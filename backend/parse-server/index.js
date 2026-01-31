@@ -69,13 +69,11 @@ const parseServerConfig = {
   // Files adapter - only configure if S3 credentials are provided
   // Otherwise Parse Server will use default file storage
   // Cache adapter - only configure if Redis URL is provided
+  // Using built-in RedisCacheAdapter from Parse Server 6.x
   ...(process.env.REDIS_URL ? {
-    cacheAdapter: {
-      module: 'parse-server-redis-cache-adapter',
-      options: {
-        redisURL: process.env.REDIS_URL || 'redis://localhost:6379',
-      },
-    },
+    cacheAdapter: new (require('parse-server').RedisCacheAdapter)({
+      url: process.env.REDIS_URL || 'redis://localhost:6379',
+    }),
   } : {}),
   allowClientClassCreation: false,
   allowCustomObjectId: false,
