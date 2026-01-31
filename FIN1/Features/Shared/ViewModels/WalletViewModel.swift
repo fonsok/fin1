@@ -106,14 +106,8 @@ final class WalletViewModel: ObservableObject {
             }
         }
 
-        // Ensure cash balance service is started
-        // CashBalanceServiceProtocol already conforms to ServiceLifecycle
-        // Note: start() is async by protocol but may not perform async operations in all implementations
-        // The await is required by the protocol signature, even if no async operations occur
-        // This is typically called by ServiceLifecycleCoordinator, but we ensure it's started here
-        // Suppress compiler warning: Protocol requires async, but implementation may not have async operations
-        // swift-format-ignore: RemoveAwait
-        await cashBalanceService.start()
+        // Note: cash balance service is started by ServiceLifecycleCoordinator
+        // No need to call start() here
 
         // Get user-specific balance based on role
         // This function is async and performs async operations (try await) in some code paths

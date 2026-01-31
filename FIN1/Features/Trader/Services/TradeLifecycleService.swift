@@ -168,39 +168,43 @@ final class TradeLifecycleService: TradeLifecycleServiceProtocol, ServiceLifecyc
         // CRITICAL: Use per-trader trade numbering for proper isolation
         // Each trader has their own sequence starting from 1
         let tradeNumber = tradeNumberService?.generateNextTradeNumber(for: buyOrder.traderId) ?? 0
-        var newTrade = Trade.from(buyOrder: buyOrder, tradeNumber: tradeNumber)
+        let initialTrade = Trade.from(buyOrder: buyOrder, tradeNumber: tradeNumber)
 
-        // Save to Parse Server if available
+        // Save to Parse Server if available and get updated trade (with server-assigned ID if any)
+        let finalTrade: Trade
         if let tradeAPIService = tradeAPIService {
             do {
-                newTrade = try await tradeAPIService.saveTrade(newTrade)
-                print("✅ TradeLifecycleService: Trade #\(newTrade.tradeNumber) saved to Parse Server")
+                finalTrade = try await tradeAPIService.saveTrade(initialTrade)
+                print("✅ TradeLifecycleService: Trade #\(finalTrade.tradeNumber) saved to Parse Server")
             } catch {
                 print("⚠️ TradeLifecycleService: Failed to save trade to Parse Server: \(error)")
                 // Continue with local storage even if server save fails
+                finalTrade = initialTrade
             }
+        } else {
+            finalTrade = initialTrade
         }
 
         await MainActor.run {
-            completedTrades.append(newTrade)
+            completedTrades.append(finalTrade)
             // Persist immediately after adding trade
             persistenceService.persistTrades(completedTrades)
         }
 
-        return newTrade
+        return finalTrade
     }
 
     func addSellOrderToTrade(_ tradeId: String, sellOrder: OrderSell) async throws {
-        var updatedTrade: Trade?
-
-        await MainActor.run {
+        let updatedTrade: Trade? = await MainActor.run {
             if let index = completedTrades.firstIndex(where: { $0.id == tradeId }) {
                 let trade = completedTrades[index]
-                updatedTrade = trade.with(sellOrder: sellOrder).updateStatus()
-                completedTrades[index] = updatedTrade!
+                let updated = trade.with(sellOrder: sellOrder).updateStatus()
+                completedTrades[index] = updated
                 // Persist after update
                 persistenceService.persistTrades(completedTrades)
+                return updated
             }
+            return nil
         }
 
         // Update on Parse Server if available
@@ -215,16 +219,16 @@ final class TradeLifecycleService: TradeLifecycleServiceProtocol, ServiceLifecyc
     }
 
     func addPartialSellOrderToTrade(_ tradeId: String, sellOrder: OrderSell) async throws {
-        var updatedTrade: Trade?
-
-        await MainActor.run {
+        let updatedTrade: Trade? = await MainActor.run {
             if let index = completedTrades.firstIndex(where: { $0.id == tradeId }) {
                 let trade = completedTrades[index]
-                updatedTrade = trade.withPartialSellOrder(sellOrder).updateStatus()
-                completedTrades[index] = updatedTrade!
+                let updated = trade.withPartialSellOrder(sellOrder).updateStatus()
+                completedTrades[index] = updated
                 // Persist after update
                 persistenceService.persistTrades(completedTrades)
+                return updated
             }
+            return nil
         }
 
         // Update on Parse Server if available
@@ -239,12 +243,10 @@ final class TradeLifecycleService: TradeLifecycleServiceProtocol, ServiceLifecyc
     }
 
     func cancelTrade(_ tradeId: String) async throws {
-        var cancelledTrade: Trade?
-
-        await MainActor.run {
+        let cancelledTrade: Trade? = await MainActor.run {
             if let index = completedTrades.firstIndex(where: { $0.id == tradeId }) {
                 let trade = completedTrades[index]
-                cancelledTrade = Trade(
+                let cancelled = Trade(
                     id: trade.id,
                     tradeNumber: trade.tradeNumber,
                     traderId: trade.traderId,
@@ -258,10 +260,12 @@ final class TradeLifecycleService: TradeLifecycleServiceProtocol, ServiceLifecyc
                     completedAt: trade.completedAt,
                     updatedAt: Date()
                 )
-                completedTrades[index] = cancelledTrade!
+                completedTrades[index] = cancelled
                 // Persist after update
                 persistenceService.persistTrades(completedTrades)
+                return cancelled
             }
+            return nil
         }
 
         // Update on Parse Server if available
@@ -276,57 +280,61 @@ final class TradeLifecycleService: TradeLifecycleServiceProtocol, ServiceLifecyc
     }
 
     func completeTrade(_ tradeId: String) async throws {
-        var finalTrade: Trade?
+        let finalTrade: Trade? = await MainActor.run {
+            guard let index = completedTrades.firstIndex(where: { $0.id == tradeId }) else {
+                return nil
+            }
+            
+            let trade = completedTrades[index]
+            let updatedTrade = trade.updateStatus()
 
-        await MainActor.run {
-            if let index = completedTrades.firstIndex(where: { $0.id == tradeId }) {
-                let trade = completedTrades[index]
-                let updatedTrade = trade.updateStatus()
+            // Calculate and store profit if trade is completed and we have invoice service
+            let resultTrade: Trade
+            if updatedTrade.isCompleted, let invoiceService = invoiceService {
+                let allInvoices = invoiceService.getInvoicesForTrade(trade.id)
+                let buyInvoices = allInvoices.filter { $0.transactionType == .buy }
+                let sellInvoices = allInvoices.filter { $0.transactionType == .sell }
+                let buyInvoice = buyInvoices.first
 
-                // Calculate and store profit if trade is completed and we have invoice service
-                if updatedTrade.isCompleted, let invoiceService = invoiceService {
-                    let allInvoices = invoiceService.getInvoicesForTrade(trade.id)
-                    let buyInvoices = allInvoices.filter { $0.transactionType == .buy }
-                    let sellInvoices = allInvoices.filter { $0.transactionType == .sell }
-                    let buyInvoice = buyInvoices.first
+                let calculatedProfit = ProfitCalculationService.calculateTaxableProfit(buyInvoice: buyInvoice, sellInvoices: sellInvoices)
+                resultTrade = updatedTrade.withCalculatedProfit(calculatedProfit)
+            } else {
+                resultTrade = updatedTrade
+            }
 
-                    let calculatedProfit = ProfitCalculationService.calculateTaxableProfit(buyInvoice: buyInvoice, sellInvoices: sellInvoices)
-                    finalTrade = updatedTrade.withCalculatedProfit(calculatedProfit)
-                } else {
-                    finalTrade = updatedTrade
-                }
+            completedTrades[index] = resultTrade
+            // Persist after completion
+            persistenceService.persistTrades(completedTrades)
+            
+            return resultTrade
+        }
+        
+        // ✅ MiFID II Compliance: Log trade completion (outside MainActor.run to avoid capture issues)
+        if let trade = finalTrade,
+           let auditService = auditLoggingService,
+           let userId = userService?.currentUser?.id {
+            let profitInfo = trade.calculatedProfit != nil
+                ? "Profit: €\(trade.calculatedProfit!.formatted(.number.precision(.fractionLength(2)))))"
+                : "Profit: Calculating..."
 
-                completedTrades[index] = finalTrade!
-                // Persist after completion
-                persistenceService.persistTrades(completedTrades)
+            let complianceEvent = ComplianceEvent(
+                eventType: .tradeCompleted,
+                agentId: userId,
+                customerId: userId,
+                description: "Trade #\(trade.tradeNumber) completed: \(trade.description)",
+                severity: .medium,
+                requiresReview: false,
+                notes: "Trade ID: \(trade.id), \(profitInfo)"
+            )
+            Task {
+                await auditService.logComplianceEvent(complianceEvent)
+            }
+        }
 
-                // ✅ MiFID II Compliance: Log trade completion
-                if let auditService = auditLoggingService,
-                   let userId = userService?.currentUser?.id {
-                    let profitInfo = finalTrade?.calculatedProfit != nil
-                        ? "Profit: €\(finalTrade!.calculatedProfit!.formatted(.number.precision(.fractionLength(2)))))"
-                        : "Profit: Calculating..."
-
-                    let complianceEvent = ComplianceEvent(
-                        eventType: .tradeCompleted,
-                        agentId: userId,
-                        customerId: userId,
-                        description: "Trade #\(finalTrade!.tradeNumber) completed: \(finalTrade!.description)",
-                        severity: .medium,
-                        requiresReview: false,
-                        notes: "Trade ID: \(finalTrade!.id), \(profitInfo)"
-                    )
-                    Task {
-                        await auditService.logComplianceEvent(complianceEvent)
-                    }
-                }
-
-                // Generate Collection Bill document for completed trade
-                if let trade = finalTrade {
-                    Task {
-                        await self.tradingNotificationService?.generateCollectionBillDocument(for: trade)
-                    }
-                }
+        // Generate Collection Bill document for completed trade
+        if let trade = finalTrade {
+            Task {
+                await self.tradingNotificationService?.generateCollectionBillDocument(for: trade)
             }
         }
 

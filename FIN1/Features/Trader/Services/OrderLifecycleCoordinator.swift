@@ -123,7 +123,7 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
         // ✅ MiFID II Compliance: Log sell order placement
         if let auditLoggingService = auditLoggingService {
             let userId = userService.currentUser?.id ?? order.traderId
-            let underlyingAsset = order.underlyingAsset ?? order.description ?? "N/A"
+            let underlyingAsset = order.underlyingAsset ?? order.description
             let complianceEvent = ComplianceEvent(
                 eventType: .orderPlaced,
                 agentId: userId,
@@ -193,7 +193,7 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
             if let auditLoggingService = auditLoggingService {
                 let userId = userService.currentUser?.id ?? order.traderId
                 let orderType = order.type == .buy ? "Buy" : "Sell"
-                let underlyingAsset = order.underlyingAsset ?? order.description ?? "N/A"
+                let underlyingAsset = order.underlyingAsset ?? order.description
                 let complianceEvent = ComplianceEvent(
                     eventType: .orderCompleted,
                     agentId: userId,
