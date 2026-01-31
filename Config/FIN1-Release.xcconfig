@@ -1,0 +1,4 @@
+// Release build configuration for FIN1 (compat wrapper).
+// Prefer using the "Prod" build configuration + FIN1-Prod.xcconfig for archives.
+#include "FIN1-Prod.xcconfig"
+

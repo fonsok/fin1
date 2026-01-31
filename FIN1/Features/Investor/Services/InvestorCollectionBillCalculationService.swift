@@ -1,0 +1,316 @@
+import Foundation
+
+// MARK: - Investor Collection Bill Calculation Service
+
+/// Service for calculating investor collection bill values (buy/sell amounts, quantities, fees, profit)
+/// Implements the protocol defined in InvestorCollectionBillCalculationServiceProtocol.swift
+final class InvestorCollectionBillCalculationService: InvestorCollectionBillCalculationServiceProtocol {
+
+    // MARK: - Public Methods
+
+    func calculateCollectionBill(input: InvestorCollectionBillInput) throws -> InvestorCollectionBillOutput {
+        // Validate input first
+        let validation = validateInput(input)
+        if !validation.isValid {
+            throw AppError.validation(validation.errorMessage ?? "Unknown validation error")
+        }
+
+        // Calculate buy leg
+        let buyResult = calculateBuyLeg(input: input)
+
+        // Calculate sell leg
+        let sellResult = calculateSellLeg(input: input, buyQuantity: buyResult.quantity)
+
+        // Calculate profit
+        let grossProfit = sellResult.amount + sellResult.fees - (buyResult.amount + buyResult.fees)
+        let roiGrossProfit = sellResult.amount - buyResult.roiInvestedAmount
+
+        return InvestorCollectionBillOutput(
+            buyAmount: buyResult.amount,
+            buyQuantity: buyResult.quantity,
+            buyPrice: input.buyPrice,
+            buyFees: buyResult.fees,
+            buyFeeDetails: buyResult.feeDetails,
+            residualAmount: buyResult.residualAmount,
+            sellAmount: sellResult.amount,
+            sellQuantity: sellResult.quantity,
+            sellAveragePrice: sellResult.averagePrice,
+            sellFees: sellResult.fees,
+            sellFeeDetails: sellResult.feeDetails,
+            grossProfit: grossProfit,
+            roiGrossProfit: roiGrossProfit,
+            roiInvestedAmount: buyResult.roiInvestedAmount
+        )
+    }
+
+    func validateInput(_ input: InvestorCollectionBillInput) -> ValidationResult {
+        // Check investment capital
+        if input.investmentCapital <= 0 {
+            return .error("Investment capital must be positive")
+        }
+
+        // Check buy price
+        if input.buyPrice <= 0 {
+            return .error("Buy price must be positive")
+        }
+
+        // Check trade total quantity
+        if input.tradeTotalQuantity <= 0 {
+            return .error("Trade total quantity must be positive")
+        }
+
+        // Check ownership percentage
+        if input.ownershipPercentage <= 0 || input.ownershipPercentage > 1.0 {
+            return .error("Ownership percentage must be between 0 (exclusive) and 1.0 (inclusive)")
+        }
+
+        // Check for invoice quantity mismatch (warning only)
+        if let buyInvoice = input.buyInvoice {
+            let invoiceQty = buyInvoice.securitiesItems.reduce(0.0) { $0 + $1.quantity }
+            let calculatedQty = input.investmentCapital / input.buyPrice
+            let scaledInvoiceQty = invoiceQty * input.ownershipPercentage
+            let difference = abs(scaledInvoiceQty - calculatedQty)
+            if difference > 1.0 {
+                return .warning("Invoice quantity (\(scaledInvoiceQty)) differs significantly from calculated quantity (\(calculatedQty))")
+            }
+        }
+
+        return .valid
+    }
+
+    // MARK: - Private Types
+
+    private struct BuyLegResult {
+        let amount: Double
+        let quantity: Double
+        let fees: Double
+        let feeDetails: [InvestorFeeDetail]
+        let roiInvestedAmount: Double
+        let residualAmount: Double
+    }
+
+    private struct SellLegResult {
+        let amount: Double
+        let quantity: Double
+        let averagePrice: Double
+        let fees: Double
+        let feeDetails: [InvestorFeeDetail]
+    }
+
+    // MARK: - Private Methods
+
+    private func calculateBuyLeg(input: InvestorCollectionBillInput) -> BuyLegResult {
+        let investmentCapital = input.investmentCapital
+
+        print("📊 InvestorCollectionBillCalculationService.calculateBuyLeg")
+        print("   💰 Investment Capital: €\(String(format: "%.2f", investmentCapital))")
+        print("   💵 Buy Price: €\(String(format: "%.2f", input.buyPrice))")
+
+        // Solve for buyAmount where: buyAmount + fees(buyAmount) = investmentCapital
+        // This ensures Total Buy Cost ≤ Investment Amount (accounting principle)
+        let finalBuyAmount = solveForBuyAmount(investmentCapital: investmentCapital, tolerance: 0.01)
+
+        // Calculate quantity from the final buyAmount: buyAmount / buy price, rounded down to whole number
+        // CRITICAL: Only whole pieces/units can be traded, not decimals (e.g., 22.78 → 22.00)
+        let calculatedQty = finalBuyAmount / input.buyPrice
+        let buyQuantity = floor(calculatedQty) // Round down to whole number (integer)
+
+        // Recalculate actual buyAmount based on rounded quantity (ensures whole units only)
+        // This may differ from the binary search result due to rounding
+        let actualBuyAmount = buyQuantity * input.buyPrice
+
+        // Recalculate fees based on actual buyAmount (fees depend on order amount)
+        let actualBuyFeeBreakdown = FeeCalculationService.createFeeBreakdown(for: actualBuyAmount)
+        let actualBuyFeeDetails = actualBuyFeeBreakdown.map { feeDetail in
+            InvestorFeeDetail(
+                label: feeDetail.name,
+                amount: feeDetail.amount
+            )
+        }
+        let actualBuyFees = actualBuyFeeDetails.reduce(0) { $0 + $1.amount }
+
+        // Calculate actual total buy cost and residual
+        var currentQuantity = buyQuantity
+        var currentBuyAmount = actualBuyAmount
+        var currentBuyFees = actualBuyFees
+        var currentBuyFeeDetails = actualBuyFeeDetails
+        var currentTotalBuyCost = actualBuyAmount + actualBuyFees
+        var residualAmount = investmentCapital - currentTotalBuyCost
+
+        // CRITICAL: Loop to maximize capital utilization
+        // Keep buying more units as long as we can afford them
+        // This ensures residual is ALWAYS less than the cost to buy one more unit
+        var iterations = 0
+        let maxIterations = 100 // Safety limit
+
+        while iterations < maxIterations {
+            iterations += 1
+
+            // Calculate the ACTUAL cost to buy one more unit (with proper fee scaling)
+            let nextQuantity = currentQuantity + 1
+            let nextBuyAmount = nextQuantity * input.buyPrice
+            let nextFees = FeeCalculationService.calculateTotalFees(for: nextBuyAmount)
+            let nextTotalCost = nextBuyAmount + nextFees
+
+            // Can we afford one more unit?
+            if nextTotalCost <= investmentCapital {
+                // Yes! Buy one more unit
+                print("   🔧 Buying one more unit: Quantity \(currentQuantity) → \(nextQuantity)")
+
+                let nextBuyFeeBreakdown = FeeCalculationService.createFeeBreakdown(for: nextBuyAmount)
+                let nextBuyFeeDetails = nextBuyFeeBreakdown.map { feeDetail in
+                    InvestorFeeDetail(
+                        label: feeDetail.name,
+                        amount: feeDetail.amount
+                    )
+                }
+
+                currentQuantity = nextQuantity
+                currentBuyAmount = nextBuyAmount
+                currentBuyFees = nextFees
+                currentBuyFeeDetails = nextBuyFeeDetails
+                currentTotalBuyCost = nextTotalCost
+                residualAmount = investmentCapital - currentTotalBuyCost
+            } else {
+                // No, can't afford one more unit - we're done
+                print("   ✅ Cannot afford one more unit (need €\(String(format: "%.2f", nextTotalCost)), have €\(String(format: "%.2f", investmentCapital)))")
+                break
+            }
+        }
+
+        print("   💵 Final buy amount (securities value): €\(String(format: "%.2f", currentBuyAmount))")
+        print("   💵 Final buy fees: €\(String(format: "%.2f", currentBuyFees))")
+        print("   💵 Final Total Buy Cost: €\(String(format: "%.2f", currentTotalBuyCost))")
+        print("   💵 Final residual amount: €\(String(format: "%.2f", residualAmount))")
+        print("   📊 Final quantity: \(currentQuantity)")
+
+        // Verify Total Buy Cost ≤ Investment Capital (accounting principle)
+        if currentTotalBuyCost > investmentCapital {
+            print("⚠️ WARNING: Total Buy Cost (\(String(format: "%.2f", currentTotalBuyCost))) exceeds Investment Capital (\(String(format: "%.2f", investmentCapital)))")
+        }
+
+        // CRITICAL VALIDATION: Residual must be less than buy price
+        // If residual >= buy price, something is wrong (we could have bought more)
+        if residualAmount >= input.buyPrice {
+            print("⚠️ CRITICAL WARNING: Residual (\(String(format: "%.2f", residualAmount))) >= buy price (\(String(format: "%.2f", input.buyPrice))) - calculation error!")
+        }
+
+        // ROI invested amount uses pure securities value (quantity × price)
+        let roiInvestedAmount = currentQuantity * input.buyPrice
+
+        return BuyLegResult(
+            amount: currentBuyAmount,
+            quantity: currentQuantity,
+            fees: currentBuyFees,
+            feeDetails: currentBuyFeeDetails,
+            roiInvestedAmount: roiInvestedAmount,
+            residualAmount: residualAmount
+        )
+    }
+
+    /// Solves for buyAmount where: buyAmount + fees(buyAmount) = investmentCapital
+    /// Uses binary search since fees are a function of buyAmount
+    private func solveForBuyAmount(investmentCapital: Double, tolerance: Double) -> Double {
+        var low = 0.0
+        var high = investmentCapital
+        var result = 0.0
+
+        // Binary search to find buyAmount where buyAmount + fees(buyAmount) ≈ investmentCapital
+        // We want the largest buyAmount such that totalCost ≤ investmentCapital
+        for _ in 0..<100 { // Max 100 iterations
+            let mid = (low + high) / 2
+            let fees = FeeCalculationService.calculateTotalFees(for: mid)
+            let totalCost = mid + fees
+
+            if abs(totalCost - investmentCapital) < tolerance {
+                result = mid
+                break
+            }
+
+            if totalCost < investmentCapital {
+                result = mid // This is a valid solution, but we might find a better one
+                low = mid
+            } else {
+                high = mid
+            }
+        }
+
+        // Final validation: ensure we don't exceed investment capital
+        let finalFees = FeeCalculationService.calculateTotalFees(for: result)
+        let finalTotalCost = result + finalFees
+
+        if finalTotalCost > investmentCapital {
+            // Back off slightly if we exceeded
+            result = result * 0.99
+        }
+
+        return result
+    }
+
+    private func calculateSellLeg(input: InvestorCollectionBillInput, buyQuantity: Double) -> SellLegResult {
+        let sellInvoices = input.sellInvoices
+
+        guard !sellInvoices.isEmpty else {
+            return SellLegResult(
+                amount: 0,
+                quantity: 0,
+                averagePrice: 0,
+                fees: 0,
+                feeDetails: []
+            )
+        }
+
+        // Calculate total sell quantity and value from invoices
+        let totalSellQtyFromInvoices = sellInvoices.reduce(0.0) { total, invoice in
+            total + invoice.securitiesItems.reduce(0.0) { $0 + $1.quantity }
+        }
+        let totalSellValueFromInvoices = sellInvoices.reduce(0.0) { total, invoice in
+            total + invoice.securitiesTotal
+        }
+
+        // Calculate sell percentage (what portion of the trade was sold)
+        let sellPercentage = input.tradeTotalQuantity > 0 ? (totalSellQtyFromInvoices / input.tradeTotalQuantity) : 0.0
+
+        // Investor sells proportionally to trader sell percentage
+        // CRITICAL: Round down to whole number - only whole pieces/units can be traded
+        let calculatedSellQty = buyQuantity * sellPercentage
+        let investorSellQuantity = floor(calculatedSellQty)
+
+        // Calculate average sell price from invoices
+        let sellAvgPrice = totalSellQtyFromInvoices > 0 ? totalSellValueFromInvoices / totalSellQtyFromInvoices : 0.0
+
+        // CRITICAL FIX: Calculate sell amount from actual quantity and price
+        // This ensures sell amount matches displayed quantity (accounting principle)
+        // Previous incorrect approach: totalSellValueFromInvoices * ownershipPercentage
+        let investorSellValue = investorSellQuantity * sellAvgPrice
+
+        // Fees from invoices (scaled by sell share based on quantity ratio)
+        let sellShare = totalSellQtyFromInvoices > 0 ? (investorSellQuantity / totalSellQtyFromInvoices) : input.ownershipPercentage
+        let sellFeeDetails = buildFeeDetails(from: sellInvoices, scale: sellShare)
+        let investorSellFees = sellFeeDetails.reduce(0) { $0 + $1.amount }
+
+        return SellLegResult(
+            amount: investorSellValue,
+            quantity: investorSellQuantity,
+            averagePrice: sellAvgPrice,
+            fees: investorSellFees,
+            feeDetails: sellFeeDetails
+        )
+    }
+
+    private func buildFeeDetails(from invoices: [Invoice], scale: Double) -> [InvestorFeeDetail] {
+        guard scale > 0 else { return [] }
+
+        return invoices.flatMap { invoice -> [InvestorFeeDetail] in
+            invoice.items
+                .filter { $0.itemType != .securities }
+                .map { item in
+                    InvestorFeeDetail(
+                        label: item.description,
+                        amount: item.totalAmount * scale
+                    )
+                }
+        }
+        .filter { abs($0.amount) > 0.0001 }
+    }
+}

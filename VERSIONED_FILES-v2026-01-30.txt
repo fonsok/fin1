@@ -1,0 +1,8 @@
+root=/Users/ra/app/FIN1
+version=v2026-01-30
+total_candidates=501
+created=0
+created_numbered=1
+skipped_identical=500
+
+FIN1.xcodeproj/project-v2026-01-30-03.pbxproj

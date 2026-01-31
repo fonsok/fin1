@@ -1,0 +1,153 @@
+import Foundation
+
+// MARK: - Unified Order Completion Handler
+
+/// Handles order completion logic for UnifiedOrderService
+/// Separated to reduce main service file size and improve maintainability
+@MainActor
+final class UnifiedOrderCompletionHandler {
+    private let tradingNotificationService: any TradingNotificationServiceProtocol
+    private let cashBalanceService: any CashBalanceServiceProtocol
+    private let invoiceService: any InvoiceServiceProtocol
+    private let tradeNumberService: any TradeNumberServiceProtocol
+
+    init(
+        tradingNotificationService: any TradingNotificationServiceProtocol,
+        cashBalanceService: any CashBalanceServiceProtocol,
+        invoiceService: any InvoiceServiceProtocol,
+        tradeNumberService: any TradeNumberServiceProtocol
+    ) {
+        self.tradingNotificationService = tradingNotificationService
+        self.cashBalanceService = cashBalanceService
+        self.invoiceService = invoiceService
+        self.tradeNumberService = tradeNumberService
+    }
+
+    /// Handles order completion
+    func handleOrderCompletion(order: Order, completedTrades: [Trade]) async {
+        if order.type == .buy {
+            await handleBuyOrderCompletion(order: order, completedTrades: completedTrades)
+        } else {
+            await handleSellOrderCompletion(order: order, completedTrades: completedTrades)
+        }
+    }
+
+    /// Handles buy order completion
+    private func handleBuyOrderCompletion(order: Order, completedTrades: [Trade]) async {
+        let buyOrder = OrderBuy(from: order)
+        let trade = try? await createTrade(from: buyOrder)
+
+        if let trade = trade {
+            // Show buy confirmation
+            await tradingNotificationService.showBuyConfirmation(for: trade)
+
+            // Generate invoice
+            await tradingNotificationService.generateInvoiceAndNotification(
+                for: order,
+                tradeId: trade.id,
+                tradeNumber: trade.tradeNumber
+            )
+        }
+    }
+
+    /// Handles sell order completion
+    private func handleSellOrderCompletion(order: Order, completedTrades: [Trade]) async {
+        let sellOrder = OrderSell(from: order)
+
+        // Find matching trade
+        let matchingTrade = findMatchingTrade(for: sellOrder, in: completedTrades)
+
+        if let trade = matchingTrade {
+            let updatedTrade = try? await addSellOrderToTrade(trade.id, sellOrder: sellOrder, in: completedTrades)
+
+            if let updatedTrade = updatedTrade {
+                // Show sell confirmation
+                await tradingNotificationService.showSellConfirmation(for: updatedTrade)
+
+                // Generate invoice
+                await tradingNotificationService.generateInvoiceAndNotification(
+                    for: order,
+                    tradeId: updatedTrade.id,
+                    tradeNumber: updatedTrade.tradeNumber
+                )
+
+                // Check if trade is now fully completed and generate Collection Bill
+                if updatedTrade.isCompleted {
+                    print("🎯 Trade #\(updatedTrade.tradeNumber) is now fully completed - generating Collection Bill")
+                    await tradingNotificationService.generateCollectionBillDocument(for: updatedTrade)
+                }
+            }
+        } else {
+            // Generate invoice even if no trade found
+            await tradingNotificationService.generateInvoiceAndNotification(
+                for: order,
+                tradeId: nil,
+                tradeNumber: nil
+            )
+        }
+    }
+
+    /// Creates a trade from a buy order
+    func createTrade(from buyOrder: OrderBuy) async throws -> Trade {
+        // CRITICAL: Use per-trader trade numbering for proper isolation
+        // Each trader has their own sequence starting from 1
+        let tradeNumber = tradeNumberService.generateNextTradeNumber(for: buyOrder.traderId)
+        let trade = Trade.from(buyOrder: buyOrder, tradeNumber: tradeNumber)
+
+        // Note: completedTrades is managed by the main service
+        // This method returns the trade, and the main service adds it
+
+        // Update cash balance
+        await cashBalanceService.processBuyOrderExecution(amount: buyOrder.totalAmount)
+
+        return trade
+    }
+
+    /// Adds a sell order to an existing trade
+    func addSellOrderToTrade(_ tradeId: String, sellOrder: OrderSell, in completedTrades: [Trade]) async throws -> Trade {
+        guard let trade = completedTrades.first(where: { $0.id == tradeId }) else {
+            throw AppError.tradeNotFound(tradeId)
+        }
+        let tradeWithSellOrder = trade.withPartialSellOrder(sellOrder)
+        let updatedTrade = tradeWithSellOrder.updateStatus()
+
+        // Calculate and store profit if trade is completed
+        let finalTrade: Trade
+        if updatedTrade.isCompleted {
+            let allInvoices = invoiceService.getInvoicesForTrade(trade.id)
+            let buyInvoices = allInvoices.filter { $0.transactionType == .buy }
+            let sellInvoices = allInvoices.filter { $0.transactionType == .sell }
+            let buyInvoice = buyInvoices.first
+
+            let calculatedProfit = ProfitCalculationService.calculateTaxableProfit(buyInvoice: buyInvoice, sellInvoices: sellInvoices)
+            finalTrade = updatedTrade.withCalculatedProfit(calculatedProfit)
+        } else {
+            finalTrade = updatedTrade
+        }
+
+        // Update cash balance
+        await cashBalanceService.processSellOrderExecution(amount: sellOrder.totalAmount)
+
+        return finalTrade
+    }
+
+    /// Finds matching trade for a sell order
+    private func findMatchingTrade(for sellOrder: OrderSell, in completedTrades: [Trade]) -> Trade? {
+        // Try to match by originalHoldingId first
+        if let originalHoldingId = sellOrder.originalHoldingId {
+            if let trade = completedTrades.first(where: { $0.buyOrder.id == originalHoldingId }) {
+                return trade
+            }
+        }
+
+        // Fallback to WKN matching - find trade with matching WKN that still has remaining quantity
+        // The previous implementation would find the FIRST trade with matching WKN (possibly
+        // already completed), causing the sell order to be added to the wrong trade
+        return completedTrades.first { trade in
+            guard trade.wkn == sellOrder.wkn else { return false }
+            // Only match trades that still have quantity available for selling
+            return trade.remainingQuantity > 0
+        }
+    }
+}
+

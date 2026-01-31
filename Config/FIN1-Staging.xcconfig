@@ -1,0 +1,6 @@
+// Staging build configuration for FIN1.
+#include "FIN1-Base.xcconfig"
+
+// TODO: Replace with a real staging host when available.
+FIN1_PARSE_SERVER_URL = http:$(FIN1_URL_SLASH)$(FIN1_URL_SLASH)192.168.178.24$(FIN1_URL_SLASH)parse
+

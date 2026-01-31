@@ -1,0 +1,48 @@
+{
+  "configurations" : [
+    {
+      "id" : "DEFAULT",
+      "name" : "Default",
+      "options" : {
+        "testTimeoutsEnabled" : true,
+        "maximumTestExecutionTimeAllowance" : 600,
+        "codeCoverage" : true,
+        "parallelizable" : true
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:FIN1.xcodeproj",
+      "identifier" : "114BEE662E51EBCC00C3E8F1",
+      "name" : "FIN1"
+    }
+  },
+  "testTargets" : [
+    {
+      "target" : {
+        "containerPath" : "container:FIN1.xcodeproj",
+        "identifier" : "114BEE732E51EBCE00C3E8F1",
+        "name" : "FIN1Tests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:FIN1.xcodeproj",
+        "identifier" : "114BEE7D2E51EBCE00C3E8F1",
+        "name" : "FIN1UITests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:FIN1.xcodeproj",
+        "identifier" : "11INVTGT000000000000001",
+        "name" : "FIN1InvestorTests"
+      }
+    }
+  ],
+  "version" : 1
+}
+
+
+

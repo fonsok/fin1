@@ -1,0 +1,53 @@
+# FIN1 Backend Environment Variables
+# Copy this file to .env and update the values
+
+# Parse Server Configuration
+PARSE_SERVER_APPLICATION_ID=fin1-app-id
+PARSE_SERVER_MASTER_KEY=fin1-master-key-change-this-in-production
+PARSE_SERVER_DATABASE_URI=mongodb://mongodb:27017/fin1
+PARSE_SERVER_PUBLIC_SERVER_URL=http://localhost:1337/parse
+PARSE_SERVER_LIVE_QUERY_SERVER_URL=ws://localhost:1337/parse
+PARSE_SERVER_PRODUCTION_URL=https://your-production-domain.com/parse
+
+# Database Configuration
+MONGODB_URI=mongodb://admin:fin1-mongo-password@mongodb:27017/fin1?authSource=admin
+POSTGRES_URL=postgresql://fin1_user:fin1-postgres-password@postgres:5432/fin1_analytics
+REDIS_URL=redis://:fin1-redis-password@redis:6379
+
+# Push Notifications
+PARSE_SERVER_PUSH_APNS_CERT_PATH=/app/certs/apns.p12
+PARSE_SERVER_PUSH_APNS_KEY_ID=your-apns-key-id
+PARSE_SERVER_PUSH_APNS_TEAM_ID=your-apple-team-id
+PARSE_SERVER_PUSH_APNS_BUNDLE_ID=com.fin1.app
+PARSE_SERVER_PUSH_APNS_PRODUCTION=false
+PARSE_SERVER_PUSH_FCM_API_KEY=your-fcm-server-key
+
+# File Storage (MinIO/S3)
+S3_BUCKET=fin1-files
+S3_REGION=us-east-1
+S3_ACCESS_KEY=fin1-minio-admin
+S3_SECRET_KEY=fin1-minio-password
+S3_ENDPOINT=http://minio:9000
+
+# Market Data API
+MARKET_DATA_API_KEY=your-market-data-api-key
+MARKET_DATA_WS_URL=wss://your-market-data-websocket-url
+
+# Security
+JWT_SECRET=your-jwt-secret-key-change-this-in-production
+ENCRYPTION_KEY=your-encryption-key-32-chars-long
+
+# Dashboard (Development Only)
+DASHBOARD_USER=admin
+DASHBOARD_PASSWORD=admin123
+
+# CORS
+ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8080
+
+# Logging
+LOG_LEVEL=info
+LOG_FILE=/app/logs/app.log
+
+# Environment
+NODE_ENV=development
+PORT=1337

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kontoauszug - {{ document.period }}</title>
+</head>
+<body>
+    <div class="document">
+        <!-- Header with Company Info -->
+        <div class="header">
+            <div class="company-info">
+                <div class="company-name">{{ company.name }}</div>
+                <div class="company-details">
+                    {{ company.address }} | {{ company.city }}<br>
+                    {{ company.contact }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Address Section (DIN 5008) -->
+        <div class="address-section">
+            <div class="recipient-address">
+                <div class="return-address">
+                    {{ company.name }} · {{ company.address }} · {{ company.city }}
+                </div>
+                <p><strong>{{ customer.name }}</strong></p>
+                <p>{{ customer.address }}</p>
+                <p>{{ customer.city }}</p>
+            </div>
+
+            <div class="info-block">
+                <div class="info-row">
+                    <span class="info-label">Auszug-Nr.:</span>
+                    <span class="info-value">{{ document.number }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Zeitraum:</span>
+                    <span class="info-value">{{ document.period }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Datum:</span>
+                    <span class="info-value">{{ document.date }}</span>
+                </div>
+                {% if customer.customer_number %}
+                <div class="info-row">
+                    <span class="info-label">Kundennummer:</span>
+                    <span class="info-value">{{ customer.customer_number }}</span>
+                </div>
+                {% endif %}
+                {% if customer.depot_number %}
+                <div class="info-row">
+                    <span class="info-label">Depotnummer:</span>
+                    <span class="info-value">{{ customer.depot_number }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Document Title -->
+        <div class="document-title">
+            <h1>{{ document.title }}</h1>
+            <div class="document-subtitle">{{ document.period }}</div>
+        </div>
+
+        <!-- Balance Summary -->
+        <div class="balance-section">
+            <div class="balance-item">
+                <div class="balance-label">Anfangssaldo</div>
+                <div class="balance-value">{{ balances.opening }}</div>
+            </div>
+            <div class="balance-item">
+                <div class="balance-label">➜</div>
+            </div>
+            <div class="balance-item">
+                <div class="balance-label">Endsaldo</div>
+                <div class="balance-value {% if closing_balance >= 0 %}positive{% else %}negative{% endif %}">
+                    {{ balances.closing }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Transaction Entries -->
+        <div class="section">
+            <div class="section-header">Kontobewegungen</div>
+            <table class="items-table">
+                <thead>
+                    <tr>
+                        <th style="width: 12%;">Datum</th>
+                        <th style="width: 35%;">Beschreibung</th>
+                        <th style="width: 15%;">Kategorie</th>
+                        <th class="text-right" style="width: 15%;">Eingang</th>
+                        <th class="text-right" style="width: 15%;">Ausgang</th>
+                        <th class="text-right" style="width: 18%;">Saldo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in entries %}
+                    <tr>
+                        <td>{{ format_date(entry.date) if entry.date else '-' }}</td>
+                        <td>{{ entry.description }}</td>
+                        <td>{{ entry.category }}</td>
+                        <td class="text-right text-success">
+                            {% if entry.direction == 'credit' %}
+                            {{ format_currency(entry.amount) }}
+                            {% endif %}
+                        </td>
+                        <td class="text-right text-danger">
+                            {% if entry.direction == 'debit' %}
+                            {{ format_currency(entry.amount) }}
+                            {% endif %}
+                        </td>
+                        <td class="text-right font-bold">
+                            {{ format_currency(entry.balance_after) if entry.balance_after else '-' }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Summary Box -->
+        <div class="totals-section">
+            <div class="totals-box">
+                <div class="totals-row">
+                    <span class="totals-label">Anfangssaldo</span>
+                    <span class="totals-value">{{ balances.opening }}</span>
+                </div>
+                <div class="totals-row">
+                    <span class="totals-label">Eingänge gesamt</span>
+                    <span class="totals-value text-success">
+                        {% set total_credits = entries | selectattr('direction', 'equalto', 'credit') | map(attribute='amount') | sum %}
+                        {{ format_currency(total_credits) }}
+                    </span>
+                </div>
+                <div class="totals-row">
+                    <span class="totals-label">Ausgänge gesamt</span>
+                    <span class="totals-value text-danger">
+                        {% set total_debits = entries | selectattr('direction', 'equalto', 'debit') | map(attribute='amount') | sum %}
+                        {{ format_currency(total_debits) }}
+                    </span>
+                </div>
+                <div class="totals-row total">
+                    <span class="label">Endsaldo</span>
+                    <span class="value">{{ balances.closing }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notes -->
+        <div class="notes-section">
+            <div class="note">
+                <div class="note-text">
+                    Dieser Kontoauszug wurde maschinell erstellt und ist ohne Unterschrift gültig.
+                    Einwände gegen diesen Kontoauszug sind innerhalb von 6 Wochen nach Zugang
+                    schriftlich an uns zu richten.
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <div class="footer-line">{{ company.name }} | {{ company.legal }}</div>
+            <div class="footer-line">{{ company.management }}</div>
+            <div class="footer-line">{{ company.bank }}</div>
+            {% if company.business_hours %}
+            <div class="footer-line">Telefonischer Support: {{ company.phone }} | {{ company.business_hours }}</div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

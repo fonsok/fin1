@@ -1,0 +1,49 @@
+{
+  "documentType": "imprint",
+  "language": "de",
+  "sections": [
+    {
+      "id": "anbieter",
+      "title": "Anbieter",
+      "content": "**Anbieter:**\n{{LEGAL_COMPANY_LEGAL_NAME}}\n{{LEGAL_COMPANY_ADDRESS_LINE}}\n",
+      "icon": "building.2"
+    },
+    {
+      "id": "kontakt",
+      "title": "Kontakt",
+      "content": "- E-Mail: {{LEGAL_COMPANY_EMAIL}}\n- Telefon: {{LEGAL_COMPANY_PHONE}}\n- Website: {{LEGAL_COMPANY_WEBSITE}}\n",
+      "icon": "envelope"
+    },
+    {
+      "id": "vertretung",
+      "title": "Vertretungsberechtigte / Geschäftsführung",
+      "content": "{{LEGAL_COMPANY_MANAGEMENT}}\n",
+      "icon": "person.crop.circle"
+    },
+    {
+      "id": "register",
+      "title": "Registereintrag",
+      "content": "{{LEGAL_COMPANY_REGISTER_NUMBER}}\n",
+      "icon": "doc.text"
+    },
+    {
+      "id": "ust",
+      "title": "Umsatzsteuer-ID",
+      "content": "{{LEGAL_COMPANY_VAT_ID}}\n",
+      "icon": "number"
+    },
+    {
+      "id": "bank",
+      "title": "Bankverbindung (optional)",
+      "content": "- Bank: {{LEGAL_BANK_NAME}}\n- IBAN: {{LEGAL_BANK_IBAN}}\n- BIC: {{LEGAL_BANK_BIC}}\n",
+      "icon": "creditcard"
+    },
+    {
+      "id": "haftung",
+      "title": "Haftungshinweis",
+      "content": "Trotz sorgfältiger inhaltlicher Kontrolle übernehmen wir keine Haftung für die Inhalte externer Links. Für den Inhalt der verlinkten Seiten sind ausschließlich deren Betreiber verantwortlich.\n",
+      "icon": "exclamationmark.triangle"
+    }
+  ]
+}
+

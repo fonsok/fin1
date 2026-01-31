@@ -1,0 +1,290 @@
+import XCTest
+@testable import FIN1
+import Combine
+import UIKit
+
+// MARK: - Invoice ViewModel Tests (Simplified Mocking)
+final class InvoiceViewModelTests: XCTestCase {
+
+    var viewModel: InvoiceViewModel!
+    var mockInvoiceService: MockInvoiceService!
+    var mockNotificationService: MockNotificationService!
+
+    override func setUp() {
+        super.setUp()
+        mockInvoiceService = MockInvoiceService()
+        mockNotificationService = MockNotificationService()
+        viewModel = InvoiceViewModel(
+            invoiceService: mockInvoiceService,
+            notificationService: mockNotificationService
+        )
+    }
+
+    override func tearDown() {
+        viewModel = nil
+        mockInvoiceService = nil
+        mockNotificationService = nil
+        super.tearDown()
+    }
+
+    // MARK: - Invoice Loading Tests
+
+    func testLoadInvoices() async {
+        // Given
+        let expectedInvoices = [Invoice.sampleInvoice()]
+        let expectation = XCTestExpectation(description: "Load invoices")
+
+        mockInvoiceService.loadInvoicesHandler = { _ in
+            await MainActor.run {
+                self.mockInvoiceService.invoices = expectedInvoices
+            }
+            expectation.fulfill()
+        }
+
+        // When
+        viewModel.loadInvoices(for: "test-user")
+        await fulfillment(of: [expectation], timeout: 1.0)
+
+        // Then
+        XCTAssertEqual(viewModel.invoices.count, 1)
+        XCTAssertEqual(viewModel.invoices.first?.id, expectedInvoices.first?.id)
+    }
+
+    func testCreateInvoice() async {
+        // Given
+        let order = createSampleOrderBuy()
+        let customerInfo = createSampleCustomerInfo()
+        let expectedInvoice = Invoice.sampleInvoice()
+        let expectation = XCTestExpectation(description: "Create invoice")
+
+        mockInvoiceService.createInvoiceFromOrderHandler = { _, _ in
+            expectation.fulfill()
+            return expectedInvoice
+        }
+
+        // When
+        viewModel.createInvoice(from: order, customerInfo: customerInfo)
+        await fulfillment(of: [expectation], timeout: 1.0)
+
+        // Then
+        XCTAssertEqual(viewModel.invoices.count, 1)
+        XCTAssertEqual(viewModel.invoices.first?.id, expectedInvoice.id)
+    }
+
+    func testUpdateInvoiceStatus() async {
+        // Given
+        let invoice = Invoice.sampleInvoice()
+        mockInvoiceService.invoices = [invoice]
+        let expectation = XCTestExpectation(description: "Update invoice status")
+
+        mockInvoiceService.updateInvoiceStatusHandler = { inv, status in
+            await MainActor.run {
+                if let index = self.mockInvoiceService.invoices.firstIndex(where: { $0.id == inv.id }) {
+                    let updated = Invoice(
+                        id: inv.id,
+                        invoiceNumber: inv.invoiceNumber,
+                        type: inv.type,
+                        status: status,
+                        customerInfo: inv.customerInfo,
+                        items: inv.items,
+                        tradeId: inv.tradeId,
+                        tradeNumber: inv.tradeNumber,
+                        orderId: inv.orderId,
+                        transactionType: inv.transactionType,
+                        taxNote: inv.taxNote,
+                        legalNote: inv.legalNote,
+                        dueDate: inv.dueDate
+                    )
+                    self.mockInvoiceService.invoices[index] = updated
+                }
+            }
+            expectation.fulfill()
+        }
+
+        // When
+        viewModel.updateInvoiceStatus(invoice, status: .paid)
+        await fulfillment(of: [expectation], timeout: 1.0)
+
+        // Then
+        XCTAssertFalse(viewModel.showError)
+        XCTAssertEqual(viewModel.invoices.first?.status, .paid)
+    }
+
+    func testDeleteInvoice() async {
+        // Given
+        let invoice = Invoice.sampleInvoice()
+        mockInvoiceService.invoices = [invoice]
+        viewModel.invoices = [invoice]
+        let expectation = XCTestExpectation(description: "Delete invoice")
+
+        mockInvoiceService.deleteInvoiceHandler = { _ in
+            expectation.fulfill()
+        }
+
+        // When
+        viewModel.deleteInvoice(invoice)
+        await fulfillment(of: [expectation], timeout: 1.0)
+
+        // Then
+        XCTAssertEqual(viewModel.invoices.count, 0)
+    }
+
+    // MARK: - PDF Generation Tests
+
+    func testGeneratePDF() async {
+        // Given
+        let invoice = Invoice.sampleInvoice()
+        let expectedPDFData = Data("Mock PDF data".utf8)
+        let expectation = XCTestExpectation(description: "Generate PDF")
+
+        mockInvoiceService.generatePDFHandler = { _ in
+            expectation.fulfill()
+            return expectedPDFData
+        }
+
+        // When
+        viewModel.generatePDF(for: invoice)
+        await fulfillment(of: [expectation], timeout: 1.0)
+
+        // Then
+        XCTAssertFalse(viewModel.showError)
+    }
+
+    func testGeneratePDFPreview() async {
+        // Given
+        let invoice = Invoice.sampleInvoice()
+        let expectedImage = UIImage(systemName: "doc.text") ?? UIImage()
+        let expectation = XCTestExpectation(description: "Generate PDF preview")
+
+        mockInvoiceService.generatePDFPreviewHandler = { _ in
+            expectation.fulfill()
+            return expectedImage
+        }
+
+        // When
+        viewModel.generatePDFPreview(for: invoice)
+        await fulfillment(of: [expectation], timeout: 1.0)
+
+        // Then
+        XCTAssertFalse(viewModel.showError)
+    }
+
+    // MARK: - Filtering and Search Tests
+
+    func testFilterInvoicesByType() {
+        // Given
+        let invoice1 = Invoice.sampleInvoice()
+        let invoice2 = createPaidInvoice()
+        viewModel.invoices = [invoice1, invoice2]
+
+        // When
+        let filteredInvoices = viewModel.filterInvoices(by: .securitiesSettlement)
+
+        // Then
+        XCTAssertEqual(filteredInvoices.count, 1)
+        XCTAssertEqual(filteredInvoices.first?.type, .securitiesSettlement)
+    }
+
+    func testSearchInvoices() {
+        // Given
+        let invoice1 = Invoice.sampleInvoice()
+        let invoice2 = createPaidInvoice()
+        viewModel.invoices = [invoice1, invoice2]
+
+        // When
+        let searchResults = viewModel.searchInvoices(query: "sample")
+
+        // Then
+        XCTAssertEqual(searchResults.count, 1)
+    }
+
+    // MARK: - Computed Properties Tests
+
+    func testTotalInvoices() {
+        // Given
+        let invoice1 = Invoice.sampleInvoice()
+        let invoice2 = createPaidInvoice()
+        viewModel.invoices = [invoice1, invoice2]
+
+        // Then
+        XCTAssertEqual(viewModel.totalInvoices, 2)
+    }
+
+    func testPaidInvoicesCount() {
+        // Given
+        let invoice1 = Invoice.sampleInvoice()
+        let invoice2 = createPaidInvoice()
+        viewModel.invoices = [invoice1, invoice2]
+
+        // Then
+        XCTAssertEqual(viewModel.paidInvoicesCount, 1)
+    }
+
+    func testOverdueInvoicesCount() {
+        // Given
+        let invoice1 = createOverdueInvoice()
+        let invoice2 = createCurrentInvoice()
+        viewModel.invoices = [invoice1, invoice2]
+
+        // Then
+        XCTAssertEqual(viewModel.overdueInvoicesCount, 1)
+    }
+
+    func testTotalAmount() {
+        // Given
+        let invoice1 = createInvoiceWithAmount(100.0)
+        let invoice2 = createInvoiceWithAmount(200.0)
+        viewModel.invoices = [invoice1, invoice2]
+
+        // Then
+        XCTAssertEqual(viewModel.totalAmount, 300.0)
+    }
+
+    // MARK: - Error Handling Tests
+
+    func testErrorHandling() async {
+        // Given
+        let expectation = XCTestExpectation(description: "Error handling")
+        let testError = AppError.serviceError("Test error")
+
+        mockInvoiceService.loadInvoicesHandler = { _ in
+            expectation.fulfill()
+            throw testError
+        }
+
+        // When
+        viewModel.loadInvoices(for: "test-user")
+        await fulfillment(of: [expectation], timeout: 1.0)
+
+        // Then
+        XCTAssertTrue(viewModel.showError)
+        XCTAssertNotNil(viewModel.errorMessage)
+    }
+}
+
+// MARK: - Test Helpers
+
+extension InvoiceViewModelTests {
+    func createSampleOrderBuy() -> OrderBuy {
+        return OrderBuy(
+            id: "test-order-123",
+            traderId: "test-trader",
+            symbol: "DAX PUT",
+            description: "DAX Optionsschein PUT",
+            quantity: 1000,
+            price: 1.20,
+            totalAmount: 1200.00,
+            status: .completed,
+            createdAt: Date(),
+            executedAt: Date(),
+            confirmedAt: Date(),
+            updatedAt: Date(),
+            optionDirection: "PUT",
+            underlyingAsset: "DAX",
+            wkn: "VT1234",
+            category: nil,
+            orderInstruction: "market",
+            limitPrice: nil
+        )
+    }
+}

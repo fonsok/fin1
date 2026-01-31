@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sammelabrechnung - Trade #{{ document.trade_number }}</title>
+</head>
+<body>
+    <div class="document">
+        <!-- Header with Company Info -->
+        <div class="header">
+            <div class="company-info">
+                <div class="company-name">{{ company.name }}</div>
+                <div class="company-details">
+                    {{ company.address }} | {{ company.city }}<br>
+                    {{ company.contact }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Address Section -->
+        <div class="address-section">
+            <div class="recipient-address">
+                <div class="return-address">
+                    {{ company.name }} · {{ company.address }} · {{ company.city }}
+                </div>
+                <p><strong>{{ depot.holder }}</strong></p>
+            </div>
+
+            <div class="info-block">
+                <div class="info-row">
+                    <span class="info-label">Trade-Nummer:</span>
+                    <span class="info-value">#{{ document.trade_number }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Datum:</span>
+                    <span class="info-value">{{ document.date }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Depotnummer:</span>
+                    <span class="info-value">{{ depot.number }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Kontonummer:</span>
+                    <span class="info-value">{{ depot.account }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Document Title -->
+        <div class="document-title">
+            <h1>{{ document.title }}</h1>
+            <div class="document-subtitle">Trade #{{ document.trade_number }} - {{ depot.security }}</div>
+        </div>
+
+        <!-- Depot Information -->
+        <div class="section">
+            <div class="section-header">Depot-Informationen</div>
+            <table class="info-table">
+                <tr>
+                    <td>Depotnummer</td>
+                    <td>{{ depot.number }}</td>
+                </tr>
+                <tr>
+                    <td>Depotinhaber</td>
+                    <td>{{ depot.holder }}</td>
+                </tr>
+                <tr>
+                    <td>Wertpapier</td>
+                    <td>{{ depot.security }}</td>
+                </tr>
+                <tr>
+                    <td>Kontonummer</td>
+                    <td>{{ depot.account }}</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Buy Transaction (if exists) -->
+        {% if buy_transaction %}
+        <div class="section">
+            <div class="section-header">Kauf-Transaktion</div>
+            <table class="info-table">
+                <tr>
+                    <td>Transaktionsnummer</td>
+                    <td>{{ buy_transaction.transactionNumber }}</td>
+                </tr>
+                <tr>
+                    <td>Ordervolumen</td>
+                    <td>{{ buy_transaction.orderVolume }}</td>
+                </tr>
+                <tr>
+                    <td>Ausgeführtes Volumen</td>
+                    <td>{{ buy_transaction.executedVolume }}</td>
+                </tr>
+                <tr>
+                    <td>Preis</td>
+                    <td>{{ buy_transaction.price }}</td>
+                </tr>
+                <tr>
+                    <td>Marktwert</td>
+                    <td>{{ buy_transaction.marketValue }}</td>
+                </tr>
+                <tr>
+                    <td>Provision</td>
+                    <td>{{ buy_transaction.commission }}</td>
+                </tr>
+                <tr>
+                    <td>Eigene Kosten</td>
+                    <td>{{ buy_transaction.ownExpenses }}</td>
+                </tr>
+                <tr>
+                    <td>Externe Kosten</td>
+                    <td>{{ buy_transaction.externalExpenses }}</td>
+                </tr>
+                <tr>
+                    <td><strong>Endbetrag</strong></td>
+                    <td><strong>{{ buy_transaction.finalAmount }}</strong></td>
+                </tr>
+            </table>
+        </div>
+        {% endif %}
+
+        <!-- Sell Transactions (if exist) -->
+        {% if sell_transactions %}
+        <div class="section">
+            <div class="section-header">Verkauf-Transaktionen</div>
+            <table class="items-table">
+                <thead>
+                    <tr>
+                        <th>Trans.-Nr.</th>
+                        <th class="text-right">Volumen</th>
+                        <th class="text-right">Preis</th>
+                        <th class="text-right">Marktwert</th>
+                        <th class="text-right">Provision</th>
+                        <th class="text-right">Endbetrag</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sell in sell_transactions %}
+                    <tr>
+                        <td>{{ sell.transactionNumber }}</td>
+                        <td class="text-right">{{ sell.orderVolume }}</td>
+                        <td class="text-right">{{ sell.price }}</td>
+                        <td class="text-right">{{ sell.marketValue }}</td>
+                        <td class="text-right">{{ sell.commission }}</td>
+                        <td class="text-right">{{ sell.finalAmount }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
+        <!-- Calculation Breakdown -->
+        <div class="section">
+            <div class="section-header">Berechnungsübersicht</div>
+            <table class="info-table">
+                <tr>
+                    <td>Gesamt-Verkaufsbetrag</td>
+                    <td>{{ calculation.totalSellAmount }}</td>
+                </tr>
+                <tr>
+                    <td>Kaufbetrag</td>
+                    <td>{{ calculation.buyAmount }}</td>
+                </tr>
+                <tr>
+                    <td><strong>Ergebnis vor Steuern</strong></td>
+                    <td><strong>{{ calculation.resultBeforeTaxes }}</strong></td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Tax Summary -->
+        <div class="section">
+            <div class="section-header">Steuerübersicht</div>
+            <div class="totals-section">
+                <div class="totals-box">
+                    <div class="totals-row">
+                        <span class="totals-label">Bemessungsgrundlage</span>
+                        <span class="totals-value">{{ tax_summary.assessmentBasis }}</span>
+                    </div>
+                    <div class="totals-row">
+                        <span class="totals-label">Gesamtsteuer</span>
+                        <span class="totals-value">{{ tax_summary.totalTax }}</span>
+                    </div>
+                    <div class="totals-row total">
+                        <span class="label">Nettoergebnis</span>
+                        <span class="value">{{ tax_summary.netResult }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Legal Disclaimer -->
+        {% if legal_disclaimer %}
+        <div class="notes-section">
+            <div class="note">
+                <div class="note-title">Rechtliche Hinweise</div>
+                <div class="note-text">{{ legal_disclaimer }}</div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Footer -->
+        <div class="footer">
+            <div class="footer-line">{{ company.name }} | {{ company.legal }}</div>
+            <div class="footer-line">{{ company.management }}</div>
+            <div class="footer-line">{{ company.bank }}</div>
+            {% if company.business_hours %}
+            <div class="footer-line">Telefonischer Support: {{ company.phone }} | {{ company.business_hours }}</div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

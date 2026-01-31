@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDisplayName</key>
+	<string>$(INFOPLIST_KEY_CFBundleDisplayName)</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict/>
+	</array>
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>FIN1PDFServiceBaseURL</key>
+	<string>$(FIN1_PDF_SERVICE_BASE_URL)</string>
+	<key>FIN1ParseApplicationId</key>
+	<string>$(FIN1_PARSE_APPLICATION_ID)</string>
+	<key>FIN1ParseServerURL</key>
+	<string>$(FIN1_PARSE_SERVER_URL)</string>
+	<key>LegalBankBIC</key>
+	<string>COBADEFFXXX</string>
+	<key>LegalBankIBAN</key>
+	<string>DE89 3704 0044 0532 0130 00</string>
+	<key>LegalBankName</key>
+	<string></string>
+	<key>LegalCompanyAddress</key>
+	<string>Hauptstraße 100</string>
+	<key>LegalCompanyAddressLine</key>
+	<string>Hauptstraße 100, 60311 Frankfurt am Main</string>
+	<key>LegalCompanyBusinessHours</key>
+	<string>Mo-Fr: 9:00-18:00 Uhr</string>
+	<key>LegalCompanyCity</key>
+	<string>60311 Frankfurt am Main</string>
+	<key>LegalCompanyEmail</key>
+	<string>info@fin1-investing.de</string>
+	<key>LegalCompanyManagement</key>
+	<string>Max Mustermann</string>
+	<key>LegalCompanyName</key>
+	<string></string>
+	<key>LegalCompanyPhone</key>
+	<string>+49 (0) 69 12345678</string>
+	<key>LegalCompanyRegisterNumber</key>
+	<string>HRB 123456</string>
+	<key>LegalCompanyVatId</key>
+	<string>DE123456789</string>
+	<key>LegalCompanyWebsite</key>
+	<string>www.fin1-investing.de</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+		<key>NSExceptionDomains</key>
+		<dict>
+			<key>192.168.178.24</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+				<key>NSIncludesSubdomains</key>
+				<true/>
+			</dict>
+			<key>iobox.local</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+			</dict>
+		</dict>
+	</dict>
+	<key>NSCameraUsageDescription</key>
+	<string>$(PRODUCT_NAME) benötigt Zugriff auf Ihre Kamera, um Dokumente und Ausweisdokumente für die Kontoerstellung zu fotografieren.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>$(PRODUCT_NAME) benötigt Zugriff auf Ihre Fotos, um Dokumente und Ausweisdokumente für die Kontoerstellung auszuwählen.</string>
+	<key>UIApplicationSceneManifest</key>
+	<dict>
+		<key>UIApplicationSupportsMultipleScenes</key>
+		<false/>
+	</dict>
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
+	<key>UILaunchScreen</key>
+	<dict>
+		<key>UIColorName</key>
+		<string>ScreenBackground</string>
+	</dict>
+	<key>UIRequiresFullScreen</key>
+	<false/>
+	<key>UIStatusBarHidden</key>
+	<false/>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UIViewControllerBasedStatusBarAppearance</key>
+	<true/>
+</dict>
+</plist>

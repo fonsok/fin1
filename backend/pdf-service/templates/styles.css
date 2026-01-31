@@ -1,0 +1,511 @@
+/*
+ * FIN1 Professional PDF Document Styles
+ * DIN A4 format following German DIN 5008 business letter standards
+ * and principles of proper accounting (GoB)
+ */
+
+/* === Page Setup === */
+@page {
+    size: A4;
+    margin: 20mm 20mm 25mm 25mm;  /* DIN 5008: left 25mm, right 20mm */
+
+    @bottom-center {
+        content: "Seite " counter(page) " von " counter(pages);
+        font-size: 8pt;
+        color: #666;
+    }
+}
+
+/* === Base Styles === */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html, body {
+    font-family: 'Liberation Sans', 'DejaVu Sans', Arial, Helvetica, sans-serif;
+    font-size: 10pt;
+    line-height: 1.4;
+    color: #1a1a1a;
+    background: white;
+}
+
+/* === Typography === */
+h1 {
+    font-size: 16pt;
+    font-weight: bold;
+    color: #1f4070;
+    margin-bottom: 8pt;
+}
+
+h2 {
+    font-size: 12pt;
+    font-weight: bold;
+    color: #2a2a2a;
+    margin-bottom: 6pt;
+    padding-bottom: 4pt;
+    border-bottom: 1px solid #d0d0d0;
+}
+
+h3 {
+    font-size: 10pt;
+    font-weight: bold;
+    color: #3a3a3a;
+    margin-bottom: 4pt;
+}
+
+p {
+    margin-bottom: 6pt;
+}
+
+/* === Document Container === */
+.document {
+    width: 100%;
+    max-width: 170mm;  /* Content width for A4 */
+}
+
+/* === Header Section === */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 15mm;
+    padding-bottom: 5mm;
+    border-bottom: 2px solid #1f4070;
+}
+
+.company-info {
+    flex: 1;
+}
+
+.company-name {
+    font-size: 14pt;
+    font-weight: bold;
+    color: #1f4070;
+    margin-bottom: 4pt;
+}
+
+.company-details {
+    font-size: 8pt;
+    color: #666;
+    line-height: 1.5;
+}
+
+.qr-code {
+    width: 20mm;
+    height: 20mm;
+}
+
+.qr-code img {
+    width: 100%;
+    height: 100%;
+}
+
+.qr-label {
+    font-size: 6pt;
+    color: #999;
+    text-align: center;
+    margin-top: 2pt;
+}
+
+/* === Address Section (DIN 5008) === */
+.address-section {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10mm;
+}
+
+.return-address {
+    font-size: 7pt;
+    color: #888;
+    text-decoration: underline;
+    margin-bottom: 3pt;
+}
+
+.recipient-address {
+    width: 80mm;  /* Standard envelope window width */
+    min-height: 40mm;
+}
+
+.recipient-address p {
+    margin-bottom: 2pt;
+    line-height: 1.4;
+}
+
+.info-block {
+    width: 55mm;
+    padding: 8pt;
+    background: #f7f8fa;
+    border: 1px solid #e0e2e6;
+    border-radius: 3pt;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4pt;
+    font-size: 9pt;
+}
+
+.info-label {
+    color: #555;
+}
+
+.info-value {
+    font-weight: bold;
+    text-align: right;
+}
+
+/* === Document Title === */
+.document-title {
+    margin-bottom: 8mm;
+}
+
+.document-title h1 {
+    margin-bottom: 2pt;
+}
+
+.document-subtitle {
+    font-size: 10pt;
+    color: #555;
+}
+
+/* === Section Headers === */
+.section {
+    margin-bottom: 8mm;
+}
+
+.section-header {
+    font-size: 10pt;
+    font-weight: bold;
+    color: #2a2a2a;
+    padding-bottom: 3pt;
+    margin-bottom: 6pt;
+    border-bottom: 1px solid #d0d0d0;
+}
+
+/* === Tables === */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 8pt;
+    font-size: 9pt;
+}
+
+/* Items Table */
+.items-table {
+    margin-bottom: 10mm;
+}
+
+.items-table thead {
+    background: #1f4070;
+    color: white;
+}
+
+.items-table th {
+    padding: 8pt 6pt;
+    text-align: left;
+    font-weight: bold;
+    font-size: 8pt;
+    text-transform: uppercase;
+    letter-spacing: 0.3pt;
+}
+
+.items-table th.text-right {
+    text-align: right;
+}
+
+.items-table th.text-center {
+    text-align: center;
+}
+
+.items-table tbody tr:nth-child(even) {
+    background: #f9fafb;
+}
+
+.items-table tbody tr:hover {
+    background: #f0f4f8;
+}
+
+.items-table td {
+    padding: 6pt;
+    border-bottom: 1px solid #e8e8e8;
+    vertical-align: middle;
+}
+
+.items-table td.text-right {
+    text-align: right;
+}
+
+.items-table td.text-center {
+    text-align: center;
+}
+
+.items-table tbody tr:last-child td {
+    border-bottom: 2px solid #1f4070;
+}
+
+/* Info Table (Key-Value) */
+.info-table {
+    width: 100%;
+    margin-bottom: 8pt;
+}
+
+.info-table tr:nth-child(even) {
+    background: #f9fafb;
+}
+
+.info-table td {
+    padding: 5pt 6pt;
+    border-bottom: 1px solid #e8e8e8;
+}
+
+.info-table td:first-child {
+    color: #555;
+    width: 45%;
+}
+
+.info-table td:last-child {
+    text-align: right;
+    font-weight: 500;
+}
+
+/* === Totals Section === */
+.totals-section {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 10mm;
+}
+
+.totals-box {
+    width: 70mm;
+    padding: 8pt;
+    background: #f5f7fa;
+    border: 1px solid #d0d4da;
+    border-radius: 3pt;
+}
+
+.totals-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 4pt 0;
+    font-size: 9pt;
+}
+
+.totals-row.subtotal {
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 6pt;
+    margin-bottom: 4pt;
+}
+
+.totals-row.total {
+    background: #e8edf4;
+    margin: 6pt -8pt -8pt -8pt;
+    padding: 8pt;
+    border-radius: 0 0 3pt 3pt;
+}
+
+.totals-row.total .label,
+.totals-row.total .value {
+    font-weight: bold;
+    font-size: 11pt;
+    color: #1f4070;
+}
+
+.totals-label {
+    color: #555;
+}
+
+.totals-value {
+    font-weight: 500;
+    text-align: right;
+}
+
+/* === Notes Section === */
+.notes-section {
+    margin-top: 10mm;
+    padding-top: 8pt;
+    border-top: 1px solid #e0e0e0;
+}
+
+.note {
+    margin-bottom: 8pt;
+}
+
+.note-title {
+    font-size: 8pt;
+    font-weight: bold;
+    color: #555;
+    margin-bottom: 2pt;
+}
+
+.note-text {
+    font-size: 8pt;
+    color: #666;
+    line-height: 1.5;
+}
+
+/* === Footer Section === */
+.footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding-top: 8pt;
+    border-top: 1px solid #d0d0d0;
+    font-size: 7pt;
+    color: #666;
+    text-align: center;
+    line-height: 1.6;
+}
+
+.footer-line {
+    margin-bottom: 2pt;
+}
+
+/* === Utility Classes === */
+.text-right {
+    text-align: right;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.text-left {
+    text-align: left;
+}
+
+.font-bold {
+    font-weight: bold;
+}
+
+.text-muted {
+    color: #666;
+}
+
+.text-primary {
+    color: #1f4070;
+}
+
+.text-success {
+    color: #2a8a4a;
+}
+
+.text-warning {
+    color: #b85c00;
+}
+
+.text-danger {
+    color: #c53030;
+}
+
+.mt-2 { margin-top: 4pt; }
+.mt-4 { margin-top: 8pt; }
+.mb-2 { margin-bottom: 4pt; }
+.mb-4 { margin-bottom: 8pt; }
+
+/* === Highlight Box === */
+.highlight-box {
+    background: #e8f4ea;
+    border: 1px solid #a8d4b0;
+    border-radius: 3pt;
+    padding: 8pt;
+    margin: 8pt 0;
+}
+
+.highlight-box.warning {
+    background: #fff3e0;
+    border-color: #ffb74d;
+}
+
+.highlight-box.info {
+    background: #e3f2fd;
+    border-color: #64b5f6;
+}
+
+/* === Transaction Details === */
+.transaction-details {
+    margin-bottom: 8mm;
+}
+
+.transaction-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4pt 12pt;
+}
+
+.transaction-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 3pt 0;
+}
+
+/* === Account Statement Specific === */
+.balance-section {
+    display: flex;
+    justify-content: space-between;
+    margin: 8mm 0;
+    padding: 8pt;
+    background: #f5f7fa;
+    border: 1px solid #d0d4da;
+    border-radius: 3pt;
+}
+
+.balance-item {
+    text-align: center;
+}
+
+.balance-label {
+    font-size: 8pt;
+    color: #555;
+    margin-bottom: 2pt;
+}
+
+.balance-value {
+    font-size: 12pt;
+    font-weight: bold;
+    color: #1f4070;
+}
+
+.balance-value.positive {
+    color: #2a8a4a;
+}
+
+.balance-value.negative {
+    color: #c53030;
+}
+
+/* === Credit Note Specific === */
+.credit-highlight {
+    background: #e8f5e9;
+    border-left: 4pt solid #4caf50;
+    padding: 8pt;
+    margin: 8pt 0;
+}
+
+.credit-amount {
+    font-size: 14pt;
+    font-weight: bold;
+    color: #2a8a4a;
+}
+
+/* === Print Optimizations === */
+@media print {
+    .document {
+        break-inside: avoid;
+    }
+
+    .section {
+        break-inside: avoid;
+    }
+
+    table {
+        break-inside: avoid;
+    }
+
+    .footer {
+        break-before: avoid;
+    }
+}

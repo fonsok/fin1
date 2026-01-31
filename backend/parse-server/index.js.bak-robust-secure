@@ -1,0 +1,226 @@
+const express = require('express');
+const { ParseServer } = require('parse-server');
+const ParseDashboard = require('parse-dashboard');
+const cors = require('cors');
+const helmet = require('helmet');
+const compression = require('compression');
+const morgan = require('morgan');
+const path = require('path');
+require('dotenv').config();
+
+const app = express();
+
+// Security middleware
+// Note: CSP disabled for Parse Dashboard - Dashboard needs full access
+// In production, consider restricting CSP more carefully
+app.use(helmet({
+  contentSecurityPolicy: false, // Disable CSP for Dashboard compatibility
+}));
+
+// CORS configuration
+app.use(cors({
+  origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'],
+  credentials: true,
+}));
+
+// Compression and logging
+app.use(compression());
+app.use(morgan('combined'));
+
+// Parse Server configuration
+const parseServerConfig = {
+  databaseURI: process.env.PARSE_SERVER_DATABASE_URI || 'mongodb://localhost:27017/fin1',
+  cloud: process.env.PARSE_SERVER_CLOUD_CODE_MAIN || './cloud/main.js',
+  appId: process.env.PARSE_SERVER_APPLICATION_ID || 'fin1-app-id',
+  masterKey: process.env.PARSE_SERVER_MASTER_KEY || 'fin1-master-key',
+  // Parse Server 6.x restricts master key usage by IP (default is localhost only).
+  // We explicitly allow Docker bridge + local LAN so Parse Dashboard can use masterKey.
+  // You can override via PARSE_SERVER_MASTER_KEY_IPS="127.0.0.1/32,::1/128,172.16.0.0/12,192.168.178.0/24"
+  masterKeyIps: (process.env.PARSE_SERVER_MASTER_KEY_IPS
+    ? process.env.PARSE_SERVER_MASTER_KEY_IPS.split(',').map((s) => s.trim()).filter(Boolean)
+    : ['127.0.0.1/32', '::1/128', '172.16.0.0/12', '192.168.178.0/24']),
+  serverURL: process.env.PARSE_SERVER_PUBLIC_SERVER_URL || 'http://localhost:1337/parse',
+  liveQuery: {
+    classNames: ['Investment', 'Trade', 'Notification', 'Document', 'User', 'WalletTransaction', 'ComplianceEvent', 'Order', 'MarketData', 'PriceAlert'],
+  },
+  // Push notifications - only configure if credentials are provided
+  ...(process.env.PARSE_SERVER_PUSH_APNS_CERT_PATH || process.env.PARSE_SERVER_PUSH_FCM_API_KEY ? {
+    push: {
+      ...(process.env.PARSE_SERVER_PUSH_APNS_CERT_PATH ? {
+        ios: {
+          pfx: process.env.PARSE_SERVER_PUSH_APNS_CERT_PATH,
+          keyId: process.env.PARSE_SERVER_PUSH_APNS_KEY_ID,
+          teamId: process.env.PARSE_SERVER_PUSH_APNS_TEAM_ID,
+          bundleId: process.env.PARSE_SERVER_PUSH_APNS_BUNDLE_ID,
+          production: process.env.PARSE_SERVER_PUSH_APNS_PRODUCTION === 'true',
+        },
+      } : {}),
+      ...(process.env.PARSE_SERVER_PUSH_FCM_API_KEY ? {
+        android: {
+          apiKey: process.env.PARSE_SERVER_PUSH_FCM_API_KEY,
+        },
+      } : {}),
+    },
+  } : {}),
+  // Files adapter - only configure if S3 credentials are provided
+  // Otherwise Parse Server will use default file storage
+  // Cache adapter - only configure if Redis URL is provided
+  ...(process.env.REDIS_URL ? {
+    cacheAdapter: {
+      module: 'parse-server-redis-cache-adapter',
+      options: {
+        redisURL: process.env.REDIS_URL || 'redis://localhost:6379',
+      },
+    },
+  } : {}),
+  allowClientClassCreation: false,
+  allowCustomObjectId: false,
+  enableAnonymousUsers: false,
+  enableSingleSchemaCache: true,
+  maxLimit: 1000,
+  passwordPolicy: {
+    validatorPattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
+    validatorCallback: (password) => {
+      return password.length >= 8;
+    },
+    doNotAllowUsername: true,
+    maxPasswordAge: 90,
+    maxPasswordHistory: 5,
+    resetTokenValidityDuration: 24 * 60 * 60 * 1000, // 24 hours
+  },
+  accountLockout: {
+    duration: 5,
+    threshold: 3,
+  },
+  sessionLength: 30 * 24 * 60 * 60 * 1000, // 30 days
+  expireInactiveSessions: true,
+  revokeSessionOnPasswordReset: true,
+  // Schema definitions removed - Parse Server will auto-generate schema from usage
+  // If you need explicit schema, use Parse Server Dashboard or Cloud Code
+};
+
+// Parse Dashboard configuration
+const parseDashboardConfig = {
+  apps: [
+    {
+      serverURL: parseServerConfig.serverURL,
+      appId: parseServerConfig.appId,
+      masterKey: parseServerConfig.masterKey,
+      appName: 'FIN1 Backend',
+      productionServerURL: process.env.PARSE_SERVER_PRODUCTION_URL,
+    },
+  ],
+  users: [
+    {
+      user: process.env.DASHBOARD_USER || 'admin',
+      pass: process.env.DASHBOARD_PASSWORD || 'admin123',
+    },
+  ],
+  useEncryptedPasswords: false,
+  trustProxy: 1,
+};
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    version: process.env.npm_package_version || '1.0.0',
+  });
+});
+
+// API documentation endpoint
+app.get('/api-docs', (req, res) => {
+  res.json({
+    name: 'FIN1 API',
+    version: '1.0.0',
+    description: 'FIN1 Investment Platform Backend API',
+    endpoints: {
+      parse: '/parse',
+      dashboard: '/dashboard',
+      health: '/health',
+    },
+  });
+});
+
+// Async startup function for Parse Server 6.x
+async function startServer() {
+  const port = process.env.PORT || 1337;
+
+  // Initialize and start Parse Server (required for Parse Server 6.x)
+  const parseServer = new ParseServer(parseServerConfig);
+  await parseServer.start();
+  console.log('✅ Parse Server initialized and connected to MongoDB');
+
+  // Mount Parse Server AFTER start()
+  app.use('/parse', parseServer.app);
+
+  // Mount Parse Dashboard
+  const dashboard = new ParseDashboard(parseDashboardConfig, { allowInsecureHTTP: true });
+  app.use('/dashboard', dashboard);
+
+  // Error handling middleware (AFTER Parse Server mount)
+  app.use((err, req, res, next) => {
+    console.error('Error:', err);
+    res.status(500).json({
+      error: 'Internal Server Error',
+      message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong',
+    });
+  });
+
+  // 404 handler (MUST be last)
+  app.use('*', (req, res) => {
+    res.status(404).json({
+      error: 'Not Found',
+      message: 'The requested resource was not found',
+    });
+  });
+
+  // Start HTTP server
+  const httpServer = require('http').createServer(app);
+
+  httpServer.listen(port, () => {
+    console.log(`FIN1 Parse Server running on port ${port}`);
+    console.log(`Dashboard available at http://localhost:${port}/dashboard`);
+    console.log(`API available at http://localhost:${port}/parse`);
+  });
+
+  // Start Parse Live Query WebSocket Server
+  try {
+    await ParseServer.createLiveQueryServer(httpServer, {
+      appId: parseServerConfig.appId,
+      masterKey: parseServerConfig.masterKey,
+      serverURL: parseServerConfig.serverURL,
+      websocketTimeout: 10 * 1000,
+      cacheTimeout: 5 * 1000,
+      logLevel: process.env.LOG_LEVEL || 'INFO',
+    });
+    console.log('✅ Parse Live Query WebSocket Server started on port', port);
+  } catch (error) {
+    console.error('❌ Failed to start Parse Live Query Server:', error);
+  }
+
+  // Graceful shutdown
+  process.on('SIGTERM', () => {
+    console.log('SIGTERM received, shutting down gracefully');
+    httpServer.close(() => {
+      console.log('Process terminated');
+    });
+  });
+
+  return { app, parseServer, httpServer };
+}
+
+// Start the server and export for testing
+let serverInstance = null;
+
+startServer()
+  .then((instance) => {
+    serverInstance = instance;
+  })
+  .catch((error) => {
+    console.error('❌ Failed to start FIN1 Parse Server:', error);
+    process.exit(1);
+  });
+
+module.exports = { app, getServer: () => serverInstance };

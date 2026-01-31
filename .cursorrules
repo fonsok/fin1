@@ -1,0 +1,24 @@
+# Cursor Rules for FIN1
+
+**⚠️ DEPRECATED: This file is kept for backward compatibility only.**
+
+**✅ All rules have been migrated to `.cursor/rules/` directory.**
+
+**📁 See `.cursor/rules/index.md` for the current rule structure and all rules.**
+
+**🔄 New rules should be added to the appropriate file in `.cursor/rules/`.**
+
+---
+
+## Quick Reference
+
+All rules are now organized in `.cursor/rules/`:
+
+- **`architecture.md`** - Architecture, MVVM, DI, class vs struct, SwiftUI patterns, enforcement rules
+- **`testing.md`** - Testing patterns, mocking, repository testing
+- **`dry-constants.md`** - DRY principles and constants management
+- **`swiftlint.md`** - SwiftLint rules and automated detection patterns
+- **`ci-cd.md`** - Local development & build requirements
+- **`responsive-design.md`** - Responsive design system compliance
+
+See `.cursor/rules/index.md` for complete documentation and quick reference.

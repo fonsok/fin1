@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gutschrift - {{ document.number }}</title>
+</head>
+<body>
+    <div class="document">
+        <!-- Header with Company Info and QR Code -->
+        <div class="header">
+            <div class="company-info">
+                <div class="company-name">{{ company.name }}</div>
+                <div class="company-details">
+                    {{ company.address }} | {{ company.city }}<br>
+                    {{ company.contact }}
+                </div>
+            </div>
+            {% if qr_code %}
+            <div class="qr-code">
+                <img src="{{ qr_code }}" alt="QR Code">
+                <div class="qr-label">Scan für Details</div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Address Section (DIN 5008) -->
+        <div class="address-section">
+            <div class="recipient-address">
+                <div class="return-address">
+                    {{ company.name }} · {{ company.address }} · {{ company.city }}
+                </div>
+                <p><strong>{{ customer.name }}</strong></p>
+                <p>{{ customer.address }}</p>
+                <p>{{ customer.city }}</p>
+            </div>
+
+            <div class="info-block">
+                <div class="info-row">
+                    <span class="info-label">Gutschrift-Nr.:</span>
+                    <span class="info-value">{{ document.number }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Datum:</span>
+                    <span class="info-value">{{ document.date }}</span>
+                </div>
+                {% if customer.customer_number %}
+                <div class="info-row">
+                    <span class="info-label">Kundennummer:</span>
+                    <span class="info-value">{{ customer.customer_number }}</span>
+                </div>
+                {% endif %}
+                {% if customer.depot_number %}
+                <div class="info-row">
+                    <span class="info-label">Depotnummer:</span>
+                    <span class="info-value">{{ customer.depot_number }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Document Title -->
+        <div class="document-title">
+            <h1>{{ document.title }}</h1>
+            {% if document.original_invoice %}
+            <div class="document-subtitle">zur Rechnung {{ document.original_invoice }}</div>
+            {% endif %}
+        </div>
+
+        <!-- Credit Note Highlight -->
+        <div class="credit-highlight">
+            <div class="text-muted mb-2">Gutschriftsbetrag</div>
+            <div class="credit-amount">{{ totals.total }}</div>
+            {% if document.reason %}
+            <div class="mt-2 text-muted">
+                <strong>Grund:</strong> {{ document.reason }}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Items Table -->
+        <div class="section">
+            <div class="section-header">Positionen</div>
+            <table class="items-table">
+                <thead>
+                    <tr>
+                        <th style="width: 45%;">Position</th>
+                        <th class="text-right" style="width: 12%;">Menge</th>
+                        <th class="text-right" style="width: 18%;">Einzelpreis</th>
+                        <th class="text-right" style="width: 18%;">Betrag</th>
+                        <th class="text-center" style="width: 12%;">Art</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                    <tr>
+                        <td>{{ item.description }}</td>
+                        <td class="text-right">{{ item.quantity }}</td>
+                        <td class="text-right">{{ item.unit_price }}</td>
+                        <td class="text-right text-success">{{ item.total }}</td>
+                        <td class="text-center">{{ item.type }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Total -->
+        <div class="totals-section">
+            <div class="totals-box">
+                <div class="totals-row total">
+                    <span class="label">Gutschriftsbetrag</span>
+                    <span class="value text-success">{{ totals.total }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Info Box -->
+        <div class="highlight-box info">
+            <strong>Hinweis:</strong> Der Gutschriftsbetrag wird Ihrem Konto gutgeschrieben.
+            Bei Fragen wenden Sie sich bitte an unseren Kundenservice.
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <div class="footer-line">{{ company.name }} | {{ company.legal }}</div>
+            <div class="footer-line">{{ company.management }}</div>
+            <div class="footer-line">{{ company.bank }}</div>
+            {% if company.business_hours %}
+            <div class="footer-line">Telefonischer Support: {{ company.phone }} | {{ company.business_hours }}</div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

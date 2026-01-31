@@ -1,0 +1,4 @@
+// Debug build configuration for FIN1 (compat wrapper).
+// Prefer using the "Dev" build configuration + FIN1-Dev.xcconfig.
+#include "FIN1-Dev.xcconfig"
+

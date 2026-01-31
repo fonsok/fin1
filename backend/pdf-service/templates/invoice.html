@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ document.title }} - {{ document.number }}</title>
+</head>
+<body>
+    <div class="document">
+        <!-- Header with Company Info and QR Code -->
+        <div class="header">
+            <div class="company-info">
+                <div class="company-name">{{ company.name }}</div>
+                <div class="company-details">
+                    {{ company.address }} | {{ company.city }}<br>
+                    {{ company.contact }}
+                </div>
+            </div>
+            {% if qr_code %}
+            <div class="qr-code">
+                <img src="{{ qr_code }}" alt="QR Code">
+                <div class="qr-label">Scan für Details</div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Address Section (DIN 5008) -->
+        <div class="address-section">
+            <div class="recipient-address">
+                <div class="return-address">
+                    {{ company.name }} · {{ company.address }} · {{ company.city }}
+                </div>
+                <p><strong>{{ customer.name }}</strong></p>
+                <p>{{ customer.address }}</p>
+                <p>{{ customer.city }}</p>
+                {% if customer.tax_number %}
+                <p class="mt-4 text-muted">Steuernummer: {{ customer.tax_number }}</p>
+                {% endif %}
+            </div>
+
+            <div class="info-block">
+                <div class="info-row">
+                    <span class="info-label">{{ document.title }}-Nr.:</span>
+                    <span class="info-value">{{ document.number }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Datum:</span>
+                    <span class="info-value">{{ document.date }}</span>
+                </div>
+                {% if customer.customer_number %}
+                <div class="info-row">
+                    <span class="info-label">Kundennummer:</span>
+                    <span class="info-value">{{ customer.customer_number }}</span>
+                </div>
+                {% endif %}
+                {% if customer.depot_number %}
+                <div class="info-row">
+                    <span class="info-label">Depotnummer:</span>
+                    <span class="info-value">{{ customer.depot_number }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Document Title -->
+        <div class="document-title">
+            <h1>{{ document.title }}</h1>
+            {% if document.trade_number %}
+            <div class="document-subtitle">zu Trade #{{ document.trade_number }}</div>
+            {% endif %}
+        </div>
+
+        <!-- Transaction Details (if applicable) -->
+        {% if document.trade_id or document.order_id or document.transaction_type %}
+        <div class="section transaction-details">
+            <div class="section-header">Transaktionsdetails</div>
+            <table class="info-table">
+                {% if document.transaction_type %}
+                <tr>
+                    <td>Transaktionsart</td>
+                    <td>{{ document.transaction_type }}</td>
+                </tr>
+                {% endif %}
+                {% if document.trade_number %}
+                <tr>
+                    <td>Trade-Nummer</td>
+                    <td>#{{ document.trade_number }}</td>
+                </tr>
+                {% endif %}
+                {% if document.trade_id %}
+                <tr>
+                    <td>Trade-ID</td>
+                    <td>{{ document.trade_id }}</td>
+                </tr>
+                {% endif %}
+                {% if document.order_id %}
+                <tr>
+                    <td>Order-ID</td>
+                    <td>{{ document.order_id }}</td>
+                </tr>
+                {% endif %}
+            </table>
+        </div>
+        {% endif %}
+
+        <!-- Items Table -->
+        <div class="section">
+            <div class="section-header">Positionen</div>
+            <table class="items-table">
+                <thead>
+                    <tr>
+                        <th style="width: 40%;">Position</th>
+                        <th class="text-right" style="width: 12%;">Menge</th>
+                        <th class="text-right" style="width: 18%;">Einzelpreis</th>
+                        <th class="text-right" style="width: 18%;">Betrag</th>
+                        <th class="text-center" style="width: 12%;">Art</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                    <tr>
+                        <td>{{ item.description }}</td>
+                        <td class="text-right">{{ item.quantity }}</td>
+                        <td class="text-right">{{ item.unit_price }}</td>
+                        <td class="text-right">{{ item.total }}</td>
+                        <td class="text-center">{{ item.type }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Totals Section -->
+        <div class="totals-section">
+            <div class="totals-box">
+                <div class="totals-row subtotal">
+                    <span class="totals-label">Zwischensumme</span>
+                    <span class="totals-value">{{ totals.subtotal }}</span>
+                </div>
+                {% if totals.tax %}
+                <div class="totals-row">
+                    <span class="totals-label">Steuer</span>
+                    <span class="totals-value">{{ totals.tax }}</span>
+                </div>
+                {% endif %}
+                <div class="totals-row total">
+                    <span class="label">Gesamtbetrag</span>
+                    <span class="value">{{ totals.total }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notes Section -->
+        {% if notes.tax or notes.legal %}
+        <div class="notes-section">
+            {% if notes.tax %}
+            <div class="note">
+                <div class="note-title">Steuerhinweis</div>
+                <div class="note-text">{{ notes.tax }}</div>
+            </div>
+            {% endif %}
+            {% if notes.legal %}
+            <div class="note">
+                <div class="note-title">Rechtlicher Hinweis</div>
+                <div class="note-text">{{ notes.legal }}</div>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Footer -->
+        <div class="footer">
+            <div class="footer-line">{{ company.name }} | {{ company.legal }}</div>
+            <div class="footer-line">{{ company.management }}</div>
+            <div class="footer-line">{{ company.bank }}</div>
+            {% if company.business_hours %}
+            <div class="footer-line">Telefonischer Support: {{ company.phone }} | {{ company.business_hours }}</div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

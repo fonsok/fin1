@@ -1,0 +1,183 @@
+import SwiftUI
+
+// MARK: - FAQ Knowledge Base Supporting Components
+/// Reusable components for FAQ views
+
+struct FAQStatisticCard: View {
+    let icon: String
+    let value: String
+    let label: String
+    let color: Color
+
+    var body: some View {
+        VStack(spacing: ResponsiveDesign.spacing(4)) {
+            Image(systemName: icon)
+                .font(ResponsiveDesign.bodyFont())
+                .foregroundColor(color)
+
+            Text(value)
+                .font(ResponsiveDesign.headlineFont())
+                .fontWeight(.bold)
+                .foregroundColor(AppTheme.inputText)
+
+            Text(label)
+                .font(ResponsiveDesign.captionFont())
+                .foregroundColor(AppTheme.inputText)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, ResponsiveDesign.spacing(8))
+        .background(AppTheme.inputFieldBackground)
+        .cornerRadius(ResponsiveDesign.spacing(8))
+    }
+}
+
+struct FAQCategoryChip: View {
+    let title: String
+    let icon: String
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: ResponsiveDesign.spacing(4)) {
+                Image(systemName: icon)
+                    .font(ResponsiveDesign.captionFont())
+
+                Text(title)
+                    .font(ResponsiveDesign.captionFont())
+            }
+            .padding(.horizontal, ResponsiveDesign.spacing(12))
+            .padding(.vertical, ResponsiveDesign.spacing(8))
+            .background(isSelected ? AppTheme.accentLightBlue : AppTheme.inputFieldBackground)
+            .foregroundColor(isSelected ? .white : AppTheme.inputText)
+            .cornerRadius(ResponsiveDesign.spacing(16))
+        }
+    }
+}
+
+struct FAQArticleRow: View {
+    let article: FAQArticle
+    let isCSRMode: Bool
+    var showReviewBadge: Bool = false
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(alignment: .top, spacing: ResponsiveDesign.spacing(12)) {
+                Image(systemName: article.category.icon)
+                    .font(ResponsiveDesign.headlineFont())
+                    .foregroundColor(Color(hex: article.category.color))
+                    .frame(width: ResponsiveDesign.spacing(32))
+
+                VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
+                    HStack {
+                        Text(article.title)
+                            .font(ResponsiveDesign.bodyFont())
+                            .fontWeight(.medium)
+                            .foregroundColor(AppTheme.inputText)
+                            .lineLimit(2)
+                            .multilineTextAlignment(.leading)
+
+                        Spacer()
+
+                        if !article.isPublished {
+                            Text("Entwurf")
+                                .font(ResponsiveDesign.captionFont())
+                                .foregroundColor(.white)
+                                .padding(.horizontal, ResponsiveDesign.spacing(6))
+                                .padding(.vertical, ResponsiveDesign.spacing(2))
+                                .background(AppTheme.accentOrange)
+                                .cornerRadius(ResponsiveDesign.spacing(4))
+                        }
+
+                        if showReviewBadge {
+                            Image(systemName: "exclamationmark.circle.fill")
+                                .foregroundColor(AppTheme.accentRed)
+                        }
+                    }
+
+                    Text(article.summary)
+                        .font(ResponsiveDesign.captionFont())
+                        .foregroundColor(AppTheme.inputText)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
+
+                    HStack(spacing: ResponsiveDesign.spacing(12)) {
+                        Label("\(article.viewCount)", systemImage: "eye")
+                        Label("\(article.helpfulnessPercentage)%", systemImage: "hand.thumbsup")
+
+                        Spacer()
+
+                        Image(systemName: "chevron.right")
+                            .foregroundColor(AppTheme.fontColor.opacity(0.3))
+                    }
+                    .font(ResponsiveDesign.captionFont())
+                    .foregroundColor(AppTheme.inputText)
+                }
+            }
+            .padding()
+            .background(AppTheme.inputFieldBackground)
+            .cornerRadius(ResponsiveDesign.spacing(8))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+struct FAQSearchResultRow: View {
+    let result: FAQSearchResult
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(alignment: .top, spacing: ResponsiveDesign.spacing(12)) {
+                VStack {
+                    Image(systemName: result.article.category.icon)
+                        .font(ResponsiveDesign.headlineFont())
+                        .foregroundColor(Color(hex: result.article.category.color))
+
+                    Text(String(format: "%.0f%%", result.matchScore * 20))
+                        .font(ResponsiveDesign.captionFont())
+                        .foregroundColor(AppTheme.accentGreen)
+                }
+                .frame(width: ResponsiveDesign.spacing(40))
+
+                VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
+                    Text(result.article.title)
+                        .font(ResponsiveDesign.bodyFont())
+                        .fontWeight(.medium)
+                        .foregroundColor(AppTheme.inputText)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
+
+                    Text(result.article.summary)
+                        .font(ResponsiveDesign.captionFont())
+                        .foregroundColor(AppTheme.inputText)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
+
+                    if !result.matchedTerms.isEmpty {
+                        HStack {
+                            Text("Treffer:")
+                                .font(ResponsiveDesign.captionFont())
+                                .foregroundColor(AppTheme.fontColor.opacity(0.5))
+
+                            Text(result.matchedTerms.joined(separator: ", "))
+                                .font(ResponsiveDesign.captionFont())
+                                .foregroundColor(AppTheme.accentLightBlue)
+                        }
+                    }
+                }
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .foregroundColor(AppTheme.fontColor.opacity(0.3))
+            }
+            .padding()
+            .background(AppTheme.inputFieldBackground)
+            .cornerRadius(ResponsiveDesign.spacing(8))
+        }
+    }
+}
+

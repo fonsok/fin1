@@ -1,0 +1,81 @@
+import SwiftUI
+
+// MARK: - Settings Toggle Row
+/// Reusable toggle row component for settings screens
+/// Follows DRY principle by consolidating PrivacyToggleRow, SecurityToggleRow, NotificationToggleRow
+struct SettingsToggleRow: View {
+    let title: String
+    let subtitle: String
+    @Binding var isEnabled: Bool
+    var tintColor: Color = AppTheme.accentLightBlue
+
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
+                Text(title)
+                    .font(ResponsiveDesign.bodyFont())
+                    .fontWeight(.medium)
+                    .foregroundColor(AppTheme.fontColor)
+
+                Text(subtitle)
+                    .font(ResponsiveDesign.captionFont())
+                    .foregroundColor(AppTheme.fontColor.opacity(0.7))
+            }
+
+            Spacer()
+
+            Toggle("", isOn: $isEnabled)
+                .toggleStyle(SwitchToggleStyle(tint: tintColor))
+        }
+    }
+}
+
+// MARK: - Settings Text Field Style
+/// Reusable text field style for settings screens
+struct SettingsTextFieldStyle: TextFieldStyle {
+    func _body(configuration: TextField<Self._Label>) -> some View {
+        configuration
+            .padding(ResponsiveDesign.spacing(12))
+            .background(AppTheme.systemTertiaryBackground)
+            .cornerRadius(ResponsiveDesign.spacing(8))
+            .foregroundColor(AppTheme.fontColor)
+    }
+}
+
+// MARK: - Settings Secure Field Style
+/// Reusable secure field style for settings screens
+struct SettingsSecureFieldStyle: TextFieldStyle {
+    func _body(configuration: TextField<Self._Label>) -> some View {
+        configuration
+            .padding(ResponsiveDesign.spacing(16))
+            .background(AppTheme.systemTertiaryBackground)
+            .cornerRadius(ResponsiveDesign.spacing(12))
+            .foregroundColor(AppTheme.fontColor)
+    }
+}
+
+// MARK: - Preview
+
+#Preview {
+    VStack(spacing: 16) {
+        SettingsToggleRow(
+            title: "Enable Feature",
+            subtitle: "Description of this feature",
+            isEnabled: .constant(true)
+        )
+
+        SettingsToggleRow(
+            title: "Another Feature",
+            subtitle: "Another description",
+            isEnabled: .constant(false),
+            tintColor: AppTheme.accentGreen
+        )
+    }
+    .padding()
+    .background(AppTheme.screenBackground)
+}
+
+
+
+
+
