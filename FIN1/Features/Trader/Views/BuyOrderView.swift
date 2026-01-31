@@ -72,6 +72,8 @@ struct BuyOrderView: View {
                     costEstimateSection
 
                     insufficientFundsWarningSection
+                    
+                    transactionLimitWarningSection
 
                     orderActionButton
 
@@ -237,12 +239,60 @@ struct BuyOrderView: View {
             .cornerRadius(ResponsiveDesign.spacing(10))
         }
     }
+    
+    // MARK: - Transaction Limit Warning (MiFID II Compliance)
+    
+    @ViewBuilder
+    private var transactionLimitWarningSection: some View {
+        if viewModel.showLimitWarning {
+            VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
+                HStack {
+                    Image(systemName: "chart.bar.xaxis")
+                        .foregroundColor(.orange)
+                        .font(.system(size: ResponsiveDesign.iconSize()))
+                    Text("Transaktionslimit erreicht")
+                        .font(ResponsiveDesign.headlineFont())
+                        .foregroundColor(.orange)
+                }
+                
+                if let message = viewModel.limitWarningMessage {
+                    Text(message)
+                        .font(ResponsiveDesign.bodyFont())
+                        .foregroundColor(AppTheme.primaryText)
+                        .multilineTextAlignment(.leading)
+                }
+            }
+            .padding()
+            .background(Color.orange.opacity(0.1))
+            .overlay(
+                RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(10))
+                    .stroke(Color.orange.opacity(0.3), lineWidth: 1)
+            )
+            .cornerRadius(ResponsiveDesign.spacing(10))
+        } else if let remainingLimit = viewModel.remainingDailyLimit {
+            // Show remaining limit info when approaching limit (< 50% remaining)
+            let dailyLimit = (viewModel.transactionLimitCheckResult?.remainingDaily ?? 0) + viewModel.estimatedCost
+            let usagePercent = dailyLimit > 0 ? (1.0 - remainingLimit / dailyLimit) : 0
+            
+            if usagePercent > 0.5 {
+                HStack {
+                    Image(systemName: "info.circle")
+                        .foregroundColor(.blue)
+                        .font(.system(size: ResponsiveDesign.iconSize() * 0.8))
+                    Text("Verbleibendes Tageslimit: \(remainingLimit.formattedAsLocalizedCurrency())")
+                        .font(ResponsiveDesign.captionFont())
+                        .foregroundColor(AppTheme.secondaryText)
+                }
+                .padding(.horizontal)
+            }
+        }
+    }
 
     private var orderActionButton: some View {
         OrderActionButton(
             title: "(Gebührenpflichtig) Kaufen",
             backgroundColor: AppTheme.buttonColor,
-            isEnabled: viewModel.canPlaceOrder && viewModel.orderMode == .market,
+            isEnabled: viewModel.canPlaceOrder && viewModel.orderMode == .market && !viewModel.showLimitWarning,
             action: {
                 print("🔘 DEBUG: Buy button tapped in form section")
                 Task {
