@@ -232,3 +232,41 @@ Parse.Cloud.beforeSave('LegalConsent', async (request) => {
   }
 });
 
+// ============================================================================
+// DELETE PROTECTION (Audit Compliance)
+// Legal documents and audit logs must NEVER be deleted.
+// ============================================================================
+
+Parse.Cloud.beforeDelete('TermsContent', async (request) => {
+  // Legal documents must never be deleted for audit compliance.
+  // To "remove" a version, set isActive=false instead.
+  throw new Parse.Error(
+    Parse.Error.OPERATION_FORBIDDEN,
+    'TermsContent cannot be deleted (audit compliance). Set isActive=false instead.'
+  );
+});
+
+Parse.Cloud.beforeDelete('LegalDocumentDeliveryLog', async (request) => {
+  // Audit logs must never be deleted.
+  throw new Parse.Error(
+    Parse.Error.OPERATION_FORBIDDEN,
+    'LegalDocumentDeliveryLog cannot be deleted (audit compliance).'
+  );
+});
+
+Parse.Cloud.beforeDelete('LegalConsent', async (request) => {
+  // Consent records must never be deleted.
+  throw new Parse.Error(
+    Parse.Error.OPERATION_FORBIDDEN,
+    'LegalConsent cannot be deleted (audit compliance).'
+  );
+});
+
+Parse.Cloud.beforeDelete('ComplianceEvent', async (request) => {
+  // Compliance events must never be deleted.
+  throw new Parse.Error(
+    Parse.Error.OPERATION_FORBIDDEN,
+    'ComplianceEvent cannot be deleted (audit compliance).'
+  );
+});
+
