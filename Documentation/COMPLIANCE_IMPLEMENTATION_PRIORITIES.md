@@ -2,13 +2,18 @@
 
 Basierend auf der Analyse der Cursor-Regeln und des aktuellen Code-Stands.
 
-## 🔴 Priorität 1: Audit-Logging Integration (Quick Win - 1-2 Tage)
+**Stand: 2026-01-31** - Priorität 1 und 2 sind abgeschlossen!
 
-### Problem
-- ✅ `AuditLoggingService` existiert bereits
-- ❌ **NICHT integriert** in Trading-Services (`BuyOrderPlacementService`, `TraderService`)
-- ❌ **NICHT integriert** in Payment-Services
-- ❌ **NICHT integriert** in Accounting (`InvestorAccountStatementBuilder`)
+---
+
+## ✅ Priorität 1: Audit-Logging Integration - ABGESCHLOSSEN
+
+### Status (2026-01-31)
+- ✅ `AuditLoggingService` existiert
+- ✅ **Integriert** in `BuyOrderPlacementService` (Buy Orders)
+- ✅ **Integriert** in `OrderLifecycleCoordinator` (Sell Orders, Cancellations, Completions)
+- ⏳ Payment-Services (noch offen)
+- ⏳ Accounting (noch offen)
 
 ### Konkrete Tasks
 
@@ -75,12 +80,15 @@ final class BuyOrderPlacementService: BuyOrderPlacementServiceProtocol {
 
 ---
 
-## 🟡 Priorität 2: Transaction Limits Service (Mittelfristig - 3-5 Tage)
+## ✅ Priorität 2: Transaction Limits Service - ABGESCHLOSSEN
 
-### Problem
-- ❌ **Kein TransactionLimitService vorhanden**
-- ❌ **Keine täglichen/wöchentlichen/monatlichen Limits**
-- ❌ **Keine Risk-Class-basierten Limits**
+### Status (2026-01-31)
+- ✅ `TransactionLimitService` implementiert
+- ✅ Tägliche/wöchentliche/monatliche Limits
+- ✅ Risk-Class-basierte Limits (Multiplier 0.5x - 2.5x)
+- ✅ Parse Server Klassen (`TransactionLimit`, `TransactionHistory`)
+- ✅ UI-Integration mit Warnungen in `BuyOrderView`
+- ✅ Button-Deaktivierung bei Limit-Überschreitung
 
 ### Konkrete Tasks
 
@@ -225,36 +233,35 @@ struct RiskWarning {
 
 ---
 
-## 📋 Empfohlene Reihenfolge
+## 📋 Umsetzungsstatus
 
-### Sprint 1 (Diese Woche)
-1. ✅ **Audit-Logging Integration** (Priorität 1)
-   - BuyOrderPlacementService
-   - TraderService
-   - PaymentService
-   - **Zeit**: 1-2 Tage
+### ✅ Sprint 1 - ABGESCHLOSSEN (2026-01-31)
+1. **Audit-Logging Integration** (Priorität 1)
+   - ✅ BuyOrderPlacementService
+   - ✅ OrderLifecycleCoordinator (Sell Orders)
+   - ⏳ PaymentService (noch offen)
 
-### Sprint 2 (Nächste Woche)
-2. ✅ **Transaction Limits Service** (Priorität 2)
-   - Service erstellen
-   - BuyOrderValidator erweitern
-   - UI-Integration
-   - **Zeit**: 3-5 Tage
+### ✅ Sprint 2 - ABGESCHLOSSEN (2026-01-31)
+2. **Transaction Limits Service** (Priorität 2)
+   - ✅ Service erstellt mit Parse Server Integration
+   - ✅ UI-Integration in BuyOrderView
+   - ✅ Limit-Warnungen und Button-Deaktivierung
 
-### Sprint 3 (Später)
-3. ✅ **Risk Scoring Service** (Priorität 3)
-   - Service erstellen
-   - UI-Integration
-   - **Zeit**: 5-7 Tage
+### ⏳ Sprint 3 - AUSSTEHEND
+3. **Risk Scoring Service** (Priorität 3)
+   - ❌ Service erstellen
+   - ❌ UI-Integration
+   - **Geschätzte Zeit**: 5-7 Tage
 
 ---
 
-## 🎯 Quick Win: Audit-Logging (Start hier!)
+## 🎯 Nächster Schritt: Risk Scoring Service
 
-**Warum zuerst?**
-- ✅ Schnell umsetzbar (1-2 Tage)
-- ✅ Sofortige Compliance-Verbesserung
-- ✅ Niedriges Risiko (bestehender Service)
-- ✅ Hoher Impact (alle Trades werden geloggt)
+**Was fehlt:**
+- RiskCheckService für Trade-Risiko-Bewertung
+- UI-Warnungen basierend auf Risiko-Level
+- "Bestätigen Sie das Risiko" Checkbox für High-Risk Trades
 
-**Nächster Schritt**: Soll ich mit der Audit-Logging-Integration in `BuyOrderPlacementService` beginnen?
+**Warum wichtig:**
+- MiFID II erfordert Risiko-Bewusstsein
+- Bessere UX durch klare Risiko-Kommunikation

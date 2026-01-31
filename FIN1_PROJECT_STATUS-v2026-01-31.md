@@ -19,6 +19,12 @@
 - **Test-/Seed-Passwort-Policy**: Parse Password Policy verlangt u.a. Groß-/Kleinbuchstaben, Zahl, Sonderzeichen (Beispiel in App: `Password123!`)
 
 **Neu seit 2026-01-31 (Compliance/UX/Hardening):**
+- **Git Repository** initialisiert mit Pre-Commit Hooks für Code-Qualität
+- **Redis Caching aktiviert** für Parse Server (Performance-Boost)
+- **MiFID II Audit Logging** in Trading Services integriert (Buy/Sell Orders, Cancellations)
+- **Transaction Limits** mit UI-Feedback (Warnung + Button-Deaktivierung bei Überschreitung)
+- **Delete-Protection** für Audit-kritische Klassen (TermsContent, LegalConsent, ComplianceEvent)
+- **Production Verification Script** (`scripts/verify-production-data.sh`)
 - **Server-driven Legal Docs (Terms/Privacy/Imprint)** inkl. **Audit Trail** (Delivery + Consent) via Parse Cloud Functions/Triggers.
 - **FAQ vollständig server-driven** (Categories/Items) inkl. Caching + Retry/Refresh UI. Landing zeigt bei fehlendem SSH‑Tunnel einen klaren Hinweis.
 - **Consent-Flow** loggt die **tatsächlich angezeigte** server/cached Version + `documentHash` (nicht nur lokale Constants).
@@ -41,10 +47,16 @@
 ### Backend (Docker / Ubuntu)
 - **Parse Server** (Node.js) + Cloud Code (Hooks/Functions) als zentrale Backend-API
 - **MongoDB** als Primary DB (Parse)
-- **Redis** (Cache/Queues)
+- **Redis** ✅ **AKTIV** (Cache für Parse Server Schema/Queries)
 - **Postgres** (Analytics/Reporting Schema vorhanden, init-SQL im Repo)
 - **Nginx** als Reverse Proxy (Port 80/443)
 - Zusätzliche Services (je nach Compose): Market Data, Notification, Analytics, PDF Service, MinIO (S3)
+
+### Parse Server Klassen (Compliance)
+- `ComplianceEvent` - MiFID II Audit Logging (Master Key only write)
+- `LegalConsent` / `LegalDocumentDeliveryLog` - Legal Audit Trail (Master Key only)
+- `TransactionLimit` / `TransactionHistory` - Limit Tracking
+- `TermsContent` - Legal Documents (immutable, delete-protected)
 
 > Hinweis: Im Repo gibt es historisch unterschiedliche Doku-/Compose-Stände. Dieses Dokument beschreibt die **robuste Ziel-Topologie** plus die wichtigsten Verifikationsschritte.
 

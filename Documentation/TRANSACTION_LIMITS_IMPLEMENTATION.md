@@ -68,8 +68,26 @@ Der Transaction Limits Service wurde implementiert, um regulatorische Anforderun
 3. Bei Order-Platzierung: `BuyOrderPlacementService` prüft Limits erneut
 4. Nach erfolgreicher Order: Transaction wird für Limit-Tracking aufgezeichnet
 
-## Nächste Schritte
+## ✅ Abgeschlossene Schritte (Stand: 2026-01-31)
 
-- [ ] Parse Server Integration: Limits persistent speichern
-- [ ] UI-Integration: Limit-Warnungen in `BuyOrderView` anzeigen
-- [ ] Limit-Anzeige: Verbleibende Limits in UI zeigen
+- [x] Parse Server Integration: `TransactionLimit` und `TransactionHistory` Klassen erstellt
+- [x] UI-Integration: Limit-Warnungen in `BuyOrderView` (orange Warnung bei Überschreitung)
+- [x] Limit-Anzeige: Verbleibendes Tageslimit wird angezeigt (bei >50% Nutzung)
+- [x] Button-Deaktivierung: Buy-Button wird bei Limit-Überschreitung deaktiviert
+- [x] Redis Caching: Limits werden in Redis gecached für bessere Performance
+
+## Parse Server Klassen
+
+### TransactionLimit
+- Speichert aktuelle Limits und Ausgaben pro User
+- CLPs: Public Read, Master Key Write
+
+### TransactionHistory  
+- Speichert einzelne Transaktionen für Limit-Berechnung
+- CLPs: Public Read, Master Key Write
+
+## Nächste optionale Schritte
+
+- [ ] Sell Order Limits (falls regulatorisch erforderlich)
+- [ ] Admin-Dashboard für Limit-Übersicht
+- [ ] Export-Funktion für Compliance-Berichte
