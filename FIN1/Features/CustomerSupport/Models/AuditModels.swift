@@ -252,6 +252,8 @@ enum ComplianceEventType: String, Codable, CaseIterable {
     // MARK: - Trading Events (MiFID II Compliance)
     case orderPlaced
     case orderExecuted
+    case orderCompleted
+    case orderCancelled
     case tradeCompleted
     case deposit
     case withdrawal
@@ -269,6 +271,8 @@ enum ComplianceEventType: String, Codable, CaseIterable {
         case .escalation: return "Eskalation"
         case .orderPlaced: return "Order platziert"
         case .orderExecuted: return "Order ausgeführt"
+        case .orderCompleted: return "Order abgeschlossen"
+        case .orderCancelled: return "Order storniert"
         case .tradeCompleted: return "Trade abgeschlossen"
         case .deposit: return "Einzahlung"
         case .withdrawal: return "Auszahlung"

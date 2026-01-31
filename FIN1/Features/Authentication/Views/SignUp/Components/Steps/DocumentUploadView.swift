@@ -27,7 +27,7 @@ struct DocumentUploadView: View {
                 .foregroundColor(AppTheme.fontColor)
                 .frame(maxWidth: .infinity, alignment: .leading)
 */
-            
+
             if let image = selectedImage {
                 DocumentPreviewView(
                     image: image,

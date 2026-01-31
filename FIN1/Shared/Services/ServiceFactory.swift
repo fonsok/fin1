@@ -133,7 +133,8 @@ final class ServiceFactory {
         investmentService: (any InvestmentServiceProtocol)? = nil,
         documentService: (any DocumentServiceProtocol)? = nil,
         investorGrossProfitService: (any InvestorGrossProfitServiceProtocol)? = nil,
-        commissionCalculationService: (any CommissionCalculationServiceProtocol)? = nil
+        commissionCalculationService: (any CommissionCalculationServiceProtocol)? = nil,
+        auditLoggingService: (any AuditLoggingServiceProtocol)? = nil
     ) -> OrderLifecycleCoordinator {
         return OrderLifecycleCoordinator(
             orderManagementService: orderManagementService,
@@ -150,7 +151,8 @@ final class ServiceFactory {
             documentService: documentService,
             configurationService: configurationService,
             investorGrossProfitService: investorGrossProfitService,
-            commissionCalculationService: commissionCalculationService
+            commissionCalculationService: commissionCalculationService,
+            auditLoggingService: auditLoggingService
         )
     }
 

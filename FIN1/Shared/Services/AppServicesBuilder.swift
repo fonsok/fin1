@@ -38,6 +38,9 @@ enum AppServicesBuilder {
 
         let serviceFactory = ServiceFactory(configurationService: configurationService, userService: userService)
 
+        // ✅ Create AuditLoggingService early (needed for MiFID II compliance in trading services)
+        let auditLoggingService = AuditLoggingService(parseAPIClient: parseAPIClient)
+
         // Update CashBalanceService with Live Query support
         let cashBalanceService = CashBalanceService(
             configurationService: configurationService,
@@ -178,7 +181,8 @@ enum AppServicesBuilder {
             investmentService: investmentService,
             documentService: documentService,
             investorGrossProfitService: investorGrossProfitService,
-            commissionCalculationService: commissionCalculationService
+            commissionCalculationService: commissionCalculationService,
+            auditLoggingService: auditLoggingService
         )
 
         let tradingStateStore = serviceFactory.createTradingStateStore(
@@ -221,9 +225,6 @@ enum AppServicesBuilder {
         // KYC compliance services
         let addressChangeService = AddressChangeRequestService()
         let nameChangeService = NameChangeRequestService()
-
-        // Customer Support services (RBAC, Audit Logging) - Create early for use in other services
-        let auditLoggingService = AuditLoggingService(parseAPIClient: parseAPIClient)
 
         // Attach auditLoggingService to TradeLifecycleService (created earlier)
         tradeLifecycleService.attach(

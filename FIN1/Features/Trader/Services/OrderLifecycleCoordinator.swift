@@ -22,6 +22,7 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
     private let configurationService: (any ConfigurationServiceProtocol)?
     private let investorGrossProfitService: (any InvestorGrossProfitServiceProtocol)?
     private let commissionCalculationService: (any CommissionCalculationServiceProtocol)?
+    private let auditLoggingService: (any AuditLoggingServiceProtocol)?
 
     // MARK: - Initialization
     init(
@@ -39,7 +40,8 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
         documentService: (any DocumentServiceProtocol)? = nil,
         configurationService: (any ConfigurationServiceProtocol)? = nil,
         investorGrossProfitService: (any InvestorGrossProfitServiceProtocol)? = nil,
-        commissionCalculationService: (any CommissionCalculationServiceProtocol)? = nil
+        commissionCalculationService: (any CommissionCalculationServiceProtocol)? = nil,
+        auditLoggingService: (any AuditLoggingServiceProtocol)? = nil
     ) {
         self.orderManagementService = orderManagementService
         self.orderStatusSimulationService = orderStatusSimulationService
@@ -56,6 +58,7 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
         self.configurationService = configurationService
         self.investorGrossProfitService = investorGrossProfitService
         self.commissionCalculationService = commissionCalculationService
+        self.auditLoggingService = auditLoggingService
     }
 
     // MARK: - Order Management
@@ -117,6 +120,26 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
         // Also add to OrderManagementService for status progression
         await orderManagementService.addOrderToActiveOrders(genericOrder)
 
+        // ✅ MiFID II Compliance: Log sell order placement
+        if let auditLoggingService = auditLoggingService {
+            let userId = userService.currentUser?.id ?? order.traderId
+            let underlyingAsset = order.underlyingAsset ?? order.description ?? "N/A"
+            let complianceEvent = ComplianceEvent(
+                eventType: .orderPlaced,
+                agentId: userId,
+                customerId: userId,
+                description: "Sell order placed: \(underlyingAsset) - \(order.quantity) @ €\(order.price.formatted(.number.precision(.fractionLength(2))))",
+                severity: .medium,
+                requiresReview: false,
+                notes: "Order ID: \(order.id), Symbol: \(order.symbol), Total: €\(order.totalAmount.formatted(.number.precision(.fractionLength(2))))"
+            )
+            
+            // Log asynchronously - don't block order placement if logging fails
+            Task {
+                await auditLoggingService.logComplianceEvent(complianceEvent)
+            }
+        }
+
         // Start status progression simulation for sell orders
         orderStatusSimulationService.startOrderStatusProgression(order.id) { [weak self] status, order in
             Task { @MainActor in
@@ -131,6 +154,24 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
     func cancelOrder(_ orderId: String) async throws {
         orderStatusSimulationService.stopOrderStatusProgression(orderId)
         try await orderManagementService.cancelOrder(orderId)
+        
+        // ✅ MiFID II Compliance: Log order cancellation
+        if let auditLoggingService = auditLoggingService {
+            let userId = userService.currentUser?.id ?? "unknown"
+            let complianceEvent = ComplianceEvent(
+                eventType: .orderCancelled,
+                agentId: userId,
+                customerId: userId,
+                description: "Order cancelled: \(orderId)",
+                severity: .low,
+                requiresReview: false,
+                notes: "Order ID: \(orderId)"
+            )
+            
+            Task {
+                await auditLoggingService.logComplianceEvent(complianceEvent)
+            }
+        }
     }
 
     func updateOrderStatus(_ orderId: String, status: String) async throws {
@@ -148,6 +189,26 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
 
         // Handle order completion based on order type
         if status == "completed" {
+            // ✅ MiFID II Compliance: Log order completion
+            if let auditLoggingService = auditLoggingService {
+                let userId = userService.currentUser?.id ?? order.traderId
+                let orderType = order.type == .buy ? "Buy" : "Sell"
+                let underlyingAsset = order.underlyingAsset ?? order.description ?? "N/A"
+                let complianceEvent = ComplianceEvent(
+                    eventType: .orderCompleted,
+                    agentId: userId,
+                    customerId: userId,
+                    description: "\(orderType) order completed: \(underlyingAsset) - \(order.quantity) @ €\(order.price.formatted(.number.precision(.fractionLength(2))))",
+                    severity: .medium,
+                    requiresReview: false,
+                    notes: "Order ID: \(orderId), Symbol: \(order.symbol), Total: €\(order.totalAmount.formatted(.number.precision(.fractionLength(2))))"
+                )
+                
+                Task {
+                    await auditLoggingService.logComplianceEvent(complianceEvent)
+                }
+            }
+            
             if order.type == .buy {
                 await handleBuyOrderCompletion(orderId: orderId, order: order)
             } else if order.type == .sell {

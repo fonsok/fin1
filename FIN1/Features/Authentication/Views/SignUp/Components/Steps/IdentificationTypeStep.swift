@@ -13,12 +13,12 @@ struct IdentificationTypeStep: View {
                 .fontWeight(.bold)
                 .foregroundColor(AppTheme.fontColor)
                 .multilineTextAlignment(.center)
-            
+
          Text("Bitte wählen Sie Ihr Ausweisdokument aus")
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.8))
                 .multilineTextAlignment(.leading)
-  
+
             VStack(spacing: ResponsiveDesign.spacing(16)) {
                 Button(action: { identificationType = .passport }, label: {
                     HStack {
