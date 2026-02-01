@@ -1,17 +1,17 @@
-# FIN1 – Server‑Driven FAQs (Help Center + Landing)
+# FIN1 – Server‑Driven FAQs (Help Center + Landing) — v2026-01-31
 
 ## Ziele
 
 - **Server‑driven** FAQ Inhalte (Fragen/Antworten) für:
   - Landing Page (Prospects)
-  - Help Center (User)
+  - Help Center (Users)
 - **Themen/Bereiche** sauber strukturiert über Kategorien
 - **Ressourcenschonend**: Client cached Kategorien + FAQ Payload (TTL)
-- **Fallback**: wenn Parse nicht erreichbar → App nutzt weiterhin die gebundelten `FAQDataProvider` / `LandingFAQProvider`
+- **User‑Flow clean**: **kein** UI‑Fallback mehr auf gebundelte Provider (Legacy ist aus dem User‑Flow entkoppelt)
 
 ## Backend (Parse)
 
-### Cloud Functions (bereits vorhanden)
+### Cloud Functions
 
 - `getFAQCategories(location)`
   - `location`: `"landing" | "help_center" | "csr"`
@@ -37,14 +37,10 @@ Empfohlene Felder:
 
 Legacy / Übergang (optional):
 - `displayName` (String) – wird weiter unterstützt, falls `title` fehlt
-- `icon` (String, SF Symbol Name)
-- `sortOrder` (Number)
-- `isActive` (Boolean)
-- `showOnLanding` (Boolean)
-- `showInHelpCenter` (Boolean)
-- `showInCSR` (Boolean)
 
-#### `FAQ`
+#### `FAQItem`
+
+> **Hinweis:** Die Parse-Klasse heißt `FAQItem` (nicht `FAQ`). Die Cloud Function `getFAQs` fragt `FAQItem` ab.
 
 Empfohlene Felder:
 - `faqId` (String, stable ID aus App/Seed)
@@ -64,18 +60,20 @@ Empfohlene Felder:
 - `FIN1/Shared/Services/FAQContentService.swift`
   - holt Kategorien + FAQs über Parse Cloud Functions
   - cached Payload in `UserDefaults` (TTL default 24h)
+  - **Wichtig**: “Leere Cache‑Antworten” werden nicht als gültig akzeptiert (sonst würden leere Ergebnisse die UI 24h blocken)
   - ersetzt Platzhalter wie `{{APP_NAME}}` / `{{LEGAL_PLATFORM_NAME}}`
 
 ### UI Integration
 
 - Landing Page:
   - `FIN1/Features/Authentication/Views/Components/LandingFAQView.swift`
-  - nutzt server‑driven Daten, wenn verfügbar, sonst `LandingFAQProvider`
+  - zeigt **Loading** / **Unavailable + Retry** / Content
+  - bei Dev‑Simulator‑Setup mit `localhost:1338` zeigt die UI einen Debug‑Hinweis (SSH‑Tunnel fehlt)
 
 - Help Center:
   - `FIN1/Shared/ViewModels/HelpCenterViewModel.swift`
   - `FIN1/Shared/Components/Profile/Components/Modals/HelpCenterView.swift`
-  - nutzt server‑driven Daten, wenn verfügbar, sonst `FAQDataProvider`
+  - unterstützt Retry + Pull‑to‑Refresh (server‑driven)
 
 ## Seeding / Content Sync
 
@@ -83,12 +81,31 @@ Empfohlene Felder:
   - `scripts/export_faqs_from_swift.py`
   - erzeugt `scripts/faq_export.json`
 
-- Auf dem Server anwenden:
-  - `scripts/apply_faqs_to_parse.py`
-  - upserted `FAQCategory` + `FAQ` via Master Key (`/home/io/fin1-server/backend/.env`)
+- Auf dem Server anwenden (Upsert via Master Key):
+  - Script: `scripts/apply_faqs_to_parse.py`
+  - benötigt Server‑ENV: `/home/io/fin1-server/backend/.env`
+  - Parse erreichbar über: `http://127.0.0.1:1338/parse`
 
-## “Themen/Bereiche” (Best Practice)
+## Troubleshooting (Landing‑FAQs fehlen)
 
-Aktuell ist das **komplett server‑driven** modelliert (`id/slug/title/icon`).
-Neue Themen/Kategorien können jetzt **ohne App‑Update** im Parse Dashboard angelegt werden.
+1) **Simulator nutzt Dev‑Default `localhost:1338`**
+- SSH‑Tunnel starten:
+
+```bash
+ssh -L 1338:127.0.0.1:1338 io@192.168.178.24
+```
+
+2) **Backend‑Daten prüfen**
+- `FAQCategory`: `isActive=true` und `showOnLanding=true`
+- `FAQItem`: `isPublished=true`, `isArchived=false`, `isPublic=true`
+- `FAQItem.categoryId` muss die `objectId` der passenden Kategorie enthalten (String)
+
+3) **Klassennamen-Mismatch (historisch)**
+- Die Cloud Function `getFAQs` fragt `FAQItem` ab (nicht `FAQ`)
+- Falls Daten in der falschen Klasse `FAQ` liegen, Migration durchführen:
+
+```bash
+# Auf dem Server
+./scripts/fix-faq-class-mismatch.sh
+```
 

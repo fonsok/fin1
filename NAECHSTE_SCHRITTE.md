@@ -18,11 +18,16 @@
 - ✅ Delete-Protection für Audit-kritische Klassen
 - ✅ Server-driven Legal Docs mit Audit Trail
 
+### Legal Documents (AGB/Datenschutz)
+- ✅ PDF-Export für Terms/Privacy (client-side A4 PDF via `LegalDocumentPDFGenerator`)
+- ✅ Änderungs-Overlay bei neuen Versionen (`LegalDocumentChangesOverlay`)
+- ✅ Change Tracking für Versions-Vergleich (`LegalDocumentChangesService`)
+
 ### Parse Server Klassen
 - ✅ `ComplianceEvent` - Audit Logging
 - ✅ `LegalConsent` / `LegalDocumentDeliveryLog` - Legal Audit Trail
 - ✅ `TransactionLimit` / `TransactionHistory` - Limit Tracking
-- ✅ `FAQCategory` / `FAQItem` - Server-driven FAQs
+- ✅ `FAQCategory` / `FAQItem` - Server-driven FAQs (Cloud Function: `getFAQs` nutzt `FAQItem`)
 - ✅ `TermsContent` - Legal Documents
 
 ---
