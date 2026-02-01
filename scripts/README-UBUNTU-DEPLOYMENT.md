@@ -9,7 +9,7 @@ Diese Skripte ermöglichen die automatische Einrichtung des FIN1 Backend-Servers
 - Beide Rechner im selben Netzwerk
 
 **⚠️ WICHTIG:** Für optimale Ergebnisse sollten Sie zuerst die Fritzbox konfigurieren:
-- Siehe: [FRITZBOX_SETUP-v2026-01-30.md](FRITZBOX_SETUP-v2026-01-30.md) für detaillierte Anleitung
+- Siehe: [FRITZBOX_SETUP.md](FRITZBOX_SETUP.md) für detaillierte Anleitung
 - **Empfohlen:** Feste IP für Ubuntu-Server vergeben (erleichtert Auffinden)
 
 ## Schnellstart (Empfohlen)
@@ -101,7 +101,7 @@ chmod +x ~/setup-ubuntu-server-v2026-01-30.sh
 ## Manuelle Einrichtung
 
 Falls die automatischen Skripte nicht funktionieren, siehe:
-- [Detaillierte Anleitung](UBUNTU_SERVER_SETUP-v2026-01-30.md)
+- [Detaillierte Anleitung](UBUNTU_SERVER_SETUP.md)
 
 ## Nach dem Deployment
 
@@ -229,7 +229,7 @@ docker compose up -d --force-recreate parse-server
 
 ## Netzwerk-Konfiguration (Fritzbox)
 
-**Detaillierte Anleitung:** Siehe [FRITZBOX_SETUP-v2026-01-30.md](FRITZBOX_SETUP-v2026-01-30.md)
+**Detaillierte Anleitung:** Siehe [FRITZBOX_SETUP.md](FRITZBOX_SETUP.md)
 
 ### Wichtigste Schritte:
 

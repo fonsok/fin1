@@ -91,7 +91,7 @@ backend/
 │   └── init/
 ├── docker-compose.yml    # Main orchestration file
 ├── env.example          # Environment variables template
-└── README-v2026-01-30.md            # This file
+└── README.md            # This file
 ```
 
 ## 🔧 Development Commands

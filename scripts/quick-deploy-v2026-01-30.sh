@@ -20,7 +20,7 @@ echo "==========================================${NC}"
 echo ""
 echo -e "${YELLOW}Hinweis:${NC} Für optimale Ergebnisse:"
 echo "  - Fritzbox: Feste IP für Ubuntu vergeben"
-echo "  - Siehe: scripts/FRITZBOX_SETUP-v2026-01-30.md"
+echo "  - Siehe: scripts/FRITZBOX_SETUP.md"
 echo ""
 
 # Step 1: Find Ubuntu server

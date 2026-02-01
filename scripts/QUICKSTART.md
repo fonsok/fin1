@@ -301,6 +301,6 @@ docker compose up -d --force-recreate
 
 ## Hilfe
 
-- **Detaillierte Anleitung:** `scripts/UBUNTU_SERVER_SETUP-v2026-01-30.md`
-- **Fritzbox-Setup:** `scripts/FRITZBOX_SETUP-v2026-01-30.md`
-- **Deployment-Doku:** `scripts/README-UBUNTU-DEPLOYMENT-v2026-01-30.md`
+- **Detaillierte Anleitung:** `scripts/UBUNTU_SERVER_SETUP.md`
+- **Fritzbox-Setup:** `scripts/FRITZBOX_SETUP.md`
+- **Deployment-Doku:** `scripts/README-UBUNTU-DEPLOYMENT.md`

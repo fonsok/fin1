@@ -4,18 +4,14 @@ Die Menge an `.md` Dateien in diesem Workspace ist sehr groß. Damit es nicht ve
 
 ## ⭐ Startpunkte
 
-- **Repo-Startpunkt (rollenorientiert)**: `START_HERE.md` → aktuell: `START_HERE-v2026-02-01.md`
+- **Repo-Startpunkt (rollenorientiert)**: `START_HERE.md`
 - **Kuratierte Gesamtdoku (“Current”)**: `Documentation/FIN1_APP_DOCS/00_INDEX.md`
-- **Snapshots Index**: `Documentation/SNAPSHOTS_INDEX.md` → aktuell: `Documentation/SNAPSHOTS_INDEX-v2026-02-01.md`
+- **Snapshots/Tags Index**: `Documentation/SNAPSHOTS_INDEX.md`
 
-## ✅ Regel: `*-vYYYY-MM-DD.md` ist die aktuelle Referenz
+## ✅ Regel: “Current” ohne Versionssuffix
 
-Wenn zu einem Thema eine Datei `*-vYYYY-MM-DD.md` existiert, gilt:
-
-- **Die `-v...` Datei ist die aktuelle, autoritative Referenz**.
-- Die nicht-versionierte Datei (ohne `-v...`) ist nur ein **Pointer** (oder wird nicht mehr genutzt).
-
-Damit können Dritte schnell erkennen, was “heute” gilt, ohne Doppelquellen.
+- “Current” sind die Dateien **ohne** Versionssuffix (z.B. `START_HERE.md`, `FIN1_PROJECT_STATUS.md`).
+- Historie/“Snapshots” laufen über **Git** (Commits + optional Tags).
 
 ## 📚 Kuratierte FIN1 App-Dokumentation (Zielgruppen-orientiert)
 

@@ -1,53 +1,40 @@
 ---
-title: "FIN1 – Snapshots Index"
+title: "FIN1 – Snapshots/Tags Index"
 audience: ["Alle"]
 lastUpdated: "2026-02-01"
 ---
 
 ## Zweck
 
-Dieser Index reduziert “Doku-Verwirrung”, indem er die **wichtigen Snapshot-Dateien** (z.B. `*-v2026-01-30.md`, `*-v2026-01-31.md`) zentral auffindbar macht.
+Dieser Index reduziert “Doku-Verwirrung”, indem er die **wichtigsten Einstiegspunkte** und die empfohlene **Git-Snapshot-Strategie** an einer Stelle bündelt.
 
-**Regel in FIN1:** Wenn zu einem Thema eine Datei `*-vYYYY-MM-DD.md` existiert, ist diese Datei die **aktuelle Referenz**. Die nicht-versionierte Datei ist dann nur ein **Pointer** (oder wird nicht mehr genutzt).
+## 1) Startpunkte (“Current”)
 
-## 1) Startpunkt für die kuratierte Gesamtdoku (“Current”)
+- Repo-Start: `START_HERE.md`
+- Projektstatus (TL;DR): `FIN1_PROJECT_STATUS.md`
+- Kuratierte App-Doku: `Documentation/FIN1_APP_DOCS/00_INDEX.md`
 
-- `Documentation/FIN1_APP_DOCS/00_INDEX.md`
+## 2) Snapshots (ohne `-v...` Dateinamen)
 
-## 2) Wichtigste Snapshots (aktuellste bekannte Referenzen)
+In FIN1 werden Snapshots nicht über Dateinamen-Versionierung gemacht, sondern über **Git**:
 
-- **Projektstatus (Kurzüberblick, neue Chats)**
-  - Aktuellster Snapshot: `FIN1_PROJECT_STATUS-v2026-01-31.md`
-  - Pointer: `FIN1_PROJECT_STATUS.md`
+- **Commit** = ein konkreter Stand
+- **Tag** = ein “fester” Name für einen wichtigen Stand (optional)
 
-- **Repo-Startpunkt**
-  - Aktuellster Snapshot: `START_HERE-v2026-02-01.md`
-  - Pointer: `START_HERE.md`
+Beispiel (lokal, ohne GitHub):
 
-- **Snapshots Index selbst**
-  - Aktuellster Snapshot: `Documentation/SNAPSHOTS_INDEX-v2026-02-01.md`
-  - Pointer: `Documentation/SNAPSHOTS_INDEX.md`
+```bash
+git tag -a docs-2026-02-01 -m "Docs snapshot 2026-02-01"
+git tag --list "docs-*"
+```
 
-- **Nächste Schritte / Roadmap**
-  - Aktuellster Snapshot: `NAECHSTE_SCHRITTE-v2026-01-31.md`
-  - Pointer: `NAECHSTE_SCHRITTE.md`
+## 3) Häufige Referenzen (Dateien)
 
-## 3) Dashboard / Parse (Anleitungen)
-
-- Aktuelle Referenzen:
-  - `DASHBOARD_ANLEITUNG-v2026-01-30.md`
-  - `DASHBOARD_SCHRITT_FUER_SCHRITT-v2026-01-30.md`
-  - `DASHBOARD_TROUBLESHOOTING-v2026-01-30.md`
-  - `DASHBOARD_ALTERNATIVE-v2026-01-30.md`
-
-- Pointer-Dateien (optional, der Bequemlichkeit wegen):
+- Nächste Schritte: `NAECHSTE_SCHRITTE.md`
+- Dashboard/Parse Guides:
   - `DASHBOARD_ANLEITUNG.md`
   - `DASHBOARD_SCHRITT_FUER_SCHRITT.md`
   - `DASHBOARD_TROUBLESHOOTING.md`
   - `DASHBOARD_ALTERNATIVE.md`
-
-## 4) ComplianceEvent Setup
-
-- Aktuelle Referenz: `COMPLIANCE_EVENT_SETUP-v2026-01-30.md`
-- Pointer: `COMPLIANCE_EVENT_SETUP.md`
+- ComplianceEvent Setup: `COMPLIANCE_EVENT_SETUP.md`
 

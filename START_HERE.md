@@ -12,12 +12,12 @@ Eine sachkundige dritte Person (oder eine IDE wie Cursor) soll den **aktuellen S
 
 - **Produkt**: FIN1 ist eine iOS Investment-/Trading-Plattform mit Rollen **Investor** und **Trader** (plus Admin/CSR/Compliance).
 - **Stack**: iOS (SwiftUI, MVVM + DI über `AppServices`), Backend (Docker, Nginx, Parse Server/Cloud Code, MongoDB, Redis, Postgres optional, MinIO optional).
-- **Aktueller Projektstand**: `FIN1_PROJECT_STATUS.md` → aktueller Snapshot `FIN1_PROJECT_STATUS-v2026-01-31.md`.
+- **Aktueller Projektstand**: `FIN1_PROJECT_STATUS.md` (Historie via Git).
 - **Wichtigste URLs (LAN, iobox)**:
   - API: `http://192.168.178.24/parse`
   - LiveQuery: `ws://192.168.178.24/parse`
   - Health: `http://192.168.178.24/health`
-  - Dashboard: **nur per SSH‑Tunnel** (siehe `FIN1_PROJECT_STATUS-v2026-01-31.md` + `Documentation/FIN1_APP_DOCS/06A_BACKEND_UBUNTU_IOBOX_RUNBOOK.md`)
+  - Dashboard: **nur per SSH‑Tunnel** (siehe `FIN1_PROJECT_STATUS.md` + `Documentation/FIN1_APP_DOCS/06A_BACKEND_UBUNTU_IOBOX_RUNBOOK.md`)
 - **Doku-Startpunkte**:
   - Kuratierte Gesamtdoku: `Documentation/FIN1_APP_DOCS/00_INDEX.md`
   - Wichtige Snapshots (v2026‑01‑30/31): `Documentation/SNAPSHOTS_INDEX.md`
@@ -26,7 +26,6 @@ Eine sachkundige dritte Person (oder eine IDE wie Cursor) soll den **aktuellen S
 
 1. **Aktueller Projektstatus (Kurzüberblick)**
    - Pointer: `FIN1_PROJECT_STATUS.md`
-   - Aktueller Snapshot: `FIN1_PROJECT_STATUS-v2026-01-31.md`
 2. **Kuratierte Gesamtdoku (zielgruppenorientiert, “Current”)**
    - Startpunkt: `Documentation/FIN1_APP_DOCS/00_INDEX.md`
 3. **Snapshots-Index (für alle wichtigen v2026-01-30/31 Dateien)**
@@ -47,7 +46,7 @@ Eine sachkundige dritte Person (oder eine IDE wie Cursor) soll den **aktuellen S
 - **Betrieb / Netzwerk / Security**
   - `Documentation/FIN1_APP_DOCS/06A_BACKEND_UBUNTU_IOBOX_RUNBOOK.md` (Ports, Nginx, SSH Tunnel, Backups, Hardening)
   - `Documentation/FIN1_APP_DOCS/06_BETRIEB_PROZESSE.md` (Release/Rollback, Monitoring)
-  - Projektstatus-Snapshot: `FIN1_PROJECT_STATUS-v2026-01-31.md` (TL;DR URLs/Ports)
+  - Projektstatus: `FIN1_PROJECT_STATUS.md` (TL;DR URLs/Ports)
 
 - **QA**
   - `Documentation/FIN1_APP_DOCS/05_TEST_QUALITAET.md`
@@ -64,13 +63,13 @@ Eine sachkundige dritte Person (oder eine IDE wie Cursor) soll den **aktuellen S
 ## 3) “Current” vs. “Snapshot” (damit niemand falsche Dateien nutzt)
 
 - **Current (lebend, kuratiert)**: `Documentation/FIN1_APP_DOCS/*.md`
-- **Snapshots (bewusst aktuell, Momentaufnahme/Beleg)**: `*-v2026-01-30.md`, `*-v2026-01-31.md` usw.
-  - Einstieg/Liste: `Documentation/SNAPSHOTS_INDEX.md`
+- **Snapshots/Historie**: über **Git** (Commits; optional Tags für “feste Stände”)
+  - Index: `Documentation/SNAPSHOTS_INDEX.md`
 
 ## 4) Für Cursor/LLMs: empfohlene Lesereihenfolge (max. Kontext, minimaler Lärm)
 
 1. `Documentation/FIN1_APP_DOCS/00_INDEX.md`
-2. `FIN1_PROJECT_STATUS-v2026-01-31.md`
+2. `FIN1_PROJECT_STATUS.md`
 3. `Documentation/FIN1_APP_DOCS/03_TECHNISCHE_SPEZIFIKATION.md`
 4. Je nach Aufgabe: `04_DEVELOPER_GUIDE.md` / `06A_BACKEND_UBUNTU_IOBOX_RUNBOOK.md` / `02A_FEATURE_KATALOG_GUARDRAILS.md`
 

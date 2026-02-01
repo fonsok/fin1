@@ -44,7 +44,7 @@ echo "Remote Verzeichnis: $REMOTE_DIR"
 echo ""
 echo -e "${YELLOW}Hinweis:${NC} Für optimale Konfiguration:"
 echo "  - Fritzbox: Feste IP für Ubuntu vergeben"
-echo "  - Siehe: scripts/FRITZBOX_SETUP-v2026-01-30.md"
+echo "  - Siehe: scripts/FRITZBOX_SETUP.md"
 echo ""
 
 # Test SSH connection

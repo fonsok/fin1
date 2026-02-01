@@ -22,7 +22,7 @@ echo "==========================================${NC}"
 echo ""
 echo -e "${YELLOW}Hinweis:${NC} Für bessere Ergebnisse:"
 echo "  1. Fritzbox: Feste IP für Ubuntu-Server vergeben"
-echo "  2. Siehe: scripts/FRITZBOX_SETUP-v2026-01-30.md für Details"
+echo "  2. Siehe: scripts/FRITZBOX_SETUP.md für Details"
 echo ""
 
 # Get local network interface and IP
@@ -120,7 +120,7 @@ if [ -z "$SSH_HOSTS" ] && [ -z "$UBUNTU_HOSTS" ]; then
     echo -e "${RED}✗${NC} Keine SSH-Server gefunden."
     echo ""
     echo -e "${YELLOW}Troubleshooting:${NC}"
-    echo "  1. Prüfe Fritzbox-Konfiguration: scripts/FRITZBOX_SETUP-v2026-01-30.md"
+    echo "  1. Prüfe Fritzbox-Konfiguration: scripts/FRITZBOX_SETUP.md"
     echo "  2. Prüfe ob Ubuntu-Server im WLAN verbunden ist"
     echo "  3. Prüfe ob SSH auf Ubuntu aktiviert ist: sudo systemctl status ssh"
     echo ""
@@ -174,5 +174,5 @@ else
     echo -e "${YELLOW}Tipp:${NC} Für bessere Erkennung:"
     echo "  - Fritzbox: Feste IP für Ubuntu vergeben"
     echo "  - Ubuntu: Hostname setzen (z.B. 'fin1-server')"
-    echo "  - Siehe: scripts/FRITZBOX_SETUP-v2026-01-30.md"
+    echo "  - Siehe: scripts/FRITZBOX_SETUP.md"
 fi

@@ -33,7 +33,7 @@
 
 - **`check-bundle-size-v2026-01-30.sh`** - Prüft iOS App Bundle-Größe
   - Warnungen bei Überschreitung von Schwellwerten
-  - Dokumentation: `README-Bundle-Size-v2026-01-30.md`
+  - Dokumentation: `README-Bundle-Size.md`
 
 - **`check-file-sizes-v2026-01-30.sh`** - Prüft File-Size-Limits
   - Klassen ≤ 400 Zeilen
@@ -46,7 +46,7 @@
 - **`validate-mvvm-architecture-v2026-01-30.sh`** - MVVM-Architektur-Validierung
   - Prüft ViewModel-Instanziierung
   - Validiert Dependency Injection
-  - Dokumentation: `README-MVVM-Validation-v2026-01-30.md`
+  - Dokumentation: `README-MVVM-Validation.md`
 
 - **`validate-separation-of-concerns-v2026-01-30.sh`** - Separation of Concerns-Validierung
   - Prüft Business-Logik in Views
@@ -56,7 +56,7 @@
 
 - **`detect-duplicate-files-v2026-01-30.sh`** - Erkennt doppelte Swift-Dateien
   - Verhindert "Multiple commands produce" Fehler
-  - Dokumentation: `README-Duplicate-Prevention-v2026-01-30.md`
+  - Dokumentation: `README-Duplicate-Prevention.md`
 
 ### Git & Pre-Commit
 
@@ -75,13 +75,13 @@
   - Port-Erreichbarkeit (netcat)
   - Port-Status (nmap)
   - Netzwerk-Pfad (mtr)
-  - Dokumentation: `Documentation/NETWORK_TOOLS.md`, `scripts/network/README-v2026-01-30.md`
+  - Dokumentation: `Documentation/NETWORK_TOOLS.md`, `scripts/network/README.md`
 
 - **`network/network-tuning-v2026-01-30.sh`** - Netzwerk-Performance-Tuning (on-demand)
   - TCP-Buffer-Optimierung
   - Connection-Backlog-Erhöhung
   - MTU-Konfiguration
-  - Dokumentation: `Documentation/NETWORK_TOOLS.md`, `scripts/network/README-v2026-01-30.md`
+  - Dokumentation: `Documentation/NETWORK_TOOLS.md`, `scripts/network/README.md`
 
 - **`start-backend-v2026-01-30.sh`** - Startet Backend-Services
 
@@ -100,10 +100,10 @@
 
 - **`deploy-to-ubuntu-v2026-01-30.sh`** - Deployment auf Ubuntu-Server
   - Kopiert Dateien auf Server
-  - Dokumentation: `README-UBUNTU-DEPLOYMENT-v2026-01-30.md`
+  - Dokumentation: `README-UBUNTU-DEPLOYMENT.md`
 
 - **`setup-ubuntu-server-v2026-01-30.sh`** - Setup für Ubuntu-Server
-  - Dokumentation: `UBUNTU_SERVER_SETUP-v2026-01-30.md`
+  - Dokumentation: `UBUNTU_SERVER_SETUP.md`
 
 - **`find-ubuntu-server-v2026-01-30.sh`** - Findet Ubuntu-Server im Netzwerk
 
@@ -125,13 +125,13 @@
 
 - ✅ **Caffeinate Scripts** → `README_CAFFEINATE.md` (Root-Level)
 - ✅ **Network Scripts** → `Documentation/NETWORK_TOOLS.md`
-- ✅ **Bundle Size** → `README-Bundle-Size-v2026-01-30.md`
-- ✅ **MVVM Validation** → `README-MVVM-Validation-v2026-01-30.md`
-- ✅ **Duplicate Prevention** → `README-Duplicate-Prevention-v2026-01-30.md`
-- ✅ **Ubuntu Deployment** → `README-UBUNTU-DEPLOYMENT-v2026-01-30.md`
-- ✅ **Ubuntu Setup** → `UBUNTU_SERVER_SETUP-v2026-01-30.md`, `EINFACHES_SETUP-v2026-01-30.md`, `QUICKSTART-v2026-01-30.md`
-- ✅ **Fritzbox Setup** → `FRITZBOX_SETUP-v2026-01-30.md`
-- ✅ **Cursor Ubuntu Setup** → `CURSOR_UBUNTU_SETUP-v2026-01-30.md`
+- ✅ **Bundle Size** → `README-Bundle-Size.md`
+- ✅ **MVVM Validation** → `README-MVVM-Validation.md`
+- ✅ **Duplicate Prevention** → `README-Duplicate-Prevention.md`
+- ✅ **Ubuntu Deployment** → `README-UBUNTU-DEPLOYMENT.md`
+- ✅ **Ubuntu Setup** → `UBUNTU_SERVER_SETUP.md`, `EINFACHES_SETUP.md`, `QUICKSTART.md`
+- ✅ **Fritzbox Setup** → `FRITZBOX_SETUP.md`
+- ✅ **Cursor Ubuntu Setup** → `CURSOR_UBUNTU_SETUP.md`
 
 ### Scripts ohne dedizierte Dokumentation
 

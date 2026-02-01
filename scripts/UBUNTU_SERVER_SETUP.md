@@ -76,7 +76,7 @@ Diese Anleitung beschreibt die Einrichtung des FIN1 Backend-Servers auf einem Ub
 ### Schritt 1: Netzwerk-Konfiguration (Fritzbox)
 
 **WICHTIG:** Für optimale Ergebnisse sollten Sie die Fritzbox-Konfiguration durchführen.
-Siehe: [FRITZBOX_SETUP-v2026-01-30.md](FRITZBOX_SETUP-v2026-01-30.md) für detaillierte Anleitung.
+Siehe: [FRITZBOX_SETUP.md](FRITZBOX_SETUP.md) für detaillierte Anleitung.
 
 #### Ubuntu-Server IP-Adresse festlegen
 

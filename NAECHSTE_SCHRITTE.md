@@ -78,9 +78,9 @@ ssh io@192.168.178.24 "cd ~/fin1-server && docker compose -f docker-compose.prod
 
 ## 📝 Dokumentation
 
-- `FIN1_PROJECT_STATUS-v2026-01-31.md` - Aktueller Projektstatus
-- `Documentation/TRANSACTION_LIMITS_IMPLEMENTATION-v2026-01-31.md` - Limit Service Details
-- `Documentation/COMPLIANCE_IMPLEMENTATION_PRIORITIES-v2026-01-31.md` - Compliance Roadmap
+- `FIN1_PROJECT_STATUS.md` - Aktueller Projektstatus
+- `Documentation/TRANSACTION_LIMITS_IMPLEMENTATION.md` - Limit Service Details
+- `Documentation/COMPLIANCE_IMPLEMENTATION_PRIORITIES.md` - Compliance Roadmap
 - `scripts/verify-production-data.sh` - Production Verification Runbook
 
 ---

@@ -95,7 +95,7 @@ echo "   Stop services:       docker-compose down"
 echo "   Restart services:    docker-compose restart"
 echo "   Check status:        docker-compose ps"
 echo ""
-echo "📚 For more information, see backend/README-v2026-01-30.md"
+echo "📚 For more information, see backend/README.md"
 
 # Wait a bit more for full initialization
 echo "⏳ Waiting for full initialization..."

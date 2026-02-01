@@ -81,7 +81,7 @@ SET app.seed_dev_data = 'true';
 
 ## Migration zu MongoDB
 
-Siehe `MONGODB_MIGRATION-v2026-01-30.md` für die Collection-Struktur und Migration.
+Siehe `MONGODB_MIGRATION.md` für die Collection-Struktur und Migration.
 
 ### Grundprinzipien
 

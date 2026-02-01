@@ -225,7 +225,7 @@ Wenn Legal Texte (Terms/Privacy/Imprint) server-driven sind, muss intern nachvol
 - **iPhone + localhost**: funktioniert nicht (localhost = iPhone) → Device muss LAN-IP nutzen.
 - **`.xcconfig` URLs**: `//` ist Kommentar → URL-Slash-Workaround nutzen (ist bereits umgesetzt).
 - **Display Name “springt zurück”**: häufig durch versehentlich committen eines Test-Werts in `INFOPLIST_KEY_CFBundleDisplayName` → Guard-Script/Hook nutzen (siehe oben).
-- **Landing FAQs “nicht verfügbar”**: häufig fehlt der SSH‑Tunnel (Dev‑Simulator nutzt `localhost:1338`). Details: `Documentation/FAQS_SERVER_DRIVEN-v2026-01-31.md`
+- **Landing FAQs “nicht verfügbar”**: häufig fehlt der SSH‑Tunnel (Dev‑Simulator nutzt `localhost:1338`). Details: `Documentation/FAQS_SERVER_DRIVEN.md`
 
 ---
 
@@ -237,7 +237,7 @@ Wenn das Projekt als Git-Repo genutzt wird, Hooks installieren:
 ./scripts/install-githooks-v2026-01-31.sh
 ```
 
-Details: `Documentation/GIT_HOOKS-v2026-01-31.md`
+Details: `Documentation/GIT_HOOKS.md`
 
 ---
 
