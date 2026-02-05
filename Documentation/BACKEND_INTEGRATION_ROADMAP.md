@@ -111,8 +111,14 @@ Bei App-Background werden folgende Services parallel synchronisiert:
 | `WalletTransaction` | Wallet-Transaktionen | ✅ |
 | `Document` | Dokumente | ✅ |
 | `_User` | Benutzerprofile | ✅ (Parse built-in) |
-| `Watchlist` | Securities Watchlist | ⚠️ Muss erstellt werden |
-| `SavedFilter` | Gespeicherte Filter | ⚠️ Muss erstellt werden |
-| `PushToken` | Push-Tokens | ✅ |
+| `Watchlist` | Securities Watchlist | ✅ (erstellt 2026-02-05) |
+| `SavedFilter` | Gespeicherte Filter | ✅ (erstellt 2026-02-05) |
+| `PushToken` | Push-Tokens | ✅ (erstellt 2026-02-05) |
 | `PriceAlert` | Preisalarme | ✅ |
-| `InvestorWatchlist` | Trader-Watchlist | ⚠️ Muss erstellt werden |
+| `InvestorWatchlist` | Trader-Watchlist | ✅ (erstellt 2026-02-05) |
+
+---
+
+## 🚀 Deployment-Status
+
+**Parse Server**: Schemas erfolgreich initialisiert via `initializeNewSchemas` Cloud Function (2026-02-05)
