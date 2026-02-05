@@ -53,6 +53,101 @@ This is the main architecture and coding standards document for FIN1. All other 
 - **REQUIRED**: All Parse Server interactions MUST go through service layer, never directly from ViewModels
 - **FORBIDDEN**: Hardcoding Parse Server classes (e.g., `PFObject`) in ViewModels or Views
 
+#### Backend Synchronization Patterns
+
+**REQUIRED**: All backend-integrated services MUST implement efficient synchronization strategies:
+
+1. **Write-Through Pattern** (Primary):
+   - **REQUIRED**: Immediate sync on CRUD operations (create, update, delete)
+   - **REQUIRED**: Local state updated first, then backend sync in background
+   - **REQUIRED**: User sees immediate feedback, backend sync happens asynchronously
+   - **Example**: `saveInvestment()` updates local state immediately, syncs to Parse Server in background
+
+2. **Background Batch-Sync** (Secondary):
+   - **REQUIRED**: All services MUST implement `syncToBackend()` method
+   - **REQUIRED**: Called automatically when app enters background via App-Lifecycle Hook
+   - **REQUIRED**: Uses `withTaskGroup` for parallel synchronization of all services
+   - **REQUIRED**: Efficient resource-saving: only syncs pending changes, not entire datasets
+   - **Location**: `FIN1App.swift` → `syncPendingDataToBackend()`
+
+3. **API Service Pattern**:
+   - **REQUIRED**: All backend integrations use `*APIService` naming convention
+   - **REQUIRED**: Services implement `*APIServiceProtocol` with standard CRUD methods
+   - **REQUIRED**: All API services use `ParseAPIClientProtocol` for abstraction
+   - **REQUIRED**: Parse Server class names match service domain (e.g., `Watchlist`, `SavedFilter`, `PushToken`)
+
+**Example Pattern**:
+```swift
+// ✅ CORRECT: API Service with write-through + background sync
+protocol InvestmentAPIServiceProtocol {
+    func saveInvestment(_ investment: Investment) async throws -> Investment
+    func updateInvestment(_ investment: Investment) async throws -> Investment
+    func fetchInvestments(for investorId: String) async throws -> [Investment]
+}
+
+final class InvestmentAPIService: InvestmentAPIServiceProtocol {
+    private let apiClient: ParseAPIClientProtocol
+    
+    func saveInvestment(_ investment: Investment) async throws -> Investment {
+        // Write-through: sync immediately
+        let input = ParseInvestmentInput.from(investment: investment)
+        let response: ParseResponse = try await apiClient.createObject(
+            className: "Investment",
+            object: input
+        )
+        return investment // Return updated investment with objectId
+    }
+}
+
+// Service layer integrates API service
+final class InvestmentService: InvestmentServiceProtocol {
+    private var investmentAPIService: InvestmentAPIServiceProtocol?
+    
+    func configure(investmentAPIService: InvestmentAPIServiceProtocol) {
+        self.investmentAPIService = investmentAPIService
+    }
+    
+    func syncToBackend() async {
+        // Background batch-sync: sync all pending investments
+        guard let apiService = investmentAPIService else { return }
+        // Efficient: only sync investments without objectId
+        let pendingInvestments = investments.filter { $0.id.starts(with: "local-") }
+        for investment in pendingInvestments {
+            try? await apiService.saveInvestment(investment)
+        }
+    }
+}
+```
+
+**App-Lifecycle Hook Integration**:
+```swift
+// ✅ CORRECT: Parallel background sync in FIN1App.swift
+private func syncPendingDataToBackend() async {
+    guard let currentUser = services.userService.currentUser else { return }
+    
+    await withTaskGroup(of: Void.self) { group in
+        group.addTask { await self.services.investmentService.syncToBackend() }
+        group.addTask { await self.services.orderManagementService.syncToBackend() }
+        group.addTask { await self.services.documentService.syncToBackend() }
+        // ... all 10 services sync in parallel
+    }
+}
+```
+
+**Synchronized Services** (as of 2026-02-05):
+- `InvestmentService` → `InvestmentAPIService` → `Investment` class
+- `OrderManagementService` → `OrderAPIService` → `Order` class
+- `DocumentService` → `DocumentAPIService` → `Document` class
+- `UserService` → Parse `_User` class (direct)
+- `SecuritiesWatchlistService` → `WatchlistAPIService` → `Watchlist` class
+- `FilterSyncService` → `FilterAPIService` → `SavedFilter` class
+- `NotificationService` → `PushTokenAPIService` → `PushToken` class
+- `PriceAlertService` → Parse `PriceAlert` class (direct)
+- `InvestorWatchlistService` → `InvestorWatchlistAPIService` → `InvestorWatchlist` class
+- `PaymentService` → `WalletTransaction` class
+
+**Reference**: See `Documentation/BACKEND_INTEGRATION_ROADMAP.md` for complete list and sync strategies.
+
 #### Mock-First Development
 
 - **REQUIRED**: New payment/trading features MUST work with Parse Server mocks first
@@ -698,6 +793,7 @@ catch {
 - **No "Manager" suffix**: Avoid "Manager" in class/file names - use specific suffixes (Service, Repository, Store, Coordinator, Provider, Configurator, Utility) that indicate single responsibility.
 - **No redundant naming**: Avoid names where the domain repeats the suffix (e.g., `CustomerServiceService`). Per Swift API Guidelines: "Omit needless words."
 - **No DRY violations**: Magic numbers, percentages, rates, and repeated strings must be defined as constants in `CalculationConstants` or appropriate location. Same value appearing in multiple files is a violation.
+- **No backend sync violations**: All backend-integrated services MUST implement `syncToBackend()`. Never sync data directly from ViewModels - use service layer. Never use `async let ... ?? Task {}.value` pattern - use `withTaskGroup` for parallel sync.
 
 ## Swift 6 Concurrency Guardrails
 

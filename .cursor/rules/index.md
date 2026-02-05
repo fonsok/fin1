@@ -44,7 +44,9 @@ These rule files reference configuration files in the repository:
 - **Class vs Struct**: ViewModels/Services/Repositories use `class` (with `final`), Models use `struct`
 - **ObservableObject**: Requires `class` (ViewModels, stateful services, repositories)
 - **Backend Integration**: Mock-first approach with Parse Server, protocol-based services for BaaS swapping
-- See `architecture.md` for complete class vs struct decision tree
+- **Backend Sync**: Write-through pattern (immediate) + Background batch-sync (app lifecycle hook)
+- **API Services**: All backend integrations use `*APIService` pattern with `ParseAPIClientProtocol`
+- See `architecture.md` for complete class vs struct decision tree and sync patterns
 
 ### Swift 6 Concurrency (Modern)
 - **`@MainActor`**: Recommended for all new ViewModels (thread-safe UI updates)
