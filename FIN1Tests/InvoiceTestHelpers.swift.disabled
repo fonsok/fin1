@@ -23,11 +23,26 @@ extension InvoiceViewModelTests {
             optionDirection: "PUT",
             underlyingAsset: "DAX",
             wkn: "VT1234",
+            category: "Optionsschein",
+            strike: 15000.0,
             orderInstruction: "market",
             limitPrice: nil
         )
 
-        return Trade.from(buyOrder: buyOrder, tradeNumber: 1)
+        return Trade(
+            id: "test-trade-123",
+            tradeNumber: 1,
+            traderId: "test-trader",
+            symbol: "DAX PUT",
+            description: "DAX Optionsschein PUT",
+            buyOrder: buyOrder,
+            sellOrder: nil,
+            sellOrders: [],
+            status: .pending,
+            createdAt: Date(),
+            completedAt: nil,
+            updatedAt: Date()
+        )
     }
 
     func createSampleCustomerInfo() -> CustomerInfo {

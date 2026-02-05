@@ -4,6 +4,7 @@ import Combine
 import UIKit
 
 // MARK: - Invoice ViewModel Tests (Simplified Mocking)
+@MainActor
 final class InvoiceViewModelTests: XCTestCase {
 
     var viewModel: InvoiceViewModel!
