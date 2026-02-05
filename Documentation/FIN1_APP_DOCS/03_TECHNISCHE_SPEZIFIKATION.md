@@ -1,7 +1,7 @@
 ---
 title: "FIN1 – Technische Spezifikation"
 audience: ["Entwicklung", "Architektur", "Security", "QA", "Betrieb"]
-lastUpdated: "2026-02-04"
+lastUpdated: "2026-02-05"
 ---
 
 ## Konfigurierbare Finanzparameter
@@ -291,6 +291,9 @@ sequenceDiagram
 - **Admin/Compliance**: `ComplianceEvent`, `AuditLog`, `FourEyesRequest`, `FourEyesAudit`
 - **Legal**: `TermsContent`, `LegalDocumentDeliveryLog`, `LegalConsent`
 - **Push**: `PushToken`
+- **Watchlist**: `Watchlist` (Securities Watchlist), `InvestorWatchlist` (Trader Watchlist)
+- **Filter**: `SavedFilter` (Gespeicherte Filter für Securities/Trader Discovery)
+- **Alerts**: `PriceAlert` (Preisalarme)
 - **Konfiguration**: `Config`
 
 ### iOS → Backend Synchronisation
@@ -322,7 +325,22 @@ sequenceDiagram
 **App-Lifecycle Hook Implementierung:**
 
 - **Hook**: `FIN1App.swift` → `handleAppEnteredBackground()` wird bei `scenePhase == .background` aufgerufen
-- **Sync-Methode**: `syncPendingDataToBackend()` führt parallele Synchronisation aus:
+- **Sync-Methode**: `syncPendingDataToBackend()` führt parallele Synchronisation mit `withTaskGroup` aus:
+  ```swift
+  await withTaskGroup(of: Void.self) { group in
+      group.addTask { await self.services.investmentService.syncToBackend() }
+      group.addTask { await self.services.orderManagementService.syncToBackend() }
+      group.addTask { await self.services.paymentService.syncToBackend() }
+      group.addTask { await self.services.documentService.syncToBackend() }
+      group.addTask { await self.services.userService.syncToBackend() }
+      group.addTask { await self.services.securitiesWatchlistService.syncToBackend() }
+      group.addTask { await self.services.notificationService.syncPushTokensToBackend(for: userId) }
+      group.addTask { await self.services.watchlistService.syncToBackend() }
+      group.addTask { await filterSyncService.syncToBackend() }
+      group.addTask { await priceAlertService.syncToBackend() }
+  }
+  ```
+- **Synchronisierte Services** (10 Services parallel):
   - `investmentService.syncToBackend()` - Sync pending Investments
   - `orderManagementService.syncToBackend()` - Sync pending Orders (nicht completed/cancelled)
   - `paymentService.syncToBackend()` - Sync recent Transactions (letzte 24h)
@@ -335,7 +353,7 @@ sequenceDiagram
   - `watchlistService.syncToBackend()` - Sync Investor Watchlist (Trader Watchlist)
 - **Ressourcenschonend**: Nur bei App-Background, nicht bei jedem Speichern
 - **Fehlerbehandlung**: Fehler werden geloggt, blockieren aber nicht den App-Lifecycle
-- **Parallelisierung**: Alle Syncs laufen parallel für maximale Effizienz
+- **Parallelisierung**: `withTaskGroup` ermöglicht parallele Ausführung aller Syncs für maximale Effizienz
 
 ### Serverseitige Unveränderlichkeit (Audit)
 
