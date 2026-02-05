@@ -47,15 +47,24 @@ private struct ParseFilterInput: Encodable {
 
     static func from(securitiesFilter: SecuritiesFilterCombination, userId: String) -> ParseFilterInput {
         // Encode SearchFilters to dictionary
-        let criteria: [String: AnyCodable] = [
+        var criteria: [String: AnyCodable] = [
             "category": AnyCodable(securitiesFilter.filters.category),
             "underlyingAsset": AnyCodable(securitiesFilter.filters.underlyingAsset),
-            "direction": AnyCodable(securitiesFilter.filters.direction.rawValue),
-            "strikePriceGap": AnyCodable(securitiesFilter.filters.strikePriceGap),
-            "remainingTerm": AnyCodable(securitiesFilter.filters.remainingTerm),
-            "issuer": AnyCodable(securitiesFilter.filters.issuer),
-            "omega": AnyCodable(securitiesFilter.filters.omega)
+            "direction": AnyCodable(securitiesFilter.filters.direction.rawValue)
         ]
+        // Add optional fields only if they have values
+        if let strikePriceGap = securitiesFilter.filters.strikePriceGap {
+            criteria["strikePriceGap"] = AnyCodable(strikePriceGap)
+        }
+        if let remainingTerm = securitiesFilter.filters.remainingTerm {
+            criteria["remainingTerm"] = AnyCodable(remainingTerm)
+        }
+        if let issuer = securitiesFilter.filters.issuer {
+            criteria["issuer"] = AnyCodable(issuer)
+        }
+        if let omega = securitiesFilter.filters.omega {
+            criteria["omega"] = AnyCodable(omega)
+        }
 
         return ParseFilterInput(
             userId: userId,
@@ -122,17 +131,13 @@ private struct ParseFilterResponse: Codable {
             omega: filterCriteria["omega"]?.stringValue
         )
 
-        let dateFormatter = ISO8601DateFormatter()
-        let createdAtDate = dateFormatter.date(from: createdAt) ?? Date()
-
-        var filter = SecuritiesFilterCombination(
+        // Note: id and createdAt are set in init, but we need to preserve objectId
+        // We'll use objectId as a reference, but keep UUID for local identification
+        return SecuritiesFilterCombination(
             name: name,
             filters: searchFilters,
             isDefault: isDefault
         )
-        // Note: id and createdAt are set in init, but we need to preserve objectId
-        // We'll use objectId as a reference, but keep UUID for local identification
-        return filter
     }
 
     func toTraderFilter() throws -> FilterCombination {
@@ -150,15 +155,11 @@ private struct ParseFilterResponse: Codable {
             }
         }
 
-        let dateFormatter = ISO8601DateFormatter()
-        _ = dateFormatter.date(from: createdAt) ?? Date()
-
-        let filter = FilterCombination(
+        return FilterCombination(
             name: name,
             filters: filters,
             isDefault: isDefault
         )
-        return filter
     }
 }
 
@@ -253,18 +254,8 @@ final class FilterAPIService: FilterAPIServiceProtocol {
         // For updates, we need the objectId - but filters use UUID
         // We'll need to fetch first to find the objectId, or store it separately
         // For now, treat update as create (idempotent by name+context)
-        let input = ParseFilterInput.from(securitiesFilter: filter, userId: userId)
-
-        // Try to find existing filter by name and context
-        let existingFilters = try await fetchSecuritiesFilters(for: userId)
-        if let existing = existingFilters.first(where: { $0.name == filter.name }) {
-            // Update existing - but we don't have objectId in the model
-            // For now, delete and recreate (not ideal, but works)
-            // TODO: Store objectId in filter model or use a mapping
-            return try await saveSecuritiesFilter(filter, userId: userId)
-        } else {
-            return try await saveSecuritiesFilter(filter, userId: userId)
-        }
+        // TODO: Store objectId in filter model or use a mapping for proper update
+        return try await saveSecuritiesFilter(filter, userId: userId)
     }
 
     func fetchSecuritiesFilters(for userId: String) async throws -> [SecuritiesFilterCombination] {
@@ -281,7 +272,7 @@ final class FilterAPIService: FilterAPIServiceProtocol {
             limit: nil
         )
 
-        return try responses.compactMap { response in
+        return responses.compactMap { response in
             try? response.toSecuritiesFilter()
         }
     }
@@ -317,7 +308,7 @@ final class FilterAPIService: FilterAPIServiceProtocol {
             limit: nil
         )
 
-        return try responses.compactMap { response in
+        return responses.compactMap { response in
             try? response.toTraderFilter()
         }
     }

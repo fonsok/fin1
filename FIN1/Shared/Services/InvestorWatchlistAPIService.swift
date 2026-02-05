@@ -143,7 +143,7 @@ final class InvestorWatchlistAPIService: InvestorWatchlistAPIServiceProtocol {
             limit: nil
         )
 
-        return try responses.compactMap { response in
+        return responses.compactMap { response in
             try? response.toWatchlistTraderData()
         }
     }

@@ -59,7 +59,9 @@ final class AuthenticationViewModel: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            self?.handleUserSignIn()
+            Task { @MainActor in
+                self?.handleUserSignIn()
+            }
         }
 
         NotificationCenter.default.addObserver(
@@ -67,7 +69,9 @@ final class AuthenticationViewModel: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            self?.handleUserSignOut()
+            Task { @MainActor in
+                self?.handleUserSignOut()
+            }
         }
 
         NotificationCenter.default.addObserver(
@@ -75,7 +79,9 @@ final class AuthenticationViewModel: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            self?.handleUserDataUpdate()
+            Task { @MainActor in
+                self?.handleUserDataUpdate()
+            }
         }
     }
 

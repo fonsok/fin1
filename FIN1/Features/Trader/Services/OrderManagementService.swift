@@ -139,7 +139,7 @@ final class OrderManagementService: OrderManagementServiceProtocol, ServiceLifec
 
         let orderDetails = try validateAndProcessOrderDetails(params)
         let order = createOrder(from: orderDetails, params: params)
-        var newOrder = OrderBuy(from: order)
+        let newOrder = OrderBuy(from: order)
 
         await addOrderToActiveList(order)
 

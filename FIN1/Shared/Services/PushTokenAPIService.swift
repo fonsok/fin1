@@ -135,7 +135,7 @@ final class PushTokenAPIService: PushTokenAPIServiceProtocol {
 
         // Check if token already exists
         let existingTokens = try await fetchPushTokens(for: userId)
-        if let existing = existingTokens.first(where: { $0.token == token && $0.tokenType == tokenType }) {
+        if existingTokens.contains(where: { $0.token == token && $0.tokenType == tokenType }) {
             // Update existing token to active
             return try await updatePushToken(token, tokenType: tokenType, userId: userId, deviceId: deviceId)
         }
