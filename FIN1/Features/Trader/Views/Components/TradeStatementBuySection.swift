@@ -38,16 +38,9 @@ struct TradeStatementBuySection: View {
                 Spacer()
             }
 
-            // Security Information - Dynamic format
+            // Security Information (WKN - Richtung - Basiswert - Strike - Emittent aus Rechnung)
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
-                Text("WKN/ISIN: VU9GG0/DE000VU9GG06")
-                    .font(ResponsiveDesign.bodyFont())
-                    .fontWeight(.regular)
-                    .foregroundColor(DocumentDesignSystem.textColorSecondary)
-
-                let assetTypeSuffix = DepotUtils.getAssetTypeSuffix(for: underlyingAsset)
-                let underlyingName = underlyingAsset ?? "DAX"
-                Text("PUT - \(underlyingName) \(assetTypeSuffix)15.000 - 15.12.2023 - Vontobel")
+                Text(securityIdentifier)
                     .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.regular)
                     .foregroundColor(DocumentDesignSystem.textColorSecondary)
@@ -157,7 +150,7 @@ struct TradeStatementBuySection_Previews: PreviewProvider {
             profitLoss: "-41,00 EUR",
             profitLossColor: AppTheme.accentRed,
             valueDate: "17.10.23",
-            tradingVenue: "Vontobel",
+            tradingVenue: TradeStatementPlaceholders.tradingVenue,
             closingDate: "17.10.2023, 14:30 Uhr",
             marketValue: "41,00 EUR",
             commission: "5,90 EUR",

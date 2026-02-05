@@ -33,7 +33,7 @@ struct DataTable: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: ResponsiveDesign.spacing(0)) {
             // Table Header
             tableHeader
 
@@ -51,7 +51,7 @@ struct DataTable: View {
     }
 
     private var tableHeader: some View {
-        HStack(spacing: 0) {
+        HStack(spacing: ResponsiveDesign.spacing(0)) {
             ForEach(columns, id: \.id) { column in
                 TableHeaderCell(column: column, headerColor: headerColor, headerFontWeight: headerFontWeight)
                     .frame(maxWidth: .infinity)
@@ -73,7 +73,7 @@ struct DataTable: View {
     }
 
     private func tableRow(row: TableRowData, index: Int) -> some View {
-        HStack(spacing: 0) {
+        HStack(spacing: ResponsiveDesign.spacing(0)) {
             ForEach(columns, id: \.id) { column in
                 VVaaaStyleDataCell(column: column, row: row)
                     .frame(maxWidth: .infinity)

@@ -9,13 +9,19 @@ struct InvestmentFormView: View {
     @StateObject private var viewModel: InvestmentFormViewModel
     @Environment(\.themeManager) private var themeManager
 
-    init(investmentAmount: Binding<String>, selectedInvestmentSelection: Binding<InvestmentSelectionStrategy>, numberOfInvestments: Binding<Int>) {
+    init(
+        investmentAmount: Binding<String>,
+        selectedInvestmentSelection: Binding<InvestmentSelectionStrategy>,
+        numberOfInvestments: Binding<Int>,
+        configurationService: any ConfigurationServiceProtocol
+    ) {
         self._investmentAmount = investmentAmount
         self._selectedInvestmentSelection = selectedInvestmentSelection
         self._numberOfInvestments = numberOfInvestments
         self._viewModel = StateObject(wrappedValue: InvestmentFormViewModel(
             updateInvestmentAmount: { investmentAmount.wrappedValue = $0 },
-            getInvestmentAmount: { investmentAmount.wrappedValue }
+            getInvestmentAmount: { investmentAmount.wrappedValue },
+            configurationService: configurationService
         ))
     }
 
@@ -51,7 +57,7 @@ struct InvestmentFormView: View {
                 // Platform Service Charge Info
                 if viewModel.hasValidAmount {
                     VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
-                        Text("A platform service charge of \(CalculationConstants.ServiceCharges.platformServiceChargePercentage) applies: \(viewModel.formattedPlatformServiceCharge)")
+                        Text("A platform service charge of \(viewModel.configurationService.platformServiceChargePercentage) applies: \(viewModel.formattedPlatformServiceCharge)")
                             .font(ResponsiveDesign.captionFont())
                             .foregroundColor(AppTheme.secondaryText)
 
@@ -61,7 +67,7 @@ struct InvestmentFormView: View {
                     }
                     .padding(.top, ResponsiveDesign.spacing(4))
                 } else {
-                    Text("A platform service charge of \(CalculationConstants.ServiceCharges.platformServiceChargePercentage) applies and will be deducted from your account immediately.")
+                    Text("A platform service charge of \(viewModel.configurationService.platformServiceChargePercentage) applies and will be deducted from your account immediately.")
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(AppTheme.secondaryText)
                         .padding(.top, ResponsiveDesign.spacing(4))
@@ -122,7 +128,8 @@ struct InvestmentFormView: View {
             String(Int(CalculationConstants.Investment.defaultAmount))
         ),
         selectedInvestmentSelection: .constant(.multipleInvestments),
-        numberOfInvestments: .constant(1)
+        numberOfInvestments: .constant(1),
+        configurationService: ConfigurationService(userService: UserService())
     )
     .padding()
     .background(AppTheme.screenBackground)

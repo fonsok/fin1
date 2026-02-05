@@ -32,7 +32,7 @@ struct TicketTagPicker: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
+            VStack(spacing: ResponsiveDesign.spacing(0)) {
                 // Selected tags
                 if !selectedTags.isEmpty {
                     selectedTagsSection
@@ -158,7 +158,7 @@ private struct SelectedTagChip: View {
         HStack(spacing: ResponsiveDesign.spacing(4)) {
             if let icon = tag.icon {
                 Image(systemName: icon)
-                    .font(.caption2)
+                    .font(ResponsiveDesign.captionFont())
             }
 
             Text(tag.name)
@@ -212,7 +212,7 @@ private struct TagSelectionRow: View {
                 // Selection indicator
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                     .foregroundColor(isSelected ? tag.color : AppTheme.fontColor.opacity(0.3))
-                    .font(.title3)
+                    .font(ResponsiveDesign.headlineFont())
             }
             .padding()
             .background(isSelected ? tag.color.opacity(0.1) : AppTheme.sectionBackground)
@@ -245,10 +245,10 @@ struct TicketTagsDisplay: View {
                 Text("+\(tags.count - maxVisible)")
                     .font(.system(size: 10, weight: .semibold))
                     .foregroundColor(AppTheme.fontColor.opacity(0.6))
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
+                    .padding(.horizontal, ResponsiveDesign.spacing(6))
+                    .padding(.vertical, ResponsiveDesign.spacing(2))
                     .background(AppTheme.fontColor.opacity(0.1))
-                    .cornerRadius(6)
+                    .cornerRadius(ResponsiveDesign.spacing(6))
             }
         }
     }
@@ -260,7 +260,7 @@ struct InlineTagBadge: View {
     let tag: TicketTag
 
     var body: some View {
-        HStack(spacing: 2) {
+        HStack(spacing: ResponsiveDesign.spacing(2)) {
             if let icon = tag.icon {
                 Image(systemName: icon)
                     .font(.system(size: 8))
@@ -270,10 +270,10 @@ struct InlineTagBadge: View {
                 .font(.system(size: 10, weight: .medium))
         }
         .foregroundColor(tag.color)
-        .padding(.horizontal, 6)
-        .padding(.vertical, 2)
+        .padding(.horizontal, ResponsiveDesign.spacing(6))
+        .padding(.vertical, ResponsiveDesign.spacing(2))
         .background(tag.color.opacity(0.15))
-        .cornerRadius(6)
+        .cornerRadius(ResponsiveDesign.spacing(6))
     }
 }
 

@@ -3,7 +3,7 @@ import SwiftUI
 
 // MARK: - Trade Status
 
-enum TradeStatus: String, CaseIterable, Codable {
+enum TradeStatus: String, CaseIterable, Codable, Sendable {
     case pending         // Only buy order exists
     case active           // Buy order confirmed, sell order exists
     case completed     // Both orders completed
@@ -41,7 +41,7 @@ enum TradeStatus: String, CaseIterable, Codable {
 /// 2. Sell order added (status: active)
 /// 3. Both orders completed (status: completed)
 /// 4. Trade moved to DepotBestand (holdings)
-struct Trade: Identifiable, Codable {
+struct Trade: Identifiable, Codable, Sendable {
     let id: String
     let tradeNumber: Int // User-friendly sequential number (001, 002, 003...)
     let traderId: String
@@ -276,7 +276,7 @@ struct Trade: Identifiable, Codable {
 
 // MARK: - Trade Result
 
-struct TradeResult: Identifiable, Codable {
+struct TradeResult: Identifiable, Codable, Sendable {
     let id: String
     let tradeId: String
     let traderId: String

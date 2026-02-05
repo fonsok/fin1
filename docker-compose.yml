@@ -38,7 +38,7 @@ services:
     image: mongo:7.0
     container_name: fin1-mongodb
     ports:
-      - "0.0.0.0:27018:27017"
+      - "127.0.0.1:27018:27017"  # Security: Only localhost access
     environment:
       - MONGO_INITDB_ROOT_USERNAME=admin
       - MONGO_INITDB_ROOT_PASSWORD=fin1-mongo-password
@@ -85,8 +85,8 @@ services:
     image: minio/minio:latest
     container_name: fin1-minio
     ports:
-      - "9002:9000"
-      - "9003:9001"
+      - "127.0.0.1:9002:9000"  # Security: Only localhost access
+      - "127.0.0.1:9003:9001"  # Security: Only localhost access
     environment:
       - MINIO_ROOT_USER=fin1-minio-admin
       - MINIO_ROOT_PASSWORD=fin1-minio-password
@@ -120,7 +120,7 @@ services:
       dockerfile: Dockerfile
     container_name: fin1-market-data
     ports:
-      - "8083:8080"
+      - "127.0.0.1:8083:8080"  # Security: Only localhost access
     environment:
       - REDIS_URL=redis://:fin1-redis-password@redis:6379
       - PARSE_SERVER_URL=http://parse-server:1337/parse
@@ -139,7 +139,7 @@ services:
       dockerfile: Dockerfile
     container_name: fin1-notification-service
     ports:
-      - "8084:8081"
+      - "127.0.0.1:8084:8081"  # Security: Only localhost access
     environment:
       - REDIS_URL=redis://:fin1-redis-password@redis:6379
       - PARSE_SERVER_URL=http://parse-server:1337/parse
@@ -161,7 +161,7 @@ services:
       dockerfile: Dockerfile
     container_name: fin1-analytics-service
     ports:
-      - "8085:8082"
+      - "127.0.0.1:8085:8082"  # Security: Only localhost access
     environment:
       - POSTGRES_URL=postgresql://fin1_user:fin1-postgres-password@postgres:5432/fin1_analytics
       - REDIS_URL=redis://:fin1-redis-password@redis:6379

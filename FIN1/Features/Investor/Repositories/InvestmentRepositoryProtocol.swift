@@ -10,6 +10,9 @@ protocol InvestmentRepositoryProtocol: ObservableObject {
 
     var investmentsPublisher: AnyPublisher<[Investment], Never> { get }
     func investmentsPublisher(for investorId: String) -> AnyPublisher<[Investment], Never>
+
+    /// Adds an investment (used for backend merge)
+    func addInvestment(_ investment: Investment)
 }
 
 // MARK: - Investment Repository Implementation
@@ -43,5 +46,11 @@ final class InvestmentRepository: InvestmentRepositoryProtocol {
                 return zip(lhs, rhs).allSatisfy { $0.id == $1.id && $0.updatedAt == $1.updatedAt }
             })
             .eraseToAnyPublisher()
+    }
+
+    /// Adds an investment if not already present (idempotent)
+    func addInvestment(_ investment: Investment) {
+        guard !investments.contains(where: { $0.id == investment.id }) else { return }
+        investments.append(investment)
     }
 }

@@ -5,8 +5,8 @@
 # Default target: 192.168.178.20 (iobox.local)
 #
 # Verwendung:
-#   ./scripts/health-check-backend-v2026-01-30.sh [HOST]
-#   sudo ./scripts/health-check-backend-v2026-01-30.sh 192.168.178.20  # Mit mtr-Diagnose
+#   ./scripts/network/health-check-backend.sh [HOST]
+#   sudo ./scripts/network/health-check-backend.sh 192.168.178.20  # Mit mtr-Diagnose
 #
 # Was wird getestet:
 #   - Port-Erreichbarkeit (netcat)

@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - App Error Types
 /// Centralized error handling for the FIN1 app
-enum AppError: LocalizedError, Equatable {
+enum AppError: LocalizedError, Equatable, Sendable {
     case validation(String)
     case network(NetworkError)
     case authentication(AuthError)
@@ -51,7 +51,7 @@ enum AppError: LocalizedError, Equatable {
 }
 
 // MARK: - Network Error
-enum NetworkError: LocalizedError, Equatable {
+enum NetworkError: LocalizedError, Equatable, Sendable {
     case noConnection
     case timeout
     case serverError(Int)
@@ -75,7 +75,7 @@ enum NetworkError: LocalizedError, Equatable {
 }
 
 // MARK: - Authentication Error
-enum AuthError: LocalizedError, Equatable {
+enum AuthError: LocalizedError, Equatable, Sendable {
     case invalidCredentials
     case userNotFound
     case accountLocked
@@ -129,7 +129,7 @@ enum AuthError: LocalizedError, Equatable {
 }
 
 // MARK: - Service Error
-enum ServiceError: LocalizedError, Equatable {
+enum ServiceError: LocalizedError, Equatable, Sendable {
     case dataNotFound
     case invalidData
     case operationFailed

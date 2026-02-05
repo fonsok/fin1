@@ -11,19 +11,22 @@ final class InvestmentCashDeductionProcessor {
     private let invoiceService: (any InvoiceServiceProtocol)?
     private let documentService: (any DocumentServiceProtocol)?
     private let transactionIdService: any TransactionIdServiceProtocol
+    private let configurationService: any ConfigurationServiceProtocol
 
     init(
         investorCashBalanceService: (any InvestorCashBalanceServiceProtocol)?,
         bankContraAccountService: (any BankContraAccountPostingServiceProtocol)?,
         invoiceService: (any InvoiceServiceProtocol)?,
         documentService: (any DocumentServiceProtocol)?,
-        transactionIdService: any TransactionIdServiceProtocol
+        transactionIdService: any TransactionIdServiceProtocol,
+        configurationService: any ConfigurationServiceProtocol
     ) {
         self.investorCashBalanceService = investorCashBalanceService
         self.bankContraAccountService = bankContraAccountService
         self.invoiceService = invoiceService
         self.documentService = documentService
         self.transactionIdService = transactionIdService
+        self.configurationService = configurationService
     }
 
     // MARK: - Public Methods
@@ -80,7 +83,7 @@ final class InvestmentCashDeductionProcessor {
             investor: investor,
             serviceChargeAmount: batch.platformServiceCharge,
             batchId: batch.id,
-            investmentIds: investments.map { $0.id },
+            investments: investments,
             netAmount: netServiceCharge,
             vatAmount: vatAmount
         )
@@ -125,7 +128,7 @@ final class InvestmentCashDeductionProcessor {
         investor: User,
         serviceChargeAmount: Double,
         batchId: String,
-        investmentIds: [String],
+        investments: [Investment],
         netAmount: Double,
         vatAmount: Double
     ) async {
@@ -135,12 +138,19 @@ final class InvestmentCashDeductionProcessor {
         }
 
         let customerInfo = CustomerInfo.from(user: investor)
+
+        // Extract investment IDs and amounts for detailed invoice description
+        let investmentIds = investments.map { $0.id }
+        let investmentAmounts = investments.map { $0.amount }
+
         let invoice = Invoice.forServiceCharge(
             grossServiceChargeAmount: serviceChargeAmount,
             customerInfo: customerInfo,
             transactionIdService: transactionIdService,
             batchId: batchId,
-            investmentIds: investmentIds
+            investmentIds: investmentIds,
+            investmentAmounts: investmentAmounts,
+            serviceChargeRate: configurationService.effectivePlatformServiceChargeRate
         )
 
         await invoiceService.addInvoice(invoice)

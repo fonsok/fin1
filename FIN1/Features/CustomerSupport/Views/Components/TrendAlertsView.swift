@@ -20,7 +20,7 @@ struct TrendAlertsView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
+            VStack(spacing: ResponsiveDesign.spacing(0)) {
                 headerSection
                 severityFilter
                 trendsList
@@ -207,7 +207,7 @@ private struct SeverityFilterButton: View {
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
                         .background(isSelected ? Color.white : color)
-                        .cornerRadius(8)
+                        .cornerRadius(ResponsiveDesign.spacing(8))
                 }
             }
             .foregroundColor(isSelected ? .white : AppTheme.fontColor)
@@ -229,7 +229,7 @@ private struct TrendCard: View {
             // Header
             HStack {
                 Image(systemName: trend.type.icon)
-                    .font(.title2)
+                    .font(ResponsiveDesign.headlineFont())
                     .foregroundColor(severityColor)
 
                 VStack(alignment: .leading, spacing: 2) {
@@ -332,10 +332,10 @@ private struct TrendStatItem: View {
     let label: String
 
     var body: some View {
-        VStack(spacing: 2) {
-            HStack(spacing: 4) {
+        VStack(spacing: ResponsiveDesign.spacing(2)) {
+            HStack(spacing: ResponsiveDesign.spacing(4)) {
                 Image(systemName: icon)
-                    .font(.caption2)
+                    .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.6))
                 Text(value)
                     .font(ResponsiveDesign.captionFont())

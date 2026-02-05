@@ -29,7 +29,7 @@ if [ -z "$1" ]; then
     echo "Möchten Sie automatisch nach Ubuntu-Servern suchen? (y/n)"
     read -p "> " AUTO_FIND
     if [ "$AUTO_FIND" = "y" ]; then
-        "$SCRIPT_DIR/find-ubuntu-server-v2026-01-30.sh"
+        "$SCRIPT_DIR/find-ubuntu-server.sh"
         echo ""
         read -p "Ubuntu Server IP eingeben: " UBUNTU_IP
     else
@@ -63,7 +63,7 @@ echo ""
 echo -e "${YELLOW}[3/5]${NC} Ubuntu-Setup prüfen..."
 if ! ssh -o ConnectTimeout=5 "$UBUNTU_USER@$UBUNTU_IP" "command -v docker &> /dev/null" 2>/dev/null; then
     echo -e "${YELLOW}Docker nicht gefunden. Setup wird ausgeführt...${NC}"
-    "$SCRIPT_DIR/deploy-to-ubuntu-v2026-01-30.sh" "$UBUNTU_IP" "$UBUNTU_USER"
+    "$SCRIPT_DIR/deploy-to-ubuntu.sh" "$UBUNTU_IP" "$UBUNTU_USER"
     echo ""
     echo -e "${YELLOW}WICHTIG: Bitte auf Ubuntu 'newgrp docker' ausführen!${NC}"
     read -p "Wurde 'newgrp docker' auf Ubuntu ausgeführt? (y/n): " DOCKER_READY
@@ -78,7 +78,7 @@ echo ""
 
 # Step 4: Deploy files
 echo -e "${YELLOW}[4/5]${NC} Dateien deployen..."
-"$SCRIPT_DIR/deploy-to-ubuntu-v2026-01-30.sh" "$UBUNTU_IP" "$UBUNTU_USER"
+"$SCRIPT_DIR/deploy-to-ubuntu.sh" "$UBUNTU_IP" "$UBUNTU_USER"
 echo ""
 
 # Step 5: Configure and start

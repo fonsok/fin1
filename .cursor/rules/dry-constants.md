@@ -47,6 +47,8 @@ Text("Fee: 1.5%")
 - **Financial/calculation constants** → `CalculationConstants.swift`
 - **UI constants** → `ResponsiveDesign.swift`
 - **Feature-specific constants** → Feature's Models folder
+- **Document/display placeholders** (z. B. Handelsplatz bis Produktion) → `TradeStatementPlaceholders` in `TradeStatementDisplayData.swift`
+- **Emittent-Mapping (WKN → Anzeigename)** → Single source: `String.emittentName(forWKN:)` in `FIN1/Shared/Extensions/String+Emittent.swift`; nicht duplizieren
 
 ## Automated Detection
 

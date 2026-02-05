@@ -17,7 +17,7 @@ struct OrderSuccessMessageOverlay: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: ResponsiveDesign.spacing(0)) {
             // Modern Header with Gradient
             VStack(spacing: ResponsiveDesign.spacing(4)) {
                 // Removed icon and glow effect for minimal design
@@ -310,7 +310,7 @@ private struct ModernStatusRow: View {
                 // Create formatted text with italic styling
                 let parts = text.components(separatedBy: italicText)
                 if parts.count == 2 {
-                    HStack(spacing: 0) {
+                    HStack(spacing: ResponsiveDesign.spacing(0)) {
                         Text(parts[0])
                             .font(.system(size: 14, weight: .regular))
                             .foregroundColor(AppTheme.secondaryText)

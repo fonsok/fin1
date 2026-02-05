@@ -73,7 +73,7 @@ ssh user@192.168.178.50
 
 ```bash
 cd /Users/ra/app/FIN1
-./scripts/find-ubuntu-server-v2026-01-30.sh
+./scripts/find-ubuntu-server.sh
 ```
 
 Das Skript zeigt:
@@ -93,7 +93,7 @@ Das Skript zeigt:
 
 ```bash
 cd /Users/ra/app/FIN1
-./scripts/quick-deploy-v2026-01-30.sh
+./scripts/quick-deploy.sh
 ```
 
 Das Skript führt automatisch durch:
@@ -108,7 +108,7 @@ Das Skript führt automatisch durch:
 ```bash
 # 1. Deployment durchführen
 cd /Users/ra/app/FIN1
-./scripts/deploy-to-ubuntu-v2026-01-30.sh 192.168.178.50 ubuntu
+./scripts/deploy-to-ubuntu.sh 192.168.178.50 ubuntu
 # IP und User anpassen!
 
 # 2. Auf Ubuntu: Docker-Gruppe aktivieren (falls nötig)
@@ -117,7 +117,7 @@ newgrp docker
 exit
 
 # 3. Deployment erneut starten (falls nötig)
-./scripts/deploy-to-ubuntu-v2026-01-30.sh 192.168.178.50 ubuntu
+./scripts/deploy-to-ubuntu.sh 192.168.178.50 ubuntu
 ```
 
 **✅ Fertig:** Server ist vorbereitet, Dateien sind kopiert

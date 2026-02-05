@@ -109,14 +109,13 @@ final class InvoiceDisplayViewModel: ObservableObject {
     }
 
     private func parseSecuritiesDescription(_ description: String) -> SecuritiesComponents {
-        // This would parse the existing description format
-        // For now, we'll extract from the invoice's underlying data
+        let wkn = extractWKNFromInvoice()
         return SecuritiesComponents(
-            wkn: extractWKNFromInvoice(),
+            wkn: wkn,
             direction: extractDirectionFromInvoice(),
             underlying: extractUnderlyingFromInvoice(),
             strikePrice: extractStrikePriceFromInvoice(),
-            issuer: "Issuer" // Placeholder - would need to be added to invoice model
+            issuer: String.emittentName(forWKN: wkn)
         )
     }
 

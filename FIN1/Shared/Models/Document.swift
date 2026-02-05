@@ -3,7 +3,7 @@ import SwiftUI
 
 // MARK: - Document Types
 
-enum DocumentType: String, CaseIterable, Codable, Hashable {
+enum DocumentType: String, CaseIterable, Codable, Hashable, Sendable {
     case identification
     case address
     case financial
@@ -113,7 +113,7 @@ struct Document: Identifiable, Codable, Hashable {
     let statementYear: Int?
     let statementMonth: Int?
     let statementRole: UserRole?
-    
+
     // MARK: - Accounting Document Number
     /// Eindeutige Belegnummer für Buchhaltungsbelege (Rechnungen, Rechnungen/Bills, Gutschriften)
     /// Gemäß Grundsätzen ordnungsgemäßer Buchführung (GoB) müssen alle Belege eindeutig identifizierbar sein
@@ -204,15 +204,15 @@ struct Document: Identifiable, Codable, Hashable {
         let components = calendar.dateComponents([.day], from: Date(), to: expiresAt)
         return components.day
     }
-    
+
     // MARK: - Accounting Document Number Helper
-    
+
     /// Gibt die Belegnummer zurück, falls vorhanden
     /// Für Buchhaltungsbelege (Invoices, Bills, Credit Notes) sollte dies immer gesetzt sein
     var accountingDocumentNumber: String? {
         return documentNumber ?? invoiceData?.invoiceNumber
     }
-    
+
     /// Prüft, ob das Dokument eine Belegnummer hat (erforderlich für Buchhaltungsbelege)
     var hasAccountingDocumentNumber: Bool {
         return accountingDocumentNumber != nil

@@ -65,12 +65,12 @@ class TestHelpers {
         return XCTestExpectation(description: description)
     }
 
-    /// Waits for an expectation to be fulfilled
+    /// Waits for an expectation to be fulfilled using XCTWaiter
     /// - Parameters:
     ///   - expectation: The expectation to wait for
     ///   - timeout: Maximum time to wait (default: 1.0 seconds)
-    static func waitForExpectation(_ expectation: XCTestExpectation, timeout: TimeInterval = 1.0) async {
-        await fulfillment(of: [expectation], timeout: timeout)
+    static func waitForExpectation(_ expectation: XCTestExpectation, timeout: TimeInterval = 1.0) {
+        _ = XCTWaiter.wait(for: [expectation], timeout: timeout)
     }
 
     /// Creates expectation and waits for it - convenience method for simple async tests
@@ -82,10 +82,10 @@ class TestHelpers {
         description: String = "Async operation",
         timeout: TimeInterval = 1.0,
         operation: @escaping (XCTestExpectation) -> Void
-    ) async {
+    ) {
         let expectation = XCTestExpectation(description: description)
         operation(expectation)
-        await fulfillment(of: [expectation], timeout: timeout)
+        _ = XCTWaiter.wait(for: [expectation], timeout: timeout)
     }
 
     // MARK: - Repository Test Helpers

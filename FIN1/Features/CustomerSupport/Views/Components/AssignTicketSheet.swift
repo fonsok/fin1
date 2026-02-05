@@ -249,7 +249,7 @@ struct AgentRow: View {
                 VStack(alignment: .trailing, spacing: ResponsiveDesign.spacing(2)) {
                     ForEach(agent.languages.prefix(2), id: \.self) { lang in
                         Text(lang)
-                            .font(.caption2)
+                            .font(ResponsiveDesign.captionFont())
                             .foregroundColor(AppTheme.fontColor.opacity(0.5))
                     }
                 }
@@ -286,11 +286,11 @@ struct WorkloadIndicator: View {
     var body: some View {
         GeometryReader { geo in
             ZStack(alignment: .leading) {
-                RoundedRectangle(cornerRadius: 2)
+                RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(2))
                     .fill(AppTheme.screenBackground)
                     .frame(height: 4)
 
-                RoundedRectangle(cornerRadius: 2)
+                RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(2))
                     .fill(color)
                     .frame(width: geo.size.width * min(percentage / 100, 1.0), height: 4)
             }

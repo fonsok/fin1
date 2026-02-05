@@ -244,7 +244,7 @@ struct DocumentRow: View {
         HStack(spacing: ResponsiveDesign.spacing(12)) {
             // Document icon
             Image(systemName: documentIcon(for: document.type))
-                .font(.title3)
+                .font(ResponsiveDesign.headlineFont())
                 .foregroundColor(document.isVerified ? AppTheme.accentGreen : AppTheme.accentOrange)
                 .frame(width: ResponsiveDesign.spacing(32))
 

@@ -6,9 +6,10 @@ import Foundation
 /// - document numbers / IDs prefix
 /// - legal wording shown in-app (Terms/Privacy "Platform" naming)
 ///
-/// NOTE: By default, these values derive from `AppBrand.appName` (Display Name).
-/// You can override any value via Info.plist keys for scenarios where legal
-/// identity must differ from the marketing/display name.
+/// NOTE:
+/// - By default, these values derive from `AppBrand.appName` (Display Name) to support easy rebranding.
+/// - For production/legal correctness, you SHOULD override legal/accounting identity values via Info.plist
+///   (e.g., legal entity name, bank name, document prefix), because those values must be stable and accurate.
 enum LegalIdentity {
     // MARK: Bundle keys (optional overrides)
     private enum InfoKey {
@@ -47,9 +48,10 @@ enum LegalIdentity {
     }
 
     /// Legal entity name used on accounting documents (issuer).
-    /// Defaults to a stable legal name (must not depend on Display Name).
+    /// Defaults to a rebrand-friendly value derived from Display Name.
+    /// Override via Info.plist (`LegalCompanyName`) for legal correctness.
     static var companyLegalName: String {
-        bundleOverride(InfoKey.companyLegalName) ?? "FIN1 Investing GmbH"
+        bundleOverride(InfoKey.companyLegalName) ?? "\(AppBrand.appName) Investing GmbH"
     }
 
     /// Company street address (e.g., "Hauptstraße 100").
@@ -84,15 +86,17 @@ enum LegalIdentity {
     }
 
     /// Prefix used for accounting IDs / document numbers (e.g., `<AppName>-INV-...`).
-    /// Defaults to a stable prefix (must not depend on Display Name).
+    /// Defaults to a derived, *sanitized* prefix from Display Name.
+    /// Override via Info.plist (`LegalDocumentPrefix`) for stable numbering schemes.
     static var documentPrefix: String {
-        bundleOverride(InfoKey.documentPrefix) ?? "FIN1"
+        bundleOverride(InfoKey.documentPrefix) ?? derivedDocumentPrefix
     }
 
     /// Bank display name used in statements/invoices (demo/default).
-    /// Defaults to a stable bank name (must not depend on Display Name).
+    /// Defaults to a value derived from Display Name.
+    /// Override via Info.plist (`LegalBankName`) for legal correctness.
     static var bankName: String {
-        bundleOverride(InfoKey.bankName) ?? "FIN1 Bank AG"
+        bundleOverride(InfoKey.bankName) ?? "\(AppBrand.appName) Bank AG"
     }
 
     /// Bank IBAN for payment information on documents.
@@ -106,8 +110,22 @@ enum LegalIdentity {
     }
 
     /// Asset name for the legal/logo mark used on documents.
-    /// Defaults to "<AppName>Logo".
+    /// Defaults to "<DocumentPrefix>Logo" (sanitized for asset naming).
     static var logoAssetName: String {
-        bundleOverride(InfoKey.logoAssetName) ?? "FIN1Logo"
+        bundleOverride(InfoKey.logoAssetName) ?? "\(derivedDocumentPrefix)Logo"
+    }
+
+    // MARK: - Derived defaults
+
+    /// Derived prefix suitable for IDs / QR types (ASCII-ish, uppercase, no spaces).
+    private static var derivedDocumentPrefix: String {
+        let raw = AppBrand.appName.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // Keep only alphanumerics for stability in document numbers / QR types.
+        let scalars = raw.unicodeScalars.filter { CharacterSet.alphanumerics.contains($0) }
+        let cleaned = String(String.UnicodeScalarView(scalars)).uppercased()
+
+        // Fall back to FIN1 for unusual runtime contexts.
+        return cleaned.isEmpty ? "FIN1" : cleaned
     }
 }

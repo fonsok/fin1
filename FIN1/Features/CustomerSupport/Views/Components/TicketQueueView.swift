@@ -122,10 +122,10 @@ struct TicketQueueView: View {
                     .font(ResponsiveDesign.captionFont())
                     .fontWeight(.bold)
                     .foregroundColor(.white)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
+                    .padding(.horizontal, ResponsiveDesign.spacing(8))
+                    .padding(.vertical, ResponsiveDesign.spacing(4))
                     .background(unassignedTickets.isEmpty ? AppTheme.accentGreen : AppTheme.accentOrange)
-                    .cornerRadius(8)
+                    .cornerRadius(ResponsiveDesign.spacing(8))
             }
 
             if unassignedTickets.isEmpty {
@@ -190,7 +190,7 @@ private struct QueueStatCard: View {
                 .foregroundColor(AppTheme.fontColor)
 
             Text(title)
-                .font(.caption2)
+                .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.6))
                 .multilineTextAlignment(.center)
                 .lineLimit(2)
@@ -251,10 +251,10 @@ private struct AgentWorkloadRow: View {
 
                 GeometryReader { geo in
                     ZStack(alignment: .leading) {
-                        RoundedRectangle(cornerRadius: 2)
+                        RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(2))
                             .fill(AppTheme.screenBackground)
 
-                        RoundedRectangle(cornerRadius: 2)
+                        RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(2))
                             .fill(workloadColor)
                             .frame(width: geo.size.width * min(agent.workloadPercentage / 100, 1.0))
                     }
@@ -318,10 +318,10 @@ private struct UnassignedTicketRow: View {
                         .font(ResponsiveDesign.captionFont())
                         .fontWeight(.medium)
                         .foregroundColor(.white)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
+                        .padding(.horizontal, ResponsiveDesign.spacing(8))
+                        .padding(.vertical, ResponsiveDesign.spacing(4))
                         .background(AppTheme.accentLightBlue)
-                        .cornerRadius(6)
+                        .cornerRadius(ResponsiveDesign.spacing(6))
                 }
             }
         }

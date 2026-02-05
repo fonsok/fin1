@@ -16,7 +16,7 @@ struct LegalDocumentFormatter: View {
 
     @ViewBuilder
     private func lineView(for line: FormattedLine, isFirst: Bool) -> some View {
-        VStack(spacing: 0) {
+        VStack(spacing: ResponsiveDesign.spacing(0)) {
             if line.isBoldHeading && !isFirst {
                 Spacer().frame(height: ResponsiveDesign.spacing(8))
             }

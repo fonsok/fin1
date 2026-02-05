@@ -13,7 +13,7 @@ ENV_FILE="${1:-./backend/.env}"
 
 if [ ! -f "$ENV_FILE" ]; then
     echo "Fehler: .env Datei nicht gefunden: $ENV_FILE"
-    echo "Verwendung: ./setup-passwords-v2026-01-30.sh [pfad-zur-.env]"
+    echo "Verwendung: ./setup-passwords.sh [pfad-zur-.env]"
     exit 1
 fi
 

@@ -1,5 +1,5 @@
 // ============================================================================
-// FIN1 Parse Cloud Code
+// Parse Cloud Code
 // functions/reports.js - Reporting Functions
 // ============================================================================
 
@@ -176,5 +176,91 @@ Parse.Cloud.define('getInvestorPerformance', async (request) => {
       realizedProfit: totalProfit,
       returnPct: totalInvested > 0 ? ((totalCurrentValue - totalInvested) / totalInvested) * 100 : 0
     }
+  };
+});
+
+// Create service charge invoice for investment
+Parse.Cloud.define('createServiceChargeInvoice', async (request) => {
+  const user = request.user;
+  if (!user) throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Login required');
+
+  const {
+    invoiceNumber,
+    grossServiceChargeAmount,
+    netServiceChargeAmount,
+    vatAmount,
+    vatRate,
+    batchId,
+    investmentIds,
+    customerInfo
+  } = request.params;
+
+  // Validate required fields
+  if (!invoiceNumber || !grossServiceChargeAmount || !customerInfo) {
+    throw new Parse.Error(Parse.Error.INVALID_VALUE, 'Missing required invoice fields');
+  }
+
+  // Generate invoice number if not provided (for backward compatibility)
+  let finalInvoiceNumber = invoiceNumber;
+  if (!finalInvoiceNumber) {
+    const prefix = 'SC'; // Service Charge prefix
+    const lastInvoice = await new Parse.Query('Invoice')
+      .startsWith('invoiceNumber', `${prefix}-${new Date().getFullYear()}-`)
+      .descending('invoiceNumber')
+      .first({ useMasterKey: true });
+
+    let seq = 1;
+    if (lastInvoice) {
+      const parts = lastInvoice.get('invoiceNumber').split('-');
+      seq = parseInt(parts[2], 10) + 1;
+    }
+
+    finalInvoiceNumber = `${prefix}-${new Date().getFullYear()}-${seq.toString().padStart(7, '0')}`;
+  }
+
+  // Create invoice object
+  const Invoice = Parse.Object.extend('Invoice');
+  const invoice = new Invoice();
+
+  invoice.set('invoiceNumber', finalInvoiceNumber);
+  invoice.set('invoiceType', 'service_charge');
+  invoice.set('userId', user.id);
+  invoice.set('subtotal', netServiceChargeAmount || grossServiceChargeAmount);
+  invoice.set('taxAmount', vatAmount || 0);
+  invoice.set('taxRate', vatRate || 19.0);
+  invoice.set('totalAmount', grossServiceChargeAmount);
+  invoice.set('invoiceDate', new Date());
+  invoice.set('status', 'issued');
+  invoice.set('currency', 'EUR');
+
+  // Link to investment batch if provided
+  if (batchId) {
+    const InvestmentBatch = Parse.Object.extend('InvestmentBatch');
+    const batchQuery = new Parse.Query(InvestmentBatch);
+    const batch = await batchQuery.get(batchId, { useMasterKey: true });
+    if (batch) {
+      invoice.set('investmentId', batchId);
+    }
+  }
+
+  // Store investment IDs as metadata
+  if (investmentIds && investmentIds.length > 0) {
+    invoice.set('investmentIds', investmentIds);
+  }
+
+  // Store customer info snapshot
+  if (customerInfo) {
+    invoice.set('customerName', customerInfo.name || '');
+    invoice.set('customerAddress', customerInfo.address || '');
+    invoice.set('customerEmail', customerInfo.email || '');
+    invoice.set('customerId', customerInfo.customerNumber || user.id);
+  }
+
+  await invoice.save(null, { useMasterKey: true });
+
+  return {
+    invoiceId: invoice.id,
+    invoiceNumber: finalInvoiceNumber,
+    status: 'issued'
   };
 });

@@ -1,5 +1,5 @@
 const express = require('express');
-const { ParseServer } = require('parse-server');
+const { ParseServer, RedisCacheAdapter } = require('parse-server');
 const ParseDashboard = require('parse-dashboard');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -69,10 +69,9 @@ const parseServerConfig = {
   // Files adapter - only configure if S3 credentials are provided
   // Otherwise Parse Server will use default file storage
   // Cache adapter - only configure if Redis URL is provided
-  // Using built-in RedisCacheAdapter from Parse Server 6.x
-  ...(process.env.REDIS_URL ? {
-    cacheAdapter: new (require('parse-server').RedisCacheAdapter)({
-      url: process.env.REDIS_URL || 'redis://localhost:6379',
+  ...(process.env.REDIS_URL && RedisCacheAdapter ? {
+    cacheAdapter: new RedisCacheAdapter({
+      url: process.env.REDIS_URL,
     }),
   } : {}),
   allowClientClassCreation: false,
@@ -137,9 +136,9 @@ app.get('/health', (req, res) => {
 // API documentation endpoint
 app.get('/api-docs', (req, res) => {
   res.json({
-    name: 'FIN1 API',
+    name: 'FIN1 Backend API',
     version: '1.0.0',
-    description: 'FIN1 Investment Platform Backend API',
+    description: 'FIN1 project backend API',
     endpoints: {
       parse: '/parse',
       dashboard: '/dashboard',

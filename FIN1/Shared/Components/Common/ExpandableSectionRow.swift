@@ -11,6 +11,9 @@ struct ExpandableSectionRow<Content: View>: View {
     let content: () -> Content
     let titleFontWeight: Font.Weight
     let style: LandingViewModel.DesignStyle
+    /// Optional override for the extra leading padding applied to expanded content (only for non-typewriter style).
+    /// When `nil`, padding is calculated to align content with the header text (skipping the icon).
+    let contentLeadingPaddingOverride: CGFloat?
 
     init(
         title: String,
@@ -19,6 +22,7 @@ struct ExpandableSectionRow<Content: View>: View {
         isExpanded: Bool,
         onToggle: @escaping () -> Void,
         titleFontWeight: Font.Weight = .semibold,
+        contentLeadingPaddingOverride: CGFloat? = nil,
         style: LandingViewModel.DesignStyle = .original,
         @ViewBuilder content: @escaping () -> Content
     ) {
@@ -28,6 +32,7 @@ struct ExpandableSectionRow<Content: View>: View {
         self.isExpanded = isExpanded
         self.onToggle = onToggle
         self.titleFontWeight = titleFontWeight
+        self.contentLeadingPaddingOverride = contentLeadingPaddingOverride
         self.style = style
         self.content = content
     }
@@ -95,7 +100,7 @@ struct ExpandableSectionRow<Content: View>: View {
     private var sectionContent: some View {
         content()
             .padding(ResponsiveDesign.spacing(16))
-            .padding(.leading, style == .typewriter ? 0 : calculatedContentLeadingPadding)
+            .padding(.leading, style == .typewriter ? 0 : effectiveContentLeadingPadding)
             .frame(maxWidth: .infinity, alignment: .topLeading)
             .background(style == .typewriter ? Color.clear : AppTheme.systemTertiaryBackground)
             .transition(.opacity.combined(with: .move(edge: .top)))
@@ -110,6 +115,10 @@ struct ExpandableSectionRow<Content: View>: View {
             // If no icon: align with header text (no extra padding needed)
             return 0
         }
+    }
+
+    private var effectiveContentLeadingPadding: CGFloat {
+        contentLeadingPaddingOverride ?? calculatedContentLeadingPadding
     }
 
 }

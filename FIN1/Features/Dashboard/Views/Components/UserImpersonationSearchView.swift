@@ -92,7 +92,7 @@ struct UserSearchResultRow: View {
             HStack(spacing: ResponsiveDesign.spacing(12)) {
                 // Role Icon
                 Image(systemName: roleIcon)
-                    .font(.title3)
+                    .font(ResponsiveDesign.headlineFont())
                     .foregroundColor(roleColor)
                     .frame(width: 30)
 
@@ -125,7 +125,7 @@ struct UserSearchResultRow: View {
 
                 // Impersonate Button
                 Image(systemName: "person.badge.key.fill")
-                    .font(.title3)
+                    .font(ResponsiveDesign.headlineFont())
                     .foregroundColor(AppTheme.accentLightBlue)
             }
             .padding()

@@ -2,7 +2,7 @@ import Foundation
 
 /// Tracks which investment pools participated in which trades
 /// Used for calculating profit distribution to investors
-struct PoolTradeParticipation: Identifiable, Codable {
+struct PoolTradeParticipation: Identifiable, Codable, Sendable {
     let id: String
     let tradeId: String
     let investmentId: String

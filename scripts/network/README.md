@@ -4,17 +4,17 @@ Netzwerk-bezogene Scripts für Entwicklung und Diagnose.
 
 ## 📋 Verfügbare Scripts
 
-### `health-check-backend-v2026-01-30.sh`
+### `health-check-backend.sh`
 
 Umfassender Backend-Verbindungstest mit netcat, nmap und mtr.
 
 **Verwendung:**
 ```bash
 # Standard-Verwendung (ohne mtr)
-./scripts/network/health-check-backend-v2026-01-30.sh [HOST]
+./scripts/network/health-check-backend.sh [HOST]
 
 # Mit mtr-Diagnose (benötigt sudo)
-sudo ./scripts/network/health-check-backend-v2026-01-30.sh 192.168.178.20
+sudo ./scripts/network/health-check-backend.sh 192.168.178.20
 ```
 
 **Was wird getestet:**
@@ -28,26 +28,26 @@ sudo ./scripts/network/health-check-backend-v2026-01-30.sh 192.168.178.20
 - Host-Erreichbarkeits-Prüfung
 - Klare Status-Anzeige (✅/❌)
 
-### `network-tuning-v2026-01-30.sh`
+### `network-tuning.sh`
 
 On-demand Netzwerk-Performance-Tuning für macOS.
 
 **Verwendung:**
 ```bash
 # Status anzeigen (kein sudo nötig)
-./scripts/network/network-tuning-v2026-01-30.sh status
+./scripts/network/network-tuning.sh status
 
 # TCP-Buffer für große Transfers optimieren
-sudo ./scripts/network/network-tuning-v2026-01-30.sh transfer
+sudo ./scripts/network/network-tuning.sh transfer
 
 # Max. Verbindungen erhöhen
-sudo ./scripts/network/network-tuning-v2026-01-30.sh connections
+sudo ./scripts/network/network-tuning.sh connections
 
 # MTU für Interface setzen
-sudo ./scripts/network/network-tuning-v2026-01-30.sh mtu Wi-Fi 1500
+sudo ./scripts/network/network-tuning.sh mtu Wi-Fi 1500
 
 # Einstellungen zurücksetzen (aus Backup)
-sudo ./scripts/network/network-tuning-v2026-01-30.sh reset [backup-file]
+sudo ./scripts/network/network-tuning.sh reset [backup-file]
 ```
 
 **Modi:**

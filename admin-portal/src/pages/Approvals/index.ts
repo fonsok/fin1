@@ -1,0 +1,1 @@
+export { ApprovalsListPage } from './ApprovalsList';

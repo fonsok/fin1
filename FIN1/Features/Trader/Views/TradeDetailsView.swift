@@ -142,7 +142,7 @@ struct TradeDetailsView: View {
                                 VStack(alignment: .trailing, spacing: 2) {
                                     Text(viewModel.gvCurrencyText)
                                         .tradeDetailsColoredValueStyle(color: viewModel.trade.profitLoss >= 0 ? AppTheme.accentGreen : AppTheme.accentRed)
-                                    HStack(spacing: 4) {
+                                    HStack(spacing: ResponsiveDesign.spacing(4)) {
                                         Text(viewModel.roiCalculationLabel)
                                             .tradeDetailsDescriptionStyle()
                                         Text(viewModel.gvPercentText)

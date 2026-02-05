@@ -230,7 +230,7 @@ struct LandingView: View {
                                                 await viewModel.signInAsCSRWithRole(role)
                                             }
                                         }, label: {
-                                            HStack(spacing: 6) {
+                                            HStack(spacing: ResponsiveDesign.spacing(6)) {
                                                 Image(systemName: role.icon)
                                                     .font(.system(size: 12))
                                                 Text(role.shortName)

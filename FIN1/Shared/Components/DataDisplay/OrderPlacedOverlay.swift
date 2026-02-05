@@ -103,7 +103,7 @@ struct OrderPlacedOverlay: View {
 #if DEBUG
 struct OrderPlacedOverlay_Previews: PreviewProvider {
     static var previews: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: ResponsiveDesign.spacing(20)) {
             OrderPlacedOverlay(orderType: .buy)
             OrderPlacedOverlay(orderType: .sell)
         }

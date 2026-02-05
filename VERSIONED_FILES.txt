@@ -1,0 +1,4 @@
+This file is deprecated.
+
+FIN1 no longer uses date/version suffixes in filenames (e.g. -vYYYY-MM-DD or -YYYY-MM-DD).
+Use Git commit history (and optional tags) for snapshots.

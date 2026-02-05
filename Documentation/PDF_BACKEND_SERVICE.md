@@ -53,13 +53,28 @@ Die iOS-App sendet die Firmendaten aus `LegalIdentity` und `CompanyContactInfo` 
 ```swift
 // iOS: CompanyInfoDTO.fromLegalIdentity()
 {
-  "name": "TTTT Trading GmbH",          // LegalIdentity.companyLegalName
+  "name": "TTTT Investing GmbH",         // LegalIdentity.companyLegalName
   "address": "Hauptstraße 100",          // LegalIdentity.companyAddressLine
-  "email": "info@fin1-trading.de",       // CompanyContactInfo.email
+  "email": "info@tttt-investing.com",     // CompanyContactInfo.email (default derived from Display Name)
   "phone": "+49 (0) 69 12345678",        // CompanyContactInfo.phone
   "registerNumber": "HRB 123456",        // LegalIdentity.companyRegisterNumber
   "vatId": "DE123456789",                // LegalIdentity.companyVatId
   ...
+}
+```
+
+## QR Code Flow (DRY)
+
+Die iOS-App erzeugt den QR-Payload zentral (Single Source of Truth) und sendet ihn an das Backend:
+
+- **iOS**: `QRCodeGenerator.generateInvoiceQRData(for:)` (oder entsprechende Methode)
+- **Backend**: rendert daraus nur das QR-Bild in den HTML-Templates
+
+Request-Feld:
+
+```json
+{
+  "qr_data": "{...}"
 }
 ```
 
@@ -68,7 +83,7 @@ Das Backend verwendet diese Daten in den HTML-Templates:
 ```html
 <!-- invoice.html -->
 <div class="company-name">{{ company.name }}</div>
-<!-- Output: "TTTT Trading GmbH" -->
+<!-- Output: "TTTT Investing GmbH" -->
 ```
 
 ## Verwendung
@@ -145,10 +160,10 @@ curl -X POST http://fin1-server:8083/api/pdf/invoice \
     "subtotal": 15015.00,
     "total_amount": 15015.00,
     "company_info": {
-      "name": "TTTT Trading GmbH",
+      "name": "TTTT Investing GmbH",
       "address": "Hauptstraße 100",
       "city": "60311 Frankfurt am Main",
-      "email": "info@fin1-trading.de",
+      "email": "info@fin1-investing.com",
       "phone": "+49 (0) 69 12345678",
       "register_number": "HRB 123456",
       "vat_id": "DE123456789"

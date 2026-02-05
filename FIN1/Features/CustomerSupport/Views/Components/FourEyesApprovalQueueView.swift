@@ -277,7 +277,7 @@ private struct ApprovalRequestCard: View {
 
                 HStack(spacing: ResponsiveDesign.spacing(4)) {
                     Image(systemName: "clock.fill")
-                        .font(.caption2)
+                        .font(ResponsiveDesign.captionFont())
                     Text(hours > 0 ? "\(hours) Std." : "< 1 Std.")
                         .font(ResponsiveDesign.captionFont())
                 }

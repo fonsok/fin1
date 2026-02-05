@@ -146,7 +146,7 @@ final class TradeStatementDisplayService: TradeStatementDisplayServiceProtocol {
             sellProfitLoss: firstSellTransaction?.profitLoss ?? trade.profitLoss.formatted(.currency(code: "EUR")),
             sellProfitLossColor: colorFromString(firstSellTransaction?.profitLossColor ?? (trade.profitLoss >= 0 ? "fin1AccentGreen" : "fin1AccentRed")),
             sellValueDate: firstSellTransaction?.valueDate ?? "",
-            sellTradingVenue: firstSellTransaction?.tradingVenue ?? "Vontobel",
+            sellTradingVenue: firstSellTransaction?.tradingVenue ?? TradeStatementPlaceholders.tradingVenue,
             sellClosingDate: firstSellTransaction?.closingDate ?? "",
             sellMarketValue: firstSellTransaction?.marketValue ?? "62,00 EUR",
             sellCommission: firstSellTransaction?.commission ?? "5,90 EUR",
@@ -239,7 +239,7 @@ final class TradeStatementDisplayService: TradeStatementDisplayServiceProtocol {
     }
 
     private func getBuyTradingVenue(_ buyTransaction: BuyTransactionData?) -> String {
-        return buyTransaction?.tradingVenue ?? "Vontobel"
+        return buyTransaction?.tradingVenue ?? TradeStatementPlaceholders.tradingVenue
     }
 
     private func getBuyClosingDate(_ buyTransaction: BuyTransactionData?) -> String {

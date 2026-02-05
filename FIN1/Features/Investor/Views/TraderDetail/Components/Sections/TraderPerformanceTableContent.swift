@@ -42,7 +42,7 @@ struct TraderPerformanceTableContent: View {
 
     // MARK: - Month Label Column
     private func monthLabelColumn(monthGroup: MonthGroup) -> some View {
-        VStack(spacing: 0) {
+        VStack(spacing: ResponsiveDesign.spacing(0)) {
             Spacer()
             Text(monthGroup.month)
                 .font(ResponsiveDesign.captionFont())

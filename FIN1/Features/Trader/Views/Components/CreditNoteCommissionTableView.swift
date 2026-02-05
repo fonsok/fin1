@@ -9,7 +9,7 @@ struct CreditNoteCommissionTableView: View {
     let commissionRateFormatted: String
 
     var body: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: ResponsiveDesign.spacing(0)) {
             tableHeader
             tableRows
             totalRow
@@ -57,11 +57,16 @@ struct CreditNoteCommissionTableView: View {
     private var tableRows: some View {
         ForEach(items) { item in
             HStack(spacing: ResponsiveDesign.spacing(8)) {
-                Text(item.investorName)
-                    .font(ResponsiveDesign.bodyFont())
-                    .foregroundColor(AppTheme.fontColor)
-                    .lineLimit(2)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(item.investorName)
+                        .font(ResponsiveDesign.bodyFont())
+                        .foregroundColor(AppTheme.fontColor)
+                        .lineLimit(2)
+                    Text("Investment Nr. \(item.investmentNumber)")
+                        .font(ResponsiveDesign.captionFont())
+                        .foregroundColor(AppTheme.fontColor.opacity(0.7))
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
 
                 Text(formatCurrency(item.grossProfit))
                     .font(ResponsiveDesign.bodyFont())

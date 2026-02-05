@@ -2,7 +2,7 @@
 
 # Bundle Size Check Script
 # Checks iOS app bundle size and warns if it exceeds thresholds
-# Usage: ./scripts/check-bundle-size-v2026-01-30.sh [configuration]
+# Usage: ./scripts/check-bundle-size.sh [configuration]
 
 set -e
 

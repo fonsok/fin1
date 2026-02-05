@@ -455,7 +455,7 @@ struct CustomerDetailSheet: View {
             } else if viewModel.customerTickets.isEmpty {
                 VStack(spacing: ResponsiveDesign.spacing(8)) {
                     Image(systemName: "tray")
-                        .font(.title2)
+                        .font(ResponsiveDesign.headlineFont())
                         .foregroundColor(AppTheme.fontColor.opacity(0.3))
 
                     Text("Keine Support-Tickets vorhanden")

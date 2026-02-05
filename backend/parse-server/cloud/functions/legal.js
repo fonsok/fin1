@@ -1,5 +1,5 @@
 // ============================================================================
-// FIN1 Parse Cloud Code
+// Parse Cloud Code
 // functions/legal.js - Legal Document Functions (Terms/Privacy/Imprint)
 // ============================================================================
 //

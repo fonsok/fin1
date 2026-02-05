@@ -1,5 +1,5 @@
 // ============================================================================
-// FIN1 MongoDB Initialization
+// MongoDB Initialization
 // 00_init_admin.js - Database and User Setup
 // ============================================================================
 //
@@ -11,7 +11,7 @@
 //
 // ============================================================================
 
-print('=== FIN1 MongoDB Initialization ===');
+print('=== MongoDB Initialization ===');
 print('Setting up database and users...');
 
 // ============================================================================
@@ -195,10 +195,10 @@ db.Config.updateOne(
       },
 
       company: {
-        name: "FIN1 Investing GmbH",
+        name: "Company Investing GmbH",
         address: "Hauptstraße 100",
         city: "60311 Frankfurt am Main",
-        email: "info@fin1-investing.de",
+        email: "info@fin1-investing.com",
         phone: "+49 (0) 69 12345678",
         vatId: "DE123456789",
         registerNumber: "HRB 123456",
@@ -306,7 +306,7 @@ print('CSR roles created.');
 // ============================================================================
 
 print('');
-print('=== FIN1 MongoDB Initialization Complete ===');
+print('=== MongoDB Initialization Complete ===');
 print('');
 print('Database: fin1');
 print('Users created: fin1_app, fin1_analytics');

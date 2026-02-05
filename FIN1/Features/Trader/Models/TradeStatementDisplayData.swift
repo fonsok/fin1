@@ -1,5 +1,12 @@
 import Foundation
 
+// MARK: - Placeholders (Handelsplatz etc. werden in Live-Produktion belegt)
+
+/// Handelsplätze sind nicht festgelegt und werden erst in Live-Produktion bestimmt.
+enum TradeStatementPlaceholders {
+    static let tradingVenue = "—"
+}
+
 // MARK: - Main Display Data Model
 
 /// Complete display data for a trade statement

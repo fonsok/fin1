@@ -73,24 +73,55 @@ final class ParseAPIClient: ParseAPIClientProtocol {
 
     private let baseURL: String
     private let applicationId: String
-    private let sessionToken: String?
+    private let sessionTokenProvider: (() -> String?)?
     private let session: URLSession
+
+    /// Returns the current session token (dynamic lookup via provider)
+    /// Note: Simulated tokens (starting with "r:") are NOT sent to Parse Server
+    /// as Parse validates them at middleware level before Cloud Functions run.
+    /// For development, we rely on the backend's test mode instead.
+    private var sessionToken: String? {
+        let token = sessionTokenProvider?()
+        // Skip simulated tokens - Parse Server rejects them at middleware level
+        if let token = token, token.hasPrefix("r:") {
+            return nil
+        }
+        return token
+    }
 
     // MARK: - Initialization
 
+    /// Creates a ParseAPIClient with a dynamic session token provider
+    /// - Parameters:
+    ///   - baseURL: Parse Server base URL
+    ///   - applicationId: Parse Application ID
+    ///   - sessionTokenProvider: Closure that returns the current session token (called on each request)
     init(
         baseURL: String,
         applicationId: String,
-        sessionToken: String? = nil
+        sessionTokenProvider: (() -> String?)? = nil
     ) {
         self.baseURL = baseURL
         self.applicationId = applicationId
-        self.sessionToken = sessionToken
+        self.sessionTokenProvider = sessionTokenProvider
 
         let configuration = URLSessionConfiguration.default
         configuration.timeoutIntervalForRequest = 30
         configuration.timeoutIntervalForResource = 60
         self.session = URLSession(configuration: configuration)
+    }
+
+    /// Legacy initializer for backward compatibility
+    convenience init(
+        baseURL: String,
+        applicationId: String,
+        sessionToken: String?
+    ) {
+        self.init(
+            baseURL: baseURL,
+            applicationId: applicationId,
+            sessionTokenProvider: sessionToken != nil ? { sessionToken } : nil
+        )
     }
 
     // MARK: - Public Methods

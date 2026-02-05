@@ -109,12 +109,8 @@ final class TradeCalculationService {
     }
 
     private func extractIssuer(from trade: Trade) -> String {
-        // Extract issuer from symbol or description
-        let symbol = trade.buyOrder.symbol
-        if symbol.contains("VONT") {
-            return "Vontobel"
-        } else if symbol.contains("HSBC") {
-            return "HSBC"
+        if let wkn = trade.buyOrder.wkn, !wkn.isEmpty {
+            return String.emittentName(forWKN: wkn)
         }
         return "N/A"
     }

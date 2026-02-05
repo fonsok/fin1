@@ -3,7 +3,7 @@ import SwiftUI
 
 // MARK: - Invoice Model
 
-struct Invoice: Identifiable, Codable, Hashable {
+struct Invoice: Identifiable, Codable, Hashable, Sendable {
     let id: String
     let invoiceNumber: String
     let type: InvoiceType

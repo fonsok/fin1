@@ -13,6 +13,7 @@ enum NewBuyOrderStatus: Equatable {
 
 // Note: OrderMode enum moved to Shared/Models/OrderModels.swift to eliminate duplication
 
+@MainActor
 final class NewBuyOrderViewModel: ObservableObject {
     @Published var searchResult: SearchResult
     @Published var quantity: Double = 1000

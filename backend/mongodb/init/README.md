@@ -1,4 +1,4 @@
-# FIN1 MongoDB Initialization
+# MongoDB Initialization
 
 ## Übersicht
 

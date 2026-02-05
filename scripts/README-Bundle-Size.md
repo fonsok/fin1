@@ -2,16 +2,16 @@
 
 ## Overview
 
-The `check-bundle-size-v2026-01-30.sh` script monitors iOS app bundle size to prevent bloat and ensure App Store compliance.
+The `check-bundle-size.sh` script monitors iOS app bundle size to prevent bloat and ensure App Store compliance.
 
 ## Usage
 
 ```bash
 # Check Release build (default)
-./scripts/check-bundle-size-v2026-01-30.sh Release
+./scripts/check-bundle-size.sh Release
 
 # Check Debug build
-./scripts/check-bundle-size-v2026-01-30.sh Debug
+./scripts/check-bundle-size.sh Debug
 ```
 
 ## Thresholds
@@ -37,7 +37,7 @@ The script runs automatically in CI (`.github/workflows/ci.yml`) on every build 
 Run locally before committing large changes:
 
 ```bash
-./scripts/check-bundle-size-v2026-01-30.sh Release
+./scripts/check-bundle-size.sh Release
 ```
 
 ## Reducing Bundle Size
@@ -56,7 +56,7 @@ If bundle size exceeds thresholds:
 Track bundle size over time by checking CI logs or running:
 
 ```bash
-./scripts/check-bundle-size-v2026-01-30.sh Release | grep "Size:"
+./scripts/check-bundle-size.sh Release | grep "Size:"
 ```
 
 

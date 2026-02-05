@@ -10,11 +10,17 @@ final class InvestmentFormViewModel: ObservableObject {
     // MARK: - Dependencies
     private var updateInvestmentAmount: (String) -> Void
     private var getInvestmentAmount: () -> String
+    let configurationService: any ConfigurationServiceProtocol
 
     // MARK: - Initialization
-    init(updateInvestmentAmount: @escaping (String) -> Void, getInvestmentAmount: @escaping () -> String) {
+    init(
+        updateInvestmentAmount: @escaping (String) -> Void,
+        getInvestmentAmount: @escaping () -> String,
+        configurationService: any ConfigurationServiceProtocol
+    ) {
         self.updateInvestmentAmount = updateInvestmentAmount
         self.getInvestmentAmount = getInvestmentAmount
+        self.configurationService = configurationService
     }
 
     // MARK: - Input Formatting Methods
@@ -67,7 +73,7 @@ final class InvestmentFormViewModel: ObservableObject {
     var platformServiceCharge: Double {
         let investmentAmount = getInvestmentAmount()
         let amountValue = Double(investmentAmount.replacingOccurrences(of: ".", with: "")) ?? 0
-        return amountValue * CalculationConstants.ServiceCharges.platformServiceChargeRate
+        return amountValue * configurationService.effectivePlatformServiceChargeRate
     }
 
     /// Formatted platform service charge for display

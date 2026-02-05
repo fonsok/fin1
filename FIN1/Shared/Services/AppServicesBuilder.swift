@@ -16,27 +16,46 @@ enum AppServicesBuilder {
             filterManager: searchFilterManager
         )
 
-        // Create core service instances first
-        let documentService = DocumentService()
+        // Create core service instances first (without backend dependencies)
         let userService = UserService()
         let configurationService = ConfigurationService(userService: userService)
 
         // Create Parse API client and Live Query client early (needed for services)
-        let parseServerURL = configurationService.parseServerURL ?? "http://localhost:1337/parse"
+        // Both Simulator and Device connect directly to production server
+        // Note: Previous localhost:1338 required SSH tunnel - now direct connection
+        let defaultParseServerURL = "http://192.168.178.24/parse"
+        let parseServerURL = configurationService.parseServerURL ?? defaultParseServerURL
         let parseApplicationId = configurationService.parseApplicationId ?? "fin1-app-id"
+
+        // Create ParseAPIClient with dynamic session token provider
+        // This allows the client to use the current session token on each request
         let parseAPIClient = ParseAPIClient(
             baseURL: parseServerURL,
             applicationId: parseApplicationId,
-            sessionToken: nil // TODO: Get session token from user service when authentication is implemented
+            sessionTokenProvider: { [weak userService] in
+                userService?.sessionToken
+            }
         )
-        let parseLiveQueryURL = configurationService.parseLiveQueryURL ?? "ws://localhost:1337/parse"
+        configurationService.configureParseAPIClient(parseAPIClient)
+
+        // Configure UserService with ParseAPIClient for backend synchronization
+        userService.configure(parseAPIClient: parseAPIClient)
+
+        let parseLiveQueryURL = configurationService.parseLiveQueryURL ?? "ws://192.168.178.24:1337/parse"
         let parseLiveQueryClient = ParseLiveQueryClient(
             liveQueryURL: parseLiveQueryURL,
             applicationId: parseApplicationId,
-            sessionToken: nil // TODO: Get session token from user service when authentication is implemented
+            sessionToken: userService.sessionToken // Note: Live Query doesn't support dynamic tokens yet
         )
 
         let serviceFactory = ServiceFactory(configurationService: configurationService, userService: userService)
+
+        // ✅ Configure InvoiceService with ParseAPIClient for backend integration
+        serviceFactory.configureInvoiceService(parseAPIClient: parseAPIClient)
+
+        // ✅ Create DocumentAPIService for syncing documents to Parse Server
+        let documentAPIService = DocumentAPIService(apiClient: parseAPIClient)
+        let documentService = DocumentService(documentAPIService: documentAPIService)
 
         // ✅ Create AuditLoggingService early (needed for MiFID II compliance in trading services)
         let auditLoggingService = AuditLoggingService(parseAPIClient: parseAPIClient)
@@ -66,8 +85,24 @@ enum AppServicesBuilder {
             userService: userService
         )
 
+        // Create OrderAPIService for syncing orders to Parse Server
+        let orderAPIService = OrderAPIService(apiClient: parseAPIClient)
+
+        // Create WatchlistAPIService for syncing watchlist to Parse Server
+        let watchlistAPIService = WatchlistAPIService(apiClient: parseAPIClient)
+
+        // Create FilterAPIService for syncing filters to Parse Server
+        let filterAPIService = FilterAPIService(apiClient: parseAPIClient)
+        let filterSyncService = FilterSyncService(filterAPIService: filterAPIService, userService: userService)
+
+        // Create PushTokenAPIService for managing push notification tokens
+        let pushTokenAPIService = PushTokenAPIService(apiClient: parseAPIClient)
+
+        // Create InvestorWatchlistAPIService for syncing investor watchlist to Parse Server
+        let investorWatchlistAPIService = InvestorWatchlistAPIService(apiClient: parseAPIClient)
+
         // Create trader services using factory
-        let orderManagementService = serviceFactory.createOrderManagementService()
+        let orderManagementService = serviceFactory.createOrderManagementService(orderAPIService: orderAPIService)
         let orderStatusSimulationService = serviceFactory.createOrderStatusSimulationService(orderManagementService: orderManagementService)
         let tradingNotificationService = serviceFactory.createTradingNotificationService(documentService: documentService)
         let tradeLifecycleService = serviceFactory.createTradeLifecycleService(
@@ -77,7 +112,9 @@ enum AppServicesBuilder {
         let tradeMatchingService = serviceFactory.createTradeMatchingService()
         let securitiesWatchlistService = serviceFactory.createSecuritiesWatchlistService(
             parseLiveQueryClient: parseLiveQueryClient,
-            marketDataService: marketDataService
+            marketDataService: marketDataService,
+            userService: userService,
+            watchlistAPIService: watchlistAPIService
         )
         let tradingStatisticsService = serviceFactory.createTradingStatisticsService()
 
@@ -89,7 +126,12 @@ enum AppServicesBuilder {
             parseLiveQueryClient: parseLiveQueryClient,
             userService: userService
         )
-        let poolTradeParticipationService = PoolTradeParticipationService()
+
+        // Create InvestmentAPIService for syncing investments to Parse Server
+        let investmentAPIService = InvestmentAPIService(apiClient: parseAPIClient)
+
+        // Create PoolTradeParticipationService with API service for server sync
+        let poolTradeParticipationService = PoolTradeParticipationService(investmentAPIService: investmentAPIService)
         let telemetryService = TelemetryService()
         let investmentManagementService = InvestmentManagementService()
         let traderDataService = TraderDataService()
@@ -123,7 +165,11 @@ enum AppServicesBuilder {
             documentService: documentService,
             investmentManagementService: investmentManagementService,
             investmentCompletionService: investmentCompletionService,
-            investmentDocumentService: investmentDocumentService
+            investmentDocumentService: investmentDocumentService,
+            invoiceService: serviceFactory.coreInvoiceService,
+            transactionIdService: serviceFactory.coreTransactionIdService,
+            configurationService: configurationService,
+            investmentAPIService: investmentAPIService
         )
 
         // Create centralized services
@@ -204,9 +250,14 @@ enum AppServicesBuilder {
 
         // Create remaining services
         // Pass the same documentService instance to NotificationService so it observes the correct instance
-        let notificationService = NotificationService(documentService: documentService)
+        let notificationService = NotificationService(documentService: documentService, pushTokenAPIService: pushTokenAPIService)
+        notificationService.configure(pushTokenAPIService: pushTokenAPIService)
         print("🔔 AppServicesBuilder: Created NotificationService instance \(ObjectIdentifier(notificationService))")
-        let watchlistService = InvestorWatchlistService()
+        let watchlistService = InvestorWatchlistService(
+            investorWatchlistAPIService: investorWatchlistAPIService,
+            userService: userService
+        )
+        watchlistService.configure(investorWatchlistAPIService: investorWatchlistAPIService, userService: userService)
         let dashboardService = DashboardService()
         let testModeService = TestModeService()
         let roundingDifferencesService = RoundingDifferencesService(telemetryService: telemetryService)
@@ -361,6 +412,7 @@ enum AppServicesBuilder {
             parseLiveQueryClient: parseLiveQueryClient,
             marketDataService: marketDataService,
             priceAlertService: priceAlertService,
+            filterSyncService: filterSyncService,
             auditLoggingService: auditLoggingService,
             customerSupportService: customerSupportService,
             satisfactionSurveyService: satisfactionSurveyService,

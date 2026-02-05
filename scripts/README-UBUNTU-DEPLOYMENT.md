@@ -18,7 +18,7 @@ Diese Skripte ermöglichen die automatische Einrichtung des FIN1 Backend-Servers
 
 ```bash
 cd /Users/ra/app/FIN1
-./scripts/quick-deploy-v2026-01-30.sh
+./scripts/quick-deploy.sh
 ```
 
 Das Skript führt automatisch alle Schritte durch:
@@ -34,23 +34,23 @@ Das Skript führt automatisch alle Schritte durch:
 #### 1. Ubuntu-Server finden
 
 ```bash
-./scripts/find-ubuntu-server-v2026-01-30.sh
+./scripts/find-ubuntu-server.sh
 ```
 
 #### 2. Deployment durchführen
 
 ```bash
-./scripts/deploy-to-ubuntu-v2026-01-30.sh [ubuntu-ip] [ubuntu-user]
+./scripts/deploy-to-ubuntu.sh [ubuntu-ip] [ubuntu-user]
 ```
 
 Beispiel:
 ```bash
-./scripts/deploy-to-ubuntu-v2026-01-30.sh 192.168.178.50 ubuntu
+./scripts/deploy-to-ubuntu.sh 192.168.178.50 ubuntu
 ```
 
 ## Verfügbare Skripte
 
-### `quick-deploy-v2026-01-30.sh`
+### `quick-deploy.sh`
 **All-in-One Deployment-Skript**
 - Führt alle Schritte automatisch durch
 - Interaktive Konfiguration
@@ -58,10 +58,10 @@ Beispiel:
 
 **Verwendung:**
 ```bash
-./scripts/quick-deploy-v2026-01-30.sh [ubuntu-ip]
+./scripts/quick-deploy.sh [ubuntu-ip]
 ```
 
-### `deploy-to-ubuntu-v2026-01-30.sh`
+### `deploy-to-ubuntu.sh`
 **Haupt-Deployment-Skript**
 - Kopiert alle Backend-Dateien
 - Konfiguriert Umgebungsvariablen
@@ -69,10 +69,10 @@ Beispiel:
 
 **Verwendung:**
 ```bash
-./scripts/deploy-to-ubuntu-v2026-01-30.sh [ubuntu-ip] [ubuntu-user]
+./scripts/deploy-to-ubuntu.sh [ubuntu-ip] [ubuntu-user]
 ```
 
-### `setup-ubuntu-server-v2026-01-30.sh`
+### `setup-ubuntu-server.sh`
 **Ubuntu-Setup-Skript** (wird automatisch ausgeführt)
 - Installiert Docker und Docker Compose
 - Konfiguriert Firewall (UFW)
@@ -82,20 +82,20 @@ Beispiel:
 **Manuelle Verwendung:**
 ```bash
 # Auf Ubuntu ausführen
-scp scripts/setup-ubuntu-server-v2026-01-30.sh user@ubuntu-ip:~/
+scp scripts/setup-ubuntu-server.sh user@ubuntu-ip:~/
 ssh user@ubuntu-ip
-chmod +x ~/setup-ubuntu-server-v2026-01-30.sh
-~/setup-ubuntu-server-v2026-01-30.sh
+chmod +x ~/setup-ubuntu-server.sh
+~/setup-ubuntu-server.sh
 ```
 
-### `find-ubuntu-server-v2026-01-30.sh`
+### `find-ubuntu-server.sh`
 **Netzwerk-Scanner**
 - Findet Ubuntu-Server im lokalen Netzwerk
 - Zeigt verfügbare SSH-Server
 
 **Verwendung:**
 ```bash
-./scripts/find-ubuntu-server-v2026-01-30.sh
+./scripts/find-ubuntu-server.sh
 ```
 
 ## Manuelle Einrichtung

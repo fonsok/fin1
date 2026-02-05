@@ -29,6 +29,8 @@ protocol InvoiceServiceProtocol: ObservableObject, ServiceLifecycle {
     func getInvoicesByType(_ type: InvoiceType, for userId: String) -> [Invoice]
     func getInvoice(by id: String) -> Invoice?
     func getInvoicesForTrade(_ tradeId: String) -> [Invoice]
+    /// Returns the platform service charge invoice for an investment batch (invoice.tradeId == batchId).
+    func getServiceChargeInvoiceForBatch(_ batchId: String, userId: String) -> Invoice?
 
     // MARK: - Invoice Validation
     func validateInvoice(_ invoice: Invoice) -> Bool

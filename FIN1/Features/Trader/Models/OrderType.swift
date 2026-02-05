@@ -3,7 +3,7 @@ import SwiftUI
 
 // MARK: - Order Type
 /// Defines whether an order is a buy or sell transaction
-enum OrderType: String, CaseIterable, Codable {
+enum OrderType: String, CaseIterable, Codable, Sendable {
     case buy
     case sell
 

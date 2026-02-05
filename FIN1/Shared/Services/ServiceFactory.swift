@@ -9,7 +9,7 @@ final class ServiceFactory {
     private let transactionIdService: TransactionIdService
     private let tradeNumberService: TradeNumberService
     private let cashBalanceService: CashBalanceService
-    private let invoiceService: InvoiceService
+    private var invoiceService: InvoiceService // var to allow reconfiguration with ParseAPIClient
     private let configurationService: any ConfigurationServiceProtocol
     private let userService: any UserServiceProtocol
 
@@ -32,8 +32,12 @@ final class ServiceFactory {
 
     // MARK: - Service Creation Methods
 
-    func createOrderManagementService() -> OrderManagementService {
-        return OrderManagementService(transactionIdService: transactionIdService, userService: userService)
+    func createOrderManagementService(orderAPIService: OrderAPIServiceProtocol? = nil) -> OrderManagementService {
+        return OrderManagementService(
+            transactionIdService: transactionIdService,
+            userService: userService,
+            orderAPIService: orderAPIService
+        )
     }
 
     func createTradeLifecycleService(
@@ -71,11 +75,15 @@ final class ServiceFactory {
 
     func createSecuritiesWatchlistService(
         parseLiveQueryClient: (any ParseLiveQueryClientProtocol)? = nil,
-        marketDataService: (any MarketDataServiceProtocol)? = nil
+        marketDataService: (any MarketDataServiceProtocol)? = nil,
+        userService: (any UserServiceProtocol)? = nil,
+        watchlistAPIService: WatchlistAPIServiceProtocol? = nil
     ) -> SecuritiesWatchlistService {
         return SecuritiesWatchlistService(
             parseLiveQueryClient: parseLiveQueryClient,
-            marketDataService: marketDataService
+            marketDataService: marketDataService,
+            userService: userService,
+            watchlistAPIService: watchlistAPIService
         )
     }
 
@@ -234,6 +242,16 @@ final class ServiceFactory {
         investorGrossProfitService: (any InvestorGrossProfitServiceProtocol)?
     ) -> CommissionCalculationService {
         return CommissionCalculationService(investorGrossProfitService: investorGrossProfitService)
+    }
+
+    /// Configures InvoiceService with ParseAPIClient for backend integration
+    func configureInvoiceService(parseAPIClient: (any ParseAPIClientProtocol)?) {
+        // Create new InvoiceService instance with ParseAPIClient
+        // Note: This replaces the existing instance, so all references should use coreInvoiceService
+        self.invoiceService = InvoiceService(
+            transactionIdService: transactionIdService,
+            parseAPIClient: parseAPIClient
+        )
     }
 
     // MARK: - Access to Core Services

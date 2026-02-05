@@ -17,7 +17,7 @@ fi
 mkdir -p .git/hooks
 
 # Copy pre-commit hook
-cp scripts/pre-commit-hook-v2026-01-30.sh .git/hooks/pre-commit
+cp scripts/pre-commit-hook.sh .git/hooks/pre-commit
 chmod +x .git/hooks/pre-commit
 
 echo "✅ Pre-commit hook installed successfully!"
@@ -32,6 +32,6 @@ echo "To bypass hooks for emergency commits, use:"
 echo "  git commit --no-verify -m 'Emergency commit'"
 echo ""
 echo "To manually run checks:"
-echo "  ./scripts/check-responsive-design-v2026-01-30.sh"
+echo "  ./scripts/check-responsive-design.sh"
 echo "  swiftlint --strict"
 echo "  swiftformat . --lint"

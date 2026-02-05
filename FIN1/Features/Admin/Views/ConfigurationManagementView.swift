@@ -29,6 +29,7 @@ struct ConfigurationManagementView: View {
                 viewModel.poolBalanceDistributionStrategy = appServices.configurationService.poolBalanceDistributionStrategy
                 viewModel.poolBalanceDistributionThresholdInput = appServices.configurationService.poolBalanceDistributionThreshold
                 viewModel.traderCommissionRateInput = appServices.configurationService.traderCommissionRate
+                viewModel.showCommissionBreakdownInCreditNoteInput = appServices.configurationService.showCommissionBreakdownInCreditNote
             }
         }
         .environmentObject(viewModel)
@@ -39,6 +40,9 @@ struct ConfigurationManagementView: View {
     private var configurationSection: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(16)) {
+                // 4-Eyes Approval Section
+                PendingApprovalsSection()
+
                 Text("Account Settings")
                     .font(ResponsiveDesign.headlineFont())
                     .foregroundColor(.primary)
@@ -47,6 +51,7 @@ struct ConfigurationManagementView: View {
                 UserMinimumCashReserveSection(viewModel: viewModel)
                 InitialAccountBalanceSection(viewModel: viewModel)
                 TraderCommissionRateSection(viewModel: viewModel)
+                ShowCommissionBreakdownInCreditNoteSection(viewModel: viewModel)
                 PoolBalanceDistributionSection(viewModel: viewModel)
                 ResetToDefaultsSection(viewModel: viewModel)
             }

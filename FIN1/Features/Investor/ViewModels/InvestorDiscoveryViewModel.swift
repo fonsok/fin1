@@ -3,6 +3,7 @@ import Foundation
 
 // MARK: - Investor Discovery ViewModel
 
+@MainActor
 final class InvestorDiscoveryViewModel: ObservableObject {
     private var filterPersistence: FilterPersistenceRepositoryProtocol
     private var traderDataService: any TraderDataServiceProtocol

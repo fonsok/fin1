@@ -275,11 +275,19 @@ struct PDFProfessionalComponents {
 
         // === TABLE ROWS ===
         for (rowIndex, row) in rows.enumerated() {
+            // Calculate row height based on description (first column) - support multi-line text
+            let descriptionText = row.first ?? ""
+            let lineCount = max(1, descriptionText.components(separatedBy: "\n").count)
+            let calculatedRowHeight = max(
+                PDFDocumentLayout.tableRowHeight,
+                CGFloat(lineCount) * PDFTypography.tableCellFont.lineHeight + (PDFDocumentLayout.tableCellPadding * 2)
+            )
+
             let rowRect = CGRect(
                 x: PDFDocumentLayout.leftMargin,
                 y: y,
                 width: contentWidth,
-                height: PDFDocumentLayout.tableRowHeight
+                height: calculatedRowHeight
             )
 
             // Alternate row background
@@ -291,11 +299,11 @@ struct PDFProfessionalComponents {
             // Row bottom border
             context.setStrokeColor(PDFColorScheme.borderLight.cgColor)
             context.setLineWidth(PDFDocumentLayout.tableBorderWidth)
-            context.move(to: CGPoint(x: PDFDocumentLayout.leftMargin, y: y + PDFDocumentLayout.tableRowHeight))
+            context.move(to: CGPoint(x: PDFDocumentLayout.leftMargin, y: y + calculatedRowHeight))
             context.addLine(
                 to: CGPoint(
                     x: PDFDocumentLayout.leftMargin + contentWidth,
-                    y: y + PDFDocumentLayout.tableRowHeight
+                    y: y + calculatedRowHeight
                 )
             )
             context.strokePath()
@@ -306,18 +314,44 @@ struct PDFProfessionalComponents {
                 guard colIndex < columnWidths.count else { break }
 
                 let alignment = columnAlignments[safe: colIndex] ?? .left
+
+                // For first column (description), allow multi-line rendering
+                let cellHeight: CGFloat
+                let cellY: CGFloat
+                if colIndex == 0 && lineCount > 1 {
+                    // Multi-line: use full row height
+                    cellHeight = calculatedRowHeight - (PDFDocumentLayout.tableCellPadding * 2)
+                    cellY = y + PDFDocumentLayout.tableCellPadding
+                } else {
+                    // Single line: center vertically
+                    cellHeight = PDFTypography.tableCellFont.lineHeight
+                    cellY = y + (calculatedRowHeight - PDFTypography.tableCellFont.lineHeight) / 2
+                }
+
                 let cellRect = CGRect(
                     x: x + PDFDocumentLayout.tableCellPadding,
-                    y: y + (PDFDocumentLayout.tableRowHeight - PDFTypography.tableCellFont.lineHeight) / 2,
+                    y: cellY,
                     width: columnWidths[colIndex] - (PDFDocumentLayout.tableCellPadding * 2),
-                    height: PDFTypography.tableCellFont.lineHeight
+                    height: cellHeight
                 )
 
-                cellData.draw(in: cellRect, withAttributes: PDFTypography.tableCellAttributes(alignment: alignment))
+                // For multi-line text, draw with proper attributes
+                let attributes = PDFTypography.tableCellAttributes(alignment: alignment)
+                if colIndex == 0 && lineCount > 1 {
+                    // Multi-line: draw with paragraph style that preserves line breaks
+                    let paragraphStyle = NSMutableParagraphStyle()
+                    paragraphStyle.alignment = alignment
+                    paragraphStyle.lineBreakMode = .byWordWrapping
+                    var multiLineAttributes = attributes
+                    multiLineAttributes[.paragraphStyle] = paragraphStyle
+                    cellData.draw(in: cellRect, withAttributes: multiLineAttributes)
+                } else {
+                    cellData.draw(in: cellRect, withAttributes: attributes)
+                }
                 x += columnWidths[colIndex]
             }
 
-            y += PDFDocumentLayout.tableRowHeight
+            y += calculatedRowHeight
         }
 
         // Table bottom border (thicker)

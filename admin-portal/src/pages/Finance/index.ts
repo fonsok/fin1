@@ -1,0 +1,1 @@
+export { FinanceDashboardPage } from './FinanceDashboard';

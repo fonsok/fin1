@@ -5,6 +5,8 @@ import SwiftUI
 /// Represents a single investor's commission breakdown in the credit note
 struct CreditNoteBreakdownItem: Identifiable {
     let id: String
+    /// Eindeutige Anzeige-Nummer des Investments (z. B. aus ID abgeleitet), für GoB-Zuordnung.
+    let investmentNumber: String
     let investorName: String
     let grossProfit: Double
     let commissionRate: Double
@@ -25,6 +27,9 @@ final class TraderCreditNoteDetailViewModel: ObservableObject {
     @Published var totalCommission: Double = 0.0
     @Published var tradeROI: Double = 0.0
     @Published var tradeDates: (entry: Date, exit: Date)?
+    /// Für Document-Header (MVVM: View ruft keinen Service auf).
+    @Published var accountHolderName: String = ""
+    @Published var accountNumber: String = ""
 
     // MARK: - Dependencies
     private var appServices: AppServices?
@@ -33,10 +38,26 @@ final class TraderCreditNoteDetailViewModel: ObservableObject {
     // MARK: - Initialization
     init() { }
 
-    /// Configures the ViewModel with services (called from task)
-    func configure(with services: AppServices, tradeId: String?) {
+    /// Configures the ViewModel with services and document (called from task). Berechnet accountHolderName/accountNumber aus document + UserService-Fallback.
+    func configure(with services: AppServices, document: Document) {
         self.appServices = services
-        self.tradeId = tradeId
+        self.tradeId = document.tradeId
+
+        if let invoiceData = document.invoiceData, !invoiceData.customerInfo.name.isEmpty {
+            accountHolderName = invoiceData.customerInfo.name
+        } else if let currentUser = services.userService.currentUser {
+            accountHolderName = currentUser.displayName
+        } else {
+            accountHolderName = "Trader \(document.userId.prefix(8))"
+        }
+
+        if let invoiceData = document.invoiceData, !invoiceData.customerInfo.depotNumber.isEmpty {
+            accountNumber = invoiceData.customerInfo.depotNumber
+        } else if let currentUser = services.userService.currentUser {
+            accountNumber = "DE\(String(format: "%020d", abs(currentUser.id.hashValue)))"
+        } else {
+            accountNumber = "DE\(String(format: "%020d", abs(document.userId.hashValue)))"
+        }
     }
 
     // MARK: - Computed Properties
@@ -121,9 +142,11 @@ final class TraderCreditNoteDetailViewModel: ObservableObject {
                 )
 
                 let investorName = investment.investorName
+                let investmentNumber = investmentId.extractInvestmentNumber()
 
                 items.append(CreditNoteBreakdownItem(
                     id: investmentId,
+                    investmentNumber: investmentNumber,
                     investorName: investorName,
                     grossProfit: investorGrossProfit,
                     commissionRate: rate,

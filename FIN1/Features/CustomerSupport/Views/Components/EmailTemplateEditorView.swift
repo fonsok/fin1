@@ -43,7 +43,7 @@ struct EmailTemplateEditorView: View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
             HStack {
                 Image(systemName: "envelope.badge.fill")
-                    .font(.title2)
+                    .font(ResponsiveDesign.headlineFont())
                     .foregroundColor(AppTheme.accentLightBlue)
 
                 VStack(alignment: .leading, spacing: 2) {
@@ -99,7 +99,7 @@ private struct EmailTemplateRow: View {
             HStack(spacing: ResponsiveDesign.spacing(12)) {
                 // Icon
                 Image(systemName: template.type.icon)
-                    .font(.title3)
+                    .font(ResponsiveDesign.headlineFont())
                     .foregroundColor(AppTheme.accentLightBlue)
                     .frame(width: 32)
 
@@ -273,7 +273,7 @@ private struct EmailTemplateDetailView: View {
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
                             .background(AppTheme.accentLightBlue.opacity(0.1))
-                            .cornerRadius(6)
+                            .cornerRadius(ResponsiveDesign.spacing(6))
                     }
                 }
             }

@@ -465,7 +465,7 @@ struct CustomerSupportDashboardView: View {
                         .padding(.horizontal, 10)
                         .padding(.vertical, 4)
                         .background(csrRole.color)
-                        .cornerRadius(8)
+                        .cornerRadius(ResponsiveDesign.spacing(8))
                 }
                 .padding()
                 .background(csrRole.color.opacity(0.1))

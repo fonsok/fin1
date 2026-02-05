@@ -1,5 +1,5 @@
 -- ============================================================================
--- FIN1 DATABASE SCHEMA
+-- DATABASE SCHEMA
 -- 003_schema_users.sql - User Management
 -- ============================================================================
 --
@@ -49,8 +49,24 @@ CREATE TABLE IF NOT EXISTS users (
     password_reset_expires TIMESTAMP WITH TIME ZONE,
 
     -- Rolle und Kontotyp
+    -- Roles:
+    --   investor         - End-user (Anleger)
+    --   trader           - End-user (Händler)
+    --   admin            - Full app-level admin
+    --   business_admin   - Financial/Accounting oversight
+    --   security_officer - Security & Release gatekeeper
+    --   compliance       - Audit & Regulatory
+    --   customer_service - User support
+    --   system           - Automated processes
     role VARCHAR(30) NOT NULL CHECK (role IN (
-        'investor', 'trader', 'admin', 'customer_service', 'compliance', 'system'
+        'investor',
+        'trader',
+        'admin',
+        'business_admin',
+        'security_officer',
+        'compliance',
+        'customer_service',
+        'system'
     )),
     account_type VARCHAR(20) DEFAULT 'individual' CHECK (account_type IN (
         'individual', 'company', 'institutional'

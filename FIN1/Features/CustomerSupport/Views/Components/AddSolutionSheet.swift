@@ -329,7 +329,7 @@ struct SolutionTypeButton: View {
         Button(action: action) {
             HStack(spacing: ResponsiveDesign.spacing(12)) {
                 Image(systemName: type.icon)
-                    .font(.title3)
+                    .font(ResponsiveDesign.headlineFont())
                     .foregroundColor(isSelected ? .white : AppTheme.accentLightBlue)
                     .frame(width: 32)
 

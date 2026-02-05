@@ -209,7 +209,7 @@ struct SummaryCard: View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
             HStack {
                 Image(systemName: icon)
-                    .font(.title3)
+                    .font(ResponsiveDesign.headlineFont())
                     .foregroundColor(color)
                 Spacer()
             }

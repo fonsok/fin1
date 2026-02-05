@@ -95,15 +95,18 @@ The goal was: **one change updates all user-facing "app name" strings** — incl
 
 **All user-facing names now derive from `AppBrand.appName` (Display Name) by default.**
 
+**Important clarification:** `FIN1` is the **project/technical name** (target/module names, backend service names).
+The **user-facing app name** is controlled by **Xcode Display Name** and accessed via `AppBrand.appName`.
+
 ### How it works
 
 - `AppBrand.appName` reads from `CFBundleDisplayName`
 - `LegalIdentity` values now **default to** values derived from `AppBrand.appName`:
   - `platformName` → `AppBrand.appName`
-  - `documentPrefix` → `AppBrand.appName`
-  - `companyLegalName` → `"<AppName> Trading GmbH"`
+  - `documentPrefix` → **sanitized** (alphanumeric, uppercased) value derived from `AppBrand.appName`
+  - `companyLegalName` → `"<AppName> Investing GmbH"`
   - `bankName` → `"<AppName> Bank AG"`
-  - `logoAssetName` → `"<AppName>Logo"`
+  - `logoAssetName` → `"<DocumentPrefix>Logo"`
 
 ### What changes when you update Display Name
 
@@ -112,10 +115,10 @@ The goal was: **one change updates all user-facing "app name" strings** — incl
 | FAQs | "What is MyApp?" |
 | Login screens | "Sign in to MyApp" |
 | Document IDs | MyApp-INV-20260129-00001 |
-| PDF Metadata / Issuer | MyApp Trading GmbH |
+| PDF Metadata / Issuer | MyApp Investing GmbH |
 | QR Codes | MyApp_INVOICE |
 | Bank Name (in docs) | MyApp Bank AG |
-| **Backend PDFs** | MyApp Trading GmbH (sent from iOS) |
+| **Backend PDFs** | MyApp Investing GmbH (sent from iOS) |
 
 ### All configurable values in Info.plist
 
@@ -124,12 +127,14 @@ All company and legal identity values can be configured directly in **Info.plist
 | Key | Default | Example |
 |-----|---------|---------|
 | `CFBundleDisplayName` | FIN1 | TTTT |
-| `LegalCompanyName` | `<Display Name> Trading GmbH` | TTTT Investing GmbH |
+| `LegalCompanyName` | `<Display Name> Investing GmbH` | TTTT Investing GmbH |
 | `LegalCompanyAddress` | Hauptstraße 100 | Mönckebergstraße 7 |
 | `LegalCompanyCity` | 60311 Frankfurt am Main | 20095 Hamburg |
-| `LegalCompanyEmail` | info@fin1-trading.de | info@tttt-investing.de |
+| `LegalCompanyEmail` | *(derived from Display Name)* | info@tttt-investing.com |
 | `LegalCompanyPhone` | +49 (0) 69 12345678 | +49 (0) 40 12345678 |
-| `LegalCompanyWebsite` | www.fin1-trading.de | www.tttt-investing.de |
+| `LegalCompanyWebsite` | *(derived from Display Name)* | www.tttt-investing.com |
+| `LegalPrivacyEmail` | *(derived from Display Name)* | privacy@tttt-investing.com |
+| `LegalDPOEmail` | *(derived from Display Name)* | dpo@tttt-investing.com |
 | `LegalCompanyBusinessHours` | Mo-Fr: 9:00-18:00 Uhr | Mo-Fr: 8:00-17:00 Uhr |
 | `LegalCompanyRegisterNumber` | HRB 123456 | HRB 654321 |
 | `LegalCompanyVatId` | DE123456789 | DE987654321 |
@@ -229,17 +234,18 @@ PDFs can be generated either **locally** (iOS) or via **backend** (Ubuntu server
 │  iOS App                                                        │
 │  ┌──────────────────────────────────────────────────────────┐   │
 │  │ AppBrand.appName = "TTTT"                                │   │
-│  │ LegalIdentity.companyLegalName = "TTTT Trading GmbH"     │   │
-│  │ CompanyContactInfo.email = "info@fin1-trading.de"        │   │
+│  │ LegalIdentity.companyLegalName = "TTTT Investing GmbH"   │   │
+│  │ CompanyContactInfo.email = "info@fin1-investing.com"      │   │
 │  └──────────────────────────────────────────────────────────┘   │
 │                              ↓                                  │
 │  ┌──────────────────────────────────────────────────────────┐   │
-│  │ PDFBackendService sends CompanyInfoDTO:                  │   │
+│  │ PDFBackendService sends CompanyInfoDTO + qr_data:        │   │
 │  │   {                                                      │   │
-│  │     "name": "TTTT Trading GmbH",                         │   │
+│  │     "name": "TTTT Investing GmbH",                       │   │
 │  │     "address": "Hauptstraße 100",                        │   │
-│  │     "email": "info@fin1-trading.de",                     │   │
+│  │     "email": "info@fin1-investing.com",                   │   │
 │  │     ...                                                  │   │
+│  │     "qr_data": "{...}"                                   │   │
 │  │   }                                                      │   │
 │  └──────────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────┘
@@ -250,7 +256,7 @@ PDFs can be generated either **locally** (iOS) or via **backend** (Ubuntu server
 │  Backend (Ubuntu Server: fin1-server:8083)                      │
 │  ┌──────────────────────────────────────────────────────────┐   │
 │  │ PDF-Service uses company_info in HTML templates:         │   │
-│  │   {{ company.name }} → "TTTT Trading GmbH"               │   │
+│  │   {{ company.name }} → "TTTT Investing GmbH"             │   │
 │  └──────────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
@@ -277,7 +283,7 @@ The iOS app sends company data to the backend using values from `LegalIdentity`:
 ```swift
 static func fromLegalIdentity() -> CompanyInfoDTO {
     return CompanyInfoDTO(
-        name: LegalIdentity.companyLegalName,      // "TTTT Trading GmbH"
+        name: LegalIdentity.companyLegalName,      // "TTTT Investing GmbH"
         address: ...,
         email: CompanyContactInfo.email,
         phone: CompanyContactInfo.phone,
@@ -287,6 +293,13 @@ static func fromLegalIdentity() -> CompanyInfoDTO {
     )
 }
 ```
+
+### QR Code DRY fix (local vs backend)
+
+- iOS has a single QR payload generator (`QRCodeGenerator`).
+- The backend PDF service **does not invent its own QR payload format** anymore:
+  - iOS sends `qr_data` in the request
+  - the backend only renders the QR code image from that payload
 
 ### PDF Generation Modes
 
@@ -328,6 +341,6 @@ After changing Display Name:
 3. Check:
    - Landing page FAQ: "What is [NewName]?"
    - Document notifications: "[NewName]-INV-..."
-   - PDF metadata: "[NewName] Trading GmbH"
-   - **Backend PDFs**: Company name shows "[NewName] Trading GmbH"
+   - PDF metadata: "[NewName] Investing GmbH"
+   - **Backend PDFs**: Company name shows "[NewName] Investing GmbH"
 4. If any screen still shows the previous name, follow the "Simulator still shows the old name" cache-clearing steps above.

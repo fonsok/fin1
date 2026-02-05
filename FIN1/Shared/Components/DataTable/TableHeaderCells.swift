@@ -29,9 +29,9 @@ struct StaticHeaderCell: View {
     @State private var showInfo = false
 
     var body: some View {
-        VStack(spacing: 2) {
+        VStack(spacing: ResponsiveDesign.spacing(2)) {
             ForEach(Array(titleLines.indices), id: \.self) { index in
-                HStack(spacing: 2) {
+                HStack(spacing: ResponsiveDesign.spacing(2)) {
                     // Leading spacer for center alignment
                     if column.alignment == .center {
                         Spacer()

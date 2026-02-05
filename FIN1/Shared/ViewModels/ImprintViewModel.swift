@@ -130,6 +130,7 @@ final class ImprintViewModel: ObservableObject {
             **Kontakt:**
             E-Mail: \(CompanyContactInfo.email)
             Telefon: \(CompanyContactInfo.phone)
+            Website: \(CompanyContactInfo.website)
             """
         }
 
@@ -150,6 +151,7 @@ final class ImprintViewModel: ObservableObject {
         **Contact:**
         Email: \(CompanyContactInfo.email)
         Phone: \(CompanyContactInfo.phone)
+        Website: \(CompanyContactInfo.website)
         """
     }
 

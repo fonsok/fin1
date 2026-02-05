@@ -1,6 +1,6 @@
 # FIN1 Backend Services
 
-This directory contains the Docker containerized backend services for the FIN1 investment platform.
+This directory contains the Docker containerized backend services for the FIN1 project.
 
 ## 🏗 Architecture Overview
 

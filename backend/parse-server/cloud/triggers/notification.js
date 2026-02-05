@@ -1,5 +1,5 @@
 // ============================================================================
-// FIN1 Parse Cloud Code
+// Parse Cloud Code
 // triggers/notification.js - Notification Triggers
 // ============================================================================
 
@@ -17,7 +17,7 @@ Parse.Cloud.beforeSave('Notification', async (request) => {
   }
 
   // Validate category
-  const validCategories = ['investment', 'trading', 'document', 'account', 'wallet', 'support', 'system', 'marketing'];
+  const validCategories = ['investment', 'trading', 'document', 'account', 'wallet', 'support', 'system', 'marketing', 'admin'];
   const category = notif.get('category');
   if (category && !validCategories.includes(category)) {
     throw new Parse.Error(Parse.Error.INVALID_VALUE, `Invalid category: ${category}`);

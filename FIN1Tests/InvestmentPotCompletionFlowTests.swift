@@ -23,7 +23,14 @@ final class InvestmentPoolCompletionFlowTests: XCTestCase {
         mockInvestmentService = MockInvestmentService()
         completedInvestmentsViewModel = CompletedInvestmentsViewModel(
             userService: mockUserService,
-            investmentService: mockInvestmentService
+            investmentService: mockInvestmentService,
+            documentService: MockDocumentService(),
+            invoiceService: MockInvoiceService(),
+            traderDataService: MockTraderDataService(),
+            poolTradeParticipationService: MockPoolTradeParticipationService(),
+            tradeLifecycleService: MockTradeLifecycleService(),
+            configurationService: MockConfigurationService(),
+            commissionCalculationService: CommissionCalculationService()
         )
         investorPortfolioViewModel = InvestorPortfolioViewModel(
             userService: mockUserService,
@@ -222,10 +229,10 @@ final class InvestmentPoolCompletionFlowTests: XCTestCase {
 
         // Create pool reservations (all starting as `.reserved`)
         var poolReservations: [PoolReservation] = []
-        for i in 0..<numberOfPools {
+        for poolIndex in 0..<numberOfPools {
             let reservation = PoolReservation(
                 id: UUID().uuidString,
-                poolNumber: i + 1,
+                poolNumber: poolIndex + 1,
                 status: .reserved, // Status 1: Initial/reserved state
                 actualPoolId: nil,
                 allocatedAmount: amountPerPool,

@@ -50,7 +50,8 @@ private struct InvestmentSheetContent: View {
             wrappedValue: InvestmentSummaryViewModel(
                 amountPerInvestment: 0,
                 numberOfInvestments: 3,
-                totalInvestmentAmount: 0
+                totalInvestmentAmount: 0,
+                configurationService: services.configurationService
             )
         )
     }
@@ -69,7 +70,8 @@ private struct InvestmentSheetContent: View {
                         InvestmentFormView(
                             investmentAmount: $viewModel.investmentAmount,
                             selectedInvestmentSelection: $viewModel.selectedInvestmentSelection,
-                            numberOfInvestments: $viewModel.numberOfInvestments
+                            numberOfInvestments: $viewModel.numberOfInvestments,
+                            configurationService: services.configurationService
                         )
 
                         // Cash Balance Warning

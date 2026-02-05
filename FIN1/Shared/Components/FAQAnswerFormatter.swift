@@ -65,7 +65,7 @@ struct FAQAnswerFormatter: View {
 
 
 #Preview {
-    VStack(spacing: 20) {
+    VStack(spacing: ResponsiveDesign.spacing(20)) {
         FAQAnswerFormatter(
             answer: "This is a sample FAQ answer.\n• First bullet point\n• Second bullet point\n\nAnother paragraph with more information.",
             style: .original

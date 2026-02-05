@@ -35,6 +35,11 @@ protocol NotificationServiceProtocol: ObservableObject {
     // MARK: - Combined Notification Methods
     func getCombinedUnreadCount(for userId: String?) -> Int
     func getCombinedItems() -> [NotificationItem]
+
+    // MARK: - Push Token Management
+    func registerPushToken(_ token: String, tokenType: PushTokenType, userId: String, deviceId: String?) async throws
+    func deactivatePushToken(_ token: String, tokenType: PushTokenType, userId: String) async throws
+    func syncPushTokensToBackend(for userId: String) async
 }
 
 // MARK: - Notification Service Implementation
@@ -50,9 +55,17 @@ final class NotificationService: NotificationServiceProtocol, ServiceLifecycle {
 
     private var cancellables = Set<AnyCancellable>()
     private let documentService: any DocumentServiceProtocol
+    private var pushTokenAPIService: PushTokenAPIServiceProtocol?
 
-    init(documentService: any DocumentServiceProtocol = DocumentService.shared) {
+    // Store current push token for sync
+    private var currentPushToken: (token: String, type: PushTokenType, deviceId: String?)?
+
+    init(
+        documentService: any DocumentServiceProtocol = DocumentService.shared,
+        pushTokenAPIService: PushTokenAPIServiceProtocol? = nil
+    ) {
         self.documentService = documentService
+        self.pushTokenAPIService = pushTokenAPIService
 
         // Start with empty notifications - notifications will be loaded from actual data sources
         notifications = []
@@ -277,5 +290,71 @@ final class NotificationService: NotificationServiceProtocol, ServiceLifecycle {
         let notificationItems = notifications.map { NotificationItem.notification($0) }
         let documentItems = documentService.documents.map { NotificationItem.document($0) }
         return notificationItems + documentItems
+    }
+
+    // MARK: - Push Token Management
+
+    /// Configure PushTokenAPIService (called after initialization)
+    func configure(pushTokenAPIService: PushTokenAPIServiceProtocol) {
+        self.pushTokenAPIService = pushTokenAPIService
+    }
+
+    func registerPushToken(_ token: String, tokenType: PushTokenType, userId: String, deviceId: String?) async throws {
+        guard let apiService = pushTokenAPIService else {
+            print("⚠️ PushTokenAPIService not configured, skipping token registration")
+            return
+        }
+
+        // Store token for sync
+        currentPushToken = (token: token, type: tokenType, deviceId: deviceId)
+
+        // Register token with backend (write-through pattern)
+        do {
+            _ = try await apiService.registerPushToken(token, tokenType: tokenType, userId: userId, deviceId: deviceId)
+            print("✅ Push token registered on backend: \(token.prefix(20))...")
+        } catch {
+            print("⚠️ Failed to register push token on backend: \(error.localizedDescription)")
+            throw error
+        }
+    }
+
+    func deactivatePushToken(_ token: String, tokenType: PushTokenType, userId: String) async throws {
+        guard let apiService = pushTokenAPIService else {
+            print("⚠️ PushTokenAPIService not configured, skipping token deactivation")
+            return
+        }
+
+        // Clear stored token
+        if currentPushToken?.token == token && currentPushToken?.type == tokenType {
+            currentPushToken = nil
+        }
+
+        // Deactivate token on backend (write-through pattern)
+        do {
+            try await apiService.deactivatePushToken(token, tokenType: tokenType, userId: userId)
+            print("✅ Push token deactivated on backend: \(token.prefix(20))...")
+        } catch {
+            print("⚠️ Failed to deactivate push token on backend: \(error.localizedDescription)")
+            throw error
+        }
+    }
+
+    func syncPushTokensToBackend(for userId: String) async {
+        guard let apiService = pushTokenAPIService else {
+            print("⚠️ PushTokenAPIService not configured, skipping push token sync")
+            return
+        }
+
+        // Sync current push token if available
+        if let (token, type, deviceId) = currentPushToken {
+            do {
+                _ = try await apiService.registerPushToken(token, tokenType: type, userId: userId, deviceId: deviceId)
+                print("✅ Push token synced to backend")
+            } catch {
+                print("⚠️ Failed to sync push token to backend: \(error.localizedDescription)")
+            }
+        } else {
+            print("ℹ️ No push token to sync")
+        }
     }
 }

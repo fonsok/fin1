@@ -1,5 +1,5 @@
 // ============================================================================
-// FIN1 Parse Cloud Code
+// Parse Cloud Code
 // triggers/user.js - User Triggers
 // ============================================================================
 
@@ -45,8 +45,26 @@ Parse.Cloud.beforeSave(Parse.User, async (request) => {
   }
 
   // ========== ROLE VALIDATION ==========
+  // Roles:
+  //   - investor: End-user (Anleger)
+  //   - trader: End-user (Händler)
+  //   - admin: Full app-level admin
+  //   - customer_service: User support, tickets
+  //   - compliance: Audit, 4-eyes approvals
+  //   - business_admin: Accounting/financial oversight (no tech admin)
+  //   - security_officer: Security reviews, release gatekeeper
+  //   - system: Automated processes
   const role = user.get('role');
-  const validRoles = ['investor', 'trader', 'admin', 'customer_service', 'compliance', 'system'];
+  const validRoles = [
+    'investor',
+    'trader',
+    'admin',
+    'customer_service',
+    'compliance',
+    'business_admin',
+    'security_officer',
+    'system'
+  ];
   if (role && !validRoles.includes(role)) {
     throw new Parse.Error(Parse.Error.INVALID_VALUE, `Invalid role: ${role}`);
   }
@@ -67,6 +85,7 @@ Parse.Cloud.afterSave(Parse.User, async (request) => {
   const user = request.object;
   const isNew = !request.original;
   const context = request.context || {};
+  const platformName = (process.env.FIN1_LEGAL_PLATFORM_NAME || '').trim() || 'Platform';
 
   // ========== NEW USER: CREATE RELATED OBJECTS ==========
   if (isNew) {
@@ -93,7 +112,7 @@ Parse.Cloud.afterSave(Parse.User, async (request) => {
 
     // Send welcome notification
     await createNotification(user.id, 'system', 'account',
-      'Willkommen bei FIN1!',
+      `Willkommen bei ${platformName}!`,
       'Ihr Konto wurde erfolgreich erstellt. Bitte vervollständigen Sie Ihr Profil.');
   }
 

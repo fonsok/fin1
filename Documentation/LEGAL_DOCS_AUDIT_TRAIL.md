@@ -50,6 +50,12 @@ Server-side Rendering (iOS/Audit clean):
 - Platzhalter wie `{{LEGAL_*}}` und `{{COMMISSION_RATE}}` werden **serverseitig** beim Speichern von `TermsContent` aufgelöst.
 - Dadurch entspricht `documentHash` dem **tatsächlich ausgelieferten/angezeigten Text** (keine clientseitigen Mutationen).
 
+Bundled Fallback (iOS):
+- Falls die App auf **Bundled** zurückfällt (kein Server/Cache), stammen Kontakt-E-Mails aus `CompanyContactInfo`:
+  - `CompanyContactInfo.email` (allgemein)
+  - `CompanyContactInfo.privacyEmail` / `CompanyContactInfo.dpoEmail` (Datenschutz)
+  - Diese Werte sind per Info.plist überschreibbar (`LegalCompanyEmail`, `LegalPrivacyEmail`, `LegalDPOEmail`).
+
 ### Server-Konfiguration (ENV-Keys)
 
 **Wo setzen?**

@@ -11,6 +11,7 @@ final class InvestmentCreationService: InvestmentCreationServiceProtocol {
     private let invoiceService: (any InvoiceServiceProtocol)?
     private let bankContraAccountService: (any BankContraAccountPostingServiceProtocol)?
     private let transactionIdService: any TransactionIdServiceProtocol
+    private let configurationService: any ConfigurationServiceProtocol
     private let cashDeductionProcessor: InvestmentCashDeductionProcessor
 
     init(
@@ -20,7 +21,8 @@ final class InvestmentCreationService: InvestmentCreationServiceProtocol {
         documentService: (any DocumentServiceProtocol)? = nil,
         invoiceService: (any InvoiceServiceProtocol)? = nil,
         bankContraAccountService: (any BankContraAccountPostingServiceProtocol)? = nil,
-        transactionIdService: any TransactionIdServiceProtocol = TransactionIdService()
+        transactionIdService: any TransactionIdServiceProtocol = TransactionIdService(),
+        configurationService: any ConfigurationServiceProtocol
     ) {
         self.investorCashBalanceService = investorCashBalanceService
         self.investmentManagementService = investmentManagementService
@@ -29,6 +31,7 @@ final class InvestmentCreationService: InvestmentCreationServiceProtocol {
         self.invoiceService = invoiceService
         self.bankContraAccountService = bankContraAccountService
         self.transactionIdService = transactionIdService
+        self.configurationService = configurationService
 
         // Create cash deduction processor with same dependencies
         self.cashDeductionProcessor = InvestmentCashDeductionProcessor(
@@ -36,7 +39,8 @@ final class InvestmentCreationService: InvestmentCreationServiceProtocol {
             bankContraAccountService: bankContraAccountService,
             invoiceService: invoiceService,
             documentService: documentService,
-            transactionIdService: transactionIdService
+            transactionIdService: transactionIdService,
+            configurationService: configurationService
         )
     }
 
@@ -146,7 +150,7 @@ final class InvestmentCreationService: InvestmentCreationServiceProtocol {
         // Note: Platform service charge applies ONLY to investors (not traders)
         if let investorCashBalanceService = investorCashBalanceService {
             let totalInvestmentAmount = amountPerInvestment * Double(numberOfInvestments)
-            let platformServiceCharge = totalInvestmentAmount * CalculationConstants.ServiceCharges.platformServiceChargeRate
+            let platformServiceCharge = totalInvestmentAmount * configurationService.effectivePlatformServiceChargeRate
             let totalRequired = totalInvestmentAmount + platformServiceCharge
             if !investorCashBalanceService.hasSufficientFunds(investorId: investor.id, for: totalRequired) {
                 throw AppError.validationError("Insufficient funds (including platform service charge)")
@@ -177,7 +181,7 @@ final class InvestmentCreationService: InvestmentCreationServiceProtocol {
 
         // Calculate batch totals
         let totalAmount = amountPerInvestment * Double(numberOfInvestments)
-        let platformServiceCharge = totalAmount * CalculationConstants.ServiceCharges.platformServiceChargeRate
+        let platformServiceCharge = totalAmount * configurationService.effectivePlatformServiceChargeRate
         // Use numberOfInvestments directly
 
         // Create the batch
@@ -320,7 +324,7 @@ final class InvestmentCreationService: InvestmentCreationServiceProtocol {
 
         // Create document for the Batch with industry-standard naming
         let documentName = DocumentNamingUtility.investorCollectionBillBatchName(for: batch)
-        
+
         let document = Document(
             userId: batch.investorId,
             name: documentName,

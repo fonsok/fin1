@@ -188,6 +188,30 @@ Typischer Update (Beispiel Parse Server):
    - `curl http://localhost:1338/health`
    - extern: `curl http://192.168.178.24/health` und `curl http://192.168.178.24/parse/health`
 
+## 8.1) Troubleshooting (Parse Server Start)
+
+### Symptom: `fin1-parse-server` startet nicht / Restart-Loop
+
+Schnellcheck:
+
+- Logs:
+  - `docker compose -f docker-compose.production.yml logs --tail=200 parse-server`
+- Status:
+  - `docker compose -f docker-compose.production.yml ps parse-server`
+
+#### Fall A: `Cannot find module 'parse-server-redis-cache-adapter'`
+
+- **Ursache**: In `backend/parse-server/index.js` war ein Cache-Adapter als externes Modul konfiguriert, das im Image nicht existiert/aus dem Registry nicht installierbar ist.
+- **Fix (empfohlen)**: Den eingebauten Redis-Cache-Adapter aus `parse-server` verwenden (`RedisCacheAdapter`) oder den Cache-Adapter komplett entfernen, wenn Redis-Caching nicht benötigt wird.
+- **Hinweis**: Redis-Caching ist optional und sollte nur aktiviert werden, wenn `REDIS_URL` korrekt gesetzt ist (z.B. `redis://:<password>@redis:6379`, passend zu `REDIS_PASSWORD`/`--requirepass`).
+
+#### Fall B: Parse ok, aber extern `http://<host>/parse/health` ist down
+
+- Wenn `curl http://localhost:1338/health` **ok** ist, aber `curl http://192.168.178.24/parse/health` **failt**:
+  - prüfe `fin1-nginx`:
+    - `docker compose -f docker-compose.production.yml ps nginx`
+    - ggf. starten: `docker compose -f docker-compose.production.yml up -d nginx`
+
 ## 9) Backup & Restore
 
 ### Backup (v2.0 Script)

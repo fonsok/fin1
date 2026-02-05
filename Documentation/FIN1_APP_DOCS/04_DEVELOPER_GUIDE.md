@@ -110,6 +110,11 @@ Zusätzliche lokale Checks (Scripts):
 - iOS: `ConfigurationService` ist die zentrale Stelle für Konfiguration (lokal + Admin Controls).
   Empfohlen: Remote Config (Parse `Config`) als Source of Truth und iOS Cache/Fallback.
 
+**Konfigurierbare Finanzparameter:**
+- `platformServiceChargeRate`: Platform Service Charge Rate (Default: 1.5%, konfigurierbar über `ConfigurationService.updatePlatformServiceChargeRate()`)
+- `traderCommissionRate`: Trader Commission Rate (Default: 5%, konfigurierbar über `ConfigurationService.updateTraderCommissionRate()`)
+- Beide Rates verwenden `effective*` Properties mit Fallback auf `CalculationConstants` Defaults
+
 ### How-to: Neues Compliance-Event / Audit Trail
 
 - iOS: `AuditLoggingService.logComplianceEvent(...)` nutzen (asynchron, non-blocking für Logging-Fehler).

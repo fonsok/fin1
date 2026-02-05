@@ -8,6 +8,10 @@ protocol UserServiceProtocol: ObservableObject {
     var isAuthenticated: Bool { get }
     var isLoading: Bool { get }
 
+    /// Parse Server session token for authenticated API calls
+    /// Returns nil if not authenticated
+    var sessionToken: String? { get }
+
     // MARK: - Authentication
     func signIn(email: String, password: String) async throws
     func signUp(userData: User) async throws
@@ -16,6 +20,9 @@ protocol UserServiceProtocol: ObservableObject {
     // MARK: - User Management
     func updateProfile(_ user: User) async throws
     func refreshUserData() async throws
+
+    // MARK: - Backend Synchronization
+    func syncToBackend() async
 
     // MARK: - Role Management (Admin)
     func switchUserRole(to newRole: UserRole) async
@@ -42,6 +49,14 @@ final class UserService: UserServiceProtocol, ServiceLifecycle {
     @Published var isAuthenticated = false
     @Published var isLoading = false
 
+    /// Parse Server session token for authenticated API calls
+    /// In production, this would come from Parse.User.login()
+    /// For now, we generate a simulated token for test users
+    @Published private var _sessionToken: String?
+    var sessionToken: String? {
+        _sessionToken
+    }
+
     // MARK: - Impersonation State
     @Published private var _originalAdminUser: User?
     var originalAdminUser: User? {
@@ -52,9 +67,25 @@ final class UserService: UserServiceProtocol, ServiceLifecycle {
     }
 
     private var cancellables = Set<AnyCancellable>()
+    private var parseAPIClient: ParseAPIClientProtocol?
 
-    init() {
+    init(parseAPIClient: ParseAPIClientProtocol? = nil) {
+        self.parseAPIClient = parseAPIClient
         checkExistingSession()
+    }
+
+    /// Configure the API client for backend synchronization
+    func configure(parseAPIClient: ParseAPIClientProtocol) {
+        self.parseAPIClient = parseAPIClient
+    }
+
+    /// Generates a simulated session token for test users
+    /// In production, this would be the actual token from Parse Server
+    private func generateTestSessionToken(for user: User) -> String {
+        // Format: r:base64(userId:role:timestamp)
+        let payload = "\(user.id):\(user.role.rawValue):\(Date().timeIntervalSince1970)"
+        let encoded = Data(payload.utf8).base64EncodedString()
+        return "r:\(encoded)"
     }
 
     // MARK: - ServiceLifecycle
@@ -84,12 +115,15 @@ final class UserService: UserServiceProtocol, ServiceLifecycle {
         if email.contains("test@") || email.contains("trader") || email.contains("investor") || email.contains("biometric@") || email.contains("admin") || email.contains("csr") || email.contains("customerService") || email.contains("kundenberater") {
             await MainActor.run {
                 let testUser = UserFactory.createTestUser(email: email, password: password)
+                let token = generateTestSessionToken(for: testUser)
                 print("🔍 UserService.signIn (test user):")
                 print("   📧 Email: \(email)")
                 print("   👤 User ID: '\(testUser.id)'")
                 print("   👤 User role: \(testUser.role.rawValue)")
                 print("   👤 User name: \(testUser.displayName)")
+                print("   🔑 Session Token: \(token.prefix(20))...")
                 self.currentUser = testUser
+                self._sessionToken = token
                 self.isAuthenticated = true
                 self.isLoading = false
                 // Post notification for authentication state change
@@ -104,9 +138,11 @@ final class UserService: UserServiceProtocol, ServiceLifecycle {
 
         // Create regular user
         let user = UserFactory.createUser(from: email, password: password)
+        let token = generateTestSessionToken(for: user)
 
         await MainActor.run {
             self.currentUser = user
+            self._sessionToken = token
             self.isAuthenticated = true
             self.isLoading = false
             // Post notification for authentication state change
@@ -138,12 +174,11 @@ final class UserService: UserServiceProtocol, ServiceLifecycle {
     func signOut() async {
         await MainActor.run {
             currentUser = nil
+            _sessionToken = nil
             isAuthenticated = false
             // Post notification for authentication state change
             NotificationCenter.default.post(name: .userDidSignOut, object: nil)
         }
-
-        // TODO: Clear stored tokens and data
     }
 
     // MARK: - User Management
@@ -156,14 +191,59 @@ final class UserService: UserServiceProtocol, ServiceLifecycle {
             isLoading = true
         }
 
-        // Simulate API call
-        try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+        // Update local state first
+        await MainActor.run {
+            self.currentUser = user
+        }
+
+        // Sync to backend (write-through pattern)
+        if let apiClient = parseAPIClient {
+            Task.detached { [apiClient, user] in
+                do {
+                    // Update Parse.User via REST API
+                    struct UserUpdateInput: Encodable {
+                        let username: String
+                        let email: String
+                        let firstName: String
+                        let lastName: String
+                        let phoneNumber: String
+                        let streetAndNumber: String
+                        let postalCode: String
+                        let city: String
+                        let country: String
+                    }
+
+                    let input = UserUpdateInput(
+                        username: user.username,
+                        email: user.email,
+                        firstName: user.firstName,
+                        lastName: user.lastName,
+                        phoneNumber: user.phoneNumber,
+                        streetAndNumber: user.streetAndNumber,
+                        postalCode: user.postalCode,
+                        city: user.city,
+                        country: user.country
+                    )
+
+                    _ = try await apiClient.updateObject(
+                        className: "_User",
+                        objectId: user.id,
+                        object: input
+                    )
+                    print("✅ User profile synced to backend: \(user.id)")
+                } catch {
+                    print("⚠️ Failed to sync user profile to backend: \(error.localizedDescription)")
+                }
+            }
+        } else {
+            // Simulate API call if no backend available
+            try await Task.sleep(nanoseconds: 1_000_000_000)
+        }
 
         // Check for simulated errors
         try UserValidationService.checkForProfileUpdateErrors(user: user)
 
         await MainActor.run {
-            self.currentUser = user
             self.isLoading = false
         }
     }
@@ -377,6 +457,56 @@ final class UserService: UserServiceProtocol, ServiceLifecycle {
         NotificationCenter.default.post(name: NSNotification.Name("UserImpersonationStopped"), object: nil)
 
         print("🔙 UserService: Stopped impersonation, returned to admin: \(originalUser.displayName)")
+    }
+
+    // MARK: - Backend Synchronization
+
+    /// Syncs current user profile to the backend
+    /// Called automatically when app enters background
+    func syncToBackend() async {
+        guard let apiClient = parseAPIClient,
+              let user = currentUser else {
+            print("⚠️ UserService: No API client or user, skipping sync")
+            return
+        }
+
+        print("📤 UserService: Syncing user profile to backend...")
+
+        do {
+            struct UserUpdateInput: Encodable {
+                let username: String
+                let email: String
+                let firstName: String
+                let lastName: String
+                let phoneNumber: String
+                let streetAndNumber: String
+                let postalCode: String
+                let city: String
+                let country: String
+            }
+
+            let input = UserUpdateInput(
+                username: user.username,
+                email: user.email,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                phoneNumber: user.phoneNumber,
+                streetAndNumber: user.streetAndNumber,
+                postalCode: user.postalCode,
+                city: user.city,
+                country: user.country
+            )
+
+            _ = try await apiClient.updateObject(
+                className: "_User",
+                objectId: user.id,
+                object: input
+            )
+
+            print("✅ UserService: Profile synced to backend")
+        } catch {
+            print("⚠️ Failed to sync user profile: \(error.localizedDescription)")
+        }
     }
 
     // MARK: - Private Methods

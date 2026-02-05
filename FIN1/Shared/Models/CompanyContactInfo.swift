@@ -13,6 +13,14 @@ struct CompanyContactInfo {
             .nilIfEmpty
     }
 
+    /// Lowercased, alphanumeric-only slug derived from Display Name (for derived defaults).
+    private static var derivedBrandSlug: String {
+        let raw = AppBrand.appName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let scalars = raw.unicodeScalars.filter { CharacterSet.alphanumerics.contains($0) }
+        let cleaned = String(String.UnicodeScalarView(scalars)).lowercased()
+        return cleaned.isEmpty ? "fin1" : cleaned
+    }
+
     // MARK: - Company Identity (delegates to LegalIdentity)
 
     /// Full company name (e.g., "FIN1 Investing GmbH")
@@ -54,7 +62,7 @@ struct CompanyContactInfo {
 
     /// Company email address
     static var email: String {
-        bundleString("LegalCompanyEmail") ?? "info@fin1-investing.de"
+        bundleString("LegalCompanyEmail") ?? "info@\(derivedBrandSlug)-investing.com"
     }
 
     /// Company phone number
@@ -64,7 +72,25 @@ struct CompanyContactInfo {
 
     /// Company website URL
     static var website: String {
-        bundleString("LegalCompanyWebsite") ?? "www.fin1-investing.de"
+        bundleString("LegalCompanyWebsite") ?? "www.\(derivedBrandSlug)-investing.com"
+    }
+
+    /// Privacy contact email (Datenschutz).
+    ///
+    /// IMPORTANT:
+    /// - For production/legal correctness, override via Info.plist (`LegalPrivacyEmail`).
+    /// - Derived fallback is only for local/dev branding consistency.
+    static var privacyEmail: String {
+        bundleString("LegalPrivacyEmail") ?? "privacy@\(derivedBrandSlug)-investing.com"
+    }
+
+    /// Data Protection Officer (DPO) email.
+    ///
+    /// IMPORTANT:
+    /// - For production/legal correctness, override via Info.plist (`LegalDPOEmail`).
+    /// - Derived fallback is only for local/dev branding consistency.
+    static var dpoEmail: String {
+        bundleString("LegalDPOEmail") ?? "dpo@\(derivedBrandSlug)-investing.com"
     }
 
     /// Business hours

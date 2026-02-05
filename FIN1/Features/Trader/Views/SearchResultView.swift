@@ -37,7 +37,7 @@ struct SearchResultView: View {
                 .cornerRadius(ResponsiveDesign.spacing(12))
             } else {
                 // Results header
-                HStack(spacing: 0) {
+                HStack(spacing: ResponsiveDesign.spacing(0)) {
                     Text("\(filterType) - Suchergebnis: ")
                         .foregroundColor(AppTheme.secondaryText)
                     Text("\(results.count) Treffer")

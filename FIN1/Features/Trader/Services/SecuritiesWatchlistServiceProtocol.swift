@@ -17,4 +17,7 @@ protocol SecuritiesWatchlistServiceProtocol: ObservableObject {
     // MARK: - Watchlist Data Management
     func loadWatchlist() async throws
     func refreshWatchlist() async throws
+
+    // MARK: - Backend Synchronization
+    func syncToBackend() async
 }

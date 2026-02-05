@@ -1,9 +1,0 @@
-// Dev build configuration for FIN1.
-#include "FIN1-Base.xcconfig"
-
-// Expert default:
-// - Simulator: use SSH tunnel on the Mac (localhost points to the Mac).
-// - Device: use LAN (localhost would point to the iPhone/iPad itself).
-FIN1_PARSE_SERVER_URL[sdk=iphonesimulator*] = http:$(FIN1_URL_SLASH)$(FIN1_URL_SLASH)localhost:1338$(FIN1_URL_SLASH)parse
-FIN1_PARSE_SERVER_URL[sdk=iphoneos*] = http:$(FIN1_URL_SLASH)$(FIN1_URL_SLASH)192.168.178.24$(FIN1_URL_SLASH)parse
-

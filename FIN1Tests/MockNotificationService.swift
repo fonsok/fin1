@@ -42,8 +42,8 @@ class MockNotificationService: NotificationServiceProtocol {
     }
 
     func createNotification(title: String, message: String, type: NotificationType, priority: NotificationPriority, for userId: String, metadata: [String: String]?) {
-        let n = AppNotification(userId: userId, title: title, message: message, type: type, priority: priority, metadata: metadata)
-        notifications.append(n)
+        let notification = AppNotification(userId: userId, title: title, message: message, type: type, priority: priority, metadata: metadata)
+        notifications.append(notification)
         unreadCount = notifications.filter { !$0.isRead }.count
     }
 

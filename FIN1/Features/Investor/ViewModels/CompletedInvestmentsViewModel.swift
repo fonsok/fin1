@@ -2,6 +2,7 @@ import SwiftUI
 import Foundation
 import Combine
 
+@MainActor
 final class CompletedInvestmentsViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var investments: [Investment] = []
@@ -14,16 +15,45 @@ final class CompletedInvestmentsViewModel: ObservableObject {
 
     private var userService: any UserServiceProtocol
     private var investmentService: any InvestmentServiceProtocol
+    private var documentService: any DocumentServiceProtocol
+    private var invoiceService: any InvoiceServiceProtocol
+    private var traderDataService: any TraderDataServiceProtocol
+    private var poolTradeParticipationService: any PoolTradeParticipationServiceProtocol
+    private var tradeLifecycleService: any TradeLifecycleServiceProtocol
+    private var configurationService: any ConfigurationServiceProtocol
+    private var commissionCalculationService: any CommissionCalculationServiceProtocol
     private var cancellables = Set<AnyCancellable>()
     private var roleChangeCancellables = Set<AnyCancellable>() // Separate set for role change observers
-    // Capture a stable investorId when this VM is created to avoid cross-user drift
     private var boundInvestorId: String?
     private var currentRole: UserRole? // Track current role to detect role changes
 
+    /// Beleg-/Rechnungsnummern pro Investment (MVVM: View bindet nur daran).
+    @Published var investmentDocRefs: [String: (docNumber: String?, invoiceNumber: String?)] = [:]
+    /// Trader-Username pro Investment-ID (MVVM: keine Service-Aufrufe in der View).
+    @Published var traderUsernames: [String: String] = [:]
+    /// Trade-Nummer pro Investment-ID (MVVM: keine Service-Aufrufe in der View).
+    @Published var tradeNumbers: [String: String] = [:]
+    /// Statement-Summaries pro Investment-ID (MVVM: keine Berechnung in der View).
+    @Published var investmentSummaries: [String: InvestorInvestmentStatementSummary] = [:]
+
     init(userService: any UserServiceProtocol,
-         investmentService: any InvestmentServiceProtocol) {
+         investmentService: any InvestmentServiceProtocol,
+         documentService: any DocumentServiceProtocol,
+         invoiceService: any InvoiceServiceProtocol,
+         traderDataService: any TraderDataServiceProtocol,
+         poolTradeParticipationService: any PoolTradeParticipationServiceProtocol,
+         tradeLifecycleService: any TradeLifecycleServiceProtocol,
+         configurationService: any ConfigurationServiceProtocol,
+         commissionCalculationService: any CommissionCalculationServiceProtocol) {
         self.userService = userService
         self.investmentService = investmentService
+        self.documentService = documentService
+        self.invoiceService = invoiceService
+        self.traderDataService = traderDataService
+        self.poolTradeParticipationService = poolTradeParticipationService
+        self.tradeLifecycleService = tradeLifecycleService
+        self.configurationService = configurationService
+        self.commissionCalculationService = commissionCalculationService
         self.boundInvestorId = userService.currentUser?.id
         self.currentRole = userService.currentUser?.role
         setupBindings()
@@ -94,9 +124,9 @@ final class CompletedInvestmentsViewModel: ObservableObject {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] updatedInvestments in
                 guard let self = self else { return }
-                // Publisher already filtered; assign directly
                 self.investments = updatedInvestments
-                // Check and update investment completion status after changes
+                self.refreshInvestmentDocRefs()
+                self.refreshDisplayData()
                 self.checkAndUpdateInvestmentCompletion()
                 print("✅ CompletedInvestmentsViewModel: Investments updated from service - count: \(updatedInvestments.count)")
             }
@@ -114,10 +144,16 @@ final class CompletedInvestmentsViewModel: ObservableObject {
 
         self.userService = services.userService
         self.investmentService = services.investmentService
-        // Refresh bound investor id when VM is explicitly reconfigured
+        self.documentService = services.documentService
+        self.invoiceService = services.invoiceService
+        self.traderDataService = services.traderDataService
+        self.poolTradeParticipationService = services.poolTradeParticipationService
+        self.tradeLifecycleService = services.tradeLifecycleService
+        self.configurationService = services.configurationService
+        self.commissionCalculationService = services.commissionCalculationService
         self.boundInvestorId = services.userService.currentUser?.id
-
-        // Re-setup bindings with new service
+        refreshInvestmentDocRefs()
+        refreshDisplayData()
         setupBindings()
     }
 
@@ -130,13 +166,13 @@ final class CompletedInvestmentsViewModel: ObservableObject {
     func loadCompletedInvestments() {
         isLoading = true
 
-        // Load from service
         if let investorId = boundInvestorId {
             investments = investmentService.getInvestments(for: investorId)
         } else {
             investments = []
         }
-        // Check and update investment completion status after loading
+        refreshInvestmentDocRefs()
+        refreshDisplayData()
         checkAndUpdateInvestmentCompletion()
 
         // Auto-select current year for completed investments
@@ -145,6 +181,57 @@ final class CompletedInvestmentsViewModel: ObservableObject {
         }
 
         isLoading = false
+    }
+
+    /// Beleg-/Rechnungsnummern aus Services (MVVM: keine Logik in der View).
+    private func refreshInvestmentDocRefs() {
+        let userId = userService.currentUser?.id ?? ""
+        var refs: [String: (docNumber: String?, invoiceNumber: String?)] = [:]
+        for inv in investments {
+            let docs = documentService.getDocumentsForInvestment(inv.id)
+            let docNumber = docs.first { $0.type == .investorCollectionBill }?.accountingDocumentNumber
+            let batchId = inv.batchId ?? ""
+            let invoiceNumber = batchId.isEmpty
+                ? nil
+                : invoiceService.getServiceChargeInvoiceForBatch(batchId, userId: userId)?.invoiceNumber
+            refs[inv.id] = (docNumber, invoiceNumber)
+        }
+        investmentDocRefs = refs
+    }
+
+    /// Trader-Usernames, Trade-Nummern und Statement-Summaries aus Services (MVVM: keine Logik in der View).
+    private func refreshDisplayData() {
+        var usernames: [String: String] = [:]
+        var tradeNums: [String: String] = [:]
+        var summaries: [String: InvestorInvestmentStatementSummary] = [:]
+        let commissionRate = configurationService.traderCommissionRate
+        let calculationService = InvestorCollectionBillCalculationService()
+
+        for inv in investments {
+            usernames[inv.id] = traderDataService.getTrader(by: inv.traderId)?.username ?? "---"
+            let participations = poolTradeParticipationService.getParticipations(forInvestmentId: inv.id)
+            if let first = participations.first,
+               let trade = tradeLifecycleService.completedTrades.first(where: { $0.id == first.tradeId }) {
+                tradeNums[inv.id] = String(format: "%03d", trade.tradeNumber)
+            } else {
+                tradeNums[inv.id] = "---"
+            }
+            if let summary = InvestorInvestmentStatementAggregator.summarizeInvestment(
+                investmentId: inv.id,
+                poolTradeParticipationService: poolTradeParticipationService,
+                tradeLifecycleService: tradeLifecycleService,
+                invoiceService: invoiceService,
+                investmentService: investmentService,
+                calculationService: calculationService,
+                commissionCalculationService: commissionCalculationService,
+                commissionRate: commissionRate
+            ) {
+                summaries[inv.id] = summary
+            }
+        }
+        traderUsernames = usernames
+        tradeNumbers = tradeNums
+        investmentSummaries = summaries
     }
 
     // MARK: - Filtered Investment Lists

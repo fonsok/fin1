@@ -1,5 +1,5 @@
 // ============================================================================
-// FIN1 Parse Cloud Code
+// Parse Cloud Code
 // triggers/legal.js - Legal Document Triggers
 // ============================================================================
 //
@@ -41,8 +41,8 @@ function buildPlaceholderMap() {
   // If they change, you MUST create a new TermsContent version (do not edit old ones).
   const commissionRatePercent = getEnvString('FIN1_LEGAL_COMMISSION_RATE_PERCENT', '10');
 
-  const platformName = getEnvString('FIN1_LEGAL_PLATFORM_NAME', 'FIN1');
-  const companyLegalName = getEnvString('FIN1_LEGAL_COMPANY_LEGAL_NAME', 'FIN1 Investing GmbH');
+  const platformName = getEnvString('FIN1_LEGAL_PLATFORM_NAME', 'Platform');
+  const companyLegalName = getEnvString('FIN1_LEGAL_COMPANY_LEGAL_NAME', 'Company Investing GmbH');
 
   const companyAddress = getEnvString('FIN1_LEGAL_COMPANY_ADDRESS', 'Hauptstraße 100');
   const companyCity = getEnvString('FIN1_LEGAL_COMPANY_CITY', '60311 Frankfurt am Main');
@@ -59,9 +59,9 @@ function buildPlaceholderMap() {
   const bankIBAN = getEnvString('FIN1_LEGAL_BANK_IBAN', 'DE89 3704 0044 0532 0130 00');
   const bankBIC = getEnvString('FIN1_LEGAL_BANK_BIC', 'COBADEFFXXX');
 
-  const companyEmail = getEnvString('FIN1_LEGAL_COMPANY_EMAIL', 'info@fin1-investing.de');
+  const companyEmail = getEnvString('FIN1_LEGAL_COMPANY_EMAIL', 'support@example.com');
   const companyPhone = getEnvString('FIN1_LEGAL_COMPANY_PHONE', '+49 (0) 69 12345678');
-  const companyWebsite = getEnvString('FIN1_LEGAL_COMPANY_WEBSITE', 'www.fin1-investing.de');
+  const companyWebsite = getEnvString('FIN1_LEGAL_COMPANY_WEBSITE', 'www.example.com');
 
   return {
     '{{COMMISSION_RATE}}': commissionRatePercent,

@@ -2,12 +2,19 @@ import Foundation
 import Combine
 
 /// Implementation of PoolTradeParticipationService
+/// Now syncs participations to Parse Server for admin visibility
 final class PoolTradeParticipationService: PoolTradeParticipationServiceProtocol, ServiceLifecycle {
     @Published var participations: [PoolTradeParticipation] = []
 
-    init() {
-        // Initialize with empty participations
-        // In production, this would load from persistent storage
+    private var investmentAPIService: InvestmentAPIServiceProtocol?
+
+    init(investmentAPIService: InvestmentAPIServiceProtocol? = nil) {
+        self.investmentAPIService = investmentAPIService
+    }
+
+    /// Configure the API service (for late binding in DI)
+    func configure(investmentAPIService: InvestmentAPIServiceProtocol) {
+        self.investmentAPIService = investmentAPIService
     }
 
     // MARK: - ServiceLifecycle
@@ -37,26 +44,43 @@ final class PoolTradeParticipationService: PoolTradeParticipationServiceProtocol
         allocatedAmount: Double,
         totalTradeValue: Double
     ) async {
+        let participation = PoolTradeParticipation(
+            tradeId: tradeId,
+            investmentId: investmentId,
+            poolReservationId: poolReservationId,
+            poolNumber: poolNumber,
+            allocatedAmount: allocatedAmount,
+            totalTradeValue: totalTradeValue
+        )
+
+        // Store locally
         await MainActor.run {
-            let participation = PoolTradeParticipation(
-                tradeId: tradeId,
-                investmentId: investmentId,
-                poolReservationId: poolReservationId,
-                poolNumber: poolNumber,
-                allocatedAmount: allocatedAmount,
-                totalTradeValue: totalTradeValue
-            )
-
             participations.append(participation)
+        }
 
-            print("📝 PoolTradeParticipationService: Recorded participation")
-            print("   Trade ID: \(tradeId)")
-            print("   Investment ID: \(investmentId)")
-            print("   Pool Reservation ID: \(poolReservationId)")
-            print("   Pool Number: \(poolNumber)")
-            print("   Allocated Amount: €\(String(format: "%.2f", allocatedAmount))")
-            print("   Total Trade Value: €\(String(format: "%.2f", totalTradeValue))")
-            print("   Ownership %: \(String(format: "%.2f", participation.ownershipPercentage * 100))%")
+        print("📝 PoolTradeParticipationService: Recorded participation")
+        print("   Trade ID: \(tradeId)")
+        print("   Investment ID: \(investmentId)")
+        print("   Pool Reservation ID: \(poolReservationId)")
+        print("   Pool Number: \(poolNumber)")
+        print("   Allocated Amount: €\(String(format: "%.2f", allocatedAmount))")
+        print("   Total Trade Value: €\(String(format: "%.2f", totalTradeValue))")
+        print("   Ownership %: \(String(format: "%.2f", participation.ownershipPercentage * 100))%")
+
+        // Sync to Parse Server
+        if let apiService = investmentAPIService {
+            do {
+                let savedParticipation = try await apiService.createPoolParticipation(participation)
+                // Update local participation with server ID
+                await MainActor.run {
+                    if let index = participations.firstIndex(where: { $0.id == participation.id }) {
+                        participations[index] = savedParticipation
+                    }
+                }
+                print("✅ PoolTradeParticipationService: Synced to Parse Server")
+            } catch {
+                print("⚠️ PoolTradeParticipationService: Failed to sync to Parse Server: \(error)")
+            }
         }
     }
 

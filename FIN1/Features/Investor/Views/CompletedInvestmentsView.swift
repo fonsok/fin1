@@ -6,14 +6,32 @@ struct CompletedInvestmentsView: View {
     @State private var selectedCompletedInvestment: Investment?
 
     init(userService: (any UserServiceProtocol)? = nil,
-         investmentService: (any InvestmentServiceProtocol)? = nil) {
+         investmentService: (any InvestmentServiceProtocol)? = nil,
+         documentService: (any DocumentServiceProtocol)? = nil,
+         invoiceService: (any InvoiceServiceProtocol)? = nil,
+         traderDataService: (any TraderDataServiceProtocol)? = nil,
+         poolTradeParticipationService: (any PoolTradeParticipationServiceProtocol)? = nil,
+         tradeLifecycleService: (any TradeLifecycleServiceProtocol)? = nil,
+         configurationService: (any ConfigurationServiceProtocol)? = nil,
+         commissionCalculationService: (any CommissionCalculationServiceProtocol)? = nil) {
         // Services must be provided - wrapper handles injection
-        guard let userSvc = userService, let invSvc = investmentService else {
+        guard let userSvc = userService, let invSvc = investmentService,
+              let docSvc = documentService, let invoiceSvc = invoiceService,
+              let traderSvc = traderDataService, let poolSvc = poolTradeParticipationService,
+              let tradeSvc = tradeLifecycleService, let configSvc = configurationService,
+              let commissionSvc = commissionCalculationService else {
             fatalError("CompletedInvestmentsView must be initialized with services. Use CompletedInvestmentsViewWrapper instead.")
         }
         self._viewModel = StateObject(wrappedValue: CompletedInvestmentsViewModel(
             userService: userSvc,
-            investmentService: invSvc
+            investmentService: invSvc,
+            documentService: docSvc,
+            invoiceService: invoiceSvc,
+            traderDataService: traderSvc,
+            poolTradeParticipationService: poolSvc,
+            tradeLifecycleService: tradeSvc,
+            configurationService: configSvc,
+            commissionCalculationService: commissionSvc
         ))
     }
 
@@ -112,6 +130,10 @@ struct CompletedInvestmentsView: View {
             if !viewModel.completedInvestmentsByTimePeriod.isEmpty {
                 CompletedInvestmentsTable(
                     investments: viewModel.completedInvestmentsByTimePeriod,
+                    investmentDocRefs: viewModel.investmentDocRefs,
+                    traderUsernames: viewModel.traderUsernames,
+                    tradeNumbers: viewModel.tradeNumbers,
+                    investmentSummaries: viewModel.investmentSummaries,
                     onShowDetails: { investment in
                         selectedCompletedInvestment = investment
                     }
@@ -166,7 +188,14 @@ struct CompletedInvestmentsViewWrapper: View {
     var body: some View {
         CompletedInvestmentsView(
             userService: services.userService,
-            investmentService: services.investmentService
+            investmentService: services.investmentService,
+            documentService: services.documentService,
+            invoiceService: services.invoiceService,
+            traderDataService: services.traderDataService,
+            poolTradeParticipationService: services.poolTradeParticipationService,
+            tradeLifecycleService: services.tradeLifecycleService,
+            configurationService: services.configurationService,
+            commissionCalculationService: services.commissionCalculationService
         )
     }
 }

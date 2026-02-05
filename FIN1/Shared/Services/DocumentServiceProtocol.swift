@@ -32,6 +32,9 @@ protocol DocumentServiceProtocol: ObservableObject, ServiceLifecycle {
     // MARK: - Document Status Management
     func markAllDocumentsAsRead()
     func markDocumentAsRead(_ document: Document)
+
+    // MARK: - Backend Synchronization
+    func syncToBackend() async
 }
 
 // MARK: - Document Service Implementation
@@ -45,9 +48,16 @@ final class DocumentService: DocumentServiceProtocol, ServiceLifecycle {
     @Published var showError = false
 
     private var cancellables = Set<AnyCancellable>()
+    private var documentAPIService: DocumentAPIServiceProtocol?
 
-    init() {
+    init(documentAPIService: DocumentAPIServiceProtocol? = nil) {
+        self.documentAPIService = documentAPIService
         loadMockDocuments()
+    }
+
+    /// Configure the API service for backend synchronization
+    func configure(documentAPIService: DocumentAPIServiceProtocol) {
+        self.documentAPIService = documentAPIService
     }
 
     // MARK: - ServiceLifecycle
@@ -60,7 +70,23 @@ final class DocumentService: DocumentServiceProtocol, ServiceLifecycle {
     func loadDocuments(for user: User) {
         isLoading = true
 
-        // Simulate API call
+        // Try to fetch from backend first
+        if let apiService = documentAPIService {
+            Task {
+                do {
+                    let fetchedDocuments = try await apiService.fetchDocuments(for: user.id)
+                    await MainActor.run {
+                        self.documents = fetchedDocuments
+                        self.isLoading = false
+                    }
+                    return
+                } catch {
+                    print("⚠️ Failed to fetch documents from backend, using local: \(error.localizedDescription)")
+                }
+            }
+        }
+
+        // Fallback to mock data
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             self.isLoading = false
         }
@@ -71,15 +97,29 @@ final class DocumentService: DocumentServiceProtocol, ServiceLifecycle {
             isLoading = true
         }
 
-        // Simulate API call with reduced sleep time for better performance
-        try await Task.sleep(nanoseconds: 800_000_000) // 0.8 seconds (reduced from 2.0)
-
+        // Add to local storage first
         await MainActor.run {
             self.documents.append(document)
+        }
+
+        // Sync to backend (write-through pattern)
+        if let apiService = documentAPIService {
+            Task.detached { [apiService, document] in
+                do {
+                    let savedDocument = try await apiService.saveDocument(document)
+                    print("✅ Document synced to backend: \(savedDocument.id)")
+                } catch {
+                    print("⚠️ Failed to sync document to backend: \(error.localizedDescription)")
+                }
+            }
+        } else {
+            // Simulate API call if no backend available
+            try await Task.sleep(nanoseconds: 800_000_000)
+        }
+
+        await MainActor.run {
             self.isLoading = false
             print("📄 DocumentService: Document added, total count: \(self.documents.count), document: \(document.name)")
-            // The @Published property should trigger observers automatically
-            // This print confirms the array was modified and should trigger the observation
         }
     }
 
@@ -88,11 +128,27 @@ final class DocumentService: DocumentServiceProtocol, ServiceLifecycle {
             isLoading = true
         }
 
-        // Simulate API call with reduced sleep time for better performance
-        try await Task.sleep(nanoseconds: 400_000_000) // 0.4 seconds (reduced from 1.0)
-
+        // Remove from local storage first
         await MainActor.run {
             self.documents.removeAll { $0.id == document.id }
+        }
+
+        // Sync deletion to backend (write-through pattern)
+        if let apiService = documentAPIService {
+            Task.detached { [apiService, document] in
+                do {
+                    try await apiService.deleteDocument(document.id)
+                    print("✅ Document deletion synced to backend: \(document.id)")
+                } catch {
+                    print("⚠️ Failed to sync document deletion to backend: \(error.localizedDescription)")
+                }
+            }
+        } else {
+            // Simulate API call if no backend available
+            try await Task.sleep(nanoseconds: 400_000_000)
+        }
+
+        await MainActor.run {
             self.isLoading = false
         }
     }
@@ -211,6 +267,57 @@ final class DocumentService: DocumentServiceProtocol, ServiceLifecycle {
     func markDocumentAsRead(_ document: Document) {
         if let idx = documents.firstIndex(where: { $0.id == document.id }) {
             documents[idx].readAt = Date()
+
+            // Sync read status to backend
+            if let apiService = documentAPIService {
+                Task.detached { [apiService, document] in
+                    var updatedDocument = document
+                    updatedDocument.readAt = Date()
+                    do {
+                        _ = try await apiService.updateDocument(updatedDocument)
+                    } catch {
+                        print("⚠️ Failed to sync read status: \(error.localizedDescription)")
+                    }
+                }
+            }
         }
+    }
+
+    // MARK: - Backend Synchronization
+
+    /// Syncs any pending documents to the backend
+    /// Called automatically when app enters background
+    func syncToBackend() async {
+        guard let apiService = documentAPIService else {
+            print("⚠️ DocumentService: No API service configured, skipping sync")
+            return
+        }
+
+        // Get documents from last 24 hours (most likely to be pending)
+        let twentyFourHoursAgo = Calendar.current.date(byAdding: .hour, value: -24, to: Date()) ?? Date()
+        let recentDocuments = documents.filter { $0.uploadedAt >= twentyFourHoursAgo }
+
+        guard !recentDocuments.isEmpty else {
+            print("📤 DocumentService: No recent documents to sync")
+            return
+        }
+
+        print("📤 DocumentService: Syncing \(recentDocuments.count) recent documents to backend...")
+
+        var syncedCount = 0
+        var failedCount = 0
+
+        for document in recentDocuments {
+            do {
+                _ = try await apiService.saveDocument(document)
+                syncedCount += 1
+            } catch {
+                // Document might already exist in backend (idempotent)
+                print("⚠️ Failed to sync document \(document.id): \(error.localizedDescription)")
+                failedCount += 1
+            }
+        }
+
+        print("✅ DocumentService: Background sync completed - \(syncedCount) synced, \(failedCount) failed/skipped")
     }
 }

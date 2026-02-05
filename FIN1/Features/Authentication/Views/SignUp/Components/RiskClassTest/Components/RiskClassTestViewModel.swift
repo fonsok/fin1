@@ -1,5 +1,6 @@
 import SwiftUI
 
+@MainActor
 final class RiskClassTestViewModel: ObservableObject {
     @Published var signUpData = SignUpData()
 

@@ -19,4 +19,6 @@ protocol InvestorWatchlistServiceProtocol: ObservableObject {
     func removeTraderFromWatchlist(_ trader: WatchlistTraderData)
     func isInWatchlist(_ trader: WatchlistTraderData) -> Bool
 
+    // MARK: - Backend Synchronization
+    func syncToBackend() async
 }

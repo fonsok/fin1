@@ -50,7 +50,9 @@ final class InvestmentsDataProcessor {
                 profit: investmentProfit,
                 returnPercentage: investmentReturn,
                 reservation: reservation,
-                investment: investment
+                investment: investment,
+                docNumber: nil,
+                invoiceNumber: nil
             ))
         }
 

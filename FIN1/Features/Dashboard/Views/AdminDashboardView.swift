@@ -285,7 +285,7 @@ struct AdminActionCard: View {
     var body: some View {
         HStack(spacing: ResponsiveDesign.spacing(12)) {
             Image(systemName: icon)
-                .font(.title2)
+                .font(ResponsiveDesign.headlineFont())
                 .foregroundColor(color)
                 .frame(width: 30)
 
@@ -347,7 +347,7 @@ struct RoleTestButton: View {
         Button(action: { switchToRole(role) }, label: {
             HStack(spacing: ResponsiveDesign.spacing(12)) {
                 Image(systemName: role.icon)
-                    .font(.title2)
+                    .font(ResponsiveDesign.headlineFont())
                     .foregroundColor(color)
                     .frame(width: 30)
 
@@ -365,7 +365,7 @@ struct RoleTestButton: View {
                 Spacer()
 
                 Image(systemName: "arrow.right.circle")
-                    .font(.title3)
+                    .font(ResponsiveDesign.headlineFont())
                     .foregroundColor(color)
             }
             .padding()

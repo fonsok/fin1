@@ -1,5 +1,5 @@
 // ============================================================================
-// FIN1 MongoDB Initialization
+// MongoDB Initialization
 // 02_schema_validation.js - Schema Validation Rules
 // ============================================================================
 //
@@ -13,7 +13,7 @@
 
 db = db.getSiblingDB('fin1');
 
-print('=== FIN1 MongoDB Schema Validation Setup ===');
+print('=== MongoDB Schema Validation Setup ===');
 
 // ============================================================================
 // INVESTMENT VALIDATION
@@ -362,7 +362,7 @@ db.runCommand({
 // ============================================================================
 
 print('');
-print('=== FIN1 MongoDB Schema Validation Setup Complete ===');
+print('=== MongoDB Schema Validation Setup Complete ===');
 print('Validation rules applied to critical collections');
 print('Mode: moderate (validates on insert/update)');
 print('Action: warn (logs warnings, does not reject)');

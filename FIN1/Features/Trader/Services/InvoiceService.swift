@@ -13,9 +13,14 @@ final class InvoiceService: InvoiceServiceProtocol, ServiceLifecycle {
     private var cancellables = Set<AnyCancellable>()
     private let pdfGenerator = PDFGenerator()
     private let transactionIdService: any TransactionIdServiceProtocol
+    private let parseAPIClient: (any ParseAPIClientProtocol)?
 
-    init(transactionIdService: any TransactionIdServiceProtocol = TransactionIdService()) {
+    init(
+        transactionIdService: any TransactionIdServiceProtocol = TransactionIdService(),
+        parseAPIClient: (any ParseAPIClientProtocol)? = nil
+    ) {
         self.transactionIdService = transactionIdService
+        self.parseAPIClient = parseAPIClient
         // Don't load mock invoices - they will be generated from actual trades
     }
 
@@ -89,6 +94,11 @@ final class InvoiceService: InvoiceServiceProtocol, ServiceLifecycle {
     }
 
     func addInvoice(_ invoice: Invoice) async {
+        // Save to backend if it's a service charge invoice and ParseAPIClient is available
+        if invoice.type == .platformServiceCharge, let apiClient = parseAPIClient {
+            await saveServiceChargeInvoiceToBackend(invoice, apiClient: apiClient)
+        }
+
         await MainActor.run {
             self.invoices.append(invoice)
             // Post notification so ViewModels can refresh
@@ -99,6 +109,9 @@ final class InvoiceService: InvoiceServiceProtocol, ServiceLifecycle {
             )
         }
     }
+
+    // MARK: - Backend Integration
+    // Note: Backend integration methods are in InvoiceService+Backend.swift extension
 
     func updateInvoiceStatus(_ invoice: Invoice, status: InvoiceStatus) async throws {
         await MainActor.run {
@@ -222,6 +235,11 @@ final class InvoiceService: InvoiceServiceProtocol, ServiceLifecycle {
 
     func getInvoicesForTrade(_ tradeId: String) -> [Invoice] {
         return invoices.filter { $0.tradeId == tradeId }
+    }
+
+    func getServiceChargeInvoiceForBatch(_ batchId: String, userId: String) -> Invoice? {
+        return getInvoicesByType(.platformServiceCharge, for: userId)
+            .first { $0.tradeId == batchId }
     }
 
     // MARK: - Invoice Validation

@@ -1,5 +1,5 @@
 -- ============================================================================
--- FIN1 DATABASE SCHEMA
+-- DATABASE SCHEMA
 -- 012_indexes.sql - Consolidated Index Overview & Additional Indexes
 -- ============================================================================
 --

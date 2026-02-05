@@ -29,7 +29,7 @@ struct BulkOperationsView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
+            VStack(spacing: ResponsiveDesign.spacing(0)) {
                 selectionHeader
                 ticketList
                 if !selectedTicketIds.isEmpty {
@@ -249,7 +249,7 @@ private struct BulkSelectableTicketRow: View {
                 // Checkbox
                 Image(systemName: isSelected ? "checkmark.square.fill" : "square")
                     .foregroundColor(isSelected ? AppTheme.accentLightBlue : AppTheme.fontColor.opacity(0.4))
-                    .font(.title3)
+                    .font(ResponsiveDesign.headlineFont())
 
                 // Ticket info
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
@@ -307,10 +307,10 @@ private struct PriorityBadge: View {
         Text(priority.rawValue)
             .font(.system(size: 9, weight: .semibold))
             .foregroundColor(.white)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
+            .padding(.horizontal, ResponsiveDesign.spacing(6))
+            .padding(.vertical, ResponsiveDesign.spacing(2))
             .background(priorityColor)
-            .cornerRadius(4)
+            .cornerRadius(ResponsiveDesign.spacing(4))
     }
 
     private var priorityColor: Color {

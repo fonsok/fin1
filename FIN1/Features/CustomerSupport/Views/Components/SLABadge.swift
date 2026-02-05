@@ -15,7 +15,7 @@ struct SLABadge: View {
     var body: some View {
         HStack(spacing: ResponsiveDesign.spacing(4)) {
             Image(systemName: slaInfo.overallStatus.icon)
-                .font(.caption2)
+                .font(ResponsiveDesign.captionFont())
 
             if showTime, let timeString = slaInfo.formattedTimeRemaining {
                 Text(timeString)
@@ -213,7 +213,7 @@ struct SLAWarningBanner: View {
 // MARK: - Preview
 
 #Preview {
-    VStack(spacing: 20) {
+    VStack(spacing: ResponsiveDesign.spacing(20)) {
         // Create test tickets with different SLA statuses
         let urgentTicket = SupportTicket(
             id: "1",

@@ -42,7 +42,7 @@ final class InvestorCashBalanceService: InvestorCashBalanceServiceProtocol, Obse
     func start() {
         // Initialize balances for existing investors if needed
         print("💰 InvestorCashBalanceService started with initial balance: €\(initialInvestorBalance.formatted(.currency(code: "EUR")))")
-        
+
         // Subscribe to Live Query updates for current investor
         Task {
             await subscribeToLiveUpdates()
@@ -66,7 +66,7 @@ final class InvestorCashBalanceService: InvestorCashBalanceServiceProtocol, Obse
                 parseLiveQueryClient?.unsubscribe(subscription)
             }
             liveQuerySubscriptions.removeAll()
-            
+
             await MainActor.run {
                 balances.removeAll()
             }
@@ -74,9 +74,9 @@ final class InvestorCashBalanceService: InvestorCashBalanceServiceProtocol, Obse
             print("💰 InvestorCashBalanceService reset - all balances and ledger cleared")
         }
     }
-    
+
     // MARK: - Live Query Integration
-    
+
     private func setupLiveQuerySubscription() {
         // Observe Parse Live Query updates for Wallet Transactions
         NotificationCenter.default.publisher(for: .parseLiveQueryObjectUpdated)
@@ -91,14 +91,14 @@ final class InvestorCashBalanceService: InvestorCashBalanceServiceProtocol, Obse
                       let balanceAfter = object["balanceAfter"] as? Double else {
                     return
                 }
-                
+
                 // Check if this user is an investor
                 // Update balance if this investor is being tracked
                 Task { @MainActor in
                     if self.balances.keys.contains(userId) {
                         self.balances[userId] = balanceAfter
                         print("💰 InvestorCashBalanceService: Balance updated via Live Query for investor \(userId): €\(balanceAfter.formatted(.currency(code: "EUR")))")
-                        
+
                         // Post notification to update UI
                         NotificationCenter.default.post(
                             name: .investorBalanceDidChange,
@@ -113,33 +113,33 @@ final class InvestorCashBalanceService: InvestorCashBalanceServiceProtocol, Obse
             }
             .store(in: &cancellables)
     }
-    
+
     private func subscribeToLiveUpdates() async {
         guard let liveQueryClient = parseLiveQueryClient else {
             return
         }
-        
+
         // Subscribe to WalletTransaction updates for current investor (if logged in as investor)
         if let currentUserId = userService?.currentUser?.id,
            userService?.currentUser?.role == .investor {
             await subscribeToLiveUpdates(for: currentUserId, liveQueryClient: liveQueryClient)
         }
     }
-    
+
     /// Subscribe to Live Query updates for a specific investor
     func subscribeToLiveUpdates(for investorId: String) async {
         guard let liveQueryClient = parseLiveQueryClient else {
             return
         }
-        
+
         // Unsubscribe from previous subscription if exists
         if let existingSubscription = liveQuerySubscriptions[investorId] {
             liveQueryClient.unsubscribe(existingSubscription)
         }
-        
+
         await subscribeToLiveUpdates(for: investorId, liveQueryClient: liveQueryClient)
     }
-    
+
     private func subscribeToLiveUpdates(for investorId: String, liveQueryClient: any ParseLiveQueryClientProtocol) async {
         // Subscribe to WalletTransaction updates for this investor
         let subscription = liveQueryClient.subscribe(
@@ -151,7 +151,7 @@ final class InvestorCashBalanceService: InvestorCashBalanceServiceProtocol, Obse
                     if let balanceAfter = parseTransaction.balanceAfter {
                         self?.balances[investorId] = balanceAfter
                         print("💰 InvestorCashBalanceService: Balance updated via Live Query for investor \(investorId): €\(balanceAfter.formatted(.currency(code: "EUR")))")
-                        
+
                         // Post notification to update UI
                         NotificationCenter.default.post(
                             name: .investorBalanceDidChange,
@@ -164,7 +164,7 @@ final class InvestorCashBalanceService: InvestorCashBalanceServiceProtocol, Obse
                     }
                 }
             },
-            onDelete: { [weak self] (_ objectId: String) in
+            onDelete: { (_ objectId: String) in
                 // Balance might change if transaction is deleted, but we'll reload from server
                 Task { @MainActor in
                     // Could reload balance from server here if needed
@@ -503,17 +503,17 @@ final class InvestorCashBalanceService: InvestorCashBalanceServiceProtocol, Obse
         ledgerService.clearTransactions(for: investorId)
         print("💰 Investor \(investorId) - Balance reset to initial: €\(initialInvestorBalance.formatted(.currency(code: "EUR")))")
     }
-    
+
     func processDeposit(investorId: String, amount: Double) async {
         await MainActor.run {
             let currentBalance = balances[investorId] ?? initialInvestorBalance
             let newBalance = currentBalance + amount
             balances[investorId] = newBalance
-            
+
             // NOTE: Do NOT record wallet transactions in ledger
             // Wallet transactions are stored in PaymentService and loaded separately
             // Recording here would cause duplicates in Account Statement
-            
+
             // Post notification to update UI
             NotificationCenter.default.post(
                 name: .investorBalanceDidChange,
@@ -524,17 +524,17 @@ final class InvestorCashBalanceService: InvestorCashBalanceServiceProtocol, Obse
         let newBalance = getBalance(for: investorId)
         print("💰 Investor \(investorId) - Deposit: +€\(amount.formatted(.currency(code: "EUR"))) | New balance: €\(newBalance.formatted(.currency(code: "EUR")))")
     }
-    
+
     func processWithdrawal(investorId: String, amount: Double) async {
         await MainActor.run {
             let currentBalance = balances[investorId] ?? initialInvestorBalance
             let newBalance = max(0, currentBalance - amount)
             balances[investorId] = newBalance
-            
+
             // NOTE: Do NOT record wallet transactions in ledger
             // Wallet transactions are stored in PaymentService and loaded separately
             // Recording here would cause duplicates in Account Statement
-            
+
             // Post notification to update UI
             NotificationCenter.default.post(
                 name: .investorBalanceDidChange,

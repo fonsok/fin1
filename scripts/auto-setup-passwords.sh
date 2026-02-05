@@ -1,6 +1,6 @@
 #!/bin/bash
 # Automatisches Setup der Passwörter für FIN1
-# Auf Ubuntu ausführen: cd ~/fin1-server && bash auto-setup-passwords-v2026-01-30.sh
+# Auf Ubuntu ausführen: cd ~/fin1-server && bash auto-setup-passwords.sh
 
 set -e
 

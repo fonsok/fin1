@@ -64,7 +64,7 @@ final class InvestmentSheetViewModel: ObservableObject {
     /// Calculates the platform service charge for the current investment amount
     /// - Note: Service charge applies ONLY to investors (not traders)
     var platformServiceCharge: Double {
-        totalInvestmentAmount * CalculationConstants.ServiceCharges.platformServiceChargeRate
+        totalInvestmentAmount * configurationService.effectivePlatformServiceChargeRate
     }
 
     /// Total amount required (investment + platform service charge)

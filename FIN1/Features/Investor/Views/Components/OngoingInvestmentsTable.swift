@@ -41,7 +41,7 @@ struct OngoingInvestmentsTable: View {
                 headerContent(columnWidths: [:], forMeasurement: true)
 
                 // Measure data rows
-                VStack(spacing: 0) {
+                VStack(spacing: ResponsiveDesign.spacing(0)) {
                     ForEach(pools) { pool in
                         HStack(spacing: tableColumnSpacing) {
                             Text("Investment \(pool.sequenceNumber)")
@@ -90,6 +90,9 @@ struct OngoingInvestmentsTable: View {
                                     .font(ResponsiveDesign.bodyFont())
                                     .measureWidth(column: "return")
                             }
+
+                            InvestmentDocRefView(verrechnungNumber: pool.docNumber, rechnungNumber: pool.invoiceNumber)
+                                .measureWidth(column: "docRef")
                         }
                     }
 
@@ -129,6 +132,9 @@ struct OngoingInvestmentsTable: View {
                                 .font(ResponsiveDesign.bodyFont())
                                 .measureWidth(column: "return")
                         }
+
+                        Text("")
+                            .measureWidth(column: "docRef")
                     }
                 }
             }
@@ -219,6 +225,20 @@ struct OngoingInvestmentsTable: View {
                 forMeasurement: forMeasurement,
                 alignment: .trailing
             ))
+
+            Group {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("Beleg /")
+                    Text("Rechnung")
+                }
+                .font(ResponsiveDesign.bodyFont())
+            }
+            .modifier(HeaderCellModifier(
+                columnKey: "docRef",
+                columnWidths: columnWidths,
+                forMeasurement: forMeasurement,
+                alignment: .leading
+            ))
         }
     }
 
@@ -248,6 +268,7 @@ struct OngoingInvestmentsTable: View {
             case "amount": return 110
             case "profit": return 110
             case "return": return 90
+            case "docRef": return 100
             default: return 80
             }
         }
@@ -325,6 +346,10 @@ struct OngoingInvestmentsTable: View {
                     .font(ResponsiveDesign.bodyFont())
                     .frame(width: columnWidths["return"] ?? 90, alignment: .trailing)
             }
+
+            // Beleg / Rechnung (Account Statement + Service Charge Invoice)
+            InvestmentDocRefView(verrechnungNumber: pool.docNumber, rechnungNumber: pool.invoiceNumber)
+                .frame(width: columnWidths["docRef"] ?? 100, alignment: .leading)
         }
         .frame(minHeight: 44)
         .padding(.horizontal, ResponsiveDesign.spacing(12))
@@ -374,6 +399,9 @@ struct OngoingInvestmentsTable: View {
                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
                     .frame(width: columnWidths["return"] ?? 90, alignment: .trailing)
             }
+
+            Text("")
+                .frame(width: columnWidths["docRef"] ?? 100, alignment: .leading)
         }
         .frame(minHeight: 44)
         .padding(.horizontal, ResponsiveDesign.spacing(12))

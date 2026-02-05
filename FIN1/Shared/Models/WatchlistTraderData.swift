@@ -2,7 +2,7 @@ import Foundation
 import SwiftUI
 
 // MARK: - Watchlist Trader Data Model
-struct WatchlistTraderData: Identifiable {
+struct WatchlistTraderData: Identifiable, Sendable {
     let id: String
     let name: String
     let image: String

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Restore Mac power settings from backup
-# Usage: sudo ./restore-mac-power-settings-v2026-01-30.sh [backup-file]
+# Usage: sudo ./restore-mac-power-settings.sh [backup-file]
 
 set -e
 

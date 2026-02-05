@@ -39,7 +39,7 @@ struct InvestorInvestmentStatementView: View {
                             )
                         } else {
                             // Placeholder if no document number
-                            RoundedRectangle(cornerRadius: 8)
+                            RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(8))
                                 .fill(Color.gray.opacity(0.3))
                                 .frame(width: 120, height: 120)
                         }

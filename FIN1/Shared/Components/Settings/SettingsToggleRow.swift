@@ -57,7 +57,7 @@ struct SettingsSecureFieldStyle: TextFieldStyle {
 // MARK: - Preview
 
 #Preview {
-    VStack(spacing: 16) {
+    VStack(spacing: ResponsiveDesign.spacing(16)) {
         SettingsToggleRow(
             title: "Enable Feature",
             subtitle: "Description of this feature",

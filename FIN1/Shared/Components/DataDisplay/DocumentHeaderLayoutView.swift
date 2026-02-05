@@ -207,7 +207,7 @@ struct DocumentHeaderLayoutView_Previews: PreviewProvider {
                     documentDate: Date()
                 ) {
                     // QR Code placeholder
-                    RoundedRectangle(cornerRadius: 8)
+                    RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(8))
                         .fill(Color.gray.opacity(0.3))
                         .frame(width: 120, height: 120)
                 }

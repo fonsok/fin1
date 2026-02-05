@@ -6,6 +6,7 @@ struct TradeStatementSellSection: View {
     let sellOrderData: [SellOrderData]
     let securityIdentifier: String
     let underlyingAsset: String?
+    let tradingVenue: String
     let profitLoss: String
     let profitLossColor: Color
     let assessmentBasis: String
@@ -25,16 +26,9 @@ struct TradeStatementSellSection: View {
                     Spacer()
                 }
 
-                // Security Information - Dynamic format
+                // Security Information (WKN - Richtung - Basiswert - Strike - Emittent aus Rechnung)
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
-                    Text("WKN/ISIN: VU9GG0/DE000VU9GG06")
-                        .font(ResponsiveDesign.bodyFont())
-                        .fontWeight(.regular)
-                        .foregroundColor(DocumentDesignSystem.textColorSecondary)
-
-                    let assetTypeSuffix = DepotUtils.getAssetTypeSuffix(for: underlyingAsset)
-                    let underlyingName = underlyingAsset ?? "DAX"
-                    Text("PUT - \(underlyingName) \(assetTypeSuffix)15.000 - 15.12.2023 - Vontobel")
+                    Text(securityIdentifier)
                         .font(ResponsiveDesign.bodyFont())
                         .fontWeight(.regular)
                         .foregroundColor(DocumentDesignSystem.textColorSecondary)
@@ -88,7 +82,7 @@ struct TradeStatementSellSection: View {
                         TradeStatementDetailRow(label: "Lagerstelle:", value: "Clearstream Nat.")
                         TradeStatementDetailRow(label: "Lagerland:", value: "Deutschland")
                         TradeStatementDetailRow(label: "Valuta:", value: sellOrder.valueDate)
-                        TradeStatementDetailRow(label: "Handelsplatz:", value: "Vontobel")
+                        TradeStatementDetailRow(label: "Handelsplatz:", value: tradingVenue)
                         TradeStatementDetailRow(label: "Schlusstag:", value: sellOrder.closingDate)
                     }
                 }
@@ -126,6 +120,7 @@ struct TradeStatementSellSection_Previews: PreviewProvider {
             sellOrderData: [sampleSellOrder],
             securityIdentifier: "VONT.FINL PR PUT23 DAX (DE000VU9GG06/VU9GG0)",
             underlyingAsset: "DAX",
+            tradingVenue: TradeStatementPlaceholders.tradingVenue,
             profitLoss: "12,53 EUR",
             profitLossColor: AppTheme.accentGreen,
             assessmentBasis: "12,53 EUR",

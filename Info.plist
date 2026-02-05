@@ -33,11 +33,7 @@
 	<key>LegalBankIBAN</key>
 	<string>DE89 3704 0044 0532 0130 00</string>
 	<key>LegalBankName</key>
-	<string>FIN1 Bank AG</string>
-	<key>LegalDocumentPrefix</key>
-	<string>FIN1</string>
-	<key>LegalPlatformName</key>
-	<string>FIN1</string>
+	<string></string>
 	<key>LegalCompanyAddress</key>
 	<string>Hauptstraße 100</string>
 	<key>LegalCompanyAddressLine</key>
@@ -47,11 +43,11 @@
 	<key>LegalCompanyCity</key>
 	<string>60311 Frankfurt am Main</string>
 	<key>LegalCompanyEmail</key>
-	<string>info@fin1-investing.de</string>
+	<string></string>
 	<key>LegalCompanyManagement</key>
 	<string>Max Mustermann</string>
 	<key>LegalCompanyName</key>
-	<string>FIN1 Investing GmbH</string>
+	<string></string>
 	<key>LegalCompanyPhone</key>
 	<string>+49 (0) 69 12345678</string>
 	<key>LegalCompanyRegisterNumber</key>
@@ -59,28 +55,14 @@
 	<key>LegalCompanyVatId</key>
 	<string>DE123456789</string>
 	<key>LegalCompanyWebsite</key>
-	<string>www.fin1-investing.de</string>
+	<string></string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 		<key>NSExceptionDomains</key>
 		<dict>
-			<key>127.0.0.1</key>
-			<dict>
-				<key>NSExceptionAllowsInsecureHTTPLoads</key>
-				<true/>
-				<key>NSIncludesSubdomains</key>
-				<true/>
-			</dict>
 			<key>192.168.178.24</key>
-			<dict>
-				<key>NSExceptionAllowsInsecureHTTPLoads</key>
-				<true/>
-				<key>NSIncludesSubdomains</key>
-				<true/>
-			</dict>
-			<key>localhost</key>
 			<dict>
 				<key>NSExceptionAllowsInsecureHTTPLoads</key>
 				<true/>

@@ -17,19 +17,19 @@ Diese Anleitung beschreibt die Einrichtung des FIN1 Backend-Servers auf einem Ub
 1. **Ubuntu-Server im Netzwerk finden:**
    ```bash
    cd /Users/ra/app/FIN1
-   chmod +x scripts/find-ubuntu-server-v2026-01-30.sh
-   ./scripts/find-ubuntu-server-v2026-01-30.sh
+   chmod +x scripts/find-ubuntu-server.sh
+   ./scripts/find-ubuntu-server.sh
    ```
 
 2. **Deployment durchführen:**
    ```bash
-   chmod +x scripts/deploy-to-ubuntu-v2026-01-30.sh
-   ./scripts/deploy-to-ubuntu-v2026-01-30.sh [ubuntu-ip] [ubuntu-user]
+   chmod +x scripts/deploy-to-ubuntu.sh
+   ./scripts/deploy-to-ubuntu.sh [ubuntu-ip] [ubuntu-user]
    ```
 
    Beispiel:
    ```bash
-   ./scripts/deploy-to-ubuntu-v2026-01-30.sh 192.168.178.50 ubuntu
+   ./scripts/deploy-to-ubuntu.sh 192.168.178.50 ubuntu
    ```
 
 ### Option 2: Manuelles Setup auf Ubuntu
@@ -37,12 +37,12 @@ Diese Anleitung beschreibt die Einrichtung des FIN1 Backend-Servers auf einem Ub
 1. **Auf Ubuntu: Setup-Skript ausführen**
    ```bash
    # Dateien vom Mac kopieren
-   scp -r /Users/ra/app/FIN1/scripts/setup-ubuntu-server-v2026-01-30.sh user@ubuntu-ip:~/
+   scp -r /Users/ra/app/FIN1/scripts/setup-ubuntu-server.sh user@ubuntu-ip:~/
 
    # Auf Ubuntu ausführen
    ssh user@ubuntu-ip
-   chmod +x ~/setup-ubuntu-server-v2026-01-30.sh
-   ~/setup-ubuntu-server-v2026-01-30.sh
+   chmod +x ~/setup-ubuntu-server.sh
+   ~/setup-ubuntu-server.sh
    ```
 
 2. **Neu einloggen oder Docker-Gruppe aktivieren:**

@@ -37,7 +37,7 @@ final class CashBalanceService: CashBalanceServiceProtocol, ObservableObject {
         // Initialize with starting balance
         currentBalance = configurationService.initialAccountBalance
         print("💰 CashBalanceService started with balance: €\(formattedBalance)")
-        
+
         // Subscribe to Live Query updates
         await subscribeToLiveUpdates()
     }
@@ -82,7 +82,7 @@ final class CashBalanceService: CashBalanceServiceProtocol, ObservableObject {
         }
         print("💰 Gutschrift processed: +€\(amount.formatted(.currency(code: "EUR"))) | New balance: €\(formattedBalance)")
     }
-    
+
     func processWithdrawal(amount: Double) async {
         await MainActor.run {
             currentBalance -= amount
@@ -123,7 +123,7 @@ final class CashBalanceService: CashBalanceServiceProtocol, ObservableObject {
         // This would need to be implemented differently in a real app
         // For now, we'll rely on the service being restarted when configuration changes
     }
-    
+
     private func setupLiveQuerySubscription() {
         // Observe Parse Live Query updates for Wallet Transactions
         NotificationCenter.default.publisher(for: .parseLiveQueryObjectUpdated)
@@ -139,7 +139,7 @@ final class CashBalanceService: CashBalanceServiceProtocol, ObservableObject {
                       let balanceAfter = object["balanceAfter"] as? Double else {
                     return
                 }
-                
+
                 // Update balance from WalletTransaction balanceAfter
                 Task { @MainActor in
                     self.currentBalance = balanceAfter
@@ -148,13 +148,13 @@ final class CashBalanceService: CashBalanceServiceProtocol, ObservableObject {
             }
             .store(in: &cancellables)
     }
-    
+
     private func subscribeToLiveUpdates() async {
         guard let liveQueryClient = parseLiveQueryClient,
               let userId = userService?.currentUser?.id else {
             return
         }
-        
+
         // Subscribe to WalletTransaction updates for current user
         liveQuerySubscription = liveQueryClient.subscribe(
             className: "WalletTransaction",
@@ -168,7 +168,7 @@ final class CashBalanceService: CashBalanceServiceProtocol, ObservableObject {
                     }
                 }
             },
-            onDelete: { [weak self] (_ objectId: String) in
+            onDelete: { (_ objectId: String) in
                 // Balance might change if transaction is deleted, but we'll reload from server
                 Task { @MainActor in
                     // Could reload balance from server here if needed

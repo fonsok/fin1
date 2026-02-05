@@ -2,6 +2,7 @@ import SwiftUI
 import Foundation
 import LocalAuthentication
 
+@MainActor
 final class AuthenticationViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var isAuthenticated = false
@@ -78,7 +79,7 @@ final class AuthenticationViewModel: ObservableObject {
         }
     }
 
-    private func removeObservers() {
+    nonisolated private func removeObservers() {
         // Note: NotificationCenter observers are automatically removed in deinit
         // This method is kept for potential future use
     }

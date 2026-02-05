@@ -59,7 +59,7 @@ struct CollectionBillHeaderComponent: View {
 #if DEBUG
 struct CollectionBillHeaderComponent_Previews: PreviewProvider {
     static var previews: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: ResponsiveDesign.spacing(20)) {
             CollectionBillHeaderComponent(
                 title: "Max Investor",
                 subtitle: "Investment Collection Bill",

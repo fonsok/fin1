@@ -32,7 +32,7 @@ struct CannedResponsePicker: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
+            VStack(spacing: ResponsiveDesign.spacing(0)) {
                 searchBar
                 categoryFilter
                 responseList
@@ -200,10 +200,10 @@ private struct CannedResponseCard: View {
                         Text(shortcut)
                             .font(.system(size: 11, design: .monospaced))
                             .foregroundColor(AppTheme.accentOrange)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
+                            .padding(.horizontal, ResponsiveDesign.spacing(6))
+                            .padding(.vertical, ResponsiveDesign.spacing(2))
                             .background(AppTheme.accentOrange.opacity(0.1))
-                            .cornerRadius(4)
+                            .cornerRadius(ResponsiveDesign.spacing(4))
                     }
                 }
 
@@ -218,11 +218,11 @@ private struct CannedResponseCard: View {
                 if !response.placeholders.isEmpty {
                     let missingPlaceholders = response.placeholders.filter { placeholderValues[$0] == nil }
                     if !missingPlaceholders.isEmpty {
-                        HStack(spacing: 4) {
+                        HStack(spacing: ResponsiveDesign.spacing(4)) {
                             Image(systemName: "exclamationmark.triangle.fill")
-                                .font(.caption2)
+                                .font(ResponsiveDesign.captionFont())
                             Text("Platzhalter: \(missingPlaceholders.joined(separator: ", "))")
-                                .font(.system(size: 10))
+                                .font(ResponsiveDesign.captionFont())
                         }
                         .foregroundColor(AppTheme.accentOrange)
                     }
@@ -236,11 +236,11 @@ private struct CannedResponseCard: View {
                             isExpanded.toggle()
                         }
                     } label: {
-                        HStack(spacing: 4) {
+                        HStack(spacing: ResponsiveDesign.spacing(4)) {
                             Text(isExpanded ? "Weniger" : "Mehr anzeigen")
-                                .font(.system(size: 11))
+                                .font(ResponsiveDesign.captionFont())
                             Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                                .font(.system(size: 10))
+                                .font(ResponsiveDesign.captionFont())
                         }
                         .foregroundColor(AppTheme.accentLightBlue)
                     }

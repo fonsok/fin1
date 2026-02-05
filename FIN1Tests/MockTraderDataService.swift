@@ -96,13 +96,13 @@ class MockTraderDataService: TraderDataServiceProtocol {
     func performSearch() {
         var filtered = allTraders
         if !searchText.isEmpty {
-            filtered = filtered.filter { t in
-                t.name.localizedCaseInsensitiveContains(searchText) ||
-                t.specialization.localizedCaseInsensitiveContains(searchText) ||
-                t.username.localizedCaseInsensitiveContains(searchText)
+            filtered = filtered.filter { trader in
+                trader.name.localizedCaseInsensitiveContains(searchText) ||
+                trader.specialization.localizedCaseInsensitiveContains(searchText) ||
+                trader.username.localizedCaseInsensitiveContains(searchText)
             }
         }
-        if let rc = selectedRiskClass {
+        if let riskClass = selectedRiskClass {
             func score(_ level: MockTrader.RiskLevel) -> RiskClass {
                 switch level {
                 case .low: return .riskClass2
@@ -110,7 +110,7 @@ class MockTraderDataService: TraderDataServiceProtocol {
                 case .high: return .riskClass6
                 }
             }
-            filtered = filtered.filter { score($0.riskLevel) == rc }
+            filtered = filtered.filter { score($0.riskLevel) == riskClass }
         }
         if let spec = selectedSpecialization {
             filtered = filtered.filter { $0.specialization == spec }

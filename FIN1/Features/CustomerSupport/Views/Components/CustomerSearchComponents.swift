@@ -99,20 +99,20 @@ struct QuickActionCard: View {
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
                 HStack {
                     Image(systemName: icon)
-                        .font(.title2)
+                        .font(ResponsiveDesign.headlineFont())
                         .foregroundColor(isEnabled ? color : AppTheme.fontColor.opacity(0.3))
 
                     Spacer()
 
                     if let badge = badge {
                         Text(badge)
-                            .font(.caption2)
+                            .font(ResponsiveDesign.captionFont())
                             .fontWeight(.bold)
                             .foregroundColor(.white)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
+                            .padding(.horizontal, ResponsiveDesign.spacing(6))
+                            .padding(.vertical, ResponsiveDesign.spacing(2))
                             .background(color)
-                            .cornerRadius(8)
+                            .cornerRadius(ResponsiveDesign.spacing(8))
                     }
                 }
 
@@ -288,7 +288,7 @@ struct PermissionCategoryRow: View {
                 ForEach(permissions, id: \.self) { permission in
                     HStack(spacing: ResponsiveDesign.spacing(4)) {
                         Image(systemName: permission.isReadOnly ? "eye.fill" : "pencil")
-                            .font(.caption2)
+                            .font(ResponsiveDesign.captionFont())
 
                         Text(permission.displayName)
                             .font(ResponsiveDesign.captionFont())

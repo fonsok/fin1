@@ -10,7 +10,7 @@ struct ImpersonationBanner: View {
         if isVisible {
             HStack(spacing: ResponsiveDesign.spacing(12)) {
                 Image(systemName: "person.badge.key.fill")
-                    .font(.title3)
+                    .font(ResponsiveDesign.headlineFont())
                     .foregroundColor(.white)
 
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(2)) {

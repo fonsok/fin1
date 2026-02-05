@@ -12,7 +12,7 @@ import Foundation
 /// - **OrderBuy**: Individual buy transactions with status progression (submitted → executed → completed)
 /// - **OrderSell**: Individual sell transactions with status progression (submitted → executed → confirmed)
 /// - **Order**: Generic order model for backward compatibility
-struct Order: Identifiable, Codable {
+struct Order: Identifiable, Codable, Sendable {
     let id: String
     let traderId: String
     let symbol: String

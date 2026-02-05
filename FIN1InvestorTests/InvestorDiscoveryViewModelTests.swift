@@ -2,6 +2,7 @@ import XCTest
 import Combine
 @testable import FIN1
 
+@MainActor
 final class InvestorDiscoveryViewModelTests: XCTestCase {
     // MARK: - Mocks
     final class MockPersistence: FilterPersistenceRepositoryProtocol {

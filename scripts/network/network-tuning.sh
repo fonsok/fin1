@@ -12,7 +12,7 @@ BACKUP_FILE="$DEFAULT_BACKUP_DIR/network-tuning-backup-$TIMESTAMP.txt"
 
 usage() {
   cat <<'USAGE'
-Usage: sudo ./scripts/network-tuning-v2026-01-30.sh <mode> [args]
+Usage: sudo ./scripts/network/network-tuning.sh <mode> [args]
 
 Modes:
   status                    Show current tuning-related settings

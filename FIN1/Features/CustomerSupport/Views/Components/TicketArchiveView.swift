@@ -44,7 +44,7 @@ struct TicketArchiveView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
+            VStack(spacing: ResponsiveDesign.spacing(0)) {
                 filterSection
                 ticketList
             }
@@ -193,7 +193,7 @@ private struct FilterPill: View {
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2)
                     .background(isSelected ? Color.white.opacity(0.2) : AppTheme.fontColor.opacity(0.1))
-                    .cornerRadius(8)
+                    .cornerRadius(ResponsiveDesign.spacing(8))
             }
             .foregroundColor(isSelected ? .white : AppTheme.fontColor)
             .padding(.horizontal, ResponsiveDesign.spacing(12))

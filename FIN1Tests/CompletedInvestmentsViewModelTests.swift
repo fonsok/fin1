@@ -12,7 +12,14 @@ final class CompletedInvestmentsViewModelTests: XCTestCase {
         mockInvestmentService = MockInvestmentService()
         viewModel = CompletedInvestmentsViewModel(
             userService: mockUserService,
-            investmentService: mockInvestmentService
+            investmentService: mockInvestmentService,
+            documentService: MockDocumentService(),
+            invoiceService: MockInvoiceService(),
+            traderDataService: MockTraderDataService(),
+            poolTradeParticipationService: MockPoolTradeParticipationService(),
+            tradeLifecycleService: MockTradeLifecycleService(),
+            configurationService: MockConfigurationService(),
+            commissionCalculationService: CommissionCalculationService()
         )
     }
 

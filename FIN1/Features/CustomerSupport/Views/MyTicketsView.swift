@@ -72,7 +72,7 @@ struct MyTicketsView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
+            VStack(spacing: ResponsiveDesign.spacing(0)) {
                 filterSection
                 ticketList
             }
@@ -264,7 +264,7 @@ private struct MyTicketFilterPill: View {
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
                         .background(AppTheme.accentRed)
-                        .cornerRadius(8)
+                        .cornerRadius(ResponsiveDesign.spacing(8))
                 }
             }
             .foregroundColor(isSelected ? .white : AppTheme.fontColor)

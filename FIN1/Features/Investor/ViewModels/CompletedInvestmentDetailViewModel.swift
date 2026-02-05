@@ -181,7 +181,8 @@ final class CompletedInvestmentDetailViewModel: ObservableObject {
     }
 
     var provisionAmount: Double {
-        investedAmount * CalculationConstants.ServiceCharges.platformServiceChargeRate
+        let rate = configurationService?.effectivePlatformServiceChargeRate ?? CalculationConstants.ServiceCharges.platformServiceChargeRate
+        return investedAmount * rate
     }
 
     var provisionAmountText: String {

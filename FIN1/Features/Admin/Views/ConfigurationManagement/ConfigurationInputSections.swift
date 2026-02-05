@@ -10,6 +10,7 @@ struct ConfigurationInputSection: View {
     let inputValue: Binding<Double>
     let isValid: Bool
     let errorMessage: String?
+    var successMessage: String? = nil
     let updateAction: () -> Void
 
     var body: some View {
@@ -46,6 +47,12 @@ struct ConfigurationInputSection: View {
                 Text(error)
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(.red)
+            }
+
+            if let success = successMessage {
+                Text(success)
+                    .font(ResponsiveDesign.captionFont())
+                    .foregroundColor(.green)
             }
         }
     }
@@ -84,7 +91,8 @@ struct InitialAccountBalanceSection: View {
             currentValue: viewModel.formattedCurrency(appServices.configurationService.initialAccountBalance),
             inputValue: $viewModel.initialAccountBalanceInput,
             isValid: viewModel.isValidInitialAccountBalance,
-            errorMessage: viewModel.initialAccountBalanceError
+            errorMessage: viewModel.initialAccountBalanceError,
+            successMessage: viewModel.initialAccountBalanceSuccess
         ) {
             Task {
                 await viewModel.updateInitialAccountBalance(appServices.configurationService)
@@ -139,6 +147,38 @@ struct TraderCommissionRateSection: View {
                 Text(error)
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(.red)
+            }
+
+            if let success = viewModel.traderCommissionRateSuccess {
+                Text(success)
+                    .font(ResponsiveDesign.captionFont())
+                    .foregroundColor(.green)
+            }
+        }
+    }
+}
+
+/// Show Commission Breakdown in Credit Note Section (Trader Gutschrift)
+struct ShowCommissionBreakdownInCreditNoteSection: View {
+    @Environment(\.appServices) private var appServices
+    @ObservedObject var viewModel: ConfigurationManagementViewModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
+            Toggle(isOn: $viewModel.showCommissionBreakdownInCreditNoteInput) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Commission-Breakdown in Gutschrift anzeigen")
+                        .font(ResponsiveDesign.bodyFont())
+                        .foregroundColor(.primary)
+                    Text("Zeigt oder blendet die Tabelle mit Investor-Aufschlüsselung in der Trader-Gutschrift ein.")
+                        .font(ResponsiveDesign.captionFont())
+                        .foregroundColor(.secondary)
+                }
+            }
+            .onChange(of: viewModel.showCommissionBreakdownInCreditNoteInput) { _, _ in
+                Task {
+                    await viewModel.updateShowCommissionBreakdownInCreditNote(appServices.configurationService)
+                }
             }
         }
     }
@@ -222,9 +262,89 @@ struct ResetToDefaultsSection: View {
     }
 }
 
+// MARK: - Pending Approvals Section
+/// Shows pending 4-eyes configuration change requests
+struct PendingApprovalsSection: View {
+    @Environment(\.appServices) private var appServices
+    @State private var pendingCount = 0
+    @State private var isLoading = true
 
+    var body: some View {
+        VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
+            HStack {
+                Image(systemName: "checkmark.seal.fill")
+                    .foregroundColor(pendingCount > 0 ? .orange : .green)
 
+                Text("4-Eyes Approvals")
+                    .font(ResponsiveDesign.bodyFont())
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary)
 
+                Spacer()
+
+                if isLoading {
+                    ProgressView()
+                        .scaleEffect(0.8)
+                } else if pendingCount > 0 {
+                    Text("\(pendingCount) pending")
+                        .font(ResponsiveDesign.captionFont())
+                        .fontWeight(.bold)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .background(Color.orange)
+                        .clipShape(Capsule())
+                } else {
+                    Text("All approved")
+                        .font(ResponsiveDesign.captionFont())
+                        .foregroundColor(.green)
+                }
+            }
+
+            Text("Critical configuration changes require approval from a second administrator (4-eyes principle).")
+                .font(ResponsiveDesign.captionFont())
+                .foregroundColor(.secondary)
+
+            NavigationLink {
+                PendingConfigurationChangesView()
+            } label: {
+                HStack {
+                    Text(pendingCount > 0 ? "Review Pending Changes" : "View Approval History")
+                        .font(ResponsiveDesign.bodyFont())
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .foregroundColor(.secondary)
+                }
+                .padding()
+                .background(pendingCount > 0 ? Color.orange.opacity(0.1) : Color(.secondarySystemBackground))
+                .cornerRadius(ResponsiveDesign.spacing(8))
+            }
+            .buttonStyle(.plain)
+        }
+        .padding()
+        .background(Color(.secondarySystemBackground))
+        .cornerRadius(ResponsiveDesign.spacing(12))
+        .task {
+            await loadPendingCount()
+        }
+    }
+
+    private func loadPendingCount() async {
+        isLoading = true
+        guard let service = appServices.configurationService as? ConfigurationService else {
+            isLoading = false
+            return
+        }
+
+        do {
+            let changes = try await service.getPendingConfigurationChanges()
+            pendingCount = changes.count
+        } catch {
+            pendingCount = 0
+        }
+        isLoading = false
+    }
+}
 
 
 

@@ -216,4 +216,4 @@ let pdfData = try await service.generateInvoicePDF(from: invoice)
 
 ## License
 
-Copyright © 2026 FIN1 Trading GmbH. All rights reserved.
+Copyright © 2026 FIN1. All rights reserved.

@@ -1,5 +1,5 @@
 // ============================================================================
-// FIN1 Parse Cloud Code
+// Parse Cloud Code
 // triggers/order.js - Order Triggers
 // ============================================================================
 
@@ -232,20 +232,25 @@ async function createOrderInvoice(order) {
   const side = order.get('side');
   const invoiceType = side === 'buy' ? 'buy_invoice' : 'sell_invoice';
 
-  // Generate invoice number
-  const prefix = side === 'buy' ? 'INV' : 'INV';
+  // Generate invoice number; use FIN1_LEGAL_DOCUMENT_PREFIX if set (e.g. "FIN1" -> "FIN1-INV-2025-0000001")
+  const docPrefix = process.env.FIN1_LEGAL_DOCUMENT_PREFIX || '';
+  const invPrefix = docPrefix ? `${docPrefix}-INV` : 'INV';
+  const year = new Date().getFullYear();
+  const pattern = `${invPrefix}-${year}-`;
   const lastInvoice = await new Parse.Query('Invoice')
-    .startsWith('invoiceNumber', `${prefix}-${new Date().getFullYear()}-`)
+    .startsWith('invoiceNumber', pattern)
     .descending('invoiceNumber')
     .first({ useMasterKey: true });
 
   let seq = 1;
   if (lastInvoice) {
-    const parts = lastInvoice.get('invoiceNumber').split('-');
-    seq = parseInt(parts[2], 10) + 1;
+    const num = lastInvoice.get('invoiceNumber');
+    const parts = num.split('-');
+    const seqPart = docPrefix ? parts[3] : parts[2];
+    seq = parseInt(seqPart, 10) + 1;
   }
 
-  invoice.set('invoiceNumber', `${prefix}-${new Date().getFullYear()}-${seq.toString().padStart(7, '0')}`);
+  invoice.set('invoiceNumber', `${invPrefix}-${year}-${seq.toString().padStart(7, '0')}`);
   invoice.set('invoiceType', invoiceType);
   invoice.set('userId', order.get('traderId'));
   invoice.set('orderId', order.id);

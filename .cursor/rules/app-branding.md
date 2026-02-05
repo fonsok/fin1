@@ -25,7 +25,7 @@ alwaysApply: true
 - When diagnosing “wrong app name shown”, first run the guard and verify the effective setting:
 
 ```bash
-./scripts/check-xcode-display-name-v2026-01-31.sh
+./scripts/check-xcode-display-name.sh
 xcodebuild -showBuildSettings -project FIN1.xcodeproj -scheme FIN1-Dev -configuration Debug | grep INFOPLIST_KEY_CFBundleDisplayName
 ```
 
@@ -34,7 +34,7 @@ xcodebuild -showBuildSettings -project FIN1.xcodeproj -scheme FIN1-Dev -configur
 - Ensure the pre-commit hook is installed so the Display Name guard runs automatically:
 
 ```bash
-./scripts/install-githooks-v2026-01-31.sh
+./scripts/install-githooks.sh
 ```
 
 ## Allowed Exceptions

@@ -157,6 +157,9 @@ struct LandingFAQView: View {
                     }
                 }
             },
+            // Do not indent nested FAQ "cards" based on the category icon.
+            // The icon alignment indent is useful for text content, but here it creates excessive left whitespace.
+            contentLeadingPaddingOverride: 0,
             style: style
         ) {
             // FAQ Items in this category

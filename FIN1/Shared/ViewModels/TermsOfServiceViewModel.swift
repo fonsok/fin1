@@ -3,6 +3,7 @@ import Combine
 
 /// ViewModel for Terms of Service view
 /// Manages section expansion, search filtering, and language selection
+@MainActor
 final class TermsOfServiceViewModel: ObservableObject {
 
     // MARK: - Type Aliases

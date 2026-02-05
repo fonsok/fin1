@@ -1,5 +1,5 @@
 const express = require('express');
-const { ParseServer } = require('parse-server');
+const { ParseServer, RedisCacheAdapter } = require('parse-server');
 const ParseDashboard = require('parse-dashboard');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -65,13 +65,10 @@ const parseServerConfig = {
   // Files adapter - only configure if S3 credentials are provided
   // Otherwise Parse Server will use default file storage
   // Cache adapter - only configure if Redis URL is provided
-  ...(process.env.REDIS_URL ? {
-    cacheAdapter: {
-      module: 'parse-server-redis-cache-adapter',
-      options: {
-        redisURL: process.env.REDIS_URL || 'redis://localhost:6379',
-      },
-    },
+  ...(process.env.REDIS_URL && RedisCacheAdapter ? {
+    cacheAdapter: new RedisCacheAdapter({
+      url: process.env.REDIS_URL,
+    }),
   } : {}),
   allowClientClassCreation: false,
   allowCustomObjectId: false,
@@ -106,7 +103,7 @@ const parseDashboardConfig = {
       serverURL: parseServerConfig.serverURL,
       appId: parseServerConfig.appId,
       masterKey: parseServerConfig.masterKey,
-      appName: 'FIN1 Backend',
+      appName: 'Backend',
       productionServerURL: process.env.PARSE_SERVER_PRODUCTION_URL,
     },
   ],
@@ -132,9 +129,9 @@ app.get('/health', (req, res) => {
 // API documentation endpoint
 app.get('/api-docs', (req, res) => {
   res.json({
-    name: 'FIN1 API',
+    name: 'Backend API',
     version: '1.0.0',
-    description: 'FIN1 Investment Platform Backend API',
+    description: 'Investment Platform Backend API',
     endpoints: {
       parse: '/parse',
       dashboard: '/dashboard',
@@ -180,7 +177,7 @@ async function startServer() {
   const httpServer = require('http').createServer(app);
 
   httpServer.listen(port, () => {
-    console.log(`FIN1 Parse Server running on port ${port}`);
+    console.log(`Parse Server running on port ${port}`);
     console.log(`Dashboard available at http://localhost:${port}/dashboard`);
     console.log(`API available at http://localhost:${port}/parse`);
   });
@@ -219,7 +216,7 @@ startServer()
     serverInstance = instance;
   })
   .catch((error) => {
-    console.error('❌ Failed to start FIN1 Parse Server:', error);
+    console.error('❌ Failed to start Parse Server:', error);
     process.exit(1);
   });
 

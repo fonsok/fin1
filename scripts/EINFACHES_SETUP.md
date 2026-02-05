@@ -24,7 +24,7 @@
 
 ```bash
 cd ~/fin1-server
-bash auto-setup-passwords-v2026-01-30.sh
+bash auto-setup-passwords.sh
 ```
 
 **Das war's!** Das Skript macht alles automatisch:
@@ -70,10 +70,10 @@ curl http://192.168.178.20/health
 **Option A: Skript erstellen**
 
 1. In Cursor: **Datei** → **Neue Datei** (`Ctrl+N`)
-2. Name: `auto-setup-passwords-v2026-01-30.sh`
-3. Inhalt: Siehe `scripts/auto-setup-passwords-v2026-01-30.sh` vom Mac
+2. Name: `auto-setup-passwords.sh`
+3. Inhalt: Siehe `scripts/auto-setup-passwords.sh` vom Mac
 4. Speichern in: `~/fin1-server/`
-5. Im Terminal: `chmod +x auto-setup-passwords-v2026-01-30.sh`
+5. Im Terminal: `chmod +x auto-setup-passwords.sh`
 
 **Option B: Manuell (falls Skript nicht funktioniert)**
 
@@ -121,7 +121,7 @@ sudo kill -9 <PID>
 
 ```bash
 # 1. Passwörter setzen
-cd ~/fin1-server && bash auto-setup-passwords-v2026-01-30.sh
+cd ~/fin1-server && bash auto-setup-passwords.sh
 
 # 2. Server starten
 docker compose -f docker-compose.production.yml up -d

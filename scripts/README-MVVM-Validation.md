@@ -4,7 +4,7 @@
 
 ```bash
 # Run validation manually
-./scripts/validate-mvvm-architecture-v2026-01-30.sh
+./scripts/validate-mvvm-architecture.sh
 
 # Runs automatically on git commit
 git commit -m "Your changes"
@@ -47,7 +47,7 @@ git commit -m "Your changes"
 ## Integration
 
 The validation script is integrated into:
-- ✅ Pre-commit hook (`scripts/pre-commit-hook-v2026-01-30.sh`)
+- ✅ Pre-commit hook (`scripts/pre-commit-hook.sh`)
 - ✅ Git hooks (`.githooks/pre-commit`)
 - ✅ SwiftLint rules (`.swiftlint.yml`)
 

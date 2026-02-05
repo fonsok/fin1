@@ -133,6 +133,7 @@ private final class MockConfigurationService: ConfigurationServiceProtocol {
     var poolBalanceDistributionStrategy: PoolBalanceDistributionStrategy = .immediateDistribution
     var poolBalanceDistributionThreshold: Double = 5.0
     var isAdminMode: Bool = false
+    var showCommissionBreakdownInCreditNote: Bool = true
 
     func updateMinimumCashReserve(_ value: Double) async throws { minimumCashReserve = value }
     func updateMinimumCashReserve(_ value: Double, for userId: String) async throws { minimumCashReserve = value }
@@ -144,6 +145,7 @@ private final class MockConfigurationService: ConfigurationServiceProtocol {
     func updatePoolBalanceDistributionThreshold(_ threshold: Double) async throws {
         poolBalanceDistributionThreshold = threshold
     }
+    func updateShowCommissionBreakdownInCreditNote(_ value: Bool) async throws { showCommissionBreakdownInCreditNote = value }
     func resetToDefaults() async throws {}
     func validateMinimumCashReserve(_ value: Double) -> Bool { value >= 0 }
     func validateInitialAccountBalance(_ value: Double) -> Bool { value >= 0 }

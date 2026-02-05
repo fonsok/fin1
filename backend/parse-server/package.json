@@ -1,7 +1,7 @@
 {
   "name": "fin1-parse-server",
   "version": "1.0.0",
-  "description": "FIN1 Investment Platform Parse Server Backend",
+  "description": "FIN1 Parse Server Backend",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
@@ -23,7 +23,10 @@
     "joi": "^17.11.0",
     "bcryptjs": "^2.4.3",
     "jsonwebtoken": "^9.0.2",
-    "node-cron": "^3.0.3"
+    "node-cron": "^3.0.3",
+    "nodemailer": "^6.9.8",
+    "otplib": "^12.0.1",
+    "qrcode": "^1.5.3"
   },
   "devDependencies": {
     "nodemon": "^3.0.2",

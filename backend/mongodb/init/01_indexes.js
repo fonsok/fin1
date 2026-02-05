@@ -1,5 +1,5 @@
 // ============================================================================
-// FIN1 MongoDB Initialization
+// MongoDB Initialization
 // 01_indexes.js - Index Definitions
 // ============================================================================
 //
@@ -8,10 +8,10 @@
 //
 // ============================================================================
 
-// Wechsle zur FIN1 Datenbank
+// Wechsle zur Plattform-Datenbank
 db = db.getSiblingDB('fin1');
 
-print('=== FIN1 MongoDB Index Setup ===');
+print('=== MongoDB Index Setup ===');
 print('Creating indexes for optimal performance...');
 
 // ============================================================================
@@ -331,6 +331,6 @@ db.AdminImpersonationLog.createIndex({ "startedAt": -1 });
 // ============================================================================
 
 print('');
-print('=== FIN1 MongoDB Index Setup Complete ===');
+print('=== MongoDB Index Setup Complete ===');
 print('Total collections with indexes: 40+');
 print('');

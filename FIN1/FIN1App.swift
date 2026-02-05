@@ -59,13 +59,13 @@ struct FIN1App: App {
 
         // Start services with optimized lifecycle
         await lifecycleCoordinator.startServices()
-        
+
         // Log Parse Server configuration for debugging
         print("🔗 Parse Server Configuration:")
         print("   URL: \(services.configurationService.parseServerURL ?? "nil")")
         print("   Live Query URL: \(services.configurationService.parseLiveQueryURL ?? "nil")")
         print("   Application ID: \(services.configurationService.parseApplicationId ?? "nil")")
-        
+
         // Connect Parse Live Query for real-time updates
         if let liveQueryClient = services.parseLiveQueryClient {
             Task {
@@ -115,9 +115,12 @@ struct FIN1App: App {
     }
 
     private func handleAppEnteredBackground() async {
+        // Sync pending data to backend before going to background
+        await syncPendingDataToBackend()
+
         // Stop SLA monitoring to save battery
         services.slaMonitoringService.stopMonitoring()
-        
+
         // Disconnect Parse Live Query to save battery
         services.parseLiveQueryClient?.disconnect()
 
@@ -126,5 +129,31 @@ struct FIN1App: App {
 
         // Stop non-critical services to save battery
         await lifecycleCoordinator.stopServices()
+    }
+
+    /// Syncs any pending local data to the backend before app goes to background
+    private func syncPendingDataToBackend() async {
+        print("📤 Syncing pending data to backend...")
+
+        // Sync investments, orders, transactions, documents, user profile, watchlist, filters, and push tokens in parallel for efficiency
+        guard let currentUser = services.userService.currentUser else {
+            print("⚠️ No current user, skipping background sync")
+            return
+        }
+
+        async let investmentSync: () = services.investmentService.syncToBackend()
+        async let orderSync: () = services.orderManagementService.syncToBackend()
+        async let transactionSync: () = services.paymentService.syncToBackend()
+        async let documentSync: () = services.documentService.syncToBackend()
+        async let userSync: () = services.userService.syncToBackend()
+        async let watchlistSync: () = services.securitiesWatchlistService.syncToBackend()
+        async let filterSync: () = services.filterSyncService?.syncToBackend() ?? Task {}.value
+        async let pushTokenSync: () = services.notificationService.syncPushTokensToBackend(for: currentUser.id)
+        async let priceAlertSync: () = services.priceAlertService?.syncToBackend() ?? Task {}.value
+        async let investorWatchlistSync: () = services.watchlistService.syncToBackend()
+
+        _ = await (investmentSync, orderSync, transactionSync, documentSync, userSync, watchlistSync, filterSync, pushTokenSync, priceAlertSync, investorWatchlistSync)
+
+        print("✅ Background sync completed")
     }
 }

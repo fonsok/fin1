@@ -290,8 +290,8 @@ effizienter sein kann.
   },
 
   company: {
-    name: "FIN1 Investing GmbH",
-    email: "info@fin1-investing.de"
+    name: "Company Investing GmbH",
+    email: "info@fin1-investing.com"
   },
 
   updatedAt: ISODate

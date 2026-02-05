@@ -82,7 +82,7 @@ final class BaaSPaymentService: PaymentServiceProtocol {
 // ViewModel doesn't change when swapping implementations
 final class PaymentViewModel: ObservableObject {
     private let paymentService: PaymentServiceProtocol // Protocol, not concrete type
-    
+
     init(paymentService: PaymentServiceProtocol) {
         self.paymentService = paymentService
     }
@@ -109,13 +109,13 @@ final class PaymentViewModel: ObservableObject {
 // ✅ CORRECT: Service factory that can switch implementations
 final class AppServices {
     let paymentService: PaymentServiceProtocol
-    
+
     static var live: AppServices {
         let useBaaS = ConfigurationService.shared.shouldUseBaaS()
-        
+
         return AppServices(
-            paymentService: useBaaS 
-                ? BaaSPaymentService() 
+            paymentService: useBaaS
+                ? BaaSPaymentService()
                 : ParsePaymentService()
         )
     }
@@ -323,6 +323,208 @@ Smaller files enforce better separation of concerns, easier code reviews, and re
 4. Stateless utility (static methods only)? → **Use `struct`** (preferred)
 5. Always mark classes as `final` unless inheritance is specifically needed
 
+## Swift 6 Concurrency (Modern Best Practices)
+
+### @MainActor for ViewModels (RECOMMENDED)
+
+**REQUIRED for new ViewModels**: Mark all ViewModels with `@MainActor` to guarantee UI updates run on main thread.
+
+```swift
+// ✅ RECOMMENDED: Swift 6 Best Practice
+@MainActor
+final class InvestmentViewModel: ObservableObject {
+    @Published var investments: [Investment] = []
+
+    func loadData() async {
+        // Guaranteed to run on main thread
+        investments = await service.fetchInvestments()
+    }
+}
+
+// ❌ LEGACY: Still works but less safe
+final class OldViewModel: ObservableObject {
+    @Published var data: [Item] = []
+}
+```
+
+**Benefits**:
+- Compiler-enforced thread safety for UI updates
+- No manual `DispatchQueue.main.async` needed
+- Clear intent that this class manages UI state
+
+**Known Exceptions**:
+
+| ViewModel | Reason | Status |
+|-----------|--------|--------|
+| `SellOrderViewModel` | Implements `LimitOrderMonitor` protocol with non-isolated callbacks | Documented |
+
+```swift
+// ✅ Documented exception with comment
+// Note: Not @MainActor due to LimitOrderMonitor protocol constraints
+final class SellOrderViewModel: ObservableObject, LimitOrderMonitor {
+    // ...
+}
+```
+
+**When exceptions are allowed**:
+- Protocol conformance requires non-isolated methods called from non-main contexts
+- `deinit` methods (always non-isolated) - use `nonisolated` for cleanup helpers
+- Interop with legacy Timer/NotificationCenter APIs that don't support MainActor
+
+### Sendable Conformance
+
+**REQUIRED** for types crossing actor boundaries (e.g., data passed to/from async services):
+
+```swift
+// ✅ Structs: Automatically Sendable if all properties are Sendable
+struct Investment: Codable, Sendable {
+    let id: String
+    let amount: Double
+}
+
+// ✅ Classes: Must be final with immutable Sendable properties
+final class ImmutableConfig: Sendable {
+    let apiURL: String
+    let timeout: TimeInterval
+
+    init(apiURL: String, timeout: TimeInterval) {
+        self.apiURL = apiURL
+        self.timeout = timeout
+    }
+}
+```
+
+**Core Models with Sendable** (already implemented):
+
+| Category | Models |
+|----------|--------|
+| **User/Auth** | `User`, `UserRole`, `AccountType`, `Salutation`, + all UserEnums |
+| **Investment** | `Investment`, `InvestmentPool`, `InvestmentStatus`, `PoolTradeParticipation` |
+| **Trading** | `Trade`, `TradeStatus`, `Order`, `OrderBuy`, `OrderSell`, `OrderType` |
+| **Financial** | `Invoice`, `Transaction` |
+| **Errors** | `AppError`, `NetworkError`, `AuthError`, `ServiceError` |
+| **Documents** | `DocumentType` |
+
+### Actor Pattern for Shared Mutable State
+
+**RECOMMENDED** for caches, repositories, or any shared state accessed from multiple concurrent contexts:
+
+```swift
+// ✅ RECOMMENDED: Actor for thread-safe shared state
+actor CacheService {
+    private var cache: [String: Data] = [:]
+
+    func get(_ key: String) -> Data? {
+        cache[key]  // Automatically thread-safe
+    }
+
+    func set(_ key: String, value: Data) {
+        cache[key] = value
+    }
+}
+
+// Usage (requires await)
+let data = await cacheService.get("key")
+
+// ❌ LEGACY: Manual locking (error-prone)
+final class OldCacheService {
+    private var cache: [String: Data] = [:]
+    private let lock = NSLock()
+
+    func get(_ key: String) -> Data? {
+        lock.lock()
+        defer { lock.unlock() }
+        return cache[key]
+    }
+}
+```
+
+**When to use Actors**:
+- Caches with concurrent read/write access
+- Repositories managing shared state
+- Rate limiters, throttlers
+- Any mutable state accessed from multiple Tasks
+
+### Sendable Closures
+
+**REQUIRED** for closures passed to concurrent functions:
+
+```swift
+// ✅ CORRECT: @Sendable closure
+func performAsync(_ work: @Sendable @escaping () async -> Void) {
+    Task { await work() }
+}
+
+// ❌ FORBIDDEN: Non-sendable closure capturing mutable state
+var counter = 0
+Task {
+    counter += 1  // Data race!
+}
+```
+
+## @Observable (iOS 17+ / Modern SwiftUI)
+
+### When to Use @Observable vs ObservableObject
+
+| Target | Pattern | View Integration |
+|--------|---------|------------------|
+| iOS 13-16 | `ObservableObject` + `@Published` | `@StateObject`, `@ObservedObject` |
+| iOS 17+ | `@Observable` | `@State`, `@Bindable` |
+| Mixed | `ObservableObject` (safer for compatibility) | `@StateObject`, `@ObservedObject` |
+
+### @Observable Example (iOS 17+)
+
+```swift
+import Observation
+
+// ✅ Modern: @Observable (iOS 17+)
+@Observable
+@MainActor
+final class ModernViewModel {
+    var items: [Item] = []           // Automatically observed
+    var isLoading = false            // Automatically observed
+    @ObservationIgnored var cache: [String: Any] = [:]  // Opt-out
+
+    func loadItems() async {
+        isLoading = true
+        items = await service.fetchItems()
+        isLoading = false
+    }
+}
+
+// View integration changes
+struct ModernView: View {
+    @State private var viewModel = ModernViewModel()  // Note: @State, not @StateObject
+
+    var body: some View {
+        List(viewModel.items) { item in
+            Text(item.name)
+        }
+        .task { await viewModel.loadItems() }
+    }
+}
+```
+
+**@Observable Benefits**:
+- Granular updates (only changed properties trigger view refresh)
+- No `@Published` wrapper needed
+- Cleaner code, less boilerplate
+
+**@Observable Caveats**:
+- `@State` reinitializes on view rebuilds (unlike `@StateObject`)
+- Test initializer behavior carefully when migrating
+- Not a drop-in replacement for complex state management
+
+### Migration Strategy
+
+**Current FIN1 Approach**: Keep `ObservableObject` for existing code, evaluate `@Observable` for new features if iOS 17+ only.
+
+**Gradual Migration**:
+1. Add `@MainActor` to all ViewModels (safe, no behavior change)
+2. New isolated features can use `@Observable` (if iOS 17+ target)
+3. Convert Actors for thread-safe caches/repositories
+4. Full migration when iOS 16 support dropped
+
 ## SwiftUI Observation & Lifecycle
 
 - **CRITICAL**: Never create ViewModel instances in view body or navigation closures.
@@ -496,6 +698,16 @@ catch {
 - **No "Manager" suffix**: Avoid "Manager" in class/file names - use specific suffixes (Service, Repository, Store, Coordinator, Provider, Configurator, Utility) that indicate single responsibility.
 - **No redundant naming**: Avoid names where the domain repeats the suffix (e.g., `CustomerServiceService`). Per Swift API Guidelines: "Omit needless words."
 - **No DRY violations**: Magic numbers, percentages, rates, and repeated strings must be defined as constants in `CalculationConstants` or appropriate location. Same value appearing in multiple files is a violation.
+
+## Swift 6 Concurrency Guardrails
+
+- **RECOMMENDED**: New ViewModels should be marked `@MainActor` for thread safety.
+- **REQUIRED**: Data models crossing actor boundaries must conform to `Sendable`.
+- **FORBIDDEN**: Manual `DispatchQueue.main.async` in `@MainActor` contexts (redundant).
+- **FORBIDDEN**: Mutable shared state without synchronization (use Actor or locks).
+- **RECOMMENDED**: Use `actor` for caches and shared mutable state instead of manual locking.
+- **REQUIRED**: Closures passed to `Task` or async functions must be `@Sendable` if capturing external state.
+- **REQUIRED**: Exceptions to `@MainActor` must be documented with `// Note:` comment explaining the constraint.
 
 ## MVVM Architecture Enforcement
 

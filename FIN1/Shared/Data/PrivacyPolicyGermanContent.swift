@@ -37,12 +37,12 @@ enum PrivacyPolicyGermanContent {
         \(LegalIdentity.companyLegalName)
         [Registrierte Adresse]
         [Registernummer]
-        E-Mail: privacy@fin1.com
+        E-Mail: \(CompanyContactInfo.privacyEmail)
         Telefon: +49 [Nummer]
 
         **Datenschutzbeauftragter:**
         [Name]
-        E-Mail: dpo@fin1.com
+        E-Mail: \(CompanyContactInfo.dpoEmail)
         Telefon: +49 [Nummer]
 
         **Richtlinienversion:**
@@ -459,7 +459,7 @@ enum PrivacyPolicyGermanContent {
         - **Kontaktinformationen**: In der Richtlinie bereitgestellt
 
         **Ausübung Ihrer Rechte:**
-        - E-Mail: privacy@fin1.com oder dpo@fin1.com
+        - E-Mail: \(CompanyContactInfo.privacyEmail) oder \(CompanyContactInfo.dpoEmail)
         - In-App: Support-Funktion
         - Schriftlich: Postanschrift bereitgestellt
         - **Verifizierung**: Identitätsprüfung erforderlich
@@ -668,12 +668,12 @@ enum PrivacyPolicyGermanContent {
         content: """
         **A. Datenschutzbeauftragter (DPO):**
         - **Name**: [Name]
-        - **E-Mail**: dpo@fin1.com
+        - **E-Mail**: \(CompanyContactInfo.dpoEmail)
         - **Telefon**: [Nummer]
         - **Adresse**: [Adresse]
 
         **B. Allgemeine Datenschutzanfragen:**
-        - **E-Mail**: privacy@fin1.com
+        - **E-Mail**: \(CompanyContactInfo.privacyEmail)
         - **Support**: In-App-Support-Funktion
         - **Telefon**: [Nummer]
         - **Adresse**: [Adresse]

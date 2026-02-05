@@ -59,4 +59,13 @@ protocol InvestmentServiceProtocol: ObservableObject {
         investorGrossProfitService: (any InvestorGrossProfitServiceProtocol)?,
         commissionCalculationService: (any CommissionCalculationServiceProtocol)?
     )
+
+    // MARK: - Backend Sync (Optional - for persistence)
+    /// Syncs pending local investments to backend (batch operation, efficient)
+    /// Called lazily on app background or explicit user action
+    func syncToBackend() async
+
+    /// Fetches investments from backend for an investor (on-demand)
+    /// Returns cached local data immediately, fetches in background
+    func fetchFromBackend(for investorId: String) async
 }

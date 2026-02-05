@@ -1,5 +1,5 @@
 -- ============================================================================
--- FIN1 DATABASE SCHEMA
+-- DATABASE SCHEMA
 -- 015_functions.sql - Stored Procedures & Business Logic Functions
 -- ============================================================================
 --

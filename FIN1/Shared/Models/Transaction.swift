@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - Transaction Model
 /// Represents a wallet transaction (deposit, withdrawal, trade-related, profit distribution)
-struct Transaction: Identifiable, Codable, Hashable {
+struct Transaction: Identifiable, Codable, Hashable, Sendable {
 
     // MARK: - Transaction Type
 

@@ -123,7 +123,7 @@ struct RespondTicketSheet: View {
                 Button {
                     showCannedResponses = true
                 } label: {
-                    HStack(spacing: 4) {
+                    HStack(spacing: ResponsiveDesign.spacing(4)) {
                         Image(systemName: "doc.text.fill")
                         Text("Textbausteine")
                     }
@@ -196,7 +196,7 @@ struct RespondTicketSheet: View {
             HStack {
                 Image(systemName: requestConfirmation ? "checkmark.circle.fill" : "circle")
                     .foregroundColor(requestConfirmation ? AppTheme.accentGreen : AppTheme.fontColor.opacity(0.5))
-                    .font(.title3)
+                    .font(ResponsiveDesign.headlineFont())
 
                 Text("Bestätigung Problem gelöst anfordern")
                     .font(ResponsiveDesign.bodyFont())

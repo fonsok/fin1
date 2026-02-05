@@ -21,4 +21,7 @@ protocol OrderManagementServiceProtocol: ObservableObject {
     // MARK: - Order Data Management
     func loadActiveOrders() async throws
     func refreshActiveOrders() async throws
+
+    // MARK: - Backend Synchronization
+    func syncToBackend() async
 }

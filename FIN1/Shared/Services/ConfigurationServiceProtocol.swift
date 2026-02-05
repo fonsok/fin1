@@ -36,12 +36,21 @@ protocol ConfigurationServiceProtocol: ObservableObject {
     var poolBalanceDistributionThreshold: Double { get }
     var traderCommissionRate: Double { get }
     var traderCommissionPercentage: String { get }
+    var platformServiceChargeRate: Double { get }
+    var platformServiceChargePercentage: String { get }
 
     /// Single source of truth for commission rate with fallback to default
     /// Use this instead of manually checking `traderCommissionRate ?? CalculationConstants.FeeRates.traderCommissionRate`
     var effectiveCommissionRate: Double { get }
 
+    /// Single source of truth for platform service charge rate with fallback to default
+    /// Use this instead of manually checking `platformServiceChargeRate ?? CalculationConstants.ServiceCharges.platformServiceChargeRate`
+    var effectivePlatformServiceChargeRate: Double { get }
+
     var isAdminMode: Bool { get }
+
+    /// Wenn true, wird die Commission-Breakdown-Tabelle in der Trader-Gutschrift angezeigt (Admin-Option).
+    var showCommissionBreakdownInCreditNote: Bool { get }
 
     // MARK: - Customer Support Configuration
     var slaMonitoringInterval: TimeInterval { get }
@@ -59,6 +68,8 @@ protocol ConfigurationServiceProtocol: ObservableObject {
     func updatePoolBalanceDistributionStrategy(_ strategy: PoolBalanceDistributionStrategy) async throws
     func updatePoolBalanceDistributionThreshold(_ threshold: Double) async throws
     func updateTraderCommissionRate(_ rate: Double) async throws
+    func updateShowCommissionBreakdownInCreditNote(_ value: Bool) async throws
+    func updatePlatformServiceChargeRate(_ rate: Double) async throws
     func updateSLAMonitoringInterval(_ interval: TimeInterval) async throws
     func resetToDefaults() async throws
 
@@ -67,6 +78,7 @@ protocol ConfigurationServiceProtocol: ObservableObject {
     func validateInitialAccountBalance(_ value: Double) -> Bool
     func validatePoolBalanceDistributionThreshold(_ value: Double) -> Bool
     func validateTraderCommissionRate(_ rate: Double) -> Bool
+    func validatePlatformServiceChargeRate(_ rate: Double) -> Bool
     func validateSLAMonitoringInterval(_ interval: TimeInterval) -> Bool
 }
 
@@ -82,6 +94,17 @@ extension ConfigurationServiceProtocol {
     var effectiveCommissionRate: Double {
         traderCommissionRate
     }
+
+    /// Returns the platform service charge percentage as a formatted string (e.g., "1.5%")
+    var platformServiceChargePercentage: String {
+        "\((platformServiceChargeRate * 100).formatted(.number.precision(.fractionLength(2))))%"
+    }
+
+    /// Single source of truth for platform service charge rate
+    /// Always use this instead of manually checking with fallback
+    var effectivePlatformServiceChargeRate: Double {
+        platformServiceChargeRate
+    }
 }
 
 // MARK: - Configuration Models
@@ -91,6 +114,8 @@ struct AppConfiguration: Codable {
     var poolBalanceDistributionStrategy: PoolBalanceDistributionStrategy
     var poolBalanceDistributionThreshold: Double
     var traderCommissionRate: Double?
+    var platformServiceChargeRate: Double?
+    var showCommissionBreakdownInCreditNote: Bool?
     var userMinimumCashReserves: [String: Double] // userId -> minimumCashReserve
     var slaMonitoringInterval: TimeInterval // SLA monitoring check interval in seconds
     var lastUpdated: Date
@@ -102,6 +127,8 @@ struct AppConfiguration: Codable {
         poolBalanceDistributionStrategy: .immediateDistribution,
         poolBalanceDistributionThreshold: 5.0,
         traderCommissionRate: 0.10, // 10% - matches CalculationConstants default
+        platformServiceChargeRate: 0.015, // 1.5% - matches CalculationConstants default
+        showCommissionBreakdownInCreditNote: true,
         userMinimumCashReserves: [:],
         slaMonitoringInterval: 300.0, // 5 minutes default
         lastUpdated: Date(),
@@ -112,6 +139,11 @@ struct AppConfiguration: Codable {
     var effectiveTraderCommissionRate: Double {
         traderCommissionRate ?? CalculationConstants.FeeRates.traderCommissionRate
     }
+
+    // Computed property to get platform service charge rate with fallback
+    var effectivePlatformServiceChargeRate: Double {
+        platformServiceChargeRate ?? CalculationConstants.ServiceCharges.platformServiceChargeRate
+    }
 }
 
 // MARK: - Configuration Errors
@@ -120,6 +152,9 @@ enum ConfigurationError: Error, LocalizedError {
     case unauthorizedAccess
     case saveFailed
     case loadFailed
+    case fourEyesApprovalRequired(requestId: String)
+    case noBackendConnection
+    case approvalRejected(reason: String)
 
     var errorDescription: String? {
         switch self {
@@ -131,6 +166,28 @@ enum ConfigurationError: Error, LocalizedError {
             return "Failed to save configuration"
         case .loadFailed:
             return "Failed to load configuration"
+        case .fourEyesApprovalRequired(let requestId):
+            return "This configuration change requires 4-eyes approval. Request ID: \(requestId)"
+        case .noBackendConnection:
+            return "No backend connection available for configuration change"
+        case .approvalRejected(let reason):
+            return "Configuration change was rejected: \(reason)"
         }
+    }
+
+    /// Returns true if this error indicates a 4-eyes approval is pending
+    var isPendingApproval: Bool {
+        if case .fourEyesApprovalRequired = self {
+            return true
+        }
+        return false
+    }
+
+    /// Returns the request ID if this is a 4-eyes approval error
+    var fourEyesRequestId: String? {
+        if case .fourEyesApprovalRequired(let requestId) = self {
+            return requestId
+        }
+        return nil
     }
 }

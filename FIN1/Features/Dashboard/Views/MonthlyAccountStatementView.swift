@@ -127,7 +127,7 @@ struct MonthlyAccountStatementView: View {
     }
 
     private var statementMetaHeader: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: ResponsiveDesign.spacing(0)) {
             // Row 1: Account statement period
             HStack {
                 Text("Account statement from")

@@ -19,7 +19,7 @@ struct CommissionBreakdownSheet: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
+            VStack(spacing: ResponsiveDesign.spacing(0)) {
                 if viewModel.isLoading {
                     ProgressView()
                         .padding()

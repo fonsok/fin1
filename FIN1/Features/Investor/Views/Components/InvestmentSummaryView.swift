@@ -52,7 +52,7 @@ struct InvestmentSummaryView: View {
 
                 HStack {
                     HStack(spacing: ResponsiveDesign.spacing(2)) {
-                        Text("Platform Service Charge (\(CalculationConstants.ServiceCharges.platformServiceChargePercentage)):")
+                        Text("Platform Service Charge (\(viewModel.configurationService.platformServiceChargePercentage)):")
                         Button(action: {
                             showPlatformServiceChargeInfo = true
                         }) {
@@ -111,7 +111,8 @@ struct InvestmentSummaryView: View {
         viewModel: InvestmentSummaryViewModel(
             amountPerInvestment: 200.00,
             numberOfInvestments: 5,
-            totalInvestmentAmount: 1000.00
+            totalInvestmentAmount: 1000.00,
+            configurationService: ConfigurationService(userService: UserService())
         )
     )
     .padding()

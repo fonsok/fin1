@@ -3,6 +3,7 @@ import Combine
 
 /// ViewModel for Privacy Policy view
 /// Manages section expansion, search filtering, and jurisdiction-based content
+@MainActor
 final class PrivacyPolicyViewModel: ObservableObject {
 
     // MARK: - Type Aliases

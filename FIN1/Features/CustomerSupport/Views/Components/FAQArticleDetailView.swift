@@ -103,7 +103,7 @@ struct FAQArticleDetailView: View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
             HStack {
                 Image(systemName: article.category.icon)
-                    .font(.title2)
+                    .font(ResponsiveDesign.headlineFont())
                     .foregroundColor(Color(hex: article.category.color))
 
                 Text(article.category.displayName)

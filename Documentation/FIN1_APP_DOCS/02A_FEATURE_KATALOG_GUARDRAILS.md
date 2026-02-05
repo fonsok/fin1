@@ -36,7 +36,8 @@ Dieses Dokument beschreibt die **bereits funktionierenden FIN1-Features** so, da
 Diese Regeln schützen **bereits korrekte Finanzwerte** vor “Formel-Drift” (sehr häufige, teure Regression).
 
 - **Single Source of Truth ist Pflicht (keine Parallel-Formeln)**
-  - **Constants**: `FIN1/Shared/Models/CalculationConstants.swift` ist die zentrale Quelle für Raten/Limits/Default-Werte.
+  - **Constants**: `FIN1/Shared/Models/CalculationConstants.swift` ist die zentrale Quelle für Raten/Limits/Default-Werte (Fallback-Werte).
+- **Konfigurierbare Rates**: `ConfigurationService` verwaltet admin-konfigurierbare Finanzparameter (z.B. `platformServiceChargeRate`, `traderCommissionRate`) mit Fallback auf `CalculationConstants` Defaults.
   - **Fees**: ausschließlich `FIN1/Shared/Services/FeeCalculationService.swift` (`createFeeBreakdown`, `calculateTotalFees`).
   - **Profit (Trader, aus Invoices, ohne Taxes)**: `FIN1/Shared/Services/ProfitCalculationService.swift` (`calculateTaxableProfit`), verwendet `Invoice.nonTaxTotal` (siehe `FIN1/Shared/Extensions/Invoice+Calculations.swift`).
   - **Taxes**: ausschließlich `FIN1/Features/Trader/Models/InvoiceTaxCalculations.swift` (`InvoiceTaxCalculator.*`).

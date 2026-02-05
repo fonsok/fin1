@@ -183,7 +183,7 @@ struct AgentPerformanceDashboard: View {
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
                             .background(AppTheme.accentLightBlue.opacity(0.1))
-                            .cornerRadius(6)
+                            .cornerRadius(ResponsiveDesign.spacing(6))
                     }
                 }
             }

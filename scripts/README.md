@@ -11,113 +11,113 @@
 
 ### Build & Development
 
-- **`caffeinate-build-v2026-01-30.sh`** - Intelligenter caffeinate-Wrapper für Xcode-Builds/Tests
+- **`caffeinate-build.sh`** - Intelligenter caffeinate-Wrapper für Xcode-Builds/Tests
   - Verhindert System-Sleep während Builds
   - Batterie-Schutz mit Timeout
   - Dokumentation: `README_CAFFEINATE.md`
 
-- **`caffeinate-server-v2026-01-30.sh`** - Intelligenter caffeinate-Wrapper für Entwicklungsserver
+- **`caffeinate-server.sh`** - Intelligenter caffeinate-Wrapper für Entwicklungsserver
   - Verhindert System-Sleep während Server-Laufzeit
   - Erlaubt Display-Sleep (spart Batterie)
   - Dokumentation: `README_CAFFEINATE.md`
 
-- **`fix-xcode-build-v2026-01-30.sh`** - Behebt häufige Xcode Build-Probleme
+- **`fix-xcode-build.sh`** - Behebt häufige Xcode Build-Probleme
   - Bereinigt Derived Data
   - Validiert Projektstruktur
   - Prüft Schemes
   - **Neu:** 2026-01-21
 
-- **`generate-code-coverage-v2026-01-30.sh`** - Generiert Code-Coverage-Reports
+- **`generate-code-coverage.sh`** - Generiert Code-Coverage-Reports
 
 ### Code Quality & Validation
 
-- **`check-bundle-size-v2026-01-30.sh`** - Prüft iOS App Bundle-Größe
+- **`check-bundle-size.sh`** - Prüft iOS App Bundle-Größe
   - Warnungen bei Überschreitung von Schwellwerten
   - Dokumentation: `README-Bundle-Size.md`
 
-- **`check-file-sizes-v2026-01-30.sh`** - Prüft File-Size-Limits
+- **`check-file-sizes.sh`** - Prüft File-Size-Limits
   - Klassen ≤ 400 Zeilen
   - Funktionen ≤ 50 Zeilen
 
-- **`check-responsive-design-v2026-01-30.sh`** - ResponsiveDesign-Compliance-Check
+- **`check-responsive-design.sh`** - ResponsiveDesign-Compliance-Check
   - Prüft auf feste UI-Werte
   - Validiert ResponsiveDesign-System-Nutzung
 
-- **`validate-mvvm-architecture-v2026-01-30.sh`** - MVVM-Architektur-Validierung
+- **`validate-mvvm-architecture.sh`** - MVVM-Architektur-Validierung
   - Prüft ViewModel-Instanziierung
   - Validiert Dependency Injection
   - Dokumentation: `README-MVVM-Validation.md`
 
-- **`validate-separation-of-concerns-v2026-01-30.sh`** - Separation of Concerns-Validierung
+- **`validate-separation-of-concerns.sh`** - Separation of Concerns-Validierung
   - Prüft Business-Logik in Views
   - Validiert File-Organisation
 
-- **`validate-main-view-spacing-v2026-01-30.sh`** - Prüft Main-View-Spacing
+- **`validate-main-view-spacing.sh`** - Prüft Main-View-Spacing
 
-- **`detect-duplicate-files-v2026-01-30.sh`** - Erkennt doppelte Swift-Dateien
+- **`detect-duplicate-files.sh`** - Erkennt doppelte Swift-Dateien
   - Verhindert "Multiple commands produce" Fehler
   - Dokumentation: `README-Duplicate-Prevention.md`
 
 ### Git & Pre-Commit
 
-- **`pre-commit-hook-v2026-01-30.sh`** - Pre-Commit-Hook für Code-Qualität
+- **`pre-commit-hook.sh`** - Pre-Commit-Hook für Code-Qualität
   - ResponsiveDesign-Compliance
   - Separation of Concerns
   - File-Size-Validierung
 
-- **`setup-git-hooks-v2026-01-30.sh`** - Setup für Git-Hooks
+- **`setup-git-hooks.sh`** - Setup für Git-Hooks
 
 ### Netzwerk & Backend
 
 **📍 Scripts befinden sich in `scripts/network/`**
 
-- **`network/health-check-backend-v2026-01-30.sh`** - Umfassender Backend-Verbindungstest
+- **`network/health-check-backend.sh`** - Umfassender Backend-Verbindungstest
   - Port-Erreichbarkeit (netcat)
   - Port-Status (nmap)
   - Netzwerk-Pfad (mtr)
   - Dokumentation: `Documentation/NETWORK_TOOLS.md`, `scripts/network/README.md`
 
-- **`network/network-tuning-v2026-01-30.sh`** - Netzwerk-Performance-Tuning (on-demand)
+- **`network/network-tuning.sh`** - Netzwerk-Performance-Tuning (on-demand)
   - TCP-Buffer-Optimierung
   - Connection-Backlog-Erhöhung
   - MTU-Konfiguration
   - Dokumentation: `Documentation/NETWORK_TOOLS.md`, `scripts/network/README.md`
 
-- **`start-backend-v2026-01-30.sh`** - Startet Backend-Services
+- **`start-backend.sh`** - Startet Backend-Services
 
-- **`stop-backend-v2026-01-30.sh`** - Stoppt Backend-Services
+- **`stop-backend.sh`** - Stoppt Backend-Services
 
 ### Mac Development
 
-- **`optimize-mac-for-development-v2026-01-30.sh`** - Optimiert Mac-Power-Management
+- **`optimize-mac-for-development.sh`** - Optimiert Mac-Power-Management
   - Konfiguriert Sleep-Einstellungen
   - Aktiviert Netzwerk-Standby
   - Dokumentation: `Documentation/MAC_DEVELOPMENT_OPTIMIZATION.md`
 
-- **`restore-mac-power-settings-v2026-01-30.sh`** - Stellt Mac-Power-Settings wieder her
+- **`restore-mac-power-settings.sh`** - Stellt Mac-Power-Settings wieder her
 
 ### Deployment & Ubuntu
 
-- **`deploy-to-ubuntu-v2026-01-30.sh`** - Deployment auf Ubuntu-Server
+- **`deploy-to-ubuntu.sh`** - Deployment auf Ubuntu-Server
   - Kopiert Dateien auf Server
   - Dokumentation: `README-UBUNTU-DEPLOYMENT.md`
 
-- **`setup-ubuntu-server-v2026-01-30.sh`** - Setup für Ubuntu-Server
+- **`setup-ubuntu-server.sh`** - Setup für Ubuntu-Server
   - Dokumentation: `UBUNTU_SERVER_SETUP.md`
 
-- **`find-ubuntu-server-v2026-01-30.sh`** - Findet Ubuntu-Server im Netzwerk
+- **`find-ubuntu-server.sh`** - Findet Ubuntu-Server im Netzwerk
 
-- **`activate-ssh-on-ubuntu-v2026-01-30.sh`** - Aktiviert SSH auf Ubuntu
+- **`activate-ssh-on-ubuntu.sh`** - Aktiviert SSH auf Ubuntu
 
-- **`quick-deploy-v2026-01-30.sh`** - Schnelles Deployment
+- **`quick-deploy.sh`** - Schnelles Deployment
 
-- **`auto-setup-passwords-v2026-01-30.sh`** - Automatisches Passwort-Setup
+- **`auto-setup-passwords.sh`** - Automatisches Passwort-Setup
 
-- **`setup-passwords-v2026-01-30.sh`** - Passwort-Setup
+- **`setup-passwords.sh`** - Passwort-Setup
 
 ### Utilities
 
-- **`replace-white-font-colors-v2026-01-30.sh`** - Ersetzt weiße Font-Farben
+- **`replace-white-font-colors.sh`** - Ersetzt weiße Font-Farben
 
 ## 📚 Dokumentation
 
@@ -135,12 +135,12 @@
 
 ### Scripts ohne dedizierte Dokumentation
 
-- ⚠️ **`fix-xcode-build-v2026-01-30.sh`** - Neu erstellt (2026-01-21), noch nicht dokumentiert
-- ⚠️ **`generate-code-coverage-v2026-01-30.sh`** - Keine dedizierte Dokumentation
-- ⚠️ **`start-backend-v2026-01-30.sh`** / **`stop-backend-v2026-01-30.sh`** - Keine dedizierte Dokumentation
-- ⚠️ **`restore-mac-power-settings-v2026-01-30.sh`** - Keine dedizierte Dokumentation
-- ⚠️ **`replace-white-font-colors-v2026-01-30.sh`** - Keine dedizierte Dokumentation
-- ⚠️ **`validate-main-view-spacing-v2026-01-30.sh`** - Keine dedizierte Dokumentation
+- ⚠️ **`fix-xcode-build.sh`** - Neu erstellt (2026-01-21), noch nicht dokumentiert
+- ⚠️ **`generate-code-coverage.sh`** - Keine dedizierte Dokumentation
+- ⚠️ **`start-backend.sh`** / **`stop-backend.sh`** - Keine dedizierte Dokumentation
+- ⚠️ **`restore-mac-power-settings.sh`** - Keine dedizierte Dokumentation
+- ⚠️ **`replace-white-font-colors.sh`** - Keine dedizierte Dokumentation
+- ⚠️ **`validate-main-view-spacing.sh`** - Keine dedizierte Dokumentation
 
 ## 🚀 Quick Reference
 
@@ -148,32 +148,32 @@
 
 ```bash
 # Build mit caffeinate
-./scripts/caffeinate-build-v2026-01-30.sh --mode build
+./scripts/caffeinate-build.sh --mode build
 
 # Backend-Verbindung testen
-./scripts/network/health-check-backend-v2026-01-30.sh
+./scripts/network/health-check-backend.sh
 
 # Code-Qualität prüfen
-./scripts/check-file-sizes-v2026-01-30.sh
-./scripts/validate-mvvm-architecture-v2026-01-30.sh
+./scripts/check-file-sizes.sh
+./scripts/validate-mvvm-architecture.sh
 
 # Xcode Build-Probleme beheben
-./scripts/fix-xcode-build-v2026-01-30.sh
+./scripts/fix-xcode-build.sh
 
 # Mac für Entwicklung optimieren
-./scripts/optimize-mac-for-development-v2026-01-30.sh
+./scripts/optimize-mac-for-development.sh
 ```
 
 ## 📝 Hinweise
 
 - Alle Scripts sollten mit `./scripts/script-name.sh` ausgeführt werden
-- Einige Scripts benötigen `sudo` (z.B. `network-tuning-v2026-01-30.sh`, `mtr` in `health-check-backend-v2026-01-30.sh`)
-- Pre-Commit-Hooks werden automatisch von `setup-git-hooks-v2026-01-30.sh` eingerichtet
+- Einige Scripts benötigen `sudo` (z.B. `scripts/network/network-tuning.sh`, `mtr` in `scripts/network/health-check-backend.sh`)
+- Pre-Commit-Hooks werden automatisch von `setup-git-hooks.sh` eingerichtet
 
 ## 🔄 Letzte Aktualisierungen
 
-- **2026-01-21**: `fix-xcode-build-v2026-01-30.sh` erstellt
-- **2026-01-21**: `health-check-backend-v2026-01-30.sh` und `network-tuning-v2026-01-30.sh` dokumentiert in `NETWORK_TOOLS.md`
+- **2026-01-21**: `fix-xcode-build.sh` erstellt
+- **2026-01-21**: `health-check-backend.sh` und `network-tuning.sh` dokumentiert in `NETWORK_TOOLS.md`
 
 ---
 

@@ -1,7 +1,7 @@
 ---
 title: "FIN1 App-Dokumentation – Index"
 audience: ["Stakeholder", "Produkt", "Entwicklung", "QA", "Betrieb", "Support", "Compliance"]
-lastUpdated: "2026-02-01"
+lastUpdated: "2026-02-04"
 ---
 
 ## Zweck
@@ -31,6 +31,7 @@ Wenn Dokumente und Code/Configs widersprechen, gilt:
    - Feature-Schutz (Guardrails): [`02A_FEATURE_KATALOG_GUARDRAILS.md`](02A_FEATURE_KATALOG_GUARDRAILS.md)
 3. **Technische Spezifikation (Architektur/Backend/API/Datenmodell/Security)**
    Siehe [`03_TECHNISCHE_SPEZIFIKATION.md`](03_TECHNISCHE_SPEZIFIKATION.md)
+   - Belege, Rechnungen, Emittent/Handelsplatz: Abschnitt 6 in 03
 4. **Entwicklernähere Dokumentation (Setup/Guides/Build & Deployment)**
    Siehe [`04_DEVELOPER_GUIDE.md`](04_DEVELOPER_GUIDE.md)
 5. **Test- und Qualitätsdokumentation (QA/Dev)**
@@ -44,6 +45,17 @@ Wenn Dokumente und Code/Configs widersprechen, gilt:
    Siehe [`07_USER_GUIDE.md`](07_USER_GUIDE.md)
 8. **Struktur, Form und Pflege (Doc Governance)**
    Siehe [`08_PFLEGE_VERSIONING.md`](08_PFLEGE_VERSIONING.md)
+9. **Admin-Rollen und Aufgabentrennung (Separation of Duties)**
+   Siehe [`09_ADMIN_ROLES_SEPARATION.md`](09_ADMIN_ROLES_SEPARATION.md)
+   - RACI-Matrix für Xcode-Admin vs. Server-Admin
+   - App-Level Rollen (admin, business_admin, security_officer, compliance, customer_service)
+   - Security Hardening Checkliste
+   - Firewall-Setup: [`09A_SERVER_FIREWALL_SETUP.md`](09A_SERVER_FIREWALL_SETUP.md)
+10. **Admin-Web-Portal (Browser-Zugang für App-Admins)**
+    Siehe [`10_ADMIN_PORTAL_REQUIREMENTS.md`](10_ADMIN_PORTAL_REQUIREMENTS.md)
+    - Anforderungen pro Rolle
+    - Screen-Übersicht
+    - Technologie-Empfehlung
 
 ## Schnelleinstieg nach Zielgruppe
 

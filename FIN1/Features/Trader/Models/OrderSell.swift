@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - Order Sell Model
 /// Individual sell transactions with status progression (submitted → executed → confirmed)
-struct OrderSell: Identifiable, Codable {
+struct OrderSell: Identifiable, Codable, Sendable {
     let id: String
     let traderId: String
     let symbol: String

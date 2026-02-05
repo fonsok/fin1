@@ -1,6 +1,6 @@
 #!/bin/bash
 # FIN1 Deployment Script - Kopiert Dateien auf Ubuntu-Server
-# Usage: ./deploy-to-ubuntu-v2026-01-30.sh [ubuntu-ip-or-hostname] [ubuntu-user]
+# Usage: ./deploy-to-ubuntu.sh [ubuntu-ip-or-hostname] [ubuntu-user]
 
 set -e
 
@@ -74,8 +74,8 @@ fi
 echo -e "\n${YELLOW}[2/6]${NC} Prüfe ob Setup-Skript ausgeführt wurde..."
 if ! ssh "$UBUNTU_USER@$UBUNTU_HOST" "command -v docker &> /dev/null"; then
     echo -e "${YELLOW}Docker nicht gefunden. Setup-Skript wird ausgeführt...${NC}"
-    scp "$SCRIPT_DIR/setup-ubuntu-server-v2026-01-30.sh" "$UBUNTU_USER@$UBUNTU_HOST:~/setup-ubuntu-server-v2026-01-30.sh"
-    ssh "$UBUNTU_USER@$UBUNTU_HOST" "chmod +x ~/setup-ubuntu-server-v2026-01-30.sh && ~/setup-ubuntu-server-v2026-01-30.sh"
+    scp "$SCRIPT_DIR/setup-ubuntu-server.sh" "$UBUNTU_USER@$UBUNTU_HOST:~/setup-ubuntu-server.sh"
+    ssh "$UBUNTU_USER@$UBUNTU_HOST" "chmod +x ~/setup-ubuntu-server.sh && ~/setup-ubuntu-server.sh"
     echo -e "${YELLOW}Setup abgeschlossen. Bitte neu einloggen oder 'newgrp docker' auf Ubuntu ausführen.${NC}"
     read -p "Wurde 'newgrp docker' auf Ubuntu ausgeführt? (y/n): " DOCKER_READY
     if [ "$DOCKER_READY" != "y" ]; then

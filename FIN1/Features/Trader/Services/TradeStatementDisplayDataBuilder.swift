@@ -62,10 +62,12 @@ final class TradeStatementDisplayDataBuilder: TradeStatementDisplayDataBuilderPr
             sellInvoices: sellInvoices
         )
 
+        let securityIdentifier = securityIdentifierFromInvoices(buyInvoice: buyInvoice, sellInvoices: sellInvoices)
+
         return TradeStatementDisplayData(
             depotNumber: "104801", // In a real app, this would come from user profile
             depotHolder: "Max Mustermann", // In a real app, this would come from user profile
-            securityIdentifier: "VONT.FINL PR PUT23 DAX (DE000VU9GG06/VU9GG0)", // In a real app, this would come from trade's security information
+            securityIdentifier: securityIdentifier,
             buyTransaction: buyTransaction,
             sellTransactions: sellTransactions,
             sellInvoices: sellInvoices,
@@ -168,7 +170,7 @@ final class TradeStatementDisplayDataBuilder: TradeStatementDisplayDataBuilderPr
             profitLoss: "0,00 EUR",
             profitLossColor: "fin1FontColor",
             valueDate: dates.valueDate,
-            tradingVenue: "Vontobel",
+            tradingVenue: TradeStatementPlaceholders.tradingVenue,
             closingDate: dates.closingDate,
             marketValue: transactionDetails.marketValue,
             commission: orderFee.formatted(.currency(code: "EUR")),
@@ -212,7 +214,7 @@ final class TradeStatementDisplayDataBuilder: TradeStatementDisplayDataBuilderPr
                 profitLoss: profitLoss.formatted(.currency(code: "EUR")),
                 profitLossColor: profitLossColor,
                 valueDate: dates.valueDate,
-                tradingVenue: "Vontobel",
+                tradingVenue: TradeStatementPlaceholders.tradingVenue,
                 closingDate: dates.closingDate,
                 marketValue: transactionDetails.marketValue,
                 commission: orderFee.formatted(.currency(code: "EUR")),
@@ -282,6 +284,17 @@ final class TradeStatementDisplayDataBuilder: TradeStatementDisplayDataBuilderPr
         let closingDate = formatter.string(from: invoice.createdAt)
 
         return TransactionDates(valueDate: valueDate, closingDate: closingDate)
+    }
+
+    /// Builds security identifier line from first available securities description (includes real emittent).
+    private func securityIdentifierFromInvoices(buyInvoice: Invoice?, sellInvoices: [Invoice]) -> String {
+        if let desc = buyInvoice?.items.first(where: { $0.itemType == .securities })?.description, !desc.isEmpty {
+            return desc
+        }
+        if let desc = sellInvoices.first?.items.first(where: { $0.itemType == .securities })?.description, !desc.isEmpty {
+            return desc
+        }
+        return "VONT.FINL PR PUT23 DAX (DE000VU9GG06/VU9GG0)"
     }
 }
 

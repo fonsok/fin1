@@ -3,7 +3,7 @@ import SwiftUI
 
 // MARK: - Account and Personal Information Enums
 
-enum AccountType: String, CaseIterable, Codable {
+enum AccountType: String, CaseIterable, Codable, Sendable {
     case individual
     case company
 
@@ -17,7 +17,7 @@ enum AccountType: String, CaseIterable, Codable {
     }
 }
 
-enum Salutation: String, CaseIterable, Codable {
+enum Salutation: String, CaseIterable, Codable, Sendable {
     case mr
     case mrs
     case ms
@@ -40,7 +40,7 @@ enum Salutation: String, CaseIterable, Codable {
     }
 }
 
-enum UserRole: String, CaseIterable, Codable {
+enum UserRole: String, CaseIterable, Codable, Sendable {
     case investor
     case trader
     case admin
@@ -89,7 +89,7 @@ enum UserRole: String, CaseIterable, Codable {
     }
 }
 
-enum EmploymentStatus: String, CaseIterable, Codable {
+enum EmploymentStatus: String, CaseIterable, Codable, Sendable {
     case employed = "employed"
     case selfEmployed = "self_employed"
     case unemployed = "unemployed"
@@ -109,7 +109,7 @@ enum EmploymentStatus: String, CaseIterable, Codable {
 
 // MARK: - Financial Information Enums
 
-enum IncomeRange: String, CaseIterable, Codable {
+enum IncomeRange: String, CaseIterable, Codable, Sendable {
     case low = "low"
     case lowMiddle = "low_middle"
     case middle = "middle"
@@ -135,7 +135,7 @@ enum IncomeRange: String, CaseIterable, Codable {
     }
 }
 
-enum CashAndLiquidAssets: String, CaseIterable, Codable {
+enum CashAndLiquidAssets: String, CaseIterable, Codable, Sendable {
     case oneMillionPlus = "one_million_plus"
     case fiveHundredKToOneMillion = "five_hundred_k_to_one_million"
     case twoHundredKToFiveHundredK = "two_hundred_k_to_five_hundred_k"
@@ -161,7 +161,7 @@ enum CashAndLiquidAssets: String, CaseIterable, Codable {
     }
 }
 
-enum AssetType: String, CaseIterable, Codable {
+enum AssetType: String, CaseIterable, Codable, Sendable {
     case privateAssets = "private_assets"
     case businessAssets = "business_assets"
 
@@ -175,7 +175,7 @@ enum AssetType: String, CaseIterable, Codable {
 
 // MARK: - Identification and Verification Enums
 
-enum IdentificationType: String, CaseIterable, Codable {
+enum IdentificationType: String, CaseIterable, Codable, Sendable {
     case passport = "passport"
     case idCard = "id_card"
     case postident = "postident"
@@ -194,7 +194,7 @@ enum IdentificationType: String, CaseIterable, Codable {
 
 // MARK: - Investment Experience Enums
 
-enum StocksTransactionCount: String, CaseIterable, Codable {
+enum StocksTransactionCount: String, CaseIterable, Codable, Sendable {
     case oneToTen = "1-10"
     case tenToFifty = "10-50"
     case fiftyPlus = "50+"
@@ -210,7 +210,7 @@ enum StocksTransactionCount: String, CaseIterable, Codable {
     }
 }
 
-enum ETFsTransactionCount: String, CaseIterable, Codable {
+enum ETFsTransactionCount: String, CaseIterable, Codable, Sendable {
     case oneToTen = "1-10"
     case tenToTwenty = "10-20"
     case moreThanTwenty = "More than 20"
@@ -226,7 +226,7 @@ enum ETFsTransactionCount: String, CaseIterable, Codable {
     }
 }
 
-enum DerivativesTransactionCount: String, CaseIterable, Codable {
+enum DerivativesTransactionCount: String, CaseIterable, Codable, Sendable {
     case oneToTen = "1-10"
     case tenToFifty = "10-50"
     case fiftyPlus = "50+"
@@ -242,7 +242,7 @@ enum DerivativesTransactionCount: String, CaseIterable, Codable {
     }
 }
 
-enum InvestmentAmount: String, CaseIterable, Codable {
+enum InvestmentAmount: String, CaseIterable, Codable, Sendable {
     case hundredToTenThousand = "hundred_to_ten_thousand"
     case tenThousandToHundredThousand = "ten_thousand_to_hundred_thousand"
     case hundredThousandToMillion = "hundred_thousand_to_million"
@@ -267,7 +267,7 @@ enum InvestmentAmount: String, CaseIterable, Codable {
     }
 }
 
-enum DerivativesInvestmentAmount: String, CaseIterable, Codable {
+enum DerivativesInvestmentAmount: String, CaseIterable, Codable, Sendable {
     case zeroToThousand = "zero_to_thousand"
     case thousandToTenThousand = "thousand_to_ten_thousand"
     case tenThousandToHundredThousand = "ten_thousand_to_hundred_thousand"
@@ -292,7 +292,7 @@ enum DerivativesInvestmentAmount: String, CaseIterable, Codable {
     }
 }
 
-enum HoldingPeriod: String, CaseIterable, Codable {
+enum HoldingPeriod: String, CaseIterable, Codable, Sendable {
     case minutesToHours = "minutes_to_hours"
     case daysToWeeks = "days_to_weeks"
     case monthsToYears = "months_to_years"
@@ -306,7 +306,7 @@ enum HoldingPeriod: String, CaseIterable, Codable {
     }
 }
 
-enum DesiredReturn: String, CaseIterable, Codable {
+enum DesiredReturn: String, CaseIterable, Codable, Sendable {
     case atLeastTenPercent = "at_least_10_percent"
     case atLeastFiftyPercent = "at_least_50_percent"
     case atLeastHundredPercent = "at_least_100_percent"
@@ -322,7 +322,7 @@ enum DesiredReturn: String, CaseIterable, Codable {
 
 // MARK: - Risk Class Enum
 
-enum RiskClass: Int, CaseIterable, Codable {
+enum RiskClass: Int, CaseIterable, Codable, Sendable {
     case riskClass1 = 1
     case riskClass2 = 2
     case riskClass3 = 3

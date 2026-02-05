@@ -110,6 +110,7 @@ struct TradeStatementView: View {
                             sellOrderData: displayProperties.sellOrderData,
                             securityIdentifier: displayProperties.securityIdentifier,
                             underlyingAsset: viewModel.fullTrade?.underlyingAsset,
+                            tradingVenue: displayProperties.sellTradingVenue,
                             profitLoss: displayProperties.sellProfitLoss,
                             profitLossColor: displayProperties.sellProfitLossColor,
                             assessmentBasis: displayProperties.sellAssessmentBasis,

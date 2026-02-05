@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - Order Buy Model
 /// Individual buy transactions with status progression (submitted → executed → completed)
-struct OrderBuy: Identifiable, Codable {
+struct OrderBuy: Identifiable, Codable, Sendable {
     let id: String
     let traderId: String
     let symbol: String

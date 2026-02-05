@@ -7,14 +7,14 @@ This repo includes opinionated pre-commit checks in `.githooks/pre-commit`.
 Run:
 
 ```bash
-./scripts/install-githooks-v2026-01-31.sh
+./scripts/install-githooks.sh
 ```
 
 This copies `.githooks/pre-commit` into `.git/hooks/pre-commit` and ensures it is executable.
 
 ### What it enforces
 
-- `scripts/check-xcode-display-name-v2026-01-31.sh` (blocks committing test `CFBundleDisplayName` values)
+- `scripts/check-xcode-display-name.sh` (blocks committing test `CFBundleDisplayName` values)
 - ResponsiveDesign checks
 - SwiftLint / SwiftFormat
 - MVVM validation

@@ -65,12 +65,12 @@ struct StatusBar: View {
                     Rectangle()
                         .fill(AppTheme.fontColor.opacity(0.1))
                         .frame(height: 8)
-                        .cornerRadius(4)
+                        .cornerRadius(ResponsiveDesign.spacing(4))
 
                     Rectangle()
                         .fill(color)
                         .frame(width: geometry.size.width * percentage, height: 8)
-                        .cornerRadius(4)
+                        .cornerRadius(ResponsiveDesign.spacing(4))
                 }
             }
             .frame(height: 8)
@@ -96,7 +96,7 @@ struct AgentPerformanceRow: View {
 
                 Spacer()
 
-                HStack(spacing: 2) {
+                HStack(spacing: ResponsiveDesign.spacing(2)) {
                     Image(systemName: "star.fill")
                         .foregroundColor(.yellow)
                         .font(ResponsiveDesign.captionFont())
@@ -144,10 +144,10 @@ struct StatBadge: View {
     let label: String
 
     var body: some View {
-        VStack(spacing: 2) {
-            HStack(spacing: 4) {
+        VStack(spacing: ResponsiveDesign.spacing(2)) {
+            HStack(spacing: ResponsiveDesign.spacing(4)) {
                 Image(systemName: icon)
-                    .font(.caption2)
+                    .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.6))
                 Text(value)
                     .font(ResponsiveDesign.captionFont())
@@ -155,7 +155,7 @@ struct StatBadge: View {
                     .foregroundColor(AppTheme.fontColor)
             }
             Text(label)
-                .font(.system(size: 10))
+                .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.5))
         }
     }

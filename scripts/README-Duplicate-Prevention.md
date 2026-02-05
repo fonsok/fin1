@@ -6,7 +6,7 @@ This directory contains scripts to prevent and detect duplicate files in the pro
 
 ## Scripts
 
-### `detect-duplicate-files-v2026-01-30.sh`
+### `detect-duplicate-files.sh`
 
 Detects duplicate Swift files by checking for:
 - Files with the same basename in different locations
@@ -14,7 +14,7 @@ Detects duplicate Swift files by checking for:
 
 **Usage**:
 ```bash
-./scripts/detect-duplicate-files-v2026-01-30.sh
+./scripts/detect-duplicate-files.sh
 ```
 
 **Exit Codes**:
@@ -32,7 +32,7 @@ Detects duplicate Swift files by checking for:
 
 Automatically runs duplicate detection before each commit:
 ```bash
-./scripts/pre-commit-hook-v2026-01-30.sh
+./scripts/pre-commit-hook.sh
 ```
 
 ### 2. Danger CI
@@ -85,8 +85,8 @@ mkdir -p FIN1/FIN1/Features/NewFeature  # Wrong!
 ## Troubleshooting
 
 If script fails to detect duplicates:
-1. Check script has execute permission: `chmod +x scripts/detect-duplicate-files-v2026-01-30.sh`
-2. Verify script runs: `./scripts/detect-duplicate-files-v2026-01-30.sh`
+1. Check script has execute permission: `chmod +x scripts/detect-duplicate-files.sh`
+2. Verify script runs: `./scripts/detect-duplicate-files.sh`
 3. Check for files in build directories (they're excluded)
 4. Manually verify file locations
 

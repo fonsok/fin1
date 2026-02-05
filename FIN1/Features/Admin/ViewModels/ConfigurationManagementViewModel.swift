@@ -9,11 +9,17 @@ final class ConfigurationManagementViewModel: ObservableObject {
     @Published var poolBalanceDistributionStrategy: PoolBalanceDistributionStrategy = .immediateDistribution
     @Published var poolBalanceDistributionThresholdInput: Double = 5.0
     @Published var traderCommissionRateInput: Double = 0.10
+    @Published var showCommissionBreakdownInCreditNoteInput: Bool = true
     @Published var minimumCashReserveError: String?
     @Published var initialAccountBalanceError: String?
     @Published var poolBalanceDistributionThresholdError: String?
     @Published var traderCommissionRateError: String?
     @Published var isLoading: Bool = false
+
+    // Success messages for 4-eyes approval submissions
+    @Published var traderCommissionRateSuccess: String?
+    @Published var initialAccountBalanceSuccess: String?
+    @Published var platformServiceChargeRateSuccess: String?
 
     // Per-user minimum cash reserve
     @Published var userMinimumCashReserveUserId: String = ""
@@ -75,10 +81,19 @@ final class ConfigurationManagementViewModel: ObservableObject {
 
         isLoading = true
         initialAccountBalanceError = nil
+        initialAccountBalanceSuccess = nil
 
         do {
             try await configurationService.updateInitialAccountBalance(initialAccountBalanceInput)
             print("✅ Initial account balance updated to \(initialAccountBalanceInput)")
+            initialAccountBalanceSuccess = "Balance updated successfully"
+        } catch let error as ConfigurationError {
+            if error.isPendingApproval {
+                initialAccountBalanceSuccess = "Change submitted for 4-eyes approval"
+                print("⏳ Initial account balance change requires 4-eyes approval")
+            } else {
+                initialAccountBalanceError = "Failed to update: \(error.localizedDescription)"
+            }
         } catch {
             let appError = error.toAppError()
             initialAccountBalanceError = "Failed to update: \(appError.errorDescription ?? "An error occurred")"
@@ -129,15 +144,37 @@ final class ConfigurationManagementViewModel: ObservableObject {
 
         isLoading = true
         traderCommissionRateError = nil
+        traderCommissionRateSuccess = nil
 
         do {
             try await configurationService.updateTraderCommissionRate(traderCommissionRateInput)
             print("✅ Trader commission rate updated to \(traderCommissionRateInput * 100)%")
+            traderCommissionRateSuccess = "Rate updated successfully"
+        } catch let error as ConfigurationError {
+            // Handle 4-eyes approval specially - it's not an error, just pending approval
+            if error.isPendingApproval {
+                traderCommissionRateSuccess = "Change submitted for 4-eyes approval"
+                print("⏳ Trader commission rate change requires 4-eyes approval")
+            } else {
+                traderCommissionRateError = "Failed to update: \(error.localizedDescription)"
+            }
         } catch {
             let appError = error.toAppError()
             traderCommissionRateError = "Failed to update: \(appError.errorDescription ?? "An error occurred")"
         }
 
+        isLoading = false
+    }
+
+    func updateShowCommissionBreakdownInCreditNote(_ configurationService: any ConfigurationServiceProtocol) async {
+        isLoading = true
+        do {
+            try await configurationService.updateShowCommissionBreakdownInCreditNote(showCommissionBreakdownInCreditNoteInput)
+            print("✅ Show commission breakdown in credit note updated to \(showCommissionBreakdownInCreditNoteInput)")
+        } catch {
+            let appError = error.toAppError()
+            minimumCashReserveError = "Failed to update: \(appError.errorDescription ?? "An error occurred")"
+        }
         isLoading = false
     }
 
@@ -155,6 +192,7 @@ final class ConfigurationManagementViewModel: ObservableObject {
             poolBalanceDistributionStrategy = configurationService.poolBalanceDistributionStrategy
             poolBalanceDistributionThresholdInput = configurationService.poolBalanceDistributionThreshold
             traderCommissionRateInput = configurationService.traderCommissionRate
+            showCommissionBreakdownInCreditNoteInput = configurationService.showCommissionBreakdownInCreditNote
             print("✅ Configuration reset to defaults")
         } catch {
             let appError = error.toAppError()

@@ -12,6 +12,7 @@ extension SecuritiesSearchViewModel {
 }
 
 // MARK: - ViewModel
+@MainActor
 final class SecuritiesSearchViewModel: ObservableObject {
     @Published var wknIsin: String = ""
 

@@ -12,12 +12,15 @@ struct TraderCreditNoteDetailView: View {
 
     let document: Document
     let tradeNumber: Int?
+    /// Steuerung über Admin-Option: Commission-Breakdown-Tabelle anzeigen oder ausblenden.
+    let showCommissionBreakdown: Bool
 
     // MARK: - Initialization
 
-    init(document: Document) {
+    init(document: Document, showCommissionBreakdown: Bool = true) {
         self.document = document
         self.tradeNumber = document.invoiceData?.tradeNumber
+        self.showCommissionBreakdown = showCommissionBreakdown
         self._viewModel = StateObject(wrappedValue: TraderCreditNoteDetailViewModel())
     }
 
@@ -28,7 +31,7 @@ struct TraderCreditNoteDetailView: View {
             VStack(spacing: ResponsiveDesign.spacing(24)) {
                 // Document Header (einheitliches Layout für alle Dokumente)
                 DocumentHeaderLayoutView(
-                    accountHolderName: getAccountHolderName(),
+                    accountHolderName: viewModel.accountHolderName,
                     accountHolderAddress: document.invoiceData?.customerInfo.address,
                     accountHolderCity: document.invoiceData != nil ? "\(document.invoiceData!.customerInfo.postalCode) \(document.invoiceData!.customerInfo.city)" : nil,
                     documentDate: document.uploadedAt
@@ -38,7 +41,9 @@ struct TraderCreditNoteDetailView: View {
 
                 headerSection
                 tradeInfoSection
-                commissionBreakdownSection
+                if showCommissionBreakdown {
+                    commissionBreakdownSection
+                }
                 notesSections
                 footerSection
             }
@@ -58,7 +63,7 @@ struct TraderCreditNoteDetailView: View {
             }
         }
         .task {
-            viewModel.configure(with: appServices, tradeId: document.tradeId)
+            viewModel.configure(with: appServices, document: document)
             await viewModel.loadBreakdown()
         }
     }
@@ -158,7 +163,7 @@ struct TraderCreditNoteDetailView: View {
     // MARK: - Commission Breakdown Section
 
     private var commissionBreakdownSection: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: ResponsiveDesign.spacing(0)) {
             Text("Commission Calculation Breakdown")
                 .font(ResponsiveDesign.headlineFont())
                 .fontWeight(.semibold)
@@ -246,40 +251,8 @@ struct TraderCreditNoteDetailView: View {
 
     private var notesSections: some View {
         DocumentNotesSection(
-            accountNumber: getAccountNumber()
+            accountNumber: viewModel.accountNumber
         )
-    }
-
-    private func getAccountHolderName() -> String {
-        // Try to get account holder name from invoiceData
-        if let invoiceData = document.invoiceData,
-           !invoiceData.customerInfo.name.isEmpty {
-            return invoiceData.customerInfo.name
-        }
-
-        // Try to get from current user
-        if let currentUser = appServices.userService.currentUser {
-            return currentUser.displayName
-        }
-
-        // Fallback: use document userId
-        return "Trader \(document.userId.prefix(8))"
-    }
-
-    private func getAccountNumber() -> String {
-        // Try to get account number from invoiceData
-        if let invoiceData = document.invoiceData,
-           !invoiceData.customerInfo.depotNumber.isEmpty {
-            return invoiceData.customerInfo.depotNumber
-        }
-
-        // Try to get from current user
-        if let currentUser = appServices.userService.currentUser {
-            return "DE\(String(format: "%020d", abs(currentUser.id.hashValue)))"
-        }
-
-        // Fallback: use document userId
-        return "DE\(String(format: "%020d", abs(document.userId.hashValue)))"
     }
 
     // MARK: - Footer Section

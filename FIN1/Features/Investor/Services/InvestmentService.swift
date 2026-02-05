@@ -43,6 +43,10 @@ final class InvestmentService: InvestmentServiceProtocol, ServiceLifecycle {
     private var investorGrossProfitService: (any InvestorGrossProfitServiceProtocol)?
     private var commissionCalculationService: (any CommissionCalculationServiceProtocol)?
 
+    // Backend sync (optional - for persistence across devices)
+    private var investmentAPIService: (any InvestmentAPIServiceProtocol)?
+    private var pendingSyncIds: Set<String> = [] // Track investments not yet synced
+
     // MARK: - Initialization
 
     init(
@@ -61,10 +65,15 @@ final class InvestmentService: InvestmentServiceProtocol, ServiceLifecycle {
         transactionIdService: (any TransactionIdServiceProtocol)? = nil,
         configurationService: (any ConfigurationServiceProtocol)? = nil,
         investorGrossProfitService: (any InvestorGrossProfitServiceProtocol)? = nil,
-        commissionCalculationService: (any CommissionCalculationServiceProtocol)? = nil
+        commissionCalculationService: (any CommissionCalculationServiceProtocol)? = nil,
+        investmentAPIService: (any InvestmentAPIServiceProtocol)? = nil
     ) {
         self.repository = repository ?? InvestmentRepository()
         self.queryService = queryService ?? InvestmentQueryService()
+        // Ensure configurationService is available for InvestmentCreationService
+        guard let configService = configurationService else {
+            fatalError("ConfigurationService must be provided to InvestmentService")
+        }
         self.creationService = creationService ?? InvestmentCreationService(
             investorCashBalanceService: investorCashBalanceService,
             investmentManagementService: investmentManagementService,
@@ -72,7 +81,8 @@ final class InvestmentService: InvestmentServiceProtocol, ServiceLifecycle {
             documentService: documentService,
             invoiceService: invoiceService,
             bankContraAccountService: bankContraAccountService,
-            transactionIdService: transactionIdService ?? TransactionIdService()
+            transactionIdService: transactionIdService ?? TransactionIdService(),
+            configurationService: configService
         )
         self.investorCashBalanceService = investorCashBalanceService
         self.poolTradeParticipationService = poolTradeParticipationService
@@ -84,6 +94,7 @@ final class InvestmentService: InvestmentServiceProtocol, ServiceLifecycle {
         self.configurationService = configurationService
         self.investorGrossProfitService = investorGrossProfitService
         self.commissionCalculationService = commissionCalculationService
+        self.investmentAPIService = investmentAPIService
     }
 
     // MARK: - Post-Initialization Configuration
@@ -140,6 +151,10 @@ final class InvestmentService: InvestmentServiceProtocol, ServiceLifecycle {
         specialization: String,
         potSelection: InvestmentSelectionStrategy
     ) async throws {
+        // Capture current investment IDs before creation
+        let existingIds = await MainActor.run { Set(repository.investments.map(\.id)) }
+
+        // Create investments locally
         try await creationService.createInvestment(
             investor: investor,
             trader: trader,
@@ -149,6 +164,21 @@ final class InvestmentService: InvestmentServiceProtocol, ServiceLifecycle {
             potSelection: potSelection,
             repository: repository
         )
+
+        // Mark new investments for backend sync
+        let newIds = await MainActor.run {
+            repository.investments.map(\.id).filter { !existingIds.contains($0) }
+        }
+        for id in newIds {
+            markForSync(id)
+        }
+
+        // Write-through: Sync immediately in background (fire-and-forget)
+        if !newIds.isEmpty, investmentAPIService != nil {
+            Task.detached(priority: .background) { [weak self] in
+                await self?.syncToBackend()
+            }
+        }
     }
 
     // MARK: - Investment Queries
@@ -296,5 +326,55 @@ final class InvestmentService: InvestmentServiceProtocol, ServiceLifecycle {
         } else {
             print("⚠️ InvestmentService: investmentDocumentService is nil - investor Collection Bill not generated")
         }
+    }
+
+    // MARK: - Backend Sync (Efficient, Lazy)
+
+    /// Syncs pending investments to backend in batch (called on app background)
+    func syncToBackend() async {
+        guard let apiService = investmentAPIService, !pendingSyncIds.isEmpty else { return }
+
+        let idsToSync = pendingSyncIds
+        print("📡 InvestmentService: Syncing \(idsToSync.count) investments to backend...")
+
+        let investmentsToSync = await MainActor.run {
+            repository.investments.filter { idsToSync.contains($0.id) }
+        }
+
+        for investment in investmentsToSync {
+            do {
+                _ = try await apiService.saveInvestment(investment)
+                await MainActor.run { pendingSyncIds.remove(investment.id) }
+            } catch {
+                print("⚠️ InvestmentService: Failed to sync investment \(investment.id): \(error)")
+            }
+        }
+
+        print("✅ InvestmentService: Sync complete, \(pendingSyncIds.count) pending")
+    }
+
+    /// Fetches investments from backend (on-demand, merges with local)
+    func fetchFromBackend(for investorId: String) async {
+        guard let apiService = investmentAPIService else { return }
+
+        do {
+            let remoteInvestments = try await apiService.fetchInvestments(for: investorId)
+            await MainActor.run {
+                // Merge: Add remote investments not in local
+                let localIds = Set(repository.investments.map(\.id))
+                let newInvestments = remoteInvestments.filter { !localIds.contains($0.id) }
+                for investment in newInvestments {
+                    repository.addInvestment(investment)
+                }
+            }
+            print("📡 InvestmentService: Merged \(remoteInvestments.count) from backend")
+        } catch {
+            print("⚠️ InvestmentService: Backend fetch failed: \(error)")
+        }
+    }
+
+    /// Marks an investment for sync (called after local creation)
+    func markForSync(_ investmentId: String) {
+        pendingSyncIds.insert(investmentId)
     }
 }

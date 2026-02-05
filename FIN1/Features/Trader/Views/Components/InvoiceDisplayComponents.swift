@@ -60,14 +60,16 @@ struct InvoiceItemDisplayRowView: View {
     let item: InvoiceItemDisplayData
 
     var body: some View {
-        HStack(spacing: ResponsiveDesign.spacing(8)) {
-            // Description column - flexible width, single line with truncation
+        HStack(alignment: .top, spacing: ResponsiveDesign.spacing(8)) {
+            // Description column - allow multiple lines for service charge and securities items
+            let allowMultiLine = (item.itemType == .serviceCharge || item.itemType == .securities)
             Text(item.description)
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(DocumentDesignSystem.textColor)
-                .lineLimit(1)
-                .truncationMode(.middle)
+                .lineLimit(allowMultiLine ? nil : 1)
+                .truncationMode(allowMultiLine ? .tail : .middle)
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
 
             // Only show Stück and Preis columns for securities items
             if item.itemType == .securities {

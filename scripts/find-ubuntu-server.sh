@@ -83,7 +83,7 @@ if ! command -v nmap &> /dev/null; then
                     echo -e "${GREEN}✓${NC} Server ist erreichbar"
                     echo ""
                     echo "Verwende diesen Server für Deployment:"
-                    echo "  ./deploy-to-ubuntu-v2026-01-30.sh $MANUAL_IP"
+                    echo "  ./deploy-to-ubuntu.sh $MANUAL_IP"
                 else
                     echo -e "${RED}✗${NC} Server nicht erreichbar"
                 fi
@@ -140,7 +140,7 @@ if [ -z "$SSH_HOSTS" ] && [ -z "$UBUNTU_HOSTS" ]; then
                 echo -e "${GREEN}✓${NC} SSH-Verbindung erfolgreich"
                 echo ""
                 echo "Verwende diesen Server für Deployment:"
-                echo "  ./deploy-to-ubuntu-v2026-01-30.sh $MANUAL_IP"
+                echo "  ./deploy-to-ubuntu.sh $MANUAL_IP"
             else
                 echo -e "${YELLOW}⚠${NC} SSH-Verbindung nicht möglich"
                 echo "  Bitte SSH auf Ubuntu aktivieren: sudo systemctl enable ssh"
@@ -169,7 +169,7 @@ else
     fi
 
     echo "Verwende für Deployment:"
-    echo "  ./deploy-to-ubuntu-v2026-01-30.sh $FIRST_HOST"
+    echo "  ./deploy-to-ubuntu.sh $FIRST_HOST"
     echo ""
     echo -e "${YELLOW}Tipp:${NC} Für bessere Erkennung:"
     echo "  - Fritzbox: Feste IP für Ubuntu vergeben"

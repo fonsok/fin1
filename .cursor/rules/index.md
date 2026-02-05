@@ -8,14 +8,19 @@ This directory contains persistent rules automatically applied to Cursor AI conv
 
 ## Rule Files
 
-### Core Rules
+### Core Rules (iOS App)
 - **`architecture.md`** - Main project architecture, MVVM patterns, backend integration, and coding standards
 - **`compliance.md`** - Compliance and regulatory rules (MiFID II, pre-trade checks, audit logging)
+- **`documentation-checkpoints.md`** - Proactive documentation checkpoints during chats
 - **`testing.md`** - Testing patterns, mocking standards, and repository testing
 - **`dry-constants.md`** - DRY principles and constants management
+- **`trader-documents.md`** - Trader invoices & collection bill: Emittent (issuer) vs Handelsplatz (trading venue), WKN→Emittent mapping, placeholders (applies to Trader/Invoice/TradeStatement files)
 - **`swiftlint.md`** - SwiftLint configuration and code quality enforcement
 - **`ci-cd.md`** - Local development & code quality requirements (CI workflows are reference only)
 - **`responsive-design.md`** - Responsive design system compliance
+
+### Admin Portal (React/TypeScript)
+- **`admin-portal.md`** - React/TypeScript standards for the Admin Web Portal (`admin-portal/`)
 
 ### Legacy File
 - **`.cursorrules`** (repository root) - **DEPRECATED**: This file is kept for backward compatibility but all rules have been migrated to `.cursor/rules/`. New rules should be added to the appropriate file in `.cursor/rules/`.
@@ -40,6 +45,13 @@ These rule files reference configuration files in the repository:
 - **ObservableObject**: Requires `class` (ViewModels, stateful services, repositories)
 - **Backend Integration**: Mock-first approach with Parse Server, protocol-based services for BaaS swapping
 - See `architecture.md` for complete class vs struct decision tree
+
+### Swift 6 Concurrency (Modern)
+- **`@MainActor`**: Recommended for all new ViewModels (thread-safe UI updates)
+- **`Sendable`**: Required for types crossing actor boundaries
+- **`actor`**: Preferred for shared mutable state (caches, repositories)
+- **`@Observable`**: Available for iOS 17+ targets (more efficient than `ObservableObject`)
+- See `architecture.md` for migration strategy and examples
 
 ### Compliance
 - Pre-trade checks via `BuyOrderValidator` (extend, don't replace)

@@ -15,11 +15,17 @@ struct InvestmentItem: Identifiable {
 
 struct CompletedInvestmentsTable: View {
     let investments: [Investment]
+    /// Beleg-/Rechnungsnummern pro Investment-ID (aus ViewModel, MVVM).
+    let investmentDocRefs: [String: (docNumber: String?, invoiceNumber: String?)]
+    /// Trader-Username pro Investment-ID (aus ViewModel, MVVM).
+    let traderUsernames: [String: String]
+    /// Trade-Nummer pro Investment-ID (aus ViewModel, MVVM).
+    let tradeNumbers: [String: String]
+    /// Statement-Summaries pro Investment-ID (aus ViewModel, MVVM).
+    let investmentSummaries: [String: InvestorInvestmentStatementSummary]
     let onShowDetails: (Investment) -> Void
     @State private var selectedInvestmentItem: InvestmentItem?
-    @State private var investmentSummaries: [String: InvestorInvestmentStatementSummary] = [:]
     @State private var columnWidths: [String: CGFloat] = [:]
-    @Environment(\.appServices) private var services
 
     // Table Configuration Constants
     private var tableColumnSpacing: CGFloat {
@@ -55,7 +61,7 @@ struct CompletedInvestmentsTable: View {
                 headerContent(columnWidths: [:], forMeasurement: true)
 
                 // Measure data rows
-                VStack(spacing: 0) {
+                VStack(spacing: ResponsiveDesign.spacing(0)) {
                     ForEach(investments) { investment in
                         measurementRow(investment: investment)
                     }
@@ -71,10 +77,6 @@ struct CompletedInvestmentsTable: View {
             columnWidths = widths.mapValues { width in
                 max(width + ResponsiveDesign.spacing(4), 40) // Minimum 40pt width
             }
-        }
-        .onAppear(perform: refreshInvestmentSummaries)
-        .onChange(of: investments.map(\.id)) {
-            refreshInvestmentSummaries()
         }
         .sheet(item: $selectedInvestmentItem) { item in
             CommissionCalculationExplanationSheet(investment: item.investment)
@@ -156,6 +158,20 @@ struct CompletedInvestmentsTable: View {
             ))
 
             Group {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("Beleg /")
+                    Text("Rechnung")
+                }
+                .font(ResponsiveDesign.captionFont())
+            }
+            .modifier(HeaderCellModifier(
+                columnKey: "docRef",
+                columnWidths: columnWidths,
+                forMeasurement: forMeasurement,
+                alignment: .leading
+            ))
+
+            Group {
                 Text("Details")
                     .font(ResponsiveDesign.captionFont())
             }
@@ -195,6 +211,7 @@ struct CompletedInvestmentsTable: View {
             case "amount": return 80
             case "profit": return 80
             case "return": return 60
+            case "docRef": return 100
             case "details": return 40
             default: return 60
             }
@@ -209,8 +226,8 @@ struct CompletedInvestmentsTable: View {
         let grossProfit = summary?.statementGrossProfit
         let returnPercentage = investment.performance
         let isCancelled = investment.status == .cancelled
-        let traderUsername = services.traderDataService.getTrader(by: investment.traderId)?.username ?? "---"
-        let tradeNumberText = getTradeNumber(for: investment.id)
+        let traderUsername = traderUsernames[investment.id] ?? "---"
+        let tradeNumberText = tradeNumbers[investment.id] ?? "---"
 
         HStack(spacing: tableColumnSpacing) {
             Text(investment.id.extractInvestmentNumber())
@@ -253,6 +270,12 @@ struct CompletedInvestmentsTable: View {
             .font(ResponsiveDesign.bodyFont())
             .measureWidth(column: "return")
 
+            InvestmentDocRefView(
+                verrechnungNumber: investmentDocRefs[investment.id]?.docNumber,
+                rechnungNumber: investmentDocRefs[investment.id]?.invoiceNumber
+            )
+            .measureWidth(column: "docRef")
+
             Image(systemName: "doc.text")
                 .font(.system(size: ResponsiveDesign.iconSize() * 0.8))
                 .measureWidth(column: "details")
@@ -271,12 +294,8 @@ struct CompletedInvestmentsTable: View {
         let grossProfit = summary?.statementGrossProfit
         let returnPercentage = investment.performance
         let isCancelled = investment.status == .cancelled
-
-        // Get trader username from TraderDataService
-        let traderUsername = services.traderDataService.getTrader(by: investment.traderId)?.username ?? "---"
-
-        // Get trade number from participations
-        let tradeNumberText = getTradeNumber(for: investment.id)
+        let traderUsername = traderUsernames[investment.id] ?? "---"
+        let tradeNumberText = tradeNumbers[investment.id] ?? "---"
 
         return HStack(spacing: tableColumnSpacing) {
             Text(investment.id.extractInvestmentNumber())
@@ -349,6 +368,13 @@ struct CompletedInvestmentsTable: View {
             }
             .frame(width: columnWidths["return"] ?? 60, alignment: .trailing)
 
+            // Beleg / Rechnung (Account Statement + Service Charge Invoice)
+            InvestmentDocRefView(
+                verrechnungNumber: investmentDocRefs[investment.id]?.docNumber,
+                rechnungNumber: investmentDocRefs[investment.id]?.invoiceNumber
+            )
+            .frame(width: columnWidths["docRef"] ?? 100, alignment: .leading)
+
             // Details Button
             Button(action: {
                 onShowDetails(investment)
@@ -364,42 +390,4 @@ struct CompletedInvestmentsTable: View {
         .background(isEven ? AppTheme.screenBackground : AppTheme.sectionBackground.opacity(0.3))
     }
 
-    // MARK: - Private Methods
-
-    private func getTradeNumber(for investmentId: String) -> String {
-        // Get participations for this investment
-        let participations = services.poolTradeParticipationService.getParticipations(forInvestmentId: investmentId)
-        guard let firstParticipation = participations.first else {
-            return "---"
-        }
-
-        // Find the trade from completed trades
-        let trades = services.tradeLifecycleService.completedTrades
-        guard let trade = trades.first(where: { $0.id == firstParticipation.tradeId }) else {
-            return "---"
-        }
-
-        // Format trade number with leading zeros (e.g., 001, 002, 003)
-        return String(format: "%03d", trade.tradeNumber)
-    }
-
-    private func refreshInvestmentSummaries() {
-        var summaries: [String: InvestorInvestmentStatementSummary] = [:]
-        let commissionRate = services.configurationService.traderCommissionRate
-        for investment in investments {
-            if let summary = InvestorInvestmentStatementAggregator.summarizeInvestment(
-                investmentId: investment.id,
-                poolTradeParticipationService: services.poolTradeParticipationService,
-                tradeLifecycleService: services.tradeLifecycleService,
-                invoiceService: services.invoiceService,
-                investmentService: services.investmentService,
-                calculationService: InvestorCollectionBillCalculationService(),
-                commissionCalculationService: services.commissionCalculationService,
-                commissionRate: commissionRate
-            ) {
-                summaries[investment.id] = summary
-            }
-        }
-        investmentSummaries = summaries
-    }
 }

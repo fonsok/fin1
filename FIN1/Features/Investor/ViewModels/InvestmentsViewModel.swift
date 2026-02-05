@@ -15,6 +15,12 @@ final class InvestmentsViewModel: ObservableObject {
     private var investmentService: any InvestmentServiceProtocol
     private var investorCashBalanceService: (any InvestorCashBalanceServiceProtocol)?
     private var poolTradeParticipationService: any PoolTradeParticipationServiceProtocol
+    private var documentService: any DocumentServiceProtocol
+    private var invoiceService: any InvoiceServiceProtocol
+    private var traderDataService: any TraderDataServiceProtocol
+    private var tradeLifecycleService: any TradeLifecycleServiceProtocol
+    private var configurationService: any ConfigurationServiceProtocol
+    private var commissionCalculationService: any CommissionCalculationServiceProtocol
     private var cancellables = Set<AnyCancellable>()
     private var roleChangeCancellables = Set<AnyCancellable>() // Separate set for role change observers
     // Capture a stable investorId when this VM is created to avoid cross-user drift
@@ -22,14 +28,31 @@ final class InvestmentsViewModel: ObservableObject {
     private var currentRole: UserRole? // Track current role to detect role changes
     private var dataProcessor: InvestmentsDataProcessor
 
+    /// Display-Daten für Completed-Tabelle (MVVM: View bindet nur daran).
+    @Published var completedTraderUsernames: [String: String] = [:]
+    @Published var completedTradeNumbers: [String: String] = [:]
+    @Published var completedInvestmentSummaries: [String: InvestorInvestmentStatementSummary] = [:]
+
     init(userService: any UserServiceProtocol,
          investmentService: any InvestmentServiceProtocol,
          investorCashBalanceService: (any InvestorCashBalanceServiceProtocol)? = nil,
-         poolTradeParticipationService: any PoolTradeParticipationServiceProtocol) {
+         poolTradeParticipationService: any PoolTradeParticipationServiceProtocol,
+         documentService: any DocumentServiceProtocol,
+         invoiceService: any InvoiceServiceProtocol,
+         traderDataService: any TraderDataServiceProtocol,
+         tradeLifecycleService: any TradeLifecycleServiceProtocol,
+         configurationService: any ConfigurationServiceProtocol,
+         commissionCalculationService: any CommissionCalculationServiceProtocol) {
         self.userService = userService
         self.investmentService = investmentService
         self.investorCashBalanceService = investorCashBalanceService
         self.poolTradeParticipationService = poolTradeParticipationService
+        self.documentService = documentService
+        self.invoiceService = invoiceService
+        self.traderDataService = traderDataService
+        self.tradeLifecycleService = tradeLifecycleService
+        self.configurationService = configurationService
+        self.commissionCalculationService = commissionCalculationService
         self.boundInvestorId = userService.currentUser?.id
         self.currentRole = userService.currentUser?.role
         self.dataProcessor = InvestmentsDataProcessor(poolTradeParticipationService: poolTradeParticipationService)
@@ -105,6 +128,7 @@ final class InvestmentsViewModel: ObservableObject {
                 print("🔍 InvestmentsViewModel: Received investment update - count: \(updatedInvestments.count)")
                 // Publisher already filtered; assign directly
                 self.investments = updatedInvestments
+                self.refreshCompletedDisplayData()
                 // Check and update investment completion status after changes
                 self.checkAndUpdateInvestmentCompletion()
                 print("✅ InvestmentsViewModel: Investments updated for current user - count: \(self.investments.count)")
@@ -125,11 +149,18 @@ final class InvestmentsViewModel: ObservableObject {
         self.investmentService = services.investmentService
         self.investorCashBalanceService = services.investorCashBalanceService
         self.poolTradeParticipationService = services.poolTradeParticipationService
+        self.documentService = services.documentService
+        self.invoiceService = services.invoiceService
+        self.traderDataService = services.traderDataService
+        self.tradeLifecycleService = services.tradeLifecycleService
+        self.configurationService = services.configurationService
+        self.commissionCalculationService = services.commissionCalculationService
         // Refresh bound investor id when VM is explicitly reconfigured
         self.boundInvestorId = services.userService.currentUser?.id
 
         // Update data processor with new service
         self.dataProcessor = InvestmentsDataProcessor(poolTradeParticipationService: services.poolTradeParticipationService)
+        refreshCompletedDisplayData()
 
         // Re-setup bindings with new service
         setupBindings()
@@ -169,6 +200,7 @@ final class InvestmentsViewModel: ObservableObject {
             } else {
                 investments = []
             }
+            refreshCompletedDisplayData()
             // Check and update investment completion status after loading
             checkAndUpdateInvestmentCompletion()
             return
@@ -176,6 +208,7 @@ final class InvestmentsViewModel: ObservableObject {
 
         // Mock data - in real app, this would come from API
         investments = []
+        refreshCompletedDisplayData()
         checkAndUpdateInvestmentCompletion()
     }
 
@@ -248,6 +281,56 @@ final class InvestmentsViewModel: ObservableObject {
         }
     }
 
+    /// Beleg-/Rechnungsnummern für abgeschlossene Investments (MVVM: View bindet nur daran).
+    var completedInvestmentDocRefs: [String: (docNumber: String?, invoiceNumber: String?)] {
+        let userId = userService.currentUser?.id ?? ""
+        var refs: [String: (docNumber: String?, invoiceNumber: String?)] = [:]
+        for inv in completedInvestmentsByTimePeriod {
+            let docs = documentService.getDocumentsForInvestment(inv.id)
+            let docNumber = docs.first { $0.type == .investorCollectionBill }?.accountingDocumentNumber
+            let batchId = inv.batchId ?? ""
+            let invoiceNumber = batchId.isEmpty
+                ? nil
+                : invoiceService.getServiceChargeInvoiceForBatch(batchId, userId: userId)?.invoiceNumber
+            refs[inv.id] = (docNumber, invoiceNumber)
+        }
+        return refs
+    }
+
+    /// Trader-Usernames, Trade-Nummern und Summaries für Completed-Tabelle (MVVM: keine Logik in der View).
+    private func refreshCompletedDisplayData() {
+        var usernames: [String: String] = [:]
+        var tradeNums: [String: String] = [:]
+        var summaries: [String: InvestorInvestmentStatementSummary] = [:]
+        let commissionRate = configurationService.traderCommissionRate
+        let calculationService = InvestorCollectionBillCalculationService()
+        for inv in investments {
+            usernames[inv.id] = traderDataService.getTrader(by: inv.traderId)?.username ?? "---"
+            let participations = poolTradeParticipationService.getParticipations(forInvestmentId: inv.id)
+            if let first = participations.first,
+               let trade = tradeLifecycleService.completedTrades.first(where: { $0.id == first.tradeId }) {
+                tradeNums[inv.id] = String(format: "%03d", trade.tradeNumber)
+            } else {
+                tradeNums[inv.id] = "---"
+            }
+            if let summary = InvestorInvestmentStatementAggregator.summarizeInvestment(
+                investmentId: inv.id,
+                poolTradeParticipationService: poolTradeParticipationService,
+                tradeLifecycleService: tradeLifecycleService,
+                invoiceService: invoiceService,
+                investmentService: investmentService,
+                calculationService: calculationService,
+                commissionCalculationService: commissionCalculationService,
+                commissionRate: commissionRate
+            ) {
+                summaries[inv.id] = summary
+            }
+        }
+        completedTraderUsernames = usernames
+        completedTradeNumbers = tradeNums
+        completedInvestmentSummaries = summaries
+    }
+
     /// Returns completed/partial investments filtered by year (partials have no completedAt -> included)
     /// Deprecated: Use completedInvestmentsByTimePeriod instead
     var completedInvestmentsByYear: [Investment] {
@@ -265,11 +348,34 @@ final class InvestmentsViewModel: ObservableObject {
 
     // MARK: - Investment-Level Data for Table Display
 
-    /// Returns investment rows for ongoing investments
-    /// Since each investment is now a first-class entity, we map investments directly to rows
+    /// Returns investment rows for ongoing investments (mit Beleg-/Rechnungsnummern aus Services, MVVM).
     /// Sorted by: creation date (newest first), then trader name (A-Z), then investment number (ascending)
     var ongoingInvestmentRows: [InvestmentRow] {
-        dataProcessor.processOngoingInvestmentRows(from: activeInvestments)
+        let baseRows = dataProcessor.processOngoingInvestmentRows(from: activeInvestments)
+        let userId = userService.currentUser?.id ?? ""
+        return baseRows.map { row in
+            let docs = documentService.getDocumentsForInvestment(row.investmentId)
+            let docNumber = docs.first { $0.type == .investorCollectionBill }?.accountingDocumentNumber
+            let batchId = row.investment.batchId ?? ""
+            let invoiceNumber = batchId.isEmpty
+                ? nil
+                : invoiceService.getServiceChargeInvoiceForBatch(batchId, userId: userId)?.invoiceNumber
+            return InvestmentRow(
+                id: row.id,
+                investmentId: row.investmentId,
+                investmentNumber: row.investmentNumber,
+                traderName: row.traderName,
+                sequenceNumber: row.sequenceNumber,
+                status: row.status,
+                amount: row.amount,
+                profit: row.profit,
+                returnPercentage: row.returnPercentage,
+                reservation: row.reservation,
+                investment: row.investment,
+                docNumber: docNumber,
+                invoiceNumber: invoiceNumber
+            )
+        }
     }
 
     /// Total amount for ongoing investments

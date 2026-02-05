@@ -351,7 +351,7 @@ struct ActionTypeButton: View {
         Button(action: onTap) {
             VStack(spacing: ResponsiveDesign.spacing(8)) {
                 Image(systemName: action.icon)
-                    .font(.title2)
+                    .font(ResponsiveDesign.headlineFont())
                     .foregroundColor(isSelected ? .white : action.color)
 
                 Text(action.displayName)

@@ -150,7 +150,7 @@ Wichtig:
 - Wenn der App-Name “komisch” erscheint, zuerst prüfen:
 
 ```bash
-./scripts/check-xcode-display-name-v2026-01-31.sh
+./scripts/check-xcode-display-name.sh
 xcodebuild -showBuildSettings -project FIN1.xcodeproj -scheme FIN1-Dev -configuration Debug | grep INFOPLIST_KEY_CFBundleDisplayName
 ```
 
@@ -234,7 +234,7 @@ Wenn Legal Texte (Terms/Privacy/Imprint) server-driven sind, muss intern nachvol
 Wenn das Projekt als Git-Repo genutzt wird, Hooks installieren:
 
 ```bash
-./scripts/install-githooks-v2026-01-31.sh
+./scripts/install-githooks.sh
 ```
 
 Details: `Documentation/GIT_HOOKS.md`
@@ -254,6 +254,6 @@ FIN1 Status (2026-01-31):
 - Legal Docs: server-driven Terms/Privacy/Imprint (TermsContent + documentHash), Audit Logs: LegalDocumentDeliveryLog + LegalConsent, FIN1_LEGAL_* ENV server-side placeholder resolution
 - Legal PDF-Export: LegalDocumentPDFGenerator (client-side A4 PDF), Änderungs-Overlay: LegalDocumentChangesOverlay
 - FAQs: server-driven (FAQCategory + FAQItem), Cloud Functions: getFAQCategories/getFAQs
-- Display Name Guard: ./scripts/check-xcode-display-name-v2026-01-31.sh (Hook via ./scripts/install-githooks-v2026-01-31.sh)
+- Display Name Guard: ./scripts/check-xcode-display-name.sh (Hook via ./scripts/install-githooks.sh)
 ```
 

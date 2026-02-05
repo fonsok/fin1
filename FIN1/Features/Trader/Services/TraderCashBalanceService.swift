@@ -68,7 +68,7 @@ final class TraderCashBalanceService: TraderCashBalanceServiceProtocol, Observab
 
     func start() async {
         print("💰 TraderCashBalanceService started with initial balance: €\(initialTraderBalance.formatted(.currency(code: "EUR")))")
-        
+
         // Subscribe to Live Query updates for current trader
         await subscribeToLiveUpdates()
     }
@@ -89,16 +89,16 @@ final class TraderCashBalanceService: TraderCashBalanceServiceProtocol, Observab
             parseLiveQueryClient?.unsubscribe(subscription)
         }
         liveQuerySubscriptions.removeAll()
-        
+
         await MainActor.run {
             balances.removeAll()
             commissionRecords.removeAll()
         }
         print("💰 TraderCashBalanceService reset - all balances and commission records cleared")
     }
-    
+
     // MARK: - Live Query Integration
-    
+
     private func setupLiveQuerySubscription() {
         // Observe Parse Live Query updates for Wallet Transactions
         NotificationCenter.default.publisher(for: .parseLiveQueryObjectUpdated)
@@ -113,14 +113,14 @@ final class TraderCashBalanceService: TraderCashBalanceServiceProtocol, Observab
                       let balanceAfter = object["balanceAfter"] as? Double else {
                     return
                 }
-                
+
                 // Check if this user is a trader
                 // Update balance if this trader is being tracked
                 Task { @MainActor in
                     if self.balances.keys.contains(userId) {
                         self.balances[userId] = balanceAfter
                         print("💰 TraderCashBalanceService: Balance updated via Live Query for trader \(userId): €\(balanceAfter.formatted(.currency(code: "EUR")))")
-                        
+
                         // Post notification to update UI
                         // Note: Using walletTransactionCompleted as trader balance changes are typically from wallet transactions
                         NotificationCenter.default.post(
@@ -136,33 +136,33 @@ final class TraderCashBalanceService: TraderCashBalanceServiceProtocol, Observab
             }
             .store(in: &cancellables)
     }
-    
+
     private func subscribeToLiveUpdates() async {
         guard let liveQueryClient = parseLiveQueryClient else {
             return
         }
-        
+
         // Subscribe to WalletTransaction updates for current trader (if logged in as trader)
         if let currentUserId = userService?.currentUser?.id,
            userService?.currentUser?.role == .trader {
             await subscribeToLiveUpdates(for: currentUserId, liveQueryClient: liveQueryClient)
         }
     }
-    
+
     /// Subscribe to Live Query updates for a specific trader
     func subscribeToLiveUpdates(for traderId: String) async {
         guard let liveQueryClient = parseLiveQueryClient else {
             return
         }
-        
+
         // Unsubscribe from previous subscription if exists
         if let existingSubscription = liveQuerySubscriptions[traderId] {
             liveQueryClient.unsubscribe(existingSubscription)
         }
-        
+
         await subscribeToLiveUpdates(for: traderId, liveQueryClient: liveQueryClient)
     }
-    
+
     private func subscribeToLiveUpdates(for traderId: String, liveQueryClient: any ParseLiveQueryClientProtocol) async {
         // Subscribe to WalletTransaction updates for this trader
         let subscription = liveQueryClient.subscribe(
@@ -174,7 +174,7 @@ final class TraderCashBalanceService: TraderCashBalanceServiceProtocol, Observab
                     if let balanceAfter = parseTransaction.balanceAfter {
                         self?.balances[traderId] = balanceAfter
                         print("💰 TraderCashBalanceService: Balance updated via Live Query for trader \(traderId): €\(balanceAfter.formatted(.currency(code: "EUR")))")
-                        
+
                         // Post notification to update UI
                         // Note: Using walletTransactionCompleted as trader balance changes are typically from wallet transactions
                         NotificationCenter.default.post(
@@ -188,7 +188,7 @@ final class TraderCashBalanceService: TraderCashBalanceServiceProtocol, Observab
                     }
                 }
             },
-            onDelete: { [weak self] (_ objectId: String) in
+            onDelete: { (_ objectId: String) in
                 // Balance might change if transaction is deleted, but we'll reload from server
                 Task { @MainActor in
                     // Could reload balance from server here if needed

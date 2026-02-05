@@ -74,22 +74,22 @@ final class InvestorPortfolioViewModelTests: XCTestCase {
         ]
 
         let mockPoolService = MockPoolTradeParticipationService()
-        let vm = InvestorPortfolioViewModel(
+        let viewModel = InvestorPortfolioViewModel(
             userService: fakeUser,
             investmentService: fakeInv,
             investorCashBalanceService: nil,
             poolTradeParticipationService: mockPoolService
         )
-        // Inject investments from the service into the VM (mirrors a loaded state)
-        vm.investments = fakeInv.getInvestments(for: "investor1")
+        // Inject investments from the service into the ViewModel (mirrors a loaded state)
+        viewModel.investments = fakeInv.getInvestments(for: "investor1")
 
         // Act
-        _ = vm.totalPortfolioValue
-        _ = vm.totalInvestedAmount
-
+        _ = viewModel.totalPortfolioValue
+        _ = viewModel.totalInvestedAmount
+        
         // Assert
-        XCTAssertEqual(vm.totalInvestedAmount, 1500)
-        XCTAssertEqual(vm.totalPortfolioValue, 1600)
-        XCTAssertEqual(vm.isPositivePnL, true)
+        XCTAssertEqual(viewModel.totalInvestedAmount, 1500)
+        XCTAssertEqual(viewModel.totalPortfolioValue, 1600)
+        XCTAssertEqual(viewModel.isPositivePnL, true)
     }
 }

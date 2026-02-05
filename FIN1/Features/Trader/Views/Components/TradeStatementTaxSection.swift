@@ -17,7 +17,7 @@ struct TradeStatementTaxSection: View {
                 .foregroundColor(AppTheme.fontColor)
 
             // Tax Table
-            VStack(spacing: 0) {
+            VStack(spacing: ResponsiveDesign.spacing(0)) {
                 if taxItems.isEmpty {
                     // No taxes due - show simple message
                     HStack {

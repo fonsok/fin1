@@ -12,6 +12,7 @@ final class OrderManagementService: OrderManagementServiceProtocol, ServiceLifec
 
     private let transactionIdService: any TransactionIdServiceProtocol
     private let userService: (any UserServiceProtocol)?
+    private var orderAPIService: OrderAPIServiceProtocol?
 
     var activeOrdersPublisher: AnyPublisher<[Order], Never> {
         $activeOrders
@@ -23,10 +24,20 @@ final class OrderManagementService: OrderManagementServiceProtocol, ServiceLifec
 
     private var orderStatusTimers: [String: Timer] = [:]
 
-    init(transactionIdService: any TransactionIdServiceProtocol = TransactionIdService(), userService: (any UserServiceProtocol)? = nil) {
+    init(
+        transactionIdService: any TransactionIdServiceProtocol = TransactionIdService(),
+        userService: (any UserServiceProtocol)? = nil,
+        orderAPIService: OrderAPIServiceProtocol? = nil
+    ) {
         self.transactionIdService = transactionIdService
         self.userService = userService
+        self.orderAPIService = orderAPIService
         loadMockData()
+    }
+
+    /// Configure the API service for backend synchronization
+    func configure(orderAPIService: OrderAPIServiceProtocol) {
+        self.orderAPIService = orderAPIService
     }
 
     // MARK: - Current Trader ID
@@ -63,6 +74,21 @@ final class OrderManagementService: OrderManagementServiceProtocol, ServiceLifec
             errorMessage = nil
         }
 
+        // Try to fetch from backend first
+        if let apiService = orderAPIService {
+            do {
+                let orders = try await apiService.fetchActiveOrders(for: currentTraderId)
+                await MainActor.run {
+                    self.activeOrders = orders
+                    self.isLoading = false
+                }
+                return
+            } catch {
+                print("⚠️ Failed to fetch orders from backend, using local: \(error.localizedDescription)")
+            }
+        }
+
+        // Fallback to local mock data
         try await Task.sleep(nanoseconds: 300_000_000) // 0.3 seconds
 
         await MainActor.run {
@@ -113,9 +139,22 @@ final class OrderManagementService: OrderManagementServiceProtocol, ServiceLifec
 
         let orderDetails = try validateAndProcessOrderDetails(params)
         let order = createOrder(from: orderDetails, params: params)
-        let newOrder = OrderBuy(from: order)
+        var newOrder = OrderBuy(from: order)
 
         await addOrderToActiveList(order)
+
+        // Sync to backend (write-through pattern)
+        if let apiService = orderAPIService {
+            Task.detached { [apiService, newOrder] in
+                do {
+                    let savedOrder = try await apiService.saveBuyOrder(newOrder)
+                    print("✅ Order synced to backend: \(savedOrder.id)")
+                } catch {
+                    print("⚠️ Failed to sync order to backend: \(error.localizedDescription)")
+                }
+            }
+        }
+
         return newOrder
     }
 
@@ -266,6 +305,18 @@ extension OrderManagementService {
             activeOrders.append(order)
         }
 
+        // Sync to backend (write-through pattern)
+        if let apiService = orderAPIService {
+            Task.detached { [apiService, newOrder] in
+                do {
+                    let savedOrder = try await apiService.saveSellOrder(newOrder)
+                    print("✅ Sell order synced to backend: \(savedOrder.id)")
+                } catch {
+                    print("⚠️ Failed to sync sell order to backend: \(error.localizedDescription)")
+                }
+            }
+        }
+
         return newOrder
     }
 
@@ -333,5 +384,40 @@ extension OrderManagementService {
         // Force @Published update to notify subscribers
         print("🔍 DEBUG: OrderManagementService loadActiveOrdersSync - publishing \(activeOrders.count) orders")
         objectWillChange.send()
+    }
+
+    // MARK: - Backend Synchronization
+
+    /// Syncs any pending orders to the backend
+    /// Called automatically when app enters background
+    func syncToBackend() async {
+        guard let apiService = orderAPIService else {
+            print("⚠️ OrderManagementService: No API service configured, skipping sync")
+            return
+        }
+
+        let ordersToSync = activeOrders.filter { order in
+            // Sync orders that are not yet completed or cancelled
+            let status = order.status.lowercased()
+            return status != "completed" && status != "cancelled"
+        }
+
+        guard !ordersToSync.isEmpty else {
+            print("📤 OrderManagementService: No pending orders to sync")
+            return
+        }
+
+        print("📤 OrderManagementService: Syncing \(ordersToSync.count) orders to backend...")
+
+        for order in ordersToSync {
+            do {
+                _ = try await apiService.updateOrder(order)
+                print("✅ Order \(order.id) synced")
+            } catch {
+                print("⚠️ Failed to sync order \(order.id): \(error.localizedDescription)")
+            }
+        }
+
+        print("✅ OrderManagementService: Background sync completed")
     }
 }

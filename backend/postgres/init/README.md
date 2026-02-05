@@ -1,8 +1,8 @@
-# FIN1 Database Schema
+# Database Schema
 
 ## Overview
 
-Dieses Verzeichnis enthält das vollständige Datenbankschema für die FIN1-Plattform.
+Dieses Verzeichnis enthält das vollständige Datenbankschema für die Plattform.
 Das Schema ist normalisiert (3NF) und für die Migration nach MongoDB dokumentiert.
 
 ## Schema Statistics

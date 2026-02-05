@@ -13,12 +13,19 @@ final class InvestmentSummaryViewModel: ObservableObject {
     @Published var amountPerInvestment: Double
     @Published var numberOfInvestments: Int
     @Published var totalInvestmentAmount: Double
+    let configurationService: any ConfigurationServiceProtocol
 
     // MARK: - Initialization
-    init(amountPerInvestment: Double, numberOfInvestments: Int, totalInvestmentAmount: Double) {
+    init(
+        amountPerInvestment: Double,
+        numberOfInvestments: Int,
+        totalInvestmentAmount: Double,
+        configurationService: any ConfigurationServiceProtocol
+    ) {
         self.amountPerInvestment = amountPerInvestment
         self.numberOfInvestments = numberOfInvestments
         self.totalInvestmentAmount = totalInvestmentAmount
+        self.configurationService = configurationService
     }
 
     // MARK: - Update Methods
@@ -43,7 +50,7 @@ final class InvestmentSummaryViewModel: ObservableObject {
     }
 
     var platformServiceCharge: Double {
-        totalInvestmentAmount * CalculationConstants.ServiceCharges.platformServiceChargeRate
+        totalInvestmentAmount * configurationService.effectivePlatformServiceChargeRate
     }
 
     var formattedPlatformServiceCharge: String {

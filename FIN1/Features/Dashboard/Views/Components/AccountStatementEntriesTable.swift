@@ -26,7 +26,7 @@ struct AccountStatementEntriesTable<TopContent: View>: View {
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: true) {
-            VStack(spacing: 0) {
+            VStack(spacing: ResponsiveDesign.spacing(0)) {
                 if let topContent {
                     topContent
                 }

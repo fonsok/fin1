@@ -43,7 +43,7 @@ Empfehlung: Nutzt Git als Historie/Snapshot-Mechanismus:
 - Änderungen passieren in den **Current** Dateien (ohne `-v...`).
 - Wichtige Stände werden per **Git-Tag** markiert (optional), z.B.:
 
-- `docs-v2026-01-31`
+- `docs-snapshot-20260131`
 
 So findet man den Stand robust über **Git-Commits/Tags**, ohne Doppelquellen durch Dateikopien.
 

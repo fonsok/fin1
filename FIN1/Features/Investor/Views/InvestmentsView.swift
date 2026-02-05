@@ -13,16 +13,30 @@ struct InvestmentsView: View {
     init(userService: (any UserServiceProtocol)? = nil,
          investmentService: (any InvestmentServiceProtocol)? = nil,
          investorCashBalanceService: (any InvestorCashBalanceServiceProtocol)? = nil,
-         poolTradeParticipationService: any PoolTradeParticipationServiceProtocol) {
-        // Services must be provided - wrapper handles injection
-        guard let userSvc = userService, let invSvc = investmentService else {
+         poolTradeParticipationService: (any PoolTradeParticipationServiceProtocol)? = nil,
+         documentService: (any DocumentServiceProtocol)? = nil,
+         invoiceService: (any InvoiceServiceProtocol)? = nil,
+         traderDataService: (any TraderDataServiceProtocol)? = nil,
+         tradeLifecycleService: (any TradeLifecycleServiceProtocol)? = nil,
+         configurationService: (any ConfigurationServiceProtocol)? = nil,
+         commissionCalculationService: (any CommissionCalculationServiceProtocol)? = nil) {
+        guard let userSvc = userService, let invSvc = investmentService,
+              let poolSvc = poolTradeParticipationService, let docSvc = documentService, let invSvc2 = invoiceService,
+              let traderSvc = traderDataService, let tradeSvc = tradeLifecycleService,
+              let configSvc = configurationService, let commissionSvc = commissionCalculationService else {
             fatalError("InvestmentsView must be initialized with services. Use InvestmentsViewWrapper instead.")
         }
         self._viewModel = StateObject(wrappedValue: InvestmentsViewModel(
             userService: userSvc,
             investmentService: invSvc,
             investorCashBalanceService: investorCashBalanceService,
-            poolTradeParticipationService: poolTradeParticipationService
+            poolTradeParticipationService: poolSvc,
+            documentService: docSvc,
+            invoiceService: invSvc2,
+            traderDataService: traderSvc,
+            tradeLifecycleService: tradeSvc,
+            configurationService: configSvc,
+            commissionCalculationService: commissionSvc
         ))
     }
 
@@ -187,7 +201,7 @@ struct InvestmentsView: View {
                         .padding(.top, ResponsiveDesign.spacing(4))
 
                         // Table in its own section with SectionBackground
-                        VStack(spacing: 0) {
+                        VStack(spacing: ResponsiveDesign.spacing(0)) {
                             // Calculate totals for THIS trader's investments only
                             let traderTotalAmount = sortedTraderInvestments.reduce(0) { $0 + $1.amount }
                             let traderProfits = sortedTraderInvestments.compactMap { $0.profit }
@@ -258,6 +272,10 @@ struct InvestmentsView: View {
             if !viewModel.completedInvestmentsByTimePeriod.isEmpty {
                 CompletedInvestmentsTable(
                     investments: viewModel.completedInvestmentsByTimePeriod,
+                    investmentDocRefs: viewModel.completedInvestmentDocRefs,
+                    traderUsernames: viewModel.completedTraderUsernames,
+                    tradeNumbers: viewModel.completedTradeNumbers,
+                    investmentSummaries: viewModel.completedInvestmentSummaries,
                     onShowDetails: { investment in
                         selectedCompletedInvestment = investment
                     }
@@ -314,7 +332,13 @@ struct InvestmentsViewWrapper: View {
             userService: services.userService,
             investmentService: services.investmentService,
             investorCashBalanceService: services.investorCashBalanceService,
-            poolTradeParticipationService: services.poolTradeParticipationService
+            poolTradeParticipationService: services.poolTradeParticipationService,
+            documentService: services.documentService,
+            invoiceService: services.invoiceService,
+            traderDataService: services.traderDataService,
+            tradeLifecycleService: services.tradeLifecycleService,
+            configurationService: services.configurationService,
+            commissionCalculationService: services.commissionCalculationService
         )
     }
 }

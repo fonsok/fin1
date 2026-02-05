@@ -178,19 +178,23 @@ extension Invoice {
 
     /// Creates a platform service charge invoice for an investor
     /// - Parameters:
-    ///   - grossServiceChargeAmount: The gross service charge amount (1.5% of investment amount, includes VAT)
+    ///   - grossServiceChargeAmount: The gross service charge amount (includes VAT)
     ///   - customerInfo: Customer information for the invoice
     ///   - transactionIdService: Service for generating invoice numbers
     ///   - batchId: Optional batch ID to link the invoice to an investment batch
     ///   - investmentIds: Array of investment IDs that this service charge applies to
+    ///   - investmentAmounts: Array of investment amounts corresponding to investmentIds (for detailed description)
+    ///   - serviceChargeRate: Platform service charge rate (default: 1.5% from CalculationConstants)
     /// - Returns: Invoice with service charge and VAT items
-    /// - Note: The gross amount (1.5% of investment) is split into net service charge and VAT (19%)
+    /// - Note: The gross amount is split into net service charge and VAT (19%)
     static func forServiceCharge(
         grossServiceChargeAmount: Double,
         customerInfo: CustomerInfo,
         transactionIdService: any TransactionIdServiceProtocol,
         batchId: String? = nil,
-        investmentIds: [String] = []
+        investmentIds: [String] = [],
+        investmentAmounts: [Double] = [],
+        serviceChargeRate: Double = CalculationConstants.ServiceCharges.platformServiceChargeRate
     ) -> Invoice {
         let invoiceNumber = InvoiceNumberGenerator.generate(using: transactionIdService)
 
@@ -205,28 +209,15 @@ extension Invoice {
         // Create invoice items
         var items: [InvoiceItem] = []
 
-        // Build description with investment IDs (each ID on a separate line with comma/period)
-        var serviceChargeDescription = "Plattform-Servicegebühr für Investition(en)"
-        if !investmentIds.isEmpty {
-            if investmentIds.count == 1 {
-                // Single investment: just add period
-                serviceChargeDescription += "\n\(investmentIds[0])."
-            } else {
-                // Format multiple IDs: each ID on a separate line with comma, last one with period
-                var formattedIds: [String] = []
-                for (index, id) in investmentIds.enumerated() {
-                    if index == investmentIds.count - 1 {
-                        // Last ID: add period
-                        formattedIds.append("\(id).")
-                    } else {
-                        // Other IDs: add comma
-                        formattedIds.append("\(id),")
-                    }
-                }
-                let idsString = formattedIds.joined(separator: "\n")
-                serviceChargeDescription += "\n\(idsString)"
-            }
-        }
+        // Build detailed description with calculation basis, investment amounts, IDs, and split
+        let serviceChargeDescription = buildServiceChargeDescription(
+            investmentIds: investmentIds,
+            investmentAmounts: investmentAmounts,
+            totalInvestmentAmount: investmentAmounts.reduce(0, +),
+            serviceChargeRate: serviceChargeRate,
+            netServiceCharge: netServiceCharge,
+            vatAmount: vatAmount
+        )
 
         // Service charge item (net amount)
         items.append(InvoiceItem(
@@ -328,8 +319,10 @@ private extension Invoice {
             components.append(strikePrice)
         }
 
-        // Add Issuer (placeholder for now - would need to be passed as parameter)
-        // components.append("Issuer")
+        // Add Issuer (Emittent) derived from WKN
+        if let wkn = wkn, !wkn.isEmpty {
+            components.append(String.emittentName(forWKN: wkn))
+        }
 
         return components.joined(separator: " - ")
     }
@@ -353,8 +346,8 @@ private extension Invoice {
         let strikePrice = DepotUtils.formatStrikePrice(holding.strike, holding.underlyingAsset)
         components.append(strikePrice)
 
-        // Add Issuer (placeholder for now - would need to be added to DepotHolding model)
-        // components.append("Issuer")
+        // Add Issuer (Emittent) derived from WKN
+        components.append(String.emittentName(forWKN: holding.wkn))
 
         return components.joined(separator: " - ")
     }
@@ -366,5 +359,55 @@ private extension Invoice {
             InvoiceFeeCalculator.createExchangeFeeItem(for: orderAmount, isNegative: isSellOrder),
             InvoiceFeeCalculator.createForeignCostsItem(isNegative: isSellOrder)
         ]
+    }
+
+    /// Builds a detailed service charge description with calculation basis, investment amounts, IDs, and split
+    static func buildServiceChargeDescription(
+        investmentIds: [String],
+        investmentAmounts: [Double],
+        totalInvestmentAmount: Double,
+        serviceChargeRate: Double,
+        netServiceCharge: Double,
+        vatAmount: Double
+    ) -> String {
+        var description = "Plattform-Servicegebühr für Investition(en)"
+
+        // Add calculation basis
+        if totalInvestmentAmount > 0 {
+            let formattedTotal = totalInvestmentAmount.formatted(.currency(code: "EUR"))
+            let ratePercent = (serviceChargeRate * 100).formatted(.number.precision(.fractionLength(2)))
+            description += "\n\nBerechnungsgrundlage:"
+            description += "\nInvestitionsbetrag gesamt: \(formattedTotal)"
+            description += "\nServicegebühr-Satz: \(ratePercent)%"
+        }
+
+        // Add investment details (split information) - show individual investments if multiple
+        if !investmentIds.isEmpty {
+            if investmentIds.count > 1 {
+                description += "\n\nAufteilung auf \(investmentIds.count) Investition(en):"
+            } else {
+                description += "\n\nInvestition:"
+            }
+
+            // Match IDs with amounts (if arrays have same length)
+            let count = min(investmentIds.count, investmentAmounts.count)
+            if count > 0 {
+                for index in 0..<count {
+                    let id = investmentIds[index]
+                    let amount = investmentAmounts[index]
+                    let formattedAmount = amount.formatted(.currency(code: "EUR"))
+                    let separator = index < count - 1 ? "," : "."
+                    description += "\nBuchungsnummer \(id): \(formattedAmount)\(separator)"
+                }
+            } else {
+                // Fallback: just show IDs if amounts not available
+                for (index, id) in investmentIds.enumerated() {
+                    let separator = index < investmentIds.count - 1 ? "," : "."
+                    description += "\nBuchungsnummer \(id)\(separator)"
+                }
+            }
+        }
+
+        return description
     }
 }

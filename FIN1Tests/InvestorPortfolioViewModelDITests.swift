@@ -72,7 +72,7 @@ final class InvestorPortfolioViewModelDITests: XCTestCase {
         let pool1 = PoolReservation(id: "P1", poolNumber: 1, status: .completed, actualPoolId: nil, allocatedAmount: 1000, reservedAt: Date(), isLocked: true)
         let pool2 = PoolReservation(id: "P2", poolNumber: 2, status: .completed, actualPoolId: nil, allocatedAmount: 1000, reservedAt: Date(), isLocked: true)
         investmentService.investments = [
-            Investment(id: invId, investorId: userService.currentUser?.id ?? "default", traderId: "T1", traderName: "Trader", amount: 3000, currentValue: 3000, date: Date(), status: .active, performance: 0, numberOfTrades: 0, numberOfPools: 3, createdAt: Date(), updatedAt: Date(), completedAt: nil, specialization: "",             reservedPoolSlots: [pool1, pool2, PoolReservation(id: "P3", poolNumber: 3, status: .reserved, actualPoolId: nil, allocatedAmount: 1000, reservedAt: Date(), isLocked: false)])
+            Investment(id: invId, investorId: userService.currentUser?.id ?? "default", traderId: "T1", traderName: "Trader", amount: 3000, currentValue: 3000, date: Date(), status: .active, performance: 0, numberOfTrades: 0, numberOfPools: 3, createdAt: Date(), updatedAt: Date(), completedAt: nil, specialization: "", reservedPoolSlots: [pool1, pool2, PoolReservation(id: "P3", poolNumber: 3, status: .reserved, actualPoolId: nil, allocatedAmount: 1000, reservedAt: Date(), isLocked: false)])
         ]
 
         // Profits for completed pools
@@ -81,8 +81,8 @@ final class InvestorPortfolioViewModelDITests: XCTestCase {
             PoolTradeParticipation(tradeId: "T2", investmentId: invId, poolReservationId: "P2", poolNumber: 2, allocatedAmount: 1000, totalTradeValue: 1000, ownershipPercentage: 1.0, profitShare: 788.58)
         ]
 
-        // VM
-        let vm = InvestorPortfolioViewModel(
+        // ViewModel
+        let viewModel = InvestorPortfolioViewModel(
             userService: userService,
             investmentService: investmentService,
             investorCashBalanceService: nil,
@@ -90,10 +90,10 @@ final class InvestorPortfolioViewModelDITests: XCTestCase {
         )
 
         // Force-load
-        vm.investments = investmentService.investments
+        viewModel.investments = investmentService.investments
 
         // Act
-        let rows = vm.ongoingPoolRows
+        let rows = viewModel.ongoingPoolRows
 
         // Assert: both completed pools present with profit values
         let pool1Row = rows.first { $0.reservation.id == "P1" }

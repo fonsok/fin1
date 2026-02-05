@@ -4,6 +4,7 @@ import Combine
 
 // MARK: - Sell Order ViewModel
 /// Manages the state and logic for placing a sell order
+// Note: Not @MainActor due to LimitOrderMonitor protocol constraints
 final class SellOrderViewModel: ObservableObject, LimitOrderMonitor {
 
     // MARK: - Published Properties

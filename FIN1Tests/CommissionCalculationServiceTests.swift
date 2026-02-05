@@ -180,14 +180,3 @@ class MockInvestorGrossProfitService: InvestorGrossProfitServiceProtocol {
         return [:]
     }
 }
-
-
-
-
-
-
-
-
-
-
-

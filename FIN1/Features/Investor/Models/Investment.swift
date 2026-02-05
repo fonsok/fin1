@@ -1,6 +1,6 @@
 import Foundation
 
-enum InvestmentStatus: String, CaseIterable, Codable {
+enum InvestmentStatus: String, CaseIterable, Codable, Sendable {
     case submitted
     case active
     case completed
@@ -26,7 +26,7 @@ enum InvestmentStatus: String, CaseIterable, Codable {
 }
 
 /// Time period options for filtering completed investments
-enum InvestmentTimePeriod: CaseIterable {
+enum InvestmentTimePeriod: CaseIterable, Sendable {
     case last7Days
     case last30Days
     case last90Days
@@ -61,7 +61,7 @@ enum InvestmentTimePeriod: CaseIterable {
     }
 }
 
-struct Investment: Identifiable, Codable {
+struct Investment: Identifiable, Codable, Sendable {
     let id: String
     let batchId: String? // Optional: groups investments created together
     let investorId: String
@@ -339,7 +339,7 @@ struct Investment: Identifiable, Codable {
         return investments
     }
 }
-struct InvestmentPool: Identifiable, Codable {
+struct InvestmentPool: Identifiable, Codable, Sendable {
     let id: String
     let traderId: String
     let poolNumber: Int
@@ -358,7 +358,7 @@ struct InvestmentPool: Identifiable, Codable {
 
 // MARK: - Supporting Enums and Structs
 
-enum InvestmentSelectionStrategy: String, CaseIterable, Codable {
+enum InvestmentSelectionStrategy: String, CaseIterable, Codable, Sendable {
     case multipleInvestments
 
     var displayName: String {
@@ -374,7 +374,7 @@ enum InvestmentSelectionStrategy: String, CaseIterable, Codable {
     }
 }
 
-enum InvestmentReservationStatus: String, CaseIterable, Codable {
+enum InvestmentReservationStatus: String, CaseIterable, Codable, Sendable {
     case reserved
     case active
     case closed
@@ -394,7 +394,7 @@ enum InvestmentReservationStatus: String, CaseIterable, Codable {
     }
 }
 
-enum PoolStatus: String, CaseIterable, Codable {
+enum PoolStatus: String, CaseIterable, Codable, Sendable {
     case active
     case closed
     case executing
@@ -412,7 +412,7 @@ enum PoolStatus: String, CaseIterable, Codable {
     }
 }
 
-enum InvestmentValidationError: Error, LocalizedError {
+enum InvestmentValidationError: Error, LocalizedError, Sendable {
     case traderCannotInvestInTrader
     case invalidAmount
     case invalidNumberOfInvestments
@@ -438,7 +438,7 @@ enum InvestmentValidationError: Error, LocalizedError {
     }
 }
 
-struct InvestmentReservation: Identifiable, Codable {
+struct InvestmentReservation: Identifiable, Codable, Sendable {
     let id: String
     let sequenceNumber: Int // Sequence number within batch (for display)
     let status: InvestmentReservationStatus
@@ -448,7 +448,7 @@ struct InvestmentReservation: Identifiable, Codable {
     let isLocked: Bool
 }
 
-struct InvestmentAllocation: Identifiable, Codable {
+struct InvestmentAllocation: Identifiable, Codable, Sendable {
     let id: String
     let investmentId: String
     let poolId: String // InvestmentPool ID (kept for trader dashboard compatibility)

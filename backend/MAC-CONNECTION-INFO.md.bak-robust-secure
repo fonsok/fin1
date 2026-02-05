@@ -1,8 +1,8 @@
-# Mac → FIN1 Server Verbindungsinformationen
+# Mac → Server Verbindungsinformationen
 
 ## Übersicht
 
-Diese Dokumentation listet alle Informationen auf, die der Mac benötigt, um sich mit dem FIN1-Server zu verbinden.
+Diese Dokumentation listet alle Informationen auf, die der Mac benötigt, um sich mit dem Server zu verbinden.
 
 ---
 
@@ -335,7 +335,7 @@ Alle Geräte müssen im gleichen WLAN sein
 
 
 
-Informationen für Mac → FIN1-Server Verbindung
+Informationen für Mac → Server Verbindung
 Minimale Informationen für Xcode
 Server-IP-Adresse: 192.168.178.24
 Port: 1338 (externer Port)

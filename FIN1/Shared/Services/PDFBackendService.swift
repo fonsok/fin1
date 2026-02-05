@@ -206,6 +206,7 @@ private struct CompanyInfoDTO: Encodable {
     let bankName: String
     let bankIban: String
     let bankBic: String
+    let documentPrefix: String
 
     /// Creates company info from LegalIdentity (reads from Bundle/Info.plist)
     static func fromLegalIdentity() -> CompanyInfoDTO {
@@ -222,7 +223,8 @@ private struct CompanyInfoDTO: Encodable {
             management: "Geschäftsführung: \(CompanyContactInfo.management)",
             bankName: CompanyContactInfo.bankName,
             bankIban: CompanyContactInfo.bankIBAN,
-            bankBic: CompanyContactInfo.bic
+            bankBic: CompanyContactInfo.bic,
+            documentPrefix: LegalIdentity.documentPrefix
         )
     }
 }
@@ -245,6 +247,7 @@ private struct InvoicePDFRequest: Encodable {
     let transactionType: String?
     let taxNote: String?
     let legalNote: String?
+    let qrData: String?
     let companyInfo: CompanyInfoDTO
 
     init(from invoice: Invoice) {
@@ -262,6 +265,7 @@ private struct InvoicePDFRequest: Encodable {
         self.transactionType = invoice.transactionType?.rawValue
         self.taxNote = invoice.taxNote
         self.legalNote = invoice.legalNote
+        self.qrData = QRCodeGenerator.generateInvoiceQRData(for: invoice)
         self.companyInfo = CompanyInfoDTO.fromLegalIdentity()
     }
 }
@@ -304,6 +308,7 @@ private struct CreditNotePDFRequest: Encodable {
     let reason: String
     let originalInvoiceNumber: String?
     let createdAt: String?
+    let qrData: String?
     let companyInfo: CompanyInfoDTO
 
     init(from invoice: Invoice) {
@@ -314,6 +319,7 @@ private struct CreditNotePDFRequest: Encodable {
         self.reason = invoice.legalNote ?? ""
         self.originalInvoiceNumber = nil
         self.createdAt = ISO8601DateFormatter().string(from: invoice.createdAt)
+        self.qrData = QRCodeGenerator.generateInvoiceQRData(for: invoice)
         self.companyInfo = CompanyInfoDTO.fromLegalIdentity()
     }
 }

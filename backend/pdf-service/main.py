@@ -68,19 +68,22 @@ jinja_env = Environment(
 
 class CompanyInfo(BaseModel):
     """Company information for document headers - sent from iOS app"""
-    name: str = 'FIN1 Trading GmbH'
-    address: str = 'Hauptstraße 100'
-    city: str = '60311 Frankfurt am Main'
-    email: str = 'info@fin1-trading.de'
-    phone: str = '+49 (0) 69 12345678'
-    website: str = 'www.fin1-trading.de'
+    # These defaults are intentionally neutral.
+    # The iOS app is expected to send `company_info` derived from LegalIdentity/Info.plist.
+    name: str = 'Company Name'
+    address: str = 'Street 1'
+    city: str = '00000 City'
+    email: str = 'support@example.com'
+    phone: str = '+00 000 000000'
+    website: str = 'www.example.com'
     business_hours: str = 'Mo-Fr: 9:00-18:00 Uhr'
-    register_number: str = 'HRB 123456'
-    vat_id: str = 'DE123456789'
-    management: str = 'Geschäftsführung: Max Mustermann'
-    bank_name: str = 'Deutsche Bank'
-    bank_iban: str = 'DE89 3704 0044 0532 0130 00'
-    bank_bic: str = 'COBADEFFXXX'
+    register_number: str = 'HRB 000000'
+    vat_id: str = 'DE000000000'
+    management: str = 'Geschäftsführung: —'
+    bank_name: str = 'Bank'
+    bank_iban: str = 'DE00 0000 0000 0000 0000 00'
+    bank_bic: str = 'XXXXXXXXXXX'
+    document_prefix: str = 'APP'
 
     class Config:
         populate_by_name = True
@@ -129,6 +132,7 @@ class InvoiceRequest(BaseModel):
     transaction_type: Optional[str] = None
     tax_note: Optional[str] = None
     legal_note: Optional[str] = None
+    qr_data: Optional[str] = None
     # Company info from iOS app (uses LegalIdentity)
     company_info: Optional[CompanyInfo] = None
 
@@ -158,6 +162,7 @@ class CreditNoteRequest(BaseModel):
     reason: str = ''
     original_invoice_number: Optional[str] = None
     created_at: Optional[str] = None
+    qr_data: Optional[str] = None
     # Company info from iOS app (uses LegalIdentity)
     company_info: Optional[CompanyInfo] = None
 
@@ -276,19 +281,19 @@ def build_company_data(company_info: Optional[CompanyInfo]) -> dict:
             'management': company_info.management,
             'bank': f'{company_info.bank_name} | IBAN: {company_info.bank_iban} | BIC: {company_info.bank_bic}',
         }
-    # Default fallback
+    # Default fallback (neutral placeholders)
     return {
-        'name': 'FIN1 Trading GmbH',
-        'address': 'Hauptstraße 100',
-        'city': '60311 Frankfurt am Main',
-        'email': 'info@fin1-trading.de',
-        'phone': '+49 (0) 69 12345678',
-        'website': 'www.fin1-trading.de',
+        'name': 'Company Name',
+        'address': 'Street 1',
+        'city': '00000 City',
+        'email': 'support@example.com',
+        'phone': '+00 000 000000',
+        'website': 'www.example.com',
         'business_hours': 'Mo-Fr: 9:00-18:00 Uhr',
-        'contact': 'info@fin1-trading.de | +49 (0) 69 12345678',
-        'legal': 'Amtsgericht Frankfurt | HRB 123456 | USt-IdNr.: DE123456789',
-        'management': 'Geschäftsführung: Max Mustermann',
-        'bank': 'Deutsche Bank | IBAN: DE89 3704 0044 0532 0130 00 | BIC: COBADEFFXXX',
+        'contact': 'support@example.com | +00 000 000000',
+        'legal': 'Amtsgericht — | HRB 000000 | USt-IdNr.: DE000000000',
+        'management': 'Geschäftsführung: —',
+        'bank': 'Bank | IBAN: DE00 0000 0000 0000 0000 00 | BIC: XXXXXXXXXXX',
     }
 
 
@@ -338,7 +343,7 @@ def generate_invoice_pdf(request: InvoiceRequest) -> bytes:
             'tax': request.tax_note,
             'legal': request.legal_note,
         },
-        'qr_code': generate_qr_code_base64(f"FIN1:{request.invoice_number}"),
+        'qr_code': generate_qr_code_base64(request.qr_data) if request.qr_data else None,
         'format_currency': format_currency,
         'format_date': format_date,
     }
@@ -428,7 +433,7 @@ def generate_credit_note_pdf(request: CreditNoteRequest) -> bytes:
         'totals': {
             'total': format_currency(request.total_amount),
         },
-        'qr_code': generate_qr_code_base64(f"FIN1:CN:{request.credit_note_number}"),
+        'qr_code': generate_qr_code_base64(request.qr_data) if request.qr_data else None,
         'format_currency': format_currency,
     }
 

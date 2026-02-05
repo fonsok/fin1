@@ -1,9 +1,9 @@
 -- ============================================================================
--- FIN1 DATABASE SCHEMA
+-- DATABASE SCHEMA
 -- 001_schema_config.sql - Configuration Management
 -- ============================================================================
 --
--- Dieses Schema verwaltet die zentrale Konfiguration der FIN1-Plattform.
+-- Dieses Schema verwaltet die zentrale Konfiguration der Plattform.
 -- Alle App-weiten Einstellungen werden hier gespeichert und können zur
 -- Laufzeit geändert werden, ohne einen App-Rebuild zu erfordern.
 --

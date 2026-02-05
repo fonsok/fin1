@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Script to generate code coverage report for FIN1
-# Usage: ./scripts/generate-code-coverage-v2026-01-30.sh
+# Usage: ./scripts/generate-code-coverage.sh
 
 set -e
 

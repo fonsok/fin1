@@ -109,6 +109,11 @@ struct SecuritiesSearchView: View {
                 print("🔍 DEBUG: SecuritiesSearchView onAppear called")
                 viewModel.setSavedFiltersToCheck(savedFiltersRepository.savedFilters)
                 viewModel.performSearch()
+
+                // Register repository with FilterSyncService
+                if let filterSyncService = services.filterSyncService as? FilterSyncService {
+                    filterSyncService.registerSecuritiesFiltersRepository(savedFiltersRepository)
+                }
             }
             .onChange(of: savedFiltersRepository.savedFilters) { _, newFilters in
                 viewModel.setSavedFiltersToCheck(newFilters)

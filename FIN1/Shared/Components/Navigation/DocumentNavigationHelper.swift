@@ -42,14 +42,20 @@ struct DocumentNavigationHelper {
         case .investorCollectionBill:
             CollectionBillDocumentView(document: document, services: appServices)
         case .traderCreditNote:
-            TraderCreditNoteDetailView(document: document)
+            TraderCreditNoteDetailView(
+                document: document,
+                showCommissionBreakdown: appServices.configurationService.showCommissionBreakdownInCreditNote
+            )
         case .monthlyAccountStatement:
             MonthlyAccountStatementView(services: appServices, document: document)
         case .invoice:
             if let invoice = document.invoiceData {
                 // Check if this is a credit note invoice
                 if invoice.type == .creditNote {
-                    TraderCreditNoteDetailView(document: document)
+                    TraderCreditNoteDetailView(
+                        document: document,
+                        showCommissionBreakdown: appServices.configurationService.showCommissionBreakdownInCreditNote
+                    )
                 } else {
                     InvoiceDetailView(
                         invoice: invoice,

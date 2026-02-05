@@ -32,9 +32,9 @@ LEGAL_VARS: list[Pair] = [
     Pair("FIN1_LEGAL_BANK_NAME", "FIN1 Bank AG"),
     Pair("FIN1_LEGAL_BANK_IBAN", "DE89 3704 0044 0532 0130 00"),
     Pair("FIN1_LEGAL_BANK_BIC", "COBADEFFXXX"),
-    Pair("FIN1_LEGAL_COMPANY_EMAIL", "info@fin1-investing.de"),
+    Pair("FIN1_LEGAL_COMPANY_EMAIL", "info@fin1-investing.com"),
     Pair("FIN1_LEGAL_COMPANY_PHONE", "+49 (0) 69 12345678"),
-    Pair("FIN1_LEGAL_COMPANY_WEBSITE", "www.fin1-investing.de"),
+    Pair("FIN1_LEGAL_COMPANY_WEBSITE", "www.fin1-investing.com"),
 ]
 
 

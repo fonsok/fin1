@@ -84,6 +84,9 @@ struct AppServices {
     let marketDataService: (any MarketDataServiceProtocol)?
     let priceAlertService: (any PriceAlertServiceProtocol)?
 
+    // MARK: - Filter Sync Services
+    let filterSyncService: FilterSyncServiceProtocol?
+
     // MARK: - Customer Support Services
     let auditLoggingService: AuditLoggingServiceProtocol
     let customerSupportService: CustomerSupportServiceProtocol

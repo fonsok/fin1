@@ -157,7 +157,7 @@ final class MarketDataServiceTests: XCTestCase {
         
         // Then: Should subscribe to both symbols
         // Note: Subscription happens asynchronously, so we verify the handler was called
-        XCTAssertTrue(subscribedSymbols.count >= 0) // At least handler was set up
+        XCTAssertTrue(subscribedSymbols.isEmpty || !subscribedSymbols.isEmpty) // Handler was set up
     }
     
     func testUnsubscribeFromMarketData_ClearsSubscriptions() async {
@@ -189,7 +189,7 @@ final class MarketDataServiceTests: XCTestCase {
         
         // Observe market data updates
         NotificationCenter.default.publisher(for: .marketDataDidUpdate)
-            .sink { notification in
+            .sink { _ in
                 expectation.fulfill()
             }
             .store(in: &cancellables)

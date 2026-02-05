@@ -33,6 +33,10 @@ protocol PaymentServiceProtocol: ServiceLifecycle {
     /// - Parameter transactionId: Transaction ID
     /// - Returns: Transaction if found, nil otherwise
     func getTransaction(transactionId: String) async throws -> Transaction?
+
+    /// Syncs any pending transactions to the backend
+    /// Called automatically when app enters background
+    func syncToBackend() async
 }
 
 // MARK: - Payment Errors

@@ -4,6 +4,7 @@ import Combine
 
 // MARK: - Simplified Dashboard ViewModel
 /// Simplified ViewModel focused on UI state and user role information
+@MainActor
 final class DashboardViewModel: ObservableObject {
     // MARK: - Dependencies
     private let userService: any UserServiceProtocol

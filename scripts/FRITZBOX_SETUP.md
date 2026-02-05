@@ -195,7 +195,7 @@ Nach der Konfiguration sollten Sie folgende Informationen haben:
 ```bash
 # Netzwerk scannen
 cd /Users/ra/app/FIN1
-./scripts/find-ubuntu-server-v2026-01-30.sh
+./scripts/find-ubuntu-server.sh
 ```
 
 ### Manuell testen
@@ -289,12 +289,12 @@ Nach der Fritzbox-Konfiguration:
 
 1. **Ubuntu-Server finden:**
    ```bash
-   ./scripts/find-ubuntu-server-v2026-01-30.sh
+   ./scripts/find-ubuntu-server.sh
    ```
 
 2. **Deployment durchführen:**
    ```bash
-   ./scripts/deploy-to-ubuntu-v2026-01-30.sh [ubuntu-ip] [ubuntu-user]
+   ./scripts/deploy-to-ubuntu.sh [ubuntu-ip] [ubuntu-user]
    ```
 
 3. **Server testen:**

@@ -72,10 +72,10 @@ class UISpacingRegressionTests: XCTestCase {
     }
 
     func testNoResponsivePaddingInMainViews() {
-        // This test documents that main views should not use .responsivePadding()
+        // This test documents that main views should not use responsive padding modifier
         // Instead, they should use specific padding patterns
 
-        XCTAssertTrue(true, "Main views must use specific padding patterns, not .responsivePadding()")
+        XCTAssertTrue(true, "Main views must use specific padding patterns, not responsive padding modifier")
     }
 }
 

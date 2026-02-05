@@ -147,7 +147,7 @@ struct FAQStatBox: View {
     var body: some View {
         VStack(spacing: ResponsiveDesign.spacing(8)) {
             Image(systemName: icon)
-                .font(.title2)
+                .font(ResponsiveDesign.headlineFont())
                 .foregroundColor(color)
 
             Text(value)

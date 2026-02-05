@@ -3,7 +3,7 @@ import SwiftUI
 
 // MARK: - Order Buy Status
 /// Status progression for buy orders: submitted → suspended → executed → confirmed → completed
-enum OrderBuyStatus: String, CaseIterable, Codable {
+enum OrderBuyStatus: String, CaseIterable, Codable, Sendable {
     case submitted     // Status 1: Order placed
     case suspended     // Status 2: Trading suspended
     case executed      // Status 3: Order executed
@@ -47,7 +47,7 @@ enum OrderBuyStatus: String, CaseIterable, Codable {
 
 // MARK: - Order Sell Status
 /// Status progression for sell orders: submitted → suspended → executed → confirmed → completed
-enum OrderSellStatus: String, CaseIterable, Codable {
+enum OrderSellStatus: String, CaseIterable, Codable, Sendable {
     case submitted     // Status 1: Order placed
     case suspended     // Status 2: Trading suspended
     case executed      // Status 3: Order executed

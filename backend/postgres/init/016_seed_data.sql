@@ -1,5 +1,5 @@
 -- ============================================================================
--- FIN1 DATABASE SCHEMA
+-- DATABASE SCHEMA
 -- 016_seed_data.sql - Initial & Development Seed Data
 -- ============================================================================
 --
@@ -43,10 +43,10 @@ INSERT INTO config_items (category_id, key, display_name, data_type, default_val
 ((SELECT id FROM config_categories WHERE name = 'features'), 'push_notifications_enabled', 'Push Notifications', 'boolean', 'true', NULL, 'toggle', 4),
 
 -- Company
-((SELECT id FROM config_categories WHERE name = 'company'), 'company_name', 'Company Name', 'string', '"FIN1 Investing GmbH"', NULL, 'textfield', 1),
+((SELECT id FROM config_categories WHERE name = 'company'), 'company_name', 'Company Name', 'string', '"Company Investing GmbH"', NULL, 'textfield', 1),
 ((SELECT id FROM config_categories WHERE name = 'company'), 'company_address', 'Address', 'string', '"Hauptstraße 100"', NULL, 'textfield', 2),
 ((SELECT id FROM config_categories WHERE name = 'company'), 'company_city', 'City', 'string', '"60311 Frankfurt am Main"', NULL, 'textfield', 3),
-((SELECT id FROM config_categories WHERE name = 'company'), 'company_email', 'Email', 'email', '"info@fin1-investing.de"', NULL, 'textfield', 4),
+((SELECT id FROM config_categories WHERE name = 'company'), 'company_email', 'Email', 'email', '"info@fin1-investing.com"', NULL, 'textfield', 4),
 ((SELECT id FROM config_categories WHERE name = 'company'), 'company_phone', 'Phone', 'string', '"+49 (0) 69 12345678"', NULL, 'textfield', 5),
 ((SELECT id FROM config_categories WHERE name = 'company'), 'company_vat_id', 'VAT ID', 'string', '"DE123456789"', NULL, 'textfield', 6),
 ((SELECT id FROM config_categories WHERE name = 'company'), 'company_register', 'Register Number', 'string', '"HRB 123456"', NULL, 'textfield', 7),
@@ -144,8 +144,8 @@ ON CONFLICT (role_id, permission_id) DO NOTHING;
 -- Landing Page FAQs
 INSERT INTO faqs (category_id, question, answer, is_public, is_user_visible, sort_order) VALUES
 ((SELECT id FROM faq_categories WHERE slug = 'platform_overview'),
- 'Was ist FIN1?',
- 'FIN1 ist eine innovative Investmentplattform, die Investoren mit erfahrenen Tradern verbindet. Investoren können ihr Kapital in von Tradern verwaltete Pools investieren und an deren Erfolg partizipieren.',
+ 'Was ist die Plattform?',
+ 'Die Plattform ist eine innovative Investmentplattform, die Investoren mit erfahrenen Tradern verbindet. Investoren können ihr Kapital in von Tradern verwaltete Pools investieren und an deren Erfolg partizipieren.',
  true, true, 1),
 
 ((SELECT id FROM faq_categories WHERE slug = 'platform_overview'),

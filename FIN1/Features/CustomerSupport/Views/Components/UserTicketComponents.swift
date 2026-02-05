@@ -144,7 +144,7 @@ struct ConfirmationRequiredBanner: View {
     var body: some View {
         HStack(spacing: ResponsiveDesign.spacing(12)) {
             Image(systemName: "hourglass")
-                .font(.title2)
+                .font(ResponsiveDesign.headlineFont())
                 .foregroundColor(AppTheme.accentOrange)
 
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {

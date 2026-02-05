@@ -37,12 +37,12 @@ enum PrivacyPolicyAmericanContent {
         \(LegalIdentity.companyLegalName)
         [Registered Address]
         [Registration Number]
-        Email: privacy@fin1.com
+        Email: \(CompanyContactInfo.privacyEmail)
         Phone: +1 [number]
 
         **Privacy Officer:**
         [Name]
-        Email: privacy@fin1.com
+        Email: \(CompanyContactInfo.privacyEmail)
         Phone: +1 [number]
 
         **Policy Version:**
@@ -375,7 +375,7 @@ enum PrivacyPolicyAmericanContent {
 
         **A. Right to Know (CCPA/CPRA):**
         - **What**: Request information about what personal information we collect, use, disclose, and sell
-        - **How**: Contact us at privacy@fin1.com or use the in-app request feature
+        - **How**: Contact us at \(CompanyContactInfo.privacyEmail) or use the in-app request feature
         - **Timeline**: We will respond within 45 days (may extend to 90 days with notice)
         - **Format**: We will provide the information in a readily usable format
 
@@ -386,7 +386,7 @@ enum PrivacyPolicyAmericanContent {
           - Ongoing contractual obligations
           - Legal claims
           - Other exceptions under applicable law
-        - **How**: Contact us at privacy@fin1.com
+        - **How**: Contact us at \(CompanyContactInfo.privacyEmail)
         - **Timeline**: We will respond within 45 days (may extend to 90 days with notice)
 
         **C. Right to Opt-Out (CCPA/CPRA):**
@@ -422,7 +422,7 @@ enum PrivacyPolicyAmericanContent {
         - **Ease**: As easy as giving consent
 
         **Exercising Your Rights:**
-        - Email: privacy@fin1.com
+        - Email: \(CompanyContactInfo.privacyEmail)
         - In-App: Support feature
         - Written: Postal address provided
         - **Verification**: Identity verification required for security
@@ -546,7 +546,7 @@ enum PrivacyPolicyAmericanContent {
         - **Breach Register**: Maintained per legal requirements
         - **Records**: All breaches documented
 
-        If you notice a suspected data breach, please contact us immediately at privacy@fin1.com.
+        If you notice a suspected data breach, please contact us immediately at \(CompanyContactInfo.privacyEmail).
         """,
         icon: "exclamationmark.triangle.fill"
     )
@@ -640,7 +640,7 @@ enum PrivacyPolicyAmericanContent {
         title: "15. Contact Information & Exercising Rights",
         content: """
         **A. Privacy Inquiries:**
-        - **Email**: privacy@fin1.com
+        - **Email**: \(CompanyContactInfo.privacyEmail)
         - **Support**: In-app support feature
         - **Phone**: +1 [number]
         - **Address**: [Address]
@@ -653,7 +653,7 @@ enum PrivacyPolicyAmericanContent {
         - **Authorized Agents**: You may designate an authorized agent
 
         **C. Complaints:**
-        - **Internal**: Contact us first at privacy@fin1.com
+        - **Internal**: Contact us first at \(CompanyContactInfo.privacyEmail)
         - **External**:
           - **California**: California Attorney General
           - **Other States**: State attorney general (if applicable)

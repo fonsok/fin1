@@ -105,6 +105,10 @@ struct InvestmentRow: Identifiable {
     let returnPercentage: Double?
     let reservation: InvestmentReservation
     let investment: Investment
+    /// Belegnummer Verrechnung (Investor Collection Bill); von ViewModel aus Services befüllt (MVVM).
+    let docNumber: String?
+    /// Rechnungsnummer Service-Charge; von ViewModel aus Services befüllt (MVVM).
+    let invoiceNumber: String?
 
     var statusDisplayText: String {
         // Each investment shows its own status, not a count
