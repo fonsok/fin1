@@ -494,7 +494,7 @@ final class PriceAlertService: PriceAlertServiceProtocol {
 
     func syncToBackend() async {
         guard let apiClient = parseAPIClient,
-              let userId = userService?.currentUser?.id else {
+              userService?.currentUser?.id != nil else {
             print("⚠️ ParseAPIClient or userId not available for Price Alert sync")
             return
         }

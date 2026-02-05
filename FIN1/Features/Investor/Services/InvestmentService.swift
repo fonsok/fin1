@@ -344,7 +344,7 @@ final class InvestmentService: InvestmentServiceProtocol, ServiceLifecycle {
         for investment in investmentsToSync {
             do {
                 _ = try await apiService.saveInvestment(investment)
-                await MainActor.run { pendingSyncIds.remove(investment.id) }
+                _ = await MainActor.run { pendingSyncIds.remove(investment.id) }
             } catch {
                 print("⚠️ InvestmentService: Failed to sync investment \(investment.id): \(error)")
             }
