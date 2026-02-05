@@ -143,7 +143,7 @@ final class PushTokenAPIService: PushTokenAPIServiceProtocol {
         // Create new token
         let response: ParseResponse = try await apiClient.createObject(
             className: className,
-            data: try encodePushTokenInput(input)
+            object: input
         )
 
         // Construct PushToken from response
@@ -156,8 +156,8 @@ final class PushTokenAPIService: PushTokenAPIServiceProtocol {
             isActive: true,
             lastValidatedAt: nil,
             validationFailures: 0,
-            createdAt: response.createdAt ?? Date(),
-            updatedAt: response.updatedAt
+            createdAt: Date(),
+            updatedAt: nil
         )
     }
 
@@ -178,10 +178,10 @@ final class PushTokenAPIService: PushTokenAPIServiceProtocol {
             isActive: true
         )
 
-        let response: ParseResponse = try await apiClient.updateObject(
+        let _: ParseResponse = try await apiClient.updateObject(
             className: className,
             objectId: existing.id,
-            data: try encodePushTokenInput(input)
+            object: input
         )
 
         return PushToken(
@@ -194,7 +194,7 @@ final class PushTokenAPIService: PushTokenAPIServiceProtocol {
             lastValidatedAt: existing.lastValidatedAt,
             validationFailures: existing.validationFailures,
             createdAt: existing.createdAt,
-            updatedAt: response.updatedAt ?? Date()
+            updatedAt: Date()
         )
     }
 
@@ -217,7 +217,7 @@ final class PushTokenAPIService: PushTokenAPIServiceProtocol {
         _ = try await apiClient.updateObject(
             className: className,
             objectId: existing.id,
-            data: try encodePushTokenInput(input)
+            object: input
         )
     }
 
@@ -228,20 +228,12 @@ final class PushTokenAPIService: PushTokenAPIServiceProtocol {
 
         let responses: [ParsePushTokenResponse] = try await apiClient.fetchObjects(
             className: className,
-            query: query
+            query: query,
+            include: nil,
+            orderBy: nil,
+            limit: nil
         )
 
         return try responses.map { try $0.toPushToken() }
-    }
-
-    // MARK: - Private Helpers
-
-    private func encodePushTokenInput(_ input: ParsePushTokenInput) throws -> [String: Any] {
-        let encoder = JSONEncoder()
-        let data = try encoder.encode(input)
-        guard let dictionary = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-            throw PushTokenAPIServiceError.invalidTokenType
-        }
-        return dictionary
     }
 }

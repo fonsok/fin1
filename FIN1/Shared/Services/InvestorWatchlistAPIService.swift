@@ -74,7 +74,7 @@ private struct ParseInvestorWatchlistResponse: Codable {
             name: traderName,
             image: "", // Will need to be fetched separately
             performance: 0.0, // Will need to be fetched separately
-            riskClass: RiskClass(rawValue: traderRiskClass ?? 1) ?? .low,
+            riskClass: RiskClass(rawValue: traderRiskClass ?? 1) ?? .riskClass1,
             totalInvestors: 0, // Will need to be fetched separately
             minimumInvestment: targetInvestmentAmount ?? 0.0,
             description: "", // Will need to be fetched separately
@@ -100,9 +100,9 @@ final class InvestorWatchlistAPIService: InvestorWatchlistAPIServiceProtocol {
 
     func saveWatchlistItem(_ trader: WatchlistTraderData, investorId: String) async throws -> WatchlistTraderData {
         let input = ParseInvestorWatchlistInput.from(trader: trader, investorId: investorId)
-        let response: ParseResponse = try await apiClient.createObject(
+        let _: ParseResponse = try await apiClient.createObject(
             className: className,
-            data: try encodeWatchlistInput(input)
+            object: input
         )
 
         // Return trader (backend doesn't change trader data, just stores reference)
@@ -118,7 +118,10 @@ final class InvestorWatchlistAPIService: InvestorWatchlistAPIServiceProtocol {
 
         let responses: [ParseInvestorWatchlistResponse] = try await apiClient.fetchObjects(
             className: className,
-            query: query
+            query: query,
+            include: nil,
+            orderBy: nil,
+            limit: nil
         )
 
         // Delete all matching items (should be unique)
@@ -134,7 +137,10 @@ final class InvestorWatchlistAPIService: InvestorWatchlistAPIServiceProtocol {
 
         let responses: [ParseInvestorWatchlistResponse] = try await apiClient.fetchObjects(
             className: className,
-            query: query
+            query: query,
+            include: nil,
+            orderBy: nil,
+            limit: nil
         )
 
         return try responses.compactMap { response in
@@ -142,16 +148,6 @@ final class InvestorWatchlistAPIService: InvestorWatchlistAPIServiceProtocol {
         }
     }
 
-    // MARK: - Private Helpers
-
-    private func encodeWatchlistInput(_ input: ParseInvestorWatchlistInput) throws -> [String: Any] {
-        let encoder = JSONEncoder()
-        let data = try encoder.encode(input)
-        guard let dictionary = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-            throw InvestorWatchlistAPIServiceError.invalidData
-        }
-        return dictionary
-    }
 }
 
 // MARK: - Investor Watchlist API Service Error

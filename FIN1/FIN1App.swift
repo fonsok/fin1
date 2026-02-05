@@ -141,18 +141,24 @@ struct FIN1App: App {
             return
         }
 
-        async let investmentSync: () = services.investmentService.syncToBackend()
-        async let orderSync: () = services.orderManagementService.syncToBackend()
-        async let transactionSync: () = services.paymentService.syncToBackend()
-        async let documentSync: () = services.documentService.syncToBackend()
-        async let userSync: () = services.userService.syncToBackend()
-        async let watchlistSync: () = services.securitiesWatchlistService.syncToBackend()
-        async let filterSync: () = services.filterSyncService?.syncToBackend() ?? Task {}.value
-        async let pushTokenSync: () = services.notificationService.syncPushTokensToBackend(for: currentUser.id)
-        async let priceAlertSync: () = services.priceAlertService?.syncToBackend() ?? Task {}.value
-        async let investorWatchlistSync: () = services.watchlistService.syncToBackend()
+        await withTaskGroup(of: Void.self) { group in
+            group.addTask { await self.services.investmentService.syncToBackend() }
+            group.addTask { await self.services.orderManagementService.syncToBackend() }
+            group.addTask { await self.services.paymentService.syncToBackend() }
+            group.addTask { await self.services.documentService.syncToBackend() }
+            group.addTask { await self.services.userService.syncToBackend() }
+            group.addTask { await self.services.securitiesWatchlistService.syncToBackend() }
+            group.addTask { await self.services.notificationService.syncPushTokensToBackend(for: currentUser.id) }
+            group.addTask { await self.services.watchlistService.syncToBackend() }
 
-        _ = await (investmentSync, orderSync, transactionSync, documentSync, userSync, watchlistSync, filterSync, pushTokenSync, priceAlertSync, investorWatchlistSync)
+            // Optional services
+            if let filterSyncService = self.services.filterSyncService {
+                group.addTask { await filterSyncService.syncToBackend() }
+            }
+            if let priceAlertService = self.services.priceAlertService {
+                group.addTask { await priceAlertService.syncToBackend() }
+            }
+        }
 
         print("✅ Background sync completed")
     }

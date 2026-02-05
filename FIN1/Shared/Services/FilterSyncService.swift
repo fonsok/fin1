@@ -42,10 +42,14 @@ final class FilterSyncService: FilterSyncServiceProtocol {
         print("📤 Syncing all filters to backend...")
 
         // Sync both repositories in parallel
-        async let securitiesSync: () = securitiesFiltersRepository?.syncToBackend() ?? Task {}.value
-        async let traderSync: () = traderFiltersManager?.syncToBackend() ?? Task {}.value
-
-        _ = await (securitiesSync, traderSync)
+        await withTaskGroup(of: Void.self) { group in
+            if let securitiesRepo = securitiesFiltersRepository {
+                group.addTask { await securitiesRepo.syncToBackend() }
+            }
+            if let traderManager = traderFiltersManager {
+                group.addTask { await traderManager.syncToBackend() }
+            }
+        }
 
         print("✅ All filters sync completed")
     }

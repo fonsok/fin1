@@ -68,10 +68,11 @@ private struct ParseFilterInput: Encodable {
     }
 
     static func from(traderFilter: FilterCombination, userId: String) -> ParseFilterInput {
-        // Encode IndividualFilterCriteria array to dictionary
+        // Encode IndividualFilterCriteria array to dictionary using type.rawValue as key
         var criteria: [String: AnyCodable] = [:]
         for filter in traderFilter.filters {
-            criteria[filter.id] = AnyCodable(filter.value)
+            // Use type's rawValue as key and the selectedOption's rawValue as value
+            criteria[filter.type.rawValue] = AnyCodable(filter.selectedOption.rawValue)
         }
 
         return ParseFilterInput(
@@ -142,15 +143,17 @@ private struct ParseFilterResponse: Codable {
         // Decode IndividualFilterCriteria array from dictionary
         var filters: [IndividualFilterCriteria] = []
         for (key, value) in filterCriteria {
-            if let stringValue = value.stringValue {
-                filters.append(IndividualFilterCriteria(id: key, value: stringValue))
+            if let stringValue = value.stringValue,
+               let filterType = IndividualFilterCriteria.FilterType(rawValue: key),
+               let option = FilterSuccessRateOption(rawValue: stringValue) {
+                filters.append(IndividualFilterCriteria(type: filterType, selectedOption: option))
             }
         }
 
         let dateFormatter = ISO8601DateFormatter()
-        let createdAtDate = dateFormatter.date(from: createdAt) ?? Date()
+        _ = dateFormatter.date(from: createdAt) ?? Date()
 
-        var filter = FilterCombination(
+        let filter = FilterCombination(
             name: name,
             filters: filters,
             isDefault: isDefault
@@ -237,9 +240,9 @@ final class FilterAPIService: FilterAPIServiceProtocol {
 
     func saveSecuritiesFilter(_ filter: SecuritiesFilterCombination, userId: String) async throws -> SecuritiesFilterCombination {
         let input = ParseFilterInput.from(securitiesFilter: filter, userId: userId)
-        let response: ParseResponse = try await apiClient.createObject(
+        let _: ParseResponse = try await apiClient.createObject(
             className: className,
-            data: try encodeFilterInput(input)
+            object: input
         )
 
         // Return filter with objectId reference (but keep UUID for local use)
@@ -272,7 +275,10 @@ final class FilterAPIService: FilterAPIServiceProtocol {
 
         let responses: [ParseFilterResponse] = try await apiClient.fetchObjects(
             className: className,
-            query: query
+            query: query,
+            include: nil,
+            orderBy: nil,
+            limit: nil
         )
 
         return try responses.compactMap { response in
@@ -284,9 +290,9 @@ final class FilterAPIService: FilterAPIServiceProtocol {
 
     func saveTraderFilter(_ filter: FilterCombination, userId: String) async throws -> FilterCombination {
         let input = ParseFilterInput.from(traderFilter: filter, userId: userId)
-        let response: ParseResponse = try await apiClient.createObject(
+        let _: ParseResponse = try await apiClient.createObject(
             className: className,
-            data: try encodeFilterInput(input)
+            object: input
         )
 
         return filter
@@ -305,7 +311,10 @@ final class FilterAPIService: FilterAPIServiceProtocol {
 
         let responses: [ParseFilterResponse] = try await apiClient.fetchObjects(
             className: className,
-            query: query
+            query: query,
+            include: nil,
+            orderBy: nil,
+            limit: nil
         )
 
         return try responses.compactMap { response in
@@ -325,7 +334,10 @@ final class FilterAPIService: FilterAPIServiceProtocol {
 
         let responses: [ParseFilterResponse] = try await apiClient.fetchObjects(
             className: className,
-            query: query
+            query: query,
+            include: nil,
+            orderBy: nil,
+            limit: nil
         )
 
         // Find matching filter and delete
@@ -336,14 +348,4 @@ final class FilterAPIService: FilterAPIServiceProtocol {
         }
     }
 
-    // MARK: - Private Helpers
-
-    private func encodeFilterInput(_ input: ParseFilterInput) throws -> [String: Any] {
-        let encoder = JSONEncoder()
-        let data = try encoder.encode(input)
-        guard let dictionary = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-            throw FilterAPIServiceError.invalidFilterData
-        }
-        return dictionary
-    }
 }
