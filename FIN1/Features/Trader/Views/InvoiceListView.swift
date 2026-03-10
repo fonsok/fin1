@@ -143,7 +143,7 @@ struct InvoiceListView: View {
     private var emptyStateView: some View {
         VStack(spacing: ResponsiveDesign.spacing(20)) {
             Image(systemName: "doc.text")
-                .font(.system(size: 60))
+                .font(.system(size: ResponsiveDesign.iconSize() * 3))
                 .foregroundColor(.gray)
 
             Text("Keine Rechnungen gefunden")

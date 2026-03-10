@@ -5,13 +5,22 @@ import SwiftUI
 struct TradeStatementReferenceSection: View {
     let taxReportTransactionNumber: String
     let accountNumber: String
+    let referenceText: String
     let legalDisclaimer: String
+    let footerNote: String
+
+    // Defaults used as local fallback and for server-driven snippets
+    static let defaultReferenceText: String =
+        "Der Differenzbetrag zwischen ∑ Ergebnis vor Steuern und dem auf Ihrem Konto überwiesenen Betrag resultiert aus dem Steuerabzug. Dies wird gemäß den gesetzlichen Vorgaben durchgeführt und transparent in Ihren Kontoauszügen sowie Steuerunterlagen ausgewiesen.\nSteuerpflicht besteht nur, wenn der Verkaufserlös die Anschaffungskosten übersteigt. Die Berechnung basiert auf dem Prinzip der Verrechnung der Kauf- und Verkaufskosten (First-in-First-out oder Durchschnittskostenermittlung).\nDetails dazu finden Sie im Steuerreport unter der Transaktion-Nr.:"
+
+    static let defaultFooterNote: String =
+        "Diese Mitteilung ist maschinell erstellt und wird nicht unterschrieben.\nFür weitergehende Fragen wenden Sie sich bitte an Ihr Fin1-Service-Team."
 
     var body: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(16)) {
             // Reference Information
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
-                Text("Der Differenzbetrag zwischen ∑ Ergebnis vor Steuern und dem auf Ihrem Konto überwiesenen Betrag resultiert aus dem Steuerabzug. Dies wird gemäß den gesetzlichen Vorgaben durchgeführt und transparent in Ihren Kontoauszügen sowie Steuerunterlagen ausgewiesen.\nSteuerpflicht besteht nur, wenn der Verkaufserlös die Anschaffungskosten übersteigt. Die Berechnung basiert auf dem Prinzip der Verrechnung der Kauf- und Verkaufskosten (First-in-First-out oder Durchschnittskostenermittlung).\nDetails dazu finden Sie im Steuerreport unter der Transaktion-Nr.:")
+                Text(referenceText)
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(DocumentDesignSystem.textColorSecondary)
 
@@ -40,7 +49,7 @@ struct TradeStatementReferenceSection: View {
                     .multilineTextAlignment(.leading)
 
                 // Additional disclaimer text
-                Text("Diese Mitteilung ist maschinell erstellt und wird nicht unterschrieben.\nFür weitergehende Fragen wenden Sie sich bitte an Ihr Fin1-Service-Team.")
+                Text(footerNote)
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(DocumentDesignSystem.textColorSecondary)
                     .multilineTextAlignment(.leading)
@@ -58,7 +67,9 @@ struct TradeStatementReferenceSection_Previews: PreviewProvider {
         TradeStatementReferenceSection(
             taxReportTransactionNumber: "288/1",
             accountNumber: "DE89 3704 0044 0532 0130 00",
-            legalDisclaimer: "Dieses Dokument dient als Beleg für Ihre Wertpapiergeschäfte..."
+            referenceText: TradeStatementReferenceSection.defaultReferenceText,
+            legalDisclaimer: TradeStatementDisplayDataBuilder.defaultLegalDisclaimer,
+            footerNote: TradeStatementReferenceSection.defaultFooterNote
         )
         .padding()
     }

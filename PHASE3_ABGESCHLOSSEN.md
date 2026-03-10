@@ -6,8 +6,8 @@
 ## ✅ Erfolgreich durchgeführte Schritte
 
 ### 1. Parse Server URLs konfiguriert ✅
-- **PARSE_SERVER_PUBLIC_SERVER_URL:** `http://192.168.178.24:1337/parse`
-- **PARSE_SERVER_LIVE_QUERY_SERVER_URL:** `ws://192.168.178.24:1337/parse`
+- **PARSE_SERVER_PUBLIC_SERVER_URL:** `https://192.168.178.24/parse`
+- **PARSE_SERVER_LIVE_QUERY_SERVER_URL:** `wss://192.168.178.24/parse`
 - **Backup erstellt:** `.env.backup.[timestamp]`
 
 ### 2. CORS-Einstellungen angepasst ✅
@@ -27,8 +27,8 @@
    - Erreichbar vom Mac aus
 
 2. ✅ **Parse Server URLs korrekt konfiguriert**
-   - HTTP: `http://192.168.178.24:1337/parse`
-   - WebSocket: `ws://192.168.178.24:1337/parse`
+   - HTTP: `https://192.168.178.24/parse`
+   - WebSocket: `wss://192.168.178.24/parse`
 
 3. ✅ **CORS für lokales Netzwerk konfiguriert**
    - Ermöglicht Zugriff vom iOS-Simulator
@@ -36,7 +36,7 @@
 ## Nächste Schritte: Phase 4
 
 1. iOS-App konfigurieren:
-   - Parse Server URL auf `http://192.168.178.24:1337/parse` setzen
+   - Parse Server URL auf `https://192.168.178.24/parse` setzen
    - ATS-Einstellungen anpassen (Info.plist)
 
 2. End-to-End-Test:

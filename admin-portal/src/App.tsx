@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import { Layout } from './components/Layout';
+import { CSRRedirectGuard } from './components/CSRRedirectGuard';
 import { LoginPage } from './pages/Login';
 import { DashboardPage } from './pages/Dashboard';
 import { UserListPage, UserDetailPage } from './pages/Users';
@@ -13,10 +14,16 @@ import { SecurityDashboardPage } from './pages/Security';
 import { SettingsPage } from './pages/Settings';
 import { ConfigurationPage } from './pages/Configuration';
 import { SystemHealthPage } from './pages/System';
+import { TemplatesPage } from './pages/Templates';
+import { FAQsPage } from './pages/FAQs';
+import { TermsPage } from './pages/Terms';
+import { OnboardingFunnelPage } from './pages/Onboarding';
+import { SummaryReportPage, BankContraLedgerPage } from './pages/Reports';
+import { CSRApp } from './csr-portal/CSRApp';
 
-// Protected Route Wrapper
+// Protected Route Wrapper for ADMIN routes only
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading, needs2FAVerification } = useAuth();
+  const { isAuthenticated, isLoading, needs2FAVerification, user } = useAuth();
 
   if (isLoading) {
     return (
@@ -33,12 +40,22 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/login" replace />;
   }
 
+  // CRITICAL: Block CSR users from accessing admin routes - redirect to CSR portal
+  if (isAuthenticated && user?.role === 'customer_service') {
+    return <Navigate to="/csr" replace />;
+  }
+
+  // Block non-admin roles
+  if (isAuthenticated && user?.role !== 'admin' && user?.role !== 'business_admin' && user?.role !== 'security_officer' && user?.role !== 'compliance') {
+    return <Navigate to="/login" replace />;
+  }
+
   return <>{children}</>;
 }
 
 // Public Route Wrapper (redirects to dashboard if already authenticated)
 function PublicRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
 
   if (isLoading) {
     return (
@@ -49,6 +66,10 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (isAuthenticated) {
+    // Redirect CSR users to CSR portal, admin users to admin dashboard
+    if (user?.role === 'customer_service') {
+      return <Navigate to="/csr" replace />;
+    }
     return <Navigate to="/" replace />;
   }
 
@@ -58,7 +79,10 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <Routes>
-      {/* Public Routes */}
+      {/* CSR Portal Routes - Separate App */}
+      <Route path="/csr/*" element={<CSRApp />} />
+
+      {/* Admin Portal Routes */}
       <Route
         path="/login"
         element={
@@ -68,29 +92,37 @@ export default function App() {
         }
       />
 
-      {/* Protected Routes */}
+      {/* Protected Admin Routes */}
       <Route
         path="/*"
         element={
-          <ProtectedRoute>
-            <Layout>
-              <Routes>
-                <Route path="/" element={<DashboardPage />} />
-                <Route path="/users" element={<UserListPage />} />
-                <Route path="/users/:userId" element={<UserDetailPage />} />
-                <Route path="/tickets" element={<TicketListPage />} />
-                <Route path="/compliance" element={<ComplianceEventsPage />} />
-                <Route path="/finance" element={<FinanceDashboardPage />} />
-                <Route path="/security" element={<SecurityDashboardPage />} />
-                <Route path="/approvals" element={<ApprovalsListPage />} />
-                <Route path="/audit" element={<AuditLogsPage />} />
-                <Route path="/configuration" element={<ConfigurationPage />} />
-                <Route path="/system" element={<SystemHealthPage />} />
-                <Route path="/settings" element={<SettingsPage />} />
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-            </Layout>
-          </ProtectedRoute>
+          <CSRRedirectGuard>
+            <ProtectedRoute>
+              <Layout>
+                <Routes>
+                  <Route path="/" element={<DashboardPage />} />
+                  <Route path="/users" element={<UserListPage />} />
+                  <Route path="/users/:userId" element={<UserDetailPage />} />
+                  <Route path="/tickets" element={<TicketListPage />} />
+                  <Route path="/onboarding" element={<OnboardingFunnelPage />} />
+                  <Route path="/compliance" element={<ComplianceEventsPage />} />
+                  <Route path="/finance" element={<FinanceDashboardPage />} />
+                  <Route path="/security" element={<SecurityDashboardPage />} />
+                  <Route path="/approvals" element={<ApprovalsListPage />} />
+                  <Route path="/audit" element={<AuditLogsPage />} />
+                  <Route path="/configuration" element={<ConfigurationPage />} />
+                  <Route path="/reports" element={<SummaryReportPage />} />
+                  <Route path="/bank-ledger" element={<BankContraLedgerPage />} />
+                  <Route path="/system" element={<SystemHealthPage />} />
+                  <Route path="/templates" element={<TemplatesPage />} />
+                  <Route path="/faqs" element={<FAQsPage />} />
+                  <Route path="/terms" element={<TermsPage />} />
+                  <Route path="/settings" element={<SettingsPage />} />
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </Layout>
+            </ProtectedRoute>
+          </CSRRedirectGuard>
         }
       />
     </Routes>

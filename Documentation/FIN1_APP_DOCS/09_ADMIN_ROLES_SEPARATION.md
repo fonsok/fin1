@@ -79,7 +79,7 @@ system           - System-Prozesse (kein Login)
 | Daten manuell ändern | ❌ |
 
 **Credentials:**
-- Parse Server URL: `http://192.168.178.24/parse`
+- Parse Server URL: `https://192.168.178.24/parse`
 - Parse App ID: `fin1-app-id`
 - Apple Developer Portal Zugang
 
@@ -110,8 +110,8 @@ system           - System-Prozesse (kein Login)
 
 **WICHTIG:** Dashboard nur per SSH-Tunnel!
 ```bash
-ssh -L 1338:127.0.0.1:1338 io@192.168.178.24
-# Dann: http://localhost:1338/dashboard
+ssh -L 443:127.0.0.1:443 io@192.168.178.24
+# Dann: https://localhost/dashboard/
 ```
 
 ---

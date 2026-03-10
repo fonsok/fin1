@@ -12,6 +12,7 @@ export interface AuthUser {
   role: string;
   firstName?: string;
   lastName?: string;
+  csrSubRole?: string;
   requires2FA: boolean;
   has2FAEnabled: boolean;
   twoFactorEnabled?: boolean;
@@ -20,6 +21,8 @@ export interface AuthUser {
   createdAt?: string;
   lastLogin?: string;
 }
+
+export type User = AuthUser;
 
 interface Permissions {
   role: string;
@@ -98,13 +101,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             role: role,
             firstName: parseUser.firstName,
             lastName: parseUser.lastName,
+            csrSubRole: parseUser.csrSubRole,
             requires2FA: ELEVATED_ROLES.includes(role),
             has2FAEnabled: parseUser.twoFactorEnabled || false,
           };
 
-          // Check if 2FA verification is needed
+          // Check if 2FA verification is needed (CSR users skip 2FA)
+          const isCSRUser = role === 'customer_service';
           const session2FAVerified = sessionStorage.getItem('2fa_verified') === 'true';
-          const needs2FA = user.requires2FA && user.has2FAEnabled && !session2FAVerified;
+          const needs2FA = !isCSRUser && user.requires2FA && user.has2FAEnabled && !session2FAVerified;
 
           if (needs2FA) {
             setState({
@@ -181,12 +186,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         role: role,
         firstName: parseUser.firstName,
         lastName: parseUser.lastName,
+        csrSubRole: parseUser.csrSubRole, // CSR-spezifische Rolle (level1, level2, fraud, etc.)
         requires2FA: ELEVATED_ROLES.includes(role),
         has2FAEnabled: parseUser.twoFactorEnabled || false,
       };
 
-      // Check if 2FA is required
-      if (user.requires2FA && user.has2FAEnabled) {
+      // Check if 2FA is required (skip for CSR users)
+      const isCSRUser = role === 'customer_service';
+      if (!isCSRUser && user.requires2FA && user.has2FAEnabled) {
         setState({
           user,
           permissions: null,
@@ -195,7 +202,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           needs2FAVerification: true,
         });
       } else {
-        // No 2FA required or not set up
+        // No 2FA required or CSR user
         try {
           const permissions = await cloudFunction<Permissions>('getMyPermissions');
           setState({

@@ -60,7 +60,7 @@ docker compose ps
 
 ```bash
 # Health Check
-curl http://192.168.178.20/health
+curl -sk https://192.168.178.20/health
 
 # Sollte eine Antwort zurückgeben
 ```
@@ -127,7 +127,7 @@ cd ~/fin1-server && bash auto-setup-passwords.sh
 docker compose -f docker-compose.production.yml up -d
 
 # 3. Testen
-curl http://192.168.178.20/health
+curl -sk https://192.168.178.20/health
 ```
 
 **Das war's!** 🎉

@@ -64,6 +64,9 @@ final class ServiceLifecycleCoordinator: ObservableObject {
         if let userService = services.userService as? ServiceLifecycle {
             addService("UserService", priority: .critical, service: userService, dependencies: [])
         }
+        if let configurationService = services.configurationService as? ServiceLifecycle {
+            addService("ConfigurationService", priority: .critical, service: configurationService, dependencies: [])
+        }
         if let telemetryService = services.telemetryService as? ServiceLifecycle {
             addService("TelemetryService", priority: .critical, service: telemetryService, dependencies: [])
         }

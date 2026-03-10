@@ -92,7 +92,7 @@ struct IdentificationUploadFrontStep: View {
                         }) {
                             HStack {
                                 Image(systemName: "testtube.2")
-                                    .font(.system(size: 16))
+                                    .font(ResponsiveDesign.bodyFont())
                                     .foregroundColor(AppTheme.accentOrange)
 
                                 Text("Enable Test Mode")

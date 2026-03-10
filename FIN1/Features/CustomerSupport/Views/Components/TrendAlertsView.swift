@@ -137,7 +137,7 @@ struct TrendAlertsView: View {
     private var emptyView: some View {
         VStack(spacing: ResponsiveDesign.spacing(12)) {
             Image(systemName: "checkmark.seal.fill")
-                .font(.system(size: 48))
+                .font(.system(size: ResponsiveDesign.iconSize() * 2))
                 .foregroundColor(AppTheme.accentGreen)
 
             Text("Keine auffälligen Trends")
@@ -343,7 +343,7 @@ private struct TrendStatItem: View {
                     .foregroundColor(AppTheme.fontColor)
             }
             Text(label)
-                .font(.system(size: 10))
+                .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.5))
         }
     }

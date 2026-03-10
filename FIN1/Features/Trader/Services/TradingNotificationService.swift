@@ -235,13 +235,12 @@ final class TradingNotificationService: TradingNotificationServiceProtocol, Serv
         print("🔔 Trade Completion Notification: Trade \(tradeId) completed")
     }
 
-    func sendCommissionSettlementNotification(for trade: Trade, commissionAmount: Double, grossProfit: Double, netProfit: Double) async {
-        // Create commission settlement record data
+    func sendCommissionSettlementNotification(for trade: Trade, commissionAmount: Double, commissionRate: Double, grossProfit: Double, netProfit: Double) async {
         let commissionRecord = CommissionRecord(
             tradeId: trade.id,
             traderId: trade.traderId,
             grossProfit: grossProfit,
-            commissionRate: CalculationConstants.FeeRates.traderCommissionRate,
+            commissionRate: commissionRate,
             commissionAmount: commissionAmount,
             netProfit: netProfit
         )
@@ -336,7 +335,6 @@ final class TradingNotificationService: TradingNotificationServiceProtocol, Serv
 
         // Add invoice to invoice service so it shows up in statements
         await invoiceService.addInvoice(creditNoteInvoice)
-        print("📄 Credit Note added to invoice service: \(creditNoteInvoice.invoiceNumber)")
 
         // Send notification
         print("🔔 Notification: Credit Note \(documentId) is ready for download")

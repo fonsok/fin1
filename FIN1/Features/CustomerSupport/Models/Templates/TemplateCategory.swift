@@ -14,6 +14,7 @@ enum TemplateCategory: String, CaseIterable, Codable {
     case technical = "Technisch"
     case escalation = "Eskalation"
     case closing = "Abschluss"
+    case general = "Allgemein"
 
     var icon: String {
         switch self {
@@ -28,6 +29,7 @@ enum TemplateCategory: String, CaseIterable, Codable {
         case .technical: return "wrench.and.screwdriver.fill"
         case .escalation: return "arrow.up.circle.fill"
         case .closing: return "checkmark.circle.fill"
+        case .general: return "doc.text"
         }
     }
 }

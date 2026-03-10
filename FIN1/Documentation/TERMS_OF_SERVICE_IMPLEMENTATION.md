@@ -89,7 +89,7 @@ The Terms document includes 20 comprehensive sections:
 - Order Fee: 0.5% (min €5, max €50)
 - Exchange Fee: 0.1% (min €1, max €20)
 - Foreign Costs: €1.50
-- Platform Service Charge: 1.5% (investors, includes 19% VAT)
+- Platform Service Charge: 2% (investors, includes 19% VAT)
 - Trader Commission: 10% (configurable)
 
 ### Risk Disclosures

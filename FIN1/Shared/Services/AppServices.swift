@@ -95,10 +95,17 @@ struct AppServices {
     let slaMonitoringService: SLAMonitoringServiceProtocol
     let fourEyesApprovalService: FourEyesApprovalServiceProtocol
     let faqContentService: any FAQContentServiceProtocol
+    let templateAPIService: TemplateAPIServiceProtocol?
+
+    // MARK: - Settlement Services (Backend-Authoritative)
+    let settlementAPIService: (any SettlementAPIServiceProtocol)?
 
     // MARK: - Auth Provider Services
     let authService: AuthServiceProtocol
     let tokenStorage: TokenStorageProtocol
+
+    // MARK: - Onboarding Services
+    let onboardingAPIService: OnboardingAPIServiceProtocol?
 
     // MARK: - Live Instance
     static let live: AppServices = {

@@ -13,13 +13,24 @@ final class InvestorInvestmentStatementViewModel: ObservableObject {
     private let invoiceService: any InvoiceServiceProtocol
     private let calculationService: any InvestorCollectionBillCalculationServiceProtocol
     private let commissionCalculationService: any CommissionCalculationServiceProtocol
+    private let configurationService: any ConfigurationServiceProtocol
+    private let settlementAPIService: (any SettlementAPIServiceProtocol)?
 
     // MARK: - Published Data
     @Published var statementItems: [InvestorInvestmentStatementItem] = []
-    
+    /// True while fetching backend-authoritative collection bill data
+    @Published private(set) var isRefreshingFromBackend = false
+    /// When non-nil, backend fetch failed; user is seeing local/cached data
+    @Published private(set) var backendRefreshMessage: String?
+
     // MARK: - Document Number
     /// Eindeutige Belegnummer für dieses Collection Bill Dokument (gemäß GoB)
     var documentNumber: String?
+
+    /// Admin-configured commission rate (single source of truth via ConfigurationService)
+    var effectiveCommissionRate: Double {
+        configurationService.effectiveCommissionRate
+    }
 
     // MARK: - Initialization
     init(
@@ -28,7 +39,9 @@ final class InvestorInvestmentStatementViewModel: ObservableObject {
         tradeService: any TradeLifecycleServiceProtocol,
         invoiceService: any InvoiceServiceProtocol,
         calculationService: any InvestorCollectionBillCalculationServiceProtocol = InvestorCollectionBillCalculationService(),
-        commissionCalculationService: any CommissionCalculationServiceProtocol = CommissionCalculationService()
+        commissionCalculationService: any CommissionCalculationServiceProtocol = CommissionCalculationService(),
+        configurationService: any ConfigurationServiceProtocol,
+        settlementAPIService: (any SettlementAPIServiceProtocol)? = nil
     ) {
         self.investment = investment
         self.poolTradeParticipationService = poolTradeParticipationService
@@ -36,6 +49,8 @@ final class InvestorInvestmentStatementViewModel: ObservableObject {
         self.invoiceService = invoiceService
         self.calculationService = calculationService
         self.commissionCalculationService = commissionCalculationService
+        self.configurationService = configurationService
+        self.settlementAPIService = settlementAPIService
 
         rebuildStatement()
     }
@@ -55,6 +70,9 @@ final class InvestorInvestmentStatementViewModel: ObservableObject {
 
         let trades = tradeService.completedTrades
         var items: [InvestorInvestmentStatementItem] = []
+
+        let effectiveRate = effectiveCommissionRate
+        print("💰 InvestorInvestmentStatementViewModel: Using commission rate: \(String(format: "%.0f", effectiveRate * 100))%")
 
         for participation in participations {
             guard let trade = trades.first(where: { $0.id == participation.tradeId }) else { continue }
@@ -87,7 +105,8 @@ final class InvestorInvestmentStatementViewModel: ObservableObject {
                     investorAllocatedAmount: participation.allocatedAmount,
                     investmentCapitalAmount: tradeCapitalShare,
                     calculationService: calculationService,
-                    commissionCalculationService: commissionCalculationService
+                    commissionCalculationService: commissionCalculationService,
+                    commissionRate: effectiveRate
                 )
                 items.append(item)
             } catch {
@@ -99,7 +118,8 @@ final class InvestorInvestmentStatementViewModel: ObservableObject {
                     sellInvoices: sellInvoices,
                     ownershipPercentage: participation.ownershipPercentage,
                     investorAllocatedAmount: participation.allocatedAmount,
-                    commissionCalculationService: commissionCalculationService
+                    commissionCalculationService: commissionCalculationService,
+                    commissionRate: effectiveRate
                 )
                 items.append(legacyItem)
             }
@@ -108,6 +128,106 @@ final class InvestorInvestmentStatementViewModel: ObservableObject {
         // Sort statement items by trade completion date
         statementItems = items.sorted { lhs, rhs in
             lhs.tradeDate < rhs.tradeDate
+        }
+    }
+
+    /// Refreshes statement items using backend-authoritative collection bill data where available.
+    func refreshFromBackend() async {
+        guard settlementAPIService != nil else { return }
+
+        isRefreshingFromBackend = true
+        backendRefreshMessage = nil
+        defer { isRefreshingFromBackend = false }
+
+        let participations = poolTradeParticipationService.getParticipations(forInvestmentId: investment.id)
+        guard !participations.isEmpty else { return }
+
+        let totalInvestmentCapital = investment.amount
+        let trades = tradeService.completedTrades
+        var items: [InvestorInvestmentStatementItem] = []
+        let effectiveRate = effectiveCommissionRate
+
+        for participation in participations {
+            guard let trade = trades.first(where: { $0.id == participation.tradeId }) else { continue }
+
+            let allInvoices = invoiceService.getInvoicesForTrade(trade.id)
+            let buyInvoice = allInvoices.first { $0.transactionType == .buy }
+            let sellInvoices = allInvoices.filter { $0.transactionType == .sell }
+
+            let tradeCapitalShare: Double
+            if participations.count == 1 {
+                tradeCapitalShare = totalInvestmentCapital
+            } else {
+                let totalOwnership = participations.reduce(0.0) { $0 + $1.ownershipPercentage }
+                tradeCapitalShare = totalOwnership > 0
+                    ? (totalInvestmentCapital * participation.ownershipPercentage / totalOwnership)
+                    : (totalInvestmentCapital / Double(participations.count))
+            }
+
+            let input = InvestorCollectionBillInput(
+                investmentCapital: tradeCapitalShare,
+                buyPrice: trade.entryPrice,
+                tradeTotalQuantity: trade.totalQuantity,
+                ownershipPercentage: participation.ownershipPercentage,
+                buyInvoice: buyInvoice,
+                sellInvoices: sellInvoices,
+                investorAllocatedAmount: participation.allocatedAmount
+            )
+
+            do {
+                let output = try await calculationService.calculateCollectionBillWithBackend(
+                    input: input,
+                    settlementAPIService: settlementAPIService,
+                    tradeId: trade.id,
+                    investmentId: investment.id,
+                    onUsedLocalFallback: { [weak self] in
+                        Task { @MainActor in
+                            self?.backendRefreshMessage = "Daten werden aus dem lokalen Speicher angezeigt (Server nicht erreichbar)"
+                        }
+                    }
+                )
+
+                let commission = commissionCalculationService.calculateCommission(
+                    grossProfit: output.grossProfit,
+                    rate: effectiveRate
+                )
+                let netAfterComm = commissionCalculationService.calculateNetProfitAfterCommission(
+                    grossProfit: output.grossProfit,
+                    rate: effectiveRate
+                )
+
+                let item = InvestorInvestmentStatementItem(
+                    id: trade.id,
+                    tradeNumber: trade.tradeNumber,
+                    symbol: trade.symbol,
+                    tradeDate: trade.completedAt ?? trade.updatedAt,
+                    buyQuantity: output.buyQuantity,
+                    buyPrice: output.buyPrice,
+                    buyTotal: output.buyAmount,
+                    buyFees: output.buyFees,
+                    buyFeeDetails: output.buyFeeDetails,
+                    sellQuantity: output.sellQuantity,
+                    sellAveragePrice: output.sellAveragePrice,
+                    sellTotal: output.sellAmount,
+                    sellFees: output.sellFees,
+                    sellFeeDetails: output.sellFeeDetails,
+                    grossProfit: output.grossProfit,
+                    ownershipPercentage: participation.ownershipPercentage,
+                    roiGrossProfit: output.roiGrossProfit,
+                    roiInvestedAmount: output.roiInvestedAmount,
+                    tradeROI: trade.displayROI,
+                    commission: commission,
+                    grossProfitAfterCommission: netAfterComm,
+                    residualAmount: output.residualAmount
+                )
+                items.append(item)
+            } catch {
+                print("⚠️ Backend refresh failed for trade \(trade.tradeNumber): \(error.localizedDescription)")
+            }
+        }
+
+        if !items.isEmpty {
+            statementItems = items.sorted { $0.tradeDate < $1.tradeDate }
         }
     }
 }
@@ -222,7 +342,8 @@ struct InvestorInvestmentStatementItem: Identifiable {
         sellInvoices: [Invoice],
         ownershipPercentage: Double,
         investorAllocatedAmount: Double,
-        commissionCalculationService: any CommissionCalculationServiceProtocol = CommissionCalculationService()
+        commissionCalculationService: any CommissionCalculationServiceProtocol = CommissionCalculationService(),
+        commissionRate: Double = CalculationConstants.FeeRates.traderCommissionRate
     ) -> InvestorInvestmentStatementItem {
         // Buy leg
         let buyPrice = trade.entryPrice
@@ -273,8 +394,6 @@ struct InvestorInvestmentStatementItem: Identifiable {
         // ROI profit uses pure securities values (aligned with trader ROI)
         let roiGrossProfit = investorSellValue - roiInvestedAmount
 
-        // Use centralized commission calculation service
-        let commissionRate = CalculationConstants.FeeRates.traderCommissionRate
         let commission = commissionCalculationService.calculateCommission(
             grossProfit: grossProfit,
             rate: commissionRate

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { cloudFunction } from '../../api/admin';
 import { Card, Button, Badge, getStatusVariant } from '../../components/ui';
 import { formatDateTime } from '../../utils/format';
@@ -20,6 +21,9 @@ interface Ticket {
 }
 
 export function TicketListPage() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const isCSRRoute = location.pathname.startsWith('/csr');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [priorityFilter, setPriorityFilter] = useState<string>('');
 
@@ -147,7 +151,11 @@ export function TicketListPage() {
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {data.tickets.map((ticket) => (
-                  <tr key={ticket.objectId} className="hover:bg-gray-50">
+                  <tr
+                    key={ticket.objectId}
+                    className="hover:bg-gray-50 cursor-pointer"
+                    onClick={() => navigate(isCSRRoute ? `/csr/tickets/${ticket.objectId}` : `/tickets/${ticket.objectId}`)}
+                  >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="text-sm font-mono text-fin1-primary">
                         #{ticket.ticketNumber || ticket.objectId.slice(0, 8)}

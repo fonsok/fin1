@@ -192,17 +192,17 @@ docker compose logs -f
 
 ```bash
 # Health Check
-curl http://192.168.178.50/health  # Ubuntu-IP einsetzen
+curl -sk https://192.168.178.50/health  # Ubuntu-IP einsetzen
 
 # Parse Server
-curl http://192.168.178.50:1338/parse/health
+curl -sk https://192.168.178.50/parse/health
 ```
 
 ### Im Browser:
 
-- **Health Check:** `http://192.168.178.50/health`
-- **Parse Dashboard:** `http://192.168.178.50:1338/dashboard`
-- **MinIO Console:** `http://192.168.178.50:9001`
+- **Health Check:** `https://192.168.178.50/health`
+- **Parse Dashboard:** nur per SSH-Tunnel (`ssh -L 443:127.0.0.1:443 user@ubuntu-ip` → `https://localhost/dashboard/`)
+- **MinIO Console:** nur localhost (Port 9003 nach Hardening)
 
 **✅ Fertig:** Server läuft und antwortet
 
@@ -214,7 +214,7 @@ curl http://192.168.178.50:1338/parse/health
 
 In der iOS-App die API-URL ändern:
 - Von: `http://localhost:1337/parse`
-- Zu: `http://192.168.178.50:1338/parse` (Ubuntu-IP einsetzen)
+- Zu: `https://192.168.178.50/parse` (Ubuntu-IP einsetzen)
 
 ---
 

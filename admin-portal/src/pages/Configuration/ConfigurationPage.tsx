@@ -20,11 +20,11 @@ const PARAMETER_DEFINITIONS: Record<string, Omit<ConfigurationParameter, 'value'
   initialAccountBalance: {
     key: 'initialAccountBalance',
     displayName: 'Initial Account Balance',
-    description: 'Startguthaben für neue Benutzerkonten',
+    description: 'Startguthaben für neue Benutzerkonten (Trader & Investor)',
     type: 'currency',
     category: 'financial',
     isCritical: true,
-    min: 1000,
+    min: 0.01,
     max: 1000000,
   },
   platformServiceChargeRate: {
@@ -44,24 +44,81 @@ const PARAMETER_DEFINITIONS: Record<string, Omit<ConfigurationParameter, 'value'
     type: 'currency',
     category: 'financial',
     isCritical: false,
-    min: 1,
+    min: 0.01,
     max: 1000,
   },
   poolBalanceDistributionThreshold: {
     key: 'poolBalanceDistributionThreshold',
     displayName: 'Pool Distribution Threshold',
-    description: 'Schwellenwert für die Pool-Verteilung',
+    description: 'Schwellenwert für die Pool-Verteilung. Logik noch nicht implementiert; reserviert für spätere Option „Restbeträge sammeln bis Schwellenwert“, dann Auszahlung.',
     type: 'currency',
     category: 'financial',
     isCritical: false,
     min: 1,
     max: 100,
   },
+  maximumRiskExposurePercent: {
+    key: 'maximumRiskExposurePercent',
+    displayName: 'Maximum Risk Exposure (%)',
+    description: 'Empfohlener maximaler Prozentsatz des Vermögens, der dem Risiko ausgesetzt werden soll (Dashboard-Hinweis)',
+    type: 'percent_display',
+    category: 'display',
+    isCritical: false,
+    min: 0,
+    max: 100,
+  },
+  walletFeatureEnabled: {
+    key: 'walletFeatureEnabled',
+    displayName: 'Wallet-Feature aktiv',
+    description: 'Wallet-Anzeige (Ein-/Auszahlung, Konto) in der App. Deaktivieren, bis Krypto-Handel optional angeboten wird.',
+    type: 'boolean',
+    category: 'display',
+    isCritical: false,
+  },
 };
 
 interface ConfigResponse {
-  config: Record<string, number | string | boolean>;
-  pendingChanges: PendingConfigChange[];
+  config?: Record<string, number | string | boolean>;
+  financial?: Record<string, number>;
+  limits?: Record<string, number>;
+  display?: Record<string, number | string | boolean>;
+  pendingChanges?: PendingConfigChange[];
+}
+
+// Client-side defaults matching backend configHelper.js DEFAULT_CONFIG
+const DEFAULT_VALUES: Record<string, number> = {
+  traderCommissionRate: 0.10,
+  initialAccountBalance: 1.0,
+  platformServiceChargeRate: 0.02,
+  minimumCashReserve: 20.0,
+  poolBalanceDistributionThreshold: 5.0,
+  maximumRiskExposurePercent: 2.0,
+  walletFeatureEnabled: 0,
+};
+
+/**
+ * Extract a flat config map from the backend response.
+ * Handles both formats:
+ *   - New: { config: { traderCommissionRate: 0.10, ... } }
+ *   - Old: { financial: { traderCommissionRate: 0.10, ... }, limits: { ... } }
+ * Falls back to client-side defaults for any missing keys.
+ */
+function resolveConfig(data: ConfigResponse | undefined): Record<string, number | string | boolean> {
+  if (!data) return { ...DEFAULT_VALUES };
+
+  // Prefer flat `config` if present, otherwise merge financial + limits; always merge display
+  const base = (data.config && Object.keys(data.config).length > 0)
+    ? data.config
+    : { ...data.financial, ...data.limits };
+  const display = data.display || {};
+  const raw: Record<string, number | string | boolean> = { ...base, ...display };
+
+  // Fill any missing keys from defaults (so every defined parameter has a value)
+  const merged: Record<string, number | string | boolean> = { ...DEFAULT_VALUES };
+  for (const [k, v] of Object.entries(raw)) {
+    if (v !== undefined && v !== null) merged[k] = v;
+  }
+  return merged;
 }
 
 export function ConfigurationPage() {
@@ -85,7 +142,7 @@ export function ConfigurationPage() {
 
   // Request change mutation
   const requestChangeMutation = useMutation({
-    mutationFn: (params: { parameterName: string; newValue: number; reason: string }) =>
+    mutationFn: (params: { parameterName: string; newValue: number | boolean; reason: string }) =>
       cloudFunction('requestConfigurationChange', params),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['configuration'] });
@@ -106,12 +163,16 @@ export function ConfigurationPage() {
     if (!editingParam || !changeReason.trim()) return;
 
     const def = PARAMETER_DEFINITIONS[editingParam];
-    let newValue = parseFloat(editValue);
+    let newValue: number | boolean;
 
-    // Validate
-    if (isNaN(newValue)) return;
-    if (def.min !== undefined && newValue < def.min) return;
-    if (def.max !== undefined && newValue > def.max) return;
+    if (def.type === 'boolean') {
+      newValue = editValue === 'true' || editValue === '1';
+    } else {
+      newValue = parseFloat(editValue);
+      if (isNaN(newValue)) return;
+      if (def.min !== undefined && newValue < def.min) return;
+      if (def.max !== undefined && newValue > def.max) return;
+    }
 
     requestChangeMutation.mutate({
       parameterName: editingParam,
@@ -122,15 +183,23 @@ export function ConfigurationPage() {
 
   const formatValue = (key: string, value: number | string | boolean): string => {
     const def = PARAMETER_DEFINITIONS[key];
-    if (!def) return String(value);
+    if (!def) return String(value ?? '');
 
+    if (def.type === 'boolean') {
+      const on = value === true || value === 'true' || value === 1 || value === '1';
+      return on ? 'Aktiv' : 'Deaktiviert';
+    }
+
+    const num = Number(value);
     switch (def.type) {
       case 'percentage':
-        return formatPercentage(Number(value));
+        return formatPercentage(num);
+      case 'percent_display':
+        return `${Number.isFinite(num) ? num : 0} %`;
       case 'currency':
-        return formatCurrency(Number(value));
+        return formatCurrency(num);
       default:
-        return String(value);
+        return String(value ?? '');
     }
   };
 
@@ -157,10 +226,11 @@ export function ConfigurationPage() {
     );
   }
 
-  const config = data?.config || {};
+  const config = resolveConfig(data);
 
   // Group parameters by category
   const financialParams = Object.entries(PARAMETER_DEFINITIONS).filter(([_, def]) => def.category === 'financial');
+  const displayParams = Object.entries(PARAMETER_DEFINITIONS).filter(([_, def]) => def.category === 'display');
 
   return (
     <div className="space-y-6">
@@ -254,13 +324,18 @@ export function ConfigurationPage() {
                             value={editValue}
                             onChange={(e) => setEditValue(e.target.value)}
                             className="w-32"
-                            step={def.type === 'percentage' ? '0.01' : '1'}
+                            step={def.type === 'percentage' ? '0.01' : def.type === 'percent_display' ? '1' : '0.01'}
                             min={def.min}
                             max={def.max}
                           />
                           {def.type === 'percentage' && (
                             <span className="text-sm text-gray-500">
-                              ({(parseFloat(editValue) * 100).toFixed(0)}%)
+                              ({(parseFloat(editValue) * 100).toFixed(0)} %)
+                            </span>
+                          )}
+                          {def.type === 'percent_display' && (
+                            <span className="text-sm text-gray-500">
+                              ({parseFloat(editValue || '0').toFixed(0)} %)
                             </span>
                           )}
                         </div>
@@ -321,6 +396,130 @@ export function ConfigurationPage() {
           })}
         </div>
       </Card>
+
+      {/* Display Parameters */}
+      {displayParams.length > 0 && (
+        <Card>
+          <h3 className="text-md font-semibold mb-4 flex items-center gap-2">
+            <svg className="w-5 h-5 text-fin1-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
+            Anzeige
+          </h3>
+
+          <div className="divide-y divide-gray-100">
+            {displayParams.map(([key, def]) => {
+              const value = config[key];
+              const isEditing = editingParam === key;
+              const hasPendingChange = pendingData?.requests?.some(c => c.parameterName === key);
+
+              return (
+                <div key={key} className="py-4 first:pt-0 last:pb-0">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{def.displayName}</span>
+                        {hasPendingChange && (
+                          <Badge variant="info" size="sm">Änderung ausstehend</Badge>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-500 mt-1">{def.description}</p>
+
+                      {isEditing ? (
+                        <div className="mt-3 space-y-3">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-gray-500">Aktuell:</span>
+                            <span className="font-medium">{formatValue(key, value)}</span>
+                          </div>
+                          {def.type === 'boolean' ? (
+                            <div className="flex items-center gap-2">
+                              <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={editValue === 'true' || editValue === '1'}
+                                  onChange={(e) => setEditValue(e.target.checked ? 'true' : 'false')}
+                                  className="rounded border-gray-300"
+                                />
+                                <span className="text-sm">{editValue === 'true' || editValue === '1' ? 'Aktiv' : 'Deaktiviert'}</span>
+                              </label>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <Input
+                                type="number"
+                                value={editValue}
+                                onChange={(e) => setEditValue(e.target.value)}
+                                className="w-32"
+                                step={def.type === 'percent_display' ? '1' : '0.01'}
+                                min={def.min}
+                                max={def.max}
+                              />
+                              {def.type === 'percent_display' && (
+                                <span className="text-sm text-gray-500">
+                                  ({parseFloat(editValue || '0').toFixed(0)} %)
+                                </span>
+                              )}
+                            </div>
+                          )}
+                          <div>
+                            <Input
+                              placeholder="Begründung für die Änderung..."
+                              value={changeReason}
+                              onChange={(e) => setChangeReason(e.target.value)}
+                              className="w-full"
+                            />
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              onClick={handleSaveChange}
+                              loading={requestChangeMutation.isPending}
+                              disabled={!changeReason.trim()}
+                            >
+                              Speichern
+                            </Button>
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => setEditingParam(null)}
+                            >
+                              Abbrechen
+                            </Button>
+                          </div>
+                          {requestChangeMutation.isError && (
+                            <p className="text-sm text-red-500">Fehler beim Speichern</p>
+                          )}
+                          {requestChangeMutation.isSuccess && (
+                            <p className="text-sm text-green-600">Wert aktualisiert</p>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="mt-2 flex items-center gap-4">
+                          <span className="text-lg font-semibold text-fin1-primary">
+                            {formatValue(key, value)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {!isEditing && (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => handleStartEdit(key, value)}
+                        disabled={hasPendingChange}
+                      >
+                        Bearbeiten
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
 
       {/* Info Box */}
       <Card className="bg-blue-50 border-blue-200">

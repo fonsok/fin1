@@ -27,7 +27,8 @@ final class AccountStatementViewModel: ObservableObject {
     private let configurationService: any ConfigurationServiceProtocol
     private let traderDataService: (any TraderDataServiceProtocol)?
     private let paymentService: (any PaymentServiceProtocol)?
-    
+    private let settlementAPIService: (any SettlementAPIServiceProtocol)?
+
     private var cancellables = Set<AnyCancellable>()
 
     // MARK: - Initialization
@@ -39,12 +40,13 @@ final class AccountStatementViewModel: ObservableObject {
         self.configurationService = services.configurationService
         self.traderDataService = services.traderDataService
         self.paymentService = services.paymentService
-        
+        self.settlementAPIService = services.settlementAPIService
+
         setupNotificationObservers()
     }
-    
+
     // MARK: - Setup
-    
+
     private func setupNotificationObservers() {
         // Investor balance changed
         NotificationCenter.default.publisher(for: .investorBalanceDidChange)
@@ -61,7 +63,7 @@ final class AccountStatementViewModel: ObservableObject {
                 self.refresh()
             }
             .store(in: &cancellables)
-        
+
         // Trader balance changed
         NotificationCenter.default.publisher(for: .traderBalanceDidChange)
             .receive(on: DispatchQueue.main)
@@ -77,7 +79,7 @@ final class AccountStatementViewModel: ObservableObject {
                 self.refresh()
             }
             .store(in: &cancellables)
-        
+
         // Wallet transaction completed
         NotificationCenter.default.publisher(for: .walletTransactionCompleted)
             .receive(on: DispatchQueue.main)
@@ -92,7 +94,7 @@ final class AccountStatementViewModel: ObservableObject {
                 self.refresh()
             }
             .store(in: &cancellables)
-        
+
         // Parse Live Query updates for Wallet Transactions
         NotificationCenter.default.publisher(for: .parseLiveQueryObjectUpdated)
             .receive(on: DispatchQueue.main)
@@ -106,8 +108,20 @@ final class AccountStatementViewModel: ObservableObject {
                       userId == self.userService.currentUser?.id else {
                     return
                 }
-                
+
                 // Refresh account statement when wallet transaction is updated via Live Query
+                self.refresh()
+            }
+            .store(in: &cancellables)
+
+        // Invoice added/changed (credit notes, trade invoices)
+        NotificationCenter.default.publisher(for: .invoiceDidChange)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                guard let self = self,
+                      self.userService.currentUser != nil else {
+                    return
+                }
                 self.refresh()
             }
             .store(in: &cancellables)
@@ -122,7 +136,7 @@ final class AccountStatementViewModel: ObservableObject {
             await MainActor.run {
                 isLoading = true
             }
-            
+
             defer {
                 Task { @MainActor in
                     isLoading = false
@@ -189,59 +203,38 @@ final class AccountStatementViewModel: ObservableObject {
     // MARK: - Private Builders
 
     private func buildInvestorStatement(for user: User) async {
-        do {
-            // Load investment + wallet transactions (single source of truth)
-            let snapshot = try await InvestorAccountStatementBuilder.buildSnapshotWithWallet(
-                for: user,
-                investorCashBalanceService: investorCashBalanceService,
-                paymentService: paymentService
-            )
+        let snapshot = await InvestorAccountStatementBuilder.buildSnapshotWithWallet(
+            for: user,
+            investorCashBalanceService: investorCashBalanceService,
+            paymentService: paymentService,
+            settlementAPIService: settlementAPIService
+        )
 
-            await MainActor.run {
-                openingBalance = snapshot.openingBalance
-                currentBalance = snapshot.closingBalance
-                // Entries are already sorted by InvestorAccountStatementBuilder (newest first)
-                entries = snapshot.entries
-                errorMessage = nil
-            }
-        } catch {
-            let appError = error.toAppError()
-            await MainActor.run {
-                errorMessage = appError.errorDescription ?? "Failed to load account statement"
-                entries = []
-                filteredEntries = []
-            }
+        await MainActor.run {
+            openingBalance = snapshot.openingBalance
+            currentBalance = snapshot.closingBalance
+            entries = snapshot.entries
+            errorMessage = nil
         }
     }
 
     private func buildTraderStatement(for user: User) async {
-        do {
-            // Load trading + wallet transactions (single source of truth)
-            let snapshot = try await TraderAccountStatementBuilder.buildSnapshotWithWallet(
-                for: user,
-                invoiceService: invoiceService,
-                configurationService: configurationService,
-                paymentService: paymentService
-            )
-            
-            // Calculate opening balance from all entries
-            let totalDelta = snapshot.entries.reduce(0) { $0 + $1.signedAmount }
-            let calculatedOpening = snapshot.closingBalance - totalDelta
+        let snapshot = await TraderAccountStatementBuilder.buildSnapshotWithWallet(
+            for: user,
+            invoiceService: invoiceService,
+            configurationService: configurationService,
+            paymentService: paymentService,
+            settlementAPIService: settlementAPIService
+        )
 
-            await MainActor.run {
-                openingBalance = max(0, calculatedOpening)
-                currentBalance = snapshot.closingBalance
-                // Entries are already sorted by TraderAccountStatementBuilder (newest first)
-                entries = snapshot.entries
-                errorMessage = nil
-            }
-        } catch {
-            let appError = error.toAppError()
-            await MainActor.run {
-                errorMessage = appError.errorDescription ?? "Failed to load account statement"
-                entries = []
-                filteredEntries = []
-            }
+        let totalDelta = snapshot.entries.reduce(0) { $0 + $1.signedAmount }
+        let calculatedOpening = snapshot.closingBalance - totalDelta
+
+        await MainActor.run {
+            openingBalance = max(0, calculatedOpening)
+            currentBalance = snapshot.closingBalance
+            entries = snapshot.entries
+            errorMessage = nil
         }
     }
 

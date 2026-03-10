@@ -14,9 +14,9 @@ Diese Parameter erfordern eine Genehmigung durch einen zweiten Administrator:
 
 | Parameter | Standard | Cloud Function | Beschreibung |
 |-----------|----------|----------------|--------------|
-| `traderCommissionRate` | 5% (0.05) | `requestConfigurationChange` | Trader-Provision |
-| `initialAccountBalance` | €50.000 | `requestConfigurationChange` | Startguthaben |
-| `platformServiceChargeRate` | 1.5% (0.015) | `requestConfigurationChange` | Plattformgebühr |
+| `traderCommissionRate` | 10% (0.10) | `requestConfigurationChange` | Trader-Provision |
+| `initialAccountBalance` | €1,00 | `requestConfigurationChange` | Startguthaben |
+| `platformServiceChargeRate` | 2% (0.02) | `requestConfigurationChange` | Plattformgebühr |
 
 **Workflow:**
 1. Admin A beantragt Änderung → `FourEyesRequest` wird erstellt
@@ -31,7 +31,7 @@ Diese Parameter erfordern eine Genehmigung durch einen zweiten Administrator:
 
 Diese können direkt geändert werden:
 
-- **Minimum Cash Reserve**: Standard €12.00, konfigurierbar über `ConfigurationService.updateMinimumCashReserve()`
+- **Minimum Cash Reserve**: Standard €20,00, konfigurierbar über `ConfigurationService.updateMinimumCashReserve()`
 - **Pool Balance Distribution Threshold**: Schwellenwert für Pool-Verteilung
 
 Alle Rates verwenden `effective*` Properties mit Fallback auf `CalculationConstants` Defaults, falls nicht konfiguriert.
@@ -194,8 +194,8 @@ sequenceDiagram
 
 ### 3.1 Basiskonzept (Parse REST + Cloud Functions)
 
-- **Base URL** (Produktion über Nginx): `http://<HOST>/parse`
-  (iOS Default: `http://192.168.178.24/parse`, Dev-Simulator: `http://localhost:1338/parse` via SSH Tunnel)
+- **Base URL** (Produktion über Nginx): `https://<HOST>/parse`
+  (iOS Default: `https://192.168.178.24/parse`, Dev-Simulator: `https://localhost/parse` via SSH Tunnel auf 443)
 - **Cloud Functions**: `POST /parse/functions/<name>`
 - **REST Klassen**: `GET/POST/PUT/DELETE /parse/classes/<ClassName>`
 - **Headers**
@@ -209,7 +209,7 @@ sequenceDiagram
 #### Health/Config
 
 - **`health`** (Cloud): returns `{status,timestamp,version,cloudCode}`
-- **`getConfig`**: params `{environment?}` → liefert Config aus Parse-Klasse `Config` oder Defaults (inkl. `financial`, `features`, `limits`)
+- **`getConfig`**: params `{environment?}` → liefert **finanzielle Parameter aus der Parse-Klasse `Configuration`** (via configHelper) sowie `features`, `limits`, `display`. Die iOS-App synchronisiert diese Werte beim Start über `ConfigurationService.fetchRemoteDisplayConfig()`.
 
 #### User/FAQ
 
@@ -251,10 +251,12 @@ sequenceDiagram
 - **`getAdminDashboard`**: auth required, role in {admin, customer_service, compliance}
 - **`searchUsers`**: auth required, params `{query?, role?, status?, limit?, skip?}` → `{users:[...], total}`
 - **`updateUserStatus`**: auth required, params `{userId, status, reason?}` → `{success:true}` (+ schreibt `AuditLog`)
-- **`getPendingApprovals`**: auth required → `{requests:[...]}`
+- **`getPendingApprovals`**: auth required → `{requests:[...], ownPending:[...], history:[...], allRequests:[...]}` (Freigaben erteilen, eigene Anträge, Abgeschlossen, Alle Anträge). Die Aufteilung in `requests` (Anträge anderer) und `ownPending` (eigene pending Anträge) erfolgt serverseitig per `requesterId`-Vergleich, damit beide Admins korrekt getrennte Listen sehen; `requesterId` wird in der Antwort immer als String zurückgegeben.
 - **`approveRequest`**: auth required, params `{requestId, notes?}` → `{success:true}`
+- **`rejectRequest`**: auth required, params `{requestId, reason}` → `{success:true}`
+- **`withdrawRequest`**: auth required, params `{requestId, reason?}` → `{success:true}` (nur Antragsteller kann eigenen pending Antrag zurückziehen)
 
-**Hinweis**: Finanzielle Konfiguration (z.B. `traderCommissionRate`, `platformServiceChargeRate`) erfolgt über `ConfigurationService` im iOS-Code (admin-only). Backend-Config (`getConfig`) liefert Default-Werte, aber die tatsächliche Konfiguration wird clientseitig verwaltet.
+**Hinweis**: Die finanzielle Konfiguration (z.B. `initialAccountBalance`, `traderCommissionRate`) ist **serverseitig in der Klasse `Configuration`** die Quelle der Wahrheit (Admin-Portal / 4-Augen). Die iOS-App lädt sie beim Start via `getConfig` und speichert sie lokal; `ConfigurationService` ist im `ServiceLifecycleCoordinator` registriert und ruft `fetchRemoteDisplayConfig()` in `start()` auf.
 
 #### Reports
 

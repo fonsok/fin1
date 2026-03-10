@@ -12,6 +12,10 @@ struct PoolBalanceDistributionSection: View {
             Text("Pool Balance Distribution")
                 .font(ResponsiveDesign.headlineFont())
                 .foregroundColor(.primary)
+            Text("Logik noch nicht implementiert; reserviert für spätere Option „Restbeträge sammeln bis Schwellenwert“, dann Auszahlung.")
+                .font(ResponsiveDesign.captionFont())
+                .foregroundColor(.secondary)
+                .italic()
 
             // Strategy Selection
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {

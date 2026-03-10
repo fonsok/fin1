@@ -7,19 +7,15 @@ struct InvestorAccountStatementSnapshot {
 }
 
 enum InvestorAccountStatementBuilder {
-    /// Builds an investor account statement snapshot including wallet transactions
-    /// This is the single source of truth for investor balance calculation
-    /// - Parameters:
-    ///   - user: The investor user
-    ///   - investorCashBalanceService: Service for investment transactions and balance
-    ///   - paymentService: Optional service for wallet transactions
-    /// - Returns: Snapshot with investment + wallet transactions and combined balance
-    /// - Throws: AppError if wallet transactions cannot be loaded
+    /// Builds an investor account statement snapshot including wallet transactions.
+    /// Uses backend `AccountStatement` entries when `settlementAPIService` is provided,
+    /// falling back to local `investorCashBalanceService` ledger entries otherwise.
     static func buildSnapshotWithWallet(
         for user: User?,
         investorCashBalanceService: any InvestorCashBalanceServiceProtocol,
-        paymentService: (any PaymentServiceProtocol)?
-    ) async throws -> InvestorAccountStatementSnapshot {
+        paymentService: (any PaymentServiceProtocol)?,
+        settlementAPIService: (any SettlementAPIServiceProtocol)? = nil
+    ) async -> InvestorAccountStatementSnapshot {
         guard let user = user else {
             let initialBalance = CalculationConstants.Account.initialInvestorBalance
             return InvestorAccountStatementSnapshot(
@@ -29,25 +25,25 @@ enum InvestorAccountStatementBuilder {
             )
         }
 
-        // Load investment transactions (from InvestorCashBalanceService Ledger)
-        let investmentLedger = investorCashBalanceService.getTransactions(for: user.id)
-
-        // Get base balance from service (this includes wallet transactions that were processed via processDeposit/Withdrawal)
         let serviceBalance = investorCashBalanceService.getBalance(for: user.id)
+        let walletEntries = await loadWalletEntries(for: user, paymentService: paymentService)
 
-        // Load wallet transactions (deposits/withdrawals)
-        let walletEntries = try await loadWalletEntries(for: user, paymentService: paymentService)
+        // Try backend entries first; fall back to local ledger
+        let investmentEntries: [AccountStatementEntry]
+        if let settlementService = settlementAPIService {
+            investmentEntries = await loadBackendEntries(
+                for: user,
+                settlementAPIService: settlementService,
+                localFallback: { investorCashBalanceService.getTransactions(for: user.id) }
+            )
+        } else {
+            investmentEntries = investorCashBalanceService.getTransactions(for: user.id)
+        }
 
-        // Combine investment and wallet entries
-        let allEntries = investmentLedger + walletEntries
-
-        // Calculate opening balance from all entries
+        let allEntries = investmentEntries + walletEntries
         let openingBalance = calculateOpeningBalance(serviceBalance: serviceBalance, entries: allEntries)
-
-        // Recalculate balanceAfter for all entries in chronological order
         let recalculatedEntries = recalculateBalanceAfter(entries: allEntries, openingBalance: openingBalance)
 
-        // Return entries sorted by date descending (newest first) for display
         return InvestorAccountStatementSnapshot(
             entries: recalculatedEntries.sorted { $0.occurredAt > $1.occurredAt },
             openingBalance: openingBalance,
@@ -55,18 +51,84 @@ enum InvestorAccountStatementBuilder {
         )
     }
 
+    // MARK: - Backend Integration
+
+    /// Fetches investor account statement entries from the backend and converts them
+    /// to `AccountStatementEntry` objects. Falls back to `localFallback()` on error.
+    private static func loadBackendEntries(
+        for user: User,
+        settlementAPIService: any SettlementAPIServiceProtocol,
+        localFallback: () -> [AccountStatementEntry]
+    ) async -> [AccountStatementEntry] {
+        do {
+            let response = try await settlementAPIService.fetchAccountStatement(
+                limit: 200, skip: 0, entryType: nil
+            )
+            guard !response.entries.isEmpty else {
+                return localFallback()
+            }
+            return response.entries.compactMap { convertBackendEntry($0) }
+        } catch {
+            print("⚠️ InvestorAccountStatementBuilder: Backend entries unavailable (\(error.localizedDescription)) — using local ledger")
+            return localFallback()
+        }
+    }
+
+    /// Converts a single `BackendAccountEntry` to a display `AccountStatementEntry`.
+    private static func convertBackendEntry(_ entry: BackendAccountEntry) -> AccountStatementEntry? {
+        let occurredAt = entry.createdAtDate ?? Date()
+
+        let title: String
+        let direction: AccountStatementEntry.Direction
+        let category: AccountStatementEntry.Category
+
+        switch entry.entryType {
+        case "commission_debit":
+            title = "Commission"
+            direction = .debit
+            category = .commission
+        case "investment_profit":
+            title = "Profit Distribution"
+            direction = .credit
+            category = .profitDistribution
+        default:
+            title = entry.description ?? entry.entryType
+            direction = entry.amount >= 0 ? .credit : .debit
+            category = .tradeSettlement
+        }
+
+        let amount = abs(entry.amount)
+
+        var subtitle: String?
+        if let tradeNumber = entry.tradeNumber {
+            subtitle = String(format: "Trade #%03d", tradeNumber)
+        }
+
+        var metadata: [String: String] = ["source": "backend"]
+        if let tradeId = entry.tradeId { metadata["tradeId"] = tradeId }
+        if let investmentId = entry.investmentId { metadata["investmentId"] = investmentId }
+        if let tradeNumber = entry.tradeNumber { metadata["tradeNumber"] = String(format: "%03d", tradeNumber) }
+
+        return AccountStatementEntry(
+            title: title,
+            subtitle: subtitle,
+            occurredAt: occurredAt,
+            amount: amount,
+            direction: direction,
+            category: category,
+            reference: entry.objectId,
+            metadata: metadata,
+            balanceAfter: entry.balanceAfter
+        )
+    }
+
     // MARK: - Private Helper Methods
 
     /// Loads wallet transactions for the given user
-    /// - Parameters:
-    ///   - user: The investor user
-    ///   - paymentService: Optional payment service
-    /// - Returns: Array of AccountStatementEntry for wallet transactions
-    /// - Throws: AppError if loading fails
     private static func loadWalletEntries(
         for user: User,
         paymentService: (any PaymentServiceProtocol)?
-    ) async throws -> [AccountStatementEntry] {
+    ) async -> [AccountStatementEntry] {
         guard let paymentService = paymentService else {
             return []
         }
@@ -79,9 +141,8 @@ enum InvestorAccountStatementBuilder {
                 AccountStatementEntry.from(transaction: transaction)
             }
         } catch {
-            // Map error to AppError and throw
-            _ = error.toAppError() // Error mapping for potential future use
-            throw AppError.service(.operationFailed)
+            print("⚠️ InvestorAccountStatementBuilder: Wallet transactions unavailable (\(error.localizedDescription)) — showing investment-based entries only")
+            return []
         }
     }
 

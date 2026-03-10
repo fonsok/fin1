@@ -34,31 +34,39 @@ enum InvestmentCashDistributor {
         poolTradeParticipationService: (any PoolTradeParticipationServiceProtocol)?,
         tradeLifecycleService: (any TradeLifecycleServiceProtocol)?,
         invoiceService: (any InvoiceServiceProtocol)?,
-        configurationService: (any ConfigurationServiceProtocol)?
+        configurationService: any ConfigurationServiceProtocol,
+        settlementAPIService: (any SettlementAPIServiceProtocol)? = nil
     ) async {
-        // CRITICAL: Prevent duplicate distribution for the same investment (async-safe)
         let isNew = await distributionState.insertIfNew(investment.id)
         if !isNew {
-            print("⚠️ InvestmentCashDistributor: Cash already distributed for investment \(investment.id) - skipping to prevent double-booking")
+            print("⚠️ InvestmentCashDistributor: Cash already distributed for investment \(investment.id) - skipping")
             return
         }
 
         print("💰 InvestmentCashDistributor: Starting cash distribution for investment \(investment.id)")
 
-        // Get commission rate from admin configuration
-        let commissionRate = configurationService?.effectiveCommissionRate ?? CalculationConstants.FeeRates.traderCommissionRate
+        let commissionRate = configurationService.effectiveCommissionRate
 
-        // Calculate amounts
-        let amounts = calculateDistributionAmounts(
+        // Phase 3: Try backend-authoritative amounts first
+        let amounts: DistributionAmounts
+        if let backendAmounts = await fetchBackendAmounts(
             investment: investment,
-            investmentReservation: investmentReservation,
-            poolTradeParticipationService: poolTradeParticipationService,
-            tradeLifecycleService: tradeLifecycleService,
-            invoiceService: invoiceService,
-            commissionRate: commissionRate
-        )
+            commissionRate: commissionRate,
+            settlementAPIService: settlementAPIService
+        ) {
+            print("✅ InvestmentCashDistributor: Using backend-authoritative amounts")
+            amounts = backendAmounts
+        } else {
+            amounts = calculateDistributionAmounts(
+                investment: investment,
+                investmentReservation: investmentReservation,
+                poolTradeParticipationService: poolTradeParticipationService,
+                tradeLifecycleService: tradeLifecycleService,
+                invoiceService: invoiceService,
+                commissionRate: commissionRate
+            )
+        }
 
-        // 1. Post Net Sell Amount as deposit (only if > 0)
         if amounts.netSellAmount > 0 {
             await investorCashBalanceService.processProfitDistribution(
                 investorId: investment.investorId,
@@ -67,7 +75,6 @@ enum InvestmentCashDistributor {
             )
         }
 
-        // 2. Post Commission as withdrawal (debit)
         if amounts.commissionAmount > 0 {
             let commissionDetails = CommissionDeductionDetails(
                 investmentSequenceNumber: investment.sequenceNumber,
@@ -84,9 +91,6 @@ enum InvestmentCashDistributor {
             )
         }
 
-        // 3. Return residual amount to investor's cash balance (leftover after rounding quantities to whole numbers)
-        // CRITICAL: Residual occurs when rounding down to whole units leaves unused capital
-        // Example: Investment €3,000, buy price €2.51 → quantity 1,187 units → actual cost €2,999.37 → residual €0.63
         if amounts.residualAmount > 0 {
             await investorCashBalanceService.processRemainingBalanceDistribution(
                 investorId: investment.investorId,
@@ -95,11 +99,7 @@ enum InvestmentCashDistributor {
             )
         }
 
-        logDistribution(
-            investment: investment,
-            investmentReservation: investmentReservation,
-            amounts: amounts
-        )
+        logDistribution(investment: investment, investmentReservation: investmentReservation, amounts: amounts)
     }
 
     // MARK: - Private Types
@@ -110,6 +110,59 @@ enum InvestmentCashDistributor {
         let grossProfit: Double
         let tradeNumbers: [String]
         let residualAmount: Double // Leftover amount after rounding quantities to whole numbers
+    }
+
+    // MARK: - Backend Integration
+
+    /// Fetches distribution amounts from backend AccountStatement entries for the investment.
+    /// Returns nil if the backend has no data or the call fails (triggering local fallback).
+    private static func fetchBackendAmounts(
+        investment: Investment,
+        commissionRate: Double,
+        settlementAPIService: (any SettlementAPIServiceProtocol)?
+    ) async -> DistributionAmounts? {
+        guard let api = settlementAPIService else { return nil }
+        do {
+            let response = try await api.fetchAccountStatement(limit: 200, skip: 0, entryType: nil)
+            let investmentEntries = response.entries.filter { $0.investmentId == investment.id }
+            guard !investmentEntries.isEmpty else { return nil }
+
+            var netSell: Double = 0
+            var commission: Double = 0
+            var grossProfit: Double = 0
+            var residual: Double = 0
+            var tradeNumbers: [String] = []
+
+            for entry in investmentEntries {
+                switch entry.entryType {
+                case "sell_proceeds", "profit_distribution":
+                    netSell += entry.amount
+                case "commission_debit":
+                    commission += abs(entry.amount)
+                case "residual_return":
+                    residual += entry.amount
+                default:
+                    break
+                }
+                if let tn = entry.tradeNumber, !tradeNumbers.contains(String(format: "%03d", tn)) {
+                    tradeNumbers.append(String(format: "%03d", tn))
+                }
+            }
+
+            // Gross profit = net sell + commission (commission was deducted from gross)
+            grossProfit = netSell + commission
+
+            return DistributionAmounts(
+                netSellAmount: netSell,
+                commissionAmount: commission,
+                grossProfit: grossProfit,
+                tradeNumbers: tradeNumbers,
+                residualAmount: residual
+            )
+        } catch {
+            print("⚠️ InvestmentCashDistributor: Backend fetch failed — using local fallback: \(error.localizedDescription)")
+            return nil
+        }
     }
 
     // MARK: - Private Helpers

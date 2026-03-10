@@ -4,19 +4,20 @@ import Foundation
 /// Hybrid implementation: Uses Parse Server when available, falls back to in-memory storage
 /// Tracks transaction limits based on risk class and regulatory requirements
 final class TransactionLimitService: TransactionLimitServiceProtocol {
-    
+
     // MARK: - Dependencies
     private let userService: any UserServiceProtocol
     private let auditLoggingService: (any AuditLoggingServiceProtocol)?
     private let parseAPIClient: (any ParseAPIClientProtocol)?
-    
-    // MARK: - State
+
+    // MARK: - State (protected by stateLock)
+    private let stateLock = NSLock()
     private var limits: [String: TransactionLimit] = [:]
     private var transactionHistory: [String: [Date: Double]] = [:] // userId -> [date: amount]
     private var useParseServer: Bool {
         parseAPIClient != nil
     }
-    
+
     // MARK: - Initialization
     init(
         userService: any UserServiceProtocol,
@@ -27,7 +28,7 @@ final class TransactionLimitService: TransactionLimitServiceProtocol {
         self.auditLoggingService = auditLoggingService
         self.parseAPIClient = parseAPIClient
     }
-    
+
     // MARK: - ServiceLifecycle
     func start() async {
         // Load limits from Parse Server if available
@@ -35,103 +36,111 @@ final class TransactionLimitService: TransactionLimitServiceProtocol {
             await loadLimitsFromParseServer()
         }
     }
-    
+
     func stop() async {
         // Save limits to Parse Server if available
         if useParseServer {
             await saveLimitsToParseServer()
         }
     }
-    
+
     func reset() {
+        stateLock.lock()
         limits.removeAll()
         transactionHistory.removeAll()
+        stateLock.unlock()
     }
-    
+
     // MARK: - TransactionLimitServiceProtocol
-    
+
     func checkDailyLimit(userId: String, amount: Double) async throws -> Bool {
         let limits = try await getTransactionLimits(userId: userId)
         let checkResult = limits.canSpend(amount: amount)
-        return checkResult.isAllowed && checkResult.violations.filter { 
+        return checkResult.isAllowed && checkResult.violations.filter {
             if case .dailyLimitExceeded = $0 { return true }
             return false
         }.isEmpty
     }
-    
+
     func checkWeeklyLimit(userId: String, amount: Double) async throws -> Bool {
         let limits = try await getTransactionLimits(userId: userId)
         let checkResult = limits.canSpend(amount: amount)
-        return checkResult.isAllowed && checkResult.violations.filter { 
+        return checkResult.isAllowed && checkResult.violations.filter {
             if case .weeklyLimitExceeded = $0 { return true }
             return false
         }.isEmpty
     }
-    
+
     func checkMonthlyLimit(userId: String, amount: Double) async throws -> Bool {
         let limits = try await getTransactionLimits(userId: userId)
         let checkResult = limits.canSpend(amount: amount)
-        return checkResult.isAllowed && checkResult.violations.filter { 
+        return checkResult.isAllowed && checkResult.violations.filter {
             if case .monthlyLimitExceeded = $0 { return true }
             return false
         }.isEmpty
     }
-    
+
     func getRemainingDailyLimit(userId: String) async throws -> Double {
         let limits = try await getTransactionLimits(userId: userId)
         return limits.remainingDailyLimit
     }
-    
+
     func getRemainingWeeklyLimit(userId: String) async throws -> Double {
         let limits = try await getTransactionLimits(userId: userId)
         return limits.remainingWeeklyLimit
     }
-    
+
     func getRemainingMonthlyLimit(userId: String) async throws -> Double {
         let limits = try await getTransactionLimits(userId: userId)
         return limits.remainingMonthlyLimit
     }
-    
+
     func getRiskClassBasedLimit(userId: String) async throws -> Double {
         let limits = try await getTransactionLimits(userId: userId)
         return limits.riskClassBasedLimit
     }
-    
+
     func checkAllLimits(userId: String, amount: Double) async throws -> TransactionLimitCheckResult {
         let limits = try await getTransactionLimits(userId: userId)
         return limits.canSpend(amount: amount)
     }
-    
+
     func getTransactionLimits(userId: String) async throws -> TransactionLimit {
-        // Return cached limits if available and recent
-        if let cached = limits[userId], 
+        // Return cached limits if available and recent (thread-safe read)
+        stateLock.lock()
+        if let cached = limits[userId],
            Date().timeIntervalSince(cached.lastUpdated) < 300 { // 5 minutes cache
+            stateLock.unlock()
             return cached
         }
-        
-        // Load transaction history from Parse Server if available
-        if useParseServer && transactionHistory[userId] == nil {
+        let needsHistory = useParseServer && transactionHistory[userId] == nil
+        stateLock.unlock()
+
+        if needsHistory {
             await loadTransactionHistoryFromParseServer(userId: userId)
         }
-        
-        // Get user's risk class
+
+        // After await, re-check cache — another concurrent call may have populated it
+        stateLock.lock()
+        if let cached = limits[userId],
+           Date().timeIntervalSince(cached.lastUpdated) < 300 {
+            stateLock.unlock()
+            return cached
+        }
+        stateLock.unlock()
+
         guard let user = userService.currentUser else {
             throw AppError.service(.dataNotFound)
         }
-        
-        // ✅ IMPORTANT: Risk class is calculated during signup (Step 13+) and stored in User.riskTolerance
-        // Use User.riskClass extension which correctly interprets riskTolerance as RiskClass
+
         let riskClass = user.riskClass
-        
-        // Calculate limits based on risk class
         let dailyLimit = CalculationConstants.TransactionLimits.dailyLimit(for: riskClass)
         let weeklyLimit = CalculationConstants.TransactionLimits.weeklyLimit(for: riskClass)
         let monthlyLimit = CalculationConstants.TransactionLimits.monthlyLimit(for: riskClass)
-        let riskClassBasedLimit = dailyLimit // Use daily as base for risk class limit
-        
-        // Calculate spent amounts from transaction history
+        let riskClassBasedLimit = dailyLimit
+
         let (dailySpent, weeklySpent, monthlySpent) = calculateSpentAmounts(userId: userId)
-        
+
         let transactionLimit = TransactionLimit(
             userId: userId,
             dailyLimit: dailyLimit,
@@ -143,26 +152,26 @@ final class TransactionLimitService: TransactionLimitServiceProtocol {
             monthlySpent: monthlySpent,
             riskClass: riskClass
         )
-        
-        // Cache the limits
+
+        // Cache the limits (thread-safe write)
+        stateLock.lock()
         limits[userId] = transactionLimit
-        
-        // Save to Parse Server if available (async, don't wait)
+        stateLock.unlock()
+
         if useParseServer {
-            Task {
-                await saveLimitsToParseServer()
+            Task { [weak self] in
+                await self?.saveLimitsToParseServer()
             }
         }
-        
+
         return transactionLimit
     }
-    
+
     func recordTransaction(userId: String, amount: Double) async throws {
         let now = Date()
         let calendar = Calendar.current
         let dateKey = calendar.startOfDay(for: now)
-        
-        // Save to Parse Server if available
+
         if useParseServer, let parseClient = parseAPIClient {
             do {
                 let parseHistory = ParseTransactionHistory(
@@ -176,23 +185,19 @@ final class TransactionLimitService: TransactionLimitServiceProtocol {
                     object: parseHistory
                 )
             } catch {
-                // Fallback to in-memory if Parse Server fails
                 print("⚠️ Failed to save transaction to Parse Server, using in-memory: \(error.localizedDescription)")
             }
         }
-        
-        // Initialize history if needed
+
+        stateLock.lock()
         if transactionHistory[userId] == nil {
             transactionHistory[userId] = [:]
         }
-        
-        // Add transaction to history
         let currentAmount = transactionHistory[userId]?[dateKey] ?? 0.0
         transactionHistory[userId]?[dateKey] = currentAmount + amount
-        
-        // Invalidate cached limits for this user
         limits.removeValue(forKey: userId)
-        
+        stateLock.unlock()
+
         // ✅ Log limit usage for compliance
         if let auditService = auditLoggingService {
             let complianceEvent = ComplianceEvent(
@@ -209,15 +214,15 @@ final class TransactionLimitService: TransactionLimitServiceProtocol {
             }
         }
     }
-    
+
     // MARK: - Private Methods - Parse Server Integration
-    
+
     private func loadLimitsFromParseServer() async {
         guard let parseClient = parseAPIClient,
               let userId = userService.currentUser?.id else {
             return
         }
-        
+
         do {
             let parseLimits: [ParseTransactionLimit] = try await parseClient.fetchObjects(
                 className: "TransactionLimit",
@@ -226,22 +231,28 @@ final class TransactionLimitService: TransactionLimitServiceProtocol {
                 orderBy: nil,
                 limit: 1
             )
-            
+
             if let parseLimit = parseLimits.first,
                let user = userService.currentUser {
+                stateLock.lock()
                 limits[userId] = parseLimit.toTransactionLimit(riskClass: user.riskClass)
+                stateLock.unlock()
             }
         } catch {
             print("⚠️ Failed to load limits from Parse Server: \(error.localizedDescription)")
         }
     }
-    
+
     private func saveLimitsToParseServer() async {
         guard let parseClient = parseAPIClient else {
             return
         }
-        
-        for (userId, limit) in limits {
+
+        stateLock.lock()
+        let limitsCopy = limits
+        stateLock.unlock()
+
+        for (userId, limit) in limitsCopy {
             do {
                 let parseLimit = ParseTransactionLimit(
                     objectId: nil, // Will be set by Parse Server if new
@@ -255,7 +266,7 @@ final class TransactionLimitService: TransactionLimitServiceProtocol {
                     monthlySpent: limit.monthlySpent,
                     lastUpdated: limit.lastUpdated
                 )
-                
+
                 // Try to find existing limit first
                 let existing: [ParseTransactionLimit] = try await parseClient.fetchObjects(
                     className: "TransactionLimit",
@@ -264,7 +275,7 @@ final class TransactionLimitService: TransactionLimitServiceProtocol {
                     orderBy: nil,
                     limit: 1
                 )
-                
+
                 if let existingLimit = existing.first, let objectId = existingLimit.objectId {
                     // Update existing
                     _ = try await parseClient.updateObject(
@@ -284,17 +295,17 @@ final class TransactionLimitService: TransactionLimitServiceProtocol {
             }
         }
     }
-    
+
     private func loadTransactionHistoryFromParseServer(userId: String) async {
         guard let parseClient = parseAPIClient else {
             return
         }
-        
+
         do {
             let now = Date()
             let calendar = Calendar.current
             let weekAgo = calendar.date(byAdding: .day, value: -7, to: now) ?? now
-            
+
             // Parse Server expects ISO8601 date strings in queries
             let parseHistory: [ParseTransactionHistory] = try await parseClient.fetchObjects(
                 className: "TransactionHistory",
@@ -306,36 +317,41 @@ final class TransactionLimitService: TransactionLimitServiceProtocol {
                 orderBy: "-date",
                 limit: 100
             )
-            
-            // Convert to in-memory format
+
             var history: [Date: Double] = [:]
             for entry in parseHistory {
                 let dateKey = calendar.startOfDay(for: entry.date)
                 let currentAmount = history[dateKey] ?? 0.0
                 history[dateKey] = currentAmount + entry.amount
             }
+            stateLock.lock()
             transactionHistory[userId] = history
+            stateLock.unlock()
         } catch {
             print("⚠️ Failed to load transaction history from Parse Server: \(error.localizedDescription)")
         }
     }
-    
+
     private func calculateSpentAmounts(userId: String) -> (daily: Double, weekly: Double, monthly: Double) {
+        stateLock.lock()
         guard let history = transactionHistory[userId] else {
+            stateLock.unlock()
             return (0.0, 0.0, 0.0)
         }
-        
+        let historyCopy = history
+        stateLock.unlock()
+
         let now = Date()
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: now)
         let weekAgo = calendar.date(byAdding: .day, value: -7, to: now) ?? now
         let monthAgo = calendar.date(byAdding: .day, value: -30, to: now) ?? now
-        
+
         var dailySpent: Double = 0.0
         var weeklySpent: Double = 0.0
         var monthlySpent: Double = 0.0
-        
-        for (date, amount) in history {
+
+        for (date, amount) in historyCopy {
             if date == today {
                 dailySpent += amount
             }
@@ -346,7 +362,7 @@ final class TransactionLimitService: TransactionLimitServiceProtocol {
                 monthlySpent += amount
             }
         }
-        
+
         return (dailySpent, weeklySpent, monthlySpent)
     }
 }

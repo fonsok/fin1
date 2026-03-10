@@ -79,6 +79,11 @@ struct User: Identifiable, Codable, Sendable {
     var acceptedPrivacyPolicyVersion: String?
     var acceptedPrivacyPolicyDate: Date?
 
+    // Onboarding State (synced with backend)
+    var onboardingCompleted: Bool = false
+    var onboardingStep: String?
+    var kycStatus: String?
+
     var lastLoginDate: Date?
     var createdAt: Date
     var updatedAt: Date

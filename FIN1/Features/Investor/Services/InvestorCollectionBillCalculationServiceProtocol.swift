@@ -26,4 +26,14 @@ protocol InvestorCollectionBillCalculationServiceProtocol {
     /// - Parameter input: Input data to validate
     /// - Returns: Validation result with any errors or warnings
     func validateInput(_ input: InvestorCollectionBillInput) -> ValidationResult
+
+    /// Attempts to build a collection bill output from backend data, falling back to local calculation.
+    /// - Parameter onUsedLocalFallback: Optional closure called when backend fetch failed and local calculation was used.
+    func calculateCollectionBillWithBackend(
+        input: InvestorCollectionBillInput,
+        settlementAPIService: (any SettlementAPIServiceProtocol)?,
+        tradeId: String?,
+        investmentId: String?,
+        onUsedLocalFallback: (() -> Void)?  // Callers may pass nil if they do not need fallback notification
+    ) async throws -> InvestorCollectionBillOutput
 }

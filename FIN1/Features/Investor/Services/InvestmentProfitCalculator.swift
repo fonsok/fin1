@@ -16,6 +16,87 @@ struct InvestmentProfitCalculator {
     ///   - investmentCapital: The investor's total investment amount (source of truth)
     ///   - calculationService: Service for proper fee calculations
     /// - Returns: Tuple of (grossProfit, investedAmount) or nil if calculation fails
+    static func calculateInvestorTotalsWithBackend(
+        for participations: [PoolTradeParticipation],
+        invoiceService: any InvoiceServiceProtocol,
+        tradeLifecycleService: any TradeLifecycleServiceProtocol,
+        investmentId: String?,
+        investmentCapital: Double? = nil,
+        calculationService: (any InvestorCollectionBillCalculationServiceProtocol)? = nil,
+        settlementAPIService: (any SettlementAPIServiceProtocol)? = nil
+    ) async -> (grossProfit: Double, investedAmount: Double)? {
+        guard !participations.isEmpty else { return nil }
+
+        var totalGross = 0.0
+        var totalInvested = 0.0
+        let trades = tradeLifecycleService.completedTrades
+        let calcService = calculationService ?? InvestorCollectionBillCalculationService()
+
+        for participation in participations {
+            guard let trade = trades.first(where: { $0.id == participation.tradeId }) else { continue }
+            let invoices = invoiceService.getInvoicesForTrade(trade.id)
+            let buyInvoice = invoices.first { $0.transactionType == .buy }
+            let sellInvoices = invoices.filter { $0.transactionType == .sell }
+
+            let tradeCapitalShare: Double
+            if let capital = investmentCapital {
+                if participations.count == 1 {
+                    tradeCapitalShare = capital
+                } else {
+                    let totalOwnership = participations.reduce(0.0) { $0 + $1.ownershipPercentage }
+                    tradeCapitalShare = totalOwnership > 0
+                        ? (capital * participation.ownershipPercentage / totalOwnership)
+                        : (capital / Double(participations.count))
+                }
+            } else {
+                tradeCapitalShare = participation.allocatedAmount
+            }
+
+            let input = InvestorCollectionBillInput(
+                investmentCapital: tradeCapitalShare,
+                buyPrice: trade.entryPrice,
+                tradeTotalQuantity: trade.totalQuantity,
+                ownershipPercentage: participation.ownershipPercentage,
+                buyInvoice: buyInvoice,
+                sellInvoices: sellInvoices,
+                investorAllocatedAmount: participation.allocatedAmount
+            )
+
+            do {
+                let output = try await calcService.calculateCollectionBillWithBackend(
+                    input: input,
+                    settlementAPIService: settlementAPIService,
+                    tradeId: trade.id,
+                    investmentId: investmentId,
+                    onUsedLocalFallback: nil
+                )
+                totalGross += output.grossProfit
+                let totalBuyCost = output.buyAmount + output.buyFees
+                totalInvested += totalBuyCost
+            } catch {
+                if let output = try? calcService.calculateCollectionBill(input: input) {
+                    totalGross += output.grossProfit
+                    totalInvested += output.buyAmount + output.buyFees
+                } else {
+                    let investorProfit = ProfitCalculationService.calculateInvestorTaxableProfit(
+                        buyInvoice: buyInvoice,
+                        sellInvoices: sellInvoices,
+                        ownershipPercentage: participation.ownershipPercentage
+                    )
+                    totalGross += investorProfit
+                    if trade.totalSoldQuantity > 0 {
+                        let investorDenominator = trade.buyOrder.price * Double(trade.totalSoldQuantity) * participation.ownershipPercentage
+                        totalInvested += investorDenominator
+                    }
+                }
+            }
+        }
+
+        guard totalInvested > 0 else { return nil }
+        return (totalGross, totalInvested)
+    }
+
+    /// Sync version – uses local calculation only. Prefer `calculateInvestorTotalsWithBackend` when backend data is available.
     static func calculateInvestorTotals(
         for participations: [PoolTradeParticipation],
         invoiceService: any InvoiceServiceProtocol,
@@ -186,7 +267,8 @@ struct InvestmentProfitCalculator {
 
     private static func calculateGrossProfitFromAccumulatedProfit(
         investmentId: String,
-        poolTradeParticipationService: (any PoolTradeParticipationServiceProtocol)?
+        poolTradeParticipationService: (any PoolTradeParticipationServiceProtocol)?,
+        commissionRate: Double = CalculationConstants.FeeRates.traderCommissionRate
     ) -> Double {
         guard let poolTradeParticipationService = poolTradeParticipationService else {
             return 0.0
@@ -194,7 +276,7 @@ struct InvestmentProfitCalculator {
 
         let accumulatedProfit = poolTradeParticipationService.getAccumulatedProfit(for: investmentId)
         return accumulatedProfit > 0 ?
-            accumulatedProfit / (1.0 - CalculationConstants.FeeRates.traderCommissionRate) :
+            accumulatedProfit / (1.0 - commissionRate) :
             accumulatedProfit
     }
 }

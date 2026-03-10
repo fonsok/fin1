@@ -87,7 +87,7 @@ struct InitialAccountBalanceSection: View {
     var body: some View {
         ConfigurationInputSection(
             title: "Initial Account Balance",
-            description: "Starting balance for new user accounts",
+            description: "Startguthaben für neue Benutzerkonten",
             currentValue: viewModel.formattedCurrency(appServices.configurationService.initialAccountBalance),
             inputValue: $viewModel.initialAccountBalanceInput,
             isValid: viewModel.isValidInitialAccountBalance,

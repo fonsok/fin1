@@ -46,12 +46,12 @@ const DEFAULT_CONFIG = {
     foreignCosts: 2.50,         // €2.50
 
     // Commission & Service Charges
-    traderCommissionRate: 0.10,       // 10% (matches Admin UI default)
-    platformServiceChargeRate: 0.015, // 1.5%
+    traderCommissionRate: 0.10,       // 10%
+    platformServiceChargeRate: 0.02,  // 2%
 
     // Account settings
-    minimumCashReserve: 12.0,         // €12.00
-    initialAccountBalance: 50000.0,   // €50,000.00
+    minimumCashReserve: 20.0,         // €20.00
+    initialAccountBalance: 1.0,       // €1.00
   },
   limits: {
     minDeposit: 10.0,
@@ -61,6 +61,8 @@ const DEFAULT_CONFIG = {
   },
   display: {
     showCommissionBreakdownInCreditNote: true,
+    maximumRiskExposurePercent: 2.0,
+    walletFeatureEnabled: false,  // Wallet (crypto) – optional; disable to reduce confusion until needed
   },
 };
 
@@ -138,6 +140,8 @@ async function loadConfig(forceRefresh = false) {
         display: {
           ...DEFAULT_CONFIG.display,
           showCommissionBreakdownInCreditNote: config.get('showCommissionBreakdownInCreditNote') ?? DEFAULT_CONFIG.display.showCommissionBreakdownInCreditNote,
+          maximumRiskExposurePercent: config.get('maximumRiskExposurePercent') ?? DEFAULT_CONFIG.display.maximumRiskExposurePercent,
+          walletFeatureEnabled: config.get('walletFeatureEnabled') ?? DEFAULT_CONFIG.display.walletFeatureEnabled,
         },
         _id: config.id,
         _updatedAt: config.get('updatedAt'),
@@ -265,15 +269,15 @@ function validateConfigValue(paramName, value) {
     },
     minimumCashReserve: {
       type: 'number',
-      min: 1.0,
+      min: 0.01,
       max: 1000.0,
-      errorMsg: 'Minimum cash reserve must be between €1.00 and €1,000.00',
+      errorMsg: 'Minimum cash reserve must be between €0.01 and €1,000.00',
     },
     initialAccountBalance: {
       type: 'number',
-      min: 1000.0,
+      min: 0.01,
       max: 1000000.0,
-      errorMsg: 'Initial account balance must be between €1,000.00 and €1,000,000.00',
+      errorMsg: 'Initial account balance must be between €0.01 and €1,000,000.00',
     },
     orderFeeRate: {
       type: 'number',
@@ -293,6 +297,16 @@ function validateConfigValue(paramName, value) {
       max: 500.0,
       errorMsg: 'Order fee maximum must be between €1.00 and €500.00',
     },
+    maximumRiskExposurePercent: {
+      type: 'number',
+      min: 0,
+      max: 100,
+      errorMsg: 'Maximum risk exposure percent must be between 0 and 100',
+    },
+    walletFeatureEnabled: {
+      type: 'boolean',
+      errorMsg: 'Wallet feature enabled must be true or false',
+    },
   };
 
   const validation = validations[paramName];
@@ -300,11 +314,16 @@ function validateConfigValue(paramName, value) {
     return { valid: true }; // Unknown parameter, allow
   }
 
+  if (validation.type === 'boolean') {
+    const boolVal = value === true || value === false || value === 1 || value === 0;
+    return boolVal ? { valid: true } : { valid: false, error: validation.errorMsg };
+  }
+
   if (typeof value !== validation.type) {
     return { valid: false, error: `${paramName} must be a ${validation.type}` };
   }
 
-  if (value < validation.min || value > validation.max) {
+  if (validation.min !== undefined && (value < validation.min || value > validation.max)) {
     return { valid: false, error: validation.errorMsg };
   }
 

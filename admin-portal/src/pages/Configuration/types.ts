@@ -5,8 +5,8 @@ export interface ConfigurationParameter {
   value: number | string | boolean;
   displayName: string;
   description: string;
-  type: 'number' | 'percentage' | 'currency' | 'boolean' | 'string';
-  category: 'financial' | 'system' | 'feature';
+  type: 'number' | 'percentage' | 'percent_display' | 'currency' | 'boolean' | 'string';
+  category: 'financial' | 'display' | 'system' | 'feature';
   isCritical: boolean;
   min?: number;
   max?: number;

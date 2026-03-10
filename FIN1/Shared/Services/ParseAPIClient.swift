@@ -1,89 +1,27 @@
 import Foundation
 
-// MARK: - Parse API Client Protocol
-
-/// Protocol for making HTTP requests to Parse Server
-protocol ParseAPIClientProtocol {
-    /// Fetches objects from a Parse class
-    func fetchObjects<T: Decodable>(
-        className: String,
-        query: [String: Any]?,
-        include: [String]?,
-        orderBy: String?,
-        limit: Int?
-    ) async throws -> [T]
-
-    /// Fetches a single object by ID
-    func fetchObject<T: Decodable>(
-        className: String,
-        objectId: String,
-        include: [String]?
-    ) async throws -> T
-
-    /// Creates a new object in Parse
-    func createObject<T: Encodable>(
-        className: String,
-        object: T
-    ) async throws -> ParseResponse
-
-    /// Updates an existing object in Parse
-    func updateObject<T: Encodable>(
-        className: String,
-        objectId: String,
-        object: T
-    ) async throws -> ParseResponse
-
-    /// Deletes an object from Parse
-    func deleteObject(
-        className: String,
-        objectId: String
-    ) async throws
-
-    /// Calls a Parse Cloud Function
-    /// - Note: Uses REST endpoint: POST /functions/{name}
-    func callFunction<T: Decodable>(
-        _ name: String,
-        parameters: [String: Any]?
-    ) async throws -> T
-}
-
-// MARK: - Parse Response Models
-
-struct ParseResponse: Codable {
-    let objectId: String
-    let createdAt: String?
-    let updatedAt: String?
-}
-
-struct ParseQueryResponse<T: Decodable>: Decodable {
-    let results: [T]
-}
-
-/// Parse Cloud Functions usually respond with `{ "result": <payload> }`
-private struct ParseFunctionEnvelope<R: Decodable>: Decodable {
-    let result: R
-}
-
 // MARK: - Parse API Client Implementation
 
 /// HTTP client for Parse Server REST API
 final class ParseAPIClient: ParseAPIClientProtocol {
 
-    // MARK: - Properties
+    // MARK: - Properties (internal for extensions)
 
-    private let baseURL: String
-    private let applicationId: String
-    private let sessionTokenProvider: (() -> String?)?
-    private let session: URLSession
+    let baseURL: String
+    let applicationId: String
+    let sessionTokenProvider: (() -> String?)?
+    let session: URLSession
+    let circuitBreaker: CircuitBreaker
+    let requestDeduplicator = RequestDeduplicator()
+    var offlineQueue: OfflineOperationQueue?
+    var conflictResolver: ConflictResolutionServiceProtocol?
+    var networkLogger: NetworkLogger?
 
-    /// Returns the current session token (dynamic lookup via provider)
-    /// Note: Simulated tokens (starting with "r:") are NOT sent to Parse Server
-    /// as Parse validates them at middleware level before Cloud Functions run.
-    /// For development, we rely on the backend's test mode instead.
-    private var sessionToken: String? {
-        let token = sessionTokenProvider?()
-        // Skip simulated tokens - Parse Server rejects them at middleware level
-        if let token = token, token.hasPrefix("r:") {
+    /// Returns the current session token (dynamic lookup via provider).
+    /// Only real Parse tokens (r: prefix) are forwarded. Simulated fallback
+    /// tokens (sim:) are stripped so the server doesn't reject them with 209.
+    var sessionToken: String? {
+        guard let token = sessionTokenProvider?(), token.hasPrefix("r:") else {
             return nil
         }
         return token
@@ -96,19 +34,51 @@ final class ParseAPIClient: ParseAPIClientProtocol {
     ///   - baseURL: Parse Server base URL
     ///   - applicationId: Parse Application ID
     ///   - sessionTokenProvider: Closure that returns the current session token (called on each request)
+    ///   - circuitBreaker: Optional circuit breaker instance (creates default if nil)
+    ///   - offlineQueue: Optional offline operation queue for offline support
     init(
         baseURL: String,
         applicationId: String,
-        sessionTokenProvider: (() -> String?)? = nil
+        sessionTokenProvider: (() -> String?)? = nil,
+        circuitBreaker: CircuitBreaker? = nil,
+        offlineQueue: OfflineOperationQueue? = nil
     ) {
         self.baseURL = baseURL
         self.applicationId = applicationId
         self.sessionTokenProvider = sessionTokenProvider
+        self.circuitBreaker = circuitBreaker ?? CircuitBreaker()
+        self.offlineQueue = offlineQueue
 
         let configuration = URLSessionConfiguration.default
         configuration.timeoutIntervalForRequest = 30
         configuration.timeoutIntervalForResource = 60
         self.session = URLSession(configuration: configuration)
+    }
+
+    /// Configure offline queue for offline operation support
+    func configure(offlineQueue: OfflineOperationQueue) {
+        self.offlineQueue = offlineQueue
+        Task { @MainActor in
+            offlineQueue.configure(parseAPIClient: self)
+        }
+    }
+
+    /// Configure conflict resolution service
+    func configure(conflictResolver: ConflictResolutionServiceProtocol) {
+        self.conflictResolver = conflictResolver
+    }
+
+    /// Configure network logger for request logging
+    func configure(networkLogger: NetworkLogger) {
+        self.networkLogger = networkLogger
+    }
+
+    /// Resets the circuit breaker to closed state (used after health check recovery)
+    func resetCircuitBreaker() async {
+        await circuitBreaker.reset()
+        #if DEBUG
+        print("🔄 ParseAPIClient: Circuit breaker reset to closed state")
+        #endif
     }
 
     /// Legacy initializer for backward compatibility
@@ -124,257 +94,92 @@ final class ParseAPIClient: ParseAPIClientProtocol {
         )
     }
 
-    // MARK: - Public Methods
+    // MARK: - Retry Logic & Circuit Breaker
 
-    func fetchObjects<T: Decodable>(
-        className: String,
-        query: [String: Any]? = nil,
-        include: [String]? = nil,
-        orderBy: String? = nil,
-        limit: Int? = nil
-    ) async throws -> [T] {
-        guard var components = URLComponents(string: "\(baseURL)/classes/\(className)") else {
-            throw NetworkError.invalidResponse
+    /// Executes a network operation with circuit breaker protection and automatic retry logic
+    func executeWithRetry<T>(_ operation: @escaping () async throws -> T) async throws -> T {
+        // First, execute through circuit breaker
+        return try await circuitBreaker.execute {
+            // Then apply retry logic
+            try await self.executeRetryLogic(operation: operation)
         }
-
-        var queryItems: [URLQueryItem] = []
-
-        // Add query parameters
-        if let query = query {
-            if let queryJSON = try? JSONSerialization.data(withJSONObject: query),
-               let queryString = String(data: queryJSON, encoding: .utf8) {
-                queryItems.append(URLQueryItem(name: "where", value: queryString))
-            }
-        }
-
-        // Add include parameters
-        if let include = include, !include.isEmpty {
-            queryItems.append(URLQueryItem(name: "include", value: include.joined(separator: ",")))
-        }
-
-        // Add order by
-        if let orderBy = orderBy {
-            queryItems.append(URLQueryItem(name: "order", value: orderBy))
-        }
-
-        // Add limit
-        if let limit = limit {
-            queryItems.append(URLQueryItem(name: "limit", value: "\(limit)"))
-        }
-
-        components.queryItems = queryItems.isEmpty ? nil : queryItems
-
-        guard let finalURL = components.url else {
-            throw NetworkError.invalidResponse
-        }
-
-        var request = URLRequest(url: finalURL)
-        request.httpMethod = "GET"
-        addHeaders(to: &request)
-
-        let (data, response) = try await session.data(for: request)
-
-        try validateResponse(response)
-
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .custom { decoder in
-            let container = try decoder.singleValueContainer()
-            let dateString = try container.decode(String.self)
-
-            // Parse Server uses ISO8601 format with milliseconds
-            let formatter = ISO8601DateFormatter()
-            formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-
-            if let date = formatter.date(from: dateString) {
-                return date
-            }
-
-            // Fallback to standard ISO8601
-            formatter.formatOptions = [.withInternetDateTime]
-            if let date = formatter.date(from: dateString) {
-                return date
-            }
-
-            throw DecodingError.dataCorruptedError(
-                in: container,
-                debugDescription: "Invalid date format: \(dateString)"
-            )
-        }
-
-        let parseResponse = try decoder.decode(ParseQueryResponse<T>.self, from: data)
-        return parseResponse.results
     }
 
-    func fetchObject<T: Decodable>(
-        className: String,
-        objectId: String,
-        include: [String]? = nil
-    ) async throws -> T {
-        var components = URLComponents(string: "\(baseURL)/classes/\(className)/\(objectId)")
+    /// Executes retry logic with exponential backoff
+    func executeRetryLogic<T>(operation: @escaping () async throws -> T) async throws -> T {
+        var lastError: Error?
 
-        if let include = include, !include.isEmpty {
-            components?.queryItems = [
-                URLQueryItem(name: "include", value: include.joined(separator: ","))
-            ]
-        }
+        for attempt in 0...NetworkRetryPolicy.maxRetries {
+            do {
+                return try await operation()
+            } catch {
+                lastError = error
 
-        guard let url = components?.url else {
-            throw NetworkError.invalidResponse
-        }
+                // Check if we should retry this error
+                guard NetworkRetryPolicy.shouldRetry(error: error, attempt: attempt) else {
+                    // Don't retry - throw the error immediately
+                    throw error
+                }
 
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        addHeaders(to: &request)
+                // Calculate delay before retry
+                let delay = NetworkRetryPolicy.delay(for: attempt)
 
-        let (data, response) = try await session.data(for: request)
+                // Log retry attempt (only in debug builds)
+                #if DEBUG
+                print("⚠️ ParseAPIClient: Retry attempt \(attempt + 1)/\(NetworkRetryPolicy.maxRetries + 1) after \(String(format: "%.2f", delay))s - Error: \(error.localizedDescription)")
+                #endif
 
-        try validateResponse(response)
+                // Wait before retrying
+                try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
 
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .custom { decoder in
-            let container = try decoder.singleValueContainer()
-            let dateString = try container.decode(String.self)
-
-            let formatter = ISO8601DateFormatter()
-            formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-
-            if let date = formatter.date(from: dateString) {
-                return date
+                // Continue to next retry attempt
+                continue
             }
-
-            formatter.formatOptions = [.withInternetDateTime]
-            if let date = formatter.date(from: dateString) {
-                return date
-            }
-
-            throw DecodingError.dataCorruptedError(
-                in: container,
-                debugDescription: "Invalid date format: \(dateString)"
-            )
         }
 
-        return try decoder.decode(T.self, from: data)
-    }
-
-    func createObject<T: Encodable>(
-        className: String,
-        object: T
-    ) async throws -> ParseResponse {
-        guard let url = URL(string: "\(baseURL)/classes/\(className)") else {
-            throw NetworkError.invalidResponse
-        }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        addHeaders(to: &request)
-
-        let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
-        request.httpBody = try encoder.encode(object)
-
-        let (data, response) = try await session.data(for: request)
-
-        try validateResponse(response)
-
-        let decoder = JSONDecoder()
-        return try decoder.decode(ParseResponse.self, from: data)
-    }
-
-    func updateObject<T: Encodable>(
-        className: String,
-        objectId: String,
-        object: T
-    ) async throws -> ParseResponse {
-        guard let url = URL(string: "\(baseURL)/classes/\(className)/\(objectId)") else {
-            throw NetworkError.invalidResponse
-        }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "PUT"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        addHeaders(to: &request)
-
-        let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
-        request.httpBody = try encoder.encode(object)
-
-        let (data, response) = try await session.data(for: request)
-
-        try validateResponse(response)
-
-        let decoder = JSONDecoder()
-        return try decoder.decode(ParseResponse.self, from: data)
-    }
-
-    func deleteObject(
-        className: String,
-        objectId: String
-    ) async throws {
-        guard let url = URL(string: "\(baseURL)/classes/\(className)/\(objectId)") else {
-            throw NetworkError.invalidResponse
-        }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "DELETE"
-        addHeaders(to: &request)
-
-        let (_, response) = try await session.data(for: request)
-        try validateResponse(response)
-    }
-
-    func callFunction<T: Decodable>(
-        _ name: String,
-        parameters: [String: Any]? = nil
-    ) async throws -> T {
-        guard let url = URL(string: "\(baseURL)/functions/\(name)") else {
-            throw NetworkError.invalidResponse
-        }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        addHeaders(to: &request)
-
-        if let parameters = parameters {
-            request.httpBody = try JSONSerialization.data(withJSONObject: parameters, options: [])
-        } else {
-            request.httpBody = try JSONSerialization.data(withJSONObject: [:], options: [])
-        }
-
-        let (data, response) = try await session.data(for: request)
-        try validateResponse(response)
-
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .custom { decoder in
-            let container = try decoder.singleValueContainer()
-            let dateString = try container.decode(String.self)
-
-            let formatter = ISO8601DateFormatter()
-            formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-            if let date = formatter.date(from: dateString) {
-                return date
-            }
-            formatter.formatOptions = [.withInternetDateTime]
-            if let date = formatter.date(from: dateString) {
-                return date
-            }
-            throw DecodingError.dataCorruptedError(
-                in: container,
-                debugDescription: "Invalid date format: \(dateString)"
-            )
-        }
-
-        // Prefer envelope decode; fallback to direct decode for non-standard functions.
-        if let envelope = try? decoder.decode(ParseFunctionEnvelope<T>.self, from: data) {
-            return envelope.result
-        }
-        return try decoder.decode(T.self, from: data)
+        // All retries exhausted - throw the last error
+        throw lastError ?? NetworkError.timeout
     }
 
     // MARK: - Private Methods
 
-    private func addHeaders(to request: inout URLRequest) {
+    /// Creates a deduplication key from request parameters
+    func createDeduplicationKey(
+        operation: String,
+        className: String,
+        query: [String: Any]? = nil,
+        include: [String]? = nil,
+        orderBy: String? = nil,
+        limit: Int? = nil,
+        objectId: String? = nil
+    ) -> String {
+        var keyComponents: [String] = [operation, className]
+
+        if let objectId = objectId {
+            keyComponents.append(objectId)
+        }
+
+        if let query = query, let queryData = try? JSONSerialization.data(withJSONObject: query),
+           let queryString = String(data: queryData, encoding: .utf8) {
+            keyComponents.append("query:\(queryString)")
+        }
+
+        if let include = include, !include.isEmpty {
+            keyComponents.append("include:\(include.sorted().joined(separator: ","))")
+        }
+
+        if let orderBy = orderBy {
+            keyComponents.append("orderBy:\(orderBy)")
+        }
+
+        if let limit = limit {
+            keyComponents.append("limit:\(limit)")
+        }
+
+        return keyComponents.joined(separator: "|")
+    }
+
+    func addHeaders(to request: inout URLRequest) {
         request.setValue(applicationId, forHTTPHeaderField: "X-Parse-Application-Id")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
@@ -383,7 +188,24 @@ final class ParseAPIClient: ParseAPIClientProtocol {
         }
     }
 
-    private func validateResponse(_ response: URLResponse) throws {
+    // MARK: - Parse Date Encoding
+
+    /// Custom date encoding strategy that outputs Parse Server Date format.
+    static let parseDateEncodingStrategy: JSONEncoder.DateEncodingStrategy = .custom { date, encoder in
+        var container = encoder.container(keyedBy: ParseDateCodingKeys.self)
+        try container.encode("Date", forKey: .type)
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        try container.encode(formatter.string(from: date), forKey: .iso)
+    }
+
+    /// Coding keys for Parse Server Date format
+    enum ParseDateCodingKeys: String, CodingKey {
+        case type = "__type"
+        case iso
+    }
+
+    func validateResponse(_ response: URLResponse) throws {
         guard let httpResponse = response as? HTTPURLResponse else {
             throw NetworkError.invalidResponse
         }
@@ -397,11 +219,31 @@ final class ParseAPIClient: ParseAPIClientProtocol {
             throw NetworkError.serverError(401)
         case 404:
             throw NetworkError.invalidResponse
+        case 409:
+            throw NetworkError.serverError(409)
+        case 429:
+            throw NetworkError.serverError(429)
         case 500...599:
             throw NetworkError.serverError(httpResponse.statusCode)
         default:
             throw NetworkError.serverError(httpResponse.statusCode)
         }
+    }
+
+    /// JSONDecoder configured for Parse Server date format (for use in extensions).
+    static func makeDateDecoder() -> JSONDecoder {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .custom { decoder in
+            let container = try decoder.singleValueContainer()
+            let dateString = try container.decode(String.self)
+            let formatter = ISO8601DateFormatter()
+            formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            if let date = formatter.date(from: dateString) { return date }
+            formatter.formatOptions = [.withInternetDateTime]
+            if let date = formatter.date(from: dateString) { return date }
+            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid date format: \(dateString)")
+        }
+        return decoder
     }
 }
 

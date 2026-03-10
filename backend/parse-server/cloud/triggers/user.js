@@ -6,6 +6,10 @@
 'use strict';
 
 const { generateCustomerId } = require('../utils/helpers');
+const { encryptFields } = require('../utils/fieldEncryption');
+
+// Fields encrypted at rest (see also triggers/encryption.js for other classes)
+const USER_PII_FIELDS = ['phone_number'];
 
 // ============================================================================
 // BEFORE SAVE
@@ -14,6 +18,11 @@ const { generateCustomerId } = require('../utils/helpers');
 Parse.Cloud.beforeSave(Parse.User, async (request) => {
   const user = request.object;
   const isNew = !user.existed();
+
+  // Encrypt PII before persisting (no-op when key is not configured)
+  if (!(request.context && request.context.skipEncryptionTrigger)) {
+    encryptFields(user, USER_PII_FIELDS);
+  }
 
   // ========== NEW USER ==========
   if (isNew) {
@@ -67,6 +76,31 @@ Parse.Cloud.beforeSave(Parse.User, async (request) => {
   ];
   if (role && !validRoles.includes(role)) {
     throw new Parse.Error(Parse.Error.INVALID_VALUE, `Invalid role: ${role}`);
+  }
+
+  // ========== CSR SUB-ROLE AUTO-DETECTION ==========
+  // Automatically detect CSR sub-role from email for customer_service users
+  if (role === 'customer_service' && !user.get('csrSubRole')) {
+    const emailLower = email ? email.toLowerCase() : '';
+    let csrSubRole = null;
+
+    if (emailLower.includes('l1@') || emailLower.includes('level1@') || emailLower.includes('csr1@')) {
+      csrSubRole = 'level_1';
+    } else if (emailLower.includes('l2@') || emailLower.includes('level2@') || emailLower.includes('csr2@')) {
+      csrSubRole = 'level_2';
+    } else if (emailLower.includes('fraud@')) {
+      csrSubRole = 'fraud_analyst';
+    } else if (emailLower.includes('compliance@')) {
+      csrSubRole = 'compliance_officer';
+    } else if (emailLower.includes('tech@') || emailLower.includes('technical@')) {
+      csrSubRole = 'tech_support';
+    } else if (emailLower.includes('lead@') || emailLower.includes('teamlead@')) {
+      csrSubRole = 'teamlead';
+    }
+
+    if (csrSubRole) {
+      user.set('csrSubRole', csrSubRole);
+    }
   }
 
   // ========== STATUS VALIDATION ==========

@@ -9,7 +9,7 @@ export default defineConfig({
     port: 3000,
     proxy: {
       '/parse': {
-        target: 'http://192.168.178.24',
+        target: 'https://192.168.178.24',
         changeOrigin: true,
       },
     },

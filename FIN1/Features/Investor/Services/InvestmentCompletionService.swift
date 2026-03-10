@@ -14,7 +14,8 @@ final class InvestmentCompletionService: InvestmentCompletionServiceProtocol {
     private let transactionIdService: (any TransactionIdServiceProtocol)?
     private let userService: (any UserServiceProtocol)?
     private let documentService: (any DocumentServiceProtocol)?
-    private let configurationService: (any ConfigurationServiceProtocol)?
+    private let configurationService: any ConfigurationServiceProtocol
+    private let settlementAPIService: (any SettlementAPIServiceProtocol)?
 
     // MARK: - Initialization
     init(
@@ -26,7 +27,8 @@ final class InvestmentCompletionService: InvestmentCompletionServiceProtocol {
         transactionIdService: (any TransactionIdServiceProtocol)? = nil,
         userService: (any UserServiceProtocol)? = nil,
         documentService: (any DocumentServiceProtocol)? = nil,
-        configurationService: (any ConfigurationServiceProtocol)? = nil
+        configurationService: any ConfigurationServiceProtocol,
+        settlementAPIService: (any SettlementAPIServiceProtocol)? = nil
     ) {
         self.poolTradeParticipationService = poolTradeParticipationService
         self.telemetryService = telemetryService
@@ -37,6 +39,7 @@ final class InvestmentCompletionService: InvestmentCompletionServiceProtocol {
         self.userService = userService
         self.documentService = documentService
         self.configurationService = configurationService
+        self.settlementAPIService = settlementAPIService
     }
 
     // MARK: - ServiceLifecycle
@@ -112,7 +115,8 @@ final class InvestmentCompletionService: InvestmentCompletionServiceProtocol {
             poolTradeParticipationService: poolTradeParticipationService,
             tradeLifecycleService: tradeLifecycleService,
             invoiceService: invoiceService,
-            configurationService: configurationService
+            configurationService: configurationService,
+            settlementAPIService: settlementAPIService
         )
     }
 

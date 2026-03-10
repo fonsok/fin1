@@ -124,7 +124,7 @@ final class LegalDocumentChangesService {
             if oldSectionsById[section.id] == nil {
                 changes.append(DocumentChange(
                     changeType: .added,
-                    sectionTitle: section.title,
+                    sectionTitle: section.titleOrEmpty,
                     description: summarizeContent(section.content, maxLength: 100)
                 ))
             }
@@ -135,7 +135,7 @@ final class LegalDocumentChangesService {
             if newSectionsById[section.id] == nil {
                 changes.append(DocumentChange(
                     changeType: .removed,
-                    sectionTitle: section.title,
+                    sectionTitle: section.titleOrEmpty,
                     description: summarizeContent(section.content, maxLength: 100)
                 ))
             }
@@ -147,7 +147,7 @@ final class LegalDocumentChangesService {
                 if hasSignificantChanges(old: oldSection, new: newSection) {
                     changes.append(DocumentChange(
                         changeType: .modified,
-                        sectionTitle: newSection.title,
+                        sectionTitle: newSection.titleOrEmpty,
                         description: describeModification(old: oldSection, new: newSection)
                     ))
                 }
@@ -198,7 +198,7 @@ final class LegalDocumentChangesService {
         let newNormalized = normalizeForComparison(new.content)
 
         // Title change counts as significant
-        if old.title != new.title {
+        if old.titleOrEmpty != new.titleOrEmpty {
             return true
         }
 

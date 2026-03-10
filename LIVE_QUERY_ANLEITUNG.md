@@ -88,8 +88,8 @@ ssh io@192.168.178.24 "cd ~/fin1-server && docker compose -f docker-compose.prod
 **Erfolgreich verbunden:**
 ```
 🔗 Parse Server Configuration:
-   URL: http://192.168.178.24:1337/parse
-   Live Query URL: ws://192.168.178.24:1337/parse
+   URL: https://192.168.178.24/parse
+   Live Query URL: wss://192.168.178.24/parse
    Application ID: fin1-app-id
 ✅ Parse Live Query connected successfully!
 ```
@@ -149,12 +149,12 @@ ssh io@192.168.178.24 "cd ~/fin1-server && docker compose -f docker-compose.prod
 
 **1. Prüfe Firewall:**
 ```bash
-ssh io@192.168.178.24 "sudo ufw status | grep 1337"
+ssh io@192.168.178.24 "sudo ufw status | grep 443"
 ```
 
-**2. Prüfe ob Port 1337 offen ist:**
+**2. Prüfe ob HTTPS/WebSocket erreichbar ist:**
 ```bash
-curl -v -H "Upgrade: websocket" -H "Connection: Upgrade" http://192.168.178.24:1337/parse
+curl -vsk -H "Upgrade: websocket" -H "Connection: Upgrade" https://192.168.178.24/parse
 ```
 
 **3. Prüfe Parse Server Konfiguration:**

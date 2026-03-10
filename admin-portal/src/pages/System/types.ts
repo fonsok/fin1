@@ -23,4 +23,6 @@ export interface SystemHealth {
   serverTime: string;
   uptime: number;
   version: string;
+  nodeVersion?: string;
+  totalResponseTime?: number;
 }

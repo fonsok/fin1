@@ -26,7 +26,7 @@ protocol OrderAPIServiceProtocol {
 // MARK: - Parse Order Input
 
 /// Input struct for creating/updating orders on Parse Server
-private struct ParseOrderInput: Encodable {
+private struct ParseOrderInput: Codable {
     let traderId: String
     let symbol: String
     let description: String
@@ -409,7 +409,7 @@ final class OrderAPIService: OrderAPIServiceProtocol {
         print("📡 OrderAPIService: Cancelling order: \(orderId)")
 
         // Update order status to cancelled
-        struct CancelInput: Encodable {
+        struct CancelInput: Codable {
             let status: String
         }
 

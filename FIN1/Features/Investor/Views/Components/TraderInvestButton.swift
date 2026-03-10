@@ -26,7 +26,7 @@ struct TraderInvestButton: View {
                 .padding(.vertical, ResponsiveDesign.spacing(13))
                 .background(
                     LinearGradient(
-                        gradient: Gradient(colors: [AppTheme.accentLightBlue, AppTheme.accentGreen]),
+                        gradient: Gradient(colors: [AppTheme.accentGreen, AppTheme.accentGreen]),
                         startPoint: .leading,
                         endPoint: .trailing
                     )

@@ -1,8 +1,8 @@
 # FIN1 Admin-Web-Portal: Dokumentation
 
-> **Datum:** 2026-02-02
+> **Datum:** 2026-02-05
 > **Status:** MVP Implementiert ✅
-> **URL:** `http://192.168.178.24/admin/`
+> **URL:** `https://192.168.178.24/admin/`
 
 ---
 
@@ -120,7 +120,13 @@ admin-portal/
 │   │   ├── Tickets/          # TicketList
 │   │   ├── Compliance/       # ComplianceEvents
 │   │   ├── Approvals/        # ApprovalsList
-│   │   └── Audit/            # AuditLogs
+│   │   ├── Audit/            # AuditLogs
+│   │   ├── Templates/        # Response Templates
+│   │   └── CSR/              # CSR Web Panel (siehe Abschnitt 10)
+│   │       ├── pages/        # CreateTicket, TicketDetails, etc.
+│   │       ├── components/   # TemplateDropdown, CustomerSelection, etc.
+│   │       ├── templates.ts  # Default-Textbausteine
+│   │       └── api.ts        # CSR-spezifische API
 │   ├── utils/
 │   │   └── format.ts         # Date, Currency, Status Formatter
 │   ├── App.tsx               # Routes
@@ -167,10 +173,33 @@ async function cloudFunction<T>(name: string, params?: Record<string, unknown>):
 | `getTickets` | Tickets | Ticket-Liste |
 | `getComplianceEvents` | Compliance | Events-Liste |
 | `reviewComplianceEvent` | Compliance | Event prüfen |
-| `getPendingApprovals` | Approvals | Ausstehende Freigaben |
+| `getPendingApprovals` | Approvals | Ausstehende Freigaben, eigene Anträge, Historie, alle Anträge |
 | `approveRequest` | Approvals | Genehmigen |
 | `rejectRequest` | Approvals | Ablehnen |
+| `withdrawRequest` | Approvals | Eigenen pending Antrag zurückziehen (nur Antragsteller) |
 | `getAuditLogs` | Audit | Log-Liste |
+| `getFAQCategories` | FAQs | FAQ-Kategorien für Landing/Help Center/CSR |
+| `getFAQs` | FAQs | Server‑getriebene FAQs für Landing/Help Center/CSR |
+| `createFAQ` | FAQs | Admin‑funktion, neue FAQ anlegen (inkl. Multi‑Kontext/Multi‑Kategorie) |
+| `updateFAQ` | FAQs | Admin‑funktion, bestehende FAQ aktualisieren |
+| `deleteFAQ` | FAQs | Admin‑funktion, FAQ archivieren (Soft Delete) |
+| `createFAQCategory` | FAQs | Admin‑funktion, neue FAQ‑Kategorie anlegen (Slug + Flags) |
+| `listTermsContent` | AGB & Rechtstexte | Rechtstext-Versionen listen (Filter: documentType, language) |
+| `getTermsContent` | AGB & Rechtstexte | Eine Version inkl. Abschnitte zum Klonen/Bearbeiten |
+| `createTermsContent` | AGB & Rechtstexte | Neue Version anlegen (terms/privacy/imprint, append-only) |
+| `setActiveTermsContent` | AGB & Rechtstexte | Version für documentType+Sprache als aktiv setzen |
+| `getDefaultLegalSnippetSections` | AGB & Rechtstexte | Standard-Snippet-Abschnitte (DE/EN) für neue Version (z. B. „Snippet-Abschnitte einfügen“) |
+| `getDefaultLegalSnippetSectionsPublic` | Backend/Skripte | Wie oben, ohne Auth; für Seed-Skript `scripts/seed-legal-snippets.js` |
+
+**Hinweis Navigation:** Die FAQ-Verwaltung erscheint in der Sidebar als **„Hilfe & Anleitung“**; Rechtstexte unter **„AGB & Rechtstexte“**.
+
+**Seite Approvals (`/approvals`)** – vier Tabs:
+- **Freigaben erteilen**: Pending Anträge anderer Admins (Genehmigen/Ablehnen)
+- **Eigene Anträge**: Vom aktuellen User eingereichte, noch offene Anträge (mit Zurückziehen)
+- **Alle Anträge**: Chronologische Liste aller Anträge aller Admins (neueste zuerst); bei eigenen pending Anträgen Button „Zurückziehen“
+- **Abgeschlossen**: Genehmigte/abgelehnte/zurückgezogene Anträge (letzte 30 Tage)
+
+**Sidebar „Freigaben“**: Solange offene Anträge existieren (Anträge zur Freigabe oder eigene pending Anträge), wird am Navigationspunkt „Freigaben“ ein rotes Badge mit der Anzahl angezeigt (Polling alle 30 s). Beide Admins sehen das Badge, bis alle Anträge bearbeitet sind.
 
 ---
 
@@ -180,7 +209,7 @@ async function cloudFunction<T>(name: string, params?: Record<string, unknown>):
 
 - **Server:** Ubuntu 24.04 (192.168.178.24)
 - **Pfad:** `/home/io/fin1-server/admin/`
-- **URL:** `http://192.168.178.24/admin/`
+- **URL:** `https://192.168.178.24/admin/`
 - **Nginx:** Location `/admin` mit SPA-Routing
 
 ### 5.2 Build & Deploy
@@ -250,7 +279,7 @@ npm run dev
 // vite.config.ts
 proxy: {
   '/parse': {
-    target: 'http://192.168.178.24',
+    target: 'https://192.168.178.24',
     changeOrigin: true,
   },
 }
@@ -348,7 +377,308 @@ E-Mail-bezogene Cloud Functions in `backend/parse-server/cloud/functions/notific
 
 ---
 
-## 10. Bekannte Einschränkungen
+## 10. CSR Web Panel (Standalone)
+
+### 10.1 Übersicht
+
+Das CSR Web Panel ist ein eigenständiges Portal für Kundenservice-Mitarbeiter (`customer_service` Rolle).
+
+| Merkmal | Beschreibung |
+|---------|--------------|
+| **URL** | `https://192.168.178.24/admin/csr/` |
+| **Login** | Separater Login unter `/admin/csr/login` |
+| **Rolle** | Nur `customer_service` Rolle erlaubt |
+
+### 10.2 Features
+
+| Feature | Status | Beschreibung |
+|---------|:------:|--------------|
+| Dashboard | ✅ | Ticket-Statistiken, Quick Actions |
+| Ticket-Liste | ✅ | Filter nach Status, Priorität, Agent |
+| Ticket-Details | ✅ | Vollständige Ticket-Ansicht, Antworten |
+| Ticket erstellen | ✅ | Mit Kundenauswahl und Textbausteinen |
+| Kunden-Suche | ✅ | Nach Name, E-Mail, ID |
+| Kunden-Details | ✅ | Profil, KYC-Status, Tickets |
+| Analytics | ✅ | Performance-Metriken |
+| Templates | ✅ | Textbausteine verwalten |
+| FAQs | ✅ | FAQ-Verwaltung (Sidebar: „Hilfe & Anleitung“, inkl. Multi‑Kontext/Multi‑Kategorie, neue Kategorien) |
+| AGB & Rechtstexte | ✅ | Terms, Datenschutz, Impressum versioniert verwalten (Filter, neue Version, Klonen, Als aktiv setzen) |
+
+#### 10.2.1 FAQ-Verwaltung – Details
+
+- **Multi‑Kontext:** Eine FAQ kann gleichzeitig mehreren Kontexten zugeordnet werden, z.B. `Help Center`, `Landing Page`, `Investor`, `Trader` sowie zukünftigen, frei definierbaren Kontext‑Tags.
+- **Multi‑Kategorie:** Eine FAQ kann mehreren FAQ‑Kategorien (`categoryIds`) zugeordnet werden; im UI werden alle Kategorien angezeigt und im Filter berücksichtigt.
+- **Legacy‑Kompatibilität:** Das Backend hält die Felder `categoryId` (Primär‑Kategorie) und `source` (Primär‑Kontext) automatisch mit den Arrays (`categoryIds`, `contexts`) synchron, sodass bestehende Clients (Swift‑App, ältere Scripts) weiterhin funktionieren.
+- **Neue Kategorien:** Im FAQ‑Editor können neue Kategorien direkt erzeugt werden. Diese werden serverseitig als `FAQCategory` mit `slug`, `title`, `displayName`, `icon`, `sortOrder`, `isActive`, `showOnLanding`, `showInHelpCenter`, `showInCSR` angelegt.
+
+#### 10.2.2 AGB & Rechtstexte – Details
+
+- **Dokumenttypen:** AGB/Terms of Service, Datenschutz (Privacy Policy), Impressum. Jeder Typ wird mit Sprache (DE/EN) und Versionierung geführt.
+- **Filter:** Nach Dokumenttyp (Alle / AGB / Datenschutz / Impressum) und Sprache. Die Statistik-Karte „Dokumenttyp“ zeigt das lesbare Label (z. B. „Datenschutz“).
+- **Workflow:** Neue Version (leer), oder aus bestehender Version klonen → Abschnitte bearbeiten → speichern (append-only) → „Als aktiv setzen“. Bestehende Versionen werden nicht editiert (Immutability).
+- **Leerzustand:** Typ-spezifische Meldung (z. B. „Keine Datenschutz-Versionen gefunden“) mit Hinweis auf neue Version oder Klonen. Details: `Documentation/LEGAL_DOCS_AUDIT_TRAIL.md`.
+- **Schritt-für-Schritt (Abschnitt ändern):** Siehe `Documentation/AGB_RECHTSTEXTE_ADMIN_ANLEITUNG.md`.
+- **Versionsanzeige:** Pro Version werden „Gültig ab“ und „Aktualisiert“ mit **Datum und Uhrzeit** (TT.MM.JJ, HH:MM) angezeigt, damit der Stand der Version eindeutig erkennbar ist.
+- **Bearbeiten-Button:** In der aufgeklappten Abschnittsliste hat jeder Abschnitt einen Button **„Bearbeiten“**. Ein Klick klont die Version und öffnet den Editor mit vorausgefüllter Suche auf diesen Abschnitt (Titel/ID), sodass der gewünschte Abschnitt sofort sichtbar ist.
+- **Suchfunktion im Editor:** Beim Anlegen einer neuen Version (Klonen) kann im Editor nach Abschnitten gesucht werden (Titel, Inhalt, ID); die Abschnittsliste wird gefiltert, ohne die Reihenfolge oder Daten zu ändern.
+- **Änderungen zur Vorgängerversion:** Beim Aufklappen einer Version erscheint der Bereich „Änderungen zur Vorgängerversion“. Über **„Änderungen anzeigen“** wird die unmittelbar vorherige Version geladen und ein Vergleich angezeigt (hinzugefügte, entfernte, geänderte Abschnitte) – ohne manuelles Durchsuchen der Vorgängerversion.
+
+### 10.3 Textbausteine (Ticket-Erstellung)
+
+Bei der Ticket-Erstellung stehen vordefinierte Textbausteine zur Verfügung:
+
+**Betreff-Vorlagen (20 Stück):**
+| Kategorie | Beispiele |
+|-----------|-----------|
+| 👤 Konto | Kontosperrung aufheben, Passwort zurücksetzen, Anmeldeproblem |
+| 📋 KYC | Dokumente nachfordern, Verifizierung abgelehnt, Adressnachweis |
+| 🔧 Technisch | App-Fehler, App-Update, Verbindungsproblem |
+| 💰 Finanzen | Rückerstattung, Transaktion prüfen, Gebühren erklären |
+| 📄 Allgemein | Allgemeine Anfrage, Feedback, Beschwerde |
+
+**Beschreibungs-Vorlagen (14 Stück):**
+| Kategorie | Beispiele |
+|-----------|-----------|
+| 👋 Begrüßung | Standard-Begrüßung, Formelle Begrüßung |
+| 👤 Konto | Konto entsperrt, Passwort-Reset Anleitung |
+| 📋 KYC | Dokumente anfordern, KYC erfolgreich |
+| 🔧 Technisch | App-Update, Cache leeren, Neuinstallation |
+| 💰 Finanzen | Rückerstattung eingeleitet, Transaktion wird geprüft |
+| 🏁 Abschluss | Standard-Abschluss, Problem gelöst, Weiteres Vorgehen |
+
+### 10.4 Backend-Integration
+
+Templates werden aus der MongoDB-Collection `CSRResponseTemplate` geladen:
+
+```javascript
+// Cloud Function
+Parse.Cloud.define('getResponseTemplates', async (request) => {
+  requireAdminRole(request);
+  const { role, category, language = 'de' } = request.params;
+  // ... returns templates filtered by role
+});
+```
+
+**Fallback**: Falls die API nicht verfügbar ist, werden Default-Templates aus dem Frontend verwendet.
+
+### 10.5 Komponenten-Struktur
+
+```
+admin-portal/src/pages/CSR/
+├── pages/
+│   ├── CreateTicket.tsx       # 362 Zeilen (refactored)
+│   └── ...
+├── components/
+│   ├── TemplateDropdown.tsx   # Wiederverwendbare Template-Auswahl
+│   ├── CustomerSelection.tsx  # Kundenauswahl-Komponenten
+│   └── CustomerInfoSidebar.tsx # Kunden-Info Sidebar
+├── templates.ts               # Default-Textbausteine
+├── types.ts                   # TypeScript-Interfaces
+└── api.ts                     # CSR API-Funktionen
+```
+
+### 10.6 CSR-Rollen und Berechtigungen (RBAC)
+
+Die CSR-Berechtigungen folgen dem **Least Privilege Principle** und sind in der iOS-App unter `CustomerSupportPermission.swift` und `CustomerSupportPermissionSet.swift` definiert.
+
+#### 10.6.1 Level 1 Support (L1)
+
+| Kategorie | Berechtigung |
+|-----------|--------------|
+| **👁️ Ansicht** | Kundenprofil anzeigen |
+| | KYC-Status anzeigen |
+| | Investments anzeigen |
+| | Dokumente anzeigen |
+| | Benachrichtigungen anzeigen |
+| | Support-Verlauf anzeigen |
+| **✏️ Bearbeitung** | Kontaktdaten aktualisieren |
+| **💬 Support** | Support-Ticket erstellen |
+| | Support-Ticket beantworten |
+| | Interne Notiz hinzufügen |
+
+> ⚠️ **Banking Best Practice:** L1 hat bewusst **keinen** Zugriff auf Trades (Preise, Volumen, Strategien). Trade-Anfragen müssen an L2 eskaliert werden.
+
+#### 10.6.2 Level 2 Support (L2)
+
+*Enthält alle L1-Berechtigungen plus:*
+
+| Kategorie | Berechtigung |
+|-----------|--------------|
+| **👁️ Ansicht** | Trades anzeigen |
+| **✏️ Bearbeitung** | Adresse aktualisieren *(4-Augen)* |
+| | Name aktualisieren *(4-Augen)* |
+| | Passwort zurücksetzen |
+| | Konto entsperren |
+| **💬 Support** | An Admin eskalieren |
+| **📋 Compliance** | KYC-Prüfung einleiten |
+
+#### 10.6.3 Fraud Analyst
+
+*Enthält alle L1-Berechtigungen plus:*
+
+| Kategorie | Berechtigung |
+|-----------|--------------|
+| **🔍 Betrugsbekämpfung** | Fraud-Alerts anzeigen |
+| | Transaktionsmuster anzeigen |
+| | Verdächtige Aktivität melden |
+| | Konto temporär sperren (<24h) |
+| | Konto erweitert sperren (>24h) *(4-Augen)* |
+| | Zahlungskarte sperren |
+| | Chargeback einleiten *(4-Augen)* |
+| **📋 Compliance** | AML-Flags anzeigen |
+| **💬 Support** | An Admin eskalieren |
+
+#### 10.6.4 Compliance Officer
+
+*Enthält alle L1-Berechtigungen plus:*
+
+| Kategorie | Berechtigung |
+|-----------|--------------|
+| **👁️ Ansicht** | Trades anzeigen *(für AML/SAR)* |
+| | Audit-Protokolle anzeigen |
+| **📋 Compliance** | Compliance-Prüfung anfordern |
+| | KYC-Prüfung einleiten |
+| | KYC-Entscheidung genehmigen *(4-Augen)* |
+| | AML-Flags anzeigen |
+| | SAR-Meldungen anzeigen |
+| | SAR-Meldung erstellen *(4-Augen)* |
+| | DSGVO-Anfrage bearbeiten |
+| | DSGVO-Löschung genehmigen *(4-Augen)* |
+| **🔐 Genehmigung** | SAR-Einreichung genehmigen |
+| | Kontosperrung genehmigen |
+
+#### 10.6.5 Tech Support
+
+*Enthält alle L1-Berechtigungen plus:*
+
+| Kategorie | Berechtigung |
+|-----------|--------------|
+| **📋 Compliance** | Audit-Protokolle anzeigen |
+| **💬 Support** | An Admin eskalieren |
+
+> ℹ️ Tech Support hat **keinen Schreibzugriff** auf Kundendaten – Fokus liegt auf technischer Analyse.
+
+#### 10.6.6 Teamlead
+
+*Enthält alle L2-Berechtigungen plus:*
+
+| Kategorie | Berechtigung |
+|-----------|--------------|
+| **🔍 Betrugsbekämpfung** | Fraud-Alerts anzeigen |
+| | Transaktionsmuster anzeigen |
+| **📋 Compliance** | AML-Flags anzeigen |
+| | Audit-Protokolle anzeigen |
+| | SAR-Meldungen anzeigen |
+| | Compliance-Prüfung anfordern |
+| **🔐 Genehmigung** | Kontosperrung genehmigen |
+| | Chargeback genehmigen |
+| | SAR-Einreichung genehmigen |
+| | KYC-Entscheidung genehmigen |
+| | DSGVO-Löschung genehmigen |
+| **⚙️ Administration** | Agenten-Berechtigungen verwalten |
+
+#### 10.6.7 4-Augen-Prinzip
+
+Folgende Aktionen erfordern eine Genehmigung durch **Teamlead** oder **Compliance Officer**:
+
+| Aktion | Genehmiger |
+|--------|------------|
+| Adresse aktualisieren | Teamlead, Compliance |
+| Name aktualisieren | Teamlead, Compliance |
+| Konto erweitert sperren (>24h) | Teamlead, Compliance |
+| Chargeback einleiten | Teamlead |
+| SAR-Meldung erstellen | Compliance |
+| DSGVO-Löschung | Teamlead, Compliance |
+
+> ⚠️ **Wichtig:** Requester ≠ Approver (Backend-enforced)
+
+#### 10.6.8 Berechtigungs-Kategorien
+
+| Icon | Kategorie | Beschreibung |
+|:----:|-----------|--------------|
+| 👁️ | Ansicht | Nur-Lesen-Zugriff auf Kundendaten |
+| ✏️ | Bearbeitung | Schreibzugriff (teilweise mit Genehmigung) |
+| 💬 | Support | Ticket-Operationen |
+| 📋 | Compliance | KYC/AML/GDPR-Operationen |
+| 🔍 | Betrugsbekämpfung | Fraud-Detection und Kontosperrungen |
+| 🔐 | Genehmigung | 4-Augen-Approver-Rechte |
+| ⚙️ | Administration | Team-Management |
+
+**Source of Truth (Code):**
+- iOS: `FIN1/Features/CustomerSupport/Models/CustomerSupportPermission.swift`
+- iOS: `FIN1/Features/CustomerSupport/Models/CustomerSupportPermissionSet.swift`
+- iOS: `FIN1/Features/CustomerSupport/Models/CSRRole.swift`
+- Backend: `backend/parse-server/cloud/functions/seed.js` (seedCSRPermissions)
+- Backend: `backend/parse-server/cloud/functions/support.js` (Cloud Functions)
+
+### 10.6.9 Backend-Integration (MongoDB)
+
+Die CSR-Berechtigungen sind auch im Backend (MongoDB) verfügbar:
+
+**Collections:**
+| Collection | Beschreibung |
+|------------|--------------|
+| `CSRPermission` | Einzelne Berechtigungen mit Metadaten |
+| `CSRRole` | Rollen mit Berechtigungs-Sets |
+
+**Seeding:**
+```bash
+# Via Admin Portal oder curl:
+curl -k -X POST "https://192.168.178.24/parse/functions/seedCSRPermissions" \
+  -H "X-Parse-Application-Id: FIN1_APP_2024" \
+  -H "X-Parse-Session-Token: <session-token>" \
+  -H "Content-Type: application/json"
+
+# Force Reseed (löscht existierende zuerst):
+curl -k -X POST "https://192.168.178.24/parse/functions/forceReseedCSRPermissions" ...
+```
+
+**Cloud Functions:**
+| Function | Beschreibung |
+|----------|--------------|
+| `getCSRPermissions` | Alle Berechtigungen (gruppiert nach Kategorie) |
+| `getCSRRoles` | Alle Rollen mit Berechtigungen |
+| `getCSRRolePermissions` | Berechtigungen einer spezifischen Rolle |
+| `checkCSRPermission` | Prüft ob User eine Berechtigung hat |
+| `getCSRAgentsWithRoles` | Alle CSR-Agenten mit Rollen-Info |
+| `updateCSRUserRole` | Ändert CSR-Sub-Rolle eines Users |
+
+**Beispiel-Response `getCSRRolePermissions`:**
+```json
+{
+  "role": {
+    "key": "fraud",
+    "displayName": "Fraud Analyst",
+    "canApprove": false
+  },
+  "permissionCount": 18,
+  "permissions": [
+    {
+      "category": "viewing",
+      "displayName": "Ansicht",
+      "icon": "👁️",
+      "permissions": [
+        { "key": "viewCustomerProfile", "displayName": "Kundenprofil anzeigen" },
+        ...
+      ]
+    },
+    {
+      "category": "fraud",
+      "displayName": "Betrugsbekämpfung",
+      "icon": "🔍",
+      "permissions": [
+        { "key": "viewFraudAlerts", "displayName": "Fraud-Alerts anzeigen" },
+        { "key": "suspendAccountExtended", "displayName": "Konto erweitert sperren (>24h)", "requiresApproval": true },
+        ...
+      ]
+    }
+  ]
+}
+```
+
+---
+
+## 11. Bekannte Einschränkungen
 
 1. **Kein Parse SDK** - Direkte REST Calls wegen Vite-Kompatibilität
 2. **Self-signed SSL** - Browser-Ausnahme für HTTPS erforderlich
@@ -356,7 +686,7 @@ E-Mail-bezogene Cloud Functions in `backend/parse-server/cloud/functions/notific
 
 ---
 
-## 11. Nächste Schritte
+## 12. Nächste Schritte
 
 - [x] ~~HTTPS aktivieren~~ (Self-signed Zertifikat aktiv)
 - [x] ~~Finanzen-Dashboard implementieren~~
@@ -364,19 +694,22 @@ E-Mail-bezogene Cloud Functions in `backend/parse-server/cloud/functions/notific
 - [x] ~~2FA Setup UI~~
 - [x] ~~Unit Tests (Vitest)~~ - 183 Tests, 90% Coverage
 - [x] ~~E-Mail-Benachrichtigungen~~ (Brevo SMTP konfiguriert)
+- [x] ~~CSR Web Panel~~ (Textbausteine, Ticket-Erstellung)
 - [ ] Let's Encrypt (bei öffentlicher Domain)
 - [ ] E2E Tests (Playwright)
 - [ ] Echte Backend-Daten für Dashboards
 
 ---
 
-## 12. Zugehörige Dokumentation
+## 13. Zugehörige Dokumentation
 
 - [Admin Roles Separation](./09_ADMIN_ROLES_SEPARATION.md)
+- [CSR Support Workflow](./06B_CSR_SUPPORT_WORKFLOW.md)
+- [Customer Support System](../CUSTOMER_SUPPORT_SYSTEM.md)
 - [Cursor Rules: Admin Portal](../.cursor/rules/admin-portal.md)
 - [Backend Permissions](../backend/parse-server/cloud/utils/permissions.js)
 
 ---
 
 *Erstellt: 2026-02-02*
-*Letzte Änderung: 2026-02-03*
+*Letzte Änderung: 2026-02-05*

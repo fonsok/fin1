@@ -190,7 +190,7 @@ struct MyTicketsView: View {
     private var emptyView: some View {
         VStack(spacing: ResponsiveDesign.spacing(16)) {
             Image(systemName: selectedFilter == .all ? "ticket" : "tray")
-                .font(.system(size: 48))
+                .font(.system(size: ResponsiveDesign.iconSize() * 2))
                 .foregroundColor(AppTheme.fontColor.opacity(0.3))
 
             Text(emptyMessage)
@@ -259,10 +259,11 @@ private struct MyTicketFilterPill: View {
 
                 if let badge = badge {
                     Text("\(badge)")
-                        .font(.system(size: 10, weight: .bold))
+                        .font(ResponsiveDesign.captionFont())
+                        .fontWeight(.bold)
                         .foregroundColor(.white)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
+                        .padding(.horizontal, ResponsiveDesign.spacing(6))
+                        .padding(.vertical, ResponsiveDesign.spacing(2))
                         .background(AppTheme.accentRed)
                         .cornerRadius(ResponsiveDesign.spacing(8))
                 }

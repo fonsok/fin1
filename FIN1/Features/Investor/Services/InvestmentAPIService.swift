@@ -79,7 +79,7 @@ struct ParseInvestment: Codable {
 
 // MARK: - Parse Investment Input
 
-private struct ParseInvestmentInput: Encodable {
+private struct ParseInvestmentInput: Codable {
     let investorId: String
     let investorName: String
     let traderId: String
@@ -121,7 +121,7 @@ private struct ParseInvestmentInput: Encodable {
 // MARK: - Parse Pool Participation Input
 // Maps local PoolTradeParticipation to Parse Server format
 
-private struct ParsePoolParticipationInput: Encodable {
+private struct ParsePoolParticipationInput: Codable {
     let investmentId: String
     let tradeId: String
     let poolReservationId: String

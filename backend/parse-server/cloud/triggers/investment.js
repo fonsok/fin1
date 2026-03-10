@@ -6,6 +6,7 @@
 'use strict';
 
 const { generateSequentialNumber, calculateServiceCharge } = require('../utils/helpers');
+const { getPlatformServiceChargeRate } = require('../utils/configHelper');
 
 // ============================================================================
 // BEFORE SAVE
@@ -38,8 +39,9 @@ Parse.Cloud.beforeSave('Investment', async (request) => {
         'Investor cannot invest in their own pool');
     }
 
-    // Calculate service charge
-    const serviceChargeRate = investment.get('serviceChargeRate') || 0.015;
+    // Calculate service charge using admin-configured rate
+    const configuredRate = await getPlatformServiceChargeRate();
+    const serviceChargeRate = investment.get('serviceChargeRate') || configuredRate;
     const serviceCharge = calculateServiceCharge(amount, serviceChargeRate);
 
     investment.set('serviceChargeRate', serviceCharge.rate);

@@ -13,8 +13,7 @@ Architecture and coding standards for the FIN1 Admin Web Portal (`admin-portal/`
 
 | Environment | URL |
 |-------------|-----|
-| Production (HTTPS) | `https://192.168.178.24/admin/` |
-| Production (HTTP) | `http://192.168.178.24/admin/` |
+| Production (HTTPS, HTTP→Redirect) | `https://192.168.178.24/admin/` |
 | Local Dev | `http://localhost:3000/` |
 
 **Note:** Self-signed SSL certificate requires browser exception for HTTPS.
@@ -352,7 +351,7 @@ curl -X POST 'http://localhost:1337/parse/functions/sendTestEmail' \
 | `/compliance` | Compliance | Compliance Events | compliance, admin |
 | `/finance` | Finance | Financial Dashboard | business_admin, admin |
 | `/security` | Security | Sessions, Alerts | security_officer, admin |
-| `/approvals` | Approvals | 4-Eyes Workflow | compliance, admin |
+| `/approvals` | Approvals | 4-Eyes: Freigaben erteilen, Eigene Anträge, Alle Anträge, Abgeschlossen; Antragsteller kann pending Antrag zurückziehen. Sidebar zeigt rotes Badge mit Anzahl offener Anträge (requests + ownPending). | compliance, admin, business_admin |
 | `/audit` | Audit | Audit Logs | compliance, admin |
 | `/configuration` | Configuration | System Parameters | admin |
 | `/system` | System | Server Health | admin, security_officer |

@@ -52,16 +52,16 @@ ssh io@192.168.178.24 "cd ~/fin1-server && docker compose -f docker-compose.prod
 
 ```bash
 # Netzwerk-Verbindungen zum Parse Server überwachen
-sudo lsof -i -P | grep 192.168.178.24 | grep 1337
+sudo lsof -i -P | grep 192.168.178.24 | grep 443
 ```
 
 **Oder mit netstat:**
 ```bash
-netstat -an | grep 192.168.178.24 | grep 1337
+netstat -an | grep 192.168.178.24 | grep 443
 ```
 
 **Was du sehen solltest:**
-- ESTABLISHED-Verbindungen zur IP `192.168.178.24:1337`
+- ESTABLISHED-Verbindungen zur IP `192.168.178.24:443`
 - Das bedeutet, die App hat eine aktive Verbindung
 
 ### 4. Parse Server API direkt testen ✅
@@ -70,10 +70,10 @@ netstat -an | grep 192.168.178.24 | grep 1337
 
 ```bash
 # Test: Health-Check
-curl http://192.168.178.24:1337/parse/health
+curl -sk https://192.168.178.24/parse/health
 
 # Test: API-Endpoint (sollte Fehler geben, aber zeigt dass Server antwortet)
-curl -X POST http://192.168.178.24:1337/parse/classes/TestClass \
+curl -sk -X POST https://192.168.178.24/parse/classes/TestClass \
   -H "X-Parse-Application-Id: fin1-app-id" \
   -H "Content-Type: application/json" \
   -d '{"test":"value"}'
@@ -134,7 +134,7 @@ sudo lsof -i -P | grep 192.168.178.24
 
 **Was du sehen solltest:**
 - Prozess (z.B. `Simulator` oder `FIN1`)
-- Verbindung zu `192.168.178.24:1337`
+- Verbindung zu `192.168.178.24:443`
 
 ## ✅ Erfolgs-Indikatoren
 
@@ -170,7 +170,7 @@ sudo lsof -i -P | grep 192.168.178.24
    ```
 
 2. Prüfe Parse Server URL in der App:
-   - Sollte sein: `http://192.168.178.24:1337/parse`
+   - Sollte sein: `https://192.168.178.24/parse`
    - Prüfe in `ConfigurationService.swift`
 
 3. Prüfe ATS-Einstellungen in `Info.plist`
@@ -184,7 +184,7 @@ sudo lsof -i -P | grep 192.168.178.24
 - Netzwerk-Problem
 
 **Lösung:**
-1. Parse Server testen: `curl http://192.168.178.24:1337/parse/health`
+1. Parse Server testen: `curl -sk https://192.168.178.24/parse/health`
 2. URL in `ConfigurationService.swift` prüfen
 3. Firewall-Regeln prüfen
 4. Netzwerk-Verbindung testen: `ping 192.168.178.24`

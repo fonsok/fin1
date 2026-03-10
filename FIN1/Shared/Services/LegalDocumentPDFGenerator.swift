@@ -186,14 +186,15 @@ final class LegalDocumentPDFGenerator {
             .foregroundColor: UIColor.black
         ]
 
-        let titleHeight = heightForText(section.title, attributes: titleAttributes, width: Layout.contentWidth)
+        let titleText = section.titleOrEmpty
+        let titleHeight = heightForText(titleText, attributes: titleAttributes, width: Layout.contentWidth)
         let titleRect = CGRect(
             x: Layout.marginLeft,
             y: currentY,
             width: Layout.contentWidth,
             height: titleHeight
         )
-        section.title.draw(in: titleRect, withAttributes: titleAttributes)
+        titleText.draw(in: titleRect, withAttributes: titleAttributes)
         currentY += titleHeight + Layout.lineSpacing
 
         // Section Content
@@ -334,7 +335,7 @@ final class LegalDocumentPDFGenerator {
             .font: UIFont.systemFont(ofSize: 10, weight: .regular)
         ]
 
-        let titleHeight = heightForText(section.title, attributes: titleAttributes, width: Layout.contentWidth)
+        let titleHeight = heightForText(section.titleOrEmpty, attributes: titleAttributes, width: Layout.contentWidth)
         let contentHeight = heightForText(section.content, attributes: contentAttributes, width: Layout.contentWidth)
 
         return titleHeight + contentHeight + Layout.paragraphSpacing * 2

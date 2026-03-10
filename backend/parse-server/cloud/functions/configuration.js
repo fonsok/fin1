@@ -43,10 +43,24 @@ Parse.Cloud.define('getConfiguration', async (request) => {
   // Log access
   await logPermissionCheck(request, 'getConfiguration', 'Configuration', config._id || 'default');
 
+  // Flatten financial params into a single config map for the admin portal
+  const flatConfig = {
+    ...config.financial,
+    ...config.limits,
+  };
+
+  // Ensure display is always an object with expected keys (for admin portal Configuration page)
+  const display = {
+    showCommissionBreakdownInCreditNote: config.display?.showCommissionBreakdownInCreditNote ?? true,
+    maximumRiskExposurePercent: config.display?.maximumRiskExposurePercent ?? 2.0,
+    walletFeatureEnabled: config.display?.walletFeatureEnabled ?? false,
+  };
+
   return {
+    config: flatConfig,
     financial: config.financial,
     limits: config.limits,
-    display: config.display,
+    display,
     metadata: {
       lastUpdated: config._updatedAt,
       updatedBy: config._updatedBy,
@@ -126,8 +140,11 @@ Parse.Cloud.define('requestConfigurationChange', async (request) => {
     };
   }
 
-  // Non-critical parameter: Apply immediately
-  await applyConfigurationChange(parameterName, newValue, request.user.id);
+  // Non-critical parameter: Apply immediately (normalize boolean for display params)
+  const valueToApply = parameterName === 'walletFeatureEnabled'
+    ? Boolean(Number(newValue))
+    : newValue;
+  await applyConfigurationChange(parameterName, valueToApply, request.user.id);
 
   // Log the change
   await logConfigurationChange(request, parameterName, oldValue, newValue, reason, null);

@@ -25,15 +25,15 @@
 
 ### ✅ Phase 3: Backend-Konfiguration
 - **Parse Server URLs konfiguriert:**
-  - HTTP: `http://192.168.178.24:1337/parse`
-  - WebSocket: `ws://192.168.178.24:1337/parse`
+  - HTTP: `https://192.168.178.24/parse`
+  - WebSocket: `wss://192.168.178.24/parse`
 - **CORS für lokales Netzwerk konfiguriert**
 - **Parse Server Health-Check funktioniert:** `{"status":"initialized"}`
 
 ### ✅ Phase 4: iOS-App-Konfiguration
 - **ConfigurationService.swift aktualisiert**
 - **Info.plist ATS-Einstellungen aktualisiert**
-- **Parse Server URL:** `http://192.168.178.24:1337/parse`
+- **Parse Server URL:** `https://192.168.178.24/parse`
 
 ### ✅ Phase 5: Validierung & Testing
 - **Ping-Test:** ✅ Server erreichbar (0% packet loss)
@@ -65,8 +65,8 @@
 
 ### iOS-App
 ```
-✅ Parse Server URL:    http://192.168.178.24:1337/parse
-✅ Live Query URL:      ws://192.168.178.24:1337/parse
+✅ Parse Server URL:    https://192.168.178.24/parse
+✅ Live Query URL:      wss://192.168.178.24/parse
 ✅ Application ID:      fin1-app-id
 ✅ ATS konfiguriert:    Lokales Netzwerk erlaubt
 ```

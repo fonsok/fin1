@@ -10,10 +10,11 @@
 
 ### Schritt-für-Schritt:
 
-1. **Parse Dashboard öffnen:**
+1. **Parse Dashboard öffnen (per SSH-Tunnel):**
+   ```bash
+   ssh -L 443:127.0.0.1:443 io@192.168.178.24
    ```
-   http://192.168.178.24:1337/dashboard
-   ```
+   Dann im Browser: **`https://localhost/dashboard/`** (Zertifikat-Warnung ggf. bestätigen)
 
 2. **Login:**
    - User: `admin` (oder wie in `.env` konfiguriert)
@@ -28,9 +29,9 @@
    - Klicke: **"Create class"**
 
 5. **Felder hinzufügen:**
-   
+
    Klicke auf **"Add a new column"** für jedes Feld:
-   
+
    | Feldname | Typ | Required | Default |
    |----------|-----|----------|---------|
    | `userId` | String | ✅ Yes | - |

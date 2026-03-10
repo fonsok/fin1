@@ -23,10 +23,25 @@ struct SignUpView: View {
                 AppTheme.screenBackground
                     .ignoresSafeArea()
 
+                if coordinator.isResuming {
+                    VStack(spacing: ResponsiveDesign.spacing(16)) {
+                        ProgressView()
+                            .scaleEffect(1.2)
+                        Text("Resuming your progress…")
+                            .font(ResponsiveDesign.bodyFont())
+                            .foregroundColor(AppTheme.fontColor)
+                    }
+                }
+
                 VStack(spacing: ResponsiveDesign.spacing(0)) {
                     // Progress Bar
-                    SignUpProgressBar(progress: coordinator.progress, currentStep: coordinator.currentStepNumber, totalSteps: coordinator.totalStepsForRole)
-                        .padding(.horizontal, ResponsiveDesign.lightBlueAreaHorizontalPadding())
+                    SignUpProgressBar(
+                        progress: coordinator.progress,
+                        currentStep: coordinator.currentStepNumber,
+                        totalSteps: coordinator.totalStepsForRole,
+                        phase: coordinator.currentStep.phase
+                    )
+                    .padding(.horizontal, ResponsiveDesign.lightBlueAreaHorizontalPadding())
 
                     // Step Content
                     ScrollView {
@@ -50,6 +65,7 @@ struct SignUpView: View {
                     )
                     .padding(.horizontal, ResponsiveDesign.lightBlueAreaHorizontalPadding())
                 }
+                .opacity(coordinator.isResuming ? 0 : 1)
             }
             .navigationTitle(coordinator.isFirstStep ? "Konto eröffnen" : "Create Account")
             .navigationBarTitleDisplayMode(.inline)
@@ -67,27 +83,55 @@ struct SignUpView: View {
         } message: {
             Text(coordinator.alertMessage)
         }
+        .alert("Session Timeout", isPresented: $coordinator.showTimeoutWarning) {
+            Button("Continue Session") {
+                coordinator.extendSession()
+            }
+            Button("End Session", role: .destructive) {
+                coordinator.stopInactivityTimers()
+                coordinator.requestDismissal()
+            }
+        } message: {
+            Text("Your session will expire in \(coordinator.timeoutCountdown) seconds due to inactivity. Sensitive data will be cleared for your security.")
+        }
         .onAppear {
-            // Initialize any necessary setup
             coordinator.signUpData = signUpData
-            // Inject services into SignUpData
             signUpData.injectServices(
                 riskClassCalculationService: appServices.riskClassCalculationService,
                 investmentExperienceCalculationService: appServices.investmentExperienceCalculationService
             )
-            // Inject TestModeService into validation
             coordinator.setValidation(
                 DefaultStepValidation(testModeService: appServices.testModeService)
             )
+            coordinator.configureServices(
+                onboardingAPIService: appServices.onboardingAPIService,
+                userService: appServices.userService,
+                telemetryService: appServices.telemetryService
+            )
+            Task {
+                await coordinator.resumeOnboarding()
+                coordinator.startInactivityTimer()
+            }
         }
         .onChange(of: signUpData.userRole) { _, newRole in
             coordinator.setUserRole(newRole)
         }
+        .onChange(of: coordinator.currentStep) { _, newStep in
+            if newStep == .emailVerification {
+                coordinator.sendVerificationCode()
+            } else if newStep == .phoneVerification {
+                coordinator.sendPhoneVerificationCode()
+            }
+        }
         .onChange(of: coordinator.shouldDismiss) { _, newValue in
             if newValue {
                 dismiss()
-                coordinator.shouldDismiss = false // Reset flag
+                coordinator.shouldDismiss = false
             }
+        }
+        .onDisappear {
+            coordinator.stopInactivityTimers()
+            coordinator.trackDropOffIfNeeded()
         }
         .fullScreenCover(isPresented: $coordinator.showWelcomePage) {
             WelcomePage(coordinator: coordinator)
@@ -118,6 +162,28 @@ struct SignUpView: View {
             )
         case .accountCreated:
             AccountCreatedStep()
+        case .emailVerification:
+            EmailVerificationStep(
+                email: signUpData.email,
+                verificationCode: $coordinator.verificationCode,
+                isVerifying: coordinator.isVerifyingCode,
+                errorMessage: coordinator.verificationError,
+                canResend: coordinator.canResendCode,
+                resendCountdown: coordinator.resendCountdown,
+                onVerify: coordinator.verifyCode,
+                onResend: coordinator.resendCode
+            )
+        case .phoneVerification:
+            PhoneVerificationStep(
+                phoneNumber: signUpData.phoneNumber,
+                verificationCode: $coordinator.phoneVerificationCode,
+                isVerifying: coordinator.isVerifyingPhone,
+                errorMessage: coordinator.phoneVerificationError,
+                canResend: coordinator.canResendPhoneCode,
+                resendCountdown: coordinator.phoneResendCountdown,
+                onVerify: coordinator.verifyPhoneCode,
+                onResend: coordinator.resendPhoneCode
+            )
         case .personalInfo:
             PersonalInfoStep(
                 salutation: $signUpData.salutation,
@@ -224,24 +290,33 @@ struct SignUpView: View {
     private func completeRegistration() {
         coordinator.isLoading = true
 
-        do {
-            let user = try signUpData.createUser()
+        Task {
+            do {
+                let user = try signUpData.createUser()
+                let exportedData = signUpData.exportSignUpData()
 
-            // Simulate registration
-            Task {
-                try? await Task.sleep(nanoseconds: 2_000_000_000) // 2 seconds
-                await MainActor.run {
-                    coordinator.isLoading = false
+                try await appServices.userService.updateProfile(user)
+
+                if let onboardingAPI = appServices.onboardingAPIService {
+                    // Mark legalConsent phase complete
+                    _ = try await onboardingAPI.completeStep(
+                        step: OnboardingPhase.legalConsent.completionBackendStep,
+                        data: exportedData
+                    )
+                    // Mark the final verification step
+                    _ = try await onboardingAPI.completeStep(
+                        step: "verification",
+                        data: exportedData
+                    )
                 }
-                try? await appServices.userService.signUp(userData: user)
-                await MainActor.run {
-                    dismiss()
-                }
+
+                coordinator.trackOnboardingCompleted()
+                coordinator.isLoading = false
+                dismiss()
+            } catch {
+                coordinator.isLoading = false
+                coordinator.showError(error.localizedDescription)
             }
-        } catch {
-            coordinator.isLoading = false
-            // Handle error - could show alert or set error state
-            print("Failed to create user: \(error.localizedDescription)")
         }
     }
 }

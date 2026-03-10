@@ -42,6 +42,9 @@ final class CustomerSupportService: CustomerSupportServiceProtocol, ServiceLifec
     var mockTickets: [SupportTicket] = []
     var mockAgents: [CSRAgent] = []
 
+    // Backend integration
+    var ticketAPIService: TicketAPIServiceProtocol?
+
     // MARK: - Initialization
 
     init(
@@ -72,6 +75,60 @@ final class CustomerSupportService: CustomerSupportServiceProtocol, ServiceLifec
     func start() { logger.info("CustomerSupportService started") }
     func stop() { logger.info("CustomerSupportService stopped") }
     func reset() { logger.info("CustomerSupportService reset") }
+
+    // MARK: - Backend Configuration
+
+    /// Configures the ticket API service for backend synchronization
+    func configure(ticketAPIService: TicketAPIServiceProtocol) {
+        self.ticketAPIService = ticketAPIService
+    }
+
+    // MARK: - Backend Synchronization
+
+    /// Syncs pending tickets to the backend
+    func syncToBackend() async {
+        guard let apiService = ticketAPIService else {
+            print("⚠️ CustomerSupportService: No API service configured, skipping sync")
+            return
+        }
+
+        print("📤 CustomerSupportService: Syncing pending tickets to backend...")
+
+        // Sync pending tickets (without Parse objectId or with local- prefix)
+        let pendingTickets = mockTickets.filter { ticket in
+            ticket.id.starts(with: "local-") ||
+            !ticket.id.contains("-") || // UUID without Parse objectId format
+            ticket.id.count == 36 // Standard UUID format (not Parse objectId)
+        }
+
+        print("📤 CustomerSupportService: Found \(pendingTickets.count) pending tickets to sync")
+
+        for ticket in pendingTickets {
+            do {
+                let ticketCreate = SupportTicketCreate(
+                    customerId: ticket.customerId,
+                    subject: ticket.subject,
+                    description: ticket.description,
+                    priority: ticket.priority
+                )
+
+                let syncedTicket = try await apiService.createTicket(ticketCreate)
+
+                // Update local ticket with Parse objectId
+                await MainActor.run {
+                    if let index = self.mockTickets.firstIndex(where: { $0.id == ticket.id }) {
+                        self.mockTickets[index] = syncedTicket
+                    }
+                }
+
+                print("✅ CustomerSupportService: Synced ticket \(ticket.ticketNumber)")
+            } catch {
+                print("⚠️ CustomerSupportService: Failed to sync ticket \(ticket.ticketNumber): \(error.localizedDescription)")
+            }
+        }
+
+        print("✅ CustomerSupportService: Background sync completed")
+    }
 
     // MARK: - Permission Checking
 

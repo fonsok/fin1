@@ -33,6 +33,12 @@ struct TermsVersionConstants {
         return formatter.date(from: "2024-01-01") ?? Date()
     }()
 
+    // MARK: - Questionnaire Version
+
+    /// Version of the MiFID-II risk/experience questionnaire.
+    /// Increment when questions, answer options, or scoring weights change.
+    static let currentQuestionnaireVersion: String = "1.0"
+
     // MARK: - Acceptance Requirements
 
     /// Whether material changes require explicit acceptance (not just continued use)

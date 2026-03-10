@@ -1,7 +1,7 @@
 ---
 title: "FIN1 – CSR Workflow & Aufgabenverteilung (Support Runbook)"
 audience: ["Customer Support (CSR)", "QA", "Produkt", "Compliance", "Betrieb", "Entwicklung"]
-lastUpdated: "2026-02-01"
+lastUpdated: "2026-02-05"
 ---
 
 ## Zweck
@@ -10,10 +10,12 @@ Dieses Dokument beschreibt den **konkret implementierten** Support-Workflow in F
 
 **Source of Truth** (Code):
 - iOS CSR Portal: `FIN1/Features/CustomerSupport/**`
-- RBAC/Permissions: `FIN1/Features/CustomerSupport/Models/CustomerSupportPermission*.swift`, `CSRRole.swift`
+- RBAC/Permissions (iOS): `FIN1/Features/CustomerSupport/Models/CustomerSupportPermission*.swift`, `CSRRole.swift`
+- RBAC/Permissions (Backend): `CSRPermission` und `CSRRole` Collections in MongoDB (siehe `backend/scripts/seed-csr-permissions.js`)
 - Ticket-Workflow: `CustomerSupportService+Tickets.swift`, `+Resolution.swift`, `+UserConfirmation.swift`, `+Lifecycle.swift`
 - SLA: `SLAModels.swift`, `SLAMonitoringService.swift`
 - Backend Triggers: `backend/parse-server/cloud/triggers/support.js`
+- Backend Cloud Functions: `backend/parse-server/cloud/functions/support.js` (getCSRRoles, getCSRPermissions, etc.)
 - 4-Augen (Backend): `backend/parse-server/cloud/functions/admin.js` (`getPendingApprovals`, `approveRequest`)
 
 ## 1) Rollenmodell (wer macht was?)

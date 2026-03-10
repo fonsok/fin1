@@ -7,7 +7,7 @@ Web-basiertes Administrations-Portal für FIN1 App-Level-Admins.
 | Environment | URL |
 |-------------|-----|
 | Production (HTTPS) | `https://192.168.178.24/admin/` |
-| Production (HTTP) | `http://192.168.178.24/admin/` |
+| Production (HTTPS) | `https://192.168.178.24/admin/` |
 | Local Dev | `http://localhost:3000/` |
 
 **Hinweis:** HTTPS verwendet ein Self-signed Zertifikat (Browser-Ausnahme erforderlich).

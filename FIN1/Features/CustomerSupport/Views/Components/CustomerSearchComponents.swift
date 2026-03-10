@@ -219,7 +219,7 @@ struct TicketRow: View {
                             Text("•")
                                 .foregroundColor(AppTheme.fontColor.opacity(0.3))
                             Image(systemName: "person.fill")
-                                .font(.system(size: 9))
+                                .font(ResponsiveDesign.captionFont())
                                 .foregroundColor(AppTheme.fontColor.opacity(0.5))
                             Text(agentName.replacingOccurrences(of: "user:", with: "").components(separatedBy: "@").first ?? "")
                                 .font(ResponsiveDesign.captionFont())

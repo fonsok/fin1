@@ -1,8 +1,8 @@
 import SwiftUI
 
 // MARK: - Bulk Operations View
-
-/// View for performing bulk actions on multiple tickets
+/// View for performing bulk actions on multiple tickets.
+/// Subviews in BulkOperations/ (BulkSelectableTicketRow, PriorityBadge, BulkActionButton, BulkAssignSheet, BulkCloseSheet).
 struct BulkOperationsView: View {
     @ObservedObject var viewModel: CustomerSupportDashboardViewModel
     @Environment(\.dismiss) private var dismiss
@@ -69,8 +69,6 @@ struct BulkOperationsView: View {
         }
     }
 
-    // MARK: - Selection Header
-
     private var selectionHeader: some View {
         HStack {
             Image(systemName: selectedTicketIds.isEmpty ? "square" : "checkmark.square.fill")
@@ -91,8 +89,6 @@ struct BulkOperationsView: View {
         .padding()
         .background(AppTheme.sectionBackground)
     }
-
-    // MARK: - Ticket List
 
     private var ticketList: some View {
         ScrollView {
@@ -117,7 +113,7 @@ struct BulkOperationsView: View {
     private var emptyState: some View {
         VStack(spacing: ResponsiveDesign.spacing(12)) {
             Image(systemName: "tray")
-                .font(.system(size: 48))
+                .font(.system(size: ResponsiveDesign.iconSize() * 2))
                 .foregroundColor(AppTheme.fontColor.opacity(0.3))
 
             Text("Keine bearbeitbaren Tickets")
@@ -131,8 +127,6 @@ struct BulkOperationsView: View {
         .frame(maxWidth: .infinity)
         .padding(.vertical, ResponsiveDesign.spacing(40))
     }
-
-    // MARK: - Action Bar
 
     private var actionBar: some View {
         VStack(spacing: ResponsiveDesign.spacing(12)) {
@@ -180,8 +174,6 @@ struct BulkOperationsView: View {
         .padding(.vertical, ResponsiveDesign.spacing(8))
         .background(AppTheme.sectionBackground)
     }
-
-    // MARK: - Actions
 
     private func toggleSelection(_ ticketId: String) {
         if selectedTicketIds.contains(ticketId) {
@@ -236,249 +228,7 @@ struct BulkOperationsView: View {
     }
 }
 
-// MARK: - Bulk Selectable Ticket Row
-
-private struct BulkSelectableTicketRow: View {
-    let ticket: SupportTicket
-    let isSelected: Bool
-    let onToggle: () -> Void
-
-    var body: some View {
-        Button(action: onToggle) {
-            HStack(spacing: ResponsiveDesign.spacing(12)) {
-                // Checkbox
-                Image(systemName: isSelected ? "checkmark.square.fill" : "square")
-                    .foregroundColor(isSelected ? AppTheme.accentLightBlue : AppTheme.fontColor.opacity(0.4))
-                    .font(ResponsiveDesign.headlineFont())
-
-                // Ticket info
-                VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
-                    HStack {
-                        Text(ticket.ticketNumber)
-                            .font(ResponsiveDesign.captionFont())
-                            .fontWeight(.semibold)
-                            .foregroundColor(AppTheme.accentLightBlue)
-
-                        CSStatusBadge(text: ticket.status.displayName, color: statusColor)
-
-                        PriorityBadge(priority: ticket.priority)
-                    }
-
-                    Text(ticket.subject)
-                        .font(ResponsiveDesign.bodyFont())
-                        .foregroundColor(AppTheme.fontColor)
-                        .lineLimit(1)
-
-                    Text(ticket.customerName)
-                        .font(ResponsiveDesign.captionFont())
-                        .foregroundColor(AppTheme.fontColor.opacity(0.7))
-                }
-
-                Spacer()
-            }
-            .padding()
-            .background(isSelected ? AppTheme.accentLightBlue.opacity(0.1) : AppTheme.sectionBackground)
-            .cornerRadius(ResponsiveDesign.spacing(10))
-            .overlay(
-                RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(10))
-                    .stroke(isSelected ? AppTheme.accentLightBlue : Color.clear, lineWidth: 1)
-            )
-        }
-        .buttonStyle(PlainButtonStyle())
-    }
-
-    private var statusColor: Color {
-        switch ticket.status {
-        case .open, .inProgress: return AppTheme.accentLightBlue
-        case .waitingForCustomer: return AppTheme.accentOrange
-        case .escalated: return AppTheme.accentRed
-        case .resolved, .closed: return AppTheme.accentGreen
-        case .archived: return AppTheme.fontColor.opacity(0.5)
-        }
-    }
-}
-
-// MARK: - Priority Badge
-
-private struct PriorityBadge: View {
-    let priority: SupportTicket.TicketPriority
-
-    var body: some View {
-        Text(priority.rawValue)
-            .font(.system(size: 9, weight: .semibold))
-            .foregroundColor(.white)
-            .padding(.horizontal, ResponsiveDesign.spacing(6))
-            .padding(.vertical, ResponsiveDesign.spacing(2))
-            .background(priorityColor)
-            .cornerRadius(ResponsiveDesign.spacing(4))
-    }
-
-    private var priorityColor: Color {
-        switch priority {
-        case .urgent: return AppTheme.accentRed
-        case .high: return AppTheme.accentOrange
-        case .medium: return AppTheme.accentLightBlue
-        case .low: return AppTheme.fontColor.opacity(0.5)
-        }
-    }
-}
-
-// MARK: - Bulk Action Button
-
-private struct BulkActionButton: View {
-    let title: String
-    let icon: String
-    let color: Color
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: ResponsiveDesign.spacing(6)) {
-                Image(systemName: icon)
-                    .font(ResponsiveDesign.captionFont())
-                Text(title)
-                    .font(ResponsiveDesign.captionFont())
-                    .fontWeight(.medium)
-            }
-            .foregroundColor(.white)
-            .padding(.horizontal, ResponsiveDesign.spacing(16))
-            .padding(.vertical, ResponsiveDesign.spacing(10))
-            .background(color)
-            .cornerRadius(ResponsiveDesign.spacing(20))
-        }
-    }
-}
-
-// MARK: - Bulk Assign Sheet
-
-private struct BulkAssignSheet: View {
-    let selectedCount: Int
-    let agents: [CSRAgent]
-    let onAssign: (String) -> Void
-
-    @State private var selectedAgentId: String?
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        NavigationStack {
-            VStack(spacing: ResponsiveDesign.spacing(16)) {
-                Text("\(selectedCount) Tickets zuweisen an:")
-                    .font(ResponsiveDesign.headlineFont())
-                    .foregroundColor(AppTheme.fontColor)
-
-                ScrollView {
-                    LazyVStack(spacing: ResponsiveDesign.spacing(8)) {
-                        ForEach(agents.filter { $0.canAcceptTickets }) { agent in
-                            Button {
-                                selectedAgentId = agent.id
-                            } label: {
-                                HStack {
-                                    VStack(alignment: .leading) {
-                                        Text(agent.name)
-                                            .font(ResponsiveDesign.bodyFont())
-                                            .foregroundColor(AppTheme.fontColor)
-
-                                        Text("\(agent.currentTicketCount)/\(CSRAgent.maxTickets) Tickets")
-                                            .font(ResponsiveDesign.captionFont())
-                                            .foregroundColor(AppTheme.fontColor.opacity(0.7))
-                                    }
-
-                                    Spacer()
-
-                                    Image(systemName: selectedAgentId == agent.id ? "checkmark.circle.fill" : "circle")
-                                        .foregroundColor(selectedAgentId == agent.id ? AppTheme.accentLightBlue : AppTheme.fontColor.opacity(0.3))
-                                }
-                                .padding()
-                                .background(selectedAgentId == agent.id ? AppTheme.accentLightBlue.opacity(0.1) : AppTheme.sectionBackground)
-                                .cornerRadius(ResponsiveDesign.spacing(10))
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                        }
-                    }
-                    .padding()
-                }
-            }
-            .background(AppTheme.screenBackground.ignoresSafeArea())
-            .navigationTitle("Agent auswählen")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Abbrechen") { dismiss() }
-                }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Zuweisen") {
-                        if let agentId = selectedAgentId {
-                            onAssign(agentId)
-                        }
-                    }
-                    .disabled(selectedAgentId == nil)
-                }
-            }
-        }
-    }
-}
-
-// MARK: - Bulk Close Sheet
-
-private struct BulkCloseSheet: View {
-    let selectedCount: Int
-    let onClose: (String) -> Void
-
-    @State private var reason = ""
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        NavigationStack {
-            VStack(spacing: ResponsiveDesign.spacing(16)) {
-                Image(systemName: "exclamationmark.triangle.fill")
-                    .font(ResponsiveDesign.largeTitleFont())
-                    .foregroundColor(AppTheme.accentOrange)
-
-                Text("\(selectedCount) Tickets schließen?")
-                    .font(ResponsiveDesign.headlineFont())
-                    .foregroundColor(AppTheme.fontColor)
-
-                Text("Diese Aktion kann nicht rückgängig gemacht werden.")
-                    .font(ResponsiveDesign.captionFont())
-                    .foregroundColor(AppTheme.fontColor.opacity(0.7))
-
-                VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
-                    Text("Begründung")
-                        .font(ResponsiveDesign.bodyFont())
-                        .fontWeight(.medium)
-                        .foregroundColor(AppTheme.fontColor)
-
-                    TextEditor(text: $reason)
-                        .frame(minHeight: 100)
-                        .padding(ResponsiveDesign.spacing(12))
-                        .background(AppTheme.sectionBackground)
-                        .cornerRadius(ResponsiveDesign.spacing(10))
-                        .scrollContentBackground(.hidden)
-                }
-                .padding()
-
-                Spacer()
-            }
-            .background(AppTheme.screenBackground.ignoresSafeArea())
-            .navigationTitle("Tickets schließen")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Abbrechen") { dismiss() }
-                }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Schließen") {
-                        onClose(reason.isEmpty ? "Massenbearbeitung" : reason)
-                    }
-                    .foregroundColor(AppTheme.accentRed)
-                }
-            }
-        }
-    }
-}
-
 // MARK: - Preview
-
 #Preview {
     BulkOperationsView(
         viewModel: CustomerSupportDashboardViewModel(
@@ -488,4 +238,3 @@ private struct BulkCloseSheet: View {
         )
     )
 }
-

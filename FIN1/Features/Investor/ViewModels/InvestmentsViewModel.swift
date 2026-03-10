@@ -55,7 +55,7 @@ final class InvestmentsViewModel: ObservableObject {
         self.commissionCalculationService = commissionCalculationService
         self.boundInvestorId = userService.currentUser?.id
         self.currentRole = userService.currentUser?.role
-        self.dataProcessor = InvestmentsDataProcessor(poolTradeParticipationService: poolTradeParticipationService)
+        self.dataProcessor = InvestmentsDataProcessor(poolTradeParticipationService: poolTradeParticipationService, configurationService: configurationService)
         setupRoleChangeObservers()
         setupBindings()
     }
@@ -158,8 +158,7 @@ final class InvestmentsViewModel: ObservableObject {
         // Refresh bound investor id when VM is explicitly reconfigured
         self.boundInvestorId = services.userService.currentUser?.id
 
-        // Update data processor with new service
-        self.dataProcessor = InvestmentsDataProcessor(poolTradeParticipationService: services.poolTradeParticipationService)
+        self.dataProcessor = InvestmentsDataProcessor(poolTradeParticipationService: services.poolTradeParticipationService, configurationService: services.configurationService)
         refreshCompletedDisplayData()
 
         // Re-setup bindings with new service

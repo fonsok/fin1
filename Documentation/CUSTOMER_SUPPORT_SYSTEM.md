@@ -615,7 +615,7 @@ Alle Vorlagen unterstützen dynamische Platzhalter:
 
 | Datei | Beschreibung |
 |-------|--------------|
-| `CustomerSupportPermission.swift` | 30+ granulare Berechtigungen für CSR-Aktionen |
+| `CustomerSupportPermission.swift` | 36 granulare Berechtigungen für CSR-Aktionen |
 | `CSRRole.swift` | 6 Rollen (L1, L2, Fraud, Compliance, Tech, Teamlead) mit UI-Eigenschaften |
 | `PermissionCategory.swift` | Kategorien zur UI-Gruppierung von Berechtigungen |
 | `CustomerSupportPermissionSet.swift` | Vordefinierte Berechtigungs-Sets pro Rolle |
@@ -623,6 +623,23 @@ Alle Vorlagen unterstützen dynamische Platzhalter:
 | `FraudAMLModels.swift` | AccountSuspension, SARReport, ChargebackRequest, FraudAlert |
 | `FourEyesApprovalModels.swift` | 4-Augen-Workflow mit ApprovalRequest, ApprovalDecision, AuditEntry |
 | `GDPRRequestModels.swift` | DSGVO Art. 15/17/20 Anfragen mit RetentionConflicts |
+
+### Backend (MongoDB Collections)
+
+| Collection | Beschreibung |
+|------------|--------------|
+| `CSRPermission` | 36 Berechtigungen mit Metadaten (category, requiresApproval, etc.) |
+| `CSRRole` | 6 Rollen mit Berechtigungs-Arrays und UI-Properties |
+
+**Backend Cloud Functions** (`backend/parse-server/cloud/functions/support.js`):
+- `getCSRPermissions` – Alle Berechtigungen abrufen (gruppiert nach Kategorie)
+- `getCSRRoles` – Alle Rollen mit Berechtigungen abrufen
+- `getCSRRolePermissions` – Berechtigungen einer spezifischen Rolle
+- `checkCSRPermission` – Prüfen ob User eine bestimmte Berechtigung hat
+- `getCSRAgentsWithRoles` – CSR-Agenten mit Rollen-Info
+- `updateCSRUserRole` – CSR-Sub-Rolle eines Benutzers ändern
+
+**Seed-Skript:** `backend/scripts/seed-csr-permissions.js`
 
 ### Templates (`FIN1/Features/CustomerSupport/Models/Templates/`)
 

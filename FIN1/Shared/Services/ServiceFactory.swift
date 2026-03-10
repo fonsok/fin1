@@ -99,7 +99,8 @@ final class ServiceFactory {
         traderCashBalanceService: (any TraderCashBalanceServiceProtocol)? = nil,
         investmentService: (any InvestmentServiceProtocol)? = nil,
         userService: any UserServiceProtocol,
-        traderDataService: (any TraderDataServiceProtocol)? = nil
+        traderDataService: (any TraderDataServiceProtocol)? = nil,
+        settlementAPIService: (any SettlementAPIServiceProtocol)? = nil
     ) -> ProfitDistributionService {
         return ProfitDistributionService(
             commissionCalculationService: commissionCalculationService,
@@ -110,7 +111,8 @@ final class ServiceFactory {
             investmentService: investmentService,
             userService: userService,
             traderDataService: traderDataService,
-            configurationService: configurationService
+            configurationService: configurationService,
+            settlementAPIService: settlementAPIService
         )
     }
 
@@ -142,7 +144,8 @@ final class ServiceFactory {
         documentService: (any DocumentServiceProtocol)? = nil,
         investorGrossProfitService: (any InvestorGrossProfitServiceProtocol)? = nil,
         commissionCalculationService: (any CommissionCalculationServiceProtocol)? = nil,
-        auditLoggingService: (any AuditLoggingServiceProtocol)? = nil
+        auditLoggingService: (any AuditLoggingServiceProtocol)? = nil,
+        settlementAPIService: (any SettlementAPIServiceProtocol)? = nil
     ) -> OrderLifecycleCoordinator {
         return OrderLifecycleCoordinator(
             orderManagementService: orderManagementService,
@@ -160,7 +163,8 @@ final class ServiceFactory {
             configurationService: configurationService,
             investorGrossProfitService: investorGrossProfitService,
             commissionCalculationService: commissionCalculationService,
-            auditLoggingService: auditLoggingService
+            auditLoggingService: auditLoggingService,
+            settlementAPIService: settlementAPIService
         )
     }
 
@@ -244,13 +248,33 @@ final class ServiceFactory {
         return CommissionCalculationService(investorGrossProfitService: investorGrossProfitService)
     }
 
-    /// Configures InvoiceService with ParseAPIClient for backend integration
+    /// Configures InvoiceService with ParseAPIClient and InvoiceAPIService for backend integration
     func configureInvoiceService(parseAPIClient: (any ParseAPIClientProtocol)?) {
         // Create new InvoiceService instance with ParseAPIClient
         // Note: This replaces the existing instance, so all references should use coreInvoiceService
         self.invoiceService = InvoiceService(
             transactionIdService: transactionIdService,
             parseAPIClient: parseAPIClient
+        )
+
+        // Configure InvoiceAPIService if ParseAPIClient is available
+        if let apiClient = parseAPIClient {
+            let invoiceAPIService = InvoiceAPIService(apiClient: apiClient)
+            self.invoiceService.configure(invoiceAPIService: invoiceAPIService)
+        }
+    }
+
+    // MARK: - Customer Support Services
+
+    /// Creates TemplateAPIService for CSR template management
+    /// Fetches templates from backend with local caching and offline fallback
+    func createTemplateAPIService(
+        parseAPIClient: any ParseAPIClientProtocol,
+        preferredLanguage: String = "de"
+    ) -> TemplateAPIService {
+        return TemplateAPIService(
+            apiClient: parseAPIClient,
+            preferredLanguage: preferredLanguage
         )
     }
 

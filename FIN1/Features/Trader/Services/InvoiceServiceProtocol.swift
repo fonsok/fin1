@@ -35,4 +35,7 @@ protocol InvoiceServiceProtocol: ObservableObject, ServiceLifecycle {
     // MARK: - Invoice Validation
     func validateInvoice(_ invoice: Invoice) -> Bool
     func validateCustomerInfo(_ customerInfo: CustomerInfo) -> Bool
+
+    // MARK: - Backend Synchronization
+    func syncToBackend() async
 }

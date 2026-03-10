@@ -62,7 +62,7 @@ final class TraderCreditNoteDetailViewModel: ObservableObject {
 
     // MARK: - Computed Properties
     var commissionRate: Double {
-        appServices?.configurationService.traderCommissionRate ?? 0.05
+        appServices?.configurationService.traderCommissionRate ?? CalculationConstants.FeeRates.traderCommissionRate
     }
 
     var formattedCommissionRate: String {

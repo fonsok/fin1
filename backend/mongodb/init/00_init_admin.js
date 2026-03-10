@@ -171,11 +171,10 @@ db.Config.updateOne(
         orderFeeMin: 5.0,
         orderFeeMax: 50.0,
         exchangeFeeRate: 0.001,
-        traderCommissionRate: 0.05,
-        platformServiceCharge: 0.015,
-        minimumCashReserve: 12.0,
-        initialTraderBalance: 50000.0,
-        initialInvestorBalance: 25000.0
+        traderCommissionRate: 0.10,
+        platformServiceChargeRate: 0.02,
+        minimumCashReserve: 20.0,
+        initialAccountBalance: 1.0
       },
 
       features: {

@@ -66,7 +66,7 @@ final class TermsOfServiceViewModel: ObservableObject {
         return serverTermsContent.sections.map { section in
             TermsSection(
                 id: section.id,
-                title: section.title,
+                title: section.titleOrEmpty,
                 // Backend/audit clean: render exactly what server stored/served.
                 content: section.content,
                 icon: section.icon ?? ""

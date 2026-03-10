@@ -60,6 +60,12 @@ struct BuyOrderView: View {
     @EnvironmentObject var tabRouter: TabRouter
     @State private var isShowingConfirmation = false
     @Environment(\.themeManager) private var themeManager
+    @Environment(\.appServices) private var services
+    @State private var legalNoticeText: String = ""
+
+    private var defaultLegalNoticeText: String {
+        "Mit dem Klicken auf 'Kaufen' stimmen Sie den allgemeinen Geschäftsbedingungen zu und bestätigen, dass Sie die Risiken des Wertpapierhandels verstanden haben. Diese Transaktion ist gebührenpflichtig."
+    }
 
     var body: some View {
         NavigationStack {
@@ -72,7 +78,7 @@ struct BuyOrderView: View {
                     costEstimateSection
 
                     insufficientFundsWarningSection
-                    
+
                     transactionLimitWarningSection
 
                     orderActionButton
@@ -81,7 +87,7 @@ struct BuyOrderView: View {
                     Text("Rechtliche Hinweise")
                         .font(ResponsiveDesign.headlineFont())
                         .foregroundColor(AppTheme.secondaryText)
-                    Text("Mit dem Klicken auf 'Kaufen' stimmen Sie den allgemeinen Geschäftsbedingungen zu und bestätigen, dass Sie die Risiken des Wertpapierhandels verstanden haben. Diese Transaktion ist gebührenpflichtlich.")
+                    Text(legalNoticeText.isEmpty ? defaultLegalNoticeText : legalNoticeText)
                         .font(ResponsiveDesign.captionFont())
                 }
                 .padding()
@@ -135,6 +141,18 @@ struct BuyOrderView: View {
             viewModel.onLimitPriceChanged()
         }
         .dismissKeyboardOnTap()
+        .task {
+            let provider = LegalSnippetProvider(termsContentService: services.termsContentService)
+            let language: TermsOfServiceDataProvider.Language = .german
+            let text = await provider.text(
+                for: .orderLegalWarningBuy,
+                language: language,
+                documentType: .terms,
+                defaultText: defaultLegalNoticeText,
+                placeholders: [:]
+            )
+            legalNoticeText = text
+        }
     }
 
     // MARK: - Computed Properties for View Sections
@@ -239,9 +257,9 @@ struct BuyOrderView: View {
             .cornerRadius(ResponsiveDesign.spacing(10))
         }
     }
-    
+
     // MARK: - Transaction Limit Warning (MiFID II Compliance)
-    
+
     @ViewBuilder
     private var transactionLimitWarningSection: some View {
         if viewModel.showLimitWarning {
@@ -254,7 +272,7 @@ struct BuyOrderView: View {
                         .font(ResponsiveDesign.headlineFont())
                         .foregroundColor(.orange)
                 }
-                
+
                 if let message = viewModel.limitWarningMessage {
                     Text(message)
                         .font(ResponsiveDesign.bodyFont())
@@ -273,7 +291,7 @@ struct BuyOrderView: View {
             // Show remaining limit info when approaching limit (< 50% remaining)
             let dailyLimit = (viewModel.transactionLimitCheckResult?.remainingDaily ?? 0) + viewModel.estimatedCost
             let usagePercent = dailyLimit > 0 ? (1.0 - remainingLimit / dailyLimit) : 0
-            
+
             if usagePercent > 0.5 {
                 HStack {
                     Image(systemName: "info.circle")

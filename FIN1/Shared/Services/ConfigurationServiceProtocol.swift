@@ -30,6 +30,10 @@ enum PoolBalanceDistributionStrategy: String, Codable, CaseIterable {
 // MARK: - Configuration Service Protocol
 /// Defines the contract for application configuration management
 protocol ConfigurationServiceProtocol: ObservableObject {
+    /// Publisher that fires when any configuration value changes.
+    /// Use this instead of `objectWillChange` when holding `any ConfigurationServiceProtocol`.
+    var configurationChanged: AnyPublisher<Void, Never> { get }
+
     var minimumCashReserve: Double { get }
     var initialAccountBalance: Double { get }
     var poolBalanceDistributionStrategy: PoolBalanceDistributionStrategy { get }
@@ -52,6 +56,12 @@ protocol ConfigurationServiceProtocol: ObservableObject {
     /// Wenn true, wird die Commission-Breakdown-Tabelle in der Trader-Gutschrift angezeigt (Admin-Option).
     var showCommissionBreakdownInCreditNote: Bool { get }
 
+    /// Maximum recommended risk exposure as percentage of assets (e.g. 2.0 = 2%). Shown on dashboard.
+    var maximumRiskExposurePercent: Double { get }
+
+    /// When false, Wallet (crypto) UI is hidden. Enable later when crypto trading is supported.
+    var walletFeatureEnabled: Bool { get }
+
     // MARK: - Customer Support Configuration
     var slaMonitoringInterval: TimeInterval { get }
 
@@ -69,6 +79,7 @@ protocol ConfigurationServiceProtocol: ObservableObject {
     func updatePoolBalanceDistributionThreshold(_ threshold: Double) async throws
     func updateTraderCommissionRate(_ rate: Double) async throws
     func updateShowCommissionBreakdownInCreditNote(_ value: Bool) async throws
+    func updateMaximumRiskExposurePercent(_ value: Double) async throws
     func updatePlatformServiceChargeRate(_ rate: Double) async throws
     func updateSLAMonitoringInterval(_ interval: TimeInterval) async throws
     func resetToDefaults() async throws
@@ -78,6 +89,7 @@ protocol ConfigurationServiceProtocol: ObservableObject {
     func validateInitialAccountBalance(_ value: Double) -> Bool
     func validatePoolBalanceDistributionThreshold(_ value: Double) -> Bool
     func validateTraderCommissionRate(_ rate: Double) -> Bool
+    func validateMaximumRiskExposurePercent(_ value: Double) -> Bool
     func validatePlatformServiceChargeRate(_ rate: Double) -> Bool
     func validateSLAMonitoringInterval(_ interval: TimeInterval) -> Bool
 }
@@ -95,7 +107,7 @@ extension ConfigurationServiceProtocol {
         traderCommissionRate
     }
 
-    /// Returns the platform service charge percentage as a formatted string (e.g., "1.5%")
+    /// Returns the platform service charge percentage as a formatted string (e.g., "2%")
     var platformServiceChargePercentage: String {
         "\((platformServiceChargeRate * 100).formatted(.number.precision(.fractionLength(2))))%"
     }
@@ -116,21 +128,27 @@ struct AppConfiguration: Codable {
     var traderCommissionRate: Double?
     var platformServiceChargeRate: Double?
     var showCommissionBreakdownInCreditNote: Bool?
-    var userMinimumCashReserves: [String: Double] // userId -> minimumCashReserve
-    var slaMonitoringInterval: TimeInterval // SLA monitoring check interval in seconds
+    /// Maximum recommended risk exposure as percentage of assets (e.g. 2.0 = 2%). Shown on dashboard.
+    var maximumRiskExposurePercent: Double?
+    /// When false, Wallet (crypto) UI is hidden. Managed via admin portal.
+    var walletFeatureEnabled: Bool?
+    var userMinimumCashReserves: [String: Double]
+    var slaMonitoringInterval: TimeInterval
     var lastUpdated: Date
-    var updatedBy: String // User ID who made the change
+    var updatedBy: String
 
     static let `default` = AppConfiguration(
-        minimumCashReserve: 12.0,
-        initialAccountBalance: 50000.0,
+        minimumCashReserve: 20.0,
+        initialAccountBalance: 1.0,
         poolBalanceDistributionStrategy: .immediateDistribution,
         poolBalanceDistributionThreshold: 5.0,
-        traderCommissionRate: 0.10, // 10% - matches CalculationConstants default
-        platformServiceChargeRate: 0.015, // 1.5% - matches CalculationConstants default
+        traderCommissionRate: 0.10,
+        platformServiceChargeRate: 0.02,
         showCommissionBreakdownInCreditNote: true,
+        maximumRiskExposurePercent: 2.0,
+        walletFeatureEnabled: false,
         userMinimumCashReserves: [:],
-        slaMonitoringInterval: 300.0, // 5 minutes default
+        slaMonitoringInterval: 300.0,
         lastUpdated: Date(),
         updatedBy: "system"
     )
@@ -143,6 +161,16 @@ struct AppConfiguration: Codable {
     // Computed property to get platform service charge rate with fallback
     var effectivePlatformServiceChargeRate: Double {
         platformServiceChargeRate ?? CalculationConstants.ServiceCharges.platformServiceChargeRate
+    }
+
+    /// Maximum risk exposure percent with fallback (e.g. 2.0 for 2%).
+    var effectiveMaximumRiskExposurePercent: Double {
+        maximumRiskExposurePercent ?? 2.0
+    }
+
+    /// Wallet feature enabled with fallback (default off until crypto is supported).
+    var effectiveWalletFeatureEnabled: Bool {
+        walletFeatureEnabled ?? false
     }
 }
 

@@ -21,7 +21,10 @@ final class TradesOverviewViewModel: ObservableObject {
 
     /// Commission percentage string for display (e.g., "10%")
     var commissionPercentage: String {
-        configurationService?.traderCommissionPercentage ?? CalculationConstants.FeeRates.traderCommissionPercentage
+        guard let configurationService else {
+            return CalculationConstants.FeeRates.traderCommissionPercentage
+        }
+        return configurationService.traderCommissionPercentage
     }
 
     // Delegated ViewModels and Calculators
@@ -122,12 +125,12 @@ final class TradesOverviewViewModel: ObservableObject {
                 }
             }
             .store(in: &cancellables)
-        
+
         // Subscribe to Live Query updates
         Task {
             await subscribeToLiveUpdates()
         }
-        
+
         // Observe invoice changes (credit notes are added asynchronously after trade completion)
         // This ensures commission is updated when credit note becomes available
         NotificationCenter.default.publisher(for: .invoiceDidChange)
@@ -410,15 +413,15 @@ final class TradesOverviewViewModel: ObservableObject {
         errorMessage = appError.errorDescription ?? "An error occurred"
         showError = true
     }
-    
+
     // MARK: - Live Query Integration
-    
+
     private func subscribeToLiveUpdates() async {
         guard let liveQueryClient = parseLiveQueryClient,
               let traderId = currentTraderId else {
             return
         }
-        
+
         // Subscribe to Order updates for current trader
         let orderSubscription = liveQueryClient.subscribe(
             className: "Order",
@@ -440,7 +443,7 @@ final class TradesOverviewViewModel: ObservableObject {
             }
         )
         liveQuerySubscriptions.append(orderSubscription)
-        
+
         // Subscribe to Trade updates for current trader
         let tradeSubscription = liveQueryClient.subscribe(
             className: "Trade",
@@ -463,7 +466,7 @@ final class TradesOverviewViewModel: ObservableObject {
         )
         liveQuerySubscriptions.append(tradeSubscription)
     }
-    
+
     deinit {
         // Unsubscribe from Live Query
         for subscription in liveQuerySubscriptions {

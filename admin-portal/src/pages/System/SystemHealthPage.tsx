@@ -5,24 +5,6 @@ import { formatDateTime } from '../../utils/format';
 import type { SystemHealth, ServiceStatus } from './types';
 import clsx from 'clsx';
 
-// Mock data for development (replace with real API call)
-const mockHealthData: SystemHealth = {
-  overall: 'healthy',
-  services: [
-    { name: 'Parse Server', status: 'healthy', responseTime: 45, lastCheck: new Date().toISOString() },
-    { name: 'Live Query', status: 'healthy', responseTime: 12, lastCheck: new Date().toISOString() },
-    { name: 'PDF Service', status: 'healthy', responseTime: 120, lastCheck: new Date().toISOString() },
-    { name: 'Email Service', status: 'healthy', responseTime: 89, lastCheck: new Date().toISOString() },
-  ],
-  databases: [
-    { name: 'MongoDB', connected: true, version: '7.0.4', collections: 24 },
-    { name: 'Redis Cache', connected: true, version: '7.2' },
-  ],
-  serverTime: new Date().toISOString(),
-  uptime: 86400 * 7 + 3600 * 5 + 60 * 23, // 7 days, 5 hours, 23 minutes
-  version: '1.0.0',
-};
-
 function StatusBadge({ status }: { status: ServiceStatus['status'] }) {
   const variants: Record<string, 'success' | 'warning' | 'danger' | 'neutral'> = {
     healthy: 'success',
@@ -55,20 +37,22 @@ function formatUptime(seconds: number): string {
 }
 
 export function SystemHealthPage() {
-  const { data, isLoading, refetch } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['systemHealth'],
-    queryFn: async () => {
-      try {
-        return await cloudFunction<SystemHealth>('getSystemHealth');
-      } catch {
-        // Use mock data if API not available
-        return mockHealthData;
-      }
-    },
-    refetchInterval: 30000, // Refresh every 30 seconds
+    queryFn: () => cloudFunction<SystemHealth>('getSystemHealth'),
+    refetchInterval: 30000,
   });
 
-  const health = data || mockHealthData;
+  const fallback: SystemHealth = {
+    overall: isError ? 'down' : 'healthy',
+    services: [],
+    databases: [],
+    serverTime: new Date().toISOString(),
+    uptime: 0,
+    version: '-',
+  };
+
+  const health = data || fallback;
 
   const overallStatusColor = {
     healthy: 'text-green-500',
@@ -131,7 +115,7 @@ export function SystemHealthPage() {
       </Card>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <div className="text-center">
             <p className="text-sm text-gray-500">Uptime</p>
@@ -150,6 +134,12 @@ export function SystemHealthPage() {
             <p className="text-2xl font-bold text-fin1-primary mt-1">
               {health.services.filter(s => s.status === 'healthy').length}/{health.services.length}
             </p>
+          </div>
+        </Card>
+        <Card>
+          <div className="text-center">
+            <p className="text-sm text-gray-500">Node.js</p>
+            <p className="text-2xl font-bold text-fin1-primary mt-1">{health.nodeVersion || '-'}</p>
           </div>
         </Card>
       </div>

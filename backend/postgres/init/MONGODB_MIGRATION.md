@@ -79,9 +79,9 @@ effizienter sein kann.
   profit: Decimal128("250.00"),
 
   serviceCharge: {
-    rate: Decimal128("0.015"),
-    amount: Decimal128("75.00"),
-    vat: Decimal128("14.25")
+    rate: Decimal128("0.02"),
+    amount: Decimal128("100.00"),
+    vat: Decimal128("19.00")
   },
 
   status: "active",

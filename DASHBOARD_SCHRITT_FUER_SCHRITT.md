@@ -7,7 +7,7 @@
 ## 🔗 Schritt 1: Dashboard öffnen
 
 1. Öffne deinen Browser
-2. Gehe zu: **`http://192.168.178.24:1337/dashboard`**
+2. SSH-Tunnel starten: `ssh -L 443:127.0.0.1:443 io@192.168.178.24`, dann im Browser: **`https://localhost/dashboard/`**
 3. Du solltest die Parse Dashboard Login-Seite sehen
 
 ---
@@ -139,7 +139,7 @@ Die 500-Fehler in der App sollten jetzt verschwinden.
 **Falls das Dashboard nicht funktioniert:**
 - Prüfe ob Parse Server läuft: `docker compose ps parse-server`
 - Prüfe Logs: `docker compose logs parse-server`
-- Prüfe ob Dashboard aktiviert ist: `curl http://192.168.178.24:1337/dashboard`
+- Prüfe ob Dashboard aktiviert ist: `curl -sk https://192.168.178.24/dashboard` (oder nach Tunnel: `curl -sk https://localhost/dashboard`)
 
 **Falls Login nicht funktioniert:**
 - Prüfe Passwort in `backend/.env`: `DASHBOARD_PASSWORD=...`

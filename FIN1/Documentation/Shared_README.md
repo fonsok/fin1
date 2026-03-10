@@ -84,7 +84,7 @@ All services follow the protocol-based dependency injection pattern:
 | `DocumentService` | `DocumentServiceProtocol` | Document handling and storage |
 | `NotificationService` | `NotificationServiceProtocol` | Role-based notifications |
 | `CashBalanceService` | `CashBalanceServiceProtocol` | Cash balance management |
-| `ConfigurationService` | `ConfigurationServiceProtocol` | App configuration |
+| `ConfigurationService` | `ConfigurationServiceProtocol` | App configuration; wird im `ServiceLifecycleCoordinator` (critical) gestartet und synchronisiert finanzielle Parameter vom Server via `getConfig`. |
 | `ThemeManager` | - | Theme and appearance |
 | `TransactionIdService` | `TransactionIdServiceProtocol` | Transaction ID generation |
 

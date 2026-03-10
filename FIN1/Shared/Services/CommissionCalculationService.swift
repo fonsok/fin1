@@ -60,10 +60,20 @@ final class CommissionCalculationService: CommissionCalculationServiceProtocol {
 
     // MARK: - Dependencies
     private let investorGrossProfitService: (any InvestorGrossProfitServiceProtocol)?
+    private var settlementAPIService: (any SettlementAPIServiceProtocol)?
 
     // MARK: - Initialization
-    init(investorGrossProfitService: (any InvestorGrossProfitServiceProtocol)? = nil) {
+    init(
+        investorGrossProfitService: (any InvestorGrossProfitServiceProtocol)? = nil,
+        settlementAPIService: (any SettlementAPIServiceProtocol)? = nil
+    ) {
         self.investorGrossProfitService = investorGrossProfitService
+        self.settlementAPIService = settlementAPIService
+    }
+
+    /// Late-binding for settlement API (avoids circular init)
+    func configure(settlementAPIService: any SettlementAPIServiceProtocol) {
+        self.settlementAPIService = settlementAPIService
     }
 
     // MARK: - ServiceLifecycle
@@ -97,23 +107,35 @@ final class CommissionCalculationService: CommissionCalculationServiceProtocol {
     }
 
     // MARK: - Investor-Specific Commission Calculations
+    //
+    // Phase 3: These methods try backend AccountStatement first. The backend
+    // `settleCompletedTrade` already recorded `commission_debit` entries per
+    // investor.  If the backend is unreachable, we fall back to the local
+    // InvestorGrossProfitService path (labelled "estimate/fallback").
 
     func calculateCommissionForInvestor(
         investmentId: String,
         tradeId: String,
         commissionRate: Double
     ) async throws -> Double {
-        guard let investorGrossProfitService = investorGrossProfitService else {
-            throw AppError.serviceError(.serviceUnavailable)
+        // Backend-authoritative: read commission_debit entry
+        if let api = settlementAPIService {
+            do {
+                let response = try await api.fetchAccountStatement(limit: 50, skip: 0, entryType: "commission_debit")
+                if let entry = response.entries.first(where: { $0.tradeId == tradeId && $0.investmentId == investmentId }) {
+                    let amount = abs(entry.amount)
+                    return amount
+                }
+            } catch {
+                print("⚠️ CommissionCalculationService: Backend fetch failed, falling back to local: \(error.localizedDescription)")
+            }
         }
 
-        // Get gross profit using the single source of truth
-        let grossProfit = try await investorGrossProfitService.getGrossProfit(
-            for: investmentId,
-            tradeId: tradeId
-        )
-
-        // Calculate commission from gross profit
+        // Fallback: local estimation
+        guard let investorGrossProfitService else {
+            throw AppError.serviceError(.serviceUnavailable)
+        }
+        let grossProfit = try await investorGrossProfitService.getGrossProfit(for: investmentId, tradeId: tradeId)
         return calculateCommission(grossProfit: grossProfit, rate: commissionRate)
     }
 
@@ -121,28 +143,26 @@ final class CommissionCalculationService: CommissionCalculationServiceProtocol {
         tradeId: String,
         commissionRate: Double
     ) async throws -> Double {
-        guard let investorGrossProfitService = investorGrossProfitService else {
+        // Backend-authoritative: sum all commission_debit entries for this trade
+        if let api = settlementAPIService {
+            do {
+                let response = try await api.fetchAccountStatement(limit: 200, skip: 0, entryType: "commission_debit")
+                let tradeEntries = response.entries.filter { $0.tradeId == tradeId }
+                if !tradeEntries.isEmpty {
+                    let total = tradeEntries.reduce(0.0) { $0 + abs($1.amount) }
+                    return total
+                }
+            } catch {
+                print("⚠️ CommissionCalculationService: Backend fetch failed, falling back to local: \(error.localizedDescription)")
+            }
+        }
+
+        // Fallback: local estimation
+        guard let investorGrossProfitService else {
             throw AppError.serviceError(.serviceUnavailable)
         }
-
-        // Get gross profits for all investments in this trade
-        // This method includes validation to ensure all investments are accounted for
         let grossProfits = try await investorGrossProfitService.getGrossProfitsForTrade(tradeId: tradeId)
-
-        guard !grossProfits.isEmpty else {
-            print("ℹ️ CommissionCalculationService: No investor gross profits found for trade \(tradeId) - returning 0")
-            return 0.0
-        }
-        
-        // Calculate total commission from all investor gross profits
-        let totalCommission = grossProfits.values.reduce(0.0) { total, grossProfit in
-            total + calculateCommission(grossProfit: grossProfit, rate: commissionRate)
-        }
-        
-        print("💰 CommissionCalculationService: Calculated total commission for trade \(tradeId)")
-        print("   📊 Number of investments: \(grossProfits.count)")
-        print("   💰 Total commission: €\(String(format: "%.2f", totalCommission))")
-        
-        return totalCommission
+        guard !grossProfits.isEmpty else { return 0.0 }
+        return grossProfits.values.reduce(0.0) { $0 + calculateCommission(grossProfit: $1, rate: commissionRate) }
     }
 }

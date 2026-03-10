@@ -6,6 +6,7 @@ struct AuthenticationView: View {
     @Environment(\.appServices) private var services
     @State private var isAuthenticated = false
     @State private var showTermsAcceptance = false
+    @State private var showOnboardingResume = false
 
     var body: some View {
         Group {
@@ -18,7 +19,6 @@ struct AuthenticationView: View {
                             checkTermsAcceptance()
                         }
 
-                    // Blocking terms acceptance modal
                     if showTermsAcceptance {
                         TermsAcceptanceModalView(
                             termsAcceptanceService: services.termsAcceptanceService,
@@ -26,8 +26,12 @@ struct AuthenticationView: View {
                             parseAPIClient: services.parseAPIClient,
                             termsContentService: services.termsContentService
                         )
-                        .zIndex(1000) // Ensure it's on top
+                        .zIndex(1000)
                     }
+                }
+                .fullScreenCover(isPresented: $showOnboardingResume) {
+                    SignUpView()
+                        .environment(\.appServices, services)
                 }
             } else {
                 LandingView(userService: services.userService)
@@ -39,28 +43,41 @@ struct AuthenticationView: View {
         }
         .accessibilityIdentifier("AuthenticationView")
         .onAppear {
-            // Initial state
             isAuthenticated = services.userService.isAuthenticated
             if isAuthenticated {
                 checkTermsAcceptance()
+                checkOnboardingStatus()
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .userDidSignIn)) { _ in
             isAuthenticated = true
             print("🔍 AuthenticationView: User signed in")
             checkTermsAcceptance()
+            checkOnboardingStatus()
         }
         .onReceive(NotificationCenter.default.publisher(for: .userDidSignOut)) { _ in
             isAuthenticated = false
             showTermsAcceptance = false
+            showOnboardingResume = false
             print("🔍 AuthenticationView: User signed out")
         }
         .onReceive(NotificationCenter.default.publisher(for: .userDataDidUpdate)) { _ in
-            // Recheck when user data updates (e.g., after accepting terms)
             if isAuthenticated {
                 checkTermsAcceptance()
+                checkOnboardingStatus()
             }
         }
+    }
+
+    // MARK: - Onboarding Status
+
+    private func checkOnboardingStatus() {
+        guard let user = services.userService.currentUser else {
+            showOnboardingResume = false
+            return
+        }
+        // If account exists but onboarding is not complete, prompt to resume
+        showOnboardingResume = !user.onboardingCompleted && user.onboardingStep != nil
     }
 
     // MARK: - Private Methods

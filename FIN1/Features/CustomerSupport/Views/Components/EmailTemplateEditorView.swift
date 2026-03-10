@@ -268,7 +268,7 @@ private struct EmailTemplateDetailView: View {
                         bodyContent += "{{\(placeholder)}}"
                     } label: {
                         Text("{{\(placeholder)}}")
-                            .font(.system(size: 11, design: .monospaced))
+                            .font(ResponsiveDesign.monospacedFont(size: 11, weight: .regular))
                             .foregroundColor(AppTheme.accentLightBlue)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)

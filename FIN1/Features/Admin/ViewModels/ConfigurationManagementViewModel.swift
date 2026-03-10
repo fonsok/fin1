@@ -4,8 +4,8 @@ import SwiftUI
 // MARK: - Configuration Management ViewModel
 @MainActor
 final class ConfigurationManagementViewModel: ObservableObject {
-    @Published var minimumCashReserveInput: Double = 12.0
-    @Published var initialAccountBalanceInput: Double = 50000.0
+    @Published var minimumCashReserveInput: Double = 20.0
+    @Published var initialAccountBalanceInput: Double = 1.0
     @Published var poolBalanceDistributionStrategy: PoolBalanceDistributionStrategy = .immediateDistribution
     @Published var poolBalanceDistributionThresholdInput: Double = 5.0
     @Published var traderCommissionRateInput: Double = 0.10
@@ -16,29 +16,26 @@ final class ConfigurationManagementViewModel: ObservableObject {
     @Published var traderCommissionRateError: String?
     @Published var isLoading: Bool = false
 
-    // Success messages for 4-eyes approval submissions
     @Published var traderCommissionRateSuccess: String?
     @Published var initialAccountBalanceSuccess: String?
     @Published var platformServiceChargeRateSuccess: String?
 
-    // Per-user minimum cash reserve
     @Published var userMinimumCashReserveUserId: String = ""
-    @Published var userMinimumCashReserveInput: Double = 12.0
+    @Published var userMinimumCashReserveInput: Double = 20.0
     @Published var userMinimumCashReserveError: String?
 
     // MARK: - Formatting Properties
 
-    /// Formats a currency value for display
     func formattedCurrency(_ value: Double) -> String {
         value.formattedAsLocalizedCurrency()
     }
 
     var isValidMinimumCashReserve: Bool {
-        return minimumCashReserveInput >= 1.0 && minimumCashReserveInput <= 1000.0
+        return minimumCashReserveInput >= 0.01 && minimumCashReserveInput <= 1000.0
     }
 
     var isValidInitialAccountBalance: Bool {
-        return initialAccountBalanceInput >= 1000.0 && initialAccountBalanceInput <= 1000000.0
+        return initialAccountBalanceInput >= 0.01 && initialAccountBalanceInput <= 1000000.0
     }
 
     var isValidPoolBalanceDistributionThreshold: Bool {
@@ -50,12 +47,12 @@ final class ConfigurationManagementViewModel: ObservableObject {
     }
 
     var isValidUserMinimumCashReserve: Bool {
-        return userMinimumCashReserveInput >= 1.0 && userMinimumCashReserveInput <= 1000.0 && !userMinimumCashReserveUserId.isEmpty
+        return userMinimumCashReserveInput >= 0.01 && userMinimumCashReserveInput <= 1000.0 && !userMinimumCashReserveUserId.isEmpty
     }
 
     func updateMinimumCashReserve(_ configurationService: any ConfigurationServiceProtocol) async {
         guard isValidMinimumCashReserve else {
-            minimumCashReserveError = "Value must be between 1.0 and 1000.0"
+            minimumCashReserveError = "Value must be between 0.01 and 1000.0"
             return
         }
 
@@ -75,7 +72,7 @@ final class ConfigurationManagementViewModel: ObservableObject {
 
     func updateInitialAccountBalance(_ configurationService: any ConfigurationServiceProtocol) async {
         guard isValidInitialAccountBalance else {
-            initialAccountBalanceError = "Value must be between 1000.0 and 1000000.0"
+            initialAccountBalanceError = "Value must be between 0.01 and 1000000.0"
             return
         }
 
@@ -109,7 +106,6 @@ final class ConfigurationManagementViewModel: ObservableObject {
             try await configurationService.updatePoolBalanceDistributionStrategy(poolBalanceDistributionStrategy)
             print("✅ Pool balance distribution strategy updated to \(poolBalanceDistributionStrategy.displayName)")
         } catch {
-            // Handle error if needed
             print("❌ Failed to update strategy: \(error.localizedDescription)")
         }
 
@@ -151,7 +147,6 @@ final class ConfigurationManagementViewModel: ObservableObject {
             print("✅ Trader commission rate updated to \(traderCommissionRateInput * 100)%")
             traderCommissionRateSuccess = "Rate updated successfully"
         } catch let error as ConfigurationError {
-            // Handle 4-eyes approval specially - it's not an error, just pending approval
             if error.isPendingApproval {
                 traderCommissionRateSuccess = "Change submitted for 4-eyes approval"
                 print("⏳ Trader commission rate change requires 4-eyes approval")
@@ -204,7 +199,7 @@ final class ConfigurationManagementViewModel: ObservableObject {
 
     func updateUserMinimumCashReserve(_ configurationService: any ConfigurationServiceProtocol) async {
         guard isValidUserMinimumCashReserve else {
-            userMinimumCashReserveError = "User ID is required and value must be between 1.0 and 1000.0"
+            userMinimumCashReserveError = "User ID is required and value must be between 0.01 and 1000.0"
             return
         }
 
@@ -214,7 +209,6 @@ final class ConfigurationManagementViewModel: ObservableObject {
         do {
             try await configurationService.updateMinimumCashReserve(userMinimumCashReserveInput, for: userMinimumCashReserveUserId)
             print("✅ User \(userMinimumCashReserveUserId) minimum cash reserve updated to \(userMinimumCashReserveInput)")
-            // Clear inputs after successful update
             userMinimumCashReserveUserId = ""
             userMinimumCashReserveInput = configurationService.minimumCashReserve
         } catch {

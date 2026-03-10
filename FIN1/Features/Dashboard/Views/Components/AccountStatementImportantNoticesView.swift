@@ -1,22 +1,56 @@
 import SwiftUI
 
 struct AccountStatementImportantNoticesView: View {
+    @Environment(\.appServices) private var services
+    @State private var germanSnippet: LegalSnippetResult?
+    @State private var englishSnippet: LegalSnippetResult?
+
+    private var germanTitle: String { germanSnippet?.title ?? "Wichtige Hinweise" }
+    private var englishTitle: String { englishSnippet?.title ?? "Important Notice" }
+    private var germanParagraphs: [String] {
+        guard let t = germanSnippet?.content, !t.isEmpty else { return AccountStatementNoticesText.germanParagraphs }
+        return t.split(separator: "\n\n").map(String.init)
+    }
+    private var englishParagraphs: [String] {
+        guard let t = englishSnippet?.content, !t.isEmpty else { return AccountStatementNoticesText.englishParagraphs }
+        return t.split(separator: "\n\n").map(String.init)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(16)) {
-            noticeSection(
-                title: "Wichtige Hinweise",
-                paragraphs: AccountStatementNoticesText.germanParagraphs
-            )
-
-            noticeSection(
-                title: "Important Notice",
-                paragraphs: AccountStatementNoticesText.englishParagraphs
-            )
+            noticeSection(title: germanTitle, paragraphs: germanParagraphs)
+            noticeSection(title: englishTitle, paragraphs: englishParagraphs)
         }
         .padding(ResponsiveDesign.spacing(20))
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(AppTheme.sectionBackground.opacity(0.3))
         .cornerRadius(ResponsiveDesign.spacing(16))
+        .task {
+            guard let termsService = services?.termsContentService else { return }
+            let provider = LegalSnippetProvider(termsContentService: termsService)
+            let defaultDE = AccountStatementNoticesText.germanParagraphs.joined(separator: "\n\n")
+            let defaultEN = AccountStatementNoticesText.englishParagraphs.joined(separator: "\n\n")
+
+            async let deTask = provider.snippet(
+                for: .accountStatementImportantNoticeDe,
+                language: .german,
+                documentType: .terms,
+                defaultTitle: "Wichtige Hinweise",
+                defaultContent: defaultDE,
+                placeholders: [:]
+            )
+            async let enTask = provider.snippet(
+                for: .accountStatementImportantNoticeEn,
+                language: .german,
+                documentType: .terms,
+                defaultTitle: "Important Notice",
+                defaultContent: defaultEN,
+                placeholders: [:]
+            )
+            let (de, en) = await (deTask, enTask)
+            germanSnippet = de
+            englishSnippet = en
+        }
     }
 
     private func noticeSection(title: String, paragraphs: [String]) -> some View {

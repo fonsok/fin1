@@ -14,20 +14,18 @@ Diese Hilfe ist **aufgabenorientiert** (“Wie mache ich X?”). Sie ist so gesc
 
 **Voraussetzungen**
 - Konto erstellt und (falls erforderlich) verifiziert.
-- Ausreichendes Guthaben im Wallet.
 
 **Schritte**
-- Öffne “Trader entdecken”.
-- Wähle einen Trader und prüfe Risikoklasse/Infos.
-- Tippe “Investieren”, gib Betrag ein (mind. €100).
+- Wähle einen Trader aus liste oder öffne “Finde Trader” und setze Filter.
+- Tippe “Investieren”, gib Betrag ein.
 - Bestätige das Investment (falls die App zwischen “reserviert” und “aktiv” unterscheidet).
 
 **Ergebnis**
-- Investment erscheint im Portfolio; Status wird angezeigt.
+- Investment erscheint unter Investments; Status wird angezeigt.
 
 ### Wie sehe ich meine Performance?
 
-- Öffne “Portfolio”.
+- Öffne “Investments”.
 - Prüfe Gesamtübersicht (investiert, aktueller Wert, Profit/Return%).
 - Öffne ein Investment für Details/Trades/Dokumente (sofern verfügbar).
 
@@ -55,21 +53,9 @@ Diese Hilfe ist **aufgabenorientiert** (“Wie mache ich X?”). Sie ist so gesc
 
 ## 3) Wallet – Ein- und Auszahlungen
 
-### Wie zahle ich Geld ein?
-
-**Schritte**
-- Öffne “Wallet”.
-- Wähle “Einzahlen”.
-- Betrag eingeben (min. €10, max. €100.000).
-- Bestätigen.
-
-**Hinweis**
-- Je nach Systemzustand kann eine Einzahlung zunächst als “pending” erscheinen.
-
 ### Wie zahle ich Geld aus?
 
 **Schritte**
-- Öffne “Wallet”.
 - Wähle “Auszahlen”.
 - Betrag eingeben (min. €10) und ggf. IBAN angeben.
 - Bestätigen.
@@ -81,15 +67,14 @@ Diese Hilfe ist **aufgabenorientiert** (“Wie mache ich X?”). Sie ist so gesc
 
 ### Wo finde ich Rechnungen/Statements?
 
-- Öffne “Dokumente” oder “Profil → Dokumente”.
-- Filtere nach Typ (Dokument, Rechnung, Kontoauszug), falls angeboten.
+- Öffne “Profil → Notifications → Dokumente”.
 
 ## 5) Support / Help Center
 
 ### Wie erstelle ich ein Support-Ticket?
 
 **Schritte**
-- Öffne “Help Center/Support”.
+- Öffne “Profil → Help Center/Support”.
 - Wähle Kategorie (z.B. Account, Trading, Billing).
 - Beschreibe dein Problem und sende ab.
 

@@ -6,6 +6,7 @@ import Combine
 @MainActor
 final class HelpCenterViewModel: ObservableObject {
     private let faqContentService: (any FAQContentServiceProtocol)?
+    private let userRole: String?
 
     // MARK: - Published Properties
 
@@ -17,8 +18,9 @@ final class HelpCenterViewModel: ObservableObject {
     @Published private(set) var faqs: [FAQContentItem] = []
     @Published private(set) var categories: [FAQCategoryContent] = []
 
-    init(faqContentService: (any FAQContentServiceProtocol)? = nil) {
+    init(faqContentService: (any FAQContentServiceProtocol)? = nil, userRole: String? = nil) {
         self.faqContentService = faqContentService
+        self.userRole = userRole
 
         Task { [weak self] in
             await self?.loadServerFAQsIfAvailable()
@@ -90,10 +92,10 @@ final class HelpCenterViewModel: ObservableObject {
         isLoading = true
         loadFailed = false
         do {
-            let categories = try await faqContentService.fetchFAQCategories(location: "help_center")
-            let faqs = try await faqContentService.fetchFAQsForHelpCenter()
+            let categories = try await faqContentService.fetchFAQCategories(location: "help_center", userRole: userRole)
+            let faqs = try await faqContentService.fetchFAQsForHelpCenter(userRole: userRole)
 
-            if !categories.isEmpty, !faqs.isEmpty {
+            if !categories.isEmpty {
                 self.categories = categories
                 self.faqs = faqs
             }

@@ -20,6 +20,11 @@ protocol TradeStatementDisplayDataBuilderProtocol {
 final class TradeStatementDisplayDataBuilder: TradeStatementDisplayDataBuilderProtocol {
     private let calculationGuardService: CalculationGuardService
 
+    /// Default rechtlicher Hinweis für Collection Bills (Trade Statements).
+    /// Dient als Fallback, falls kein serverseitiges Snippet hinterlegt ist.
+    static let defaultLegalDisclaimer: String =
+        "Wir buchen die Wertpapiere und den Gegenwert gemäß der Abrechnung mit dem angegebenen Valutatag. Bitte prüfen Sie diese Abrechnung auf Richtigkeit und Vollständigkeit. Einspruch gegen diese Abrechnung muss unverzüglich nach Erhalt bei der Bank erhoben werden. Unterlassen Sie den rechtzeitigen Einspruch, gilt dies als Genehmigung. Bitte beachten Sie mögliche Hinweise des Emittenten bezüglich vorzeitiger Fälligkeit, z.B. aufgrund eines Knock-out, in den jeweiligen Optionsscheinbedingungen und informieren Sie sich rechtzeitig, welche besondere Fälligkeitsregelung für die von Ihnen gehaltenen Wertpapiere gilt. Kapitalerträge unterliegen der Einkommensteuer."
+
     init(calculationGuardService: CalculationGuardService = CalculationGuardService.shared) {
         self.calculationGuardService = calculationGuardService
     }
@@ -75,7 +80,7 @@ final class TradeStatementDisplayDataBuilder: TradeStatementDisplayDataBuilderPr
             taxSummary: taxSummary,
             fees: fees,
             taxes: taxes,
-            legalDisclaimer: "Wir buchen die Wertpapiere und den Gegenwert gemäß der Abrechnung mit dem angegebenen Valutatag. Bitte prüfen Sie diese Abrechnung auf Richtigkeit und Vollständigkeit. Einspruch gegen diese Abrechnung muss unverzüglich nach Erhalt bei der Bank erhoben werden. Unterlassen Sie den rechtzeitigen Einspruch, gilt dies als Genehmigung. Bitte beachten Sie mögliche Hinweise des Emittenten bezüglich vorzeitiger Fälligkeit, z.B. aufgrund eines Knock-out, in den jeweiligen Optionsscheinbedingungen und informieren Sie sich rechtzeitig, welche besondere Fälligkeitsregelung für die von Ihnen gehaltenen Wertpapiere gilt. Kapitalerträge unterliegen der Einkommensteuer.",
+            legalDisclaimer: Self.defaultLegalDisclaimer,
             accountNumber: "DE89 3704 0044 0532 0130 00", // In a real app, this would come from user's account information
             taxReportTransactionNumber: "343433" // In a real app, this would be a unique transaction number for tax reporting
         )

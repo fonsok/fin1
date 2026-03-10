@@ -48,7 +48,12 @@ final class CompletedInvestmentDetailViewModel: ObservableObject {
             return
         }
 
-        let commissionRate = configurationService?.traderCommissionRate ?? CalculationConstants.FeeRates.traderCommissionRate
+        guard let configurationService else {
+            statementSummary = nil
+            return
+        }
+
+        let commissionRate = configurationService.traderCommissionRate
         statementSummary = InvestorInvestmentStatementAggregator.summarizeInvestment(
             investmentId: investment.id,
             poolTradeParticipationService: poolTradeParticipationService,
@@ -181,7 +186,8 @@ final class CompletedInvestmentDetailViewModel: ObservableObject {
     }
 
     var provisionAmount: Double {
-        let rate = configurationService?.effectivePlatformServiceChargeRate ?? CalculationConstants.ServiceCharges.platformServiceChargeRate
+        guard let configurationService else { return 0.0 }
+        let rate = configurationService.effectivePlatformServiceChargeRate
         return investedAmount * rate
     }
 
@@ -190,15 +196,12 @@ final class CompletedInvestmentDetailViewModel: ObservableObject {
     }
 
     // MARK: - Commission Calculation
-    /// Calculates trader commission as 10% of the displayed profit (net profit)
-    /// The displayed profit is what the investor received after commission was deducted
-    /// Commission is shown as 10% of the investor's profit for transparency
     var commissionAmount: Double {
         guard profit > 0 else {
-            return 0.0 // No commission on losses or zero profit
+            return 0.0
         }
-        // Use centralized commission calculation service
-        let commissionRate = CalculationConstants.FeeRates.traderCommissionRate
+        guard let configurationService else { return 0.0 }
+        let commissionRate = configurationService.effectiveCommissionRate
         return commissionCalculationService?.calculateCommission(
             grossProfit: profit,
             rate: commissionRate

@@ -26,6 +26,8 @@ final class CollectionBillDocumentViewModel: ObservableObject {
     private let investmentService: any InvestmentServiceProtocol
     private let poolTradeParticipationService: any PoolTradeParticipationServiceProtocol
     private let invoiceService: any InvoiceServiceProtocol
+    private let configurationService: any ConfigurationServiceProtocol
+    private let settlementAPIService: (any SettlementAPIServiceProtocol)?
 
     // MARK: - Initialization
 
@@ -35,7 +37,9 @@ final class CollectionBillDocumentViewModel: ObservableObject {
         tradingStatisticsService: any TradingStatisticsServiceProtocol,
         investmentService: any InvestmentServiceProtocol,
         poolTradeParticipationService: any PoolTradeParticipationServiceProtocol,
-        invoiceService: any InvoiceServiceProtocol
+        invoiceService: any InvoiceServiceProtocol,
+        configurationService: any ConfigurationServiceProtocol,
+        settlementAPIService: (any SettlementAPIServiceProtocol)? = nil
     ) {
         self.document = document
         self.tradeLifecycleService = tradeLifecycleService
@@ -43,6 +47,8 @@ final class CollectionBillDocumentViewModel: ObservableObject {
         self.investmentService = investmentService
         self.poolTradeParticipationService = poolTradeParticipationService
         self.invoiceService = invoiceService
+        self.configurationService = configurationService
+        self.settlementAPIService = settlementAPIService
     }
 
     /// Convenience initializer using AppServices
@@ -53,7 +59,9 @@ final class CollectionBillDocumentViewModel: ObservableObject {
             tradingStatisticsService: services.tradingStatisticsService,
             investmentService: services.investmentService,
             poolTradeParticipationService: services.poolTradeParticipationService,
-            invoiceService: services.invoiceService
+            invoiceService: services.invoiceService,
+            configurationService: services.configurationService,
+            settlementAPIService: services.settlementAPIService
         )
     }
 
@@ -65,9 +73,10 @@ final class CollectionBillDocumentViewModel: ObservableObject {
             investment: investment,
             poolTradeParticipationService: poolTradeParticipationService,
             tradeService: tradeLifecycleService,
-            invoiceService: invoiceService
+            invoiceService: invoiceService,
+            configurationService: configurationService,
+            settlementAPIService: settlementAPIService
         )
-        // Set document number from document for accounting compliance
         viewModel.documentNumber = document.accountingDocumentNumber
         return viewModel
     }

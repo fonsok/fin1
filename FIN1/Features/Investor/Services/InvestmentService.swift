@@ -39,7 +39,7 @@ final class InvestmentService: InvestmentServiceProtocol, ServiceLifecycle {
     private let investmentManagementService: (any InvestmentManagementServiceProtocol)?
     private let investmentCompletionService: (any InvestmentCompletionServiceProtocol)?
     private let investmentDocumentService: (any InvestmentDocumentServiceProtocol)?
-    private let configurationService: (any ConfigurationServiceProtocol)?
+    private let configurationService: any ConfigurationServiceProtocol
     private var investorGrossProfitService: (any InvestorGrossProfitServiceProtocol)?
     private var commissionCalculationService: (any CommissionCalculationServiceProtocol)?
 
@@ -63,17 +63,13 @@ final class InvestmentService: InvestmentServiceProtocol, ServiceLifecycle {
         investmentDocumentService: (any InvestmentDocumentServiceProtocol)? = nil,
         invoiceService: (any InvoiceServiceProtocol)? = nil,
         transactionIdService: (any TransactionIdServiceProtocol)? = nil,
-        configurationService: (any ConfigurationServiceProtocol)? = nil,
+        configurationService: any ConfigurationServiceProtocol,
         investorGrossProfitService: (any InvestorGrossProfitServiceProtocol)? = nil,
         commissionCalculationService: (any CommissionCalculationServiceProtocol)? = nil,
         investmentAPIService: (any InvestmentAPIServiceProtocol)? = nil
     ) {
         self.repository = repository ?? InvestmentRepository()
         self.queryService = queryService ?? InvestmentQueryService()
-        // Ensure configurationService is available for InvestmentCreationService
-        guard let configService = configurationService else {
-            fatalError("ConfigurationService must be provided to InvestmentService")
-        }
         self.creationService = creationService ?? InvestmentCreationService(
             investorCashBalanceService: investorCashBalanceService,
             investmentManagementService: investmentManagementService,
@@ -82,7 +78,7 @@ final class InvestmentService: InvestmentServiceProtocol, ServiceLifecycle {
             invoiceService: invoiceService,
             bankContraAccountService: bankContraAccountService,
             transactionIdService: transactionIdService ?? TransactionIdService(),
-            configurationService: configService
+            configurationService: configurationService
         )
         self.investorCashBalanceService = investorCashBalanceService
         self.poolTradeParticipationService = poolTradeParticipationService

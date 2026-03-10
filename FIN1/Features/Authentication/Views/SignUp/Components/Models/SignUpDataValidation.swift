@@ -8,7 +8,7 @@ extension SignUpData {
         let usernameRegex = "^[A-Za-z0-9]{4,10}$"
         return username.range(of: usernameRegex, options: .regularExpression) != nil
     }
-    
+
     // MARK: - Password Validation
     var isPasswordValid: Bool {
         password.count >= 8 &&
@@ -17,23 +17,23 @@ extension SignUpData {
         password.range(of: "[0-9]", options: .regularExpression) != nil &&
         password.range(of: "[!@#$%^&*(),.?\":{}|<>]", options: .regularExpression) != nil
     }
-    
+
     var isPasswordConfirmed: Bool {
         password == confirmPassword
     }
-    
+
     // MARK: - Email Validation
     var isEmailValid: Bool {
         let emailRegex = "^[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
         return email.range(of: emailRegex, options: .regularExpression) != nil
     }
-    
+
     // MARK: - Phone Number Validation
     var isPhoneNumberValid: Bool {
         let phoneRegex = "^\\+[1-9]\\d{1,14}$"
         return phoneNumber.range(of: phoneRegex, options: .regularExpression) != nil
     }
-    
+
     // MARK: - Personal Information Validation
     var isPersonalInfoValid: Bool {
         !firstName.isEmpty &&
@@ -44,13 +44,13 @@ extension SignUpData {
         !state.isEmpty &&
         !country.isEmpty
     }
-    
+
     // MARK: - Tax Information Validation
     var isTaxInfoValid: Bool {
         !taxNumber.isEmpty &&
         !nationality.isEmpty
     }
-    
+
     // MARK: - Identification Validation
     var isIdentificationValid: Bool {
         switch identificationType {
@@ -62,14 +62,14 @@ extension SignUpData {
             return true // Postident doesn't require image upload
         }
     }
-    
+
     // MARK: - Financial Information Validation
     var isFinancialInfoValid: Bool {
         !income.isEmpty &&
         !incomeSources.isEmpty &&
         incomeSources.values.contains(true) // At least one income source selected
     }
-    
+
     // MARK: - Investment Experience Validation
     var isInvestmentExperienceValid: Bool {
         // At least one type of investment experience should be provided
@@ -78,7 +78,7 @@ extension SignUpData {
                derivativesTransactionsCount != .none ||
                otherAssets.values.contains(true)
     }
-    
+
     // MARK: - Legal Declarations Validation
     var areLegalDeclarationsValid: Bool {
         acceptedTerms &&
@@ -86,7 +86,7 @@ extension SignUpData {
         moneyLaunderingDeclaration &&
         insiderTradingOptions.values.contains(true) // At least one option selected
     }
-    
+
     // MARK: - Overall Form Validation
     var isFormValid: Bool {
         isEmailValid &&
@@ -100,7 +100,7 @@ extension SignUpData {
         isInvestmentExperienceValid &&
         areLegalDeclarationsValid
     }
-    
+
     // MARK: - Step-Specific Validation
     func isValidForStep(_ step: SignUpStep) -> Bool {
         switch step {
@@ -109,7 +109,11 @@ extension SignUpData {
         case .contact:
             return isEmailValid && isUsernameValid && isPasswordValid && isPasswordConfirmed && isPhoneNumberValid
         case .accountCreated:
-            return true // Success step
+            return true
+        case .emailVerification:
+            return true
+        case .phoneVerification:
+            return true
         case .personalInfo:
             return isPersonalInfoValid
         case .citizenshipTax:

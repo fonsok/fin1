@@ -8,7 +8,9 @@ struct SignUpNavigationButtons: View {
 
     var body: some View {
         // Hide standard navigation buttons on steps that have their own custom action buttons
-        if coordinator.currentStep == .riskClassificationNote ||
+        if coordinator.currentStep == .emailVerification ||
+           coordinator.currentStep == .phoneVerification ||
+           coordinator.currentStep == .riskClassificationNote ||
            coordinator.currentStep == .riskClass7Confirmation ||
            (coordinator.currentStep == .summary && signUpData.finalRiskClass == .riskClass7) {
             EmptyView()
@@ -99,9 +101,11 @@ struct SignUpNavigationButtons: View {
     private var continueButton: some View {
         if coordinator.canGoForward {
             Button(action: {
-                // Handle Postident flow or regular flow
-                if coordinator.currentStep == .identificationType && signUpData.identificationType == .postident {
-                    // Skip directly to Postident confirmation
+                if coordinator.currentStep == .contact {
+                    Task {
+                        await coordinator.createAccountIfNeeded(with: signUpData)
+                    }
+                } else if coordinator.currentStep == .identificationType && signUpData.identificationType == .postident {
                     withAnimation(.easeInOut(duration: 0.3)) {
                         coordinator.currentStep = .postidentConfirmation
                     }

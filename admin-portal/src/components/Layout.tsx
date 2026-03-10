@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
 import { useNavigation } from '../hooks/usePermissions';
+import { cloudFunction } from '../api/admin';
 import { getRoleDisplay } from '../utils/format';
 import clsx from 'clsx';
 
@@ -15,6 +17,20 @@ export function Layout({ children }: LayoutProps) {
   const navItems = useNavigation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  const { data: pendingCount } = useQuery({
+    queryKey: ['approvalsBadge'],
+    queryFn: async () => {
+      const res = await cloudFunction<{
+        requests: unknown[];
+        ownPending: unknown[];
+      }>('getPendingApprovals');
+      return (res.requests?.length ?? 0) + (res.ownPending?.length ?? 0);
+    },
+    refetchInterval: 30000,
+    staleTime: 15000,
+    enabled: !!user,
+  });
+
   const handleLogout = async () => {
     await logout();
   };
@@ -24,12 +40,12 @@ export function Layout({ children }: LayoutProps) {
       {/* Sidebar */}
       <aside
         className={clsx(
-          'fixed inset-y-0 left-0 z-50 w-64 bg-fin1-primary transform transition-transform duration-300 ease-in-out lg:translate-x-0',
+          'fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-fin1-primary transform transition-transform duration-300 ease-in-out lg:translate-x-0',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
         {/* Logo */}
-        <div className="h-16 flex items-center px-6 border-b border-white/10">
+        <div className="h-16 flex-shrink-0 flex items-center px-6 border-b border-white/10">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
               <span className="text-sm font-bold text-fin1-primary">F1</span>
@@ -38,10 +54,11 @@ export function Layout({ children }: LayoutProps) {
           </div>
         </div>
 
-        {/* Navigation */}
-        <nav className="mt-6 px-3">
+        {/* Navigation - scrollable so Konfiguration/System/Einstellungen stay clickable above user block */}
+        <nav className="flex-1 overflow-y-auto mt-6 px-3 pb-4">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path;
+            const badge = item.id === 'approvals' && pendingCount ? pendingCount : 0;
             return (
               <Link
                 key={item.id}
@@ -54,26 +71,33 @@ export function Layout({ children }: LayoutProps) {
                     : 'text-white/70 hover:bg-white/10 hover:text-white'
                 )}
               >
-                <NavIcon name={item.icon} />
+                <div className="relative">
+                  <NavIcon name={item.icon} />
+                  {badge > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white leading-none">
+                      {badge}
+                    </span>
+                  )}
+                </div>
                 <span className="font-medium">{item.label}</span>
               </Link>
             );
           })}
         </nav>
 
-        {/* User Info (Bottom) */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10">
+        {/* User Info (Bottom) - flex-shrink-0 so it never overlaps nav */}
+        <div className="flex-shrink-0 p-4 border-t border-white/10">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+            <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
               <span className="text-white font-medium">
                 {user?.firstName?.[0] || user?.email?.[0]?.toUpperCase() || 'A'}
               </span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white truncate">
+              <p className="text-sm font-medium text-white truncate leading-tight">
                 {user?.firstName || user?.email}
               </p>
-              <p className="text-xs text-white/60 truncate">
+              <p className="text-xs text-white/60 truncate leading-tight mt-0.5">
                 {user ? getRoleDisplay(user.role) : ''}
               </p>
             </div>
@@ -195,6 +219,31 @@ function NavIcon({ name }: { name: string }) {
     server: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
+      </svg>
+    ),
+    'question-mark-circle': (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
+    chart: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+      </svg>
+    ),
+    'user-plus': (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+      </svg>
+    ),
+    'chart-bar': (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+      </svg>
+    ),
+    'building-library': (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
       </svg>
     ),
   };

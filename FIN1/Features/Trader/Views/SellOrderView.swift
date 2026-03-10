@@ -28,6 +28,12 @@ struct SellOrderView: View {
     @EnvironmentObject var tabRouter: TabRouter
     @State private var isShowingConfirmation = false
     @Environment(\.themeManager) private var themeManager
+    @Environment(\.appServices) private var services
+    @State private var legalNoticeText: String = ""
+
+    private var defaultLegalNoticeText: String {
+        "Mit dem Klicken auf 'Verkaufen' stimmen Sie den allgemeinen Geschäftsbedingungen zu und bestätigen, dass Sie die Risiken des Wertpapierhandels verstanden haben. Diese Transaktion ist gebührenpflichtig."
+    }
 
     var body: some View {
         NavigationStack {
@@ -77,6 +83,18 @@ struct SellOrderView: View {
             viewModel.onLimitPriceChanged()
         }
         .dismissKeyboardOnTap()
+        .task {
+            let provider = LegalSnippetProvider(termsContentService: services.termsContentService)
+            let language: TermsOfServiceDataProvider.Language = .german
+            let text = await provider.text(
+                for: .orderLegalWarningSell,
+                language: language,
+                documentType: .terms,
+                defaultText: defaultLegalNoticeText,
+                placeholders: [:]
+            )
+            legalNoticeText = text
+        }
     }
 
     private func formatStrikePrice(_ strike: Double, _ underlyingAsset: String?) -> String {
@@ -214,7 +232,7 @@ struct SellOrderView: View {
             Text("Rechtliche Hinweise")
                 .font(ResponsiveDesign.headlineFont())
                 .foregroundColor(AppTheme.secondaryText)
-            Text("Mit dem Klicken auf 'Verkaufen' stimmen Sie den allgemeinen Geschäftsbedingungen zu und bestätigen, dass Sie die Risiken des Wertpapierhandels verstanden haben. Diese Transaktion ist gebührenpflichtig.")
+            Text(legalNoticeText.isEmpty ? defaultLegalNoticeText : legalNoticeText)
                 .font(ResponsiveDesign.captionFont())
         }
         .padding()

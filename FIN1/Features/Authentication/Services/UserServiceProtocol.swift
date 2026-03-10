@@ -79,13 +79,11 @@ final class UserService: UserServiceProtocol, ServiceLifecycle {
         self.parseAPIClient = parseAPIClient
     }
 
-    /// Generates a simulated session token for test users
-    /// In production, this would be the actual token from Parse Server
-    private func generateTestSessionToken(for user: User) -> String {
-        // Format: r:base64(userId:role:timestamp)
+    /// Generates a simulated session token for offline/fallback scenarios
+    private func generateFallbackSessionToken(for user: User) -> String {
         let payload = "\(user.id):\(user.role.rawValue):\(Date().timeIntervalSince1970)"
         let encoded = Data(payload.utf8).base64EncodedString()
-        return "r:\(encoded)"
+        return "sim:\(encoded)"
     }
 
     // MARK: - ServiceLifecycle
@@ -100,52 +98,54 @@ final class UserService: UserServiceProtocol, ServiceLifecycle {
     // MARK: - Authentication
 
     func signIn(email: String, password: String) async throws {
-        // Input validation
         try UserValidationService.validateSignIn(email: email, password: password)
 
         await MainActor.run {
             isLoading = true
         }
 
-        // Simulate API call
-        try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+        // Try real Parse Server login first
+        if let apiClient = parseAPIClient {
+            do {
+                let loginResponse = try await apiClient.login(
+                    username: email.lowercased().trimmingCharacters(in: .whitespaces),
+                    password: password
+                )
 
-        #if DEBUG
-        // Check if this is a test user login
-        if email.contains("test@") || email.contains("trader") || email.contains("investor") || email.contains("biometric@") || email.contains("admin") || email.contains("csr") || email.contains("customerService") || email.contains("kundenberater") {
-            await MainActor.run {
+                #if DEBUG
                 let testUser = UserFactory.createTestUser(email: email, password: password)
-                let token = generateTestSessionToken(for: testUser)
-                print("🔍 UserService.signIn (test user):")
-                print("   📧 Email: \(email)")
-                print("   👤 User ID: '\(testUser.id)'")
-                print("   👤 User role: \(testUser.role.rawValue)")
-                print("   👤 User name: \(testUser.displayName)")
-                print("   🔑 Session Token: \(token.prefix(20))...")
-                self.currentUser = testUser
-                self._sessionToken = token
-                self.isAuthenticated = true
-                self.isLoading = false
-                // Post notification for authentication state change
-                NotificationCenter.default.post(name: .userDidSignIn, object: nil)
+                #else
+                let testUser = UserFactory.createUser(from: email, password: password)
+                #endif
+
+                await MainActor.run {
+                    self.currentUser = testUser
+                    self._sessionToken = loginResponse.sessionToken
+                    self.isAuthenticated = true
+                    self.isLoading = false
+                    NotificationCenter.default.post(name: .userDidSignIn, object: nil)
+                }
+                return
+            } catch {
+                print("⚠️ UserService: Parse login failed (\(error.localizedDescription)), falling back to local auth")
             }
-            return
         }
+
+        // Fallback: local test user creation (offline or no backend)
+        #if DEBUG
+        let testUser = UserFactory.createTestUser(email: email, password: password)
+        #else
+        try UserValidationService.checkForSimulatedErrors(email: email, password: password)
+        let testUser = UserFactory.createUser(from: email, password: password)
         #endif
 
-        // Check for simulated errors
-        try UserValidationService.checkForSimulatedErrors(email: email, password: password)
-
-        // Create regular user
-        let user = UserFactory.createUser(from: email, password: password)
-        let token = generateTestSessionToken(for: user)
+        let token = generateFallbackSessionToken(for: testUser)
 
         await MainActor.run {
-            self.currentUser = user
+            self.currentUser = testUser
             self._sessionToken = token
             self.isAuthenticated = true
             self.isLoading = false
-            // Post notification for authentication state change
             NotificationCenter.default.post(name: .userDidSignIn, object: nil)
         }
     }
@@ -201,7 +201,7 @@ final class UserService: UserServiceProtocol, ServiceLifecycle {
             Task.detached { [apiClient, user] in
                 do {
                     // Update Parse.User via REST API
-                    struct UserUpdateInput: Encodable {
+                    struct UserUpdateInput: Codable {
                         let username: String
                         let email: String
                         let firstName: String
@@ -473,7 +473,7 @@ final class UserService: UserServiceProtocol, ServiceLifecycle {
         print("📤 UserService: Syncing user profile to backend...")
 
         do {
-            struct UserUpdateInput: Encodable {
+            struct UserUpdateInput: Codable {
                 let username: String
                 let email: String
                 let firstName: String

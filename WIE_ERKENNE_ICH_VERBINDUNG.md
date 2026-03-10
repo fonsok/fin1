@@ -108,7 +108,7 @@ sudo lsof -i -P | grep 192.168.178.24 | grep 1337
 
 **Was du sehen solltest:**
 ```
-FIN1    12345  ra   23u  IPv4 0x...  TCP 192.168.178.25:54321->192.168.178.24:1337 (ESTABLISHED)
+FIN1    12345  ra   23u  IPv4 0x...  TCP 192.168.178.25:54321->192.168.178.24:443 (ESTABLISHED)
 ```
 
 ### Methode 4: Test-Script verwenden

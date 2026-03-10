@@ -123,7 +123,7 @@ final class DashboardStatsViewModel: ObservableObject {
                 self?.updateActiveInvestmentsCount()
             }
             .store(in: &cancellables)
-        
+
         // Wallet transaction completed (deposit/withdrawal)
         NotificationCenter.default.publisher(for: .walletTransactionCompleted)
             .receive(on: DispatchQueue.main)
@@ -136,7 +136,7 @@ final class DashboardStatsViewModel: ObservableObject {
                 self.refreshAllData()
             }
             .store(in: &cancellables)
-        
+
         // Trader balance changed (for trader role)
         NotificationCenter.default.publisher(for: .traderBalanceDidChange)
             .receive(on: DispatchQueue.main)
@@ -151,7 +151,7 @@ final class DashboardStatsViewModel: ObservableObject {
                 }
             }
             .store(in: &cancellables)
-        
+
         // Parse Live Query updates for Wallet Transactions
         NotificationCenter.default.publisher(for: .parseLiveQueryObjectUpdated)
             .receive(on: DispatchQueue.main)
@@ -165,7 +165,7 @@ final class DashboardStatsViewModel: ObservableObject {
                       userId == self.currentUserId else {
                     return
                 }
-                
+
                 // Refresh all data when wallet transaction is updated via Live Query
                 self.refreshAllData()
             }
@@ -206,24 +206,17 @@ final class DashboardStatsViewModel: ObservableObject {
             investorBalance = "€ 0,00"
             return
         }
-        
+
         // Use single source of truth for investor balance (consistent with trader)
         Task {
-            do {
-                let snapshot = try await InvestorAccountStatementBuilder.buildSnapshotWithWallet(
-                    for: currentUser,
-                    investorCashBalanceService: investorCashBalanceService,
-                    paymentService: paymentService
-                )
-                
-                await MainActor.run {
-                    investorBalance = snapshot.closingBalance.formatted(.currency(code: "EUR"))
-                }
-            } catch {
-                // On error, fallback to service balance
-                await MainActor.run {
-                    investorBalance = investorCashBalanceService.getFormattedBalance(for: currentUserId)
-                }
+            let snapshot = await InvestorAccountStatementBuilder.buildSnapshotWithWallet(
+                for: currentUser,
+                investorCashBalanceService: investorCashBalanceService,
+                paymentService: paymentService
+            )
+
+            await MainActor.run {
+                investorBalance = snapshot.closingBalance.formatted(.currency(code: "EUR"))
             }
         }
     }
@@ -241,27 +234,15 @@ final class DashboardStatsViewModel: ObservableObject {
 
     private func updateTraderAccountBalance() {
         Task {
-            do {
-                let snapshot = try await TraderAccountStatementBuilder.buildSnapshotWithWallet(
-                    for: userService.currentUser,
-                    invoiceService: invoiceService,
-                    configurationService: configurationService,
-                    paymentService: paymentService
-                )
-                
-                await MainActor.run {
-                    accountBalance = snapshot.closingBalance
-                }
-            } catch {
-                // On error, fallback to base snapshot without wallet
-                let baseSnapshot = TraderAccountStatementBuilder.buildSnapshot(
-                    for: userService.currentUser,
-                    invoiceService: invoiceService,
-                    configurationService: configurationService
-                )
-                await MainActor.run {
-                    accountBalance = baseSnapshot.closingBalance
-                }
+            let snapshot = await TraderAccountStatementBuilder.buildSnapshotWithWallet(
+                for: userService.currentUser,
+                invoiceService: invoiceService,
+                configurationService: configurationService,
+                paymentService: paymentService
+            )
+
+            await MainActor.run {
+                accountBalance = snapshot.closingBalance
             }
         }
     }

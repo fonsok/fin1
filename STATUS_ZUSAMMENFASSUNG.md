@@ -26,8 +26,8 @@
 ## 📋 Phase 3: Backend-Konfiguration - Nächste Schritte
 
 1. **Parse Server URLs konfigurieren:**
-   - `PARSE_SERVER_PUBLIC_SERVER_URL` auf `http://192.168.178.24:1337/parse` setzen
-   - `PARSE_SERVER_LIVE_QUERY_SERVER_URL` auf `ws://192.168.178.24:1337/parse` setzen
+   - `PARSE_SERVER_PUBLIC_SERVER_URL` auf `https://192.168.178.24/parse` setzen
+   - `PARSE_SERVER_LIVE_QUERY_SERVER_URL` auf `wss://192.168.178.24/parse` setzen
 
 2. **CORS-Einstellungen anpassen:**
    - `ALLOWED_ORIGINS` für lokales Netzwerk erweitern
@@ -36,7 +36,7 @@
    - Sollte dann healthy werden
 
 4. **iOS-App konfigurieren:**
-   - Parse Server URL auf `http://192.168.178.24:1337/parse` setzen
+   - Parse Server URL auf `https://192.168.178.24/parse` setzen
    - ATS-Einstellungen anpassen
 
 ## 🎯 Aktueller Stand

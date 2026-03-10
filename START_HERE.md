@@ -14,9 +14,10 @@ Eine sachkundige dritte Person (oder eine IDE wie Cursor) soll den **aktuellen S
 - **Stack**: iOS (SwiftUI, MVVM + DI über `AppServices`), Backend (Docker, Nginx, Parse Server/Cloud Code, MongoDB, Redis, Postgres optional, MinIO optional).
 - **Aktueller Projektstand**: `FIN1_PROJECT_STATUS.md` (Historie via Git).
 - **Wichtigste URLs (LAN, iobox)**:
-  - API: `http://192.168.178.24/parse`
-  - LiveQuery: `ws://192.168.178.24/parse`
-  - Health: `http://192.168.178.24/health`
+  - API: `https://192.168.178.24/parse`
+  - LiveQuery: `wss://192.168.178.24/parse`
+  - Health: `https://192.168.178.24/health`
+  - Admin-Portal: `https://192.168.178.24/admin`
   - Dashboard: **nur per SSH‑Tunnel** (siehe `FIN1_PROJECT_STATUS.md` + `Documentation/FIN1_APP_DOCS/06A_BACKEND_UBUNTU_IOBOX_RUNBOOK.md`)
 - **Doku-Startpunkte**:
   - Kuratierte Gesamtdoku: `Documentation/FIN1_APP_DOCS/00_INDEX.md`

@@ -81,7 +81,7 @@ docker-compose logs -f parse-server --tail=50
 
 ```bash
 # Auf dem Server oder lokal (mit SSH-Tunnel)
-curl http://192.168.178.24/parse/functions/health \
+curl -k https://192.168.178.24/parse/functions/health \
   -H "X-Parse-Application-Id: fin1-app-id" \
   -H "Content-Type: application/json" \
   -d '{}'
@@ -96,7 +96,7 @@ Erwartete Antwort:
 
 ```bash
 # Configuration abrufen (als Admin mit Session-Token)
-curl http://192.168.178.24/parse/functions/getConfiguration \
+curl -k https://192.168.178.24/parse/functions/getConfiguration \
   -H "X-Parse-Application-Id: fin1-app-id" \
   -H "X-Parse-Session-Token: <ADMIN_SESSION_TOKEN>" \
   -H "Content-Type: application/json" \
@@ -114,16 +114,16 @@ Falls noch keine Configuration-Klasse existiert:
 open http://localhost:4040/dashboard
 
 # Oder manuell über API:
-curl http://192.168.178.24/parse/classes/Configuration \
+curl -k https://192.168.178.24/parse/classes/Configuration \
   -H "X-Parse-Application-Id: fin1-app-id" \
   -H "X-Parse-Master-Key: <MASTER_KEY>" \
   -H "Content-Type: application/json" \
   -d '{
     "isActive": true,
     "traderCommissionRate": 0.10,
-    "platformServiceChargeRate": 0.015,
-    "minimumCashReserve": 12.0,
-    "initialAccountBalance": 50000.0
+    "platformServiceChargeRate": 0.02,
+    "minimumCashReserve": 20.0,
+    "initialAccountBalance": 1.0
   }'
 ```
 
@@ -136,8 +136,8 @@ Die folgenden Parameter erfordern 4-Augen-Genehmigung:
 | Parameter | Beschreibung | Standardwert |
 |-----------|-------------|--------------|
 | `traderCommissionRate` | Trader Commission | 10% |
-| `platformServiceChargeRate` | Service Charge | 1.5% |
-| `initialAccountBalance` | Startguthaben | €50.000 |
+| `platformServiceChargeRate` | Service Charge | 2% |
+| `initialAccountBalance` | Startguthaben | €1,00 |
 | `orderFeeRate` | Ordergebühr Rate | 0.5% |
 | `orderFeeMin` | Ordergebühr Min | €5.00 |
 | `orderFeeMax` | Ordergebühr Max | €50.00 |
@@ -154,7 +154,7 @@ Die folgenden Parameter erfordern 4-Augen-Genehmigung:
 │       ↓                                                                     │
 │  3. Backend erstellt FourEyesRequest (Status: pending)                      │
 │       ↓                                                                     │
-│  4. Admin B öffnet "Pending Approvals" in Configuration                     │
+│  4. Admin B öffnet Approvals-Seite (/approvals), Tab „Freigaben erteilen“    │
 │       ↓                                                                     │
 │  5. Admin B genehmigt oder lehnt ab                                         │
 │       ↓                                                                     │
@@ -180,6 +180,10 @@ Die folgenden Parameter erfordern 4-Augen-Genehmigung:
 
 → 4-Augen-Prinzip: Ein anderer Admin muss genehmigen.
 
+### Eigenen Antrag zurückziehen
+
+→ Antragsteller kann unter Approvals (Tab „Eigene Anträge“ oder „Alle Anträge“) einen eigenen pending Antrag per „Zurückziehen“ widerrufen (`withdrawRequest`).
+
 ### Commission Rate wird nicht aktualisiert
 
 → Cache invalidieren: Parse Server neu starten oder 5 Minuten warten.
@@ -197,7 +201,7 @@ Alle Konfigurationsänderungen werden im `AuditLog` protokolliert:
 
 Query für Audit-Trail:
 ```bash
-curl http://192.168.178.24/parse/classes/AuditLog \
+curl -k https://192.168.178.24/parse/classes/AuditLog \
   -H "X-Parse-Application-Id: fin1-app-id" \
   -H "X-Parse-Master-Key: <MASTER_KEY>" \
   -G --data-urlencode 'where={"resourceType":"Configuration"}' \

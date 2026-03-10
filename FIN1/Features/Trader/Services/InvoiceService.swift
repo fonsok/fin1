@@ -3,7 +3,7 @@ import SwiftUI
 import Combine
 
 // MARK: - Invoice Service Implementation
-/// Handles invoice operations, PDF generation, and management
+/// Handles invoice CRUD, queries, validation, and backend sync. PDF generation/export is delegated to InvoicePDFService.
 final class InvoiceService: InvoiceServiceProtocol, ServiceLifecycle {
     @Published var invoices: [Invoice] = []
     @Published var isLoading = false
@@ -11,17 +11,24 @@ final class InvoiceService: InvoiceServiceProtocol, ServiceLifecycle {
     @Published var showError = false
 
     private var cancellables = Set<AnyCancellable>()
-    private let pdfGenerator = PDFGenerator()
-    private let transactionIdService: any TransactionIdServiceProtocol
+    let transactionIdService: any TransactionIdServiceProtocol
+    private let pdfService: any InvoicePDFServiceProtocol
     private let parseAPIClient: (any ParseAPIClientProtocol)?
+    private var invoiceAPIService: InvoiceAPIServiceProtocol?
 
     init(
         transactionIdService: any TransactionIdServiceProtocol = TransactionIdService(),
-        parseAPIClient: (any ParseAPIClientProtocol)? = nil
+        parseAPIClient: (any ParseAPIClientProtocol)? = nil,
+        pdfService: (any InvoicePDFServiceProtocol)? = nil
     ) {
         self.transactionIdService = transactionIdService
         self.parseAPIClient = parseAPIClient
-        // Don't load mock invoices - they will be generated from actual trades
+        self.pdfService = pdfService ?? InvoicePDFService()
+    }
+
+    /// Configures the invoice API service for backend synchronization
+    func configure(invoiceAPIService: InvoiceAPIServiceProtocol) {
+        self.invoiceAPIService = invoiceAPIService
     }
 
     // MARK: - ServiceLifecycle
@@ -47,12 +54,26 @@ final class InvoiceService: InvoiceServiceProtocol, ServiceLifecycle {
             isLoading = true
         }
 
-        // Simulate API call
-        try await Task.sleep(nanoseconds: 800_000_000) // 0.8 seconds
+        // Try loading from backend first
+        if let apiService = invoiceAPIService {
+            do {
+                let backendInvoices = try await apiService.fetchInvoices(for: userId)
+                await MainActor.run {
+                    // Merge: backend invoices take precedence, keep local-only invoices that aren't on backend yet
+                    let backendIds = Set(backendInvoices.map(\.invoiceNumber))
+                    let localOnly = self.invoices.filter { !backendIds.contains($0.invoiceNumber) && $0.id.count == 36 }
+                    self.invoices = backendInvoices + localOnly
+                    self.isLoading = false
+                }
+                print("✅ InvoiceService: Loaded \(backendInvoices.count) invoices from backend")
+                return
+            } catch {
+                print("⚠️ InvoiceService: Failed to load invoices from backend: \(error.localizedDescription)")
+            }
+        }
 
         await MainActor.run {
             self.isLoading = false
-            // In a real app, this would load from API
             self.loadMockInvoices()
         }
     }
@@ -94,7 +115,27 @@ final class InvoiceService: InvoiceServiceProtocol, ServiceLifecycle {
     }
 
     func addInvoice(_ invoice: Invoice) async {
-        // Save to backend if it's a service charge invoice and ParseAPIClient is available
+        // Write-through: Sync immediately if API service available
+        if let apiService = invoiceAPIService {
+            do {
+                let syncedInvoice = try await apiService.saveInvoice(invoice)
+                await MainActor.run {
+                    self.invoices.append(syncedInvoice)
+                    // Post notification so ViewModels can refresh
+                    NotificationCenter.default.post(
+                        name: .invoiceDidChange,
+                        object: nil,
+                        userInfo: ["invoiceId": syncedInvoice.id, "invoiceType": syncedInvoice.type.rawValue]
+                    )
+                }
+                return
+            } catch {
+                print("⚠️ InvoiceService: Failed to sync invoice immediately: \(error.localizedDescription)")
+                // Fall through to local storage + legacy service charge sync
+            }
+        }
+
+        // Fallback: Legacy service charge invoice sync (for backward compatibility)
         if invoice.type == .platformServiceCharge, let apiClient = parseAPIClient {
             await saveServiceChargeInvoiceToBackend(invoice, apiClient: apiClient)
         }
@@ -108,6 +149,46 @@ final class InvoiceService: InvoiceServiceProtocol, ServiceLifecycle {
                 userInfo: ["invoiceId": invoice.id, "invoiceType": invoice.type.rawValue]
             )
         }
+    }
+
+    // MARK: - Backend Synchronization
+
+    /// Syncs pending invoices to the backend
+    func syncToBackend() async {
+        guard let apiService = invoiceAPIService else {
+            print("⚠️ InvoiceService: No API service configured, skipping sync")
+            return
+        }
+
+        print("📤 InvoiceService: Syncing pending invoices to backend...")
+
+        // Sync pending invoices (without Parse objectId or with local- prefix)
+        let pendingInvoices = invoices.filter { invoice in
+            invoice.id.starts(with: "local-") ||
+            !invoice.id.contains("-") || // UUID without Parse objectId format
+            invoice.id.count == 36 // Standard UUID format (not Parse objectId)
+        }
+
+        print("📤 InvoiceService: Found \(pendingInvoices.count) pending invoices to sync")
+
+        for invoice in pendingInvoices {
+            do {
+                let syncedInvoice = try await apiService.saveInvoice(invoice)
+
+                // Update local invoice with Parse objectId
+                await MainActor.run {
+                    if let index = self.invoices.firstIndex(where: { $0.id == invoice.id }) {
+                        self.invoices[index] = syncedInvoice
+                    }
+                }
+
+                print("✅ InvoiceService: Synced invoice \(invoice.invoiceNumber)")
+            } catch {
+                print("⚠️ InvoiceService: Failed to sync invoice \(invoice.invoiceNumber): \(error.localizedDescription)")
+            }
+        }
+
+        print("✅ InvoiceService: Background sync completed")
     }
 
     // MARK: - Backend Integration
@@ -156,65 +237,34 @@ final class InvoiceService: InvoiceServiceProtocol, ServiceLifecycle {
         }
     }
 
-    // MARK: - PDF Generation
+    // MARK: - PDF Generation (delegated to InvoicePDFService)
 
     func generatePDF(for invoice: Invoice) async throws -> Data {
-        await MainActor.run {
-            isLoading = true
-        }
-
+        await MainActor.run { isLoading = true }
         do {
-            // Simulate PDF generation time
-            try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
-
-            print("🔧 DEBUG: Starting PDF generation for invoice: \(invoice.formattedInvoiceNumber)")
-
-            let pdfData = PDFGenerator.generatePDF(from: invoice)
-
-            print("🔧 DEBUG: PDF generation completed. Data size: \(pdfData.count) bytes")
-
-            // Check if PDF data is empty (generation failed)
-            if pdfData.isEmpty {
-                print("❌ DEBUG: PDF generation returned empty data")
-                throw AppError.serviceError(.operationFailed)
-            }
-
-            await MainActor.run {
-                self.isLoading = false
-            }
-
-            return pdfData
+            let data = try await pdfService.generatePDF(for: invoice)
+            await MainActor.run { isLoading = false }
+            return data
         } catch {
-            print("❌ DEBUG: PDF generation failed with error: \(error.localizedDescription)")
-            await MainActor.run {
-                self.isLoading = false
-            }
+            await MainActor.run { isLoading = false }
             throw AppError.serviceError(.operationFailed)
         }
     }
 
     func generatePDFPreview(for invoice: Invoice) async throws -> UIImage {
-        await MainActor.run {
-            isLoading = true
+        await MainActor.run { isLoading = true }
+        do {
+            let image = try await pdfService.generatePDFPreview(for: invoice)
+            await MainActor.run { isLoading = false }
+            return image
+        } catch {
+            await MainActor.run { isLoading = false }
+            throw error
         }
-
-        // Simulate preview generation time
-        try await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
-
-        guard let preview = PDFGenerator.generatePreview(from: invoice) else {
-            throw AppError.invoiceGenerationFailed
-        }
-
-        await MainActor.run {
-            self.isLoading = false
-        }
-
-        return preview
     }
 
     func savePDFToDocuments(_ pdfData: Data, fileName: String) async throws -> URL {
-        // Save to Documents folder for sharing
-        return try await PDFDownloadService.savePDFToDocuments(pdfData, fileName: fileName, fileExtension: "pdf")
+        try await pdfService.savePDFToDocuments(pdfData, fileName: fileName)
     }
 
     // MARK: - Invoice Queries
@@ -242,133 +292,12 @@ final class InvoiceService: InvoiceServiceProtocol, ServiceLifecycle {
             .first { $0.tradeId == batchId }
     }
 
-    // MARK: - Invoice Validation
-
-    func validateInvoice(_ invoice: Invoice) -> Bool {
-        // Check if invoice has required fields
-        guard !invoice.invoiceNumber.isEmpty,
-              !invoice.customerInfo.name.isEmpty,
-              !invoice.items.isEmpty else {
-            return false
-        }
-
-        // Check if total amount is positive
-        guard invoice.totalAmount > 0 else {
-            return false
-        }
-
-        // Check if all items are valid
-        for item in invoice.items {
-            guard item.quantity > 0,
-                  item.unitPrice >= 0,
-                  item.totalAmount >= 0 else {
-                return false
-            }
-        }
-
-        return true
-    }
-
-    func validateCustomerInfo(_ customerInfo: CustomerInfo) -> Bool {
-        // Check if all required customer fields are present
-        guard !customerInfo.name.isEmpty,
-              !customerInfo.address.isEmpty,
-              !customerInfo.city.isEmpty,
-              !customerInfo.postalCode.isEmpty,
-              !customerInfo.taxNumber.isEmpty,
-              !customerInfo.depotNumber.isEmpty,
-              !customerInfo.bank.isEmpty,
-              !customerInfo.customerNumber.isEmpty else {
-            return false
-        }
-
-        // Validate postal code format (German format)
-        let postalCodeRegex = "^[0-9]{5}$"
-        let postalCodePredicate = NSPredicate(format: "SELF MATCHES %@", postalCodeRegex)
-        guard postalCodePredicate.evaluate(with: customerInfo.postalCode) else {
-            return false
-        }
-
-        return true
-    }
-
     // MARK: - Private Methods
 
     private func loadMockInvoices() {
         // Invoices are now generated automatically when trades complete
         // No need for mock invoices - they will be created dynamically
         invoices = []
-    }
-
-    /// Generate invoices for all existing completed trades (backfill)
-    func generateInvoicesForCompletedTrades(_ trades: [Trade]) async {
-        print("📄 Generating invoices for \(trades.count) completed trades...")
-
-        for trade in trades where trade.status == .completed {
-            // CRITICAL: Use trade.traderId as customer number for proper trader isolation
-            // This ensures invoices are tied to the specific trader who owns the trade
-            let customerInfo = CustomerInfo(
-                name: "Dr. Hans-Peter Müller",
-                address: "Hauptstraße 42",
-                city: "Frankfurt am Main",
-                postalCode: "60311",
-                taxNumber: "43/123/45678",
-                depotNumber: "DE12345678901234567890",
-                bank: "Deutsche Bank AG",
-                customerNumber: trade.traderId  // Use trader ID for proper isolation
-            )
-
-            // Check if invoices already exist for this trade
-            let existingInvoices = invoices.filter { $0.tradeId == trade.id }
-            let hasBuyInvoice = existingInvoices.contains { $0.transactionType == .buy }
-            // Create buy invoice if missing
-            if !hasBuyInvoice {
-                let buyInvoice = Invoice.from(
-                    order: trade.buyOrder,
-                    customerInfo: customerInfo,
-                    transactionIdService: transactionIdService,
-                    tradeId: trade.id,
-                    tradeNumber: trade.tradeNumber
-                )
-                await addInvoice(buyInvoice)
-            }
-
-            // Create sell invoices for each sell order
-            // Handle multiple sell orders (partial sales)
-            for sellOrder in trade.sellOrders {
-                // Check if invoice already exists for this specific order
-                let invoiceExists = existingInvoices.contains { $0.orderId == sellOrder.id }
-
-                if !invoiceExists {
-                    let sellInvoice = Invoice.from(
-                        sellOrder: sellOrder,
-                        customerInfo: customerInfo,
-                        transactionIdService: transactionIdService,
-                        tradeId: trade.id,
-                        tradeNumber: trade.tradeNumber
-                    )
-                    await addInvoice(sellInvoice)
-                }
-            }
-
-            // Handle legacy single sell order (backward compatibility)
-            if let sellOrder = trade.sellOrder, trade.sellOrders.isEmpty {
-                let invoiceExists = existingInvoices.contains { $0.orderId == sellOrder.id }
-
-                if !invoiceExists {
-                    let sellInvoice = Invoice.from(
-                        sellOrder: sellOrder,
-                        customerInfo: customerInfo,
-                        transactionIdService: transactionIdService,
-                        tradeId: trade.id,
-                        tradeNumber: trade.tradeNumber
-                    )
-                    await addInvoice(sellInvoice)
-                }
-            }
-        }
-
-        print("📄 Invoice generation complete. Total invoices: \(invoices.count)")
     }
 
     private func handleError(_ error: Error) async {

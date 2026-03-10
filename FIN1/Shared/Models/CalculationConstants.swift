@@ -65,13 +65,24 @@ struct CalculationConstants {
         /// Foreign costs fixed amount in EUR
         static let foreignCosts: Double = 1.50
 
-        /// Trader commission rate on profit - default fallback only
-        /// NOTE: Use ConfigurationService.traderCommissionRate for the actual admin-configured value
-        static let traderCommissionRate: Double = 0.05
+        // MARK: Admin-Configurable Rate Defaults
+        // ⚠️ CRITICAL: These are LAST-RESORT FALLBACKS only, matching the backend
+        // DEFAULT_CONFIG in configHelper.js. The actual production value is set by
+        // an admin via the Configuration class and served through ConfigurationService.
+        //
+        // RULE: All financial code paths MUST obtain the commission rate from
+        //   ConfigurationServiceProtocol.effectiveCommissionRate
+        // Direct use of these constants in business logic is FORBIDDEN.
+        // They exist solely as the documented baseline when ConfigurationService
+        // has not yet loaded (app cold-start) or is unavailable (unit tests).
 
-        /// Trader commission percentage for display - default fallback only
-        /// NOTE: Use ConfigurationService.traderCommissionRate for the actual admin-configured value
-        static let traderCommissionPercentage: String = "5%"
+        /// Trader commission rate on profit - LAST-RESORT FALLBACK.
+        /// Production value comes from `ConfigurationService.traderCommissionRate`.
+        static let traderCommissionRate: Double = 0.10
+
+        /// Trader commission percentage for display - LAST-RESORT FALLBACK.
+        /// Production value comes from `ConfigurationService.traderCommissionPercentage`.
+        static let traderCommissionPercentage: String = "10%"
     }
 
     // MARK: - Service Charges
@@ -79,16 +90,16 @@ struct CalculationConstants {
     /// Platform service charges (separate from trading fees)
     /// - Note: Service charges are ONLY charged to investors, not traders
     struct ServiceCharges {
-        /// Platform service charge rate - 1.5% of investment amount (GROSS amount, includes VAT)
+        /// Platform service charge rate - 2% of investment amount (GROSS amount, includes VAT)
         /// - Note: This charge applies ONLY to investors when creating investments
-        /// - The 1.5% is the gross amount that gets debited from the account
+        /// - The 2% is the gross amount that gets debited from the account
         /// - For invoicing, this gross amount is split into net service charge and VAT (19%)
-        static let platformServiceChargeRate: Double = 0.015
+        static let platformServiceChargeRate: Double = 0.02
 
-        /// Platform service charge percentage for display (e.g., "1.5%")
+        /// Platform service charge percentage for display (e.g., "2%")
         /// - Note: This charge applies ONLY to investors when creating investments
-        /// - The 1.5% represents the gross amount (includes VAT)
-        static let platformServiceChargePercentage: String = "1.5%"
+        /// - The 2% represents the gross amount (includes VAT)
+        static let platformServiceChargePercentage: String = "2%"
     }
 
     // MARK: - Account Configuration
@@ -96,13 +107,13 @@ struct CalculationConstants {
     /// Account and balance configuration
     struct Account {
         /// Initial account balance for new traders in EUR
-        static let initialBalance: Double = 50000.0
+        static let initialBalance: Double = 1.0
 
         /// Initial account balance for new investors in EUR
-        static let initialInvestorBalance: Double = 25000.0
+        static let initialInvestorBalance: Double = 1.0
 
         /// Minimum cash balance reserve in EUR (for buy order and investment validation)
-        static let minimumCashReserve: Double = 12.0
+        static let minimumCashReserve: Double = 20.0
     }
 
     // MARK: - Investment Defaults
@@ -126,37 +137,37 @@ struct CalculationConstants {
         /// Maximum number of decimal places for percentage formatting
         static let percentageDecimalPlaces: Int = 1
     }
-    
+
     // MARK: - Payment Limits
-    
+
     /// Payment limits for deposits and withdrawals
     struct PaymentLimits {
         /// Minimum deposit amount (EUR)
         static let minimumDeposit: Double = 10.0
-        
+
         /// Maximum deposit amount per transaction (EUR)
         static let maximumDeposit: Double = 100_000.0
-        
+
         /// Minimum withdrawal amount (EUR)
         static let minimumWithdrawal: Double = 10.0
-        
+
         /// Maximum withdrawal amount per transaction (EUR)
         static let maximumWithdrawal: Double = 50_000.0
     }
-    
+
     // MARK: - Transaction Limits
-    
+
     /// Transaction limits based on risk class (MiFID II / BaFin compliance)
     struct TransactionLimits {
         /// Base daily limit for all users (EUR)
         static let baseDailyLimit: Double = 10_000.0
-        
+
         /// Base weekly limit for all users (EUR)
         static let baseWeeklyLimit: Double = 50_000.0
-        
+
         /// Base monthly limit for all users (EUR)
         static let baseMonthlyLimit: Double = 200_000.0
-        
+
         /// Risk class based limit multipliers
         /// Higher risk class = higher limits
         static func riskClassMultiplier(for riskClass: RiskClass) -> Double {
@@ -170,17 +181,17 @@ struct CalculationConstants {
             case .riskClass7: return 2.5  // Very high risk - higher limits
             }
         }
-        
+
         /// Calculates risk class based daily limit
         static func dailyLimit(for riskClass: RiskClass) -> Double {
             return baseDailyLimit * riskClassMultiplier(for: riskClass)
         }
-        
+
         /// Calculates risk class based weekly limit
         static func weeklyLimit(for riskClass: RiskClass) -> Double {
             return baseWeeklyLimit * riskClassMultiplier(for: riskClass)
         }
-        
+
         /// Calculates risk class based monthly limit
         static func monthlyLimit(for riskClass: RiskClass) -> Double {
             return baseMonthlyLimit * riskClassMultiplier(for: riskClass)

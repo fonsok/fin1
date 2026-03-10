@@ -1,7 +1,7 @@
 ---
 title: "FIN1 Backend – Ubuntu Runbook (iobox, User io)"
 audience: ["Betrieb", "Backend-Entwicklung", "Security", "Release Management"]
-lastUpdated: "2026-02-01"
+lastUpdated: "2026-02-23"
 ---
 
 ## Zweck
@@ -33,7 +33,7 @@ Dieses Runbook dokumentiert den **realen** Backend-Betrieb auf dem Ubuntu-Server
 - `docker-compose.production.yml` – Produktions-Compose (aktiver Stack)
 - `docker-compose.yml` / `docker-compose.simple.yml` – alternative Setups
 - `auto-start-services.sh` – Service Monitor (Auto-Restart via Compose)
-- `backup-fin1-server-v2.0.sh` / `restore-fin1-server-v2.0.sh` – Backup/Restore
+- `scripts/backup.sh` – automatisches Backup (Cron 3:00); `scripts/restore-from-backup.sh` – Restore (siehe `scripts/BACKUP_RESTORE.md`)
 - `service-monitor.service` – Systemd Unit (liegt im Repo-Ordner, ist **nicht** installiert)
 
 ## 3) Aktiver Stack (docker compose – Produktion)
@@ -49,18 +49,18 @@ Aus `docker compose -f docker-compose.production.yml ps`:
 
 - **`fin1-nginx`**: `:80`, `:443` (öffentlich)
 - **`fin1-parse-server`**: `127.0.0.1:1338 -> 1337` (**nur localhost**)
-- **`fin1-mongodb`**: `0.0.0.0:27018 -> 27017` (**aktuell offen**)
+- **`fin1-mongodb`**: `127.0.0.1:27018 -> 27017` (**nur localhost**, nach Hardening)
 - **`fin1-redis`**: `127.0.0.1:6380 -> 6379` (**nur localhost**)
 - **`fin1-postgres`**: `127.0.0.1:5433 -> 5432` (**nur localhost**)
-- **`fin1-minio`**: `:9002` (S3), `:9003` (Console) (**aktuell offen**)
-- **`fin1-market-data`**: `:8083` (**aktuell offen**)
-- **`fin1-notification-service`**: `:8084` (**aktuell offen**)
-- **`fin1-analytics-service`**: `:8085` (**aktuell offen**)
+- **`fin1-minio`**: `127.0.0.1:9002/9003` (**nur localhost**, nach Hardening)
+- **`fin1-market-data`**: `127.0.0.1:8083` (**nur localhost**)
+- **`fin1-notification-service`**: `127.0.0.1:8084` (**nur localhost**)
+- **`fin1-analytics-service`**: `127.0.0.1:8085` (**nur localhost**)
+- **`fin1-uptime-kuma`** (Monitoring): `127.0.0.1:3001` (optional per UFW freigegeben)
 
 **Wichtig**
 
-- Das ist ein bewusstes Hardening: Parse Server ist **nicht** direkt aus dem LAN erreichbar, sondern über Nginx (`/parse`).
-- MongoDB/MinIO/Service-Ports sind derzeit **auf 0.0.0.0** gebunden → siehe Security-Hardening.
+- Nach Hardening (Feb 2026): Parse Server und alle DBs/Service-Ports nur auf **127.0.0.1**. Zugriff von LAN ausschließlich über Nginx (HTTPS :443). Siehe `Documentation/SERVER_HARDENING_2026-02.md`.
 
 ### 3.1 Source of Truth: Port-Bindings aus `docker-compose.production.yml` (Server)
 
@@ -69,23 +69,18 @@ Quelle: `/home/io/fin1-server/docker-compose.production.yml` (Ports-Blocks).
 - **parse-server**
   - `"127.0.0.1:1338:1337"` (nur localhost)
 - **mongodb**
-  - `"0.0.0.0:27018:27017"` (**LAN-weit offen**)
+  - `"127.0.0.1:27018:27017"` (nur localhost)
 - **redis**
   - `"127.0.0.1:6380:6379"` (nur localhost)
 - **postgres**
   - `"127.0.0.1:5433:5432"` (nur localhost)
 - **minio**
-  - `"9002:9000"` (**LAN-weit offen**)
-  - `"9003:9001"` (**LAN-weit offen**)
+  - `"127.0.0.1:9002:9000"` (nur localhost)
+  - `"127.0.0.1:9003:9001"` (nur localhost)
 - **nginx**
-  - `"80:80"` (öffentlich)
-  - `"443:443"` (öffentlich)
-- **market-data**
-  - `"8083:8080"` (**LAN-weit offen**)
-- **notification-service**
-  - `"8084:8081"` (**LAN-weit offen**)
-- **analytics-service**
-  - `"8085:8082"` (**LAN-weit offen**)
+  - `"80:80"` (Redirect auf HTTPS), `"443:443"` (HTTPS, öffentlich)
+- **market-data** / **notification-service** / **analytics-service**
+  - `"127.0.0.1:8083:8080"` usw. (nur localhost)
 
 ### 3.2 Zusätzliche offene OS-Ports (nicht aus Compose dokumentiert)
 
@@ -106,20 +101,20 @@ Nginx Konfiguration: `/home/io/fin1-server/backend/nginx/nginx.conf`
 
 Aktive Routen:
 
-- **Parse API**: `http://<host>/parse` (Proxy auf Parse Server)
-- **LiveQuery WS**: `ws://<host>/parse` (Upgrade/WS Header werden gesetzt)
-- **Health**: `http://<host>/health` (Proxy auf Parse `/health`)
-- **API Docs**: `http://<host>/api-docs` (Proxy auf Parse `/api-docs`)
+- **Parse API**: `https://<host>/parse` (Proxy auf Parse Server)
+- **LiveQuery WS**: `wss://<host>/parse` (Upgrade/WS Header werden gesetzt)
+- **Health**: `https://<host>/health` (Proxy auf Parse `/health`)
+- **API Docs**: `https://<host>/api-docs` (nur von localhost, Nginx `allow 127.0.0.1; deny all`)
 
 Service-Routes (Reverse Proxy):
 
-- **Market Data**: `http://<host>/api/market-data/` → `fin1-market-data`
-- **Notifications**: `http://<host>/api/notifications/` → `fin1-notification-service`
-- **Analytics**: `http://<host>/api/analytics/` → `fin1-analytics-service`
+- **Market Data**: `https://<host>/api/market-data/` → `fin1-market-data`
+- **Notifications**: `https://<host>/api/notifications/` → `fin1-notification-service`
+- **Analytics**: `https://<host>/api/analytics/` → `fin1-analytics-service`
 
-Absichtlich deaktiviert:
+Absichtlich eingeschränkt:
 
-- **Parse Dashboard**: `/dashboard/` liefert **404** (Nginx blockt externen Zugriff).
+- **Parse Dashboard**: `/dashboard/` nur von **localhost** (Nginx `allow 127.0.0.1; deny all` → von LAN 403).
 
 ## 5) Parse Dashboard (sicherer Zugriff)
 
@@ -127,18 +122,18 @@ Parse Dashboard ist nur über **SSH Tunnel** sinnvoll, weil es den `serverURL` i
 
 ### Empfohlenes Setup
 
-- Parse Port ist auf dem Server an `127.0.0.1:1338` gebunden.
-- Tunnel:
+- Dashboard wird über Nginx unter `/dashboard/` ausgeliefert; Nginx hört auf 443 (HTTPS).
+- Tunnel (Mac → Server):
 
 ```bash
-ssh -L 1338:127.0.0.1:1338 io@192.168.178.24
+ssh -L 443:127.0.0.1:443 io@192.168.178.24
 ```
 
-- Dashboard im Browser (Mac): `http://localhost:1338/dashboard`
+- Dashboard im Browser (Mac): `https://localhost/dashboard/` (bei self-signed Zertifikat Warnung bestätigen)
 
 Relevante `.env` Variable:
 
-- `PARSE_DASHBOARD_SERVER_URL` (sollte auf `http://localhost:1338/parse` zeigen)
+- `PARSE_DASHBOARD_SERVER_URL` (z. B. `http://localhost:1338/parse` für Dashboard-Frontend)
 
 ## 6) Konfiguration (Secrets, URLs, Legal Identity)
 
@@ -170,8 +165,8 @@ Im Server-Verzeichnis `/home/io/fin1-server`:
   - `docker compose -f docker-compose.production.yml logs --tail=200 parse-server`
   - `docker compose -f docker-compose.production.yml logs --tail=200 nginx`
 - Health:
-  - `curl -sS http://localhost:1338/health`
-  - `curl -sS http://localhost/health` (über Nginx, lokal auf Server)
+  - `curl -sk https://localhost/health` (über Nginx, lokal auf Server; `-k` bei self-signed)
+  - `curl -sk https://192.168.178.24/health` (von außen, LAN)
 
 ## 8) Deployment/Update Ablauf (bewährter Flow)
 
@@ -184,9 +179,9 @@ Typischer Update (Beispiel Parse Server):
 3. **Rollout**:
    - `docker compose -f docker-compose.production.yml up -d --force-recreate parse-server`
 4. **Verify**
-   - `docker compose -f docker-compose.production.yml ps`
-   - `curl http://localhost:1338/health`
-   - extern: `curl http://192.168.178.24/health` und `curl http://192.168.178.24/parse/health`
+  - `docker compose -f docker-compose.production.yml ps`
+  - `curl -sk https://localhost/health`
+  - extern: `curl -sk https://192.168.178.24/health` und `curl -sk https://192.168.178.24/parse/health`
 
 ## 8.1) Troubleshooting (Parse Server Start)
 
@@ -205,36 +200,31 @@ Schnellcheck:
 - **Fix (empfohlen)**: Den eingebauten Redis-Cache-Adapter aus `parse-server` verwenden (`RedisCacheAdapter`) oder den Cache-Adapter komplett entfernen, wenn Redis-Caching nicht benötigt wird.
 - **Hinweis**: Redis-Caching ist optional und sollte nur aktiviert werden, wenn `REDIS_URL` korrekt gesetzt ist (z.B. `redis://:<password>@redis:6379`, passend zu `REDIS_PASSWORD`/`--requirepass`).
 
-#### Fall B: Parse ok, aber extern `http://<host>/parse/health` ist down
+#### Fall B: Parse ok, aber extern `https://<host>/parse/health` ist down
 
-- Wenn `curl http://localhost:1338/health` **ok** ist, aber `curl http://192.168.178.24/parse/health` **failt**:
+- Wenn `curl -sk https://localhost/health` **ok** ist, aber `curl -sk https://192.168.178.24/parse/health` **failt**:
   - prüfe `fin1-nginx`:
     - `docker compose -f docker-compose.production.yml ps nginx`
     - ggf. starten: `docker compose -f docker-compose.production.yml up -d nginx`
 
 ## 9) Backup & Restore
 
-### Backup (v2.0 Script)
+**Vollständige Anleitung:** `scripts/BACKUP_RESTORE.md` (im Repo). Auf dem Server: `/home/io/fin1-server/scripts/`.
 
-- Script: `/home/io/fin1-server/backup-fin1-server-v2.0.sh`
-- Zielverzeichnis: standardmäßig `~/fin1-backups/fin1-backup-YYYYMMDD-HHMMSS`
-- Inhalt (high-level):
-  - Compose Dateien
-  - Backend Config inkl. `backend/.env` (**enthält Secrets → sicher lagern!**)
-  - Cloud Code + Zertifikate
-  - DB Dumps: Mongo (archive), Postgres (sql.gz), Redis (dump.rdb)
-  - MinIO Daten (tar.gz aus Volume)
-  - Logs + System Info
+### Backup (automatisch)
 
-### Restore (v2.0 Script)
+- Script: `/home/io/fin1-server/scripts/backup.sh`
+- Cron: täglich **3:00 Uhr** (`crontab -l` prüfen)
+- Zielverzeichnis: `/home/io/fin1-backups/<BACKUP_ID>/` (z. B. `20260223_124944`)
+- Inhalt: MongoDB (mongodump, .gz), PostgreSQL (pg_dump, .sql.gz), Redis (dump.rdb), Config (docker-compose, .env, nginx.conf). 14 Tage Aufbewahrung.
 
-- Script: `/home/io/fin1-server/restore-fin1-server-v2.0.sh <backup-dir>`
-- Stoppt Container (nach Prompt), startet Stack, spielt Dumps ein, restarts.
+### Restore (bestimmte Version)
 
-### Automatische Backups
-
-- `setup-automatic-backups.sh` richtet cron ein (interaktiv).
-- Aktueller Ist-Zustand (User `io`): **kein Cronjob gesetzt** (kein `crontab -l` Eintrag).
+- Script: `/home/io/fin1-server/scripts/restore-from-backup.sh`
+- Backups anzeigen: `./scripts/restore-from-backup.sh --list`
+- Vollrestore: `./scripts/restore-from-backup.sh <BACKUP_ID>` (z. B. `20260223_124944`); Bestätigung mit `yes` erforderlich.
+- Nur Config: `./scripts/restore-from-backup.sh <BACKUP_ID> --config-only`
+- Details und Logs: siehe `scripts/BACKUP_RESTORE.md`, `Documentation/SERVER_HARDENING_2026-02.md`.
 
 ## 10) Auto-Recovery / Service Monitoring
 
@@ -279,11 +269,11 @@ Ziel: **Nur** `22` (SSH), `80/443` (Nginx) sind inbound nötig. Alles andere ent
 ### Stufe 0: Baseline & Safety Net
 
 - **Backup** erstellen (inkl. DB/Config):
-  - `/home/io/fin1-server/backup-fin1-server-v2.0.sh`
+  - `/home/io/fin1-server/scripts/backup.sh`
 - Aktuellen Zustand dokumentieren:
   - `docker compose -f docker-compose.production.yml ps`
   - `ss -ltn` (Ports)
-  - `curl http://localhost/health` und `curl http://localhost/parse/health`
+  - `curl -sk https://localhost/health` und `curl -sk https://localhost/parse/health`
 
 ### Stufe 1: Exponierte Host-Ports reduzieren (Compose)
 
@@ -305,7 +295,7 @@ Rollout:
 - `docker compose -f docker-compose.production.yml up -d`
 - Verify:
   - `docker compose -f docker-compose.production.yml ps`
-  - `curl http://192.168.178.24/health` und `curl http://192.168.178.24/parse/health`
+  - `curl -sk https://192.168.178.24/health` und `curl -sk https://192.168.178.24/parse/health`
   - `ss -ltn` → prüfen, dass `8083/8084/8085` nicht mehr auf `0.0.0.0` hängen
 
 ### Stufe 2: Firewall (ufw) aktiv managen
@@ -331,8 +321,8 @@ Empfohlenes Policy-Set (Beispiel):
 ### Stufe 4: Go/No-Go & Regression Checks
 
 - Health: `/health` und `/parse/health`
-- App-Funktionalität: iOS Verbindung (Parse REST + LiveQuery) via `http://192.168.178.24/parse`
-- Dashboard Zugriff: nur via SSH Tunnel (`localhost:1338/dashboard`)
+- App-Funktionalität: iOS Verbindung (Parse REST + LiveQuery) via `https://192.168.178.24/parse` und `wss://192.168.178.24/parse`
+- Dashboard Zugriff: nur via SSH Tunnel (`ssh -L 443:127.0.0.1:443 io@<server>` → `https://localhost/dashboard/`)
 - Keine unerwarteten offenen Ports: `ss -ltn` Review
 
 ### Rollback-Strategie
@@ -363,7 +353,7 @@ Nginx nutzt Docker-DNS/Service-Namen (`market-data`, `notification-service`, `an
 Auswirkungen:
 - ✅ Zugriff weiterhin über Nginx:
   - `/api/market-data/`, `/api/notifications/`, `/api/analytics/`
-- ❌ Direkter Zugriff via `http://<host>:8083/...` entfällt (gewollt).
+- ❌ Direkter Zugriff via `http(s)://<host>:8083/...` entfällt (Port nur 127.0.0.1, gewollt).
 
 **Option B: Nur localhost binden (wenn du direkte Debug-Calls brauchst)**
 
@@ -422,7 +412,7 @@ Beibehalten, Nginx ist der External Entry Point (`/parse`).
   - `docker compose -f docker-compose.production.yml up -d`
 - **Verify**
   - `docker compose -f docker-compose.production.yml ps`
-  - extern (LAN): `curl http://192.168.178.24/health` und `curl http://192.168.178.24/parse/health`
+  - extern (LAN): `curl -sk https://192.168.178.24/health` und `curl -sk https://192.168.178.24/parse/health`
   - Ports: `ss -ltn` (keine `0.0.0.0:27018`, `:9002`, `:9003`, `:8083`, `:8084`, `:8085`)
 - **Rollback**
   - Compose-Datei zurücksetzen
@@ -495,8 +485,8 @@ Hinweise:
 ### 14.5 Quick Verify Checklist nach Hardening
 
 - `docker compose ps` → alles healthy
-- `curl http://192.168.178.24/health` → 200
-- `curl http://192.168.178.24/parse/health` → 200
+- `curl -sk https://192.168.178.24/health` → 200
+- `curl -sk https://192.168.178.24/parse/health` → 200
 - `ss -ltn`:
   - nur `22`, `80`, `443` (und ggf. bewusst erlaubte Admin-Ports) auf `0.0.0.0`
   - Parse `1338` bleibt localhost

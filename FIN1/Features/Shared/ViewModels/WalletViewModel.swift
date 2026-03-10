@@ -26,7 +26,7 @@ final class WalletViewModel: ObservableObject {
     private let cashBalanceService: any CashBalanceServiceProtocol
     private let investorCashBalanceService: (any InvestorCashBalanceServiceProtocol)?
     private let invoiceService: (any InvoiceServiceProtocol)?
-    private let configurationService: (any ConfigurationServiceProtocol)?
+    private let configurationService: any ConfigurationServiceProtocol
     private let paymentService: any PaymentServiceProtocol
     private let userService: any UserServiceProtocol
     private let parseLiveQueryClient: (any ParseLiveQueryClientProtocol)?
@@ -42,7 +42,7 @@ final class WalletViewModel: ObservableObject {
         userService: any UserServiceProtocol,
         investorCashBalanceService: (any InvestorCashBalanceServiceProtocol)? = nil,
         invoiceService: (any InvoiceServiceProtocol)? = nil,
-        configurationService: (any ConfigurationServiceProtocol)? = nil,
+        configurationService: any ConfigurationServiceProtocol,
         parseLiveQueryClient: (any ParseLiveQueryClientProtocol)? = nil
     ) {
         self.cashBalanceService = cashBalanceService
@@ -171,44 +171,27 @@ final class WalletViewModel: ObservableObject {
         case .investor:
             // For investors, calculate balance from account statement snapshot (including wallet)
             if let investorService = investorCashBalanceService {
-                do {
-                    let snapshot = try await InvestorAccountStatementBuilder.buildSnapshotWithWallet(
-                        for: currentUser,
-                        investorCashBalanceService: investorService,
-                        paymentService: paymentService
-                    )
-                    return snapshot.closingBalance
-                } catch {
-                    // On error, fallback to service balance
-                    return investorService.getBalance(for: currentUser.id)
-                }
+                let snapshot = await InvestorAccountStatementBuilder.buildSnapshotWithWallet(
+                    for: currentUser,
+                    investorCashBalanceService: investorService,
+                    paymentService: paymentService
+                )
+                return snapshot.closingBalance
             }
             // Fallback to global cash balance service
             return cashBalanceService.currentBalance
 
         case .trader:
             // For traders, calculate balance from account statement snapshot (including wallet)
-            if let invoiceService = invoiceService,
-               let configurationService = configurationService {
-                do {
-                    let snapshot = try await TraderAccountStatementBuilder.buildSnapshotWithWallet(
-                        for: currentUser,
-                        invoiceService: invoiceService,
-                        configurationService: configurationService,
-                        paymentService: paymentService
-                    )
-                    return snapshot.closingBalance
-                } catch {
-                    // On error, fallback to base snapshot without wallet
-                    let baseSnapshot = TraderAccountStatementBuilder.buildSnapshot(
-                        for: currentUser,
-                        invoiceService: invoiceService,
-                        configurationService: configurationService
-                    )
-                    return baseSnapshot.closingBalance
-                }
+            if let invoiceService = invoiceService {
+                let snapshot = await TraderAccountStatementBuilder.buildSnapshotWithWallet(
+                    for: currentUser,
+                    invoiceService: invoiceService,
+                    configurationService: configurationService,
+                    paymentService: paymentService
+                )
+                return snapshot.closingBalance
             }
-            // Fallback to global cash balance service
             return cashBalanceService.currentBalance
 
         default:

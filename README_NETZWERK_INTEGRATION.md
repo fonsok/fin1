@@ -12,7 +12,7 @@ Die gesamte Netzwerk-Integration wurde erfolgreich durchgeführt. Die iOS-App ka
 ### Für iOS-App-Entwicklung:
 
 1. **Parse Server ist konfiguriert:**
-   - URL: `http://192.168.178.24:1337/parse`
+   - URL: `https://192.168.178.24/parse`
    - Application ID: `fin1-app-id`
 
 2. **App ist konfiguriert:**
@@ -46,14 +46,14 @@ Die gesamte Netzwerk-Integration wurde erfolgreich durchgeführt. Die iOS-App ka
 ## 🔧 Wichtige Konfigurationen
 
 ### Ubuntu-Server (192.168.178.24)
-- Parse Server: Port 1337 ✅
+- Parse Server: via Nginx Port 443 (HTTPS) ✅
 - MongoDB: Port 27017 (localhost)
 - PostgreSQL: Port 5432 (localhost)
 - Redis: Port 6379 (localhost)
 
 ### iOS-App
-- Parse Server URL: `http://192.168.178.24:1337/parse`
-- Live Query URL: `ws://192.168.178.24:1337/parse`
+- Parse Server URL: `https://192.168.178.24/parse`
+- Live Query URL: `wss://192.168.178.24/parse`
 - Application ID: `fin1-app-id`
 
 ## 🚀 Nützliche Befehle
@@ -65,7 +65,7 @@ ssh io@192.168.178.24 "cd ~/fin1-server && docker compose -f docker-compose.prod
 
 ### Parse Server testen:
 ```bash
-curl http://192.168.178.24:1337/parse/health
+curl -sk https://192.168.178.24/parse/health
 ```
 
 ### Logs anzeigen:

@@ -118,10 +118,17 @@ final class CashBalanceService: CashBalanceServiceProtocol, ObservableObject {
     // MARK: - Private Methods
 
     private func setupConfigurationObservation() {
-        // Observe configuration changes to update initial balance if needed
-        // Note: We can't observe @Published properties from protocols directly
-        // This would need to be implemented differently in a real app
-        // For now, we'll rely on the service being restarted when configuration changes
+        configurationService.configurationChanged
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                guard let self else { return }
+                let serverValue = self.configurationService.initialAccountBalance
+                if self.currentBalance == 1.0 && serverValue != 1.0 {
+                    self.currentBalance = serverValue
+                    print("💰 CashBalanceService: balance synced to server value €\(serverValue.formatted(.currency(code: "EUR")))")
+                }
+            }
+            .store(in: &cancellables)
     }
 
     private func setupLiveQuerySubscription() {

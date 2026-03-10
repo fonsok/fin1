@@ -313,4 +313,87 @@ final class InvestorCollectionBillCalculationService: InvestorCollectionBillCalc
         }
         .filter { abs($0.amount) > 0.0001 }
     }
+
+    // MARK: - Backend Integration
+
+    func calculateCollectionBillWithBackend(
+        input: InvestorCollectionBillInput,
+        settlementAPIService: (any SettlementAPIServiceProtocol)?,
+        tradeId: String?,
+        investmentId: String?,
+        onUsedLocalFallback: (() -> Void)? = nil
+    ) async throws -> InvestorCollectionBillOutput {
+        if let api = settlementAPIService, let tradeId, let investmentId {
+            do {
+                let response = try await api.fetchInvestorCollectionBills(
+                    limit: 1, skip: 0, investmentId: investmentId, tradeId: tradeId
+                )
+                if let bill = response.collectionBills.first, let meta = bill.metadata {
+                    if let output = mapBackendToOutput(metadata: meta, input: input) {
+                        print("✅ InvestorCollectionBillCalculationService: Using backend data for trade \(tradeId)")
+                        return output
+                    }
+                }
+            } catch {
+                print("⚠️ InvestorCollectionBillCalculationService: Backend fetch failed, falling back to local: \(error.localizedDescription)")
+                onUsedLocalFallback?()
+            }
+        }
+        return try calculateCollectionBill(input: input)
+    }
+
+    /// Maps backend collection bill metadata to local output model.
+    private func mapBackendToOutput(metadata meta: BackendCollectionBillMetadata, input: InvestorCollectionBillInput) -> InvestorCollectionBillOutput? {
+        guard let buyLeg = meta.buyLeg else { return nil }
+
+        let buyQty = buyLeg.quantity ?? 0
+        let buyPrice = buyLeg.price ?? input.buyPrice
+        let buyAmt = buyLeg.amount ?? (buyQty * buyPrice)
+        let buyFeesTotal = buyLeg.fees?.totalFees ?? 0
+        let residual = buyLeg.residualAmount ?? 0
+
+        let buyFeeDetails = buildFeeDetailsFromBreakdown(buyLeg.fees)
+
+        let sellQty = meta.sellLeg?.quantity ?? 0
+        let sellPrice = meta.sellLeg?.price ?? 0
+        let sellAmt = meta.sellLeg?.amount ?? (sellQty * sellPrice)
+        let sellFeesTotal = meta.sellLeg?.fees?.totalFees ?? 0
+        let sellFeeDetails = buildFeeDetailsFromBreakdown(meta.sellLeg?.fees)
+
+        let grossProfit = meta.grossProfit ?? (sellAmt - sellFeesTotal - buyAmt - buyFeesTotal)
+        let roiInvestedAmount = buyQty * buyPrice
+        let roiGrossProfit = sellAmt - roiInvestedAmount
+
+        return InvestorCollectionBillOutput(
+            buyAmount: buyAmt,
+            buyQuantity: buyQty,
+            buyPrice: buyPrice,
+            buyFees: buyFeesTotal,
+            buyFeeDetails: buyFeeDetails,
+            residualAmount: residual,
+            sellAmount: sellAmt,
+            sellQuantity: sellQty,
+            sellAveragePrice: sellPrice,
+            sellFees: sellFeesTotal,
+            sellFeeDetails: sellFeeDetails,
+            grossProfit: grossProfit,
+            roiGrossProfit: roiGrossProfit,
+            roiInvestedAmount: roiInvestedAmount
+        )
+    }
+
+    private func buildFeeDetailsFromBreakdown(_ fees: BackendFeeBreakdown?) -> [InvestorFeeDetail] {
+        guard let fees else { return [] }
+        var details: [InvestorFeeDetail] = []
+        if let v = fees.orderFee, abs(v) > 0.0001 {
+            details.append(InvestorFeeDetail(label: "Ordergebühr", amount: v))
+        }
+        if let v = fees.exchangeFee, abs(v) > 0.0001 {
+            details.append(InvestorFeeDetail(label: "Börsenplatzgebühr", amount: v))
+        }
+        if let v = fees.foreignCosts, abs(v) > 0.0001 {
+            details.append(InvestorFeeDetail(label: "Fremdkostenpauschale", amount: v))
+        }
+        return details
+    }
 }

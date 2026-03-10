@@ -331,7 +331,7 @@ final class TradeAPIService: TradeAPIServiceProtocol {
 // MARK: - Parse Trade Input Model
 
 /// Model for sending trade data to Parse Server
-private struct ParseTradeInput: Encodable {
+private struct ParseTradeInput: Codable {
     let tradeNumber: Int
     let traderId: String
     let symbol: String
@@ -362,7 +362,7 @@ private struct ParseTradeInput: Encodable {
     }
 }
 
-private struct ParseOrderBuyInput: Encodable {
+private struct ParseOrderBuyInput: Codable {
     let id: String
     let traderId: String
     let symbol: String
@@ -411,7 +411,7 @@ private struct ParseOrderBuyInput: Encodable {
     }
 }
 
-private struct ParseOrderSellInput: Encodable {
+private struct ParseOrderSellInput: Codable {
     let id: String
     let traderId: String
     let symbol: String

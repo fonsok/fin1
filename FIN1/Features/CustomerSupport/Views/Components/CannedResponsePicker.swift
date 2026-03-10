@@ -1,24 +1,41 @@
 import SwiftUI
 
 // MARK: - Canned Response Picker
-
-/// Picker for selecting pre-written response templates
+/// Picker for selecting pre-written response templates.
+/// Subviews: CannedResponse/CannedResponseCategoryChip, CannedResponseCard, BackendTemplateCard, CannedResponsePickerSearchBar.
 struct CannedResponsePicker: View {
     @Binding var selectedResponse: CannedResponse?
     let placeholderValues: [String: String]
     let onSelect: (String) -> Void
+    let csrRole: CSRRole?
+    let templateService: TemplateAPIServiceProtocol?
 
     @State private var searchQuery = ""
     @State private var selectedCategory: CannedResponseCategory?
+    @State private var backendTemplates: [ResponseTemplate] = []
+    @State private var isLoadingTemplates = false
+    @State private var useBackendTemplates = false
     @Environment(\.dismiss) private var dismiss
+
+    init(
+        selectedResponse: Binding<CannedResponse?>,
+        placeholderValues: [String: String],
+        csrRole: CSRRole? = nil,
+        templateService: TemplateAPIServiceProtocol? = nil,
+        onSelect: @escaping (String) -> Void
+    ) {
+        _selectedResponse = selectedResponse
+        self.placeholderValues = placeholderValues
+        self.csrRole = csrRole
+        self.templateService = templateService
+        self.onSelect = onSelect
+    }
 
     private var filteredResponses: [CannedResponse] {
         var responses = CannedResponse.defaults
-
         if let category = selectedCategory {
             responses = responses.filter { $0.category == category }
         }
-
         if !searchQuery.isEmpty {
             responses = responses.filter {
                 $0.title.localizedCaseInsensitiveContains(searchQuery) ||
@@ -26,16 +43,44 @@ struct CannedResponsePicker: View {
                 ($0.shortcut?.localizedCaseInsensitiveContains(searchQuery) ?? false)
             }
         }
-
         return responses
+    }
+
+    private var filteredBackendTemplates: [ResponseTemplate] {
+        var templates = backendTemplates
+        if let category = selectedCategory, let templateCategory = mapToTemplateCategory(category) {
+            templates = templates.filter { $0.category == templateCategory }
+        }
+        if !searchQuery.isEmpty {
+            templates = templates.filter {
+                $0.title.localizedCaseInsensitiveContains(searchQuery) ||
+                $0.body.localizedCaseInsensitiveContains(searchQuery)
+            }
+        }
+        return templates
+    }
+
+    private func mapToTemplateCategory(_ category: CannedResponseCategory) -> TemplateCategory? {
+        switch category {
+        case .greeting: return .greeting
+        case .closing: return .closing
+        case .technical: return .technical
+        case .billing: return .transactions
+        default: return nil
+        }
     }
 
     var body: some View {
         NavigationStack {
             VStack(spacing: ResponsiveDesign.spacing(0)) {
-                searchBar
+                CannedResponsePickerSearchBar(searchQuery: $searchQuery)
+                sourceToggle
                 categoryFilter
-                responseList
+                if useBackendTemplates {
+                    backendTemplateList
+                } else {
+                    responseList
+                }
             }
             .background(AppTheme.screenBackground.ignoresSafeArea())
             .navigationTitle("Textbausteine")
@@ -45,32 +90,105 @@ struct CannedResponsePicker: View {
                     Button("Schließen") { dismiss() }
                 }
             }
-        }
-    }
-
-    // MARK: - Search Bar
-
-    private var searchBar: some View {
-        HStack {
-            Image(systemName: "magnifyingglass")
-                .foregroundColor(AppTheme.fontColor.opacity(0.5))
-
-            TextField("Suchen oder /Kürzel eingeben...", text: $searchQuery)
-                .font(ResponsiveDesign.bodyFont())
-                .foregroundColor(AppTheme.fontColor)
-
-            if !searchQuery.isEmpty {
-                Button { searchQuery = "" } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundColor(AppTheme.fontColor.opacity(0.5))
-                }
+            .task {
+                await loadBackendTemplates()
             }
         }
-        .padding()
-        .background(AppTheme.sectionBackground)
     }
 
-    // MARK: - Category Filter
+    private var sourceToggle: some View {
+        Group {
+            if templateService != nil && csrRole != nil {
+                HStack {
+                    Picker("Quelle", selection: $useBackendTemplates) {
+                        Text("Lokal").tag(false)
+                        Text("Backend").tag(true)
+                    }
+                    .pickerStyle(.segmented)
+                    .frame(maxWidth: 200)
+
+                    if isLoadingTemplates {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                    }
+                }
+                .padding(.horizontal)
+                .padding(.vertical, ResponsiveDesign.spacing(4))
+            }
+        }
+    }
+
+    private var backendTemplateList: some View {
+        ScrollView {
+            LazyVStack(spacing: ResponsiveDesign.spacing(8)) {
+                ForEach(filteredBackendTemplates) { template in
+                    BackendTemplateCard(
+                        template: template,
+                        placeholderValues: placeholderValues
+                    ) {
+                        let filledContent = fillPlaceholders(in: template.body, with: placeholderValues)
+                        onSelect(filledContent)
+                        Task {
+                            try? await templateService?.recordUsage(templateId: template.id, ticketId: nil)
+                        }
+                        dismiss()
+                    }
+                }
+
+                if filteredBackendTemplates.isEmpty {
+                    backendEmptyState
+                }
+            }
+            .padding()
+        }
+    }
+
+    private var backendEmptyState: some View {
+        VStack(spacing: ResponsiveDesign.spacing(12)) {
+            if isLoadingTemplates {
+                ProgressView()
+                Text("Lade Templates vom Server...")
+                    .font(ResponsiveDesign.captionFont())
+                    .foregroundColor(AppTheme.fontColor.opacity(0.7))
+            } else {
+                Image(systemName: "doc.text.magnifyingglass")
+                    .font(.system(size: ResponsiveDesign.iconSize() * 2))
+                    .foregroundColor(AppTheme.fontColor.opacity(0.3))
+
+                Text("Keine Backend-Templates gefunden")
+                    .font(ResponsiveDesign.bodyFont())
+                    .foregroundColor(AppTheme.fontColor.opacity(0.7))
+
+                Button("Lokale Templates verwenden") {
+                    useBackendTemplates = false
+                }
+                .buttonStyle(.bordered)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, ResponsiveDesign.spacing(40))
+    }
+
+    private func loadBackendTemplates() async {
+        guard let service = templateService, let role = csrRole else { return }
+        isLoadingTemplates = true
+        defer { isLoadingTemplates = false }
+        if let service = service as? TemplateAPIService {
+            backendTemplates = await service.fetchTemplatesWithFallback(for: role, category: nil)
+            if !backendTemplates.isEmpty {
+                useBackendTemplates = true
+            }
+        }
+    }
+
+    private func fillPlaceholders(in text: String, with values: [String: String]) -> String {
+        var result = text
+        for (key, value) in values {
+            result = result.replacingOccurrences(of: "{{\(key)}}", with: value)
+            result = result.replacingOccurrences(of: "{{\(key.uppercased())}}", with: value)
+        }
+        return result
+    }
 
     private var categoryFilter: some View {
         ScrollView(.horizontal, showsIndicators: false) {
@@ -99,8 +217,6 @@ struct CannedResponsePicker: View {
         .background(AppTheme.sectionBackground.opacity(0.5))
     }
 
-    // MARK: - Response List
-
     private var responseList: some View {
         ScrollView {
             LazyVStack(spacing: ResponsiveDesign.spacing(8)) {
@@ -126,7 +242,7 @@ struct CannedResponsePicker: View {
     private var emptyState: some View {
         VStack(spacing: ResponsiveDesign.spacing(12)) {
             Image(systemName: "doc.text.magnifyingglass")
-                .font(.system(size: 40))
+                .font(.system(size: ResponsiveDesign.iconSize() * 2))
                 .foregroundColor(AppTheme.fontColor.opacity(0.3))
 
             Text("Keine Textbausteine gefunden")
@@ -135,123 +251,6 @@ struct CannedResponsePicker: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, ResponsiveDesign.spacing(40))
-    }
-}
-
-// MARK: - Canned Response Category Chip
-
-private struct CannedResponseCategoryChip: View {
-    let title: String
-    let icon: String
-    let isSelected: Bool
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: ResponsiveDesign.spacing(4)) {
-                Image(systemName: icon)
-                    .font(ResponsiveDesign.captionFont())
-                Text(title)
-                    .font(ResponsiveDesign.captionFont())
-            }
-            .foregroundColor(isSelected ? .white : AppTheme.fontColor)
-            .padding(.horizontal, ResponsiveDesign.spacing(12))
-            .padding(.vertical, ResponsiveDesign.spacing(6))
-            .background(isSelected ? AppTheme.accentLightBlue : AppTheme.sectionBackground)
-            .cornerRadius(ResponsiveDesign.spacing(16))
-        }
-    }
-}
-
-// MARK: - Canned Response Card
-
-private struct CannedResponseCard: View {
-    let response: CannedResponse
-    let placeholderValues: [String: String]
-    let onSelect: () -> Void
-
-    @State private var isExpanded = false
-
-    private var previewContent: String {
-        let filled = response.fillPlaceholders(placeholderValues)
-        if filled.count > 100 {
-            return String(filled.prefix(100)) + "..."
-        }
-        return filled
-    }
-
-    var body: some View {
-        Button(action: onSelect) {
-            VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
-                // Header
-                HStack {
-                    Image(systemName: response.category.icon)
-                        .foregroundColor(AppTheme.accentLightBlue)
-                        .font(ResponsiveDesign.captionFont())
-
-                    Text(response.title)
-                        .font(ResponsiveDesign.bodyFont())
-                        .fontWeight(.medium)
-                        .foregroundColor(AppTheme.fontColor)
-
-                    Spacer()
-
-                    if let shortcut = response.shortcut {
-                        Text(shortcut)
-                            .font(.system(size: 11, design: .monospaced))
-                            .foregroundColor(AppTheme.accentOrange)
-                            .padding(.horizontal, ResponsiveDesign.spacing(6))
-                            .padding(.vertical, ResponsiveDesign.spacing(2))
-                            .background(AppTheme.accentOrange.opacity(0.1))
-                            .cornerRadius(ResponsiveDesign.spacing(4))
-                    }
-                }
-
-                // Preview
-                Text(isExpanded ? response.fillPlaceholders(placeholderValues) : previewContent)
-                    .font(ResponsiveDesign.captionFont())
-                    .foregroundColor(AppTheme.fontColor.opacity(0.7))
-                    .lineLimit(isExpanded ? nil : 3)
-                    .multilineTextAlignment(.leading)
-
-                // Placeholders warning
-                if !response.placeholders.isEmpty {
-                    let missingPlaceholders = response.placeholders.filter { placeholderValues[$0] == nil }
-                    if !missingPlaceholders.isEmpty {
-                        HStack(spacing: ResponsiveDesign.spacing(4)) {
-                            Image(systemName: "exclamationmark.triangle.fill")
-                                .font(ResponsiveDesign.captionFont())
-                            Text("Platzhalter: \(missingPlaceholders.joined(separator: ", "))")
-                                .font(ResponsiveDesign.captionFont())
-                        }
-                        .foregroundColor(AppTheme.accentOrange)
-                    }
-                }
-
-                // Expand toggle
-                HStack {
-                    Spacer()
-                    Button {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            isExpanded.toggle()
-                        }
-                    } label: {
-                        HStack(spacing: ResponsiveDesign.spacing(4)) {
-                            Text(isExpanded ? "Weniger" : "Mehr anzeigen")
-                                .font(ResponsiveDesign.captionFont())
-                            Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                                .font(ResponsiveDesign.captionFont())
-                        }
-                        .foregroundColor(AppTheme.accentLightBlue)
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                }
-            }
-            .padding()
-            .background(AppTheme.sectionBackground)
-            .cornerRadius(ResponsiveDesign.spacing(10))
-        }
-        .buttonStyle(PlainButtonStyle())
     }
 }
 
@@ -264,9 +263,10 @@ private struct CannedResponseCard: View {
             "customerName": "Max Mustermann",
             "ticketNumber": "TKT-12345",
             "agentName": "Stefan Müller"
-        ]
+        ],
+        csrRole: .level1,
+        templateService: nil
     ) { content in
         print("Selected: \(content)")
     }
 }
-

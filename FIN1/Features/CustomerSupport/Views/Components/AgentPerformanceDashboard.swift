@@ -178,7 +178,7 @@ struct AgentPerformanceDashboard: View {
                 FlowLayout(spacing: 6) {
                     ForEach(agent.specializations, id: \.self) { spec in
                         Text(spec)
-                            .font(.system(size: 11))
+                            .font(ResponsiveDesign.captionFont())
                             .foregroundColor(AppTheme.accentLightBlue)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
@@ -420,7 +420,7 @@ private struct AgentDetailMetric: View {
                 .foregroundColor(AppTheme.fontColor)
 
             Text(label)
-                .font(.system(size: 10))
+                .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.6))
         }
         .frame(maxWidth: .infinity, alignment: .leading)

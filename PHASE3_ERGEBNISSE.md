@@ -6,8 +6,8 @@
 ## Durchgeführte Schritte
 
 ### 1. Parse Server URLs konfiguriert ✅
-- **PARSE_SERVER_PUBLIC_SERVER_URL:** `http://192.168.178.24:1337/parse`
-- **PARSE_SERVER_LIVE_QUERY_SERVER_URL:** `ws://192.168.178.24:1337/parse`
+- **PARSE_SERVER_PUBLIC_SERVER_URL:** `https://192.168.178.24/parse`
+- **PARSE_SERVER_LIVE_QUERY_SERVER_URL:** `wss://192.168.178.24/parse`
 - **Backup erstellt:** `.env.backup.[timestamp]`
 
 ### 2. CORS-Einstellungen angepasst ✅

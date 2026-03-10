@@ -62,7 +62,7 @@ final class PrivacyPolicyViewModel: ObservableObject {
         return serverPrivacyContent.sections.map { section in
             PrivacySection(
                 id: section.id,
-                title: section.title,
+                title: section.titleOrEmpty,
                 // Backend/audit clean: render exactly what server stored/served.
                 content: section.content,
                 icon: section.icon ?? ""

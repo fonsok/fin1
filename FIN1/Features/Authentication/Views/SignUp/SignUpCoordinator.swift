@@ -1,5 +1,6 @@
 import SwiftUI
 
+@MainActor
 final class SignUpCoordinator: ObservableObject {
     @Published var currentStep: SignUpStep = .welcome
     @Published var isLoading: Bool = false
@@ -7,10 +8,43 @@ final class SignUpCoordinator: ObservableObject {
     @Published var alertMessage: String = ""
     @Published var shouldDismiss = false // New property to signal dismissal
 
-    private var validation: StepValidation
+    var validation: StepValidation
     // Changed from private to internal to allow access from extensions
     var userRole: UserRole = .investor // Default role
     weak var signUpData: SignUpData?
+
+    // Backend integration for early account creation and step persistence (internal for extensions)
+    var onboardingAPIService: OnboardingAPIServiceProtocol?
+    var userService: (any UserServiceProtocol)?
+    var telemetryService: TelemetryServiceProtocol?
+    var sessionStartDate: Date?
+    @Published var accountCreationError: String?
+    @Published var isResuming: Bool = false
+
+    // Email verification state
+    @Published var verificationCode: String = ""
+    @Published var isVerifyingCode: Bool = false
+    @Published var verificationError: String?
+    @Published var canResendCode: Bool = false
+    @Published var resendCountdown: Int = 60
+    var resendTimer: Timer?
+
+    // Phone verification state
+    @Published var phoneVerificationCode: String = ""
+    @Published var isVerifyingPhone: Bool = false
+    @Published var phoneVerificationError: String?
+    @Published var canResendPhoneCode: Bool = false
+    @Published var phoneResendCountdown: Int = 60
+    var phoneResendTimer: Timer?
+
+    // Session timeout (BaFin: sensitive data must not linger in memory)
+    @Published var showTimeoutWarning: Bool = false
+    @Published var timeoutCountdown: Int = 60
+    static let inactivityTimeout: TimeInterval = 10 * 60 // 10 min
+    static let warningLeadTime: TimeInterval = 60        // warn 60s before
+    var inactivityTimer: Timer?
+    var warningTimer: Timer?
+    var countdownTimer: Timer?
 
     init(validation: StepValidation? = nil) {
         self.validation = validation ?? DefaultStepValidation()
@@ -18,6 +52,20 @@ final class SignUpCoordinator: ObservableObject {
 
     func setValidation(_ validation: StepValidation) {
         self.validation = validation
+    }
+
+    func configureServices(
+        onboardingAPIService: OnboardingAPIServiceProtocol?,
+        userService: any UserServiceProtocol,
+        telemetryService: TelemetryServiceProtocol? = nil
+    ) {
+        self.onboardingAPIService = onboardingAPIService
+        self.userService = userService
+        self.telemetryService = telemetryService
+        self.sessionStartDate = Date()
+        telemetryService?.trackEvent(name: "onboarding_started", properties: [
+            "role": userRole.rawValue
+        ])
     }
 
     /// Set the user role (should be called after user selects role in welcome step)
@@ -56,38 +104,52 @@ final class SignUpCoordinator: ObservableObject {
     }
 
     func nextStep() {
+        let oldStep = currentStep
         withAnimation(.easeInOut(duration: 0.3)) {
             if let data = signUpData {
-                // Use custom logic that handles Postident flow
                 customNextStep(with: data)
             } else {
-                // Fallback to default behavior
                 if let nextStep = StepConfiguration.nextStep(after: currentStep, role: userRole) {
                     currentStep = nextStep
                 }
             }
         }
+        if currentStep != oldStep {
+            persistStepTransition(from: oldStep, to: currentStep)
+        }
     }
 
     func previousStep() {
+        let oldStep = currentStep
         withAnimation(.easeInOut(duration: 0.3)) {
             if let previousStep = StepConfiguration.previousStep(before: currentStep, role: userRole) {
                 currentStep = previousStep
             }
         }
+        if currentStep != oldStep {
+            persistStepPosition(currentStep)
+        }
     }
 
     func goToStep(_ step: SignUpStep) {
+        let oldStep = currentStep
         withAnimation(.easeInOut(duration: 0.3)) {
             currentStep = step
+        }
+        if currentStep != oldStep {
+            persistStepTransition(from: oldStep, to: step)
         }
     }
 
     func goToStepNumber(_ stepNumber: Int) {
+        let oldStep = currentStep
         withAnimation(.easeInOut(duration: 0.3)) {
             if let step = StepConfiguration.step(for: stepNumber, role: userRole) {
                 currentStep = step
             }
+        }
+        if currentStep != oldStep {
+            persistStepTransition(from: oldStep, to: currentStep)
         }
     }
 
@@ -107,119 +169,96 @@ final class SignUpCoordinator: ObservableObject {
         shouldDismiss = true
     }
 
-    func resetToFirstStep() {
-        currentStep = .welcome
-        isLoading = false
-        showAlert = false
-        alertMessage = ""
+    // MARK: - Early Account Creation (after Contact step)
+
+    /// Creates the account on the backend after Contact step,
+    /// enabling session-based persistence for all subsequent steps.
+    func createAccountIfNeeded(with data: SignUpData) async {
+        guard currentStep == .contact else { return }
+        guard let userService = userService else {
+            advanceFromContact()
+            return
+        }
+
+        isLoading = true
+        accountCreationError = nil
+
+        do {
+            try await userService.signUp(userData: User(
+                id: UUID().uuidString,
+                customerId: data.customerId,
+                accountType: data.accountType,
+                email: data.email,
+                username: data.username,
+                phoneNumber: data.phoneNumber,
+                password: data.password,
+                salutation: data.salutation,
+                academicTitle: "",
+                firstName: "",
+                lastName: "",
+                streetAndNumber: "",
+                postalCode: "",
+                city: "",
+                state: "",
+                country: "Deutschland",
+                dateOfBirth: Date(),
+                placeOfBirth: "",
+                countryOfBirth: "Deutschland",
+                role: data.userRole,
+                employmentStatus: .employed,
+                income: 0,
+                incomeRange: .low,
+                riskTolerance: 0,
+                address: "",
+                nationality: "",
+                additionalNationalities: "",
+                taxNumber: "",
+                additionalTaxResidences: "",
+                isNotUSCitizen: true,
+                identificationType: .passport,
+                passportFrontImageURL: nil,
+                passportBackImageURL: nil,
+                idCardFrontImageURL: nil,
+                idCardBackImageURL: nil,
+                identificationConfirmed: false,
+                addressConfirmed: false,
+                addressVerificationDocumentURL: nil,
+                leveragedProductsExperience: false,
+                financialProductsExperience: false,
+                investmentExperience: 0,
+                tradingFrequency: 0,
+                investmentKnowledge: 0,
+                desiredReturn: .atLeastTenPercent,
+                insiderTradingOptions: [:],
+                moneyLaunderingDeclaration: false,
+                assetType: .privateAssets,
+                profileImageURL: nil,
+                isEmailVerified: false,
+                isKYCCompleted: false,
+                acceptedTerms: false,
+                acceptedPrivacyPolicy: false,
+                acceptedMarketingConsent: false,
+                lastLoginDate: nil,
+                createdAt: Date(),
+                updatedAt: Date()
+            ))
+
+            isLoading = false
+            advanceFromContact()
+        } catch {
+            isLoading = false
+            accountCreationError = error.localizedDescription
+            showError("Account creation failed: \(error.localizedDescription)")
+        }
     }
 
-    // MARK: - Welcome Page Navigation
+    private func advanceFromContact() {
+        let oldStep = currentStep
+        withAnimation(.easeInOut(duration: 0.3)) {
+            currentStep = .accountCreated
+        }
+        persistStepTransition(from: oldStep, to: .accountCreated)
+    }
 
     @Published var showWelcomePage = false
-
-    func presentWelcomePage() {
-        showWelcomePage = true
-    }
-
-    /// Check if user can proceed to next step based on validation
-    func canProceedToNextStep(with data: SignUpData) -> Bool {
-        validation.canProceedToNextStep(for: currentStep, with: data)
-    }
-
-    /// Get validation message for current step
-    func getValidationMessage(with data: SignUpData) -> String? {
-        validation.getValidationMessage(for: currentStep, with: data)
-    }
-
-    /// Get current step number (1-based) for current role
-    var currentStepNumber: Int {
-        currentStep.stepNumberForRole(userRole)
-    }
-
-    /// Get step number string (e.g., "1 of 17")
-    var stepNumberString: String {
-        StepConfiguration.stepNumberString(for: currentStep, role: userRole)
-    }
-
-    /// Get current step title
-    var currentStepTitle: String {
-        switch currentStep {
-        case .welcome: return "Welcome"
-        case .contact: return "Contact Information"
-        case .accountCreated: return "Account Created"
-        case .personalInfo: return "Personal Information"
-        case .citizenshipTax: return "Citizenship & Tax"
-        case .identificationType: return "Identification Type"
-        case .identificationUploadFront: return "Upload ID Front"
-        case .identificationUploadBack: return "Upload ID Back"
-        case .postidentConfirmation: return "Postident"
-        case .identificationConfirm: return "ID Confirmation"
-        case .addressConfirm: return "Address Confirmation"
-        case .addressConfirmSuccess: return "Address Success"
-        case .financial: return "Financial Information"
-        case .experience: return "Investment Experience"
-        case .desiredReturn: return "Desired Return"
-        case .nonInsiderDeclaration: return "Non-Insider Declaration"
-        case .moneyLaunderingDeclaration: return "Money Laundering Declaration"
-        case .terms: return "Terms & Conditions"
-        case .summary: return "Summary"
-        case .riskClassificationNote: return "Note on risk classification"
-        case .riskClass7Confirmation: return "Risk Class 7 Confirmation"
-        }
-    }
-
-    /// Get current step description
-    var currentStepDescription: String {
-        switch currentStep {
-        case .welcome: return "Choose your account type"
-        case .contact: return "Enter your contact details"
-        case .accountCreated: return "Account successfully created"
-        case .personalInfo: return "Provide personal information"
-        case .citizenshipTax: return "Citizenship and tax details"
-        case .identificationType: return "Select ID document type"
-        case .identificationUploadFront: return "Upload front of ID"
-        case .identificationUploadBack: return "Upload back of ID"
-        case .postidentConfirmation: return "Postident verification"
-        case .identificationConfirm: return "Confirm ID documents"
-        case .addressConfirm: return "Confirm your address"
-        case .addressConfirmSuccess: return "Address confirmed"
-        case .financial: return "Financial background"
-        case .experience: return "Investment experience"
-        case .desiredReturn: return "Return expectations"
-        case .nonInsiderDeclaration: return "Legal declarations"
-        case .moneyLaunderingDeclaration: return "AML compliance"
-        case .terms: return "Terms and conditions"
-        case .summary: return "Review all information"
-        case .riskClassificationNote: return "Risk classification information"
-        case .riskClass7Confirmation: return "Confirm high-risk selection"
-        }
-    }
-
-    /// Get current step icon
-    var currentStepIcon: String {
-        switch currentStep {
-        case .welcome: return "person.badge.plus"
-        case .contact: return "envelope"
-        case .accountCreated: return "checkmark.circle"
-        case .personalInfo: return "person.text.rectangle"
-        case .citizenshipTax: return "flag"
-        case .identificationType: return "doc.text"
-        case .identificationUploadFront: return "camera"
-        case .identificationUploadBack: return "camera.fill"
-        case .postidentConfirmation: return "building.columns"
-        case .identificationConfirm: return "checkmark.shield"
-        case .addressConfirm: return "house"
-        case .addressConfirmSuccess: return "checkmark.house"
-        case .financial: return "chart.bar"
-        case .experience: return "chart.line.uptrend.xyaxis"
-        case .desiredReturn: return "percent"
-        case .nonInsiderDeclaration: return "hand.raised"
-        case .moneyLaunderingDeclaration: return "shield"
-        case .terms: return "doc.text"
-        case .summary: return "list.bullet"
-        case .riskClassificationNote: return "exclamationmark.triangle"
-        case .riskClass7Confirmation: return "exclamationmark.triangle.fill"
-        }
-    }
 }

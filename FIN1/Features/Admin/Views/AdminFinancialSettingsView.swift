@@ -14,7 +14,7 @@ struct AdminFinancialSettingsView: View {
 
     // State for editing
     @State private var tradingFeePercentage: Double = 0.0025
-    @State private var managementFeePercentage: Double = 0.015
+    @State private var managementFeePercentage: Double = 0.02
     @State private var performanceFeePercentage: Double = 0.20
     @State private var minimumInvestmentAmount: Double = 50.0
     @State private var maximumInvestmentAmount: Double = 1000000.0
@@ -211,7 +211,7 @@ struct AdminFinancialSettingsView: View {
     private func loadCurrentSettings() {
         // Load from UserDefaults or services
         tradingFeePercentage = UserDefaults.standard.object(forKey: "tradingFeePercentage") as? Double ?? 0.0025
-        managementFeePercentage = UserDefaults.standard.object(forKey: "managementFeePercentage") as? Double ?? 0.015
+        managementFeePercentage = UserDefaults.standard.object(forKey: "managementFeePercentage") as? Double ?? 0.02
         performanceFeePercentage = UserDefaults.standard.object(forKey: "performanceFeePercentage") as? Double ?? 0.20
         minimumInvestmentAmount = UserDefaults.standard.object(forKey: "minimumInvestmentAmount") as? Double ?? 50.0
         maximumInvestmentAmount = UserDefaults.standard.object(forKey: "maximumInvestmentAmount") as? Double ?? 1000000.0

@@ -18,7 +18,7 @@ final class TradesOverviewCommissionCalculator {
         tradeService: (any TradeLifecycleServiceProtocol)?,
         poolTradeParticipationService: (any PoolTradeParticipationServiceProtocol)?,
         commissionCalculationService: (any CommissionCalculationServiceProtocol)?,
-        configurationService: (any ConfigurationServiceProtocol)?
+        configurationService: (any ConfigurationServiceProtocol)? = nil
     ) {
         self.invoiceService = invoiceService
         self.tradeService = tradeService
@@ -78,7 +78,10 @@ final class TradesOverviewCommissionCalculator {
             return 0.0
         }
 
-        let commissionRate = configurationService?.effectiveCommissionRate ?? CalculationConstants.FeeRates.traderCommissionRate
+        guard let configurationService else {
+            return 0.0
+        }
+        let commissionRate = configurationService.effectiveCommissionRate
 
         do {
             let totalCommission = try await commissionCalculationService.calculateTotalCommissionForTrade(

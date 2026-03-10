@@ -109,6 +109,10 @@ const PERMISSIONS = {
     'getInvoices',
     'getStatements',
     'regenerateStatement',
+
+    // Reports & Bank Contra Ledger
+    'getSummaryReport',
+    'getBankContraLedger',
   ],
 
   // ═══════════════════════════════════════════════════════════════
@@ -272,6 +276,10 @@ const PERMISSIONS = {
     'resetUserPassword',
     'unlockUserAccount',
     'resendVerificationEmail',
+
+    // Template management (CSR role-based)
+    'manageTemplates',
+    'viewAnalytics',
   ],
 
   // ═══════════════════════════════════════════════════════════════

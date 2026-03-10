@@ -200,7 +200,7 @@ enum Language: String, CaseIterable {
 - **Order Fee**: 0.5% of order amount (minimum €5, maximum €50)
 - **Exchange Fee**: 0.1% of order amount (minimum €1, maximum €20)
 - **Foreign Costs**: €1.50 per transaction
-- **Platform Service Charge**: 1.5% (includes 19% VAT)
+- **Platform Service Charge**: 2% (includes 19% VAT)
 ```
 - **Compliance**: ✅ Matches `CalculationConstants.FeeRates`
 - **Best Practice**: Terms accurately reflect actual fees
@@ -220,8 +220,8 @@ enum Language: String, CaseIterable {
 #### **Account Balance Disclosure**
 ```swift
 // ✅ CORRECT: Clear account balance information
-- Initial Balance: €50,000 (demo/simulation purposes)
-- Minimum Cash Reserve: €12
+- Initial Balance: €1.00 (for new accounts)
+- Minimum Cash Reserve: €20
 ```
 - **Compliance**: ✅ Matches `CalculationConstants.Account`
 - **Best Practice**: Transparent account terms

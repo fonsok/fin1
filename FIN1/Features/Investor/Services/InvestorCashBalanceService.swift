@@ -15,9 +15,9 @@ final class InvestorCashBalanceService: InvestorCashBalanceServiceProtocol, Obse
     private let configurationService: any ConfigurationServiceProtocol
     private let parseLiveQueryClient: (any ParseLiveQueryClientProtocol)?
     private let userService: (any UserServiceProtocol)?
-    private let initialInvestorBalance: Double
+    private var initialInvestorBalance: Double
     private let queue = DispatchQueue(label: "com.fin.app.investorcashbalance", attributes: .concurrent)
-    private var liveQuerySubscriptions: [String: LiveQuerySubscription] = [:] // investorId -> subscription
+    private var liveQuerySubscriptions: [String: LiveQuerySubscription] = [:]
     private var cancellables = Set<AnyCancellable>()
 
     // MARK: - Initialization
@@ -31,10 +31,24 @@ final class InvestorCashBalanceService: InvestorCashBalanceServiceProtocol, Obse
         self.parseLiveQueryClient = parseLiveQueryClient
         self.userService = userService
         self.ledgerService = InvestorCashBalanceLedgerService()
-        // Investors start with a different initial balance (e.g., €25,000)
-        // This could be configurable in the future
-        self.initialInvestorBalance = 25000.0
+        self.initialInvestorBalance = configurationService.initialAccountBalance
         setupLiveQuerySubscription()
+        observeConfigChanges()
+    }
+
+    /// Re-sync initialInvestorBalance when the config service loads server values
+    private func observeConfigChanges() {
+        configurationService.configurationChanged
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                guard let self else { return }
+                let serverValue = self.configurationService.initialAccountBalance
+                if serverValue != self.initialInvestorBalance {
+                    self.initialInvestorBalance = serverValue
+                    print("💰 InvestorCashBalanceService: initial balance updated to €\(serverValue.formatted(.currency(code: "EUR")))")
+                }
+            }
+            .store(in: &cancellables)
     }
 
     // MARK: - ServiceLifecycle

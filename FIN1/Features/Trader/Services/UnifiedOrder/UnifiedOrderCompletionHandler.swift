@@ -10,17 +10,20 @@ final class UnifiedOrderCompletionHandler {
     private let cashBalanceService: any CashBalanceServiceProtocol
     private let invoiceService: any InvoiceServiceProtocol
     private let tradeNumberService: any TradeNumberServiceProtocol
+    private let tradeAPIService: (any TradeAPIServiceProtocol)?
 
     init(
         tradingNotificationService: any TradingNotificationServiceProtocol,
         cashBalanceService: any CashBalanceServiceProtocol,
         invoiceService: any InvoiceServiceProtocol,
-        tradeNumberService: any TradeNumberServiceProtocol
+        tradeNumberService: any TradeNumberServiceProtocol,
+        tradeAPIService: (any TradeAPIServiceProtocol)? = nil
     ) {
         self.tradingNotificationService = tradingNotificationService
         self.cashBalanceService = cashBalanceService
         self.invoiceService = invoiceService
         self.tradeNumberService = tradeNumberService
+        self.tradeAPIService = tradeAPIService
     }
 
     /// Handles order completion
@@ -92,15 +95,28 @@ final class UnifiedOrderCompletionHandler {
         // CRITICAL: Use per-trader trade numbering for proper isolation
         // Each trader has their own sequence starting from 1
         let tradeNumber = tradeNumberService.generateNextTradeNumber(for: buyOrder.traderId)
-        let trade = Trade.from(buyOrder: buyOrder, tradeNumber: tradeNumber)
+        let initialTrade = Trade.from(buyOrder: buyOrder, tradeNumber: tradeNumber)
 
-        // Note: completedTrades is managed by the main service
-        // This method returns the trade, and the main service adds it
+        // Save to Parse Server if available
+        let finalTrade: Trade
+        if let tradeAPIService = tradeAPIService {
+            do {
+                finalTrade = try await tradeAPIService.saveTrade(initialTrade)
+                print("✅ UnifiedOrderCompletionHandler: Trade #\(finalTrade.tradeNumber) saved to Parse Server with objectId: \(finalTrade.id)")
+            } catch {
+                print("⚠️ UnifiedOrderCompletionHandler: Failed to save trade to Parse Server: \(error)")
+                // Continue with local trade even if server save fails
+                finalTrade = initialTrade
+            }
+        } else {
+            print("⚠️ UnifiedOrderCompletionHandler: No tradeAPIService - trade only saved locally")
+            finalTrade = initialTrade
+        }
 
         // Update cash balance
         await cashBalanceService.processBuyOrderExecution(amount: buyOrder.totalAmount)
 
-        return trade
+        return finalTrade
     }
 
     /// Adds a sell order to an existing trade
@@ -123,6 +139,16 @@ final class UnifiedOrderCompletionHandler {
             finalTrade = updatedTrade.withCalculatedProfit(calculatedProfit)
         } else {
             finalTrade = updatedTrade
+        }
+
+        // Update on Parse Server if available
+        if let tradeAPIService = tradeAPIService {
+            do {
+                _ = try await tradeAPIService.updateTrade(finalTrade)
+                print("✅ UnifiedOrderCompletionHandler: Trade #\(finalTrade.tradeNumber) updated on Parse Server (sell order added)")
+            } catch {
+                print("⚠️ UnifiedOrderCompletionHandler: Failed to update trade on Parse Server: \(error)")
+            }
         }
 
         // Update cash balance

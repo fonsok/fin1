@@ -87,7 +87,7 @@ struct InvestmentSummaryView: View {
                         Text(remainingBalance.formattedAsLocalizedCurrency())
                             .font(ResponsiveDesign.bodyFont())
                             .fontWeight(.bold)
-                            .foregroundColor(remainingBalance >= 12.0 ? AppTheme.accentGreen : AppTheme.accentRed) // Note: Uses global default, per-user value checked in ViewModel
+                            .foregroundColor(remainingBalance >= CalculationConstants.Account.minimumCashReserve ? AppTheme.accentGreen : AppTheme.accentRed)
                     }
                 }
             }

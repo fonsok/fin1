@@ -39,8 +39,8 @@ Dieses Dokument ist der **praktische Einstieg** für Entwickler:innen: Setup, lo
 
 - In `.xcconfig` startet `//` einen Kommentar. URLs werden daher über `FIN1_URL_SLASH` gebaut.
 - Dev-Default:
-  - Simulator: `http://localhost:1338/parse` (SSH Tunnel)
-  - Device: `http://192.168.178.24/parse` (LAN)
+  - Simulator: `https://localhost/parse` (SSH Tunnel: `ssh -L 443:127.0.0.1:443 io@<server>`)
+  - Device: `https://192.168.178.24/parse` (LAN)
 
 ### Backend lokal starten (Docker)
 
@@ -106,13 +106,12 @@ Zusätzliche lokale Checks (Scripts):
 
 ### How-to: Neues Feature Flag / Remote Config
 
-- Backend: `getConfig` liefert (environment-basiert) Feature Flags/Financial/Limits aus Klasse `Config` oder Defaults.
-- iOS: `ConfigurationService` ist die zentrale Stelle für Konfiguration (lokal + Admin Controls).
-  Empfohlen: Remote Config (Parse `Config`) als Source of Truth und iOS Cache/Fallback.
+- Backend: `getConfig` liefert (environment-basiert) **finanzielle Parameter aus der Klasse `Configuration`** (via configHelper) sowie Feature Flags/Limits/Display. Source of Truth für Finanz-Config ist das Admin-Portal (4-Augen).
+- iOS: `ConfigurationService` ist die zentrale Stelle für Konfiguration; er wird im `ServiceLifecycleCoordinator` mit Priorität „critical“ gestartet und ruft in `start()` `fetchRemoteDisplayConfig()` auf, um die Server-Werte (u.a. `initialAccountBalance`, `traderCommissionRate`, `platformServiceChargeRate`) zu laden und lokal zu mergen.
 
 **Konfigurierbare Finanzparameter:**
-- `platformServiceChargeRate`: Platform Service Charge Rate (Default: 1.5%, konfigurierbar über `ConfigurationService.updatePlatformServiceChargeRate()`)
-- `traderCommissionRate`: Trader Commission Rate (Default: 5%, konfigurierbar über `ConfigurationService.updateTraderCommissionRate()`)
+- `platformServiceChargeRate`: Platform Service Charge Rate (Default: 2%, konfigurierbar über `ConfigurationService.updatePlatformServiceChargeRate()`)
+- `traderCommissionRate`: Trader Commission Rate (Default: 10%, konfigurierbar über `ConfigurationService.updateTraderCommissionRate()`)
 - Beide Rates verwenden `effective*` Properties mit Fallback auf `CalculationConstants` Defaults
 
 ### How-to: Neues Compliance-Event / Audit Trail

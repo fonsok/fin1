@@ -81,13 +81,13 @@ struct TraderPerformanceSection: View {
                 HStack {
                     Text(viewModel.selectedTimePeriod.rawValue)
                         .font(ResponsiveDesign.bodyFont())
-                        .foregroundColor(AppTheme.fontColor)
+                        .foregroundColor(AppTheme.inputText)
 
                     Spacer()
 
                     Image(systemName: "chevron.up.chevron.down")
-                        .font(.system(size: ResponsiveDesign.iconSize() * 0.7))
-                        .foregroundColor(AppTheme.fontColor.opacity(0.6))
+                        .font(.system(size: ResponsiveDesign.iconSize() * 0.8))
+                        .foregroundColor(AppTheme.inputText.opacity(0.8))
                 }
                 .padding(ResponsiveDesign.spacing(12))
                 .background(AppTheme.inputFieldBackground)

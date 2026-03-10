@@ -20,6 +20,12 @@ private struct DashboardContainerContent: View {
     @EnvironmentObject var tabRouter: TabRouter
     @State private var navigationPath = NavigationPath()
     @ObservedObject private var themeManager = ThemeManager.shared
+    @State private var maximumRiskExposurePercent: Double = 2.0
+    @State private var riskWarningText: String = ""
+
+    private var defaultRiskWarningText: String {
+        "Note: never expose more than \(Int(maximumRiskExposurePercent)) % of your assets to risk."
+    }
 
     init(services: AppServices) {
         self.services = services
@@ -42,8 +48,8 @@ private struct DashboardContainerContent: View {
                         // Welcome Header
                         DashboardWelcomeHeader()
 
-                        // Risk Warning Message
-                        Text("Note: never expose more than 2% of your assets to risk.")
+                        // Risk Warning Message (value from configuration)
+                        Text(riskWarningText.isEmpty ? defaultRiskWarningText : riskWarningText)
                             .font(ResponsiveDesign.captionFont())
                             .foregroundColor(AppTheme.secondaryText)
                             .multilineTextAlignment(.center)
@@ -77,7 +83,11 @@ private struct DashboardContainerContent: View {
                 case .accountStatement:
                     AccountStatementView(services: services)
                 case .wallet:
-                    WalletViewWrapper(services: services)
+                    if services.configurationService.walletFeatureEnabled {
+                        WalletViewWrapper(services: services)
+                    } else {
+                        EmptyView()
+                    }
                 }
             }
         }
@@ -85,9 +95,29 @@ private struct DashboardContainerContent: View {
             print("🔄 Navigation selection changed to: \(newValue ?? "nil")")
         }
         .onAppear {
+            maximumRiskExposurePercent = services.configurationService.maximumRiskExposurePercent
+            Task {
+                let provider = LegalSnippetProvider(termsContentService: services.termsContentService)
+                let language: TermsOfServiceDataProvider.Language = .german
+                let text = await provider.text(
+                    for: .dashboardRiskNote,
+                    language: language,
+                    documentType: .terms,
+                    defaultText: defaultRiskWarningText,
+                    placeholders: [
+                        "MAX_RISK_PERCENT": String(Int(maximumRiskExposurePercent))
+                    ]
+                )
+                await MainActor.run {
+                    riskWarningText = text
+                }
+            }
             Task {
                 await viewModel.loadDashboardDataAsync()
             }
+        }
+        .onReceive(services.configurationService.configurationChanged) { _ in
+            maximumRiskExposurePercent = services.configurationService.maximumRiskExposurePercent
         }
     }
 

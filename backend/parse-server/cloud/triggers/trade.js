@@ -6,6 +6,7 @@
 'use strict';
 
 const { getTraderCommissionRate } = require('../utils/configHelper');
+const { settleCompletedTrade } = require('../utils/accountingHelper');
 
 // ============================================================================
 // BEFORE SAVE
@@ -44,8 +45,8 @@ Parse.Cloud.beforeSave('Trade', async (request) => {
     const calculatedProfit = trade.get('calculatedProfit');
     if (calculatedProfit !== undefined && calculatedProfit !== null) {
       trade.set('grossProfit', calculatedProfit);
-      // Calculate commission at 10%
-      const commission = calculatedProfit > 0 ? calculatedProfit * 0.10 : 0;
+      const commissionRate = await getTraderCommissionRate();
+      const commission = calculatedProfit > 0 ? calculatedProfit * commissionRate : 0;
       trade.set('totalFees', commission);
       trade.set('netProfit', calculatedProfit - commission);
       trade.set('profitPercentage', quantity > 0 ? (calculatedProfit / quantity) * 100 : 0);
@@ -103,10 +104,11 @@ Parse.Cloud.beforeSave('Trade', async (request) => {
     if (calculatedProfit !== undefined && calculatedProfit !== null && calculatedProfit !== 0) {
       trade.set('grossProfit', calculatedProfit);
       trade.set('calculatedProfit', calculatedProfit);
-      const commission = calculatedProfit > 0 ? calculatedProfit * 0.10 : 0;
+      const updateCommissionRate = await getTraderCommissionRate();
+      const commission = calculatedProfit > 0 ? calculatedProfit * updateCommissionRate : 0;
       trade.set('totalFees', commission);
       trade.set('netProfit', calculatedProfit - commission);
-      console.log(`📊 Trade update: Set grossProfit=${calculatedProfit}, commission=${commission}`);
+      console.log(`📊 Trade update: Set grossProfit=${calculatedProfit}, commission=${commission} (rate=${updateCommissionRate})`);
     }
   }
 });
@@ -134,9 +136,22 @@ Parse.Cloud.afterSave('Trade', async (request) => {
       await logAudit('Trade', trade.id, 'status_change',
         { status: oldStatus }, { status: newStatus });
 
-      // Trade completed - distribute profits to investors
+      // Trade completed - distribute profits to investors and settle financials
       if (newStatus === 'completed') {
         await distributeTradeProfit(trade);
+
+        // Phase 1: Backend-authoritative accounting
+        // Creates AccountStatement entries, Credit Note, and Collection Bills
+        try {
+          const settlement = await settleCompletedTrade(trade);
+          if (settlement) {
+            console.log(`✅ Trade #${trade.get('tradeNumber')} backend settlement complete: commission=€${settlement.totalCommission}`);
+          }
+        } catch (err) {
+          // Non-fatal: existing distributeTradeProfit already handled core logic
+          // Settlement creates accounting records; failure is logged but does not block
+          console.error(`⚠️ Trade #${trade.get('tradeNumber')} settlement error (non-fatal):`, err.message);
+        }
       }
     }
   }

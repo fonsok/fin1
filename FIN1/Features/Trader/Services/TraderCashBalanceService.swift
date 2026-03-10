@@ -44,9 +44,9 @@ final class TraderCashBalanceService: TraderCashBalanceServiceProtocol, Observab
     private let configurationService: any ConfigurationServiceProtocol
     private let parseLiveQueryClient: (any ParseLiveQueryClientProtocol)?
     private let userService: (any UserServiceProtocol)?
-    private let initialTraderBalance: Double
+    private var initialTraderBalance: Double
     private let queue = DispatchQueue(label: "com.fin.app.tradercashbalance", attributes: .concurrent)
-    private var liveQuerySubscriptions: [String: LiveQuerySubscription] = [:] // traderId -> subscription
+    private var liveQuerySubscriptions: [String: LiveQuerySubscription] = [:]
     private var cancellables = Set<AnyCancellable>()
 
     // MARK: - Initialization
@@ -59,9 +59,24 @@ final class TraderCashBalanceService: TraderCashBalanceServiceProtocol, Observab
         self.configurationService = configurationService
         self.parseLiveQueryClient = parseLiveQueryClient
         self.userService = userService
-        // Traders start with initial balance (e.g., €50,000)
         self.initialTraderBalance = configurationService.initialAccountBalance
         setupLiveQuerySubscription()
+        observeConfigChanges()
+    }
+
+    /// Re-sync initialTraderBalance when the config service loads server values
+    private func observeConfigChanges() {
+        configurationService.configurationChanged
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                guard let self else { return }
+                let serverValue = self.configurationService.initialAccountBalance
+                if serverValue != self.initialTraderBalance {
+                    self.initialTraderBalance = serverValue
+                    print("💰 TraderCashBalanceService: initial balance updated to €\(serverValue.formatted(.currency(code: "EUR")))")
+                }
+            }
+            .store(in: &cancellables)
     }
 
     // MARK: - ServiceLifecycle

@@ -140,7 +140,7 @@ docker compose ps
 docker compose logs -f
 
 # Health Check
-curl http://ubuntu-ip/health
+curl -sk https://ubuntu-ip/health
 ```
 
 ## Nützliche Befehle
@@ -158,6 +158,7 @@ ssh user@ubuntu-ip 'cd ~/fin1-server && docker compose restart'
 ssh user@ubuntu-ip 'cd ~/fin1-server && docker compose down'
 
 # Backup erstellen
+# Backup: auf dem Server scripts/backup.sh (Cron 3:00); Restore: scripts/restore-from-backup.sh (siehe scripts/BACKUP_RESTORE.md)
 ssh user@ubuntu-ip 'cd ~/fin1-server && docker compose exec mongodb mongodump --out /backup'
 ```
 

@@ -1,13 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Button, Input, Card } from '../components/ui';
 import { TwoFactorVerify } from '../components/TwoFactorVerify';
 
 export function LoginPage() {
-  const { login, isLoading, needs2FAVerification } = useAuth();
+  const { login, isLoading, needs2FAVerification, user, isAuthenticated } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+
+  // Redirect CSR users immediately after successful login
+  useEffect(() => {
+    if (isAuthenticated && user?.role === 'customer_service') {
+      // Force immediate redirect to CSR portal
+      window.location.href = '/admin/csr';
+    }
+  }, [isAuthenticated, user?.role]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -15,6 +23,7 @@ export function LoginPage() {
 
     try {
       await login(email, password);
+      // Navigation will be handled by useEffect
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Anmeldung fehlgeschlagen');
     }

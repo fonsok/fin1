@@ -17,7 +17,7 @@ struct IncomeSourceOption: View {
                             if isSelected {
                                 Image(systemName: "checkmark")
                                     .foregroundColor(AppTheme.fontColor)
-                                    .font(.system(size: 18, weight: .bold))
+                                    .font(ResponsiveDesign.headlineFont().weight(.bold))
                             }
                         }
                     )

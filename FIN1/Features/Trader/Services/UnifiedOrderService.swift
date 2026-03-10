@@ -58,6 +58,7 @@ final class UnifiedOrderService: @preconcurrency ServiceLifecycle, UnifiedOrderS
     private let invoiceService: any InvoiceServiceProtocol
     private let userService: (any UserServiceProtocol)?
     private let auditLoggingService: (any AuditLoggingServiceProtocol)?
+    private let tradeAPIService: (any TradeAPIServiceProtocol)?
 
     // MARK: - Current Trader ID
     /// Returns the current trader's ID from the user service
@@ -79,7 +80,8 @@ final class UnifiedOrderService: @preconcurrency ServiceLifecycle, UnifiedOrderS
         tradeNumberService: any TradeNumberServiceProtocol,
         invoiceService: any InvoiceServiceProtocol,
         userService: (any UserServiceProtocol)? = nil,
-        auditLoggingService: (any AuditLoggingServiceProtocol)? = nil
+        auditLoggingService: (any AuditLoggingServiceProtocol)? = nil,
+        tradeAPIService: (any TradeAPIServiceProtocol)? = nil
     ) {
         self.transactionIdService = transactionIdService
         self.orderStatusSimulationService = orderStatusSimulationService
@@ -89,13 +91,15 @@ final class UnifiedOrderService: @preconcurrency ServiceLifecycle, UnifiedOrderS
         self.invoiceService = invoiceService
         self.userService = userService
         self.auditLoggingService = auditLoggingService
+        self.tradeAPIService = tradeAPIService
 
-        // Initialize completion handler
+        // Initialize completion handler with tradeAPIService for backend sync
         self.completionHandler = UnifiedOrderCompletionHandler(
             tradingNotificationService: tradingNotificationService,
             cashBalanceService: cashBalanceService,
             invoiceService: invoiceService,
-            tradeNumberService: tradeNumberService
+            tradeNumberService: tradeNumberService,
+            tradeAPIService: tradeAPIService
         )
     }
 

@@ -243,7 +243,8 @@ struct TicketTagsDisplay: View {
 
             if tags.count > maxVisible {
                 Text("+\(tags.count - maxVisible)")
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(ResponsiveDesign.captionFont())
+                    .fontWeight(.semibold)
                     .foregroundColor(AppTheme.fontColor.opacity(0.6))
                     .padding(.horizontal, ResponsiveDesign.spacing(6))
                     .padding(.vertical, ResponsiveDesign.spacing(2))
@@ -263,11 +264,12 @@ struct InlineTagBadge: View {
         HStack(spacing: ResponsiveDesign.spacing(2)) {
             if let icon = tag.icon {
                 Image(systemName: icon)
-                    .font(.system(size: 8))
+                    .font(ResponsiveDesign.captionFont())
             }
 
             Text(tag.name)
-                .font(.system(size: 10, weight: .medium))
+                .font(ResponsiveDesign.captionFont())
+                .fontWeight(.medium)
         }
         .foregroundColor(tag.color)
         .padding(.horizontal, ResponsiveDesign.spacing(6))

@@ -1,7 +1,7 @@
 ---
 title: "FIN1 App-Dokumentation – Index"
 audience: ["Stakeholder", "Produkt", "Entwicklung", "QA", "Betrieb", "Support", "Compliance"]
-lastUpdated: "2026-02-04"
+lastUpdated: "2026-03-09"
 ---
 
 ## Zweck

@@ -14,6 +14,8 @@ Für den **konkreten** Serverbetrieb auf `iobox` (User `io`, Pfade, Ports, Scrip
 
 - `06A_BACKEND_UBUNTU_IOBOX_RUNBOOK.md`
 
+**Nächste Schritte (Prioritäten)** für Server & Operations (Restore-Test, Patching, Ports, Incident-Runbook, Deploy-Tagging): `Documentation/NAECHSTE_SCHRITTE_SERVER_OPS.md`
+
 Hinweis: Das Runbook enthält auch einen **Hardening-Stufenplan** (Port-Exposure/Firewall/OS-Services).
 
 ## ⭐ CSR Workflow & Aufgabenverteilung
@@ -29,15 +31,12 @@ Für den **genauen** Support-Prozess (Rollen L1/L2/Fraud/Compliance/Tech/Teamlea
 Referenz: `docker-compose.production.yml`
 
 - **Nginx**: :80/:443 (Reverse Proxy)
-- **Parse Server**: Host :1338 → Container :1337 (`/parse`, `/dashboard`, `/health`, LiveQuery)
-- **MongoDB**: Host :27018 → :27017
-- **Redis**: Host :6380 (localhost only) → :6379
-- **Postgres**: Host :5433 (localhost only) → :5432
-- **MinIO**: :9002/:9003
-- **Market Data**: :8083
-- **Notification Service**: :8084
-- **Analytics Service**: :8085
-- **PDF Service**: (im Status-Dokument erwähnt; Base URL z.B. `:8086`)
+- **Nginx**: :80 (Redirect auf HTTPS), :443 (HTTPS)
+- **Parse Server**: Host 127.0.0.1:1338 → Container :1337 (`/parse`, `/dashboard`, `/health`, LiveQuery)
+- **MongoDB / Redis / Postgres / MinIO**: nur 127.0.0.1 (nicht von LAN erreichbar)
+- **Market Data / Notification / Analytics**: 127.0.0.1:8083/8084/8085
+- **Uptime Kuma (Monitoring)**: optional Port 3001
+- **PDF Service**: (wenn genutzt; Base URL z.B. `:8086`)
 
 ### Start/Stop
 
@@ -58,28 +57,37 @@ Referenz: `docker-compose.production.yml`
 Problem: Dashboard embeded `serverURL` im Browser-Frontend. Deshalb:
 
 - Dashboard **nicht** öffentlich exponieren.
-- Zugriff über **SSH Tunnel** auf `localhost`:
-  - Tunnel: `ssh -L 1338:127.0.0.1:1338 <user>@<server>`
-  - Dashboard: `http://localhost:1338/dashboard`
-- `PARSE_DASHBOARD_SERVER_URL` auf `http://localhost:1338/parse` setzen.
+- Zugriff über **SSH Tunnel** auf Nginx (Dashboard nur von localhost):
+  - Tunnel: `ssh -L 443:127.0.0.1:443 <user>@<server>`
+  - Dashboard: `https://localhost/dashboard/`
+- `PARSE_DASHBOARD_SERVER_URL` auf `http://localhost:1338/parse` setzen (Server-ENV).
 - `PARSE_SERVER_MASTER_KEY_IPS` restriktiv halten (z.B. localhost + Docker range).
 
 ## 2) Backup/Restore
 
+**Automatisches Backup (Produktion):** Täglich 3:00 Uhr auf dem Server (Cron). Inhalt: MongoDB, PostgreSQL, Redis, Config. 14 Tage Aufbewahrung. Siehe `scripts/BACKUP_RESTORE.md`.
+
+**Bestimmte Backup-Version wiederherstellen:**
+
+- Auf dem Server: `./scripts/restore-from-backup.sh --list` (Backups anzeigen), dann `./scripts/restore-from-backup.sh <BACKUP_ID>` (z. B. `20260223_124944`).
+- Vollständige Anleitung: `scripts/BACKUP_RESTORE.md`. Restore-Script: `scripts/restore-from-backup.sh`.
+
 ### MongoDB (Parse Primary DB)
 
-- Backup (Beispiel):
-  - `mongodump` aus Container, Volume/Host-Path als Ziel
-- Restore:
-  - `mongorestore`
-
-Operational requirements:
-- Backups verschlüsseln, Zugriff restriktiv, regelmäßige Restore-Tests.
+- Backup: automatisch via `scripts/backup.sh` (mongodump --gzip).
+- Restore: `restore-from-backup.sh <BACKUP_ID>` (nutzt mongorestore --drop).
 
 ### Postgres (Analytics)
 
-- Backup: `pg_dump`
-- Restore: `psql` / `pg_restore`
+- Backup: automatisch via `scripts/backup.sh` (pg_dump, nicht pg_dumpall).
+- Restore: `restore-from-backup.sh <BACKUP_ID>` (DROP/CREATE DB + Einspielen des Dumps).
+
+### Redis
+
+- Backup: RDB-Snapshot im Backup-Verzeichnis.
+- Restore: Script ersetzt dump.rdb und startet Redis neu.
+
+Operational: Regelmäßige Restore-Tests empfohlen (siehe `Documentation/SERVER_HARDENING_2026-02.md`).
 
 ## 3) Skalierung
 
@@ -97,7 +105,8 @@ Typisch:
 
 ### Monitoring/Alerts (Minimum)
 
-- Uptime Checks: `/health` (Nginx) + `/parse/health`
+- **Uptime Kuma** (Container, Port 3001): 8 Monitore (Parse, Nginx, Microservices, MongoDB, Redis, Postgres). Alerts z. B. via ntfy. Siehe `Documentation/SERVER_HARDENING_2026-02.md`.
+- Uptime Checks: `https://<host>/health` (Nginx) + `/parse/health`
 - Error Rate: 5xx/4xx in Parse, Cloud Function Fehler
 - DB Health: Mongo ping, Redis ping, Postgres readiness
 - Disk: Volumes für Mongo/Postgres/Logs

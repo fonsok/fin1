@@ -18,9 +18,12 @@ struct TermsContent: Codable, Hashable {
 
 struct TermsContentSection: Codable, Hashable, Identifiable {
     let id: String
-    let title: String
+    /// Überschrift des Abschnitts (z. B. „Wichtige Hinweise“); im Admin pflegbar. Optional für robustes Decoding.
+    let title: String?
     let content: String
     let icon: String?
+
+    var titleOrEmpty: String { title?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "" }
 }
 
 enum LegalDocumentType: String, Codable, CaseIterable {

@@ -10,12 +10,12 @@
 - **Ergebnis:** ✅ Erfolgreich
 
 ### 2. Parse Server Health-Check ✅
-- **Endpoint:** `http://192.168.178.24:1337/parse/health`
+- **Endpoint:** `https://192.168.178.24/parse/health`
 - **Erwartet:** `{"status":"initialized"}` oder `{"status":"healthy"}`
 - **Ergebnis:** ✅ Server antwortet korrekt
 
 ### 3. Parse Server API-Test ✅
-- **Endpoint:** `POST http://192.168.178.24:1337/parse/classes/TestClass`
+- **Endpoint:** `POST https://192.168.178.24/parse/classes/TestClass`
 - **Headers:** `X-Parse-Application-Id: fin1-app-id`
 - **Ergebnis:** ✅ API funktioniert (auch wenn Fehler zurückgegeben werden, zeigt das, dass Server antwortet)
 

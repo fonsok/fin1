@@ -87,6 +87,11 @@
 
 - **`stop-backend.sh`** - Stoppt Backend-Services
 
+- **`seed-faq-data.sh`** - FAQ-Daten auf dem Parse-Backend seeden (Landing + Help Center, Investor/Trader)
+  - `./seed-faq-data.sh HOST USER` – seeden (wenn noch keine FAQs)
+  - `./seed-faq-data.sh HOST USER --force` – bestehende FAQs löschen und neu seeden
+  - Dokumentation: **`README-FAQ-SEED.md`**
+
 ### Mac Development
 
 - **`optimize-mac-for-development.sh`** - Optimiert Mac-Power-Management
@@ -95,6 +100,16 @@
   - Dokumentation: `Documentation/MAC_DEVELOPMENT_OPTIMIZATION.md`
 
 - **`restore-mac-power-settings.sh`** - Stellt Mac-Power-Settings wieder her
+
+### Backup & Restore (Produktion)
+
+- **`restore-from-backup.sh`** - Bestimmte Backup-Version wiederherstellen (auf dem Server)
+  - `./restore-from-backup.sh --list` – Backups anzeigen
+  - `./restore-from-backup.sh <BACKUP_ID>` – Vollrestore (MongoDB, PostgreSQL, Redis)
+  - `--config-only` – nur Config-Dateien (.env, nginx.conf, docker-compose)
+  - Dokumentation: **`BACKUP_RESTORE.md`** (Backup-Zeitplan, Restore-Ablauf, Logs)
+
+- Backups laufen automatisch täglich 3:00 Uhr auf dem Server (`/home/io/fin1-server/scripts/backup.sh`). Siehe `Documentation/SERVER_HARDENING_2026-02.md`.
 
 ### Deployment & Ubuntu
 
@@ -130,6 +145,7 @@
 - ✅ **Duplicate Prevention** → `README-Duplicate-Prevention.md`
 - ✅ **Ubuntu Deployment** → `README-UBUNTU-DEPLOYMENT.md`
 - ✅ **Ubuntu Setup** → `UBUNTU_SERVER_SETUP.md`, `EINFACHES_SETUP.md`, `QUICKSTART.md`
+- ✅ **Backup & Restore** → `BACKUP_RESTORE.md` (Produktion; Restore-Script: `restore-from-backup.sh`)
 - ✅ **Fritzbox Setup** → `FRITZBOX_SETUP.md`
 - ✅ **Cursor Ubuntu Setup** → `CURSOR_UBUNTU_SETUP.md`
 

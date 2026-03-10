@@ -20,7 +20,7 @@ protocol DocumentAPIServiceProtocol {
 // MARK: - Parse Document Input
 
 /// Input struct for creating/updating documents on Parse Server
-private struct ParseDocumentInput: Encodable {
+private struct ParseDocumentInput: Codable {
     let userId: String
     let name: String
     let type: String

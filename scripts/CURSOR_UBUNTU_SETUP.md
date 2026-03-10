@@ -68,10 +68,10 @@ Im Cursor-Terminal:
 
 ```bash
 # Health Check
-curl http://192.168.178.20/health
+curl -sk https://192.168.178.20/health
 
 # Parse Server
-curl http://192.168.178.20:1338/parse/health
+curl -sk https://192.168.178.20/parse/health
 ```
 
 ## Tipps für Cursor

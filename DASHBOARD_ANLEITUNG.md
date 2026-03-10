@@ -6,7 +6,11 @@
 
 ## 🔗 Dashboard-Zugriff
 
-**URL:** `http://192.168.178.24:1337/dashboard`
+**Empfohlen (per SSH-Tunnel):**
+```bash
+ssh -L 443:127.0.0.1:443 io@192.168.178.24
+```
+Dann im Browser: **`https://localhost/dashboard/`**
 
 **Login:**
 - **User:** `admin`
@@ -20,10 +24,7 @@
 
 ### Schritt-für-Schritt:
 
-1. **Dashboard öffnen:**
-   ```
-   http://192.168.178.24:1337/dashboard
-   ```
+1. **Dashboard öffnen:** Zuerst SSH-Tunnel (siehe oben), dann `https://localhost/dashboard/`
 
 2. **Login mit:**
    - User: `admin`
@@ -38,9 +39,9 @@
    - Klicke: **"Create class"**
 
 5. **Felder hinzufügen:**
-   
+
    Für jedes Feld: **"Add a new column"** klicken
-   
+
    | Feldname | Typ | Required | Default |
    |----------|-----|----------|---------|
    | `userId` | String | ✅ Yes | - |

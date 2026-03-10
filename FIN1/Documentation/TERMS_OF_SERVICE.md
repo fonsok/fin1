@@ -100,8 +100,8 @@ The Platform supports two primary account types:
 Your role is determined during registration and may require separate approval processes.
 
 ### 5.3 Account Balance
-- **Initial Balance**: New accounts may receive an initial balance of €50,000 (demo/simulation purposes)
-- **Minimum Cash Reserve**: Accounts must maintain a minimum cash reserve of €12
+- **Initial Balance**: New accounts receive an initial balance of €1.00
+- **Minimum Cash Reserve**: Accounts must maintain a minimum cash reserve of €20
 - **Balance Purpose**: Account balances are for Platform use only (clarify if demo or real funds)
 - **Balance Limitations**: Balances may be subject to Platform policies and regulatory requirements
 
@@ -146,10 +146,10 @@ The Platform reserves the right to modify fee structures with 30 days' notice. C
 
 ### 7.2 Platform Service Charge
 Investors are subject to a **Platform Service Charge**:
-- **Rate**: 1.5% of investment amount (gross amount, includes 19% VAT)
+- **Rate**: 2% of investment amount (gross amount, includes 19% VAT)
 - **Timing**: Charged at investment creation
 - **Non-Refundable**: Service charges are not refundable
-- **VAT**: The 1.5% includes 19% VAT (German Umsatzsteuer)
+- **VAT**: The 2% includes 19% VAT (German Umsatzsteuer)
 - **Invoice**: Service charges are detailed in invoices provided to investors
 
 ### 7.3 Investment Returns
@@ -433,7 +433,7 @@ The Platform reserves the right to modify these Terms at any time.
 ## 18. Special Provisions
 
 ### 18.1 Demo/Simulation Accounts
-- **Initial Balance**: €50,000 may be provided for demo/simulation purposes
+- **Initial Balance**: €1.00 is provided for new accounts
 - **Clarification**: Users must understand whether balances are virtual or real
 - **Conversion**: Demo accounts may be convertible to real accounts (if applicable)
 - **Limitations**: Demo accounts may have limitations compared to real accounts

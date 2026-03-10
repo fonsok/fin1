@@ -44,6 +44,23 @@ This is the main architecture and coding standards document for FIN1. All other 
 
 **REQUIRED**: All backend integrations must follow a mock-first, protocol-based approach to enable easy swapping of implementations.
 
+#### Backend-Authoritative Financial Calculations (Migration in Progress)
+
+**CRITICAL**: All financial calculations that create or modify accounting records (account statements, commission bookings, profit distribution, document generation) MUST be performed by the backend (Parse Cloud Functions). The frontend displays results but does NOT perform authoritative calculations.
+
+See `Documentation/BACKEND_CALCULATION_MIGRATION.md` for the phased migration plan.
+
+**Current state (Phase 1):**
+- Backend `trade.js` afterSave creates `AccountStatement` entries, `Credit Note`, and `Collection Bill` documents via `accountingHelper.settleCompletedTrade()`
+- Frontend checks for backend-created entries (`source: 'backend'`) before performing local calculations
+- Cloud Functions `getTradeSettlement` and `getAccountStatement` provide authoritative data
+
+**Rules for new financial features:**
+- **REQUIRED**: Financial business logic MUST be implemented as Cloud Functions first
+- **REQUIRED**: Frontend services MUST check for backend-settled data before local calculation
+- **FORBIDDEN**: Frontend-only financial calculations that are treated as authoritative bookings (without backend validation)
+- **ALLOWED**: Frontend estimation/preview calculations clearly marked as non-authoritative
+
 #### Parse Server Integration
 
 - **REQUIRED**: New features MUST start with Parse Server mock implementation
@@ -87,7 +104,7 @@ protocol InvestmentAPIServiceProtocol {
 
 final class InvestmentAPIService: InvestmentAPIServiceProtocol {
     private let apiClient: ParseAPIClientProtocol
-    
+
     func saveInvestment(_ investment: Investment) async throws -> Investment {
         // Write-through: sync immediately
         let input = ParseInvestmentInput.from(investment: investment)
@@ -102,11 +119,11 @@ final class InvestmentAPIService: InvestmentAPIServiceProtocol {
 // Service layer integrates API service
 final class InvestmentService: InvestmentServiceProtocol {
     private var investmentAPIService: InvestmentAPIServiceProtocol?
-    
+
     func configure(investmentAPIService: InvestmentAPIServiceProtocol) {
         self.investmentAPIService = investmentAPIService
     }
-    
+
     func syncToBackend() async {
         // Background batch-sync: sync all pending investments
         guard let apiService = investmentAPIService else { return }
@@ -124,7 +141,7 @@ final class InvestmentService: InvestmentServiceProtocol {
 // ✅ CORRECT: Parallel background sync in FIN1App.swift
 private func syncPendingDataToBackend() async {
     guard let currentUser = services.userService.currentUser else { return }
-    
+
     await withTaskGroup(of: Void.self) { group in
         group.addTask { await self.services.investmentService.syncToBackend() }
         group.addTask { await self.services.orderManagementService.syncToBackend() }
@@ -292,6 +309,39 @@ final class InvestorCollectionBillCalculationService: InvestorCollectionBillCalc
 - ✅ Clear separation of business logic from display logic
 - ✅ Enforced data source hierarchy
 - ✅ Reusable across multiple ViewModels
+
+### Critical Financial Operation Guards
+
+Financial operations that move money (commission bookings, profit distribution, balance updates) must never silently fail. A missing dependency at runtime means the DI graph is misconfigured and an accounting entry will be lost.
+
+**REQUIRED** — for any service call that creates or modifies an accounting entry (account statement, cash balance, commission record):
+
+1. **Non-optional dependencies preferred**: The service dependency should be non-optional where possible. If a code path reaches the financial operation, the service *must* be available.
+2. **`assertionFailure` + production log** when optional: If the dependency must remain optional (e.g., phased DI wiring), guard with `assertionFailure` (fires in debug/test) **and** a `print("🚨 ...")` or structured log (visible in production). Never silently skip the operation.
+3. **Never `guard let ... else { return }`** without logging: A bare early-return on a financial operation hides a critical bug.
+
+```swift
+// ✅ CORRECT — loud failure for missing financial service
+if let cashBalanceService = cashBalanceService {
+    await cashBalanceService.processCommissionPayment(
+        traderId: trade.traderId,
+        commissionAmount: commission,
+        tradeId: trade.id
+    )
+} else {
+    assertionFailure("cashBalanceService is nil — commission not booked for trade \(trade.id)")
+    print("🚨 CRITICAL: commission of €\(commission) for trade \(trade.id) NOT booked — DI misconfiguration")
+}
+
+// ❌ FORBIDDEN — silent swallow of financial operation
+guard let cashBalanceService = cashBalanceService else { return }
+```
+
+### Admin-Configurable Rates via ConfigurationService
+
+Some financial rates (trader commission, platform service charge) are admin-configurable at runtime. See `dry-constants.md` for the full rule.
+
+**Summary**: All financial services and ViewModels MUST hold `ConfigurationServiceProtocol` as a **non-optional** dependency. This eliminates all `?? CalculationConstants` fallback paths at the type level. `CalculationConstants` values are last-resort fallbacks wired once inside the `ConfigurationServiceProtocol` extension — never referenced directly in business logic. See `dry-constants.md` for the complete rule including the `reconfigure` pattern exception.
 
 ## Naming Conventions
 
@@ -793,6 +843,8 @@ catch {
 - **No "Manager" suffix**: Avoid "Manager" in class/file names - use specific suffixes (Service, Repository, Store, Coordinator, Provider, Configurator, Utility) that indicate single responsibility.
 - **No redundant naming**: Avoid names where the domain repeats the suffix (e.g., `CustomerServiceService`). Per Swift API Guidelines: "Omit needless words."
 - **No DRY violations**: Magic numbers, percentages, rates, and repeated strings must be defined as constants in `CalculationConstants` or appropriate location. Same value appearing in multiple files is a violation.
+- **No direct use of admin-configurable constants**: `CalculationConstants.FeeRates.traderCommissionRate` and `CalculationConstants.ServiceCharges.platformServiceChargeRate` must NOT appear in business logic. Use `ConfigurationServiceProtocol.effectiveCommissionRate` (or equivalent) via a **non-optional** dependency. See `dry-constants.md`.
+- **No silent financial operation failures**: Any code path that creates/modifies an accounting entry (cash balance, commission, account statement) must use `assertionFailure` + production log if the required service is nil. Bare `guard ... else { return }` on financial ops is forbidden. See "Critical Financial Operation Guards" in architecture.md.
 - **No backend sync violations**: All backend-integrated services MUST implement `syncToBackend()`. Never sync data directly from ViewModels - use service layer. Never use `async let ... ?? Task {}.value` pattern - use `withTaskGroup` for parallel sync.
 
 ## Swift 6 Concurrency Guardrails

@@ -9,6 +9,8 @@ struct TraderCreditNoteDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.appServices) private var appServices
     @StateObject private var viewModel: TraderCreditNoteDetailViewModel
+    @State private var taxNoteSnippet: String?
+    @State private var legalNoteSnippet: String?
 
     let document: Document
     let tradeNumber: Int?
@@ -65,6 +67,28 @@ struct TraderCreditNoteDetailView: View {
         .task {
             viewModel.configure(with: appServices, document: document)
             await viewModel.loadBreakdown()
+        }
+        .task {
+            let provider = LegalSnippetProvider(termsContentService: appServices.termsContentService)
+            let language: TermsOfServiceDataProvider.Language = .german
+            let taxPlaceholders = ["TAX_RATE": CalculationConstants.TaxRates.capitalGainsTaxWithSoli]
+            async let taxTask = provider.text(
+                for: .docTaxNoteSell,
+                language: language,
+                documentType: .terms,
+                defaultText: DocumentNotesSection.defaultTaxNote,
+                placeholders: taxPlaceholders
+            )
+            async let legalTask = provider.text(
+                for: .docLegalNoteWphg,
+                language: language,
+                documentType: .terms,
+                defaultText: DocumentNotesSection.defaultLegalNotePart1 + "\n\n" + DocumentNotesSection.defaultLegalNotePart2,
+                placeholders: [:]
+            )
+            let (tax, legal) = await (taxTask, legalTask)
+            taxNoteSnippet = tax
+            legalNoteSnippet = legal
         }
     }
 
@@ -192,7 +216,7 @@ struct TraderCreditNoteDetailView: View {
     private var emptyStateView: some View {
         VStack(spacing: ResponsiveDesign.spacing(16)) {
             Image(systemName: "person.2.slash")
-                .font(.system(size: 40))
+                .font(.system(size: ResponsiveDesign.iconSize() * 2))
                 .foregroundColor(DocumentDesignSystem.textColorTertiary)
 
             Text("Keine Investoren")
@@ -213,7 +237,7 @@ struct TraderCreditNoteDetailView: View {
     private func errorView(message: String) -> some View {
         VStack(spacing: ResponsiveDesign.spacing(12)) {
             Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 32))
+                .font(.system(size: ResponsiveDesign.iconSize() * 1.6))
                 .foregroundColor(DocumentDesignSystem.textColorTertiary)
 
             Text("Error")
@@ -251,7 +275,9 @@ struct TraderCreditNoteDetailView: View {
 
     private var notesSections: some View {
         DocumentNotesSection(
-            accountNumber: viewModel.accountNumber
+            accountNumber: viewModel.accountNumber,
+            taxNote: taxNoteSnippet,
+            legalNote: legalNoteSnippet
         )
     }
 

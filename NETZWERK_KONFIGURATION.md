@@ -16,8 +16,8 @@
 
 | Service | Port | Status | Zugriff |
 |---------|------|--------|---------|
-| Parse Server | 1337 | ✅ Running | 0.0.0.0 (öffentlich) |
-| Nginx | 80 | ⚠️ Restart-Loop | 0.0.0.0 (öffentlich) |
+| Parse Server (via Nginx) | 443 | ✅ Running | 0.0.0.0 (HTTPS) |
+| Nginx | 80, 443 | ✅ | 0.0.0.0 (HTTP→HTTPS Redirect) |
 | Market Data | 8080 | ❌ Not Running | 0.0.0.0 (öffentlich) |
 | Notification Service | 8081 | ❌ Not Running | 0.0.0.0 (öffentlich) |
 | Analytics Service | 8082 | ❌ Not Running | 0.0.0.0 (öffentlich) |
@@ -28,8 +28,8 @@
 
 ## Parse Server URLs
 
-- **API URL:** `http://192.168.178.24:1337/parse`
-- **Live Query URL:** `ws://192.168.178.24:1337/parse`
+- **API URL:** `https://192.168.178.24/parse`
+- **Live Query URL:** `wss://192.168.178.24/parse`
 - **Application ID:** `fin1-app-id`
 - **Master Key:** (siehe backend/.env)
 
@@ -38,8 +38,8 @@
 ### ConfigurationService.swift
 ```swift
 var parseServerURL: String? {
-    return ProcessInfo.processInfo.environment["PARSE_SERVER_URL"] 
-        ?? "http://192.168.178.24:1337/parse"
+    return ProcessInfo.processInfo.environment["PARSE_SERVER_URL"]
+        ?? "https://192.168.178.24/parse"
 }
 ```
 
@@ -64,8 +64,8 @@ var parseServerURL: String? {
 
 ### .env Datei (Ubuntu Server)
 ```bash
-PARSE_SERVER_PUBLIC_SERVER_URL=http://192.168.178.24:1337/parse
-PARSE_SERVER_LIVE_QUERY_SERVER_URL=ws://192.168.178.24:1337/parse
+PARSE_SERVER_PUBLIC_SERVER_URL=https://192.168.178.24/parse
+PARSE_SERVER_LIVE_QUERY_SERVER_URL=wss://192.168.178.24/parse
 ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8080,http://192.168.178.0/24,*
 ```
 
@@ -83,7 +83,7 @@ ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8080,http://192.168.178.0
 ```bash
 sudo ufw allow from 192.168.178.0/24 to any port 22    # SSH
 sudo ufw allow from 192.168.178.0/24 to any port 80     # Nginx
-sudo ufw allow from 192.168.178.0/24 to any port 1337   # Parse Server
+sudo ufw allow from 192.168.178.0/24 to any port 443     # HTTPS (Parse/API)
 sudo ufw allow from 192.168.178.0/24 to any port 8080   # Market Data
 sudo ufw allow from 192.168.178.0/24 to any port 8081   # Notification
 sudo ufw allow from 192.168.178.0/24 to any port 8082   # Analytics
@@ -106,14 +106,14 @@ docker compose -f docker-compose.production.yml ps parse-server
 docker compose -f docker-compose.production.yml logs parse-server
 
 # Vom Mac testen
-curl http://192.168.178.24:1337/parse/health
+curl -sk https://192.168.178.24/parse/health
 ```
 
 ### Firewall blockiert Verbindungen
 ```bash
 # Auf Ubuntu-Server
 sudo ufw status
-sudo ufw allow from 192.168.178.0/24 to any port 1337
+sudo ufw allow from 192.168.178.0/24 to any port 443
 ```
 
 ### Services im Restart-Loop

@@ -9,10 +9,12 @@ struct HelpCenterView: View {
         Locale.current.language.languageCode?.identifier == "de"
     }
 
-    init() {
+    init(userRole: UserRole? = nil) {
         let services = AppServices.live
+        let role = userRole ?? (services.userService as? UserService)?.currentUser?.role
         self._viewModel = StateObject(wrappedValue: HelpCenterViewModel(
-            faqContentService: FAQContentService(parseAPIClient: services.parseAPIClient)
+            faqContentService: FAQContentService(parseAPIClient: services.parseAPIClient),
+            userRole: role?.rawValue
         ))
     }
 

@@ -183,8 +183,8 @@ nano .env
 
 ```bash
 # Server-URLs (Ubuntu IP verwenden)
-PARSE_SERVER_PUBLIC_SERVER_URL=http://192.168.178.50:1338/parse
-PARSE_SERVER_LIVE_QUERY_SERVER_URL=ws://192.168.178.50:1338/parse
+PARSE_SERVER_PUBLIC_SERVER_URL=https://192.168.178.50/parse
+PARSE_SERVER_LIVE_QUERY_SERVER_URL=wss://192.168.178.50/parse
 
 # Produktionsmodus
 NODE_ENV=production
@@ -249,7 +249,7 @@ sudo ufw allow 8082/tcp  # Analytics
 curl http://ubuntu-ip/health
 
 # Parse Server API
-curl http://ubuntu-ip:1338/parse/health
+curl -sk https://ubuntu-ip/parse/health
 
 # Services testen
 curl http://ubuntu-ip:8080/health  # Market Data
@@ -307,9 +307,11 @@ docker compose restart parse-server
 
 ```bash
 # MongoDB Backup
+# Backup: siehe scripts/backup.sh auf dem Server (Cron 3:00) bzw. scripts/BACKUP_RESTORE.md
 docker compose exec mongodb mongodump --out /backup/mongodb-$(date +%Y%m%d)
 
 # PostgreSQL Backup
+# Restore: scripts/restore-from-backup.sh <BACKUP_ID> (siehe scripts/BACKUP_RESTORE.md)
 docker compose exec postgres pg_dump -U fin1_user fin1_analytics > ~/backups/postgres-$(date +%Y%m%d).sql
 ```
 

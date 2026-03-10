@@ -8,7 +8,7 @@
 
 **Symptome:**
 - iOS-App kann sich nicht mit Server verbinden
-- `curl http://192.168.178.24:1337/parse/health` schlägt fehl
+- `curl -sk https://192.168.178.24/parse/health` schlägt fehl
 
 **Lösung:**
 ```bash
@@ -19,7 +19,7 @@ ssh io@192.168.178.24 "cd ~/fin1-server && docker compose -f docker-compose.prod
 ssh io@192.168.178.24 "cd ~/fin1-server && docker compose -f docker-compose.production.yml logs --tail=20 parse-server"
 
 # 3. Prüfe Firewall
-ssh io@192.168.178.24 "sudo ufw status | grep 1337"
+ssh io@192.168.178.24 "sudo ufw status | grep 443"
 
 # 4. Parse Server neu starten
 ssh io@192.168.178.24 "cd ~/fin1-server && docker compose -f docker-compose.production.yml restart parse-server"
@@ -97,8 +97,8 @@ docker compose -f docker-compose.production.yml restart nginx
 **A) Prüfe ConfigurationService.swift:**
 ```swift
 // Sollte sein:
-return ProcessInfo.processInfo.environment["PARSE_SERVER_URL"] 
-    ?? "http://192.168.178.24:1337/parse"
+return ProcessInfo.processInfo.environment["PARSE_SERVER_URL"]
+    ?? "https://192.168.178.24/parse"
 ```
 
 **B) Prüfe Info.plist:**
@@ -120,7 +120,7 @@ return ProcessInfo.processInfo.environment["PARSE_SERVER_URL"]
 
 **C) Teste Verbindung vom Mac:**
 ```bash
-curl http://192.168.178.24:1337/parse/health
+curl -sk https://192.168.178.24/parse/health
 ```
 
 **D) Prüfe Simulator-Netzwerk:**
@@ -140,7 +140,7 @@ curl http://192.168.178.24:1337/parse/health
 sudo ufw status
 
 # 2. Regeln für lokales Netzwerk hinzufügen
-sudo ufw allow from 192.168.178.0/24 to any port 1337
+sudo ufw allow from 192.168.178.0/24 to any port 443
 sudo ufw allow from 192.168.178.0/24 to any port 80
 sudo ufw allow from 192.168.178.0/24 to any port 8080
 
@@ -161,15 +161,15 @@ ssh io@192.168.178.24 "cd ~/fin1-server/backend && cat .env | grep PARSE_SERVER"
 
 # 2. Prüfe ob URLs korrekt sind
 # Sollte sein:
-# PARSE_SERVER_PUBLIC_SERVER_URL=http://192.168.178.24:1337/parse
-# PARSE_SERVER_LIVE_QUERY_SERVER_URL=ws://192.168.178.24:1337/parse
+# PARSE_SERVER_PUBLIC_SERVER_URL=https://192.168.178.24/parse
+# PARSE_SERVER_LIVE_QUERY_SERVER_URL=wss://192.168.178.24/parse
 
 # 3. Parse Server neu starten
 ssh io@192.168.178.24 "cd ~/fin1-server && docker compose -f docker-compose.production.yml restart parse-server"
 
 # 4. Warten und erneut prüfen
 sleep 20
-curl http://192.168.178.24:1337/parse/health
+curl -sk https://192.168.178.24/parse/health
 ```
 
 ### 8. Market Data Service fehlt index.js
@@ -214,13 +214,13 @@ ssh io@192.168.178.24 "cd ~/fin1-server && docker compose -f docker-compose.prod
 ```bash
 # Vom Mac
 ping 192.168.178.24
-curl http://192.168.178.24:1337/parse/health
-nc -zv 192.168.178.24 1337
+curl -sk https://192.168.178.24/parse/health
+nc -zv 192.168.178.24 443
 ```
 
 ### Parse Server URL testen
 ```bash
-curl -X POST http://192.168.178.24:1337/parse/classes/TestClass \
+curl -sk -X POST https://192.168.178.24/parse/classes/TestClass \
   -H "X-Parse-Application-Id: fin1-app-id" \
   -H "Content-Type: application/json" \
   -d '{"test":"value"}'

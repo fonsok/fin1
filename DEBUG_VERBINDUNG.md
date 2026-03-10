@@ -77,14 +77,14 @@ sudo lsof -i -P | grep 192.168.178.24 | grep 1337
 
 **Oder:**
 ```bash
-netstat -an | grep 192.168.178.24 | grep 1337
+netstat -an | grep 192.168.178.24 | grep 443
 ```
 
 ### Was du sehen solltest:
 
 **✅ Verbindung vorhanden:**
 ```
-FIN1    12345  ra   23u  IPv4 0x...  TCP 192.168.178.25:54321->192.168.178.24:1337 (ESTABLISHED)
+FIN1    12345  ra   23u  IPv4 0x...  TCP 192.168.178.25:54321->192.168.178.24:443 (ESTABLISHED)
 ```
 
 **❌ Keine Verbindung:**
@@ -155,10 +155,10 @@ Das Script prüft:
 **Lösung:**
 ```bash
 # 1. Parse Server prüfen
-curl http://192.168.178.24:1337/parse/health
+curl -sk https://192.168.178.24/parse/health
 
 # 2. URL in App prüfen (sollte sein):
-# http://192.168.178.24:1337/parse
+# https://192.168.178.24/parse
 
 # 3. Netzwerk testen
 ping 192.168.178.24

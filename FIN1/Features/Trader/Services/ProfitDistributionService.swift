@@ -15,7 +15,8 @@ final class ProfitDistributionService: ProfitDistributionServiceProtocol {
     private let investmentService: (any InvestmentServiceProtocol)?
     private let userService: any UserServiceProtocol
     private let traderDataService: (any TraderDataServiceProtocol)?
-    private let configurationService: (any ConfigurationServiceProtocol)?
+    private let configurationService: any ConfigurationServiceProtocol
+    private let settlementAPIService: (any SettlementAPIServiceProtocol)?
 
     // MARK: - Initialization
     init(
@@ -27,7 +28,8 @@ final class ProfitDistributionService: ProfitDistributionServiceProtocol {
         investmentService: (any InvestmentServiceProtocol)? = nil,
         userService: any UserServiceProtocol,
         traderDataService: (any TraderDataServiceProtocol)? = nil,
-        configurationService: (any ConfigurationServiceProtocol)? = nil
+        configurationService: any ConfigurationServiceProtocol,
+        settlementAPIService: (any SettlementAPIServiceProtocol)? = nil
     ) {
         self.commissionCalculationService = commissionCalculationService
         self.investorGrossProfitService = investorGrossProfitService
@@ -38,6 +40,7 @@ final class ProfitDistributionService: ProfitDistributionServiceProtocol {
         self.userService = userService
         self.traderDataService = traderDataService
         self.configurationService = configurationService
+        self.settlementAPIService = settlementAPIService
     }
 
     // MARK: - Profit Distribution
@@ -49,98 +52,105 @@ final class ProfitDistributionService: ProfitDistributionServiceProtocol {
             return 0.0
         }
 
-        // Calculate gross trade profit
         let grossProfit = trade.calculatedProfit ?? trade.currentPnL ?? 0.0
-
         guard grossProfit > 0 else {
-            print("ℹ️ ProfitDistributionService: Trade profit is \(grossProfit) (<= 0), skipping commission and distribution")
+            print("ℹ️ ProfitDistributionService: Trade profit is \(grossProfit) (<= 0), skipping")
             return 0.0
         }
 
-        print("💰 ProfitDistributionService: Processing profit distribution for trade \(trade.id)")
-        print("   📊 Gross Profit: €\(String(format: "%.2f", grossProfit))")
+        print("💰 ProfitDistributionService: Processing trade \(trade.id), grossProfit=€\(String(format: "%.2f", grossProfit))")
 
-        // Check if there are investors participating in this trade
+        // --- Phase 3: Backend is authoritative ---
+        // If backend has settled this trade, read its values instead of recalculating locally.
+        if let settlementService = settlementAPIService {
+            if let summary = try? await settlementService.fetchTradeSettlement(tradeId: trade.id),
+               summary.isSettledByBackend {
+                print("✅ ProfitDistributionService: Trade \(trade.id) settled by backend — reading authoritative values")
+                let backendCommission = summary.totalFees
+                let backendNetProfit = summary.netProfit
+
+                // Local UI bookkeeping: credit commission to trader cash balance for display
+                if backendCommission > 0, let traderCashBalanceService {
+                    await traderCashBalanceService.processCommissionPayment(
+                        traderId: trade.traderId,
+                        commissionAmount: backendCommission,
+                        tradeId: trade.id
+                    )
+                }
+
+                // Distribute net profit to participating pots (local state for UI)
+                let distributed = await poolTradeParticipationService.distributeTradeProfit(
+                    tradeId: trade.id,
+                    totalProfit: backendNetProfit
+                )
+
+                await investmentService.updateInvestmentProfitsFromTrades()
+
+                print("✅ ProfitDistributionService: Backend-authoritative distribution complete")
+                print("   💰 Commission (backend): €\(String(format: "%.2f", backendCommission))")
+                print("   💵 Net profit distributed: €\(String(format: "%.2f", backendNetProfit))")
+                return distributed
+            }
+        }
+
+        // --- Fallback: local calculation (backend unreachable or not yet settled) ---
+        print("ℹ️ ProfitDistributionService: Backend settlement not available — using local calculation")
+        return await distributeLocalFallback(trade: trade, grossProfit: grossProfit)
+    }
+
+    /// Local fallback: calculates commission and distributes profit entirely on-device.
+    /// Labelled as estimation path — backend is the source of truth.
+    private func distributeLocalFallback(trade: Trade, grossProfit: Double) async -> Double {
+        guard let poolTradeParticipationService = poolTradeParticipationService,
+              let investmentService = investmentService else { return 0.0 }
+
         let participations = poolTradeParticipationService.getParticipations(forTradeId: trade.id)
 
-        // Commission is only calculated when there are investors participating
-        // Commission is a fee that investors pay to the trader, so no investors = no commission
         var totalCommission: Double = 0.0
-        var totalInvestorGrossProfit: Double = 0.0
         let netProfit: Double
 
         if !participations.isEmpty {
-            let commissionRate = configurationService?.effectiveCommissionRate ?? CalculationConstants.FeeRates.traderCommissionRate
-
-            // Group participations by investment
+            let commissionRate = configurationService.effectiveCommissionRate
             let participationsByInvestment = Dictionary(grouping: participations) { $0.investmentId }
             let allInvestments = investmentService.investments
 
-            print("   👥 Number of Participations: \(participations.count)")
-            print("   📊 Commission Rate: \(String(format: "%.0f", commissionRate * 100))%")
-
-            // Calculate commission using centralized services (single source of truth)
-            // This ensures consistency with Credit Note and Account Statement
             for (investmentId, _) in participationsByInvestment {
-                guard allInvestments.first(where: { $0.id == investmentId }) != nil else {
-                    continue
-                }
+                guard allInvestments.first(where: { $0.id == investmentId }) != nil else { continue }
 
-                // Use centralized InvestorGrossProfitService for authoritative gross profit
-                if let investorGrossProfitService = investorGrossProfitService {
+                if let investorGrossProfitService {
                     do {
                         let investorGrossProfit = try await investorGrossProfitService.getGrossProfit(
-                            for: investmentId,
-                            tradeId: trade.id
+                            for: investmentId, tradeId: trade.id
                         )
                         let investorCommission = try await commissionCalculationService.calculateCommissionForInvestor(
-                            investmentId: investmentId,
-                            tradeId: trade.id,
-                            commissionRate: commissionRate
+                            investmentId: investmentId, tradeId: trade.id, commissionRate: commissionRate
                         )
-                        totalInvestorGrossProfit += investorGrossProfit
                         totalCommission += investorCommission
+                        _ = investorGrossProfit
                     } catch {
-                        print("⚠️ ProfitDistributionService: Error calculating commission for investment \(investmentId): \(error)")
+                        print("⚠️ ProfitDistributionService [local fallback]: Error for investment \(investmentId): \(error)")
                     }
                 }
             }
-
-            // Net profit for distribution: full gross profit minus total commission
             netProfit = grossProfit - totalCommission
-
-            print("   💵 Total Investor Gross Profit: €\(String(format: "%.2f", totalInvestorGrossProfit))")
-            print("   💰 Total Commission (centralized): €\(String(format: "%.2f", totalCommission))")
         } else {
-            // No investors = no commission (trader keeps full profit)
-            totalCommission = 0.0
             netProfit = grossProfit
-            print("   ℹ️ No investors participating - no commission calculated")
         }
 
-        // Accumulate commissions for investors (only if commission > 0 and investors exist)
         if totalCommission > 0 && !participations.isEmpty {
-            await accumulateCommissionsForInvestors(
-                trade: trade,
-                totalCommission: totalCommission,
-                grossProfit: grossProfit
-            )
+            await accumulateCommissionsForInvestors(trade: trade, totalCommission: totalCommission, grossProfit: grossProfit)
+            if let traderCashBalanceService {
+                await traderCashBalanceService.processCommissionPayment(
+                    traderId: trade.traderId, commissionAmount: totalCommission, tradeId: trade.id
+                )
+            }
         }
 
-        // Distribute net profit (after commission) to participating pots
-        let distributedProfit = await poolTradeParticipationService.distributeTradeProfit(
-            tradeId: trade.id,
-            totalProfit: netProfit
+        let distributed = await poolTradeParticipationService.distributeTradeProfit(
+            tradeId: trade.id, totalProfit: netProfit
         )
-
-        print("✅ ProfitDistributionService: Distributed €\(String(format: "%.2f", distributedProfit)) net profit to pots")
-        print("   💰 Commission accumulated: €\(String(format: "%.2f", totalCommission))")
-        print("   💵 Net profit distributed: €\(String(format: "%.2f", netProfit))")
-
-        // Update investment values with accumulated profits
         await investmentService.updateInvestmentProfitsFromTrades()
-
-        return distributedProfit
+        return distributed
     }
 
     // MARK: - Private Helpers
@@ -176,7 +186,7 @@ final class ProfitDistributionService: ProfitDistributionServiceProtocol {
         // Get all investments to find investor IDs
         let allInvestments = investmentService.investments
 
-        let commissionRate = configurationService?.effectiveCommissionRate ?? CalculationConstants.FeeRates.traderCommissionRate
+        let commissionRate = configurationService.effectiveCommissionRate
 
         // Accumulate commission for each investor using centralized services
         for (investmentId, _) in participationsByInvestment {

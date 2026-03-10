@@ -35,6 +35,12 @@ export function usePermissions() {
     canViewConfiguration: hasPermission('getConfiguration') || user?.role === 'admin',
     canEditConfiguration: hasPermission('requestConfigurationChange') || user?.role === 'admin',
     canViewSystemHealth: user?.role === 'admin' || user?.role === 'security_officer',
+
+    // Templates
+    canManageTemplates: hasPermission('manageTemplates') || user?.role === 'admin' || user?.role === 'customer_service',
+
+    // FAQs - visible to all admins and customer service
+    canManageFAQs: user?.role === 'admin' || user?.role === 'customer_service' || hasPermission('manageTemplates'),
   }), [permissions, hasPermission, user?.role]);
 
   return {
@@ -52,6 +58,7 @@ export function useNavigation() {
   const perms = usePermissions();
 
   const navItems = useMemo(() => {
+    // Admin navigation only (CSR users are redirected to separate portal)
     const items = [
       {
         id: 'dashboard',
@@ -73,6 +80,13 @@ export function useNavigation() {
         path: '/tickets',
         icon: 'ticket',
         visible: perms.canViewTickets,
+      },
+      {
+        id: 'onboarding',
+        label: 'Onboarding',
+        path: '/onboarding',
+        icon: 'user-plus',
+        visible: true, // Alle Admin-Portal-Nutzer (Rolle bereits in ProtectedRoute geprüft)
       },
       {
         id: 'compliance',
@@ -108,6 +122,43 @@ export function useNavigation() {
         path: '/audit',
         icon: 'document-text',
         visible: perms.canViewAuditLogs,
+      },
+      // CSR Tools
+      {
+        id: 'templates',
+        label: 'CSR Templates',
+        path: '/templates',
+        icon: 'document-text',
+        visible: perms.canManageTemplates,
+      },
+      {
+        id: 'faqs',
+        label: 'Hilfe & Anleitung',
+        path: '/faqs',
+        icon: 'question-mark-circle',
+        visible: perms.canManageFAQs,
+      },
+      {
+        id: 'terms',
+        label: 'AGB & Rechtstexte',
+        path: '/terms',
+        icon: 'document-text',
+        visible: perms.canManageFAQs,
+      },
+      // Berichte & Buchhaltung
+      {
+        id: 'reports',
+        label: 'Summary Report',
+        path: '/reports',
+        icon: 'chart-bar',
+        visible: perms.canViewFinancials,
+      },
+      {
+        id: 'bank-ledger',
+        label: 'Bank Contra Ledger',
+        path: '/bank-ledger',
+        icon: 'building-library',
+        visible: perms.canViewFinancials,
       },
       // Technische Administration
       {

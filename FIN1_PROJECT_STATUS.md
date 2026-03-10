@@ -1,15 +1,15 @@
 # FIN1 – Projekt-Status (Kurzüberblick für neue Chats)
 
-**Stand:** 2026-01-31
+**Stand:** 2026-02-23 (Server-Hardening: HTTPS, Backups, Monitoring – siehe `Documentation/SERVER_HARDENING_2026-02.md`)
 **Ziel dieses Dokuments:** In einem neuen Chat in < 5 Minuten Kontext liefern (ohne Repo-Deep-Dive).
 
 ---
 
 ## 1) TL;DR (die 10 wichtigsten Fakten)
 
-- **Server-IP (LAN)**: `192.168.178.24` (Ubuntu, „iobox“)
-- **Öffentliche App-API (empfohlen)**: `http://192.168.178.24/parse` (über Nginx :80)
-- **LiveQuery (empfohlen)**: `ws://192.168.178.24/parse`
+- **Server-IP (LAN)**: `192.168.178.24` oder `192.168.178.20` (Ubuntu, „iobox“)
+- **Öffentliche App-API (empfohlen)**: `https://192.168.178.24/parse` (über Nginx :443; HTTP leitet um)
+- **LiveQuery (empfohlen)**: `wss://192.168.178.24/parse`
 - **Parse App ID**: `fin1-app-id`
 - **Dashboard (sicher)**: **nur per SSH-Tunnel** (Browser nutzt „serverURL“ direkt)
 - **iOS Konfiguration**: **`.xcconfig` + `Info.plist` Platzhalter** (keine manuelle Plist-Editiererei)
@@ -92,22 +92,25 @@
 ## 4) Netzwerk / Ports / URLs (Produktiv-LAN)
 
 ### Extern/LAN (vom Mac/iPhone erreichbar)
-- **Nginx**: `http://192.168.178.24/` (Port 80)
-- **Health**: `http://192.168.178.24/health`
-- **Parse API**: `http://192.168.178.24/parse`
-- **LiveQuery**: `ws://192.168.178.24/parse`
+- **Nginx**: `https://192.168.178.24/` (Port 443; Port 80 leitet auf HTTPS um)
+- **Health**: `https://192.168.178.24/health`
+- **Parse API**: `https://192.168.178.24/parse`
+- **LiveQuery**: `wss://192.168.178.24/parse`
+- **Admin-Portal**: `https://192.168.178.24/admin`
 - **PDF (wenn separat exposed)**: `http://192.168.178.24:8086` (Base URL)
 
 ### Intern (Docker-Netz)
 - Parse Server intern: `http://parse-server:1337/parse`
 - Nginx upstream zeigt auf Container-Namen (siehe `backend/nginx/nginx.conf`)
 
-### Typische Host-Ports (je nach Compose)
-- Parse: Host `1338` → Container `1337` (**idealerweise hostseitig nur localhost**, wenn Dashboard nur per Tunnel)
-- Mongo: Host `27018` → Container `27017`
-- Redis: Host `6380` (localhost) → Container `6379`
-- Postgres: Host `5433` (localhost) → Container `5432`
-- MinIO: `9002/9003`
+### Typische Host-Ports (Produktion nach Hardening)
+- Alle DB/Parse-Ports nur auf **127.0.0.1** (nicht von LAN erreichbar). Nach außen: Nginx 80/443, optional Uptime Kuma 3001.
+- Parse: Host `127.0.0.1:1338` → Container `1337`
+- Mongo: Host `127.0.0.1:27018` → Container `27017` (oder kein Host-Port im aktuellen Setup)
+- Redis: Host `127.0.0.1:6380` → Container `6379`
+- Postgres: Host `127.0.0.1:5433` → Container `5432`
+- MinIO: `127.0.0.1:9002/9003`
+- **Uptime Kuma (Monitoring):** Port 3001 (optional per UFW freigegeben)
 
 ---
 
@@ -122,14 +125,15 @@
 ### SSH Tunnel (Mac → Ubuntu)
 
 ```bash
-ssh -L 1338:127.0.0.1:1338 io@192.168.178.24
+ssh -L 443:127.0.0.1:443 io@192.168.178.24
 ```
 
 Dann im Browser (Mac):
-- Dashboard: `http://localhost:1338/dashboard`
+- Dashboard: `https://localhost/dashboard/` (Zertifikat-Warnung bei self-signed ggf. bestätigen)
 
 Wichtig:
-- `PARSE_DASHBOARD_SERVER_URL` (Server-ENV) sollte für das Dashboard-Frontend passend gesetzt sein, z.B. `http://localhost:1338/parse` (siehe Template `backend/env.production.example`).
+- Dashboard und API-Docs sind per Nginx nur von localhost erreichbar (`allow 127.0.0.1; deny all`).
+- `PARSE_DASHBOARD_SERVER_URL` (Server-ENV) z.B. `http://localhost:1338/parse` (siehe Template `backend/env.production.example`).
 
 ---
 
@@ -161,7 +165,7 @@ In `.xcconfig` startet `//` einen Kommentar. Deshalb werden URLs so gebaut:
 
 ### Dev-Default (Expert)
 - Simulator: `http://localhost:1338/parse` (per SSH-Tunnel)
-- Device: `http://192.168.178.24/parse` (direkt im LAN)
+- Device: `https://192.168.178.24/parse` (direkt im LAN)
 
 Das ist bereits in `Config/FIN1-Dev.xcconfig` so hinterlegt.
 
@@ -172,8 +176,8 @@ Das ist bereits in `Config/FIN1-Dev.xcconfig` so hinterlegt.
 ### Vom Mac (LAN)
 
 ```bash
-curl -sS http://192.168.178.24/health
-curl -sS http://192.168.178.24/parse/health
+curl -sk https://192.168.178.24/health
+curl -sk https://192.168.178.24/parse/health
 ```
 
 ### Auf dem Server
@@ -225,7 +229,7 @@ Wenn Legal Texte (Terms/Privacy/Imprint) server-driven sind, muss intern nachvol
 - **iPhone + localhost**: funktioniert nicht (localhost = iPhone) → Device muss LAN-IP nutzen.
 - **`.xcconfig` URLs**: `//` ist Kommentar → URL-Slash-Workaround nutzen (ist bereits umgesetzt).
 - **Display Name “springt zurück”**: häufig durch versehentlich committen eines Test-Werts in `INFOPLIST_KEY_CFBundleDisplayName` → Guard-Script/Hook nutzen (siehe oben).
-- **Landing FAQs “nicht verfügbar”**: häufig fehlt der SSH‑Tunnel (Dev‑Simulator nutzt `localhost:1338`). Details: `Documentation/FAQS_SERVER_DRIVEN.md`
+- **Landing FAQs “nicht verfügbar”**: häufig fehlt der SSH‑Tunnel (Dev‑Simulator nutzt `localhost:1338`). Details: `Documentation/HELP_N_INSTRUCTIONS_SERVER_DRIVEN.md`
 
 ---
 
@@ -244,13 +248,15 @@ Details: `Documentation/GIT_HOOKS.md`
 ## 11) “Copy/Paste Context” für neuen Chat
 
 ```text
-FIN1 Status (2026-01-31):
-- Server (LAN): 192.168.178.24, Nginx :80, Parse API via http://192.168.178.24/parse, LiveQuery ws://192.168.178.24/parse
+FIN1 Status (2026-02-23):
+- Server (LAN): 192.168.178.24/20, Nginx :443 (HTTPS), Parse API https://<server>/parse, LiveQuery wss://<server>/parse
 - Parse App ID: fin1-app-id
-- Dashboard: nur per SSH-Tunnel (ssh -L 1338:127.0.0.1:1338 io@192.168.178.24) → http://localhost:1338/dashboard
-- iOS Config: Info.plist nutzt $(FIN1_PARSE_SERVER_URL)/$(FIN1_PARSE_APPLICATION_ID)/$(FIN1_PDF_SERVICE_BASE_URL), Werte kommen aus Config/*.xcconfig
+- Dashboard: nur per SSH-Tunnel (ssh -L 443:127.0.0.1:443 io@<server>) → https://localhost/dashboard/
+- Backup/Restore: scripts/restore-from-backup.sh, siehe scripts/BACKUP_RESTORE.md; automatisches Backup täglich 3:00
+- Monitoring: Uptime Kuma Port 3001 (optional UFW), 8 Monitore + ntfy-Alerts
+- iOS Config: Info.plist nutzt $(FIN1_PARSE_SERVER_URL)/$(FIN1_PARSE_APPLICATION_ID)/$(FIN1_PDF_SERVICE_BASE_URL), Werte aus Config/*.xcconfig
 - Xcode: Build Configs Dev/Staging/Prod + Schemes FIN1-Dev/FIN1-Staging/FIN1-Prod
-- Dev default: Simulator → localhost:1338/parse (Tunnel), Device → 192.168.178.24/parse
+- Dev default: Simulator → localhost/parse (Tunnel), Device → https://192.168.178.24/parse
 - Legal Docs: server-driven Terms/Privacy/Imprint (TermsContent + documentHash), Audit Logs: LegalDocumentDeliveryLog + LegalConsent, FIN1_LEGAL_* ENV server-side placeholder resolution
 - Legal PDF-Export: LegalDocumentPDFGenerator (client-side A4 PDF), Änderungs-Overlay: LegalDocumentChangesOverlay
 - FAQs: server-driven (FAQCategory + FAQItem), Cloud Functions: getFAQCategories/getFAQs

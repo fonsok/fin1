@@ -6,7 +6,13 @@ struct TradeStatementView: View {
     @ObservedObject var viewModel: TradeStatementViewModel
     @State private var showingPDFPreview = false
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.appServices) private var services
     let showCustomBackButton: Bool
+
+    // Server-driven Collection Bill texts (with strong local fallback)
+    @State private var referenceText: String = TradeStatementReferenceSection.defaultReferenceText
+    @State private var legalDisclaimerText: String = TradeStatementDisplayDataBuilder.defaultLegalDisclaimer
+    @State private var footerNoteText: String = TradeStatementReferenceSection.defaultFooterNote
 
     init(viewModel: TradeStatementViewModel, showCustomBackButton: Bool = true) {
         self.viewModel = viewModel
@@ -124,7 +130,9 @@ struct TradeStatementView: View {
                         TradeStatementReferenceSection(
                             taxReportTransactionNumber: displayProperties.taxReportTransactionNumber,
                             accountNumber: displayProperties.accountNumber,
-                            legalDisclaimer: displayProperties.legalDisclaimer
+                        referenceText: referenceText,
+                        legalDisclaimer: legalDisclaimerText,
+                        footerNote: footerNoteText
                         )
                     }
 
@@ -145,6 +153,38 @@ struct TradeStatementView: View {
         }
         .navigationTitle("Collection Bill")
         .navigationBarTitleDisplayMode(.inline)
+        .task {
+            // Load server-driven snippets for Collection Bill reference texts (if available)
+            let provider = LegalSnippetProvider(termsContentService: services.termsContentService)
+            let language: TermsOfServiceDataProvider.Language = .german
+
+            async let referenceTask = provider.text(
+                for: .docCollectionBillReferenceInfo,
+                language: language,
+                documentType: .terms,
+                defaultText: TradeStatementReferenceSection.defaultReferenceText,
+                placeholders: [:]
+            )
+            async let legalTask = provider.text(
+                for: .docCollectionBillLegalDisclaimer,
+                language: language,
+                documentType: .terms,
+                defaultText: TradeStatementDisplayDataBuilder.defaultLegalDisclaimer,
+                placeholders: [:]
+            )
+            async let footerTask = provider.text(
+                for: .docCollectionBillFooterNote,
+                language: language,
+                documentType: .terms,
+                defaultText: TradeStatementReferenceSection.defaultFooterNote,
+                placeholders: [:]
+            )
+
+            let (ref, legal, footer) = await (referenceTask, legalTask, footerTask)
+            referenceText = ref
+            legalDisclaimerText = legal
+            footerNoteText = footer
+        }
         .toolbarColorScheme(.light, for: .navigationBar)
         .toolbarBackground(DocumentDesignSystem.documentBackground, for: .navigationBar)
         .toolbar {

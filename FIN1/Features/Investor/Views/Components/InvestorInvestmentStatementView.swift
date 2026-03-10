@@ -7,6 +7,8 @@ struct InvestorInvestmentStatementView: View {
     @ObservedObject var viewModel: InvestorInvestmentStatementViewModel
     @Environment(\.dismiss) private var dismiss
     @Environment(\.appServices) private var services
+    @State private var taxNoteSnippet: String?
+    @State private var legalNoteSnippet: String?
 
     init(viewModel: InvestorInvestmentStatementViewModel) {
         self.viewModel = viewModel
@@ -25,6 +27,23 @@ struct InvestorInvestmentStatementView: View {
 
             ScrollView([.vertical, .horizontal], showsIndicators: true) {
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(16)) {
+                    if viewModel.isRefreshingFromBackend {
+                        HStack(spacing: ResponsiveDesign.spacing(8)) {
+                            ProgressView()
+                                .scaleEffect(0.8)
+                            Text("Aktualisiere…")
+                                .font(ResponsiveDesign.captionFont())
+                                .foregroundColor(.secondary)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, ResponsiveDesign.spacing(4))
+                    }
+                    if let msg = viewModel.backendRefreshMessage {
+                        Text(msg)
+                            .font(ResponsiveDesign.captionFont())
+                            .foregroundColor(.secondary)
+                            .padding(.vertical, ResponsiveDesign.spacing(4))
+                    }
                     // Document Header (einheitliches Layout für alle Dokumente)
                     DocumentHeaderLayoutView(
                         accountHolderName: getInvestorDisplayName(),
@@ -81,6 +100,29 @@ struct InvestorInvestmentStatementView: View {
         }
         .navigationTitle("Collection Bill")
         .navigationBarTitleDisplayMode(.inline)
+        .task { await viewModel.refreshFromBackend() }
+        .task {
+            let provider = LegalSnippetProvider(termsContentService: services.termsContentService)
+            let language: TermsOfServiceDataProvider.Language = .german
+            let taxPlaceholders = ["TAX_RATE": CalculationConstants.TaxRates.capitalGainsTaxWithSoli]
+            async let taxTask = provider.text(
+                for: .docTaxNoteSell,
+                language: language,
+                documentType: .terms,
+                defaultText: DocumentNotesSection.defaultTaxNote,
+                placeholders: taxPlaceholders
+            )
+            async let legalTask = provider.text(
+                for: .docLegalNoteWphg,
+                language: language,
+                documentType: .terms,
+                defaultText: DocumentNotesSection.defaultLegalNotePart1 + "\n\n" + DocumentNotesSection.defaultLegalNotePart2,
+                placeholders: [:]
+            )
+            let (tax, legal) = await (taxTask, legalTask)
+            taxNoteSnippet = tax
+            legalNoteSnippet = legal
+        }
         .toolbarColorScheme(.light, for: .navigationBar)
         .toolbarBackground(DocumentDesignSystem.documentBackground, for: .navigationBar)
         .toolbar {
@@ -319,7 +361,9 @@ struct InvestorInvestmentStatementView: View {
 
     private var notesSections: some View {
         DocumentNotesSection(
-            accountNumber: getAccountNumber()
+            accountNumber: getAccountNumber(),
+            taxNote: taxNoteSnippet,
+            legalNote: legalNoteSnippet
         )
     }
 

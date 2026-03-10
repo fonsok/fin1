@@ -105,7 +105,7 @@ struct InvoiceNotes {
     /// Tax note for buy orders
     static let buyOrderTaxNote = """
     Steuerlicher Hinweis:
-    Beim Kauf werden keine Steuern abgezogen. Die Besteuerung erfolgt erst beim Verkauf bzw. Gewinnrealisierung gemäß Abgeltungsteuer (dzt. 25% + Soli).
+    Beim Kauf werden keine Steuern abgezogen. Die Besteuerung erfolgt erst beim Verkauf bzw. Gewinnrealisierung gemäß Abgeltungsteuer (dzt. \(CalculationConstants.TaxRates.capitalGainsTaxWithSoli)).
 
     Rechtlicher Hinweis:
     Die Versteuerung erfolgt mit Gewinnrealisierung laut aktueller Regelung (§ 20 EStG).
@@ -114,7 +114,7 @@ struct InvoiceNotes {
     /// Tax note for sell orders
     static let sellOrderTaxNote = """
     Steuerlicher Hinweis:
-    Beim Verkauf erfolgt die Besteuerung gemäß Abgeltungsteuer (dzt. 25% + Soli) auf den realisierten Gewinn. Die Steuer wird automatisch von der Bank einbehalten.
+    Beim Verkauf erfolgt die Besteuerung gemäß Abgeltungsteuer (dzt. \(CalculationConstants.TaxRates.capitalGainsTaxWithSoli)) auf den realisierten Gewinn. Die Steuer wird automatisch von der Bank einbehalten.
 
     Rechtlicher Hinweis:
     Die Versteuerung erfolgt mit Gewinnrealisierung laut aktueller Regelung (§ 20 EStG).
@@ -126,7 +126,7 @@ struct InvoiceNotes {
     /// Tax note for service charge invoices
     static let serviceChargeTaxNote = """
     Steuerlicher Hinweis:
-    Die Plattform-Servicegebühr unterliegt der Umsatzsteuer (19%). Der Rechnungsbetrag ist bereits die Bruttosumme inklusive Umsatzsteuer.
+    Die Plattform-Servicegebühr unterliegt der Umsatzsteuer (\(CalculationConstants.VATRates.standardVATPercentage)). Der Rechnungsbetrag ist bereits die Bruttosumme inklusive Umsatzsteuer.
 
     Rechtlicher Hinweis:
     Diese Gebühr wird bei Erstellung der Investition fällig und ist nicht erstattungsfähig.

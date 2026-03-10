@@ -9,6 +9,41 @@ extension CustomerSupportService {
 
     func getSupportTickets(customerId: String?) async throws -> [SupportTicket] {
         try await validatePermission(.viewCustomerSupportHistory)
+
+        // Try loading from backend first
+        if let apiService = ticketAPIService {
+            do {
+                let backendTickets = try await apiService.fetchTickets(
+                    userId: customerId,
+                    status: nil as SupportTicket.TicketStatus?,
+                    limit: 100,
+                    skip: 0
+                )
+
+                // Update local cache
+                await MainActor.run {
+                    // Merge with existing tickets (avoid duplicates)
+                    for backendTicket in backendTickets {
+                        if let index = self.mockTickets.firstIndex(where: { $0.id == backendTicket.id }) {
+                            self.mockTickets[index] = backendTicket
+                        } else {
+                            self.mockTickets.append(backendTicket)
+                        }
+                    }
+                }
+
+                // Return filtered tickets
+                if let customerId = customerId {
+                    return backendTickets.filter { $0.customerId == customerId }
+                }
+                return backendTickets
+            } catch {
+                print("⚠️ CustomerSupportService: Failed to load tickets from backend: \(error.localizedDescription)")
+                // Fall through to mock data
+            }
+        }
+
+        // Fallback to mock data
         if let customerId = customerId {
             return mockTickets.filter { $0.customerId == customerId }
         }
@@ -17,7 +52,36 @@ extension CustomerSupportService {
 
     func getUserTickets(userId: String) async throws -> [SupportTicket] {
         // Users can view their own tickets without permission check
-        // Find customer by userId (format: "user:email@test.com")
+
+        // Try loading from backend first
+        if let apiService = ticketAPIService {
+            do {
+                let backendTickets = try await apiService.fetchTickets(
+                    userId: userId,
+                    status: nil as SupportTicket.TicketStatus?,
+                    limit: 100,
+                    skip: 0
+                )
+
+                // Update local cache
+                await MainActor.run {
+                    for backendTicket in backendTickets {
+                        if let index = self.mockTickets.firstIndex(where: { $0.id == backendTicket.id }) {
+                            self.mockTickets[index] = backendTicket
+                        } else {
+                            self.mockTickets.append(backendTicket)
+                        }
+                    }
+                }
+
+                return backendTickets
+            } catch {
+                print("⚠️ CustomerSupportService: Failed to load user tickets from backend: \(error.localizedDescription)")
+                // Fall through to mock data
+            }
+        }
+
+        // Fallback to mock data
         let customer = mockCustomers.first(where: { $0.id == userId })
         guard let customerId = customer?.customerId else {
             return [] // User not found or no tickets
@@ -27,6 +91,28 @@ extension CustomerSupportService {
 
     func getTicket(ticketId: String) async throws -> SupportTicket? {
         // Users can view their own tickets, CSR can view any ticket
+
+        // Try loading from backend first
+        if let apiService = ticketAPIService {
+            do {
+                if let backendTicket = try await apiService.fetchTicket(ticketId: ticketId) {
+                    // Update local cache
+                    await MainActor.run {
+                        if let index = self.mockTickets.firstIndex(where: { $0.id == ticketId }) {
+                            self.mockTickets[index] = backendTicket
+                        } else {
+                            self.mockTickets.append(backendTicket)
+                        }
+                    }
+                    return backendTicket
+                }
+            } catch {
+                print("⚠️ CustomerSupportService: Failed to load ticket from backend: \(error.localizedDescription)")
+                // Fall through to mock data
+            }
+        }
+
+        // Fallback to mock data
         return mockTickets.first(where: { $0.id == ticketId })
     }
 
@@ -73,10 +159,11 @@ extension CustomerSupportService {
             newTicket.status = .inProgress
             logger.info("🎯 Auto-assigned ticket \(newTicket.ticketNumber) to \(agentName): \(reason)")
 
-            // Update agent workload and notify
+            // Update agent workload and notify (use local copy to avoid concurrent capture)
             if let agentIndex = mockAgents.firstIndex(where: { $0.id == agentId }) {
                 mockAgents[agentIndex].currentTicketCount += 1
-                await sendAgentAssignmentNotification(ticket: newTicket, agent: mockAgents[agentIndex])
+                let ticketForNotification = newTicket
+                await sendAgentAssignmentNotification(ticket: ticketForNotification, agent: mockAgents[agentIndex])
             }
 
         case .queued(let reason):
@@ -86,7 +173,28 @@ extension CustomerSupportService {
             logger.error("❌ Auto-assignment failed: \(error)")
         }
 
-        mockTickets.append(newTicket)
+        // Write-through: Sync immediately if API service available
+        if let apiService = ticketAPIService {
+            do {
+                let syncedTicket = try await apiService.createTicket(ticket)
+
+                await MainActor.run {
+                    self.mockTickets.append(syncedTicket)
+                }
+
+                logger.info("✅ Support ticket created and synced: \(syncedTicket.ticketNumber)")
+                return syncedTicket
+            } catch {
+                logger.error("⚠️ Failed to sync ticket immediately: \(error.localizedDescription)")
+                // Fall through to local storage
+            }
+        }
+
+        let ticketToAppend = newTicket
+        await MainActor.run {
+            self.mockTickets.append(ticketToAppend)
+        }
+        logger.info("✅ Support ticket created: \(newTicket.ticketNumber)")
         return newTicket
     }
 
@@ -136,10 +244,11 @@ extension CustomerSupportService {
             newTicket.status = .inProgress
             logger.info("🎯 Auto-assigned user ticket \(newTicket.ticketNumber) to \(agentName): \(reason)")
 
-            // Update agent workload and notify
+            // Update agent workload and notify (use local copy to avoid concurrent capture)
             if let agentIndex = mockAgents.firstIndex(where: { $0.id == agentId }) {
                 mockAgents[agentIndex].currentTicketCount += 1
-                await sendAgentAssignmentNotification(ticket: newTicket, agent: mockAgents[agentIndex])
+                let ticketForNotification = newTicket
+                await sendAgentAssignmentNotification(ticket: ticketForNotification, agent: mockAgents[agentIndex])
             }
 
         case .queued(let reason):
@@ -149,7 +258,34 @@ extension CustomerSupportService {
             logger.error("❌ Auto-assignment failed for user ticket: \(error)")
         }
 
-        mockTickets.append(newTicket)
+        // Write-through: Sync immediately if API service available
+        if let apiService = ticketAPIService {
+            do {
+                let ticketCreate = SupportTicketCreate(
+                    customerId: customerId,
+                    subject: subject,
+                    description: description,
+                    priority: priority
+                )
+
+                let syncedTicket = try await apiService.createTicket(ticketCreate)
+
+                await MainActor.run {
+                    self.mockTickets.append(syncedTicket)
+                }
+
+                logger.info("✅ Support ticket created and synced: \(syncedTicket.ticketNumber) for user \(userId)")
+                return syncedTicket
+            } catch {
+                logger.error("⚠️ Failed to sync user ticket immediately: \(error.localizedDescription)")
+                // Fall through to local storage
+            }
+        }
+
+        let ticketToAppend = newTicket
+        await MainActor.run {
+            self.mockTickets.append(ticketToAppend)
+        }
         logger.info("✅ Support ticket created: \(newTicket.ticketNumber) for user \(userId)")
 
         return newTicket
@@ -160,6 +296,33 @@ extension CustomerSupportService {
     func respondToTicket(ticketId: String, response: String, isInternal: Bool) async throws {
         try await validatePermission(.respondToSupportTicket)
 
+        // Write-through: Sync response to backend immediately if API service available
+        if let apiService = ticketAPIService {
+            do {
+                let backendResponse = try await apiService.replyToTicket(
+                    ticketId: ticketId,
+                    message: response,
+                    isInternal: isInternal
+                )
+
+                // Update local ticket with response
+                await MainActor.run {
+                    if let ticketIndex = self.mockTickets.firstIndex(where: { $0.id == ticketId }) {
+                        var ticket = self.mockTickets[ticketIndex]
+                        ticket.responses.append(backendResponse)
+                        ticket.updatedAt = Date()
+                        self.mockTickets[ticketIndex] = ticket
+                    }
+                }
+
+                logger.info("✅ Ticket response synced to backend")
+                return
+            } catch {
+                logger.error("⚠️ Failed to sync ticket response immediately: \(error.localizedDescription)")
+                // Fall through to local storage
+            }
+        }
+
         guard let ticketIndex = mockTickets.firstIndex(where: { $0.id == ticketId }) else {
             throw CustomerSupportError.ticketNotFound
         }
@@ -167,6 +330,7 @@ extension CustomerSupportService {
         let ticket = mockTickets[ticketIndex]
         let customerId = ticket.customerId
 
+        // Create response locally
         let ticketResponse = TicketResponse(
             id: UUID().uuidString,
             agentId: currentAgentId,
@@ -193,7 +357,10 @@ extension CustomerSupportService {
             updatedAt: Date(),
             responses: updatedResponses
         )
-        mockTickets[ticketIndex] = updatedTicket
+
+        await MainActor.run {
+            self.mockTickets[ticketIndex] = updatedTicket
+        }
 
         let actionDescription = isInternal ? "Interne Notiz auf Ticket \(ticketId)" : "Antwort auf Ticket \(ticketId)"
         await logAction(.respondToSupportTicket, customerId: customerId, description: actionDescription)

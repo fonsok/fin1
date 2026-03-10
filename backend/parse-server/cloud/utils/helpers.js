@@ -180,11 +180,11 @@ function calculateOrderFees(orderAmount, isForeign = false, config = {}) {
  * Calculate service charge (for investments)
  *
  * @param {number} amount - Investment amount
- * @param {number} rate - Service charge rate (default: 0.015 = 1.5%)
+ * @param {number} rate - Service charge rate (default: 0.02 = 2%)
  * @param {number} vatRate - VAT rate (default: 0.19 = 19%)
  * @returns {object} Service charge breakdown
  */
-function calculateServiceCharge(amount, rate = 0.015, vatRate = 0.19) {
+function calculateServiceCharge(amount, rate = 0.02, vatRate = 0.19) {
   const serviceCharge = amount * rate;
   const vat = serviceCharge * vatRate;
 

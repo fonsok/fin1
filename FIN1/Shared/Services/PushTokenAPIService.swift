@@ -46,7 +46,7 @@ struct PushToken: Identifiable, Codable, Sendable {
 // MARK: - Parse Push Token Input
 
 /// Input struct for creating/updating push tokens on Parse Server
-private struct ParsePushTokenInput: Encodable {
+private struct ParsePushTokenInput: Codable {
     let userId: String
     let token: String
     let tokenType: String

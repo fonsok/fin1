@@ -120,8 +120,8 @@ enum TermsOfServiceEnglishContent {
         - **Investor Accounts**: For users who invest capital with traders
 
         **Account Balance:**
-        - Initial Balance: New accounts may receive an initial balance of €50,000 (demo/simulation purposes)
-        - Minimum Cash Reserve: Accounts must maintain a minimum cash reserve of €12
+        - Initial Balance: New accounts receive an initial balance of €1.00
+        - Minimum Cash Reserve: Accounts must maintain a minimum cash reserve of €20
         - Balance Purpose: Account balances are for Platform use only
         """,
         icon: "person.circle.fill"
@@ -163,10 +163,10 @@ enum TermsOfServiceEnglishContent {
             - The Platform does not guarantee investment allocation or trader availability
 
             **Platform Service Charge:**
-            - **Rate**: 1.5% of investment amount (gross amount, includes 19% VAT)
+            - **Rate**: 2% of investment amount (gross amount, includes 19% VAT)
             - **Timing**: Charged at investment creation
             - **Non-Refundable**: Service charges are not refundable
-            - **VAT**: The 1.5% includes 19% VAT (German Umsatzsteuer)
+            - **VAT**: The 2% includes 19% VAT (German Umsatzsteuer)
 
             **Investment Returns:**
             - Returns depend on trader performance and market conditions
@@ -407,7 +407,7 @@ enum TermsOfServiceEnglishContent {
         title: "18. Special Provisions",
         content: """
         **Demo/Simulation Accounts:**
-        - Initial Balance: €50,000 may be provided for demo/simulation purposes
+        - Initial Balance: €1.00 is provided for new accounts
         - Clarification: Users must understand whether balances are virtual or real
         - Conversion: Demo accounts may be convertible to real accounts (if applicable)
         - Limitations: Demo accounts may have limitations compared to real accounts

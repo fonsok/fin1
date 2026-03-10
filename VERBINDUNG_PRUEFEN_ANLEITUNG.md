@@ -18,8 +18,8 @@
 ### ✅ Erfolgreich verbunden:
 ```
 🔗 Parse Server Configuration:
-   URL: http://192.168.178.24:1337/parse
-   Live Query URL: ws://192.168.178.24:1337/parse
+   URL: https://192.168.178.24/parse
+   Live Query URL: wss://192.168.178.24/parse
    Application ID: fin1-app-id
 ✅ Parse Live Query connected successfully!
 🚀 App launch time: X.XXX seconds

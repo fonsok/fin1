@@ -34,18 +34,18 @@ ip addr show | grep "inet " | grep -v 127.0.0.1
 
 **Vollständige URL:**
 ```
-http://192.168.178.24/parse
+https://192.168.178.24/parse
 ```
 
 **Komponenten:**
-- **Protokoll:** `http://` (oder `https://` wenn SSL konfiguriert)
+- **Protokoll:** `https://` (TLS; HTTP leitet auf HTTPS um)
 - **IP:** `192.168.178.24` (Server-IP)
-- **Port:** `80` (via Nginx Reverse Proxy)
+- **Port:** `443` (via Nginx Reverse Proxy)
 - **Pfad:** `/parse` (Parse Server Endpoint via Nginx)
 
 **Live Query URL (WebSocket):**
 ```
-ws://192.168.178.24/parse
+wss://192.168.178.24/parse
 ```
 
 ---
@@ -79,7 +79,7 @@ struct FIN1App: App {
     init() {
         ParseServerConfiguration.initialize(
             applicationId: "fin1-app-id",                    // ← Application ID
-            serverURL: "http://192.168.178.24/parse"        // ← Server URL
+            serverURL: "https://192.168.178.24/parse"        // ← Server URL
         )
 
         #if DEBUG
@@ -99,8 +99,8 @@ struct FIN1App: App {
 ```swift
 ParseServerConfiguration.initialize(
     applicationId: "fin1-app-id",
-    serverURL: "http://192.168.178.24/parse",
-    liveQueryURL: "ws://192.168.178.24/parse"  // Optional
+    serverURL: "https://192.168.178.24/parse",
+    liveQueryURL: "wss://192.168.178.24/parse"  // Optional
 )
 ```
 
@@ -132,7 +132,7 @@ ParseServerConfiguration.initialize(
 
 ```xml
 <key>ParseServerURL</key>
-<string>http://192.168.178.24/parse</string>
+<string>https://192.168.178.24/parse</string>
 <key>ParseApplicationId</key>
 <string>fin1-app-id</string>
 ```
@@ -195,12 +195,12 @@ ifconfig | grep "inet " | grep -v 127.0.0.1
 
 **Health-Check:**
 ```bash
-curl http://192.168.178.24/health
+curl -sk https://192.168.178.24/health
 ```
 
 **Parse Server Info:**
 ```bash
-curl http://192.168.178.24/parse
+curl -sk https://192.168.178.24/parse
 ```
 
 **Erwartete Ausgabe (Health-Check):**
@@ -219,7 +219,7 @@ curl http://192.168.178.24/parse
 nc -zv 192.168.178.24 80
 
 # Oder mit telnet
-telnet 192.168.178.24 1338
+telnet 192.168.178.24 443
 ```
 
 **Erwartete Ausgabe:**
@@ -231,7 +231,7 @@ Connection to 192.168.178.24 port 80 [tcp/*] succeeded!
 
 Öffnen Sie im Browser auf dem Mac:
 ```
-http://192.168.178.24/health
+https://192.168.178.24/health
 ```
 
 Sie sollten die JSON-Antwort sehen.
@@ -243,14 +243,12 @@ Sie sollten die JSON-Antwort sehen.
 ### Voraussetzungen
 - [ ] Server läuft und ist erreichbar
 - [ ] Mac und Server im gleichen WLAN
-- [ ] Port 1338 ist erreichbar (`curl http://SERVER_IP:1338/health`)
-- [ ] Port 80 ist erreichbar (`curl http://SERVER_IP/health`)
+- [ ] Port 443 ist erreichbar (`curl -sk https://SERVER_IP/health`)
 
 ### Xcode-Konfiguration
 - [ ] ParseSwift SDK hinzugefügt
 - [ ] Application ID konfiguriert: `fin1-app-id`
-- [ ] Server URL konfiguriert: `http://192.168.178.24:1338/parse`
-- [ ] Server URL konfiguriert: `http://192.168.178.24/parse`
+- [ ] Server URL konfiguriert: `https://192.168.178.24/parse`
 - [ ] Info.plist ATS-Einstellungen für Server-IP vorhanden
 
 ### Testing
@@ -307,15 +305,15 @@ docker compose -f docker-compose.production.yml ps
 **Minimale Informationen für Xcode:**
 
 1. **Server-IP:** `192.168.178.24`
-2. **Port:** `1338`
+2. **Port:** `443` (HTTPS via Nginx)
 3. **Application ID:** `fin1-app-id`
-4. **Server URL:** `http://192.168.178.24/parse`
+4. **Server URL:** `https://192.168.178.24/parse`
 
 **Swift-Code:**
 ```swift
 ParseServerConfiguration.initialize(
     applicationId: "fin1-app-id",
-    serverURL: "http://192.168.178.24/parse"
+    serverURL: "https://192.168.178.24/parse"
 )
 ```
 
@@ -333,15 +331,16 @@ weil es im Browser mit erhöhten Rechten (Master Key) arbeitet.
 ### SSH Tunnel (Mac → Ubuntu)
 
 ```bash
-# Port 1338 lokal auf dem Mac -> Port 1338 (localhost) auf dem Server
-ssh -L 1338:127.0.0.1:1338 io@192.168.178.24
+# Port 443 lokal auf dem Mac -> Port 443 (localhost) auf dem Server
+ssh -L 443:127.0.0.1:443 io@192.168.178.24
 ```
 
 Dann im Browser auf dem Mac:
 
 ```
-http://localhost:1338/dashboard
+https://localhost/dashboard/
 ```
+(Zertifikat-Warnung bei self-signed ggf. bestätigen)
 
 ---
 
@@ -352,7 +351,7 @@ http://localhost:1338/dashboard
 Wichtige Punkte
 Server-IP: 192.168.178.24 (in der App verwenden)
 Mac-IP: 192.168.178.25 (nur für Netzwerk-Identifikation)
-Port: 1338 (nicht 1337!)
+Port: 443 (HTTPS)
 Alle Geräte müssen im gleichen WLAN sein
 
 
@@ -360,7 +359,7 @@ Alle Geräte müssen im gleichen WLAN sein
 Informationen für Mac → FIN1-Server Verbindung
 Minimale Informationen für Xcode
 Server-IP-Adresse: 192.168.178.24
-Port: 1338 (externer Port)
+Port: 443 (HTTPS via Nginx)
 Application ID: fin1-app-id
-Server URL: http://192.168.178.24:1338/parse
+Server URL: https://192.168.178.24/parse
 

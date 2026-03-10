@@ -6,9 +6,14 @@ import Foundation
 /// Separated to reduce main ViewModel file size and improve maintainability
 final class InvestmentsDataProcessor {
     private let poolTradeParticipationService: any PoolTradeParticipationServiceProtocol
+    private let configurationService: any ConfigurationServiceProtocol
 
-    init(poolTradeParticipationService: any PoolTradeParticipationServiceProtocol) {
+    init(
+        poolTradeParticipationService: any PoolTradeParticipationServiceProtocol,
+        configurationService: any ConfigurationServiceProtocol
+    ) {
         self.poolTradeParticipationService = poolTradeParticipationService
+        self.configurationService = configurationService
     }
 
     // MARK: - Investment-Level Data for Table Display
@@ -165,10 +170,11 @@ final class InvestmentsDataProcessor {
 
             guard denominator > 0 else { return nil }
 
+            let commissionRate = configurationService.effectiveCommissionRate
             // Net profit = Gross profit * (1 - commissionRate)
             // So: Gross profit = Net profit / (1 - commissionRate)
             let grossProfit = profit > 0 ?
-                profit / (1.0 - CalculationConstants.FeeRates.traderCommissionRate) :
+                profit / (1.0 - commissionRate) :
                 profit
             return (grossProfit / denominator) * 100
         }

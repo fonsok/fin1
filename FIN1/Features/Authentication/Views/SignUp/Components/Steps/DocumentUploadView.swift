@@ -160,7 +160,7 @@ struct UploadOptionsView: View {
                 Button(action: onEnableTestMode, label: {
                     HStack {
                         Image(systemName: "testtube.2")
-                            .font(.system(size: 16))
+                            .font(ResponsiveDesign.bodyFont())
                             .foregroundColor(AppTheme.accentOrange)
 
                         Text("Enable Test Mode")
@@ -210,7 +210,7 @@ struct UploadOptionButton: View {
         Button(action: action, label: {
             VStack(spacing: ResponsiveDesign.spacing(12)) {
                 Image(systemName: icon)
-                    .font(.system(size: 32))
+                    .font(.system(size: ResponsiveDesign.iconSize() * 1.6))
                     .foregroundColor(AppTheme.accentLightBlue)
 
                 Text(title)

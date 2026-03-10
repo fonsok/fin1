@@ -81,24 +81,26 @@ struct DashboardQuickActionsSection: View {
             .accessibilityIdentifier("HandelnButton")
             .accessibilityLabel("Handeln")
             .accessibilityHint("Tap to open securities search")
-            
-            NavigationLink(value: DashboardRoute.wallet) {
-                HStack(spacing: ResponsiveDesign.spacing(12)) {
-                    Image(systemName: "wallet.pass.fill")
-                        .font(ResponsiveDesign.headlineFont())
-                        .foregroundColor(AppTheme.fontColor)
 
-                    Text("Wallet")
-                        .font(ResponsiveDesign.headlineFont())
-                        .fontWeight(.semibold)
-                        .foregroundColor(AppTheme.fontColor)
+            if appServices.configurationService.walletFeatureEnabled {
+                NavigationLink(value: DashboardRoute.wallet) {
+                    HStack(spacing: ResponsiveDesign.spacing(12)) {
+                        Image(systemName: "wallet.pass.fill")
+                            .font(ResponsiveDesign.headlineFont())
+                            .foregroundColor(AppTheme.fontColor)
+
+                        Text("Wallet")
+                            .font(ResponsiveDesign.headlineFont())
+                            .fontWeight(.semibold)
+                            .foregroundColor(AppTheme.fontColor)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: ResponsiveDesign.spacing(56))
+                    .background(AppTheme.buttonColor)
+                    .cornerRadius(ResponsiveDesign.spacing(12))
                 }
-                .frame(maxWidth: .infinity)
-                .frame(height: ResponsiveDesign.spacing(56))
-                .background(AppTheme.buttonColor)
-                .cornerRadius(ResponsiveDesign.spacing(12))
             }
-            
+
             // Price Alerts button - users can access via tab bar
             // Quick action removed to keep UI clean - Price Alerts is accessible via "Alerts" tab
         }
@@ -106,27 +108,31 @@ struct DashboardQuickActionsSection: View {
 
     // MARK: - Investor Quick Actions
 
-    /// Investor-specific Quick Actions: Wallet button
+    /// Investor-specific Quick Actions: Wallet button (only when wallet feature is enabled)
     ///
     /// IMPORTANT: The "New Investment" button for investors is displayed in
     /// `DashboardContainer` using `NewInvestmentButton`, not here.
     /// This separation allows the button to appear above Quick Stats.
     private var investorQuickActions: some View {
-        NavigationLink(value: DashboardRoute.wallet) {
-            HStack(spacing: ResponsiveDesign.spacing(12)) {
-                Image(systemName: "wallet.pass.fill")
-                    .font(ResponsiveDesign.headlineFont())
-                    .foregroundColor(AppTheme.fontColor)
+        Group {
+            if appServices.configurationService.walletFeatureEnabled {
+                NavigationLink(value: DashboardRoute.wallet) {
+                    HStack(spacing: ResponsiveDesign.spacing(12)) {
+                        Image(systemName: "wallet.pass.fill")
+                            .font(ResponsiveDesign.headlineFont())
+                            .foregroundColor(AppTheme.fontColor)
 
-                Text("Wallet")
-                    .font(ResponsiveDesign.headlineFont())
-                    .fontWeight(.semibold)
-                    .foregroundColor(AppTheme.fontColor)
+                        Text("Wallet")
+                            .font(ResponsiveDesign.headlineFont())
+                            .fontWeight(.semibold)
+                            .foregroundColor(AppTheme.fontColor)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: ResponsiveDesign.spacing(56))
+                    .background(AppTheme.buttonColor)
+                    .cornerRadius(ResponsiveDesign.spacing(12))
+                }
             }
-            .frame(maxWidth: .infinity)
-            .frame(height: ResponsiveDesign.spacing(56))
-            .background(AppTheme.buttonColor)
-            .cornerRadius(ResponsiveDesign.spacing(12))
         }
     }
 

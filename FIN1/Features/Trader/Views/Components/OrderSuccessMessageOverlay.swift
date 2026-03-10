@@ -312,26 +312,26 @@ private struct ModernStatusRow: View {
                 if parts.count == 2 {
                     HStack(spacing: ResponsiveDesign.spacing(0)) {
                         Text(parts[0])
-                            .font(.system(size: 14, weight: .regular))
+                            .font(ResponsiveDesign.bodyFont())
                             .foregroundColor(AppTheme.secondaryText)
 
                         Text(italicText)
-                            .font(.system(size: 14, weight: .regular))
+                            .font(ResponsiveDesign.bodyFont())
                             .italic()
                             .foregroundColor(AppTheme.secondaryText)
 
                         Text(parts[1])
-                            .font(.system(size: 14, weight: .regular))
+                            .font(ResponsiveDesign.bodyFont())
                             .foregroundColor(AppTheme.secondaryText)
                     }
                 } else {
                     Text(text)
-                        .font(.system(size: 14, weight: .regular))
+                        .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(AppTheme.secondaryText)
                 }
             } else {
                 Text(text)
-                    .font(.system(size: 14, weight: .regular))
+                    .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.secondaryText)
             }
 

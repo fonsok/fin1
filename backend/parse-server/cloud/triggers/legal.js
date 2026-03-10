@@ -233,6 +233,76 @@ Parse.Cloud.beforeSave('LegalConsent', async (request) => {
 });
 
 // ============================================================================
+// AFTER-SAVE AUDIT TRAIL (GoB: Nachvollziehbarkeit / Belegprinzip)
+// Every new TermsContent version is automatically logged in AuditLog,
+// regardless of how it was created (admin portal, script, dashboard).
+// ============================================================================
+
+Parse.Cloud.afterSave('TermsContent', async (request) => {
+  const obj = request.object;
+  const original = request.original;
+
+  // Only log NEW versions (not isActive toggling on existing records)
+  if (original) {
+    // Existing record updated — only isActive can change (enforced by beforeSave).
+    // Log deactivation for traceability.
+    const wasActive = original.get('isActive');
+    const isActive = obj.get('isActive');
+    if (wasActive && !isActive) {
+      try {
+        const AuditLog = Parse.Object.extend('AuditLog');
+        const log = new AuditLog();
+        log.set('logType', 'legal');
+        log.set('action', 'legal_document_deactivated');
+        log.set('resourceType', 'TermsContent');
+        log.set('resourceId', obj.id);
+        log.set('metadata', {
+          version: obj.get('version'),
+          language: obj.get('language'),
+          documentType: obj.get('documentType'),
+          documentHash: obj.get('documentHash'),
+          deactivatedAt: new Date().toISOString(),
+          source: 'system',
+        });
+        await log.save(null, { useMasterKey: true });
+      } catch (err) {
+        console.error('Failed to log TermsContent deactivation:', err.message);
+      }
+    }
+    return;
+  }
+
+  // NEW record — log the creation of a new legal document version
+  try {
+    const effectiveDate = obj.get('effectiveDate');
+    const AuditLog = Parse.Object.extend('AuditLog');
+    const log = new AuditLog();
+    log.set('logType', 'legal');
+    log.set('action', 'legal_document_version_created');
+    log.set('resourceType', 'TermsContent');
+    log.set('resourceId', obj.id);
+    log.set('newValues', {
+      version: obj.get('version'),
+      language: obj.get('language'),
+      documentType: obj.get('documentType'),
+      effectiveDate: effectiveDate instanceof Date ? effectiveDate.toISOString() : null,
+      documentHash: obj.get('documentHash'),
+      sectionCount: (obj.get('sections') || []).length,
+      isActive: obj.get('isActive'),
+    });
+    log.set('metadata', {
+      createdAt: new Date().toISOString(),
+      source: request.context?.source || 'unknown',
+      reason: request.context?.reason || null,
+      deployedBy: request.context?.deployedBy || null,
+    });
+    await log.save(null, { useMasterKey: true });
+  } catch (err) {
+    console.error('Failed to log TermsContent creation:', err.message);
+  }
+});
+
+// ============================================================================
 // DELETE PROTECTION (Audit Compliance)
 // Legal documents and audit logs must NEVER be deleted.
 // ============================================================================
@@ -267,6 +337,20 @@ Parse.Cloud.beforeDelete('ComplianceEvent', async (request) => {
   throw new Parse.Error(
     Parse.Error.OPERATION_FORBIDDEN,
     'ComplianceEvent cannot be deleted (audit compliance).'
+  );
+});
+
+Parse.Cloud.beforeDelete('AuditLog', async (request) => {
+  throw new Parse.Error(
+    Parse.Error.OPERATION_FORBIDDEN,
+    'AuditLog cannot be deleted (GoB: Aufbewahrungspflicht).'
+  );
+});
+
+Parse.Cloud.beforeDelete('FourEyesRequest', async (request) => {
+  throw new Parse.Error(
+    Parse.Error.OPERATION_FORBIDDEN,
+    'FourEyesRequest cannot be deleted (GoB: Belegprinzip).'
   );
 });
 

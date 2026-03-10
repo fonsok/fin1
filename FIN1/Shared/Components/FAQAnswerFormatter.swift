@@ -20,7 +20,7 @@ struct FAQAnswerFormatter: View {
                     HStack(alignment: .top, spacing: ResponsiveDesign.spacing(10)) {
                         if style == .typewriter {
                             Text("-")
-                                .font(.system(size: 16, weight: .regular, design: .monospaced))
+                                .font(ResponsiveDesign.monospacedFont(size: 16, weight: .regular))
                                 .foregroundColor(Color("InputText"))
                                 .padding(.top, ResponsiveDesign.spacing(5))
                         } else {
@@ -33,7 +33,7 @@ struct FAQAnswerFormatter: View {
                         Group {
                             if style == .typewriter {
                                 Text(line.trimmingCharacters(in: .whitespaces).dropFirst().trimmingCharacters(in: .whitespaces))
-                                    .font(.system(size: 16, weight: .regular, design: .monospaced))
+                                    .font(ResponsiveDesign.monospacedFont(size: 16, weight: .regular))
                                     .foregroundColor(Color("InputText"))
                             } else {
                                 Text(line.trimmingCharacters(in: .whitespaces).dropFirst().trimmingCharacters(in: .whitespaces))
@@ -46,7 +46,7 @@ struct FAQAnswerFormatter: View {
                     Group {
                         if style == .typewriter {
                             Text(line.trimmingCharacters(in: .whitespaces))
-                                .font(.system(size: 16, weight: .regular, design: .monospaced))
+                                .font(ResponsiveDesign.monospacedFont(size: 16, weight: .regular))
                                 .foregroundColor(Color("InputText"))
                         } else {
                             Text(line.trimmingCharacters(in: .whitespaces))

@@ -86,4 +86,7 @@ protocol CustomerSupportServiceProtocol: AnyObject {
     func requestNameChange(customerId: String, newName: CSNameChangeInput) async throws -> ChangeRequest
     func initiatePasswordReset(customerId: String) async throws
     func unlockAccount(customerId: String, reason: String) async throws
+
+    // MARK: - Backend Synchronization
+    func syncToBackend() async
 }

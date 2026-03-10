@@ -8,14 +8,21 @@ import Combine
 /// @unchecked Sendable: Safe because we use [weak self] in all async closures and proper queue synchronization
 final class ConfigurationService: ConfigurationServiceProtocol, ServiceLifecycle, @unchecked Sendable {
 
+    // MARK: - Change Publisher
+    lazy var configurationChanged: AnyPublisher<Void, Never> = {
+        objectWillChange.map { _ in () }.eraseToAnyPublisher()
+    }()
+
     // MARK: - Published Properties
-    @Published var minimumCashReserve: Double = 12.0 // internal(set) for extension access
-    @Published var initialAccountBalance: Double = 50000.0 // internal(set) for extension access
+    @Published var minimumCashReserve: Double = 20.0
+    @Published var initialAccountBalance: Double = 1.0
     @Published var poolBalanceDistributionStrategy: PoolBalanceDistributionStrategy = .immediateDistribution // internal(set) for extension access
     @Published var poolBalanceDistributionThreshold: Double = 5.0 // internal(set) for extension access
-    @Published var traderCommissionRate: Double = 0.05 // internal(set) for extension access
-    @Published var platformServiceChargeRate: Double = 0.015 // internal(set) for extension access
+    @Published var traderCommissionRate: Double = 0.10 // internal(set) for extension access
+    @Published var platformServiceChargeRate: Double = 0.02 // internal(set) for extension access
     @Published var showCommissionBreakdownInCreditNote: Bool = true // internal(set) for extension access
+    @Published var maximumRiskExposurePercent: Double = 2.0 // internal(set) for extension access
+    @Published var walletFeatureEnabled: Bool = false // internal(set) for extension access
     @Published var slaMonitoringInterval: TimeInterval = 300.0 // 5 minutes default, internal(set) for extension access
     @Published private(set) var isAdminMode: Bool = false
 
@@ -105,11 +112,11 @@ final class ConfigurationService: ConfigurationServiceProtocol, ServiceLifecycle
 
     // MARK: - Validation
     func validateMinimumCashReserve(_ value: Double) -> Bool {
-        return value >= 1.0 && value <= 1000.0
+        return value >= 0.01 && value <= 1000.0
     }
 
     func validateInitialAccountBalance(_ value: Double) -> Bool {
-        return value >= 1000.0 && value <= 1000000.0
+        return value >= 0.01 && value <= 1000000.0
     }
 
     func validatePoolBalanceDistributionThreshold(_ value: Double) -> Bool {
@@ -126,6 +133,10 @@ final class ConfigurationService: ConfigurationServiceProtocol, ServiceLifecycle
 
     func validateSLAMonitoringInterval(_ interval: TimeInterval) -> Bool {
         return interval >= 60.0 && interval <= 3600.0 // 1 minute to 1 hour
+    }
+
+    func validateMaximumRiskExposurePercent(_ value: Double) -> Bool {
+        return value >= 0.0 && value <= 100.0
     }
 
     // MARK: - Private Methods
@@ -152,8 +163,16 @@ final class ConfigurationService: ConfigurationServiceProtocol, ServiceLifecycle
                 if self.configuration.showCommissionBreakdownInCreditNote == nil {
                     self.configuration.showCommissionBreakdownInCreditNote = true
                 }
+                // Backward compatibility: if maximumRiskExposurePercent is nil (missing from old config), set to 2.0
+                if self.configuration.maximumRiskExposurePercent == nil {
+                    self.configuration.maximumRiskExposurePercent = 2.0
+                }
+                // Backward compatibility: if walletFeatureEnabled is nil, set to false
+                if self.configuration.walletFeatureEnabled == nil {
+                    self.configuration.walletFeatureEnabled = false
+                }
                 // Save updated config with new fields if needed
-                if self.configuration.traderCommissionRate == nil || self.configuration.platformServiceChargeRate == nil || self.configuration.slaMonitoringInterval == 0 || self.configuration.showCommissionBreakdownInCreditNote == nil {
+                if self.configuration.traderCommissionRate == nil || self.configuration.platformServiceChargeRate == nil || self.configuration.slaMonitoringInterval == 0 || self.configuration.showCommissionBreakdownInCreditNote == nil || self.configuration.maximumRiskExposurePercent == nil || self.configuration.walletFeatureEnabled == nil {
                     self.saveConfiguration()
                 }
             } else {
@@ -185,6 +204,8 @@ final class ConfigurationService: ConfigurationServiceProtocol, ServiceLifecycle
         traderCommissionRate = configuration.effectiveTraderCommissionRate
         platformServiceChargeRate = configuration.effectivePlatformServiceChargeRate
         showCommissionBreakdownInCreditNote = configuration.showCommissionBreakdownInCreditNote ?? true
+        maximumRiskExposurePercent = configuration.effectiveMaximumRiskExposurePercent
+        walletFeatureEnabled = configuration.effectiveWalletFeatureEnabled
         slaMonitoringInterval = configuration.slaMonitoringInterval
     }
 
@@ -200,7 +221,9 @@ final class ConfigurationService: ConfigurationServiceProtocol, ServiceLifecycle
         }
     }
 
-    /// Fetches display config from Parse (getConfig) and merges into local configuration.
+    /// Fetches full config from Parse (getConfig) and merges into local configuration.
+    /// This syncs financial parameters (initialAccountBalance, commissionRate, etc.)
+    /// and display settings from the server's authoritative Configuration.
     func fetchRemoteDisplayConfig() async {
         let client: (any ParseAPIClientProtocol)? = queue.sync { parseAPIClient }
         guard let client = client else { return }
@@ -209,10 +232,42 @@ final class ConfigurationService: ConfigurationServiceProtocol, ServiceLifecycle
                 "getConfig",
                 parameters: ["environment": "production"]
             )
-            if let value = response.display?.showCommissionBreakdownInCreditNote {
-                queue.async(flags: .barrier) { [weak self] in
-                    guard let self = self else { return }
-                    self.configuration.showCommissionBreakdownInCreditNote = value
+            queue.async(flags: .barrier) { [weak self] in
+                guard let self = self else { return }
+                var changed = false
+
+                if let f = response.financial {
+                    if let v = f.initialAccountBalance {
+                        self.configuration.initialAccountBalance = v
+                        changed = true
+                    }
+                    if let v = f.traderCommissionRate {
+                        self.configuration.traderCommissionRate = v
+                        changed = true
+                    }
+                    if let v = f.platformServiceChargeRate {
+                        self.configuration.platformServiceChargeRate = v
+                        changed = true
+                    }
+                    if let v = f.minimumCashReserve {
+                        self.configuration.minimumCashReserve = v
+                        changed = true
+                    }
+                }
+                if let v = response.display?.showCommissionBreakdownInCreditNote {
+                    self.configuration.showCommissionBreakdownInCreditNote = v
+                    changed = true
+                }
+                if let v = response.display?.maximumRiskExposurePercent {
+                    self.configuration.maximumRiskExposurePercent = v
+                    changed = true
+                }
+                if let v = response.display?.walletFeatureEnabled {
+                    self.configuration.walletFeatureEnabled = v
+                    changed = true
+                }
+
+                if changed {
                     self.saveConfiguration()
                     Task { @MainActor in
                         self.updatePublishedValues()
@@ -220,7 +275,7 @@ final class ConfigurationService: ConfigurationServiceProtocol, ServiceLifecycle
                 }
             }
         } catch {
-            // No session or network error: keep local config
+            print("⚠️ ConfigurationService: Failed to fetch remote config: \(error.localizedDescription)")
         }
     }
 
@@ -234,9 +289,19 @@ final class ConfigurationService: ConfigurationServiceProtocol, ServiceLifecycle
 
 // MARK: - Parse config API responses (internal for use in ConfigurationService+Updates)
 struct GetConfigResponse: Decodable {
+    let financial: FinancialSection?
     let display: DisplaySection?
+
+    struct FinancialSection: Decodable {
+        let initialAccountBalance: Double?
+        let traderCommissionRate: Double?
+        let platformServiceChargeRate: Double?
+        let minimumCashReserve: Double?
+    }
     struct DisplaySection: Decodable {
         let showCommissionBreakdownInCreditNote: Bool?
+        let maximumRiskExposurePercent: Double?
+        let walletFeatureEnabled: Bool?
     }
 }
 

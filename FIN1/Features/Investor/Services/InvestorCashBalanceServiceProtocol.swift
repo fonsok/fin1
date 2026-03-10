@@ -15,7 +15,7 @@ struct CommissionDeductionDetails {
         traderName: String? = nil,
         tradeNumbers: [String] = [],
         grossProfit: Double = 0,
-        commissionRate: Double = 0.05
+        commissionRate: Double = CalculationConstants.FeeRates.traderCommissionRate
     ) {
         self.investmentSequenceNumber = investmentSequenceNumber
         self.traderName = traderName

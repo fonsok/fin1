@@ -6,7 +6,7 @@
 ## ✅ Durchgeführte Änderungen
 
 ### 1. ConfigurationService.swift aktualisiert ✅
-- **Parse Server URL:** Geändert von `http://localhost:1337/parse` zu `http://192.168.178.24:1337/parse`
+- **Parse Server URL:** Geändert von `http://localhost:1337/parse` zu `https://192.168.178.24/parse`
 - **Datei:** `FIN1/Shared/Services/ConfigurationService.swift`
 - **Zeile 24:** Default-URL auf Ubuntu-Server-IP gesetzt
 
@@ -18,15 +18,15 @@
 ## 📱 iOS-App ist jetzt konfiguriert
 
 Die App verwendet jetzt automatisch:
-- **Parse Server URL:** `http://192.168.178.24:1337/parse`
-- **Live Query URL:** `ws://192.168.178.24:1337/parse` (automatisch generiert)
+- **Parse Server URL:** `https://192.168.178.24/parse`
+- **Live Query URL:** `wss://192.168.178.24/parse` (automatisch generiert)
 - **Application ID:** `fin1-app-id`
 
 ## ✅ Validierung
 
 ### Parse Server API-Test:
 ```bash
-curl -X POST http://192.168.178.24:1337/parse/classes/_User \
+curl -sk -X POST https://192.168.178.24/parse/classes/_User \
   -H "X-Parse-Application-Id: fin1-app-id" \
   -H "Content-Type: application/json" \
   -d '{"username":"test","password":"test123"}'

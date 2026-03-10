@@ -2,11 +2,36 @@
 // Parse Cloud Code
 // functions/wallet.js - Wallet Functions
 // ============================================================================
+//
+// Wallet-Logik bleibt vorhanden für spätere Nutzung (z. B. Krypto). Aktivierung
+// über Konfiguration (display.walletFeatureEnabled). Ein zentraler Wrapper
+// prüft das Feature-Flag; neue Wallet-Funktionen nur noch über defineWallet
+// registrieren.
+//
+// ============================================================================
 
 'use strict';
 
-// Get wallet balance
-Parse.Cloud.define('getWalletBalance', async (request) => {
+const { loadConfig } = require('../utils/configHelper');
+
+const WALLET_DISABLED_MESSAGE = 'Wallet-Feature ist deaktiviert. Bei Bedarf im Admin-Portal unter Konfiguration → Anzeige aktivieren.';
+
+/**
+ * Registriert eine Cloud Function, die nur ausgeführt wird, wenn das Wallet-Feature
+ * aktiv ist. Eine zentrale Stelle für die Feature-Prüfung – keine verstreuten Checks.
+ */
+function defineWallet(name, handler) {
+  Parse.Cloud.define(name, async (request) => {
+    const config = await loadConfig();
+    if (!(config.display && config.display.walletFeatureEnabled === true)) {
+      throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, WALLET_DISABLED_MESSAGE);
+    }
+    return handler(request);
+  });
+}
+
+// --- Get wallet balance ---
+defineWallet('getWalletBalance', async (request) => {
   const user = request.user;
   if (!user) throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Login required');
 
@@ -24,8 +49,8 @@ Parse.Cloud.define('getWalletBalance', async (request) => {
   };
 });
 
-// Get transaction history
-Parse.Cloud.define('getTransactionHistory', async (request) => {
+// --- Get transaction history ---
+defineWallet('getTransactionHistory', async (request) => {
   const user = request.user;
   if (!user) throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Login required');
 
@@ -49,8 +74,8 @@ Parse.Cloud.define('getTransactionHistory', async (request) => {
   };
 });
 
-// Request deposit (creates pending transaction)
-Parse.Cloud.define('requestDeposit', async (request) => {
+// --- Request deposit (creates pending transaction) ---
+defineWallet('requestDeposit', async (request) => {
   const user = request.user;
   if (!user) throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Login required');
 
@@ -80,8 +105,8 @@ Parse.Cloud.define('requestDeposit', async (request) => {
   };
 });
 
-// Request withdrawal
-Parse.Cloud.define('requestWithdrawal', async (request) => {
+// --- Request withdrawal ---
+defineWallet('requestWithdrawal', async (request) => {
   const user = request.user;
   if (!user) throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Login required');
 

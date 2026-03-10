@@ -84,7 +84,7 @@ extension ConfigurationService {
         }
 
         guard validateMinimumCashReserve(value) else {
-            throw ConfigurationError.invalidValue("Minimum cash reserve must be between 1.0 and 1000.0")
+            throw ConfigurationError.invalidValue("Minimum cash reserve must be between 0.01 and 1000.0")
         }
 
         return try await withCheckedThrowingContinuation { continuation in
@@ -116,7 +116,7 @@ extension ConfigurationService {
         }
 
         guard validateMinimumCashReserve(value) else {
-            throw ConfigurationError.invalidValue("Minimum cash reserve must be between 1.0 and 1000.0")
+            throw ConfigurationError.invalidValue("Minimum cash reserve must be between 0.01 and 1000.0")
         }
 
         return try await withCheckedThrowingContinuation { continuation in
@@ -147,16 +147,12 @@ extension ConfigurationService {
     /// Update initial account balance for new users.
     /// IMPORTANT: This is a critical parameter and requires 4-eyes approval via backend.
     func updateInitialAccountBalance(_ value: Double) async throws {
-        // Check admin role dynamically (not cached) to ensure current user has permission
         guard userService.currentUser?.role == .admin else {
             throw ConfigurationError.unauthorizedAccess
         }
-
         guard validateInitialAccountBalance(value) else {
-            throw ConfigurationError.invalidValue("Initial account balance must be between 1000.0 and 1000000.0")
+            throw ConfigurationError.invalidValue("Initial account balance must be between 0.01 and 1000000.0")
         }
-
-        // Try to request change via backend (4-eyes for critical parameters)
         if let client = getParseAPIClient() {
             let response = try await requestConfigurationChangeViaBackend(
                 client: client,
@@ -164,15 +160,10 @@ extension ConfigurationService {
                 newValue: value,
                 reason: "Admin configuration update"
             )
-
             if response.requiresApproval {
-                // 4-eyes approval required - don't apply locally yet
-                print("⏳ Initial account balance change requires 4-eyes approval. Request ID: \(response.fourEyesRequestId ?? "unknown")")
                 throw ConfigurationError.fourEyesApprovalRequired(requestId: response.fourEyesRequestId ?? "unknown")
             }
         }
-
-        // Apply locally (either non-critical or backend approved immediately)
         return try await withCheckedThrowingContinuation { continuation in
             let queue = self.queue
             queue.async(flags: .barrier) { [weak self] in
@@ -180,15 +171,10 @@ extension ConfigurationService {
                     continuation.resume(throwing: ConfigurationError.saveFailed)
                     return
                 }
-
                 self.configuration.initialAccountBalance = value
                 self.configuration.lastUpdated = Date()
                 self.configuration.updatedBy = self.userService.currentUser?.id ?? "unknown"
-
-                Task { @MainActor in
-                    self.initialAccountBalance = value
-                }
-
+                Task { @MainActor in self.initialAccountBalance = value }
                 self.saveConfiguration()
                 continuation.resume()
             }
@@ -345,6 +331,52 @@ extension ConfigurationService {
                 )
             } catch {
                 // Local save already applied; Parse persistence optional (e.g. no session yet)
+            }
+        }
+    }
+
+    /// Update maximum risk exposure percent (dashboard disclaimer, 0–100%).
+    func updateMaximumRiskExposurePercent(_ value: Double) async throws {
+        guard userService.currentUser?.role == .admin else {
+            throw ConfigurationError.unauthorizedAccess
+        }
+
+        guard validateMaximumRiskExposurePercent(value) else {
+            throw ConfigurationError.invalidValue("Maximum risk exposure percent must be between 0 and 100")
+        }
+
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            let queue = self.queue
+            queue.async(flags: .barrier) { [weak self] in
+                guard let self = self else {
+                    continuation.resume(throwing: ConfigurationError.saveFailed)
+                    return
+                }
+
+                self.configuration.maximumRiskExposurePercent = value
+                self.configuration.lastUpdated = Date()
+                self.configuration.updatedBy = self.userService.currentUser?.id ?? "unknown"
+
+                Task { @MainActor in
+                    self.maximumRiskExposurePercent = value
+                }
+
+                self.saveConfiguration()
+                continuation.resume()
+            }
+        }
+
+        if let client = getParseAPIClient() {
+            do {
+                let _: UpdateConfigResponse = try await client.callFunction(
+                    "updateConfig",
+                    parameters: [
+                        "environment": "production",
+                        "display": ["maximumRiskExposurePercent": value]
+                    ]
+                )
+            } catch {
+                // Local save already applied; Parse persistence optional
             }
         }
     }

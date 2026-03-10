@@ -66,7 +66,7 @@
 
 **Health Check:**
 ```bash
-curl -sS http://192.168.178.24/parse/health
+curl -sk https://192.168.178.24/parse/health
 ```
 
 **Service Status:**

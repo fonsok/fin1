@@ -3,52 +3,26 @@ import SwiftUI
 struct AdminDashboardView: View {
     @Environment(\.appServices) private var services
     @Environment(\.themeManager) private var themeManager
-    @StateObject private var roundingVM: RoundingDifferencesViewModel
     @State private var showingAppSettings = false
-    @State private var showingFinancialSettings = false
-
-    init() {
-        // Use a lightweight init; actual services are resolved from environment in body
-        _roundingVM = StateObject(wrappedValue: RoundingDifferencesViewModel(
-            roundingService: RoundingDifferencesService(telemetryService: TelemetryService()),
-            telemetryService: TelemetryService()
-        ))
-    }
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: ResponsiveDesign.spacing(20)) {
-                    // Admin Header
                     adminHeaderSection
-
-                    // App Configuration Section
-                    appConfigurationSection
-
-                    // Operations Section
-                    operationsSection
-
-                    // System Information Section
+                    webPortalBannerSection
                     systemInfoSection
-
-                    // User Impersonation Section
+                    appSettingsSection
                     userImpersonationSection
-
-                    // Role Testing Section (for development)
                     roleTestingSection
-
                     Spacer(minLength: ResponsiveDesign.spacing(20))
                 }
                 .padding()
             }
             .background(AppTheme.screenBackground.ignoresSafeArea())
             .navigationTitle("Admin")
-            .task { await roundingVM.load() }
             .sheet(isPresented: $showingAppSettings) {
                 AdminAppSettingsView()
-            }
-            .sheet(isPresented: $showingFinancialSettings) {
-                AdminFinancialSettingsView()
             }
         }
     }
@@ -61,7 +35,7 @@ struct AdminDashboardView: View {
                 .fontWeight(.bold)
                 .foregroundColor(AppTheme.fontColor)
 
-            Text("Manage platform settings, configurations, and system parameters.")
+            Text("System information and development tools. Configuration, reports, and operations are managed via the Admin Web Portal.")
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
         }
@@ -71,98 +45,65 @@ struct AdminDashboardView: View {
         .cornerRadius(ResponsiveDesign.spacing(12))
     }
 
-    // MARK: - App Configuration Section
-    private var appConfigurationSection: some View {
-        VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
-            Text("App Configuration")
-                .font(ResponsiveDesign.headlineFont())
-                .fontWeight(.semibold)
-                .foregroundColor(AppTheme.fontColor)
+    // MARK: - Web Portal Banner
+    private var webPortalBannerSection: some View {
+        VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
+            HStack(spacing: ResponsiveDesign.spacing(12)) {
+                Image(systemName: "globe")
+                    .font(.system(size: ResponsiveDesign.iconSize() * 1.4))
+                    .foregroundColor(AppTheme.accentLightBlue)
 
-            VStack(spacing: ResponsiveDesign.spacing(10)) {
-                // App Settings
-                Button(action: { showingAppSettings = true }, label: {
-                    AdminActionCard(
-                        icon: "gear",
-                        title: "App Settings",
-                        subtitle: "Themes, target groups, and app configuration",
-                        color: AppTheme.accentLightBlue
-                    )
-                })
-
-                // Financial Settings
-                Button(action: { showingFinancialSettings = true }, label: {
-                    AdminActionCard(
-                        icon: "dollarsign.circle",
-                        title: "Financial Settings",
-                        subtitle: "Fees, tax rates, and investment limits",
-                        color: AppTheme.accentGreen
-                    )
-                })
-
-                // Configuration Management
-                NavigationLink(destination: ConfigurationManagementView()) {
-                    AdminActionCard(
-                        icon: "slider.horizontal.3",
-                        title: "System Configuration",
-                        subtitle: "Cash reserves, commission rates, and balance settings",
-                        color: AppTheme.accentOrange
-                    )
+                VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
+                    Text("Admin Web Portal")
+                        .font(ResponsiveDesign.headlineFont())
+                        .fontWeight(.semibold)
+                        .foregroundColor(AppTheme.fontColor)
+                    Text("Konfiguration, Finanzen, Reports, Bank Contra Ledger, Freigaben und System-Status sind im Web Portal verfügbar.")
+                        .font(ResponsiveDesign.captionFont())
+                        .foregroundColor(AppTheme.fontColor.opacity(0.7))
                 }
+
+                Spacer()
+            }
+
+            VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(6)) {
+                webPortalFeatureRow(icon: "slider.horizontal.3", title: "Konfiguration", subtitle: "4-Augen-Prinzip")
+                webPortalFeatureRow(icon: "chart.bar.doc.horizontal", title: "Summary Report", subtitle: "Investments & Trades")
+                webPortalFeatureRow(icon: "building.columns", title: "Bank Contra Ledger", subtitle: "Verrechnungskonten")
+                webPortalFeatureRow(icon: "eurosign.circle", title: "Finanzen", subtitle: "Rundungsdifferenzen & Korrekturen")
+                webPortalFeatureRow(icon: "checkmark.shield", title: "Freigaben", subtitle: "4-Augen-Workflow")
+                webPortalFeatureRow(icon: "server.rack", title: "System-Status", subtitle: "Health Checks")
             }
         }
         .padding()
-        .background(AppTheme.sectionBackground)
-        .cornerRadius(ResponsiveDesign.spacing(12))
+        .background(
+            RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(12))
+                .fill(AppTheme.accentLightBlue.opacity(0.08))
+                .overlay(
+                    RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(12))
+                        .stroke(AppTheme.accentLightBlue.opacity(0.3), lineWidth: 1)
+                )
+        )
     }
 
-    // MARK: - Operations Section
-    private var operationsSection: some View {
-        VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
-            Text("Operations")
-                .font(ResponsiveDesign.headlineFont())
-                .fontWeight(.semibold)
+    private func webPortalFeatureRow(icon: String, title: String, subtitle: String) -> some View {
+        HStack(spacing: ResponsiveDesign.spacing(8)) {
+            Image(systemName: icon)
+                .font(ResponsiveDesign.captionFont())
+                .foregroundColor(AppTheme.accentLightBlue)
+                .frame(width: 20)
+            Text(title)
+                .font(ResponsiveDesign.captionFont())
+                .fontWeight(.medium)
                 .foregroundColor(AppTheme.fontColor)
-
-            VStack(spacing: ResponsiveDesign.spacing(10)) {
-                // Rounding Differences
-                NavigationLink(destination: RoundingDifferencesAdminView(viewModel: roundingVM)) {
-                    AdminActionCard(
-                        icon: "plusminus.circle",
-                        title: "Rounding Differences",
-                        subtitle: "Review and manage calculation discrepancies",
-                        color: AppTheme.accentOrange
-                    )
-                }
-
-                // Bank Contra Ledger
-                NavigationLink(destination: BankContraLedgerView(
-                    viewModel: BankContraLedgerViewModel(
-                        postingService: BankContraAccountPostingService()
-                    )
-                )) {
-                    AdminActionCard(
-                        icon: "building.columns",
-                        title: "Bank Contra Ledger",
-                        subtitle: "Bank account reconciliation and postings",
-                        color: AppTheme.accentLightBlue
-                    )
-                }
-
-                // Summary Report
-                NavigationLink(destination: AdminSummaryReportView(services: services)) {
-                    AdminActionCard(
-                        icon: "chart.bar.doc.horizontal",
-                        title: "Summary Report",
-                        subtitle: "Completed investments and trades overview",
-                        color: AppTheme.accentGreen
-                    )
-                }
-            }
+            Text("–")
+                .font(ResponsiveDesign.captionFont())
+                .foregroundColor(AppTheme.fontColor.opacity(0.5))
+            Text(subtitle)
+                .font(ResponsiveDesign.captionFont())
+                .foregroundColor(AppTheme.fontColor.opacity(0.6))
+            Spacer()
         }
-        .padding()
-        .background(AppTheme.sectionBackground)
-        .cornerRadius(ResponsiveDesign.spacing(12))
     }
 
     // MARK: - System Info Section
@@ -179,7 +120,30 @@ struct AdminDashboardView: View {
                 AdminInfoRow(title: "Build Number", value: Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1")
                 AdminInfoRow(title: "User Role", value: services.userService.userRole?.displayName ?? "Unknown")
                 AdminInfoRow(title: "Commission Rate", value: "\(Int(services.configurationService.traderCommissionRate * 100))%")
+                AdminInfoRow(title: "Initial Balance", value: services.configurationService.initialAccountBalance.formatted(.currency(code: "EUR")))
             }
+        }
+        .padding()
+        .background(AppTheme.sectionBackground)
+        .cornerRadius(ResponsiveDesign.spacing(12))
+    }
+
+    // MARK: - App Settings Section (iOS-specific)
+    private var appSettingsSection: some View {
+        VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
+            Text("App Configuration")
+                .font(ResponsiveDesign.headlineFont())
+                .fontWeight(.semibold)
+                .foregroundColor(AppTheme.fontColor)
+
+            Button(action: { showingAppSettings = true }, label: {
+                AdminActionCard(
+                    icon: "gear",
+                    title: "App Settings",
+                    subtitle: "Themes, target groups, and app configuration",
+                    color: AppTheme.accentLightBlue
+                )
+            })
         }
         .padding()
         .background(AppTheme.sectionBackground)
@@ -197,7 +161,6 @@ struct AdminDashboardView: View {
 
                 Spacer()
 
-                // Stop Impersonation Button (if impersonating)
                 if services.userService.isImpersonating {
                     Button(action: {
                         Task {
@@ -219,7 +182,6 @@ struct AdminDashboardView: View {
             }
 
             if services.userService.isImpersonating {
-                // Impersonation Indicator
                 HStack(spacing: ResponsiveDesign.spacing(8)) {
                     Image(systemName: "person.badge.key.fill")
                         .foregroundColor(AppTheme.accentOrange)

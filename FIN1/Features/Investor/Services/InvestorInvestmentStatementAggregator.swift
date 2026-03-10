@@ -137,7 +137,8 @@ enum InvestorInvestmentStatementAggregator {
                     sellInvoices: sellInvoices,
                     ownershipPercentage: participation.ownershipPercentage,
                     investorAllocatedAmount: participation.allocatedAmount,
-                    commissionCalculationService: commissionService
+                    commissionCalculationService: commissionService,
+                    commissionRate: commissionRate
                 )
                 items.append(item)
                 statementGrossProfitTotal += item.grossProfit

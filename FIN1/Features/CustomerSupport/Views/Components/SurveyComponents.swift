@@ -107,7 +107,7 @@ struct SurveyThankYouView: View {
             Spacer()
 
             Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 80))
+                .font(.system(size: ResponsiveDesign.iconSize() * 4))
                 .foregroundColor(AppTheme.accentGreen)
 
             Text("Vielen Dank!")

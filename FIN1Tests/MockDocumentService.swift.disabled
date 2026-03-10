@@ -101,6 +101,12 @@ class MockDocumentService: DocumentServiceProtocol {
         }
     }
 
+    // MARK: - Backend Synchronization
+
+    func syncToBackend() async {
+        // Mock: no-op
+    }
+
     // MARK: - ServiceLifecycle
 
     func start() {}

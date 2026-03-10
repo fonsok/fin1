@@ -138,7 +138,7 @@ struct TicketArchiveView: View {
     private var emptyView: some View {
         VStack(spacing: ResponsiveDesign.spacing(12)) {
             Image(systemName: "archivebox")
-                .font(.system(size: 48))
+                .font(.system(size: ResponsiveDesign.iconSize() * 2))
                 .foregroundColor(AppTheme.fontColor.opacity(0.3))
 
             Text("Keine archivierten Tickets")

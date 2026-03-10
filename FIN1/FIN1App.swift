@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Combine
 
 // MARK: - App Entry Point
 @main
@@ -65,6 +66,14 @@ struct FIN1App: App {
         print("   URL: \(services.configurationService.parseServerURL ?? "nil")")
         print("   Live Query URL: \(services.configurationService.parseLiveQueryURL ?? "nil")")
         print("   Application ID: \(services.configurationService.parseApplicationId ?? "nil")")
+
+        // Process offline operation queue when app becomes active
+        Task {
+            await OfflineOperationQueue.shared.processQueue()
+        }
+
+        // Observe network changes and process queue when connection is restored
+        observeNetworkChanges()
 
         // Connect Parse Live Query for real-time updates
         if let liveQueryClient = services.parseLiveQueryClient {
@@ -150,6 +159,8 @@ struct FIN1App: App {
             group.addTask { await self.services.securitiesWatchlistService.syncToBackend() }
             group.addTask { await self.services.notificationService.syncPushTokensToBackend(for: currentUser.id) }
             group.addTask { await self.services.watchlistService.syncToBackend() }
+            group.addTask { await self.services.invoiceService.syncToBackend() }
+            group.addTask { await self.services.customerSupportService.syncToBackend() }
 
             // Optional services
             if let filterSyncService = self.services.filterSyncService {
@@ -161,5 +172,26 @@ struct FIN1App: App {
         }
 
         print("✅ Background sync completed")
+    }
+
+    // MARK: - Network Monitoring
+
+    private func observeNetworkChanges() {
+        // Observe network connectivity changes
+        // Process queue when connection is restored
+        Task { @MainActor in
+            var previousState = NetworkMonitor.shared.isConnected
+            while true {
+                try? await Task.sleep(nanoseconds: 1_000_000_000) // Check every second
+                let currentState = NetworkMonitor.shared.isConnected
+
+                // Process queue when connection is restored (was offline, now online)
+                if !previousState && currentState {
+                    await OfflineOperationQueue.shared.processQueue()
+                }
+
+                previousState = currentState
+            }
+        }
     }
 }

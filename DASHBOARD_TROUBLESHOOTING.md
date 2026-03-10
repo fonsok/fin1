@@ -94,7 +94,7 @@ app.use(helmet({
 
 ```bash
 # Prüfe ob JavaScript-Bundle erreichbar ist
-curl http://192.168.178.24:1337/dashboard/bundles/login.bundle.js | head -5
+curl -sk https://192.168.178.24/dashboard/bundles/login.bundle.js | head -5
 ```
 
 **Sollte JavaScript-Code zeigen, nicht HTML oder Fehler**

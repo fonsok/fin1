@@ -55,6 +55,20 @@ def replace_placeholders(text: str) -> str:
 
     text = re.sub(r"\\\(\s*LegalIdentity\.([A-Za-z0-9_]+)\s*\)", repl, text)
 
+    # Replace CompanyContactInfo interpolations with placeholders.
+    def repl_contact(m: re.Match) -> str:
+        prop = m.group(1)
+        return "{{CONTACT_" + camel_to_upper_snake(prop) + "}}"
+
+    text = re.sub(r"\\\(\s*CompanyContactInfo\.([A-Za-z0-9_]+)\s*\)", repl_contact, text)
+
+    # Replace AppBrand interpolations with placeholders.
+    def repl_brand(m: re.Match) -> str:
+        prop = m.group(1)
+        return "{{BRAND_" + camel_to_upper_snake(prop) + "}}"
+
+    text = re.sub(r"\\\(\s*AppBrand\.([A-Za-z0-9_]+)\s*\)", repl_brand, text)
+
     # Replace common bracket placeholders in Privacy templates with LegalIdentity placeholders
     replacements = {
         "[Registrierte Adresse]": "{{LEGAL_COMPANY_ADDRESS_LINE}}",

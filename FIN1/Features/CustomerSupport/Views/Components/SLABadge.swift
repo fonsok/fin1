@@ -19,7 +19,8 @@ struct SLABadge: View {
 
             if showTime, let timeString = slaInfo.formattedTimeRemaining {
                 Text(timeString)
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(ResponsiveDesign.captionFont())
+                    .fontWeight(.semibold)
             }
         }
         .foregroundColor(slaInfo.overallStatus.color)
@@ -131,7 +132,7 @@ private struct SLAMetricRow: View {
 
                 if let deadline = deadline {
                     Text(deadline.formatted(date: .abbreviated, time: .shortened))
-                        .font(.system(size: 11))
+                        .font(ResponsiveDesign.captionFont())
                         .foregroundColor(AppTheme.fontColor.opacity(0.5))
                 }
             }
@@ -196,7 +197,7 @@ struct SLAWarningBanner: View {
 
                     if let time = slaInfo.formattedTimeRemaining {
                         Text(slaInfo.overallStatus == .breached ? "Überfällig seit \(time)" : "Noch \(time)")
-                            .font(.system(size: 11))
+                            .font(ResponsiveDesign.captionFont())
                     }
                 }
 

@@ -25,7 +25,13 @@ struct DefaultStepValidation: StepValidation {
             return !data.email.isEmpty && !data.username.isEmpty && data.isUsernameValid && !data.password.isEmpty && data.password.count >= 8
 
         case .accountCreated:
-            return true // Success step, always proceed
+            return true
+
+        case .emailVerification:
+            return true
+
+        case .phoneVerification:
+            return true
 
         case .personalInfo:
             return !data.firstName.isEmpty && !data.lastName.isEmpty &&
@@ -127,7 +133,13 @@ struct DefaultStepValidation: StepValidation {
             return nil
 
         case .accountCreated:
-            return nil // Success step, always proceed
+            return nil
+
+        case .emailVerification:
+            return nil
+
+        case .phoneVerification:
+            return nil
 
         case .personalInfo:
             if data.firstName.isEmpty {

@@ -30,23 +30,30 @@ enum TraderAccountStatementBuilder {
             )
         }
 
-        let sortedInvoices = invoices.sorted { $0.createdAt < $1.createdAt }
+        // Separate credit notes from regular invoices.
+        // Credit notes represent the commission payout that happens AFTER a trade
+        // completes, so they must be processed after all settlement entries.
+        let regularInvoices = invoices
+            .filter { $0.type != .creditNote }
+            .sorted { $0.createdAt < $1.createdAt }
+        let creditNotes = invoices
+            .filter { $0.type == .creditNote }
+            .sorted { $0.createdAt < $1.createdAt }
+
         var runningBalance = openingBalance
         var entries: [AccountStatementEntry] = []
+        var latestDatePerTrade: [String: Date] = [:]
 
-        for invoice in sortedInvoices {
-            // Handle Credit Note invoices (commission payments)
-            if invoice.type == .creditNote {
-                let entry = createCommissionEntry(from: invoice, runningBalance: &runningBalance)
-                entries.append(entry)
-                continue
-            }
-
-            // Handle regular trade invoices (buy/sell)
+        for invoice in regularInvoices {
             guard let transactionType = invoice.transactionType else { continue }
             let direction: AccountStatementEntry.Direction = transactionType == .sell ? .credit : .debit
             let amount = invoice.totalAmount
             runningBalance += direction == .credit ? amount : -amount
+
+            if let tradeId = invoice.tradeId {
+                let current = latestDatePerTrade[tradeId] ?? .distantPast
+                latestDatePerTrade[tradeId] = max(current, invoice.createdAt)
+            }
 
             let reference = invoice.tradeId ?? invoice.invoiceNumber
             let subtitle: String? = {
@@ -56,11 +63,9 @@ enum TraderAccountStatementBuilder {
                 return nil
             }()
 
-            // Extract primary securities line (WKN/ISIN, direction, underlying, strike, issuer...)
             let primarySecuritiesItem = invoice.items.first { $0.itemType == .securities }
             let securitiesDescription = primarySecuritiesItem?.description ?? ""
 
-            // Split description "WKN/ISIN - DIRECTION - UNDERLYING - STRIKE - ISSUER" into components
             let components = securitiesDescription
                 .split(separator: "-")
                 .map { $0.trimmingCharacters(in: .whitespaces) }
@@ -77,7 +82,6 @@ enum TraderAccountStatementBuilder {
                 "transactionType": transactionType.rawValue
             ]
 
-            // Enrich metadata with trade/securities details for clearer statements
             if let tradeNumber = invoice.tradeNumber {
                 metadata["tradeNumber"] = String(format: "%03d", tradeNumber)
             }
@@ -96,8 +100,6 @@ enum TraderAccountStatementBuilder {
             if !issuer.isEmpty {
                 metadata["issuer"] = issuer
             }
-
-            // Quantity from primary securities item, if present
             if let quantity = primarySecuritiesItem?.quantity {
                 metadata["quantity"] = String(quantity)
             }
@@ -116,6 +118,24 @@ enum TraderAccountStatementBuilder {
             entries.append(entry)
         }
 
+        // Process credit notes AFTER all settlement entries so the running
+        // balance reflects: buy → sell → commission. The occurredAt is set
+        // to 1 second after the trade's latest settlement entry so the
+        // commission row appears above (newest-first) the sell row.
+        for creditNote in creditNotes {
+            let tradeLatest = creditNote.tradeId.flatMap { latestDatePerTrade[$0] }
+            let adjustedDate = max(
+                creditNote.createdAt,
+                tradeLatest?.addingTimeInterval(1) ?? creditNote.createdAt
+            )
+            let entry = createCommissionEntry(
+                from: creditNote,
+                runningBalance: &runningBalance,
+                adjustedDate: adjustedDate
+            )
+            entries.append(entry)
+        }
+
         return TraderAccountStatementSnapshot(
             entries: entries,
             openingBalance: openingBalance,
@@ -123,30 +143,34 @@ enum TraderAccountStatementBuilder {
         )
     }
 
-    /// Builds a trader account statement snapshot including wallet transactions
-    /// This is the single source of truth for trader balance calculation
-    /// - Parameters:
-    ///   - user: The trader user
-    ///   - invoiceService: Service for fetching trade invoices
-    ///   - configurationService: Service for initial balance configuration
-    ///   - paymentService: Optional service for wallet transactions
-    /// - Returns: Snapshot with trading + wallet transactions and combined balance
-    /// - Throws: AppError if wallet transactions cannot be loaded
+    /// Builds a trader account statement snapshot including wallet transactions.
+    /// Uses backend `AccountStatement` entries for commission data when available,
+    /// falling back to local credit note invoices otherwise.
     static func buildSnapshotWithWallet(
         for user: User?,
         invoiceService: any InvoiceServiceProtocol,
         configurationService: any ConfigurationServiceProtocol,
-        paymentService: (any PaymentServiceProtocol)?
-    ) async throws -> TraderAccountStatementSnapshot {
-        // Build base snapshot from trading transactions (invoices)
-        let baseSnapshot = buildSnapshot(
-            for: user,
-            invoiceService: invoiceService,
-            configurationService: configurationService
-        )
+        paymentService: (any PaymentServiceProtocol)?,
+        settlementAPIService: (any SettlementAPIServiceProtocol)? = nil
+    ) async -> TraderAccountStatementSnapshot {
+        let baseSnapshot: TraderAccountStatementSnapshot
 
-        // Load wallet transactions if payment service is available
-        let (walletEntries, walletDelta) = try await loadWalletEntriesAndDelta(
+        if let settlementService = settlementAPIService {
+            baseSnapshot = await buildSnapshotWithBackendCommissions(
+                for: user,
+                invoiceService: invoiceService,
+                configurationService: configurationService,
+                settlementAPIService: settlementService
+            )
+        } else {
+            baseSnapshot = buildSnapshot(
+                for: user,
+                invoiceService: invoiceService,
+                configurationService: configurationService
+            )
+        }
+
+        let (walletEntries, walletDelta) = await loadWalletEntriesAndDelta(
             for: user,
             paymentService: paymentService
         )
@@ -171,18 +195,130 @@ enum TraderAccountStatementBuilder {
         )
     }
 
+    // MARK: - Backend-Hybrid Builder
+
+    /// Builds a snapshot using local invoices for trade entries and backend
+    /// `AccountStatement` records for commission entries (authoritative source).
+    /// Falls back to local-only if backend is unavailable.
+    private static func buildSnapshotWithBackendCommissions(
+        for user: User?,
+        invoiceService: any InvoiceServiceProtocol,
+        configurationService: any ConfigurationServiceProtocol,
+        settlementAPIService: any SettlementAPIServiceProtocol
+    ) async -> TraderAccountStatementSnapshot {
+        let openingBalance = configurationService.initialAccountBalance
+        guard let user else {
+            return TraderAccountStatementSnapshot(entries: [], openingBalance: openingBalance, closingBalance: openingBalance)
+        }
+
+        // Fetch backend commission entries
+        let backendEntries: [BackendAccountEntry]
+        do {
+            let response = try await settlementAPIService.fetchAccountStatement(limit: 200, skip: 0, entryType: nil)
+            backendEntries = response.entries
+        } catch {
+            // Backend unavailable — fall back to fully local snapshot
+            return buildSnapshot(for: user, invoiceService: invoiceService, configurationService: configurationService)
+        }
+
+        // Build trade settlement entries from local invoices (buy/sell only)
+        let invoices = fetchInvoices(for: user, invoiceService: invoiceService)
+        let regularInvoices = invoices
+            .filter { $0.type != .creditNote }
+            .sorted { $0.createdAt < $1.createdAt }
+
+        var runningBalance = openingBalance
+        var entries: [AccountStatementEntry] = []
+        var latestDatePerTrade: [String: Date] = [:]
+
+        for invoice in regularInvoices {
+            guard let transactionType = invoice.transactionType else { continue }
+            let direction: AccountStatementEntry.Direction = transactionType == .sell ? .credit : .debit
+            let amount = invoice.totalAmount
+            runningBalance += direction == .credit ? amount : -amount
+
+            if let tradeId = invoice.tradeId {
+                let current = latestDatePerTrade[tradeId] ?? .distantPast
+                latestDatePerTrade[tradeId] = max(current, invoice.createdAt)
+            }
+
+            let reference = invoice.tradeId ?? invoice.invoiceNumber
+            let subtitle: String? = invoice.tradeNumber.map { String(format: "Trade #%03d", $0) }
+
+            var metadata: [String: String] = [
+                "invoiceNumber": invoice.invoiceNumber,
+                "tradeId": invoice.tradeId ?? "",
+                "transactionType": transactionType.rawValue
+            ]
+            if let tradeNumber = invoice.tradeNumber {
+                metadata["tradeNumber"] = String(format: "%03d", tradeNumber)
+            }
+
+            entries.append(AccountStatementEntry(
+                title: transactionType.displayName,
+                subtitle: subtitle,
+                occurredAt: invoice.createdAt,
+                amount: amount,
+                direction: direction,
+                category: .tradeSettlement,
+                reference: reference,
+                metadata: metadata,
+                balanceAfter: runningBalance
+            ))
+        }
+
+        // Commission entries from backend (authoritative)
+        let commissionEntries = backendEntries.filter { $0.entryType == "commission_credit" }
+        if !commissionEntries.isEmpty {
+            for entry in commissionEntries {
+                let amount = abs(entry.amount)
+                runningBalance += amount
+                let tradeLatest = entry.tradeId.flatMap { latestDatePerTrade[$0] }
+                let occurredAt = tradeLatest?.addingTimeInterval(1) ?? Date()
+
+                let subtitle = entry.tradeNumber.map { String(format: "Trade #%03d", $0) } ?? "Trader Commission"
+                var metadata: [String: String] = [
+                    "source": "backend",
+                    "commissionAmount": String(format: "%.2f", amount)
+                ]
+                if let tradeId = entry.tradeId { metadata["tradeId"] = tradeId }
+
+                entries.append(AccountStatementEntry(
+                    title: "Gutschrift Provision",
+                    subtitle: subtitle,
+                    occurredAt: occurredAt,
+                    amount: amount,
+                    direction: .credit,
+                    category: .commission,
+                    reference: entry.objectId,
+                    metadata: metadata,
+                    balanceAfter: runningBalance
+                ))
+            }
+        } else {
+            // No backend commission entries — fall back to local credit notes
+            let creditNotes = invoices.filter { $0.type == .creditNote }.sorted { $0.createdAt < $1.createdAt }
+            for creditNote in creditNotes {
+                let tradeLatest = creditNote.tradeId.flatMap { latestDatePerTrade[$0] }
+                let adjustedDate = max(creditNote.createdAt, tradeLatest?.addingTimeInterval(1) ?? creditNote.createdAt)
+                entries.append(createCommissionEntry(from: creditNote, runningBalance: &runningBalance, adjustedDate: adjustedDate))
+            }
+        }
+
+        return TraderAccountStatementSnapshot(entries: entries, openingBalance: openingBalance, closingBalance: runningBalance)
+    }
+
     // MARK: - Private Helper Methods
 
     /// Loads wallet transactions and calculates delta for the given user
     /// - Parameters:
     ///   - user: The trader user
     ///   - paymentService: Optional payment service
-    /// - Returns: Tuple of (wallet entries, wallet delta)
-    /// - Throws: AppError if loading fails
+    /// - Returns: Tuple of (wallet entries, wallet delta). Returns empty on failure.
     private static func loadWalletEntriesAndDelta(
         for user: User?,
         paymentService: (any PaymentServiceProtocol)?
-    ) async throws -> ([AccountStatementEntry], Double) {
+    ) async -> ([AccountStatementEntry], Double) {
         guard let paymentService = paymentService,
               let userId = user?.id else {
             return ([], 0.0)
@@ -192,12 +328,10 @@ enum TraderAccountStatementBuilder {
             let walletTransactions = try await paymentService.getTransactionHistory(limit: 1000, offset: 0)
             let userWalletTransactions = walletTransactions.filter { $0.userId == userId }
 
-            // Convert to AccountStatementEntry
             let walletEntries = userWalletTransactions.map { transaction in
                 AccountStatementEntry.from(transaction: transaction)
             }
 
-            // Calculate wallet delta (deposits - withdrawals)
             let walletDelta = userWalletTransactions.reduce(0.0) { total, transaction in
                 switch transaction.type {
                 case .deposit:
@@ -211,8 +345,8 @@ enum TraderAccountStatementBuilder {
 
             return (walletEntries, walletDelta)
         } catch {
-            // Map error to AppError and throw
-            throw AppError.service(.operationFailed)
+            print("⚠️ TraderAccountStatementBuilder: Wallet transactions unavailable (\(error.localizedDescription)) — showing invoice-based entries only")
+            return ([], 0.0)
         }
     }
 
@@ -255,24 +389,24 @@ enum TraderAccountStatementBuilder {
 
     // MARK: - Commission Entry Creation
 
-    /// Creates an account statement entry for a commission credit note
+    /// Creates an account statement entry for a commission credit note.
     /// - Parameters:
     ///   - invoice: The credit note invoice
     ///   - runningBalance: The running balance (updated in place)
-    /// - Returns: An account statement entry for the commission deposit
+    ///   - adjustedDate: If provided, overrides `invoice.createdAt` for the
+    ///     entry's `occurredAt`. Used to place the commission row after the
+    ///     trade's last settlement entry in chronological order.
     private static func createCommissionEntry(
         from invoice: Invoice,
-        runningBalance: inout Double
+        runningBalance: inout Double,
+        adjustedDate: Date? = nil
     ) -> AccountStatementEntry {
-        // Commission is always a credit (deposit) for the trader
         let amount = abs(invoice.totalAmount)
         runningBalance += amount
 
-        // Extract trade numbers from commission description
         let commissionItem = invoice.items.first { $0.itemType == .commission }
         let description = commissionItem?.description ?? invoice.invoiceNumber
 
-        // Parse trade numbers from description (e.g., "Trade #001, Trade #002")
         var tradeNumbers: [String] = []
         let regex = try? NSRegularExpression(pattern: "Trade #(\\d+)", options: [])
         if let regex = regex {
@@ -317,7 +451,7 @@ enum TraderAccountStatementBuilder {
         return AccountStatementEntry(
             title: "Gutschrift Provision",
             subtitle: subtitle,
-            occurredAt: invoice.createdAt,
+            occurredAt: adjustedDate ?? invoice.createdAt,
             amount: amount,
             direction: .credit,
             category: .commission,
@@ -331,11 +465,8 @@ enum TraderAccountStatementBuilder {
         for user: User,
         invoiceService: any InvoiceServiceProtocol
     ) -> [Invoice] {
-        // CRITICAL: Only use user-specific identifiers for proper trade isolation
-        // The user.id (e.g., "user:trader1@test.com") should match the invoice's customerNumber
-        // which is now set to order.traderId when invoices are created
         let possibleCustomerNumbers = [
-            user.id,  // Primary identifier - matches order.traderId used in invoice creation
+            user.id,
             user.customerId
         ].filter { !$0.isEmpty }
 

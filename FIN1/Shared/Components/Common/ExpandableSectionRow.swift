@@ -87,7 +87,7 @@ struct ExpandableSectionRow<Content: View>: View {
         Group {
             if style == .typewriter {
                 Text(isExpanded ? "[-]" : "[+]")
-                    .font(.system(size: 16, weight: .regular, design: .monospaced))
+                    .font(ResponsiveDesign.monospacedFont(size: 16, weight: .regular))
                     .foregroundColor(Color("InputText"))
             } else {
                 Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
@@ -153,7 +153,7 @@ struct ExpandableSectionRow<Content: View>: View {
         ) {
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
                 Text("This is expandable content")
-                    .font(.system(size: 16, weight: .regular, design: .monospaced))
+                    .font(ResponsiveDesign.monospacedFont(size: 16, weight: .regular))
                     .foregroundColor(.black)
             }
         }

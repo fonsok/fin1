@@ -23,8 +23,8 @@ Die gesamte Netzwerk-Integration wurde erfolgreich durchgeführt! Die iOS-App ka
 ## ✅ Phase 3: Backend-Konfiguration - Abgeschlossen
 
 - ✅ Parse Server URLs konfiguriert:
-  - HTTP: `http://192.168.178.24:1337/parse`
-  - WebSocket: `ws://192.168.178.24:1337/parse`
+  - HTTP: `https://192.168.178.24/parse`
+  - WebSocket: `wss://192.168.178.24/parse`
 - ✅ CORS für lokales Netzwerk konfiguriert
 - ✅ Parse Server Health-Check funktioniert: `{"status":"initialized"}`
 
@@ -32,12 +32,12 @@ Die gesamte Netzwerk-Integration wurde erfolgreich durchgeführt! Die iOS-App ka
 
 - ✅ ConfigurationService.swift aktualisiert
 - ✅ Info.plist ATS-Einstellungen aktualisiert
-- ✅ Parse Server URL: `http://192.168.178.24:1337/parse`
+- ✅ Parse Server URL: `https://192.168.178.24/parse`
 
 ## 🎯 Finale Konfiguration
 
 ### Ubuntu-Server (192.168.178.24)
-- ✅ Parse Server: Port 1337 - **Funktioniert!**
+- ✅ Parse Server: via Nginx Port 443 (HTTPS) - **Funktioniert!**
 - ✅ MongoDB: Port 27017 (nur localhost)
 - ✅ PostgreSQL: Port 5432 (nur localhost)
 - ✅ Redis: Port 6379 (nur localhost)
@@ -46,8 +46,8 @@ Die gesamte Netzwerk-Integration wurde erfolgreich durchgeführt! Die iOS-App ka
 - ⚠️ Market Data: Port 8080 (läuft nicht, nicht kritisch)
 
 ### iOS-App
-- ✅ Parse Server URL: `http://192.168.178.24:1337/parse`
-- ✅ Live Query URL: `ws://192.168.178.24:1337/parse`
+- ✅ Parse Server URL: `https://192.168.178.24/parse`
+- ✅ Live Query URL: `wss://192.168.178.24/parse`
 - ✅ Application ID: `fin1-app-id`
 - ✅ ATS: Lokales Netzwerk erlaubt
 

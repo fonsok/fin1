@@ -48,7 +48,7 @@ struct StaticHeaderCell: View {
                             showInfo = true
                         }) {
                             Image(systemName: "info.circle.fill")
-                                .font(.system(size: 12))
+                                .font(ResponsiveDesign.captionFont())
                                 .foregroundColor(AppTheme.accentLightBlue.opacity(0.8))
                         }
                         .padding(.leading, 2)

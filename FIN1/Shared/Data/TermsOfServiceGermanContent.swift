@@ -120,8 +120,8 @@ enum TermsOfServiceGermanContent {
         - **Investor-Konten**: Für Nutzer, die Kapital bei Tradern investieren
 
         **Kontoguthaben:**
-        - Anfangsguthaben: Neue Konten können ein Anfangsguthaben von €50.000 erhalten (Demo/Simulationszwecke)
-        - Mindestbargeldreserve: Konten müssen eine Mindestbargeldreserve von €12 aufrechterhalten
+        - Anfangsguthaben: Neue Konten erhalten ein Anfangsguthaben von €1,00
+        - Mindestbargeldreserve: Konten müssen eine Mindestbargeldreserve von €20 aufrechterhalten
         - Guthabenzweck: Kontoguthaben sind nur für die Plattformnutzung bestimmt
         """,
         icon: "person.circle.fill"
@@ -163,10 +163,10 @@ enum TermsOfServiceGermanContent {
             - Die Plattform garantiert keine Investitionszuweisung oder Trader-Verfügbarkeit
 
             **Plattform-Servicegebühr:**
-            - **Satz**: 1,5% des Investitionsbetrags (Bruttobetrag, einschließlich 19% MwSt.)
+            - **Satz**: 2% des Investitionsbetrags (Bruttobetrag, einschließlich 19% MwSt.)
             - **Zeitpunkt**: Bei Investitionserstellung berechnet
             - **Nicht erstattungsfähig**: Servicegebühren sind nicht erstattungsfähig
-            - **MwSt.**: Die 1,5% enthalten 19% MwSt. (deutsche Umsatzsteuer)
+            - **MwSt.**: Die 2% enthalten 19% MwSt. (deutsche Umsatzsteuer)
 
             **Investitionsrenditen:**
             - Renditen hängen von der Trader-Performance und Marktbedingungen ab
@@ -406,11 +406,6 @@ enum TermsOfServiceGermanContent {
         id: "special",
         title: "18. Besondere Bestimmungen",
         content: """
-        **Demo/Simulationskonten:**
-        - Anfangsguthaben: €50.000 können für Demo/Simulationszwecke bereitgestellt werden
-        - Klarstellung: Nutzer müssen verstehen, ob Guthaben virtuell oder real sind
-        - Umwandlung: Demo-Konten können in echte Konten umgewandelt werden (falls zutreffend)
-        - Einschränkungen: Demo-Konten können im Vergleich zu echten Konten Einschränkungen haben
 
         **Geldwäscheprävention:**
         - KYC-Anforderungen: Identitätsprüfung ist erforderlich

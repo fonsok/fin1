@@ -19,10 +19,11 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
     private let userService: any UserServiceProtocol
     private let investmentService: (any InvestmentServiceProtocol)?
     private let documentService: (any DocumentServiceProtocol)?
-    private let configurationService: (any ConfigurationServiceProtocol)?
+    private let configurationService: any ConfigurationServiceProtocol
     private let investorGrossProfitService: (any InvestorGrossProfitServiceProtocol)?
     private let commissionCalculationService: (any CommissionCalculationServiceProtocol)?
     private let auditLoggingService: (any AuditLoggingServiceProtocol)?
+    private let settlementAPIService: (any SettlementAPIServiceProtocol)?
 
     // MARK: - Initialization
     init(
@@ -38,10 +39,11 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
         userService: any UserServiceProtocol,
         investmentService: (any InvestmentServiceProtocol)? = nil,
         documentService: (any DocumentServiceProtocol)? = nil,
-        configurationService: (any ConfigurationServiceProtocol)? = nil,
+        configurationService: any ConfigurationServiceProtocol,
         investorGrossProfitService: (any InvestorGrossProfitServiceProtocol)? = nil,
         commissionCalculationService: (any CommissionCalculationServiceProtocol)? = nil,
-        auditLoggingService: (any AuditLoggingServiceProtocol)? = nil
+        auditLoggingService: (any AuditLoggingServiceProtocol)? = nil,
+        settlementAPIService: (any SettlementAPIServiceProtocol)? = nil
     ) {
         self.orderManagementService = orderManagementService
         self.orderStatusSimulationService = orderStatusSimulationService
@@ -59,6 +61,7 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
         self.investorGrossProfitService = investorGrossProfitService
         self.commissionCalculationService = commissionCalculationService
         self.auditLoggingService = auditLoggingService
+        self.settlementAPIService = settlementAPIService
     }
 
     // MARK: - Order Management
@@ -133,7 +136,7 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
                 requiresReview: false,
                 notes: "Order ID: \(order.id), Symbol: \(order.symbol), Total: €\(order.totalAmount.formatted(.number.precision(.fractionLength(2))))"
             )
-            
+
             // Log asynchronously - don't block order placement if logging fails
             Task {
                 await auditLoggingService.logComplianceEvent(complianceEvent)
@@ -154,7 +157,7 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
     func cancelOrder(_ orderId: String) async throws {
         orderStatusSimulationService.stopOrderStatusProgression(orderId)
         try await orderManagementService.cancelOrder(orderId)
-        
+
         // ✅ MiFID II Compliance: Log order cancellation
         if let auditLoggingService = auditLoggingService {
             let userId = userService.currentUser?.id ?? "unknown"
@@ -167,7 +170,7 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
                 requiresReview: false,
                 notes: "Order ID: \(orderId)"
             )
-            
+
             Task {
                 await auditLoggingService.logComplianceEvent(complianceEvent)
             }
@@ -203,12 +206,12 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
                     requiresReview: false,
                     notes: "Order ID: \(orderId), Symbol: \(order.symbol), Total: €\(order.totalAmount.formatted(.number.precision(.fractionLength(2))))"
                 )
-                
+
                 Task {
                     await auditLoggingService.logComplianceEvent(complianceEvent)
                 }
             }
-            
+
             if order.type == .buy {
                 await handleBuyOrderCompletion(orderId: orderId, order: order)
             } else if order.type == .sell {
@@ -332,7 +335,6 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
                 // RACE CONDITION FIX: Ensure completion logic runs only once per trade
                 if let documentService = documentService, documentService.documentExists(for: trade.id, ofType: .traderCollectionBill) {
                     print("ℹ️ Trade #\(trade.tradeNumber) completion logic already ran; skipping duplicate run.")
-                    // Still show the confirmation after depot is updated
                     await tradingNotificationService.showSellConfirmation(for: trade)
                     return
                 }
@@ -340,12 +342,14 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
                 print("🎯 Trade #\(trade.tradeNumber) is now fully completed - generating Collection Bill")
                 await tradingNotificationService.generateCollectionBillDocument(for: trade)
 
+                // Generate Credit Note BEFORE distributing profits. distributeProfit()
+                // posts .traderBalanceDidChange which triggers the account statement
+                // refresh — the credit note invoice must already exist at that point.
+                await generateCreditNoteIfCommissionExists(for: trade)
+
                 // Distribute profit to investors if trade involved pots
                 if let profitDistributionService = profitDistributionService {
                     _ = await profitDistributionService.distributeProfit(for: trade, order: order)
-
-                    // Generate Credit Note document for trader commission
-                    await generateCreditNoteIfCommissionExists(for: trade)
                 }
 
                 // Mark pool as completed for investments that participated in this trade
@@ -379,54 +383,59 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
     /// Uses centralized gross-profit-based calculation to ensure consistency with Credit Note detail view
     /// - Parameter trade: The completed trade
     private func generateCreditNoteIfCommissionExists(for trade: Trade) async {
-        // Require all calculation services - do not generate credit note with potentially incorrect values
-        guard let poolTradeParticipationService = poolTradeParticipationService,
-              let investmentService = investmentService,
-              let investorGrossProfitService = investorGrossProfitService,
-              let commissionCalculationService = commissionCalculationService else {
-            print("📄 CreditNote: Required calculation services unavailable - skipping to avoid incorrect values")
+        // Phase 3: Try backend settlement for authoritative commission values
+        if let settlementAPI = settlementAPIService {
+            do {
+                let settlement = try await settlementAPI.fetchTradeSettlement(tradeId: trade.id)
+                if settlement.isSettledByBackend && settlement.totalFees > 0 {
+                    print("📄 CreditNote: Using backend-authoritative commission for trade #\(trade.tradeNumber)")
+                    await tradingNotificationService.generateCreditNoteDocument(
+                        for: trade,
+                        commissionAmount: settlement.totalFees,
+                        grossProfit: settlement.grossProfit
+                    )
+                    return
+                }
+            } catch {
+                print("⚠️ CreditNote: Backend fetch failed, falling back to local: \(error.localizedDescription)")
+            }
+        }
+
+        // Fallback: local estimation
+        guard let poolTradeParticipationService,
+              let investmentService,
+              let investorGrossProfitService,
+              let commissionCalculationService else {
+            print("📄 CreditNote: Required services unavailable - skipping")
             return
         }
 
-        // Get participations for this trade
         let participations = poolTradeParticipationService.getParticipations(forTradeId: trade.id)
-
         guard !participations.isEmpty else {
-            print("📄 CreditNote: No investor participations for trade #\(trade.tradeNumber) - no commission")
+            print("📄 CreditNote: No participations for trade #\(trade.tradeNumber) - no commission")
             return
         }
 
-        // Get commission rate from admin configuration (single source of truth)
-        let commissionRate = configurationService?.effectiveCommissionRate ?? CalculationConstants.FeeRates.traderCommissionRate
-
-        // Group participations by investment to calculate commission per investor
+        let commissionRate = configurationService.effectiveCommissionRate
         let participationsByInvestment = Dictionary(grouping: participations) { $0.investmentId }
         let allInvestments = investmentService.investments
 
         var totalCommission: Double = 0.0
         var totalGrossProfit: Double = 0.0
 
-        // Calculate commission using centralized services (single source of truth)
-        // This ensures stored values exactly match what Credit Note detail view displays
         for (investmentId, _) in participationsByInvestment {
-            guard allInvestments.first(where: { $0.id == investmentId }) != nil else {
-                continue
-            }
-
+            guard allInvestments.first(where: { $0.id == investmentId }) != nil else { continue }
             do {
                 let investorGrossProfit = try await investorGrossProfitService.getGrossProfit(
-                    for: investmentId,
-                    tradeId: trade.id
+                    for: investmentId, tradeId: trade.id
                 )
                 let investorCommission = try await commissionCalculationService.calculateCommissionForInvestor(
-                    investmentId: investmentId,
-                    tradeId: trade.id,
-                    commissionRate: commissionRate
+                    investmentId: investmentId, tradeId: trade.id, commissionRate: commissionRate
                 )
                 totalGrossProfit += investorGrossProfit
                 totalCommission += investorCommission
             } catch {
-                print("⚠️ CreditNote: Error calculating commission for investment \(investmentId): \(error)")
+                print("⚠️ CreditNote [local fallback]: Error for investment \(investmentId): \(error)")
             }
         }
 
@@ -435,11 +444,6 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
             return
         }
 
-        print("📄 CreditNote: Generating for trade #\(trade.tradeNumber)")
-        print("   💰 Commission: €\(String(format: "%.2f", totalCommission))")
-        print("   📊 Gross Profit: €\(String(format: "%.2f", totalGrossProfit))")
-
-        // Generate the credit note document
         await tradingNotificationService.generateCreditNoteDocument(
             for: trade,
             commissionAmount: totalCommission,

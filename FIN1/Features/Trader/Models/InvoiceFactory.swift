@@ -184,7 +184,7 @@ extension Invoice {
     ///   - batchId: Optional batch ID to link the invoice to an investment batch
     ///   - investmentIds: Array of investment IDs that this service charge applies to
     ///   - investmentAmounts: Array of investment amounts corresponding to investmentIds (for detailed description)
-    ///   - serviceChargeRate: Platform service charge rate (default: 1.5% from CalculationConstants)
+    ///   - serviceChargeRate: Platform service charge rate (default: 2% from CalculationConstants)
     /// - Returns: Invoice with service charge and VAT items
     /// - Note: The gross amount is split into net service charge and VAT (19%)
     static func forServiceCharge(

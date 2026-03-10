@@ -3,6 +3,23 @@ import SwiftUI
 struct RiskClass7ConfirmationStep: View {
     let signUpData: SignUpData
     let coordinator: SignUpCoordinator
+    @Environment(\.appServices) private var services
+    @State private var maxLossWarningText: String = ""
+    @State private var experiencedOnlyText: String = ""
+
+    private var defaultMaxLossWarningText: String {
+        "Das Verlustrisiko bis zu 100 % des eingesetzten Kapitals ist bekannt."
+    }
+
+    private var defaultExperiencedOnlyText: String {
+        "Diese Risikoklasse ist nur für erfahrene Anleger geeignet."
+    }
+
+    private var combinedWarningText: String {
+        let experienced = experiencedOnlyText.isEmpty ? defaultExperiencedOnlyText : experiencedOnlyText
+        let maxLoss = maxLossWarningText.isEmpty ? defaultMaxLossWarningText : maxLossWarningText
+        return "Sie haben Risikoklasse 7 ausgewählt. \(experienced) \(maxLoss)"
+    }
 
     var body: some View {
         VStack(spacing: ResponsiveDesign.spacing(24)) {
@@ -22,16 +39,16 @@ struct RiskClass7ConfirmationStep: View {
                         .foregroundColor(AppTheme.accentOrange)
                         .font(ResponsiveDesign.titleFont())
 
-                    VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
-                        Text("Hochrisiko-Warnung")
-                            .font(ResponsiveDesign.headlineFont())
-                            .foregroundColor(AppTheme.fontColor)
+                        VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
+                            Text("Hochrisiko-Warnung")
+                                .font(ResponsiveDesign.headlineFont())
+                                .foregroundColor(AppTheme.fontColor)
 
-                        Text("Sie haben Risikoklasse 7 ausgewählt. Diese Risikoklasse ist nur für erfahrene Anleger geeignet. Das Verlustrisiko bis zu 100 % des eingesetzten Kapitals ist bekannt.")
-                            .font(ResponsiveDesign.bodyFont())
-                            .foregroundColor(AppTheme.fontColor.opacity(0.8))
-                            .multilineTextAlignment(.leading)
-                    }
+                            Text(combinedWarningText)
+                                .font(ResponsiveDesign.bodyFont())
+                                .foregroundColor(AppTheme.fontColor.opacity(0.8))
+                                .multilineTextAlignment(.leading)
+                        }
 
                     Spacer()
                 }
@@ -112,6 +129,27 @@ struct RiskClass7ConfirmationStep: View {
             }
         }
         .padding(.horizontal, ResponsiveDesign.lightBlueAreaHorizontalPadding())
+        .task {
+            let provider = LegalSnippetProvider(termsContentService: services.termsContentService)
+            let language: TermsOfServiceDataProvider.Language = .german
+            async let maxLossTask = provider.text(
+                for: .riskClass7MaxLossWarning,
+                language: language,
+                documentType: .terms,
+                defaultText: defaultMaxLossWarningText,
+                placeholders: [:]
+            )
+            async let experiencedTask = provider.text(
+                for: .riskClass7ExperiencedOnly,
+                language: language,
+                documentType: .terms,
+                defaultText: defaultExperiencedOnlyText,
+                placeholders: [:]
+            )
+            let (maxLoss, experienced) = await (maxLossTask, experiencedTask)
+            maxLossWarningText = maxLoss
+            experiencedOnlyText = experienced
+        }
     }
 }
 

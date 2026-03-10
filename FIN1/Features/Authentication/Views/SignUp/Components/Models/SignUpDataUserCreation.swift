@@ -236,7 +236,11 @@ extension SignUpData {
             "acceptedMarketingConsent": acceptedMarketingConsent,
             "calculatedRiskClass": calculatedRiskClass.rawValue,
             "finalRiskClass": finalRiskClass.rawValue,
-            "customerId": customerId
+            "customerId": customerId,
+            // Compliance metadata for audit trail
+            "questionnaireVersion": TermsVersionConstants.currentQuestionnaireVersion,
+            "termsVersion": TermsVersionConstants.currentTermsVersion,
+            "privacyVersion": TermsVersionConstants.currentPrivacyPolicyVersion
         ]
     }
 

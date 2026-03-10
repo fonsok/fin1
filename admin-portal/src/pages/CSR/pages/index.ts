@@ -1,0 +1,10 @@
+export { TicketDetailPage } from './TicketDetail';
+export { TicketQueuePage } from './TicketQueue';
+export { CreateTicketPage } from './CreateTicket';
+export { CustomerListPage } from './CustomerList';
+export { CustomerDetailPage } from './CustomerDetail';
+export { AnalyticsPage } from './Analytics';
+export { TicketArchivePage } from './TicketArchive';
+export { BulkOperationsPage } from './BulkOperations';
+export { KYCStatusPage } from './KYCStatus';
+export { TrendsPage } from './Trends';

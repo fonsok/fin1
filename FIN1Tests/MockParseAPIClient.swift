@@ -144,6 +144,22 @@ final class MockParseAPIClient: ParseAPIClientProtocol {
         return result
     }
 
+    func login(username: String, password: String) async throws -> ParseLoginResponse {
+        if shouldThrowError { throw errorToThrow }
+        return ParseLoginResponse(
+            objectId: "mock-id",
+            sessionToken: "r:mock-token",
+            username: username,
+            email: username,
+            role: "investor",
+            stableId: "user:\(username)",
+            firstName: "Mock",
+            lastName: "User"
+        )
+    }
+
+    func resetCircuitBreaker() async {}
+
     // MARK: - Helper Methods
 
     func reset() {

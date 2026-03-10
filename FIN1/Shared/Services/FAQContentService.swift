@@ -1,9 +1,19 @@
 import Foundation
 
 protocol FAQContentServiceProtocol {
-    func fetchFAQsForHelpCenter() async throws -> [FAQContentItem]
+    func fetchFAQsForHelpCenter(userRole: String?) async throws -> [FAQContentItem]
     func fetchFAQsForLanding() async throws -> [FAQContentItem]
-    func fetchFAQCategories(location: String) async throws -> [FAQCategoryContent]
+    func fetchFAQCategories(location: String, userRole: String?) async throws -> [FAQCategoryContent]
+}
+
+extension FAQContentServiceProtocol {
+    func fetchFAQsForHelpCenter() async throws -> [FAQContentItem] {
+        try await fetchFAQsForHelpCenter(userRole: nil)
+    }
+
+    func fetchFAQCategories(location: String) async throws -> [FAQCategoryContent] {
+        try await fetchFAQCategories(location: location, userRole: nil)
+    }
 }
 
 final class FAQContentService: FAQContentServiceProtocol {
@@ -63,8 +73,8 @@ final class FAQContentService: FAQContentServiceProtocol {
 
     // MARK: - Public API
 
-    func fetchFAQCategories(location: String) async throws -> [FAQCategoryContent] {
-        let res = try await fetchRawCategories(location: location)
+    func fetchFAQCategories(location: String, userRole: String? = nil) async throws -> [FAQCategoryContent] {
+        let res = try await fetchRawCategories(location: location, userRole: userRole)
 
         let ordered = res
             .filter { ($0.isActive ?? true) }
@@ -91,18 +101,18 @@ final class FAQContentService: FAQContentServiceProtocol {
         }
     }
 
-    func fetchFAQsForHelpCenter() async throws -> [FAQContentItem] {
-        try await fetchFAQsFilteredByLocation(location: "help_center")
+    func fetchFAQsForHelpCenter(userRole: String? = nil) async throws -> [FAQContentItem] {
+        try await fetchFAQsFilteredByLocation(location: "help_center", userRole: userRole)
     }
 
     func fetchFAQsForLanding() async throws -> [FAQContentItem] {
-        try await fetchFAQsFilteredByLocation(location: "landing")
+        try await fetchFAQsFilteredByLocation(location: "landing", userRole: nil)
     }
 
     // MARK: - Internals
 
-    private func fetchFAQsFilteredByLocation(location: String) async throws -> [FAQContentItem] {
-        let categories = try await fetchRawCategories(location: location)
+    private func fetchFAQsFilteredByLocation(location: String, userRole: String? = nil) async throws -> [FAQContentItem] {
+        let categories = try await fetchRawCategories(location: location, userRole: userRole)
 
         // Only allow FAQs whose category is present for this location.
         var allowedCategoryIds: Set<String> = []
@@ -114,7 +124,7 @@ final class FAQContentService: FAQContentServiceProtocol {
             categoryIdToSortOrder[cat.objectId] = cat.sortOrder ?? Int.max
         }
 
-        let faqsRes = try await fetchRawFAQs()
+        let faqsRes = try await fetchRawFAQs(location: location, userRole: userRole)
 
         // Keep sortOrder for stable ordering
         let itemsWithOrder: [(FAQContentItem, Int, Int)] = faqsRes.compactMap { faq in
@@ -172,20 +182,22 @@ final class FAQContentService: FAQContentServiceProtocol {
         let cachedAt: Date
     }
 
-    private func categoriesCacheKey(location: String) -> String {
-        "FIN1.faq.categories.\(location)"
+    private func categoriesCacheKey(location: String, userRole: String?) -> String {
+        let suffix = userRole ?? "all"
+        return "FIN1.faq.categories.v2.\(location).\(suffix)"
     }
 
-    private func faqsCacheKey() -> String {
-        "FIN1.faq.faqs.public"
+    private func faqsCacheKey(location: String, userRole: String?) -> String {
+        let suffix = userRole ?? "all"
+        return "FIN1.faq.faqs.v2.\(location).\(suffix)"
     }
 
     private func isFresh(_ date: Date) -> Bool {
         Date().timeIntervalSince(date) < cacheTTL
     }
 
-    private func fetchRawCategories(location: String) async throws -> [ParseFAQCategory] {
-        let key = categoriesCacheKey(location: location)
+    private func fetchRawCategories(location: String, userRole: String? = nil) async throws -> [ParseFAQCategory] {
+        let key = categoriesCacheKey(location: location, userRole: userRole)
         if let data = userDefaults.data(forKey: key),
            let cached = try? JSONDecoder().decode(CachedCategories.self, from: data),
            isFresh(cached.cachedAt),
@@ -194,9 +206,13 @@ final class FAQContentService: FAQContentServiceProtocol {
         }
 
         guard let parseAPIClient else { throw Error.notConfigured }
+
+        var params: [String: Any] = ["location": location]
+        if let userRole { params["userRole"] = userRole }
+
         let res: GetFAQCategoriesResult = try await parseAPIClient.callFunction(
             "getFAQCategories",
-            parameters: ["location": location]
+            parameters: params
         )
 
         let cached = CachedCategories(categories: res.categories, cachedAt: Date())
@@ -206,8 +222,8 @@ final class FAQContentService: FAQContentServiceProtocol {
         return res.categories
     }
 
-    private func fetchRawFAQs() async throws -> [ParseFAQ] {
-        let key = faqsCacheKey()
+    private func fetchRawFAQs(location: String, userRole: String? = nil) async throws -> [ParseFAQ] {
+        let key = faqsCacheKey(location: location, userRole: userRole)
         if let data = userDefaults.data(forKey: key),
            let cached = try? JSONDecoder().decode(CachedFAQs.self, from: data),
            isFresh(cached.cachedAt),
@@ -216,9 +232,16 @@ final class FAQContentService: FAQContentServiceProtocol {
         }
 
         guard let parseAPIClient else { throw Error.notConfigured }
+
+        var params: [String: Any] = ["location": location]
+        if location == "landing" {
+            params["isPublic"] = true
+        }
+        if let userRole { params["userRole"] = userRole }
+
         let res: GetFAQsResult = try await parseAPIClient.callFunction(
             "getFAQs",
-            parameters: ["isPublic": true]
+            parameters: params
         )
 
         let cached = CachedFAQs(faqs: res.faqs, cachedAt: Date())

@@ -174,7 +174,8 @@ Wenn es nicht nur um “was soll das Produkt”, sondern um “was darf nicht ka
 - **US-H3 4-Augen-Freigaben**
   Als Admin/Compliance möchte ich Freigaben bearbeiten.
   - **Akzeptanzkriterien**
-    - `getPendingApprovals` zeigt nicht eigene Requests.
+    - `getPendingApprovals` zeigt nicht eigene Requests („Freigaben erteilen“ nur Anträge anderer; „Eigene Anträge“ nur eigene pending).
+    - In der Sidebar zeigt „Freigaben“ ein rotes Badge mit der Anzahl offener Anträge (Anträge zur Freigabe + eigene pending), solange welche offen sind.
     - `approveRequest` verhindert Selbstfreigabe und schreibt Audit.
 
 ### I) Legal (AGB/Datenschutz/Impressum) inkl. Audit Trail
