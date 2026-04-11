@@ -115,7 +115,7 @@ extension AppServicesBuilder {
                 #if DEBUG
                 return MockAuthProvider(tokenStorage: tokenStorage)
                 #else
-                return MockAuthProvider(tokenStorage: tokenStorage)
+                return ParseAuthProvider(apiClient: parseAPIClient, tokenStorage: tokenStorage)
                 #endif
             }()
             ctx.tokenStorage = tokenStorage
