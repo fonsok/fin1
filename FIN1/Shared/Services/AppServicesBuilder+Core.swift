@@ -21,7 +21,7 @@ extension AppServicesBuilder {
             ctx.userService = userService
             ctx.configurationService = configurationService
 
-            let defaultParseServerURL = "http://192.168.178.24/parse"
+            let defaultParseServerURL = "http://192.168.178.20/parse"
             let parseServerURL = configurationService.parseServerURL ?? defaultParseServerURL
             let parseApplicationId = configurationService.parseApplicationId ?? "fin1-app-id"
 
@@ -50,7 +50,7 @@ extension AppServicesBuilder {
 
             userService.configure(parseAPIClient: parseAPIClient)
 
-            let parseLiveQueryURL = configurationService.parseLiveQueryURL ?? "ws://192.168.178.24:1337/parse"
+            let parseLiveQueryURL = configurationService.parseLiveQueryURL ?? "wss://192.168.178.20/parse"
             let parseLiveQueryClient = ParseLiveQueryClient(
                 liveQueryURL: parseLiveQueryURL,
                 applicationId: parseApplicationId,
