@@ -59,7 +59,7 @@
   - SwiftLint (strict)
   - Build & tests on iOS Simulator (iPhone 15 Pro)
   - Danger checks on PRs
-- If using a different platform, mirror these steps in your CI to keep guardrails.
+- If using a different environment, mirror these steps in your CI to keep guardrails.
 
 #### How to Add a New ViewModel
 - Create under `Features/<Feature>/ViewModels/`.
@@ -83,6 +83,15 @@
 - Unit tests: `FIN1Tests/`
 - UI tests: `FIN1UITests/`
 - Documentation: `FIN1/Documentation/`
+
+#### Onboarding and multi-step flows (Codable DTOs and Parse contracts)
+- **Client (Swift)**: Prefer **`Codable` structs** for onboarding payloads saved to Parse (e.g. `SavedOnboardingData` in `OnboardingAPIService.swift`). Build snapshots from feature models (e.g. `SignUpData.savedOnboardingData()`). Encode to a JSON-compatible dictionary **only inside** `*APIService` when calling `ParseAPIClientProtocol.callFunction` — Views and ViewModels must not assemble raw `[String: Any]` for these flows.
+- **MVVM**: Coordinators/ViewModels orchestrate; **`*APIService`** owns the network contract; no Parse types in Views (see `.cursor/rules/architecture.md`).
+- **Backend (Parse Cloud Functions)**: Remains **authoritative** for validation, compliance-relevant decisions, and audit (`sanitizeObject`, `validateStepData`, `OnboardingAudit`). Client DTOs are **not** a substitute for server-side checks.
+- **Contract alignment**: JSON keys produced by encoding Swift DTOs must match what `backend/parse-server/cloud/functions/user/onboarding.js` and `backend/parse-server/cloud/utils/validation.js` expect. When adding fields, update server validation if the field is required for a step.
+- **Partial save vs completion**: **“Save for later”** should persist **`currentStep` + `savedData`** only; append **`completedSteps`** (and phase completion) only on successful **`completeOnboardingStep`** (or the equivalent Cloud Function), not on partial saves — keeps resume semantics clear and payloads smaller.
+- **Per-step schemas (Joi)**: Implemented in [`backend/parse-server/cloud/utils/onboardingStepSchemas.js`](../../backend/parse-server/cloud/utils/onboardingStepSchemas.js) (complete + partial). Optional: add JSON Schema docs under repo `Documentation/` for non-developer readers.
+- **When changing shapes**: Add a short note to this guide or an ADR under `Documentation/` (see `.cursor/rules/documentation-checkpoints.md`). See repo root [`Documentation/ADR-002-Onboarding-Codable-DTO.md`](../../Documentation/ADR-002-Onboarding-Codable-DTO.md).
 
 #### Coverage and Quality Targets
 - Suggested coverage floor: 60% (ratchet +2% monthly).

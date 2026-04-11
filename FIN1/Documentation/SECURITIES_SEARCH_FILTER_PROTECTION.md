@@ -1,5 +1,7 @@
 # 🛡️ Securities Search Filter Protection Guide
 
+> **Produktkontext (FIN1):** Die Suche und Filter beziehen sich auf **Derivate** (z. B. Optionsscheine, Zertifikate). Einträge wie „Aktien“, „EUR/USD“ oder „Bitcoin“ in Filterlisten sind **Basiswerte** (Underlying) oder Kategorien für solche Produkte — nicht die Behauptung, die App biete Kassamarkt-Aktienhandel, Spot-Forex oder unmittelbaren Krypto-Spot an.
+
 ## ⚠️ CRITICAL: ALL Filter Logic Must Not Be Broken Again
 
 The securities search filter functionality was previously broken, causing search results to show incorrect data despite correct filter selection. This document outlines how to protect the ENTIRE filter system.
@@ -60,11 +62,11 @@ xcodebuild test -project FIN1.xcodeproj -scheme FIN1 -destination 'platform=iOS 
 ### 3. **Manual Testing Checklist**
 - [ ] **Category Filter**: Select "Optionsschein" → Results show "Optionsschein" category
 - [ ] **Category Filter**: Test with any new categories added → Results show correct category
-- [ ] **Basiswert Filter**: Test with any item from "Basiswerte" card → Results show correct underlying asset
+- [ ] **Basiswert Filter**: Test with any item from "Basiswerte" card → Results show correct underlying asset (**underlying of the derivative**, not “we trade spot equities/FX/crypto”)
   - [ ] Indices: DAX, MDAX, SDAX, TecDAX, FTSE 100, CAC 40, S&P 500, NASDAQ 100
-  - [ ] Stocks: Apple, BMW, SAP, Siemens, Volkswagen, Adidas, Allianz, BASF
-  - [ ] Metals: Gold, Silber, Platin, Palladium, Kupfer
-  - [ ] Other: EUR/USD, GBP/USD, Bitcoin, Ethereum (as available)
+  - [ ] Single-name underlyings (often shown as company names): Apple, BMW, SAP, Siemens, Volkswagen, Adidas, Allianz, BASF — **as basis for warrants/certificates**, if present in mock/UI lists
+  - [ ] Metals: Gold, Silber, Platin, Palladium, Kupfer — **as underlying for derivative products**, if present
+  - [ ] Other underlyings: EUR/USD, GBP/USD, Bitcoin, Ethereum (as available in lists) — **derivative-linked only**, not spot FX/crypto trading as a separate product line
 - [ ] **Direction Filter**: Select "Call" → Results show "Call" direction
 - [ ] **Direction Filter**: Select "Put" → Results show "Put" direction
 - [ ] **Strike Price Gap Filter**: Select "Am Geld" → Results respect filter
@@ -94,7 +96,7 @@ The following tests must pass:
 
 ### SecuritiesSearchFilterTests
 - `testCategoryFilterOptionsschein()`
-- `testCategoryFilterAktien()`
+- `testCategoryFilterAktien()` — **Note:** If the test name still references „Aktien“, treat it as a **category/label** in the search UI; product scope remains **derivatives**. Rename test when refactoring for clarity.
 - `testBasiswertFilterWithFTSE100()`
 - `testBasiswertFilterWithCAC40()`
 - `testBasiswertFilterWithDAX()`
@@ -157,6 +159,7 @@ If any filter breaks again:
 
 ## 📝 Change Log
 
+- **2026-04-04**: Product scope clarified in this doc — search/filters are **derivatives-first**; Basiswert lists describe **underlyings**, not cash-market equities/FX/crypto as standalone FIN1 products. Architecture/future-improvements wording aligned.
 - **2025-10-12**: Initial basiswert filter fix implemented
 - **2025-10-12**: Comprehensive filter protection added
 - **2025-10-12**: All filter tests implemented
@@ -185,13 +188,13 @@ SecuritiesSearchViewModel
 └── SecuritiesSearchService (Search Execution)
 
 MockDataGenerator
-├── generateOptionsResults() (Options Filtering)
-├── generateStockResults() (Stock Filtering)
+├── generateOptionsResults() (Options / derivative-style filtering)
+├── generateStockResults() — **Legacy name:** if still present, it should only feed **derivative** mock rows (e.g. category labels), not a separate “cash stock trading” mode
 └── SearchResult Creation (Result Generation)
 
 Dynamic Filter Lists (can change over time):
-├── Category List (currently: Optionsschein, future: Aktien, Futures, CFDs, etc.)
-├── Basiswert List (Indices, Stocks, Metals, Forex, Crypto, etc.)
+├── Category List (e.g. Optionsschein, weitere **Derivat**-Typen wenn das Produkt erweitert wird — **nicht** als Roadmap für Kassamarkt-Aktien, Spot-Forex oder freistehende CFD-/Futures-Brokerage ohne Produktentscheid)
+├── Basiswert List (Indices, **Einzelwerte** als Underlying, Rohstoffe, FX-/Krypto-**Bezug** in Zertifikaten/OS — sprachlich als Underlyings für Derivate, nicht als „wir handeln alles“)
 ├── Emittent List (Banks, Investment firms, etc.)
 └── Other Filter Lists (Strike Price Gap, Restlaufzeit, Omega, etc.)
 ```
@@ -201,8 +204,8 @@ Dynamic Filter Lists (can change over time):
 ### Key Principles:
 1. **Filter lists are dynamic** - items can be added/removed over time
 2. **Issuer availability changes** - some issuers may stop providing certain products
-3. **New underlying assets** - new indices, stocks, metals, etc. can be added
-4. **Category expansion** - new product categories can be introduced
+3. **New underlying assets** - new indices, single-name underlyings, metals, etc. can be added **for derivative search**
+4. **Category expansion** - new **derivative** product categories can be introduced when product/legal allows
 5. **Filter logic must remain robust** - regardless of list changes
 
 ### Protection Strategy:

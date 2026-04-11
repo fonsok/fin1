@@ -200,7 +200,7 @@ enum Language: String, CaseIterable {
 - **Order Fee**: 0.5% of order amount (minimum €5, maximum €50)
 - **Exchange Fee**: 0.1% of order amount (minimum €1, maximum €20)
 - **Foreign Costs**: €1.50 per transaction
-- **Platform Service Charge**: 2% (includes 19% VAT)
+- **App Service Charge**: 2% (includes 19% VAT)
 ```
 - **Compliance**: ✅ Matches `CalculationConstants.FeeRates`
 - **Best Practice**: Terms accurately reflect actual fees
@@ -211,7 +211,7 @@ enum Language: String, CaseIterable {
 // ✅ CORRECT: Accurate tax information
 - **Abgeltungsteuer**: 25% + Soli applies to realized capital gains
 - Tax withholding handled by executing bank
-- Platform does not withhold taxes
+- The App does not withhold taxes
 ```
 - **Compliance**: ✅ Matches `InvoiceCalculations.swift` tax notes
 - **Best Practice**: Accurate tax disclosure
@@ -220,10 +220,10 @@ enum Language: String, CaseIterable {
 #### **Account Balance Disclosure**
 ```swift
 // ✅ CORRECT: Clear account balance information
-- Initial Balance: €1.00 (for new accounts)
+- Initial Balance: €0.00 unless raised via admin Configuration (see backend defaultConfig + getConfig)
 - Minimum Cash Reserve: €20
 ```
-- **Compliance**: ✅ Matches `CalculationConstants.Account`
+- **Compliance**: ✅ Aligns with server `Configuration` / `getConfig` and `CalculationConstants.Account` fallbacks
 - **Best Practice**: Transparent account terms
 - **Benefit**: User understands account structure
 
@@ -243,7 +243,7 @@ enum Language: String, CaseIterable {
 **Recommendation**: Verify all financial values match constants:
 - ✅ Order fees match `CalculationConstants.FeeRates.orderFeeRate`
 - ✅ Exchange fees match `CalculationConstants.FeeRates.exchangeFeeRate`
-- ✅ Service charge matches `CalculationConstants.ServiceCharges.platformServiceChargeRate`
+- ✅ Service charge matches `CalculationConstants.ServiceCharges.appServiceChargeRate`
 - ✅ Minimum reserve matches `CalculationConstants.Account.minimumCashReserve`
 
 ---
