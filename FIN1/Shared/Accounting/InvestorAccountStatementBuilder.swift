@@ -10,14 +10,21 @@ enum InvestorAccountStatementBuilder {
     /// Builds an investor account statement snapshot including wallet transactions.
     /// Uses backend `AccountStatement` entries when `settlementAPIService` is provided,
     /// falling back to local `investorCashBalanceService` ledger entries otherwise.
+    ///
+    /// When `configurationService` is provided, opening balance matches admin / `getConfig`
+    /// (`initialAccountBalance`), and closing balance is derived from ledger + wallet entries
+    /// (same basis as trader statements). Otherwise the legacy path infers opening from
+    /// `investorCashBalanceService` cache, which can drift from server configuration.
     static func buildSnapshotWithWallet(
         for user: User?,
         investorCashBalanceService: any InvestorCashBalanceServiceProtocol,
         paymentService: (any PaymentServiceProtocol)?,
-        settlementAPIService: (any SettlementAPIServiceProtocol)? = nil
+        settlementAPIService: (any SettlementAPIServiceProtocol)? = nil,
+        configurationService: (any ConfigurationServiceProtocol)? = nil
     ) async -> InvestorAccountStatementSnapshot {
         guard let user = user else {
-            let initialBalance = CalculationConstants.Account.initialInvestorBalance
+            let initialBalance = configurationService?.initialAccountBalance
+                ?? CalculationConstants.Account.initialInvestorBalance
             return InvestorAccountStatementSnapshot(
                 entries: [],
                 openingBalance: initialBalance,
@@ -41,13 +48,24 @@ enum InvestorAccountStatementBuilder {
         }
 
         let allEntries = investmentEntries + walletEntries
-        let openingBalance = calculateOpeningBalance(serviceBalance: serviceBalance, entries: allEntries)
+        let openingBalance: Double
+        if let configurationService {
+            openingBalance = configurationService.initialAccountBalance
+        } else {
+            openingBalance = calculateOpeningBalance(serviceBalance: serviceBalance, entries: allEntries)
+        }
         let recalculatedEntries = recalculateBalanceAfter(entries: allEntries, openingBalance: openingBalance)
+        let closingBalance: Double
+        if configurationService != nil {
+            closingBalance = recalculatedEntries.last?.balanceAfter ?? openingBalance
+        } else {
+            closingBalance = serviceBalance
+        }
 
         return InvestorAccountStatementSnapshot(
             entries: recalculatedEntries.sorted { $0.occurredAt > $1.occurredAt },
             openingBalance: openingBalance,
-            closingBalance: serviceBalance
+            closingBalance: closingBalance
         )
     }
 
@@ -91,6 +109,30 @@ enum InvestorAccountStatementBuilder {
             title = "Profit Distribution"
             direction = .credit
             category = .profitDistribution
+        case "residual_return":
+            title = "Residual Return"
+            direction = .credit
+            category = .tradeSettlement
+        case "investment_activate":
+            title = "Investment Activated"
+            direction = .debit
+            category = .investment
+        case "investment_return":
+            title = "Investment Return"
+            direction = .credit
+            category = .investment
+        case "investment_refund":
+            title = "Investment Refund"
+            direction = .credit
+            category = .investment
+        case "deposit":
+            title = "Deposit"
+            direction = .credit
+            category = .walletDeposit
+        case "withdrawal":
+            title = "Withdrawal"
+            direction = .debit
+            category = .walletWithdrawal
         default:
             title = entry.description ?? entry.entryType
             direction = entry.amount >= 0 ? .credit : .debit

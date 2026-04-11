@@ -54,7 +54,7 @@ final class BankContraAccountPostingService: BankContraAccountPostingServiceProt
     // MARK: - Recording
 
     @discardableResult
-    func recordPlatformServiceChargePosting(
+    func recordAppServiceChargePosting(
         investorId: String,
         batchId: String,
         investmentIds: [String],
@@ -66,7 +66,7 @@ final class BankContraAccountPostingService: BankContraAccountPostingServiceProt
         let createdAt = Date()
 
         let netPosting = BankContraAccountPosting(
-            account: .platformServiceChargeNet,
+            account: .appServiceChargeNet,
             side: .credit,
             amount: netAmount,
             investorId: investorId,
@@ -81,7 +81,7 @@ final class BankContraAccountPostingService: BankContraAccountPostingServiceProt
         )
 
         let vatPosting = BankContraAccountPosting(
-            account: .platformServiceChargeVAT,
+            account: .appServiceChargeVAT,
             side: .credit,
             amount: vatAmount,
             investorId: investorId,
@@ -106,6 +106,25 @@ final class BankContraAccountPostingService: BankContraAccountPostingServiceProt
         print("🏦 Recorded contra postings for batch \(batchId): NET \(netText) | VAT \(vatText)")
 
         return BankContraPostingPair(netPosting: netPosting, vatPosting: vatPosting)
+    }
+
+    @discardableResult
+    func recordPlatformServiceChargePosting(
+        investorId: String,
+        batchId: String,
+        investmentIds: [String],
+        grossAmount: Double,
+        netAmount: Double,
+        vatAmount: Double
+    ) -> BankContraPostingPair {
+        recordAppServiceChargePosting(
+            investorId: investorId,
+            batchId: batchId,
+            investmentIds: investmentIds,
+            grossAmount: grossAmount,
+            netAmount: netAmount,
+            vatAmount: vatAmount
+        )
     }
 
     // MARK: - Retrieval

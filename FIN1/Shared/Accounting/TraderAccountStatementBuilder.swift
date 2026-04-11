@@ -467,7 +467,7 @@ enum TraderAccountStatementBuilder {
     ) -> [Invoice] {
         let possibleCustomerNumbers = [
             user.id,
-            user.customerId
+            user.customerNumber
         ].filter { !$0.isEmpty }
 
         for number in possibleCustomerNumbers {
