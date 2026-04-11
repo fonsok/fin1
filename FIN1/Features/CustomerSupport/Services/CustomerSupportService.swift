@@ -106,7 +106,7 @@ final class CustomerSupportService: CustomerSupportServiceProtocol, ServiceLifec
         for ticket in pendingTickets {
             do {
                 let ticketCreate = SupportTicketCreate(
-                    customerId: ticket.customerId,
+                    userId: ticket.userId,
                     subject: ticket.subject,
                     description: ticket.description,
                     priority: ticket.priority

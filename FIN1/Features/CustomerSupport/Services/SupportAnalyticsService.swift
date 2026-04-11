@@ -26,7 +26,7 @@ final class SupportAnalyticsService: SupportAnalyticsServiceProtocol {
 
     func getMetrics(from startDate: Date, to endDate: Date) async throws -> SupportMetrics {
         let surveys = try await surveyService.getSurveys(from: startDate, to: endDate)
-        let tickets = try await supportService.getSupportTickets(customerId: nil)
+        let tickets = try await supportService.getSupportTickets(userId: nil)
 
         let filteredTickets = tickets.filter {
             $0.createdAt >= startDate && $0.createdAt <= endDate
@@ -109,7 +109,7 @@ final class SupportAnalyticsService: SupportAnalyticsServiceProtocol {
             $0.submittedAt >= startDate && $0.submittedAt <= endDate
         }
 
-        let tickets = try await supportService.getSupportTickets(customerId: nil)
+        let tickets = try await supportService.getSupportTickets(userId: nil)
         let agentTickets = tickets.filter {
             $0.assignedTo == agentId && $0.createdAt >= startDate && $0.createdAt <= endDate
         }
@@ -182,7 +182,7 @@ final class SupportAnalyticsService: SupportAnalyticsServiceProtocol {
     }
 
     func getIssuesByCategory() async throws -> [String: Int] {
-        let tickets = try await supportService.getSupportTickets(customerId: nil)
+        let tickets = try await supportService.getSupportTickets(userId: nil)
         var categoryCount: [String: Int] = [:]
 
         for ticket in tickets {

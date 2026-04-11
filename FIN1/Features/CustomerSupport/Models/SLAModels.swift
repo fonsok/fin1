@@ -129,7 +129,7 @@ extension SupportTicket {
         // First Response SLA
         let firstResponseTarget = config.firstResponseTargets[priority] ?? 24
         let firstResponseDeadline = createdAt.addingTimeInterval(firstResponseTarget * 3600)
-        let hasFirstResponse = responses.contains { !$0.isInternal && $0.agentId != customerId }
+        let hasFirstResponse = responses.contains { !$0.isInternal && $0.agentId != userId }
 
         let firstResponseStatus: SLAStatus
         let firstResponseTimeRemaining: TimeInterval?

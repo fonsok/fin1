@@ -146,7 +146,7 @@ struct TicketDetailSheet: View {
     let mockTicket = SupportTicket(
         id: "1",
         ticketNumber: "TKT-12345",
-        customerId: "CUST-001",
+        userId: "user:preview@test.com",
         customerName: "Max Mustermann",
         subject: "Test Ticket",
         description: "This is a test ticket description.",

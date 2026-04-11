@@ -19,7 +19,7 @@ struct CustomerDetailActionsSection: View {
                         title: "Support-Ticket erstellen",
                         color: AppTheme.accentLightBlue
                     ) {
-                        viewModel.openCreateTicketSheet(customerId: customer.customerId)
+                        viewModel.openCreateTicketSheet(userId: customer.id)
                     }
                 }
 
@@ -30,7 +30,7 @@ struct CustomerDetailActionsSection: View {
                         color: AppTheme.accentOrange
                     ) {
                         Task {
-                            await viewModel.initiatePasswordReset(customerId: customer.customerId)
+                            await viewModel.initiatePasswordReset(customerNumber: customer.customerNumber)
                         }
                     }
                 }
@@ -42,7 +42,7 @@ struct CustomerDetailActionsSection: View {
                         color: AppTheme.accentGreen
                     ) {
                         Task {
-                            await viewModel.unlockAccount(customerId: customer.customerId, reason: "Kundenanfrage")
+                            await viewModel.unlockAccount(customerNumber: customer.customerNumber, reason: "Kundenanfrage")
                         }
                     }
                 }

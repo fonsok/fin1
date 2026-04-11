@@ -80,7 +80,7 @@ final class CustomerSupportDashboardViewModel: ObservableObject {
     var ticketForAction: SupportTicket?
     var ticketToRespond: SupportTicket?
     var ticketToEscalate: SupportTicket?
-    var preselectedCustomerId: String?
+    var preselectedUserId: String?
 
     // MARK: - Computed Properties - Search
 
@@ -156,7 +156,7 @@ final class CustomerSupportDashboardViewModel: ObservableObject {
         isLoading = true
         defer { isLoading = false }
         do {
-            supportTickets = try await supportService.getSupportTickets(customerId: nil)
+            supportTickets = try await supportService.getSupportTickets(userId: nil)
             availableAgents = try await supportService.getAvailableAgents()
         } catch {
             handleError(error)

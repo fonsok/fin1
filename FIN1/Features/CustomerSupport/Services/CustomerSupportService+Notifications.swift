@@ -8,9 +8,8 @@ extension CustomerSupportService {
     // MARK: - Survey Request
 
     func sendSurveyRequest(ticket: SupportTicket) async {
-        // Resolve user ID from customer ID (customerId like "CUST-001" → userId like "user:max@test.com")
-        let customer = mockCustomers.first(where: { $0.customerId == ticket.customerId })
-        let userId = customer?.id ?? ticket.customerId
+        let customer = mockCustomers.first(where: { $0.id == ticket.userId })
+        let userId = customer?.id ?? ticket.userId
 
         do {
             // Create survey request through the dedicated service
@@ -43,8 +42,8 @@ extension CustomerSupportService {
     // MARK: - Solution Notification
 
     func sendSolutionNotification(ticket: SupportTicket, solution: SolutionDetails) async {
-        let customer = mockCustomers.first(where: { $0.customerId == ticket.customerId })
-        let userId = customer?.id ?? ticket.customerId
+        let customer = mockCustomers.first(where: { $0.id == ticket.userId })
+        let userId = customer?.id ?? ticket.userId
 
         var message = "Eine Lösung wurde für Ihr Ticket \"\(ticket.subject)\" bereitgestellt."
         if let articleTitle = solution.helpCenterArticleTitle {
@@ -70,8 +69,8 @@ extension CustomerSupportService {
     // MARK: - Confirmation Request Notification
 
     func sendConfirmationRequestNotification(ticket: SupportTicket) async {
-        let customer = mockCustomers.first(where: { $0.customerId == ticket.customerId })
-        let userId = customer?.id ?? ticket.customerId
+        let customer = mockCustomers.first(where: { $0.id == ticket.userId })
+        let userId = customer?.id ?? ticket.userId
 
         notificationService.createNotification(
             title: "Bestätigung erforderlich",
@@ -92,8 +91,8 @@ extension CustomerSupportService {
     // MARK: - Resolution Notification
 
     func sendResolutionNotification(ticket: SupportTicket, customerConfirmed: Bool) async {
-        let customer = mockCustomers.first(where: { $0.customerId == ticket.customerId })
-        let userId = customer?.id ?? ticket.customerId
+        let customer = mockCustomers.first(where: { $0.id == ticket.userId })
+        let userId = customer?.id ?? ticket.userId
 
         notificationService.createNotification(
             title: "Support-Ticket gelöst",

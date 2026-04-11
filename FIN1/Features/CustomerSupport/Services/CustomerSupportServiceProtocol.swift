@@ -18,16 +18,16 @@ protocol CustomerSupportServiceProtocol: AnyObject {
 
     // MARK: - Customer Search (Read-Only)
     func searchCustomers(query: String) async throws -> [CustomerSearchResult]
-    func getCustomerProfile(customerId: String) async throws -> CustomerProfile?
+    func getCustomerProfile(userId: String) async throws -> CustomerProfile?
 
     // MARK: - Customer Data Access (Audited)
-    func getCustomerInvestments(customerId: String) async throws -> [CustomerInvestmentSummary]
-    func getCustomerTrades(customerId: String) async throws -> [CustomerTradeSummary]
-    func getCustomerDocuments(customerId: String) async throws -> [CustomerDocumentSummary]
-    func getCustomerKYCStatus(customerId: String) async throws -> CustomerKYCStatus
+    func getCustomerInvestments(userId: String) async throws -> [CustomerInvestmentSummary]
+    func getCustomerTrades(userId: String) async throws -> [CustomerTradeSummary]
+    func getCustomerDocuments(customerNumber: String) async throws -> [CustomerDocumentSummary]
+    func getCustomerKYCStatus(customerNumber: String) async throws -> CustomerKYCStatus
 
     // MARK: - Support Operations
-    func getSupportTickets(customerId: String?) async throws -> [SupportTicket]
+    func getSupportTickets(userId: String?) async throws -> [SupportTicket]
     func getUserTickets(userId: String) async throws -> [SupportTicket]
     func getTicket(ticketId: String) async throws -> SupportTicket?
     func createSupportTicket(_ ticket: SupportTicketCreate) async throws -> SupportTicket
@@ -75,17 +75,17 @@ protocol CustomerSupportServiceProtocol: AnyObject {
     /// Archive old closed tickets (called by background job or manually)
     func archiveOldTickets() async throws -> Int
     /// Get tickets related to a customer (previous tickets, linked tickets)
-    func getRelatedTickets(customerId: String, excludeTicketId: String?) async throws -> [SupportTicket]
+    func getRelatedTickets(userId: String, excludeTicketId: String?) async throws -> [SupportTicket]
 
     // MARK: - Analytics & Metrics
     func getTicketMetrics(from startDate: Date, to endDate: Date) async throws -> TicketMetrics
     func getAgentMetrics(agentId: String, from startDate: Date, to endDate: Date) async throws -> AgentMetrics
 
     // MARK: - Approved Modifications (Compliance Checked)
-    func requestAddressChange(customerId: String, newAddress: CSAddressChangeInput) async throws -> ChangeRequest
-    func requestNameChange(customerId: String, newName: CSNameChangeInput) async throws -> ChangeRequest
-    func initiatePasswordReset(customerId: String) async throws
-    func unlockAccount(customerId: String, reason: String) async throws
+    func requestAddressChange(customerNumber: String, newAddress: CSAddressChangeInput) async throws -> ChangeRequest
+    func requestNameChange(customerNumber: String, newName: CSNameChangeInput) async throws -> ChangeRequest
+    func initiatePasswordReset(customerNumber: String) async throws
+    func unlockAccount(customerNumber: String, reason: String) async throws
 
     // MARK: - Backend Synchronization
     func syncToBackend() async

@@ -24,7 +24,7 @@ enum CustomerSupportMockData {
             let language = index % 2 == 0 ? "German" : "English"
             customers.append(CustomerProfile(
                 id: "user:investor\(number)@test.com",
-                customerId: "CUST-INV-\(String(format: "%03d", number))",
+                customerNumber: "ANL-2026-\(String(format: "%05d", number))",
                 salutation: index % 2 == 0 ? "Herr" : "Frau",
                 academicTitle: nil,
                 firstName: name.firstName,
@@ -62,7 +62,7 @@ enum CustomerSupportMockData {
             let languages = ["German", "English", "Spanish"]
             customers.append(CustomerProfile(
                 id: "user:trader\(number)@test.com",
-                customerId: "CUST-TRD-\(String(format: "%03d", number))",
+                customerNumber: "TRD-2026-\(String(format: "%05d", number))",
                 salutation: index % 2 == 0 ? "Herr" : "Frau",
                 academicTitle: nil,
                 firstName: name.firstName,
@@ -91,7 +91,7 @@ enum CustomerSupportMockData {
         customers.append(contentsOf: [
             CustomerProfile(
                 id: UUID().uuidString,
-                customerId: "CUST-001",
+                customerNumber: "CUST-001",
                 salutation: "Herr",
                 academicTitle: nil,
                 firstName: "Max",
@@ -116,7 +116,7 @@ enum CustomerSupportMockData {
             ),
             CustomerProfile(
                 id: UUID().uuidString,
-                customerId: "CUST-002",
+                customerNumber: "CUST-002",
                 salutation: "Frau",
                 academicTitle: "Dr.",
                 firstName: "Erika",
@@ -141,7 +141,7 @@ enum CustomerSupportMockData {
             ),
             CustomerProfile(
                 id: UUID().uuidString,
-                customerId: "CUST-003",
+                customerNumber: "CUST-003",
                 salutation: "Herr",
                 academicTitle: "Prof. Dr.",
                 firstName: "Hans",
@@ -170,7 +170,7 @@ enum CustomerSupportMockData {
     }
 
     /// Sample investments for a customer
-    static func createMockInvestments(for customerId: String) -> [CustomerInvestmentSummary] {
+    static func createMockInvestments(for userId: String) -> [CustomerInvestmentSummary] {
         [
             CustomerInvestmentSummary(
                 id: UUID().uuidString,
@@ -198,7 +198,7 @@ enum CustomerSupportMockData {
     }
 
     /// Sample trades for a customer
-    static func createMockTrades(for customerId: String) -> [CustomerTradeSummary] {
+    static func createMockTrades(for userId: String) -> [CustomerTradeSummary] {
         [
             CustomerTradeSummary(
                 id: UUID().uuidString,
@@ -216,7 +216,7 @@ enum CustomerSupportMockData {
     }
 
     /// Sample documents for a customer
-    static func createMockDocuments(for customerId: String) -> [CustomerDocumentSummary] {
+    static func createMockDocuments(for customerNumber: String) -> [CustomerDocumentSummary] {
         [
             CustomerDocumentSummary(
                 id: UUID().uuidString,
@@ -250,7 +250,7 @@ enum CustomerSupportMockData {
             SupportTicket(
                 id: UUID().uuidString,
                 ticketNumber: "TKT-12345",
-                customerId: customer1.customerId,
+                userId: customer1.id,
                 customerName: customer1.fullName,
                 subject: "Frage zu meiner Investition",
                 description: "Ich habe eine Frage bezüglich meiner Investition INV-2024-001.",
@@ -265,7 +265,7 @@ enum CustomerSupportMockData {
             SupportTicket(
                 id: UUID().uuidString,
                 ticketNumber: "TKT-12346",
-                customerId: customer2.customerId,
+                userId: customer2.id,
                 customerName: customer2.fullName,
                 subject: "Problem beim Login",
                 description: "Ich kann mich nicht mehr in mein Konto einloggen.",
@@ -289,7 +289,7 @@ enum CustomerSupportMockData {
             SupportTicket(
                 id: UUID().uuidString,
                 ticketNumber: "TKT-12347",
-                customerId: customer3.customerId,
+                userId: customer3.id,
                 customerName: customer3.fullName,
                 subject: "Rechnung nicht erhalten",
                 description: "Ich habe meine monatliche Rechnung nicht per E-Mail erhalten.",
@@ -304,7 +304,7 @@ enum CustomerSupportMockData {
             SupportTicket(
                 id: UUID().uuidString,
                 ticketNumber: "TKT-12348",
-                customerId: customer1.customerId,
+                userId: customer1.id,
                 customerName: customer1.fullName,
                 subject: "App stürzt beim Öffnen ab",
                 description: "Die App stürzt jedes Mal ab, wenn ich sie öffne. iOS 17.2.",

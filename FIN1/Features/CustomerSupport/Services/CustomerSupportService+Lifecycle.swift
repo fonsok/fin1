@@ -50,7 +50,7 @@ extension CustomerSupportService {
 
         await logAction(
             .respondToSupportTicket,
-            customerId: ticket.customerId,
+            customerId: ticket.userId,
             description: "Ticket \(ticket.ticketNumber) wiedereröffnet: \(reason)"
         )
 
@@ -67,7 +67,7 @@ extension CustomerSupportService {
 
         // Verify user owns this ticket
         let customer = mockCustomers.first(where: { $0.id == userId })
-        guard customer?.customerId == ticket.customerId else {
+        guard ticket.userId == userId else {
             throw CustomerSupportError.invalidRequest("Sie können nur eigene Tickets wiedereröffnen")
         }
 
@@ -114,7 +114,7 @@ extension CustomerSupportService {
         let newTicket = SupportTicket(
             id: UUID().uuidString,
             ticketNumber: newTicketNumber,
-            customerId: ticket.customerId,
+            userId: ticket.userId,
             customerName: ticket.customerName,
             subject: "Folgeanfrage: \(ticket.subject)",
             description: "Bezug auf Ticket \(ticket.ticketNumber):\n\n\(reason)",
@@ -173,10 +173,10 @@ extension CustomerSupportService {
     // MARK: - Related Tickets
 
     /// Get tickets related to a customer
-    func getRelatedTickets(customerId: String, excludeTicketId: String?) async throws -> [SupportTicket] {
+    func getRelatedTickets(userId: String, excludeTicketId: String?) async throws -> [SupportTicket] {
         let tickets = mockTickets
         return tickets.filter { ticket in
-            ticket.customerId == customerId &&
+            ticket.userId == userId &&
             ticket.id != excludeTicketId &&
             ticket.status != .archived
         }

@@ -21,7 +21,7 @@ struct CustomerDetailHeader: View {
                 .fontWeight(.bold)
                 .foregroundColor(AppTheme.fontColor)
 
-            Text("Kundennummer: \(customer.customerId)")
+            Text("Kundennummer: \(customer.customerNumber)")
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
 

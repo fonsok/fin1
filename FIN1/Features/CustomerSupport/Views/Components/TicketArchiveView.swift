@@ -161,7 +161,7 @@ struct TicketArchiveView: View {
         defer { isLoading = false }
 
         do {
-            let allTickets = try await viewModel.supportService.getSupportTickets(customerId: nil)
+            let allTickets = try await viewModel.supportService.getSupportTickets(userId: nil)
             archivedTickets = allTickets.filter { ticket in
                 ticket.status == .archived || ticket.status == .closed || ticket.status == .resolved
             }

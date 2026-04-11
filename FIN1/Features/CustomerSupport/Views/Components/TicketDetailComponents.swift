@@ -182,7 +182,7 @@ struct TicketInfoSection: View {
 
             VStack(spacing: ResponsiveDesign.spacing(8)) {
                 CSInfoRow(label: "Kunde", value: ticket.customerName)
-                CSInfoRow(label: "Kunden-ID", value: ticket.customerId)
+                CSInfoRow(label: "Nutzer-ID", value: ticket.userId)
                 CSInfoRow(
                     label: "Erstellt am",
                     value: ticket.createdAt.formatted(date: .abbreviated, time: .omitted)

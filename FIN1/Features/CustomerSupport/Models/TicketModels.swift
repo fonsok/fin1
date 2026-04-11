@@ -5,7 +5,8 @@ import Foundation
 struct SupportTicket: Identifiable, Codable {
     let id: String
     let ticketNumber: String
-    let customerId: String
+    /// Parse `_User.objectId` des Endkunden.
+    let userId: String
     let customerName: String
     let subject: String
     let description: String
@@ -163,7 +164,7 @@ enum TicketResponseType: String, Codable, CaseIterable {
 // MARK: - Ticket Create DTO
 
 struct SupportTicketCreate: Codable {
-    let customerId: String
+    let userId: String
     let subject: String
     let description: String
     let priority: SupportTicket.TicketPriority

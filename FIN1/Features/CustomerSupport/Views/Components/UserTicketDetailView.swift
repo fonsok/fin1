@@ -225,7 +225,7 @@ struct UserTicketDetailView: View {
         ticket: SupportTicket(
             id: "test-ticket",
             ticketNumber: "TKT-001",
-            customerId: "CUST-001",
+            userId: "user:preview@test.com",
             customerName: "Test Customer",
             subject: "Test Ticket",
             description: "This is a test ticket",

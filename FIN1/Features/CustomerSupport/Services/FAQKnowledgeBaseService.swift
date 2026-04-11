@@ -352,12 +352,12 @@ final class FAQKnowledgeBaseService: FAQKnowledgeBaseServiceProtocol, ServiceLif
                 - Bestätigen Sie die Investition
 
                 ### 4. Nachverfolgung
-                - Verfolgen Sie Ihre Investition im Portfolio
+                - Verfolgen Sie Ihre Investition unter Investments
                 - Sie erhalten Benachrichtigungen bei wichtigen Ereignissen
                 """,
                 category: .investment,
                 tags: ["Investment", "Erste Schritte", "Anleitung"],
-                keywords: ["investieren", "erste", "anleitung", "trader", "betrag", "portfolio"],
+                keywords: ["investieren", "erste", "anleitung", "trader", "betrag", "investments"],
                 viewCount: 720,
                 helpfulCount: 112,
                 notHelpfulCount: 5,

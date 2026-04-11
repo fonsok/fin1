@@ -12,18 +12,18 @@ extension CustomerSupportDashboardViewModel {
 
     // MARK: - Create Ticket
 
-    func openCreateTicketSheet(customerId: String? = nil) {
-        preselectedCustomerId = customerId
+    func openCreateTicketSheet(userId: String? = nil) {
+        preselectedUserId = userId
         showCreateTicketSheet = true
     }
 
     func closeCreateTicketSheet() {
         showCreateTicketSheet = false
-        preselectedCustomerId = nil
+        preselectedUserId = nil
     }
 
     func createSupportTicket(
-        customerId: String,
+        userId: String,
         subject: String,
         description: String,
         priority: SupportTicket.TicketPriority
@@ -37,7 +37,7 @@ extension CustomerSupportDashboardViewModel {
 
         do {
             let ticket = SupportTicketCreate(
-                customerId: customerId,
+                userId: userId,
                 subject: subject,
                 description: description,
                 priority: priority

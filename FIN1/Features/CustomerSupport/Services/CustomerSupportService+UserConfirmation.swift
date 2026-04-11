@@ -16,7 +16,7 @@ extension CustomerSupportService {
 
         // Verify user owns this ticket
         let customer = mockCustomers.first(where: { $0.id == userId })
-        guard customer?.customerId == ticket.customerId else {
+        guard ticket.userId == userId else {
             throw CustomerSupportError.invalidRequest("Sie können nur eigene Tickets bestätigen")
         }
 
@@ -44,7 +44,7 @@ extension CustomerSupportService {
         let updatedTicket = SupportTicket(
             id: ticket.id,
             ticketNumber: ticket.ticketNumber,
-            customerId: ticket.customerId,
+            userId: ticket.userId,
             customerName: ticket.customerName,
             subject: ticket.subject,
             description: ticket.description,
@@ -90,7 +90,7 @@ extension CustomerSupportService {
 
         // Verify user owns this ticket
         let customer = mockCustomers.first(where: { $0.id == userId })
-        guard customer?.customerId == ticket.customerId else {
+        guard ticket.userId == userId else {
             throw CustomerSupportError.invalidRequest("Sie können nur eigene Tickets bearbeiten")
         }
 
@@ -118,7 +118,7 @@ extension CustomerSupportService {
         let updatedTicket = SupportTicket(
             id: ticket.id,
             ticketNumber: ticket.ticketNumber,
-            customerId: ticket.customerId,
+            userId: ticket.userId,
             customerName: ticket.customerName,
             subject: ticket.subject,
             description: ticket.description,

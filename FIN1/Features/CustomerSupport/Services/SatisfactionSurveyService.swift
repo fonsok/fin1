@@ -32,7 +32,7 @@ final class SatisfactionSurveyService: SatisfactionSurveyServiceProtocol {
             id: UUID().uuidString,
             ticketId: ticket.id,
             ticketNumber: ticket.ticketNumber,
-            customerId: ticket.customerId,
+            userId: ticket.userId,
             agentId: ticket.assignedTo ?? "unassigned",
             agentName: agentName,
             ticketSubject: ticket.subject,
@@ -51,9 +51,9 @@ final class SatisfactionSurveyService: SatisfactionSurveyServiceProtocol {
         return request
     }
 
-    func getPendingSurveyRequests(customerId: String) async throws -> [SurveyRequest] {
+    func getPendingSurveyRequests(userId: String) async throws -> [SurveyRequest] {
         surveyRequests.filter {
-            $0.customerId == customerId && !$0.isCompleted && !$0.isExpired
+            $0.userId == userId && !$0.isCompleted && !$0.isExpired
         }
     }
 
@@ -93,7 +93,7 @@ final class SatisfactionSurveyService: SatisfactionSurveyServiceProtocol {
             id: UUID().uuidString,
             ticketId: request.ticketId,
             ticketNumber: request.ticketNumber,
-            customerId: request.customerId,
+            userId: request.userId,
             agentId: request.agentId,
             agentName: request.agentName,
             rating: rating,
@@ -122,8 +122,8 @@ final class SatisfactionSurveyService: SatisfactionSurveyServiceProtocol {
         surveys.filter { $0.ticketId == ticketId }
     }
 
-    func getCustomerSurveys(customerId: String) async throws -> [SatisfactionSurvey] {
-        surveys.filter { $0.customerId == customerId }
+    func getCustomerSurveys(userId: String) async throws -> [SatisfactionSurvey] {
+        surveys.filter { $0.userId == userId }
     }
 
     func getAgentSurveys(agentId: String) async throws -> [SatisfactionSurvey] {

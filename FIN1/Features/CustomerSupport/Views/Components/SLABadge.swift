@@ -219,7 +219,7 @@ struct SLAWarningBanner: View {
         let urgentTicket = SupportTicket(
             id: "1",
             ticketNumber: "TKT-001",
-            customerId: "c1",
+            userId: "user:preview@test.com",
             customerName: "Test",
             subject: "Urgent",
             description: "Test",

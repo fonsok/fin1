@@ -276,7 +276,7 @@ final class TicketAssignmentService {
             (["fehler", "error", "bug", "funktioniert nicht", "doesn't work", "problem", "absturz", "crash", "laden", "loading"],
              AgentSpecialization.technical.rawValue),
 
-            (["investment", "anlage", "portfolio", "rendite", "return", "aktie", "stock", "handel", "trade"],
+            (["investment", "anlage", "investments", "rendite", "return", "aktie", "stock", "handel", "trade"],
              AgentSpecialization.investments.rawValue),
 
             (["konto", "account", "profil", "profile", "daten", "data", "ändern", "change", "persönlich", "personal"],

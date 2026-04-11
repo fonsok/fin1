@@ -20,8 +20,8 @@ struct MyTicketsView: View {
         appServices.userService.currentUser?.id ?? ""
     }
 
-    private var customerId: String {
-        appServices.userService.currentUser?.customerId ?? ""
+    private var endUserObjectId: String {
+        appServices.userService.currentUser?.id ?? ""
     }
 
     enum TicketFilter: String, CaseIterable {
@@ -230,7 +230,7 @@ struct MyTicketsView: View {
         defer { isLoading = false }
 
         do {
-            tickets = try await appServices.customerSupportService.getSupportTickets(customerId: customerId)
+            tickets = try await appServices.customerSupportService.getSupportTickets(userId: endUserObjectId)
         } catch {
             let appError = error.toAppError()
             errorMessage = appError.errorDescription ?? "An error occurred"
@@ -360,10 +360,10 @@ private struct MyTicketRow: View {
 
     // Check if there's a response newer than any customer response
     private var hasUnreadResponse: Bool {
-        guard let lastAgentResponse = ticket.responses.last(where: { $0.agentId != ticket.customerId && !$0.isInternal }) else {
+        guard let lastAgentResponse = ticket.responses.last(where: { $0.agentId != ticket.userId && !$0.isInternal }) else {
             return false
         }
-        guard let lastCustomerResponse = ticket.responses.last(where: { $0.agentId == ticket.customerId }) else {
+        guard let lastCustomerResponse = ticket.responses.last(where: { $0.agentId == ticket.userId }) else {
             return true  // Agent responded, customer never did
         }
         return lastAgentResponse.createdAt > lastCustomerResponse.createdAt

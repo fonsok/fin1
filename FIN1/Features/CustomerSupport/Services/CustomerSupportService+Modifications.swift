@@ -7,10 +7,10 @@ extension CustomerSupportService {
 
     // MARK: - Address Change
 
-    func requestAddressChange(customerId: String, newAddress: CSAddressChangeInput) async throws -> ChangeRequest {
+    func requestAddressChange(customerNumber: String, newAddress: CSAddressChangeInput) async throws -> ChangeRequest {
         try await validatePermission(.updateCustomerAddress)
 
-        guard let customer = mockCustomers.first(where: { $0.customerId == customerId }) else {
+        guard let customer = mockCustomers.first(where: { $0.customerNumber == customerNumber }) else {
             throw CustomerSupportError.customerNotFound
         }
 
@@ -20,7 +20,7 @@ extension CustomerSupportService {
         await auditService.logModificationWithCompliance(
             agentId: currentAgentId,
             agentRole: currentAgentRole,
-            customerId: customerId,
+            customerId: customerNumber,
             permission: .updateCustomerAddress,
             fieldName: "Adresse",
             previousValue: previousAddress,
@@ -31,7 +31,7 @@ extension CustomerSupportService {
         return ChangeRequest(
             id: UUID().uuidString,
             requestType: .address,
-            customerId: customerId,
+            customerId: customerNumber,
             requestedBy: currentAgentId,
             status: .pending,
             previousValue: previousAddress,
@@ -46,10 +46,10 @@ extension CustomerSupportService {
 
     // MARK: - Name Change
 
-    func requestNameChange(customerId: String, newName: CSNameChangeInput) async throws -> ChangeRequest {
+    func requestNameChange(customerNumber: String, newName: CSNameChangeInput) async throws -> ChangeRequest {
         try await validatePermission(.updateCustomerName)
 
-        guard let customer = mockCustomers.first(where: { $0.customerId == customerId }) else {
+        guard let customer = mockCustomers.first(where: { $0.customerNumber == customerNumber }) else {
             throw CustomerSupportError.customerNotFound
         }
 
@@ -63,7 +63,7 @@ extension CustomerSupportService {
         await auditService.logModificationWithCompliance(
             agentId: currentAgentId,
             agentRole: currentAgentRole,
-            customerId: customerId,
+            customerId: customerNumber,
             permission: .updateCustomerName,
             fieldName: "Name",
             previousValue: previousName,
@@ -74,7 +74,7 @@ extension CustomerSupportService {
         return ChangeRequest(
             id: UUID().uuidString,
             requestType: .name,
-            customerId: customerId,
+            customerId: customerNumber,
             requestedBy: currentAgentId,
             status: .pending,
             previousValue: previousName,
@@ -89,19 +89,19 @@ extension CustomerSupportService {
 
     // MARK: - Password Reset
 
-    func initiatePasswordReset(customerId: String) async throws {
+    func initiatePasswordReset(customerNumber: String) async throws {
         try await validatePermission(.resetCustomerPassword)
 
         await logAction(
             .resetCustomerPassword,
-            customerId: customerId,
+            customerId: customerNumber,
             description: "Passwort-Zurücksetzung eingeleitet"
         )
 
         let event = ComplianceEvent(
             eventType: .passwordReset,
             agentId: currentAgentId,
-            customerId: customerId,
+            customerId: customerNumber,
             description: "Passwort-Zurücksetzung durch Kundenservice",
             severity: .low,
             requiresReview: false
@@ -111,19 +111,19 @@ extension CustomerSupportService {
 
     // MARK: - Account Unlock
 
-    func unlockAccount(customerId: String, reason: String) async throws {
+    func unlockAccount(customerNumber: String, reason: String) async throws {
         try await validatePermission(.unlockCustomerAccount)
 
         await logAction(
             .unlockCustomerAccount,
-            customerId: customerId,
+            customerId: customerNumber,
             description: "Konto entsperrt: \(reason)"
         )
 
         let event = ComplianceEvent(
             eventType: .accountUnlock,
             agentId: currentAgentId,
-            customerId: customerId,
+            customerId: customerNumber,
             description: "Kontoentsperrung: \(reason)",
             severity: .medium,
             requiresReview: true

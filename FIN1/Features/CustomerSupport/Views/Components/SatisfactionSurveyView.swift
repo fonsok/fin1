@@ -200,7 +200,7 @@ struct SatisfactionSurveyView: View {
             id: "1",
             ticketId: "ticket-1",
             ticketNumber: "TKT-12345",
-            customerId: "customer-1",
+            userId: "user:preview@test.com",
             agentId: "user:csr1@test.com",
             agentName: "Stefan Müller",
             ticketSubject: "Problem mit meinem Konto",

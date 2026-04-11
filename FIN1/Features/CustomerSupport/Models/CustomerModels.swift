@@ -4,7 +4,7 @@ import Foundation
 
 struct CustomerSearchResult: Identifiable, Codable {
     let id: String
-    let customerId: String
+    let customerNumber: String
     let fullName: String
     let email: String
     let role: String
@@ -42,7 +42,7 @@ struct CustomerSearchResult: Identifiable, Codable {
 
 struct CustomerProfile: Identifiable, Codable {
     let id: String
-    let customerId: String
+    let customerNumber: String
     let salutation: String
     let academicTitle: String?
     let firstName: String
@@ -134,7 +134,7 @@ struct CustomerDocumentSummary: Identifiable, Codable {
 // MARK: - Customer KYC Status
 
 struct CustomerKYCStatus: Codable {
-    let customerId: String
+    let customerNumber: String
     let overallStatus: KYCOverallStatus
     let emailVerified: Bool
     let identityVerified: Bool

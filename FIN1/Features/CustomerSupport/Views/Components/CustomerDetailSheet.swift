@@ -81,7 +81,7 @@ struct CustomerDetailSheet: View {
                 )
             }
             .task {
-                await viewModel.loadCustomerTickets(customerId: customer.customerId)
+                await viewModel.loadCustomerTickets(userId: customer.id)
             }
         }
     }

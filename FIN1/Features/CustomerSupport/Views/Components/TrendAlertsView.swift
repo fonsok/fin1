@@ -166,7 +166,7 @@ struct TrendAlertsView: View {
         let twoWeeksAgo = calendar.date(byAdding: .day, value: -14, to: now)!
 
         do {
-            let allTickets = try await viewModel.supportService.getSupportTickets(customerId: nil)
+            let allTickets = try await viewModel.supportService.getSupportTickets(userId: nil)
 
             let currentPeriod = allTickets.filter { $0.createdAt >= weekAgo }
             let previousPeriod = allTickets.filter { $0.createdAt >= twoWeeksAgo && $0.createdAt < weekAgo }

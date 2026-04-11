@@ -39,7 +39,7 @@ extension CustomerSupportService {
         let updatedTicket = SupportTicket(
             id: ticket.id,
             ticketNumber: ticket.ticketNumber,
-            customerId: ticket.customerId,
+            userId: ticket.userId,
             customerName: ticket.customerName,
             subject: ticket.subject,
             description: ticket.description,
@@ -55,7 +55,7 @@ extension CustomerSupportService {
         // Log the solution
         await logAction(
             .respondToSupportTicket,
-            customerId: ticket.customerId,
+            customerId: ticket.userId,
             description: "Lösung bereitgestellt für Ticket \(ticket.ticketNumber): \(solution.solutionType.displayName)"
         )
 
@@ -93,7 +93,7 @@ extension CustomerSupportService {
         let updatedTicket = SupportTicket(
             id: ticket.id,
             ticketNumber: ticket.ticketNumber,
-            customerId: ticket.customerId,
+            userId: ticket.userId,
             customerName: ticket.customerName,
             subject: ticket.subject,
             description: ticket.description,
@@ -146,7 +146,7 @@ extension CustomerSupportService {
         let updatedTicket = SupportTicket(
             id: ticket.id,
             ticketNumber: ticket.ticketNumber,
-            customerId: ticket.customerId,
+            userId: ticket.userId,
             customerName: ticket.customerName,
             subject: ticket.subject,
             description: ticket.description,
@@ -162,7 +162,7 @@ extension CustomerSupportService {
         // Log escalation
         await logAction(
             .escalateToAdmin,
-            customerId: ticket.customerId,
+            customerId: ticket.userId,
             description: "Bug an \(escalation.devTeam) eskaliert: \(escalation.description). Severity: \(escalation.severity.displayName)",
             actionType: .escalation
         )
@@ -171,7 +171,7 @@ extension CustomerSupportService {
         let event = ComplianceEvent(
             eventType: .escalation,
             agentId: currentAgentId,
-            customerId: ticket.customerId,
+            customerId: ticket.userId,
             description: "Bug-Eskalation an Entwicklung: \(escalation.description)",
             severity: escalation.severity == .critical ? .high : .medium,
             requiresReview: escalation.severity == .critical
@@ -211,7 +211,7 @@ extension CustomerSupportService {
         let updatedTicket = SupportTicket(
             id: ticket.id,
             ticketNumber: ticket.ticketNumber,
-            customerId: ticket.customerId,
+            userId: ticket.userId,
             customerName: ticket.customerName,
             subject: ticket.subject,
             description: ticket.description,
@@ -226,8 +226,8 @@ extension CustomerSupportService {
 
         // Notify customer about the new response (which already contains the confirmation request)
         // No separate confirmation notification needed - the response itself includes the confirmation request
-        let customer = mockCustomers.first(where: { $0.customerId == ticket.customerId })
-        let userId = customer?.id ?? ticket.customerId
+        let customer = mockCustomers.first(where: { $0.id == ticket.userId })
+        let userId = customer?.id ?? ticket.userId
 
         notificationService.createNotification(
             title: "Neue Antwort auf Support-Ticket",
@@ -241,7 +241,7 @@ extension CustomerSupportService {
         // Log the action
         await logAction(
             .respondToSupportTicket,
-            customerId: ticket.customerId,
+            customerId: ticket.userId,
             description: "Bestätigungsanfrage für Ticket \(ticket.ticketNumber) gesendet"
         )
 
@@ -298,7 +298,7 @@ extension CustomerSupportService {
         // Log resolution
         await logAction(
             .respondToSupportTicket,
-            customerId: ticket.customerId,
+            customerId: ticket.userId,
             description: "Ticket \(ticket.ticketNumber) gelöst. Kundenbestätigung: \(customerConfirmed ? "Ja" : "Nein")"
         )
 
@@ -362,7 +362,7 @@ extension CustomerSupportService {
         // Log closure
         await logAction(
             .respondToSupportTicket,
-            customerId: ticket.customerId,
+            customerId: ticket.userId,
             description: "Ticket \(ticket.ticketNumber) geschlossen: \(closureReason)"
         )
 

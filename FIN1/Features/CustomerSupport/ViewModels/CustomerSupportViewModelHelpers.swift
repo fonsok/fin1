@@ -13,18 +13,19 @@ final class CustomerSupportSheetManager: ObservableObject {
     @Published var showEscalateTicketSheet = false
     @Published var showKYCStatusList = false
 
-    var preselectedCustomerId: String?
+    /// Parse `objectId` / stable user id for ticket creation (not Kundennummer).
+    var preselectedUserId: String?
     var ticketToRespond: SupportTicket?
     var ticketToEscalate: SupportTicket?
 
-    func openCreateTicketSheet(customerId: String? = nil) {
-        preselectedCustomerId = customerId
+    func openCreateTicketSheet(userId: String? = nil) {
+        preselectedUserId = userId
         showCreateTicketSheet = true
     }
 
     func closeCreateTicketSheet() {
         showCreateTicketSheet = false
-        preselectedCustomerId = nil
+        preselectedUserId = nil
     }
 
     func openRespondTicketSheet(for ticket: SupportTicket) {
@@ -145,8 +146,8 @@ final class CustomerSupportTicketCoordinator {
         self.supportService = supportService
     }
 
-    func loadTickets(customerId: String?) async throws -> [SupportTicket] {
-        try await supportService.getSupportTickets(customerId: customerId)
+    func loadTickets(userId: String?) async throws -> [SupportTicket] {
+        try await supportService.getSupportTickets(userId: userId)
     }
 }
 
@@ -160,8 +161,8 @@ final class CustomerSupportCustomerCoordinator {
         self.supportService = supportService
     }
 
-    func getProfile(customerId: String) async throws -> CustomerProfile? {
-        try await supportService.getCustomerProfile(customerId: customerId)
+    func getProfile(userId: String) async throws -> CustomerProfile? {
+        try await supportService.getCustomerProfile(userId: userId)
     }
 }
 
@@ -175,8 +176,8 @@ final class CustomerSupportKYCCoordinator {
         self.supportService = supportService
     }
 
-    func getKYCStatus(customerId: String) async throws -> CustomerKYCStatus {
-        try await supportService.getCustomerKYCStatus(customerId: customerId)
+    func getKYCStatus(customerNumber: String) async throws -> CustomerKYCStatus {
+        try await supportService.getCustomerKYCStatus(customerNumber: customerNumber)
     }
 }
 
@@ -190,12 +191,12 @@ final class CustomerSupportCustomerDataLoader {
         self.supportService = supportService
     }
 
-    func loadInvestments(customerId: String) async throws -> [CustomerInvestmentSummary] {
-        try await supportService.getCustomerInvestments(customerId: customerId)
+    func loadInvestments(userId: String) async throws -> [CustomerInvestmentSummary] {
+        try await supportService.getCustomerInvestments(userId: userId)
     }
 
-    func loadDocuments(customerId: String) async throws -> [CustomerDocumentSummary] {
-        try await supportService.getCustomerDocuments(customerId: customerId)
+    func loadDocuments(customerNumber: String) async throws -> [CustomerDocumentSummary] {
+        try await supportService.getCustomerDocuments(customerNumber: customerNumber)
     }
 }
 
@@ -211,9 +212,9 @@ final class CustomerSupportTicketOperationsHandler {
         self.viewModel = viewModel
     }
 
-    func createTicket(customerId: String, subject: String, description: String, priority: SupportTicket.TicketPriority) async {
+    func createTicket(userId: String, subject: String, description: String, priority: SupportTicket.TicketPriority) async {
         do {
-            let ticket = SupportTicketCreate(customerId: customerId, subject: subject, description: description, priority: priority)
+            let ticket = SupportTicketCreate(userId: userId, subject: subject, description: description, priority: priority)
             _ = try await supportService.createSupportTicket(ticket)
             viewModel?.showSuccessMessage("Ticket wurde erstellt.")
             await viewModel?.load()
@@ -255,18 +256,18 @@ final class CustomerSupportCustomerOperationsHandler {
         self.viewModel = viewModel
     }
 
-    func initiatePasswordReset(customerId: String) async {
+    func initiatePasswordReset(customerNumber: String) async {
         do {
-            try await supportService.initiatePasswordReset(customerId: customerId)
+            try await supportService.initiatePasswordReset(customerNumber: customerNumber)
             viewModel?.showSuccessMessage("Passwort-Reset wurde initiiert.")
         } catch {
             viewModel?.handleError(error)
         }
     }
 
-    func unlockAccount(customerId: String, reason: String) async {
+    func unlockAccount(customerNumber: String, reason: String) async {
         do {
-            try await supportService.unlockAccount(customerId: customerId, reason: reason)
+            try await supportService.unlockAccount(customerNumber: customerNumber, reason: reason)
             viewModel?.showSuccessMessage("Konto wurde entsperrt.")
         } catch {
             viewModel?.handleError(error)
@@ -290,12 +291,12 @@ final class CustomerSupportCustomerSelectionHandler {
 
     func selectCustomer(_ result: CustomerSearchResult) async {
         do {
-            let profile = try await supportService.getCustomerProfile(customerId: result.customerId)
+            let profile = try await supportService.getCustomerProfile(userId: result.id)
             viewModel?.selectedCustomer = profile
-            if let customerId = profile?.customerId {
-                viewModel?.customerKYCStatus = try await supportService.getCustomerKYCStatus(customerId: customerId)
-                viewModel?.customerInvestments = try await dataLoader.loadInvestments(customerId: customerId)
-                viewModel?.customerDocuments = try await dataLoader.loadDocuments(customerId: customerId)
+            if let profile {
+                viewModel?.customerKYCStatus = try await supportService.getCustomerKYCStatus(customerNumber: profile.customerNumber)
+                viewModel?.customerInvestments = try await dataLoader.loadInvestments(userId: profile.id)
+                viewModel?.customerDocuments = try await dataLoader.loadDocuments(customerNumber: profile.customerNumber)
             }
         } catch {
             viewModel?.handleError(error)

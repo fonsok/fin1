@@ -7,7 +7,7 @@ struct SatisfactionSurvey: Identifiable, Codable {
     let id: String
     let ticketId: String
     let ticketNumber: String
-    let customerId: String
+    let userId: String
     let agentId: String
     let agentName: String
 
@@ -50,7 +50,7 @@ struct SurveyRequest: Identifiable, Codable {
     let id: String
     let ticketId: String
     let ticketNumber: String
-    let customerId: String
+    let userId: String
     let agentId: String
     let agentName: String
     let ticketSubject: String

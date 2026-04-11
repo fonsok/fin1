@@ -97,7 +97,7 @@ final class SLAMonitoringService: SLAMonitoringServiceProtocol {
         }
 
         // Get all active tickets
-        let tickets = try await supportService.getSupportTickets(customerId: nil)
+        let tickets = try await supportService.getSupportTickets(userId: nil)
         let activeTickets = tickets.filter { ticket in
             ticket.status != .resolved &&
             ticket.status != .closed &&
@@ -173,7 +173,7 @@ final class SLAMonitoringService: SLAMonitoringServiceProtocol {
         let event = ComplianceEvent(
             eventType: .escalation,
             agentId: "system",
-            customerId: ticket.customerId,
+            customerId: ticket.userId,
             description: "Automatische Eskalation: Ticket \(ticket.ticketNumber) - \(violationReason)",
             severity: .high,
             requiresReview: true

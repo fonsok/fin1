@@ -13,28 +13,27 @@ extension CustomerSupportDashboardViewModel {
 
         do {
             // Load customer profile
-            if let profile = try await supportService.getCustomerProfile(customerId: result.customerId) {
+            if let profile = try await supportService.getCustomerProfile(userId: result.id) {
                 selectedCustomer = profile
 
                 // Load role-specific data using the user's actual ID (profile.id)
                 // Note: profile.id is the real user ID (e.g., "user:investor1@test.com")
                 // which matches investorId/traderId in real investments/trades
-                print("🔍 CSR: Loading data for \(profile.role) - userId='\(profile.id)', customerId='\(profile.customerId)'")
+                print("🔍 CSR: Loading data for \(profile.role) - userId='\(profile.id)', customerNumber='\(profile.customerNumber)'")
 
                 if profile.role.lowercased() == "investor" {
-                    customerInvestments = try await supportService.getCustomerInvestments(customerId: profile.id)
+                    customerInvestments = try await supportService.getCustomerInvestments(userId: profile.id)
                     customerTrades = [] // Clear trades for investor
                     print("🔍 CSR: Loaded \(customerInvestments.count) investments for investor")
                 } else if profile.role.lowercased() == "trader" {
-                    customerTrades = try await supportService.getCustomerTrades(customerId: profile.id)
+                    customerTrades = try await supportService.getCustomerTrades(userId: profile.id)
                     customerInvestments = [] // Clear investments for trader
                     print("🔍 CSR: Loaded \(customerTrades.count) trades for trader")
                 }
             }
 
-            // Load related data using customerId (display number) for profile-related data
-            customerKYCStatus = try await supportService.getCustomerKYCStatus(customerId: result.customerId)
-            customerDocuments = try await supportService.getCustomerDocuments(customerId: result.customerId)
+            customerKYCStatus = try await supportService.getCustomerKYCStatus(customerNumber: result.customerNumber)
+            customerDocuments = try await supportService.getCustomerDocuments(customerNumber: result.customerNumber)
         } catch {
             handleError(error)
         }
@@ -52,13 +51,13 @@ extension CustomerSupportDashboardViewModel {
     // MARK: - Customer Tickets
 
     /// Loads tickets for the currently selected customer
-    func loadCustomerTickets(customerId: String) async {
+    func loadCustomerTickets(userId: String) async {
         isLoadingCustomerTickets = true
         defer { isLoadingCustomerTickets = false }
 
         do {
             customerTickets = try await supportService.getRelatedTickets(
-                customerId: customerId,
+                userId: userId,
                 excludeTicketId: nil
             )
         } catch {
@@ -111,7 +110,7 @@ extension CustomerSupportDashboardViewModel {
 
     // MARK: - Customer Modifications
 
-    func initiatePasswordReset(customerId: String) async {
+    func initiatePasswordReset(customerNumber: String) async {
         guard hasPermission(.resetCustomerPassword) else {
             showPermissionError(.resetCustomerPassword)
             return
@@ -120,14 +119,14 @@ extension CustomerSupportDashboardViewModel {
         defer { isLoading = false }
 
         do {
-            try await supportService.initiatePasswordReset(customerId: customerId)
+            try await supportService.initiatePasswordReset(customerNumber: customerNumber)
             showSuccessMessage("Passwort-Reset wurde initiiert. Der Kunde erhält eine E-Mail.")
         } catch {
             handleError(error)
         }
     }
 
-    func unlockAccount(customerId: String, reason: String) async {
+    func unlockAccount(customerNumber: String, reason: String) async {
         guard hasPermission(.unlockCustomerAccount) else {
             showPermissionError(.unlockCustomerAccount)
             return
@@ -136,7 +135,7 @@ extension CustomerSupportDashboardViewModel {
         defer { isLoading = false }
 
         do {
-            try await supportService.unlockAccount(customerId: customerId, reason: reason)
+            try await supportService.unlockAccount(customerNumber: customerNumber, reason: reason)
             showSuccessMessage("Konto wurde entsperrt.")
         } catch {
             handleError(error)

@@ -8,7 +8,7 @@ struct CreateTicketSheet: View {
     @ObservedObject var viewModel: CustomerSupportDashboardViewModel
     @Environment(\.dismiss) private var dismiss
 
-    @State private var selectedCustomerId: String = ""
+    @State private var selectedUserId: String = ""
     @State private var subject: String = ""
     @State private var description: String = ""
     @State private var priority: SupportTicket.TicketPriority = .medium
@@ -41,11 +41,11 @@ struct CreateTicketSheet: View {
             .task {
                 await loadCustomers()
             }
-            .onChange(of: viewModel.preselectedCustomerId) { _, newValue in
+            .onChange(of: viewModel.preselectedUserId) { _, newValue in
                 if let preselectedId = newValue,
                    !availableCustomers.isEmpty,
-                   availableCustomers.contains(where: { $0.customerId == preselectedId }) {
-                    selectedCustomerId = preselectedId
+                   availableCustomers.contains(where: { $0.id == preselectedId }) {
+                    selectedUserId = preselectedId
                 }
             }
         }
@@ -88,16 +88,16 @@ struct CreateTicketSheet: View {
                 Menu {
                     ForEach(availableCustomers) { customer in
                         Button(action: {
-                            selectedCustomerId = customer.customerId
+                            selectedUserId = customer.id
                         }) {
                             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(2)) {
                                 Text(customer.fullName)
                                     .font(ResponsiveDesign.bodyFont())
-                                Text("\(customer.email) • \(customer.customerId)")
+                                Text("\(customer.email) • \(customer.customerNumber)")
                                     .font(ResponsiveDesign.captionFont())
                                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
                             }
-                            if selectedCustomerId == customer.customerId {
+                            if selectedUserId == customer.id {
                                 Spacer()
                                 Image(systemName: "checkmark")
                             }
@@ -105,7 +105,7 @@ struct CreateTicketSheet: View {
                     }
                 } label: {
                     HStack {
-                        if let selectedCustomer = availableCustomers.first(where: { $0.customerId == selectedCustomerId }) {
+                        if let selectedCustomer = availableCustomers.first(where: { $0.id == selectedUserId }) {
                             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(2)) {
                                 Text(selectedCustomer.fullName)
                                     .font(ResponsiveDesign.bodyFont())
@@ -257,7 +257,7 @@ struct CreateTicketSheet: View {
     // MARK: - Computed Properties
 
     private var isFormValid: Bool {
-        !selectedCustomerId.isEmpty &&
+        !selectedUserId.isEmpty &&
         !subject.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
         !description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
         description.count >= 10
@@ -270,10 +270,10 @@ struct CreateTicketSheet: View {
         await MainActor.run {
             availableCustomers = allCustomers
             // Set preselected customer after loading if available
-            if let preselectedId = viewModel.preselectedCustomerId,
+            if let preselectedId = viewModel.preselectedUserId,
                !allCustomers.isEmpty,
-               allCustomers.contains(where: { $0.customerId == preselectedId }) {
-                selectedCustomerId = preselectedId
+               allCustomers.contains(where: { $0.id == preselectedId }) {
+                selectedUserId = preselectedId
             }
         }
     }
@@ -282,7 +282,7 @@ struct CreateTicketSheet: View {
         guard isFormValid else { return }
 
         await viewModel.createSupportTicket(
-            customerId: selectedCustomerId,
+            userId: selectedUserId,
             subject: subject.trimmingCharacters(in: .whitespacesAndNewlines),
             description: description.trimmingCharacters(in: .whitespacesAndNewlines),
             priority: priority

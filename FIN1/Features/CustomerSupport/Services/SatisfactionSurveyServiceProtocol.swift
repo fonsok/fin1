@@ -15,7 +15,7 @@ protocol SatisfactionSurveyServiceProtocol {
     func createSurveyRequest(for ticket: SupportTicket, agentName: String, userId: String) async throws -> SurveyRequest
 
     /// Gets pending survey requests for a customer
-    func getPendingSurveyRequests(customerId: String) async throws -> [SurveyRequest]
+    func getPendingSurveyRequests(userId: String) async throws -> [SurveyRequest]
 
     /// Gets a specific survey request by ID
     func getSurveyRequest(id: String) async throws -> SurveyRequest?
@@ -38,7 +38,7 @@ protocol SatisfactionSurveyServiceProtocol {
     func getSurveys(ticketId: String) async throws -> [SatisfactionSurvey]
 
     /// Gets all surveys submitted by a customer
-    func getCustomerSurveys(customerId: String) async throws -> [SatisfactionSurvey]
+    func getCustomerSurveys(userId: String) async throws -> [SatisfactionSurvey]
 
     /// Gets all surveys for an agent
     func getAgentSurveys(agentId: String) async throws -> [SatisfactionSurvey]

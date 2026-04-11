@@ -7,14 +7,14 @@ extension CustomerSupportService {
 
     // MARK: - Ticket Retrieval
 
-    func getSupportTickets(customerId: String?) async throws -> [SupportTicket] {
+    func getSupportTickets(userId: String?) async throws -> [SupportTicket] {
         try await validatePermission(.viewCustomerSupportHistory)
 
         // Try loading from backend first
         if let apiService = ticketAPIService {
             do {
                 let backendTickets = try await apiService.fetchTickets(
-                    userId: customerId,
+                    userId: userId,
                     status: nil as SupportTicket.TicketStatus?,
                     limit: 100,
                     skip: 0
@@ -33,8 +33,8 @@ extension CustomerSupportService {
                 }
 
                 // Return filtered tickets
-                if let customerId = customerId {
-                    return backendTickets.filter { $0.customerId == customerId }
+                if let uid = userId {
+                    return backendTickets.filter { $0.userId == uid }
                 }
                 return backendTickets
             } catch {
@@ -44,8 +44,8 @@ extension CustomerSupportService {
         }
 
         // Fallback to mock data
-        if let customerId = customerId {
-            return mockTickets.filter { $0.customerId == customerId }
+        if let uid = userId {
+            return mockTickets.filter { $0.userId == uid }
         }
         return mockTickets
     }
@@ -82,11 +82,7 @@ extension CustomerSupportService {
         }
 
         // Fallback to mock data
-        let customer = mockCustomers.first(where: { $0.id == userId })
-        guard let customerId = customer?.customerId else {
-            return [] // User not found or no tickets
-        }
-        return mockTickets.filter { $0.customerId == customerId }
+        return mockTickets.filter { $0.userId == userId }
     }
 
     func getTicket(ticketId: String) async throws -> SupportTicket? {
@@ -121,20 +117,20 @@ extension CustomerSupportService {
     func createSupportTicket(_ ticket: SupportTicketCreate) async throws -> SupportTicket {
         try await validatePermission(.createSupportTicket)
 
-        let customer = mockCustomers.first(where: { $0.customerId == ticket.customerId })
+        let customer = mockCustomers.first(where: { $0.id == ticket.userId })
         let customerName = customer?.fullName ?? "Kunde"
         let customerLanguage = customer?.language
 
         await logAction(
             .createSupportTicket,
-            customerId: ticket.customerId,
+            customerId: ticket.userId,
             description: "Support-Ticket erstellt: \(ticket.subject)"
         )
 
         var newTicket = SupportTicket(
             id: UUID().uuidString,
             ticketNumber: generateTicketNumber(),
-            customerId: ticket.customerId,
+            userId: ticket.userId,
             customerName: customerName,
             subject: ticket.subject,
             description: ticket.description,
@@ -209,7 +205,6 @@ extension CustomerSupportService {
         // No CSR permission required - users can create their own tickets
 
         let customer = mockCustomers.first(where: { $0.id == userId })
-        let customerId = customer?.customerId ?? userId
         let customerName = customer?.fullName ?? "Benutzer"
         let customerLanguage = customer?.language
         let priority = mapCategoryToPriority(category)
@@ -219,7 +214,7 @@ extension CustomerSupportService {
         var newTicket = SupportTicket(
             id: UUID().uuidString,
             ticketNumber: generateTicketNumber(),
-            customerId: customerId,
+            userId: userId,
             customerName: customerName,
             subject: subject,
             description: description,
@@ -262,7 +257,7 @@ extension CustomerSupportService {
         if let apiService = ticketAPIService {
             do {
                 let ticketCreate = SupportTicketCreate(
-                    customerId: customerId,
+                    userId: userId,
                     subject: subject,
                     description: description,
                     priority: priority
@@ -328,7 +323,7 @@ extension CustomerSupportService {
         }
 
         let ticket = mockTickets[ticketIndex]
-        let customerId = ticket.customerId
+        let endUserObjectId = ticket.userId
 
         // Create response locally
         let ticketResponse = TicketResponse(
@@ -346,7 +341,7 @@ extension CustomerSupportService {
         let updatedTicket = SupportTicket(
             id: ticket.id,
             ticketNumber: ticket.ticketNumber,
-            customerId: ticket.customerId,
+            userId: ticket.userId,
             customerName: ticket.customerName,
             subject: ticket.subject,
             description: ticket.description,
@@ -363,11 +358,11 @@ extension CustomerSupportService {
         }
 
         let actionDescription = isInternal ? "Interne Notiz auf Ticket \(ticketId)" : "Antwort auf Ticket \(ticketId)"
-        await logAction(.respondToSupportTicket, customerId: customerId, description: actionDescription)
+        await logAction(.respondToSupportTicket, customerId: endUserObjectId, description: actionDescription)
 
         // Send notification to customer if it's a public response
         if !isInternal {
-            await sendTicketResponseNotification(ticket: ticket, customerId: customerId, ticketId: ticketId)
+            await sendTicketResponseNotification(ticket: ticket, endUserObjectId: endUserObjectId, ticketId: ticketId)
         }
     }
 
@@ -396,7 +391,7 @@ extension CustomerSupportService {
         // Log action
         await logAction(
             .escalateToAdmin,
-            customerId: ticket.customerId,
+            customerId: ticket.userId,
             description: isAutomatic ? "Automatische Eskalation: Ticket \(ticketId) - \(reason)" : "Ticket \(ticketId) eskaliert: \(reason)",
             actionType: .escalation
         )
@@ -405,7 +400,7 @@ extension CustomerSupportService {
         let event = ComplianceEvent(
             eventType: .escalation,
             agentId: isAutomatic ? "system" : currentAgentId,
-            customerId: ticket.customerId,
+            customerId: ticket.userId,
             description: isAutomatic ? "Automatische Eskalation: Ticket \(ticket.ticketNumber) - \(reason)" : "Support-Ticket \(ticket.ticketNumber) an Admin eskaliert",
             severity: .high,
             requiresReview: isAutomatic
@@ -472,7 +467,7 @@ extension CustomerSupportService {
         // Log the assignment action
         await logAction(
             .respondToSupportTicket,
-            customerId: ticket.customerId,
+            customerId: ticket.userId,
             description: "Ticket \(ticket.ticketNumber) zugewiesen an \(newAgentName)"
         )
 
@@ -499,25 +494,25 @@ extension CustomerSupportService {
         }
     }
 
-    private func sendTicketResponseNotification(ticket: SupportTicket, customerId: String, ticketId: String) async {
-        let customer = mockCustomers.first(where: { $0.customerId == customerId })
-        let userId = customer?.id ?? customerId
+    private func sendTicketResponseNotification(ticket: SupportTicket, endUserObjectId: String, ticketId: String) async {
+        let customer = mockCustomers.first(where: { $0.id == endUserObjectId })
+        let notifyUserId = customer?.id ?? endUserObjectId
 
         notificationService.createNotification(
             title: "Neue Antwort auf Support-Ticket",
             message: "Ihr Ticket \"\(ticket.subject)\" hat eine neue Antwort erhalten.",
             type: .system,
             priority: .medium,
-            for: userId,
+            for: notifyUserId,
             metadata: ["ticketId": ticketId]
         )
 
-        logger.info("📧 Notification sent to user \(userId) (customerId: \(customerId)) for ticket \(ticketId)")
+        logger.info("📧 Notification sent to user \(notifyUserId) (userId: \(endUserObjectId)) for ticket \(ticketId)")
 
         if let concreteService = notificationService as? NotificationService {
             logger.info("📧 NotificationService has \(concreteService.notifications.count) total notifications")
-            let userNotifications = concreteService.notifications.filter { $0.userId == userId }
-            logger.info("📧 User \(userId) has \(userNotifications.count) notifications")
+            let userNotifications = concreteService.notifications.filter { $0.userId == notifyUserId }
+            logger.info("📧 User \(notifyUserId) has \(userNotifications.count) notifications")
         }
     }
 
@@ -532,7 +527,7 @@ extension CustomerSupportService {
             metadata: [
                 "ticketId": ticket.id,
                 "ticketNumber": ticket.ticketNumber,
-                "customerId": ticket.customerId,
+                "userId": ticket.userId,
                 "priority": ticket.priority.rawValue
             ]
         )

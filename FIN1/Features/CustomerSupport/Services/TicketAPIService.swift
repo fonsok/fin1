@@ -46,7 +46,9 @@ private struct ParseTicketsResponse: Decodable {
 private struct ParseTicket: Codable {
     let objectId: String
     let ticketNumber: String
-    let customerId: String
+    /// Canonical on server (`SupportTicket.userId`); legacy docs may only have `customerId`.
+    let userId: String?
+    let customerId: String?
     let customerName: String?
     let subject: String
     let description: String
@@ -76,14 +78,19 @@ private struct ParseTicket: Codable {
         let closedDate = closedAt.flatMap { dateFormatter.date(from: $0) }
         let resolvedDate = resolvedAt.flatMap { dateFormatter.date(from: $0) }
 
+        let endCustomerUserId = [userId, customerId].compactMap { $0 }.first(where: { !$0.isEmpty })
+        guard let endCustomerUserId else {
+            return nil
+        }
+
         // Convert messages to responses
         let responses = (messages ?? []).compactMap { $0.toTicketResponse() }
 
         return SupportTicket(
             id: objectId,
             ticketNumber: ticketNumber,
-            customerId: customerId,
-            customerName: customerName ?? customerId,
+            userId: endCustomerUserId,
+            customerName: customerName ?? endCustomerUserId,
             subject: subject,
             description: description,
             status: ticketStatus,
@@ -223,7 +230,7 @@ final class TicketAPIService: TicketAPIServiceProtocol {
         return try await fetchTicket(ticketId: response.objectId) ?? SupportTicket(
             id: response.objectId,
             ticketNumber: "TKT-\(Calendar.current.component(.year, from: Date()))-00001",
-            customerId: ticket.customerId,
+            userId: ticket.userId,
             customerName: "",
             subject: ticket.subject,
             description: ticket.description,
@@ -304,7 +311,7 @@ final class TicketAPIService: TicketAPIServiceProtocol {
 
 /// Input struct for creating tickets on Parse Server
 private struct ParseSupportTicketInput: Encodable {
-    let customerId: String
+    let userId: String
     let subject: String
     let description: String
     let priority: String
@@ -312,8 +319,8 @@ private struct ParseSupportTicketInput: Encodable {
     let status: String
 
     static func from(ticket: SupportTicketCreate) -> ParseSupportTicketInput {
-        return ParseSupportTicketInput(
-            customerId: ticket.customerId,
+        ParseSupportTicketInput(
+            userId: ticket.userId,
             subject: ticket.subject,
             description: ticket.description,
             priority: ticket.priority.rawValue,

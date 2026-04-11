@@ -13,7 +13,7 @@ extension CustomerSupportService {
         await logDataAccess(
             dataCategory: .personalIdentification,
             accessType: .search,
-            fields: ["name", "email", "customerId"],
+            fields: ["name", "email", "customerNumber"],
             purpose: "Kundensuche: \(query)"
         )
 
@@ -27,17 +27,17 @@ extension CustomerSupportService {
         return mockCustomers.compactMap { customer in
             let matches = customer.fullName.lowercased().contains(lowercasedQuery) ||
                           customer.email.lowercased().contains(lowercasedQuery) ||
-                          customer.customerId.lowercased().contains(lowercasedQuery)
+                          customer.customerNumber.lowercased().contains(lowercasedQuery)
 
             guard matches else { return nil }
             return mapCustomerToSearchResult(customer)
         }
     }
 
-    func getCustomerProfile(customerId: String) async throws -> CustomerProfile? {
+    func getCustomerProfile(userId: String) async throws -> CustomerProfile? {
         try await validatePermission(.viewCustomerProfile)
 
-        guard let customer = mockCustomers.first(where: { $0.customerId == customerId }) else {
+        guard let customer = mockCustomers.first(where: { $0.id == userId }) else {
             return nil
         }
 
@@ -46,13 +46,13 @@ extension CustomerSupportService {
             accessType: .read,
             fields: ["profile"],
             purpose: "Kundenprofil anzeigen",
-            customerId: customerId
+            customerId: userId
         )
 
         await auditService.logViewAction(
             agentId: currentAgentId,
             agentRole: currentAgentRole,
-            customerId: customerId,
+            customerId: userId,
             viewedData: "Kundenprofil"
         )
 
@@ -61,7 +61,7 @@ extension CustomerSupportService {
 
     // MARK: - Customer Data Access
 
-    func getCustomerInvestments(customerId: String) async throws -> [CustomerInvestmentSummary] {
+    func getCustomerInvestments(userId: String) async throws -> [CustomerInvestmentSummary] {
         try await validatePermission(.viewCustomerInvestments)
 
         await logDataAccess(
@@ -69,13 +69,13 @@ extension CustomerSupportService {
             accessType: .read,
             fields: ["investments"],
             purpose: "Investments anzeigen",
-            customerId: customerId
+            customerId: userId
         )
 
         // Fetch real investments if service is available
         if let investmentService = investmentService {
-            let realInvestments = investmentService.getInvestments(for: customerId)
-            logger.info("📊 CSR: Looking up investments for userId='\(customerId)', found \(realInvestments.count) real investments")
+            let realInvestments = investmentService.getInvestments(for: userId)
+            logger.info("📊 CSR: Looking up investments for userId='\(userId)', found \(realInvestments.count) real investments")
             if !realInvestments.isEmpty {
                 return realInvestments.map { investment in
                     CustomerInvestmentSummary(
@@ -96,11 +96,11 @@ extension CustomerSupportService {
         }
 
         // Fall back to mock data if no real investments found
-        logger.info("📊 CSR: Using mock investments for userId='\(customerId)'")
-        return CustomerSupportMockData.createMockInvestments(for: customerId)
+        logger.info("📊 CSR: Using mock investments for userId='\(userId)'")
+        return CustomerSupportMockData.createMockInvestments(for: userId)
     }
 
-    func getCustomerTrades(customerId: String) async throws -> [CustomerTradeSummary] {
+    func getCustomerTrades(userId: String) async throws -> [CustomerTradeSummary] {
         try await validatePermission(.viewCustomerTrades)
 
         await logDataAccess(
@@ -108,14 +108,14 @@ extension CustomerSupportService {
             accessType: .read,
             fields: ["trades"],
             purpose: "Trades anzeigen",
-            customerId: customerId
+            customerId: userId
         )
 
         // Fetch real trades if service is available
         if let tradeLifecycleService = tradeLifecycleService {
             let allTrades = tradeLifecycleService.completedTrades
-            let traderTrades = allTrades.filter { $0.traderId == customerId }
-            logger.info("📈 CSR: Looking up trades for userId='\(customerId)', found \(traderTrades.count) real trades (from \(allTrades.count) total)")
+            let traderTrades = allTrades.filter { $0.traderId == userId }
+            logger.info("📈 CSR: Looking up trades for userId='\(userId)', found \(traderTrades.count) real trades (from \(allTrades.count) total)")
             if !traderTrades.isEmpty {
                 return traderTrades.map { trade in
                     CustomerTradeSummary(
@@ -137,8 +137,8 @@ extension CustomerSupportService {
         }
 
         // Fall back to mock data if no real trades found
-        logger.info("📈 CSR: Using mock trades for userId='\(customerId)'")
-        return CustomerSupportMockData.createMockTrades(for: customerId)
+        logger.info("📈 CSR: Using mock trades for userId='\(userId)'")
+        return CustomerSupportMockData.createMockTrades(for: userId)
     }
 
     // MARK: - Status Mapping Helpers
@@ -169,7 +169,7 @@ extension CustomerSupportService {
         }
     }
 
-    func getCustomerDocuments(customerId: String) async throws -> [CustomerDocumentSummary] {
+    func getCustomerDocuments(customerNumber: String) async throws -> [CustomerDocumentSummary] {
         try await validatePermission(.viewCustomerDocuments)
 
         await logDataAccess(
@@ -177,13 +177,13 @@ extension CustomerSupportService {
             accessType: .read,
             fields: ["documents"],
             purpose: "Dokumente anzeigen",
-            customerId: customerId
+            customerId: customerNumber
         )
 
-        return CustomerSupportMockData.createMockDocuments(for: customerId)
+        return CustomerSupportMockData.createMockDocuments(for: customerNumber)
     }
 
-    func getCustomerKYCStatus(customerId: String) async throws -> CustomerKYCStatus {
+    func getCustomerKYCStatus(customerNumber: String) async throws -> CustomerKYCStatus {
         try await validatePermission(.viewCustomerKYCStatus)
 
         await logDataAccess(
@@ -191,15 +191,15 @@ extension CustomerSupportService {
             accessType: .read,
             fields: ["kyc_status"],
             purpose: "KYC-Status anzeigen",
-            customerId: customerId
+            customerId: customerNumber
         )
 
-        guard let customer = mockCustomers.first(where: { $0.customerId == customerId }) else {
+        guard let customer = mockCustomers.first(where: { $0.customerNumber == customerNumber }) else {
             throw CustomerSupportError.customerNotFound
         }
 
         return CustomerKYCStatus(
-            customerId: customerId,
+            customerNumber: customerNumber,
             overallStatus: customer.isKYCCompleted ? .complete : .inProgress,
             emailVerified: customer.isEmailVerified,
             identityVerified: customer.identificationConfirmed,
@@ -216,7 +216,7 @@ extension CustomerSupportService {
     private func mapCustomerToSearchResult(_ customer: CustomerProfile) -> CustomerSearchResult {
         CustomerSearchResult(
             id: customer.id,
-            customerId: customer.customerId,
+            customerNumber: customer.customerNumber,
             fullName: customer.fullName,
             email: customer.email,
             role: customer.role,
