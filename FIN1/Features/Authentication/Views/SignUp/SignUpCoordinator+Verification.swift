@@ -30,10 +30,8 @@ extension SignUpCoordinator {
                 let result = try await onboardingAPI.verifyEmailCode(code)
                 isVerifyingCode = false
                 if result.verified {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        currentStep = .personalInfo
-                    }
-                    persistStepTransition(from: .emailVerification, to: .personalInfo)
+                    // Route through coordinator flow logic to respect account-type specific paths.
+                    nextStep()
                     stopResendTimer()
                 }
             } catch {
@@ -101,10 +99,8 @@ extension SignUpCoordinator {
                 let result = try await onboardingAPI.verifyPhoneCode(code)
                 isVerifyingPhone = false
                 if result.verified {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        currentStep = .personalInfo
-                    }
-                    persistStepTransition(from: .phoneVerification, to: .personalInfo)
+                    // Route through coordinator flow logic to respect account-type specific paths.
+                    nextStep()
                     stopPhoneResendTimer()
                 }
             } catch {

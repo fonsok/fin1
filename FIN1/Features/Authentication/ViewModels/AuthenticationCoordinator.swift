@@ -26,7 +26,7 @@ struct AuthenticationCoordinator {
                 Task {
                     do {
                         // Must satisfy Parse Server password policy (uppercase/lowercase/digit/special)
-                        try await userService.signIn(email: "biometric@example.com", password: "Password123!")
+                        try await userService.signIn(email: "biometric@example.com", password: TestConstants.password)
                         await MainActor.run {
                             onSuccess()
                         }

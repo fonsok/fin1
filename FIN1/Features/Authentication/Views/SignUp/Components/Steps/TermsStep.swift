@@ -40,7 +40,7 @@ struct TermsStep: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                 VStack(alignment: .leading, spacing: 8) {
-                    InfoBullet(text: "Nutzungsbedingungen für unsere Plattform")
+                    InfoBullet(text: "Nutzungsbedingungen für unsere App")
                     InfoBullet(text: "Datenschutzrichtlinien und -verarbeitung")
                     InfoBullet(text: "Regulatorische Compliance-Anforderungen")
                     InfoBullet(text: "Risikohinweise für Finanzprodukte")

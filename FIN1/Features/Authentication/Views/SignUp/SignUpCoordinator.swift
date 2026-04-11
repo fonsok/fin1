@@ -186,7 +186,7 @@ final class SignUpCoordinator: ObservableObject {
         do {
             try await userService.signUp(userData: User(
                 id: UUID().uuidString,
-                customerId: data.customerId,
+                customerNumber: data.customerNumber,
                 accountType: data.accountType,
                 email: data.email,
                 username: data.username,
@@ -261,4 +261,5 @@ final class SignUpCoordinator: ObservableObject {
     }
 
     @Published var showWelcomePage = false
+    @Published var showCompanyKyb = false
 }

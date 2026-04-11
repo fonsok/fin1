@@ -48,7 +48,7 @@ struct LandingFAQView: View {
             } else if serverCategories.isEmpty || serverFAQs.isEmpty {
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
                     Text(isGerman
-                         ? "Der FAQ‑Bereich ist gerade nicht verfügbar."
+                         ? "Der FAQ‑Bereich ist gerade nicht verfügbar.\n(Evtl. Einstellungen⇒Apps⇒...Lokales Netzwerk Zugriff erlauben.)"
                          : "FAQs are currently unavailable.")
                         .font(style == .typewriter
                               ? .system(size: 14, weight: .regular, design: .monospaced)
@@ -56,10 +56,11 @@ struct LandingFAQView: View {
                         .foregroundColor(style == .typewriter ? Color("InputText") : AppTheme.secondaryText)
 
                     Button(isGerman ? "Erneut versuchen" : "Retry") {
-                        Task { await loadServerFAQsIfAvailable() }
+                        Task { await loadServerFAQsIfAvailable(forceRefresh: true) }
                     }
-                    .buttonStyle(.bordered)
-                    .tint(style == .typewriter ? Color("InputText") : AppTheme.accentLightBlue)
+                    .buttonStyle(.borderedProminent)
+                    .tint(AppTheme.accentLightBlue)
+                    .foregroundStyle(Color.white)
                     .disabled(isLoading)
 
                     if loadFailed {
@@ -93,7 +94,7 @@ struct LandingFAQView: View {
             }
         }
         .padding(.horizontal, ResponsiveDesign.horizontalPadding())
-        .task { await loadServerFAQsIfAvailable() }
+        .task { await loadServerFAQsIfAvailable(forceRefresh: false) }
     }
 
     private var displayedCategories: [FAQCategoryContent] {
@@ -113,29 +114,48 @@ struct LandingFAQView: View {
         }
 
         let url = (appServices.configurationService.parseServerURL ?? "").lowercased()
+        if url.contains("localhost:8443") || url.contains("127.0.0.1:8443") {
+            return isGerman
+                ? "Debug: Simulator nutzt https://localhost:8443 → SSH‑Tunnel: ssh -L 8443:127.0.0.1:443 io@192.168.178.20"
+                : "Debug: Simulator uses https://localhost:8443 → SSH tunnel: ssh -L 8443:127.0.0.1:443 io@192.168.178.20"
+        }
         if url.contains("localhost:1338") || url.contains("127.0.0.1:1338") {
             return isGerman
-                ? "Debug: Simulator nutzt localhost:1338 → bitte SSH‑Tunnel starten (ssh -L 1338:127.0.0.1:1338 io@192.168.178.24)."
-                : "Debug: Simulator uses localhost:1338 → start the SSH tunnel (ssh -L 1338:127.0.0.1:1338 io@192.168.178.24)."
+                ? "Debug: Simulator nutzt localhost:1338 → SSH‑Tunnel zum Parse-Host: ssh -L 1338:127.0.0.1:1338 user@<server-ip>"
+                : "Debug: Simulator uses localhost:1338 → SSH tunnel to Parse host: ssh -L 1338:127.0.0.1:1338 user@<server-ip>"
         }
 
         return nil
     }
 
-    @MainActor
-    private func loadServerFAQsIfAvailable() async {
-        isLoading = true
-        loadFailed = false
+    private func loadServerFAQsIfAvailable(forceRefresh: Bool = false) async {
+        await MainActor.run {
+            isLoading = true
+            loadFailed = false
+        }
+
         let service = appServices.faqContentService
         do {
+            if forceRefresh {
+                await service.clearCache(location: "landing", userRole: nil)
+            }
+            // Fetch off the main actor to avoid blocking UI interactions if the underlying
+            // implementation performs any synchronous work.
             let categories = try await service.fetchFAQCategories(location: "landing")
             let faqs = try await service.fetchFAQsForLanding()
-            serverCategories = categories
-            serverFAQs = faqs
+            await MainActor.run {
+                serverCategories = categories
+                serverFAQs = faqs
+            }
         } catch {
-            loadFailed = true
+            await MainActor.run {
+                loadFailed = true
+            }
         }
-        isLoading = false
+
+        await MainActor.run {
+            isLoading = false
+        }
     }
 
 

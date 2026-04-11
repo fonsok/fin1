@@ -17,7 +17,9 @@ struct LandingDebugButtonsView: View {
                         await viewModel.signInAsInvestor(number: number)
                     }
                 },
-                buttonText: { number in "Test: Sign In as Investor \(number)" },
+                buttonText: { number in
+                    "Investor \(number) – \(TestConstants.investorDisplayName(for: number))"
+                },
                 accessibilityPrefix: "LoginInvestor",
                 accentColor: AppTheme.accentLightBlue
             )
@@ -25,7 +27,7 @@ struct LandingDebugButtonsView: View {
             // Test Traders
             TestUserSection(
                 title: "Test Traders",
-                count: 3,
+                count: 5,
                 style: viewModel.designStyle,
                 isLoading: viewModel.isLoading,
                 action: { number in
@@ -33,7 +35,9 @@ struct LandingDebugButtonsView: View {
                         await viewModel.signInAsTrader(number: number)
                     }
                 },
-                buttonText: { number in "Test: Sign In as Trader \(number)" },
+                buttonText: { number in
+                    "Trader \(number) – \(TestConstants.traderDisplayName(for: number))"
+                },
                 accessibilityPrefix: "LoginTrader",
                 accentColor: AppTheme.accentGreen
             )
@@ -64,6 +68,58 @@ struct LandingDebugButtonsView: View {
                     }
                 }
             )
+
+            CompanyKybDebugSection(style: viewModel.designStyle)
+        }
+    }
+}
+
+// MARK: - Company KYB Debug Section
+
+private struct CompanyKybDebugSection: View {
+    let style: LandingViewModel.DesignStyle
+    @State private var showKybWizard = false
+
+    var body: some View {
+        VStack(spacing: ResponsiveDesign.spacing(6)) {
+            Text("Company KYB (Mock)")
+                .font(style == .typewriter
+                      ? ResponsiveDesign.monospacedFont(size: 14, weight: .bold)
+                      : ResponsiveDesign.captionFont())
+                .foregroundColor(style == .typewriter ? Color("InputText") : AppTheme.tertiaryText)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            Button(action: { showKybWizard = true }) {
+                if style == .typewriter {
+                    HStack(spacing: ResponsiveDesign.spacing(6)) {
+                        Image(systemName: "building.2")
+                            .font(.system(size: 12))
+                        Text("Company KYB Wizard (8 Steps)")
+                            .font(ResponsiveDesign.monospacedFont(size: 12, weight: .regular))
+                    }
+                    .foregroundColor(Color("InputText"))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                } else {
+                    HStack(spacing: ResponsiveDesign.spacing(6)) {
+                        Image(systemName: "building.2")
+                            .font(ResponsiveDesign.captionFont())
+                        Text("Company KYB Wizard (8 Steps)")
+                            .font(ResponsiveDesign.captionFont())
+                    }
+                    .foregroundColor(.orange.opacity(0.9))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 32)
+                    .background(Color.clear)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(8))
+                            .stroke(Color.orange.opacity(0.3), lineWidth: 1)
+                    )
+                }
+            }
+            .accessibilityIdentifier("DebugCompanyKybButton")
+            .fullScreenCover(isPresented: $showKybWizard) {
+                CompanyKybView(companyKybAPIService: MockCompanyKybAPIService())
+            }
         }
     }
 }

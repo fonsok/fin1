@@ -10,7 +10,7 @@ struct OnboardingProgress: Codable, Sendable {
     let savedData: SavedOnboardingData?
 }
 
-// MARK: - Saved Onboarding Data (mirrors exportSignUpData keys)
+// MARK: - Saved Onboarding Data (mirrors `SignUpData.savedOnboardingData()`)
 
 /// All fields are optional because partial saves may omit later steps.
 /// Image fields (UIImage) are intentionally excluded — they cannot round-trip through JSON.
@@ -84,8 +84,14 @@ struct SavedOnboardingData: Codable, Sendable {
     let acceptedPrivacyPolicy: Bool?
     let acceptedMarketingConsent: Bool?
 
-    // Meta
+    // Meta (prefer `customerNumber`; `customerId` is legacy JSON from older saves)
+    let customerNumber: String?
     let customerId: String?
+
+    // Compliance metadata for audit trail (sent with complete/submit; optional for resume)
+    let questionnaireVersion: String?
+    let termsVersion: String?
+    let privacyVersion: String?
 }
 
 // MARK: - Onboarding Step Completion Response
@@ -120,15 +126,18 @@ struct VerifyPhoneCodeResponse: Codable, Sendable {
 
 // MARK: - Onboarding API Service Protocol
 
-protocol OnboardingAPIServiceProtocol: Sendable {
+protocol OnboardingAPIServiceProtocol {
     /// Fetches the current onboarding progress from the backend
     func getOnboardingProgress() async throws -> OnboardingProgress
 
     /// Marks a phase-level step as completed on the backend
-    func completeStep(step: String, data: [String: Any]?) async throws -> OnboardingStepResponse
+    func completeStep(step: String, data: SavedOnboardingData?) async throws -> OnboardingStepResponse
 
     /// Saves partial progress for the current step (for resume capability)
-    func savePartialProgress(step: String, data: [String: Any]) async throws
+    func savePartialProgress(step: String, data: SavedOnboardingData) async throws
+
+    /// Persists only the current step position (minimal payload).
+    func savePartialProgressPositionOnly(step: String) async throws
 
     /// Sends a 6-digit verification code to the user's email
     func sendVerificationCode() async throws -> SendCodeResponse
@@ -161,10 +170,10 @@ final class OnboardingAPIService: OnboardingAPIServiceProtocol {
         return result
     }
 
-    func completeStep(step: String, data: [String: Any]?) async throws -> OnboardingStepResponse {
+    func completeStep(step: String, data: SavedOnboardingData?) async throws -> OnboardingStepResponse {
         var params: [String: Any] = ["step": step]
         if let data = data {
-            params["data"] = data
+            params["data"] = try data.encodeToJSONDictionary()
         }
         let result: OnboardingStepResponse = try await apiClient.callFunction(
             "completeOnboardingStep",
@@ -173,10 +182,22 @@ final class OnboardingAPIService: OnboardingAPIServiceProtocol {
         return result
     }
 
-    func savePartialProgress(step: String, data: [String: Any]) async throws {
+    func savePartialProgress(step: String, data: SavedOnboardingData) async throws {
         let params: [String: Any] = [
             "step": step,
-            "data": data,
+            "data": try data.encodeToJSONDictionary(),
+            "partial": true
+        ]
+        let _: OnboardingStepResponse = try await apiClient.callFunction(
+            "saveOnboardingProgress",
+            parameters: params
+        )
+    }
+
+    func savePartialProgressPositionOnly(step: String) async throws {
+        let params: [String: Any] = [
+            "step": step,
+            "data": ["_positionOnly": true],
             "partial": true
         ]
         let _: OnboardingStepResponse = try await apiClient.callFunction(
@@ -212,4 +233,22 @@ final class OnboardingAPIService: OnboardingAPIServiceProtocol {
             parameters: ["code": code]
         )
     }
+}
+
+// MARK: - SavedOnboardingData → Parse parameters
+
+extension SavedOnboardingData {
+    /// Encodes this DTO to a JSON-compatible dictionary for `callFunction` `data` payloads.
+    func encodeToJSONDictionary() throws -> [String: Any] {
+        let encoder = JSONEncoder()
+        let jsonData = try encoder.encode(self)
+        guard let object = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any] else {
+            throw SavedOnboardingDataEncodingError.invalidJSONObject
+        }
+        return object
+    }
+}
+
+private enum SavedOnboardingDataEncodingError: Error {
+    case invalidJSONObject
 }

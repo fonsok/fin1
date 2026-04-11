@@ -136,6 +136,12 @@ struct SignUpView: View {
         .fullScreenCover(isPresented: $coordinator.showWelcomePage) {
             WelcomePage(coordinator: coordinator)
         }
+        .fullScreenCover(isPresented: $coordinator.showCompanyKyb) {
+            if let kybService = appServices.companyKybAPIService {
+                CompanyKybView(companyKybAPIService: kybService)
+                    .environment(\.appServices, appServices)
+            }
+        }
         .sheet(isPresented: $showTermsOfService) {
             TermsOfServiceView(
                 configurationService: appServices.configurationService,
@@ -293,7 +299,7 @@ struct SignUpView: View {
         Task {
             do {
                 let user = try signUpData.createUser()
-                let exportedData = signUpData.exportSignUpData()
+                let exportedData = signUpData.savedOnboardingData()
 
                 try await appServices.userService.updateProfile(user)
 

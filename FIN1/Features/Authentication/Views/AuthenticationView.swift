@@ -7,6 +7,9 @@ struct AuthenticationView: View {
     @State private var isAuthenticated = false
     @State private var showTermsAcceptance = false
     @State private var showOnboardingResume = false
+    @State private var showCompanyKybResume = false
+    @State private var showCompanyKybStatus = false
+    @State private var companyKybReviewStatus: CompanyKybReviewStatus?
 
     var body: some View {
         Group {
@@ -32,6 +35,24 @@ struct AuthenticationView: View {
                 .fullScreenCover(isPresented: $showOnboardingResume) {
                     SignUpView()
                         .environment(\.appServices, services)
+                }
+                .fullScreenCover(isPresented: $showCompanyKybResume) {
+                    if let kybService = services.companyKybAPIService {
+                        CompanyKybView(companyKybAPIService: kybService)
+                            .environment(\.appServices, services)
+                    }
+                }
+                .fullScreenCover(isPresented: $showCompanyKybStatus) {
+                    if let reviewStatus = companyKybReviewStatus {
+                        CompanyKybStatusView(
+                            status: reviewStatus,
+                            onDismiss: { showCompanyKybStatus = false },
+                            onResubmit: {
+                                showCompanyKybStatus = false
+                                showCompanyKybResume = true
+                            }
+                        )
+                    }
                 }
             } else {
                 LandingView(userService: services.userService)
@@ -59,6 +80,9 @@ struct AuthenticationView: View {
             isAuthenticated = false
             showTermsAcceptance = false
             showOnboardingResume = false
+            showCompanyKybResume = false
+            showCompanyKybStatus = false
+            companyKybReviewStatus = nil
             print("🔍 AuthenticationView: User signed out")
         }
         .onReceive(NotificationCenter.default.publisher(for: .userDataDidUpdate)) { _ in
@@ -74,9 +98,45 @@ struct AuthenticationView: View {
     private func checkOnboardingStatus() {
         guard let user = services.userService.currentUser else {
             showOnboardingResume = false
+            showCompanyKybResume = false
+            showCompanyKybStatus = false
             return
         }
-        // If account exists but onboarding is not complete, prompt to resume
+
+        // Company accounts: KYB takes precedence over personal onboarding
+        if user.accountType == .company {
+            let kybStatus = user.companyKybStatus
+
+            // Post-reset: status is 'draft' and completed is false -- re-enter wizard
+            if kybStatus == "draft" && !user.companyKybCompleted {
+                showCompanyKybResume = true
+                showCompanyKybStatus = false
+                showOnboardingResume = false
+                return
+            }
+
+            if user.companyKybCompleted {
+                if let status = CompanyKybReviewStatus(from: kybStatus), status != .approved {
+                    companyKybReviewStatus = status
+                    showCompanyKybStatus = true
+                } else {
+                    showCompanyKybStatus = false
+                }
+                showCompanyKybResume = false
+                showOnboardingResume = false
+                return
+            }
+
+            if user.companyKybStep != nil {
+                showCompanyKybResume = true
+                showCompanyKybStatus = false
+                showOnboardingResume = false
+                return
+            }
+        }
+
+        showCompanyKybResume = false
+        showCompanyKybStatus = false
         showOnboardingResume = !user.onboardingCompleted && user.onboardingStep != nil
     }
 

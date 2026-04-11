@@ -95,7 +95,7 @@ final class LandingViewModel: ObservableObject {
 
         do {
             // Must satisfy Parse Server password policy (uppercase/lowercase/digit/special)
-            try await userService.signIn(email: email, password: "Password123!")
+            try await userService.signIn(email: email, password: TestConstants.password)
             print("✅ \(role) sign-in successful")
             isLoading = false
         } catch {

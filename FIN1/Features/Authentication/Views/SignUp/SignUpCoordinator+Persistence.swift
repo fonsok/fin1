@@ -23,7 +23,7 @@ extension SignUpCoordinator {
         guard let onboardingAPI = onboardingAPIService,
               let data = signUpData else { return }
 
-        let exportedData = data.exportSignUpData()
+        let exportedData = data.savedOnboardingData()
         let oldPhase = oldStep.phase
         let newPhase = newStep.phase
         let crossedPhase = newPhase.rawValue > oldPhase.rawValue
@@ -55,10 +55,7 @@ extension SignUpCoordinator {
 
         Task {
             do {
-                try await onboardingAPI.savePartialProgress(
-                    step: stepKey,
-                    data: ["_positionOnly": true]
-                )
+                try await onboardingAPI.savePartialProgressPositionOnly(step: stepKey)
             } catch {
                 print("⚠️ Failed to save step position: \(error.localizedDescription)")
             }

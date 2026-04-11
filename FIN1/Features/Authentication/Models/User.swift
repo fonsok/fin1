@@ -2,7 +2,8 @@ import Foundation
 
 struct User: Identifiable, Codable, Sendable {
     let id: String
-    var customerId: String
+    /// Business Kundennummer (z. B. ANL-/TRD-…), nicht Parse `objectId`.
+    var customerNumber: String
     var accountType: AccountType
     var email: String
     var username: String
@@ -83,6 +84,11 @@ struct User: Identifiable, Codable, Sendable {
     var onboardingCompleted: Bool = false
     var onboardingStep: String?
     var kycStatus: String?
+
+    // Company KYB State (synced with backend)
+    var companyKybCompleted: Bool = false
+    var companyKybStep: String?
+    var companyKybStatus: String?
 
     var lastLoginDate: Date?
     var createdAt: Date

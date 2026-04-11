@@ -12,7 +12,7 @@ struct RiskClass7ConfirmationStep: View {
     }
 
     private var defaultExperiencedOnlyText: String {
-        "Diese Risikoklasse ist nur für erfahrene Anleger geeignet."
+        "Diese Risikoklasse ist nur für erfahrene Investoren geeignet."
     }
 
     private var combinedWarningText: String {
@@ -95,7 +95,7 @@ struct RiskClass7ConfirmationStep: View {
                                 .font(ResponsiveDesign.headlineFont())
                                 .foregroundColor(AppTheme.fontColor)
 
-                            Text("Mit Risikoklasse 7 können Sie auf unserer Platform handeln.")
+                            Text("Mit Risikoklasse 7 können Sie in der App handeln.")
                                 .font(ResponsiveDesign.bodyFont())
                                 .foregroundColor(AppTheme.fontColor.opacity(0.8))
                                 .multilineTextAlignment(.leading)

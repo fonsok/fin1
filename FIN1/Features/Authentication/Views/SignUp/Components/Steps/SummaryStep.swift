@@ -38,7 +38,7 @@ struct SummaryStep: View {
                     }
                     
                     SummarySection(title: "Personal Information") {
-                        SummaryRow(label: "Kundennummer", value: signUpData.customerId, icon: "number.circle.fill")
+                        SummaryRow(label: "Kundennummer", value: signUpData.customerNumber, icon: "number.circle.fill")
                         SummaryRow(label: "Salutation", value: signUpData.salutation.displayName, icon: "person.fill")
                         if !signUpData.academicTitle.isEmpty {
                             SummaryRow(label: "Academic Title", value: signUpData.academicTitle, icon: "graduationcap.fill")

@@ -49,7 +49,7 @@ struct LandingTypewriterStyleBody: View {
                             .font(ResponsiveDesign.monospacedFont(size: 48, weight: .bold))
                             .foregroundColor(Color("InputText"))
 
-                        Text(LandingConstants.platformSubtitleText)
+                        Text(LandingConstants.appSubtitleText)
                             .font(ResponsiveDesign.monospacedFont(size: 18, weight: .regular))
                             .foregroundColor(Color("InputText"))
                             .multilineTextAlignment(.center)

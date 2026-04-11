@@ -95,27 +95,48 @@ struct WelcomeStep: View {
                     })
                     .buttonStyle(PlainButtonStyle())
 
-                    Button(action: { userRole = .trader }, label: {
+                    Button(action: {
+                        guard accountType != .company else { return }
+                        userRole = .trader
+                    }, label: {
                         HStack {
                             InteractiveElement(
                                 isSelected: userRole == .trader,
                                 type: .radioButton,
-                                color: AppTheme.accentLightBlue
+                                color: accountType == .company
+                                    ? AppTheme.fontColor.opacity(0.3)
+                                    : AppTheme.accentLightBlue
                             )
 
                             Text("Trader")
                                 .font(ResponsiveDesign.headlineFont())
-                                .foregroundColor(AppTheme.fontColor)
+                                .foregroundColor(
+                                    accountType == .company
+                                        ? AppTheme.fontColor.opacity(0.4)
+                                        : AppTheme.fontColor
+                                )
+
+                            if accountType == .company {
+                                Text("(nur für Einzelpersonen)")
+                                    .font(ResponsiveDesign.captionFont())
+                                    .foregroundColor(AppTheme.fontColor.opacity(0.5))
+                            }
 
                             Spacer()
                         }
                     })
                     .buttonStyle(PlainButtonStyle())
+                    .disabled(accountType == .company)
                 }
             }
             .padding(ResponsiveDesign.spacing(16))
             .background(AppTheme.sectionBackground)
             .cornerRadius(ResponsiveDesign.isCompactDevice() ? 12 : 16)
+            .onChange(of: accountType) { _, newType in
+                if newType == .company && userRole == .trader {
+                    userRole = .investor
+                }
+            }
 
             // Information Requirements
             VStack(spacing: ResponsiveDesign.spacing(16)) {
@@ -125,10 +146,20 @@ struct WelcomeStep: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
-                    InfoBullet(text: "Angaben zur Person und Adressdaten (laut Ausweisdokumenten).")
-                    InfoBullet(text: "Informationen zum Einkommen und steuerlichen Wohnsitz.")
-                    InfoBullet(text: "Informationen zur Handelserfahrung und Anlagezielen.")
-                    InfoBullet(text: "Daten zum Bankkonto")
+                    if accountType == .company {
+                        InfoBullet(text: "Angaben zum Unternehmen (Firma, Rechtsform, Registerdaten).")
+                        InfoBullet(text: "Eingetragener Sitz und ggf. Geschäftsanschrift.")
+                        InfoBullet(text: "Steuerliche Identifikatoren (USt-IdNr. oder Steuernummer).")
+                        InfoBullet(text: "Wirtschaftlich Berechtigte (UBOs) mit Name, Geburtsdatum, Staatsangehörigkeit.")
+                        InfoBullet(text: "Vertretungsberechtigte Personen und deren Funktion.")
+                        InfoBullet(text: "Erklärungen zu PEP-Status, Sanktionen und Richtigkeit der Angaben.")
+                        InfoBullet(text: "Angaben zur vertretungsberechtigten Person (persönliche KYC-Daten).")
+                    } else {
+                        InfoBullet(text: "Angaben zur Person und Adressdaten (laut Ausweisdokumenten).")
+                        InfoBullet(text: "Informationen zum Einkommen und steuerlichen Wohnsitz.")
+                        InfoBullet(text: "Informationen zur Handelserfahrung und Anlagezielen.")
+                        InfoBullet(text: "Daten zum Bankkonto")
+                    }
                 }
             }
             .padding(ResponsiveDesign.spacing(16))
@@ -143,9 +174,17 @@ struct WelcomeStep: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
-                    InfoBullet(text: "Ihre Steuernummer")
-                    InfoBullet(text: "Kopie (.png-Datei) Ihres Personalausweis (Vorder- und Rückseite) oder Ihres Reisepasses")
-                    InfoBullet(text: "Kopie (.png-Datei) eines plausiblen Adressnachweises (z.B. Kontoauszug, Rechnung Energieversorger, Kreditkartenabrechnung)")
+                    if accountType == .company {
+                        InfoBullet(text: "Aktueller Handelsregisterauszug (nicht älter als 6 Monate)")
+                        InfoBullet(text: "USt-IdNr. oder nationale Steuernummer des Unternehmens")
+                        InfoBullet(text: "Gesellschaftsvertrag / Satzung (falls abweichend vom Register)")
+                        InfoBullet(text: "Transparenzregisterauszug (falls zutreffend)")
+                        InfoBullet(text: "Personalausweis oder Reisepass der vertretungsberechtigten Person")
+                    } else {
+                        InfoBullet(text: "Ihre Steuernummer")
+                        InfoBullet(text: "Kopie (.png-Datei) Ihres Personalausweis (Vorder- und Rückseite) oder Ihres Reisepasses")
+                        InfoBullet(text: "Kopie (.png-Datei) eines plausiblen Adressnachweises (z.B. Kontoauszug, Rechnung Energieversorger, Kreditkartenabrechnung)")
+                    }
                 }
             }
             .padding(ResponsiveDesign.spacing(16))

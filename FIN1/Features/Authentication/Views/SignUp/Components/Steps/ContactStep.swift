@@ -115,8 +115,8 @@ struct ContactStep: View {
         email: .constant("test@example.com"),
         phoneNumber: .constant("+49123456789"),
         username: .constant("testuser"),
-        password: .constant("TestPassword123!"),
-        confirmPassword: .constant("TestPassword123!")
+        password: .constant(TestConstants.password),
+        confirmPassword: .constant(TestConstants.password)
     )
     .background(AppTheme.screenBackground)
 }

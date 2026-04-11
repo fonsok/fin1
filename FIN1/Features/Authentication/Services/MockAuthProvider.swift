@@ -1,7 +1,6 @@
 import Foundation
 import OSLog
 
-#if DEBUG
 // MARK: - Mock Auth Provider
 /// Mock authentication provider for development and testing
 /// This provider simulates authentication without requiring a real backend
@@ -18,27 +17,37 @@ final class MockAuthProvider: AuthProviderProtocol {
 
     /// Simulated user database for testing
     private let testUsers: [String: TestUserCredentials] = [
-        // Investors
-        "investor1@test.com": TestUserCredentials(password: "Password123!", userId: "inv-001", role: "investor"),
-        "investor2@test.com": TestUserCredentials(password: "Password123!", userId: "inv-002", role: "investor"),
-        "investor3@test.com": TestUserCredentials(password: "Password123!", userId: "inv-003", role: "investor"),
-        // Traders
-        "trader1@test.com": TestUserCredentials(password: "Password123!", userId: "trd-001", role: "trader"),
-        "trader2@test.com": TestUserCredentials(password: "Password123!", userId: "trd-002", role: "trader"),
+        // 5 Investors (ANL-)
+        "investor1@test.com": TestUserCredentials(password: TestConstants.password, userId: "inv-001", role: "investor"),
+        "investor2@test.com": TestUserCredentials(password: TestConstants.password, userId: "inv-002", role: "investor"),
+        "investor3@test.com": TestUserCredentials(password: TestConstants.password, userId: "inv-003", role: "investor"),
+        "investor4@test.com": TestUserCredentials(password: TestConstants.password, userId: "inv-004", role: "investor"),
+        "investor5@test.com": TestUserCredentials(password: TestConstants.password, userId: "inv-005", role: "investor"),
+        // 10 Traders (TRD-)
+        "trader1@test.com": TestUserCredentials(password: TestConstants.password, userId: "trd-001", role: "trader"),
+        "trader2@test.com": TestUserCredentials(password: TestConstants.password, userId: "trd-002", role: "trader"),
+        "trader3@test.com": TestUserCredentials(password: TestConstants.password, userId: "trd-003", role: "trader"),
+        "trader4@test.com": TestUserCredentials(password: TestConstants.password, userId: "trd-004", role: "trader"),
+        "trader5@test.com": TestUserCredentials(password: TestConstants.password, userId: "trd-005", role: "trader"),
+        "trader6@test.com": TestUserCredentials(password: TestConstants.password, userId: "trd-006", role: "trader"),
+        "trader7@test.com": TestUserCredentials(password: TestConstants.password, userId: "trd-007", role: "trader"),
+        "trader8@test.com": TestUserCredentials(password: TestConstants.password, userId: "trd-008", role: "trader"),
+        "trader9@test.com": TestUserCredentials(password: TestConstants.password, userId: "trd-009", role: "trader"),
+        "trader10@test.com": TestUserCredentials(password: TestConstants.password, userId: "trd-010", role: "trader"),
         // Admin
-        "admin@test.com": TestUserCredentials(password: "Password123!", userId: "adm-001", role: "admin"),
+        "admin@test.com": TestUserCredentials(password: TestConstants.password, userId: "adm-001", role: "admin"),
         // CSR Roles
-        "csr-l1@test.com": TestUserCredentials(password: "Password123!", userId: "csr-l1-001", role: "csr-l1"),
-        "csr-l2@test.com": TestUserCredentials(password: "Password123!", userId: "csr-l2-001", role: "csr-l2"),
-        "csr-fraud@test.com": TestUserCredentials(password: "Password123!", userId: "csr-fraud-001", role: "csr-fraud"),
-        "csr-compliance@test.com": TestUserCredentials(password: "Password123!", userId: "csr-compl-001", role: "csr-compliance"),
-        "csr-tech-support@test.com": TestUserCredentials(password: "Password123!", userId: "csr-tech-001", role: "csr-tech"),
-        "csr-teamlead@test.com": TestUserCredentials(password: "Password123!", userId: "csr-lead-001", role: "csr-teamlead")
+        "csr-l1@test.com": TestUserCredentials(password: TestConstants.password, userId: "csr-l1-001", role: "csr-l1"),
+        "csr-l2@test.com": TestUserCredentials(password: TestConstants.password, userId: "csr-l2-001", role: "csr-l2"),
+        "csr-fraud@test.com": TestUserCredentials(password: TestConstants.password, userId: "csr-fraud-001", role: "csr-fraud"),
+        "csr-compliance@test.com": TestUserCredentials(password: TestConstants.password, userId: "csr-compl-001", role: "csr-compliance"),
+        "csr-tech-support@test.com": TestUserCredentials(password: TestConstants.password, userId: "csr-tech-001", role: "csr-tech"),
+        "csr-teamlead@test.com": TestUserCredentials(password: TestConstants.password, userId: "csr-lead-001", role: "csr-teamlead")
     ]
 
     // MARK: - Initialization
 
-    init(tokenStorage: TokenStorageProtocol = InMemoryTokenStorage()) {
+    init(tokenStorage: TokenStorageProtocol) {
         self.tokenStorage = tokenStorage
     }
 
@@ -282,4 +291,3 @@ private struct TestUserCredentials {
     let userId: String
     let role: String
 }
-#endif

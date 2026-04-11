@@ -75,8 +75,8 @@ final class AuthService: AuthServiceProtocol, ObservableObject, ServiceLifecycle
         logger.info("🔐 AuthService started")
 
         // Check for existing session asynchronously
-        Task { @MainActor in
-            await checkExistingSession()
+        Task { [weak self] in
+            await self?.checkExistingSession()
         }
     }
 
@@ -85,8 +85,8 @@ final class AuthService: AuthServiceProtocol, ObservableObject, ServiceLifecycle
     }
 
     func reset() {
-        Task { @MainActor in
-            clearAuthState()
+        Task { @MainActor [weak self] in
+            self?.clearAuthState()
         }
         logger.info("🔐 AuthService reset")
     }
@@ -160,8 +160,8 @@ final class AuthService: AuthServiceProtocol, ObservableObject, ServiceLifecycle
     func signOut() async throws {
         do {
             try await authProvider.revokeTokens()
-            await MainActor.run {
-                clearAuthState()
+            await MainActor.run { [weak self] in
+                self?.clearAuthState()
             }
             logger.info("👋 User signed out")
         } catch {
@@ -247,8 +247,8 @@ final class AuthService: AuthServiceProtocol, ObservableObject, ServiceLifecycle
             // Restore session from stored tokens
             if (try? await tokenStorage.getAccessToken()) != nil {
                 logger.info("🔐 Restored existing session")
-                await MainActor.run {
-                    self.isAuthenticated = true
+                await MainActor.run { [weak self] in
+                    self?.isAuthenticated = true
                     // Note: userId would need to be decoded from token in production
                 }
             }

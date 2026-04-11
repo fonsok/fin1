@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - Dashboard Statistics Model
 struct DashboardStats {
-    var totalPortfolioValue: Double = 0
+    var totalInvestmentsValue: Double = 0
     var dailyChange: Double = 0
     var dailyChangePercentage: Double = 0
     var totalInvestments: Int = 0
@@ -12,8 +12,8 @@ struct DashboardStats {
         dailyChange >= 0
     }
 
-    var formattedPortfolioValue: String {
-        totalPortfolioValue.formattedAsLocalizedCurrency()
+    var formattedInvestmentsValue: String {
+        totalInvestmentsValue.formattedAsLocalizedCurrency()
     }
 
     var formattedDailyChange: String {

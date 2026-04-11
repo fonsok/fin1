@@ -119,8 +119,8 @@ final class SignUpData: ObservableObject {
     // MARK: - Risk Class Properties
     @Published var userSelectedRiskClass: RiskClass?
 
-    // Customer ID (automatically generated)
-    @Published var customerId: String = ""
+    // Kundennummer (automatically generated, business identifier)
+    @Published var customerNumber: String = ""
 
     // MARK: - Services (injected)
     var riskClassCalculationService: (any RiskClassCalculationServiceProtocol)?
@@ -133,7 +133,7 @@ final class SignUpData: ObservableObject {
     ) {
         self.riskClassCalculationService = riskClassCalculationService
         self.investmentExperienceCalculationService = investmentExperienceCalculationService
-        generateCustomerId()
+        generateCustomerNumber()
     }
 
     // MARK: - Service Injection
@@ -145,12 +145,12 @@ final class SignUpData: ObservableObject {
         self.investmentExperienceCalculationService = investmentExperienceCalculationService
     }
 
-    // MARK: - Customer ID Generation
-    private func generateCustomerId() {
-        // Generate a unique customer ID with format: <PREFIX>-YYYY-XXXXX
+    // MARK: - Kundennummer Generation
+    private func generateCustomerNumber() {
+        let prefix = userRole == .trader ? TestConstants.customerIdPrefixTrader : TestConstants.customerIdPrefixInvestor
         let year = Calendar.current.component(.year, from: Date())
         let randomNumber = String(format: "%05d", Int.random(in: 1...99999))
-        customerId = "\(LegalIdentity.documentPrefix)-\(year)-\(randomNumber)"
+        customerNumber = "\(prefix)-\(year)-\(randomNumber)"
     }
 
     // MARK: - Restore from Backend (Resume Flow)
@@ -227,7 +227,7 @@ final class SignUpData: ObservableObject {
         if let v = data.acceptedMarketingConsent { acceptedMarketingConsent = v }
 
         // Meta
-        if let v = data.customerId, !v.isEmpty { customerId = v }
+        if let v = data.customerNumber ?? data.customerId, !v.isEmpty { customerNumber = v }
     }
 
     // MARK: - Pre-fill with Test Data (DEBUG only)
@@ -236,8 +236,8 @@ final class SignUpData: ObservableObject {
         email = "test@example.com"
         phoneNumber = "+49123456789"
         username = "testuser"
-        password = "TestPassword123!"
-        confirmPassword = "TestPassword123!"
+        password = TestConstants.password
+        confirmPassword = TestConstants.password
         firstName = "Max"
         lastName = "Mustermann"
         streetAndNumber = "Musterstraße 123"

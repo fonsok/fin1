@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Platform Advantages section for the landing page
+/// App Advantages section for the landing page
 /// Displays key advantages for investors and traders
 struct LandingPlatformAdvantagesView: View {
     @State private var expandedSection: AdvantageSection?
@@ -8,16 +8,19 @@ struct LandingPlatformAdvantagesView: View {
 
     // MARK: - Constants
 
-    private static let sectionTitle = "Platform Advantages"
-    private static let sectionSubtitle = "Discover why investors and traders choose our platform"
+    private static let sectionTitle = "App Advantages"
+    private static let sectionSubtitle = "Discover why investors and traders choose our app"
     private static let investorsTitle = "Investors"
     private static let tradersTitle = "Traders"
-    private static let investorsIntroText = "Investors on our platform enjoy:"
-    private static let tradersIntroText = "Traders on our platform enjoy:"
+    private static let differentiatorsTitle = "Key differences from traditional asset management"
+    private static let investorsIntroText = "Investors on our app enjoy:"
+    private static let tradersIntroText = "Traders on our app enjoy:"
+    private static let differentiatorsIntroText = "What makes us different:"
 
     enum AdvantageSection {
         case investors
         case traders
+        case differentiators
     }
 
     init(style: LandingViewModel.DesignStyle = .original) {
@@ -62,12 +65,21 @@ struct LandingPlatformAdvantagesView: View {
 
             // Advantages Cards
             VStack(spacing: ResponsiveDesign.spacing(16)) {
+                // Differentiators
+                advantageCard(
+                    title: Self.differentiatorsTitle,
+                    icon: nil,
+                    color: AppTheme.accentOrange,
+                    advantages: AppAdvantagesProvider.appDifferentiators,
+                    section: .differentiators
+                )
+                
                 // For Investors
                 advantageCard(
                     title: Self.investorsTitle,
                     icon: nil,
                     color: AppTheme.accentGreen,
-                    advantages: PlatformAdvantagesProvider.investorAdvantages,
+                    advantages: AppAdvantagesProvider.investorAdvantages,
                     section: .investors
                 )
 
@@ -76,9 +88,11 @@ struct LandingPlatformAdvantagesView: View {
                     title: Self.tradersTitle,
                     icon: nil,
                     color: AppTheme.accentLightBlue,
-                    advantages: PlatformAdvantagesProvider.traderAdvantages,
+                    advantages: AppAdvantagesProvider.traderAdvantages,
                     section: .traders
                 )
+
+
             }
             .padding(.horizontal, ResponsiveDesign.horizontalPadding())
         }
@@ -92,6 +106,8 @@ struct LandingPlatformAdvantagesView: View {
             return Self.investorsIntroText
         case .traders:
             return Self.tradersIntroText
+        case .differentiators:
+            return Self.differentiatorsIntroText
         }
     }
 

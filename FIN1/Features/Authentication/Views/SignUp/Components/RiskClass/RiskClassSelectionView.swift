@@ -165,7 +165,7 @@ struct RiskClassSelectionView: View {
                 // Keep the selection
             }
         } message: {
-            Text("Risikoklasse 7 ist nur für erfahrene Anleger geeignet. Es besteht das Risiko des Totalverlusts Ihres Kapitals. Sind Sie sicher, dass Sie diese Risikoklasse wählen möchten?")
+            Text("Risikoklasse 7 ist nur für erfahrene Investoren geeignet. Es besteht das Risiko des Totalverlusts Ihres Kapitals. Sind Sie sicher, dass Sie diese Risikoklasse wählen möchten?")
         }
     }
 }

@@ -32,7 +32,12 @@ extension SignUpCoordinator {
     
     /// Override the default next step behavior to handle custom flows
     func customNextStep(with data: SignUpData) {
-        // Handle special cases for identification flow
+        // Company KYB: after phone verification, present the KYB wizard
+        if currentStep == .phoneVerification && data.accountType == .company {
+            showCompanyKyb = true
+            return
+        }
+
         if currentStep == .identificationType {
             currentStep = nextStepAfterIdentificationType(with: data)
         } else if currentStep == .identificationUploadBack || currentStep == .postidentConfirmation {
@@ -40,7 +45,6 @@ extension SignUpCoordinator {
                 currentStep = nextStep
             }
         } else {
-            // Default behavior
             if let nextStep = StepConfiguration.nextStep(after: currentStep, role: userRole) {
                 currentStep = nextStep
             }
