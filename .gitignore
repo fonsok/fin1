@@ -136,6 +136,12 @@ backend/.env.*
 !backend/env.example
 !backend/env.production.example
 
+# Backend - local TLS material and runtime logs (never commit)
+# Certs/keys belong on the host, in a secret store, or in CI artifacts — not in git.
+backend/nginx/ssl/
+# Parse file logger output (e.g. parse-server.err.*); not *.log extension
+backend/parse-server/logs/
+
 # Node.js
 node_modules/
 npm-debug.log*
@@ -148,6 +154,7 @@ __pycache__/
 *$py.class
 .venv/
 .venv_*/
+.venv-backtest/
 venv/
 *.egg-info/
 
