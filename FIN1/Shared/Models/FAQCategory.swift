@@ -3,10 +3,10 @@ import Foundation
 /// Categories for organizing FAQs
 enum FAQCategory: String, CaseIterable, Identifiable {
     case gettingStarted = "Getting Started"
-    case platformOverview = "Platform Overview"
+    case appOverview = "App Overview"
     case investments = "Investments"
     case trading = "Trading"
-    case portfolio = "Portfolio & Performance"
+    case portfolio = "Investments & Performance"
     case invoices = "Invoices & Statements"
     case security = "Security & Authentication"
     case notifications = "Notifications"
@@ -17,7 +17,7 @@ enum FAQCategory: String, CaseIterable, Identifiable {
     var icon: String {
         switch self {
         case .gettingStarted: return "arrow.right.circle.fill"
-        case .platformOverview: return "star.fill"
+        case .appOverview: return "star.fill"
         case .investments: return "dollarsign.circle.fill"
         case .trading: return "chart.line.uptrend.xyaxis"
         case .portfolio: return "chart.bar.fill"

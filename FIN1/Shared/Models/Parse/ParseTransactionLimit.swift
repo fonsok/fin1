@@ -51,7 +51,7 @@ struct ParseTransactionLimit: Codable {
         self.lastUpdated = lastUpdated
     }
     
-    func toTransactionLimit(riskClass: RiskClass) -> TransactionLimit {
+    func toTransactionLimit() -> TransactionLimit {
         TransactionLimit(
             userId: userId,
             dailyLimit: dailyLimit,
@@ -60,8 +60,7 @@ struct ParseTransactionLimit: Codable {
             riskClassBasedLimit: riskClassBasedLimit,
             dailySpent: dailySpent,
             weeklySpent: weeklySpent,
-            monthlySpent: monthlySpent,
-            riskClass: riskClass
+            monthlySpent: monthlySpent
         )
     }
 }

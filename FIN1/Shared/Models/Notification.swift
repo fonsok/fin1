@@ -66,8 +66,11 @@ struct AppNotification: Identifiable, Codable {
     let title: String
     let message: String
     let type: NotificationType
+    /// Raw backend category (Parse `Notification.category`) for accurate semantics and future filtering.
+    let serverCategory: String?
     let priority: NotificationPriority
     var isRead: Bool
+    var readAt: Date?
     let createdAt: Date
     let metadata: [String: String]? // Store additional data like ticketId
 
@@ -77,8 +80,10 @@ struct AppNotification: Identifiable, Codable {
         title: String,
         message: String,
         type: NotificationType,
+        serverCategory: String? = nil,
         priority: NotificationPriority,
         isRead: Bool = false,
+        readAt: Date? = nil,
         createdAt: Date = Date(),
         metadata: [String: String]? = nil
     ) {
@@ -87,8 +92,10 @@ struct AppNotification: Identifiable, Codable {
         self.title = title
         self.message = message
         self.type = type
+        self.serverCategory = serverCategory
         self.priority = priority
         self.isRead = isRead
+        self.readAt = readAt
         self.createdAt = createdAt
         self.metadata = metadata
     }

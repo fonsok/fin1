@@ -5,10 +5,10 @@ extension FAQCategory {
     var slug: String {
         switch self {
         case .gettingStarted: return "getting_started"
-        case .platformOverview: return "platform_overview"
+        case .appOverview: return "app_overview"
         case .investments: return "investments"
         case .trading: return "trading"
-        case .portfolio: return "portfolio"
+        case .portfolio: return "portfolio" // API compatibility; display name: "Investments & Performance"
         case .invoices: return "invoices"
         case .security: return "security"
         case .notifications: return "notifications"

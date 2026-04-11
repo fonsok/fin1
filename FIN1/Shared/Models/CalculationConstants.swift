@@ -2,7 +2,13 @@ import Foundation
 
 // MARK: - Calculation Constants
 
-/// Centralized constants for all financial calculations
+/// Centralized constants for all financial calculations.
+///
+/// **Fee responsibility (product model)**
+/// - **Investors** pay the app service charge on investments. They do **not** pay
+///   order fees, exchange fees, or other trading fees grouped under ``FeeRates``.
+/// - **Traders** pay order fees, exchange fees, and related trading fees. They do **not** pay
+///   the app service charge.
 struct CalculationConstants {
 
     // MARK: - Tax Rates
@@ -42,7 +48,8 @@ struct CalculationConstants {
 
     // MARK: - Fee Rates
 
-    /// Trading fee rates and limits
+    /// Trading fee rates and limits (trader order / execution flows).
+    /// - Note: These fees are **not** applied to investors for investments; see ``ServiceCharges``.
     struct FeeRates {
         /// Order fee rate - 0.5% of order amount
         static let orderFeeRate: Double = 0.005
@@ -67,7 +74,7 @@ struct CalculationConstants {
 
         // MARK: Admin-Configurable Rate Defaults
         // ⚠️ CRITICAL: These are LAST-RESORT FALLBACKS only, matching the backend
-        // DEFAULT_CONFIG in configHelper.js. The actual production value is set by
+        // DEFAULT_CONFIG in backend utils/configHelper. The actual production value is set by
         // an admin via the Configuration class and served through ConfigurationService.
         //
         // RULE: All financial code paths MUST obtain the commission rate from
@@ -87,30 +94,30 @@ struct CalculationConstants {
 
     // MARK: - Service Charges
 
-    /// Platform service charges (separate from trading fees)
-    /// - Note: Service charges are ONLY charged to investors, not traders
+    /// App service charge on investments (investor-only).
+    /// - Note: Not the same as ``FeeRates`` (trader trading fees). Traders do not pay this charge.
     struct ServiceCharges {
-        /// Platform service charge rate - 2% of investment amount (GROSS amount, includes VAT)
+        /// App service charge rate - 2% of investment amount (GROSS amount, includes VAT)
         /// - Note: This charge applies ONLY to investors when creating investments
         /// - The 2% is the gross amount that gets debited from the account
         /// - For invoicing, this gross amount is split into net service charge and VAT (19%)
-        static let platformServiceChargeRate: Double = 0.02
+        static let appServiceChargeRate: Double = 0.02
 
-        /// Platform service charge percentage for display (e.g., "2%")
+        /// App service charge percentage for display (e.g., "2%")
         /// - Note: This charge applies ONLY to investors when creating investments
         /// - The 2% represents the gross amount (includes VAT)
-        static let platformServiceChargePercentage: String = "2%"
+        static let appServiceChargePercentage: String = "2%"
     }
 
     // MARK: - Account Configuration
 
     /// Account and balance configuration
     struct Account {
-        /// Initial account balance for new traders in EUR
-        static let initialBalance: Double = 1.0
+        /// Fallback when no `ConfigurationService` — real default is 0 € from backend / admin only
+        static let initialBalance: Double = 0.0
 
-        /// Initial account balance for new investors in EUR
-        static let initialInvestorBalance: Double = 1.0
+        /// Fallback when no `ConfigurationService` — real default is 0 € from backend / admin only
+        static let initialInvestorBalance: Double = 0.0
 
         /// Minimum cash balance reserve in EUR (for buy order and investment validation)
         static let minimumCashReserve: Double = 20.0
@@ -159,7 +166,8 @@ struct CalculationConstants {
 
     /// Transaction limits based on risk class (MiFID II / BaFin compliance)
     struct TransactionLimits {
-        /// Base daily limit for all users (EUR)
+        /// Base daily limit for all users (EUR).
+        /// Used only as LAST-RESORT fallback; admin configuration is authoritative.
         static let baseDailyLimit: Double = 10_000.0
 
         /// Base weekly limit for all users (EUR)
@@ -168,34 +176,9 @@ struct CalculationConstants {
         /// Base monthly limit for all users (EUR)
         static let baseMonthlyLimit: Double = 200_000.0
 
-        /// Risk class based limit multipliers
-        /// Higher risk class = higher limits
-        static func riskClassMultiplier(for riskClass: RiskClass) -> Double {
-            switch riskClass {
-            case .riskClass1: return 0.5  // Very conservative - lower limits
-            case .riskClass2: return 0.75
-            case .riskClass3: return 1.0  // Standard
-            case .riskClass4: return 1.25
-            case .riskClass5: return 1.5
-            case .riskClass6: return 2.0
-            case .riskClass7: return 2.5  // Very high risk - higher limits
-            }
-        }
-
-        /// Calculates risk class based daily limit
-        static func dailyLimit(for riskClass: RiskClass) -> Double {
-            return baseDailyLimit * riskClassMultiplier(for: riskClass)
-        }
-
-        /// Calculates risk class based weekly limit
-        static func weeklyLimit(for riskClass: RiskClass) -> Double {
-            return baseWeeklyLimit * riskClassMultiplier(for: riskClass)
-        }
-
-        /// Calculates risk class based monthly limit
-        static func monthlyLimit(for riskClass: RiskClass) -> Double {
-            return baseMonthlyLimit * riskClassMultiplier(for: riskClass)
-        }
+        // NOTE: Risk-class based multipliers have been removed.
+        // Transaction limits are now configured exclusively via admin configuration
+        // and are independent of the user's risk class.
     }
 
     // MARK: - Security Trading Constraints

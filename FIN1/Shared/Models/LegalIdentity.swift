@@ -4,7 +4,7 @@ import Foundation
 /// Centralized legal/accounting identity values used in:
 /// - document headers / PDFs (issuer / author / company name)
 /// - document numbers / IDs prefix
-/// - legal wording shown in-app (Terms/Privacy "Platform" naming)
+/// - legal wording shown in-app (Terms/Privacy "App" naming)
 ///
 /// NOTE:
 /// - By default, these values derive from `AppBrand.appName` (Display Name) to support easy rebranding.
@@ -41,7 +41,7 @@ enum LegalIdentity {
         return trimmed
     }
 
-    /// Name used in legal wording (e.g., "the <Platform> Platform").
+    /// Name used in legal wording (e.g., "the <App> App").
     /// Defaults to AppBrand.appName (Display Name).
     static var platformName: String {
         bundleOverride(InfoKey.platformName) ?? AppBrand.appName
