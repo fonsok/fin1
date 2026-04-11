@@ -3,7 +3,7 @@ import SwiftUI
 import Combine
 
 // MARK: - Investment Service Implementation
-/// Handles investment operations, investment management, and portfolio operations
+/// Handles investment operations, investment management, and investment overview
 /// Delegates to focused helper services for specific functionality
 final class InvestmentService: InvestmentServiceProtocol, ServiceLifecycle {
 
@@ -107,6 +107,10 @@ final class InvestmentService: InvestmentServiceProtocol, ServiceLifecycle {
 
     func start() {
         Task {
+            // Sync investment status from backend (picks up completed/cancelled states)
+            if let userId = repository.investments.first?.investorId {
+                await fetchFromBackend(for: userId)
+            }
             if let investmentDocumentService = investmentDocumentService {
                 await investmentDocumentService.regenerateInvestmentDocuments(for: repository.investments)
             }
@@ -169,11 +173,10 @@ final class InvestmentService: InvestmentServiceProtocol, ServiceLifecycle {
             markForSync(id)
         }
 
-        // Write-through: Sync immediately in background (fire-and-forget)
+        // Write-through: Sync immediately so Parse objectIds are available
+        // for PoolTradeParticipation references
         if !newIds.isEmpty, investmentAPIService != nil {
-            Task.detached(priority: .background) { [weak self] in
-                await self?.syncToBackend()
-            }
+            await syncToBackend()
         }
     }
 
@@ -263,12 +266,44 @@ final class InvestmentService: InvestmentServiceProtocol, ServiceLifecycle {
     }
 
     func deleteInvestment(investmentId: String, reservationId: String) async {
+        let snapshot = await MainActor.run {
+            repository.investments.first { $0.id == investmentId }
+        }
+        let isLocalOnlyId = UUID(uuidString: investmentId) != nil
+
+        if !isLocalOnlyId, let api = investmentAPIService {
+            do {
+                try await api.cancelReservedInvestment(investmentId: investmentId)
+                let deleted = await MainActor.run {
+                    InvestmentStatusManager.deleteInvestment(investmentId: investmentId, repository: repository)
+                }
+                if deleted {
+                    await checkAndUpdateInvestmentCompletion()
+                    NotificationCenter.default.post(name: .investorBalanceDidChange, object: nil)
+                }
+                return
+            } catch {
+                print("⚠️ InvestmentService: cancelReservedInvestment failed — local fallback: \(error.localizedDescription)")
+            }
+        }
+
+        if let cash = investorCashBalanceService,
+           let inv = snapshot,
+           inv.reservationStatus == .reserved {
+            await cash.processRemainingBalanceDistribution(
+                investorId: inv.investorId,
+                amount: inv.amount,
+                investmentId: investmentId
+            )
+        }
+
         let deleted = await MainActor.run {
             InvestmentStatusManager.deleteInvestment(investmentId: investmentId, repository: repository)
         }
 
         if deleted {
             await checkAndUpdateInvestmentCompletion()
+            NotificationCenter.default.post(name: .investorBalanceDidChange, object: nil)
         }
     }
 
@@ -339,8 +374,17 @@ final class InvestmentService: InvestmentServiceProtocol, ServiceLifecycle {
 
         for investment in investmentsToSync {
             do {
-                _ = try await apiService.saveInvestment(investment)
-                _ = await MainActor.run { pendingSyncIds.remove(investment.id) }
+                let savedInvestment = try await apiService.saveInvestment(investment)
+                let localId = investment.id
+                await MainActor.run {
+                    pendingSyncIds.remove(localId)
+                    // Replace local investment with the one carrying the Parse objectId
+                    if savedInvestment.id != localId,
+                       let index = repository.investments.firstIndex(where: { $0.id == localId }) {
+                        repository.investments[index] = savedInvestment
+                        print("📡 InvestmentService: Updated ID \(localId) → \(savedInvestment.id)")
+                    }
+                }
             } catch {
                 print("⚠️ InvestmentService: Failed to sync investment \(investment.id): \(error)")
             }
@@ -349,21 +393,63 @@ final class InvestmentService: InvestmentServiceProtocol, ServiceLifecycle {
         print("✅ InvestmentService: Sync complete, \(pendingSyncIds.count) pending")
     }
 
-    /// Fetches investments from backend (on-demand, merges with local)
+    /// Fetches investments from backend and merges status/financial updates into local store
     func fetchFromBackend(for investorId: String) async {
         guard let apiService = investmentAPIService else { return }
 
         do {
             let remoteInvestments = try await apiService.fetchInvestments(for: investorId)
             await MainActor.run {
-                // Merge: Add remote investments not in local
-                let localIds = Set(repository.investments.map(\.id))
-                let newInvestments = remoteInvestments.filter { !localIds.contains($0.id) }
-                for investment in newInvestments {
-                    repository.addInvestment(investment)
+                let remoteIds = Set(remoteInvestments.map(\.id))
+                // Drop local rows removed on the server (e.g. after DEV reset); keep pending unsynced creates.
+                repository.investments.removeAll { inv in
+                    guard inv.investorId == investorId else { return false }
+                    if pendingSyncIds.contains(inv.id) { return false }
+                    return !remoteIds.contains(inv.id)
                 }
+
+                let localById = Dictionary(uniqueKeysWithValues: repository.investments.map { ($0.id, $0) })
+                var addedCount = 0
+                var updatedCount = 0
+
+                for remote in remoteInvestments {
+                    if let local = localById[remote.id] {
+                        // Update existing: apply backend status and financial data
+                        let needsUpdate = local.status != remote.status
+                            || local.reservationStatus != remote.reservationStatus
+                            || abs(local.currentValue - remote.currentValue) > 0.01
+                            || abs((local.performance) - (remote.performance)) > 0.01
+                        if needsUpdate {
+                            let merged = Investment(
+                                id: local.id,
+                                batchId: local.batchId ?? remote.batchId,
+                                investorId: local.investorId,
+                                investorName: local.investorName,
+                                traderId: local.traderId,
+                                traderName: local.traderName.isEmpty ? remote.traderName : local.traderName,
+                                amount: local.amount,
+                                currentValue: remote.currentValue,
+                                date: local.date,
+                                status: remote.status,
+                                performance: remote.performance,
+                                numberOfTrades: max(local.numberOfTrades, remote.numberOfTrades),
+                                sequenceNumber: local.sequenceNumber,
+                                createdAt: local.createdAt,
+                                updatedAt: Date(),
+                                completedAt: remote.completedAt ?? local.completedAt,
+                                specialization: local.specialization,
+                                reservationStatus: remote.reservationStatus
+                            )
+                            repository.updateInvestment(merged)
+                            updatedCount += 1
+                        }
+                    } else {
+                        repository.addInvestment(remote)
+                        addedCount += 1
+                    }
+                }
+                print("📡 InvestmentService: Backend sync — \(addedCount) added, \(updatedCount) updated (of \(remoteInvestments.count) remote)")
             }
-            print("📡 InvestmentService: Merged \(remoteInvestments.count) from backend")
         } catch {
             print("⚠️ InvestmentService: Backend fetch failed: \(error)")
         }

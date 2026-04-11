@@ -13,6 +13,9 @@ protocol InvestmentRepositoryProtocol: ObservableObject {
 
     /// Adds an investment (used for backend merge)
     func addInvestment(_ investment: Investment)
+
+    /// Replaces an existing investment in-place (used for backend status sync)
+    func updateInvestment(_ investment: Investment)
 }
 
 // MARK: - Investment Repository Implementation
@@ -52,5 +55,12 @@ final class InvestmentRepository: InvestmentRepositoryProtocol {
     func addInvestment(_ investment: Investment) {
         guard !investments.contains(where: { $0.id == investment.id }) else { return }
         investments.append(investment)
+    }
+
+    /// Replaces an existing investment in-place (for backend status/financial sync)
+    func updateInvestment(_ investment: Investment) {
+        if let idx = investments.firstIndex(where: { $0.id == investment.id }) {
+            investments[idx] = investment
+        }
     }
 }

@@ -26,7 +26,7 @@ struct AccountStatementImportantNoticesView: View {
         .background(AppTheme.sectionBackground.opacity(0.3))
         .cornerRadius(ResponsiveDesign.spacing(16))
         .task {
-            guard let termsService = services?.termsContentService else { return }
+            let termsService = services.termsContentService
             let provider = LegalSnippetProvider(termsContentService: termsService)
             let defaultDE = AccountStatementNoticesText.germanParagraphs.joined(separator: "\n\n")
             let defaultEN = AccountStatementNoticesText.englishParagraphs.joined(separator: "\n\n")

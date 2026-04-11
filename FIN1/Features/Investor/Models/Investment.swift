@@ -44,7 +44,8 @@ struct Investment: Identifiable, Codable, Sendable {
         reservationStatus == .active || reservationStatus == .executing || reservationStatus == .closed
     }
 
-    /// Checks if this investment can be deleted (only if reserved)
+    /// Trash/delete allowed only while reserved (not yet committed to an ongoing trade path).
+    /// App service charge for the batch is never refunded when deleting a split.
     var canBeDeleted: Bool {
         reservationStatus == .reserved
     }

@@ -3,7 +3,7 @@ import SwiftUI
 import Combine
 
 // MARK: - Investment Service Protocol
-/// Defines the contract for investment operations and portfolio management
+/// Defines the contract for investment operations and investment overview
 protocol InvestmentServiceProtocol: ObservableObject {
     var investments: [Investment] { get }
     var investmentPools: [InvestmentPool] { get }

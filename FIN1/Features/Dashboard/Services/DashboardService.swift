@@ -95,7 +95,7 @@ final class DashboardService: DashboardServiceProtocol, ServiceLifecycle {
     private func loadQuickStatsSync() {
         // Mock data - in real app, this would come from API
         quickStats = DashboardStats(
-            totalPortfolioValue: 25000,
+            totalInvestmentsValue: 25000,
             dailyChange: 1250,
             dailyChangePercentage: 5.3,
             totalInvestments: 8,

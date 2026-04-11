@@ -178,11 +178,16 @@ final class InvestmentsViewModel: ObservableObject {
     func loadInvestmentsData() {
         isLoading = true
 
-        // Simulate API call using modern Swift concurrency
         Task { @MainActor in
-            try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
             loadInvestments()
-            // Auto-select current year for completed investments
+
+            // Always reconcile with Parse so server-side deletes (e.g. DEV reset) clear local rows.
+            if let investorId = boundInvestorId {
+                print("📡 InvestmentsViewModel: Fetching from backend for \(investorId)")
+                await investmentService.fetchFromBackend(for: investorId)
+                loadInvestments()
+            }
+
             if selectedYear == nil && !availableYears.isEmpty {
                 selectedYear = availableYears.first
             }
@@ -191,22 +196,12 @@ final class InvestmentsViewModel: ObservableObject {
     }
 
     private func loadInvestments() {
-        // Load from service if available, otherwise use mock data
-        if !investmentService.investments.isEmpty {
-            // Only load investments for the VM's bound investor
-            if let investorId = boundInvestorId {
-                investments = investmentService.getInvestments(for: investorId)
-            } else {
-                investments = []
+        if let investorId = boundInvestorId {
+            let localInvestments = investmentService.getInvestments(for: investorId)
+            if !localInvestments.isEmpty {
+                investments = localInvestments
             }
-            refreshCompletedDisplayData()
-            // Check and update investment completion status after loading
-            checkAndUpdateInvestmentCompletion()
-            return
         }
-
-        // Mock data - in real app, this would come from API
-        investments = []
         refreshCompletedDisplayData()
         checkAndUpdateInvestmentCompletion()
     }
@@ -419,25 +414,9 @@ final class InvestmentsViewModel: ObservableObject {
 
     // MARK: - Investment Deletion
 
-    /// Deletes an investment (storno) and refunds the allocated amount to investor's cash balance
-    /// - Note: Only the investment's allocated amount is refunded. Platform service charge is NON-REFUNDABLE
-    ///   and remains charged even if all investments are deleted and investment is cancelled.
+    /// Deletes a reserved split (storno). Refund + escrow: `InvestmentService` (server via API when synced, else local wallet).
+    /// App service charge is never refunded.
     func deleteInvestment(_ investmentRow: InvestmentRow) async throws {
-        // Get the allocated amount for this investment
-        let refundAmount = investmentRow.reservation.allocatedAmount
-
-        // Refund ONLY the investment's allocated amount to investor's cash balance
-        // Platform service charge is NOT refunded - it's a non-refundable creation charge
-        if let investorId = currentUser?.id,
-           let cashBalanceService = investorCashBalanceService {
-            await cashBalanceService.processRemainingBalanceDistribution(
-                investorId: investorId,
-                amount: refundAmount,
-                investmentId: investmentRow.investmentId
-            )
-        }
-
-        // Delegate actual deletion to the InvestmentService (source of truth)
         await investmentService.deleteInvestment(
             investmentId: investmentRow.investmentId,
             reservationId: investmentRow.reservation.id

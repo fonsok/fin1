@@ -27,6 +27,7 @@ final class DashboardStatsViewModel: ObservableObject {
     private let configurationService: any ConfigurationServiceProtocol
     private let holdingsConversionService: any HoldingsConversionServiceProtocol
     private let paymentService: (any PaymentServiceProtocol)?
+    private let settlementAPIService: (any SettlementAPIServiceProtocol)?
 
     private var cancellables = Set<AnyCancellable>()
 
@@ -55,7 +56,8 @@ final class DashboardStatsViewModel: ObservableObject {
         invoiceService: any InvoiceServiceProtocol,
         configurationService: any ConfigurationServiceProtocol,
         holdingsConversionService: any HoldingsConversionServiceProtocol,
-        paymentService: (any PaymentServiceProtocol)? = nil
+        paymentService: (any PaymentServiceProtocol)? = nil,
+        settlementAPIService: (any SettlementAPIServiceProtocol)? = nil
     ) {
         self.userService = userService
         self.investmentService = investmentService
@@ -66,6 +68,7 @@ final class DashboardStatsViewModel: ObservableObject {
         self.configurationService = configurationService
         self.holdingsConversionService = holdingsConversionService
         self.paymentService = paymentService
+        self.settlementAPIService = settlementAPIService
 
         setupNotificationObservers()
     }
@@ -81,7 +84,8 @@ final class DashboardStatsViewModel: ObservableObject {
             invoiceService: appServices.invoiceService,
             configurationService: appServices.configurationService,
             holdingsConversionService: appServices.holdingsConversionService,
-            paymentService: appServices.paymentService
+            paymentService: appServices.paymentService,
+            settlementAPIService: appServices.settlementAPIService
         )
     }
 
@@ -201,18 +205,18 @@ final class DashboardStatsViewModel: ObservableObject {
     // MARK: - Investor Data Updates
 
     private func updateInvestorBalance() {
-        guard let currentUserId = currentUserId,
-              let currentUser = userService.currentUser else {
+        guard let currentUser = userService.currentUser else {
             investorBalance = "€ 0,00"
             return
         }
 
-        // Use single source of truth for investor balance (consistent with trader)
         Task {
             let snapshot = await InvestorAccountStatementBuilder.buildSnapshotWithWallet(
                 for: currentUser,
                 investorCashBalanceService: investorCashBalanceService,
-                paymentService: paymentService
+                paymentService: paymentService,
+                settlementAPIService: settlementAPIService,
+                configurationService: configurationService
             )
 
             await MainActor.run {
@@ -238,7 +242,8 @@ final class DashboardStatsViewModel: ObservableObject {
                 for: userService.currentUser,
                 invoiceService: invoiceService,
                 configurationService: configurationService,
-                paymentService: paymentService
+                paymentService: paymentService,
+                settlementAPIService: settlementAPIService
             )
 
             await MainActor.run {

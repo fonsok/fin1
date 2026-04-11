@@ -187,7 +187,7 @@ final class CompletedInvestmentDetailViewModel: ObservableObject {
 
     var provisionAmount: Double {
         guard let configurationService else { return 0.0 }
-        let rate = configurationService.effectivePlatformServiceChargeRate
+        let rate = configurationService.effectiveAppServiceChargeRate
         return investedAmount * rate
     }
 

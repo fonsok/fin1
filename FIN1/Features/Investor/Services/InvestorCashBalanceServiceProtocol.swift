@@ -46,15 +46,23 @@ protocol InvestorCashBalanceServiceProtocol: ServiceLifecycle {
     ///   - investmentId: The investment ID for accounting linkage
     func processInvestment(investorId: String, amount: Double, investmentId: String) async
 
-    /// Processes platform service charge deduction (separate accounting transaction)
-    /// - Note: Platform service charge is ONLY charged to investors (not traders).
+    /// Processes app service charge deduction (separate accounting transaction)
+    /// - Note: App service charge is ONLY charged to investors (not traders).
     ///   It is NON-REFUNDABLE and is charged when investment is created.
     ///   It is NOT refunded if investment is cancelled or deleted.
     /// - Parameters:
     ///   - investorId: The investor's user ID (service charge applies only to investors)
-    ///   - chargeAmount: Platform service charge amount to deduct
+    ///   - chargeAmount: App service charge amount to deduct
     ///   - investmentId: The investment ID for accounting linkage (links charge to investment)
     ///   - metadata: Additional accounting metadata (contra account posting IDs, VAT split, etc.)
+    func processAppServiceCharge(
+        investorId: String,
+        chargeAmount: Double,
+        investmentId: String,
+        metadata: [String: String]
+    ) async
+
+    /// Backward compatible alias (legacy naming).
     func processPlatformServiceCharge(
         investorId: String,
         chargeAmount: Double,

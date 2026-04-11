@@ -207,7 +207,8 @@ final class AccountStatementViewModel: ObservableObject {
             for: user,
             investorCashBalanceService: investorCashBalanceService,
             paymentService: paymentService,
-            settlementAPIService: settlementAPIService
+            settlementAPIService: settlementAPIService,
+            configurationService: configurationService
         )
 
         await MainActor.run {

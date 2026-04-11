@@ -4,7 +4,7 @@ import SwiftUI
 /// Displays investment summary with totals following MVVM architecture
 struct InvestmentSummaryView: View {
     @ObservedObject private var viewModel: InvestmentSummaryViewModel
-    @State private var showPlatformServiceChargeInfo = false
+    @State private var showAppServiceChargeInfo = false
     let remainingBalance: Double
     let currentBalance: Double
     @Environment(\.themeManager) private var themeManager
@@ -52,9 +52,9 @@ struct InvestmentSummaryView: View {
 
                 HStack {
                     HStack(spacing: ResponsiveDesign.spacing(2)) {
-                        Text("Platform Service Charge (\(viewModel.configurationService.platformServiceChargePercentage)):")
+                        Text("App Service Charge (\(viewModel.configurationService.appServiceChargePercentage)):")
                         Button(action: {
-                            showPlatformServiceChargeInfo = true
+                            showAppServiceChargeInfo = true
                         }) {
                             Image(systemName: "info.circle.fill")
                                 .font(.system(size: ResponsiveDesign.iconSize() * 0.7))
@@ -62,7 +62,7 @@ struct InvestmentSummaryView: View {
                         }
                     }
                     Spacer()
-                    Text(viewModel.formattedPlatformServiceCharge)
+                    Text(viewModel.formattedAppServiceCharge)
                         .fontWeight(.medium)
                 }
 
@@ -97,8 +97,8 @@ struct InvestmentSummaryView: View {
         .padding()
         .background(AppTheme.sectionBackground)
         .cornerRadius(ResponsiveDesign.spacing(16))
-        .sheet(isPresented: $showPlatformServiceChargeInfo) {
-            PlatformServiceChargeInfoSheet()
+        .sheet(isPresented: $showAppServiceChargeInfo) {
+            AppServiceChargeInfoSheet()
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
         }
@@ -119,8 +119,8 @@ struct InvestmentSummaryView: View {
     .background(AppTheme.screenBackground)
 }
 
-// MARK: - Platform Service Charge Info Sheet
-private struct PlatformServiceChargeInfoSheet: View {
+// MARK: - App Service Charge Info Sheet
+private struct AppServiceChargeInfoSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.themeManager) private var themeManager
 
@@ -128,7 +128,7 @@ private struct PlatformServiceChargeInfoSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(16)) {
-                    Text("Platform Service Charge (\(CalculationConstants.ServiceCharges.platformServiceChargePercentage))")
+                    Text("App Service Charge (\(CalculationConstants.ServiceCharges.appServiceChargePercentage))")
                         .font(ResponsiveDesign.headlineFont())
                         .fontWeight(.bold)
                         .foregroundColor(AppTheme.fontColor)

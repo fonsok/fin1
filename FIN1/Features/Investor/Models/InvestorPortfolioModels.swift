@@ -1,9 +1,9 @@
 import SwiftUI
 import Foundation
 
-// MARK: - Investor Portfolio Models
+// MARK: - Investor Summary Models
 
-struct Portfolio {
+struct InvestorSummary {
     var totalValue: Double = 0
     var totalInvested: Double = 0
     var totalUnrealizedPnL: Double = 0

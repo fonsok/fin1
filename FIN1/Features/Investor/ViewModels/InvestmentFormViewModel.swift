@@ -65,20 +65,20 @@ final class InvestmentFormViewModel: ObservableObject {
         displayAmount = integerValue.formattedAsLocalizedInteger()
     }
 
-    // MARK: - Platform Service Charge Calculation
+    // MARK: - App Service Charge Calculation
 
-    /// Calculates the platform service charge for the current investment amount
+    /// Calculates the app service charge for the current investment amount
     /// - Note: Currently applies to investors when creating investments (not traders).
     ///   Can be extended to traders in the future if needed.
-    var platformServiceCharge: Double {
+    var appServiceCharge: Double {
         let investmentAmount = getInvestmentAmount()
         let amountValue = Double(investmentAmount.replacingOccurrences(of: ".", with: "")) ?? 0
-        return amountValue * configurationService.effectivePlatformServiceChargeRate
+        return amountValue * configurationService.effectiveAppServiceChargeRate
     }
 
-    /// Formatted platform service charge for display
-    var formattedPlatformServiceCharge: String {
-        platformServiceCharge.formattedAsLocalizedCurrency()
+    /// Formatted app service charge for display
+    var formattedAppServiceCharge: String {
+        appServiceCharge.formattedAsLocalizedCurrency()
     }
 
     /// Whether the investment amount is greater than zero

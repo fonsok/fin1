@@ -73,19 +73,19 @@ struct CompletedInvestmentsView: View {
                 .foregroundColor(AppTheme.fontColor)
 
             if let user = viewModel.currentUser {
-                Text("Portfolio-Nr.: \(user.customerId)")
+                Text("Kunden-Nr.: \(user.customerNumber)")
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.8))
 
-                Text("Portfolio owner: \(user.fullName)")
+                Text("Kontoinhaber: \(user.fullName)")
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.8))
             } else {
-                Text("Portfolio-Nr.: ...")
+                Text("Kunden-Nr.: ...")
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.8))
 
-                Text("Portfolio owner: ...")
+                Text("Kontoinhaber: ...")
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.8))
             }

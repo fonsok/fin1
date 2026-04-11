@@ -162,7 +162,9 @@ struct InvestmentStatusManager {
 
     // MARK: - Delete Investment
 
-    /// Deletes a reserved investment from the repository
+    /// Deletes a reserved investment from the repository (Papierkorb).
+    /// Only allowed while `reservationStatus == .reserved` (not yet used in an ongoing trade).
+    /// The batch **app service charge** remains charged; it is not refunded when removing a split.
     /// - Parameters:
     ///   - investmentId: ID of the investment to delete
     ///   - repository: Investment repository

@@ -18,55 +18,91 @@ protocol InvestmentAPIServiceProtocol {
 
     /// Updates pool participation (e.g., when trade completes)
     func updatePoolParticipation(_ participation: PoolTradeParticipation) async throws -> PoolTradeParticipation
+
+    /// Server-side cancel of a reserved split; releases escrow and credits wallet (see Cloud Code).
+    func cancelReservedInvestment(investmentId: String) async throws
 }
 
 // Note: PoolTradeParticipation is defined in FIN1/Features/Investor/Models/PoolTradeParticipation.swift
 
 // MARK: - Parse Investment Model
 
+/// Decodes a Parse date field that may arrive as an ISO string or as `{"__type":"Date","iso":"…"}`
+struct FlexibleParseDate: Codable {
+    let dateString: String?
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        if container.decodeNil() {
+            dateString = nil
+        } else if let str = try? container.decode(String.self) {
+            dateString = str
+        } else if let dict = try? container.decode([String: String].self), let iso = dict["iso"] {
+            dateString = iso
+        } else {
+            dateString = nil
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(dateString)
+    }
+
+    func toDate() -> Date? {
+        guard let dateString else { return nil }
+        let fmt = ISO8601DateFormatter()
+        fmt.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let d = fmt.date(from: dateString) { return d }
+        fmt.formatOptions = [.withInternetDateTime]
+        return fmt.date(from: dateString)
+    }
+}
+
 /// Parse Server representation of an Investment
 struct ParseInvestment: Codable {
     let objectId: String
     let investorId: String
-    let investorName: String
+    let investorName: String?
     let traderId: String
-    let traderName: String
+    let traderName: String?
     let amount: Double
-    let currentValue: Double
+    let currentValue: Double?
     let status: String
-    let performance: Double
-    let numberOfTrades: Int
+    let performance: Double?
+    let numberOfTrades: Int?
     let batchId: String?
     let sequenceNumber: Int?
-    let createdAt: String
-    let updatedAt: String
-    let completedAt: String?
+    let createdAt: FlexibleParseDate
+    let updatedAt: FlexibleParseDate
+    let completedAt: FlexibleParseDate?
+    let activatedAt: FlexibleParseDate?
     let specialization: String?
     let reservationStatus: String?
+    let profit: Double?
+    let profitPercentage: Double?
+    let investmentNumber: String?
 
     func toInvestment() -> Investment {
-        let dateFormatter = ISO8601DateFormatter()
-        dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-
-        let createdDate = dateFormatter.date(from: createdAt) ?? Date()
-        let updatedDate = dateFormatter.date(from: updatedAt) ?? Date()
-        let completedDate = completedAt.flatMap { dateFormatter.date(from: $0) }
+        let createdDate = createdAt.toDate() ?? Date()
+        let updatedDate = updatedAt.toDate() ?? Date()
+        let completedDate = completedAt?.toDate()
         let investmentStatus = InvestmentStatus(rawValue: status) ?? .active
-        let reservStatus = InvestmentReservationStatus(rawValue: reservationStatus ?? "active") ?? .active
+        let reservStatus = InvestmentReservationStatus(rawValue: reservationStatus ?? status) ?? .active
 
         return Investment(
             id: objectId,
             batchId: batchId,
             investorId: investorId,
-            investorName: investorName,
+            investorName: investorName ?? "",
             traderId: traderId,
-            traderName: traderName,
+            traderName: traderName ?? "",
             amount: amount,
-            currentValue: currentValue,
+            currentValue: currentValue ?? amount,
             date: createdDate,
             status: investmentStatus,
-            performance: performance,
-            numberOfTrades: numberOfTrades,
+            performance: profitPercentage ?? performance ?? 0.0,
+            numberOfTrades: numberOfTrades ?? 0,
             sequenceNumber: sequenceNumber,
             createdAt: createdDate,
             updatedAt: updatedDate,
@@ -120,6 +156,10 @@ private struct ParseInvestmentInput: Codable {
 
 // MARK: - Parse Pool Participation Input
 // Maps local PoolTradeParticipation to Parse Server format
+
+private struct CancelReservedInvestmentResponse: Decodable {
+    let success: Bool?
+}
 
 private struct ParsePoolParticipationInput: Codable {
     let investmentId: String
@@ -272,5 +312,13 @@ final class InvestmentAPIService: InvestmentAPIServiceProtocol {
 
         print("✅ InvestmentAPIService: Pool participation updated successfully")
         return participation
+    }
+
+    func cancelReservedInvestment(investmentId: String) async throws {
+        let _: CancelReservedInvestmentResponse = try await apiClient.callFunction(
+            "cancelReservedInvestment",
+            parameters: ["investmentId": investmentId]
+        )
+        print("✅ InvestmentAPIService: cancelReservedInvestment OK \(investmentId)")
     }
 }

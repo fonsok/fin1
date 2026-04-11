@@ -98,7 +98,7 @@ final class UserImpersonationViewModel: ObservableObject {
 
         await userService.impersonateUser(
             userId: result.id,
-            customerId: result.customerId,
+            customerNumber: result.customerNumber,
             email: result.email,
             fullName: result.fullName,
             role: userRole

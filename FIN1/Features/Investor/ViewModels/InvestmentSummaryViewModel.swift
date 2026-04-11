@@ -49,12 +49,12 @@ final class InvestmentSummaryViewModel: ObservableObject {
         "\(numberOfInvestments)"
     }
 
-    var platformServiceCharge: Double {
-        totalInvestmentAmount * configurationService.effectivePlatformServiceChargeRate
+    var appServiceCharge: Double {
+        totalInvestmentAmount * configurationService.effectiveAppServiceChargeRate
     }
 
-    var formattedPlatformServiceCharge: String {
-        platformServiceCharge.formattedAsLocalizedCurrency()
+    var formattedAppServiceCharge: String {
+        appServiceCharge.formattedAsLocalizedCurrency()
     }
 
     // MARK: - Error Handling

@@ -42,10 +42,15 @@ final class InvestorCashBalanceService: InvestorCashBalanceServiceProtocol, Obse
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 guard let self else { return }
-                let serverValue = self.configurationService.initialAccountBalance
-                if serverValue != self.initialInvestorBalance {
+                // Read after this run loop so @Published values from ConfigurationService have committed
+                // (objectWillChange can fire before stored properties update).
+                DispatchQueue.main.async { [weak self] in
+                    guard let self else { return }
+                    let serverValue = self.configurationService.initialAccountBalance
+                    guard serverValue != self.initialInvestorBalance else { return }
                     self.initialInvestorBalance = serverValue
                     print("💰 InvestorCashBalanceService: initial balance updated to €\(serverValue.formatted(.currency(code: "EUR")))")
+                    NotificationCenter.default.post(name: .investorBalanceDidChange, object: nil)
                 }
             }
             .store(in: &cancellables)
@@ -242,11 +247,11 @@ final class InvestorCashBalanceService: InvestorCashBalanceServiceProtocol, Obse
         print("💰 Investor \(investorId) - Investment [ID: \(investmentId)]: -€\(amount.formatted(.currency(code: "EUR"))) | New balance: €\(newBalance.formatted(.currency(code: "EUR")))")
     }
 
-    /// Processes platform service charge deduction (NON-REFUNDABLE creation charge)
-    /// - Note: Currently charged to investors when creating investments (not traders).
-    ///   It is charged when investment is created and is NOT refunded on cancellation.
+    /// Processes app service charge deduction (NON-REFUNDABLE creation charge)
+    /// - Note: Charged to investors when they **complete** the investment flow (not traders).
+    ///   Irrevocable immediately; deleting a **split** (reserved-only) investment does **not** refund this fee.
     ///   To extend to traders: implement similar method in TraderCashBalanceService.
-    func processPlatformServiceCharge(
+    func processAppServiceCharge(
         investorId: String,
         chargeAmount: Double,
         investmentId: String,
@@ -259,14 +264,14 @@ final class InvestorCashBalanceService: InvestorCashBalanceServiceProtocol, Obse
 
             var metadata: [String: String] = [
                 "investmentId": investmentId,
-                "transactionType": "platformServiceCharge",
+                "transactionType": "appServiceCharge",
                 "isRefundable": "false"
             ]
             additionalMetadata.forEach { metadata[$0.key] = $0.value }
 
             ledgerService.recordTransaction(
                 investorId: investorId,
-                title: "Platform Service Charge",
+                title: "App Service Charge",
                 subtitle: "Investment \(investmentId)",
                 amount: chargeAmount,
                 direction: .debit,
@@ -281,8 +286,8 @@ final class InvestorCashBalanceService: InvestorCashBalanceServiceProtocol, Obse
                 "investorId": investorId,
                 "newBalance": newBalance,
                 "investmentId": investmentId,
-                "transactionType": "platformServiceCharge",
-                "isRefundable": false // Platform service charge is non-refundable
+                "transactionType": "appServiceCharge",
+                "isRefundable": false // App service charge is non-refundable
             ]
             additionalMetadata.forEach { userInfo[$0.key] = $0.value }
 
@@ -293,7 +298,22 @@ final class InvestorCashBalanceService: InvestorCashBalanceServiceProtocol, Obse
             )
         }
         let newBalance = getBalance(for: investorId)
-        print("💰 Investor \(investorId) - Platform Service Charge [Investment ID: \(investmentId), NON-REFUNDABLE]: -€\(chargeAmount.formatted(.currency(code: "EUR"))) | New balance: €\(newBalance.formatted(.currency(code: "EUR")))")
+        print("💰 Investor \(investorId) - App Service Charge [Investment ID: \(investmentId), NON-REFUNDABLE]: -€\(chargeAmount.formatted(.currency(code: "EUR"))) | New balance: €\(newBalance.formatted(.currency(code: "EUR")))")
+    }
+
+    /// Backward compatible alias (legacy naming).
+    func processPlatformServiceCharge(
+        investorId: String,
+        chargeAmount: Double,
+        investmentId: String,
+        metadata additionalMetadata: [String: String] = [:]
+    ) async {
+        await processAppServiceCharge(
+            investorId: investorId,
+            chargeAmount: chargeAmount,
+            investmentId: investmentId,
+            metadata: additionalMetadata
+        )
     }
 
     func processProfitDistribution(investorId: String, profitAmount: Double, investmentId: String? = nil) async {

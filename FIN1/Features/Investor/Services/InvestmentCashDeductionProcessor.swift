@@ -31,7 +31,7 @@ final class InvestmentCashDeductionProcessor {
 
     // MARK: - Public Methods
 
-    /// Processes cash deductions for investments and platform service charge
+    /// Processes cash deductions for investments and app service charge
     func processCashDeductions(
         investor: User,
         batch: InvestmentBatch,
@@ -39,7 +39,7 @@ final class InvestmentCashDeductionProcessor {
     ) async {
         print("💰 InvestmentCashDeductionProcessor: Processing - Investor: \(investor.id)")
         print("   💵 Total Investment: €\(batch.totalAmount.formatted(.currency(code: "EUR")))")
-        print("   💰 Platform Service Charge: €\(batch.platformServiceCharge.formatted(.currency(code: "EUR")))")
+        print("   💰 App Service Charge: €\(batch.appServiceCharge.formatted(.currency(code: "EUR")))")
 
         guard let investorCashBalanceService = investorCashBalanceService else {
             print("⚠️ InvestmentCashDeductionProcessor: investorCashBalanceService is nil")
@@ -58,8 +58,8 @@ final class InvestmentCashDeductionProcessor {
 
         // Calculate VAT breakdown
         let vatRate = CalculationConstants.TaxRates.vatRate
-        let netServiceCharge = batch.platformServiceCharge / (1.0 + vatRate)
-        let vatAmount = batch.platformServiceCharge - netServiceCharge
+        let netServiceCharge = batch.appServiceCharge / (1.0 + vatRate)
+        let vatAmount = batch.appServiceCharge - netServiceCharge
 
         // Build service charge metadata
         let serviceChargeMetadata = buildServiceChargeMetadata(
@@ -71,17 +71,17 @@ final class InvestmentCashDeductionProcessor {
         )
 
         // Process service charge deduction
-        await investorCashBalanceService.processPlatformServiceCharge(
+        await investorCashBalanceService.processAppServiceCharge(
             investorId: investor.id,
-            chargeAmount: batch.platformServiceCharge,
+            chargeAmount: batch.appServiceCharge,
             investmentId: batch.id,
             metadata: serviceChargeMetadata
         )
 
-        // Create invoice for platform service charge
+        // Create invoice for app service charge
         await createServiceChargeInvoice(
             investor: investor,
-            serviceChargeAmount: batch.platformServiceCharge,
+            serviceChargeAmount: batch.appServiceCharge,
             batchId: batch.id,
             investments: investments,
             netAmount: netServiceCharge,
@@ -106,11 +106,11 @@ final class InvestmentCashDeductionProcessor {
         ]
 
         if let bankContraAccountService = bankContraAccountService {
-            let contraPostings = bankContraAccountService.recordPlatformServiceChargePosting(
+            let contraPostings = bankContraAccountService.recordAppServiceChargePosting(
                 investorId: investor.id,
                 batchId: batch.id,
                 investmentIds: investments.map { $0.id },
-                grossAmount: batch.platformServiceCharge,
+                grossAmount: batch.appServiceCharge,
                 netAmount: netServiceCharge,
                 vatAmount: vatAmount
             )
@@ -120,6 +120,9 @@ final class InvestmentCashDeductionProcessor {
 
             print("🏦 InvestmentCashDeductionProcessor: Bank contra postings created")
         }
+
+        // Platform ledger (AppLedgerEntry + BankContraPosting) for service charge is
+        // recorded server-side in triggers/invoice.js when the Invoice is saved.
 
         return metadata
     }
@@ -150,7 +153,7 @@ final class InvestmentCashDeductionProcessor {
             batchId: batchId,
             investmentIds: investmentIds,
             investmentAmounts: investmentAmounts,
-            serviceChargeRate: configurationService.effectivePlatformServiceChargeRate
+            serviceChargeRate: configurationService.effectiveAppServiceChargeRate
         )
 
         await invoiceService.addInvoice(invoice)

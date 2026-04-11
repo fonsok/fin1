@@ -38,14 +38,14 @@ struct DashboardWelcomeHeader: View {
                         }
                     }
 
-                    // Customer ID on separate line
-                    if let customerId = currentUser?.customerId, !customerId.isEmpty {
+                    // Kundennummer on separate line
+                    if let customerNumber = currentUser?.customerNumber, !customerNumber.isEmpty {
                         HStack(spacing: ResponsiveDesign.spacing(4)) {
-                            Text("Customer ID:")
+                            Text("Kundennummer:")
                                 .font(ResponsiveDesign.captionFont())
                                 .foregroundColor(AppTheme.tertiaryText)
 
-                            Text(customerId)
+                            Text(customerNumber)
                                 .font(ResponsiveDesign.captionFont())
                                 .foregroundColor(AppTheme.tertiaryText)
                         }

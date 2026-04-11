@@ -54,10 +54,10 @@ struct InvestmentFormView: View {
                         .foregroundColor(AppTheme.fontColor)
                 }
 
-                // Platform Service Charge Info
+                // App Service Charge Info
                 if viewModel.hasValidAmount {
                     VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
-                        Text("A platform service charge of \(viewModel.configurationService.platformServiceChargePercentage) applies: \(viewModel.formattedPlatformServiceCharge)")
+                        Text("An app service charge of \(viewModel.configurationService.appServiceChargePercentage) applies: \(viewModel.formattedAppServiceCharge)")
                             .font(ResponsiveDesign.captionFont())
                             .foregroundColor(AppTheme.secondaryText)
 
@@ -67,7 +67,7 @@ struct InvestmentFormView: View {
                     }
                     .padding(.top, ResponsiveDesign.spacing(4))
                 } else {
-                    Text("A platform service charge of \(viewModel.configurationService.platformServiceChargePercentage) applies and will be deducted from your account immediately.")
+                    Text("An app service charge of \(viewModel.configurationService.appServiceChargePercentage) applies and will be deducted from your account immediately.")
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(AppTheme.secondaryText)
                         .padding(.top, ResponsiveDesign.spacing(4))

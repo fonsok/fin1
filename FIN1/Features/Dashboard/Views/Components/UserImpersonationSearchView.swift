@@ -108,7 +108,7 @@ struct UserSearchResultRow: View {
                         .foregroundColor(AppTheme.secondaryText)
 
                     HStack(spacing: ResponsiveDesign.spacing(8)) {
-                        Text("ID: \(result.customerId)")
+                        Text("Kundennummer: \(result.customerNumber)")
                             .font(ResponsiveDesign.captionFont())
                             .foregroundColor(AppTheme.tertiaryText)
 

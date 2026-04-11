@@ -33,7 +33,6 @@ final class InvestmentCreationService: InvestmentCreationServiceProtocol {
         self.transactionIdService = transactionIdService
         self.configurationService = configurationService
 
-        // Create cash deduction processor with same dependencies
         self.cashDeductionProcessor = InvestmentCashDeductionProcessor(
             investorCashBalanceService: investorCashBalanceService,
             bankContraAccountService: bankContraAccountService,
@@ -85,7 +84,7 @@ final class InvestmentCreationService: InvestmentCreationServiceProtocol {
             repository: repository
         )
 
-        // Step 4: Process cash deductions (investment amounts + platform service charge)
+        // Step 4: Process cash deductions (investment amounts + app service charge)
         await cashDeductionProcessor.processCashDeductions(
             investor: investor,
             batch: batch,
@@ -146,14 +145,14 @@ final class InvestmentCreationService: InvestmentCreationServiceProtocol {
             }
         }
 
-        // Check sufficient funds before creating investment (including platform service charge)
-        // Note: Platform service charge applies ONLY to investors (not traders)
+        // Check sufficient funds before creating investment (including app service charge)
+        // Note: App service charge applies ONLY to investors (not traders)
         if let investorCashBalanceService = investorCashBalanceService {
             let totalInvestmentAmount = amountPerInvestment * Double(numberOfInvestments)
-            let platformServiceCharge = totalInvestmentAmount * configurationService.effectivePlatformServiceChargeRate
-            let totalRequired = totalInvestmentAmount + platformServiceCharge
+            let appServiceCharge = totalInvestmentAmount * configurationService.effectiveAppServiceChargeRate
+            let totalRequired = totalInvestmentAmount + appServiceCharge
             if !investorCashBalanceService.hasSufficientFunds(investorId: investor.id, for: totalRequired) {
-                throw AppError.validationError("Insufficient funds (including platform service charge)")
+                throw AppError.validationError("Insufficient funds (including app service charge)")
             }
         }
     }
@@ -181,7 +180,7 @@ final class InvestmentCreationService: InvestmentCreationServiceProtocol {
 
         // Calculate batch totals
         let totalAmount = amountPerInvestment * Double(numberOfInvestments)
-        let platformServiceCharge = totalAmount * configurationService.effectivePlatformServiceChargeRate
+        let appServiceCharge = totalAmount * configurationService.effectiveAppServiceChargeRate
         // Use numberOfInvestments directly
 
         // Create the batch
@@ -196,14 +195,14 @@ final class InvestmentCreationService: InvestmentCreationServiceProtocol {
             investor: investor,
             trader: trader,
             totalAmount: totalAmount,
-            platformServiceCharge: platformServiceCharge,
+            appServiceCharge: appServiceCharge,
             specialization: specialization
         )
 
         print("   ✅ Created batch:")
         print("      Batch ID: \(batch.id)")
         print("      Batch totalAmount: €\(batch.totalAmount.formatted(.currency(code: "EUR")))")
-        print("      Batch platformServiceCharge: €\(batch.platformServiceCharge.formatted(.currency(code: "EUR")))")
+        print("      Batch appServiceCharge: €\(batch.appServiceCharge.formatted(.currency(code: "EUR")))")
 
         // Add to repository
         repository.investmentBatches.append(batch)

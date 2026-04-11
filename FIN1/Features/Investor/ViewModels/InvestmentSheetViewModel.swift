@@ -61,15 +61,15 @@ final class InvestmentSheetViewModel: ObservableObject {
         Double(investmentAmount.replacingOccurrences(of: ".", with: "")) ?? 0
     }
 
-    /// Calculates the platform service charge for the current investment amount
+    /// Calculates the app service charge for the current investment amount
     /// - Note: Service charge applies ONLY to investors (not traders)
-    var platformServiceCharge: Double {
-        totalInvestmentAmount * configurationService.effectivePlatformServiceChargeRate
+    var appServiceCharge: Double {
+        totalInvestmentAmount * configurationService.effectiveAppServiceChargeRate
     }
 
-    /// Total amount required (investment + platform service charge)
+    /// Total amount required (investment + app service charge)
     var totalRequiredAmount: Double {
-        totalInvestmentAmount + platformServiceCharge
+        totalInvestmentAmount + appServiceCharge
     }
 
     /// Validates that cash balance after investment + fee will be >= minimum cash reserve

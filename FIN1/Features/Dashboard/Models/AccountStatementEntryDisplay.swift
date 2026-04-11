@@ -81,9 +81,9 @@ extension AccountStatementEntry {
     private var serviceChargeDescriptionTitle: String {
         let investmentId = metadata["investmentId"] ?? reference
         if let investmentId {
-            return "Platform service charge for Investment \(investmentId)"
+            return "App service charge for Investment \(investmentId)"
         }
-        return "Platform service charge"
+        return "App service charge"
     }
 
     private var profitDistributionDescriptionTitle: String {
@@ -183,9 +183,9 @@ extension AccountStatementEntry {
         let isRefundableFlag = metadata["isRefundable"] ?? "false"
         let refundableText = isRefundableFlag == "true" ? "refundable fee" : "non‑refundable fee"
         if let investmentId {
-            return "Platform fee for Investment \(investmentId) (\(refundableText))."
+            return "App fee for Investment \(investmentId) (\(refundableText))."
         }
-        return "Platform service fee (\(refundableText))."
+        return "App service fee (\(refundableText))."
     }
 
     private var profitDistributionDescriptionSubtitle: String? {
