@@ -140,7 +140,16 @@ struct AppServicesBuildContext {
             faqKnowledgeBaseService: faqKnowledgeBaseService!,
             slaMonitoringService: slaMonitoringService!,
             fourEyesApprovalService: fourEyesApprovalService!,
-            faqContentService: FAQContentService(parseAPIClient: parseAPIClient!),
+            faqContentService: FAQContentService(
+                parseAPIClient: parseAPIClient!,
+                cacheTTL: {
+                    #if DEBUG
+                    return 60 * 5 // 5 minutes in debug to reflect admin-portal edits quickly
+                    #else
+                    return 60 * 60 * 24 // 24h in release
+                    #endif
+                }()
+            ),
             templateAPIService: templateAPIService,
             settlementAPIService: settlementAPIService,
             authService: authService!,
