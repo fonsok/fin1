@@ -28,7 +28,7 @@ final class HelpCenterViewModel: ObservableObject {
     }
 
     func reload() async {
-        await loadServerFAQsIfAvailable()
+        await loadServerFAQsIfAvailable(forceRefresh: true)
     }
 
     // MARK: - Computed Properties
@@ -87,18 +87,19 @@ final class HelpCenterViewModel: ObservableObject {
         searchQuery = ""
     }
 
-    private func loadServerFAQsIfAvailable() async {
+    private func loadServerFAQsIfAvailable(forceRefresh: Bool = false) async {
         guard let faqContentService else { return }
         isLoading = true
         loadFailed = false
         do {
+            if forceRefresh {
+                await faqContentService.clearCache(location: "help_center", userRole: userRole)
+            }
             let categories = try await faqContentService.fetchFAQCategories(location: "help_center", userRole: userRole)
             let faqs = try await faqContentService.fetchFAQsForHelpCenter(userRole: userRole)
-
-            if !categories.isEmpty {
-                self.categories = categories
-                self.faqs = faqs
-            }
+            // Always apply a successful response (even if empty) so retry/refresh replaces stale data.
+            self.categories = categories
+            self.faqs = faqs
         } catch {
             loadFailed = true
             self.categories = []
