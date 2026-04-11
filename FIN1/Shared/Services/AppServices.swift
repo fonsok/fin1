@@ -109,6 +109,7 @@ struct AppServices {
 
     // MARK: - Onboarding Services
     let onboardingAPIService: OnboardingAPIServiceProtocol?
+    let companyKybAPIService: CompanyKybAPIServiceProtocol?
 
     // MARK: - Live Instance
     static let live: AppServices = {

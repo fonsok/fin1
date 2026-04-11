@@ -156,7 +156,8 @@ struct AppServicesBuildContext {
             settlementAPIService: settlementAPIService,
             authService: authService!,
             tokenStorage: tokenStorage!,
-            onboardingAPIService: OnboardingAPIService(apiClient: parseAPIClient!)
+            onboardingAPIService: OnboardingAPIService(apiClient: parseAPIClient!),
+            companyKybAPIService: CompanyKybAPIService(apiClient: parseAPIClient!)
         )
     }
 }
