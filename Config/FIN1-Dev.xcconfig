@@ -1,9 +1,17 @@
 // Dev build configuration for FIN1.
 #include "FIN1-Base.xcconfig"
 
-// Expert default:
-// - Simulator: use SSH tunnel on the Mac (localhost points to the Mac).
-// - Device: use LAN (localhost would point to the iPhone/iPad itself).
-FIN1_PARSE_SERVER_URL[sdk=iphonesimulator*] = http:$(FIN1_URL_SLASH)$(FIN1_URL_SLASH)localhost:1338$(FIN1_URL_SLASH)parse
-FIN1_PARSE_SERVER_URL[sdk=iphoneos*] = http:$(FIN1_URL_SLASH)$(FIN1_URL_SLASH)192.168.178.24$(FIN1_URL_SLASH)parse
+// Backend: Ubuntu fin1-server (Nginx :80 HTTP / :443 HTTPS).
+// Simulator: direktes LAN-HTTP zu Nginx :80 (kein SSH-Tunnel nötig; vermeidet TLS-/localhost-Fallen).
+// Optional Tunnel: Xcode Scheme → Environment `PARSE_SERVER_URL` = https://localhost:8443/parse
+//   und Shell: ssh -L 8443:127.0.0.1:443 io@192.168.178.20
+// Hinweis: In .xcconfig ist // ein Kommentar — URLs bauen mit $(FIN1_URL_SLASH) doppelt für :// .
+FIN1_FIN1_SERVER_LAN_HOST = 192.168.178.20
+FIN1_MAC_IP = 192.168.178.25
+FIN1_PARSE_SERVER_URL[sdk=iphonesimulator*] = http:$(FIN1_URL_SLASH)$(FIN1_URL_SLASH)$(FIN1_FIN1_SERVER_LAN_HOST)$(FIN1_URL_SLASH)parse
+// Physisches Gerät: HTTPS (Selbstsigniert → ggf. ATS/Profile; bei Problemen wie Simulator HTTP testen).
+FIN1_PARSE_SERVER_URL[sdk=iphoneos*] = https:$(FIN1_URL_SLASH)$(FIN1_URL_SLASH)$(FIN1_FIN1_SERVER_LAN_HOST)$(FIN1_URL_SLASH)parse
+
+// Local PDF service runs on docker-compose.yml as host port 8087.
+FIN1_PDF_SERVICE_BASE_URL[sdk=iphoneos*] = http:$(FIN1_URL_SLASH)$(FIN1_URL_SLASH)$(FIN1_MAC_IP):8087
 
