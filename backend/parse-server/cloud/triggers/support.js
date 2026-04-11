@@ -5,11 +5,36 @@
 
 'use strict';
 
-const { generateSequentialNumber } = require('../utils/helpers');
+Parse.Cloud.beforeSave('SatisfactionSurvey', (request) => {
+  const o = request.object;
+  const uid = o.get('userId') || o.get('customerId');
+  if (uid) {
+    o.set('userId', uid);
+  }
+  if (o.get('customerId') !== undefined) {
+    o.unset('customerId');
+  }
+});
 
 Parse.Cloud.beforeSave('SupportTicket', async (request) => {
   const ticket = request.object;
   const isNew = !ticket.existed();
+
+  // Canonical end-customer reference: userId = Parse _User.objectId only.
+  // Legacy rows may have customerId on the ticket (same meaning); migrate and drop it.
+  const legacyTicketCustomer = ticket.get('customerId');
+  const endUserId = ticket.get('userId') || legacyTicketCustomer;
+  if (endUserId) {
+    ticket.set('userId', endUserId);
+  }
+  if (legacyTicketCustomer !== undefined) {
+    ticket.unset('customerId');
+  }
+
+  if (isNew && !ticket.get('userId')) {
+    throw new Parse.Error(Parse.Error.INVALID_QUERY,
+      'SupportTicket requires userId (Parse User objectId of the customer)');
+  }
 
   if (isNew) {
     // Generate ticket number
@@ -29,8 +54,10 @@ Parse.Cloud.beforeSave('SupportTicket', async (request) => {
       ticket.set('ticketNumber', `TKT-${year}-${seq.toString().padStart(5, '0')}`);
     }
 
-    // Set defaults
-    ticket.set('status', 'open');
+    // Set defaults (do not overwrite explicit status from imports / seeds)
+    if (!ticket.get('status')) {
+      ticket.set('status', 'open');
+    }
     ticket.set('priority', ticket.get('priority') || 'medium');
     ticket.set('escalationLevel', 0);
     ticket.set('reopenCount', 0);
@@ -53,9 +80,9 @@ Parse.Cloud.beforeSave('SupportTicket', async (request) => {
 Parse.Cloud.afterSave('SupportTicket', async (request) => {
   const ticket = request.object;
   const isNew = !request.original;
-  const customerId = ticket.get('customerId');
+  const endUserId = ticket.get('userId');
 
-  if (isNew) {
+  if (isNew && endUserId) {
     // Create SLA tracking
     const SLA = Parse.Object.extend('TicketSLATracking');
     const sla = new SLA();
@@ -80,7 +107,7 @@ Parse.Cloud.afterSave('SupportTicket', async (request) => {
     // Notify customer
     const Notification = Parse.Object.extend('Notification');
     const notif = new Notification();
-    notif.set('userId', customerId);
+    notif.set('userId', endUserId);
     notif.set('type', 'ticket_created');
     notif.set('category', 'support');
     notif.set('title', 'Ticket erstellt');
@@ -100,27 +127,30 @@ Parse.Cloud.afterSave('SupportTicket', async (request) => {
       if (newStatus === 'resolved') {
         ticket.set('resolvedAt', new Date());
 
-        // Create satisfaction survey
-        const Survey = Parse.Object.extend('SatisfactionSurvey');
-        const survey = new Survey();
-        survey.set('ticketId', ticket.id);
-        survey.set('customerId', customerId);
-        survey.set('agentId', ticket.get('assignedTo'));
-        survey.set('status', 'pending');
-        survey.set('sentAt', new Date());
-        survey.set('expiresAt', new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)); // 7 days
-        await survey.save(null, { useMasterKey: true });
+        const uid = ticket.get('userId');
+        if (uid) {
+          // Create satisfaction survey
+          const Survey = Parse.Object.extend('SatisfactionSurvey');
+          const survey = new Survey();
+          survey.set('ticketId', ticket.id);
+          survey.set('userId', uid);
+          survey.set('agentId', ticket.get('assignedTo'));
+          survey.set('status', 'pending');
+          survey.set('sentAt', new Date());
+          survey.set('expiresAt', new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)); // 7 days
+          await survey.save(null, { useMasterKey: true });
 
-        // Notify customer
-        const Notification = Parse.Object.extend('Notification');
-        const notif = new Notification();
-        notif.set('userId', customerId);
-        notif.set('type', 'ticket_resolved');
-        notif.set('category', 'support');
-        notif.set('title', 'Ticket gelöst');
-        notif.set('message', `Ihr Ticket ${ticket.get('ticketNumber')} wurde gelöst.`);
-        notif.set('isRead', false);
-        await notif.save(null, { useMasterKey: true });
+          // Notify customer
+          const Notification = Parse.Object.extend('Notification');
+          const notif = new Notification();
+          notif.set('userId', uid);
+          notif.set('type', 'ticket_resolved');
+          notif.set('category', 'support');
+          notif.set('title', 'Ticket gelöst');
+          notif.set('message', `Ihr Ticket ${ticket.get('ticketNumber')} wurde gelöst.`);
+          notif.set('isRead', false);
+          await notif.save(null, { useMasterKey: true });
+        }
       }
     }
   }

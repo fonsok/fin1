@@ -88,6 +88,63 @@ struct ParseLoginResponse: Decodable {
     let stableId: String?
     let firstName: String?
     let lastName: String?
+    let accountType: String?
+    let companyKybCompleted: Bool?
+    let companyKybStep: String?
+    let companyKybStatus: String?
+    let onboardingCompleted: Bool?
+    let onboardingStep: String?
+}
+
+/// Payload from `getUserMe` (`backend/.../user/profile.js`): account/KYB plus identity slice (one round-trip).
+struct ParseUserMeResponse: Decodable {
+    let id: String?
+    let email: String?
+    let role: String?
+    let kycStatus: String?
+    let customerNumber: String?
+    let accountType: String?
+    let companyKybCompleted: Bool?
+    let companyKybStep: String?
+    let companyKybStatus: String?
+    let onboardingCompleted: Bool?
+    let onboardingStep: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case email
+        case role
+        case kycStatus
+        case customerNumber
+        case legacyCustomerNumber = "customerId"
+        case accountType
+        case companyKybCompleted
+        case companyKybStep
+        case companyKybStatus
+        case onboardingCompleted
+        case onboardingStep
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decodeIfPresent(String.self, forKey: .id)
+        email = try c.decodeIfPresent(String.self, forKey: .email)
+        role = try c.decodeIfPresent(String.self, forKey: .role)
+        kycStatus = try c.decodeIfPresent(String.self, forKey: .kycStatus)
+        accountType = try c.decodeIfPresent(String.self, forKey: .accountType)
+        companyKybCompleted = try c.decodeIfPresent(Bool.self, forKey: .companyKybCompleted)
+        companyKybStep = try c.decodeIfPresent(String.self, forKey: .companyKybStep)
+        companyKybStatus = try c.decodeIfPresent(String.self, forKey: .companyKybStatus)
+        onboardingCompleted = try c.decodeIfPresent(Bool.self, forKey: .onboardingCompleted)
+        onboardingStep = try c.decodeIfPresent(String.self, forKey: .onboardingStep)
+        if let n = try c.decodeIfPresent(String.self, forKey: .customerNumber), !n.isEmpty {
+            customerNumber = n
+        } else if let legacy = try c.decodeIfPresent(String.self, forKey: .legacyCustomerNumber), !legacy.isEmpty {
+            customerNumber = legacy
+        } else {
+            customerNumber = nil
+        }
+    }
 }
 
 /// Parse Cloud Functions usually respond with `{ "result": <payload> }`

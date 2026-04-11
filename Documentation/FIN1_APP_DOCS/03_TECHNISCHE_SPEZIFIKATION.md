@@ -1,7 +1,7 @@
 ---
 title: "FIN1 – Technische Spezifikation"
 audience: ["Entwicklung", "Architektur", "Security", "QA", "Betrieb"]
-lastUpdated: "2026-02-05"
+lastUpdated: "2026-04-11"
 ---
 
 ## Konfigurierbare Finanzparameter
@@ -15,8 +15,8 @@ Diese Parameter erfordern eine Genehmigung durch einen zweiten Administrator:
 | Parameter | Standard | Cloud Function | Beschreibung |
 |-----------|----------|----------------|--------------|
 | `traderCommissionRate` | 10% (0.10) | `requestConfigurationChange` | Trader-Provision |
-| `initialAccountBalance` | €1,00 | `requestConfigurationChange` | Startguthaben |
-| `platformServiceChargeRate` | 2% (0.02) | `requestConfigurationChange` | Plattformgebühr |
+| `initialAccountBalance` | €0,00 (Code-/DB-Default; Anhebung nur Admin-Portal / 4-Augen) | `requestConfigurationChange` | Startguthaben für Kontoführung (kein „geschenktes“ Guthaben ohne Admin-Entscheid) |
+| `appServiceChargeRate` | 2% (0.02) | `requestConfigurationChange` | Appgebühr |
 
 **Workflow:**
 1. Admin A beantragt Änderung → `FourEyesRequest` wird erstellt
@@ -25,7 +25,7 @@ Diese Parameter erfordern eine Genehmigung durch einen zweiten Administrator:
 
 **Backend-Dateien:**
 - `backend/parse-server/cloud/functions/configuration.js` - 4-Augen Cloud Functions
-- `backend/parse-server/cloud/utils/configHelper.js` - Zentralisierte Config-Logik
+- `backend/parse-server/cloud/utils/configHelper/` - Zentralisierte Config-Logik (Modulordner, Einstieg `index.js`)
 
 ### Nicht-kritische Parameter
 
@@ -68,7 +68,7 @@ Diese Spezifikation beschreibt die **Detail-Architektur**, **APIs**, **Datenmode
 
 - `Authentication`: Login/Signup/Onboarding, RiskClass/Experience Calculation, Token Storage (Keychain/Memory), Terms Step.
 - `Dashboard`: Role-based Einstieg, KPIs.
-- `Investor`: Discovery/Portfolio/Watchlist, Investor Cash Balance.
+- `Investor`: Discovery/Investments/Watchlist, Investor Cash Balance.
 - `Trader`: Depot/Holdings, Orders/Trades, Live Query Subscriptions, Statistics.
 - `CustomerSupport`: Tickets, SLA, Surveys, Audit Logging, 4-Augen Queue, Knowledge Base/FAQ.
 - `Admin`: Reporting, Rounding Differences, Configuration.
@@ -141,7 +141,7 @@ sequenceDiagram
   PS-->>App: objectId + acceptedAt
 ```
 
-### (B) Investment: create → confirm → wallet movement → service charge invoice
+### (B) Investment: create → confirm → Kontobelastung → service charge invoice
 
 ```mermaid
 sequenceDiagram
@@ -150,20 +150,17 @@ sequenceDiagram
   participant DB as MongoDB
 
   App->>PS: callFunction(createInvestment){traderId, amount}
-  PS->>PS: callFunction(getWalletBalance)
-  PS->>DB: Read last WalletTransaction(completed)
-  DB-->>PS: balance
   PS->>DB: Insert Investment (beforeSave: numbers, service charge, status=reserved)
   DB-->>PS: investmentId
   PS-->>App: {investmentId, investmentNumber, status}
 
   App->>PS: callFunction(confirmInvestment){investmentId}
   PS->>DB: Update Investment status reserved->active
-  PS->>DB: afterSave Investment: create completed WalletTransaction (investment debit)
+  PS->>DB: afterSave Investment: Kontobelastung (investment debit)
   PS-->>App: {success:true, status:"active"}
 
-  Note over App: InvestmentCashDeductionProcessor: Platform Service Charge wird gebucht\n(Service Charge Rate aus ConfigurationService, konfigurierbar)
-  App->>App: InvoiceService.addInvoice(platformServiceCharge)\n(mit detaillierter Beschreibung: Berechnungsgrundlage, Investment-Beträge, Buchungsnummern)\n(UI: mehrzeilige Anzeige in InvoiceItemRowView/InvoiceItemDisplayRowView)\n(PDF: dynamische Zeilenhöhe in PDFProfessionalComponents.drawTable)
+  Note over App: InvestmentCashDeductionProcessor: App Service Charge wird gebucht\n(Service Charge Rate aus ConfigurationService, konfigurierbar)
+  App->>App: InvoiceService.addInvoice(appServiceCharge)\n(mit detaillierter Beschreibung: Berechnungsgrundlage, Investment-Beträge, Buchungsnummern)\n(UI: mehrzeilige Anzeige in InvoiceItemRowView/InvoiceItemDisplayRowView)\n(PDF: dynamische Zeilenhöhe in PDFProfessionalComponents.drawTable)
   App->>PS: callFunction(createServiceChargeInvoice){invoiceNumber, amounts, customerInfo, investmentIds, ...}
   PS->>DB: Insert Invoice (invoiceType=service_charge, status=issued)
   DB-->>PS: invoiceId
@@ -209,15 +206,25 @@ sequenceDiagram
 #### Health/Config
 
 - **`health`** (Cloud): returns `{status,timestamp,version,cloudCode}`
-- **`getConfig`**: params `{environment?}` → liefert **finanzielle Parameter aus der Parse-Klasse `Configuration`** (via configHelper) sowie `features`, `limits`, `display`. Die iOS-App synchronisiert diese Werte beim Start über `ConfigurationService.fetchRemoteDisplayConfig()`.
+- **`getConfig`**: params `{environment?}` → liefert **finanzielle Parameter aus der Parse-Klasse `Configuration`** (via `cloud/utils/configHelper`) sowie `features`, `limits`, `display`. Die iOS-App synchronisiert diese Werte beim Start über `ConfigurationService.fetchRemoteDisplayConfig()`.
 
 #### User/FAQ
 
-- **`getUserProfile`**: auth required → `{ user, profile, address, riskAssessment }`
+- **`getUserProfile`**: auth required → `{ user, profile, address, riskAssessment }` (volles Profil für Anzeige/Bearbeitung)
+- **`getUserMe`**: auth required → schlanker Snapshot für Session/Refresh (iOS nutzt ihn nach Login u. a. für `User`): `{ id, customerNumber, email, role, kycStatus, accountType, companyKybCompleted, companyKybStep, companyKybStatus, onboardingCompleted, onboardingStep }` (`backend/parse-server/cloud/functions/user/profile.js`)
 - **`updateProfile`**: auth required, params `{firstName?, lastName?, salutation?, dateOfBirth?, phoneNumber?}` → `{success:true}`
-- **`completeOnboardingStep`**: auth required, params `{step, data?}` → `{success, nextStep?, onboardingCompleted}`
+- **`getOnboardingProgress`**: auth required → `{ currentStep, completedSteps, onboardingCompleted, kycStatus, savedData }`
+- **`saveOnboardingProgress`**: auth required, params `{ step, data?, partial? }` → Fortschritt speichern (partiell); `data` wird nach `sanitizeObject` mit **`validatePartialOnboardingData(step, data)`** (Joi) geprüft — ungültige Felder → `Parse.Error.INVALID_VALUE`.
+- **`completeOnboardingStep`**: auth required, params `{step, data?}` → `{success, nextStep?, onboardingCompleted}`; `data` wird mit **`validateStepData(step, data)`** (Joi in `onboardingStepSchemas.js`) validiert — Fehler → `INVALID_VALUE` mit Meldung `Validation failed: …`.
+- **`getCompanyKybProgress`**: auth required, nur **`accountType == company`** und **`role == investor`** → `{ currentStep, completedSteps, companyKybCompleted, companyKybStatus, savedData }` (sonst `OPERATION_FORBIDDEN`). Fortschritt in `CompanyKybProgress`, abgeschlossene Schritte in `CompanyKybAudit`.
+- **`saveCompanyKybProgress`**: auth required, gleiche Kontext-Regel, params `{ step, data?, partial? }` → speichert Blob in `CompanyKybProgress`; `data` nach `sanitizeObject` mit **`validatePartialCompanyKybData(step, data)`** (Joi in `companyKybStepSchemas.js`).
+- **`completeCompanyKybStep`**: auth required, gleiche Kontext-Regel, params `{ step, data }` ( **`data` Pflicht** ) → `{ success, nextStep?, companyKybCompleted, companyKybStatus }`; Validierung mit **`validateCompanyKybStepData`**; Schritt `submission` setzt u. a. `companyKybCompleted`, `companyKybStatus: pending_review`, optional `companyFourEyesRequestId` aus `data`.
 - **`getFAQCategories`**: params `{location?}` → `{categories:[...]}`
 - **`getFAQs`**: params `{categorySlug?, isPublic?}` → `{faqs:[...]}`
+
+**Onboarding-Validierung (Server):** Eingaben werden nach Sanitizing **schemabasiert** geprüft (`backend/parse-server/cloud/utils/onboardingStepSchemas.js`, Einbindung in `validation.js`). Details und Client-Kontrakt: [`Documentation/ENGINEERING_GUIDE.md`](../ENGINEERING_GUIDE.md) (Abschnitt Onboarding), [`Documentation/ADR-002-Onboarding-Codable-DTO.md`](../ADR-002-Onboarding-Codable-DTO.md).
+
+**Company-KYB (Server):** Joi in `backend/parse-server/cloud/utils/companyKybStepSchemas.js`, Einbindung in `validation.js`. Produktregeln und Schrittliste: [`Documentation/COMPANY_KYB_ONBOARDING.md`](../COMPANY_KYB_ONBOARDING.md), [`Documentation/ADR-003-Company-KYB-Onboarding.md`](../ADR-003-Company-KYB-Onboarding.md). iOS: `CompanyKybAPIService` / `SavedCompanyKybData`.
 
 #### Investment
 
@@ -233,13 +240,6 @@ sequenceDiagram
 - **`calculateOrderPreview`**: params `{symbol, quantity, price, side, orderType}` → `{grossAmount, fees, netAmount, ...}`
 - **`placeOrder`**: auth required, params `{symbol, quantity, price?, side, orderType, limitPrice?, stopPrice?, tradeId?}` → `{orderId, orderNumber, status}`
 - **`getHoldings`**: auth required → `{holdings:[...]}`
-
-#### Wallet
-
-- **`getWalletBalance`**: auth required → `{balance, lastTransactionAt}`
-- **`getTransactionHistory`**: auth required, params `{limit?, skip?, type?}` → `{transactions:[...], total, hasMore}`
-- **`requestDeposit`**: auth required, params `{amount}` → `{transactionId, transactionNumber, status:"pending"}`
-- **`requestWithdrawal`**: auth required, params `{amount, iban?}` → `{transactionId, transactionNumber, status:"pending"}`
 
 #### Notifications
 
@@ -265,7 +265,7 @@ sequenceDiagram
 - **`getAccountStatements`**: auth required, params `{year?}` → `{statements:[...]}`
 - **`getTraderPerformance`**: auth required, trader-only, params `{period?}` → `{trades:{...}, profit:{...}}`
 - **`getInvestorPerformance`**: auth required, params `{period?}` → `{investments:{...}, financials:{...}}`
-- **`createServiceChargeInvoice`**: auth required, params `{invoiceNumber, grossServiceChargeAmount, netServiceChargeAmount, vatAmount, vatRate, batchId?, investmentIds?, customerInfo}` → `{invoiceId, invoiceNumber, status:"issued"}` (persistiert Platform Service Charge Invoice im Backend mit detaillierter Beschreibung: Berechnungsgrundlage, Investment-Beträge, Buchungsnummern, Split-Informationen). Die Beschreibung wird in der UI mehrzeilig angezeigt und im PDF mit dynamischer Zeilenhöhe gerendert.
+- **`createServiceChargeInvoice`**: auth required, params `{invoiceNumber, grossServiceChargeAmount, netServiceChargeAmount, vatAmount, vatRate, batchId?, investmentIds?, customerInfo}` → `{invoiceId, invoiceNumber, status:"issued"}` (persistiert App Service Charge Invoice im Backend mit detaillierter Beschreibung: Berechnungsgrundlage, Investment-Beträge, Buchungsnummern, Split-Informationen). Die Beschreibung wird in der UI mehrzeilig angezeigt und im PDF mit dynamischer Zeilenhöhe gerendert.
 
 #### Legal
 
@@ -276,6 +276,8 @@ sequenceDiagram
 ### 3.3 Fehlercodes / Fehlerverhalten (Backend)
 
 - Parse nutzt `Parse.Error.*` (z.B. `INVALID_SESSION_TOKEN`, `INVALID_VALUE`, `OPERATION_FORBIDDEN`, `OBJECT_NOT_FOUND`).
+- **Onboarding**: `INVALID_VALUE` wenn Joi-Validierung für `completeOnboardingStep` / `saveOnboardingProgress` fehlschlägt (Nachricht oft mit Präfix `Validation failed:`).
+- **Company KYB**: `OPERATION_FORBIDDEN` wenn nicht `company`+`investor`; `INVALID_VALUE` bei Joi für `completeCompanyKybStep` / `saveCompanyKybProgress`.
 - HTTP: typischerweise 4xx bei Validation/Auth, 5xx bei Serverfehlern.
 
 ## 4) Datenmodell (Kurzüberblick)
@@ -285,9 +287,10 @@ sequenceDiagram
 ### Zentrale Parse Klassen
 
 - **Identity/Profil**: `Parse.User`, `UserProfile`, `UserAddress`, `UserRiskAssessment`, `NotificationPreference`
+- **Onboarding (KYC natürliche Person)**: `OnboardingProgress`, `OnboardingAudit` (Felder auf `Parse.User`: u. a. `onboardingStep`, `onboardingCompleted`, `kycStatus`)
+- **Company KYB (Investor, juristische Person)**: `CompanyKybProgress`, `CompanyKybAudit` (Felder auf `Parse.User`: u. a. `companyKybStep`, `companyKybCompleted`, `companyKybStatus`, optional `companyFourEyesRequestId`, `companyKybCompletedAt`)
 - **Investments**: `Investment`, `PoolTradeParticipation`, `Commission`
 - **Trading**: `Order`, `Trade`, `Holding`
-- **Wallet**: `WalletTransaction`
 - **Dokumente**: `Document`, `Invoice`, `AccountStatement`
 - **Support**: `SupportTicket`, `TicketSLATracking`, `SatisfactionSurvey`
 - **Admin/Compliance**: `ComplianceEvent`, `AuditLog`, `FourEyesRequest`, `FourEyesAudit`
@@ -309,7 +312,7 @@ sequenceDiagram
 | `OrderAPIService` | Write-through + Background | Buy/Sell Orders werden bei Platzierung sofort synchronisiert; pending Orders werden bei App-Background nachgezogen |
 | `PoolTradeParticipationService` | Write-through | Partizipationen werden bei Trade-Erstellung sofort synchronisiert |
 | `DocumentAPIService` | Write-through + Background | Dokumente werden bei Upload sofort synchronisiert; pending Uploads werden bei App-Background nachgezogen |
-| `MockPaymentService` | Write-through + Background | Wallet-Transactions werden bei Erstellung sofort synchronisiert; recent Transactions werden bei App-Background nachgezogen |
+| `MockPaymentService` | Write-through + Background | Konto-Transaktionen werden bei Erstellung sofort synchronisiert; recent Transactions werden bei App-Background nachgezogen |
 | `UserService` | Write-through + Background | User-Profile-Updates werden bei Änderung sofort synchronisiert; Profile wird bei App-Background nachgezogen |
 | `WatchlistAPIService` | Write-through + Background | Watchlist-Items werden bei Hinzufügen/Entfernen sofort synchronisiert; alle Watchlist-Items werden bei App-Background nachgezogen |
 | `FilterAPIService` | Write-through + Background | Filter werden bei Speicherung/Update/Löschung sofort synchronisiert; alle Filter werden bei App-Background nachgezogen |
@@ -409,7 +412,7 @@ sequenceDiagram
 
 ### 6.4 Mehrzeilige Beschreibung und Service Charge
 
-- Rechnungspositionen **Securities** und **Service Charge**: mehrzeilige Anzeige (InvoiceItemRowView, InvoiceItemDisplayRowView). PDF: dynamische Zeilenhöhe in PDFProfessionalComponents. Service Charge Rate konfigurierbar über `ConfigurationService.updatePlatformServiceChargeRate()`.
+- Rechnungspositionen **Securities** und **Service Charge**: mehrzeilige Anzeige (InvoiceItemRowView, InvoiceItemDisplayRowView). PDF: dynamische Zeilenhöhe in PDFProfessionalComponents. Service Charge Rate konfigurierbar über `ConfigurationService.updateAppServiceChargeRate()`.
 
 ### 6.5 Trader-Gutschrift (Commission Credit Note)
 

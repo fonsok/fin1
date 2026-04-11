@@ -30,7 +30,7 @@ protocol UserServiceProtocol: ObservableObject {
     // MARK: - User Impersonation (Admin)
     var isImpersonating: Bool { get }
     var originalAdminUser: User? { get }
-    func impersonateUser(userId: String, customerId: String, email: String, fullName: String, role: UserRole) async
+    func impersonateUser(userId: String, customerNumber: String, email: String, fullName: String, role: UserRole) async
     func stopImpersonating() async
 
     // MARK: - User Queries
@@ -100,8 +100,8 @@ final class UserService: UserServiceProtocol, ServiceLifecycle {
     func signIn(email: String, password: String) async throws {
         try UserValidationService.validateSignIn(email: email, password: password)
 
-        await MainActor.run {
-            isLoading = true
+        await MainActor.run { [weak self] in
+            self?.isLoading = true
         }
 
         // Try real Parse Server login first
@@ -113,17 +113,34 @@ final class UserService: UserServiceProtocol, ServiceLifecycle {
                 )
 
                 #if DEBUG
-                let testUser = UserFactory.createTestUser(email: email, password: password)
+                var user = UserFactory.createTestUser(email: email, password: password)
                 #else
-                let testUser = UserFactory.createUser(from: email, password: password)
+                var user = UserFactory.createUser(from: email, password: password)
                 #endif
 
-                await MainActor.run {
-                    self.currentUser = testUser
-                    self._sessionToken = loginResponse.sessionToken
-                    self.isAuthenticated = true
-                    self.isLoading = false
+                UserFactory.applyLoginResponse(loginResponse, to: &user)
+
+                await MainActor.run { [weak self] in
+                    self?.currentUser = user
+                    self?._sessionToken = loginResponse.sessionToken
+                    self?.isAuthenticated = true
+                    self?.isLoading = false
                     NotificationCenter.default.post(name: .userDidSignIn, object: nil)
+                }
+
+                do {
+                    let me: ParseUserMeResponse = try await apiClient.callFunction(
+                        "getUserMe",
+                        parameters: nil
+                    )
+                    await MainActor.run { [weak self] in
+                        guard var u = self?.currentUser else { return }
+                        UserFactory.applyUserMeResponse(me, to: &u)
+                        self?.currentUser = u
+                        NotificationCenter.default.post(name: .userDataDidUpdate, object: nil)
+                    }
+                } catch {
+                    print("⚠️ UserService: getUserMe after login failed (\(error.localizedDescription))")
                 }
                 return
             } catch {
@@ -141,11 +158,11 @@ final class UserService: UserServiceProtocol, ServiceLifecycle {
 
         let token = generateFallbackSessionToken(for: testUser)
 
-        await MainActor.run {
-            self.currentUser = testUser
-            self._sessionToken = token
-            self.isAuthenticated = true
-            self.isLoading = false
+        await MainActor.run { [weak self] in
+            self?.currentUser = testUser
+            self?._sessionToken = token
+            self?.isAuthenticated = true
+            self?.isLoading = false
             NotificationCenter.default.post(name: .userDidSignIn, object: nil)
         }
     }
@@ -154,8 +171,8 @@ final class UserService: UserServiceProtocol, ServiceLifecycle {
         // Input validation
         try UserValidationService.validateSignUp(userData: userData)
 
-        await MainActor.run {
-            isLoading = true
+        await MainActor.run { [weak self] in
+            self?.isLoading = true
         }
 
         // Simulate API call
@@ -164,18 +181,18 @@ final class UserService: UserServiceProtocol, ServiceLifecycle {
         // Check for simulated errors
         try UserValidationService.checkForSignUpErrors(userData: userData)
 
-        await MainActor.run {
-            self.currentUser = userData
-            self.isAuthenticated = true
-            self.isLoading = false
+        await MainActor.run { [weak self] in
+            self?.currentUser = userData
+            self?.isAuthenticated = true
+            self?.isLoading = false
         }
     }
 
     func signOut() async {
-        await MainActor.run {
-            currentUser = nil
-            _sessionToken = nil
-            isAuthenticated = false
+        await MainActor.run { [weak self] in
+            self?.currentUser = nil
+            self?._sessionToken = nil
+            self?.isAuthenticated = false
             // Post notification for authentication state change
             NotificationCenter.default.post(name: .userDidSignOut, object: nil)
         }
@@ -187,13 +204,13 @@ final class UserService: UserServiceProtocol, ServiceLifecycle {
         // Input validation
         try UserValidationService.validateProfileUpdate(user: user)
 
-        await MainActor.run {
-            isLoading = true
+        await MainActor.run { [weak self] in
+            self?.isLoading = true
         }
 
         // Update local state first
-        await MainActor.run {
-            self.currentUser = user
+        await MainActor.run { [weak self] in
+            self?.currentUser = user
         }
 
         // Sync to backend (write-through pattern)
@@ -243,21 +260,36 @@ final class UserService: UserServiceProtocol, ServiceLifecycle {
         // Check for simulated errors
         try UserValidationService.checkForProfileUpdateErrors(user: user)
 
-        await MainActor.run {
-            self.isLoading = false
+        await MainActor.run { [weak self] in
+            self?.isLoading = false
         }
     }
 
     func refreshUserData() async throws {
-        guard let currentUser = currentUser else {
+        guard let user = currentUser else {
             throw AppError.serviceError(.dataNotFound)
         }
 
-        // Simulate API call
-        try await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+        if let apiClient = parseAPIClient {
+            do {
+                let me: ParseUserMeResponse = try await apiClient.callFunction(
+                    "getUserMe",
+                    parameters: nil
+                )
+                await MainActor.run { [weak self] in
+                    guard let self, var updated = self.currentUser else { return }
+                    UserFactory.applyUserMeResponse(me, to: &updated)
+                    self.currentUser = updated
+                    NotificationCenter.default.post(name: .userDataDidUpdate, object: nil)
+                }
+                return
+            } catch {
+                print("⚠️ UserService: refreshUserData from backend failed (\(error.localizedDescription)), using local data")
+            }
+        }
 
-        // Check for simulated errors
-        try UserValidationService.checkForRefreshErrors(currentUser: currentUser)
+        try await Task.sleep(nanoseconds: 500_000_000)
+        try UserValidationService.checkForRefreshErrors(currentUser: user)
     }
 
     // MARK: - Role Management (Admin)
@@ -269,7 +301,7 @@ final class UserService: UserServiceProtocol, ServiceLifecycle {
 
         let updatedUser = User(
             id: user.id,
-            customerId: user.customerId,
+            customerNumber: user.customerNumber,
             accountType: user.accountType,
             email: user.email,
             username: user.username,
@@ -344,12 +376,12 @@ final class UserService: UserServiceProtocol, ServiceLifecycle {
     /// Impersonates a user for testing purposes (admin only)
     /// - Parameters:
     ///   - userId: The user ID to impersonate
-    ///   - customerId: The customer ID
+    ///   - customerNumber: Business Kundennummer (ANL-/TRD-…)
     ///   - email: The user's email
     ///   - fullName: The user's full name
     ///   - role: The user's role
     @MainActor
-    func impersonateUser(userId: String, customerId: String, email: String, fullName: String, role: UserRole) async {
+    func impersonateUser(userId: String, customerNumber: String, email: String, fullName: String, role: UserRole) async {
         // Store original admin user if not already stored
         if _originalAdminUser == nil, let currentUser = currentUser, currentUser.role == .admin {
             _originalAdminUser = currentUser
@@ -364,7 +396,7 @@ final class UserService: UserServiceProtocol, ServiceLifecycle {
         // Create impersonated user
         let impersonatedUser = User(
             id: userId,
-            customerId: customerId,
+            customerNumber: customerNumber,
             accountType: .individual,
             email: email,
             username: email.components(separatedBy: "@").first ?? "",

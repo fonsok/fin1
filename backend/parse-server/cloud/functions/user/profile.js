@@ -1,6 +1,7 @@
 'use strict';
 
 const { sanitizeObject, validateProfileUpdate } = require('../../utils/validation');
+const { readCustomerNumber } = require('../../utils/userIdentity');
 
 // ============================================================================
 // USER PROFILE
@@ -27,7 +28,7 @@ Parse.Cloud.define('getUserProfile', async (request) => {
   return {
     user: {
       id: user.id,
-      customerId: user.get('customerId'),
+      customerNumber: readCustomerNumber(user),
       email: user.get('email'),
       role: user.get('role'),
       status: user.get('status'),
@@ -37,6 +38,26 @@ Parse.Cloud.define('getUserProfile', async (request) => {
     profile: profile ? profile.toJSON() : null,
     address: address ? address.toJSON() : null,
     riskAssessment: risk ? risk.toJSON() : null
+  };
+});
+
+Parse.Cloud.define('getUserMe', async (request) => {
+  const user = request.user;
+  if (!user) throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Login required');
+
+  // Single round-trip for app refresh / post-login: KYB + identity + Kundennummer (see iOS `ParseUserMeResponse`).
+  return {
+    id: user.id,
+    customerNumber: readCustomerNumber(user),
+    email: user.get('email') || null,
+    role: user.get('role') || null,
+    kycStatus: user.get('kycStatus') || null,
+    accountType: user.get('accountType') || 'individual',
+    companyKybCompleted: user.get('companyKybCompleted') || false,
+    companyKybStep: user.get('companyKybStep') || null,
+    companyKybStatus: user.get('companyKybStatus') || null,
+    onboardingCompleted: user.get('onboardingCompleted') || false,
+    onboardingStep: user.get('onboardingStep') || null,
   };
 });
 

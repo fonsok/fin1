@@ -10,13 +10,63 @@ struct UserFactory {
         return "user:\(email.lowercased())"
     }
 
+    /// Overlays server-provided fields from the login response onto a locally-created User.
+    static func applyLoginResponse(_ response: ParseLoginResponse, to user: inout User) {
+        if let accountType = response.accountType, let at = AccountType(rawValue: accountType) {
+            user.accountType = at
+        }
+        if let role = response.role, let r = UserRole(rawValue: role) {
+            user.role = r
+        }
+        if let firstName = response.firstName, !firstName.isEmpty {
+            user.firstName = firstName
+        }
+        if let lastName = response.lastName, !lastName.isEmpty {
+            user.lastName = lastName
+        }
+        user.companyKybCompleted = response.companyKybCompleted ?? false
+        user.companyKybStep = response.companyKybStep
+        user.companyKybStatus = response.companyKybStatus
+        user.onboardingCompleted = response.onboardingCompleted ?? false
+        user.onboardingStep = response.onboardingStep
+    }
+
+    /// Overlays fields from `getUserMe` (`ParseUserMeResponse`) onto the local `User`.
+    static func applyUserMeResponse(_ me: ParseUserMeResponse, to user: inout User) {
+        if let cn = me.customerNumber, !cn.isEmpty {
+            user.customerNumber = cn
+        }
+        if let k = me.kycStatus {
+            user.kycStatus = k
+        }
+        if let r = me.role, let role = UserRole(rawValue: r) {
+            user.role = role
+        }
+        if let e = me.email, !e.isEmpty {
+            user.email = e
+        }
+        if let ob = me.onboardingCompleted {
+            user.onboardingCompleted = ob
+        }
+        if let at = me.accountType, let accountType = AccountType(rawValue: at) {
+            user.accountType = accountType
+        }
+        if let ckc = me.companyKybCompleted {
+            user.companyKybCompleted = ckc
+        }
+        user.companyKybStep = me.companyKybStep
+        user.companyKybStatus = me.companyKybStatus
+        user.onboardingStep = me.onboardingStep
+    }
+
     static func createUser(from email: String, password: String) -> User {
         let isTrader = email.contains("trader")
         let userRole: UserRole = isTrader ? .trader : .investor
+        let customerPrefix = isTrader ? TestConstants.customerIdPrefixTrader : TestConstants.customerIdPrefixInvestor
 
         return User(
             id: stableUserId(for: email),
-            customerId: "\(LegalIdentity.documentPrefix)-\(Calendar.current.component(.year, from: Date()))-\(String(format: "%05d", Int.random(in: 1...99999)))",
+            customerNumber: "\(customerPrefix)-\(Calendar.current.component(.year, from: Date()))-\(String(format: "%05d", Int.random(in: 1...99999)))",
             accountType: .individual,
             email: email,
             username: email.components(separatedBy: "@").first ?? "user",
@@ -94,7 +144,7 @@ struct UserFactory {
             // Create an admin user
             return User(
                 id: stableUserId(for: email),
-                customerId: signUpData.customerId,
+                customerNumber: signUpData.customerNumber,
                 accountType: .company,
                 email: email,
                 username: "admin",
@@ -163,7 +213,7 @@ struct UserFactory {
             // Create a customer service representative user
             return User(
                 id: stableUserId(for: email),
-                customerId: signUpData.customerId,
+                customerNumber: signUpData.customerNumber,
                 accountType: .company,
                 email: email,
                 username: csrInfo.username,
@@ -241,18 +291,19 @@ struct UserFactory {
             signUpData.financialProductsExperience = true
         }
 
-        // Set email and name based on the user type and number
         signUpData.email = email
-        signUpData.username = email.components(separatedBy: "@").first ?? "user"
-
-        // Set names based on user type and number
+        let firstName: String
+        let lastName: String
         if isTrader {
-            signUpData.firstName = getTraderFirstName(for: userNumber)
-            signUpData.lastName = getTraderLastName(for: userNumber)
+            firstName = getTraderFirstName(for: userNumber)
+            lastName = getTraderLastName(for: userNumber)
         } else {
-            signUpData.firstName = getInvestorFirstName(for: userNumber)
-            signUpData.lastName = getInvestorLastName(for: userNumber)
+            firstName = getInvestorFirstName(for: userNumber)
+            lastName = getInvestorLastName(for: userNumber)
         }
+        signUpData.firstName = firstName
+        signUpData.lastName = lastName
+        signUpData.username = "\(firstName.lowercased().prefix(1))\(lastName.lowercased())"
 
         // Set other required fields
         signUpData.moneyLaunderingDeclaration = true
@@ -263,7 +314,7 @@ struct UserFactory {
         // Create user directly from the sign up data
         return User(
             id: stableUserId(for: email),
-            customerId: signUpData.customerId,
+            customerNumber: signUpData.customerNumber,
             accountType: signUpData.accountType,
             email: email,
             username: signUpData.username.isEmpty ? email.components(separatedBy: "@").first ?? "user" : signUpData.username,
@@ -342,23 +393,19 @@ struct UserFactory {
     }
 
     private static func getInvestorFirstName(for number: Int) -> String {
-        let names = ["Max", "Sarah", "Michael", "Emma", "David"]
-        return names[(number - 1) % names.count]
+        TestConstants.investorNames[(number - 1) % TestConstants.investorNames.count].first
     }
 
     private static func getInvestorLastName(for number: Int) -> String {
-        let names = ["Investor", "Smith", "Johnson", "Williams", "Brown"]
-        return names[(number - 1) % names.count]
+        TestConstants.investorNames[(number - 1) % TestConstants.investorNames.count].last
     }
 
     private static func getTraderFirstName(for number: Int) -> String {
-        let names = ["Thomas", "Alex", "Maria"]
-        return names[(number - 1) % names.count]
+        TestConstants.traderNames[(number - 1) % TestConstants.traderNames.count].first
     }
 
     private static func getTraderLastName(for number: Int) -> String {
-        let names = ["Trader", "Chen", "Rodriguez"]
-        return names[(number - 1) % names.count]
+        TestConstants.traderNames[(number - 1) % TestConstants.traderNames.count].last
     }
 
     // MARK: - CSR Role Helpers

@@ -1,7 +1,7 @@
 ---
 title: "FIN1 – Fachliche Spezifikation (Requirements)"
 audience: ["Produkt", "BA", "QA", "Compliance", "Support"]
-lastUpdated: "2026-02-01"
+lastUpdated: "2026-04-11"
 ---
 
 ## Zweck
@@ -36,9 +36,10 @@ Wenn es nicht nur um “was soll das Produkt”, sondern um “was darf nicht ka
   Als Nutzer möchte ich mein Profil sehen und aktualisieren, damit meine Daten korrekt sind.
   - **Akzeptanzkriterien**
     - Profil liefert `User` + `UserProfile` + primäre `UserAddress` + letzte `UserRiskAssessment` (`getUserProfile`).
+    - Nach Login bzw. Aktualisierung des lokalen Nutzerobjekts synchronisiert die App den Server-`User`-Snapshot per `getUserMe` (ein Aufruf; u. a. Kundennummer, KYC, Onboarding/KYB); `getUserProfile` bleibt für die vollständige Profil-UI.
     - Profiländerungen sind serverseitig gespeichert (`updateProfile`).
 
-### B) Investor: Trader Discovery, Investment, Portfolio
+### B) Investor: Trader Discovery, Investment, Investment-Übersicht
 
 - **US-B1 Trader entdecken**
   Als Investor möchte ich Trader finden, um investieren zu können.
@@ -47,7 +48,7 @@ Wenn es nicht nur um “was soll das Produkt”, sondern um “was darf nicht ka
     - Ergebnis enthält riskClass (falls vorhanden), InvestorCount/AUM-Snapshot.
 
 - **US-B2 Investment erstellen (Reservierung)**
-  Als Investor möchte ich ein Investment erstellen, um Kapital in einen Trader-Pool zu geben.
+  Als Investor erstelle ich ein Investment, um denselben Trade eines von mir ausgewählten Traders durch die {{APP_NAME}} simultan ausführen zu lassen.
   - **Akzeptanzkriterien**
     - Mindestinvestment: **€100**.
     - Investor kann nicht in eigenen Pool investieren (Trigger `Investment.beforeSave`).
@@ -58,12 +59,12 @@ Wenn es nicht nur um “was soll das Produkt”, sondern um “was darf nicht ka
   Als Investor möchte ich ein reserviertes Investment bestätigen, damit es aktiv wird.
   - **Akzeptanzkriterien**
     - `confirmInvestment` erlaubt nur `reserved → active`.
-    - Bei Aktivierung wird Wallet belastet (Trigger `Investment.afterSave` erzeugt `WalletTransaction`).
+    - Bei Aktivierung wird das Konto belastet (Trigger `Investment.afterSave` erzeugt Kontobuchung).
 
-- **US-B4 Portfolio ansehen**
-  Als Investor möchte ich mein Portfolio sehen, um Überblick über Investments/Performance zu haben.
+- **US-B4 Investment-Übersicht ansehen**
+  Als Investor möchte ich meine Investment-Übersicht sehen, um Überblick über Investments/Performance zu haben.
   - **Akzeptanzkriterien**
-    - Portfolio liefert Investments + Summary (totalInvested/totalCurrentValue/totalProfit/return%) (`getInvestorPortfolio`).
+    - Die Übersicht liefert Investments + Summary (totalInvested/totalCurrentValue/totalProfit/return%) (`getInvestorPortfolio`).
 
 ### C) Trader: Order/Trade, Depot/Holdings, Performance
 
@@ -97,24 +98,26 @@ Wenn es nicht nur um “was soll das Produkt”, sondern um “was darf nicht ka
     - Trader-Commission wird abgezogen; `Investment.currentValue/profit` werden aktualisiert.
     - Commission Record wird erzeugt (`Commission`).
 
-### D) Wallet/Payments
+### D) Konto (Kontostand, Ein- und Auszahlungen)
 
-- **US-D1 Wallet-Balance sehen**
+Der Nutzer hat ein **normales Konto** (kein separates Wallet-Feature). Kontostand und Ein-/Auszahlungen werden über dieses Konto abgewickelt.
+
+- **US-D1 Kontostand sehen**
   Als Nutzer möchte ich meinen Kontostand sehen.
   - **Akzeptanzkriterien**
-    - Balance basiert auf letzter `WalletTransaction` mit `status=completed` (`getWalletBalance`).
+    - Kontostand wird serverseitig geführt und angezeigt.
 
 - **US-D2 Einzahlen/Auszahlen anstoßen**
   Als Nutzer möchte ich Geld ein-/auszahlen.
   - **Akzeptanzkriterien**
-    - Einzahlung min €10, max €100k (`requestDeposit`).
-    - Auszahlung min €10; IBAN wird als Metadata gespeichert (`requestWithdrawal`).
-    - Keine negative Balance (Trigger `WalletTransaction.beforeSave`).
+    - Einzahlung min €10, max €100k.
+    - Auszahlung min €10; IBAN wird als Metadata gespeichert.
+    - Keine negative Balance (serverseitig enforced).
 
 - **US-D3 Compliance bei großen Transaktionen**
   Als Compliance möchte ich große Ein-/Auszahlungen automatisch erkennen.
   - **Akzeptanzkriterien**
-    - Bei completed deposit/withdrawal ≥ €10k wird `ComplianceEvent` erstellt; ab €15k `requiresReview=true` (Trigger `WalletTransaction.afterSave`).
+    - Bei completed deposit/withdrawal ≥ €10k wird `ComplianceEvent` erstellt; ab €15k `requiresReview=true`.
 
 ### E) Dokumente & Reporting
 
@@ -220,11 +223,10 @@ Wenn es nicht nur um “was soll das Produkt”, sondern um “was darf nicht ka
 
 - Initial `pending` (weitere Status je nach Ausführung: `executed`, `cancelled` etc.)
 
-### Wallet-Regeln (Balance & Compliance)
+### Konto-Regeln (Kontostand & Compliance)
 
-- `WalletTransaction.balanceAfter` wird serverseitig berechnet (Trigger `WalletTransaction.beforeSave`).
-- Negative Balance ist verboten.
-- Große deposit/withdrawal erzeugen `ComplianceEvent` bei completion.
+- Kontostand wird serverseitig geführt; negative Balance ist verboten.
+- Große Ein-/Auszahlungen erzeugen `ComplianceEvent` bei completion.
 
 ### Berechnungslogik (fachliche Leitplanken)
 
@@ -252,7 +254,7 @@ Wenn es nicht nur um “was soll das Produkt”, sondern um “was darf nicht ka
 
 ### Reporting/Controlling
 
-- Ereignisse: Investments (created/activated/completed), Trades (created/completed), WalletTransactions (completed), Invoices/Documents/Statements.
+- Ereignisse: Investments (created/activated/completed), Trades (created/completed), Kontobewegungen, Invoices/Documents/Statements.
 - Quellen: Parse Klassen (primär) + optional Postgres Analytics Schema (`backend/postgres/init/*.sql`).
 
 ### Compliance

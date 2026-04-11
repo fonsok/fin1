@@ -61,7 +61,7 @@ load("/path/to/02_schema_validation.js")
 - UserProfile, UserAddress, UserKYCDocument, UserRiskAssessment, UserConsent, UserDevice
 
 **Business:**
-- Investment, Trade, Order, Holding, Commission, WalletTransaction
+- Investment, Trade, Order, Holding, Commission (Konto: Wallet-Feature deaktiviert)
 
 **Support:**
 - SupportTicket, TicketResponse, CSRAgent, FourEyesRequest
@@ -85,6 +85,16 @@ db.runCommand({ collMod: "CollectionName", validationAction: "error" })
 Automatisches Löschen:
 - `MarketData`: Nach 90 Tagen
 - `Notification` (gelesen): Nach 90 Tagen
+
+## Bestehende Datenbanken (kein frisches Volume)
+
+Die Init-Skripte unter `/docker-entrypoint-initdb.d` laufen **nur beim ersten Start** von MongoDB (leeres `data`-Volume). Auf **länger laufenden** Umgebungen gilt:
+
+| Thema | Was tun |
+|--------|--------|
+| **Indexes** | Neue Indizes aus `01_indexes.js` werden **nicht** automatisch nachgezogen. Einzelindexes kannst du per `mongosh` mit `createIndex` anlegen (oder gezielt `01_indexes.js` in `mongosh` laden — ggf. `createIndex`-Duplikate sind harmlos). |
+| **JSON Schema / `collMod`** | Änderungen in `02_schema_validation.js` (z. B. `SupportTicket` verlangt `userId` statt `customerId`) wirken erst nach **manuellem** `collMod` auf der Collection oder nach Ausführen des entsprechenden `runCommand`-Blocks in `mongosh`. Aktuell: `validationAction: "warn"` — Verstöße loggen, schreiben nicht hart fehl. |
+| **Alte Ticket-Felder `customerId`** | Parse **beforeSave** (`triggers/support.js`) kopiert bei jedem Speichern `customerId` → `userId` und entfernt `customerId`. Unberührte alte Dokumente bleiben, bis sie gespeichert werden. **Bulk:** Script `backend/mongodb/scripts/migrate_customerId_to_userId_fin1.js` **oder** Cloud Function `migrateLegacyCustomerIdToUserId` (Admin, optional `dryRun: true`). |
 
 ## Troubleshooting
 
