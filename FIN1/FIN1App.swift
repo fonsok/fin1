@@ -69,7 +69,11 @@ struct FIN1App: App {
 
         // Process offline operation queue when app becomes active
         Task {
-            await OfflineOperationQueue.shared.processQueue()
+            // Resource-saving & UX: only process the offline queue once a user is available.
+            // The queue is @MainActor and may do non-trivial work; avoid impacting the unauthenticated landing experience.
+            if self.services.userService.currentUser != nil {
+                await OfflineOperationQueue.shared.processQueue()
+            }
         }
 
         // Observe network changes and process queue when connection is restored
@@ -187,7 +191,9 @@ struct FIN1App: App {
 
                 // Process queue when connection is restored (was offline, now online)
                 if !previousState && currentState {
-                    await OfflineOperationQueue.shared.processQueue()
+                    if self.services.userService.currentUser != nil {
+                        await OfflineOperationQueue.shared.processQueue()
+                    }
                 }
 
                 previousState = currentState
