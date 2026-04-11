@@ -154,7 +154,13 @@ final class MockParseAPIClient: ParseAPIClientProtocol {
             role: "investor",
             stableId: "user:\(username)",
             firstName: "Mock",
-            lastName: "User"
+            lastName: "User",
+            accountType: nil,
+            companyKybCompleted: nil,
+            companyKybStep: nil,
+            companyKybStatus: nil,
+            onboardingCompleted: nil,
+            onboardingStep: nil
         )
     }
 

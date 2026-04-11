@@ -221,6 +221,30 @@ final class SecuritiesWatchlistServiceLiveUpdatesTests: XCTestCase {
     }
 }
 
+// MARK: - Mock ParseLiveQueryClient for Testing
+final class MockParseLiveQueryClient: ParseLiveQueryClientProtocol {
+    private var subscriptionCounter = 0
+
+    func subscribe<T: Decodable>(
+        className: String,
+        query: [String: Any]?,
+        onUpdate: @escaping (T) -> Void,
+        onDelete: ((String) -> Void)?,
+        onError: ((Error) -> Void)?
+    ) -> LiveQuerySubscription {
+        subscriptionCounter += 1
+        return LiveQuerySubscription(
+            id: "mock-\(subscriptionCounter)",
+            className: className,
+            query: query
+        )
+    }
+
+    func unsubscribe(_ subscription: LiveQuerySubscription) {}
+    func connect() async throws {}
+    func disconnect() {}
+}
+
 // MARK: - Mock MarketDataService for Testing
 final class MockMarketDataService: MarketDataServiceProtocol {
     var getMarketDataHandler: ((String) -> MarketData?)?

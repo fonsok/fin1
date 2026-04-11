@@ -8,6 +8,10 @@ class MockNotificationService: NotificationServiceProtocol {
     @Published var unreadCount: Int = 0
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
+    
+    var notificationsPublisher: AnyPublisher<[AppNotification], Never> {
+        $notifications.eraseToAnyPublisher()
+    }
 
     // Test configuration
     var shouldThrowError = false
@@ -20,6 +24,7 @@ class MockNotificationService: NotificationServiceProtocol {
     func markAsRead(_ notification: AppNotification) {
         if let index = self.notifications.firstIndex(where: { $0.id == notification.id }) {
             self.notifications[index].isRead = true
+            self.notifications[index].readAt = self.notifications[index].readAt ?? Date()
             self.unreadCount = self.notifications.filter { !$0.isRead }.count
         }
     }
@@ -27,6 +32,7 @@ class MockNotificationService: NotificationServiceProtocol {
     func markAllAsRead() {
         for index in self.notifications.indices {
             self.notifications[index].isRead = true
+            self.notifications[index].readAt = self.notifications[index].readAt ?? Date()
         }
         self.unreadCount = 0
     }

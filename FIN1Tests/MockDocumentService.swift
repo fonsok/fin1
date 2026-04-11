@@ -9,6 +9,10 @@ class MockDocumentService: DocumentServiceProtocol {
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
     @Published var showError: Bool = false
+    
+    var documentsPublisher: AnyPublisher<[Document], Never> {
+        $documents.eraseToAnyPublisher()
+    }
 
     // MARK: - Behavior Closures (Simplified Approach)
     /// Closure to handle uploadDocument - defaults to appending to documents array

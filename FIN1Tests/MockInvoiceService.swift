@@ -203,7 +203,7 @@ class MockInvoiceService: InvoiceServiceProtocol {
         // Find invoice where tradeId == batchId and type is platform service charge
         for invoice in invoices {
             if invoice.tradeId == batchId,
-               invoice.type == .platformServiceCharge,
+               invoice.type == .appServiceCharge,
                invoice.customerInfo.customerNumber == userId {
                 return invoice
             }
@@ -225,6 +225,8 @@ class MockInvoiceService: InvoiceServiceProtocol {
 
     func start() {}
     func stop() {}
+
+    func syncToBackend() async {}
 
     func reset() {
         invoices.removeAll()
