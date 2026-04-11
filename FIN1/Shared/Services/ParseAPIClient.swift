@@ -247,3 +247,9 @@ final class ParseAPIClient: ParseAPIClientProtocol {
     }
 }
 
+extension ParseAPIClient: SessionStateProviding {
+    var hasAuthenticatedSession: Bool {
+        sessionToken != nil
+    }
+}
+

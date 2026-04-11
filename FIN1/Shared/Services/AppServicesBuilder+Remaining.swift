@@ -7,6 +7,7 @@ extension AppServicesBuilder {
             guard let serviceFactory = ctx.serviceFactory,
                   let documentService = ctx.documentService,
                   let pushTokenAPIService = ctx.pushTokenAPIService,
+                  let notificationAPIService = ctx.notificationAPIService,
                   let investorWatchlistAPIService = ctx.investorWatchlistAPIService,
                   let userService = ctx.userService,
                   let cashBalanceService = ctx.cashBalanceService,
@@ -23,6 +24,7 @@ extension AppServicesBuilder {
 
             let notificationService = NotificationService(
                 documentService: documentService,
+                notificationAPIService: notificationAPIService,
                 pushTokenAPIService: pushTokenAPIService
             )
             notificationService.configure(pushTokenAPIService: pushTokenAPIService)

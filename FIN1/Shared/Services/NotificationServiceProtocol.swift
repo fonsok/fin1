@@ -59,6 +59,7 @@ final class NotificationService: NotificationServiceProtocol, ServiceLifecycle {
 
     private var cancellables = Set<AnyCancellable>()
     private let documentService: any DocumentServiceProtocol
+    private let notificationAPIService: NotificationAPIServiceProtocol?
     private var pushTokenAPIService: PushTokenAPIServiceProtocol?
 
     // Store current push token for sync
@@ -66,9 +67,11 @@ final class NotificationService: NotificationServiceProtocol, ServiceLifecycle {
 
     init(
         documentService: any DocumentServiceProtocol = DocumentService.shared,
+        notificationAPIService: NotificationAPIServiceProtocol? = nil,
         pushTokenAPIService: PushTokenAPIServiceProtocol? = nil
     ) {
         self.documentService = documentService
+        self.notificationAPIService = notificationAPIService
         self.pushTokenAPIService = pushTokenAPIService
 
         // Start with empty notifications - notifications will be loaded from actual data sources
@@ -113,17 +116,60 @@ final class NotificationService: NotificationServiceProtocol, ServiceLifecycle {
     // MARK: - Notification Management
 
     func loadNotifications(for user: User) {
+        let uid = user.id
         isLoading = true
+        errorMessage = nil
 
-        // Simulate API call
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            self.isLoading = false
-            self.updateUnreadCount()
-            self.updateCombinedUnreadCount()
+        guard let api = notificationAPIService else {
+            DispatchQueue.main.async { [weak self] in
+                self?.isLoading = false
+                self?.updateUnreadCount()
+                self?.updateCombinedUnreadCount()
+            }
+            return
+        }
+
+        Task { [weak self] in
+            do {
+                let fetched = try await api.fetchNotifications(for: uid, includeArchived: false)
+                await MainActor.run {
+                    guard let self else { return }
+                    self.applyMergedServerNotifications(fetched: fetched, userId: uid)
+                    self.isLoading = false
+                    self.updateUnreadCount()
+                    self.updateCombinedUnreadCount()
+                }
+            } catch {
+                await MainActor.run {
+                    guard let self else { return }
+                    self.errorMessage = error.localizedDescription
+                    self.isLoading = false
+                    self.updateUnreadCount()
+                    self.updateCombinedUnreadCount()
+                }
+            }
         }
     }
 
+    /// Keeps client-only rows (e.g. UUID ids) for this user; replaces overlapping ids with server payload.
+    private func applyMergedServerNotifications(fetched: [AppNotification], userId: String) {
+        let serverIds = Set(fetched.map(\.id))
+        let localsForUser = notifications.filter { $0.userId == userId && !serverIds.contains($0.id) }
+        var merged = fetched + localsForUser
+        merged.sort { $0.createdAt > $1.createdAt }
+        notifications = merged
+    }
+
     func markAsRead(_ notification: AppNotification) {
+        if let api = notificationAPIService {
+            Task { [weak self] in
+                do {
+                    try await api.markNotificationRead(notificationId: notification.id)
+                } catch {
+                    await MainActor.run { self?.errorMessage = error.localizedDescription }
+                }
+            }
+        }
         if let index = notifications.firstIndex(where: { $0.id == notification.id }) {
             var updatedNotification = notifications[index]
             updatedNotification.isRead = true
@@ -134,6 +180,15 @@ final class NotificationService: NotificationServiceProtocol, ServiceLifecycle {
     }
 
     func markAllAsRead() {
+        if let api = notificationAPIService {
+            Task { [weak self] in
+                do {
+                    try await api.markAllNotificationsRead()
+                } catch {
+                    await MainActor.run { self?.errorMessage = error.localizedDescription }
+                }
+            }
+        }
         for i in 0..<notifications.count {
             notifications[i].isRead = true
         }

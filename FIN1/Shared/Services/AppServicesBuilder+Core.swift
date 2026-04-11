@@ -94,6 +94,7 @@ extension AppServicesBuilder {
             let filterAPIService = FilterAPIService(apiClient: parseAPIClient)
             let filterSyncService = FilterSyncService(filterAPIService: filterAPIService, userService: userService)
             let pushTokenAPIService = PushTokenAPIService(apiClient: parseAPIClient)
+            let notificationAPIService = NotificationAPIService(apiClient: parseAPIClient)
             let investorWatchlistAPIService = InvestorWatchlistAPIService(apiClient: parseAPIClient)
 
             ctx.tradeAPIService = tradeAPIService
@@ -104,6 +105,7 @@ extension AppServicesBuilder {
             ctx.filterAPIService = filterAPIService
             ctx.filterSyncService = filterSyncService
             ctx.pushTokenAPIService = pushTokenAPIService
+            ctx.notificationAPIService = notificationAPIService
             ctx.investorWatchlistAPIService = investorWatchlistAPIService
 
             ctx.appLedgerService = AppLedgerService(parseAPIClient: parseAPIClient)

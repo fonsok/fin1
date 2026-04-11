@@ -23,6 +23,7 @@ struct AppServicesBuildContext {
     var filterAPIService: FilterAPIService?
     var filterSyncService: FilterSyncService?
     var pushTokenAPIService: PushTokenAPIService?
+    var notificationAPIService: NotificationAPIService?
     var investorWatchlistAPIService: InvestorWatchlistAPIService?
     var orderManagementService: OrderManagementService?
     var orderStatusSimulationService: OrderStatusSimulationService?
