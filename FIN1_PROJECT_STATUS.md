@@ -14,7 +14,7 @@
 - **Dashboard (sicher)**: **nur per SSH-Tunnel** (Browser nutzt „serverURL“ direkt)
 - **iOS Konfiguration**: **`.xcconfig` + `Info.plist` Platzhalter** (keine manuelle Plist-Editiererei)
 - **Xcode Build Configs/Schemes**: `Dev`, `Staging`, `Prod` + Schemes `FIN1-Dev`, `FIN1-Staging`, `FIN1-Prod`
-- **Dev-Default (Expert)**: Simulator → Tunnel/`localhost:1338`, Device → LAN/`192.168.178.24`
+- **Dev-Default (Expert)**: Simulator → Tunnel `8443→443` / `https://localhost:8443/parse`, Device → LAN `https://192.168.178.20/parse`
 - **PDF-Service**: `http://192.168.178.24:8086` (Base-URL; App nutzt `/api/pdf/...`)
 - **Test-/Seed-Passwort-Policy**: Parse Password Policy verlangt u.a. Groß-/Kleinbuchstaben, Zahl, Sonderzeichen (Beispiel in App: `Password123!`)
 
@@ -41,7 +41,7 @@
 ### App (iOS, SwiftUI)
 - **Kernrollen**: Investor & Trader (role-based UI)
 - **Auth**: Login/SignUp-Flows inkl. KYC-ähnlicher Multi-Step-Registrierung (UI/Logik vorhanden)
-- **Investor**: Trader Discovery, Portfolio/Investments, Watchlist
+- **Investor**: Trader Discovery, Investments, Watchlist
 - **Trader**: Depot, Trades-Übersichten, Order-Flows, KPIs
 - **Dokumente/PDF**: PDF-Backend-Service angebunden (API-Calls vorbereitet)
 - **Customer Support (CSR)**: Ticket-System, FAQ-Knowledgebase, Audit Logging, SLA Monitoring, Surveys (UI/Service Layer)
@@ -164,7 +164,7 @@ In `.xcconfig` startet `//` einen Kommentar. Deshalb werden URLs so gebaut:
 - `http:$(FIN1_URL_SLASH)$(FIN1_URL_SLASH)host/path`
 
 ### Dev-Default (Expert)
-- Simulator: `http://localhost:1338/parse` (per SSH-Tunnel)
+- Simulator: `https://localhost:8443/parse` (SSH: `ssh -L 8443:127.0.0.1:443 io@192.168.178.20`)
 - Device: `https://192.168.178.24/parse` (direkt im LAN)
 
 Das ist bereits in `Config/FIN1-Dev.xcconfig` so hinterlegt.
@@ -229,7 +229,7 @@ Wenn Legal Texte (Terms/Privacy/Imprint) server-driven sind, muss intern nachvol
 - **iPhone + localhost**: funktioniert nicht (localhost = iPhone) → Device muss LAN-IP nutzen.
 - **`.xcconfig` URLs**: `//` ist Kommentar → URL-Slash-Workaround nutzen (ist bereits umgesetzt).
 - **Display Name “springt zurück”**: häufig durch versehentlich committen eines Test-Werts in `INFOPLIST_KEY_CFBundleDisplayName` → Guard-Script/Hook nutzen (siehe oben).
-- **Landing FAQs “nicht verfügbar”**: häufig fehlt der SSH‑Tunnel (Dev‑Simulator nutzt `localhost:1338`). Details: `Documentation/HELP_N_INSTRUCTIONS_SERVER_DRIVEN.md`
+- **Landing FAQs “nicht verfügbar”**: häufig fehlt der SSH‑Tunnel (Dev‑Simulator nutzt `https://localhost:8443/parse`). Details: `Documentation/HELP_N_INSTRUCTIONS_SERVER_DRIVEN.md`
 
 ---
 

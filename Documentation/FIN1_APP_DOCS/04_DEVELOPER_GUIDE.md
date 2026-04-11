@@ -1,7 +1,7 @@
 ---
 title: "FIN1 – Developer Guide (Setup, Coding, Build/Release, How-Tos)"
 audience: ["Entwicklung", "QA (technisch)", "Betrieb (technisch)"]
-lastUpdated: "2026-02-01"
+lastUpdated: "2026-04-04"
 ---
 
 ## Zweck
@@ -49,6 +49,7 @@ Es gibt mehrere Compose-Varianten. Für lokale Entwicklung ist i.d.R. `docker-co
 - Environment Template:
   - Dev: `backend/env.example` → nach `backend/.env`
   - Prod: `backend/env.production.example` → nach `backend/.env` (auf Server)
+- **Parse Cloud Code:** Lokal mountet `docker-compose.yml` typischerweise `./backend/parse-server/cloud` nach `/app/cloud` im `parse-server`-Container. Ohne vergleichbaren Mount auf dem Server „sieht“ ein Container nach `rsync` auf den Host **keine** neuen `Parse.Cloud.define`-Funktionen → Clients melden **`Invalid function`**. Siehe [`Documentation/HELP_N_INSTRUCTIONS_SERVER_DRIVEN.md`](../HELP_N_INSTRUCTIONS_SERVER_DRIVEN.md) (Abschnitt *Parse Cloud Code: Deployment*) und [`Documentation/FIN1_APP_DOCS/06A_BACKEND_UBUNTU_IOBOX_RUNBOOK.md`](06A_BACKEND_UBUNTU_IOBOX_RUNBOOK.md) § 8.2.
 
 ## 2) Coding-Guidelines (Kurzfassung)
 
@@ -99,18 +100,25 @@ Zusätzliche lokale Checks (Scripts):
 
 ### How-to: Neue Parse Cloud Function anbinden
 
-- Backend: `backend/parse-server/cloud/functions/<domain>.js` → `Parse.Cloud.define(...)`
+- Backend: `backend/parse-server/cloud/functions/<domain>.js` → `Parse.Cloud.define(...)`; Einbindung über die `require`-Kette ab `cloud/main.js` nicht vergessen.
+- **Deploy / Sichtbarkeit:** Die Funktion existiert für Clients erst, wenn der **laufende** Parse-Server-Prozess den aktualisierten `cloud/`-Stand lädt (lokal: Container-Neustart bei Volume-Mount; Server: Volume **oder** Image-Rebuild). Symptom bei veraltetem Stand: **`Invalid function`**. Details und FAQ-Admin-Portal: [`Documentation/HELP_N_INSTRUCTIONS_SERVER_DRIVEN.md`](../HELP_N_INSTRUCTIONS_SERVER_DRIVEN.md).
 - iOS: `ParseAPIClient.callFunction("<name>", parameters: ...)`
 - Auth: Für user-gebundene Funktionen braucht ihr einen **gültigen `X-Parse-Session-Token`**.
   **Hinweis**: In `AppServicesBuilder` ist `sessionToken` derzeit `nil` (TODO im Code). Für produktive Calls muss der Token aus Auth/UserService in den Client injiziert werden.
 
+### How-to: Onboarding-Payloads ändern (Swift + Node)
+
+- **Client**: `SavedOnboardingData` (Codable) in `OnboardingAPIService.swift`; nur im `OnboardingAPIService` encodieren, nicht in Views.
+- **Server**: Autoritative Prüfung in `backend/parse-server/cloud/functions/user/onboarding.js` nach `sanitizeObject`; **Joi-Schemas** in `backend/parse-server/cloud/utils/onboardingStepSchemas.js` (`validateStepData` = abgeschlossener Schritt, `validatePartialOnboardingData` = `saveOnboardingProgress`).
+- **Bei neuen Pflichtfeldern/Enums**: Swift-DTO + `onboardingStepSchemas.js` + ggf. `validation.js`-Hilfsfunktionen abstimmen; siehe [`Documentation/ENGINEERING_GUIDE.md`](../ENGINEERING_GUIDE.md) und [`Documentation/ADR-002-Onboarding-Codable-DTO.md`](../ADR-002-Onboarding-Codable-DTO.md).
+
 ### How-to: Neues Feature Flag / Remote Config
 
-- Backend: `getConfig` liefert (environment-basiert) **finanzielle Parameter aus der Klasse `Configuration`** (via configHelper) sowie Feature Flags/Limits/Display. Source of Truth für Finanz-Config ist das Admin-Portal (4-Augen).
-- iOS: `ConfigurationService` ist die zentrale Stelle für Konfiguration; er wird im `ServiceLifecycleCoordinator` mit Priorität „critical“ gestartet und ruft in `start()` `fetchRemoteDisplayConfig()` auf, um die Server-Werte (u.a. `initialAccountBalance`, `traderCommissionRate`, `platformServiceChargeRate`) zu laden und lokal zu mergen.
+- Backend: `getConfig` liefert (environment-basiert) **finanzielle Parameter aus der Klasse `Configuration`** (via `cloud/utils/configHelper`) sowie Feature Flags/Limits/Display. Source of Truth für Finanz-Config ist das Admin-Portal (4-Augen).
+- iOS: `ConfigurationService` ist die zentrale Stelle für Konfiguration; er wird im `ServiceLifecycleCoordinator` mit Priorität „critical“ gestartet und ruft in `start()` `fetchRemoteDisplayConfig()` auf, um die Server-Werte (u.a. `initialAccountBalance`, `traderCommissionRate`, `appServiceChargeRate`) zu laden und lokal zu mergen. **`initialAccountBalance`**: Backend- und App-Default **0 €**; Nutzer erhalten kein automatisches Startguthaben außer was Admins in der `Configuration` hinterlegt haben (4-Augen).
 
 **Konfigurierbare Finanzparameter:**
-- `platformServiceChargeRate`: Platform Service Charge Rate (Default: 2%, konfigurierbar über `ConfigurationService.updatePlatformServiceChargeRate()`)
+- `appServiceChargeRate`: App Service Charge Rate (Default: 2%, konfigurierbar über `ConfigurationService.updateAppServiceChargeRate()`)
 - `traderCommissionRate`: Trader Commission Rate (Default: 10%, konfigurierbar über `ConfigurationService.updateTraderCommissionRate()`)
 - Beide Rates verwenden `effective*` Properties mit Fallback auf `CalculationConstants` Defaults
 
@@ -118,4 +126,35 @@ Zusätzliche lokale Checks (Scripts):
 
 - iOS: `AuditLoggingService.logComplianceEvent(...)` nutzen (asynchron, non-blocking für Logging-Fehler).
 - Backend: `ComplianceEvent` ist eine Parse Klasse, die auch serverseitig in Triggern erzeugt wird (z.B. large transaction).
+
+### How-to: DEV Reset Testdaten (Trading/Investments)
+
+Während der Entwicklungsphase kann es sinnvoll sein, alle beim Testen entstandenen Daten (Trading/Investments inkl. Belege/Buchungen) auf Knopfdruck zurückzusetzen – **ohne** Templates/Vorlagen zu verlieren.
+
+**Admin-Portal UI:**
+- Seite **System‑Status** → Bereich **Development Maintenance**
+- Button: **DEV: Reset Testdaten (Trading/Investments)**
+- Vor Ausführung wird ein **Preview (Dry‑Run)** mit Counts angezeigt.
+
+**Scopes:**
+- `all`: alles zurücksetzen
+- `sinceHours`: nur Daten der letzten \(X\) Stunden
+- `testUsers`: nur Daten von Test‑Usern (z.B. `investor1..5`, `trader1..10`, `@test.com`, `user:` Prefix). **Quelle für Namen, Passwort und Kunden‑ID‑Prefixe (ANL/TRD):** `FIN1/Shared/Constants/TestUserConstants.swift`; Backend‑Vollprofile: Cloud Function `seedTestUsers` (`backend/parse-server/cloud/functions/seed/users.js`).
+
+**Betroffene Klassen (werden gelöscht):**
+`PoolTradeParticipation`, `Commission`, `AccountStatement`, `Document`, `Invoice`, `Order`, `Holding`, `Trade`, `WalletTransaction`, `Investment`, `InvestmentBatch`, `BankContraPosting`, `AppLedgerEntry`, `Notification`, `ComplianceEvent`.
+
+**Was bleibt erhalten:**
+Templates/Vorlagen (z.B. `CSRResponseTemplate`, `CSREmailTemplate`, `CSRTemplateCategory`) sowie Legal/Config Daten.
+
+**Serverseitige Guardrails (ENV):**
+- `ALLOW_DEV_TRADING_RESET=true`
+- In `NODE_ENV=production` zusätzlich: `ALLOW_DEV_TRADING_RESET_IN_PRODUCTION=true`
+
+### Admin-Web-Portal (`admin-portal/`, React/Vite)
+
+- **Entwicklung:** `npm install`, `npm run dev` (siehe `admin-portal/README.md` und `FIN1_APP_DOCS/10_ADMIN_PORTAL_REQUIREMENTS.md`).
+- **Qualität:** `npm run lint` (ESLint 9, `eslint.config.js`), `npm run test:run` (Vitest), `npm run build` (Typecheck via `tsc` + Vite).
+- **CI:** Job `admin-portal` in `.github/workflows/ci.yml` führt dieselben Schritte auf Ubuntu aus.
+- **Hilfe & Anleitung (FAQs):** Seite `FAQsPage` — **Export/Import** (`exportFAQBackup` / `importFAQBackup`, Dry‑Run wie bei AGB‑Backups) und **Development Maintenance** (`devResetFAQsBaseline`, serverseitig an `ALLOW_FAQ_HARD_DELETE` gebunden; siehe `06_BETRIEB_PROZESSE.md` und Runbook § 8.4).
 

@@ -23,7 +23,7 @@ FIN1 unterscheidet **zwei Ebenen** von Admin-Zugang:
 ### 2.1 Technische Rollen (Parse/Postgres)
 
 ```
-investor         - Anleger (End-User)
+investor         - Investor (End-User)
 trader           - Händler (End-User)
 admin            - Voll-Administrator (App-Level)
 business_admin   - Business/Accounting Administrator (CFO, Finance)
@@ -306,7 +306,7 @@ customer_service (CSR Team)
 ```
 Xcode-Admin (iOS Team Lead)
 Server-Admin (DevOps Team)
-admin (Platform Admin)
+admin (App Admin)
 business_admin (CFO, Finance)
 security_officer (CISO, Security Team)
 compliance (Compliance, Legal)
@@ -429,6 +429,8 @@ Die aktuellen Cloud Functions behandeln `admin`, `customer_service` und `complia
 Siehe: `backend/parse-server/cloud/utils/permissions.js` (neu zu erstellen)
 
 ### 8.2 Beispiel-Implementierung
+
+> **Hinweis (Stand Code):** Die produktive Rollen-Matrix liegt in **`backend/parse-server/cloud/utils/permissions/constants.js`**. Die Rolle `customer_service` enthält dort u. a. auch **`getCompanyKybSubmissions`** und **`getCompanyKybSubmissionDetail`** (Lesen von Firmen-KYB im Admin-/CSR-Web-Portal), nicht aber `reviewCompanyKyb` / `resetCompanyKyb`. Das folgende Snippet ist nur ein vereinfachtes **Muster** und nicht 1:1 der Live-Stand.
 
 ```javascript
 // permissions.js

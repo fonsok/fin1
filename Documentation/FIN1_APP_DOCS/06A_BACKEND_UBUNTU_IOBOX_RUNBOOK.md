@@ -1,7 +1,7 @@
 ---
 title: "FIN1 Backend – Ubuntu Runbook (iobox, User io)"
 audience: ["Betrieb", "Backend-Entwicklung", "Security", "Release Management"]
-lastUpdated: "2026-02-23"
+lastUpdated: "2026-03-28"
 ---
 
 ## Zweck
@@ -21,6 +21,8 @@ Dieses Runbook dokumentiert den **realen** Backend-Betrieb auf dem Ubuntu-Server
 - **Host Alias**: `ssh io@iobox` (wenn Nameauflösung im LAN aktiv ist)
 
 ## 2) Deployment-Verzeichnis & Struktur
+
+**Hinweis (rsync):** Backend-Deployments **nicht** mit `rsync --delete` gegen den Server spiegeln, wenn dort Dateien liegen, die **nicht** im Repo sind (Zertifikate, lokale Service-Dateien, …). Kurzbeschreibung: [`Documentation/DEPLOYMENT_RSYNC_SICHERHEIT.md`](../DEPLOYMENT_RSYNC_SICHERHEIT.md).
 
 **Base Directory (Production/Server):**
 
@@ -155,6 +157,24 @@ Relevante `.env` Variable:
 - Werte niemals in Git/Docs committen.
 - Änderungen an `FIN1_LEGAL_*` sind auditkritisch: Legal Content muss versioniert/append-only bleiben.
 
+### Wichtig: `.env` ist nicht “source”-bar
+
+Die Datei `backend/.env` ist **nicht garantiert shell-kompatibel** (kann Leerzeichen, Klammern oder `+49 (0) ...` enthalten). Deshalb:
+
+- **Nicht** `source backend/.env` oder `. backend/.env` verwenden.
+- Wenn du einzelne Werte brauchst (z.B. `MONGO_INITDB_ROOT_PASSWORD`), extrahiere sie gezielt (z.B. via `python3`/grep) oder nutze `docker compose config`/Container‑Env.
+
+### Wichtig: ENV Änderungen in `env_file` → Container neu erstellen
+
+`docker compose restart parse-server` lädt `env_file` nicht immer zuverlässig neu.
+
+Best practice nach `.env` Änderungen:
+
+```bash
+cd /home/io/fin1-server
+docker compose -f docker-compose.production.yml up -d --force-recreate --no-deps parse-server
+```
+
 ## 7) Standard-Operator-Kommandos (nicht destruktiv)
 
 Im Server-Verzeichnis `/home/io/fin1-server`:
@@ -182,6 +202,85 @@ Typischer Update (Beispiel Parse Server):
   - `docker compose -f docker-compose.production.yml ps`
   - `curl -sk https://localhost/health`
   - extern: `curl -sk https://192.168.178.24/health` und `curl -sk https://192.168.178.24/parse/health`
+
+### 8.2) Refactor-Deploy Checkliste (Cloud Code, 2026-03 Ergänzung)
+
+Für interne Refactorings ohne API-Verhaltensänderung (Loader + Submodule) hat sich folgender schnelle Verify-Flow bewährt:
+
+1. Zielordner auf Server sicherstellen (z. B. `cloud/utils/<modul>/`, `cloud/functions/admin/<modul>/`).
+2. Geänderte Dateien per `scp` in `/home/io/fin1-server/backend/parse-server/cloud/...` übertragen.
+3. Parse-Service neu laden:
+   - `docker compose up -d parse-server`
+4. Gesundheitszustand prüfen:
+   - `docker compose ps parse-server nginx mongodb redis`
+   - `curl -sS http://127.0.0.1:1338/health`
+5. Auth-Grenze prüfen (ohne Token):
+   - Beispiel `getPendingApprovals` sollte erwartbar `Login required` liefern.
+6. Authentifizierten Smoke-Check mit gültigem Session-Token ausführen:
+   - gleiche Funktion sollte reguläre `result`-Payload zurückgeben.
+
+Diese Sequenz wurde am 2026-03-19 für folgende Refactors erfolgreich durchgeführt:
+
+- `cloud/utils/permissions.js` + `cloud/utils/permissions/*`
+- `cloud/utils/accountingHelper.js` + `cloud/utils/accountingHelper/*`
+- `cloud/functions/admin/fourEyes.js` + `cloud/functions/admin/fourEyes/*`
+
+**Neue Cloud Functions & Admin-Portal („Invalid function“):** Wird im Browser (z. B. Admin **Hilfe & Anleitung**) nach Copy der Dateien auf den Host weiterhin **`Invalid function`** für einen **neuen** Function-Namen gemeldet, nutzt der Container vermutlich **kein** Live-Volume auf `backend/parse-server/cloud` (Cloud Code nur im **Image**). Dann reicht `scp`/`rsync` nach `/home/io/fin1-server/backend/parse-server/cloud/` allein nicht: **Compose anpassen** (analog Repo-`docker-compose.yml`: Host-`cloud` → `/app/cloud`) **oder** `parse-server`-**Image neu bauen** und ausrollen. Einordnung, Klasse **`FAQ`** vs. Legacy-Namen, Paging der FAQ-Liste: [`Documentation/HELP_N_INSTRUCTIONS_SERVER_DRIVEN.md`](../HELP_N_INSTRUCTIONS_SERVER_DRIVEN.md).
+
+### 8.3) FAQ: englische Texte von Legacy-Spalten migrieren (`migrateFAQEnglishFields`)
+
+**Hintergrund:** Optional englische FAQ-Texte lagen historisch in den falsch benannten Spalten `questionDe` / `answerDe`. Kanonisch sind **`questionEn` / `answerEn`** (siehe `backend/parse-server/cloud/functions/user/faqLocales.js`). `getFAQs` liefert bereits zusammengeführte Werte; diese Migration schreibt die Daten in MongoDB um und entfernt die Legacy-Keys.
+
+**Berechtigung:** Die Cloud Function erlaubt entweder einen **eingeloggten** Admin mit Berechtigung `manageTemplates` oder einen Aufruf mit **Parse Master Key** (`request.master`), damit ein Einmal-Job vom Server aus ohne Browser-Session möglich ist.
+
+**Sicherheit:** Master Key **nur** auf dem Host aus `/home/io/fin1-server/backend/.env` lesen; **nicht** in Tickets, Chat oder Git committen. Aufruf über **`127.0.0.1:1338`** (localhost-Binding von `parse-server`), nicht über das LAN exponieren.
+
+**Ablauf (auf `iobox`):**
+
+```bash
+cd /home/io/fin1-server/backend
+APP_ID=$(grep -E '^PARSE_SERVER_APPLICATION_ID=' .env | head -1 | cut -d= -f2- | tr -d "\"'" | tr -d '\r')
+MK=$(grep -E '^PARSE_SERVER_MASTER_KEY=' .env | head -1 | cut -d= -f2- | tr -d "\"'" | tr -d '\r')
+
+# 1) Simulation (keine Schreibzugriffe)
+curl -sS "http://127.0.0.1:1338/parse/functions/migrateFAQEnglishFields" \
+  -H "X-Parse-Application-Id: $APP_ID" \
+  -H "X-Parse-Master-Key: $MK" \
+  -H "Content-Type: application/json" \
+  -d '{"dryRun":true}'
+
+# 2) Ausführung (nach Prüfung der JSON-Antwort von Schritt 1)
+curl -sS "http://127.0.0.1:1338/parse/functions/migrateFAQEnglishFields" \
+  -H "X-Parse-Application-Id: $APP_ID" \
+  -H "X-Parse-Master-Key: $MK" \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
+**Antwort:** u. a. `copiedFromLegacy`, `strippedLegacyOnly`, `examined`, `dryRun`. Ein zweites `dryRun` sollte nach erfolgreichem Lauf überall **`0`** melden, wenn keine Legacy-Daten mehr übrig sind.
+
+**Deploy:** Cloud-Code wie üblich nach `/home/io/fin1-server/backend/` übertragen und `parse-server` neu laden (siehe Abschnitt 8).
+
+### 8.4) FAQ: JSON‑Import und DEV‑Baseline‑Reset (`importFAQBackup`, `devResetFAQsBaseline`)
+
+**Import (Restore):** Cloud Function `importFAQBackup` — spielt ein JSON ein, das dem Export (`exportFAQBackup`) entspricht (`categories[]`, `faqs[]`). Ablauf im Admin‑Portal: Datei wählen → **Dry‑Run** → Bestätigung → Schreiblauf. Zuordnung: **Kategorien** per `slug`, **FAQs** per `faqId`. Nicht auflösbare Kategorie‑Referenzen erzeugen **Warnungen** in der Antwort; betroffene FAQs können übersprungen werden.
+
+**Development Maintenance:** `devResetFAQsBaseline` — wie bei Rechtstexten eine **bewusst destruktive** DEV‑Pflege (Sicherheits‑JSON im Response‑Body, dann Klonen der **aktiven** FAQs `isPublished` und nicht archiviert, Hard‑Delete der bisherigen aktiven Zeilen und **aller inaktiven** FAQs). Optionaler Parameter `deleteInactiveCategories: true` entfernt zusätzlich **inaktive** `FAQCategory`‑Zeilen (`isActive === false`); Standard ist **ohne** Kategorielöschung.
+
+**ENV (Parse‑Container, typisch `~/fin1-server/backend/.env`):**
+
+- `ALLOW_FAQ_HARD_DELETE=true` — zwingend für `devResetFAQsBaseline` und für Hard‑Deletes mit Kontext `allowFaqHardDelete` / `allowFaqCategoryHardDelete`.
+- Wenn `NODE_ENV=production`: zusätzlich `ALLOW_FAQ_HARD_DELETE_IN_PRODUCTION=true`, sonst blocken die `beforeDelete`‑Trigger auf `FAQ` / `FAQCategory`.
+
+**Verifikation im Container:**
+
+```bash
+docker exec fin1-parse-server sh -lc 'printenv ALLOW_FAQ_HARD_DELETE ALLOW_FAQ_HARD_DELETE_IN_PRODUCTION NODE_ENV'
+```
+
+Nach Änderung an `.env`: `docker compose -f docker-compose.production.yml up -d parse-server` (Container neu erzeugen, damit Variablen geladen werden).
+
+**Hard‑Delete‑Schutz:** `cloud/triggers/faq.js` — normales Löschen ist untersagt; **Seed** nutzt `context: { allowFaqSeedDelete: true }` (siehe `cloud/functions/seed/faq/helpers.js`).
 
 ## 8.1) Troubleshooting (Parse Server Start)
 

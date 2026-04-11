@@ -1,6 +1,6 @@
 # FIN1 Admin-Web-Portal: Dokumentation
 
-> **Datum:** 2026-02-05
+> **Datum:** 2026-04-04 (**Benutzer-Detailseite**: Trading-/Investment-Übersicht und Kontoauszug ausführlich dokumentiert; zuvor Payload/`getUserDetails`; 2026-04-03 Freigaben: Typ-Filter, Listen-Sortierung / Parse-Datum / Deploy-Check in §5; 2026-04-01 Hilfe & Anleitung; 2026-03-28 KYB-Status CSR, Vitest/ESLint/CI, `getCompanyKyb*`)
 > **Status:** MVP Implementiert ✅
 > **URL:** `https://192.168.178.24/admin/`
 
@@ -35,7 +35,7 @@ Ein web-basiertes Administrations-Portal für FIN1, das rollen-basierte Zugriffs
 ┌──────────────────┬─────────────────────────────────────────────┐
 │ Rolle            │ Typische Position                           │
 ├──────────────────┼─────────────────────────────────────────────┤
-│ admin            │ Platform Admin, CTO                         │
+│ admin            │ App Admin, CTO                              │
 │ business_admin   │ CFO, Finance Manager, Accounting            │
 │ security_officer │ CISO, Security Lead, DevSecOps              │
 │ compliance       │ Compliance Officer, Legal, Regulatory       │
@@ -53,11 +53,62 @@ Ein web-basiertes Administrations-Portal für FIN1, das rollen-basierte Zugriffs
 |---------|:------:|--------------|
 | Login/Logout | ✅ | E-Mail/Passwort Auth |
 | Dashboard | ✅ | Statistiken, Quick Actions |
-| Benutzer-Suche | ✅ | Nach Name, E-Mail, Status |
-| Benutzer-Details | ✅ | Profil, KYC, Aktionen |
-| Benutzer-Aktionen | ✅ | Suspend/Reactivate, Passwort-Reset |
+| Benutzer-Suche | ✅ | Nach Name, E-Mail, Kunden-ID, Vor-/Nachname, Benutzername, Rolle, Status (siehe `searchUsers`) |
+| Benutzer-Details | ✅ | Siehe **Abschnitt „Benutzer-Detailseite“** unten (Profil, Adresse, KPIs, Kontoauszug, Aktivitäten) |
+| Benutzer-Aktionen | ✅ | Suspend/Reactivate, Passwort-Reset (mit Grund/Modal; keine Selbstsperrung) |
 | Ticket-Liste | ✅ | Filter nach Status, Priorität |
 | 2FA-Flow | ✅ | Verification bei Login |
+
+### Benutzer-Detailseite (`/users/:userId`)
+
+**Route:** `userId` = Parse **`objectId`** des `_User` (Link aus der Benutzerliste).
+
+**Frontend:** `admin-portal/src/pages/Users/UserDetail.tsx` (TanStack Query `getUserDetails`), Unterkomponenten in `pages/Users/components/` (`AccountStatementCard`, `InvestmentTable`, `UserTradeCard`, `UserActionModal`, `UserShared`).
+
+**Backend:** `getUserDetails` in `backend/parse-server/cloud/functions/admin/users.js` (Berechtigung `getUserDetails`). Aggregiert u. a.:
+
+| Bereich | Quelle / Logik | Anzeige im Portal |
+|--------|----------------|-------------------|
+| Stammdaten | `_User`, `UserProfile`, primäre `UserAddress` | Karten **Benutzerdaten** und **Adresse & Status** (u. a. Kunden-ID, Anrede, Name, E-Mail, Telefon, Geburtsdatum, Rolle, Adresse, Nationalität, Account-Status, KYC-Status, Registrierung, letzter Login) |
+| Kontostand (Saldo) | Parse-Klasse **`Wallet`** (falls Datensatz existiert) | Karte **Kontostand** (Saldo, Währung, letzte Aktualisierung). *Hinweis:* Produktseitig kein Crypto-Wallet-Feature; es handelt sich um **Konto-/Saldoanzeige** auf Basis der gespeicherten Wallet-Entität. |
+| Trader | `Trade` zu `traderId` = `user:<email>`, `PoolTradeParticipation` | Karte **Trading-Übersicht** (KPIs), Liste **Letzte Trades** mit Investoren-Zuordnung (`UserTradeCard`) |
+| Investor | `Investment` zu `investorId` = `objectId` **oder** `user:<email>` | Karte **Investment-Übersicht** (KPIs inkl. reserviert/aktiv/abgeschlossen), Tabellen **Ongoing** / **Completed** (`InvestmentTable`) |
+| Kontoauszug | `AccountStatement` mit `userId` = **`user:<email>`** (stableId), Anfangssaldo aus **`loadConfig`/ aktiver `Configuration`-Zeile** (`initialAccountBalance`; ohne Konfiguration **0 €**) | Karte **Cash Balance & Kontoauszug** bzw. **Account Balance & Kontoauszug** (`AccountStatementCard`): siehe Unterabschnitt **Kontoauszug** unten |
+| Aktivitäten | `AuditLog` mit `resourceId` = `userId` (objectId), neueste zuerst | Karte **Letzte Aktivitäten** (sofern Einträge vorhanden) |
+
+#### Trading- und Investment-Übersicht (rollenspezifisch)
+
+**Gemeinsam:** Die Daten kommen aus **`getUserDetails`** (`admin/users.js`). Es werden nur **Lesewerte** angezeigt, keine Bearbeitung von Trades oder Investments im Portal.
+
+##### Trading-Übersicht (Rolle `trader`)
+
+- **Sichtbarkeit:** Karte erscheint, wenn `tradeSummary` gesetzt ist (Backend setzt sie nur für `role === 'trader'`).
+- **KPI-Zeile** (`StatBox`): Gesamt-Trades, Abgeschlossen, Aktiv, Gesamt-Gewinn (Summe `netProfit`, sonst `grossProfit`, über abgeschlossene Trades), **Provision** (Summe der `commissionAmount` aus `PoolTradeParticipation` je abgeschlossenem Trade).
+- **Liste „Letzte Trades“:** maximal **10** Einträge, neueste zuerst (`Trade`-Abfrage nach `traderId` = `user:<email>`).
+- **Pro Trade** (`UserTradeCard`):
+  - Kopfzeile: Trade-**#**, **Symbol**, Kurzbeschreibung, **Netto-Gewinn** (Anzeige: `netProfit`, Fallback `grossProfit`), **Status**-Badge, Anzahl Investoren (wenn Beteiligungen existieren).
+  - Fußzeile: **Erstellt**, ggf. **Abgeschlossen**, **Provision** (Summe der Investor-Provisionen dieser Trade-Karte).
+  - **Aufklappen** (nur wenn Investoren vorhanden): Tabelle **Beteiligte Investoren** — Name, E-Mail, **Anteil** (%; Backend liefert 0–1 oder 0–100), **Investiert**, **Gewinn-Anteil**, **Provision**, Status **Abgerechnet** / **Offen** (`isSettled`).
+
+##### Investment-Übersicht (Rolle `investor`)
+
+- **Sichtbarkeit:** Karte erscheint, wenn `investmentSummary` gesetzt ist (Backend nur für `role === 'investor'`).
+- **KPI-Zeile:** Gesamt-Anzahl Investments, **Reserviert**, **Aktiv**, **Abgeschlossen**, Summe investierter **Beträge**, Summe **Gewinn** (aus `Investment`-Objekten; bei gesettelten Pool-Beteiligungen kann das Backend Gewinn/Status aus `PoolTradeParticipation` ableiten, falls Investment-Felder stale sind).
+- **Tabellen** (`InvestmentTable`): Es werden höchstens **10** Investments geladen (neueste zuerst). Aufteilung im UI:
+  - **Ongoing Investments:** Status weder `completed` noch `cancelled`
+  - **Completed Investments:** Status `completed` oder `cancelled`
+- **Spalten:** Investment-Nr. (gekürzte `objectId`), **Trader** (Name oder `traderId`), **Trade-Nr.** (aus verknüpftem Trade, 3-stellig), **InvestAmount**, **Profit**, **Return (%)**, **Beleg / Rechnung** (`docRef`: Referenz aus `Document`, gesucht über `AccountStatement` mit `investmentId` und `entryType` ∈ `investment_profit`, `commission_debit` und gesetztem `referenceDocumentId`), **Status**.
+
+#### Kontoauszug (`AccountStatementCard`)
+
+- **Sichtbarkeit:** Die Response enthält immer ein Objekt **`accountStatement`** (Summen + `entries`); die Karte wird gerendert, wenn dieses Objekt vorhanden ist.
+- **Titel:** Rolle **Trader** → *„Account Balance & Kontoauszug“*; **alle anderen Rollen** (z. B. Investor) → *„Cash Balance & Kontoauszug“* (`AccountStatementCard`: `userRole === 'trader'`).
+- **Datenherkunft:** Parse-Klasse **`AccountStatement`**, gefiltert mit `userId` = **`user:<email>`** (gleiche stableId wie in der App). Bis zu **100** Einträge, sortiert nach `createdAt` aufsteigend; **Anfangssaldo** wie in **`getUserDetails`**: Wert aus **`loadConfig(true).financial.initialAccountBalance`** (aktive `Configuration`-Zeile bzw. Backend-Default **0 €**). Kein separates „Magic“-Fallback mehr. Autoritative Buchungen durch Backend-Settlement: siehe `Documentation/BACKEND_CALCULATION_MIGRATION.md`.
+- **Summenboxen:** **Anfangssaldo**, **Gutschriften** (Summe positiver `amount`), **Belastungen** (Summe absoluter negativer `amount`), **Nettoveränderung**, **Aktueller Saldo** (laufender Endsaldo nach den geladenen Zeilen).
+- **Tabelle:** Zuerst eine Zeile **Anfangssaldo**, danach pro Eintrag: **Datum**, **Buchungstext** (`description`, optional zweite Zeile **Trade #** aus `tradeNumber`), **Typ** (Badge; deutsche Labels für u. a. `deposit`, `withdrawal`, `investment_activate`, `investment_return`, `investment_refund`, `investment_profit`, `commission_debit`, `commission_credit`, `residual_return`, `trade_buy`, `trade_sell`, `trading_fees` — unbekannte `entryType` werden **roh** angezeigt), Spalten **Belastung** / **Gutschrift** (je nach Vorzeichen von `amount`), **Saldo** (`balanceAfter`), **Beleg** (`referenceDocumentId` oder „—“).
+- **Ein-/Ausklappen:** Standard **alle** Einträge sichtbar, wenn höchstens **10** Zeilen; bei mehr als **10** startet die Tabelle mit den **letzten 5** Einträgen und Link **„Alle N Einträge anzeigen“**; nach Aufklappen bei >10 Einträgen **„Weniger anzeigen“**. Keine Einträge → Hinweis *„Keine Kontoauszugseinträge vorhanden.“*
+
+**Aktionen im Header:** Passwort zurücksetzen (`forcePasswordReset`), Sperren (`suspended`) / Reaktivieren (`active`) über `updateUserStatus` — abhängig von `usePermissions` und **keine Sperrung des eigenen Accounts**.
 
 ### ✅ Phase 2: Compliance & Finance (Abgeschlossen)
 
@@ -81,7 +132,7 @@ Ein web-basiertes Administrations-Portal für FIN1, das rollen-basierte Zugriffs
 
 | Feature | Status | Beschreibung |
 |---------|:------:|--------------|
-| Unit Tests | ✅ | Vitest, 183 Tests, 90% Coverage |
+| Unit Tests | ✅ | Vitest, ESLint 9 (Flat Config), CI-Job `admin-portal` (`lint` → `test:run` → `build`); Stand Code: siehe `npm run test:run` / `test:coverage` |
 | Component Tests | ✅ | React Testing Library |
 | API Mocking | ✅ | vi.mock für Parse API |
 
@@ -116,12 +167,13 @@ admin-portal/
 │   ├── pages/
 │   │   ├── Login.tsx
 │   │   ├── Dashboard.tsx
-│   │   ├── Users/            # UserList, UserDetail
+│   │   ├── Users/            # UserList, UserDetail, components/ (AccountStatement, Investments, Trades, Modal)
 │   │   ├── Tickets/          # TicketList
 │   │   ├── Compliance/       # ComplianceEvents
 │   │   ├── Approvals/        # ApprovalsList
 │   │   ├── Audit/            # AuditLogs
 │   │   ├── Templates/        # Response Templates
+│   │   ├── KYBReview/        # Company KYB Prüfung (Review, Detail, Decision, Reset)
 │   │   └── CSR/              # CSR Web Panel (siehe Abschnitt 10)
 │   │       ├── pages/        # CreateTicket, TicketDetails, etc.
 │   │       ├── components/   # TemplateDropdown, CustomerSelection, etc.
@@ -130,7 +182,12 @@ admin-portal/
 │   ├── utils/
 │   │   └── format.ts         # Date, Currency, Status Formatter
 │   ├── App.tsx               # Routes
+│   ├── test/
+│   │   ├── setup.ts          # Vitest (+ localStorage-Mocks)
+│   │   └── test-utils.tsx    # render mit MemoryRouter + ThemeProvider
 │   └── main.tsx              # Entry Point
+├── eslint.config.js          # ESLint 9 Flat Config
+├── vitest.config.ts
 ├── vite.config.ts
 ├── tailwind.config.js
 └── package.json
@@ -166,7 +223,7 @@ async function cloudFunction<T>(name: string, params?: Record<string, unknown>):
 | Function | Bereich | Beschreibung |
 |----------|---------|--------------|
 | `searchUsers` | Users | Benutzersuche |
-| `getUserDetails` | Users | Benutzerdetails |
+| `getUserDetails` | Users | Aggregierte Benutzerdetails (Profil, Adresse, optional Wallet, rollenabhängig Trades/Investments, **Kontoauszug** aus `AccountStatement`, Audit-Schnipsel); siehe Abschnitt **Benutzer-Detailseite** |
 | `updateUserStatus` | Users | Status ändern |
 | `forcePasswordReset` | Users | Passwort zurücksetzen |
 | `getAdminDashboard` | Dashboard | Statistiken |
@@ -178,26 +235,37 @@ async function cloudFunction<T>(name: string, params?: Record<string, unknown>):
 | `rejectRequest` | Approvals | Ablehnen |
 | `withdrawRequest` | Approvals | Eigenen pending Antrag zurückziehen (nur Antragsteller) |
 | `getAuditLogs` | Audit | Log-Liste |
-| `getFAQCategories` | FAQs | FAQ-Kategorien für Landing/Help Center/CSR |
-| `getFAQs` | FAQs | Server‑getriebene FAQs für Landing/Help Center/CSR |
+| `getFAQCategories` | FAQs | FAQ-Kategorien für Landing/Help Center/CSR; im Bereich **Hilfe & Anleitung** ohne `location`-Parameter, damit alle aktiven Kategorien für Dropdowns geladen werden |
+| `getFAQs` | FAQs | Server‑getriebene FAQs für Landing/Help Center/CSR; **Hilfe & Anleitung** ruft mit `context: 'admin'` auf (siehe `admin-portal/src/pages/FAQs/api.ts`). Liste: bis zu **500** Einträge vom Server, **Filter und Paging** der Tabelle **im Browser** (`FAQsPage.tsx`). Hintergrund und „Invalid function“ bei neuen Functions: [`../HELP_N_INSTRUCTIONS_SERVER_DRIVEN.md`](../HELP_N_INSTRUCTIONS_SERVER_DRIVEN.md) |
 | `createFAQ` | FAQs | Admin‑funktion, neue FAQ anlegen (inkl. Multi‑Kontext/Multi‑Kategorie) |
 | `updateFAQ` | FAQs | Admin‑funktion, bestehende FAQ aktualisieren |
 | `deleteFAQ` | FAQs | Admin‑funktion, FAQ archivieren (Soft Delete) |
 | `createFAQCategory` | FAQs | Admin‑funktion, neue FAQ‑Kategorie anlegen (Slug + Flags) |
+| `exportFAQBackup` | FAQs | JSON‑Backup aller FAQ‑Kategorien und ‑Einträge (Admin, `manageTemplates`) |
+| `importFAQBackup` | FAQs | JSON‑Restore mit **Dry‑Run** und Apply: Kategorien per **`slug`** anlegen/aktualisieren, FAQs per **`faqId`** anlegen/aktualisieren; Warnungen bei nicht auflösbaren Kategorie‑Referenzen (`manageTemplates`) |
+| `devResetFAQsBaseline` | FAQs / **DEV** | Destruktive Baseline‑Pflege (nur mit **`ALLOW_FAQ_HARD_DELETE=true`**, in Production zusätzlich **`ALLOW_FAQ_HARD_DELETE_IN_PRODUCTION=true`**): Sicherheits‑JSON, Klonen aktiver (`isPublished`, nicht archiviert) FAQs, Hard‑Delete alter aktiver Zeilen und aller inaktiven FAQs. Siehe `06A_BACKEND_UBUNTU_IOBOX_RUNBOOK.md` § 8.4 |
+| `migrateFAQEnglishFields` | FAQs / Ops | Einmal‑Migration: Legacy `questionDe`/`answerDe` → kanonisch `questionEn`/`answerEn`; Admin‑Session mit `manageTemplates` oder Aufruf mit **Master Key** vom Server (Runbook: `06A_BACKEND_UBUNTU_IOBOX_RUNBOOK.md` § 8.3). Parameter `dryRun: true` simuliert ohne Schreiben |
 | `listTermsContent` | AGB & Rechtstexte | Rechtstext-Versionen listen (Filter: documentType, language) |
 | `getTermsContent` | AGB & Rechtstexte | Eine Version inkl. Abschnitte zum Klonen/Bearbeiten |
 | `createTermsContent` | AGB & Rechtstexte | Neue Version anlegen (terms/privacy/imprint, append-only) |
 | `setActiveTermsContent` | AGB & Rechtstexte | Version für documentType+Sprache als aktiv setzen |
 | `getDefaultLegalSnippetSections` | AGB & Rechtstexte | Standard-Snippet-Abschnitte (DE/EN) für neue Version (z. B. „Snippet-Abschnitte einfügen“) |
 | `getDefaultLegalSnippetSectionsPublic` | Backend/Skripte | Wie oben, ohne Auth; für Seed-Skript `scripts/seed-legal-snippets.js` |
+| `getCompanyKybSubmissions` | KYB-Status | Firmen-KYB-Einreichungen nach Status filtern |
+| `getCompanyKybSubmissionDetail` | KYB-Status | Detail-Ansicht inkl. Audit-Trail für eine Einreichung |
+| `reviewCompanyKyb` | KYB-Status | Genehmigen, Ablehnen oder Nachbesserung anfordern (nicht CSR) |
+| `resetCompanyKyb` | KYB-Status | Abgelehnte/Nachbesserung-Einreichung auf Entwurf zurücksetzen (nicht CSR) |
 
-**Hinweis Navigation:** Die FAQ-Verwaltung erscheint in der Sidebar als **„Hilfe & Anleitung“**; Rechtstexte unter **„AGB & Rechtstexte“**.
+**Rollen (Backend, `permissions/constants.js`):** `business_admin` und `compliance` besitzen die vollen KYB-Functions einschließlich `reviewCompanyKyb` / `resetCompanyKyb`. Die Rolle `customer_service` hat **`getCompanyKybSubmissions`** und **`getCompanyKybSubmissionDetail`** (Lesen für Support), nicht jedoch Entscheiden oder Zurücksetzen.
+
+**Hinweis Navigation (Admin-UI):** FAQ unter **„Hilfe & Anleitung“**; Rechtstexte unter **„AGB & Rechtstexte“**; Firmen-KYB unter **„KYB-Status“** (`/kyb-review`, Icon building-office).
 
 **Seite Approvals (`/approvals`)** – vier Tabs:
 - **Freigaben erteilen**: Pending Anträge anderer Admins (Genehmigen/Ablehnen)
 - **Eigene Anträge**: Vom aktuellen User eingereichte, noch offene Anträge (mit Zurückziehen)
 - **Alle Anträge**: Chronologische Liste aller Anträge aller Admins (neueste zuerst); bei eigenen pending Anträgen Button „Zurückziehen“
 - **Abgeschlossen**: Genehmigte/abgelehnte/zurückgezogene Anträge (letzte 30 Tage)
+- **Typ filtern** (oberhalb der Liste): Dropdown **Antragsart** (z. B. Konfigurationsänderung gesamt, Korrekturbuchung, …) und **Konfigurationsparameter** (dynamisch aus `metadata.parameterName` der geladenen Anträge, z. B. App-Servicegebühr, Startguthaben, Trader-Provision). Filterung **clientseitig** auf den jeweils aktiven Tab; Tab-Badge-Zahlen entsprechen der gefilterten Menge.
 
 **Sidebar „Freigaben“**: Solange offene Anträge existieren (Anträge zur Freigabe oder eigene pending Anträge), wird am Navigationspunkt „Freigaben“ ein rotes Badge mit der Anzahl angezeigt (Polling alle 30 s). Beide Admins sehen das Badge, bis alle Anträge bearbeitet sind.
 
@@ -219,9 +287,14 @@ async function cloudFunction<T>(name: string, params?: Record<string, unknown>):
 cd admin-portal
 npm run build
 
-# Auf Server kopieren
+# Empfohlen: Build + Rsync gemäß deploy.sh
+npm run deploy
+
+# Alternativ manuell auf Server kopieren (Ziel muss dem Nginx-alias entsprechen)
 scp -r dist/* io@192.168.178.24:~/fin1-server/admin/
 ```
+
+**Wichtig:** Der Browser lädt die statischen Dateien aus dem Verzeichnis, das Nginx unter `/admin` ausliefert (z. B. `~/fin1-server/admin/` → `/var/www/admin`). Ein veraltetes `admin-portal/dist/` **allein** auf dem Server ist irrelevant, wenn nicht nach `admin/` synchronisiert wurde. Nach Deploy prüfen: in `index.html` referenziertes `index-*.js` muss mit dem Bundle auf dem Server übereinstimmen (z. B. `curl …/admin/ | grep index-`).
 
 ### 5.3 Nginx-Konfiguration
 
@@ -236,6 +309,11 @@ location @admin_fallback {
     rewrite ^ /admin/index.html break;
 }
 ```
+
+### 5.4 Listen-Sortierung & Parse-Datumswerte (technisch)
+
+- **Sortierung:** Cloud-Function-Aufrufe laufen über `admin-portal/src/api/parse.ts` → `cloudFunction()`. Bei Listen mit `sortBy`/`sortOrder` sendet der Client zusätzlich **`listSortOrder`** (gleicher Wert wie normalisiertes `sortOrder`), weil Parse Server Body und Query-String zusammenführt und Query-Parameter den Body überschreiben können. Backend: `backend/parse-server/cloud/utils/applyQuerySort.js` (`resolveListSortOrder`, Whitelist `allowed` pro Function).
+- **Datumsanzeige:** Parse REST liefert Daten oft als `{ "__type": "Date", "iso": "…" }`. Formatierung über `formatDate` / `formatDateTime` in `admin-portal/src/utils/format.ts` (unterstützt diese Objekte).
 
 ---
 
@@ -293,6 +371,15 @@ Siehe `.cursor/rules/admin-portal.md` für:
 - TailwindCSS Guidelines
 - API Layer Patterns
 
+### 7.4 Lint (ESLint 9)
+
+```bash
+cd admin-portal
+npm run lint
+```
+
+Konfiguration: `eslint.config.js` (Flat Config: `@eslint/js`, `typescript-eslint`, `eslint-plugin-react-hooks`, `eslint-plugin-react-refresh`). In CI Teil des Jobs **admin-portal** in `.github/workflows/ci.yml`.
+
 ---
 
 ## 8. Testing
@@ -314,10 +401,9 @@ npm run test:coverage
 
 | Metrik | Wert |
 |--------|------|
-| Test Files | 11 |
-| Tests | 183 |
-| Statement Coverage | 89% |
-| Line Coverage | 90% |
+| Test Files | 12 |
+| Tests | 191 (Stand 2026-03; `npm run test:run`) |
+| Coverage | `npm run test:coverage` (Ziele variieren nach Modulen) |
 
 ### 8.3 Test-Kategorien
 
@@ -328,7 +414,9 @@ npm run test:coverage
 | Auth | 34 | AuthContext, TwoFactorVerify |
 | API | 18 | parse.ts |
 | Utilities | 49 | format.ts |
-| Hooks | 9 | usePermissions |
+| Hooks | 11 | usePermissions |
+
+**Hinweis:** Gemeinsamer `render` in `src/test/test-utils.tsx` kapselt `MemoryRouter` und `ThemeProvider`, damit Komponenten mit `useTheme()` / `Link` zuverlässig testbar sind.
 
 ---
 
@@ -401,8 +489,10 @@ Das CSR Web Panel ist ein eigenständiges Portal für Kundenservice-Mitarbeiter 
 | Kunden-Details | ✅ | Profil, KYC-Status, Tickets |
 | Analytics | ✅ | Performance-Metriken |
 | Templates | ✅ | Textbausteine verwalten |
-| FAQs | ✅ | FAQ-Verwaltung (Sidebar: „Hilfe & Anleitung“, inkl. Multi‑Kontext/Multi‑Kategorie, neue Kategorien) |
+| FAQs | ✅ | FAQ-Verwaltung (Sidebar: „Hilfe & Anleitung“): Multi‑Kontext/Multi‑Kategorie, neue Kategorien, **Export/Import (Backup/Restore)** mit Vorschau, **Development Maintenance** (DEV‑Baseline, gated per ENV) |
 | AGB & Rechtstexte | ✅ | Terms, Datenschutz, Impressum versioniert verwalten (Filter, neue Version, Klonen, Als aktiv setzen) |
+| KYC-Status | ✅ | Übersicht KYC pro Kunde (`/csr/kyc`) |
+| KYB-Status | ✅ | Übersicht eingereichte Firmen-KYB (`/csr/kyb`); gleiche Oberfläche wie Admin **KYB-Status**, aber ohne Prüfen/Zurücksetzen sofern die Session kein `reviewCompanyKyb` / `resetCompanyKyb` hat |
 
 #### 10.2.1 FAQ-Verwaltung – Details
 
@@ -410,6 +500,8 @@ Das CSR Web Panel ist ein eigenständiges Portal für Kundenservice-Mitarbeiter 
 - **Multi‑Kategorie:** Eine FAQ kann mehreren FAQ‑Kategorien (`categoryIds`) zugeordnet werden; im UI werden alle Kategorien angezeigt und im Filter berücksichtigt.
 - **Legacy‑Kompatibilität:** Das Backend hält die Felder `categoryId` (Primär‑Kategorie) und `source` (Primär‑Kontext) automatisch mit den Arrays (`categoryIds`, `contexts`) synchron, sodass bestehende Clients (Swift‑App, ältere Scripts) weiterhin funktionieren.
 - **Neue Kategorien:** Im FAQ‑Editor können neue Kategorien direkt erzeugt werden. Diese werden serverseitig als `FAQCategory` mit `slug`, `title`, `displayName`, `icon`, `sortOrder`, `isActive`, `showOnLanding`, `showInHelpCenter`, `showInCSR` angelegt.
+- **Export (Backup) / Import (Restore):** Vollbackup wie `exportFAQBackup` (JSON). Import ruft `importFAQBackup` mit **Dry‑Run‑Vorschau** und anschließendem bestätigten Lauf auf (analog AGB & Rechtstexte). Tooltips im UI beschreiben Umfang und Ablauf.
+- **Development Maintenance (FAQ):** Gelbe Karte oben auf der Seite „Hilfe & Anleitung“ — DEV‑Baseline‑Reset (`devResetFAQsBaseline`): nur sinnvoll auf nicht‑produktiven Umgebungen oder mit bewusst gesetzten ENV‑Flags (siehe Betriebsdokumentation / Runbook). **Hard‑Deletes** von `FAQ`/`FAQCategory` sind serverseitig an **`ALLOW_FAQ_HARD_DELETE`** gebunden; Production zusätzlich **`ALLOW_FAQ_HARD_DELETE_IN_PRODUCTION`**.
 
 #### 10.2.2 AGB & Rechtstexte – Details
 
@@ -422,6 +514,7 @@ Das CSR Web Panel ist ein eigenständiges Portal für Kundenservice-Mitarbeiter 
 - **Bearbeiten-Button:** In der aufgeklappten Abschnittsliste hat jeder Abschnitt einen Button **„Bearbeiten“**. Ein Klick klont die Version und öffnet den Editor mit vorausgefüllter Suche auf diesen Abschnitt (Titel/ID), sodass der gewünschte Abschnitt sofort sichtbar ist.
 - **Suchfunktion im Editor:** Beim Anlegen einer neuen Version (Klonen) kann im Editor nach Abschnitten gesucht werden (Titel, Inhalt, ID); die Abschnittsliste wird gefiltert, ohne die Reihenfolge oder Daten zu ändern.
 - **Änderungen zur Vorgängerversion:** Beim Aufklappen einer Version erscheint der Bereich „Änderungen zur Vorgängerversion“. Über **„Änderungen anzeigen“** wird die unmittelbar vorherige Version geladen und ein Vergleich angezeigt (hinzugefügte, entfernte, geänderte Abschnitte) – ohne manuelles Durchsuchen der Vorgängerversion.
+- **Development Maintenance:** Gelbe Karte — `devResetLegalDocumentsBaseline` (Dry‑Run, dann bestätigter Lauf). Hard‑Deletes nur mit **`ALLOW_LEGAL_HARD_DELETE`** (+ in Production **`ALLOW_LEGAL_HARD_DELETE_IN_PRODUCTION`**). Hover‑Texte der Export/Import‑Buttons erläutern Umfang und Ablauf.
 
 ### 10.3 Textbausteine (Ticket-Erstellung)
 
@@ -676,6 +769,8 @@ curl -k -X POST "https://192.168.178.24/parse/functions/forceReseedCSRPermission
 }
 ```
 
+**Darstellung:** Im CSR-Web-Portal (Karte „Meine Berechtigungen“) werden **Kategorien** und **einzelne Berechtigungen** jeweils **alphabetisch nach `displayName`** (Locale `de`) sortiert – unabhängig von der Reihenfolge in der API-Response.
+
 ---
 
 ## 11. Bekannte Einschränkungen
@@ -692,7 +787,8 @@ curl -k -X POST "https://192.168.178.24/parse/functions/forceReseedCSRPermission
 - [x] ~~Finanzen-Dashboard implementieren~~
 - [x] ~~Sicherheits-Dashboard implementieren~~
 - [x] ~~2FA Setup UI~~
-- [x] ~~Unit Tests (Vitest)~~ - 183 Tests, 90% Coverage
+- [x] ~~Unit Tests (Vitest)~~ – siehe `npm run test:run` (z. B. 191 Tests)
+- [x] ~~ESLint 9 + CI~~ – `npm run lint` im Workflow-Job `admin-portal`
 - [x] ~~E-Mail-Benachrichtigungen~~ (Brevo SMTP konfiguriert)
 - [x] ~~CSR Web Panel~~ (Textbausteine, Ticket-Erstellung)
 - [ ] Let's Encrypt (bei öffentlicher Domain)
@@ -707,9 +803,109 @@ curl -k -X POST "https://192.168.178.24/parse/functions/forceReseedCSRPermission
 - [CSR Support Workflow](./06B_CSR_SUPPORT_WORKFLOW.md)
 - [Customer Support System](../CUSTOMER_SUPPORT_SYSTEM.md)
 - [Cursor Rules: Admin Portal](../.cursor/rules/admin-portal.md)
-- [Backend Permissions](../backend/parse-server/cloud/utils/permissions.js)
+- [Backend Permissions (Rollen-Matrix)](../backend/parse-server/cloud/utils/permissions/constants.js)
+
+---
+
+## 14. UI Design & Style Guide – Admin Content Area
+
+### 14.1 Layout-Übersicht
+
+- **Grundlayout**: Zweispaltiges Layout mit fixer Sidebar links (ca. 260 px Breite) und einem flexiblen Content-Bereich rechts (`.admin-container`, `.sidebar`, `.main-content`).
+- **Höhe**: Der Admin-Bereich nutzt die gesamte Viewport-Höhe (`min-height: 100vh`), Sidebar ist fixiert (`position: fixed; height: 100vh`).
+- **Top-Bar**: Im Content-Bereich wird eine sticky Top-Bar (`.top-bar`) verwendet, die beim Scrollen sichtbar bleibt und Titel, Aktionen und Status anzeigt.
+- **Content-Innenabstand**: Der eigentliche Inhaltsbereich (`.content`) verwendet einen großzügigen Rand (`padding: 30px`), um Karten, Tabellen und Formulare klar zu strukturieren.
+- **Karten & Grids**: KPIs und Zusammenfassungen werden über `.stats-grid` (responsive Grid) und `.card` / `.stat-card` dargestellt.
+
+### 14.2 Farbpalette (Hex-Codes)
+
+**Grund- und Hintergrundfarben**
+
+| Bereich                              | Variable / Klasse                   | Hex-Wert      | Beschreibung                                   |
+|--------------------------------------|-------------------------------------|---------------|-----------------------------------------------|
+| Seitenhintergrund (Content)         | `--background`, `body`, `.main-content` | `#1e293b`    | Dunkles Blau/Grau (Slate 800)                 |
+| Content-Surface / Panels            | `--content-surface`, `.top-bar`     | `#334155`     | Dunkle Karten-/Panel-Farbe                    |
+| Card-Hintergrund                    | `--card-bg`, `.card`, `.stat-card`  | `#334155` / `#334155e6` | Karten auf dunklem Hintergrund    |
+| Sidebar-Hintergrund                 | `--sidebar-bg`, `.sidebar`          | `#1a1a2e`     | Sehr dunkler Blau-/Violett-Ton                |
+| Tabellen-Hintergrund (Header)       | `th` in Dark-Content                | `#334155`     | Gleiche Surface-Farbe wie Cards               |
+
+**Textfarben**
+
+| Zweck                                | Variable / Klasse                               | Hex-Wert  |
+|--------------------------------------|-------------------------------------------------|-----------|
+| Primärer Text (Überschriften, H1/H2) | `--text-primary`, `main[data-content-area="dark"] h1,h2` | `#f1f5f9` |
+| Sekundärer Text (Beschreibungen)     | `--text-secondary`, `.text-muted`, `p.text-gray-500`     | `#94a3b8` |
+| Standard-Body-Text (helles Theme)    | `body` (Tailwind `text-fin1-dark`)             | `#0f172a` |
+| Tabellentext in Dark-Cards           | `table th, table td`                           | `#e2e8f0` |
+
+**Rahmen & Hover**
+
+| Zweck                           | Variable / Klasse      | Hex-Wert             |
+|---------------------------------|------------------------|----------------------|
+| Standard-Border                 | `--border-color`       | `#475569`            |
+| Tabellenzeilen Hover            | `tr:hover`             | `rgba(51,65,85,0.5)` |
+| Input-Focus-Ring (Box-Shadow)   | `.form-control:focus`  | `rgba(0,102,204,0.25)` |
+
+**Brand / Primärfarben**
+
+| Zweck                            | Variable / Klasse                | Hex-Wert  |
+|----------------------------------|----------------------------------|-----------|
+| Admin-Primärfarbe (Legacy)      | `--primary-color`, `.btn-primary` | `#0066cc` |
+| Admin-Primärfarbe Hover         | `--primary-hover`                | `#0052a3` |
+| FIN1 Brand Blue (Portal)        | Tailwind `fin1-primary`          | `#1e3a5f` |
+| FIN1 Sekundärblau               | Tailwind `fin1-secondary`        | `#2e5a8e` |
+| Dark-Mode Brand-Text            | `.fin1-theme-dark .text-fin1-primary` | `#93c5fd` |
+
+**Status- & Feedback-Farben**
+
+| Zweck                     | Variable / Klasse                      | Hex-Wert / RGBA              |
+|---------------------------|----------------------------------------|------------------------------|
+| Erfolg (Buttons, Badges) | `--success-color`                      | `#28a745`                    |
+| Erfolg (Tailwind)        | `bg-fin1-success`, `text-green-500`   | `#10b981`, `#22c55e`         |
+| Warnung                  | `--warning-color`, Amber-Farben       | `#ffc107`, `#fde68a`, `#f59e0b` |
+| Fehler / Danger          | `--danger-color`, Rot-Farben          | `#dc3545`, `#ef4444`, `#dc2626` |
+| Status „connected“       | `.status-badge.connected`             | `rgba(16,185,129,0.2)`, `#6ee7b7` |
+| Status „disconnected“    | `.status-badge.disconnected`          | `rgba(239,68,68,0.2)`, `#fca5a5` |
+
+**Formulare, Tags & Badges**
+
+| Element                        | Klasse / Verhalten                            | Hex-Wert / RGBA      |
+|--------------------------------|-----------------------------------------------|----------------------|
+| Input-Hintergrund (Dark-Content) | `.form-control`, `.search-box input`       | `#334155`            |
+| Input-Placeholder              | `.form-control::placeholder`                 | `#94a3b8`            |
+| Select (Dark-Card, bewusst hell) | `main[data-content-area="dark"] .fin1-card select` | Text `#1e3a5f`, BG `#e2e8f0` |
+| Textinput in Cards (Dark, aber hell) | `.fin1-card input[type="text"/"search"/"email"]` | Text `#111827`, BG `#ffffff` |
+| Standard-Tag                   | `.tag`                                       | BG `#334155`, Border `#475569`, Text `#f1f5f9` |
+| Tag „email“                    | `.tag.email`                                 | BG `rgba(30,58,95,0.6)`, Text `#93c5fd` |
+| Tag „default“                  | `.tag.default`                               | BG `rgba(120,80,40,0.5)`, Text `#fdba74` |
+
+**Toasts, Modals & Scrollbars**
+
+| Element                 | Klasse / Bereich                     | Hex-Wert / RGBA  |
+|-------------------------|---------------------------------------|------------------|
+| Modal-Overlay           | `.modal-overlay`                      | `rgba(0,0,0,0.5)`|
+| Modal-Inhalt            | `.modal`                              | BG `#334155`, Border `#475569` |
+| Toast-Hintergrund       | `.toast`                              | BG `#334155`, Border `#475569` |
+| Toast-Erfolg-Markierung | `.toast.success` (linker Rand)        | `#10b981`        |
+| Toast-Fehler-Markierung | `.toast.error` (linker Rand)          | `#ef4444`        |
+| Scrollbar-Track         | `::-webkit-scrollbar-track`           | `#f3f4f6`        |
+| Scrollbar-Thumb         | `::-webkit-scrollbar-thumb`           | `#d1d5db` / Hover `#9ca3af` |
+
+### 14.3 Typografie & Abstände
+
+- **Schriftfamilie**: Systemfont-Stack (Inter / -apple-system / BlinkMacSystemFont / Segoe UI / Roboto / Ubuntu / sans-serif).
+- **Überschriften**: H1/H2 im Content-Bereich sind hell (`#f1f5f9`) und nutzen mittlere bis hohe Schriftstärken (z. B. `font-weight: 600`).
+- **Lauftext**: Standard-Text im Dark-Content nutzt `#f1f5f9` bzw. `#94a3b8` für erklärende Texte; Tabellen- und Labeltexte sind bewusst leicht aufgehellt.
+- **Abstände**: Karten und Tabellen verwenden vertikale Abstände von 16–24 px (`margin-bottom: 16px/24px`) und Innenabstände von 20–24 px (`padding: 20px/24px`), um Informationen visuell zu gruppieren.
+
+### 14.4 Design-Rationale (Accounting / Compliance)
+
+- **Lesbarkeit in Dark-Mode**: Alle geschäftsrelevanten Daten (KPIs, Summen, Rundungsdifferenzen, Status) werden mit hohem Kontrast dargestellt (heller Text auf dunklem Hintergrund bzw. helle Inputs mit dunklem Text), um Fehlablesungen bei Freigaben und Prüfungen zu minimieren.
+- **Konsistente Brand-Farben**: FIN1-Primärblau (`#1e3a5f`) und die dazugehörigen Blautöne werden für Navigation, Primäraktionen und wichtige Kennzahlen eingesetzt, sodass Benutzer:innen Änderungen und Freigaben klar zuordnen können.
+- **Status-Codierung**: Erfolg, Warnung und Fehler werden durch konsistente Grün-/Gelb-/Rot-Töne codiert; Badges (z. B. „Freigaben“, Verbindungsstatus, Compliance-Flags) nutzen dieselben Farben, damit kritische Zustände sofort visuell erkennbar sind.
+- **Strukturierte Layout-Hierarchie**: Fixe Sidebar, sticky Top-Bar und kartengestütztes Layout sorgen für eine klare visuelle Hierarchie. Accounting- und Compliance-Workflows (4-Augen-Requests, Audit-Logs, Finanz-Kennzahlen) sind dadurch in klar abgegrenzten Bereichen platziert, was die Nachvollziehbarkeit und Revisionssicherheit unterstützt.
 
 ---
 
 *Erstellt: 2026-02-02*
-*Letzte Änderung: 2026-02-05*
+*Letzte Änderung: 2026-04-03*

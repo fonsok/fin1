@@ -37,7 +37,7 @@ Diese Regeln schützen **bereits korrekte Finanzwerte** vor “Formel-Drift” (
 
 - **Single Source of Truth ist Pflicht (keine Parallel-Formeln)**
   - **Constants**: `FIN1/Shared/Models/CalculationConstants.swift` ist die zentrale Quelle für Raten/Limits/Default-Werte (Fallback-Werte).
-- **Konfigurierbare Rates**: `ConfigurationService` verwaltet admin-konfigurierbare Finanzparameter (z.B. `platformServiceChargeRate`, `traderCommissionRate`) mit Fallback auf `CalculationConstants` Defaults.
+- **Konfigurierbare Rates**: `ConfigurationService` verwaltet admin-konfigurierbare Finanzparameter (z.B. `appServiceChargeRate`, `traderCommissionRate`) mit Fallback auf `CalculationConstants` Defaults.
   - **Fees**: ausschließlich `FIN1/Shared/Services/FeeCalculationService.swift` (`createFeeBreakdown`, `calculateTotalFees`).
   - **Profit (Trader, aus Invoices, ohne Taxes)**: `FIN1/Shared/Services/ProfitCalculationService.swift` (`calculateTaxableProfit`), verwendet `Invoice.nonTaxTotal` (siehe `FIN1/Shared/Extensions/Invoice+Calculations.swift`).
   - **Taxes**: ausschließlich `FIN1/Features/Trader/Models/InvoiceTaxCalculations.swift` (`InvoiceTaxCalculator.*`).
@@ -62,8 +62,8 @@ Diese Regeln schützen **bereits korrekte Finanzwerte** vor “Formel-Drift” (
     - Nutze `Invoice.nonTaxItems`/`nonTaxTotal` aus `Invoice+Calculations`.
 
 - **Cash Balance: welche Balance ist gemeint?**
-  - **Trader “live cash”** (UI/Validierung): `FIN1/Shared/Services/CashBalanceService.swift` (inkl. LiveQuery `WalletTransaction.balanceAfter`).
-  - **Investor Balance + Ledger**: `FIN1/Features/Investor/Services/InvestorCashBalanceService.swift` ist ledgerbasiert (Investment-Events + optional Wallet).
+  - **Trader “live cash”** (UI/Validierung): `FIN1/Shared/Services/CashBalanceService.swift` (Kontostand/Live-Updates).
+  - **Investor Balance + Ledger**: `FIN1/Features/Investor/Services/InvestorCashBalanceService.swift` ist ledgerbasiert (Investment-Events + optional Konto).
   - **Trader Balance + Commission Tracking**: `FIN1/Features/Trader/Services/TraderCashBalanceService.swift`.
   - **No-Go**: Balance im UI durch “Summieren von Invoices” oder “Summieren von Trades” rekonstruieren – dafür existieren Builder/Services.
 
@@ -73,9 +73,9 @@ Diese Regeln schützen **bereits korrekte Finanzwerte** vor “Formel-Drift” (
 
 - **Minimal-Checks (wenn du irgendeine Calculation anfässt)**
   - Trades-Übersicht vs Trade-Detail vs Collection-Bill/Breakdown zeigen **identische** Profit/ROI-Werte (keine 0,xx-€ Drift).
-  - Investor: Investment Amount + Platform Service Charge + Minimum Reserve Validation bleibt korrekt.
+  - Investor: Investment Amount + App Service Charge + Minimum Reserve Validation bleibt korrekt.
   - Account Statement: Opening/Closing Balance plausibel, Running Balance stimmt, Filter (Range/Monat) bleibt korrekt.
-  - Wallet/Live Updates: Balance-Updates via `WalletTransaction.balanceAfter` brechen nicht.
+  - Konto/Live Updates: Balance-Updates brechen nicht.
 
 - **Weiterführende Implementations-Dokus (aktuell, code-nah)**
   - `Documentation/CALCULATION_SCHEME_PROTECTION.md`
@@ -103,7 +103,7 @@ Diese Regeln schützen **bereits korrekte Finanzwerte** vor “Formel-Drift” (
   - `Get Started` → öffnet **Sign Up** als `fullScreenCover` (`SignUpView`).
   - `Sign In` → öffnet **Login** als `sheet` (`DirectLoginView`).
   - Landing enthält:
-    - Platform-Advantages Section
+    - App-Advantages Section
     - FAQ Section (`LandingFAQView`)
     - Legal Links (Terms/Privacy/Imprint) als Sheets, server-driven via `TermsContentService`.
 - **Protected Behaviors**
@@ -155,8 +155,8 @@ Diese Regeln schützen **bereits korrekte Finanzwerte** vor “Formel-Drift” (
   - Service Layer: `FIN1/Features/Investor/Services/*` (`InvestmentService`, Creation/Completion Services)
 - **Protected Behaviors**
   - Investment-Erstellung arbeitet über Service Layer (`InvestmentService.createInvestment(...)`), nicht inline im ViewModel.
-  - **Platform Service Charge** (Investor-only) bleibt korrekt:
-    - Berechnung im UI/VM: `CalculationConstants.ServiceCharges.platformServiceChargeRate` (siehe `InvestmentSheetViewModel.platformServiceCharge`).
+  - **App Service Charge** (Investor-only) bleibt korrekt:
+    - Berechnung im UI/VM: `CalculationConstants.ServiceCharges.appServiceChargeRate` (siehe `InvestmentSheetViewModel.appServiceCharge`).
     - Validation darf nicht nur “Investment Amount” prüfen, sondern **Investment + Service Charge** (siehe `totalRequiredAmount`/`hasSufficientCashBalance`).
   - Pool-/Pot-Logik bleibt konsistent (keine Formel-Drift; siehe `1.1 Financial Calculations & Accounting Guardrails`).
   - Collection Bill/Investment Statements bleiben **authoritativ** via `InvestorCollectionBillCalculationService` (kein Re-Implementieren in UI/VM).

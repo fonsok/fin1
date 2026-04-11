@@ -1,7 +1,7 @@
 ---
 title: "FIN1 – Betriebs- und Prozessdokumentation (Runbook)"
 audience: ["Betrieb", "SRE/Ops", "Release Management", "Security"]
-lastUpdated: "2026-02-01"
+lastUpdated: "2026-04-01"
 ---
 
 ## Zweck
@@ -63,6 +63,19 @@ Problem: Dashboard embeded `serverURL` im Browser-Frontend. Deshalb:
 - `PARSE_DASHBOARD_SERVER_URL` auf `http://localhost:1338/parse` setzen (Server-ENV).
 - `PARSE_SERVER_MASTER_KEY_IPS` restriktiv halten (z.B. localhost + Docker range).
 
+### Parse / Admin: destruktive DEV‑Wartung (Rechtstexte & FAQs)
+
+Cloud Functions für **Hard‑Deletes** und Baseline‑Resets sind absichtlich **nicht** ohne explizite Umgebungsvariablen nutzbar (Schutz vor Datenverlust).
+
+| Variable | Wirkung |
+|----------|---------|
+| `ALLOW_LEGAL_HARD_DELETE` | Erlaubt u. a. `devResetLegalDocumentsBaseline` (TermsContent hart löschen im definierten Ablauf). |
+| `ALLOW_LEGAL_HARD_DELETE_IN_PRODUCTION` | Nur nötig, wenn `NODE_ENV=production` **und** Legal‑DEV‑Reset trotzdem ausgeführt werden soll. |
+| `ALLOW_FAQ_HARD_DELETE` | Erlaubt `devResetFAQsBaseline` sowie kontextgeführte Hard‑Deletes auf `FAQ` / `FAQCategory` (siehe Trigger `cloud/triggers/faq.js`). |
+| `ALLOW_FAQ_HARD_DELETE_IN_PRODUCTION` | Nur nötig, wenn `NODE_ENV=production` **und** FAQ‑DEV‑Reset trotzdem ausgeführt werden soll. |
+
+**Betrieb:** Variablen in `backend/.env` des Compose‑Stacks setzen, **`parse-server`‑Container neu erstellen/starten** (`docker compose … up -d parse-server`), damit die Werte im Container ankommen. Details und Verifikation: `06A_BACKEND_UBUNTU_IOBOX_RUNBOOK.md` (FAQ § 8.4, Legal siehe `LEGAL_DOCS_AUDIT_TRAIL.md`).
+
 ## 2) Backup/Restore
 
 **Automatisches Backup (Produktion):** Täglich 3:00 Uhr auf dem Server (Cron). Inhalt: MongoDB, PostgreSQL, Redis, Config. 14 Tage Aufbewahrung. Siehe `scripts/BACKUP_RESTORE.md`.
@@ -116,9 +129,10 @@ Typisch:
 ### Go/No-Go Kriterien (Backend)
 
 - Healthchecks grün
+- **Repository-CI:** Für Änderungen am Admin-Web-Portal GitHub-Job **`admin-portal`** grün (Lint, Vitest, Build)
 - Keine neuen High/Critical Findings (Security/Compliance)
 - Smoke Tests (kritische Cloud Functions) erfolgreich:
-  - `getConfig`, `getCurrentLegalDocument`, `createInvestment/confirmInvestment`, `placeOrder`, `getWalletBalance`
+  - `getConfig`, `getCurrentLegalDocument`, `createInvestment/confirmInvestment`, `placeOrder`
 - Backup aktuell und geprüft
 
 ### Rollback-Strategie
@@ -143,7 +157,7 @@ Typisch:
 
 ### Priorisierung (SLA-orientiert)
 
-- S0: Trading/Wallet/Legal komplett down
+- S0: Trading/Legal komplett down
 - S1: kritischer Flow betroffen (Order Placement, Investment Activation, Consent)
 - S2: Degradation/Einzelfälle
 - S3: Cosmetic/Low impact
@@ -151,4 +165,21 @@ Typisch:
 ### Wartungsfenster
 
 - Planbar, kommuniziert, Rollback bereit, Monitoring währenddessen erhöht.
+
+## 7) CI / Repository-Qualität (GitHub Actions)
+
+Workflow: **`.github/workflows/ci.yml`** (Branches `main` / `master` und zugehörige PRs).
+
+| Job | Runner | Inhalt (Kurz) |
+|-----|--------|----------------|
+| **`admin-portal`** | `ubuntu-latest`, Node 20 | Im Verzeichnis `admin-portal/`: `npm ci` → **`npm run lint`** (ESLint 9 Flat Config) → **`npm run test:run`** (Vitest) → **`npm run build`** (`tsc` + Vite; Postbuild synchronisiert `dist/` nach `admin/` im Repo) |
+| **`build-test-lint`** | `macos-14` | SwiftFormat, SwiftLint, Xcode Build & Tests (Simulator), ggf. Danger auf PRs |
+
+**Release-Hinweis:** Vor einem Release, das das Admin-Web-Portal betrifft, sollte der Job **`admin-portal`** grün sein (keine bewusst ignorierten Lint-/Testfehler). Details zur Portal-Funktion: `FIN1_APP_DOCS/10_ADMIN_PORTAL_REQUIREMENTS.md`; Entwickler-Quickstart: `admin-portal/README.md`.
+
+## 8) Admin-Web-Portal (statisches Frontend)
+
+- **Build:** lokal oder in CI wie oben; Artefakt: `admin-portal/dist/` (wird per `postbuild` nach `admin/` gespiegelt).
+- **Deploy auf den Server:** üblich rsync/scp von `admin/` (oder `dist/`) gemäß Nginx-`alias` (siehe `10_ADMIN_PORTAL_REQUIREMENTS.md` §5, `DEPLOYMENT_RSYNC_SICHERHEIT.md`).
+- **Kein** separater Node-Prozess im Betrieb (reines Static Hosting hinter Nginx).
 

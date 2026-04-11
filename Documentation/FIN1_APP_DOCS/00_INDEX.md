@@ -1,7 +1,7 @@
 ---
 title: "FIN1 App-Dokumentation – Index"
 audience: ["Stakeholder", "Produkt", "Entwicklung", "QA", "Betrieb", "Support", "Compliance"]
-lastUpdated: "2026-03-09"
+lastUpdated: "2026-03-28"
 ---
 
 ## Zweck
@@ -22,6 +22,8 @@ Wenn Dokumente und Code/Configs widersprechen, gilt:
 2. **Backend-Konfiguration & Cloud Code** (z.B. `backend/parse-server/index.js`, `backend/parse-server/cloud/**`) sind maßgeblich.
 3. **Dokumentation** ergänzt und erklärt – darf aber nie “gegen” Code/Config behaupten.
 
+**Lab-Host / URLs (canonical):** [`CANONICAL_HOST_AND_URLS.md`](../CANONICAL_HOST_AND_URLS.md) (`fin1-lab.example`, `/etc/hosts`, CI `FIN1_LAB_HOST`). **PHASE-/snapshotartige Markdown** ohne Pflege: Git-Historie verbindlich; für Leser klar als Kontext/Archiv einordnen oder nach `Documentation/Archive/` verschieben (siehe Root-[`Documentation/README.md`](../README.md)).
+
 ## Dokumentationsstruktur (8 Hauptbereiche)
 
 1. **Übergeordnete Projektdokumentation (Stakeholder/Management)**
@@ -32,6 +34,8 @@ Wenn Dokumente und Code/Configs widersprechen, gilt:
 3. **Technische Spezifikation (Architektur/Backend/API/Datenmodell/Security)**
    Siehe [`03_TECHNISCHE_SPEZIFIKATION.md`](03_TECHNISCHE_SPEZIFIKATION.md)
    - Belege, Rechnungen, Emittent/Handelsplatz: Abschnitt 6 in 03
+   - Onboarding (Cloud Functions + Joi-Validierung): Abschnitt 3.2 „User/FAQ“ und 3.3 in 03; ADR: [`../ADR-002-Onboarding-Codable-DTO.md`](../ADR-002-Onboarding-Codable-DTO.md)
+   - **Company / KYB (Firmen-Onboarding, implementiert):** [`../COMPANY_KYB_ONBOARDING.md`](../COMPANY_KYB_ONBOARDING.md), ADR: [`../ADR-003-Company-KYB-Onboarding.md`](../ADR-003-Company-KYB-Onboarding.md)
 4. **Entwicklernähere Dokumentation (Setup/Guides/Build & Deployment)**
    Siehe [`04_DEVELOPER_GUIDE.md`](04_DEVELOPER_GUIDE.md)
 5. **Test- und Qualitätsdokumentation (QA/Dev)**
@@ -39,6 +43,7 @@ Wenn Dokumente und Code/Configs widersprechen, gilt:
 6. **Betriebs- und Prozessdokumentation (Ops/SRE/Release Mgmt)**
    Siehe [`06_BETRIEB_PROZESSE.md`](06_BETRIEB_PROZESSE.md)
    - Ubuntu Backend Runbook: [`06A_BACKEND_UBUNTU_IOBOX_RUNBOOK.md`](06A_BACKEND_UBUNTU_IOBOX_RUNBOOK.md)
+   - Deployment / rsync (kein `--delete` auf Server-Backend): [`../DEPLOYMENT_RSYNC_SICHERHEIT.md`](../DEPLOYMENT_RSYNC_SICHERHEIT.md)
    - Enthält: Hardening-Stufenplan (Ports/Firewall/OS-Services)
    - CSR Support Workflow & Aufgabenverteilung: [`06B_CSR_SUPPORT_WORKFLOW.md`](06B_CSR_SUPPORT_WORKFLOW.md)
 7. **User-Dokumentation (Endnutzer/Admins)**
@@ -53,9 +58,25 @@ Wenn Dokumente und Code/Configs widersprechen, gilt:
    - Firewall-Setup: [`09A_SERVER_FIREWALL_SETUP.md`](09A_SERVER_FIREWALL_SETUP.md)
 10. **Admin-Web-Portal (Browser-Zugang für App-Admins)**
     Siehe [`10_ADMIN_PORTAL_REQUIREMENTS.md`](10_ADMIN_PORTAL_REQUIREMENTS.md)
+    - **Stand 2026-04:** Hilfe & Anleitung: **FAQ-Import (Restore)** mit Dry-Run, **Development Maintenance** (`devResetFAQsBaseline`) und ENV `ALLOW_FAQ_HARD_DELETE*` (siehe [`06_BETRIEB_PROZESSE.md`](06_BETRIEB_PROZESSE.md), Runbook § 8.4)
+    - **Stand 2026-03:** CSR-Web **KYB-Status** (Firmen, Leserecht), Admin-Navigation **KYB-Status**, Vitest-Helfer, ESLint 9 + CI-Job `admin-portal`
+    - Server-driven **Hilfe & Anleitung** (FAQs): technischer Tiefgang, Cloud-Code-Deployment, Paging → [`../HELP_N_INSTRUCTIONS_SERVER_DRIVEN.md`](../HELP_N_INSTRUCTIONS_SERVER_DRIVEN.md)
     - Anforderungen pro Rolle
     - Screen-Übersicht
     - Technologie-Empfehlung
+11. **App Ledger – Handbuch für Buchhalter**
+    Siehe [`11_APP_LEDGER_BUCHHALTER_MANUAL.md`](11_APP_LEDGER_BUCHHALTER_MANUAL.md)
+    - Kontenrahmen, Buchungslogik, Bank Clearing ↔ Erlös ↔ USt
+    - Nutzung Admin-Portal (Filter, Export), Prüfungen, Glossar
+    - **Reservierte Investments / Escrow (Zielbild, technisch Architektur):** [`../INVESTMENT_ESCROW_LEDGER_SKETCH.md`](../INVESTMENT_ESCROW_LEDGER_SKETCH.md)
+12. **Produktmerkmale für KI & FAQ**
+    Siehe [`12_PRODUKT_MERKMALE_KI_FAQ.md`](12_PRODUKT_MERKMALE_KI_FAQ.md)
+    - Merkmale mit hohem KI-Verständnis, FAQ-taugliche Themen, einheitliche Begriffe
+    - **Abschnitt 6:** AI-Einordnung (Positionierung für KI-Suche) – EN/DE Einzeiler für Metadaten, App-Store, RAG
+    - **Abschnitt 7:** Landing-Page & App-Store-Optimierung für KI-Suche (sichtbarer Text, Accessibility, FAQ, Store-Texte)
+13. **Portfolio-Begriff ersetzt**
+    Siehe [`13_PORTFOLIO_BEGRIFF_ERSETZUNG.md`](13_PORTFOLIO_BEGRIFF_ERSETZUNG.md)
+    - Ersetzungsmatrix, empfohlene Begriffe (Investments/Depot), betroffene Stellen
 
 ## Schnelleinstieg nach Zielgruppe
 
@@ -64,5 +85,6 @@ Wenn Dokumente und Code/Configs widersprechen, gilt:
 - **Entwicklung (iOS/Backend)**: `03_TECHNISCHE_SPEZIFIKATION.md` + `04_DEVELOPER_GUIDE.md`.
 - **QA**: `05_TEST_QUALITAET.md` → Teststrategie, Szenarien, Acceptance-Criteria-Checklisten.
 - **Betrieb/Ops**: `06_BETRIEB_PROZESSE.md` → Runbook, Backup/Restore, Monitoring, Release/Rollback.
-- **Support/CSR**: `02_REQUIREMENTS.md` (Support-Prozesse) + `07_USER_GUIDE.md` (User-Fragen/FAQ).
+- **Support/CSR**: `02_REQUIREMENTS.md` (Support-Prozesse) + `07_USER_GUIDE.md` (User-Fragen/FAQ) + `12_PRODUKT_MERKMALE_KI_FAQ.md` (FAQ-taugliche Merkmale/Begriffe).
+- **Buchhaltung/Controlling**: `11_APP_LEDGER_BUCHHALTER_MANUAL.md` → App Ledger, Konten, Abläufe, Admin-Portal-Nutzung.
 

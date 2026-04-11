@@ -1,12 +1,14 @@
 ---
 title: "FIN1 – CSR Workflow & Aufgabenverteilung (Support Runbook)"
 audience: ["Customer Support (CSR)", "QA", "Produkt", "Compliance", "Betrieb", "Entwicklung"]
-lastUpdated: "2026-02-05"
+lastUpdated: "2026-03-28"
 ---
 
 ## Zweck
 
 Dieses Dokument beschreibt den **konkret implementierten** Support-Workflow in FIN1 (iOS + Backend) und die **Aufgabenverteilung** zwischen CSR-Rollen (L1/L2/Fraud/Compliance/Tech/Teamlead).
+
+**Web-CSR (Browser):** Rollen mit Parse-Rolle `customer_service` nutzen das **CSR-Web-Panel** im Repository unter `admin-portal/` (Routen z. B. `/admin/csr/`, Login `/admin/csr/login`). Neben Tickets, Kunden und **KYC-Status** (`/csr/kyc`) gibt es **KYB-Status** für Firmenkonten (`/csr/kyb`): Lesen/Liste/Detail über Cloud Functions `getCompanyKybSubmissions` / `getCompanyKybSubmissionDetail`; **Prüfen/Entscheiden/Zurücksetzen** bleiben Rollen mit `reviewCompanyKyb` / `resetCompanyKyb` vorbehalten (siehe `backend/parse-server/cloud/utils/permissions/constants.js`). Unter **„Meine Berechtigungen“** werden Kategorien und Einträge alphabetisch (de) angezeigt.
 
 **Source of Truth** (Code):
 - iOS CSR Portal: `FIN1/Features/CustomerSupport/**`

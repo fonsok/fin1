@@ -16,8 +16,8 @@ FIN1 ist eine Investment-/Trading-Plattform, die **Investoren** mit **Tradern** 
 
 ### Zielgruppen
 
-- **Investoren**: investieren in Trader, verfolgen Portfolio/Performance, erhalten Dokumente/Reports.
-- **Trader**: verwalten Pool, platzieren Orders, überwachen Trades/Depot/Performance.
+- **Investoren**: investieren in Trader, verfolgen Investments/Performance, erhalten Dokumente/Reports.
+- **Trader**: platzieren Orders, überwachen Trades/Depot/Performance.
 - **Customer Support (CSR)**: bearbeitet Tickets, Zugriff auf Kundenprofile (auditpflichtig), SLA/Analytics.
 - **Admin/Compliance**: Konfiguration, Freigaben (4-Augen), Reporting, Compliance Events, Legal Docs.
 
@@ -26,7 +26,7 @@ FIN1 ist eine Investment-/Trading-Plattform, die **Investoren** mit **Tradern** 
 - **Onboarding/KYC**: Mehrstufige Registrierung inkl. Risiko-/Erfahrungsabfragen.
 - **Investor Journey**: Trader finden → investieren → Status/Profit/Reports verfolgen.
 - **Trader Journey**: Orders platzieren → Trades ausführen → Profitverteilung → Dokumente/Invoices.
-- **Wallet/Payments**: Ein-/Auszahlungen, Transaktionshistorie, Compliance bei großen Beträgen.
+- **Konto**: Kontostand, Ein-/Auszahlungen am normalen Konto, Transaktionshistorie, Compliance bei großen Beträgen.
 - **Support**: Tickets, SLA-Überwachung, Surveys, Knowledge Base/FAQ.
 - **Legal**: server-driven AGB/Datenschutz/Impressum inkl. Audit Trail (Delivery + Consent).
 
@@ -103,7 +103,7 @@ flowchart LR
 ### Zentrale Designentscheidungen (aus Code/Rules ableitbar)
 
 - **iOS**: MVVM + Service Layer + DI via `AppServices` und `Environment(\.appServices)` (Composition Root: `FIN1/FIN1App.swift`).
-- **Backend**: Parse Server als BaaS-ähnliche Basis + **Cloud Functions/Triggers** für Businesslogik (z.B. Investment-/Order-/Wallet-Workflows).
+- **Backend**: Parse Server als BaaS-ähnliche Basis + **Cloud Functions/Triggers** für Businesslogik (z.B. Investment-/Order-Workflows).
 - **Compliance**: Pre-trade Checks und Audit Logging sind **Pflicht** (siehe `.cursor/rules/compliance.md`).
 - **Legal**: Terms/Privacy/Imprint server-driven, auditierbar, append-only (siehe `backend/parse-server/cloud/functions/legal.js` + `triggers/legal.js`).
 

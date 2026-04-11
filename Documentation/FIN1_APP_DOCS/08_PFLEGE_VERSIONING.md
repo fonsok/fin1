@@ -72,7 +72,7 @@ Empfehlung:
   - “Investment” (Investor → Trader Pool)
   - “Order” (Order Placement)
   - “Trade” (Position/Trade Lifecycle)
-  - “WalletTransaction” (Buchung)
+  - “Kontobuchung” (Buchung)
 - “Legal Document” (AGB/Datenschutz/Impressum) – Versionen können im Admin-Portal unter **„AGB & Rechtstexte“** angelegt, geklont und als aktiv gesetzt werden (append-only; siehe `LEGAL_DOCS_AUDIT_TRAIL.md`).
   - **Versionskonvention:** Semantische Version `MAJOR.MINOR.PATCH` (z. B. `1.0.3`). Beim Klonen schlägt das Admin-Portal automatisch die nächste Patch-Version vor (z. B. `1.0.4`). Optionale Suffixe wie `-legal-snippets` sind erlaubt, aber technische Marker wie `-clone` oder mehrfach wiederholte Suffixe (`-snippets-snippets`) sind zu vermeiden.
 - Fachjargon nur wo nötig; ansonsten erklären.

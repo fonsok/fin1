@@ -1,7 +1,7 @@
 ---
 title: "FIN1 – Test- und Qualitätsdokumentation"
 audience: ["QA", "Entwicklung", "Compliance"]
-lastUpdated: "2026-02-01"
+lastUpdated: "2026-03-28"
 ---
 
 ## Zweck
@@ -12,6 +12,7 @@ Dieses Dokument definiert Teststrategie, Testarten, Kern-Szenarien und Qualität
 
 ### Testarten
 
+- **Unit / Component Tests (Admin-Web-Portal, React)**: **Vitest** + **React Testing Library** im Verzeichnis `admin-portal/`. Gemeinsamer **`render`** in `admin-portal/src/test/test-utils.tsx` umschließt **`MemoryRouter`** und **`ThemeProvider`**, damit Komponenten mit Routing/Theme stabil getestet werden. Ausführung: `npm run test:run` (in `admin-portal/`). In **CI** Bestandteil des GitHub-Actions-Jobs `admin-portal` (vor dem Production-Build).
 - **Unit Tests (iOS)**: ViewModels/Services/Repositories, deterministisch, schnell.
 - **UI Tests (iOS)**: kritische User Flows (Login/Onboarding/Invest/Order).
 - **API/Contract Tests (Backend)**: Cloud Functions/Trigger-Verhalten gegen Schema/Contracts (derzeit als Empfehlung; kann später automatisiert werden).
@@ -25,7 +26,7 @@ Dieses Dokument definiert Teststrategie, Testarten, Kern-Szenarien und Qualität
 
 ### Coverage-Ziele (Leitplanke)
 
-- **Kritische Pfade** (Auth, Investment, Order, Wallet, Legal/Audit): ≥ 80% (realistisch, risikobasiert)
+- **Kritische Pfade** (Auth, Investment, Order, Legal/Audit): ≥ 80% (realistisch, risikobasiert)
 - Rest: nach Aufwand/ROI
 
 ## 2) Testfälle / Szenarien (Feature-orientiert)
@@ -53,14 +54,14 @@ Dieses Dokument definiert Teststrategie, Testarten, Kern-Szenarien und Qualität
   - Schritte: setze Investment `active → reserved` (direkt, z.B. via Dashboard)
   - Erwartet: Trigger blockt Transition (invalid transition)
 
-### C) Wallet
+### C) Konto (Kontostand, Compliance)
 
 - **TC-C1 Negative Balance blocken**
-  - Schritte: erstelle Debit Tx ohne ausreichende Credits
-  - Erwartet: Trigger blockt mit `OPERATION_FORBIDDEN`
+  - Schritte: Buchung ohne ausreichendes Guthaben
+  - Erwartet: serverseitig blockiert (keine negative Balance)
 
 - **TC-C2 Large Transaction Compliance**
-  - Schritte: markiere deposit/withdrawal ≥ 10k als completed
+  - Schritte: Ein-/Auszahlung ≥ 10k als completed
   - Erwartet: ComplianceEvent erstellt; ab 15k requiresReview=true
 
 ### D) Trading
@@ -92,6 +93,25 @@ Dieses Dokument definiert Teststrategie, Testarten, Kern-Szenarien und Qualität
 - **TC-F2 SLA Targets by priority**
   - Schritte: Ticket priority=`urgent`
   - Erwartet: firstResponseTarget ~ +1h, resolutionTarget ~ +4h
+
+### G) Admin Reports – App Ledger
+
+- **TC-G1 Transaktionstyp-Filter wirkt auf Buchungsliste**
+  - Voraussetzungen: App Ledger enthält Buchungen mit unterschiedlichen Typen
+  - Schritte: `Transaktionstyp` auf z. B. `Provision` oder `Fremdkosten` setzen
+  - Erwartet: In Spalte `Typ` erscheinen nur Buchungen des gewählten Typs
+
+- **TC-G2 Zeitraum-Filter (Preset)**
+  - Schritte: `Zeitraum` auf `Aktueller Monat`, danach auf `Letzter Monat` setzen
+  - Erwartet: Ergebnisliste und Zähler `Buchungen (Z)` passen jeweils zum gewählten Zeitraum
+
+- **TC-G3 Benutzerdefiniert Von/Bis**
+  - Schritte: `Zeitraum = Benutzerdefiniert`, `Von`/`Bis` setzen
+  - Erwartet: Nur Buchungen innerhalb des Datumsintervalls werden angezeigt
+
+- **TC-G4 Filter + Pagination kombiniert**
+  - Schritte: Filter setzen, dann Seitenumfang (`50/100/250/500`) ändern und blättern
+  - Erwartet: Navigation und `Zeige X-Y von Z Buchungen` bleiben konsistent mit aktivem Filter
 
 ## 3) Teststandards (iOS, verbindlich)
 

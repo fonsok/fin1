@@ -51,17 +51,9 @@ Diese Hilfe ist **aufgabenorientiert** (“Wie mache ich X?”). Sie ist so gesc
 - Öffne “Trades”.
 - “Offen” zeigt active/pending/partial, “Historie” zeigt abgeschlossene Trades (paginiert).
 
-## 3) Wallet – Ein- und Auszahlungen
+## 3) Konto – Kontostand und Auszahlungen
 
-### Wie zahle ich Geld aus?
-
-**Schritte**
-- Wähle “Auszahlen”.
-- Betrag eingeben (min. €10) und ggf. IBAN angeben.
-- Bestätigen.
-
-**Hinweis**
-- Auszahlungen können Compliance-Prüfungen auslösen (z.B. große Beträge).
+Der Nutzer hat ein **normales Konto** (kein separates Wallet). Kontostand wird in der App angezeigt; Auszahlungen können über das Konto angefragt werden (min. €10, IBAN). Große Beträge können Compliance-Prüfungen auslösen.
 
 ## 4) Dokumente & Reports
 
@@ -102,4 +94,23 @@ Diese Hilfe ist **aufgabenorientiert** (“Wie mache ich X?”). Sie ist so gesc
 - **4-Augen**: Freigaben dürfen nicht selbst genehmigt werden.
 - **SLA**: Tickets priorisieren; Urgent/High haben strengere Targets.
 - **Detaillierter CSR Workflow**: Siehe `06B_CSR_SUPPORT_WORKFLOW.md` (Rollenmodell, RACI, SLA, Eskalation, 4-Augen).
+
+### App Ledger (Admin) – Buchungen filtern und paginieren
+
+**Zweck**
+- Buchungen im Admin-Portal gezielt analysieren und für Prüfungen eingrenzen.
+
+**Verfügbare Filter**
+- `Konto` (z. B. alle Konten oder einzelnes Sachkonto)
+- `User-ID` (Teiltreffer)
+- `Transaktionstyp` (z. B. Plattformgebühr, Provision, Fremdkosten)
+- `Zeitraum` (Alle, aktueller Monat, letzter Monat, letzte 30 Tage, aktuelles Jahr, benutzerdefiniert Von/Bis)
+
+**Pagination**
+- Seitenumfang: `50`, `100`, `250`, `500` Einträge pro Seite.
+- Navigation: erste/letzte Seite sowie vor/zurück.
+- Die Anzeige `Zeige X-Y von Z Buchungen` zeigt den aktuellen Ausschnitt.
+
+**Hinweis**
+- Bei Filterwechsel wird die Ansicht auf Seite 1 zurückgesetzt, damit Ergebnisse konsistent sichtbar bleiben.
 
