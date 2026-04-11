@@ -151,7 +151,7 @@ extension ConfigurationService {
             throw ConfigurationError.unauthorizedAccess
         }
         guard validateInitialAccountBalance(value) else {
-            throw ConfigurationError.invalidValue("Initial account balance must be between 0.01 and 1000000.0")
+            throw ConfigurationError.invalidValue("Initial account balance must be between 0 and 1000000 EUR")
         }
         if let client = getParseAPIClient() {
             let response = try await requestConfigurationChangeViaBackend(
@@ -381,30 +381,30 @@ extension ConfigurationService {
         }
     }
 
-    /// Update platform service charge rate.
+    /// Update app service charge rate.
     /// IMPORTANT: This is a critical parameter and requires 4-eyes approval via backend.
-    func updatePlatformServiceChargeRate(_ rate: Double) async throws {
+    func updateAppServiceChargeRate(_ rate: Double) async throws {
         // Check admin role dynamically (not cached) to ensure current user has permission
         guard userService.currentUser?.role == .admin else {
             throw ConfigurationError.unauthorizedAccess
         }
 
-        guard validatePlatformServiceChargeRate(rate) else {
-            throw ConfigurationError.invalidValue("Platform service charge rate must be between 0.0 (0%) and 0.1 (10%)")
+        guard validateAppServiceChargeRate(rate) else {
+            throw ConfigurationError.invalidValue("App service charge rate must be between 0.0 (0%) and 0.1 (10%)")
         }
 
         // Try to request change via backend (4-eyes for critical parameters)
         if let client = getParseAPIClient() {
             let response = try await requestConfigurationChangeViaBackend(
                 client: client,
-                parameterName: "platformServiceChargeRate",
+                parameterName: "appServiceChargeRate",
                 newValue: rate,
                 reason: "Admin configuration update"
             )
 
             if response.requiresApproval {
                 // 4-eyes approval required - don't apply locally yet
-                print("⏳ Platform service charge rate change requires 4-eyes approval. Request ID: \(response.fourEyesRequestId ?? "unknown")")
+                print("⏳ App service charge rate change requires 4-eyes approval. Request ID: \(response.fourEyesRequestId ?? "unknown")")
                 throw ConfigurationError.fourEyesApprovalRequired(requestId: response.fourEyesRequestId ?? "unknown")
             }
         }
@@ -418,12 +418,12 @@ extension ConfigurationService {
                     return
                 }
 
-                self.configuration.platformServiceChargeRate = rate
+                self.configuration.appServiceChargeRate = rate
                 self.configuration.lastUpdated = Date()
                 self.configuration.updatedBy = self.userService.currentUser?.id ?? "unknown"
 
                 Task { @MainActor in
-                    self.platformServiceChargeRate = rate
+                    self.appServiceChargeRate = rate
                 }
 
                 self.saveConfiguration()

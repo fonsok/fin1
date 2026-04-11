@@ -5,8 +5,7 @@ import Combine
 // MARK: - Configuration Service Implementation
 /// Manages application configuration settings with admin controls
 /// Note: Safe to use with DispatchQueue.async closures due to [weak self] capture pattern
-/// @unchecked Sendable: Safe because we use [weak self] in all async closures and proper queue synchronization
-final class ConfigurationService: ConfigurationServiceProtocol, ServiceLifecycle, @unchecked Sendable {
+final class ConfigurationService: ConfigurationServiceProtocol, ServiceLifecycle {
 
     // MARK: - Change Publisher
     lazy var configurationChanged: AnyPublisher<Void, Never> = {
@@ -15,11 +14,11 @@ final class ConfigurationService: ConfigurationServiceProtocol, ServiceLifecycle
 
     // MARK: - Published Properties
     @Published var minimumCashReserve: Double = 20.0
-    @Published var initialAccountBalance: Double = 1.0
+    @Published var initialAccountBalance: Double = 0.0
     @Published var poolBalanceDistributionStrategy: PoolBalanceDistributionStrategy = .immediateDistribution // internal(set) for extension access
     @Published var poolBalanceDistributionThreshold: Double = 5.0 // internal(set) for extension access
     @Published var traderCommissionRate: Double = 0.10 // internal(set) for extension access
-    @Published var platformServiceChargeRate: Double = 0.02 // internal(set) for extension access
+    @Published var appServiceChargeRate: Double = 0.02 // internal(set) for extension access
     @Published var showCommissionBreakdownInCreditNote: Bool = true // internal(set) for extension access
     @Published var maximumRiskExposurePercent: Double = 2.0 // internal(set) for extension access
     @Published var walletFeatureEnabled: Bool = false // internal(set) for extension access
@@ -32,15 +31,27 @@ final class ConfigurationService: ConfigurationServiceProtocol, ServiceLifecycle
         // 1) Info.plist override (works on iOS devices)
         // 2) Environment variable (useful for local dev/tests)
         // 3) FIN1 server default (behind nginx on port 80)
+        var resolved: String?
+
         if let value = Bundle.main.object(forInfoDictionaryKey: "FIN1ParseServerURL") as? String,
            !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            return value
+            resolved = value
         }
+
         if let value = ProcessInfo.processInfo.environment["PARSE_SERVER_URL"],
            !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            return value
+            resolved = value
         }
-        return "http://192.168.178.24/parse"
+
+        if resolved == nil {
+            resolved = "https://192.168.178.20/parse"
+        }
+
+        // Simulator: use `FIN1_PARSE_SERVER_URL` from xcconfig (direct LAN HTTP recommended in FIN1-Dev).
+        // Optional SSH tunnel: set launch env `PARSE_SERVER_URL=https://localhost:8443/parse` when using
+        // `ssh -L 8443:127.0.0.1:443 user@host`.
+
+        return resolved
     }
 
     var parseApplicationId: String? {
@@ -79,13 +90,27 @@ final class ConfigurationService: ConfigurationServiceProtocol, ServiceLifecycle
         self.userService = userService
         loadConfiguration()
         setupUserRoleObservation()
+        setupRemoteConfigRefreshOnSignIn()
     }
 
     /// Injects Parse API client for fetching/saving config from Parse (getConfig / updateConfig).
     func configureParseAPIClient(_ client: (any ParseAPIClientProtocol)?) {
-        queue.async(flags: .barrier) { [weak self] in
+        queue.sync(flags: .barrier) { [weak self] in
             self?.parseAPIClient = client
         }
+        Task { [weak self] in
+            await self?.fetchRemoteDisplayConfig()
+        }
+    }
+
+    /// After sign-in, financial parameters must match the authenticated session / server (not cold-start defaults).
+    private func setupRemoteConfigRefreshOnSignIn() {
+        NotificationCenter.default.publisher(for: .userDidSignIn)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                Task { await self?.fetchRemoteDisplayConfig() }
+            }
+            .store(in: &cancellables)
     }
 
     // MARK: - ServiceLifecycle
@@ -116,7 +141,7 @@ final class ConfigurationService: ConfigurationServiceProtocol, ServiceLifecycle
     }
 
     func validateInitialAccountBalance(_ value: Double) -> Bool {
-        return value >= 0.01 && value <= 1000000.0
+        value >= 0.0 && value <= 1_000_000.0
     }
 
     func validatePoolBalanceDistributionThreshold(_ value: Double) -> Bool {
@@ -127,7 +152,7 @@ final class ConfigurationService: ConfigurationServiceProtocol, ServiceLifecycle
         return rate >= 0.0 && rate <= 1.0 // 0% to 100%
     }
 
-    func validatePlatformServiceChargeRate(_ rate: Double) -> Bool {
+    func validateAppServiceChargeRate(_ rate: Double) -> Bool {
         return rate >= 0.0 && rate <= 0.1 // 0% to 10% (reasonable limit for service charges)
     }
 
@@ -151,9 +176,9 @@ final class ConfigurationService: ConfigurationServiceProtocol, ServiceLifecycle
                 if self.configuration.traderCommissionRate == nil {
                     self.configuration.traderCommissionRate = CalculationConstants.FeeRates.traderCommissionRate
                 }
-                // Backward compatibility: if platformServiceChargeRate is nil (missing from old config), set it to default
-                if self.configuration.platformServiceChargeRate == nil {
-                    self.configuration.platformServiceChargeRate = CalculationConstants.ServiceCharges.platformServiceChargeRate
+                // Backward compatibility: if appServiceChargeRate is nil (missing from old config), set it to default
+                if self.configuration.appServiceChargeRate == nil {
+                    self.configuration.appServiceChargeRate = CalculationConstants.ServiceCharges.appServiceChargeRate
                 }
                 // Backward compatibility: if slaMonitoringInterval is 0 (missing from old config), set it to default
                 if self.configuration.slaMonitoringInterval == 0 {
@@ -172,7 +197,7 @@ final class ConfigurationService: ConfigurationServiceProtocol, ServiceLifecycle
                     self.configuration.walletFeatureEnabled = false
                 }
                 // Save updated config with new fields if needed
-                if self.configuration.traderCommissionRate == nil || self.configuration.platformServiceChargeRate == nil || self.configuration.slaMonitoringInterval == 0 || self.configuration.showCommissionBreakdownInCreditNote == nil || self.configuration.maximumRiskExposurePercent == nil || self.configuration.walletFeatureEnabled == nil {
+                if self.configuration.traderCommissionRate == nil || self.configuration.appServiceChargeRate == nil || self.configuration.slaMonitoringInterval == 0 || self.configuration.showCommissionBreakdownInCreditNote == nil || self.configuration.maximumRiskExposurePercent == nil || self.configuration.walletFeatureEnabled == nil {
                     self.saveConfiguration()
                 }
             } else {
@@ -202,7 +227,7 @@ final class ConfigurationService: ConfigurationServiceProtocol, ServiceLifecycle
         poolBalanceDistributionStrategy = configuration.poolBalanceDistributionStrategy
         poolBalanceDistributionThreshold = configuration.poolBalanceDistributionThreshold
         traderCommissionRate = configuration.effectiveTraderCommissionRate
-        platformServiceChargeRate = configuration.effectivePlatformServiceChargeRate
+        appServiceChargeRate = configuration.effectiveAppServiceChargeRate
         showCommissionBreakdownInCreditNote = configuration.showCommissionBreakdownInCreditNote ?? true
         maximumRiskExposurePercent = configuration.effectiveMaximumRiskExposurePercent
         walletFeatureEnabled = configuration.effectiveWalletFeatureEnabled
@@ -237,16 +262,17 @@ final class ConfigurationService: ConfigurationServiceProtocol, ServiceLifecycle
                 var changed = false
 
                 if let f = response.financial {
-                    if let v = f.initialAccountBalance {
-                        self.configuration.initialAccountBalance = v
+                    let initial = f.initialAccountBalance ?? 0.0
+                    if self.configuration.initialAccountBalance != initial {
+                        self.configuration.initialAccountBalance = initial
                         changed = true
                     }
                     if let v = f.traderCommissionRate {
                         self.configuration.traderCommissionRate = v
                         changed = true
                     }
-                    if let v = f.platformServiceChargeRate {
-                        self.configuration.platformServiceChargeRate = v
+                    if let v = f.appServiceChargeRate ?? f.platformServiceChargeRate {
+                        self.configuration.appServiceChargeRate = v
                         changed = true
                     }
                     if let v = f.minimumCashReserve {
@@ -296,6 +322,7 @@ struct GetConfigResponse: Decodable {
         let initialAccountBalance: Double?
         let traderCommissionRate: Double?
         let platformServiceChargeRate: Double?
+        let appServiceChargeRate: Double?
         let minimumCashReserve: Double?
     }
     struct DisplaySection: Decodable {
@@ -350,7 +377,7 @@ struct PendingConfigurationChangesResponse: Decodable {
 /// Parameters that require 4-eyes approval for changes
 enum CriticalConfigurationParameter: String, CaseIterable {
     case traderCommissionRate
-    case platformServiceChargeRate
+    case appServiceChargeRate
     case initialAccountBalance
     case orderFeeRate
     case orderFeeMin
@@ -359,7 +386,7 @@ enum CriticalConfigurationParameter: String, CaseIterable {
     var displayName: String {
         switch self {
         case .traderCommissionRate: return "Trader Commission Rate"
-        case .platformServiceChargeRate: return "Platform Service Charge Rate"
+        case .appServiceChargeRate: return "App Service Charge Rate"
         case .initialAccountBalance: return "Initial Account Balance"
         case .orderFeeRate: return "Order Fee Rate"
         case .orderFeeMin: return "Order Fee Minimum"
