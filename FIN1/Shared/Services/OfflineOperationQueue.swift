@@ -12,14 +12,14 @@ final class OfflineOperationQueue: ObservableObject {
     @Published private(set) var failedOperations: [QueuedOperation] = []
     @Published private(set) var isProcessing = false
 
-    enum OperationType: String, Codable {
+    enum OperationType: String, Codable, Sendable {
         case create
         case update
         case delete
         case callFunction
     }
 
-    struct QueuedOperation: Codable, Identifiable {
+    struct QueuedOperation: Codable, Identifiable, Sendable {
         let id: String
         let type: OperationType
         let className: String?
@@ -56,6 +56,7 @@ final class OfflineOperationQueue: ObservableObject {
     private let persistenceKey = "offline_operations_queue"
     private let maxRetries = 5
     private var parseAPIClient: (any ParseAPIClientProtocol)?
+    private var parseServerConfig: ParseServerConfig?
 
     private init() {
         loadQueue()
@@ -64,6 +65,7 @@ final class OfflineOperationQueue: ObservableObject {
     /// Configure the Parse API client for processing operations
     func configure(parseAPIClient: any ParseAPIClientProtocol) {
         self.parseAPIClient = parseAPIClient
+        self.parseServerConfig = ParseServerConfig(from: parseAPIClient)
     }
 
     // MARK: - Queue Management
@@ -116,6 +118,12 @@ final class OfflineOperationQueue: ObservableObject {
             #endif
             return
         }
+        guard let config = parseServerConfig else {
+            #if DEBUG
+            print("⚠️ OfflineOperationQueue: Missing Parse server config, skipping queue processing")
+            #endif
+            return
+        }
 
         isProcessing = true
 
@@ -124,9 +132,24 @@ final class OfflineOperationQueue: ObservableObject {
         print("🔄 OfflineOperationQueue: Processing \(operations.count) operations")
         #endif
 
+        // Snapshot the current session token for the processing run.
+        // This avoids moving a non-Sendable API client across concurrency boundaries.
+        let sessionToken: String? = {
+            if let concrete = apiClient as? ParseAPIClient {
+                return concrete.sessionToken
+            }
+            return nil
+        }()
+
         for operation in operations {
             do {
-                try await executeOperation(operation, apiClient: apiClient)
+                // Execute off-main without capturing the non-Sendable apiClient.
+                try await OfflineOperationQueue.executeOperationOffMain(
+                    operation,
+                    baseURL: config.baseURL,
+                    applicationId: config.applicationId,
+                    sessionToken: sessionToken
+                )
                 removeOperation(operation.id)
                 #if DEBUG
                 print("✅ OfflineOperationQueue: Successfully processed operation \(operation.id)")
@@ -157,8 +180,24 @@ final class OfflineOperationQueue: ObservableObject {
     }
 
     // MARK: - Operation Execution
+    fileprivate static func executeOperationOffMain(
+        _ operation: QueuedOperation,
+        baseURL: String,
+        applicationId: String,
+        sessionToken: String?
+    ) async throws {
+        try await Task.detached(priority: .utility) {
+            let client = ParseAPIClient(
+                baseURL: baseURL,
+                applicationId: applicationId,
+                sessionTokenProvider: sessionToken != nil ? { sessionToken } : nil,
+                offlineQueue: nil
+            )
+            try await Self.executeOperation(operation, apiClient: client)
+        }.value
+    }
 
-    private func executeOperation(_ operation: QueuedOperation, apiClient: any ParseAPIClientProtocol) async throws {
+    private static func executeOperation(_ operation: QueuedOperation, apiClient: any ParseAPIClientProtocol) async throws {
         switch operation.type {
         case .create:
             guard let className = operation.className else {
@@ -299,5 +338,16 @@ struct AnyCodable: Codable {
 
     var stringValue: String? {
         return value as? String
+    }
+}
+
+private struct ParseServerConfig: Sendable {
+    let baseURL: String
+    let applicationId: String
+
+    init?(from apiClient: any ParseAPIClientProtocol) {
+        guard let concrete = apiClient as? ParseAPIClient else { return nil }
+        self.baseURL = concrete.baseURL
+        self.applicationId = concrete.applicationId
     }
 }

@@ -41,7 +41,16 @@ final class BackendHealthMonitor: ObservableObject {
 
     /// Configure direct health check URL (bypasses CircuitBreaker)
     func configure(parseServerURL: String, applicationId: String) {
-        self.healthCheckURL = URL(string: "\(parseServerURL)/functions/health")
+        // Parse Server exposes a built-in GET health endpoint at `/health` (root).
+        // `parseServerURL` is commonly the `/parse` endpoint, e.g. `http://host:1338/parse`.
+        // So we derive the root host and hit `.../health` (not `.../parse/health`).
+        let trimmed: String
+        if parseServerURL.hasSuffix("/parse") {
+            trimmed = String(parseServerURL.dropLast("/parse".count))
+        } else {
+            trimmed = parseServerURL
+        }
+        self.healthCheckURL = URL(string: "\(trimmed)/health")
         self.applicationId = applicationId
     }
 
@@ -86,10 +95,9 @@ final class BackendHealthMonitor: ObservableObject {
 
         do {
             var request = URLRequest(url: url)
-            request.httpMethod = "POST"
-            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            // Built-in Parse health endpoint is typically a simple GET.
+            request.httpMethod = "GET"
             request.setValue(appId, forHTTPHeaderField: "X-Parse-Application-Id")
-            request.httpBody = try JSONSerialization.data(withJSONObject: [:], options: [])
             request.timeoutInterval = 10
 
             let (data, response) = try await session.data(for: request)
@@ -99,11 +107,10 @@ final class BackendHealthMonitor: ObservableObject {
                 throw NSError(domain: "HealthCheck", code: -1, userInfo: [NSLocalizedDescriptionKey: "HTTP error"])
             }
 
-            // Verify response contains valid health data
-            if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-               let result = json["result"] as? [String: Any],
-               let status = result["status"] as? String,
-               status == "healthy" {
+            // Direct /health usually returns a top-level payload like:
+            // { "status": "healthy", "timestamp": "...", "version": "..." }
+            if let decoded = try? JSONDecoder().decode(HealthResponse.self, from: data),
+               decoded.status == "healthy" || decoded.status == "ok" {
 
                 let duration = Date().timeIntervalSince(startTime)
 
@@ -128,9 +135,40 @@ final class BackendHealthMonitor: ObservableObject {
                 if let apiClient = parseAPIClient {
                     await apiClient.resetCircuitBreaker()
                 }
-            } else {
-                throw NSError(domain: "HealthCheck", code: -2, userInfo: [NSLocalizedDescriptionKey: "Unexpected response format"])
+                return
             }
+
+            // Backward compatible fallback: if the health response is wrapped as Parse cloud function style:
+            // { "result": { "status": "healthy" } }
+            if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let result = json["result"] as? [String: Any],
+               let status = result["status"] as? String,
+               status == "healthy" {
+                let duration = Date().timeIntervalSince(startTime)
+                await MainActor.run {
+                    isHealthy = true
+                    lastHealthCheck = Date()
+                    lastError = nil
+                    consecutiveFailures = 0
+
+                    responseTimes.append(duration)
+                    if responseTimes.count > maxResponseTimeHistory {
+                        responseTimes.removeFirst()
+                    }
+                    averageResponseTime = responseTimes.reduce(0, +) / Double(responseTimes.count)
+
+                    #if DEBUG
+                    print("✅ BackendHealthMonitor: Health check passed (\(String(format: "%.3f", duration))s)")
+                    #endif
+                }
+
+                if let apiClient = parseAPIClient {
+                    await apiClient.resetCircuitBreaker()
+                }
+                return
+            }
+
+            throw NSError(domain: "HealthCheck", code: -2, userInfo: [NSLocalizedDescriptionKey: "Unexpected response format"])
         } catch {
             let duration = Date().timeIntervalSince(startTime)
 

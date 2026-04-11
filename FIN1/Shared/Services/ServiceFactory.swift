@@ -57,7 +57,9 @@ final class ServiceFactory {
     }
 
     func createOrderStatusSimulationService(orderManagementService: OrderManagementService) -> OrderStatusSimulationService {
-        return OrderStatusSimulationService(orderManagementService: orderManagementService)
+        MainActor.assumeIsolated {
+            OrderStatusSimulationService(orderManagementService: orderManagementService)
+        }
     }
 
     func createTradingNotificationService(documentService: any DocumentServiceProtocol) -> TradingNotificationService {

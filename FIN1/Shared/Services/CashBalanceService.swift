@@ -9,6 +9,8 @@ final class CashBalanceService: CashBalanceServiceProtocol, ObservableObject {
     // MARK: - Properties
 
     @Published private(set) var currentBalance: Double
+    /// Last known admin-configured initial balance; used to sync `currentBalance` when it still matches that baseline.
+    private var baselineInitialFromConfig: Double
     private let configurationService: any ConfigurationServiceProtocol
     private let parseLiveQueryClient: (any ParseLiveQueryClientProtocol)?
     private let userService: (any UserServiceProtocol)?
@@ -26,7 +28,9 @@ final class CashBalanceService: CashBalanceServiceProtocol, ObservableObject {
         self.configurationService = configurationService
         self.parseLiveQueryClient = parseLiveQueryClient
         self.userService = userService
-        self.currentBalance = configurationService.initialAccountBalance
+        let initial = configurationService.initialAccountBalance
+        self.currentBalance = initial
+        self.baselineInitialFromConfig = initial
         setupConfigurationObservation()
         setupLiveQuerySubscription()
     }
@@ -35,7 +39,9 @@ final class CashBalanceService: CashBalanceServiceProtocol, ObservableObject {
 
     func start() async {
         // Initialize with starting balance
-        currentBalance = configurationService.initialAccountBalance
+        let initial = configurationService.initialAccountBalance
+        currentBalance = initial
+        baselineInitialFromConfig = initial
         print("💰 CashBalanceService started with balance: €\(formattedBalance)")
 
         // Subscribe to Live Query updates
@@ -52,7 +58,9 @@ final class CashBalanceService: CashBalanceServiceProtocol, ObservableObject {
     }
 
     func reset() async {
-        currentBalance = configurationService.initialAccountBalance
+        let initial = configurationService.initialAccountBalance
+        currentBalance = initial
+        baselineInitialFromConfig = initial
         print("💰 CashBalanceService reset to initial balance: €\(formattedBalance)")
     }
 
@@ -92,7 +100,9 @@ final class CashBalanceService: CashBalanceServiceProtocol, ObservableObject {
 
     func resetToInitialBalance() async {
         await MainActor.run {
-            currentBalance = configurationService.initialAccountBalance
+            let initial = configurationService.initialAccountBalance
+            currentBalance = initial
+            baselineInitialFromConfig = initial
         }
         print("💰 Cash balance reset to initial: €\(formattedBalance)")
     }
@@ -122,10 +132,15 @@ final class CashBalanceService: CashBalanceServiceProtocol, ObservableObject {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 guard let self else { return }
-                let serverValue = self.configurationService.initialAccountBalance
-                if self.currentBalance == 1.0 && serverValue != 1.0 {
-                    self.currentBalance = serverValue
-                    print("💰 CashBalanceService: balance synced to server value €\(serverValue.formatted(.currency(code: "EUR")))")
+                DispatchQueue.main.async { [weak self] in
+                    guard let self else { return }
+                    let serverValue = self.configurationService.initialAccountBalance
+                    guard serverValue != self.baselineInitialFromConfig else { return }
+                    if self.currentBalance == self.baselineInitialFromConfig {
+                        self.currentBalance = serverValue
+                        print("💰 CashBalanceService: balance synced to admin initial €\(serverValue.formatted(.currency(code: "EUR")))")
+                    }
+                    self.baselineInitialFromConfig = serverValue
                 }
             }
             .store(in: &cancellables)

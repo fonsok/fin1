@@ -9,6 +9,7 @@ enum LegalSnippetKey: String {
     case docTaxNoteServiceCharge = "doc_tax_note_service_charge"
     case orderLegalWarningBuy = "order_legal_warning_buy"
     case orderLegalWarningSell = "order_legal_warning_sell"
+    case transactionLimitWarningBuy = "transaction_limit_warning_buy"
     case dashboardRiskNote = "dashboard_risk_note"
     case riskClass7MaxLossWarning = "riskclass7_max_loss_warning"
     case riskClass7ExperiencedOnly = "riskclass7_experienced_only"

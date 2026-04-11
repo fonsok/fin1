@@ -6,6 +6,7 @@ import Combine
 /// Defines the contract for document operations and management
 protocol DocumentServiceProtocol: ObservableObject, ServiceLifecycle {
     var documents: [Document] { get }
+    var documentsPublisher: AnyPublisher<[Document], Never> { get }
     var isLoading: Bool { get }
     var errorMessage: String? { get }
     var showError: Bool { get }
@@ -53,6 +54,10 @@ final class DocumentService: DocumentServiceProtocol, ServiceLifecycle {
     init(documentAPIService: DocumentAPIServiceProtocol? = nil) {
         self.documentAPIService = documentAPIService
         loadMockDocuments()
+    }
+
+    var documentsPublisher: AnyPublisher<[Document], Never> {
+        $documents.eraseToAnyPublisher()
     }
 
     /// Configure the API service for backend synchronization

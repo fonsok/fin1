@@ -4,6 +4,8 @@ protocol FAQContentServiceProtocol {
     func fetchFAQsForHelpCenter(userRole: String?) async throws -> [FAQContentItem]
     func fetchFAQsForLanding() async throws -> [FAQContentItem]
     func fetchFAQCategories(location: String, userRole: String?) async throws -> [FAQCategoryContent]
+    /// Clears cached FAQ data for a specific location/role (or all if nil).
+    func clearCache(location: String?, userRole: String?) async
 }
 
 extension FAQContentServiceProtocol {
@@ -13,6 +15,10 @@ extension FAQContentServiceProtocol {
 
     func fetchFAQCategories(location: String) async throws -> [FAQCategoryContent] {
         try await fetchFAQCategories(location: location, userRole: nil)
+    }
+
+    func clearCache() async {
+        await clearCache(location: nil, userRole: nil)
     }
 }
 
@@ -162,7 +168,9 @@ final class FAQContentService: FAQContentServiceProtocol {
         var output = text
         let replacements: [String: String] = [
             "{{APP_NAME}}": AppBrand.appName,
-            "{{LEGAL_PLATFORM_NAME}}": LegalIdentity.platformName
+            "{{LEGAL_PLATFORM_NAME}}": LegalIdentity.platformName,
+            "{(APP_NAME)}": AppBrand.appName,
+            "{(LEGAL_PLATFORM_NAME)}": LegalIdentity.platformName
         ]
         for (placeholder, value) in replacements {
             output = output.replacingOccurrences(of: placeholder, with: value)
@@ -196,9 +204,18 @@ final class FAQContentService: FAQContentServiceProtocol {
         Date().timeIntervalSince(date) < cacheTTL
     }
 
-    private func fetchRawCategories(location: String, userRole: String? = nil) async throws -> [ParseFAQCategory] {
+    func clearCache(location: String? = nil, userRole: String? = nil) async {
+        let locations = location.map { [$0] } ?? ["landing", "help_center", "csr"]
+        for loc in locations {
+            userDefaults.removeObject(forKey: categoriesCacheKey(location: loc, userRole: userRole))
+            userDefaults.removeObject(forKey: faqsCacheKey(location: loc, userRole: userRole))
+        }
+    }
+
+    private func fetchRawCategories(location: String, userRole: String? = nil, forceRefresh: Bool = false) async throws -> [ParseFAQCategory] {
         let key = categoriesCacheKey(location: location, userRole: userRole)
-        if let data = userDefaults.data(forKey: key),
+        if !forceRefresh,
+           let data = userDefaults.data(forKey: key),
            let cached = try? JSONDecoder().decode(CachedCategories.self, from: data),
            isFresh(cached.cachedAt),
            !cached.categories.isEmpty {
@@ -222,9 +239,10 @@ final class FAQContentService: FAQContentServiceProtocol {
         return res.categories
     }
 
-    private func fetchRawFAQs(location: String, userRole: String? = nil) async throws -> [ParseFAQ] {
+    private func fetchRawFAQs(location: String, userRole: String? = nil, forceRefresh: Bool = false) async throws -> [ParseFAQ] {
         let key = faqsCacheKey(location: location, userRole: userRole)
-        if let data = userDefaults.data(forKey: key),
+        if !forceRefresh,
+           let data = userDefaults.data(forKey: key),
            let cached = try? JSONDecoder().decode(CachedFAQs.self, from: data),
            isFresh(cached.cachedAt),
            !cached.faqs.isEmpty {
@@ -249,6 +267,86 @@ final class FAQContentService: FAQContentServiceProtocol {
             userDefaults.set(data, forKey: key)
         }
         return res.faqs
+    }
+
+    // MARK: - Refresh helpers (bypass cache)
+
+    func fetchFAQCategoriesFresh(location: String, userRole: String? = nil) async throws -> [FAQCategoryContent] {
+        let res = try await fetchRawCategories(location: location, userRole: userRole, forceRefresh: true)
+        let ordered = res
+            .filter { ($0.isActive ?? true) }
+            .sorted { a, b in
+                let ao = a.sortOrder ?? Int.max
+                let bo = b.sortOrder ?? Int.max
+                if ao != bo { return ao < bo }
+                let at = (a.title ?? a.displayName ?? a.slug ?? "")
+                let bt = (b.title ?? b.displayName ?? b.slug ?? "")
+                return at < bt
+            }
+
+        return ordered.compactMap { c in
+            let slug = (c.slug ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            let title = (c.title ?? c.displayName ?? slug).trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !slug.isEmpty, !title.isEmpty else { return nil }
+            return FAQCategoryContent(
+                id: c.objectId,
+                slug: slug,
+                title: title,
+                icon: (c.icon ?? "square.grid.2x2.fill"),
+                sortOrder: c.sortOrder ?? Int.max
+            )
+        }
+    }
+
+    func fetchFAQsForLandingFresh() async throws -> [FAQContentItem] {
+        try await fetchFAQsFilteredByLocationFresh(location: "landing", userRole: nil)
+    }
+
+    func fetchFAQsForHelpCenterFresh(userRole: String? = nil) async throws -> [FAQContentItem] {
+        try await fetchFAQsFilteredByLocationFresh(location: "help_center", userRole: userRole)
+    }
+
+    private func fetchFAQsFilteredByLocationFresh(location: String, userRole: String? = nil) async throws -> [FAQContentItem] {
+        let categories = try await fetchRawCategories(location: location, userRole: userRole, forceRefresh: true)
+
+        var allowedCategoryIds: Set<String> = []
+        var categoryIdToSortOrder: [String: Int] = [:]
+        for cat in categories {
+            guard (cat.isActive ?? true) else { continue }
+            allowedCategoryIds.insert(cat.objectId)
+            categoryIdToSortOrder[cat.objectId] = cat.sortOrder ?? Int.max
+        }
+
+        let faqsRes = try await fetchRawFAQs(location: location, userRole: userRole, forceRefresh: true)
+
+        let itemsWithOrder: [(FAQContentItem, Int, Int)] = faqsRes.compactMap { faq in
+            guard (faq.isPublished ?? true), !(faq.isArchived ?? false) else { return nil }
+            guard let categoryId = faq.categoryId, allowedCategoryIds.contains(categoryId) else { return nil }
+
+            let id = (faq.faqId?.trimmingCharacters(in: .whitespacesAndNewlines)).flatMap { $0.isEmpty ? nil : $0 } ?? faq.objectId
+            let question = replacePlaceholders(in: faq.question ?? "")
+            let answer = replacePlaceholders(in: faq.answer ?? "")
+            if question.isEmpty || answer.isEmpty { return nil }
+
+            let item = FAQContentItem(
+                id: id,
+                question: question,
+                answer: answer,
+                categoryId: categoryId,
+                sortOrder: faq.sortOrder ?? Int.max
+            )
+            let categoryOrder = categoryIdToSortOrder[categoryId] ?? Int.max
+            let faqOrder = faq.sortOrder ?? Int.max
+            return (item, categoryOrder, faqOrder)
+        }
+
+        return itemsWithOrder
+            .sorted { a, b in
+                if a.1 != b.1 { return a.1 < b.1 }
+                if a.2 != b.2 { return a.2 < b.2 }
+                return a.0.question < b.0.question
+            }
+            .map(\.0)
     }
 }
 

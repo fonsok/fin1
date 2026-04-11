@@ -32,7 +32,7 @@ protocol PDFBackendServiceProtocol: Sendable {
 
 /// Service for generating PDFs via the backend (WeasyPrint)
 /// Professional DIN A4 documents following German business standards
-final class PDFBackendService: PDFBackendServiceProtocol, @unchecked Sendable {
+actor PDFBackendService: PDFBackendServiceProtocol {
 
     // MARK: - Properties
 
@@ -56,8 +56,8 @@ final class PDFBackendService: PDFBackendServiceProtocol, @unchecked Sendable {
                 // Use same server host as Parse Server (ConfigurationService default is 1338 per server port mapping)
                 let parseURL = Bundle.main.object(forInfoDictionaryKey: "FIN1ParseServerURL") as? String
                     ?? ProcessInfo.processInfo.environment["PARSE_SERVER_URL"]
-                    ?? "http://192.168.178.24/parse"
-                let serverHost = URL(string: parseURL)?.host ?? "192.168.178.24"
+                    ?? "http://192.168.178.20/parse"
+                let serverHost = URL(string: parseURL)?.host ?? "192.168.178.20"
 
                 // In production, route PDFs via nginx (PORT-CONFIGURATION: external 8086)
                 self.baseURL = URL(string: "http://\(serverHost):8086")!

@@ -17,6 +17,7 @@ final class ThemeManager: ObservableObject {
         case premium = "premium"
         case institutional = "institutional"
         case corporate = "corporate"
+        case finCorp = "fincorp"
         case demo = "demo"
 
         var displayName: String {
@@ -25,6 +26,7 @@ final class ThemeManager: ObservableObject {
             case .premium: return "Premium"
             case .institutional: return "Institutional"
             case .corporate: return "Corporate"
+            case .finCorp: return "FinCorp"
             case .demo: return "Demo"
             }
         }
@@ -35,6 +37,7 @@ final class ThemeManager: ObservableObject {
             case .premium: return "Sophisticated dark theme with gold accents"
             case .institutional: return "Professional blue theme for institutional clients"
             case .corporate: return "Corporate green theme for business clients"
+            case .finCorp: return "Dark slate/blue theme aligned with the Admin Web Portal content area for FinCorp target group"
             case .demo: return "Bright theme for demonstration purposes"
             }
         }
@@ -293,6 +296,54 @@ final class ThemeManager: ObservableObject {
 
             // Button Colors
             buttonColor: Color(hex: "#33651a")
+        ),
+
+        .finCorp: ThemeColors(
+            // Primary Colors - FinCorp: align with Admin Web Portal content area (dark slate/blue)
+            primaryBackground: Color(hex: "#1E293B"), // Matches web admin content background
+            cardBackground: Color(hex: "#334155"), // Matches web admin card/content-surface
+            accentColor: Color(hex: "#1E3A5F"), // FIN1 brand blue for primary accents
+
+            // Text Colors (high contrast on dark background)
+            titleText: Color(hex: "#F1F5F9"), // Slate-100
+            primaryText: Color(hex: "#F1F5F9"), // Slate-100
+            secondaryText: Color(hex: "#94A3B8"), // Slate-400
+            tertiaryText: Color(hex: "#CBD5E1"), // Slate-300
+            quaternaryText: Color.white.opacity(0.4),
+
+            // Status Colors (mirror admin web content area semantics)
+            successGreen: Color(hex: "#10B981"), // Tailwind emerald-500
+            warningOrange: Color(hex: "#F59E0B"), // Tailwind amber-500
+            errorRed: Color(hex: "#EF4444"), // Tailwind red-500
+            infoBlue: Color(hex: "#3B82F6"), // Tailwind blue-500
+
+            // System Component Colors
+            systemBackground: Color(hex: "#1E293B"), // Same as primary background
+            systemSecondaryBackground: Color(hex: "#334155"), // Same as card background
+            systemTertiaryBackground: Color(hex: "#0F172A"), // Slate-900 for deeper sections
+            systemText: Color(hex: "#F1F5F9"),
+            systemSecondaryText: Color(hex: "#94A3B8"),
+            systemTertiaryText: Color(hex: "#CBD5E1"),
+            systemSeparator: Color(hex: "#475569"), // Slate-600, aligns with web borders
+            systemGroupedBackground: Color(hex: "#1E293B"),
+            systemSecondaryGroupedBackground: Color(hex: "#334155"),
+
+            // Tab Bar Colors
+            tabBarActive: Color(hex: "#F1F5F9"),
+            tabBarInactive: Color(hex: "#94A3B8"),
+            tabBarBackground: Color(hex: "#0F172A"),
+
+            // Input Field Colors (dark cards with readable text)
+            inputFieldBackground: Color(hex: "#334155"),
+            inputFieldText: Color(hex: "#F1F5F9"),
+            inputFieldPlaceholder: Color(hex: "#94A3B8"),
+
+            // Link Colors (FinCorp/information accents)
+            linkColor: Color(hex: "#93C5FD"), // Tailwind sky-300
+            secondaryLinkColor: Color(hex: "#E2E8F0"), // Slate-200
+
+            // Button Colors
+            buttonColor: Color(hex: "#1E3A5F") // FIN1 brand blue for primary buttons
         ),
 
         .demo: ThemeColors(
