@@ -88,7 +88,7 @@ struct NotificationRow: View {
         NotificationRow(notification: AppNotification(
             userId: "user1",
             title: "Investment Completed",
-            message: "Your investment in John Smith has been completed successfully. Total return: +$250",
+            message: "Your investment in Jan Becker has been completed successfully. Total return: +250 €",
             type: .investment,
             priority: .medium,
             isRead: false,

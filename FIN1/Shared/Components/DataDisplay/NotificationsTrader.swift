@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 // MARK: - Trader-Specific Notifications View
 struct NotificationsTraderView: View {
@@ -26,8 +27,9 @@ private struct NotificationsTraderContentView: View {
     @Binding var showFilters: Bool
     let availableFilters: [NotificationFilter]
 
-    // Observe the notification service to react to changes
-    @ObservedObject private var notificationService: NotificationService
+    private let notificationService: any NotificationServiceProtocol
+    @State private var notifications: [AppNotification] = []
+    @State private var cancellables = Set<AnyCancellable>()
 
     init(appServices: AppServices, selectedFilter: Binding<NotificationFilter>, showFilters: Binding<Bool>, availableFilters: [NotificationFilter]) {
         self.appServices = appServices
@@ -35,16 +37,8 @@ private struct NotificationsTraderContentView: View {
         _showFilters = showFilters
         self.availableFilters = availableFilters
 
-        // Get the notification service from appServices and observe it
-        // CRITICAL: Must use the same instance that CustomerSupportService uses
-        guard let service = appServices.notificationService as? NotificationService else {
-            print("⚠️ NotificationsTraderView: Failed to cast notificationService to NotificationService, using shared")
-            _notificationService = ObservedObject(wrappedValue: NotificationService.shared)
-            return
-        }
-
-        print("✅ NotificationsTraderView: Using notification service from appServices with \(service.notifications.count) notifications")
-        _notificationService = ObservedObject(wrappedValue: service)
+        self.notificationService = appServices.notificationService
+        self._notifications = State(initialValue: appServices.notificationService.notifications)
     }
 
     var body: some View {
@@ -63,7 +57,10 @@ private struct NotificationsTraderContentView: View {
                             ForEach(filteredNotifications) { notification in
                                 NotificationCardView(
                                     notification: notification,
-                                    notificationService: notificationService
+                                    notificationService: notificationService,
+                                    userId: appServices.userService.currentUser?.id ?? "",
+                                    customerSupportService: appServices.customerSupportService,
+                                    satisfactionSurveyService: appServices.satisfactionSurveyService
                                 )
                             }
                         }
@@ -93,6 +90,18 @@ private struct NotificationsTraderContentView: View {
         }
         .onAppear {
             selectedFilter = .all
+            // Keep role-based view reactive without depending on concrete NotificationService.
+            cancellables.removeAll()
+            notifications = notificationService.notifications
+            notificationService.notificationsPublisher
+                .receive(on: DispatchQueue.main)
+                .sink { newNotifications in
+                    self.notifications = newNotifications
+                }
+                .store(in: &cancellables)
+        }
+        .onDisappear {
+            cancellables.removeAll()
         }
     }
 
@@ -119,18 +128,9 @@ private struct NotificationsTraderContentView: View {
 
     private var filteredNotifications: [AppNotification] {
         // Filter notifications by current user's ID
-        // Access notifications directly from observed service to trigger view updates
         let currentUserId = appServices.userService.currentUser?.id ?? ""
-        let allNotifications = notificationService.notifications
+        let allNotifications = notifications
         let userNotifications = allNotifications.filter { $0.userId == currentUserId }
-
-        // Debug logging
-        if !allNotifications.isEmpty {
-            print("🔔 NotificationsTraderView: Total notifications: \(allNotifications.count), User notifications: \(userNotifications.count) for userId: \(currentUserId)")
-            for notif in allNotifications.prefix(3) {
-                print("   - Notification userId: '\(notif.userId)', title: '\(notif.title)'")
-            }
-        }
 
         switch selectedFilter {
         case .all:

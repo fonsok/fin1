@@ -113,7 +113,7 @@ struct PrivacySettingsView: View {
             VStack(spacing: ResponsiveDesign.spacing(16)) {
                 SettingsToggleRow(title: "Profile Visible to Traders", subtitle: "Allow traders to see your investor profile", isEnabled: $viewModel.profileVisibleToTraders, tintColor: AppTheme.accentGreen)
                 SettingsToggleRow(title: "Investment History", subtitle: "Show your investment history to connected traders", isEnabled: $viewModel.investmentHistoryVisible, tintColor: AppTheme.accentGreen)
-                SettingsToggleRow(title: "Performance Metrics", subtitle: "Display your portfolio performance publicly", isEnabled: $viewModel.performanceMetricsVisible, tintColor: AppTheme.accentGreen)
+                SettingsToggleRow(title: "Performance Metrics", subtitle: "Display your investment performance publicly", isEnabled: $viewModel.performanceMetricsVisible, tintColor: AppTheme.accentGreen)
             }
         }
     }

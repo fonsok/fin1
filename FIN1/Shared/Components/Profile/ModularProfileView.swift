@@ -97,7 +97,7 @@ struct ModularProfileView: View {
             SettingsView()
         }
         .sheet(isPresented: $showNotifications) {
-            NotificationsView()
+            NotificationsView(services: appServices)
         }
         .sheet(isPresented: $showHelpCenter) {
             HelpCenterView()

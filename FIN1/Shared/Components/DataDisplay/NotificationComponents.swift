@@ -112,7 +112,7 @@ struct MockNotification: Identifiable {
 let mockInvestorNotifications = [
     MockNotification(
         title: "Investment Completed",
-        message: "Your investment in John Smith has been completed successfully. Total return: +$250",
+        message: "Your investment in Jan Becker has been completed successfully. Total return: +250 €",
         type: .investment,
         icon: "checkmark.circle.fill",
         timestamp: Date().addingTimeInterval(-3600),
@@ -130,7 +130,7 @@ let mockInvestorNotifications = [
     ),
     MockNotification(
         title: "New Trader Available",
-        message: "Sarah Johnson is now accepting new investments. Specialization: Cryptocurrency",
+        message: "Tobias Hoffmann is now accepting new investments. Specialization: Bonus-Zertifikate",
         type: .investment,
         icon: "person.badge.plus.fill",
         timestamp: Date().addingTimeInterval(-259200),

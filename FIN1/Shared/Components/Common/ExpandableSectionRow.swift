@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Reusable expandable section row component matching Terms layout
-/// Used across Terms, FAQs, and Platform Advantages to ensure consistent UI
+/// Used across Terms, FAQs, and App Advantages to ensure consistent UI
 struct ExpandableSectionRow<Content: View>: View {
     let title: String
     let icon: String?

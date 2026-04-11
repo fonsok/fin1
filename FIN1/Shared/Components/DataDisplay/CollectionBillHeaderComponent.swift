@@ -68,7 +68,7 @@ struct CollectionBillHeaderComponent_Previews: PreviewProvider {
             )
 
             CollectionBillHeaderComponent(
-                title: "Thomas Trader",
+                title: "Jan Becker",
                 subtitle: "Collection Bill",
                 documentNumber: "\(LegalIdentity.documentPrefix)-INV-20250123-00001",
                 description: "Sammelabrechnung (Wertpapierkauf/-verkauf)"

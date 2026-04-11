@@ -67,7 +67,7 @@ struct NotificationsSettingsView: View {
                                 VStack(spacing: ResponsiveDesign.spacing(16)) {
                                     NotificationToggleRow(
                                         title: "Investment Updates",
-                                        subtitle: "Portfolio changes and investment status",
+                                        subtitle: "Investment changes and status",
                                         isEnabled: $investmentNotificationsEnabled
                                     )
 
@@ -79,7 +79,7 @@ struct NotificationsSettingsView: View {
 
                                     NotificationToggleRow(
                                         title: "Risk Assessments",
-                                        subtitle: "Portfolio risk updates",
+                                        subtitle: "Investment risk updates",
                                         isEnabled: $securityAlertsEnabled
                                     )
                                 }

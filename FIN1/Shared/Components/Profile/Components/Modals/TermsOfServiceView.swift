@@ -103,8 +103,8 @@ struct TermsOfServiceView: View {
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
 
             Text(isEnglish
-                 ? "Please read these terms carefully. By using the \(LegalIdentity.platformName) Platform, you agree to be bound by these Terms of Service."
-                 : "Bitte lesen Sie diese Bedingungen sorgfältig. Durch die Nutzung der \(LegalIdentity.platformName)-Plattform erklären Sie sich damit einverstanden, an diese Nutzungsbedingungen gebunden zu sein.")
+                 ? "Please read these terms carefully. By using the \(LegalIdentity.platformName) App, you agree to be bound by these Terms of Service."
+                 : "Bitte lesen Sie diese Bedingungen sorgfältig. Durch die Nutzung der \(LegalIdentity.platformName)-App erklären Sie sich damit einverstanden, an diese Nutzungsbedingungen gebunden zu sein.")
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.8))
                 .multilineTextAlignment(.leading)
