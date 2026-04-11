@@ -106,6 +106,8 @@ extension AppServicesBuilder {
             ctx.pushTokenAPIService = pushTokenAPIService
             ctx.investorWatchlistAPIService = investorWatchlistAPIService
 
+            ctx.appLedgerService = AppLedgerService(parseAPIClient: parseAPIClient)
+
             ctx.filterPersistenceRepository = FilterPersistenceRepository()
             ctx.investmentQuantityCalculationService = InvestmentQuantityCalculationService()
             ctx.investorCashBalanceService = InvestorCashBalanceService(

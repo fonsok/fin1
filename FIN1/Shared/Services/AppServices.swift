@@ -97,6 +97,9 @@ struct AppServices {
     let faqContentService: any FAQContentServiceProtocol
     let templateAPIService: TemplateAPIServiceProtocol?
 
+    // MARK: - App Accounting Services
+    let appLedgerService: any AppLedgerServiceProtocol
+
     // MARK: - Settlement Services (Backend-Authoritative)
     let settlementAPIService: (any SettlementAPIServiceProtocol)?
 

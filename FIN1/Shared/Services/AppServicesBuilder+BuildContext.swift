@@ -79,6 +79,7 @@ struct AppServicesBuildContext {
     var paymentService: MockPaymentService?
     var transactionLimitService: TransactionLimitService?
     var settlementAPIService: SettlementAPIService?
+    var appLedgerService: AppLedgerService?
 
     func toAppServices() -> AppServices {
         AppServices(
@@ -151,6 +152,7 @@ struct AppServicesBuildContext {
                 }()
             ),
             templateAPIService: templateAPIService,
+            appLedgerService: appLedgerService!,
             settlementAPIService: settlementAPIService,
             authService: authService!,
             tokenStorage: tokenStorage!,
