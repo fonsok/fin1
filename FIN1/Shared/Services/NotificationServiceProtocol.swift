@@ -6,6 +6,7 @@ import Combine
 /// Defines the contract for notification operations and management
 protocol NotificationServiceProtocol: ObservableObject {
     var notifications: [AppNotification] { get }
+    var notificationsPublisher: AnyPublisher<[AppNotification], Never> { get }
     var unreadCount: Int { get }
     var isLoading: Bool { get }
     var errorMessage: String? { get }
@@ -48,6 +49,9 @@ final class NotificationService: NotificationServiceProtocol, ServiceLifecycle {
     static let shared = NotificationService()
 
     @Published var notifications: [AppNotification] = []
+    var notificationsPublisher: AnyPublisher<[AppNotification], Never> {
+        $notifications.eraseToAnyPublisher()
+    }
     @Published var unreadCount: Int = 0
     @Published var combinedUnreadCount: Int = 0
     @Published var isLoading = false
