@@ -129,14 +129,14 @@ final class TransactionLimitService: TransactionLimitServiceProtocol {
         }
         stateLock.unlock()
 
-        guard let user = userService.currentUser else {
+        guard userService.currentUser != nil else {
             throw AppError.service(.dataNotFound)
         }
 
-        let riskClass = user.riskClass
-        let dailyLimit = CalculationConstants.TransactionLimits.dailyLimit(for: riskClass)
-        let weeklyLimit = CalculationConstants.TransactionLimits.weeklyLimit(for: riskClass)
-        let monthlyLimit = CalculationConstants.TransactionLimits.monthlyLimit(for: riskClass)
+        // Authoritative limits come from admin configuration / Parse; constants are last-resort fallback.
+        let dailyLimit = CalculationConstants.TransactionLimits.baseDailyLimit
+        let weeklyLimit = CalculationConstants.TransactionLimits.baseWeeklyLimit
+        let monthlyLimit = CalculationConstants.TransactionLimits.baseMonthlyLimit
         let riskClassBasedLimit = dailyLimit
 
         let (dailySpent, weeklySpent, monthlySpent) = calculateSpentAmounts(userId: userId)
@@ -149,8 +149,7 @@ final class TransactionLimitService: TransactionLimitServiceProtocol {
             riskClassBasedLimit: riskClassBasedLimit,
             dailySpent: dailySpent,
             weeklySpent: weeklySpent,
-            monthlySpent: monthlySpent,
-            riskClass: riskClass
+            monthlySpent: monthlySpent
         )
 
         // Cache the limits (thread-safe write)
@@ -232,10 +231,9 @@ final class TransactionLimitService: TransactionLimitServiceProtocol {
                 limit: 1
             )
 
-            if let parseLimit = parseLimits.first,
-               let user = userService.currentUser {
+            if let parseLimit = parseLimits.first {
                 stateLock.lock()
-                limits[userId] = parseLimit.toTransactionLimit(riskClass: user.riskClass)
+                limits[userId] = parseLimit.toTransactionLimit()
                 stateLock.unlock()
             }
         } catch {
