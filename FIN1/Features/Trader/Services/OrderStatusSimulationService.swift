@@ -1,12 +1,10 @@
 import Foundation
-@preconcurrency import Dispatch
 import Combine
 
 // MARK: - Order Status Simulation Service Implementation
 /// Handles order status progression simulation and timer management
-/// Note: Safe to use with DispatchQueue.async closures due to [weak self] capture pattern
-/// @unchecked Sendable: Safe because we use [weak self] in all async closures
-final class OrderStatusSimulationService: OrderStatusSimulationServiceProtocol, ServiceLifecycle, @unchecked Sendable {
+@MainActor
+final class OrderStatusSimulationService: OrderStatusSimulationServiceProtocol, ServiceLifecycle {
     static let shared = OrderStatusSimulationService()
 
     @Published var isLoading = false
@@ -14,7 +12,6 @@ final class OrderStatusSimulationService: OrderStatusSimulationServiceProtocol, 
 
     private var orderStatusTasks: [String: Task<Void, Never>] = [:]
     private let orderManagementService: any OrderManagementServiceProtocol
-    private let taskQueue = DispatchQueue(label: "com.fin.app.orderStatusTasks", attributes: .concurrent)
 
     init(orderManagementService: any OrderManagementServiceProtocol = OrderManagementService.shared) {
         self.orderManagementService = orderManagementService
@@ -38,77 +35,49 @@ final class OrderStatusSimulationService: OrderStatusSimulationServiceProtocol, 
     // MARK: - Order Status Simulation
 
     func stopOrderStatusProgression(_ orderId: String) {
-        let orderIdCopy = orderId
-        let taskQueue = self.taskQueue
-        // Safe: [weak self] prevents retain cycles; @preconcurrency import Dispatch suppresses Sendable warnings
-        taskQueue.async(flags: .barrier) { [weak self] in
-            guard let self = self else { return }
-            self.orderStatusTasks[orderIdCopy]?.cancel()
-            self.orderStatusTasks.removeValue(forKey: orderIdCopy)
-        }
+        orderStatusTasks[orderId]?.cancel()
+        orderStatusTasks.removeValue(forKey: orderId)
     }
 
     func stopAllOrderStatusProgressions() {
-        let taskQueue = self.taskQueue
-        taskQueue.async(flags: .barrier) { [weak self] in
-            guard let self = self else { return }
-            self.orderStatusTasks.values.forEach { $0.cancel() }
-            self.orderStatusTasks.removeAll()
-        }
+        orderStatusTasks.values.forEach { $0.cancel() }
+        orderStatusTasks.removeAll()
     }
 
     // MARK: - Order Status Management
 
     func startOrderStatusProgression(_ orderId: String, onStatusUpdate: @escaping (String, Order) -> Void) {
-        let orderIdCopy = orderId
-        let orderManagementService = self.orderManagementService
-        let taskQueue = self.taskQueue
-        taskQueue.async(flags: .barrier) { [weak self] in
-            guard let self = self else { return }
+        orderStatusTasks[orderId]?.cancel()
 
-            // Cancel any existing task for this order
-            self.orderStatusTasks[orderIdCopy]?.cancel()
-
-            // Start task loop for status progression using centralized configuration
-            self.orderStatusTasks[orderIdCopy] = Task { [weak self] in
-                guard let self else { return }
-                while !Task.isCancelled {
-                    try? await Task.sleep(nanoseconds: OrderStatusConfig.progressionIntervalNanoseconds)
-                    await self.advanceOrderStatus(orderIdCopy, onStatusUpdate: onStatusUpdate)
-                    if let order = orderManagementService.activeOrders.first(where: { $0.id == orderIdCopy }), order.status == "completed" {
-                        break
-                    }
-                }
-                // Clean up task reference
-                let orderId = orderIdCopy
-                let taskQueue = self.taskQueue
-                await MainActor.run {
-                    // Safe: [weak self] prevents retain cycles; @preconcurrency import Dispatch suppresses Sendable warnings
-                    taskQueue.async(flags: .barrier) { [weak self] in
-                        self?.orderStatusTasks[orderId] = nil
-                    }
+        orderStatusTasks[orderId] = Task { [weak self] in
+            guard let self else { return }
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: OrderStatusConfig.progressionIntervalNanoseconds)
+                await self.advanceOrderStatus(orderId, onStatusUpdate: onStatusUpdate)
+                if let order = self.orderManagementService.activeOrders.first(where: { $0.id == orderId }),
+                   order.status == "completed" {
+                    break
                 }
             }
+            await self.cleanupTask(for: orderId)
         }
     }
 
     func advanceOrderStatus(_ orderId: String, onStatusUpdate: @escaping (String, Order) -> Void) async {
         // Get the current order from OrderManagementService
+        #if DEBUG
         print("🔍 DEBUG: advanceOrderStatus - looking for order \(orderId) in activeOrders (count: \(orderManagementService.activeOrders.count))")
         for order in orderManagementService.activeOrders {
             print("🔍 DEBUG: activeOrders - order \(order.id) type: \(order.type) status: '\(order.status)'")
         }
+        #endif
 
         guard let index = orderManagementService.activeOrders.firstIndex(where: { $0.id == orderId }) else {
             // Order not found, stop task
-            let orderIdCopy = orderId
-            let taskQueue = self.taskQueue
-            taskQueue.async(flags: .barrier) { [weak self] in
-                guard let self = self else { return }
-                self.orderStatusTasks[orderIdCopy]?.cancel()
-                self.orderStatusTasks.removeValue(forKey: orderIdCopy)
-            }
+            stopOrderStatusProgression(orderId)
+            #if DEBUG
             print("🔍 DEBUG: advanceOrderStatus - order \(orderId) not found in activeOrders, stopping task")
+            #endif
             return
         }
 
@@ -116,7 +85,9 @@ final class OrderStatusSimulationService: OrderStatusSimulationServiceProtocol, 
         let currentStatus = order.status
         let nextStatus: String
 
+        #if DEBUG
         print("🔍 DEBUG: advanceOrderStatus - order \(orderId) current status: '\(currentStatus)' (type: \(order.type))")
+        #endif
 
         // Same progression for both buy and sell orders: submitted → suspended → executed → confirmed → completed
         switch currentStatus {
@@ -130,25 +101,17 @@ final class OrderStatusSimulationService: OrderStatusSimulationServiceProtocol, 
             nextStatus = "completed"
         case "completed", "5":
             // Order is completed (final status), stop task
-            let orderIdCopy = orderId
-            let taskQueue = self.taskQueue
-            taskQueue.async(flags: .barrier) { [weak self] in
-                guard let self = self else { return }
-                self.orderStatusTasks[orderIdCopy]?.cancel()
-                self.orderStatusTasks.removeValue(forKey: orderIdCopy)
-            }
+            stopOrderStatusProgression(orderId)
+            #if DEBUG
             print("🔍 DEBUG: advanceOrderStatus - order \(orderId) completed, stopping task")
+            #endif
             return
         default:
             // Unknown status, stop task
-            let orderIdCopy = orderId
-            let taskQueue = self.taskQueue
-            taskQueue.async(flags: .barrier) { [weak self] in
-                guard let self = self else { return }
-                self.orderStatusTasks[orderIdCopy]?.cancel()
-                self.orderStatusTasks.removeValue(forKey: orderIdCopy)
-            }
+            stopOrderStatusProgression(orderId)
+            #if DEBUG
             print("🔍 DEBUG: advanceOrderStatus - order \(orderId) unknown status \(currentStatus), stopping task")
+            #endif
             return
         }
 
@@ -158,20 +121,30 @@ final class OrderStatusSimulationService: OrderStatusSimulationServiceProtocol, 
         // Get the updated order and notify the calling service
         if let updatedOrder = orderManagementService.activeOrders.first(where: { $0.id == orderId }) {
             onStatusUpdate(nextStatus, updatedOrder)
+            #if DEBUG
             print("🔍 DEBUG: advanceOrderStatus - order \(orderId) status changed from \(currentStatus) to \(nextStatus)")
+            #endif
         }
     }
 
     func moveOrderToHoldings(_ orderId: String, activeOrders: [Order], onOrderMoved: @escaping (Order) -> Void) async {
         guard let index = activeOrders.firstIndex(where: { $0.id == orderId }) else {
+            #if DEBUG
             print("🔍 DEBUG: moveOrderToHoldings - order \(orderId) not found in activeOrders")
+            #endif
             return
         }
 
         let order = activeOrders[index]
+        #if DEBUG
         print("🔍 DEBUG: moveOrderToHoldings - moving order \(orderId) to holdings. Current activeOrders count: \(activeOrders.count)")
+        #endif
 
         // Notify the calling service about the order that needs to be moved
         onOrderMoved(order)
+    }
+
+    private func cleanupTask(for orderId: String) {
+        orderStatusTasks[orderId] = nil
     }
 }

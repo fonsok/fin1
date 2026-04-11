@@ -6,16 +6,36 @@ enum InvoiceType: String, CaseIterable, Codable, Hashable {
     case securitiesSettlement = "securities_settlement"
     case tradingFee = "trading_fee"
     case accountStatement = "account_statement"
-    case platformServiceCharge = "platform_service_charge"
+    case appServiceCharge = "app_service_charge"
     case creditNote = "credit_note"
     case commissionInvoice = "commission_invoice"
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.singleValueContainer()
+        let raw = try c.decode(String.self)
+        if let v = InvoiceType(rawValue: raw) {
+            self = v
+            return
+        }
+        // Backward compatibility: legacy naming
+        if raw == "platform_service_charge" {
+            self = .appServiceCharge
+            return
+        }
+        throw DecodingError.dataCorruptedError(in: c, debugDescription: "Unknown InvoiceType: \(raw)")
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        try c.encode(rawValue)
+    }
 
     var displayName: String {
         switch self {
         case .securitiesSettlement: return "Rechnung"
         case .tradingFee: return "Handelsgebühren"
         case .accountStatement: return "Kontoauszug"
-        case .platformServiceCharge: return "Plattform-Servicegebühr"
+        case .appServiceCharge: return "App-Servicegebühr"
         case .creditNote: return "Gutschrift"
         case .commissionInvoice: return "Provisionsrechnung"
         }
@@ -26,7 +46,7 @@ enum InvoiceType: String, CaseIterable, Codable, Hashable {
         case .securitiesSettlement: return "doc.text"
         case .tradingFee: return "banknote"
         case .accountStatement: return "list.bullet.rectangle"
-        case .platformServiceCharge: return "creditcard"
+        case .appServiceCharge: return "creditcard"
         case .creditNote: return "doc.text"
         case .commissionInvoice: return "doc.text"
         }

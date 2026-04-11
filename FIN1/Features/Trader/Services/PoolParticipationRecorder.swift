@@ -31,6 +31,11 @@ struct PoolParticipationRecorder {
         trade: Trade,
         poolTradeParticipationService: any PoolTradeParticipationServiceProtocol
     ) async {
+        // Warn if any investment still has a local UUID (not synced to Parse)
+        let unsynced = activatedInvestments.filter { isLocalUUID($0.id) }
+        if !unsynced.isEmpty {
+            print("⚠️ PoolParticipationRecorder: \(unsynced.count) investments still have local UUIDs - Parse sync may not have completed")
+        }
         guard !activatedInvestments.isEmpty else {
             print("⚠️ PoolParticipationRecorder: No investments were activated")
             return
@@ -166,6 +171,13 @@ struct PoolParticipationRecorder {
         } else {
             print("   ✅ Allocation matches expected total")
         }
+    }
+
+    /// Checks if an ID looks like a local UUID (8-4-4-4-12 hex format)
+    /// Parse objectIds are short alphanumeric strings (e.g., "HhageETuvr")
+    private static func isLocalUUID(_ id: String) -> Bool {
+        let uuidPattern = #"^[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$"#
+        return id.range(of: uuidPattern, options: [.regularExpression, .caseInsensitive]) != nil
     }
 }
 

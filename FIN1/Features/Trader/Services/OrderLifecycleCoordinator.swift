@@ -339,16 +339,19 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
                     return
                 }
 
-                print("🎯 Trade #\(trade.tradeNumber) is now fully completed - generating Collection Bill")
-                await tradingNotificationService.generateCollectionBillDocument(for: trade)
+                // Check if backend already settled this trade (creates AccountStatement + documents)
+                let settledByBackend = await checkBackendSettlement(for: trade)
 
-                // Generate Credit Note BEFORE distributing profits. distributeProfit()
-                // posts .traderBalanceDidChange which triggers the account statement
-                // refresh — the credit note invoice must already exist at that point.
-                await generateCreditNoteIfCommissionExists(for: trade)
+                if !settledByBackend {
+                    print("🎯 Trade #\(trade.tradeNumber) is now fully completed - generating local documents")
+                    await tradingNotificationService.generateCollectionBillDocument(for: trade)
+                    await generateCreditNoteIfCommissionExists(for: trade)
+                } else {
+                    print("🎯 Trade #\(trade.tradeNumber) settled by backend — skipping local document creation")
+                }
 
                 // Distribute profit to investors if trade involved pots
-                if let profitDistributionService = profitDistributionService {
+                if let profitDistributionService = profitDistributionService, !settledByBackend {
                     _ = await profitDistributionService.distributeProfit(for: trade, order: order)
                 }
 
@@ -377,7 +380,20 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
         }
     }
 
-    // MARK: - Credit Note Generation
+    // MARK: - Backend Settlement Check
+
+    /// Checks if the backend has already settled this trade (AccountStatement entries + documents created)
+    private func checkBackendSettlement(for trade: Trade) async -> Bool {
+        guard let settlementAPI = settlementAPIService else { return false }
+        do {
+            return try await settlementAPI.isTradeSettledByBackend(tradeId: trade.id)
+        } catch {
+            print("⚠️ Backend settlement check failed: \(error.localizedDescription)")
+            return false
+        }
+    }
+
+    // MARK: - Credit Note Generation (local fallback)
 
     /// Generates a Credit Note document if commission was earned from the trade
     /// Uses centralized gross-profit-based calculation to ensure consistency with Credit Note detail view

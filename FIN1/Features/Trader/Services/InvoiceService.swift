@@ -136,7 +136,7 @@ final class InvoiceService: InvoiceServiceProtocol, ServiceLifecycle {
         }
 
         // Fallback: Legacy service charge invoice sync (for backward compatibility)
-        if invoice.type == .platformServiceCharge, let apiClient = parseAPIClient {
+        if invoice.type == .appServiceCharge, let apiClient = parseAPIClient {
             await saveServiceChargeInvoiceToBackend(invoice, apiClient: apiClient)
         }
 
@@ -288,7 +288,7 @@ final class InvoiceService: InvoiceServiceProtocol, ServiceLifecycle {
     }
 
     func getServiceChargeInvoiceForBatch(_ batchId: String, userId: String) -> Invoice? {
-        return getInvoicesByType(.platformServiceCharge, for: userId)
+        return getInvoicesByType(.appServiceCharge, for: userId)
             .first { $0.tradeId == batchId }
     }
 

@@ -51,13 +51,11 @@ struct InvoiceListView: View {
             }
         }
         .onAppear {
-            // Get actual current user ID
-            let currentUserId = services.userService.currentUser?.customerId ?? services.userService.currentUser?.id ?? "current_user_id"
+            let currentUserId = Self.invoiceLookupKey(for: services.userService.currentUser)
             viewModel.loadInvoices(for: currentUserId)
         }
         .onReceive(NotificationCenter.default.publisher(for: .invoiceDidChange)) { _ in
-            // Refresh invoices when a new one is added
-            let currentUserId = services.userService.currentUser?.customerId ?? services.userService.currentUser?.id ?? "current_user_id"
+            let currentUserId = Self.invoiceLookupKey(for: services.userService.currentUser)
             viewModel.refreshInvoices(for: currentUserId)
         }
     }
@@ -167,6 +165,11 @@ struct InvoiceListView: View {
 
     private var filteredInvoices: [Invoice] {
         viewModel.filteredInvoices(searchQuery: searchText, filterType: selectedFilter)
+    }
+
+    private static func invoiceLookupKey(for user: User?) -> String {
+        guard let user else { return "current_user_id" }
+        return user.customerNumber.isEmpty ? user.id : user.customerNumber
     }
 }
 

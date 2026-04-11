@@ -95,6 +95,13 @@ final class TradeLifecycleService: TradeLifecycleServiceProtocol, ServiceLifecyc
                     isLoading = false
                 }
 
+                // Drop stale on-disk trades for this trader so a later offline/API-fallback load
+                // cannot resurrect rows after a DEV backend reset (persistTrades only overwrites files it writes).
+                if let tid = userService?.currentUser?.id {
+                    persistenceService.clearPersistedTradesForTrader(tid)
+                }
+                persistenceService.persistTrades(fetchedTrades)
+
                 print("✅ TradeLifecycleService: Loaded \(fetchedTrades.count) trades from Parse Server")
 
                 // Synchronize trade numbers from loaded trades to ensure correct numbering

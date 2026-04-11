@@ -126,7 +126,7 @@ struct InvoiceNotes {
     /// Tax note for service charge invoices
     static let serviceChargeTaxNote = """
     Steuerlicher Hinweis:
-    Die Plattform-Servicegebühr unterliegt der Umsatzsteuer (\(CalculationConstants.VATRates.standardVATPercentage)). Der Rechnungsbetrag ist bereits die Bruttosumme inklusive Umsatzsteuer.
+    Die App-Servicegebühr unterliegt der Umsatzsteuer (\(CalculationConstants.VATRates.standardVATPercentage)). Der Rechnungsbetrag ist bereits die Bruttosumme inklusive Umsatzsteuer.
 
     Rechtlicher Hinweis:
     Diese Gebühr wird bei Erstellung der Investition fällig und ist nicht erstattungsfähig.

@@ -49,7 +49,7 @@ extension Invoice {
 
         return Invoice(
             invoiceNumber: invoiceNumber,
-            type: .platformServiceCharge, // Using platformServiceCharge type for commission invoices
+            type: .commissionInvoice,
             status: .generated,
             customerInfo: customerInfo,
             items: items,

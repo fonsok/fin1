@@ -70,10 +70,13 @@ final class TraderCashBalanceService: TraderCashBalanceServiceProtocol, Observab
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 guard let self else { return }
-                let serverValue = self.configurationService.initialAccountBalance
-                if serverValue != self.initialTraderBalance {
+                DispatchQueue.main.async { [weak self] in
+                    guard let self else { return }
+                    let serverValue = self.configurationService.initialAccountBalance
+                    guard serverValue != self.initialTraderBalance else { return }
                     self.initialTraderBalance = serverValue
                     print("💰 TraderCashBalanceService: initial balance updated to €\(serverValue.formatted(.currency(code: "EUR")))")
+                    NotificationCenter.default.post(name: .traderBalanceDidChange, object: nil)
                 }
             }
             .store(in: &cancellables)

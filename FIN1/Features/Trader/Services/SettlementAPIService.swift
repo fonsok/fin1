@@ -51,6 +51,7 @@ struct BackendAccountEntry: Decodable, Identifiable {
     let investmentId: String?
     let description: String?
     let source: String?
+    let referenceDocumentId: String?
     let createdAt: String?
 
     var id: String { objectId }

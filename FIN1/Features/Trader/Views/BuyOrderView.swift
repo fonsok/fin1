@@ -62,6 +62,8 @@ struct BuyOrderView: View {
     @Environment(\.themeManager) private var themeManager
     @Environment(\.appServices) private var services
     @State private var legalNoticeText: String = ""
+    @State private var transactionLimitWarningTitle: String = "Transaktionslimit erreicht"
+    @State private var transactionLimitIntroText: String?
 
     private var defaultLegalNoticeText: String {
         "Mit dem Klicken auf 'Kaufen' stimmen Sie den allgemeinen Geschäftsbedingungen zu und bestätigen, dass Sie die Risiken des Wertpapierhandels verstanden haben. Diese Transaktion ist gebührenpflichtig."
@@ -152,6 +154,57 @@ struct BuyOrderView: View {
                 placeholders: [:]
             )
             legalNoticeText = text
+        }
+        .onChange(of: viewModel.showLimitWarning) { _, newValue in
+            guard newValue else { return }
+            Task {
+                let provider = LegalSnippetProvider(termsContentService: services.termsContentService)
+                let language: TermsOfServiceDataProvider.Language = .german
+                // Ermittele Tages-, Wochen- und Monatslimit aus den Verletzungen (falls vorhanden)
+                let (dailyLimitText, weeklyLimitText, monthlyLimitText): (String?, String?, String?) = {
+                    guard let result = viewModel.transactionLimitCheckResult else { return (nil, nil, nil) }
+                    var dailyText: String?
+                    var weeklyText: String?
+                    var monthlyText: String?
+                    for violation in result.violations {
+                        switch violation {
+                        case let .dailyLimitExceeded(limit, _, _, _):
+                            if dailyText == nil {
+                                dailyText = limit.formattedAsLocalizedCurrency()
+                            }
+                        case let .weeklyLimitExceeded(limit, _, _, _):
+                            if weeklyText == nil {
+                                weeklyText = limit.formattedAsLocalizedCurrency()
+                            }
+                        case let .monthlyLimitExceeded(limit, _, _, _):
+                            if monthlyText == nil {
+                                monthlyText = limit.formattedAsLocalizedCurrency()
+                            }
+                        }
+                    }
+                    return (dailyText, weeklyText, monthlyText)
+                }()
+                var placeholders: [String: String] = [:]
+                if let daily = dailyLimitText {
+                    placeholders["DAILY_LIMIT"] = daily
+                }
+                if let weekly = weeklyLimitText {
+                    placeholders["WEEKLY_LIMIT"] = weekly
+                }
+                if let monthly = monthlyLimitText {
+                    placeholders["MONTHLY_LIMIT"] = monthly
+                }
+                let snippet = await provider.snippet(
+                    for: .transactionLimitWarningBuy,
+                    language: language,
+                    documentType: .terms,
+                    defaultTitle: "Transaktionslimit erreicht",
+                    defaultContent: "Ihr (tägliches) Transaktionslimit wurde erreicht oder überschritten.",
+                    placeholders: placeholders
+                )
+                transactionLimitWarningTitle = snippet.title
+                transactionLimitIntroText = snippet.content
+            }
         }
     }
 
@@ -268,9 +321,16 @@ struct BuyOrderView: View {
                     Image(systemName: "chart.bar.xaxis")
                         .foregroundColor(.orange)
                         .font(.system(size: ResponsiveDesign.iconSize()))
-                    Text("Transaktionslimit erreicht")
+                    Text(transactionLimitWarningTitle)
                         .font(ResponsiveDesign.headlineFont())
                         .foregroundColor(.orange)
+                }
+
+                if let intro = transactionLimitIntroText {
+                    Text(intro)
+                        .font(ResponsiveDesign.bodyFont())
+                        .foregroundColor(AppTheme.primaryText)
+                        .multilineTextAlignment(.leading)
                 }
 
                 if let message = viewModel.limitWarningMessage {

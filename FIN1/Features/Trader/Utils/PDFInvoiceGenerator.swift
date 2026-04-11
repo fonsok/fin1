@@ -289,7 +289,7 @@ struct PDFInvoiceGenerator {
             return "Kontoauszug"
         case .tradingFee:
             return "Gebührenabrechnung"
-        case .platformServiceCharge:
+        case .appServiceCharge:
             return "Servicegebühr"
         }
     }

@@ -35,6 +35,7 @@ struct CustomerInfo: Codable, Hashable {
     var depotNumber: String
     var bank: String
     var customerNumber: String
+    var userId: String = ""
 
     var fullAddress: String {
         "\(address), \(postalCode) \(city)"
@@ -76,7 +77,8 @@ extension CustomerInfo {
             taxNumber: taxNumber,
             depotNumber: depotNumber,
             bank: bank,
-            customerNumber: user.customerId.isEmpty ? user.id : user.customerId
+            customerNumber: user.customerNumber.isEmpty ? user.id : user.customerNumber,
+            userId: user.id
         )
     }
 }

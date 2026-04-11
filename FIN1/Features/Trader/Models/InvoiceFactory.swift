@@ -125,15 +125,15 @@ extension Invoice {
         )
     }
 
-    /// Creates a platform service charge invoice for investment with 19% VAT
+    /// Creates an app service charge invoice for investment with 19% VAT
     /// - Parameters:
-    ///   - platformServiceCharge: The net platform service charge amount (before VAT)
+    ///   - appServiceCharge: The net app service charge amount (before VAT)
     ///   - customerInfo: Customer information for the invoice
     ///   - transactionIdService: Service for generating invoice numbers
     ///   - investmentBatchId: Optional batch ID to link the invoice to the investment batch
-    /// - Returns: Invoice with platform service charge item and VAT item (19%)
-    static func platformServiceChargeInvoice(
-        platformServiceCharge: Double,
+    /// - Returns: Invoice with app service charge item and VAT item (19%)
+    static func appServiceChargeInvoice(
+        appServiceCharge: Double,
         customerInfo: CustomerInfo,
         transactionIdService: any TransactionIdServiceProtocol,
         investmentBatchId: String? = nil
@@ -142,17 +142,17 @@ extension Invoice {
 
         var items: [InvoiceItem] = []
 
-        // Add platform service charge item (net amount)
-        let platformServiceChargeItem = InvoiceItem(
-            description: "Plattform-Servicegebühr für Investition",
+        // Add app service charge item (net amount)
+        let appServiceChargeItem = InvoiceItem(
+            description: "App-Servicegebühr für Investition",
             quantity: 1,
-            unitPrice: platformServiceCharge,
+            unitPrice: appServiceCharge,
             itemType: .serviceCharge
         )
-        items.append(platformServiceChargeItem)
+        items.append(appServiceChargeItem)
 
         // Calculate VAT (19% of net amount)
-        let vatAmount = platformServiceCharge * CalculationConstants.TaxRates.vatRate
+        let vatAmount = appServiceCharge * CalculationConstants.TaxRates.vatRate
 
         // Add VAT item
         let vatItem = InvoiceItem(
@@ -165,7 +165,7 @@ extension Invoice {
 
         return Invoice(
             invoiceNumber: invoiceNumber,
-            type: .platformServiceCharge,
+            type: .appServiceCharge,
             customerInfo: customerInfo,
             items: items,
             tradeId: investmentBatchId, // Link to investment batch ID if provided
@@ -176,7 +176,7 @@ extension Invoice {
         )
     }
 
-    /// Creates a platform service charge invoice for an investor
+    /// Creates an app service charge invoice for an investor
     /// - Parameters:
     ///   - grossServiceChargeAmount: The gross service charge amount (includes VAT)
     ///   - customerInfo: Customer information for the invoice
@@ -184,7 +184,7 @@ extension Invoice {
     ///   - batchId: Optional batch ID to link the invoice to an investment batch
     ///   - investmentIds: Array of investment IDs that this service charge applies to
     ///   - investmentAmounts: Array of investment amounts corresponding to investmentIds (for detailed description)
-    ///   - serviceChargeRate: Platform service charge rate (default: 2% from CalculationConstants)
+    ///   - serviceChargeRate: App service charge rate (default: 2% from CalculationConstants)
     /// - Returns: Invoice with service charge and VAT items
     /// - Note: The gross amount is split into net service charge and VAT (19%)
     static func forServiceCharge(
@@ -194,7 +194,7 @@ extension Invoice {
         batchId: String? = nil,
         investmentIds: [String] = [],
         investmentAmounts: [Double] = [],
-        serviceChargeRate: Double = CalculationConstants.ServiceCharges.platformServiceChargeRate
+        serviceChargeRate: Double = CalculationConstants.ServiceCharges.appServiceChargeRate
     ) -> Invoice {
         let invoiceNumber = InvoiceNumberGenerator.generate(using: transactionIdService)
 
@@ -237,7 +237,7 @@ extension Invoice {
 
         return Invoice(
             invoiceNumber: invoiceNumber,
-            type: .platformServiceCharge,
+            type: .appServiceCharge,
             status: .generated,
             customerInfo: customerInfo,
             items: items,
@@ -251,6 +251,59 @@ extension Invoice {
     // MARK: - Commission Invoice Methods
     // Note: Commission-related factory methods (forCommission, creditNote, commissionInvoice)
     // have been extracted to CommissionInvoiceFactory.swift to reduce file size.
+
+    // MARK: - Credit Note / Gutschrift for Fee Refunds
+
+    /// Creates a credit note (Gutschrift) for a fee refund to an investor or trader.
+    /// Used when platform fees are refunded after a correction is approved (4-eyes).
+    static func forFeeRefund(
+        grossRefundAmount: Double,
+        customerInfo: CustomerInfo,
+        transactionIdService: any TransactionIdServiceProtocol,
+        originalInvoiceNumber: String? = nil,
+        reason: String,
+        correctionRequestId: String? = nil
+    ) -> Invoice {
+        let invoiceNumber = InvoiceNumberGenerator.generate(using: transactionIdService)
+
+        let vatRate = CalculationConstants.TaxRates.vatRate
+        let netAmount = grossRefundAmount / (1.0 + vatRate)
+        let vatAmount = grossRefundAmount - netAmount
+
+        var refundDescription = "Gutschrift Appgebühr"
+        if let original = originalInvoiceNumber {
+            refundDescription += " (Ref: \(original))"
+        }
+        refundDescription += "\nBegründung: \(reason)"
+
+        var items: [InvoiceItem] = []
+
+        items.append(InvoiceItem(
+            description: refundDescription,
+            quantity: 1,
+            unitPrice: -netAmount,
+            itemType: .serviceCharge
+        ))
+
+        items.append(InvoiceItem(
+            description: "Umsatzsteuer-Korrektur (19%)",
+            quantity: 1,
+            unitPrice: -vatAmount,
+            itemType: .vat
+        ))
+
+        return Invoice(
+            invoiceNumber: invoiceNumber,
+            type: .creditNote,
+            status: .generated,
+            customerInfo: customerInfo,
+            items: items,
+            tradeId: correctionRequestId,
+            taxNote: "Gutschrift gem. § 14 Abs. 2 UStG. Der Vorsteuerabzug aus der Originalrechnung ist entsprechend zu berichtigen.",
+            legalNote: InvoiceNotes.legalNote,
+            dueDate: Calendar.current.date(byAdding: .day, value: 14, to: Date())
+        )
+    }
 
     /// Creates a sample invoice for testing with realistic order values
     static func sampleInvoice(tradeId: String? = nil, transactionType: TransactionType = .buy) -> Invoice {
@@ -370,7 +423,7 @@ private extension Invoice {
         netServiceCharge: Double,
         vatAmount: Double
     ) -> String {
-        var description = "Plattform-Servicegebühr für Investition(en)"
+        var description = "App-Servicegebühr für Investition(en)"
 
         // Add calculation basis
         if totalInvestmentAmount > 0 {

@@ -30,8 +30,8 @@ extension BackendInvoice {
             appType = .securitiesSettlement; txType = .buy
         case "sell_invoice":
             appType = .securitiesSettlement; txType = .sell
-        case "service_charge", "platform_service_charge":
-            appType = .platformServiceCharge; txType = nil
+        case "service_charge", "platform_service_charge", "app_service_charge":
+            appType = .appServiceCharge; txType = nil
         case "credit_note":
             appType = .creditNote; txType = nil
         case "commission_invoice":
@@ -83,7 +83,8 @@ extension BackendInvoice {
             taxNumber: "",
             depotNumber: "",
             bank: "",
-            customerNumber: customerId ?? userId ?? ""
+            customerNumber: customerId ?? userId ?? "",
+            userId: userId ?? ""
         )
 
         return Invoice(
@@ -141,8 +142,8 @@ private struct ParseInvoice: Codable {
             appInvoiceType = .securitiesSettlement // Will be mapped via transactionType
         case "sell_invoice", "sell":
             appInvoiceType = .securitiesSettlement // Will be mapped via transactionType
-        case "service_charge":
-            appInvoiceType = .platformServiceCharge
+        case "service_charge", "app_service_charge", "platform_service_charge":
+            appInvoiceType = .appServiceCharge
         case "credit_note":
             appInvoiceType = .creditNote
         case "commission_invoice":
@@ -170,7 +171,8 @@ private struct ParseInvoice: Codable {
             taxNumber: "",
             depotNumber: "",
             bank: "",
-            customerNumber: customerId ?? userId
+            customerNumber: customerId ?? userId,
+            userId: userId
         )
 
         // Build invoice items from totals
@@ -237,9 +239,6 @@ private struct ParseInvoiceInput: Codable {
         let dateFormatter = ISO8601DateFormatter()
         dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
 
-        // Map InvoiceType to Parse Server format
-        // Parse Server uses buy_invoice/sell_invoice, but app uses different types
-        // We'll map based on transactionType if available, otherwise use type
         let invoiceTypeString: String
         if let transactionType = invoice.transactionType {
             switch transactionType {
@@ -249,11 +248,10 @@ private struct ParseInvoiceInput: Codable {
                 invoiceTypeString = "sell_invoice"
             }
         } else {
-            // Fallback to app InvoiceType
             switch invoice.type {
             case .securitiesSettlement:
-                invoiceTypeString = "buy_invoice" // Default assumption
-            case .platformServiceCharge:
+                invoiceTypeString = "buy_invoice"
+            case .appServiceCharge:
                 invoiceTypeString = "service_charge"
             case .creditNote:
                 invoiceTypeString = "credit_note"
@@ -266,14 +264,18 @@ private struct ParseInvoiceInput: Codable {
             }
         }
 
+        let resolvedUserId = invoice.customerInfo.userId.isEmpty
+            ? invoice.customerInfo.customerNumber
+            : invoice.customerInfo.userId
+
         return ParseInvoiceInput(
             invoiceNumber: invoice.invoiceNumber,
             invoiceType: invoiceTypeString,
-            userId: invoice.customerInfo.customerNumber,
+            userId: resolvedUserId,
             orderId: invoice.orderId,
             tradeId: invoice.tradeId,
             subtotal: invoice.subtotal,
-            totalFees: invoice.totalTax, // Using totalTax as fees
+            totalFees: invoice.totalTax,
             totalAmount: invoice.totalAmount,
             invoiceDate: dateFormatter.string(from: invoice.createdAt),
             status: invoice.status.rawValue,
