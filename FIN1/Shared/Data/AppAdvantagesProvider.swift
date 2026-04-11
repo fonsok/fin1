@@ -1,7 +1,7 @@
 import Foundation
 
-/// Centralized provider for platform advantages content
-struct PlatformAdvantagesProvider {
+/// Centralized provider for app advantages content
+struct AppAdvantagesProvider {
     // MARK: - Investor Advantages
 
     /// Key advantages for investors displayed on landing page
@@ -21,27 +21,27 @@ struct PlatformAdvantagesProvider {
 
     /// Key advantages for traders displayed on landing page
     static let traderAdvantages: [String] = [
-        "Access to pooled capital from multiple investors, allowing for larger trade returns.",
+        "Indirect Access to pooled capital from multiple investors, allowing for larger trade returns via commission.",
         "Performance-based compensation that aligns with investor success.",
-        "Comprehensive trading tools and analytics built into the platform.",
+        "Comprehensive trading tools and analytics built into the app.",
         "Automated investor allocation and profit distribution.",
         "Reduced administrative burden with automated invoicing and statements.",
         "Real-time depot management with holdings and order tracking.",
         "Professional invoicing and account statement generation.",
-        "Platform designed specifically for trading with investor capital."
+        "App designed specifically for trading with investor capital."
     ]
 
-    // MARK: - Platform Differentiators
+    // MARK: - App Differentiators
 
     /// Key differentiators from traditional asset management
-    static let platformDifferentiators: [String] = [
+    static let appDifferentiators: [String] = [
         "Direct access to individual traders rather than anonymous fund managers.",
         "Transparent performance metrics and trade history.",
         "Lower minimum investment requirements.",
         "Real-time updates and notifications.",
         "Proportional profit sharing with clear fee structures.",
         "Ability to choose specific traders based on their strategies and performance.",
-        "Technology-driven platform that provides instant access to information and transactions."
+        "Technology-driven app that provides instant access to information and transactions."
     ]
 }
 

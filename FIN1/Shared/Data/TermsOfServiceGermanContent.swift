@@ -10,7 +10,7 @@ enum TermsOfServiceGermanContent {
             introSection,
             acceptanceSection,
             regulatorySection,
-            platformSection,
+            appServiceScopeSection,
             accountSection,
             tradingSection,
             investmentSection(commissionRate: commissionRate),
@@ -35,15 +35,15 @@ enum TermsOfServiceGermanContent {
         id: "introduction",
         title: "1. Einleitung & Definitionen",
         content: """
-        \(LegalIdentity.platformName) ist eine Technologieplattform, die Wertpapierhandel und Vermögensanlage-/Investmentmanagement-Dienstleistungen erleichtert. Die Plattform verbindet Trader und Investoren und ermöglicht Vermögensanlage-/Investitionsmöglichkeiten in Wertpapierhandelsaktivitäten mit Derivaten.
+        \(LegalIdentity.platformName) ist eine Technologie-App, die Wertpapierhandel und Vermögensanlage-/Investmentmanagement-Dienstleistungen erleichtert. Die App verbindet Trader und Investoren und ermöglicht Vermögensanlage-/Investitionsmöglichkeiten in Wertpapierhandelsaktivitäten mit Derivaten.
 
         **Definitionen:**
-        - **Plattform** oder **Service**: Die \(LegalIdentity.platformName)-Anwendung und zugehörige Dienstleistungen
-        - **Nutzer**: Jede Person oder Entität, die die Plattform nutzt
-        - **Trader**: Nutzer, die Wertpapiergeschäfte auf der Plattform ausführen
-        - **Investor**: Nutzer, die Kapital bei Tradern über die Plattform investieren
+        - **App** oder **Service**: Die \(LegalIdentity.platformName)-Anwendung und zugehörige Dienstleistungen
+        - **Nutzer**: Jede Person oder Entität, die die App nutzt
+        - **Trader**: Nutzer, die Wertpapiergeschäfte in der App ausführen
+        - **Investor**: Nutzer, die Kapital bei Tradern über die App investieren
         - **Investition**: Kapital, das von Investoren an Trader für Handelsaktivitäten zugewiesen wird
-        - **Wertpapiere**: Finanzinstrumente, die auf der Plattform gehandelt werden
+        - **Wertpapiere**: Finanzinstrumente, die in der App gehandelt werden
         """,
         icon: "info.circle.fill"
     )
@@ -52,10 +52,10 @@ enum TermsOfServiceGermanContent {
         id: "acceptance",
         title: "2. Annahme der Bedingungen",
         content: """
-        Durch den Zugriff auf oder die Nutzung der \(LegalIdentity.platformName)-Plattform erklären Sie sich damit einverstanden, an diese Nutzungsbedingungen gebunden zu sein. Wenn Sie diesen Bedingungen nicht zustimmen, dürfen Sie die Plattform nicht nutzen.
+        Durch den Zugriff auf oder die Nutzung der \(LegalIdentity.platformName)-App erklären Sie sich damit einverstanden, an diese Nutzungsbedingungen gebunden zu sein. Wenn Sie diesen Bedingungen nicht zustimmen, dürfen Sie die App nicht nutzen.
 
         **Änderungen:**
-        Wir behalten uns das Recht vor, diese Bedingungen jederzeit zu ändern. Wesentliche Änderungen werden mit mindestens 30 Tagen Vorlaufzeit mitgeteilt. Die fortgesetzte Nutzung der Plattform nach Änderungen stellt die Annahme der geänderten Bedingungen dar.
+        Wir behalten uns das Recht vor, diese Bedingungen jederzeit zu ändern. Wesentliche Änderungen werden mit mindestens 30 Tagen Vorlaufzeit mitgeteilt. Die fortgesetzte Nutzung der App nach Änderungen stellt die Annahme der geänderten Bedingungen dar.
 
         **Berechtigung:**
         Sie müssen mindestens 18 Jahre alt sein und die rechtliche Handlungsfähigkeit haben, um rechtsverbindliche Vereinbarungen einzugehen. Sie müssen alle geltenden Gesetze und Vorschriften in Ihrer Gerichtsbarkeit einhalten.
@@ -68,7 +68,7 @@ enum TermsOfServiceGermanContent {
         title: "3. Regulatorische Compliance",
         content: """
         **Deutsche Wertpapierhandelsvorschriften:**
-        Die Plattform arbeitet in Übereinstimmung mit:
+        Die App arbeitet in Übereinstimmung mit:
         - **Wertpapierhandelsgesetz (WpHG)** - Deutsches Wertpapierhandelsgesetz
         - **Wertpapierhandelsverordnung (WpDVerOV)** - Deutsche Wertpapierhandelsverordnung
         - Alle Transaktionen werden in Übereinstimmung mit diesen Vorschriften ausgeführt
@@ -76,21 +76,21 @@ enum TermsOfServiceGermanContent {
         **Steuerrechtliche Compliance:**
         - Alle Steuerberechnungen erfolgen gemäß **§ 20 EStG** (Deutsches Einkommensteuergesetz)
         - Kapitalgewinne unterliegen der **Abgeltungsteuer** (25% + Soli) auf realisierte Gewinne
-        - Die Steuereinbehaltung wird von der ausführenden Bank durchgeführt, nicht von der Plattform
+        - Die Steuereinbehaltung wird von der ausführenden Bank durchgeführt, nicht von der App
         - Nutzer sind allein für ihre Steuercompliance verantwortlich
 
         **DSGVO-Compliance:**
-        Die Plattform entspricht der Datenschutz-Grundverordnung (DSGVO) und dem Bundesdatenschutzgesetz (BDSG). Bitte beachten Sie unsere Datenschutzerklärung für detaillierte Informationen zur Datenverarbeitung.
+        Die App entspricht der Datenschutz-Grundverordnung (DSGVO) und dem Bundesdatenschutzgesetz (BDSG). Bitte beachten Sie unsere Datenschutzerklärung für detaillierte Informationen zur Datenverarbeitung.
         """,
         icon: "shield.checkered"
     )
 
-    static let platformSection = Section(
+    static let appServiceScopeSection = Section(
         id: "platform",
-        title: "4. Plattformbeschreibung & Serviceumfang",
+        title: "4. Appbeschreibung & Serviceumfang",
         content: """
         **Art des Services:**
-        \(LegalIdentity.platformName) ist eine **Technologieplattform**, die Wertpapierhandel und Investmentmanagement erleichtert. Die Plattform bietet Technologieinfrastruktur, verbindet Trader und Investoren, führt Geschäfte über lizenzierte Broker aus und stellt Transaktionsaufzeichnungen bereit.
+        \(LegalIdentity.platformName) ist eine **Technologie-App**, die Wertpapierhandel und Investmentmanagement erleichtert. Die App bietet Technologieinfrastruktur, verbindet Trader und Investoren, führt Geschäfte über lizenzierte Broker aus und stellt Transaktionsaufzeichnungen bereit.
 
         **Was wir NICHT anbieten:**
         - Anlageberatung oder Empfehlungen
@@ -100,9 +100,9 @@ enum TermsOfServiceGermanContent {
         - Steuerberatung (Nutzer müssen Steuerberater konsultieren)
 
         **Serviceeinschränkungen:**
-        - Die Plattform fungiert als Vermittler, nicht als Hauptpartei
+        - Die App fungiert als Vermittler, nicht als Hauptpartei
         - Nutzer treffen unabhängige Anlageentscheidungen
-        - Die Plattform garantiert keine Ausführung zu angezeigten Preisen
+        - Die App garantiert keine Ausführung zu angezeigten Preisen
         - Die Serviceverfügbarkeit ist nicht garantiert unterbrechungsfrei
         """,
         icon: "app.badge"
@@ -113,16 +113,17 @@ enum TermsOfServiceGermanContent {
         title: "5. Nutzerberechtigung & Kontenanforderungen",
         content: """
         **Kontoberechtigung:**
-        Um die Plattform zu nutzen, müssen Sie mindestens 18 Jahre alt sein, rechtliche Handlungsfähigkeit haben, genaue Informationen bereitstellen, die Identitätsprüfung (KYC) abschließen und alle geltenden Gesetze einhalten.
+        Um die App zu nutzen, müssen Sie mindestens 18 Jahre alt sein, rechtliche Handlungsfähigkeit haben, genaue Informationen bereitstellen, die Identitätsprüfung (KYC) abschließen und alle geltenden Gesetze einhalten.
 
         **Kontotypen:**
         - **Trader-Konten**: Für Nutzer, die Wertpapiergeschäfte ausführen
         - **Investor-Konten**: Für Nutzer, die Kapital bei Tradern investieren
 
         **Kontoguthaben:**
-        - Anfangsguthaben: Neue Konten erhalten ein Anfangsguthaben von €1,00
+        - Anfangsguthaben: Sofern Administratoren in **Configuration** (über die App) nichts anderes festlegen, beginnen neue Konten mit **0,00 €**; Aufladung z. B. per Einzahlung oder andere von der App freigegebene Vorgänge.
         - Mindestbargeldreserve: Konten müssen eine Mindestbargeldreserve von €20 aufrechterhalten
-        - Guthabenzweck: Kontoguthaben sind nur für die Plattformnutzung bestimmt
+        - Guthabenzweck: Kontoguthaben sind nur für die App-Nutzung bestimmt (ggf. Demo vs. echtes Guthaben klären)
+        - Einschränkungen: Guthaben können App-Richtlinien und aufsichtsrechtlichen Vorgaben unterliegen
         """,
         icon: "person.circle.fill"
     )
@@ -136,7 +137,7 @@ enum TermsOfServiceGermanContent {
         **Auftragsausführung:**
         - Aufträge werden über lizenzierte Broker und Börsen ausgeführt
         - Ausführungspreise unterliegen Marktbedingungen
-        - Die Plattform garantiert keine Ausführung zu angezeigten Preisen
+        - Die App garantiert keine Ausführung zu angezeigten Preisen
 
         **Auftragsgebühren & Kosten:**
         - **Auftragsgebühr**: 0,5% des Auftragswerts (Mindestbetrag €5, Höchstbetrag €50)
@@ -159,10 +160,10 @@ enum TermsOfServiceGermanContent {
             **Investitionserstellung:**
             - Investoren können Investitionen bei verfügbaren Tradern erstellen
             - Der Mindestinvestitionsbetrag variiert je nach Trader
-            - Bis zu 10 Investitionen pro Nutzer (vorbehaltlich Plattformlimits)
-            - Die Plattform garantiert keine Investitionszuweisung oder Trader-Verfügbarkeit
+            - Bis zu 10 Investitionen pro Nutzer (vorbehaltlich App-Limits)
+            - Die App garantiert keine Investitionszuweisung oder Trader-Verfügbarkeit
 
-            **Plattform-Servicegebühr:**
+            **App-Servicegebühr:**
             - **Satz**: 2% des Investitionsbetrags (Bruttobetrag, einschließlich 19% MwSt.)
             - **Zeitpunkt**: Bei Investitionserstellung berechnet
             - **Nicht erstattungsfähig**: Servicegebühren sind nicht erstattungsfähig
@@ -170,7 +171,7 @@ enum TermsOfServiceGermanContent {
 
             **Investitionsrenditen:**
             - Renditen hängen von der Trader-Performance und Marktbedingungen ab
-            - **Keine garantierten Renditen**: Die Plattform garantiert keine Renditen
+            - **Keine garantierten Renditen**: Die App garantiert keine Renditen
             - **Verlustrisiko**: Kapitalverlust ist möglich
             - **Provisionen**: Trader-Provisionen (\(commissionPercentage)%, konfigurierbar) werden von den Renditen abgezogen
             """,
@@ -183,12 +184,12 @@ enum TermsOfServiceGermanContent {
         title: "8. Steuerpflichten & Verantwortlichkeiten",
         content: """
         **Steuerverantwortung des Nutzers:**
-        Nutzer sind allein für ihre Steuercompliance verantwortlich. Die Plattform stellt Transaktionsaufzeichnungen und Rechnungen bereit, berechnet Steuerschätzungen nur zu Informationszwecken und bietet keine Steuerberatung.
+        Nutzer sind allein für ihre Steuercompliance verantwortlich. Die App stellt Transaktionsaufzeichnungen und Rechnungen bereit, berechnet Steuerschätzungen nur zu Informationszwecken und bietet keine Steuerberatung.
 
         **Steuereinbehaltung:**
         - Die Steuereinbehaltung auf realisierte Gewinne wird von der ausführenden Bank durchgeführt
         - **Abgeltungsteuer**: 25% + Soli gilt für realisierte Kapitalgewinne
-        - Die Plattform behält keine Steuern ein
+        - Die App behält keine Steuern ein
 
         **Steuerdokumentation:**
         - Rechnungen werden für alle Transaktionen bereitgestellt
@@ -217,12 +218,12 @@ enum TermsOfServiceGermanContent {
         - **Trader-Performance-Risiko**: Renditen hängen von der Trader-Performance ab, die variiert
         - **Liquiditätsrisiko**: Investitionen sind möglicherweise nicht sofort liquidierbar
 
-        **Plattformrisiken:**
+        **App-Risiken:**
         - Technische Ausfälle, Serviceunterbrechungen, Datenqualitätseinschränkungen
         - Cybersicherheitsrisiken trotz Sicherheitsmaßnahmen
 
         **Bestätigung:**
-        Durch die Nutzung der Plattform bestätigen Sie, dass Sie die beteiligten Risiken verstehen, in der Lage sind, die finanziellen Risiken zu tragen, und unabhängige Anlageentscheidungen treffen.
+        Durch die Nutzung der App bestätigen Sie, dass Sie die beteiligten Risiken verstehen, in der Lage sind, die finanziellen Risiken zu tragen, und unabhängige Anlageentscheidungen treffen.
         """,
         icon: "exclamationmark.triangle.fill"
     )
@@ -232,14 +233,14 @@ enum TermsOfServiceGermanContent {
         title: "10. Nutzerverantwortlichkeiten & Verbotene Aktivitäten",
         content: """
         **Nutzerpflichten:**
-        Nutzer müssen genaue Informationen bereitstellen, sichere Zugangsdaten aufrechterhalten, Gesetze einhalten, verdächtige Aktivitäten melden und mit Plattformuntersuchungen zusammenarbeiten.
+        Nutzer müssen genaue Informationen bereitstellen, sichere Zugangsdaten aufrechterhalten, Gesetze einhalten, verdächtige Aktivitäten melden und mit App-Untersuchungen zusammenarbeiten.
 
         **Verbotene Aktivitäten:**
         Nutzern ist untersagt:
         - Betrügerische Aktivitäten, Marktmanipulation, unbefugter Zugriff
-        - Umgehung von Plattformkontrollen, Bereitstellung falscher Informationen
+        - Umgehung von App-Kontrollen, Bereitstellung falscher Informationen
         - Geldwäsche, Terrorismusfinanzierung, Gesetzesverstöße
-        - Störung von Plattformbetrieb oder anderen Nutzern
+        - Störung des App-Betriebs oder anderer Nutzer
 
         **Konsequenzen:**
         Verstöße können zu Kontosperrung oder -kündigung, rechtlichen Schritten, Meldung an Aufsichtsbehörden, Verlust von Geldern oder anderen gesetzlich verfügbaren Abhilfemaßnahmen führen.
@@ -251,10 +252,10 @@ enum TermsOfServiceGermanContent {
 
     static let limitationsSection = Section(
         id: "limitations",
-        title: "11. Plattformeinschränkungen & Haftungsausschlüsse",
+        title: "11. App-Einschränkungen & Haftungsausschlüsse",
         content: """
         **Serviceverfügbarkeit:**
-        - Die Plattform garantiert keinen unterbrechungsfreien oder fehlerfreien Service
+        - Die App garantiert keinen unterbrechungsfreien oder fehlerfreien Service
         - Geplante und ungeplante Wartungsarbeiten können auftreten
         - Der Service kann aufgrund von Umständen außerhalb unserer Kontrolle unterbrochen werden
 
@@ -265,7 +266,7 @@ enum TermsOfServiceGermanContent {
 
         **Haftungsbeschränkungen:**
         Im gesetzlich zulässigen Rahmen:
-        - Die Plattformhaftung ist auf direkte Schäden beschränkt
+        - Die App-Haftung ist auf direkte Schäden beschränkt
         - Wir haften nicht für indirekte, Folgeschäden, zufällige oder Strafschäden
         - Die Gesamthaftung ist auf in den 12 Monaten vor dem Anspruch gezahlte Gebühren beschränkt
         - Wir haften nicht für Verluste aufgrund von Marktbedingungen oder Nutzerentscheidungen
@@ -277,19 +278,19 @@ enum TermsOfServiceGermanContent {
         id: "ip",
         title: "12. Geistiges Eigentum",
         content: """
-        **Geistiges Eigentum der Plattform:**
-        - Alle Plattforminhalte, Software, Designs und Materialien sind Eigentum
-        - Nutzern wird eine begrenzte, nicht-exklusive, nicht übertragbare Lizenz zur Nutzung der Plattform gewährt
+        **Geistiges Eigentum der App:**
+        - Alle App-Inhalte, Software, Designs und Materialien sind Eigentum
+        - Nutzern wird eine begrenzte, nicht-exklusive, nicht übertragbare Lizenz zur Nutzung der App gewährt
         - Nutzer dürfen nicht kopieren, modifizieren, verteilen oder abgeleitete Werke erstellen
         - Alle Rechte vorbehalten
 
         **Nutzerdaten:**
         - Nutzer behalten das Eigentum an ihren Daten
-        - Nutzer gewähren der Plattform eine Lizenz zur Datenverarbeitung für die Diensterbringung
+        - Nutzer gewähren der App eine Lizenz zur Datenverarbeitung für die Diensterbringung
         - Die Datenverarbeitung unterliegt unserer Datenschutzerklärung und der DSGVO
 
         **Marken:**
-        - \(LegalIdentity.platformName) und verwandte Marken sind Eigentum der Plattform
+        - \(LegalIdentity.platformName) und verwandte Marken sind Eigentum der App
         - Nutzer dürfen Marken nicht ohne schriftliche Genehmigung verwenden
         """,
         icon: "lock.shield.fill"
@@ -300,7 +301,7 @@ enum TermsOfServiceGermanContent {
         title: "13. Datenschutz & Privatsphäre",
         content: """
         **DSGVO-Compliance:**
-        Die Plattform entspricht der DSGVO. Bitte beachten Sie unsere Datenschutzerklärung für:
+        Die App entspricht der DSGVO. Bitte beachten Sie unsere Datenschutzerklärung für:
         - Rechtsgrundlage der Datenverarbeitung
         - Nutzerrechte (Auskunft, Berichtigung, Löschung, Übertragbarkeit)
         - Speicherfristen
@@ -326,16 +327,16 @@ enum TermsOfServiceGermanContent {
         title: "14. Kontokündigung & Sperrung",
         content: """
         **Kündigung durch Nutzer:**
-        Nutzer können Konten jederzeit kündigen, indem sie den Plattform-Support kontaktieren, Kontoschließungsverfahren befolgen und alle ausstehenden Verpflichtungen begleichen.
+        Nutzer können Konten jederzeit kündigen, indem sie den App-Support kontaktieren, Kontoschließungsverfahren befolgen und alle ausstehenden Verpflichtungen begleichen.
 
-        **Kündigung durch Plattform:**
-        Die Plattform kann Konten wegen Verstoßes gegen die Bedingungen, verdächtiger Aktivitäten, regulatorischer Anforderungen, Nichteinhaltung von KYC/AML oder anderen Gründen kündigen.
+        **Kündigung durch App:**
+        Die App kann Konten wegen Verstoßes gegen die Bedingungen, verdächtiger Aktivitäten, regulatorischer Anforderungen, Nichteinhaltung von KYC/AML oder anderen Gründen kündigen.
 
         **Kontosperrung:**
         Konten können während der Untersuchung, aus Sicherheitsgründen, regulatorischer Compliance oder Nichtzahlung von Gebühren gesperrt werden.
 
         **Nach Kündigung:**
-        Ausstehende Verpflichtungen müssen beglichen werden, Datenspeicherungsrichtlinien gelten und der Zugriff auf Plattformdienste endet.
+        Ausstehende Verpflichtungen müssen beglichen werden, Datenspeicherungsrichtlinien gelten und der Zugriff auf App-Dienste endet.
         """,
         icon: "xmark.circle.fill"
     )
@@ -351,7 +352,7 @@ enum TermsOfServiceGermanContent {
         Streitigkeiten unterliegen der ausschließlichen Zuständigkeit deutscher Gerichte.
 
         **Streitbeilegungsverfahren:**
-        1. Informelle Lösung: Kontaktieren Sie zuerst den Plattform-Support
+        1. Informelle Lösung: Kontaktieren Sie zuerst den App-Support
         2. Mediation: Parteien können sich auf Mediation einigen
         3. Schiedsverfahren: Falls anwendbar, können Streitigkeiten durch Schiedsverfahren gelöst werden
         4. Gerichtsverfahren: Wenn andere Methoden scheitern, können Streitigkeiten vor Gericht gebracht werden
@@ -369,15 +370,15 @@ enum TermsOfServiceGermanContent {
         title: "16. Änderungen der Bedingungen",
         content: """
         **Änderungsrechte:**
-        Die Plattform behält sich das Recht vor, diese Bedingungen jederzeit zu ändern.
+        Die App behält sich das Recht vor, diese Bedingungen jederzeit zu ändern.
 
         **Benachrichtigungsanforderungen:**
         - Wesentliche Änderungen: Mindestens 30 Tage Vorlaufzeit
-        - Benachrichtigungsmethoden: E-Mail, In-App-Benachrichtigung oder Plattformmitteilung
+        - Benachrichtigungsmethoden: E-Mail, In-App-Benachrichtigung oder App-Mitteilung
         - Wirksamkeitsdatum: Änderungen werden am angegebenen Datum wirksam
 
         **Annahme:**
-        - Die fortgesetzte Nutzung der Plattform nach Änderungen stellt die Annahme dar
+        - Die fortgesetzte Nutzung der App nach Änderungen stellt die Annahme dar
         - Nutzer können Konten kündigen, wenn sie Änderungen nicht zustimmen
         - Bedingungen sind versioniert und datiert, mit archivierten vorherigen Versionen
         """,
@@ -406,6 +407,11 @@ enum TermsOfServiceGermanContent {
         id: "special",
         title: "18. Besondere Bestimmungen",
         content: """
+        **Demo-/Simulationskonten:**
+        - Anfangsguthaben: Wie in der App konfiguriert (häufig **0,00 €** standardmäßig; Demo-Aktionen können abweichen)
+        - Klarstellung: Nutzer müssen verstehen, ob Guthaben virtuell oder real sind
+        - Umstellung: Demo-Konten können ggf. in echte Konten umgewandelt werden
+        - Einschränkungen: Demo-Konten können gegenüber echten Konten eingeschränkt sein
 
         **Geldwäscheprävention:**
         - KYC-Anforderungen: Identitätsprüfung ist erforderlich
@@ -415,7 +421,7 @@ enum TermsOfServiceGermanContent {
         - Nutzerkooperation: Nutzer müssen mit KYC/AML-Verfahren zusammenarbeiten
 
         **Regulatorische Meldungen:**
-        - Die Plattform kann verpflichtet sein, an Aufsichtsbehörden zu berichten
+        - Die App kann verpflichtet sein, an Aufsichtsbehörden zu berichten
         - Nutzerinformationen können für regulatorische Compliance geteilt werden
         - Nutzer müssen genaue Informationen für regulatorische Zwecke bereitstellen
         """,
@@ -430,13 +436,13 @@ enum TermsOfServiceGermanContent {
         Wenn eine Bestimmung dieser Bedingungen als ungültig oder nicht durchsetzbar befunden wird, bleiben die übrigen Bestimmungen in vollem Umfang in Kraft.
 
         **Vollständige Vereinbarung:**
-        Diese Bedingungen bilden zusammen mit der Datenschutzerklärung die vollständige Vereinbarung zwischen Nutzern und der Plattform.
+        Diese Bedingungen bilden zusammen mit der Datenschutzerklärung die vollständige Vereinbarung zwischen Nutzern und der App.
 
         **Verzicht:**
         Die Nichtdurchsetzung einer Bestimmung stellt keinen Verzicht auf diese Bestimmung dar.
 
         **Übertragung:**
-        Nutzer dürfen diese Bedingungen nicht ohne Zustimmung der Plattform übertragen. Die Plattform kann diese Bedingungen übertragen.
+        Nutzer dürfen diese Bedingungen nicht ohne Zustimmung der App übertragen. Die App kann diese Bedingungen übertragen.
 
         **Sprache:**
         Diese Bedingungen werden auf Deutsch und Englisch bereitgestellt. Im Falle eines Konflikts hat die deutsche Version Vorrang.

@@ -51,7 +51,7 @@ enum PrivacyPolicyGermanContent {
         Gültig ab: [Datum]
 
         **Geltungsbereich:**
-        Diese Datenschutzerklärung gilt für alle Nutzer der \(LegalIdentity.platformName)-Plattform, einschließlich Investoren und Trader. Sie beschreibt, wie wir personenbezogene Daten sammeln, verwenden, speichern und schützen.
+        Diese Datenschutzerklärung gilt für alle Nutzer der \(LegalIdentity.platformName)-App, einschließlich Investoren und Trader. Sie beschreibt, wie wir personenbezogene Daten sammeln, verwenden, speichern und schützen.
         """,
         icon: "info.circle.fill"
     )
@@ -160,7 +160,7 @@ enum PrivacyPolicyGermanContent {
         **A. Vertragserfüllung (Art. 6 Abs. 1 lit. b DSGVO):**
         - **Gilt für**: Kontenerstellung, Handelsausführung, Investmentmanagement
         - **Daten**: Personenbezogene Identifikation, Kontaktdaten, Finanzdaten, Handelsdaten
-        - **Begründung**: Notwendig zur Bereitstellung der Plattformdienste
+        - **Begründung**: Notwendig zur Bereitstellung der App-Dienste
 
         **B. Rechtliche Verpflichtung (Art. 6 Abs. 1 lit. c DSGVO):**
         - **Gilt für**: KYC/AML-Compliance, Steuerberichterstattung, regulatorische Anforderungen
@@ -170,7 +170,7 @@ enum PrivacyPolicyGermanContent {
         **C. Berechtigte Interessen (Art. 6 Abs. 1 lit. f DSGVO):**
         - **Gilt für**: Analysen, Betrugsprävention, Sicherheit, Geschäftsbetrieb
         - **Daten**: Nutzungsdaten, Geräteinformationen, Verhaltensdaten
-        - **Begründung**: Plattformsicherheit, Serviceverbesserung, Betrugsprävention
+        - **Begründung**: Appsicherheit, Serviceverbesserung, Betrugsprävention
         - **Widerspruchsrecht**: Sie können der Verarbeitung widersprechen
 
         **D. Einwilligung (Art. 6 Abs. 1 lit. a DSGVO):**
@@ -197,7 +197,7 @@ enum PrivacyPolicyGermanContent {
         **A. Diensterbringung:**
         - Kontenerstellung und -verwaltung
         - Benutzerauthentifizierung und -autorisierung
-        - Betrieb der Handelsplattform
+        - Betrieb der Handels-App
         - Investmentpool-Verwaltung
         - Auftragsausführung
         - Gewinn-/Verlustberechnung und -verteilung
@@ -254,7 +254,7 @@ enum PrivacyPolicyGermanContent {
         - Dokumenten-Uploads
         - Support-Kommunikationen
 
-        **B. Von der Plattform generiert:**
+        **B. Von der App generiert:**
         - Transaktionsaufzeichnungen
         - Kontoumsätze
         - Rechnungen
@@ -523,7 +523,7 @@ enum PrivacyPolicyGermanContent {
         title: "11. Cookies & Tracking-Technologien",
         content: """
         **A. Notwendige Cookies:**
-        - **Zweck**: Plattformfunktionalität
+        - **Zweck**: App-Funktionalität
         - **Rechtsgrundlage**: Berechtigte Interessen (Art. 6 Abs. 1 lit. f DSGVO)
         - **Beispiele**: Sitzungs-Cookies, Authentifizierungstoken
         - **Opt-Out**: Nicht möglich (für Service erforderlich)
@@ -721,7 +721,7 @@ enum PrivacyPolicyGermanContent {
         **C. Gerichtsstand:**
         - Diese Datenschutzerklärung unterliegt deutschem Recht
         - Streitigkeiten unterliegen der ausschließlichen Zuständigkeit deutscher Gerichte
-        - Der spezifische Gerichtsstand wird durch die registrierte Adresse der Plattform oder gesetzliche Bestimmungen bestimmt
+        - Der spezifische Gerichtsstand wird durch die registrierte Adresse der App oder gesetzliche Bestimmungen bestimmt
 
         **D. EU-weite Geltung:**
         - Diese Datenschutzerklärung gilt für alle Nutzer in Deutschland und der Europäischen Union
