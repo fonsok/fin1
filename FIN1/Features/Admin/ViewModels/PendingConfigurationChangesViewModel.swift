@@ -152,8 +152,8 @@ final class PendingConfigurationChangesViewModel: ObservableObject {
         switch name {
         case "traderCommissionRate":
             return "Trader Commission Rate"
-        case "platformServiceChargeRate":
-            return "Platform Service Charge"
+        case "appServiceChargeRate", "platformServiceChargeRate":
+            return "App Service Charge"
         case "initialAccountBalance":
             return "Initial Account Balance"
         case "orderFeeRate":

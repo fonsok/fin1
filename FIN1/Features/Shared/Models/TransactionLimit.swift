@@ -12,7 +12,6 @@ struct TransactionLimit: Codable, Identifiable {
     let dailySpent: Double
     let weeklySpent: Double
     let monthlySpent: Double
-    let riskClass: RiskClass
     let lastUpdated: Date
     
     init(
@@ -25,7 +24,6 @@ struct TransactionLimit: Codable, Identifiable {
         dailySpent: Double = 0.0,
         weeklySpent: Double = 0.0,
         monthlySpent: Double = 0.0,
-        riskClass: RiskClass,
         lastUpdated: Date = Date()
     ) {
         self.id = id
@@ -37,7 +35,6 @@ struct TransactionLimit: Codable, Identifiable {
         self.dailySpent = dailySpent
         self.weeklySpent = weeklySpent
         self.monthlySpent = monthlySpent
-        self.riskClass = riskClass
         self.lastUpdated = lastUpdated
     }
     

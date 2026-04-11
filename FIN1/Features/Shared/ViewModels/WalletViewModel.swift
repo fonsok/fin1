@@ -29,6 +29,7 @@ final class WalletViewModel: ObservableObject {
     private let configurationService: any ConfigurationServiceProtocol
     private let paymentService: any PaymentServiceProtocol
     private let userService: any UserServiceProtocol
+    private let settlementAPIService: (any SettlementAPIServiceProtocol)?
     private let parseLiveQueryClient: (any ParseLiveQueryClientProtocol)?
 
     private var cancellables = Set<AnyCancellable>()
@@ -43,6 +44,7 @@ final class WalletViewModel: ObservableObject {
         investorCashBalanceService: (any InvestorCashBalanceServiceProtocol)? = nil,
         invoiceService: (any InvoiceServiceProtocol)? = nil,
         configurationService: any ConfigurationServiceProtocol,
+        settlementAPIService: (any SettlementAPIServiceProtocol)? = nil,
         parseLiveQueryClient: (any ParseLiveQueryClientProtocol)? = nil
     ) {
         self.cashBalanceService = cashBalanceService
@@ -51,6 +53,7 @@ final class WalletViewModel: ObservableObject {
         self.investorCashBalanceService = investorCashBalanceService
         self.invoiceService = invoiceService
         self.configurationService = configurationService
+        self.settlementAPIService = settlementAPIService
         self.parseLiveQueryClient = parseLiveQueryClient
 
         setupObservers()
@@ -174,7 +177,9 @@ final class WalletViewModel: ObservableObject {
                 let snapshot = await InvestorAccountStatementBuilder.buildSnapshotWithWallet(
                     for: currentUser,
                     investorCashBalanceService: investorService,
-                    paymentService: paymentService
+                    paymentService: paymentService,
+                    settlementAPIService: settlementAPIService,
+                    configurationService: configurationService
                 )
                 return snapshot.closingBalance
             }
@@ -188,7 +193,8 @@ final class WalletViewModel: ObservableObject {
                     for: currentUser,
                     invoiceService: invoiceService,
                     configurationService: configurationService,
-                    paymentService: paymentService
+                    paymentService: paymentService,
+                    settlementAPIService: settlementAPIService
                 )
                 return snapshot.closingBalance
             }

@@ -5,7 +5,7 @@ import SwiftUI
 @MainActor
 final class ConfigurationManagementViewModel: ObservableObject {
     @Published var minimumCashReserveInput: Double = 20.0
-    @Published var initialAccountBalanceInput: Double = 1.0
+    @Published var initialAccountBalanceInput: Double = 0.0
     @Published var poolBalanceDistributionStrategy: PoolBalanceDistributionStrategy = .immediateDistribution
     @Published var poolBalanceDistributionThresholdInput: Double = 5.0
     @Published var traderCommissionRateInput: Double = 0.10
@@ -18,7 +18,7 @@ final class ConfigurationManagementViewModel: ObservableObject {
 
     @Published var traderCommissionRateSuccess: String?
     @Published var initialAccountBalanceSuccess: String?
-    @Published var platformServiceChargeRateSuccess: String?
+    @Published var appServiceChargeRateSuccess: String?
 
     @Published var userMinimumCashReserveUserId: String = ""
     @Published var userMinimumCashReserveInput: Double = 20.0
@@ -35,7 +35,7 @@ final class ConfigurationManagementViewModel: ObservableObject {
     }
 
     var isValidInitialAccountBalance: Bool {
-        return initialAccountBalanceInput >= 0.01 && initialAccountBalanceInput <= 1000000.0
+        return initialAccountBalanceInput >= 0.0 && initialAccountBalanceInput <= 1_000_000.0
     }
 
     var isValidPoolBalanceDistributionThreshold: Bool {
@@ -72,7 +72,7 @@ final class ConfigurationManagementViewModel: ObservableObject {
 
     func updateInitialAccountBalance(_ configurationService: any ConfigurationServiceProtocol) async {
         guard isValidInitialAccountBalance else {
-            initialAccountBalanceError = "Value must be between 0.01 and 1000000.0"
+            initialAccountBalanceError = "Value must be between 0 and 1000000 EUR"
             return
         }
 

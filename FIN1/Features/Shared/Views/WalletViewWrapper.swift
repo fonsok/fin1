@@ -16,6 +16,7 @@ struct WalletViewWrapper: View {
             investorCashBalanceService: services.investorCashBalanceService,
             invoiceService: services.invoiceService,
             configurationService: services.configurationService,
+            settlementAPIService: services.settlementAPIService,
             parseLiveQueryClient: services.parseLiveQueryClient
         ))
     }
