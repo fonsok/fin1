@@ -12,7 +12,7 @@
 
 'use strict';
 
-const { loadConfig } = require('../utils/configHelper');
+const { loadConfig } = require('../utils/configHelper/index.js');
 
 const WALLET_DISABLED_MESSAGE = 'Wallet-Feature ist deaktiviert. Bei Bedarf im Admin-Portal unter Konfiguration → Anzeige aktivieren.';
 

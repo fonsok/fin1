@@ -1,23 +1,33 @@
 'use strict';
 
 const { requirePermission, logPermissionCheck } = require('../../utils/permissions');
+const { applyQuerySort } = require('../../utils/applyQuerySort');
 
 Parse.Cloud.define('getComplianceEvents', async (request) => {
   requirePermission(request, 'getComplianceEvents');
 
   const { severity, reviewed, limit = 50, skip = 0 } = request.params;
 
-  const query = new Parse.Query('ComplianceEvent');
+  function buildEventQuery() {
+    const q = new Parse.Query('ComplianceEvent');
+    if (severity) q.equalTo('severity', severity);
+    if (reviewed !== undefined) q.equalTo('reviewed', reviewed);
+    return q;
+  }
 
-  if (severity) query.equalTo('severity', severity);
-  if (reviewed !== undefined) query.equalTo('reviewed', reviewed);
+  const countQuery = buildEventQuery();
+  const total = await countQuery.count({ useMasterKey: true });
 
-  query.descending('occurredAt');
-  query.limit(limit);
-  query.skip(skip);
+  const pageQuery = buildEventQuery();
+  applyQuerySort(pageQuery, request.params || {}, {
+    allowed: ['occurredAt', 'severity'],
+    defaultField: 'occurredAt',
+    defaultDesc: true,
+  });
+  pageQuery.skip(skip);
+  pageQuery.limit(limit);
 
-  const events = await query.find({ useMasterKey: true });
-  const total = await query.count({ useMasterKey: true });
+  const events = await pageQuery.find({ useMasterKey: true });
 
   return { events: events.map(e => e.toJSON()), total };
 });
@@ -48,21 +58,37 @@ Parse.Cloud.define('reviewComplianceEvent', async (request) => {
 Parse.Cloud.define('getAuditLogs', async (request) => {
   requirePermission(request, 'getAuditLogs');
 
-  const { logType, action, userId, resourceType, limit = 100, skip = 0 } = request.params;
+  const {
+    logType,
+    action,
+    userId,
+    resourceType,
+    limit = 100,
+    skip = 0,
+  } = request.params;
 
-  const query = new Parse.Query('AuditLog');
+  function buildAuditQuery() {
+    const q = new Parse.Query('AuditLog');
+    if (logType) q.equalTo('logType', logType);
+    if (action) q.contains('action', action);
+    if (userId) q.equalTo('userId', userId);
+    if (resourceType) q.equalTo('resourceType', resourceType);
+    return q;
+  }
 
-  if (logType) query.equalTo('logType', logType);
-  if (action) query.contains('action', action);
-  if (userId) query.equalTo('userId', userId);
-  if (resourceType) query.equalTo('resourceType', resourceType);
+  const countQuery = buildAuditQuery();
+  const total = await countQuery.count({ useMasterKey: true });
 
-  query.descending('createdAt');
-  query.limit(limit);
-  query.skip(skip);
+  const pageQuery = buildAuditQuery();
+  applyQuerySort(pageQuery, request.params || {}, {
+    allowed: ['createdAt'],
+    defaultField: 'createdAt',
+    defaultDesc: true,
+  });
+  pageQuery.skip(skip);
+  pageQuery.limit(limit);
 
-  const logs = await query.find({ useMasterKey: true });
-  const total = await query.count({ useMasterKey: true });
+  const logs = await pageQuery.find({ useMasterKey: true });
 
   return { logs: logs.map(l => l.toJSON()), total };
 });

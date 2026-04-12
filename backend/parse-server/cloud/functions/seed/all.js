@@ -7,6 +7,13 @@ Parse.Cloud.define('seedAllMockData', async (request) => {
 
   const results = {};
 
+  // Seed test users (5 investors + 10 traders)
+  try {
+    results.testUsers = await Parse.Cloud.run('seedTestUsers', {}, { sessionToken: request.user.getSessionToken() });
+  } catch (e) {
+    results.testUsers = { success: false, error: e.message };
+  }
+
   // Seed FAQ data (categories + articles)
   try {
     results.faqData = await Parse.Cloud.run('seedFAQData', {}, { sessionToken: request.user.getSessionToken() });
@@ -50,3 +57,4 @@ Parse.Cloud.define('seedAllMockData', async (request) => {
   }
 
   return results;
+});

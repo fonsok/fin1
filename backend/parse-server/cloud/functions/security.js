@@ -11,6 +11,7 @@
 'use strict';
 
 const { requirePermission, logPermissionCheck } = require('../utils/permissions');
+const { applyQuerySort } = require('../utils/applyQuerySort');
 
 // ============================================================================
 // SECURITY DASHBOARD STATS (Extended)
@@ -84,14 +85,25 @@ Parse.Cloud.define('getFailedLoginAttempts', async (request) => {
 
   const { limit = 50, skip = 0 } = request.params;
 
-  // Query AuditLog for failed logins
-  const query = new Parse.Query('AuditLog');
-  query.equalTo('action', 'login_failed');
-  query.descending('createdAt');
-  query.limit(limit);
-  query.skip(skip);
+  function buildFailedLoginQuery() {
+    const q = new Parse.Query('AuditLog');
+    q.equalTo('action', 'login_failed');
+    return q;
+  }
 
-  const logs = await query.find({ useMasterKey: true });
+  const countQuery = buildFailedLoginQuery();
+  const total = await countQuery.count({ useMasterKey: true });
+
+  const pageQuery = buildFailedLoginQuery();
+  applyQuerySort(pageQuery, request.params || {}, {
+    allowed: ['createdAt', 'updatedAt', 'resourceId'],
+    defaultField: 'createdAt',
+    defaultDesc: true,
+  });
+  pageQuery.skip(skip);
+  pageQuery.limit(limit);
+
+  const logs = await pageQuery.find({ useMasterKey: true });
 
   const logins = logs.map(log => ({
     objectId: log.id,
@@ -102,7 +114,7 @@ Parse.Cloud.define('getFailedLoginAttempts', async (request) => {
     reason: log.get('metadata')?.reason || 'Invalid credentials',
   }));
 
-  return { logins };
+  return { logins, total };
 });
 
 // ============================================================================
@@ -116,15 +128,23 @@ Parse.Cloud.define('getFailedLoginAttempts', async (request) => {
 Parse.Cloud.define('getActiveSessions', async (request) => {
   requirePermission(request, 'getSecurityDashboard');
 
-  const { limit = 100 } = request.params;
+  const { limit = 100, skip = 0 } = request.params;
 
-  // Query Session class
-  const query = new Parse.Query(Parse.Session);
-  query.include('user');
-  query.descending('createdAt');
-  query.limit(limit);
+  const countQuery = new Parse.Query(Parse.Session);
+  const pageQuery = new Parse.Query(Parse.Session);
+  pageQuery.include('user');
+  applyQuerySort(pageQuery, request.params || {}, {
+    allowed: ['createdAt', 'updatedAt', 'expiresAt'],
+    defaultField: 'createdAt',
+    defaultDesc: true,
+  });
+  pageQuery.skip(skip);
+  pageQuery.limit(limit);
 
-  const sessionObjects = await query.find({ useMasterKey: true });
+  const [sessionObjects, total] = await Promise.all([
+    pageQuery.find({ useMasterKey: true }),
+    countQuery.count({ useMasterKey: true }),
+  ]);
 
   const sessions = [];
   for (const session of sessionObjects) {
@@ -142,7 +162,7 @@ Parse.Cloud.define('getActiveSessions', async (request) => {
     }
   }
 
-  return { sessions };
+  return { sessions, total };
 });
 
 // ============================================================================
@@ -158,26 +178,38 @@ Parse.Cloud.define('getSecurityAlerts', async (request) => {
 
   const { limit = 50, skip = 0, reviewed } = request.params;
 
-  const query = new Parse.Query('ComplianceEvent');
-  query.containedIn('eventType', [
+  const EVENT_TYPES = [
     'suspicious_activity',
     'login_from_new_device',
     'failed_login_attempt',
     'aml_check_failed',
     'account_locked',
     'password_changed',
-    'two_factor_disabled'
-  ]);
+    'two_factor_disabled',
+  ];
 
-  if (reviewed !== undefined) {
-    query.equalTo('reviewed', reviewed);
+  function buildAlertsQuery() {
+    const q = new Parse.Query('ComplianceEvent');
+    q.containedIn('eventType', EVENT_TYPES);
+    if (reviewed !== undefined) {
+      q.equalTo('reviewed', reviewed);
+    }
+    return q;
   }
 
-  query.descending('occurredAt');
-  query.limit(limit);
-  query.skip(skip);
+  const countQuery = buildAlertsQuery();
+  const total = await countQuery.count({ useMasterKey: true });
 
-  const events = await query.find({ useMasterKey: true });
+  const pageQuery = buildAlertsQuery();
+  applyQuerySort(pageQuery, request.params || {}, {
+    allowed: ['occurredAt', 'createdAt', 'severity', 'eventType', 'reviewed'],
+    defaultField: 'occurredAt',
+    defaultDesc: true,
+  });
+  pageQuery.skip(skip);
+  pageQuery.limit(limit);
+
+  const events = await pageQuery.find({ useMasterKey: true });
 
   const alerts = await Promise.all(events.map(async (event) => {
     let email = null;
@@ -205,7 +237,7 @@ Parse.Cloud.define('getSecurityAlerts', async (request) => {
     };
   }));
 
-  return { alerts };
+  return { alerts, total };
 });
 
 /**

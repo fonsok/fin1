@@ -6,7 +6,84 @@
 'use strict';
 
 const { generateSequentialNumber, calculateServiceCharge } = require('../utils/helpers');
-const { getPlatformServiceChargeRate } = require('../utils/configHelper');
+const { getPlatformServiceChargeRate } = require('../utils/configHelper/index.js');
+const { round2 } = require('../utils/accountingHelper/shared');
+const { bookAccountStatementEntry } = require('../utils/accountingHelper/statements');
+const { createWalletReceiptDocument } = require('../utils/accountingHelper/documents');
+const investmentEscrow = require('../utils/accountingHelper/investmentEscrow');
+const { validateInvestmentAmountAgainstLimits } = require('../utils/investmentLimitsValidation');
+
+// Shared helper: record a set of app ledger entries atomically
+async function recordAppLedgerEntries(entries) {
+  const AppLedgerEntry = Parse.Object.extend('AppLedgerEntry');
+  const objects = entries.map((e) => {
+    const obj = new AppLedgerEntry();
+    obj.set('account', e.account);
+    obj.set('side', e.side);
+    obj.set('amount', e.amount);
+    obj.set('userId', e.userId);
+    obj.set('userRole', e.userRole);
+    obj.set('transactionType', e.transactionType);
+    obj.set('referenceId', e.referenceId);
+    obj.set('referenceType', e.referenceType);
+    obj.set('description', e.description);
+    obj.set('metadata', e.metadata || {});
+    return obj;
+  });
+  return Parse.Object.saveAll(objects, { useMasterKey: true });
+}
+
+// Shared helper: record contra postings for platform service charge (net + VAT) at bank level
+async function recordBankContraPostingsForInvestment(investment) {
+  const BankContraPosting = Parse.Object.extend('BankContraPosting');
+
+  const investorId = investment.get('investorId') || '';
+  const investorName = investment.get('investorName') || '';
+  const batchId = investment.get('batchId') || investment.id;
+  const serviceChargeNet = investment.get('serviceChargeAmount') || 0;
+  const serviceChargeVat = investment.get('serviceChargeVat') || 0;
+  const grossAmount = serviceChargeNet + serviceChargeVat;
+
+  if (grossAmount <= 0) {
+    return;
+  }
+
+  const reference = `PSC-${batchId}`;
+  const createdAt = investment.get('createdAt') || new Date();
+  const investmentId = investment.id;
+
+  const netPosting = new BankContraPosting();
+  netPosting.set('account', 'BANK-PS-NET');
+  netPosting.set('side', 'credit');
+  netPosting.set('amount', Math.round(serviceChargeNet * 100) / 100);
+  netPosting.set('investorId', investorId);
+  netPosting.set('investorName', investorName);
+  netPosting.set('batchId', batchId);
+  netPosting.set('investmentIds', [investmentId]);
+  netPosting.set('reference', reference);
+  netPosting.set('metadata', {
+    component: 'net',
+    grossAmount: grossAmount.toString(),
+  });
+  netPosting.set('createdAt', createdAt);
+
+  const vatPosting = new BankContraPosting();
+  vatPosting.set('account', 'BANK-PS-VAT');
+  vatPosting.set('side', 'credit');
+  vatPosting.set('amount', Math.round(serviceChargeVat * 100) / 100);
+  vatPosting.set('investorId', investorId);
+  vatPosting.set('investorName', investorName);
+  vatPosting.set('batchId', batchId);
+  vatPosting.set('investmentIds', [investmentId]);
+  vatPosting.set('reference', reference);
+  vatPosting.set('metadata', {
+    component: 'vat',
+    grossAmount: grossAmount.toString(),
+  });
+  vatPosting.set('createdAt', createdAt);
+
+  await Parse.Object.saveAll([netPosting, vatPosting], { useMasterKey: true });
+}
 
 // ============================================================================
 // BEFORE SAVE
@@ -24,11 +101,11 @@ Parse.Cloud.beforeSave('Investment', async (request) => {
       investment.set('investmentNumber', investmentNumber);
     }
 
-    // Validate amount
+    // Validate amount (authoritative: admin limits from Configuration / getConfig)
     const amount = investment.get('amount');
-    if (!amount || amount < 100) {
-      throw new Parse.Error(Parse.Error.INVALID_VALUE,
-        'Investment amount must be at least €100');
+    const limitCheck = await validateInvestmentAmountAgainstLimits(amount);
+    if (!limitCheck.valid) {
+      throw new Parse.Error(Parse.Error.INVALID_VALUE, limitCheck.error);
     }
 
     // Validate investor != trader
@@ -36,7 +113,7 @@ Parse.Cloud.beforeSave('Investment', async (request) => {
     const traderId = investment.get('traderId');
     if (investorId === traderId) {
       throw new Parse.Error(Parse.Error.INVALID_VALUE,
-        'Investor cannot invest in their own pool');
+        'Investoren können nicht im eigenen Pool investieren.');
     }
 
     // Calculate service charge using admin-configured rate
@@ -63,17 +140,23 @@ Parse.Cloud.beforeSave('Investment', async (request) => {
     expiresAt.setHours(expiresAt.getHours() + 24);
     investment.set('reservationExpiresAt', expiresAt);
 
-    // Get trader info for snapshot
-    const traderQuery = new Parse.Query(Parse.User);
-    const trader = await traderQuery.get(traderId, { useMasterKey: true });
-    if (trader) {
-      const profileQuery = new Parse.Query('UserProfile');
-      profileQuery.equalTo('userId', traderId);
-      const profile = await profileQuery.first({ useMasterKey: true });
+    // Get trader info for snapshot (best-effort, must not block object creation)
+    try {
+      const traderQuery = new Parse.Query(Parse.User);
+      const trader = await traderQuery.get(traderId, { useMasterKey: true });
+      if (trader) {
+        const profileQuery = new Parse.Query('UserProfile');
+        profileQuery.equalTo('userId', traderId);
+        const profile = await profileQuery.first({ useMasterKey: true });
 
-      if (profile) {
-        investment.set('traderName', `${profile.get('firstName')} ${profile.get('lastName').charAt(0)}.`);
+        if (profile) {
+          investment.set('traderName', `${profile.get('firstName')} ${profile.get('lastName').charAt(0)}.`);
+        }
       }
+    } catch (err) {
+      // In dev/test flows the traderId may not be a real Parse _User objectId.
+      // Do not reject the investment; just skip the snapshot.
+      console.warn('beforeSave Investment: trader snapshot skipped:', err.message);
     }
   }
 
@@ -83,10 +166,12 @@ Parse.Cloud.beforeSave('Investment', async (request) => {
     const newStatus = investment.get('status');
 
     // Valid status transitions
+    // Note: reserved→completed is allowed for backend settlement (trade completes
+    // while investment was never individually activated, e.g. pool-based trading)
     const validTransitions = {
-      'reserved': ['active', 'cancelled'],
-      'active': ['executing', 'paused', 'closing', 'cancelled'],
-      'executing': ['active', 'paused'],
+      'reserved': ['active', 'completed', 'cancelled'],
+      'active': ['executing', 'paused', 'closing', 'completed', 'cancelled'],
+      'executing': ['active', 'paused', 'completed'],
       'paused': ['active', 'closing', 'cancelled'],
       'closing': ['completed'],
       'completed': [],
@@ -97,16 +182,16 @@ Parse.Cloud.beforeSave('Investment', async (request) => {
       const allowed = validTransitions[oldStatus] || [];
       if (!allowed.includes(newStatus)) {
         throw new Parse.Error(Parse.Error.INVALID_VALUE,
-          `Invalid status transition from ${oldStatus} to ${newStatus}`);
+          `Ungültiger Statuswechsel von „${oldStatus}“ zu „${newStatus}“.`);
       }
 
-      // Set timestamp
+      // Set timestamp (Parse schema stores these as String, not Date)
       if (newStatus === 'active') {
-        investment.set('activatedAt', new Date());
+        investment.set('activatedAt', new Date().toISOString());
       } else if (newStatus === 'completed') {
-        investment.set('completedAt', new Date());
+        investment.set('completedAt', new Date().toISOString());
       } else if (newStatus === 'cancelled') {
-        investment.set('cancelledAt', new Date());
+        investment.set('cancelledAt', new Date().toISOString());
       }
     }
   }
@@ -141,6 +226,17 @@ Parse.Cloud.afterSave('Investment', async (request) => {
     await logComplianceEvent(investorId, 'order_placed', 'info',
       `Investment created: ${investment.get('investmentNumber')}`,
       { amount, traderId });
+
+    try {
+      await investmentEscrow.bookReserve({
+        investorId,
+        amount: round2(amount),
+        investmentId: investment.id,
+        investmentNumber: investment.get('investmentNumber') || '',
+      });
+    } catch (err) {
+      console.error(`❌ investmentEscrow.bookReserve failed ${investment.id}:`, err.message);
+    }
   }
 
   // ========== STATUS CHANGE ==========
@@ -158,14 +254,60 @@ Parse.Cloud.afterSave('Investment', async (request) => {
 
       // Notify investor
       if (newStatus === 'active') {
-        await createNotification(investorId, 'investment_activated', 'investment',
-          'Investment aktiviert',
-          `Ihr Investment ${investment.get('investmentNumber')} ist jetzt aktiv.`);
+        // CLT-LIAB RSV→TRD must not be skipped if wallet/notification/receipt fail (those run after save).
+        try {
+          await investmentEscrow.bookDeployToTrading({
+            investorId,
+            amount: round2(amount),
+            investmentId: investment.id,
+            investmentNumber: investment.get('investmentNumber') || '',
+          });
+        } catch (err) {
+          console.error(`❌ investmentEscrow.bookDeployToTrading failed ${investment.id}:`, err.message);
+        }
 
-        // Deduct from wallet
-        await processWalletTransaction(investorId, 'investment', -amount,
-          `Investment ${investment.get('investmentNumber')}`,
-          'investment', investment.id);
+        try {
+          await createNotification(investorId, 'investment_activated', 'investment',
+            'Investment aktiviert',
+            `Ihr Investment ${investment.get('investmentNumber')} ist jetzt aktiv.`);
+        } catch (err) {
+          console.error(`❌ createNotification (investment_activated) failed ${investment.id}:`, err.message);
+        }
+
+        try {
+          await processWalletTransaction(investorId, 'investment', -amount,
+            `Investment ${investment.get('investmentNumber')}`,
+            'investment', investment.id);
+        } catch (err) {
+          console.error(`❌ processWalletTransaction (investment activation) failed ${investment.id}:`, err.message);
+        }
+
+        // GoB: Beleg + AccountStatement for investment activation
+        try {
+          const receipt = await createWalletReceiptDocument({
+            userId: investorId,
+            receiptType: 'investment',
+            amount: -amount,
+            description: `Investment Aktivierung ${investment.get('investmentNumber')}`,
+            referenceType: 'Investment',
+            referenceId: investment.id,
+            metadata: { investmentNumber: investment.get('investmentNumber'), traderId },
+          });
+
+          await bookAccountStatementEntry({
+            userId: investorId,
+            entryType: 'investment_activate',
+            amount: -Math.abs(amount),
+            investmentId: investment.id,
+            description: `Investment ${investment.get('investmentNumber')} aktiviert`,
+            referenceDocumentId: receipt.id,
+          });
+        } catch (err) {
+          console.error(`❌ GoB receipt failed for investment activation ${investment.id}:`, err.message);
+        }
+
+        // Service-Charge-Buchungen (PLT-REV-PSC, PLT-TAX-VAT, BANK-PS-NET, BANK-PS-VAT) werden
+        // zentral im Invoice-Trigger (afterSave Invoice) erzeugt – eine Quelle, keine Doppelbuchung.
 
       } else if (newStatus === 'completed') {
         const profit = investment.get('profit') || 0;
@@ -180,13 +322,154 @@ Parse.Cloud.afterSave('Investment', async (request) => {
           `Investment Rückzahlung ${investment.get('investmentNumber')}`,
           'investment', investment.id);
 
+        // GoB: Beleg + AccountStatement for investment return
+        // Skip if settlement already booked investment_return (reserved → completed path)
+        const existingReturn = await new Parse.Query('AccountStatement')
+          .equalTo('investmentId', investment.id)
+          .equalTo('entryType', 'investment_return')
+          .equalTo('source', 'backend')
+          .first({ useMasterKey: true });
+
+        if (!existingReturn) {
+          try {
+            const receipt = await createWalletReceiptDocument({
+              userId: investorId,
+              receiptType: 'investment_return',
+              amount: finalValue,
+              description: `Investment Rückzahlung ${investment.get('investmentNumber')}`,
+              referenceType: 'Investment',
+              referenceId: investment.id,
+              metadata: {
+                investmentNumber: investment.get('investmentNumber'),
+                profit,
+                finalValue,
+              },
+            });
+
+            await bookAccountStatementEntry({
+              userId: investorId,
+              entryType: 'investment_return',
+              amount: Math.abs(finalValue),
+              investmentId: investment.id,
+              description: `Investment ${investment.get('investmentNumber')} Rückzahlung`,
+              referenceDocumentId: receipt.id,
+            });
+          } catch (err) {
+            console.error(`❌ GoB receipt failed for investment return ${investment.id}:`, err.message);
+          }
+        }
+
+        try {
+          const invNo = investment.get('investmentNumber') || '';
+          const fv = round2(finalValue || 0);
+          if (oldStatus === 'reserved') {
+            await investmentEscrow.bookReleaseReservedOnComplete({
+              investorId,
+              amount: fv,
+              investmentId: investment.id,
+              investmentNumber: invNo,
+            });
+          } else if (['active', 'executing', 'paused', 'closing'].includes(oldStatus)) {
+            await investmentEscrow.bookReleaseTrading({
+              investorId,
+              amount: fv,
+              investmentId: investment.id,
+              investmentNumber: invNo,
+              reason: 'complete',
+            });
+          }
+        } catch (err) {
+          console.error(`❌ investmentEscrow release on complete failed ${investment.id}:`, err.message);
+        }
+
       } else if (newStatus === 'cancelled') {
-        // Refund if was active
-        if (oldStatus === 'active') {
+        // Refund if was active (or mid-trade states)
+        const activeLike = ['active', 'executing', 'paused', 'closing'];
+        if (activeLike.includes(oldStatus)) {
           const refundAmount = investment.get('currentValue');
           await processWalletTransaction(investorId, 'refund', refundAmount,
             `Investment Stornierung ${investment.get('investmentNumber')}`,
             'investment', investment.id);
+
+          // GoB: Beleg + AccountStatement for refund
+          try {
+            const receipt = await createWalletReceiptDocument({
+              userId: investorId,
+              receiptType: 'refund',
+              amount: refundAmount,
+              description: `Investment Stornierung ${investment.get('investmentNumber')}`,
+              referenceType: 'Investment',
+              referenceId: investment.id,
+              metadata: { investmentNumber: investment.get('investmentNumber'), refundAmount },
+            });
+
+            await bookAccountStatementEntry({
+              userId: investorId,
+              entryType: 'investment_refund',
+              amount: Math.abs(refundAmount),
+              investmentId: investment.id,
+              description: `Investment ${investment.get('investmentNumber')} Stornierung/Rückerstattung`,
+              referenceDocumentId: receipt.id,
+            });
+          } catch (err) {
+            console.error(`❌ GoB receipt failed for investment refund ${investment.id}:`, err.message);
+          }
+
+          try {
+            await investmentEscrow.bookReleaseTrading({
+              investorId,
+              amount: round2(refundAmount || 0),
+              investmentId: investment.id,
+              investmentNumber: investment.get('investmentNumber') || '',
+              reason: 'refund',
+            });
+          } catch (err) {
+            console.error(`❌ investmentEscrow.bookReleaseTrading (refund) failed ${investment.id}:`, err.message);
+          }
+        }
+
+        // reserved → cancelled: escrow zurück + Wallet-Gutschrift (serverseitige Quelle)
+        if (oldStatus === 'reserved') {
+          const refundReserved = round2(amount);
+          if (refundReserved > 0) {
+            try {
+              await investmentEscrow.bookReleaseReservation({
+                investorId,
+                amount: refundReserved,
+                investmentId: investment.id,
+                investmentNumber: investment.get('investmentNumber') || '',
+              });
+            } catch (err) {
+              console.error(`❌ investmentEscrow.bookReleaseReservation failed ${investment.id}:`, err.message);
+            }
+
+            try {
+              await processWalletTransaction(investorId, 'refund', refundReserved,
+                `Investment Reservierung aufgehoben ${investment.get('investmentNumber')}`,
+                'investment', investment.id);
+
+              const receipt = await createWalletReceiptDocument({
+                userId: investorId,
+                receiptType: 'refund',
+                amount: refundReserved,
+                description: `Investment Reservierung aufgehoben ${investment.get('investmentNumber')}`,
+                referenceType: 'Investment',
+                referenceId: investment.id,
+                metadata: { investmentNumber: investment.get('investmentNumber'), reason: 'reserved_cancel' },
+              });
+
+              await bookAccountStatementEntry({
+                userId: investorId,
+                entryType: 'investment_refund',
+                amount: Math.abs(refundReserved),
+                investmentId: investment.id,
+                description: `Reservierung storniert ${investment.get('investmentNumber')}`,
+                referenceDocumentId: receipt.id,
+              });
+            } catch (err) {
+              console.error(`❌ GoB refund failed for reserved cancel ${investment.id}:`, err.message);
+            }
+          }
         }
 
         await createNotification(investorId, 'investment_cancelled', 'investment',

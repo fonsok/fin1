@@ -8,6 +8,14 @@ This rule file incorporates local development requirements. The `.github/workflo
 
 **Note**: These rules apply regardless of GitHub connectivity. All validations are performed locally.
 
+## Parse Cloud Code (`backend/parse-server/cloud/`) — feste Regeln
+
+Diese Punkte vermeiden produktive Fehler (Admin-Konfiguration, FAQ-Platzhalter, „… is not a function“):
+
+- **`require` immer explizit:** `…/configHelper/index.js` — **niemals** nur `…/configHelper` (Legacy-Datei `utils/configHelper.js` auf dem Server würde sonst das Paket überschatten).
+- **Keine Datei** `cloud/utils/configHelper.js` im Repo oder auf dem Host anlegen/wiederherstellen; vor Commit/Deploy: `./scripts/check-parse-cloud-config-helper-shadow.sh`.
+- **Betriebsdoku:** `Documentation/FIN1_APP_DOCS/06A_BACKEND_UBUNTU_IOBOX_RUNBOOK.md` **§ 8.2.1** (Symptome, `rm`, Verifikation).
+
 ## Local Build and Test Requirements
 
 All code changes must pass these local checks (matching what would run in CI if available):
@@ -16,17 +24,20 @@ All code changes must pass these local checks (matching what would run in CI if 
    - Code must be properly formatted
    - Run `swiftformat .` locally before committing
 
-2. **SwiftLint Check**: `swiftlint --strict`
-   - All SwiftLint rules must pass (see `swiftlint.md` rule file)
-   - No warnings or errors allowed
+2. **SwiftLint Check**: `swiftlint` (non-strict in CI)
+   - Error-severity violations fail CI; warnings (including most custom rules) are reported but do not fail CI. Use `swiftlint --strict` locally for a zero-warning check. See `swiftlint.md`.
+   - Do not introduce new error-severity violations; reduce warnings in code you touch when practical.
+   - Incremental pass: `./scripts/swiftlint-changed.sh` (lint only Swift files changed vs `origin/main`).
+   - Weekly strict run: `.github/workflows/swiftlint-strict-weekly.yml` (also trigger manually via **Actions**).
 
-3. **Build Test**: Builds for iOS Simulator (iPhone 15 Pro)
-   - Build command: `xcodebuild -project FIN1.xcodeproj -scheme FIN1 -sdk iphonesimulator -configuration Debug -destination 'platform=iOS Simulator,name=iPhone 15 Pro' build`
+3. **Build Test**: Builds for iOS Simulator
+   - CI runs tests via **`scripts/run-ios-tests.sh`**, which picks the **first available iPhone** simulator by UDID (avoids `name=iPhone …` resolving to **OS:latest** with no matching runtime).
+   - For a one-off build: `xcodebuild -project FIN1.xcodeproj -scheme FIN1 -sdk iphonesimulator -configuration Debug -destination 'platform=iOS Simulator,id=<UDID>' build` (get `<UDID>` from Xcode or `xcrun simctl list`).
    - **MANDATORY**: If build fails, repeat builds until all errors are fixed and "BUILD SUCCEEDED" is achieved
    - Never commit code that doesn't build successfully
 
 4. **Unit Tests**: All tests must pass
-   - Test command: `xcodebuild -project FIN1.xcodeproj -scheme FIN1 -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 15 Pro' test`
+   - Prefer CI parity: `./scripts/run-ios-tests.sh` (or pass extra `xcodebuild` test arguments at the end).
    - Use test plan: `FIN1/FIN1.xctestplan`
 
 5. **Danger (Optional)**: For projects with CI/CD, Danger can run automated code review checks
@@ -43,7 +54,7 @@ All code changes must pass these local checks (matching what would run in CI if 
 
 Before committing, ensure:
 1. ✅ `swiftformat . --lint` passes
-2. ✅ `swiftlint --strict` passes
+2. ✅ `swiftlint` passes (exit 0; use `swiftlint --strict` if you are clearing the warning backlog)
 3. ✅ Build succeeds - must see "BUILD SUCCEEDED" (retry until all errors fixed)
 4. ✅ Tests pass locally
 
@@ -61,16 +72,16 @@ Local validation (see also `responsive-design.md` rule file):
 Reference these commands from `.cursorrules`:
 
 - **Lint format**: `swiftformat . --lint`
-- **SwiftLint**: `swiftlint --strict`
+- **SwiftLint**: `swiftlint` (stricter: `swiftlint --strict`)
 - **Format code**: `swiftformat .`
-- **Build (sim)**: `xcodebuild -project FIN1.xcodeproj -scheme FIN1 -sdk iphonesimulator -configuration Debug -destination 'platform=iOS Simulator,name=iPhone 15 Pro' build`
-- **Test (sim)**: `xcodebuild -project FIN1.xcodeproj -scheme FIN1 -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 15 Pro' test`
+- **Build (sim)**: use a concrete simulator `id=` from `xcrun simctl list devices available`, or Xcode UI
+- **Test (sim)**: `./scripts/run-ios-tests.sh`
 
 ## Code Quality Requirements
 
 All code changes must:
 1. Pass all local checks (formatting, linting, build, tests)
-2. Have no SwiftLint warnings or errors
+2. Introduce no new SwiftLint error-severity issues; avoid adding warnings in files you change when practical
 3. Follow MVVM architecture patterns (see `.cursorrules`)
 4. Use ResponsiveDesign system (see `responsive-design.md`)
 5. Pass all tests before committing
@@ -83,7 +94,7 @@ All code changes must:
 1. Analyze all build errors and warnings
 2. Fix all compilation errors
 3. Address all warnings (treat as errors)
-4. Re-run the build: `xcodebuild -project FIN1.xcodeproj -scheme FIN1 -sdk iphonesimulator -configuration Debug -destination 'platform=iOS Simulator,name=iPhone 15 Pro' build`
+4. Re-run the build with a concrete simulator **id** (see `xcrun simctl list devices available`)
 5. If build still fails, repeat steps 1-4 until you see **"BUILD SUCCEEDED"**
 6. **Before committing**: Build must succeed - never commit code that doesn't build
 
@@ -104,4 +115,29 @@ When making code changes:
 - Check for any new SwiftLint violations
 - Follow all architectural patterns defined in `.cursorrules`
 - All validation happens **locally** - no external services required
+
+## FIN1-Server Deploy (Pflicht nach relevanten Änderungen)
+
+**Wann:** Nach Änderungen an **`backend/parse-server/cloud/`** (Cloud Code, `main.js`, `utils/`), **`admin-portal/`** (gebündeltes Admin-UI), oder wenn der Nutzer ausdrücklich Deploy wünscht.
+
+**Agent-Verhalten:** Immer **anschließend** ausführen (nicht nur „kann der Nutzer tun“), sofern Netzwerk/SSH zum Zielhost möglich ist:
+
+1. **Admin-Portal** (Build + rsync + Verifikation):
+   - `cd admin-portal && ./deploy.sh`
+   - Erwartung: Standard-Host `io@192.168.178.20`, Ziel `~/fin1-server/admin/` (siehe Skript / `scripts/.env.server`).
+
+2. **Parse Cloud Code** (ohne `--delete` auf `utils/` versehentlich falsche Dateien zu überschreiben):
+   - Vor Deploy: `./scripts/check-parse-cloud-config-helper-shadow.sh` (scheitert, falls `cloud/utils/configHelper.js` existiert — würde `configHelper/` überschatten).
+   - `rsync -avz backend/parse-server/cloud/ io@192.168.178.20:~/fin1-server/backend/parse-server/cloud/`
+   - Auf dem Server ggf. `rm -f …/cloud/utils/configHelper.js` (macht `deploy-to-ubuntu.sh` automatisch nach rsync).
+   - **Nicht** beliebige `investment.js` nach `cloud/utils/` legen; nur `utils/investmentLimitsValidation.js` gehört nach `utils/`.
+   - Requires im Cloud Code: immer `…/configHelper/index.js` (explizit), nicht nur `…/configHelper`.
+
+3. **Parse neu laden:** Auf dem Server z. B.  
+   `ssh io@192.168.178.20 'cd ~/fin1-server && docker compose -f docker-compose.production.yml restart parse-server'`  
+   (Service-Name bei Abweichung anpassen.)
+
+**iOS-App:** Kein automatisches App-Store-Deploy; Nutzer baut in Xcode. Nur Server/Admin wie oben.
+
+Vollständigerer Überblick: `scripts/deploy-to-ubuntu.sh` (interaktiv, rsync gesamtes `backend/` ohne `--delete`).
 

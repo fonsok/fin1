@@ -18,7 +18,8 @@ All rules are now organized in `.cursor/rules/`:
 - **`testing.md`** - Testing patterns, mocking, repository testing
 - **`dry-constants.md`** - DRY principles and constants management
 - **`swiftlint.md`** - SwiftLint rules and automated detection patterns
-- **`ci-cd.md`** - Local development & build requirements
+- **`ci-cd.md`** - Local development & build requirements; Parse Cloud (`configHelper/index.js`, Shadow-Check); FIN1-Server-Deploy nach Backend/Admin-Änderungen
+- **`parse-cloud.md`** - Parse Cloud Code (`backend/parse-server/cloud/**`, auto per filePatterns)
 - **`responsive-design.md`** - Responsive design system compliance
 
 See `.cursor/rules/index.md` for complete documentation and quick reference.

@@ -28,3 +28,4 @@ require('./admin/devHelpers');
 require('./admin/system');
 require('./admin/reports');
 require('./admin/onboarding');
+require('./admin/companyKyb');

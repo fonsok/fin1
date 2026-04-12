@@ -13,6 +13,12 @@ This directory contains persistent rules that are automatically applied to all C
 - **`responsive-design.md`** - Responsive design system compliance rules (auto-applied for `*.swift` files in `FIN1/Features/**/Views/**`)
 - **`testing.md`** - Testing patterns, mocking standards, and repository testing (always applied)
 
+### Backend (Parse Cloud)
+- **`parse-cloud.md`** - Parse Cloud Code unter `backend/parse-server/cloud/**`: `configHelper/index.js`, Shadowing vermeiden, Guard-Skript, Deploy/Doku-Verweise (auto-applied per `filePatterns`)
+
+### Admin Portal
+- **`admin-portal.md`** - React/TypeScript Admin Web Portal: API layer, TanStack Query, Sortierung (`listSortOrder` / `applyQuerySort`), Parse-Datumswerte, Production-Deploy-Pfad, Freigaben-Filter (auto-applied for `admin-portal/**`)
+
 ### Legacy
 - **`.cursorrules`** (repository root) - **DEPRECATED**: Kept for backward compatibility. All rules migrated to `.cursor/rules/`.
 

@@ -1,6 +1,18 @@
 'use strict';
 
-const { requirePermission, requireAdminRole } = require('../../utils/permissions');
+const { requirePermission, requireAdminRole } = require('../../../utils/permissions');
+
+/** Parse FAQ/FAQCategory.sortOrder is Number; coerce client strings and reject invalid values. */
+function normalizeNumericSortOrder(value, fallback = 100) {
+  if (value === undefined || value === null) return fallback;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+const {
+  resolveEnglishFromParams,
+  pickEnglishUpdates,
+  applyEnglishFieldsToFaq,
+} = require('../faqLocales');
 
 /**
  * Create a new FAQ (Admin only)
@@ -12,9 +24,7 @@ Parse.Cloud.define('createFAQ', async (request) => {
   const {
     faqId,
     question,
-    questionDe,
     answer,
-    answerDe,
     categoryId,
     categoryIds,
     sortOrder = 100,
@@ -29,7 +39,6 @@ Parse.Cloud.define('createFAQ', async (request) => {
     throw new Parse.Error(Parse.Error.INVALID_QUERY, 'question and answer are required');
   }
 
-  // At least one category association is required: either single categoryId or non-empty categoryIds array
   const normalizedCategoryIds = Array.isArray(categoryIds)
     ? categoryIds.filter((id) => typeof id === 'string' && id.trim().length > 0)
     : [];
@@ -37,7 +46,7 @@ Parse.Cloud.define('createFAQ', async (request) => {
   if (!categoryId && normalizedCategoryIds.length === 0) {
     throw new Parse.Error(
       Parse.Error.INVALID_QUERY,
-      'At least one categoryId is required (single categoryId or non-empty categoryIds array)'
+      'At least one categoryId is required (single categoryId or non-empty categoryIds array)',
     );
   }
 
@@ -55,26 +64,20 @@ Parse.Cloud.define('createFAQ', async (request) => {
 
   faq.set('faqId', faqId || `faq-${Date.now()}`);
   faq.set('question', question);
-  if (questionDe) faq.set('questionDe', questionDe);
   faq.set('answer', answer);
-  if (answerDe) faq.set('answerDe', answerDe);
-  // Multi-category support:
-  // - Persist full categoryIds array for new behavior
-  // - Keep legacy categoryId (single) in sync using the first entry for backwards compatibility
+  const enCreate = resolveEnglishFromParams(request.params);
+  applyEnglishFieldsToFaq(faq, { questionEn: enCreate.questionEn, answerEn: enCreate.answerEn });
   if (normalizedCategoryIds.length > 0) {
     faq.set('categoryIds', normalizedCategoryIds);
     faq.set('categoryId', categoryId || normalizedCategoryIds[0]);
   } else {
     faq.set('categoryId', categoryId);
   }
-  faq.set('sortOrder', sortOrder);
+  faq.set('sortOrder', normalizeNumericSortOrder(sortOrder, 100));
   faq.set('isPublished', isPublished);
   faq.set('isArchived', false);
   faq.set('isPublic', isPublic);
   faq.set('isUserVisible', isUserVisible);
-  // Multi-context support:
-  // - Persist full contexts array if provided
-  // - Keep legacy single source in sync using the first context (or provided source)
   const normalizedContexts = Array.isArray(contexts)
     ? contexts.filter((ctx) => typeof ctx === 'string' && ctx.trim().length > 0)
     : [];
@@ -112,9 +115,7 @@ Parse.Cloud.define('updateFAQ', async (request) => {
 
   const allowedFields = [
     'question',
-    'questionDe',
     'answer',
-    'answerDe',
     'categoryId',
     'categoryIds',
     'sortOrder',
@@ -128,14 +129,29 @@ Parse.Cloud.define('updateFAQ', async (request) => {
 
   for (const field of allowedFields) {
     if (updates.hasOwnProperty(field)) {
-      faq.set(field, updates[field]);
+      const value =
+        field === 'sortOrder'
+          ? normalizeNumericSortOrder(updates[field], faq.get('sortOrder') ?? 100)
+          : updates[field];
+      faq.set(field, value);
     }
   }
 
-  // Keep legacy single fields in sync when arrays are updated
+  const enPatch = pickEnglishUpdates(updates);
+  if (Object.keys(enPatch).length > 0) {
+    applyEnglishFieldsToFaq(faq, {
+      questionEn: Object.prototype.hasOwnProperty.call(enPatch, 'questionEn')
+        ? enPatch.questionEn
+        : undefined,
+      answerEn: Object.prototype.hasOwnProperty.call(enPatch, 'answerEn')
+        ? enPatch.answerEn
+        : undefined,
+    });
+  }
+
   if (updates.hasOwnProperty('categoryIds') && Array.isArray(updates.categoryIds)) {
     const normalizedCategoryIds = updates.categoryIds.filter(
-      (id) => typeof id === 'string' && id.trim().length > 0
+      (id) => typeof id === 'string' && id.trim().length > 0,
     );
     faq.set('categoryIds', normalizedCategoryIds);
     if (normalizedCategoryIds.length > 0) {
@@ -145,7 +161,7 @@ Parse.Cloud.define('updateFAQ', async (request) => {
 
   if (updates.hasOwnProperty('contexts') && Array.isArray(updates.contexts)) {
     const normalizedContexts = updates.contexts.filter(
-      (ctx) => typeof ctx === 'string' && ctx.trim().length > 0
+      (ctx) => typeof ctx === 'string' && ctx.trim().length > 0,
     );
     faq.set('contexts', normalizedContexts);
     if (normalizedContexts.length > 0 && !updates.source) {
@@ -189,9 +205,6 @@ Parse.Cloud.define('deleteFAQ', async (request) => {
 
 /**
  * Create a new FAQCategory (Admin only)
- *
- * This is a lightweight helper to allow creating new categories directly from the Admin/CSR portal.
- * It focuses on the core fields used by the app and help center.
  */
 Parse.Cloud.define('createFAQCategory', async (request) => {
   requireAdminRole(request);
@@ -218,12 +231,14 @@ Parse.Cloud.define('createFAQCategory', async (request) => {
     throw new Parse.Error(Parse.Error.INVALID_QUERY, 'slug must not be empty');
   }
 
-  // Enforce unique slug
   const existingQuery = new Parse.Query('FAQCategory');
   existingQuery.equalTo('slug', normalizedSlug);
   const existing = await existingQuery.first({ useMasterKey: true });
   if (existing) {
-    throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, `FAQCategory with slug "${normalizedSlug}" already exists`);
+    throw new Parse.Error(
+      Parse.Error.DUPLICATE_VALUE,
+      `FAQCategory with slug "${normalizedSlug}" already exists`,
+    );
   }
 
   const FAQCategory = Parse.Object.extend('FAQCategory');
@@ -233,7 +248,7 @@ Parse.Cloud.define('createFAQCategory', async (request) => {
   if (title) category.set('title', title);
   if (displayName) category.set('displayName', displayName);
   if (icon) category.set('icon', icon);
-  category.set('sortOrder', sortOrder);
+  category.set('sortOrder', normalizeNumericSortOrder(sortOrder, 100));
   category.set('isActive', isActive);
   category.set('showOnLanding', showOnLanding);
   category.set('showInHelpCenter', showInHelpCenter);

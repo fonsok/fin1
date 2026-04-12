@@ -41,40 +41,53 @@ async function generateSequentialNumber(prefix, className, fieldName) {
 }
 
 /**
- * Generate customer ID
- * Format: INV-YYYY-NNNNN or TRD-YYYY-NNNNN
+ * Max numeric sequence for PREFIX-YYYY-* across legacy and canonical _User fields.
+ */
+async function maxUserCustomerSequence(pattern) {
+  let maxSeq = 0;
+  for (const field of ['customerNumber', 'customerId']) {
+    const query = new Parse.Query(Parse.User);
+    query.startsWith(field, pattern);
+    query.descending(field);
+    query.limit(1);
+    const row = await query.first({ useMasterKey: true });
+    if (!row) continue;
+    const val = row.get(field);
+    if (!val || typeof val !== 'string') continue;
+    const parts = val.split('-');
+    if (parts.length < 3) continue;
+    const seq = parseInt(parts[2], 10);
+    if (!Number.isNaN(seq) && seq > maxSeq) maxSeq = seq;
+  }
+  return maxSeq;
+}
+
+/**
+ * Generate business customer number for _User (canonical field: customerNumber).
+ * Format: ANL-YYYY-NNNNN or TRD-YYYY-NNNNN (INV- reserved for investments).
  *
  * @param {string} role - User role ('investor' or 'trader')
- * @returns {Promise<string>} Generated customer ID
+ * @returns {Promise<string>}
  */
-async function generateCustomerId(role) {
+async function generateCustomerNumber(role) {
   const prefixMap = {
-    'investor': 'INV',
-    'trader': 'TRD',
-    'admin': 'ADM',
-    'customer_service': 'CSR'
+    investor: 'ANL',
+    trader: 'TRD',
+    admin: 'ADM',
+    customer_service: 'CSR',
+    business_admin: 'ADM',
+    compliance: 'ADM',
   };
 
   const prefix = prefixMap[role] || 'USR';
   const year = new Date().getFullYear();
   const pattern = `${prefix}-${year}-`;
-
-  const query = new Parse.Query(Parse.User);
-  query.startsWith('customerId', pattern);
-  query.descending('customerId');
-  query.limit(1);
-
-  const results = await query.find({ useMasterKey: true });
-
-  let sequence = 1;
-  if (results.length > 0) {
-    const lastId = results[0].get('customerId');
-    const lastSequence = parseInt(lastId.split('-')[2], 10);
-    sequence = lastSequence + 1;
-  }
-
+  const sequence = (await maxUserCustomerSequence(pattern)) + 1;
   return `${prefix}-${year}-${sequence.toString().padStart(5, '0')}`;
 }
+
+/** @deprecated Use generateCustomerNumber */
+const generateCustomerId = generateCustomerNumber;
 
 // ============================================================================
 // FORMATTING
@@ -235,6 +248,7 @@ function calculateRiskClass(experienceScore, knowledgeScore, frequencyScore, des
 
 module.exports = {
   generateSequentialNumber,
+  generateCustomerNumber,
   generateCustomerId,
   formatCurrency,
   formatDate,
@@ -242,5 +256,10 @@ module.exports = {
   isValidIBAN,
   calculateOrderFees,
   calculateServiceCharge,
-  calculateRiskClass
+  calculateRiskClass,
+  escapeRegExp,
 };
+
+function escapeRegExp(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}

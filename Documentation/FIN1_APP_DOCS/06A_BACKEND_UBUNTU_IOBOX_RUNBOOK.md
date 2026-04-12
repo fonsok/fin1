@@ -1,7 +1,7 @@
 ---
 title: "FIN1 Backend – Ubuntu Runbook (iobox, User io)"
 audience: ["Betrieb", "Backend-Entwicklung", "Security", "Release Management"]
-lastUpdated: "2026-03-28"
+lastUpdated: "2026-04-12"
 ---
 
 ## Zweck
@@ -226,6 +226,36 @@ Diese Sequenz wurde am 2026-03-19 für folgende Refactors erfolgreich durchgefü
 - `cloud/functions/admin/fourEyes.js` + `cloud/functions/admin/fourEyes/*`
 
 **Neue Cloud Functions & Admin-Portal („Invalid function“):** Wird im Browser (z. B. Admin **Hilfe & Anleitung**) nach Copy der Dateien auf den Host weiterhin **`Invalid function`** für einen **neuen** Function-Namen gemeldet, nutzt der Container vermutlich **kein** Live-Volume auf `backend/parse-server/cloud` (Cloud Code nur im **Image**). Dann reicht `scp`/`rsync` nach `/home/io/fin1-server/backend/parse-server/cloud/` allein nicht: **Compose anpassen** (analog Repo-`docker-compose.yml`: Host-`cloud` → `/app/cloud`) **oder** `parse-server`-**Image neu bauen** und ausrollen. Einordnung, Klasse **`FAQ`** vs. Legacy-Namen, Paging der FAQ-Liste: [`Documentation/HELP_N_INSTRUCTIONS_SERVER_DRIVEN.md`](../HELP_N_INSTRUCTIONS_SERVER_DRIVEN.md).
+
+### 8.2.1) Parse Cloud Code: Legacy-Datei `utils/configHelper.js` (Node-Shadowing)
+
+**Symptom (Beispiele):**
+
+- Beim Speichern von Konfigurationsänderungen im Admin-Portal erscheint u. a. **`validateInvestmentAmountOrdering is not a function`** (oder andere „… is not a function“-Meldungen zu Konfig-Helfern).
+- Platzhalter in FAQs liefern unplausible Werte, weil eine **alte** Konfigurationslogik geladen wird.
+
+**Ursache:** Unter Node hat eine Datei **`backend/parse-server/cloud/utils/configHelper.js`** Vorrang vor dem Verzeichnis **`…/utils/configHelper/`** (und damit vor `index.js`), sobald irgendwo noch `require('…/configHelper')` **ohne** `/index.js` verwendet wird — oder nach einem Restore/älteren Deploy die Legacy-Datei wieder auf dem Host liegt.
+
+**Prävention (Repo / CI):**
+
+- Alle Cloud-Code-Imports nutzen explizit **`…/configHelper/index.js`** (kein reines `…/configHelper`).
+- Lokal/CI: Skript **`scripts/check-parse-cloud-config-helper-shadow.sh`** — schlägt fehl, wenn `cloud/utils/configHelper.js` im Arbeitsbaum existiert.
+- Vollständiges Backend-Deploy: **`scripts/deploy-to-ubuntu.sh`** entfernt nach dem rsync auf dem Zielhost idempotent `…/cloud/utils/configHelper.js`.
+
+**Betrieb (manuelle Korrektur auf dem Server):**
+
+```bash
+# Auf dem Host (Beispielpfad)
+rm -f /home/io/fin1-server/backend/parse-server/cloud/utils/configHelper.js
+cd /home/io/fin1-server && docker compose -f docker-compose.production.yml restart parse-server
+```
+
+**Verifikation (optional, im Container):**
+
+```bash
+docker exec fin1-parse-server node -e "const h=require('/app/cloud/utils/configHelper/index.js'); console.log(typeof h.validateInvestmentAmountOrdering)"
+# Erwartung: function
+```
 
 ### 8.3) FAQ: englische Texte von Legacy-Spalten migrieren (`migrateFAQEnglishFields`)
 

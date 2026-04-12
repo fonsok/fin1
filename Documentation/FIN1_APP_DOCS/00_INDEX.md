@@ -43,6 +43,7 @@ Wenn Dokumente und Code/Configs widersprechen, gilt:
 6. **Betriebs- und Prozessdokumentation (Ops/SRE/Release Mgmt)**
    Siehe [`06_BETRIEB_PROZESSE.md`](06_BETRIEB_PROZESSE.md)
    - Ubuntu Backend Runbook: [`06A_BACKEND_UBUNTU_IOBOX_RUNBOOK.md`](06A_BACKEND_UBUNTU_IOBOX_RUNBOOK.md)
+   - Parse Cloud: keine Legacy-Datei `cloud/utils/configHelper.js` (Shadowing, Admin-Konfig-Fehler) → Runbook **§ 8.2.1**, Kurzüberblick in `06_BETRIEB_PROZESSE.md`
    - Deployment / rsync (kein `--delete` auf Server-Backend): [`../DEPLOYMENT_RSYNC_SICHERHEIT.md`](../DEPLOYMENT_RSYNC_SICHERHEIT.md)
    - Enthält: Hardening-Stufenplan (Ports/Firewall/OS-Services)
    - CSR Support Workflow & Aufgabenverteilung: [`06B_CSR_SUPPORT_WORKFLOW.md`](06B_CSR_SUPPORT_WORKFLOW.md)

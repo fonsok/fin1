@@ -102,102 +102,41 @@ function sanitizeObject(obj) {
 }
 
 // ---------------------------------------------------------------------------
-// Per-step validation for completeOnboardingStep
+// Per-step validation for completeOnboardingStep (Joi schemas — onboardingStepSchemas.js)
 // Returns { valid: true } or { valid: false, message: '...' }
 // ---------------------------------------------------------------------------
 
-function validateStepData(step, data) {
-  if (!data) return { valid: true };
+const {
+  createValidateStepData,
+  createValidatePartialOnboardingData,
+} = require('./onboardingStepSchemas');
 
-  switch (step) {
-    case 'personal': {
-      const errors = [];
-      if (!isNonEmpty(data.firstName)) errors.push('firstName is required');
-      if (!isNonEmpty(data.lastName)) errors.push('lastName is required');
-      if (data.firstName && !isStringInRange(data.firstName, 1, 100)) errors.push('firstName too long');
-      if (data.lastName && !isStringInRange(data.lastName, 1, 100)) errors.push('lastName too long');
-      if (data.dateOfBirth && !isValidBirthDate(data.dateOfBirth)) errors.push('Invalid date of birth or age < 18');
-      if (data.salutation && !isInEnum(data.salutation, ['Herr', 'Frau', 'Divers', 'mr', 'mrs', 'diverse'])) {
-        errors.push('Invalid salutation');
-      }
-      if (data.accountType && !isInEnum(data.accountType, ['individual', 'joint', 'business'])) {
-        errors.push('Invalid account type');
-      }
-      if (data.userRole && !isInEnum(data.userRole, ['investor', 'trader'])) {
-        errors.push('Invalid user role');
-      }
-      if (data.nationality && !isStringInRange(data.nationality, 2, 60)) errors.push('Invalid nationality');
-      return errors.length ? { valid: false, message: errors.join('; ') } : { valid: true };
-    }
+const validateStepData = createValidateStepData({
+  isValidBirthDate,
+  isValidGermanPostalCode,
+  isValidGermanTaxId,
+});
 
-    case 'address':
-    case 'tax': {
-      const errors = [];
-      if (!isNonEmpty(data.streetAndNumber)) errors.push('streetAndNumber is required');
-      if (!isNonEmpty(data.city)) errors.push('city is required');
-      if (!isNonEmpty(data.country)) errors.push('country is required');
-      if (data.postalCode && !isValidGermanPostalCode(data.postalCode)) errors.push('Invalid German postal code (5 digits)');
-      if (data.taxNumber && !isValidGermanTaxId(data.taxNumber)) errors.push('Invalid German tax ID (11 digits)');
-      if (data.streetAndNumber && !isStringInRange(data.streetAndNumber, 3, 200)) errors.push('streetAndNumber out of range');
-      if (data.city && !isStringInRange(data.city, 1, 100)) errors.push('city too long');
-      return errors.length ? { valid: false, message: errors.join('; ') } : { valid: true };
-    }
+const validatePartialOnboardingData = createValidatePartialOnboardingData({
+  isValidBirthDate,
+  isValidGermanPostalCode,
+  isValidGermanTaxId,
+});
 
-    case 'verification': {
-      if (data.identificationType && !isInEnum(data.identificationType, ['passport', 'idCard', 'driversLicense'])) {
-        return { valid: false, message: 'Invalid identification type' };
-      }
-      return { valid: true };
-    }
+const {
+  createValidateCompanyKybStepData,
+  createValidatePartialCompanyKybData,
+} = require('./companyKybStepSchemas');
 
-    case 'experience': {
-      const errors = [];
-      if (data.employmentStatus && !isInEnum(data.employmentStatus, [
-        'employed', 'selfEmployed', 'civilServant', 'student',
-        'retired', 'unemployed', 'other'
-      ])) errors.push('Invalid employment status');
-      const numericFields = [
-        'stocksTransactionsCount', 'stocksInvestmentAmount',
-        'etfsTransactionsCount', 'etfsInvestmentAmount',
-        'derivativesTransactionsCount', 'derivativesInvestmentAmount'
-      ];
-      for (const f of numericFields) {
-        if (data[f] !== undefined && data[f] !== null && typeof data[f] !== 'number' && typeof data[f] !== 'string') {
-          errors.push(`${f} must be a number or string`);
-        }
-      }
-      return errors.length ? { valid: false, message: errors.join('; ') } : { valid: true };
-    }
+const validateCompanyKybStepData = createValidateCompanyKybStepData({
+  isValidBirthDate,
+  isValidGermanPostalCode,
+});
 
-    case 'risk': {
-      const errors = [];
-      if (data.calculatedRiskClass !== undefined && !isPositiveInt(data.calculatedRiskClass)) {
-        errors.push('calculatedRiskClass must be a positive integer');
-      }
-      if (data.finalRiskClass !== undefined && !isPositiveInt(data.finalRiskClass)) {
-        errors.push('finalRiskClass must be a positive integer');
-      }
-      if (data.assetType && !isInEnum(data.assetType, ['privateAssets', 'businessAssets'])) {
-        errors.push('Invalid asset type');
-      }
-      return errors.length ? { valid: false, message: errors.join('; ') } : { valid: true };
-    }
-
-    case 'consents': {
-      const errors = [];
-      if (data.acceptedTerms !== undefined && !isBoolean(data.acceptedTerms)) errors.push('acceptedTerms must be boolean');
-      if (data.acceptedPrivacyPolicy !== undefined && !isBoolean(data.acceptedPrivacyPolicy)) errors.push('acceptedPrivacyPolicy must be boolean');
-      if (data.acceptedTerms === false) errors.push('Terms must be accepted');
-      if (data.acceptedPrivacyPolicy === false) errors.push('Privacy policy must be accepted');
-      if (data.termsVersion && !isStringInRange(data.termsVersion, 1, 20)) errors.push('Invalid terms version');
-      if (data.privacyVersion && !isStringInRange(data.privacyVersion, 1, 20)) errors.push('Invalid privacy version');
-      return errors.length ? { valid: false, message: errors.join('; ') } : { valid: true };
-    }
-
-    default:
-      return { valid: true };
-  }
-}
+const validatePartialCompanyKybData = createValidatePartialCompanyKybData({
+  isValidBirthDate,
+  isValidGermanPostalCode,
+});
 
 // ---------------------------------------------------------------------------
 // Profile update validation
@@ -243,6 +182,9 @@ module.exports = {
   isBoolean,
   isPositiveInt,
   validateStepData,
+  validatePartialOnboardingData,
+  validateCompanyKybStepData,
+  validatePartialCompanyKybData,
   validateProfileUpdate,
 };
 

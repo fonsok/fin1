@@ -75,10 +75,10 @@ async function findOrCreateTestUser(userId, role) {
     user = new Parse.User();
     user.set('username', `test_${role}_${Date.now()}`);
     user.set('email', `test_${role}@fin1.dev`);
-    user.set('password', `TestPassword123!`);
+    user.set('password', 'TestPassword123!');
     user.set('role', role);
     user.set('status', 'active');
-    user.set('customerId', `TEST-${role.toUpperCase()}-${Date.now()}`);
+    user.set('customerNumber', `TEST-${role.toUpperCase()}-${Date.now()}`);
 
     await user.signUp(null, { useMasterKey: true });
     return user;

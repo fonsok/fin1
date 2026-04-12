@@ -12,12 +12,13 @@ const { requirePermission, requireAdminRole } = require('../../utils/permissions
 Parse.Cloud.define('getSupportTickets', async (request) => {
   requireAdminRole(request);
 
-  const { customerId, status, priority, limit = 50 } = request.params;
+  const { userId, customerId, status, priority, limit = 50 } = request.params;
 
   const query = new Parse.Query('SupportTicket');
 
-  if (customerId) {
-    query.equalTo('userId', customerId);
+  const endUserFilter = userId || customerId;
+  if (endUserFilter) {
+    query.equalTo('userId', endUserFilter);
   }
   if (status) {
     query.equalTo('status', status);
@@ -72,24 +73,24 @@ Parse.Cloud.define('getSupportTickets', async (request) => {
 Parse.Cloud.define('createSupportTicket', async (request) => {
   requireAdminRole(request);
 
-  const { customerId, userId, subject, description, category, priority = 'medium' } = request.params;
+  const { userId, customerId, subject, description, category, priority = 'medium' } = request.params;
 
   if (!subject || !description) {
     throw new Parse.Error(Parse.Error.INVALID_QUERY, 'subject and description required');
   }
 
-  const actualUserId = customerId || userId;
+  const actualUserId = userId || customerId;
+  if (!actualUserId) {
+    throw new Parse.Error(Parse.Error.INVALID_QUERY,
+      'userId required (Parse User objectId of the end customer). customerId is accepted as a legacy alias only.');
+  }
 
   const Ticket = Parse.Object.extend('SupportTicket');
   const ticket = new Ticket();
 
-  // Generate ticket number
-  const ticketNumber = `TKT-${Date.now().toString(36).toUpperCase()}`;
-
-  ticket.set('ticketNumber', ticketNumber);
   ticket.set('subject', subject);
   ticket.set('description', description);
-  ticket.set('category', category || 'other');
+  ticket.set('category', category || 'general');
   ticket.set('priority', priority);
   ticket.set('status', 'open');
   ticket.set('userId', actualUserId);

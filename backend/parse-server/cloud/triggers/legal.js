@@ -15,6 +15,8 @@
 'use strict';
 
 const crypto = require('crypto');
+const { loadConfig } = require('../utils/configHelper/index.js');
+const { envTrue, isDevTradingDataResetDestroyActive } = require('../functions/admin/devHelpers/shared');
 
 function normalizeString(value) {
   if (typeof value !== 'string') return value;
@@ -35,13 +37,16 @@ function replaceAll(source, search, replacement) {
   return source.split(search).join(replacement);
 }
 
-function buildPlaceholderMap() {
+async function buildPlaceholderMap() {
   // IMPORTANT (audit clean):
   // These values represent what will be *stored* and therefore hashed and served.
   // If they change, you MUST create a new TermsContent version (do not edit old ones).
   const commissionRatePercent = getEnvString('FIN1_LEGAL_COMMISSION_RATE_PERCENT', '10');
 
-  const platformName = getEnvString('FIN1_LEGAL_PLATFORM_NAME', 'Platform');
+  // Prefer DB-backed configuration (editable via admin portal), fallback to env.
+  const cfg = await loadConfig(false);
+  const platformName = (cfg?.legal?.platformName && String(cfg.legal.platformName).trim()) || getEnvString('FIN1_LEGAL_PLATFORM_NAME', 'App');
+  const appName = (cfg?.legal?.appName && String(cfg.legal.appName).trim()) || getEnvString('FIN1_LEGAL_APP_NAME', platformName);
   const companyLegalName = getEnvString('FIN1_LEGAL_COMPANY_LEGAL_NAME', 'Company Investing GmbH');
 
   const companyAddress = getEnvString('FIN1_LEGAL_COMPANY_ADDRESS', 'Hauptstraße 100');
@@ -67,6 +72,10 @@ function buildPlaceholderMap() {
     '{{COMMISSION_RATE}}': commissionRatePercent,
 
     '{{LEGAL_PLATFORM_NAME}}': platformName,
+    // Backward/alternate placeholders used in some legal templates
+    '{{APP_NAME}}': appName,
+    '{{PLATFORM_NAME}}': platformName,
+    '{{PRODUCT_NAME}}': appName,
     '{{LEGAL_COMPANY_LEGAL_NAME}}': companyLegalName,
     '{{LEGAL_COMPANY_ADDRESS}}': companyAddress,
     '{{LEGAL_COMPANY_CITY}}': companyCity,
@@ -198,7 +207,7 @@ Parse.Cloud.beforeSave('TermsContent', async (request) => {
   // Resolve placeholders on the server so that:
   // - the stored TermsContent reflects what users see (iOS guidelines)
   // - documentHash is a stable hash of the served content (audit trail)
-  const placeholderMap = buildPlaceholderMap();
+  const placeholderMap = await buildPlaceholderMap();
   const resolvedSections = resolvePlaceholdersInSections(sections, placeholderMap);
   obj.set('sections', resolvedSections);
 
@@ -308,8 +317,27 @@ Parse.Cloud.afterSave('TermsContent', async (request) => {
 // ============================================================================
 
 Parse.Cloud.beforeDelete('TermsContent', async (request) => {
-  // Legal documents must never be deleted for audit compliance.
-  // To "remove" a version, set isActive=false instead.
+  // Default policy: Legal documents must never be deleted for audit compliance.
+  //
+  // Development exception (guardrailed):
+  // Allow hard delete ONLY when ALL conditions are met:
+  // - context override is explicitly set by our maintenance function
+  // - ALLOW_LEGAL_HARD_DELETE=true (explicit toggle)
+  // - NOT production, unless a second explicit override is set
+  // - document is NOT active
+  const nodeEnv = String(process.env.NODE_ENV || '').toLowerCase();
+  const allowInProd =
+    String(process.env.ALLOW_LEGAL_HARD_DELETE_IN_PRODUCTION || '').toLowerCase() === 'true';
+
+  const allow =
+    request.context?.allowLegalHardDelete === true &&
+    String(process.env.ALLOW_LEGAL_HARD_DELETE || '').toLowerCase() === 'true' &&
+    (nodeEnv !== 'production' || allowInProd) &&
+    request.object &&
+    request.object.get('isActive') !== true;
+
+  if (allow) return;
+
   throw new Parse.Error(
     Parse.Error.OPERATION_FORBIDDEN,
     'TermsContent cannot be deleted (audit compliance). Set isActive=false instead.'
@@ -333,7 +361,19 @@ Parse.Cloud.beforeDelete('LegalConsent', async (request) => {
 });
 
 Parse.Cloud.beforeDelete('ComplianceEvent', async (request) => {
-  // Compliance events must never be deleted.
+  // Default: compliance events must never be deleted.
+  // Exception: devResetTradingTestData destroy loop sets a process flag (Parse batch-destroy often does not
+  // propagate options.context to beforeDelete reliably). Same ENV guardrails as that cloud function.
+  const nodeEnv = String(process.env.NODE_ENV || '').toLowerCase();
+  const resetEnabled = envTrue('ALLOW_DEV_TRADING_RESET');
+  const resetInProd = envTrue('ALLOW_DEV_TRADING_RESET_IN_PRODUCTION');
+  if (
+    isDevTradingDataResetDestroyActive() &&
+    resetEnabled &&
+    (nodeEnv !== 'production' || resetInProd)
+  ) {
+    return;
+  }
   throw new Parse.Error(
     Parse.Error.OPERATION_FORBIDDEN,
     'ComplianceEvent cannot be deleted (audit compliance).'

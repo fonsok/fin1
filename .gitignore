@@ -164,6 +164,9 @@ venv/
 *.swo
 *~
 
+# Deploy / local operator secrets (never commit)
+scripts/.env.server
+
 # Temporary exports
 .tmp_*/
 

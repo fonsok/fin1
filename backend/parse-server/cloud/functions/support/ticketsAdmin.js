@@ -1,6 +1,7 @@
 'use strict';
 
 const { requirePermission, requireAdminRole } = require('../../utils/permissions');
+const { applyQuerySort } = require('../../utils/applyQuerySort');
 
 // ============================================================================
 // LEGACY TICKETS (Admin Portal)
@@ -13,35 +14,41 @@ Parse.Cloud.define('getTickets', async (request) => {
   requireAdminRole(request);
   requirePermission(request, 'getTickets');
 
-  const { status, priority, category, assignedTo, userId, limit = 50, skip = 0 } = request.params;
+  const {
+    status,
+    priority,
+    category,
+    assignedTo,
+    userId,
+    limit = 50,
+    skip = 0,
+  } = request.params;
 
   const Ticket = Parse.Object.extend('SupportTicket');
-  const query = new Parse.Query(Ticket);
 
-  if (status) {
-    query.equalTo('status', status);
-  }
-  if (priority) {
-    query.equalTo('priority', priority);
-  }
-  if (category) {
-    query.equalTo('category', category);
-  }
-  if (assignedTo) {
-    query.equalTo('assignedTo', assignedTo);
-  }
-  if (userId) {
-    query.equalTo('userId', userId);
+  function buildTicketQuery() {
+    const q = new Parse.Query(Ticket);
+    if (status) q.equalTo('status', status);
+    if (priority) q.equalTo('priority', priority);
+    if (category) q.equalTo('category', category);
+    if (assignedTo) q.equalTo('assignedTo', assignedTo);
+    if (userId) q.equalTo('userId', userId);
+    return q;
   }
 
-  query.descending('createdAt');
-  query.limit(limit);
-  query.skip(skip);
+  const countQuery = buildTicketQuery();
+  const total = await countQuery.count({ useMasterKey: true });
 
-  const [tickets, total] = await Promise.all([
-    query.find({ useMasterKey: true }),
-    query.count({ useMasterKey: true }),
-  ]);
+  const pageQuery = buildTicketQuery();
+  applyQuerySort(pageQuery, request.params || {}, {
+    allowed: ['createdAt'],
+    defaultField: 'createdAt',
+    defaultDesc: true,
+  });
+  pageQuery.skip(skip);
+  pageQuery.limit(limit);
+
+  const tickets = await pageQuery.find({ useMasterKey: true });
 
   // Enrich with user emails
   const enrichedTickets = await Promise.all(

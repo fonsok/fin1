@@ -1,7 +1,7 @@
 ---
 title: "FIN1 – Betriebs- und Prozessdokumentation (Runbook)"
 audience: ["Betrieb", "SRE/Ops", "Release Management", "Security"]
-lastUpdated: "2026-04-01"
+lastUpdated: "2026-04-12"
 ---
 
 ## Zweck
@@ -51,6 +51,13 @@ Referenz: `docker-compose.production.yml`
 - Parse: `http://<host>/parse/health` (via Nginx) oder intern `http://localhost:1337/health`
 - Parse “API Docs”: `http://<host>/api-docs`
 - Services (container): `http://<host>:8083/health`, `:8084/health`, `:8085/health`
+
+### Parse Cloud Code: Konfigurations-Modul (`configHelper`)
+
+Beim Deploy von **`backend/parse-server/cloud/`** darf **keine** Datei **`utils/configHelper.js`** neben dem Ordner **`utils/configHelper/`** existieren: Node würde die Datei dem Paket vorziehen und **veralteten Code** laden (u. a. fehlgeschlagene Konfig-Speicherung im Admin-Portal, kaputte FAQ-Platzhalter).
+
+- **Prävention / Skripte:** `scripts/check-parse-cloud-config-helper-shadow.sh`, Anbindung in CI und `scripts/deploy-to-ubuntu.sh` (siehe Runbook).
+- **Details, Symptome, manuelle Korrektur:** [`06A_BACKEND_UBUNTU_IOBOX_RUNBOOK.md`](06A_BACKEND_UBUNTU_IOBOX_RUNBOOK.md) **§ 8.2.1**.
 
 ### Parse Dashboard – sicher betreiben
 

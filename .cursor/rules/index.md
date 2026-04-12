@@ -16,11 +16,14 @@ This directory contains persistent rules automatically applied to Cursor AI conv
 - **`dry-constants.md`** - DRY principles and constants management
 - **`trader-documents.md`** - Trader invoices & collection bill: Emittent (issuer) vs Handelsplatz (trading venue), WKN→Emittent mapping, placeholders (applies to Trader/Invoice/TradeStatement files)
 - **`swiftlint.md`** - SwiftLint configuration and code quality enforcement
-- **`ci-cd.md`** - Local development & code quality requirements (CI workflows are reference only)
+- **`ci-cd.md`** - Local development & code quality requirements (CI workflows are reference only); **Parse Cloud** (`configHelper/index.js`, Shadow-Guard); **FIN1-Server Deploy** nach Cloud-Code/Admin-Portal-Änderungen
 - **`responsive-design.md`** - Responsive design system compliance
 
+### Backend (Parse Cloud Code)
+- **`parse-cloud.md`** - Node/Parse Cloud unter `backend/parse-server/cloud/**`: **`configHelper/index.js`**-Imports, kein Shadowing durch `configHelper.js`, Guard-Skript, Verweis Runbook § 8.2.1 (auto-applied per `filePatterns`)
+
 ### Admin Portal (React/TypeScript)
-- **`admin-portal.md`** - React/TypeScript standards for the Admin Web Portal (`admin-portal/`)
+- **`admin-portal.md`** - React/TypeScript standards for the Admin Web Portal (`admin-portal/`), inkl. **Benutzer-Detail** (`/users/:userId`, `getUserDetails`), **Listen-Sortierung** (`listSortOrder` + `applyQuerySort`), **Parse-Datumswerte** in `format.ts`, **Deploy-Pfad** (gebündelte Assets vs. `dist/` auf dem Server), **Freigaben**-Filter
 
 ### Legacy File
 - **`.cursorrules`** (repository root) - **DEPRECATED**: This file is kept for backward compatibility but all rules have been migrated to `.cursor/rules/`. New rules should be added to the appropriate file in `.cursor/rules/`.
@@ -81,7 +84,7 @@ These rule files reference configuration files in the repository:
 
 ### Local Development Requirements
 - SwiftFormat must pass: `swiftformat . --lint`
-- SwiftLint must pass: `swiftlint --strict`
+- SwiftLint (CI): `swiftlint` — optional local gate: `swiftlint --strict`
 - All tests must pass locally
 - Build must succeed locally
 - **No external services required** - all checks run locally

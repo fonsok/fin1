@@ -5,7 +5,8 @@
 
 'use strict';
 
-const { generateCustomerId } = require('../utils/helpers');
+const { generateCustomerNumber, isValidEmail } = require('../utils/helpers');
+const { readCustomerNumber, normalizeUserCustomerNumber } = require('../utils/userIdentity');
 const { encryptFields } = require('../utils/fieldEncryption');
 
 // Fields encrypted at rest (see also triggers/encryption.js for other classes)
@@ -26,30 +27,26 @@ Parse.Cloud.beforeSave(Parse.User, async (request) => {
 
   // ========== NEW USER ==========
   if (isNew) {
-    // Generate customer ID
-    if (!user.get('customerId')) {
+    if (!readCustomerNumber(user)) {
       const role = user.get('role') || 'investor';
-      const customerId = await generateCustomerId(role);
-      user.set('customerId', customerId);
+      user.set('customerNumber', await generateCustomerNumber(role));
     }
 
-    // Set defaults
+    // Set defaults (respect pre-set values for seed/admin-created users)
     user.set('status', user.get('status') || 'pending');
     user.set('kycStatus', user.get('kycStatus') || 'pending');
-    user.set('emailVerified', false);
-    user.set('onboardingCompleted', false);
-    user.set('loginCount', 0);
-    user.set('failedLoginCount', 0);
+    if (user.get('emailVerified') === undefined) user.set('emailVerified', false);
+    if (user.get('onboardingCompleted') === undefined) user.set('onboardingCompleted', false);
+    user.set('loginCount', user.get('loginCount') || 0);
+    user.set('failedLoginCount', user.get('failedLoginCount') || 0);
   }
 
   // ========== EMAIL VALIDATION ==========
   const email = user.get('email');
   if (email) {
-    const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
-    if (!emailRegex.test(email)) {
+    if (!isValidEmail(email)) {
       throw new Parse.Error(Parse.Error.INVALID_EMAIL_ADDRESS, 'Invalid email format');
     }
-    // Normalize email
     user.set('email', email.toLowerCase().trim());
   }
 
@@ -109,6 +106,8 @@ Parse.Cloud.beforeSave(Parse.User, async (request) => {
   if (status && !validStatuses.includes(status)) {
     throw new Parse.Error(Parse.Error.INVALID_VALUE, `Invalid status: ${status}`);
   }
+
+  normalizeUserCustomerNumber(user);
 });
 
 // ============================================================================
@@ -200,6 +199,59 @@ Parse.Cloud.afterSave(Parse.User, async (request) => {
           'KYC abgelehnt',
           'Ihre Identitätsprüfung konnte nicht abgeschlossen werden. Bitte prüfen Sie Ihre Dokumente.',
           'high');
+      }
+    }
+
+    // Company KYB Status Change
+    const oldKybStatus = request.original.get('companyKybStatus');
+    const newKybStatus = user.get('companyKybStatus');
+
+    if (oldKybStatus !== newKybStatus && newKybStatus) {
+      const severityMap = {
+        pending_review: 'medium',
+        approved: 'low',
+        rejected: 'high',
+        more_info_requested: 'high',
+        draft: 'low',
+      };
+
+      const eventMap = {
+        approved: 'company_kyb_approved',
+        rejected: 'company_kyb_rejected',
+        pending_review: 'company_kyb_submitted',
+        more_info_requested: 'company_kyb_info_requested',
+        draft: 'company_kyb_reset',
+      };
+
+      await logComplianceEvent(user.id,
+        eventMap[newKybStatus] || 'company_kyb_status_change',
+        severityMap[newKybStatus] || 'medium',
+        `Company KYB status changed from ${oldKybStatus || 'none'} to ${newKybStatus}`,
+        { oldKybStatus, newKybStatus }
+      );
+
+      if (newKybStatus === 'approved') {
+        await createNotification(user.id, 'kyb_approved', 'account',
+          'KYB genehmigt',
+          'Die Identitätsprüfung Ihres Unternehmens wurde erfolgreich abgeschlossen. Ihr Firmenkonto ist nun freigeschaltet.');
+      } else if (newKybStatus === 'rejected') {
+        await createNotification(user.id, 'kyb_rejected', 'account',
+          'KYB abgelehnt',
+          'Die Identitätsprüfung Ihres Unternehmens konnte nicht abgeschlossen werden. Bitte prüfen Sie die Hinweise und kontaktieren Sie den Support.',
+          'high');
+      } else if (newKybStatus === 'pending_review') {
+        await createNotification(user.id, 'kyb_submitted', 'account',
+          'KYB eingereicht',
+          'Ihre Unternehmensunterlagen wurden eingereicht und werden nun geprüft. Sie erhalten eine Benachrichtigung, sobald die Prüfung abgeschlossen ist.');
+      } else if (newKybStatus === 'more_info_requested') {
+        await createNotification(user.id, 'kyb_info_requested', 'account',
+          'Zusätzliche Informationen benötigt',
+          'Bei der Prüfung Ihrer Unternehmensunterlagen wurden Rückfragen festgestellt. Bitte ergänzen Sie die fehlenden Angaben.',
+          'high');
+      } else if (newKybStatus === 'draft' && oldKybStatus) {
+        await createNotification(user.id, 'kyb_reset', 'account',
+          'KYB zur Überarbeitung freigegeben',
+          'Ihr Unternehmens-KYB wurde zur Überarbeitung freigegeben. Sie können den Vorgang jetzt erneut starten.');
       }
     }
   }

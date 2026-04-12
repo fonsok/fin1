@@ -107,3 +107,29 @@ Parse.Cloud.define('getUnreadNotificationCount', async (request) => {
 
   return { total, byCategory };
 });
+
+// Mark all notifications as read (non-archived)
+Parse.Cloud.define('markAllNotificationsRead', async (request) => {
+  const user = request.user;
+
+  if (!user) {
+    throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'User must be logged in');
+  }
+
+  const query = new Parse.Query('Notification');
+  query.equalTo('userId', user.id);
+  query.equalTo('isRead', false);
+  query.equalTo('isArchived', false);
+  query.limit(1000);
+
+  const notifs = await query.find({ useMasterKey: true });
+  for (const n of notifs) {
+    n.set('isRead', true);
+    n.set('readAt', new Date());
+  }
+  if (notifs.length > 0) {
+    await Parse.Object.saveAll(notifs, { useMasterKey: true });
+  }
+
+  return { success: true, updated: notifs.length };
+});

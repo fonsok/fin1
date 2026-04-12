@@ -23,10 +23,12 @@ require('./triggers/user');
 require('./triggers/investment');
 require('./triggers/trade');
 require('./triggers/order');
+require('./triggers/invoice');
 require('./triggers/wallet');
 require('./triggers/notification');
 require('./triggers/support');
 require('./triggers/legal');
+require('./triggers/faq');
 
 // Functions
 require('./functions/wallet');
@@ -42,6 +44,7 @@ require('./functions/security');
 require('./functions/notifications');
 require('./functions/seed');
 require('./functions/configuration');
+require('./functions/landing');
 require('./functions/templates');
 require('./functions/encryptExistingData');
 
@@ -65,7 +68,7 @@ Parse.Cloud.define('health', async (request) => {
 // Get app configuration
 Parse.Cloud.define('getConfig', async (request) => {
   // Load authoritative financial config from Configuration class (managed via Admin Portal / 4-Eyes)
-  const { loadConfig } = require('./utils/configHelper');
+  const { loadConfig } = require('./utils/configHelper/index.js');
   const liveConfig = await loadConfig(true);
 
   const financialDefaults = {
@@ -73,9 +76,9 @@ Parse.Cloud.define('getConfig', async (request) => {
     orderFeeMin: 5.0,
     orderFeeMax: 50.0,
     traderCommissionRate: 0.10,
-    platformServiceChargeRate: 0.02,
+    appServiceChargeRate: 0.02,
     minimumCashReserve: 20.0,
-    initialAccountBalance: 1.0,
+    initialAccountBalance: 0.0,
   };
 
   // Merge live Configuration values over defaults
@@ -83,6 +86,10 @@ Parse.Cloud.define('getConfig', async (request) => {
     ...financialDefaults,
     ...(liveConfig.financial || {}),
   };
+  {
+    const n = Number(financial.initialAccountBalance);
+    financial.initialAccountBalance = Number.isFinite(n) ? n : financialDefaults.initialAccountBalance;
+  }
 
   // Load optional Config collection (features, limits, display overrides)
   const Config = Parse.Object.extend('Config');
@@ -110,6 +117,14 @@ Parse.Cloud.define('getConfig', async (request) => {
     display.walletFeatureEnabled = false;
   }
 
+  const defaultLimits = {
+    minDeposit: 10.0,
+    maxDeposit: 100000.0,
+    minInvestment: 20.0,
+    maxInvestment: 100000.0,
+    dailyTransactionLimit: 10000.0,
+  };
+
   return {
     financial,
     features: configData.features || {
@@ -117,12 +132,7 @@ Parse.Cloud.define('getConfig', async (request) => {
       darkModeEnabled: false,
       biometricAuthEnabled: true,
     },
-    limits: configData.limits || {
-      minDeposit: 10.0,
-      maxDeposit: 100000.0,
-      minInvestment: 100.0,
-      dailyTransactionLimit: 10000.0,
-    },
+    limits: { ...defaultLimits, ...(configData.limits || {}) },
     display,
   };
 });
@@ -182,7 +192,7 @@ Parse.Cloud.define('updateConfig', async (request) => {
 // Runs automatically on server start and can be triggered manually.
 // ============================================================================
 
-const { DEFAULT_CONFIG, loadConfig } = require('./utils/configHelper');
+const { DEFAULT_CONFIG, loadConfig } = require('./utils/configHelper/index.js');
 
 async function reconcileConfigDefaults() {
   try {

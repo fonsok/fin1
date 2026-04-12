@@ -1,7 +1,7 @@
 'use strict';
 
 const { requireAdminRole } = require('../../../utils/permissions');
-const { getInitialAccountBalance } = require('../../../utils/configHelper');
+const { getInitialAccountBalance } = require('../../../utils/configHelper/index.js');
 const { round2 } = require('../../../utils/accountingHelper/shared');
 const {
   envTrue,

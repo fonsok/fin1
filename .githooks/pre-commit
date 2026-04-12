@@ -31,15 +31,7 @@ fi
 # Run Swift checks only when Swift files are staged
 STAGED_FILES=$(git diff --cached --name-only)
 if echo "$STAGED_FILES" | grep -qE '\.swift$'; then
-    # Run SwiftLint (without --strict to allow warnings)
-    echo "🔍 Running SwiftLint..."
-    if ! swiftlint; then
-        echo "❌ SwiftLint check failed!"
-        echo "Please fix the linting issues before committing."
-        exit 1
-    fi
-
-    # Run SwiftFormat check (optional - skip if not installed)
+    # SwiftFormat first so cheap style fixes apply before SwiftLint
     if command -v swiftformat &> /dev/null; then
         echo "🔍 Running SwiftFormat check..."
         if ! swiftformat . --lint; then
@@ -51,11 +43,27 @@ if echo "$STAGED_FILES" | grep -qE '\.swift$'; then
         echo "ℹ️ SwiftFormat not installed, skipping format check"
     fi
 
+    # Run SwiftLint (without --strict to allow warnings)
+    echo "🔍 Running SwiftLint..."
+    if ! swiftlint; then
+        echo "❌ SwiftLint check failed!"
+        echo "Please fix the linting issues before committing."
+        exit 1
+    fi
+
     # Run MVVM Architecture validation (informational only)
     echo "🔍 Running MVVM architecture validation..."
     ./scripts/validate-mvvm-architecture.sh || echo "ℹ️ MVVM check found issues (see above). Consider fixing these."
 else
     echo "ℹ️ No staged Swift files; skipping SwiftLint/SwiftFormat/MVVM validation."
+fi
+
+# Parse Cloud: block legacy configHelper.js (shadows configHelper/ directory on Node)
+if echo "$STAGED_FILES" | grep -qE '^backend/parse-server/cloud/'; then
+  echo "🔍 Parse Cloud: configHelper shadow check..."
+  if ! ./scripts/check-parse-cloud-config-helper-shadow.sh; then
+    exit 1
+  fi
 fi
 
 # Check for duplicate files

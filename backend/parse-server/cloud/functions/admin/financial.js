@@ -1,7 +1,7 @@
 'use strict';
 
 const { requirePermission, logPermissionCheck } = require('../../utils/permissions');
-const { getTraderCommissionRate } = require('../../utils/configHelper');
+const { getTraderCommissionRate } = require('../../utils/configHelper/index.js');
 
 Parse.Cloud.define('getFinancialDashboard', async (request) => {
   requirePermission(request, 'getFinancialDashboard');
@@ -66,7 +66,8 @@ Parse.Cloud.define('getFinancialDashboard', async (request) => {
     return sum + commission;
   }, 0);
 
-  const correctionQuery = new Parse.Query('CorrectionRequest');
+  const correctionQuery = new Parse.Query('FourEyesRequest');
+  correctionQuery.equalTo('requestType', 'correction');
   correctionQuery.equalTo('status', 'pending');
   const pendingCorrections = await correctionQuery.count({ useMasterKey: true });
 

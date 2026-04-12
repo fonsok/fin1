@@ -5,8 +5,9 @@
 
 'use strict';
 
-const { getTraderCommissionRate } = require('../utils/configHelper');
-const { settleCompletedTrade } = require('../utils/accountingHelper');
+const { getTraderCommissionRate } = require('../utils/configHelper/index.js');
+const { settleAndDistribute } = require('../utils/accountingHelper');
+const { calculateOrderFees } = require('../utils/helpers');
 
 // ============================================================================
 // BEFORE SAVE
@@ -17,7 +18,6 @@ Parse.Cloud.beforeSave('Trade', async (request) => {
   const isNew = !trade.existed();
 
   if (isNew) {
-    // Generate trade number only if not provided by iOS app
     if (!trade.get('tradeNumber')) {
       const lastTrade = await new Parse.Query('Trade')
         .descending('tradeNumber')
@@ -27,13 +27,10 @@ Parse.Cloud.beforeSave('Trade', async (request) => {
       trade.set('tradeNumber', nextNumber);
     }
 
-    // Set defaults ONLY if not already set by iOS app
-    // iOS sends: status, buyOrder, sellOrder, calculatedProfit
     if (!trade.get('status')) {
       trade.set('status', 'pending');
     }
 
-    // Get quantity from buyOrder if not set directly (iOS format)
     const buyOrder = trade.get('buyOrder');
     const directQuantity = trade.get('quantity');
     const quantity = directQuantity || (buyOrder ? buyOrder.quantity : 0);
@@ -41,14 +38,14 @@ Parse.Cloud.beforeSave('Trade', async (request) => {
     if (!trade.has('soldQuantity')) trade.set('soldQuantity', 0);
     if (!trade.has('remainingQuantity')) trade.set('remainingQuantity', quantity);
 
-    // Map iOS calculatedProfit to backend grossProfit if provided
     const calculatedProfit = trade.get('calculatedProfit');
     if (calculatedProfit !== undefined && calculatedProfit !== null) {
       trade.set('grossProfit', calculatedProfit);
-      const commissionRate = await getTraderCommissionRate();
-      const commission = calculatedProfit > 0 ? calculatedProfit * commissionRate : 0;
-      trade.set('totalFees', commission);
-      trade.set('netProfit', calculatedProfit - commission);
+
+      const tradingFees = computeTradingFees(trade);
+      trade.set('tradingFees', tradingFees);
+      trade.set('totalFees', tradingFees);
+      trade.set('netProfit', calculatedProfit - tradingFees);
       trade.set('profitPercentage', quantity > 0 ? (calculatedProfit / quantity) * 100 : 0);
     } else {
       if (!trade.has('grossProfit')) trade.set('grossProfit', 0);
@@ -80,10 +77,8 @@ Parse.Cloud.beforeSave('Trade', async (request) => {
       }
     }
 
-    // Update from iOS calculatedProfit OR calculate from orders
     let calculatedProfit = trade.get('calculatedProfit');
 
-    // If no calculatedProfit, calculate from buyOrder and sellOrders
     if (calculatedProfit === undefined || calculatedProfit === null || calculatedProfit === 0) {
       const buyOrder = trade.get('buyOrder');
       const sellOrder = trade.get('sellOrder');
@@ -104,11 +99,12 @@ Parse.Cloud.beforeSave('Trade', async (request) => {
     if (calculatedProfit !== undefined && calculatedProfit !== null && calculatedProfit !== 0) {
       trade.set('grossProfit', calculatedProfit);
       trade.set('calculatedProfit', calculatedProfit);
-      const updateCommissionRate = await getTraderCommissionRate();
-      const commission = calculatedProfit > 0 ? calculatedProfit * updateCommissionRate : 0;
-      trade.set('totalFees', commission);
-      trade.set('netProfit', calculatedProfit - commission);
-      console.log(`📊 Trade update: Set grossProfit=${calculatedProfit}, commission=${commission} (rate=${updateCommissionRate})`);
+
+      const tradingFees = computeTradingFees(trade);
+      trade.set('tradingFees', tradingFees);
+      trade.set('totalFees', tradingFees);
+      trade.set('netProfit', calculatedProfit - tradingFees);
+      console.log(`📊 Trade update: grossProfit=${calculatedProfit}, tradingFees=${tradingFees}, netProfit=${calculatedProfit - tradingFees}`);
     }
   }
 });
@@ -120,14 +116,11 @@ Parse.Cloud.beforeSave('Trade', async (request) => {
 Parse.Cloud.afterSave('Trade', async (request) => {
   const trade = request.object;
   const isNew = !request.original;
-  const traderId = trade.get('traderId');
 
   if (isNew) {
-    // Log trade creation
     await logAudit('Trade', trade.id, 'created', null, { status: 'pending' });
   }
 
-  // Status change handling
   if (request.original) {
     const oldStatus = request.original.get('status');
     const newStatus = trade.get('status');
@@ -136,21 +129,14 @@ Parse.Cloud.afterSave('Trade', async (request) => {
       await logAudit('Trade', trade.id, 'status_change',
         { status: oldStatus }, { status: newStatus });
 
-      // Trade completed - distribute profits to investors and settle financials
       if (newStatus === 'completed') {
-        await distributeTradeProfit(trade);
-
-        // Phase 1: Backend-authoritative accounting
-        // Creates AccountStatement entries, Credit Note, and Collection Bills
         try {
-          const settlement = await settleCompletedTrade(trade);
+          const settlement = await settleAndDistribute(trade);
           if (settlement) {
-            console.log(`✅ Trade #${trade.get('tradeNumber')} backend settlement complete: commission=€${settlement.totalCommission}`);
+            console.log(`✅ Trade #${trade.get('tradeNumber')} fully settled: commission=€${settlement.totalCommission}, investors=${settlement.investorCount}`);
           }
         } catch (err) {
-          // Non-fatal: existing distributeTradeProfit already handled core logic
-          // Settlement creates accounting records; failure is logged but does not block
-          console.error(`⚠️ Trade #${trade.get('tradeNumber')} settlement error (non-fatal):`, err.message);
+          console.error(`❌ Trade #${trade.get('tradeNumber')} settlement failed:`, err.message, err.stack);
         }
       }
     }
@@ -158,108 +144,30 @@ Parse.Cloud.afterSave('Trade', async (request) => {
 });
 
 // ============================================================================
-// HELPER FUNCTIONS
+// HELPER: Trading fee computation (shared with beforeSave)
 // ============================================================================
 
-async function distributeTradeProfit(trade) {
-  const traderId = trade.get('traderId');
-  const grossProfit = trade.get('grossProfit') || 0;
+function computeTradingFees(trade) {
+  const buyOrder = trade.get('buyOrder');
+  const sellOrders = trade.get('sellOrders') || [];
+  const sellOrder = trade.get('sellOrder');
+  let total = 0;
 
-  if (grossProfit <= 0) return;
-
-  // Load commission rate from Configuration (admin-configured value)
-  // This ensures consistency between App UI and Backend calculations
-  const commissionRate = await getTraderCommissionRate();
-  console.log(`📊 [Trade ${trade.id}] Using commission rate: ${(commissionRate * 100).toFixed(1)}% (from Configuration)`);
-
-  // Find all pool participations for this trade
-  const PoolParticipation = Parse.Object.extend('PoolTradeParticipation');
-  const query = new Parse.Query(PoolParticipation);
-  query.equalTo('tradeId', trade.id);
-  query.equalTo('isSettled', false);
-
-  const participations = await query.find({ useMasterKey: true });
-
-  for (const participation of participations) {
-    const ownershipPct = participation.get('ownershipPercentage') || 0;
-    const profitShare = grossProfit * (ownershipPct / 100);
-    const commission = profitShare * commissionRate;
-    const netProfit = profitShare - commission;
-
-    participation.set('profitShare', profitShare);
-    participation.set('commissionAmount', commission);
-    participation.set('commissionRate', commissionRate);
-    participation.set('grossReturn', netProfit);
-    participation.set('isSettled', true);
-    participation.set('settledAt', new Date());
-
-    await participation.save(null, { useMasterKey: true });
-
-    // Update investment
-    const investmentId = participation.get('investmentId');
-    const Investment = Parse.Object.extend('Investment');
-    const investment = await new Parse.Query(Investment).get(investmentId, { useMasterKey: true });
-
-    if (investment) {
-      const currentValue = (investment.get('currentValue') || 0) + netProfit;
-      const totalProfit = (investment.get('profit') || 0) + netProfit;
-      const totalCommission = (investment.get('totalCommissionPaid') || 0) + commission;
-      const numTrades = (investment.get('numberOfTrades') || 0) + 1;
-
-      investment.set('currentValue', currentValue);
-      investment.set('profit', totalProfit);
-      investment.set('totalCommissionPaid', totalCommission);
-      investment.set('numberOfTrades', numTrades);
-
-      // Calculate profit percentage
-      const initialValue = investment.get('initialValue') || investment.get('amount');
-      if (initialValue > 0) {
-        investment.set('profitPercentage', (totalProfit / initialValue) * 100);
-      }
-
-      await investment.save(null, { useMasterKey: true });
-
-      // Notify investor
-      const investorId = investment.get('investorId');
-      await createNotification(investorId, 'investment_profit', 'investment',
-        'Gewinn erzielt',
-        `Ihr Investment hat einen Gewinn von ${formatCurrency(netProfit)} erzielt.`);
-    }
-
-    // Create commission record
-    await createCommission(traderId, investment, trade, participation, commission);
-  }
-}
-
-async function createCommission(traderId, investment, trade, participation, amount) {
-  const Commission = Parse.Object.extend('Commission');
-  const commission = new Commission();
-
-  // Generate commission number
-  const lastComm = await new Parse.Query('Commission')
-    .startsWith('commissionNumber', `COM-${new Date().getFullYear()}-`)
-    .descending('commissionNumber')
-    .first({ useMasterKey: true });
-
-  let seq = 1;
-  if (lastComm) {
-    const parts = lastComm.get('commissionNumber').split('-');
-    seq = parseInt(parts[2], 10) + 1;
+  if (buyOrder) {
+    total += calculateOrderFees(buyOrder.totalAmount || 0, true).totalFees;
   }
 
-  commission.set('commissionNumber', `COM-${new Date().getFullYear()}-${seq.toString().padStart(7, '0')}`);
-  commission.set('traderId', traderId);
-  commission.set('investorId', investment.get('investorId'));
-  commission.set('investmentId', investment.id);
-  commission.set('tradeId', trade.id);
-  commission.set('participationId', participation.id);
-  commission.set('investorGrossProfit', participation.get('profitShare'));
-  commission.set('commissionRate', participation.get('commissionRate'));
-  commission.set('commissionAmount', amount);
-  commission.set('status', 'pending');
+  const allSells = sellOrders.length > 0 ? sellOrders : (sellOrder ? [sellOrder] : []);
+  for (const so of allSells) {
+    total += calculateOrderFees(so.totalAmount || 0, true).totalFees;
+  }
 
-  await commission.save(null, { useMasterKey: true });
+  return total;
 }
+
+// ============================================================================
+// HELPER: Audit logging
+// ============================================================================
 
 async function logAudit(resourceType, resourceId, action, oldValues, newValues) {
   const AuditLog = Parse.Object.extend('AuditLog');
@@ -271,21 +179,4 @@ async function logAudit(resourceType, resourceId, action, oldValues, newValues) 
   if (oldValues) log.set('oldValues', oldValues);
   if (newValues) log.set('newValues', newValues);
   await log.save(null, { useMasterKey: true });
-}
-
-async function createNotification(userId, type, category, title, message) {
-  const Notification = Parse.Object.extend('Notification');
-  const notif = new Notification();
-  notif.set('userId', userId);
-  notif.set('type', type);
-  notif.set('category', category);
-  notif.set('title', title);
-  notif.set('message', message);
-  notif.set('isRead', false);
-  notif.set('channels', ['in_app', 'push']);
-  await notif.save(null, { useMasterKey: true });
-}
-
-function formatCurrency(amount) {
-  return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(amount);
 }

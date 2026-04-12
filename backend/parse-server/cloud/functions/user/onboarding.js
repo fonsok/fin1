@@ -1,6 +1,10 @@
 'use strict';
 
-const { sanitizeObject, validateStepData } = require('../../utils/validation');
+const {
+  sanitizeObject,
+  validateStepData,
+  validatePartialOnboardingData,
+} = require('../../utils/validation');
 
 // Extracts the subset of answers relevant to a given audit step.
 // Stored as an immutable JSON snapshot so auditors can see exactly
@@ -182,6 +186,13 @@ Parse.Cloud.define('saveOnboardingProgress', async (request) => {
 
   if (!step || typeof step !== 'string' || step.length > 50) {
     throw new Parse.Error(Parse.Error.INVALID_VALUE, 'step is required and must be a short string');
+  }
+
+  if (data) {
+    const partialValidation = validatePartialOnboardingData(step, data);
+    if (!partialValidation.valid) {
+      throw new Parse.Error(Parse.Error.INVALID_VALUE, `Validation failed: ${partialValidation.message}`);
+    }
   }
 
   const json = data ? JSON.stringify(data) : '';

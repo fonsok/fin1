@@ -1,33 +1,34 @@
 // ============================================================================
 // Parse Cloud Code
 // triggers/wallet.js - Wallet Transaction Triggers
+//
+// GoB compliance: Every financial movement creates a Document receipt first,
+// then books an AccountStatement entry referencing that receipt.
 // ============================================================================
 
 'use strict';
 
 const { generateSequentialNumber } = require('../utils/helpers');
+const { bookAccountStatementEntry } = require('../utils/accountingHelper/statements');
+const { createWalletReceiptDocument } = require('../utils/accountingHelper/documents');
 
 Parse.Cloud.beforeSave('WalletTransaction', async (request) => {
   const tx = request.object;
   const isNew = !tx.existed();
 
   if (isNew) {
-    // Generate transaction number
     if (!tx.get('transactionNumber')) {
       const txNumber = await generateSequentialNumber('TXN', 'WalletTransaction', 'transactionNumber');
       tx.set('transactionNumber', txNumber);
     }
 
-    // Set defaults
     tx.set('status', tx.get('status') || 'pending');
     tx.set('transactionDate', tx.get('transactionDate') || new Date());
 
-    // Calculate balance
     const userId = tx.get('userId');
     const amount = tx.get('amount');
     const type = tx.get('transactionType');
 
-    // Get current balance
     const lastTx = await new Parse.Query('WalletTransaction')
       .equalTo('userId', userId)
       .equalTo('status', 'completed')
@@ -37,14 +38,12 @@ Parse.Cloud.beforeSave('WalletTransaction', async (request) => {
     const balanceBefore = lastTx ? (lastTx.get('balanceAfter') || 0) : 0;
     tx.set('balanceBefore', balanceBefore);
 
-    // Calculate new balance
     const creditTypes = ['deposit', 'trade_sell', 'profit_distribution', 'commission_credit', 'refund', 'investment_return'];
     const isCredit = creditTypes.includes(type);
     const balanceAfter = isCredit ? balanceBefore + Math.abs(amount) : balanceBefore - Math.abs(amount);
 
     tx.set('balanceAfter', balanceAfter);
 
-    // Validate sufficient balance for debits
     if (!isCredit && balanceAfter < 0) {
       throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Insufficient balance');
     }
@@ -80,8 +79,32 @@ Parse.Cloud.afterSave('WalletTransaction', async (request) => {
         await event.save(null, { useMasterKey: true });
       }
 
-      // Notify user
+      // GoB: Beleg + AccountStatement for deposit/withdrawal
       if (['deposit', 'withdrawal'].includes(type)) {
+        try {
+          const receipt = await createWalletReceiptDocument({
+            userId,
+            receiptType: type,
+            amount,
+            description: tx.get('description') || `${type === 'deposit' ? 'Einzahlung' : 'Auszahlung'} ${Math.abs(amount).toFixed(2)} €`,
+            referenceType: 'WalletTransaction',
+            referenceId: tx.id,
+            metadata: { transactionNumber: tx.get('transactionNumber') },
+          });
+
+          const isCredit = type === 'deposit';
+          await bookAccountStatementEntry({
+            userId,
+            entryType: type,
+            amount: isCredit ? Math.abs(amount) : -Math.abs(amount),
+            description: `${isCredit ? 'Einzahlung' : 'Auszahlung'} (${tx.get('transactionNumber')})`,
+            referenceDocumentId: receipt.id,
+          });
+        } catch (err) {
+          console.error(`❌ GoB receipt/booking failed for WalletTransaction ${tx.id}:`, err.message);
+        }
+
+        // Notify user
         const Notification = Parse.Object.extend('Notification');
         const notif = new Notification();
         notif.set('userId', userId);

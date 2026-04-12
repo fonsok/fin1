@@ -1,6 +1,12 @@
 #!/bin/bash
 # FIN1 Deployment Script - Kopiert Dateien auf Ubuntu-Server
 # Usage: ./deploy-to-ubuntu.sh [ubuntu-ip-or-hostname] [ubuntu-user]
+#
+# WARNUNG — niemals `rsync --delete` auf den Server-Backend-Baum anwenden, wenn dort
+# mehr liegt als im Git-Repo (z. B. nginx/ssl Zertifikate, server-spezifische
+# notification-service Dateien, Log-Archive). `--delete` entfernt alles, was lokal
+# fehlt, und kann Produktionsdaten zerstören. Dieses Skript verwendet absichtlich
+# rsync OHNE --delete.
 
 set -e
 
@@ -90,14 +96,23 @@ fi
 echo -e "\n${YELLOW}[3/6]${NC} Remote-Verzeichnisstruktur erstellen..."
 ssh "$UBUNTU_USER@$UBUNTU_HOST" "mkdir -p $REMOTE_DIR/backend/{parse-server/{cloud,certs,logs},mongodb/init,postgres/init,nginx/{ssl,logs},market-data,notification-service/certs,analytics-service}"
 
-# Copy backend files
+# Copy backend files (no --delete: server may hold certs, extra files not in repo)
 echo -e "\n${YELLOW}[4/6]${NC} Backend-Dateien kopieren..."
+if ! "$SCRIPT_DIR/check-parse-cloud-config-helper-shadow.sh"; then
+    echo -e "${RED}✗${NC} Lokale Parse-Cloud-Struktur ungültig (siehe Meldung oben)."
+    exit 1
+fi
+echo -e "${BLUE}Hinweis:${NC} rsync läuft ohne --delete, damit server-spezifische Dateien erhalten bleiben."
 rsync -avz --progress \
     --exclude='node_modules' \
     --exclude='.env' \
     --exclude='*.log' \
     --exclude='.git' \
     "$BACKEND_DIR/" "$UBUNTU_USER@$UBUNTU_HOST:$REMOTE_DIR/backend/"
+
+# Legacy file on server would shadow utils/configHelper/ if present (Node module resolution).
+ssh "$UBUNTU_USER@$UBUNTU_HOST" "rm -f $REMOTE_DIR/backend/parse-server/cloud/utils/configHelper.js" \
+    && echo -e "${GREEN}✓${NC} Legacy configHelper.js auf Server entfernt (falls vorhanden)"
 
 # Copy docker-compose files
 echo -e "\n${YELLOW}[5/6]${NC} Docker Compose Dateien kopieren..."

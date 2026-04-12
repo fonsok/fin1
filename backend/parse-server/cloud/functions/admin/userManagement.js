@@ -2,6 +2,168 @@
 
 const { requireAdminRole } = require('../../utils/permissions');
 
+/**
+ * Clears Parse Server account-lockout fields on _User (see node_modules/parse-server/lib/AccountLockout.js).
+ * Master-key PUT on /users/:id with Delete ops — same mechanism as unlockAccount() when unlockOnPasswordReset is true.
+ */
+async function clearAccountLockoutForUserObjectId(objectId) {
+  if (!objectId) {
+    return;
+  }
+  const port = String(process.env.PORT || '1337');
+  const basePath = (process.env.PARSE_SERVER_INTERNAL_PARSE_PATH || '/parse').replace(/\/$/, '');
+  const host = process.env.PARSE_SERVER_LOCKOUT_CLEAR_HOST || '127.0.0.1';
+  const url = `http://${host}:${port}${basePath}/users/${objectId}`;
+  const appId = process.env.PARSE_SERVER_APPLICATION_ID || 'fin1-app-id';
+  const masterKey = process.env.PARSE_SERVER_MASTER_KEY || 'fin1-master-key';
+
+  const res = await fetch(url, {
+    method: 'PUT',
+    headers: {
+      'X-Parse-Application-Id': appId,
+      'X-Parse-Master-Key': masterKey,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      _failed_login_count: { __op: 'Delete' },
+      _account_lockout_expires_at: { __op: 'Delete' },
+    }),
+  });
+
+  if (!res.ok) {
+    const body = await res.text();
+    console.error(`clearAccountLockoutForUserObjectId failed: ${res.status} ${body}`);
+    throw new Parse.Error(
+      Parse.Error.INTERNAL_SERVER_ERROR,
+      `Account lockout could not be cleared (HTTP ${res.status}). Check parse logs.`
+    );
+  }
+}
+
+/**
+ * Master key only: immediately clear Parse account lockout for a user (no password change).
+ * Params: { email: string }
+ */
+Parse.Cloud.define('unlockParseAccountLockout', async (request) => {
+  if (!request.master) {
+    throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Master key required');
+  }
+  const email = (request.params && request.params.email && String(request.params.email).toLowerCase().trim()) || '';
+  if (!email) {
+    throw new Parse.Error(Parse.Error.INVALID_QUERY, 'email is required');
+  }
+
+  const q = new Parse.Query(Parse.User);
+  q.equalTo('email', email);
+  let user = await q.first({ useMasterKey: true });
+  if (!user) {
+    const qu = new Parse.Query(Parse.User);
+    qu.equalTo('username', email);
+    user = await qu.first({ useMasterKey: true });
+  }
+  if (!user) {
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `User not found: ${email}`);
+  }
+
+  await clearAccountLockoutForUserObjectId(user.id);
+  return {
+    success: true,
+    message: `Account lockout cleared for ${user.get('email') || email}`,
+    objectId: user.id,
+  };
+});
+
+const PORTAL_PASSWORD_RESET_ROLES = [
+  'admin',
+  'business_admin',
+  'security_officer',
+  'compliance',
+  'customer_service',
+];
+
+/**
+ * Master key only — production-safe operator path when a portal user cannot log in:
+ * always sets a new password, normalizes email/username, ensures active status, clears Parse account lockout.
+ * Does not echo the password in the response.
+ *
+ * Params: { email, password, role? (default: keep existing if already portal role; else required), firstName?, lastName? }
+ */
+Parse.Cloud.define('resetPortalUserCredentialsMaster', async (request) => {
+  if (!request.master) {
+    throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Master key required');
+  }
+
+  const params = request.params || {};
+  const emailRaw = params.email;
+  const password = params.password;
+
+  if (!emailRaw || typeof emailRaw !== 'string') {
+    throw new Parse.Error(Parse.Error.INVALID_QUERY, 'email is required');
+  }
+  if (!password || typeof password !== 'string' || password.length < 8) {
+    throw new Parse.Error(Parse.Error.INVALID_QUERY, 'password is required (min 8 characters)');
+  }
+
+  const emailNorm = emailRaw.toLowerCase().trim();
+  let targetRole = params.role;
+
+  const q = new Parse.Query(Parse.User);
+  q.equalTo('email', emailNorm);
+  let user = await q.first({ useMasterKey: true });
+  if (!user) {
+    const qu = new Parse.Query(Parse.User);
+    qu.equalTo('username', emailNorm);
+    user = await qu.first({ useMasterKey: true });
+  }
+  if (!user) {
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `User not found: ${emailNorm}`);
+  }
+
+  const currentRole = user.get('role');
+  if (!targetRole) {
+    if (!PORTAL_PASSWORD_RESET_ROLES.includes(currentRole)) {
+      throw new Parse.Error(
+        Parse.Error.OPERATION_FORBIDDEN,
+        `User role '${currentRole}' is not a portal role; pass role in params`
+      );
+    }
+    targetRole = currentRole;
+  }
+  if (!PORTAL_PASSWORD_RESET_ROLES.includes(targetRole)) {
+    throw new Parse.Error(
+      Parse.Error.INVALID_VALUE,
+      `role must be one of: ${PORTAL_PASSWORD_RESET_ROLES.join(', ')}`
+    );
+  }
+
+  user.set('username', emailNorm);
+  user.set('email', emailNorm);
+  user.set('role', targetRole);
+  user.set('status', 'active');
+  user.set('password', password);
+  if (params.firstName) {
+    user.set('firstName', params.firstName);
+  }
+  if (params.lastName) {
+    user.set('lastName', params.lastName);
+  }
+
+  await user.save(null, { useMasterKey: true });
+  await clearAccountLockoutForUserObjectId(user.id);
+
+  return {
+    success: true,
+    message: `Portal credentials reset for ${user.get('email')}`,
+    user: {
+      objectId: user.id,
+      email: user.get('email'),
+      username: user.get('username'),
+      role: user.get('role'),
+      status: user.get('status'),
+    },
+  };
+});
+
 Parse.Cloud.define('getTestUserDetails', async (request) => {
   const { userId } = request.params;
   if (!userId) {
@@ -87,6 +249,7 @@ Parse.Cloud.define('resetDevUserPassword', async (request) => {
 
   user.set('password', newPassword);
   await user.save(null, { useMasterKey: true });
+  await clearAccountLockoutForUserObjectId(user.id);
 
   return {
     success: true,
@@ -97,37 +260,8 @@ Parse.Cloud.define('resetDevUserPassword', async (request) => {
 });
 
 Parse.Cloud.define('createTestUsers', async (request) => {
-  console.log('📊 Creating test users...');
-
-  const testUsers = [
-    { username: 'trader3@test.com', email: 'trader3@test.com', role: 'trader', status: 'active' },
-    { username: 'investor1@test.com', email: 'investor1@test.com', role: 'investor', status: 'active' },
-    { username: 'investor2@test.com', email: 'investor2@test.com', role: 'investor', status: 'active' },
-  ];
-
-  const created = [];
-  for (const userData of testUsers) {
-    const existingQuery = new Parse.Query(Parse.User);
-    existingQuery.equalTo('email', userData.email);
-    const existing = await existingQuery.first({ useMasterKey: true });
-
-    if (existing) {
-      created.push({ email: userData.email, status: 'already exists', objectId: existing.id });
-      continue;
-    }
-
-    const user = new Parse.User();
-    user.set('username', userData.username);
-    user.set('email', userData.email);
-    user.set('password', 'TestPassword123!Secure');
-    user.set('role', userData.role);
-    user.set('status', userData.status);
-
-    await user.signUp(null, { useMasterKey: true });
-    created.push({ email: userData.email, status: 'created', objectId: user.id });
-  }
-
-  return { success: true, users: created };
+  console.log('📊 Redirecting to seedTestUsers for full user provisioning...');
+  return await Parse.Cloud.run('seedTestUsers', {}, { sessionToken: request.user?.getSessionToken?.() || undefined });
 });
 
 Parse.Cloud.define('createAdminUser', async (request) => {
@@ -169,6 +303,7 @@ Parse.Cloud.define('createAdminUser', async (request) => {
     if (firstName) existing.set('firstName', firstName);
     if (lastName) existing.set('lastName', lastName);
     await existing.save(null, { useMasterKey: true });
+    await clearAccountLockoutForUserObjectId(existing.id);
 
     return {
       success: true,
@@ -199,6 +334,7 @@ Parse.Cloud.define('createAdminUser', async (request) => {
   if (lastName) user.set('lastName', lastName);
 
   await user.signUp(null, { useMasterKey: true });
+  await clearAccountLockoutForUserObjectId(user.id);
 
   return {
     success: true,
