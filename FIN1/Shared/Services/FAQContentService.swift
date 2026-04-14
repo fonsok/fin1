@@ -28,15 +28,18 @@ final class FAQContentService: FAQContentServiceProtocol {
     }
 
     private let parseAPIClient: (any ParseAPIClientProtocol)?
+    private let configurationService: (any ConfigurationServiceProtocol)?
     private let userDefaults: UserDefaults
     private let cacheTTL: TimeInterval
 
     init(
         parseAPIClient: (any ParseAPIClientProtocol)?,
+        configurationService: (any ConfigurationServiceProtocol)? = nil,
         userDefaults: UserDefaults = .standard,
         cacheTTL: TimeInterval = 60 * 60 * 24
     ) {
         self.parseAPIClient = parseAPIClient
+        self.configurationService = configurationService
         self.userDefaults = userDefaults
         self.cacheTTL = cacheTTL
     }
@@ -165,17 +168,50 @@ final class FAQContentService: FAQContentServiceProtocol {
     }
 
     private func replacePlaceholders(in text: String) -> String {
-        var output = text
+        guard !text.isEmpty else { return text }
+
+        let appServiceChargeRate = configurationService?.appServiceChargeRate
+            ?? CalculationConstants.ServiceCharges.appServiceChargeRate
+        let traderCommissionRate = configurationService?.traderCommissionRate
+            ?? CalculationConstants.FeeRates.traderCommissionRate
+
         let replacements: [String: String] = [
-            "{{APP_NAME}}": AppBrand.appName,
-            "{{LEGAL_PLATFORM_NAME}}": LegalIdentity.platformName,
-            "{(APP_NAME)}": AppBrand.appName,
-            "{(LEGAL_PLATFORM_NAME)}": LegalIdentity.platformName
+            "APP_NAME": AppBrand.appName,
+            "LEGAL_PLATFORM_NAME": LegalIdentity.platformName,
+            "APP_SERVICE_CHARGE_RATE": formatPercentDE(appServiceChargeRate),
+            "PLATFORM_SERVICE_CHARGE_RATE": formatPercentDE(appServiceChargeRate),
+            "PLATFORM_FEE_RATE": formatPercentDE(appServiceChargeRate),
+            "TRADER_COMMISSION_RATE": formatPercentDE(traderCommissionRate)
         ]
-        for (placeholder, value) in replacements {
-            output = output.replacingOccurrences(of: placeholder, with: value)
+
+        let pattern = #"\{\{([A-Z0-9_]+)\}\}|\{\(([A-Z0-9_]+)\)\}"#
+        guard let regex = try? NSRegularExpression(pattern: pattern) else {
+            return text
         }
-        return output
+        let range = NSRange(text.startIndex..<text.endIndex, in: text)
+        let mutable = NSMutableString(string: text)
+        let matches = regex.matches(in: text, options: [], range: range).reversed()
+        for match in matches {
+            let tokenRange = match.range(at: 1).location != NSNotFound ? match.range(at: 1) : match.range(at: 2)
+            guard
+                let swiftRange = Range(tokenRange, in: text),
+                let replacement = replacements[String(text[swiftRange])]
+            else {
+                continue
+            }
+            mutable.replaceCharacters(in: match.range, with: replacement)
+        }
+        return mutable as String
+    }
+
+    private func formatPercentDE(_ value: Double) -> String {
+        let percentValue = value * 100
+        let formatted = percentValue.formatted(
+            .number
+                .locale(Locale(identifier: "de_DE"))
+                .precision(.fractionLength(0...2))
+        )
+        return "\(formatted) %"
     }
 
     // MARK: - Caching (best practice: reduce network load)

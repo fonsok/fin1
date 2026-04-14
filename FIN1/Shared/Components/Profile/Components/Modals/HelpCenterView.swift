@@ -13,7 +13,10 @@ struct HelpCenterView: View {
         let services = AppServices.live
         let role = userRole ?? (services.userService as? UserService)?.currentUser?.role
         self._viewModel = StateObject(wrappedValue: HelpCenterViewModel(
-            faqContentService: FAQContentService(parseAPIClient: services.parseAPIClient),
+            faqContentService: FAQContentService(
+                parseAPIClient: services.parseAPIClient,
+                configurationService: services.configurationService
+            ),
             userRole: role?.rawValue
         ))
     }
@@ -218,7 +221,7 @@ struct HelpCenterView: View {
     private var noResultsView: some View {
         VStack(spacing: ResponsiveDesign.spacing(16)) {
             Image(systemName: "magnifyingglass")
-                .font(.system(size: ResponsiveDesign.iconSize() * 2.4))
+                .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2.4))
                 .foregroundColor(AppTheme.fontColor.opacity(0.5))
 
             Text(isGerman ? "Keine Ergebnisse" : "No Results Found")
@@ -236,7 +239,7 @@ struct HelpCenterView: View {
     private var unavailableView: some View {
         VStack(spacing: ResponsiveDesign.spacing(16)) {
             Image(systemName: "wifi.slash")
-                .font(.system(size: ResponsiveDesign.iconSize() * 2.4))
+                .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2.4))
                 .foregroundColor(AppTheme.fontColor.opacity(0.5))
 
             Text(isGerman ? "Help Center nicht verfügbar" : "Help Center Unavailable")

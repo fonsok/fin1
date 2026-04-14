@@ -15,7 +15,7 @@ struct FilterChip: View {
                 .foregroundColor(AppTheme.fontColor.opacity(0.6))
             Button(action: onClear, label: {
                 Image(systemName: "xmark")
-                    .font(.system(size: ResponsiveDesign.iconSize() * 0.7))
+                    .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 0.7))
                     .foregroundColor(AppTheme.fontColor.opacity(0.6))
             })
         }
@@ -49,70 +49,76 @@ struct FilterChipButton: View {
     }
 }
 
+// MARK: - Wrapping chip row (Layout protocol — no GeometryProxy / alignmentGuide concurrency issues)
+
+/// Lays out subviews left-to-right, wrapping to the next row when a line exceeds the proposed width.
+private struct HorizontalChipFlowLayout: Layout {
+    var spacing: CGFloat
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        layoutFrames(proposal: proposal, subviews: subviews).bounds.size
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let result = layoutFrames(proposal: proposal, subviews: subviews)
+        for (index, subview) in subviews.enumerated() {
+            let frame = result.frames[index]
+            subview.place(
+                at: CGPoint(x: bounds.minX + frame.minX, y: bounds.minY + frame.minY),
+                proposal: ProposedViewSize(frame.size)
+            )
+        }
+    }
+
+    private func layoutFrames(proposal: ProposedViewSize, subviews: Subviews) -> (frames: [CGRect], bounds: CGRect) {
+        var frames: [CGRect] = []
+        var x: CGFloat = 0
+        var y: CGFloat = 0
+        var rowHeight: CGFloat = 0
+        let maxWidth = proposal.width ?? .greatestFiniteMagnitude
+
+        for subview in subviews {
+            let ideal = subview.sizeThatFits(.unspecified)
+            if x + ideal.width > maxWidth, x > 0 {
+                x = 0
+                y += rowHeight + spacing
+                rowHeight = 0
+            }
+            frames.append(CGRect(origin: CGPoint(x: x, y: y), size: ideal))
+            rowHeight = max(rowHeight, ideal.height)
+            x += ideal.width + spacing
+        }
+
+        let totalHeight = y + rowHeight
+        let totalWidth = frames.map(\.maxX).max() ?? 0
+        let bounds = CGRect(x: 0, y: 0, width: totalWidth, height: totalHeight)
+        return (frames, bounds)
+    }
+}
+
 struct ChipFlowLayout: View {
     @Binding var strikePriceGap: String?
     @Binding var remainingTerm: String?
     @Binding var issuer: String?
 
-    @State private var totalHeight = CGFloat.zero
+    private var chipSpacing: CGFloat { ResponsiveDesign.spacing(8) }
 
     var body: some View {
-        var chips: [(label: String, value: String, onClear: () -> Void)] = []
-        if let val = strikePriceGap { chips.append(("Strike Price Gap", val, { strikePriceGap = nil })) }
-        if let val = remainingTerm { chips.append(("Restlaufzeit", val, { remainingTerm = nil })) }
-        if let val = issuer { chips.append(("Emittent", val, { issuer = nil })) }
-
-        let content = VStack {
-            GeometryReader { geometry in
-                self.generateContent(in: geometry, chips: chips)
+        HorizontalChipFlowLayout(spacing: chipSpacing) {
+            if let val = strikePriceGap {
+                FilterChip(label: "Strike Price Gap", value: val, onClear: { strikePriceGap = nil })
+                    .padding(ResponsiveDesign.spacing(4))
+            }
+            if let val = remainingTerm {
+                FilterChip(label: "Restlaufzeit", value: val, onClear: { remainingTerm = nil })
+                    .padding(ResponsiveDesign.spacing(4))
+            }
+            if let val = issuer {
+                FilterChip(label: "Emittent", value: val, onClear: { issuer = nil })
+                    .padding(ResponsiveDesign.spacing(4))
             }
         }
-
-        return content.frame(height: totalHeight)
-    }
-
-    private func generateContent(in g: GeometryProxy, chips: [(label: String, value: String, onClear: () -> Void)]) -> some View {
-        var width = CGFloat.zero
-        var height = CGFloat.zero
-
-        return ZStack(alignment: .topLeading) {
-            ForEach(chips.indices, id: \.self) { index in
-                let chip = chips[index]
-                FilterChip(label: chip.label, value: chip.value, onClear: chip.onClear)
-                    .padding(.all, 4)
-                    .alignmentGuide(.leading, computeValue: { d in
-                        if abs(width - d.width) > g.size.width {
-                            width = 0
-                            height -= d.height
-                        }
-                        let result = width
-                        if index == chips.count - 1 {
-                            width = 0 // Last item
-                        } else {
-                            width -= d.width
-                        }
-                        return result
-                    })
-                    .alignmentGuide(.top, computeValue: { _ in
-                        let result = height
-                        if index == chips.count - 1 {
-                            height = 0 // Last item
-                        }
-                        return result
-                    })
-            }
-        }
-        .background(viewHeightReader($totalHeight))
-    }
-
-    private func viewHeightReader(_ binding: Binding<CGFloat>) -> some View {
-        return GeometryReader { geometry -> Color in
-            let rect = geometry.frame(in: .local)
-            DispatchQueue.main.async {
-                binding.wrappedValue = rect.size.height
-            }
-            return .clear
-        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 

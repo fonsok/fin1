@@ -38,7 +38,8 @@ struct AppServicesBuildContext {
     var investmentAPIService: InvestmentAPIService?
     var poolTradeParticipationService: PoolTradeParticipationService?
     var telemetryService: TelemetryService?
-    var investmentManagementService: InvestmentManagementService?
+    var investmentPoolLifecycleService: InvestmentPoolLifecycleService?
+    var investmentStatusService: InvestmentStatusService?
     var traderDataService: TraderDataService?
     var commissionAccumulationService: CommissionAccumulationService?
     var traderCashBalanceService: TraderCashBalanceService?
@@ -82,6 +83,7 @@ struct AppServicesBuildContext {
     var settlementAPIService: SettlementAPIService?
     var appLedgerService: AppLedgerService?
 
+    @MainActor
     func toAppServices() -> AppServices {
         AppServices(
             userService: userService!,
@@ -144,6 +146,7 @@ struct AppServicesBuildContext {
             fourEyesApprovalService: fourEyesApprovalService!,
             faqContentService: FAQContentService(
                 parseAPIClient: parseAPIClient!,
+                configurationService: configurationService!,
                 cacheTTL: {
                     #if DEBUG
                     return 60 * 5 // 5 minutes in debug to reflect admin-portal edits quickly
