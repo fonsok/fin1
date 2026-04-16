@@ -1,13 +1,13 @@
 {
-  "exportedAt": "2026-04-16T12:43:01Z",
+  "exportedAt": "2026-04-16T12:57:35Z",
   "version": "1.0",
-  "note": "Admin «Import active (as new)» — EN terms only (same section count as DE backup).",
+  "note": "Admin «Import active (as new)» — EN terms only (same section count as DE backup). EN: all section ids translated via en_by_id (--strict-en).",
   "documents": [
     {
       "version": "1.0.2",
       "language": "en",
       "documentType": "terms",
-      "effectiveDate": "2026-04-16T12:43:01Z",
+      "effectiveDate": "2026-04-16T12:57:35Z",
       "sections": [
         {
           "id": "introduction",

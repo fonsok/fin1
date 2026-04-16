@@ -217,7 +217,7 @@ export function TermsPage() {
         `Active-Import Preview (Dry-Run)\n\n` +
         `- würde neue Versionen erstellen: ${dryRun.createdCount}\n` +
         `- würde aktiv setzen (Gruppen): ${dryRun.activatedCount}\n` +
-        (dryRun.warnings?.length ? `\nWarnings:\n- ${dryRun.warnings.join('\n- ')}` : '') +
+        (dryRun.warnings?.length ? `\nHinweise / Warnungen:\n- ${dryRun.warnings.join('\n- ')}` : '') +
         `\n\nJetzt wirklich durchführen? (Bestehende Historie bleibt erhalten.)`;
 
       const ok = window.confirm(confirmText);
@@ -227,7 +227,8 @@ export function TermsPage() {
       alert(
         `Active-Import abgeschlossen.\n\n` +
           `Neue Versionen: ${result.createdCount}\n` +
-          `Aktiv gesetzt: ${result.activatedCount}`
+          `Aktiv gesetzt: ${result.activatedCount}` +
+          (result.warnings?.length ? `\n\nHinweise:\n- ${result.warnings.join('\n- ')}` : '')
       );
       await loadList();
     } catch (err) {

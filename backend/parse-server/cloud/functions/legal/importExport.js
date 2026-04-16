@@ -11,6 +11,8 @@ const {
 const TERMS_EXPORT_FULL_LIMIT = 500;
 const TERMS_EXPORT_ACTIVE_LIMIT = 50;
 const TERMS_IMPORT_ARCHIVE_SCAN_LIMIT = 1000;
+/** Page size when loading freshly imported rows for active-flag dedupe (must paginate; no hard cap on total). */
+const TERMS_IMPORT_POST_RESTORE_PAGE = 1000;
 
 function registerLegalImportExportFunctions() {
   Parse.Cloud.define('exportLegalDocumentsBackup', async (request) => {
@@ -189,10 +191,23 @@ function registerLegalImportExportFunctions() {
 
     let fixedActiveConflicts = 0;
     if (!dryRun) {
-      const importedQuery = new Parse.Query('TermsContent');
-      importedQuery.equalTo('restoredFromBackupAt', toCreate[0]?.get('restoredFromBackupAt'));
-      importedQuery.limit(1000);
-      const imported = await importedQuery.find({ useMasterKey: true });
+      const restoredAt = toCreate[0]?.get('restoredFromBackupAt');
+      const imported = [];
+      if (restoredAt instanceof Date) {
+        let skip = 0;
+        // eslint-disable-next-line no-constant-condition
+        while (true) {
+          const importedQuery = new Parse.Query('TermsContent');
+          importedQuery.equalTo('restoredFromBackupAt', restoredAt);
+          importedQuery.limit(TERMS_IMPORT_POST_RESTORE_PAGE);
+          importedQuery.skip(skip);
+          const batch = await importedQuery.find({ useMasterKey: true });
+          if (!batch || batch.length === 0) break;
+          imported.push(...batch);
+          if (batch.length < TERMS_IMPORT_POST_RESTORE_PAGE) break;
+          skip += batch.length;
+        }
+      }
 
       const groups = new Map();
       for (const doc of imported) {
@@ -231,6 +246,9 @@ function registerLegalImportExportFunctions() {
   });
 
   Parse.Cloud.define('importActiveLegalDocumentsBackup', async (request) => {
+    requireAdminRole(request);
+    requirePermission(request, 'manageTemplates');
+
     const dryRun = !!request.params.dryRun;
 
     let backup = request.params.backup;

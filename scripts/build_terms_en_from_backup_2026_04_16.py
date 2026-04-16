@@ -5,7 +5,8 @@ legal-documents-backup JSON (same shape as Admin «Export (Backup)»).
 
 DE must have at least one section. EN uses `en_by_id` per section `id`; any `id`
 without a mapping falls back to **German** title/content (stderr warning) until
-you add translations.
+you add translations — unless you pass **`--strict-en`**, then the script exits
+with an error if any `id` is missing from `en_by_id`.
 
 Output:
 - scripts/generated/terms_en_34_2026-04-16.json (dated; name kept for history)
@@ -48,6 +49,11 @@ def main() -> int:
         type=Path,
         default=Path("/Users/ra/Downloads/legal-documents-backup-2026-04-16_14-13-10.json"),
         help="Full legal export JSON (same shape as Admin Export Backup).",
+    )
+    parser.add_argument(
+        "--strict-en",
+        action="store_true",
+        help="Fail if any DE section id has no English entry in en_by_id (no DE→EN fallback).",
     )
     args = parser.parse_args()
     backup_path = args.backup
@@ -433,6 +439,11 @@ Your account is subject to the terms and conditions governing your relationship 
                 }
             )
         else:
+            if args.strict_en:
+                raise SystemExit(
+                    f"Missing English mapping for section id={sid!r} (--strict-en). "
+                    "Add an entry to en_by_id in this script."
+                )
             print(
                 f"WARNING: no EN mapping for section id={sid!r}; using German title/content — add to en_by_id.",
                 file=sys.stderr,
@@ -457,10 +468,15 @@ Your account is subject to the terms and conditions governing your relationship 
 
     exported_at = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
     version = "1.0.2"
+    en_note = (
+        "EN: all section ids translated via en_by_id (--strict-en)."
+        if args.strict_en
+        else "EN from en_by_id; missing ids used DE text as placeholder (see script stderr when building)."
+    )
     active_import_both = {
         "exportedAt": exported_at,
         "version": "1.0",
-        "note": "Admin «Import active (as new)»: terms DE + EN, same section count as DE backup (EN from en_by_id; missing ids use DE text; bbb→{{APP_NAME}} in DE).",
+        "note": f"Admin «Import active (as new)»: terms DE + EN, same section count as DE backup. {en_note} DE: bbb→{{APP_NAME}}.",
         "documents": [
             {
                 "version": version,
@@ -484,7 +500,7 @@ Your account is subject to the terms and conditions governing your relationship 
     active_import_en_only = {
         "exportedAt": exported_at,
         "version": "1.0",
-        "note": "Admin «Import active (as new)» — EN terms only (same section count as DE backup).",
+        "note": f"Admin «Import active (as new)» — EN terms only (same section count as DE backup). {en_note}",
         "documents": [
             {
                 "version": version,
