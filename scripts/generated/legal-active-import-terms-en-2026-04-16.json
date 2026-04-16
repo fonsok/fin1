@@ -1,0 +1,219 @@
+{
+  "exportedAt": "2026-04-16T12:43:01Z",
+  "version": "1.0",
+  "note": "Admin «Import active (as new)» — EN terms only (same section count as DE backup).",
+  "documents": [
+    {
+      "version": "1.0.2",
+      "language": "en",
+      "documentType": "terms",
+      "effectiveDate": "2026-04-16T12:43:01Z",
+      "sections": [
+        {
+          "id": "introduction",
+          "title": "1. Introduction & Definitions",
+          "content": "{{APP_NAME}} is a technology app that facilitates securities trading and wealth management / investment management services. The app connects traders and investors and enables investment opportunities in securities trading activities, including derivatives.\n\n**Definitions:**\n- **App** or **Service**: The {{APP_NAME}} application and related services\n- **User**: Any individual or entity using the App\n- **Trader**: Users who execute securities trades on the App\n- **Investor**: Users who invest capital with traders through the App\n- **Investment**: Capital allocated by investors to traders for investment activities\n- **Securities**: Financial instruments traded on the App",
+          "icon": "info.circle.fill"
+        },
+        {
+          "id": "acceptance",
+          "title": "2. Acceptance of Terms",
+          "content": "By accessing or using the {{APP_NAME}} app, you agree to be bound by these Terms of Service. If you do not agree to these Terms, you must not use the App.\n\n**Changes:**\nWe reserve the right to modify these Terms at any time. Material changes will be communicated with at least 30 days' notice. Continued use of the App after changes constitutes acceptance of the modified Terms.\n\n**Eligibility:**\nYou must be at least 18 years old and have legal capacity to enter into binding agreements. You must comply with all applicable laws and regulations in your jurisdiction.",
+          "icon": "checkmark.circle.fill"
+        },
+        {
+          "id": "regulatory",
+          "title": "3. Regulatory Compliance",
+          "content": "Tax compliance:\n- Capital gains are subject to flat-rate withholding tax ({{TAX_RATE}} + solidarity surcharge) on realized gains.",
+          "icon": "shield.checkered"
+        },
+        {
+          "id": "app",
+          "title": "4. App Description & Service Scope",
+          "content": "**Nature of Service:**\n{{APP_NAME}} is a **technology app** that facilitates securities trading and investment management. The App provides technology infrastructure, connects traders and investors, executes trades through licensed brokers, and provides transaction records.\n\n**What We Do NOT Provide:**\n- Investment advice or recommendations\n- Guaranteed investment returns or performance\n- Financial advisory services\n- Guaranteed trader availability or investment opportunities\n- Tax advice (users must consult tax advisors)\n\n**Service Limitations:**\n- The App acts as an intermediary, not as principal\n- Users make independent investment decisions\n- The App does not guarantee execution at displayed prices\n- Service availability is not guaranteed to be uninterrupted",
+          "icon": "app.badge"
+        },
+        {
+          "id": "account",
+          "title": "5. User Eligibility & Account Requirements",
+          "content": "**Account Eligibility:**\nTo use the App, you must be at least 18 years old, have legal capacity, provide accurate information, complete identity verification (KYC), and comply with all applicable laws.\n\n**Account Types:**\n- **Trader accounts**: For users who execute securities trades\n- **Investor accounts**: For users who invest capital with traders\n\n**Account balance:**\n- Initial balance: New accounts receive an initial balance of €1.00\n- Minimum cash reserve: Accounts must maintain a minimum cash reserve of €20\n- Purpose of balance: Account balances are for App use only",
+          "icon": "person.circle.fill"
+        },
+        {
+          "id": "trading",
+          "title": "6. Trading Terms & Conditions",
+          "content": "**Order execution:**\n- Orders are executed via licensed brokers and exchanges\n- Execution prices are subject to market conditions\n- The App does not guarantee execution at displayed prices\n\n**Order fees & costs:**\n- **Order fee**: 0.5% of the order value (minimum €5, maximum €50)\n- **Exchange venue fee**: 0.1% of the order value (minimum €1, maximum €20)\n- **Third-party costs**: €1.50 per transaction\n- Fees are calculated on the total securities value and are non-refundable after execution\n\n**Trading limits:**\nOrders must meet minimum thresholds and sufficient balance must be available (including fees and minimum reserve).",
+          "icon": "chart.line.uptrend.xyaxis"
+        },
+        {
+          "id": "investment",
+          "title": "7. Investment Terms (Investor-Specific)",
+          "content": "App service charge:\n- Rate: {{APP_SERVICE_CHARGE_RATE}} of the investment amount (incl. {{VAT_RATE}} VAT).\n- VAT: {{APP_SERVICE_CHARGE_RATE}} includes {{VAT_RATE}} VAT.\n- Commissions: Trader commissions ({{TRADER_COMMISSION_RATE}}, configurable) are deducted from returns.",
+          "icon": "eurosign.circle.fill"
+        },
+        {
+          "id": "tax",
+          "title": "8. Tax Obligations & Responsibilities",
+          "content": "Tax withholding:\n- Flat-rate withholding tax: {{TAX_RATE}} + solidarity surcharge applies to realized capital gains.\n- Service charges are subject to {{VAT_RATE}} VAT.",
+          "icon": "doc.text.fill"
+        },
+        {
+          "id": "risks",
+          "title": "9. Risk Disclosures",
+          "content": "**IMPORTANT: Investing in securities involves substantial risk of loss.**\n\n**Investment risks:**\n- **Capital loss risk**: You may lose part or all of your invested capital\n- **Market volatility**: Securities prices fluctuate based on market conditions\n- **No guarantee of returns**: Past performance does not guarantee future results\n- **Trader performance risk**: Returns depend on trader performance, which varies\n- **Liquidity risk**: Investments may not be immediately liquid\n\n**App risks:**\n- Technical failures, service interruptions, limitations in data accuracy\n- Cybersecurity risks despite security measures\n\n**Acknowledgment:**\nBy using the App, you confirm that you understand the risks involved, are capable of bearing the financial risks, and are making independent investment decisions.",
+          "icon": "exclamationmark.triangle.fill"
+        },
+        {
+          "id": "responsibilities",
+          "title": "10. User Responsibilities & Prohibited Activities",
+          "content": "**User obligations:**\nUsers must provide accurate information, maintain secure credentials, comply with laws, report suspicious activities, and cooperate with App investigations.\n\n**Prohibited activities:**\nUsers must not:\n- Engage in fraudulent activities, market manipulation, or unauthorized access\n- Circumvent App controls or provide false information\n- Engage in money laundering, terrorist financing, or violate laws\n- Interfere with App operations or other users\n\n**Consequences:**\nViolations may result in account suspension or termination, legal action, reporting to regulatory authorities, forfeiture of funds, or other remedies available under law.",
+          "icon": "hand.raised.fill"
+        },
+        {
+          "id": "limitations",
+          "title": "11. App Limitations & Disclaimers",
+          "content": "**Service availability:**\n- The App does not guarantee uninterrupted or error-free service\n- Scheduled and unscheduled maintenance may occur\n- Service may be interrupted due to circumstances beyond our control\n\n**Data accuracy:**\n- Market data, prices, and calculations are provided \"as is\"\n- We do not guarantee accuracy, completeness, or timeliness\n- Users should verify critical information independently\n\n**Liability limitations:**\nTo the maximum extent permitted by law:\n- App liability is limited to direct damages\n- We are not liable for indirect, consequential, incidental, or punitive damages\n- Total liability is limited to fees paid in the 12 months preceding the claim\n- We are not liable for losses due to market conditions or user decisions",
+          "icon": "info.circle"
+        },
+        {
+          "id": "ip",
+          "title": "12. Intellectual Property",
+          "content": "**App intellectual property:**\n- All App content, software, designs, and materials are proprietary\n- Users are granted a limited, non-exclusive, non-transferable license to use the App\n- Users may not copy, modify, distribute, or create derivative works\n- All rights reserved\n\n**User data:**\n- Users retain ownership of their data\n- Users grant the App a license to process data for service provision\n- Data processing is governed by our Privacy Policy and GDPR / the German Federal Data Protection Act (BDSG), where applicable\n\n**Trademarks:**\n- {{APP_NAME}} and related trademarks are the property of the App\n- Users may not use trademarks without written permission",
+          "icon": "lock.shield.fill"
+        },
+        {
+          "id": "privacy",
+          "title": "13. Data Protection & Privacy",
+          "content": "**GDPR compliance:**\nThe App complies with the GDPR. Please refer to our Privacy Policy for:\n- Legal basis of processing\n- User rights (access, rectification, erasure, portability)\n- Retention periods\n- International data transfers (if applicable)\n- Contact information for data protection inquiries\n\n**Data security:**\n- We implement industry-standard security measures (AES-256 encryption, TLS 1.3)\n- Data is stored securely (Keychain for sensitive data)\n- However, no system is 100% secure\n- Users must maintain secure credentials\n\n**Data sharing:**\n- Data may be shared with brokers, exchanges, and service providers as necessary\n- Data may be shared for regulatory compliance (KYC/AML)\n- Data sharing is governed by our Privacy Policy",
+          "icon": "hand.raised.slash.fill"
+        },
+        {
+          "id": "termination",
+          "title": "14. Account Termination & Suspension",
+          "content": "**Termination by user:**\nUsers may terminate accounts at any time by contacting App support, following account closure procedures, and settling all outstanding obligations.\n\n**Termination by App:**\nThe App may terminate accounts for violation of Terms, suspicious activity, regulatory requirements, non-compliance with KYC/AML, or other reasons.\n\n**Account suspension:**\nAccounts may be suspended pending investigation, for security reasons, for regulatory compliance, or for non-payment of fees.\n\n**Post-termination:**\nOutstanding obligations must be settled, data retention policies apply, and access to App services ceases.",
+          "icon": "xmark.circle.fill"
+        },
+        {
+          "id": "disputes",
+          "title": "15. Dispute Resolution & Governing Law",
+          "content": "**Governing law:**\nThese Terms are governed by German law.\n\n**Jurisdiction:**\nDisputes shall be subject to the exclusive jurisdiction of German courts.\n\n**Dispute resolution process:**\n1. Informal resolution: contact App support first\n2. Mediation: parties may agree to mediation\n3. Arbitration: if applicable, disputes may be resolved through arbitration\n4. Court proceedings: if other methods fail, disputes may proceed to court\n\n**Regulatory complaints:**\nUsers may file complaints with BaFin (Federal Financial Supervisory Authority) or other regulatory authorities as appropriate.",
+          "icon": "scale.3d"
+        },
+        {
+          "id": "changes",
+          "title": "16. Changes to Terms",
+          "content": "**Modification rights:**\nThe App reserves the right to modify these Terms at any time.\n\n**Notice requirements:**\n- Material changes: at least 30 days' notice\n- Notification methods: email, in-app notification, or App notice\n- Effective date: changes become effective on the specified date\n\n**Acceptance:**\n- Continued use of the App after changes constitutes acceptance\n- Users may terminate accounts if they do not agree to changes\n- Terms are versioned and dated, with previous versions archived",
+          "icon": "arrow.triangle.2.circlepath"
+        },
+        {
+          "id": "contact",
+          "title": "17. Contact Information & Support",
+          "content": "**Support channels:**\n- Help Center: available in-app with FAQs and support articles\n- Contact support: in-app support messaging\n- Response times: we aim to respond within reasonable timeframes\n\n**Legal notices:**\nCompany information, registration details, regulatory authorizations, and registered address are available upon request.\n\n**Data protection officer:**\nContact information for data protection inquiries is available through the Privacy Policy.",
+          "icon": "envelope.fill"
+        },
+        {
+          "id": "special",
+          "title": "18. Special Provisions",
+          "content": "**Anti-money laundering prevention:**\n- KYC requirements: identity verification is required\n- AML compliance: anti-money laundering procedures apply\n- Transaction monitoring: transactions are monitored for suspicious activity\n- Reporting: suspicious activities are reported to authorities\n- User cooperation: users must cooperate with KYC/AML procedures\n\n**Regulatory reporting:**\n- The App may be required to report to regulatory authorities\n- User information may be shared for regulatory compliance\n- Users must provide accurate information for regulatory purposes",
+          "icon": "exclamationmark.shield.fill"
+        },
+        {
+          "id": "severability",
+          "title": "19. Severability & Miscellaneous",
+          "content": "**Severability:**\nIf any provision of these Terms is found to be invalid or unenforceable, the remaining provisions shall remain in full force and effect.\n\n**Entire agreement:**\nThese Terms, together with the Privacy Policy, constitute the entire agreement between users and the App.\n\n**Waiver:**\nFailure to enforce any provision does not constitute a waiver of that provision.\n\n**Assignment:**\nUsers may not assign these Terms without App consent. The App may assign these Terms.\n\n**Language:**\nThese Terms are provided in German and English. In case of conflict, the German version shall prevail.",
+          "icon": "doc.text.magnifyingglass"
+        },
+        {
+          "id": "dashboard_risk_note",
+          "title": "Dashboard risk notice",
+          "content": "Note: never expose more than {{MAX_RISK_PERCENT}} % of your assets to risk.",
+          "icon": "exclamationmark.triangle"
+        },
+        {
+          "id": "order_legal_warning_buy",
+          "title": "Buy order legal notice",
+          "content": "By tapping 'Buy' you agree to the general terms and conditions and confirm that you understand the risks of securities trading. This transaction is subject to fees.",
+          "icon": "doc.text"
+        },
+        {
+          "id": "order_legal_warning_sell",
+          "title": "Sell order legal notice",
+          "content": "By tapping 'Sell' you agree to the general terms and conditions and confirm that you understand the risks of securities trading. This transaction is subject to fees.",
+          "icon": "doc.text"
+        },
+        {
+          "id": "doc_tax_note_sell",
+          "title": "Tax note (sell)",
+          "content": "On sale, taxation is applied in accordance with flat-rate withholding tax (currently {{TAX_RATE}}) on the realized gain.",
+          "icon": "percent"
+        },
+        {
+          "id": "doc_tax_note_buy",
+          "title": "Tax note (buy)",
+          "content": "No tax is deducted on purchase. Taxation occurs on sale in accordance with flat-rate withholding tax (currently {{TAX_RATE}}).",
+          "icon": "percent"
+        },
+        {
+          "id": "doc_legal_note_wphg",
+          "title": "Legal note (WpHG)",
+          "content": "Taxation is based on gain realization under current regulation (Section 20 German Income Tax Act, EStG).\n\nThis statement is prepared in accordance with the German Securities Trading Act (WpHG) and the Securities Trading Ordinance (WpDVerOV).",
+          "icon": "scale.3d"
+        },
+        {
+          "id": "doc_tax_note_service_charge",
+          "title": "Tax note (service charge)",
+          "content": "The app service charge is subject to VAT ({{VAT_RATE}}).",
+          "icon": "percent"
+        },
+        {
+          "id": "riskclass7_max_loss_warning",
+          "title": "Risk class 7 – total loss",
+          "content": "The risk of loss of up to 100% of the capital invested is acknowledged.",
+          "icon": "exclamationmark.triangle"
+        },
+        {
+          "id": "riskclass7_experienced_only",
+          "title": "Risk class 7 – suitability",
+          "content": "This risk class is only suitable for experienced investors.",
+          "icon": "person.fill.checkmark"
+        },
+        {
+          "id": "doc_collection_bill_reference_info",
+          "title": "Collection Bill reference text",
+          "content": "The difference between the sum of the result before taxes and the amount transferred to your account results from tax withholding. This is carried out in accordance with legal requirements and shown transparently in your account statements and tax documents.\nTax liability exists only if sale proceeds exceed acquisition costs. The calculation is based on the principle of offsetting purchase and sale costs (first-in-first-out or average cost). For details, see the tax report under transaction no.:",
+          "icon": "doc.text"
+        },
+        {
+          "id": "doc_collection_bill_legal_disclaimer",
+          "title": "Collection Bill legal notice",
+          "content": "We book the securities and the consideration in accordance with the statement with the specified value date. Please review this statement for correctness and completeness. Objections to this statement must be raised without undue delay upon receipt with the bank. If you fail to object in time, this constitutes approval. Please note any issuer information on early maturity, e.g. due to a knock-out, in the respective warrant terms and inform yourself in good time about the specific maturity rules for the securities you hold. Capital income is subject to income tax.",
+          "icon": "doc.text"
+        },
+        {
+          "id": "doc_collection_bill_footer_note",
+          "title": "Collection Bill footer",
+          "content": "This message is machine-generated and is not signed.\nFor further questions please contact your Fin1 service team.",
+          "icon": "doc.text"
+        },
+        {
+          "id": "account_statement_important_notice_de",
+          "title": "Account statement important notices (DE)",
+          "content": "Please raise objections to individual postings without undue delay. Cheques, bills of exchange, and other direct debits are credited subject to receipt. The balance shown does not reflect the value date of postings (see above under \"Value date\").\n\nAccordingly, interest may accrue if you use an agreed or tolerated overdraft facility.\n\nThe services charged are exempt from VAT as banking or financial services, unless VAT is shown separately. {{LEGAL_COMPANY_LEGAL_NAME}}, {{LEGAL_COMPANY_ADDRESS_LINE}}. VAT ID: {{LEGAL_COMPANY_VAT_ID}}.\n\nBalances qualify as deposits eligible for compensation under the German Deposit Guarantee Act. Further information can be found in the \"Information sheet for the depositor\".",
+          "icon": "doc.text"
+        },
+        {
+          "id": "account_statement_important_notice_en",
+          "title": "Account statement important notice (EN)",
+          "content": "Please review your statement carefully and notify us immediately of any discrepancies or unauthorized transactions.\n\nAll deposits and credits are subject to final verification.\n\nThe ending balance may not reflect all pending transactions or holds on funds.\n\nOverdrafts may result in fees or interest charges.\n\nWe are not responsible for delays in posting or for errors unless required by law.\n\nYour account is subject to the terms and conditions governing your relationship with the bank.",
+          "icon": "doc.text"
+        },
+        {
+          "id": "transaction_limit_warning_buy",
+          "title": "Transaction limit reached",
+          "content": "Your daily transaction limit has been reached or exceeded. Please reduce the order amount or contact support to review your limit.",
+          "icon": "chart.bar.xaxis"
+        }
+      ]
+    }
+  ]
+}

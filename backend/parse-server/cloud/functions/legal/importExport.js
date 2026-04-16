@@ -8,6 +8,10 @@ const {
   serializeTermsContentBackup,
 } = require('./shared');
 
+const TERMS_EXPORT_FULL_LIMIT = 500;
+const TERMS_EXPORT_ACTIVE_LIMIT = 50;
+const TERMS_IMPORT_ARCHIVE_SCAN_LIMIT = 1000;
+
 function registerLegalImportExportFunctions() {
   Parse.Cloud.define('exportLegalDocumentsBackup', async (request) => {
     requireAdminRole(request);
@@ -15,16 +19,23 @@ function registerLegalImportExportFunctions() {
 
     const query = new Parse.Query('TermsContent');
     query.descending('effectiveDate');
-    query.limit(500);
+    query.limit(TERMS_EXPORT_FULL_LIMIT);
     const docs = await query.find({ useMasterKey: true });
 
     const documents = docs.map((doc) => serializeTermsContentBackup(doc));
+    const warnings = [];
+    if (docs.length >= TERMS_EXPORT_FULL_LIMIT) {
+      warnings.push(
+        `Export erreichte das Server-Limit von ${TERMS_EXPORT_FULL_LIMIT} TermsContent-Zeilen; ältere/weitere Versionen fehlen im JSON. Limit in importExport.js erhöhen oder gezielt exportieren.`
+      );
+    }
 
     return {
       exportedAt: new Date().toISOString(),
       version: '1.0',
       note: 'Backup AGB & Rechtstexte (TermsContent). Quelle: Admin-Portal AGB und Rechtstexte.',
       documents,
+      warnings,
     };
   });
 
@@ -41,10 +52,16 @@ function registerLegalImportExportFunctions() {
     if (documentType) query.equalTo('documentType', documentType);
     if (language) query.equalTo('language', language);
     query.descending('effectiveDate');
-    query.limit(50);
+    query.limit(TERMS_EXPORT_ACTIVE_LIMIT);
 
     const docs = await query.find({ useMasterKey: true });
     const documents = docs.map((doc) => serializeTermsContentBackup(doc));
+    const warnings = [];
+    if (docs.length >= TERMS_EXPORT_ACTIVE_LIMIT) {
+      warnings.push(
+        `Active-Export erreichte das Server-Limit von ${TERMS_EXPORT_ACTIVE_LIMIT} Zeilen; bei Filter „alle“ können nicht alle aktiven Dokumente enthalten sein. Filter setzen oder Limit erhöhen.`
+      );
+    }
 
     return {
       exportedAt: new Date().toISOString(),
@@ -56,6 +73,7 @@ function registerLegalImportExportFunctions() {
         activeOnly: true,
       },
       documents,
+      warnings,
     };
   });
 
@@ -122,8 +140,13 @@ function registerLegalImportExportFunctions() {
     }
 
     const termsQuery = new Parse.Query('TermsContent');
-    termsQuery.limit(1000);
+    termsQuery.limit(TERMS_IMPORT_ARCHIVE_SCAN_LIMIT);
     const existing = await termsQuery.find({ useMasterKey: true });
+    if (existing.length >= TERMS_IMPORT_ARCHIVE_SCAN_LIMIT) {
+      warnings.push(
+        `Restore lädt maximal ${TERMS_IMPORT_ARCHIVE_SCAN_LIMIT} bestehende TermsContent-Zeilen; darüber hinausgehende Einträge würden nicht archiviert. Limit erhöhen oder Datenbestand vorab bereinigen.`
+      );
+    }
 
     let archivedCount = 0;
     if (archiveExisting && existing.length > 0) {

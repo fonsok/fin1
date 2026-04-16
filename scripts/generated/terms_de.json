@@ -1,0 +1,210 @@
+{
+  "documentType": "terms",
+  "language": "de",
+  "sections": [
+    {
+      "id": "introduction",
+      "title": "1. Einleitung & Definitionen",
+      "content": "{{APP_NAME}} ist eine Technologieapp, die Wertpapierhandel und Vermögensanlage-/Investmentmanagement-Dienstleistungen erleichtert. Die App verbindet Trader und Investoren und ermöglicht Vermögensanlage-/Investitionsmöglichkeiten in Wertpapierhandelsaktivitäten mit Derivaten.\n\n**Definitionen:**\n- **App** oder **Service**: Die {{APP_NAME}}-App und zugehörige Dienstleistungen\n- **Nutzer**: Jede Person oder Entität, die die App nutzt\n- **Trader**: Nutzer, die Wertpapiergeschäfte auf der App ausführen\n- **Investor**: Nutzer, die Kapital bei Tradern über die App investieren\n- **Investition**: Kapital, das von Investoren an Trader für Investmentaktivitäten zugewiesen wird\n- **Wertpapiere**: Finanzinstrumente, die auf der App gehandelt werden.",
+      "icon": "info.circle.fill"
+    },
+    {
+      "id": "acceptance",
+      "title": "2. Annahme der Bedingungen",
+      "content": "Durch den Zugriff auf oder die Nutzung der {{APP_NAME}}-App erklären Sie sich damit einverstanden, an diese Nutzungsbedingungen gebunden zu sein. Wenn Sie diesen Bedingungen nicht zustimmen, dürfen Sie die App nicht nutzen.\n\n**Änderungen:**\nWir behalten uns das Recht vor, diese Bedingungen jederzeit zu ändern. Wesentliche Änderungen werden mit mindestens 30 Tagen Vorlaufzeit mitgeteilt. Die fortgesetzte Nutzung der App nach Änderungen stellt die Annahme der geänderten Bedingungen dar.\n\n**Berechtigung:**\nSie müssen mindestens 18 Jahre alt sein und die rechtliche Handlungsfähigkeit haben, um rechtsverbindliche Vereinbarungen einzugehen. Sie müssen alle geltenden Gesetze und Vorschriften in Ihrer Gerichtsbarkeit einhalten.",
+      "icon": "checkmark.circle.fill"
+    },
+    {
+      "id": "regulatory",
+      "title": "3. Regulatorische Compliance",
+      "content": "Steuerrechtliche Compliance:\n- Kapitalgewinne unterliegen der Abgeltungsteuer ({{TAX_RATE}} + Soli) auf realisierte Gewinne.",
+      "icon": "shield.checkered"
+    },
+    {
+      "id": "app",
+      "title": "4. Appbeschreibung & Serviceumfang",
+      "content": "**Art des Services:**\n{{APP_NAME}} ist eine **Technologieapp**, die Wertpapierhandel und Investmentmanagement erleichtert. Die App bietet Technologieinfrastruktur, verbindet Trader und Investoren, führt Geschäfte über lizenzierte Broker aus und stellt Transaktionsaufzeichnungen bereit.\n\n**Was wir NICHT anbieten:**\n- Anlageberatung oder Empfehlungen\n- Garantierte Anlagerenditen oder Performance\n- Finanzberatungsdienstleistungen\n- Garantierte Trader-Verfügbarkeit oder Investitionsmöglichkeiten\n- Steuerberatung (Nutzer müssen Steuerberater konsultieren)\n\n**Serviceeinschränkungen:**\n- Die App fungiert als Vermittler, nicht als Hauptpartei\n- Nutzer treffen unabhängige Anlageentscheidungen\n- Die App garantiert keine Ausführung zu angezeigten Preisen\n- Die Serviceverfügbarkeit ist nicht garantiert unterbrechungsfrei",
+      "icon": "app.badge"
+    },
+    {
+      "id": "account",
+      "title": "5. Nutzerberechtigung & Kontenanforderungen",
+      "content": "**Kontoberechtigung:**\nUm die App zu nutzen, müssen Sie mindestens 18 Jahre alt sein, rechtliche Handlungsfähigkeit haben, genaue Informationen bereitstellen, die Identitätsprüfung (KYC) abschließen und alle geltenden Gesetze einhalten.\n\n**Kontotypen:**\n- **Trader-Konten**: Für Nutzer, die Wertpapiergeschäfte ausführen\n- **Investor-Konten**: Für Nutzer, die Kapital bei Tradern investieren\n\n**Kontoguthaben:**\n- Anfangsguthaben: Neue Konten erhalten ein Anfangsguthaben von €1,00\n- Mindestbargeldreserve: Konten müssen eine Mindestbargeldreserve von €20 aufrechterhalten\n- Guthabenzweck: Kontoguthaben sind nur für die Appnutzung bestimmt",
+      "icon": "person.circle.fill"
+    },
+    {
+      "id": "trading",
+      "title": "6. Handelsbedingungen",
+      "content": "**Auftragsausführung:**\n- Aufträge werden über lizenzierte Broker und Börsen ausgeführt\n- Ausführungspreise unterliegen Marktbedingungen\n- Die App garantiert keine Ausführung zu angezeigten Preisen\n\n**Auftragsgebühren & Kosten:**\n- **Auftragsgebühr**: 0,5% des Auftragswerts (Mindestbetrag €5, Höchstbetrag €50)\n- **Börsenplatzgebühr**: 0,1% des Auftragswerts (Mindestbetrag €1, Höchstbetrag €20)\n- **Fremdkosten**: €1,50 pro Transaktion\n- Gebühren werden auf den Gesamtwertpapierwert berechnet und sind nach Ausführung nicht erstattungsfähig\n\n**Handelslimits:**\nAufträge müssen Mindestschwellen erfüllen und ausreichendes Guthaben muss verfügbar sein (einschließlich Gebühren und Mindestreserve).",
+      "icon": "chart.line.uptrend.xyaxis"
+    },
+    {
+      "id": "investment",
+      "title": "7. Investitionsbedingungen (Investor-spezifisch)",
+      "content": "App-Servicegebuehr:\n- Satz: {{APP_SERVICE_CHARGE_RATE}} des Investitionsbetrags (inkl. {{VAT_RATE}} MwSt.)\n- MwSt.: Die {{APP_SERVICE_CHARGE_RATE}} enthalten {{VAT_RATE}} MwSt.\n- Provisionen: Trader-Provisionen ({{TRADER_COMMISSION_RATE}}, konfigurierbar) werden von Renditen abgezogen.",
+      "icon": "eurosign.circle.fill"
+    },
+    {
+      "id": "tax",
+      "title": "8. Steuerpflichten & Verantwortlichkeiten",
+      "content": "Steuereinbehaltung:\n- Abgeltungsteuer: {{TAX_RATE}} + Soli fuer realisierte Kapitalgewinne.\n- Servicegebuehren unterliegen {{VAT_RATE}} MwSt.",
+      "icon": "doc.text.fill"
+    },
+    {
+      "id": "risks",
+      "title": "9. Risikohinweise",
+      "content": "**WICHTIG: Die Investition in Wertpapiere birgt erhebliche Verlustrisiken.**\n\n**Anlagerisiken:**\n- **Kapitalverlustrisiko**: Sie können einen Teil oder Ihr gesamtes investiertes Kapital verlieren\n- **Marktvolatilität**: Wertpapierpreise schwanken basierend auf Marktbedingungen\n- **Keine Renditegarantie**: Vergangene Performance garantiert keine zukünftigen Ergebnisse\n- **Trader-Performance-Risiko**: Renditen hängen von der Trader-Performance ab, die variiert\n- **Liquiditätsrisiko**: Investitionen sind möglicherweise nicht sofort liquidierbar\n\n**Apprisiken:**\n- Technische Ausfälle, Serviceunterbrechungen, Datenqualitätseinschränkungen\n- Cybersicherheitsrisiken trotz Sicherheitsmaßnahmen\n\n**Bestätigung:**\nDurch die Nutzung der App bestätigen Sie, dass Sie die beteiligten Risiken verstehen, in der Lage sind, die finanziellen Risiken zu tragen, und unabhängige Anlageentscheidungen treffen.",
+      "icon": "exclamationmark.triangle.fill"
+    },
+    {
+      "id": "responsibilities",
+      "title": "10. Nutzerverantwortlichkeiten & Verbotene AktivitÃ¤ten",
+      "content": "**Nutzerpflichten:**\nNutzer müssen genaue Informationen bereitstellen, sichere Zugangsdaten aufrechterhalten, Gesetze einhalten, verdächtige Aktivitäten melden und mit Appuntersuchungen zusammenarbeiten.\n\n**Verbotene Aktivitäten:**\nNutzern ist untersagt:\n- Betrügerische Aktivitäten, Marktmanipulation, unbefugter Zugriff\n- Umgehung von Appkontrollen, Bereitstellung falscher Informationen\n- Geldwäsche, Terrorismusfinanzierung, Gesetzesverstöße\n- Störung von Appbetrieb oder anderen Nutzern\n\n**Konsequenzen:**\nVerstöße können zu Kontosperrung oder -kündigung, rechtlichen Schritten, Meldung an Aufsichtsbehörden, Verlust von Geldern oder anderen gesetzlich verfügbaren Abhilfemaßnahmen führen.",
+      "icon": "hand.raised.fill"
+    },
+    {
+      "id": "limitations",
+      "title": "11. AppeinschrÃ¤nkungen & HaftungsausschlÃ¼sse",
+      "content": "**Serviceverfügbarkeit:**\n- Die App garantiert keinen unterbrechungsfreien oder fehlerfreien Service\n- Geplante und ungeplante Wartungsarbeiten können auftreten\n- Der Service kann aufgrund von Umständen außerhalb unserer Kontrolle unterbrochen werden\n\n**Datenqualität:**\n- Marktdaten, Preise und Berechnungen werden \"wie besehen\" bereitgestellt\n- Wir garantieren keine Genauigkeit, Vollständigkeit oder Aktualität\n- Nutzer sollten kritische Informationen unabhängig überprüfen\n\n**Haftungsbeschränkungen:**\nIm gesetzlich zulässigen Rahmen:\n- Die Apphaftung ist auf direkte Schäden beschränkt\n- Wir haften nicht für indirekte, Folgeschäden, zufällige oder Strafschäden\n- Die Gesamthaftung ist auf in den 12 Monaten vor dem Anspruch gezahlte Gebühren beschränkt\n- Wir haften nicht für Verluste aufgrund von Marktbedingungen oder Nutzerentscheidungen",
+      "icon": "info.circle"
+    },
+    {
+      "id": "ip",
+      "title": "12. Geistiges Eigentum",
+      "content": "**Geistiges Eigentum der App:**\n- Alle Appinhalte, Software, Designs und Materialien sind Eigentum\n- Nutzern wird eine begrenzte, nicht-exklusive, nicht übertragbare Lizenz zur Nutzung der App gewährt\n- Nutzer dürfen nicht kopieren, modifizieren, verteilen oder abgeleitete Werke erstellen\n- Alle Rechte vorbehalten\n\n**Nutzerdaten:**\n- Nutzer behalten das Eigentum an ihren Daten\n- Nutzer gewähren der App eine Lizenz zur Datenverarbeitung für die Diensterbringung\n- Die Datenverarbeitung unterliegt unserer Datenschutzerklärung und der DSGVO\n\n**Marken:**\n- {{APP_NAME}} und verwandte Marken sind Eigentum der App\n- Nutzer dürfen Marken nicht ohne schriftliche Genehmigung verwenden",
+      "icon": "lock.shield.fill"
+    },
+    {
+      "id": "privacy",
+      "title": "13. Datenschutz & Privatsphäre",
+      "content": "**DSGVO-Compliance:**\nDie App entspricht der DSGVO. Bitte beachten Sie unsere Datenschutzerklärung für:\n- Rechtsgrundlage der Datenverarbeitung\n- Nutzerrechte (Auskunft, Berichtigung, Löschung, Übertragbarkeit)\n- Speicherfristen\n- Internationale Datenübertragungen (falls zutreffend)\n- Kontaktinformationen für Datenschutzanfragen\n\n**Datensicherheit:**\n- Wir implementieren branchenübliche Sicherheitsmaßnahmen (AES-256-Verschlüsselung, TLS 1.3)\n- Daten werden sicher gespeichert (Keychain für sensible Daten)\n- Jedoch ist kein System 100% sicher\n- Nutzer müssen sichere Zugangsdaten aufrechterhalten\n\n**Datenweitergabe:**\n- Daten können bei Bedarf mit Brokern, Börsen und Dienstleistern geteilt werden\n- Daten können für regulatorische Compliance geteilt werden (KYC/AML)\n- Die Datenweitergabe unterliegt unserer Datenschutzerklärung",
+      "icon": "hand.raised.slash.fill"
+    },
+    {
+      "id": "termination",
+      "title": "14. Kontokündigung & Sperrung",
+      "content": "**Kündigung durch Nutzer:**\nNutzer können Konten jederzeit kündigen, indem sie den App-Support kontaktieren, Kontoschließungsverfahren befolgen und alle ausstehenden Verpflichtungen begleichen.\n\n**Kündigung durch App:**\nDie App kann Konten wegen Verstoßes gegen die Bedingungen, verdächtiger Aktivitäten, regulatorischer Anforderungen, Nichteinhaltung von KYC/AML oder anderen Gründen kündigen.\n\n**Kontosperrung:**\nKonten können während der Untersuchung, aus Sicherheitsgründen, regulatorischer Compliance oder Nichtzahlung von Gebühren gesperrt werden.\n\n**Nach Kündigung:**\nAusstehende Verpflichtungen müssen beglichen werden, Datenspeicherungsrichtlinien gelten und der Zugriff auf Appdienste endet.",
+      "icon": "xmark.circle.fill"
+    },
+    {
+      "id": "disputes",
+      "title": "15. Streitbeilegung & Geltendes Recht",
+      "content": "**Geltendes Recht:**\nDiese Bedingungen unterliegen deutschem Recht.\n\n**Gerichtsstand:**\nStreitigkeiten unterliegen der ausschließlichen Zuständigkeit deutscher Gerichte.\n\n**Streitbeilegungsverfahren:**\n1. Informelle Lösung: Kontaktieren Sie zuerst den App-Support\n2. Mediation: Parteien können sich auf Mediation einigen\n3. Schiedsverfahren: Falls anwendbar, können Streitigkeiten durch Schiedsverfahren gelöst werden\n4. Gerichtsverfahren: Wenn andere Methoden scheitern, können Streitigkeiten vor Gericht gebracht werden\n\n**Regulatorische Beschwerden:**\nNutzer können Beschwerden bei der BaFin (Bundesanstalt für Finanzdienstleistungsaufsicht) oder anderen Aufsichtsbehörden einreichen.",
+      "icon": "scale.3d"
+    },
+    {
+      "id": "changes",
+      "title": "16. Ãnderungen der Bedingungen",
+      "content": "**Änderungsrechte:**\nDie App behält sich das Recht vor, diese Bedingungen jederzeit zu ändern.\n\n**Benachrichtigungsanforderungen:**\n- Wesentliche Änderungen: Mindestens 30 Tage Vorlaufzeit\n- Benachrichtigungsmethoden: E-Mail, In-App-Benachrichtigung oder Appmitteilung\n- Wirksamkeitsdatum: Änderungen werden am angegebenen Datum wirksam\n\n**Annahme:**\n- Die fortgesetzte Nutzung der App nach Änderungen stellt die Annahme dar\n- Nutzer können Konten kündigen, wenn sie Änderungen nicht zustimmen\n- Bedingungen sind versioniert und datiert, mit archivierten vorherigen Versionen",
+      "icon": "arrow.triangle.2.circlepath"
+    },
+    {
+      "id": "contact",
+      "title": "17. Kontaktinformationen & Support",
+      "content": "**Support-Kanäle:**\n- Help Center: In-App verfügbar mit FAQs und Support-Artikeln\n- Support kontaktieren: In-App-Support-Messaging\n- Antwortzeiten: Wir bemühen uns, innerhalb angemessener Zeiträume zu antworten\n\n**Rechtliche Hinweise:**\nUnternehmensinformationen, Registrierungsdetails, regulatorische Genehmigungen und registrierte Adresse sind auf Anfrage verfügbar.\n\n**Datenschutzbeauftragter:**\nKontaktinformationen für Datenschutzanfragen sind über die Datenschutzerklärung verfügbar.",
+      "icon": "envelope.fill"
+    },
+    {
+      "id": "special",
+      "title": "18. Besondere Bestimmungen",
+      "content": "**Geldwäscheprävention:**\n- KYC-Anforderungen: Identitätsprüfung ist erforderlich\n- AML-Compliance: Anti-Geldwäsche-Verfahren gelten\n- Transaktionsüberwachung: Transaktionen werden auf verdächtige Aktivitäten überwacht\n- Meldung: Verdächtige Aktivitäten werden den Behörden gemeldet\n- Nutzerkooperation: Nutzer müssen mit KYC/AML-Verfahren zusammenarbeiten\n\n**Regulatorische Meldungen:**\n- Die App kann verpflichtet sein, an Aufsichtsbehörden zu berichten\n- Nutzerinformationen können für regulatorische Compliance geteilt werden\n- Nutzer müssen genaue Informationen für regulatorische Zwecke bereitstellen",
+      "icon": "exclamationmark.shield.fill"
+    },
+    {
+      "id": "severability",
+      "title": "19. Teilbarkeit & Sonstiges",
+      "content": "**Teilbarkeit:**\nWenn eine Bestimmung dieser Bedingungen als ungültig oder nicht durchsetzbar befunden wird, bleiben die übrigen Bestimmungen in vollem Umfang in Kraft.\n\n**Vollständige Vereinbarung:**\nDiese Bedingungen bilden zusammen mit der Datenschutzerklärung die vollständige Vereinbarung zwischen Nutzern und der App.\n\n**Verzicht:**\nDie Nichtdurchsetzung einer Bestimmung stellt keinen Verzicht auf diese Bestimmung dar.\n\n**Übertragung:**\nNutzer dürfen diese Bedingungen nicht ohne Zustimmung der App übertragen. Die App kann diese Bedingungen übertragen.\n\n**Sprache:**\nDiese Bedingungen werden auf Deutsch und Englisch bereitgestellt. Im Falle eines Konflikts hat die deutsche Version Vorrang.",
+      "icon": "doc.text.magnifyingglass"
+    },
+    {
+      "id": "dashboard_risk_note",
+      "title": "Risikohinweis Dashboard",
+      "content": "Hinweis: Setzen Sie nicht mehr als {{MAX_RISK_PERCENT}} % Ihres Vermögens einem Risiko aus.",
+      "icon": "exclamationmark.triangle"
+    },
+    {
+      "id": "order_legal_warning_buy",
+      "title": "Rechtliche Hinweise Kauforder",
+      "content": "Mit dem Klicken auf 'Kaufen' stimmen Sie den allgemeinen Geschäftsbedingungen zu und bestätigen, dass Sie die Risiken des Wertpapierhandels verstanden haben. Diese Transaktion ist gebührenpflichtig.",
+      "icon": "doc.text"
+    },
+    {
+      "id": "order_legal_warning_sell",
+      "title": "Rechtliche Hinweise Verkauforder",
+      "content": "Mit dem Klicken auf 'Verkaufen' stimmen Sie den allgemeinen Geschäftsbedingungen zu und bestätigen, dass Sie die Risiken des Wertpapierhandels verstanden haben. Diese Transaktion ist gebührenpflichtig.",
+      "icon": "doc.text"
+    },
+    {
+      "id": "doc_tax_note_sell",
+      "title": "Steuerhinweis Verkauf",
+      "content": "Beim Verkauf erfolgt die Besteuerung gemaess Abgeltungsteuer (dzt. {{TAX_RATE}}) auf den realisierten Gewinn.",
+      "icon": "percent"
+    },
+    {
+      "id": "doc_tax_note_buy",
+      "title": "Steuerhinweis Kauf",
+      "content": "Beim Kauf werden keine Steuern abgezogen. Besteuerung erfolgt beim Verkauf gemaess Abgeltungsteuer (dzt. {{TAX_RATE}}).",
+      "icon": "percent"
+    },
+    {
+      "id": "doc_legal_note_wphg",
+      "title": "Rechtlicher Hinweis WpHG",
+      "content": "Die Versteuerung erfolgt mit Gewinnrealisierung laut aktueller Regelung (§ 20 EStG).\n\nDiese Abrechnung erfolgt nach den Bestimmungen des Wertpapierhandelsgesetzes (WpHG) und der Wertpapierhandelsverordnung (WpDVerOV).",
+      "icon": "scale.3d"
+    },
+    {
+      "id": "doc_tax_note_service_charge",
+      "title": "Steuerhinweis Servicegebühr",
+      "content": "Die App-Servicegebuehr unterliegt der Umsatzsteuer ({{VAT_RATE}}).",
+      "icon": "percent"
+    },
+    {
+      "id": "riskclass7_max_loss_warning",
+      "title": "Risikoklasse 7 – Totalverlust",
+      "content": "Das Verlustrisiko bis zu 100 % des eingesetzten Kapitals ist bekannt.",
+      "icon": "exclamationmark.triangle"
+    },
+    {
+      "id": "riskclass7_experienced_only",
+      "title": "Risikoklasse 7 – Eignung",
+      "content": "Diese Risikoklasse ist nur für erfahrene Anleger geeignet.",
+      "icon": "person.fill.checkmark"
+    },
+    {
+      "id": "doc_collection_bill_reference_info",
+      "title": "Collection Bill Referenztext",
+      "content": "Der Differenzbetrag zwischen ∑ Ergebnis vor Steuern und dem auf Ihrem Konto überwiesenen Betrag resultiert aus dem Steuerabzug. Dies wird gemäß den gesetzlichen Vorgaben durchgeführt und transparent in Ihren Kontoauszügen sowie Steuerunterlagen ausgewiesen.\nSteuerpflicht besteht nur, wenn der Verkaufserlös die Anschaffungskosten übersteigt. Die Berechnung basiert auf dem Prinzip der Verrechnung der Kauf- und Verkaufskosten (First-in-First-out oder Durchschnittskostenermittlung).\nDetails dazu finden Sie im Steuerreport unter der Transaktion-Nr.:",
+      "icon": "doc.text"
+    },
+    {
+      "id": "doc_collection_bill_legal_disclaimer",
+      "title": "Collection Bill Rechtlicher Hinweis",
+      "content": "Wir buchen die Wertpapiere und den Gegenwert gemäß der Abrechnung mit dem angegebenen Valutatag. Bitte prüfen Sie diese Abrechnung auf Richtigkeit und Vollständigkeit. Einspruch gegen diese Abrechnung muss unverzüglich nach Erhalt bei der Bank erhoben werden. Unterlassen Sie den rechtzeitigen Einspruch, gilt dies als Genehmigung. Bitte beachten Sie mögliche Hinweise des Emittenten bezüglich vorzeitiger Fälligkeit, z.B. aufgrund eines Knock-out, in den jeweiligen Optionsscheinbedingungen und informieren Sie sich rechtzeitig, welche besondere Fälligkeitsregelung für die von Ihnen gehaltenen Wertpapiere gilt. Kapitalerträge unterliegen der Einkommensteuer.",
+      "icon": "doc.text"
+    },
+    {
+      "id": "doc_collection_bill_footer_note",
+      "title": "Collection Bill Fußnote",
+      "content": "Diese Mitteilung ist maschinell erstellt und wird nicht unterschrieben.\nFür weitergehende Fragen wenden Sie sich bitte an Ihr Fin1-Service-Team.",
+      "icon": "doc.text"
+    },
+    {
+      "id": "account_statement_important_notice_de",
+      "title": "Kontoauszug Wichtige Hinweise (DE)",
+      "content": "Bitte erheben Sie Einwendungen gegen einzelne Buchungen unverzüglich. Schecks, Wechsel und sonstige Lastschriften schreiben wir unter dem Vorbehalt des Eingangs gut. Der angegebene Kontostand berücksichtigt nicht die Wertstellung der Buchungen (siehe oben unter \"Valuta\").\n\nSomit können bei Verfügungen möglicherweise Zinsen für die Inanspruchnahme einer eingeräumten oder geduldeten Kontoüberziehung anfallen.\n\nDie abgerechneten Leistungen sind als Bank- oder Finanzdienstleistungen von der Umsatzsteuer befreit, sofern Umsatzsteuer nicht gesondert ausgewiesen ist. {{APP_NAME}} Investing GmbH, Hauptstraße 100, 60311 Frankfurt am Main. Umsatzsteuer-ID: DE123456789.\n\nGuthaben sind als Einlagen nach Maßgabe des Einlagensicherungsgesetzes entschädigungsfähig. Nähere Informationen können dem \"Informationsbogen für den Einleger\" entnommen werden.",
+      "icon": "doc.text"
+    },
+    {
+      "id": "account_statement_important_notice_en",
+      "title": "Account Statement Important Notice (EN)",
+      "content": "Please review your statement carefully and notify us immediately of any discrepancies or unauthorized transactions.\n\nAll deposits and credits are subject to final verification.\n\nThe ending balance may not reflect all pending transactions or holds on funds.\n\nOverdrafts may result in fees or interest charges.\n\nWe are not responsible for delays in posting or for errors unless required by law.\n\nYour account is subject to the terms and conditions governing your relationship with the bank.",
+      "icon": "doc.text"
+    },
+    {
+      "id": "transaction_limit_warning_buy",
+      "title": "Transaktionslimit erreicht",
+      "content": "Ihr tägliches Transaktionslimit wurde erreicht oder überschritten. Bitte reduzieren Sie den Orderbetrag oder wenden Sie sich an den Support, um Ihr Limit zu prüfen.",
+      "icon": "chart.bar.xaxis"
+    }
+  ]
+}
