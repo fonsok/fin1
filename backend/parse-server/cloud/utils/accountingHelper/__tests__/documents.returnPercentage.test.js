@@ -6,6 +6,15 @@ const {
 } = require('../documents');
 
 describe('documents helper return percentage', () => {
+  const knownRegressionFixture = {
+    tradeId: 'FxKeEPyohH',
+    investmentId: 'qQmJ4NJHcA',
+    netProfit: 373.76,
+    buyLeg: null,
+    investmentCapital: 1000,
+    expectedReturnPercentage: 37.38,
+  };
+
   test('uses buy leg amount + fees as invested amount', () => {
     const result = computeCollectionBillReturnPercentage({
       netProfit: 100,
@@ -27,6 +36,16 @@ describe('documents helper return percentage', () => {
     });
 
     expect(result).toBe(5);
+  });
+
+  test('known regression fixture keeps expected return percentage stable', () => {
+    const result = computeCollectionBillReturnPercentage({
+      netProfit: knownRegressionFixture.netProfit,
+      buyLeg: knownRegressionFixture.buyLeg,
+      investmentCapital: knownRegressionFixture.investmentCapital,
+    });
+
+    expect(result).toBe(knownRegressionFixture.expectedReturnPercentage);
   });
 
   test('returns null when no valid denominator exists', () => {

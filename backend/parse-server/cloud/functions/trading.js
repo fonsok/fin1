@@ -6,6 +6,7 @@
 'use strict';
 
 const { calculateOrderFees } = require('../utils/helpers');
+const { requireAdminRole } = require('../utils/permissions');
 
 /**
  * Resolve the stable user ID used throughout the data model.
@@ -311,7 +312,7 @@ Parse.Cloud.define('getInvestorCollectionBills', async (request) => {
 
   const query = new Parse.Query('Document');
   query.equalTo('userId', stableId);
-  query.equalTo('type', 'investor_collection_bill');
+  query.containedIn('type', ['investor_collection_bill', 'investorCollectionBill']);
   if (investmentId) query.equalTo('investmentId', investmentId);
   if (tradeId) query.equalTo('tradeId', tradeId);
   query.descending('createdAt');
@@ -325,5 +326,52 @@ Parse.Cloud.define('getInvestorCollectionBills', async (request) => {
     collectionBills: docs.map(d => d.toJSON()),
     total,
     hasMore: skip + docs.length < total,
+  };
+});
+
+// Admin-only monitoring endpoint:
+// returns active collection bills missing canonical metadata.returnPercentage.
+Parse.Cloud.define('auditCollectionBillReturnPercentage', async (request) => {
+  requireAdminRole(request);
+
+  const { limit = 100 } = request.params || {};
+  const effectiveLimit = Math.min(Math.max(Number(limit) || 100, 1), 1000);
+
+  const baseQuery = new Parse.Query('Document');
+  baseQuery.containedIn('type', ['investor_collection_bill', 'investorCollectionBill']);
+  baseQuery.doesNotExist('metadata.receiptType'); // exclude wallet receipts
+
+  const missingQuery = new Parse.Query('Document');
+  missingQuery.containedIn('type', ['investor_collection_bill', 'investorCollectionBill']);
+  missingQuery.doesNotExist('metadata.receiptType');
+  missingQuery.doesNotExist('metadata.returnPercentage');
+
+  const nullQuery = new Parse.Query('Document');
+  nullQuery.containedIn('type', ['investor_collection_bill', 'investorCollectionBill']);
+  nullQuery.doesNotExist('metadata.receiptType');
+  nullQuery.equalTo('metadata.returnPercentage', null);
+
+  const missingAnyQuery = Parse.Query.or(missingQuery, nullQuery);
+  missingAnyQuery.descending('createdAt');
+  missingAnyQuery.limit(effectiveLimit);
+
+  const [totalActive, missingCount, samples] = await Promise.all([
+    baseQuery.count({ useMasterKey: true }),
+    missingAnyQuery.count({ useMasterKey: true }),
+    missingAnyQuery.find({ useMasterKey: true }),
+  ]);
+
+  return {
+    totalActiveCollectionBills: totalActive,
+    missingReturnPercentageCount: missingCount,
+    healthy: missingCount === 0,
+    sampledMissingDocuments: samples.map((doc) => ({
+      objectId: doc.id,
+      type: doc.get('type') || null,
+      tradeId: doc.get('tradeId') || null,
+      investmentId: doc.get('investmentId') || null,
+      createdAt: doc.createdAt || null,
+    })),
+    checkedAt: new Date().toISOString(),
   };
 });
