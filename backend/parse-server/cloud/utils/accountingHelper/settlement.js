@@ -1,9 +1,10 @@
 'use strict';
 
 const { calculateOrderFees } = require('../helpers');
-const { getTraderCommissionRate, getFinancialConfig } = require('../configHelper/index.js');
+const { getTraderCommissionRate, loadConfig } = require('../configHelper/index.js');
 const { round2 } = require('./shared');
 const { bookAccountStatementEntry } = require('./statements');
+const { calculateWithholdingBundle, resolveUserTaxProfile } = require('./taxation');
 const {
   createCreditNoteDocument,
   createCollectionBillDocument,
@@ -66,7 +67,10 @@ async function settleAndDistribute(trade) {
   }
 
   const commissionRate = await getTraderCommissionRate();
-  const feeConfig = await getFinancialConfig();
+  const config = await loadConfig();
+  const feeConfig = config.financial;
+  const taxConfig = config.tax || {};
+  const traderProfile = await resolveUserTaxProfile(traderId);
 
   console.log(`💰 Settling trade #${tradeNumber}: gross=€${round2(rawGrossProfit)}, fees=€${round2(totalTradingFees)}, net=€${round2(netTradingProfit)}, commRate=${(commissionRate * 100).toFixed(1)}%`);
 
@@ -99,6 +103,7 @@ async function settleAndDistribute(trade) {
       feeConfig,
       tradeBuyPrice,
       tradeSellPrice,
+      taxConfig,
     });
 
     if (result) {
@@ -167,6 +172,11 @@ async function settleAndDistribute(trade) {
   if (totalCommission <= 0) {
     console.log(`ℹ️ Trade #${tradeNumber}: totalCommission=0, no trader credit`);
   } else {
+    const traderTaxBreakdown = calculateWithholdingBundle({
+      taxableAmount: totalCommission,
+      taxConfig,
+      userProfile: traderProfile,
+    });
     const creditNote = await createCreditNoteDocument({
       traderId,
       trade,
@@ -175,6 +185,7 @@ async function settleAndDistribute(trade) {
       grossProfit: round2(netTradingProfit),
       netProfit: round2(netTradingProfit - totalCommission),
       investorBreakdown,
+      taxBreakdown: traderTaxBreakdown,
     });
 
     // ── Step 5: Book trader commission credit WITH Beleg-Referenz ──
@@ -187,6 +198,16 @@ async function settleAndDistribute(trade) {
       description: `Provisionsgutschrift Trade #${tradeNumber}`,
       referenceDocumentId: creditNote.id,
     });
+
+    if (traderTaxBreakdown.totalTax > 0) {
+      await bookTraderTaxEntries({
+        traderId,
+        trade,
+        tradeNumber,
+        creditNoteId: creditNote.id,
+        taxBreakdown: traderTaxBreakdown,
+      });
+    }
   }
 
   const summary = {
@@ -197,6 +218,13 @@ async function settleAndDistribute(trade) {
     netTradingProfit: round2(netTradingProfit),
     totalCommission: round2(totalCommission),
     netProfit: round2(netTradingProfit - totalCommission),
+    traderTaxWithheld: round2(
+      calculateWithholdingBundle({
+        taxableAmount: totalCommission,
+        taxConfig,
+        userProfile: traderProfile,
+      }).totalTax
+    ),
     commissionRate,
     investorCount: investorBreakdown.length,
   };
@@ -219,6 +247,7 @@ async function settleParticipation({
   feeConfig,
   tradeBuyPrice,
   tradeSellPrice,
+  taxConfig,
 }) {
   // ── Normalize ownership: iOS stores as ratio (0-1), legacy as percent (0-100) ──
   const rawOwnership = participation.get('ownershipPercentage') || 0;
@@ -252,6 +281,12 @@ async function settleParticipation({
   const investmentCapital = investment.get('amount') || 0;
   const investmentNumber = investment.get('investmentNumber') || investment.id;
   console.log(`  📊 Found investment ${investment.id} for investor ${investorId}, capital=€${investmentCapital}`);
+  const investorProfile = await resolveUserTaxProfile(investorId);
+  const taxBreakdown = calculateWithholdingBundle({
+    taxableAmount: netProfit,
+    taxConfig,
+    userProfile: investorProfile,
+  });
 
   // ── 2c-pre: Book investment_activate if it was never booked (reserved → completed) ──
   // GoB: Beleg FIRST, then Buchung
@@ -302,8 +337,10 @@ async function settleParticipation({
     commission,
     netProfit,
     commissionRate,
+    investmentCapital,
     buyLeg,
     sellLeg,
+    taxBreakdown,
   });
 
   // ── 2e: Book AccountStatement entries BEFORE saving investment ──
@@ -331,6 +368,17 @@ async function settleParticipation({
       investmentId: investment.id,
       description: `Provision Trade #${tradeNumber} (${(commissionRate * 100).toFixed(0)}%)`,
       referenceDocumentId: collectionBill.id,
+    });
+  }
+
+  if (taxBreakdown.totalTax > 0) {
+    await bookInvestorTaxEntries({
+      investorId,
+      investmentId: investment.id,
+      trade,
+      tradeNumber,
+      collectionBillId: collectionBill.id,
+      taxBreakdown,
     });
   }
 
@@ -381,14 +429,103 @@ async function settleParticipation({
   // ── 2i: Notify investor ──
   await createNotification(investorId, 'investment_profit', 'investment',
     'Gewinn erzielt',
-    `Ihr Investment hat einen Gewinn von ${formatCurrency(netProfit)} erzielt.`);
+    `Ihr Investment hat einen Gewinn von ${formatCurrency(netProfit - taxBreakdown.totalTax)} nach Steuerabzug erzielt.`);
 
   return {
     investorId,
     investmentId: investment.id,
     grossProfit: profitShare,
     commission,
+    taxWithheld: taxBreakdown.totalTax,
   };
+}
+
+async function bookInvestorTaxEntries({
+  investorId,
+  investmentId,
+  trade,
+  tradeNumber,
+  collectionBillId,
+  taxBreakdown,
+}) {
+  if (taxBreakdown.withholdingTax > 0) {
+    await bookAccountStatementEntry({
+      userId: investorId,
+      entryType: 'withholding_tax_debit',
+      amount: -Math.abs(taxBreakdown.withholdingTax),
+      tradeId: trade.id,
+      tradeNumber,
+      investmentId,
+      description: `Abgeltungsteuer Trade #${tradeNumber}`,
+      referenceDocumentId: collectionBillId,
+    });
+  }
+  if (taxBreakdown.solidaritySurcharge > 0) {
+    await bookAccountStatementEntry({
+      userId: investorId,
+      entryType: 'solidarity_surcharge_debit',
+      amount: -Math.abs(taxBreakdown.solidaritySurcharge),
+      tradeId: trade.id,
+      tradeNumber,
+      investmentId,
+      description: `Solidaritätszuschlag Trade #${tradeNumber}`,
+      referenceDocumentId: collectionBillId,
+    });
+  }
+  if (taxBreakdown.churchTax > 0) {
+    await bookAccountStatementEntry({
+      userId: investorId,
+      entryType: 'church_tax_debit',
+      amount: -Math.abs(taxBreakdown.churchTax),
+      tradeId: trade.id,
+      tradeNumber,
+      investmentId,
+      description: `Kirchensteuer Trade #${tradeNumber}`,
+      referenceDocumentId: collectionBillId,
+    });
+  }
+}
+
+async function bookTraderTaxEntries({
+  traderId,
+  trade,
+  tradeNumber,
+  creditNoteId,
+  taxBreakdown,
+}) {
+  if (taxBreakdown.withholdingTax > 0) {
+    await bookAccountStatementEntry({
+      userId: traderId,
+      entryType: 'withholding_tax_debit',
+      amount: -Math.abs(taxBreakdown.withholdingTax),
+      tradeId: trade.id,
+      tradeNumber,
+      description: `Abgeltungsteuer Trader-Provision Trade #${tradeNumber}`,
+      referenceDocumentId: creditNoteId,
+    });
+  }
+  if (taxBreakdown.solidaritySurcharge > 0) {
+    await bookAccountStatementEntry({
+      userId: traderId,
+      entryType: 'solidarity_surcharge_debit',
+      amount: -Math.abs(taxBreakdown.solidaritySurcharge),
+      tradeId: trade.id,
+      tradeNumber,
+      description: `Solidaritätszuschlag Trader-Provision Trade #${tradeNumber}`,
+      referenceDocumentId: creditNoteId,
+    });
+  }
+  if (taxBreakdown.churchTax > 0) {
+    await bookAccountStatementEntry({
+      userId: traderId,
+      entryType: 'church_tax_debit',
+      amount: -Math.abs(taxBreakdown.churchTax),
+      tradeId: trade.id,
+      tradeNumber,
+      description: `Kirchensteuer Trader-Provision Trade #${tradeNumber}`,
+      referenceDocumentId: creditNoteId,
+    });
+  }
 }
 
 // ============================================================================

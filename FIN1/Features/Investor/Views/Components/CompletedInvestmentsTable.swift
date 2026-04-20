@@ -23,6 +23,8 @@ struct CompletedInvestmentsTable: View {
     let tradeNumbers: [String: String]
     /// Statement-Summaries pro Investment-ID (aus ViewModel, MVVM).
     let investmentSummaries: [String: InvestorInvestmentStatementSummary]
+    /// Server-calculated Return-% pro Investment-ID (Single Source of Truth).
+    let tradeLedReturnPercentages: [String: Double]
     let onShowDetails: (Investment) -> Void
     @State private var selectedInvestmentItem: InvestmentItem?
     @State private var columnWidths: [String: CGFloat] = [:]
@@ -224,7 +226,7 @@ struct CompletedInvestmentsTable: View {
     private func measurementRow(investment: Investment) -> some View {
         let summary = investmentSummaries[investment.id]
         let grossProfit = summary?.statementGrossProfit
-        let returnPercentage = investment.performance
+        let returnPercentage = tradeLedReturnPercentages[investment.id]
         let isCancelled = investment.status == .cancelled
         let traderUsername = traderUsernames[investment.id] ?? "---"
         let tradeNumberText = tradeNumbers[investment.id] ?? "---"
@@ -261,7 +263,7 @@ struct CompletedInvestmentsTable: View {
             Group {
                 if isCancelled {
                     Text("---")
-                } else if summary != nil {
+                } else if summary != nil, let returnPercentage {
                     Text(String(format: "%.2f%", returnPercentage))
                 } else {
                     Text("pending")
@@ -277,7 +279,7 @@ struct CompletedInvestmentsTable: View {
             .measureWidth(column: "docRef")
 
             Image(systemName: "doc.text")
-                .font(.system(size: ResponsiveDesign.iconSize() * 0.8))
+                .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 0.8))
                 .measureWidth(column: "details")
         }
     }
@@ -292,7 +294,7 @@ struct CompletedInvestmentsTable: View {
     ) -> some View {
         let summary = investmentSummaries[investment.id]
         let grossProfit = summary?.statementGrossProfit
-        let returnPercentage = investment.performance
+        let returnPercentage = tradeLedReturnPercentages[investment.id]
         let isCancelled = investment.status == .cancelled
         let traderUsername = traderUsernames[investment.id] ?? "---"
         let tradeNumberText = tradeNumbers[investment.id] ?? "---"
@@ -343,7 +345,7 @@ struct CompletedInvestmentsTable: View {
                 Group {
                     if isCancelled {
                         Text("---")
-                    } else if summary != nil {
+                    } else if summary != nil, let returnPercentage {
                         Text(String(format: "%.2f%", returnPercentage))
                     } else {
                         Text("pending")
@@ -354,14 +356,14 @@ struct CompletedInvestmentsTable: View {
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor({
                     if isCancelled { return AppTheme.fontColor }
-                    guard let _ = summary else { return AppTheme.fontColor }
+                    guard let _ = summary, let returnPercentage else { return AppTheme.fontColor }
                     return returnPercentage >= 0 ? AppTheme.accentGreen : AppTheme.accentRed
                 }())
 
                 if !isCancelled, let profit = grossProfit, profit > 0 {
                     Button(action: onShowCommissionExplanation, label: {
                         Image(systemName: "info.circle")
-                            .font(.system(size: ResponsiveDesign.iconSize() * 0.7))
+                            .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 0.7))
                             .foregroundColor(AppTheme.accentLightBlue.opacity(0.7))
                     })
                 }
@@ -380,7 +382,7 @@ struct CompletedInvestmentsTable: View {
                 onShowDetails(investment)
             }) {
                 Image(systemName: "doc.text")
-                    .font(.system(size: ResponsiveDesign.iconSize() * 0.8))
+                    .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 0.8))
                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
             }
             .frame(width: columnWidths["details"] ?? 40, alignment: .center)

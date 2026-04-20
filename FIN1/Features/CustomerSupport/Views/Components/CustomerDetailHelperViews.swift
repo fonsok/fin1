@@ -83,10 +83,17 @@ struct InvestmentSummaryCard: View {
 
                         Spacer()
 
-                        Text(String(format: "%.1f%%", investment.returnPercentage))
-                            .font(ResponsiveDesign.captionFont())
-                            .fontWeight(.medium)
-                            .foregroundColor(investment.returnPercentage >= 0 ? AppTheme.accentGreen : AppTheme.accentRed)
+                        if let returnPercentage = investment.returnPercentage {
+                            Text(String(format: "%.1f%%", returnPercentage))
+                                .font(ResponsiveDesign.captionFont())
+                                .fontWeight(.medium)
+                                .foregroundColor(returnPercentage >= 0 ? AppTheme.accentGreen : AppTheme.accentRed)
+                        } else {
+                            Text("pending")
+                                .font(ResponsiveDesign.captionFont())
+                                .fontWeight(.medium)
+                                .foregroundColor(AppTheme.fontColor.opacity(0.7))
+                        }
                     }
                 }
 

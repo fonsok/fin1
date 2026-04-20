@@ -99,7 +99,7 @@ struct CustomerInvestmentSummary: Identifiable, Codable {
     let traderName: String
     let amount: Double
     let currentValue: Double
-    let returnPercentage: Double
+    let returnPercentage: Double?
     let status: String
     let createdAt: Date
     let completedAt: Date?

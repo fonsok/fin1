@@ -13,10 +13,12 @@ final class CompletedInvestmentDetailViewModel: ObservableObject {
     private var calculationService: (any InvestorCollectionBillCalculationServiceProtocol)?
     private var commissionCalculationService: (any CommissionCalculationServiceProtocol)?
     private var configurationService: (any ConfigurationServiceProtocol)?
+    private var settlementAPIService: (any SettlementAPIServiceProtocol)?
 
     // MARK: - Published
     @Published var tradeLineItems: [TradeLineItem] = []
     @Published private var statementSummary: InvestorInvestmentStatementSummary?
+    @Published private var tradeLedReturnPercentageValue: Double?
 
     // MARK: - Initialization
     init(investment: Investment) {
@@ -33,8 +35,10 @@ final class CompletedInvestmentDetailViewModel: ObservableObject {
         calculationService = InvestorCollectionBillCalculationService()
         commissionCalculationService = services.commissionCalculationService
         configurationService = services.configurationService
+        settlementAPIService = services.settlementAPIService
         rebuildTradeLineItems()
         refreshStatementSummary()
+        refreshTradeLedReturnPercentage()
     }
 
     private func refreshStatementSummary() {
@@ -53,7 +57,7 @@ final class CompletedInvestmentDetailViewModel: ObservableObject {
             return
         }
 
-        let commissionRate = configurationService.traderCommissionRate
+        let commissionRate = configurationService.effectiveCommissionRate
         statementSummary = InvestorInvestmentStatementAggregator.summarizeInvestment(
             investmentId: investment.id,
             poolTradeParticipationService: poolTradeParticipationService,
@@ -178,11 +182,12 @@ final class CompletedInvestmentDetailViewModel: ObservableObject {
     }
 
     var returnPercentage: Double {
-        investment.performance
+        tradeLedReturnPercentageValue ?? 0.0
     }
 
     var returnPercentageText: String {
-        NumberFormatter.localizedDecimalFormatter.string(for: returnPercentage).map { "\($0) %" } ?? "0,00 %"
+        guard let tradeLedReturnPercentageValue else { return "pending" }
+        return NumberFormatter.localizedDecimalFormatter.string(for: tradeLedReturnPercentageValue).map { "\($0) %" } ?? "0,00 %"
     }
 
     var provisionAmount: Double {
@@ -371,5 +376,20 @@ final class CompletedInvestmentDetailViewModel: ObservableObject {
         }
 
         tradeLineItems = items.sorted { $0.tradeDate < $1.tradeDate }
+    }
+
+    private func refreshTradeLedReturnPercentage() {
+        guard let poolTradeParticipationService,
+              let tradeLifecycleService else {
+            tradeLedReturnPercentageValue = nil
+            return
+        }
+
+        Task {
+            tradeLedReturnPercentageValue = await ServerCalculatedReturnResolver.resolveReturnPercentage(
+                investmentId: investment.id,
+                settlementAPIService: settlementAPIService
+            )
+        }
     }
 }

@@ -22,6 +22,10 @@ final class InvestmentTradingUITests: XCTestCase {
         // Wait longer for app to be ready and show initial screen
         sleep(3)
 
+        // In CI/simulator runs we may start on Landing. Ensure investor session exists
+        // before tests that assume the main tab bar.
+        ensureAuthenticatedInvestorSession()
+
         // Print debug info
         print("📱 App launched - Current screen elements:")
         print(app.debugDescription)
@@ -196,11 +200,14 @@ final class InvestmentTradingUITests: XCTestCase {
             }
         }
 
-        // If not found, try any button with "create" or "submit" in label
+        // If not found, scan button labels (avoids NSPredicate / Swift 6 concurrency issues with `matching(_:)`).
         if createButton == nil {
-            let predicate = NSPredicate(format: "label CONTAINS[c] 'create' OR label CONTAINS[c] 'submit' OR label CONTAINS[c] 'save'")
-            if app.buttons.matching(predicate).firstMatch.exists {
-                createButton = app.buttons.matching(predicate).firstMatch
+            for button in app.buttons.allElementsBoundByIndex.prefix(40) {
+                let lower = button.label.lowercased()
+                if lower.contains("create") || lower.contains("submit") || lower.contains("save") {
+                    createButton = button
+                    break
+                }
             }
         }
 
@@ -626,6 +633,20 @@ final class InvestmentTradingUITests: XCTestCase {
         let expectation = XCTNSPredicateExpectation(predicate: predicate, object: element)
         let result = XCTWaiter.wait(for: [expectation], timeout: timeout)
         return result == .completed
+    }
+
+    /// Helper: If app is on landing/login, sign in with debug investor button.
+    private func ensureAuthenticatedInvestorSession() {
+        let tabBar = app.tabBars.firstMatch
+        if waitForElement(tabBar, timeout: 5) {
+            return
+        }
+
+        let investorDebugButton = app.buttons["LoginInvestor1Button"]
+        if waitForElement(investorDebugButton, timeout: 10) {
+            investorDebugButton.tap()
+            _ = waitForElement(tabBar, timeout: 20)
+        }
     }
 
     /// Helper: Print all available UI elements for debugging

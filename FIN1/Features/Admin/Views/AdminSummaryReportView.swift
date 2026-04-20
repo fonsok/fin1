@@ -260,7 +260,10 @@ struct InvestmentSummaryRow: View {
                     value: investment.grossProfit.formattedAsLocalizedCurrency(),
                     valueColor: investment.grossProfit >= 0 ? AppTheme.accentGreen : AppTheme.accentRed
                 )
-                SummaryInfoRow(label: "Return", value: String(format: "%.2f%%", investment.returnPercentage))
+                SummaryInfoRow(
+                    label: "Return",
+                    value: investment.returnPercentage.map { String(format: "%.2f%%", $0) } ?? "pending"
+                )
                 SummaryInfoRow(label: "Commission", value: investment.commission.formattedAsLocalizedCurrency())
                 if !investment.tradeNumbers.isEmpty {
                     SummaryInfoRow(label: "Trade Numbers", value: investment.tradeNumbersText)

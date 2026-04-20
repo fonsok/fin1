@@ -12,7 +12,8 @@ import os.log
 /// - `CustomerSupportService+Tickets.swift` - Ticket operations (CSR and user)
 /// - `CustomerSupportService+Modifications.swift` - Account modifications
 
-final class CustomerSupportService: CustomerSupportServiceProtocol, ServiceLifecycle {
+@MainActor
+final class CustomerSupportService: CustomerSupportServiceProtocol {
 
     // MARK: - Properties (Internal for Extensions)
 
@@ -26,6 +27,7 @@ final class CustomerSupportService: CustomerSupportServiceProtocol, ServiceLifec
     // Real data services for investments and trades
     let investmentService: (any InvestmentServiceProtocol)?
     let tradeLifecycleService: (any TradeLifecycleServiceProtocol)?
+    let settlementAPIService: (any SettlementAPIServiceProtocol)?
 
     /// Returns the current agent's permissions based on their CSR role
     /// Falls back to standard permissions if no CSR role is set
@@ -54,6 +56,7 @@ final class CustomerSupportService: CustomerSupportServiceProtocol, ServiceLifec
         satisfactionSurveyService: SatisfactionSurveyServiceProtocol,
         investmentService: (any InvestmentServiceProtocol)? = nil,
         tradeLifecycleService: (any TradeLifecycleServiceProtocol)? = nil,
+        settlementAPIService: (any SettlementAPIServiceProtocol)? = nil,
         permissionSet: Set<CustomerSupportPermission> = CustomerSupportPermissionSet.level1,
         assignmentConfiguration: TicketAssignmentService.Configuration = .default
     ) {
@@ -63,18 +66,13 @@ final class CustomerSupportService: CustomerSupportServiceProtocol, ServiceLifec
         self.satisfactionSurveyService = satisfactionSurveyService
         self.investmentService = investmentService
         self.tradeLifecycleService = tradeLifecycleService
+        self.settlementAPIService = settlementAPIService
         self.fallbackPermissions = permissionSet
         self.assignmentService = TicketAssignmentService(configuration: assignmentConfiguration)
         self.mockCustomers = CustomerSupportMockData.createMockCustomers()
         self.mockTickets = CustomerSupportMockData.createMockTickets(customers: mockCustomers)
         self.mockAgents = CustomerSupportMockData.createMockAgents()
     }
-
-    // MARK: - ServiceLifecycle
-
-    func start() { logger.info("CustomerSupportService started") }
-    func stop() { logger.info("CustomerSupportService stopped") }
-    func reset() { logger.info("CustomerSupportService reset") }
 
     // MARK: - Backend Configuration
 

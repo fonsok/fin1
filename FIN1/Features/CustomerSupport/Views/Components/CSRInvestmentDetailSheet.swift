@@ -100,13 +100,22 @@ struct CSRInvestmentDetailSheet: View {
             Divider()
 
             // Return percentage
-            let returnColor = investment.returnPercentage >= 0 ? AppTheme.accentGreen : AppTheme.accentRed
-            CSRDetailRow(
-                icon: investment.returnPercentage >= 0 ? "arrow.up.right" : "arrow.down.right",
-                label: "Rendite",
-                value: String(format: "%+.2f%%", investment.returnPercentage),
-                valueColor: returnColor
-            )
+            if let returnPercentage = investment.returnPercentage {
+                let returnColor = returnPercentage >= 0 ? AppTheme.accentGreen : AppTheme.accentRed
+                CSRDetailRow(
+                    icon: returnPercentage >= 0 ? "arrow.up.right" : "arrow.down.right",
+                    label: "Rendite",
+                    value: String(format: "%+.2f%%", returnPercentage),
+                    valueColor: returnColor
+                )
+            } else {
+                CSRDetailRow(
+                    icon: "clock",
+                    label: "Rendite",
+                    value: "pending",
+                    valueColor: AppTheme.fontColor.opacity(0.7)
+                )
+            }
 
             Divider()
 

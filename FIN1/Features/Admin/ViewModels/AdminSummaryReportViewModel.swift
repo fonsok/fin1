@@ -24,6 +24,7 @@ final class AdminSummaryReportViewModel: ObservableObject {
     private let poolTradeParticipationService: any PoolTradeParticipationServiceProtocol
     private let userService: any UserServiceProtocol
     private let configurationService: any ConfigurationServiceProtocol
+    private let settlementAPIService: (any SettlementAPIServiceProtocol)?
 
     // MARK: - Initialization
 
@@ -35,6 +36,7 @@ final class AdminSummaryReportViewModel: ObservableObject {
         self.poolTradeParticipationService = services.poolTradeParticipationService
         self.userService = services.userService
         self.configurationService = services.configurationService
+        self.settlementAPIService = services.settlementAPIService
     }
 
     // MARK: - Public Methods
@@ -44,10 +46,11 @@ final class AdminSummaryReportViewModel: ObservableObject {
 
         isLoading = true
         errorMessage = nil
-        defer { isLoading = false }
-
-        let report = buildSummaryReport()
-        summary = report
+        Task {
+            let report = await buildSummaryReport()
+            summary = report
+            isLoading = false
+        }
     }
 
     func refresh() {
@@ -56,7 +59,7 @@ final class AdminSummaryReportViewModel: ObservableObject {
 
     // MARK: - Private Methods
 
-    private func buildSummaryReport() -> AdminSummaryReport {
+    private func buildSummaryReport() async -> AdminSummaryReport {
         // Get all investments
         let allInvestments = investmentService.investments
 
@@ -80,7 +83,7 @@ final class AdminSummaryReportViewModel: ObservableObject {
         var totalGrossProfit: Double = 0
         var totalCommission: Double = 0
 
-        let commissionRate = configurationService.traderCommissionRate
+        let commissionRate = configurationService.effectiveCommissionRate
 
         for investment in filteredInvestments {
             // Get statement summary (source of truth)
@@ -123,7 +126,10 @@ final class AdminSummaryReportViewModel: ObservableObject {
                 amount: investment.amount,
                 currentValue: investment.currentValue,
                 grossProfit: grossProfit,
-                returnPercentage: investment.performance,
+                returnPercentage: await ServerCalculatedReturnResolver.resolveReturnPercentage(
+                    investmentId: investment.id,
+                    settlementAPIService: settlementAPIService
+                ),
                 commission: commission,
                 tradeNumbers: tradeNumbers,
                 completedAt: investment.completedAt ?? investment.updatedAt,

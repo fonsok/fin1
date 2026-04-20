@@ -13,7 +13,8 @@ struct CompletedInvestmentsView: View {
          poolTradeParticipationService: (any PoolTradeParticipationServiceProtocol)? = nil,
          tradeLifecycleService: (any TradeLifecycleServiceProtocol)? = nil,
          configurationService: (any ConfigurationServiceProtocol)? = nil,
-         commissionCalculationService: (any CommissionCalculationServiceProtocol)? = nil) {
+         commissionCalculationService: (any CommissionCalculationServiceProtocol)? = nil,
+         settlementAPIService: (any SettlementAPIServiceProtocol)? = nil) {
         // Services must be provided - wrapper handles injection
         guard let userSvc = userService, let invSvc = investmentService,
               let docSvc = documentService, let invoiceSvc = invoiceService,
@@ -31,7 +32,8 @@ struct CompletedInvestmentsView: View {
             poolTradeParticipationService: poolSvc,
             tradeLifecycleService: tradeSvc,
             configurationService: configSvc,
-            commissionCalculationService: commissionSvc
+            commissionCalculationService: commissionSvc,
+            settlementAPIService: settlementAPIService
         ))
     }
 
@@ -134,6 +136,7 @@ struct CompletedInvestmentsView: View {
                     traderUsernames: viewModel.traderUsernames,
                     tradeNumbers: viewModel.tradeNumbers,
                     investmentSummaries: viewModel.investmentSummaries,
+                    tradeLedReturnPercentages: viewModel.tradeLedReturnPercentages,
                     onShowDetails: { investment in
                         selectedCompletedInvestment = investment
                     }
@@ -143,7 +146,7 @@ struct CompletedInvestmentsView: View {
                     if allCompletedCount == 0 {
                         VStack(spacing: ResponsiveDesign.spacing(4)) {
                             Image(systemName: "tray")
-                                .font(.system(size: ResponsiveDesign.iconSize() * 2))
+                                .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2))
                                 .foregroundColor(AppTheme.fontColor.opacity(0.4))
 
                             Text("No (partially) completed investments")
@@ -195,7 +198,8 @@ struct CompletedInvestmentsViewWrapper: View {
             poolTradeParticipationService: services.poolTradeParticipationService,
             tradeLifecycleService: services.tradeLifecycleService,
             configurationService: services.configurationService,
-            commissionCalculationService: services.commissionCalculationService
+            commissionCalculationService: services.commissionCalculationService,
+            settlementAPIService: services.settlementAPIService
         )
     }
 }

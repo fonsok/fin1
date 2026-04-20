@@ -55,7 +55,7 @@ struct AdminInvestmentSummary: Identifiable {
     let amount: Double
     let currentValue: Double
     let grossProfit: Double
-    let returnPercentage: Double
+    let returnPercentage: Double?
     let commission: Double
     let tradeNumbers: [Int]
     let completedAt: Date
@@ -71,7 +71,7 @@ struct AdminInvestmentSummary: Identifiable {
         amount: Double,
         currentValue: Double,
         grossProfit: Double,
-        returnPercentage: Double,
+        returnPercentage: Double?,
         commission: Double,
         tradeNumbers: [Int],
         completedAt: Date,

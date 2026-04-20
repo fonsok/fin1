@@ -3,6 +3,36 @@
 const { generateSequentialNumber } = require('../helpers');
 const { round2, formatDateCompact, generateShortHash } = require('./shared');
 
+function computeCollectionBillReturnPercentage({ netProfit, buyLeg, investmentCapital }) {
+  const buyLegAmount = buyLeg?.amount || 0;
+  const buyLegFees = buyLeg?.fees?.totalFees || 0;
+  const investedAmountFromLeg = buyLegAmount + buyLegFees;
+  const investedAmount = investedAmountFromLeg > 0
+    ? investedAmountFromLeg
+    : (typeof investmentCapital === 'number' && investmentCapital > 0 ? investmentCapital : 0);
+
+  if (investedAmount <= 0) {
+    return null;
+  }
+  return round2((netProfit / investedAmount) * 100);
+}
+
+function assertCollectionBillReturnPercentageInvariant(returnPercentage, context = {}) {
+  if (typeof returnPercentage === 'number' && Number.isFinite(returnPercentage)) {
+    return;
+  }
+
+  const details = {
+    tradeId: context.tradeId || null,
+    investmentId: context.investmentId || null,
+    netProfit: context.netProfit ?? null,
+    investmentCapital: context.investmentCapital ?? null,
+  };
+  throw new Error(
+    `Invariant violation: investor collection bill missing canonical returnPercentage (${JSON.stringify(details)})`,
+  );
+}
+
 async function createCreditNoteDocument({
   traderId,
   trade,
@@ -11,6 +41,7 @@ async function createCreditNoteDocument({
   grossProfit,
   netProfit,
   investorBreakdown,
+  taxBreakdown,
 }) {
   const tradeNumber = trade.get('tradeNumber');
   const docNumber = await generateSequentialNumber('CN', 'Document', 'accountingDocumentNumber');
@@ -36,9 +67,12 @@ async function createCreditNoteDocument({
       investmentId: b.investmentId,
       grossProfit: round2(b.grossProfit),
       commission: round2(b.commission),
+      taxWithheld: round2(b.taxWithheld || 0),
     })),
+    taxBreakdown: taxBreakdown || null,
     generatedAt: new Date().toISOString(),
   });
+  doc.set('traderCommissionRateSnapshot', commissionRate);
 
   await doc.save(null, { useMasterKey: true });
   console.log(`📄 CreditNote created: ${docNumber} for trade #${tradeNumber}, commission €${round2(totalCommission)}`);
@@ -54,13 +88,27 @@ async function createCollectionBillDocument({
   commission,
   netProfit,
   commissionRate,
+  investmentCapital,
   buyLeg,
   sellLeg,
+  taxBreakdown,
 }) {
   const tradeNumber = trade.get('tradeNumber');
   const docNumber = await generateSequentialNumber('CB', 'Document', 'accountingDocumentNumber');
   const dateStr = formatDateCompact(new Date());
   const hash = generateShortHash();
+
+  const returnPercentage = computeCollectionBillReturnPercentage({
+    netProfit,
+    buyLeg,
+    investmentCapital,
+  });
+  assertCollectionBillReturnPercentageInvariant(returnPercentage, {
+    tradeId: trade?.id,
+    investmentId,
+    netProfit,
+    investmentCapital,
+  });
 
   const Document = Parse.Object.extend('Document');
   const doc = new Document();
@@ -77,9 +125,11 @@ async function createCollectionBillDocument({
     grossProfit: round2(grossProfit),
     commission: round2(commission),
     netProfit: round2(netProfit),
+    returnPercentage,
     commissionRate,
     buyLeg: buyLeg || null,
     sellLeg: sellLeg || null,
+    taxBreakdown: taxBreakdown || null,
     generatedAt: new Date().toISOString(),
   });
 
@@ -221,4 +271,6 @@ module.exports = {
   createCollectionBillDocument,
   createWalletReceiptDocument,
   createTradeExecutionDocument,
+  computeCollectionBillReturnPercentage,
+  assertCollectionBillReturnPercentageInvariant,
 };

@@ -7,6 +7,7 @@ struct CommissionCalculationExplanationSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.appServices) private var services
     @State private var statementSummary: InvestorInvestmentStatementSummary?
+    @State private var serverReturnPercentage: Double?
 
     // MARK: - Calculated Values
     private var buyAmount: Double {
@@ -49,7 +50,12 @@ struct CommissionCalculationExplanationSheet: View {
     }
 
     private var returnPercentage: Double {
-        investment.performance
+        serverReturnPercentage ?? 0.0
+    }
+
+    private var returnPercentageText: String? {
+        guard let serverReturnPercentage else { return nil }
+        return String(format: "%.2f%%", serverReturnPercentage)
     }
 
     var body: some View {
@@ -189,7 +195,9 @@ struct CommissionCalculationExplanationSheet: View {
                 calculationTableRow(
                     label: "Gross Profit (from trades), before commission & taxes",
                     value: grossProfit.formattedAsLocalizedCurrency(),
-                    valueColor: AppTheme.accentGreen
+                    secondaryValue: returnPercentageText,
+                    valueColor: AppTheme.accentGreen,
+                    secondaryValueColor: AppTheme.accentGreen
                 )
 
                 Divider()
@@ -206,8 +214,8 @@ struct CommissionCalculationExplanationSheet: View {
                 // Return Percentage
                 calculationTableRow(
                     label: "Return Percentage",
-                    value: String(format: "%.2f%%", returnPercentage),
-                    valueColor: returnPercentage >= 0 ? AppTheme.accentGreen : AppTheme.accentRed,
+                    value: returnPercentageText ?? "pending",
+                    valueColor: serverReturnPercentage == nil ? AppTheme.fontColor.opacity(0.7) : (returnPercentage >= 0 ? AppTheme.accentGreen : AppTheme.accentRed),
                     isBold: true
                 )
             }
@@ -217,15 +225,30 @@ struct CommissionCalculationExplanationSheet: View {
         .cornerRadius(ResponsiveDesign.spacing(8))
     }
 
-    private func calculationTableRow(label: String, value: String, valueColor: Color = AppTheme.fontColor, isBold: Bool = false) -> some View {
+    private func calculationTableRow(
+        label: String,
+        value: String,
+        secondaryValue: String? = nil,
+        valueColor: Color = AppTheme.fontColor,
+        secondaryValueColor: Color = AppTheme.fontColor.opacity(0.7),
+        isBold: Bool = false
+    ) -> some View {
         HStack {
             Text(label)
                 .font(isBold ? ResponsiveDesign.bodyFont().weight(.semibold) : ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor)
             Spacer()
-            Text(value)
-                .font(isBold ? ResponsiveDesign.bodyFont().weight(.semibold) : ResponsiveDesign.bodyFont())
-                .foregroundColor(valueColor)
+            VStack(alignment: .trailing, spacing: ResponsiveDesign.spacing(2)) {
+                Text(value)
+                    .font(isBold ? ResponsiveDesign.bodyFont().weight(.semibold) : ResponsiveDesign.bodyFont())
+                    .foregroundColor(valueColor)
+
+                if let secondaryValue {
+                    Text(secondaryValue)
+                        .font(ResponsiveDesign.captionFont())
+                        .foregroundColor(secondaryValueColor)
+                }
+            }
         }
         .padding(.horizontal, ResponsiveDesign.spacing(12))
         .padding(.vertical, ResponsiveDesign.spacing(8))
@@ -262,7 +285,7 @@ struct CommissionCalculationExplanationSheet: View {
     }
 
     private func refreshStatementSummary() {
-        let commissionRate = services.configurationService.traderCommissionRate
+        let commissionRate = services.configurationService.effectiveCommissionRate
         statementSummary = InvestorInvestmentStatementAggregator.summarizeInvestment(
             investmentId: investment.id,
             poolTradeParticipationService: services.poolTradeParticipationService,
@@ -273,5 +296,12 @@ struct CommissionCalculationExplanationSheet: View {
             commissionCalculationService: services.commissionCalculationService,
             commissionRate: commissionRate
         )
+
+        Task {
+            serverReturnPercentage = await ServerCalculatedReturnResolver.resolveReturnPercentage(
+                investmentId: investment.id,
+                settlementAPIService: services.settlementAPIService
+            )
+        }
     }
 }

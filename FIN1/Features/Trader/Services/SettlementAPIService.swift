@@ -3,7 +3,7 @@ import Foundation
 // MARK: - Settlement API Service Protocol
 
 /// Communicates with backend Cloud Functions for authoritative trade settlement data.
-protocol SettlementAPIServiceProtocol {
+protocol SettlementAPIServiceProtocol: Sendable {
     /// Checks whether a trade has been settled by the backend.
     func isTradeSettledByBackend(tradeId: String) async -> Bool
 
@@ -151,6 +151,7 @@ struct BackendInvoice: Decodable, Identifiable {
     let invoiceDate: DateValue?
     let source: String?
     let createdAt: String?
+    let traderCommissionRateSnapshot: Double?
 
     var id: String { objectId }
 
@@ -213,6 +214,7 @@ struct BackendCollectionBillMetadata: Decodable {
     let grossProfit: Double?
     let commission: Double?
     let netProfit: Double?
+    let returnPercentage: Double?
     let commissionRate: Double?
     let buyLeg: BackendCollectionBillLeg?
     let sellLeg: BackendCollectionBillLeg?
@@ -241,7 +243,7 @@ struct BackendCollectionBillResponse: Decodable {
 
 // MARK: - Settlement API Service Implementation
 
-final class SettlementAPIService: SettlementAPIServiceProtocol {
+final class SettlementAPIService: SettlementAPIServiceProtocol, @unchecked Sendable {
 
     private let apiClient: any ParseAPIClientProtocol
 

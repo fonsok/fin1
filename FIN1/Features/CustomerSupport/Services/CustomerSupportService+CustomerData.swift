@@ -77,19 +77,29 @@ extension CustomerSupportService {
             let realInvestments = investmentService.getInvestments(for: userId)
             logger.info("📊 CSR: Looking up investments for userId='\(userId)', found \(realInvestments.count) real investments")
             if !realInvestments.isEmpty {
-                return realInvestments.map { investment in
-                    CustomerInvestmentSummary(
+                var investmentSummaries: [CustomerInvestmentSummary] = []
+                investmentSummaries.reserveCapacity(realInvestments.count)
+
+                for investment in realInvestments {
+                    let serverReturn = await ServerCalculatedReturnResolver.resolveReturnPercentage(
+                        investmentId: investment.id,
+                        settlementAPIService: settlementAPIService
+                    )
+
+                    investmentSummaries.append(CustomerInvestmentSummary(
                         id: investment.id,
                         investmentNumber: "INV-\(investment.sequenceNumber ?? 0)",
                         traderName: investment.traderName,
                         amount: investment.amount,
                         currentValue: investment.currentValue,
-                        returnPercentage: investment.performance,
+                        returnPercentage: serverReturn,
                         status: mapInvestmentStatus(investment.status, reservationStatus: investment.reservationStatus),
                         createdAt: investment.createdAt,
                         completedAt: investment.completedAt
-                    )
+                    ))
                 }
+
+                return investmentSummaries
             }
         } else {
             logger.warning("⚠️ CSR: investmentService not available - cannot fetch real investments")

@@ -2,6 +2,7 @@ import Foundation
 
 extension AppServicesBuilder {
 
+    @MainActor
     enum Remaining {
         static func build(_ ctx: inout AppServicesBuildContext) {
             guard let serviceFactory = ctx.serviceFactory,
@@ -43,7 +44,9 @@ extension AppServicesBuilder {
 
             ctx.dashboardService = DashboardService()
             ctx.testModeService = TestModeService()
-            ctx.roundingDifferencesService = RoundingDifferencesService(telemetryService: telemetryService)
+            ctx.roundingDifferencesService = MainActor.assumeIsolated {
+                RoundingDifferencesService(telemetryService: telemetryService)
+            }
             ctx.holdingsConversionService = HoldingsConversionService.shared
             ctx.termsAcceptanceService = TermsAcceptanceService()
             ctx.termsContentService = TermsContentService(parseAPIClient: parseAPIClient)
@@ -79,15 +82,19 @@ extension AppServicesBuilder {
             ctx.satisfactionSurveyService = SatisfactionSurveyService(notificationService: notificationService)
             ctx.ticketAPIService = TicketAPIService(apiClient: parseAPIClient)
 
-            let customerSupportService = CustomerSupportService(
-                auditService: auditLoggingService,
-                userService: userService,
-                notificationService: notificationService,
-                satisfactionSurveyService: ctx.satisfactionSurveyService!,
-                investmentService: investmentService,
-                tradeLifecycleService: tradeLifecycleService
-            )
-            customerSupportService.configure(ticketAPIService: ctx.ticketAPIService!)
+            let customerSupportService = MainActor.assumeIsolated {
+                let service = CustomerSupportService(
+                    auditService: auditLoggingService,
+                    userService: userService,
+                    notificationService: notificationService,
+                    satisfactionSurveyService: ctx.satisfactionSurveyService!,
+                    investmentService: investmentService,
+                    tradeLifecycleService: tradeLifecycleService,
+                    settlementAPIService: ctx.settlementAPIService
+                )
+                service.configure(ticketAPIService: ctx.ticketAPIService!)
+                return service
+            }
             ctx.customerSupportService = customerSupportService
 
             ctx.faqKnowledgeBaseService = FAQKnowledgeBaseService(auditService: auditLoggingService)
@@ -97,12 +104,14 @@ extension AppServicesBuilder {
                 preferredLanguage: "de"
             )
 
-            ctx.slaMonitoringService = SLAMonitoringService(
-                supportService: customerSupportService,
-                auditService: auditLoggingService,
-                notificationService: notificationService,
-                configurationService: configurationService
-            )
+            ctx.slaMonitoringService = MainActor.assumeIsolated {
+                SLAMonitoringService(
+                    supportService: customerSupportService,
+                    auditService: auditLoggingService,
+                    notificationService: notificationService,
+                    configurationService: configurationService
+                )
+            }
 
             ctx.fourEyesApprovalService = FourEyesApprovalService(auditService: auditLoggingService)
 

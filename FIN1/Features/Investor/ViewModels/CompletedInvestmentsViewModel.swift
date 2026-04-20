@@ -22,6 +22,7 @@ final class CompletedInvestmentsViewModel: ObservableObject {
     private var tradeLifecycleService: any TradeLifecycleServiceProtocol
     private var configurationService: any ConfigurationServiceProtocol
     private var commissionCalculationService: any CommissionCalculationServiceProtocol
+    private var settlementAPIService: (any SettlementAPIServiceProtocol)?
     private var cancellables = Set<AnyCancellable>()
     private var roleChangeCancellables = Set<AnyCancellable>() // Separate set for role change observers
     private var boundInvestorId: String?
@@ -35,6 +36,8 @@ final class CompletedInvestmentsViewModel: ObservableObject {
     @Published var tradeNumbers: [String: String] = [:]
     /// Statement-Summaries pro Investment-ID (MVVM: keine Berechnung in der View).
     @Published var investmentSummaries: [String: InvestorInvestmentStatementSummary] = [:]
+    /// Server-calculated Return-% pro Investment-ID (Single Source of Truth).
+    @Published var tradeLedReturnPercentages: [String: Double] = [:]
 
     init(userService: any UserServiceProtocol,
          investmentService: any InvestmentServiceProtocol,
@@ -44,7 +47,8 @@ final class CompletedInvestmentsViewModel: ObservableObject {
          poolTradeParticipationService: any PoolTradeParticipationServiceProtocol,
          tradeLifecycleService: any TradeLifecycleServiceProtocol,
          configurationService: any ConfigurationServiceProtocol,
-         commissionCalculationService: any CommissionCalculationServiceProtocol) {
+         commissionCalculationService: any CommissionCalculationServiceProtocol,
+         settlementAPIService: (any SettlementAPIServiceProtocol)? = nil) {
         self.userService = userService
         self.investmentService = investmentService
         self.documentService = documentService
@@ -54,6 +58,7 @@ final class CompletedInvestmentsViewModel: ObservableObject {
         self.tradeLifecycleService = tradeLifecycleService
         self.configurationService = configurationService
         self.commissionCalculationService = commissionCalculationService
+        self.settlementAPIService = settlementAPIService
         self.boundInvestorId = userService.currentUser?.id
         self.currentRole = userService.currentUser?.role
         setupBindings()
@@ -151,6 +156,7 @@ final class CompletedInvestmentsViewModel: ObservableObject {
         self.tradeLifecycleService = services.tradeLifecycleService
         self.configurationService = services.configurationService
         self.commissionCalculationService = services.commissionCalculationService
+        self.settlementAPIService = services.settlementAPIService
         self.boundInvestorId = services.userService.currentUser?.id
         refreshInvestmentDocRefs()
         refreshDisplayData()
@@ -204,12 +210,13 @@ final class CompletedInvestmentsViewModel: ObservableObject {
         var usernames: [String: String] = [:]
         var tradeNums: [String: String] = [:]
         var summaries: [String: InvestorInvestmentStatementSummary] = [:]
-        let commissionRate = configurationService.traderCommissionRate
+        let commissionRate = configurationService.effectiveCommissionRate
         let calculationService = InvestorCollectionBillCalculationService()
 
         for inv in investments {
             usernames[inv.id] = traderDataService.getTrader(by: inv.traderId)?.username ?? "---"
             let participations = poolTradeParticipationService.getParticipations(forInvestmentId: inv.id)
+
             if let first = participations.first,
                let trade = tradeLifecycleService.completedTrades.first(where: { $0.id == first.tradeId }) {
                 tradeNums[inv.id] = String(format: "%03d", trade.tradeNumber)
@@ -232,6 +239,20 @@ final class CompletedInvestmentsViewModel: ObservableObject {
         traderUsernames = usernames
         tradeNumbers = tradeNums
         investmentSummaries = summaries
+        tradeLedReturnPercentages = [:]
+
+        Task {
+            var serverReturns: [String: Double] = [:]
+            for investment in investments {
+                if let value = await ServerCalculatedReturnResolver.resolveReturnPercentage(
+                    investmentId: investment.id,
+                    settlementAPIService: settlementAPIService
+                ) {
+                    serverReturns[investment.id] = value
+                }
+            }
+            tradeLedReturnPercentages = serverReturns
+        }
     }
 
     // MARK: - Filtered Investment Lists
