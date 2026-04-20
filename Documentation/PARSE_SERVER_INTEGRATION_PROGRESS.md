@@ -1,24 +1,32 @@
 # Parse Server Integration - Fortschritt
 
-**Datum**: Januar 2026  
-**Status**: Transaction Limits Service erweitert ✅
+**Datum**: April 2026
+**Status**: Return%-Contract operationalized ✅
 
 ---
 
 ## ✅ Abgeschlossen
+
+### Return%-Contract Hardening (April 2026) ✅
+
+- Server-owned `metadata.returnPercentage` contract in active use.
+- Monitoring operationalized (daily + reboot catch-up) with heartbeat and alert traces.
+- Auth-based smoke verification established (`auditCollectionBillReturnPercentage` with admin session token).
+- Weekly reconciliation process added (drift/data-quality checks).
+- DB-layer validator for active collection bills applied in production.
 
 ### 1. Parse Models erstellt
 
 - **ParseTransactionLimit.swift** ✅
   - Model für Transaction Limits in Parse Server
   - Konvertierung zu/from TransactionLimit
-  
+
 - **ParseComplianceEvent.swift** ✅
   - Model für Compliance Events in Parse Server
   - Konvertierung zu/from ComplianceEvent
-  
-- **ParseWalletTransaction.swift** ✅
-  - Model für Wallet Transactions in Parse Server
+
+- **ParseWalletTransaction.swift** ✅ (Konto; Wallet-Feature deaktiviert)
+  - Model für Konto-Transaktionen in Parse Server
   - Konvertierung zu/from Transaction
 
 ### 2. TransactionLimitService erweitert ✅
@@ -60,14 +68,14 @@
 ### 4. MockPaymentService erweitert ✅
 
 **Implementiert:**
-- Wallet Transactions werden in Parse Server gespeichert
+- Konto-Transaktionen werden in Parse Server gespeichert (Wallet-Feature deaktiviert; Nutzer hat normales Konto)
 - `loadTransactionsFromParseServer()` - Lädt Transactions beim Start
 - `deposit()` und `withdraw()` - Speichern Transactions in Parse Server
 - `getTransactionHistory()` - Liest auch aus Parse Server
 - Merge-Logik für In-Memory und Parse Server Transactions
 
 **Features:**
-- Automatisches Speichern von Wallet Transactions
+- Automatisches Speichern von Konto-Transaktionen
 - Transaction History Sync zwischen App und Server
 - Deduplication von Transactions (In-Memory hat Priorität)
 - Fallback auf In-Memory wenn Parse Server nicht verfügbar
@@ -79,8 +87,17 @@
   - `TransactionLimit` Klasse ✅
   - `TransactionHistory` Klasse ✅
   - `ComplianceEvent` Klasse ✅
-  - `WalletTransaction` Klasse ✅
-- Live Query für `WalletTransaction` und `ComplianceEvent` aktiviert
+  - Konto-Transaktionen (Backend-Klasse; Wallet-Feature deaktiviert) ✅
+- Live Query für Konto-Transaktionen und `ComplianceEvent` aktiviert
+
+### 6. Notifications (Parse) Integration erweitert ✅
+
+**Implementiert (App):**
+- `NotificationAPIService.fetchNotifications(...)` nutzt Parse `/classes/Notification` **mit Pagination** (cursor-basiert über `createdAt`, pageSize=100, safe cap), um Ressourcen zu sparen und trotzdem große Notification-Historien robust zu laden.
+- `NotificationService.markAllAsRead()` synchronisiert “Mark All Read” **best-effort** zum Backend via Cloud Function.
+
+**Implementiert (Backend/Cloud Code):**
+- Cloud Function `markAllNotificationsRead` bulk-markiert alle nicht archivierten, ungelesenen Notifications eines Users als gelesen (`isRead=true`, `readAt=Date`).
 
 ---
 
@@ -145,7 +162,7 @@
 }
 ```
 
-**WalletTransaction:**
+**Konto-Transaktionen (Backend-Schema):**
 ```javascript
 {
   userId: String (required),

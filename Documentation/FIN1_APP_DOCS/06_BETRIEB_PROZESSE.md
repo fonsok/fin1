@@ -131,6 +131,23 @@ Typisch:
 - DB Health: Mongo ping, Redis ping, Postgres readiness
 - Disk: Volumes für Mongo/Postgres/Logs
 
+### Return%-Contract: operative Guardrails (verbindlich)
+
+- **Daily monitor:** `/home/io/fin1-server/scripts/run-return-monitor.sh`
+  - cron: täglich
+  - plus `@reboot` catch-up für nicht dauerhaft laufende Server
+- **Heartbeat/Alert-Spuren:**
+  - `/home/io/fin1-server/logs/return-monitor.heartbeat`
+  - `/home/io/fin1-server/logs/return-monitor.alert`
+  - syslog tag: `fin1-return-monitor`
+- **Weekly reconciliation:** `/home/io/fin1-server/scripts/run-return-reconciliation.sh`
+  - cron: wöchentlich
+  - plus `@reboot` catch-up
+- **Auth-smoke-test vor kritischen Releases:**
+  - `scripts/smoke-audit-return-percentage-auth.sh` (real admin session token, kein master key)
+- **DB boundary validator (active collection bills):**
+  - `backend/scripts/apply-document-return-percentage-validator.js`
+
 ## 5) Release-Prozess
 
 ### Go/No-Go Kriterien (Backend)

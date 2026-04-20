@@ -20,8 +20,12 @@
 - [x] `parse-server` restarted and healthy (`docker compose ... restart parse-server`, health = healthy)
 - [x] Historical backfill executed for missing return percentage where recoverable
 - [x] Malformed legacy collection bills archived out of active scope
-- [ ] Hard release gate (Go/No-Go): `missingReturnPercentageCount` MUST equal `0` before production release
+- [x] Hard release gate (Go/No-Go): `missingReturnPercentageCount` MUST equal `0` before production release
 - [x] Auth smoke check (real admin session token) passes for `auditCollectionBillReturnPercentage`
+- [x] Redundant alert fallback available (file + syslog + SMTP path)
+- [x] Weekly reconciliation job defined for drift checks
+- [x] DB boundary validator applied in production (`backend/scripts/apply-document-return-percentage-validator.js`)
+- [x] Alert recipient configured in production monitor env (`RETURN_MONITOR_ALERT_EMAIL_TO`)
 
 ## Notes
 - A first parallelized `xcodebuild test` run hit a simulator runner launch denial (`ra.FIN1UITests.xctrunner`) and was stopped.

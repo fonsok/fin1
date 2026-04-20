@@ -198,6 +198,15 @@ Im Server-Verzeichnis `/home/io/fin1-server`:
 - Details/Alert-Template:
   - [`Documentation/RETURN_PERCENTAGE_MONITORING_AND_ALERTING.md`](../RETURN_PERCENTAGE_MONITORING_AND_ALERTING.md)
 
+### 7.2) Weekly Return%-Reconciliation (drift check)
+
+- Wrapper:
+  - `/home/io/fin1-server/scripts/run-return-reconciliation.sh`
+- Log:
+  - `/home/io/fin1-server/logs/return-reconciliation.log`
+- Catch-up mode for non-24/7 uptime:
+  - `run-return-reconciliation.sh --catchup`
+
 ## 8) Deployment/Update Ablauf (bewährter Flow)
 
 Typischer Update (Beispiel Parse Server):

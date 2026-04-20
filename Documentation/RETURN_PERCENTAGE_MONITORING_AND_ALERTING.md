@@ -15,6 +15,9 @@ Detect any active investor collection bill without canonical `metadata.returnPer
   - recommended cron: `10 5 * * * /home/io/fin1-server/scripts/run-return-monitor.sh >> /home/io/fin1-server/logs/return-monitor.log 2>&1`
   - recommended reboot catch-up: `@reboot sleep 120 && /home/io/fin1-server/scripts/run-return-monitor.sh --catchup >> /home/io/fin1-server/logs/return-monitor.log 2>&1`
   - catch-up guard: script stores last-success timestamp and skips boot catch-up if last run is recent (default max age 25h)
+- **Weekly reconciliation job**:
+  - `backend/scripts/weekly-return-percentage-reconciliation.js`
+  - wrapper: `scripts/run-return-reconciliation.sh`
 - **CI/scheduled job**:
   - `.github/workflows/return-percentage-contract-monitor.yml`
   - script: `scripts/monitor-return-percentage-contract.js`
@@ -50,6 +53,10 @@ Delivery options:
 
 - Successful monitor runs write:
   - `/home/io/fin1-server/logs/return-monitor.heartbeat`
+- Alert state snapshots write:
+  - `/home/io/fin1-server/logs/return-monitor.alert`
+- System log fallback:
+  - logger tag `fin1-return-monitor` (when `logger` is available)
 - The heartbeat provides status + timestamp for quick verification that monitoring is alive even when no alert fires.
 
 ## Safe Forced-Breach Test
@@ -69,6 +76,14 @@ Delivery options:
 Use a real admin session token (not master key) to validate auth path:
 
 `scripts/smoke-audit-return-percentage-auth.sh`
+
+## DB Boundary Enforcement
+
+Apply Mongo validator for active collection bills:
+
+- `backend/scripts/apply-document-return-percentage-validator.js`
+
+This enforces numeric `metadata.returnPercentage` at persistence layer for active collection bill documents.
 
 ## Runbook (Breach Handling)
 

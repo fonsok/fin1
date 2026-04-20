@@ -28,6 +28,7 @@ ALERT_EMAIL_TO="${RETURN_MONITOR_ALERT_EMAIL_TO:-}"
 ALERT_EMAIL_FROM="${RETURN_MONITOR_ALERT_EMAIL_FROM:-fin1-monitor@localhost}"
 STATE_FILE="${STATE_FILE:-$BASE_DIR/logs/return-monitor.last-run}"
 HEARTBEAT_FILE="${HEARTBEAT_FILE:-$BASE_DIR/logs/return-monitor.heartbeat}"
+ALERT_FILE="${ALERT_FILE:-$BASE_DIR/logs/return-monitor.alert}"
 MAX_AGE_SECONDS="${MAX_AGE_SECONDS:-90000}" # 25h
 FORCE_BREACH="${RETURN_MONITOR_FORCE_BREACH:-0}" # set to 1 for alert pipeline test
 CATCHUP_MODE="false"
@@ -136,6 +137,10 @@ fi
 if (( MISSING_COUNT > THRESHOLD )); then
   MESSAGE="FIN1 Return% monitor breach: missing=${MISSING_COUNT}, total=${TOTAL_ACTIVE:-unknown}, threshold=${THRESHOLD}, checkedAt=$(timestamp)"
   echo "[$(timestamp)] ALERT: $MESSAGE"
+  printf 'status=alert checked_at=%s missing=%s total=%s threshold=%s\n' "$(timestamp)" "$MISSING_COUNT" "${TOTAL_ACTIVE:-unknown}" "$THRESHOLD" > "$ALERT_FILE"
+  if command -v logger >/dev/null 2>&1; then
+    logger -t fin1-return-monitor -- "$MESSAGE" || true
+  fi
 
   if [[ -n "$SLACK_WEBHOOK_URL" ]]; then
     payload="$(printf '{"text":"%s"}' "$MESSAGE")"

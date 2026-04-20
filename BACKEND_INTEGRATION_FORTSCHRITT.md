@@ -1,18 +1,25 @@
 # ✅ Backend-Integration Fortschritt - FIN1
 
-**Datum:** 2026-02-05
-**Status:** Request-Deduplizierung implementiert ✅
+**Datum:** 2026-04-20
+**Status:** Return%-Contract Hardening abgeschlossen ✅
 
 ---
 
 ## 🎯 Implementierte Features
+
+### ✅ Return%-Contract Hardening (neu)
+- Canonical server field `metadata.returnPercentage` durchgesetzt.
+- Release-Gates dokumentiert und auth-basiert verifiziert.
+- Daily Monitor + reboot catch-up im Betrieb aktiv.
+- Weekly reconciliation job für Drift-Erkennung aktiv.
+- DB boundary validator für aktive collection bills angewendet.
 
 ### ✅ Phase 1: Basis-Integration (Abgeschlossen)
 - **Trade Service** - Vollständig integriert
 - **Investment Service** - Vollständig integriert
 - **Order Service** - Vollständig integriert
 - **Pool Participation Service** - Vollständig integriert
-- **Wallet Transactions** - Vollständig integriert
+- **Konto-Transaktionen** (Wallet-Feature deaktiviert) - Backend integriert
 - **Documents** - Vollständig integriert
 - **User Profile** - Vollständig integriert
 - **Watchlist Services** - Vollständig integriert

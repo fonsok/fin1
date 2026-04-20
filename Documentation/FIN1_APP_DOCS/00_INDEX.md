@@ -1,7 +1,7 @@
 ---
 title: "FIN1 App-Dokumentation – Index"
 audience: ["Stakeholder", "Produkt", "Entwicklung", "QA", "Betrieb", "Support", "Compliance"]
-lastUpdated: "2026-03-28"
+lastUpdated: "2026-04-15"
 ---
 
 ## Zweck
@@ -32,7 +32,7 @@ Wenn Dokumente und Code/Configs widersprechen, gilt:
    Siehe [`02_REQUIREMENTS.md`](02_REQUIREMENTS.md)
    - Feature-Schutz (Guardrails): [`02A_FEATURE_KATALOG_GUARDRAILS.md`](02A_FEATURE_KATALOG_GUARDRAILS.md)
 3. **Technische Spezifikation (Architektur/Backend/API/Datenmodell/Security)**
-   Siehe [`03_TECHNISCHE_SPEZIFIKATION.md`](03_TECHNISCHE_SPEZIFIKATION.md)
+   Siehe [`03_TECHNISCHE_SPEZIFIKATION.md`](03_TECHNISCHE_SPEZIFIKATION.md) — **canonical** für iOS-Client ↔ Backend (Schichten, Parse REST/Live Query, **Swift 6 / Sendable / Parse-DTO** unter Abschnitt 1).
    - Belege, Rechnungen, Emittent/Handelsplatz: Abschnitt 6 in 03
    - Onboarding (Cloud Functions + Joi-Validierung): Abschnitt 3.2 „User/FAQ“ und 3.3 in 03; ADR: [`../ADR-002-Onboarding-Codable-DTO.md`](../ADR-002-Onboarding-Codable-DTO.md)
    - **Company / KYB (Firmen-Onboarding, implementiert):** [`../COMPANY_KYB_ONBOARDING.md`](../COMPANY_KYB_ONBOARDING.md), ADR: [`../ADR-003-Company-KYB-Onboarding.md`](../ADR-003-Company-KYB-Onboarding.md)
@@ -42,7 +42,10 @@ Wenn Dokumente und Code/Configs widersprechen, gilt:
    Siehe [`05_TEST_QUALITAET.md`](05_TEST_QUALITAET.md)
 6. **Betriebs- und Prozessdokumentation (Ops/SRE/Release Mgmt)**
    Siehe [`06_BETRIEB_PROZESSE.md`](06_BETRIEB_PROZESSE.md)
-   - Ubuntu Backend Runbook: [`06A_BACKEND_UBUNTU_IOBOX_RUNBOOK.md`](06A_BACKEND_UBUNTU_IOBOX_RUNBOOK.md)
+  - Ubuntu Backend Runbook: [`06A_BACKEND_UBUNTU_IOBOX_RUNBOOK.md`](06A_BACKEND_UBUNTU_IOBOX_RUNBOOK.md)
+  - Return%-Monitoring/Alerting: [`../RETURN_PERCENTAGE_MONITORING_AND_ALERTING.md`](../RETURN_PERCENTAGE_MONITORING_AND_ALERTING.md)
+  - Return%-Incident SOP: [`../RETURN_PERCENTAGE_INCIDENT_SOP.md`](../RETURN_PERCENTAGE_INCIDENT_SOP.md)
+  - Return%-Release Verification: [`../RELEASE_VERIFICATION_RETURN_PERCENTAGE_CONTRACT_2026-04-20.md`](../RELEASE_VERIFICATION_RETURN_PERCENTAGE_CONTRACT_2026-04-20.md)
    - Parse Cloud: keine Legacy-Datei `cloud/utils/configHelper.js` (Shadowing, Admin-Konfig-Fehler) → Runbook **§ 8.2.1**, Kurzüberblick in `06_BETRIEB_PROZESSE.md`
    - Deployment / rsync (kein `--delete` auf Server-Backend): [`../DEPLOYMENT_RSYNC_SICHERHEIT.md`](../DEPLOYMENT_RSYNC_SICHERHEIT.md)
    - Enthält: Hardening-Stufenplan (Ports/Firewall/OS-Services)
@@ -59,6 +62,8 @@ Wenn Dokumente und Code/Configs widersprechen, gilt:
    - Firewall-Setup: [`09A_SERVER_FIREWALL_SETUP.md`](09A_SERVER_FIREWALL_SETUP.md)
 10. **Admin-Web-Portal (Browser-Zugang für App-Admins)**
     Siehe [`10_ADMIN_PORTAL_REQUIREMENTS.md`](10_ADMIN_PORTAL_REQUIREMENTS.md)
+    - **Stand 2026-04-15:** Steuerparameter-Hardening: `Umsatzsteuer` oberhalb `Abgeltungsteuer` (Dropdown), Detailsteuern nur bei `platform_withholds`, Dropdown-Sperre bei pending 4-Augen-Request; serverseitige Tax-Mode-Guardrails/Normalisierung in `03_TECHNISCHE_SPEZIFIKATION.md` dokumentiert
+    - **Stand 2026-04-15:** Legal Branding (`{{APP_NAME}}`) kanonisch unter **Konfiguration → Systemparameter** (`legalAppName`, 4‑Augen); AGB & Rechtstexte nur Hinweis/Deep‑Link; `updateLegalBranding` deprecated/blockiert
     - **Stand 2026-04:** Hilfe & Anleitung: **FAQ-Import (Restore)** mit Dry-Run, **Development Maintenance** (`devResetFAQsBaseline`) und ENV `ALLOW_FAQ_HARD_DELETE*` (siehe [`06_BETRIEB_PROZESSE.md`](06_BETRIEB_PROZESSE.md), Runbook § 8.4)
     - **Stand 2026-03:** CSR-Web **KYB-Status** (Firmen, Leserecht), Admin-Navigation **KYB-Status**, Vitest-Helfer, ESLint 9 + CI-Job `admin-portal`
     - Server-driven **Hilfe & Anleitung** (FAQs): technischer Tiefgang, Cloud-Code-Deployment, Paging → [`../HELP_N_INSTRUCTIONS_SERVER_DRIVEN.md`](../HELP_N_INSTRUCTIONS_SERVER_DRIVEN.md)
@@ -86,6 +91,7 @@ Wenn Dokumente und Code/Configs widersprechen, gilt:
 - **Entwicklung (iOS/Backend)**: `03_TECHNISCHE_SPEZIFIKATION.md` + `04_DEVELOPER_GUIDE.md`.
 - **QA**: `05_TEST_QUALITAET.md` → Teststrategie, Szenarien, Acceptance-Criteria-Checklisten.
 - **Betrieb/Ops**: `06_BETRIEB_PROZESSE.md` → Runbook, Backup/Restore, Monitoring, Release/Rollback.
+  - Für Return%-Contract speziell: täglicher Monitor + reboot catch-up, wöchentliche Reconciliation, auth-basierter Smoke-Test, DB-Validator.
 - **Support/CSR**: `02_REQUIREMENTS.md` (Support-Prozesse) + `07_USER_GUIDE.md` (User-Fragen/FAQ) + `12_PRODUKT_MERKMALE_KI_FAQ.md` (FAQ-taugliche Merkmale/Begriffe).
 - **Buchhaltung/Controlling**: `11_APP_LEDGER_BUCHHALTER_MANUAL.md` → App Ledger, Konten, Abläufe, Admin-Portal-Nutzung.
 
