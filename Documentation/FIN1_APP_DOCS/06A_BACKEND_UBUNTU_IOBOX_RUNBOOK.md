@@ -188,6 +188,16 @@ Im Server-Verzeichnis `/home/io/fin1-server`:
   - `curl -sk https://localhost/health` (über Nginx, lokal auf Server; `-k` bei self-signed)
   - `curl -sk https://192.168.178.24/health` (von außen, LAN)
 
+### 7.1) Return%-Contract Monitor (daily check)
+
+- Zweck: aktive Collection Bills ohne `metadata.returnPercentage` erkennen.
+- Server-local Script:
+  - `backend/scripts/monitor-collection-bill-return-percentage.js`
+- CI/Schedule:
+  - `.github/workflows/return-percentage-contract-monitor.yml`
+- Details/Alert-Template:
+  - [`Documentation/RETURN_PERCENTAGE_MONITORING_AND_ALERTING.md`](../RETURN_PERCENTAGE_MONITORING_AND_ALERTING.md)
+
 ## 8) Deployment/Update Ablauf (bewährter Flow)
 
 Typischer Update (Beispiel Parse Server):

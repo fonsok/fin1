@@ -332,7 +332,10 @@ Parse.Cloud.define('getInvestorCollectionBills', async (request) => {
 // Admin-only monitoring endpoint:
 // returns active collection bills missing canonical metadata.returnPercentage.
 Parse.Cloud.define('auditCollectionBillReturnPercentage', async (request) => {
-  requireAdminRole(request);
+  // Allow automation with master key; otherwise require authenticated admin role.
+  if (!request.master) {
+    requireAdminRole(request);
+  }
 
   const { limit = 100 } = request.params || {};
   const effectiveLimit = Math.min(Math.max(Number(limit) || 100, 1), 1000);

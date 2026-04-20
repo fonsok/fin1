@@ -20,6 +20,8 @@
 - [x] `parse-server` restarted and healthy (`docker compose ... restart parse-server`, health = healthy)
 - [x] Historical backfill executed for missing return percentage where recoverable
 - [x] Malformed legacy collection bills archived out of active scope
+- [ ] Hard release gate (Go/No-Go): `missingReturnPercentageCount` MUST equal `0` before production release
+- [x] Auth smoke check (real admin session token) passes for `auditCollectionBillReturnPercentage`
 
 ## Notes
 - A first parallelized `xcodebuild test` run hit a simulator runner launch denial (`ra.FIN1UITests.xctrunner`) and was stopped.
@@ -35,3 +37,14 @@
 - New active collection bills always include `metadata.returnPercentage`
 - Clients never compute return percentage locally
 - Missing canonical values surface as `pending` and are visible to monitoring
+
+## Release Gate Policy
+- Block release if monitor/audit reports `missingReturnPercentageCount > 0`.
+- Block release if auth-based smoke test fails:
+  - `scripts/smoke-audit-return-percentage-auth.sh`
+
+## Auth Smoke Evidence
+- Date: 2026-04-20
+- Result: `Smoke test succeeded`
+- Endpoint path: `auditCollectionBillReturnPercentage`
+- Auth mode: real admin session token (no master key)

@@ -1,0 +1,65 @@
+name: Return Percentage Contract Monitor
+
+on:
+  schedule:
+    - cron: "10 5 * * *"
+  workflow_dispatch:
+    inputs:
+      threshold:
+        description: "Allowed missing returnPercentage count before failing"
+        required: false
+        default: "0"
+
+jobs:
+  monitor-return-percentage-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run monitor check
+        id: monitor
+        continue-on-error: true
+        env:
+          PARSE_SERVER_URL: ${{ secrets.RETURN_MONITOR_PARSE_SERVER_URL }}
+          PARSE_APP_ID: ${{ secrets.RETURN_MONITOR_PARSE_APP_ID }}
+          PARSE_MASTER_KEY: ${{ secrets.RETURN_MONITOR_PARSE_MASTER_KEY }}
+          MONITOR_THRESHOLD: ${{ github.event.inputs.threshold || '0' }}
+          MONITOR_SAMPLE_LIMIT: "10"
+        run: node scripts/monitor-return-percentage-contract.js
+
+      - name: Build job summary
+        if: always()
+        run: |
+          echo "## Return% Contract Monitor" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Result: ${{ steps.monitor.outcome }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Checked at: ${{ steps.monitor.outputs.checked_at || 'n/a' }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Total active bills: ${{ steps.monitor.outputs.total_active || 'n/a' }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Missing canonical return%: ${{ steps.monitor.outputs.missing_count || 'n/a' }}" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Send Slack alert on breach
+        if: steps.monitor.outcome != 'success'
+        env:
+          WEBHOOK_URL: ${{ secrets.RETURN_MONITOR_SLACK_WEBHOOK_URL }}
+          MISSING_COUNT: ${{ steps.monitor.outputs.missing_count || 'unknown' }}
+          TOTAL_ACTIVE: ${{ steps.monitor.outputs.total_active || 'unknown' }}
+          CHECKED_AT: ${{ steps.monitor.outputs.checked_at || 'unknown' }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$WEBHOOK_URL" ]; then
+            echo "No RETURN_MONITOR_SLACK_WEBHOOK_URL configured; skipping Slack alert."
+            exit 0
+          fi
+          payload=$(cat <<EOF
+          {
+            "text": "FIN1 Return% Contract Monitor breached: missing=${MISSING_COUNT}, total=${TOTAL_ACTIVE}, checkedAt=${CHECKED_AT}. Run: ${RUN_URL}"
+          }
+          EOF
+          )
+          curl -sS -X POST "$WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            --data "$payload"
+
+      - name: Fail workflow if monitor failed
+        if: steps.monitor.outcome != 'success'
+        run: exit 1
