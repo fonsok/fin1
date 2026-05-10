@@ -231,7 +231,7 @@ Reifegrad **CI-Artefakte / Images / Immutability** (optionaler Ausbau über den 
 
 **Einmalig auf dem Server**
 
-1. Repo-Datei **`docker-compose.parse-server-ghcr.yml`** nach **`/home/io/fin1-server/`** legen (z. B. per Deploy/rsync aus dem FIN1-Repo) — sie mergt mit `docker-compose.production.yml` und setzt **`build: !reset null`** + **`image: ${FIN1_PARSE_SERVER_IMAGE}`** (Compose **v2.23+**).
+1. Repo-Datei **`docker-compose.parse-server-ghcr.yml`** nach **`/home/io/fin1-server/`** legen — per Skript **`scripts/sync-docker-compose-parse-server-ghcr-to-fin1-server.sh`** (liest `scripts/.env.server` wie der Parse-Cloud-Deploy) oder manuell per `scp`. Die Compose-Datei mergt mit `docker-compose.production.yml` und setzt **`build: !reset null`** + **`image: ${FIN1_PARSE_SERVER_IMAGE}`** (Compose **v2.23+**). Vorlage für die **`FIN1_PARSE_SERVER_IMAGE`**-Zeile: **`scripts/server-home-snippets/env.fin1-parse-ghcr.example`** (wird mit dem Sync-Skript nach **`~/fin1-server/.env.fin1-parse-ghcr.example`** kopiert).
 2. In **`~/fin1-server/.env`** (Host-Projekt-Env, **nicht** `backend/.env` duplizieren für Mongo — siehe oben) ergänzen:
    - **`FIN1_PARSE_SERVER_IMAGE=ghcr.io/<org-klein>/fin1-parse-server:main`** (oder **`…@sha256:…`** zum Pinnen).
 3. **Registry-Login** auf dem Host (klassisches **PAT** mit **`read:packages`** reicht für Pull; nicht committen):
