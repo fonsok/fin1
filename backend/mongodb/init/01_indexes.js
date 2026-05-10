@@ -8,7 +8,7 @@
 //
 // ============================================================================
 
-// Wechsle zur Plattform-Datenbank
+// Wechsle zur App-Datenbank (Parse / FIN1)
 db = db.getSiblingDB('fin1');
 
 print('=== MongoDB Index Setup ===');
@@ -22,7 +22,7 @@ print('Creating indexes for optimal performance...');
 print('Creating indexes for _User...');
 db._User.createIndex({ "email": 1 }, { unique: true, sparse: true });
 db._User.createIndex({ "username": 1 }, { unique: true, sparse: true });
-db._User.createIndex({ "customerId": 1 }, { unique: true, sparse: true });
+db._User.createIndex({ "customerNumber": 1 }, { unique: true, sparse: true });
 db._User.createIndex({ "role": 1, "status": 1 });
 db._User.createIndex({ "kycStatus": 1 });
 db._User.createIndex({ "createdAt": -1 });
@@ -177,12 +177,29 @@ db.WalletTransaction.createIndex({ "status": 1 });
 db.WalletTransaction.createIndex({ "transactionDate": -1 });
 db.WalletTransaction.createIndex({ "referenceType": 1, "referenceId": 1 }, { sparse: true });
 
+print('Creating indexes for AppLedgerEntry...');
+// getAppLedger: account / userId / transactionType + createdAt range + sort (see getAppLedgerHandler, appLedgerLoadEntries).
+db.AppLedgerEntry.createIndex({ "account": 1, "createdAt": -1 });
+db.AppLedgerEntry.createIndex({ "userId": 1, "createdAt": -1 }, { sparse: true });
+db.AppLedgerEntry.createIndex({ "account": 1, "userId": 1, "createdAt": -1 }, { sparse: true });
+db.AppLedgerEntry.createIndex({ "transactionType": 1, "createdAt": -1 });
+
+print('Creating indexes for BankContraPosting...');
+// BANK-PS-* ledger path: investorId + createdAt (appLedgerLoadEntries).
+db.BankContraPosting.createIndex({ "investorId": 1, "createdAt": -1 }, { sparse: true });
+
 print('Creating indexes for Document...');
-db.Document.createIndex({ "userId": 1 });
-db.Document.createIndex({ "userId": 1, "documentType": 1 });
+// searchDocuments / admin: Parse field is `type` (not documentType). Compounds follow equality → sort/range on uploadedAt.
+db.Document.createIndex({ "userId": 1, "type": 1, "uploadedAt": -1 });
+db.Document.createIndex({ "type": 1, "uploadedAt": -1 });
+db.Document.createIndex({ "investmentId": 1, "uploadedAt": -1 }, { sparse: true });
+db.Document.createIndex({ "tradeId": 1, "uploadedAt": -1 }, { sparse: true });
+db.Document.createIndex({ "uploadedAt": -1 });
 db.Document.createIndex({ "referenceType": 1, "referenceId": 1 }, { sparse: true });
 db.Document.createIndex({ "periodYear": 1, "periodMonth": 1 }, { sparse: true });
 db.Document.createIndex({ "createdAt": -1 });
+// Legacy field name (kept harmless if older rows still carry documentType).
+db.Document.createIndex({ "userId": 1, "documentType": 1 });
 
 print('Creating indexes for AccountStatement...');
 db.AccountStatement.createIndex({ "statementNumber": 1 }, { unique: true });
@@ -237,7 +254,7 @@ db.FAQFeedback.createIndex({ "faqId": 1, "userId": 1 }, { sparse: true });
 
 print('Creating indexes for SupportTicket...');
 db.SupportTicket.createIndex({ "ticketNumber": 1 }, { unique: true });
-db.SupportTicket.createIndex({ "customerId": 1 });
+db.SupportTicket.createIndex({ "userId": 1 });
 db.SupportTicket.createIndex({ "assignedTo": 1 }, { sparse: true });
 db.SupportTicket.createIndex({ "status": 1 });
 db.SupportTicket.createIndex({ "status": 1, "priority": 1 });
@@ -263,6 +280,7 @@ db.FourEyesRequest.createIndex({ "customerId": 1 }, { sparse: true });
 
 print('Creating indexes for SatisfactionSurvey...');
 db.SatisfactionSurvey.createIndex({ "ticketId": 1 });
+db.SatisfactionSurvey.createIndex({ "userId": 1 }, { sparse: true });
 db.SatisfactionSurvey.createIndex({ "agentId": 1 }, { sparse: true });
 db.SatisfactionSurvey.createIndex({ "status": 1 });
 
