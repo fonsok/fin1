@@ -143,8 +143,8 @@ Relevante `.env` Variable:
 
 - **Pfad**: `/home/io/fin1-server/backend/.env`
 - Enthält u.a.:
-  - Parse (`PARSE_SERVER_*`, `PARSE_DASHBOARD_*`)
-  - DB Credentials (`MONGO_*`, `POSTGRES_*`, `REDIS_*`)
+  - Parse (`PARSE_SERVER_*`, `PARSE_DASHBOARD_*`) — **`PARSE_SERVER_DATABASE_URI`** wird in **`docker-compose.production.yml`** per **`${MONGO_INITDB_ROOT_PASSWORD}`** gesetzt (siehe unten); **nicht** erneut als Mongo-Root in `backend/.env` pflegen.
+  - DB Credentials (**`POSTGRES_*`**, **`REDIS_*`**, ggf. App-spezifische DB-Variablen) — **Mongo-Root** (`MONGO_INITDB_ROOT_PASSWORD`) hier **keine** kanonische Quelle mehr.
   - MinIO/S3 (`MINIO_*`, `S3_*`)
   - Security (`JWT_SECRET`, `ENCRYPTION_KEY`)
   - Legal Placeholder Values (`FIN1_LEGAL_*`)
@@ -152,12 +152,11 @@ Relevante `.env` Variable:
   - Server Identität (`SERVER_IP`, `SERVER_HOSTNAME`)
   - Zusätzlich (Notification Service): `SUPABASE_*` Variablen sind vorhanden (ohne Werte in Doku).
 
-### Compose-Projekt-`.env` (`~/fin1-server/.env`) und MongoDB-Root
+### Compose-Projekt-`.env` (`~/fin1-server/.env`) und MongoDB-Root (Single Source of Truth)
 
-- **`~/fin1-server/.env`** liegt **neben** `docker-compose.production.yml`. **Docker Compose** nutzt sie u.a. zum Auflösen von **`${MONGO_INITDB_ROOT_PASSWORD}`** im **`mongodb`-Service** (Interpolation beim `docker compose`-Lesen der YAML).
-- **`/home/io/fin1-server/backend/.env`** wird u.a. per **`env_file`** in Container (z.B. **Parse**) geladen und enthält oft dieselben Secrets.
-- **`MONGO_INITDB_ROOT_PASSWORD`** sollte in **beiden** Dateien **identisch** sein. Sonst kann Mongo mit einem anderen Root-Passwort laufen als Parse/URI erwarten — oder Compose übergibt Mongo einen anderen Wert als in `backend/.env` dokumentiert.
-- **Bestehendes Mongo-Daten-Volume:** Änderungen an `MONGO_INITDB_ROOT_PASSWORD` in `.env` ändern den gespeicherten **`admin`**-Hash in Mongo **nicht** automatisch. Wenn Login/`mongosh` mit den Werten aus den Dateien scheitert, ist oft noch das **alte** Passwort aktiv; dann kontrollierter Reset (Wartungsfenster), danach beide `.env`-Dateien **und** ggf. `PARSE_SERVER_DATABASE_URI` anpassen und **`parse-server`** mit `--force-recreate` neu starten (siehe Abschnitt „ENV Änderungen in `env_file`“ unten).
+- **Kanonisch:** **`MONGO_INITDB_ROOT_PASSWORD`** steht **nur** in **`~/fin1-server/.env`** (neben `docker-compose.production.yml`). **Docker Compose** löst **`${MONGO_INITDB_ROOT_PASSWORD}`** dort beim Lesen der YAML auf — für **`mongodb`** **und** für **`PARSE_SERVER_DATABASE_URI`** im **`parse-server`**-Service (`environment` in der Compose-Datei).
+- **`/home/io/fin1-server/backend/.env`**: **keine** zweite Zeile `MONGO_INITDB_ROOT_PASSWORD` mehr pflegen (vermeidet Drift). Prüfen: Repo-Skript **`scripts/check-fin1-mongo-root-env-drift.sh`** (optional `--strict`).
+- **Bestehendes Mongo-Daten-Volume:** Änderung nur in `.env` ersetzt den gespeicherten **`admin`**-Hash in Mongo **nicht** automatisch. Nach kontrolliertem Passwort-Reset: Wert in **`~/fin1-server/.env`** anpassen, **`parse-server`** mit **`--force-recreate`** neu starten (siehe Abschnitt „ENV Änderungen in `env_file`“ unten).
 
 **Indizes auf bestehender DB** (ohne `mongosh --file` auf die komplette `01_indexes.js` wegen `db._User` in mongosh): siehe [`../../backend/mongodb/init/README.md`](../../backend/mongodb/init/README.md) und Skript **`backend/mongodb/scripts/apply_ledger_document_indexes_fin1.js`**.
 
@@ -171,7 +170,7 @@ Relevante `.env` Variable:
 Die Datei `backend/.env` ist **nicht garantiert shell-kompatibel** (kann Leerzeichen, Klammern oder `+49 (0) ...` enthalten). Deshalb:
 
 - **Nicht** `source backend/.env` oder `. backend/.env` verwenden.
-- Wenn du einzelne Werte brauchst (z.B. `MONGO_INITDB_ROOT_PASSWORD`), extrahiere sie gezielt (z.B. via `python3`/grep) oder nutze `docker compose config`/Container‑Env.
+- Wenn du einzelne Werte brauchst: **`MONGO_INITDB_ROOT_PASSWORD`** aus **`~/fin1-server/.env`** (nicht aus `backend/.env`); sonst gezielt extrahieren (z.B. `grep`/`python3`) oder `docker compose config`/Container‑Env.
 
 ### Wichtig: ENV Änderungen in `env_file` → Container neu erstellen
 
@@ -196,6 +195,8 @@ Im Server-Verzeichnis `/home/io/fin1-server`:
 - Health:
   - `curl -sk https://localhost/health` (über Nginx, lokal auf Server; `-k` bei self-signed)
   - `curl -sk https://192.168.178.24/health` (von außen, LAN)
+- Mongo-Root `.env`-Drift (optional, Repo auf dem Server ausgecheckt):
+  - `FIN1_SERVER_DIR=/home/io/fin1-server ./scripts/check-fin1-mongo-root-env-drift.sh`
 
 ### 7.1) Return%-Contract Monitor (daily check)
 
