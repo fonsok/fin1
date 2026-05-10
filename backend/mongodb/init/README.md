@@ -12,6 +12,7 @@ Sie erstellen Datenbank, User, Collections, Indexes und Schema-Validierung.
 | `00_init_admin.js` | Datenbank, User, Collections, Initialdaten |
 | `01_indexes.js` | Alle Performance-Indexes |
 | `02_schema_validation.js` | Schema-Validierungsregeln |
+| `../scripts/apply_ledger_document_indexes_fin1.js` | **Nur Indizes** für `AppLedgerEntry`, `BankContraPosting`, `Document` (für bestehende DBs; siehe unten) |
 
 ## Ausführungsreihenfolge
 
@@ -37,11 +38,52 @@ mongodb:
 # Via mongosh
 mongosh mongodb://admin:password@localhost:27017/admin
 
-# Dann:
+# Dann (interaktiv, mit absolutem Pfad zur Datei auf deinem Rechner):
 load("/path/to/00_init_admin.js")
 load("/path/to/01_indexes.js")
 load("/path/to/02_schema_validation.js")
 ```
+
+### Hinweis: `mongosh --file` und `01_indexes.js`
+
+`01_indexes.js` beginnt mit `db._User.createIndex(...)`. In **mongosh** ist **`db._User`** (Collection mit führendem Unterstrich) per Punktnotation **nicht** erreichbar — das Skript bricht dann mit einem Fehler ab. Beim **ersten** Container-Start übernimmt der offizielle Entrypoint die Ausführung trotzdem (anderer Kontext). Auf **bestehenden** DBs: entweder interaktiv `load()` wie oben, oder das Wartungs-Skript **`backend/mongodb/scripts/apply_ledger_document_indexes_fin1.js`** (nur Ledger-/Document-Indizes, ohne `_User`).
+
+## Indizes nachziehen (Mac Terminal, Docker Compose im Repo)
+
+Voraussetzungen: **Docker läuft**, Container heißt wie in `docker-compose.yml` typischerweise **`fin1-mongodb`**, Admin-Passwort steht bei dir in **`MONGO_INITDB_ROOT_PASSWORD`** / `docker-compose.yml` (lokal nicht ins Git committen).
+
+**Passwort nur in der Shell-Session halten** (nicht dauerhaft in der Shell-History speichern — Befehl unten nutzt eine **Umgebungsvariable** in *dieser* Zeile):
+
+```bash
+cd /path/to/FIN1   # Repo-Root
+
+# Passwort setzen (Wert aus deiner docker-compose / .env ersetzen):
+export MONGO_PASS='HIER_DEIN_ADMIN_PASSWORT'
+
+# Indizes anwenden (liest das JS von deinem Mac ein, führt es IN im Container aus):
+cat backend/mongodb/scripts/apply_ledger_document_indexes_fin1.js | docker exec -i fin1-mongodb \
+  mongosh --quiet -u admin -p "$MONGO_PASS" --authenticationDatabase admin
+
+unset MONGO_PASS
+```
+
+Wenn dein Container **anderen Namen** hat: `docker ps` → Namen anpassen. Wenn Mongo **nur auf dem Server** läuft: per **SSH** auf den Host, dort ins ausgecheckte Repo wechseln und denselben `cat … | docker exec -i …` Befehl ausführen (oder unten natives `mongosh` mit Tunnel).
+
+## Indizes nachziehen (Mac Terminal, mongosh direkt gegen localhost-Port)
+
+`docker-compose.yml` mappt Mongo oft auf **`127.0.0.1:27018`** (Host) → `27017` (Container). Dann reicht **mongosh auf dem Mac** (`brew install mongosh`), ohne `docker exec`:
+
+```bash
+cd /path/to/FIN1
+export MONGO_PASS='HIER_DEIN_ADMIN_PASSWORT'
+
+cat backend/mongodb/scripts/apply_ledger_document_indexes_fin1.js | \
+  mongosh --quiet "mongodb://admin:${MONGO_PASS}@127.0.0.1:27018/fin1?authSource=admin"
+
+unset MONGO_PASS
+```
+
+**Hinweis:** Port und Host müssen zu deiner Umgebung passen (Firewall, anderer Port-Mapping).
 
 ## Erstellte User
 
@@ -92,7 +134,7 @@ Die Init-Skripte unter `/docker-entrypoint-initdb.d` laufen **nur beim ersten St
 
 | Thema | Was tun |
 |--------|--------|
-| **Indexes** | Neue Indizes aus `01_indexes.js` werden **nicht** automatisch nachgezogen. Einzelindexes kannst du per `mongosh` mit `createIndex` anlegen (oder gezielt `01_indexes.js` in `mongosh` laden — ggf. `createIndex`-Duplikate sind harmlos). |
+| **Indexes** | Neue Indizes aus `01_indexes.js` werden **nicht** automatisch nachgezogen. Für Ledger/Document: Skript `backend/mongodb/scripts/apply_ledger_document_indexes_fin1.js` per `cat … \| docker exec … mongosh` oder natives `mongosh` (siehe Abschnitte oben). `createIndex` mit gleicher Spezifikation ist idempotent. |
 | **JSON Schema / `collMod`** | Änderungen in `02_schema_validation.js` (z. B. `SupportTicket` verlangt `userId` statt `customerId`) wirken erst nach **manuellem** `collMod` auf der Collection oder nach Ausführen des entsprechenden `runCommand`-Blocks in `mongosh`. Aktuell: `validationAction: "warn"` — Verstöße loggen, schreiben nicht hart fehl. |
 | **Alte Ticket-Felder `customerId`** | Parse **beforeSave** (`triggers/support.js`) kopiert bei jedem Speichern `customerId` → `userId` und entfernt `customerId`. Unberührte alte Dokumente bleiben, bis sie gespeichert werden. **Bulk:** Script `backend/mongodb/scripts/migrate_customerId_to_userId_fin1.js` **oder** Cloud Function `migrateLegacyCustomerIdToUserId` (Admin, optional `dryRun: true`). |
 

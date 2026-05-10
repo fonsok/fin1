@@ -1,9 +1,10 @@
 /**
  * Einmalig / bei Bedarf: Indizes für App-Ledger und Beleg-Suche (siehe init/01_indexes.js).
  *
- * Ausführung (lokal, Docker-Compose wie in docker-compose.yml):
+ * Ausführung: siehe `backend/mongodb/init/README.md` (Abschnitte „Indizes nachziehen“).
+ * Kurz (Docker, Repo-Root): `export MONGO_PASS='…'` dann
  *   cat backend/mongodb/scripts/apply_ledger_document_indexes_fin1.js | docker exec -i fin1-mongodb \
- *     mongosh --quiet -u admin -p "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin
+ *     mongosh --quiet -u admin -p "$MONGO_PASS" --authenticationDatabase admin
  *
  * Hinweis: `mongosh --file init/01_indexes.js` scheitert an Collections mit Namen `_User`
  * (Dot-Notation `db._User` ist in mongosh undefined — nutze init-Skripte nur beim ersten Volume-Start).
