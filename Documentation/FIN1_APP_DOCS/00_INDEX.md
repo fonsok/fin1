@@ -1,7 +1,7 @@
 ---
 title: "FIN1 App-Dokumentation – Index"
 audience: ["Stakeholder", "Produkt", "Entwicklung", "QA", "Betrieb", "Support", "Compliance"]
-lastUpdated: "2026-04-15"
+lastUpdated: "2026-05-02"
 ---
 
 ## Zweck
@@ -48,6 +48,8 @@ Wenn Dokumente und Code/Configs widersprechen, gilt:
   - Return%-Release Verification: [`../RELEASE_VERIFICATION_RETURN_PERCENTAGE_CONTRACT_2026-04-20.md`](../RELEASE_VERIFICATION_RETURN_PERCENTAGE_CONTRACT_2026-04-20.md)
    - Parse Cloud: keine Legacy-Datei `cloud/utils/configHelper.js` (Shadowing, Admin-Konfig-Fehler) → Runbook **§ 8.2.1**, Kurzüberblick in `06_BETRIEB_PROZESSE.md`
    - Deployment / rsync (kein `--delete` auf Server-Backend): [`../DEPLOYMENT_RSYNC_SICHERHEIT.md`](../DEPLOYMENT_RSYNC_SICHERHEIT.md)
+   - Moderne Deploy-Reife (CI-Artefakte, Images, Rollback): [`../MODERN_DEPLOY_BEST_PRACTICES.md`](../MODERN_DEPLOY_BEST_PRACTICES.md)
+  - Deploy-Host-Klarheit (iobox `.24`/`.20`, Skripte, `scripts/.env.server`): [`../OPERATIONAL_DEPLOY_HOSTS.md`](../OPERATIONAL_DEPLOY_HOSTS.md)
    - Enthält: Hardening-Stufenplan (Ports/Firewall/OS-Services)
    - CSR Support Workflow & Aufgabenverteilung: [`06B_CSR_SUPPORT_WORKFLOW.md`](06B_CSR_SUPPORT_WORKFLOW.md)
 7. **User-Dokumentation (Endnutzer/Admins)**
@@ -74,7 +76,9 @@ Wenn Dokumente und Code/Configs widersprechen, gilt:
     Siehe [`11_APP_LEDGER_BUCHHALTER_MANUAL.md`](11_APP_LEDGER_BUCHHALTER_MANUAL.md)
     - Kontenrahmen, Buchungslogik, Bank Clearing ↔ Erlös ↔ USt
     - Nutzung Admin-Portal (Filter, Export), Prüfungen, Glossar
+    - Verbindliche Escrow-Status-Policy inkl. Hinweis: Bei Löschung/Storno im Status `reserved` erfolgt die Rückbuchung ins Nutzerkonto; sichtbar in Cash Balance und Account Statement/Kontoauszug
     - **Reservierte Investments / Escrow (Zielbild, technisch Architektur):** [`../INVESTMENT_ESCROW_LEDGER_SKETCH.md`](../INVESTMENT_ESCROW_LEDGER_SKETCH.md)
+   - **Teil-Sell-Kennzahlen (iOS), Finance-Smoke, System-Health, App-Ledger-Totals:** [`../ADR-012-Partial-Sell-Metrics-Finance-Smoke-And-Ops.md`](../ADR-012-Partial-Sell-Metrics-Finance-Smoke-And-Ops.md)
 12. **Produktmerkmale für KI & FAQ**
     Siehe [`12_PRODUKT_MERKMALE_KI_FAQ.md`](12_PRODUKT_MERKMALE_KI_FAQ.md)
     - Merkmale mit hohem KI-Verständnis, FAQ-taugliche Themen, einheitliche Begriffe

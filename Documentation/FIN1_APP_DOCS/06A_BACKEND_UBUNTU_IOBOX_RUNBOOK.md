@@ -219,6 +219,8 @@ Im Server-Verzeichnis `/home/io/fin1-server`:
 
 ## 8) Deployment/Update Ablauf (bewährter Flow)
 
+Reifegrad **CI-Artefakte / Images / Immutability** (optionaler Ausbau über den heutigen rsync-Flow): [`../MODERN_DEPLOY_BEST_PRACTICES.md`](../MODERN_DEPLOY_BEST_PRACTICES.md).
+
 Typischer Update (Beispiel Parse Server):
 
 1. **Code/Config auf Server aktualisieren** (z.B. per `scp` nach `/home/io/fin1-server/...`)

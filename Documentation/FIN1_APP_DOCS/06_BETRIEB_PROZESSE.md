@@ -1,7 +1,7 @@
 ---
 title: "FIN1 – Betriebs- und Prozessdokumentation (Runbook)"
 audience: ["Betrieb", "SRE/Ops", "Release Management", "Security"]
-lastUpdated: "2026-04-12"
+lastUpdated: "2026-05-02"
 ---
 
 ## Zweck
@@ -13,6 +13,8 @@ Dieses Dokument beschreibt Betrieb/Deployment der FIN1 Backend-Services sowie Re
 Für den **konkreten** Serverbetrieb auf `iobox` (User `io`, Pfade, Ports, Scripts, Backups):
 
 - `06A_BACKEND_UBUNTU_IOBOX_RUNBOOK.md`
+- Deploy-Ziele (zwei LAN-IPs, Admin vs. Parse Cloud): [`../OPERATIONAL_DEPLOY_HOSTS.md`](../OPERATIONAL_DEPLOY_HOSTS.md) — `./scripts/show-fin1-deploy-targets.sh`
+- **Moderne Deploy-Best-Practices** (CI-Artefakte, Images, Immutability, Secrets, Rollback, Migrationspfad von rsync): [`../MODERN_DEPLOY_BEST_PRACTICES.md`](../MODERN_DEPLOY_BEST_PRACTICES.md)
 
 **Nächste Schritte (Prioritäten)** für Server & Operations (Restore-Test, Patching, Ports, Incident-Runbook, Deploy-Tagging): `Documentation/NAECHSTE_SCHRITTE_SERVER_OPS.md`
 
@@ -51,6 +53,13 @@ Referenz: `docker-compose.production.yml`
 - Parse: `http://<host>/parse/health` (via Nginx) oder intern `http://localhost:1337/health`
 - Parse “API Docs”: `http://<host>/api-docs`
 - Services (container): `http://<host>:8083/health`, `:8084/health`, `:8085/health`
+
+### Admin-Portal: System-Seite & Finance-Konsistenz (Ops)
+
+- **System → Status:** Ruft `getSystemHealth` auf. **Kein** automatischer „Systemausfall“ mehr bei reinem Ladefehler (Netzwerk/Session): Anzeige **„Systemstatus konnte nicht geladen werden“** (`unknown`) inkl. Fehlertext. **Retries** mit Backoff reduzieren False Positives nach Ubuntu-/Docker-Start.
+- **MongoDB-Check:** Erreichbarkeit über kleines `_SCHEMA`-Probe; ein optionaler Voll-Scan aller Schemas darf die Gesundheit **nicht** mehr als „getrennt“ werten (Details: `functions/admin/system.js`).
+- **System → Konsistenz-Karten:** `getTradeSettlementConsistencyStatus` (Settlement vs. `AccountStatement`), `runFinanceConsistencySmoke` (Sammel-Smoke inkl. Mirror-Basis, Ledger-Stichprobe, Beleg-Referenzen). Cloud-Code: `functions/admin/opsHealth.js`. Benchmark-Funktionen optional für Lastmessung.
+- Architektur/Kontext: [`Documentation/ADR-012-Partial-Sell-Metrics-Finance-Smoke-And-Ops.md`](../ADR-012-Partial-Sell-Metrics-Finance-Smoke-And-Ops.md).
 
 ### Parse Cloud Code: Konfigurations-Modul (`configHelper`)
 
