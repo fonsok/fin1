@@ -1,0 +1,39 @@
+# Schritt 2 „moderner Deploy“: reproduzierbares JSON-Manifest als CI-Artefakt
+# (siehe Documentation/MODERN_DEPLOY_BEST_PRACTICES.md, scripts/write-deploy-manifest.sh).
+name: Deploy manifest (parse-cloud)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+    paths:
+      - 'backend/parse-server/cloud/**'
+      - 'scripts/write-deploy-manifest.sh'
+      - 'scripts/deploy-parse-cloud-to-fin1-server.sh'
+      - '.github/workflows/deploy-manifest-artifact.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  manifest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate deploy manifest (parse-cloud)
+        run: |
+          set -euo pipefail
+          chmod +x scripts/write-deploy-manifest.sh
+          ./scripts/write-deploy-manifest.sh --component parse-cloud --output deploy-manifest-parse-cloud.json
+          echo "--- manifest ---"
+          cat deploy-manifest-parse-cloud.json
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: deploy-manifest-parse-cloud-${{ github.sha }}
+          path: deploy-manifest-parse-cloud.json
+          if-no-files-found: error
+          retention-days: 90

@@ -18,6 +18,10 @@ Diese Punkte vermeiden produktive Fehler (Admin-Konfiguration, FAQ-Platzhalter, 
 
 ## Local Build and Test Requirements
 
+GitHub Actions (`.github/workflows/ci.yml`) includes **`parse-server-unit-tests`**: `backend/parse-server` → `npm ci` + `npm test` (Jest) on every push/PR to `main`/`master`, alongside Parse smoke/naming checks. The workflow also supports **`workflow_dispatch`** for manual CI runs from the GitHub Actions UI.
+
+**Deploy manifest artifact:** `.github/workflows/deploy-manifest-artifact.yml` uploads `deploy-manifest-parse-cloud.json` (Git commit + optional `sourceTreeSha256` for Parse Cloud) on `workflow_dispatch` and on pushes to `main`/`master` that touch `backend/parse-server/cloud/` — see `Documentation/MODERN_DEPLOY_BEST_PRACTICES.md`.
+
 All code changes must pass these local checks (matching what would run in CI if available):
 
 1. **SwiftFormat Check**: `swiftformat . --lint`
@@ -120,22 +124,23 @@ When making code changes:
 
 **Wann:** Nach Änderungen an **`backend/parse-server/cloud/`** (Cloud Code, `main.js`, `utils/`), **`admin-portal/`** (gebündeltes Admin-UI), oder wenn der Nutzer ausdrücklich Deploy wünscht.
 
+**Kanone (ein physischer LAN-Server, zwei IPs):** Host `iobox` hat **WLAN `192.168.178.24`** und **Ethernet `192.168.178.20`**. **Parse/HTTPS-URLs** in Doku/Clients: **`.24`**. Beide IPs sind **derselbe Docker-Stack** — vgl. `Documentation/OPERATIONAL_DEPLOY_HOSTS.md` und `NETZWERK_KONFIGURATION.md`.
+
+**Konfiguration:** `scripts/.env.server` (Vorlage `scripts/.env.server.example`): `FIN1_SERVER_IP` (Admin-`rsync`), optional `FIN1_PARSE_CLOUD_SSH_HOST` (Cloud-Deploy; Standard **`.24`** wenn unset). Schnellcheck: `./scripts/show-fin1-deploy-targets.sh`.
+
 **Agent-Verhalten:** Immer **anschließend** ausführen (nicht nur „kann der Nutzer tun“), sofern Netzwerk/SSH zum Zielhost möglich ist:
 
 1. **Admin-Portal** (Build + rsync + Verifikation):
    - `cd admin-portal && ./deploy.sh`
-   - Erwartung: Standard-Host `io@192.168.178.20`, Ziel `~/fin1-server/admin/` (siehe Skript / `scripts/.env.server`).
+   - Ziel `~/fin1-server/admin/`; Host aus `FIN1_SERVER_IP` in `scripts/.env.server` (Default `.24`), siehe `admin-portal/deploy.sh`.
 
 2. **Parse Cloud Code** (ohne `--delete` auf `utils/` versehentlich falsche Dateien zu überschreiben):
-   - Vor Deploy: `./scripts/check-parse-cloud-config-helper-shadow.sh` (scheitert, falls `cloud/utils/configHelper.js` existiert — würde `configHelper/` überschatten).
-   - `rsync -avz backend/parse-server/cloud/ io@192.168.178.20:~/fin1-server/backend/parse-server/cloud/`
-   - Auf dem Server ggf. `rm -f …/cloud/utils/configHelper.js` (macht `deploy-to-ubuntu.sh` automatisch nach rsync).
+   - **`./scripts/deploy-parse-cloud-to-fin1-server.sh`** (führt Shadow-Check, `rsync` **ohne** Jest-Artefakte `__tests__`/`*.test.js`, `rm` auf `configHelper.js`, `restart parse-server` aus — Host wie oben).
+   - Alternativ manuell: `./scripts/check-parse-cloud-config-helper-shadow.sh` dann `rsync`/`ssh` wie in `Documentation/OPERATIONAL_DEPLOY_HOSTS.md`.
    - **Nicht** beliebige `investment.js` nach `cloud/utils/` legen; nur `utils/investmentLimitsValidation.js` gehört nach `utils/`.
    - Requires im Cloud Code: immer `…/configHelper/index.js` (explizit), nicht nur `…/configHelper`.
 
-3. **Parse neu laden:** Auf dem Server z. B.  
-   `ssh io@192.168.178.20 'cd ~/fin1-server && docker compose -f docker-compose.production.yml restart parse-server'`  
-   (Service-Name bei Abweichung anpassen.)
+3. **Parse neu laden:** ist in Schritt 2 im Skript enthalten; bei manuellem Vorgehen: `docker compose -f docker-compose.production.yml restart parse-server` auf dem **gleichen** Host wie das Cloud-`rsync`.
 
 **iOS-App:** Kein automatisches App-Store-Deploy; Nutzer baut in Xcode. Nur Server/Admin wie oben.
 

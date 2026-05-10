@@ -50,8 +50,9 @@
    - Skript: `scripts/write-deploy-manifest.sh --component parse-cloud` (JSON: `gitCommit`, Branch, `gitTreeDirty`, UTC-Zeit, optional **`sourceTreeSha256`** über `git archive … backend/parse-server/cloud`).
    - Nach **`scripts/deploy-parse-cloud-to-fin1-server.sh`** (Standard: **an**) landen Dateien unter **`~/fin1-server/deploy-manifests/`** auf iobox: `parse-cloud-latest.json` und eine Zeile pro Deploy in **`history.log`**.
    - Deaktivieren: `WRITE_DEPLOY_MANIFEST=0 ./scripts/deploy-parse-cloud-to-fin1-server.sh`
-2. **Mittel:** Parse-Image in CI bauen, Prod zieht **nur** Images; Cloud-Code **in** Image (oder read-only Volume aus Artefakt).  
-3. **Lang:** vollständige **GitOps**/Registry-Strategie — nur wenn Team/Audit das rechtfertigt.
+2. **Mittel (Schritt 2 — im Repo):** CI-Artefakt für dasselbe Manifest — Workflow **`.github/workflows/deploy-manifest-artifact.yml`** (`workflow_dispatch` und bei Push auf `main`/`master` bei Änderungen unter `backend/parse-server/cloud/`): lädt **`deploy-manifest-parse-cloud-<sha>.json`** als **Artifact** (90 Tage).  
+3. **Mittel (Parse-Image):** Parse-Image in CI bauen, Prod zieht **nur** Images; Cloud-Code **in** Image (oder read-only Volume aus Artefakt).  
+4. **Lang:** vollständige **GitOps**/Registry-Strategie — nur wenn Team/Audit das rechtfertigt.
 
 ## 9) Verknüpfungen im Repo
 
