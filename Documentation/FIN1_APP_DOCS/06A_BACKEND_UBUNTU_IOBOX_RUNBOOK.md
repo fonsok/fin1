@@ -152,6 +152,15 @@ Relevante `.env` Variable:
   - Server Identität (`SERVER_IP`, `SERVER_HOSTNAME`)
   - Zusätzlich (Notification Service): `SUPABASE_*` Variablen sind vorhanden (ohne Werte in Doku).
 
+### Compose-Projekt-`.env` (`~/fin1-server/.env`) und MongoDB-Root
+
+- **`~/fin1-server/.env`** liegt **neben** `docker-compose.production.yml`. **Docker Compose** nutzt sie u.a. zum Auflösen von **`${MONGO_INITDB_ROOT_PASSWORD}`** im **`mongodb`-Service** (Interpolation beim `docker compose`-Lesen der YAML).
+- **`/home/io/fin1-server/backend/.env`** wird u.a. per **`env_file`** in Container (z.B. **Parse**) geladen und enthält oft dieselben Secrets.
+- **`MONGO_INITDB_ROOT_PASSWORD`** sollte in **beiden** Dateien **identisch** sein. Sonst kann Mongo mit einem anderen Root-Passwort laufen als Parse/URI erwarten — oder Compose übergibt Mongo einen anderen Wert als in `backend/.env` dokumentiert.
+- **Bestehendes Mongo-Daten-Volume:** Änderungen an `MONGO_INITDB_ROOT_PASSWORD` in `.env` ändern den gespeicherten **`admin`**-Hash in Mongo **nicht** automatisch. Wenn Login/`mongosh` mit den Werten aus den Dateien scheitert, ist oft noch das **alte** Passwort aktiv; dann kontrollierter Reset (Wartungsfenster), danach beide `.env`-Dateien **und** ggf. `PARSE_SERVER_DATABASE_URI` anpassen und **`parse-server`** mit `--force-recreate` neu starten (siehe Abschnitt „ENV Änderungen in `env_file`“ unten).
+
+**Indizes auf bestehender DB** (ohne `mongosh --file` auf die komplette `01_indexes.js` wegen `db._User` in mongosh): siehe [`../../backend/mongodb/init/README.md`](../../backend/mongodb/init/README.md) und Skript **`backend/mongodb/scripts/apply_ledger_document_indexes_fin1.js`**.
+
 **Regel**
 
 - Werte niemals in Git/Docs committen.

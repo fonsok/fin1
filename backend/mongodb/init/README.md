@@ -67,7 +67,35 @@ cat backend/mongodb/scripts/apply_ledger_document_indexes_fin1.js | docker exec 
 unset MONGO_PASS
 ```
 
-Wenn dein Container **anderen Namen** hat: `docker ps` → Namen anpassen. Wenn Mongo **nur auf dem Server** läuft: per **SSH** auf den Host, dort ins ausgecheckte Repo wechseln und denselben `cat … | docker exec -i …` Befehl ausführen (oder unten natives `mongosh` mit Tunnel).
+Wenn dein Container **anderen Namen** hat: `docker ps` → Namen anpassen.
+
+## Indizes nachziehen (Mac → Ubuntu fin1-server, Skript liegt nur lokal)
+
+Mongo läuft auf dem **Server** im Container **`fin1-mongodb`**; das JS muss **nicht** unter `/home/io/fin1-server/...` existieren — du kannst es **vom Mac-Repo** per Pipe durch **SSH** direkt in `docker exec … mongosh` schicken.
+
+**Einmalig vom Mac** (Repo-Root mit der Datei `backend/mongodb/scripts/apply_ledger_document_indexes_fin1.js`; `io@fin1-server` bei Bedarf durch Nutzer/Host oder SSH-Config-Alias ersetzen):
+
+```bash
+cd /path/to/FIN1
+read -s -p "Mongo admin password (wie auf dem Server): " MONGO_PASS
+echo
+cat backend/mongodb/scripts/apply_ledger_document_indexes_fin1.js | \
+  ssh io@fin1-server "docker exec -i fin1-mongodb mongosh --quiet -u admin -p \"$MONGO_PASS\" --authenticationDatabase admin"
+unset MONGO_PASS
+```
+
+Passwort-Quelle auf dem Server: z. B. `MONGO_INITDB_ROOT_PASSWORD` in `docker-compose.production.yml` oder `backend/.env`.
+
+**Alternative:** Skript dauerhaft auf den Server legen (z. B. nach `git pull` fehlt nur der Ordner):
+
+```bash
+cd /path/to/FIN1
+ssh io@fin1-server 'mkdir -p /home/io/fin1-server/backend/mongodb/scripts'
+scp backend/mongodb/scripts/apply_ledger_document_indexes_fin1.js \
+  io@fin1-server:/home/io/fin1-server/backend/mongodb/scripts/
+```
+
+Danach auf dem Server wie oben im Abschnitt „Docker Compose im Repo“ mit `cat … | docker exec …` arbeiten.
 
 ## Indizes nachziehen (Mac Terminal, mongosh direkt gegen localhost-Port)
 
