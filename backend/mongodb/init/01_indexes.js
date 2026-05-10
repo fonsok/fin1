@@ -276,7 +276,8 @@ db.CSRAgent.createIndex({ "roleId": 1 });
 db.CSRAgent.createIndex({ "isAvailable": 1, "isOnline": 1 });
 
 print('Creating indexes for FourEyesRequest...');
-db.FourEyesRequest.createIndex({ "requestNumber": 1 }, { unique: true });
+// sparse: mehrere Legacy-Dokumente ohne requestNumber (null) sonst E11000 bei unique
+db.FourEyesRequest.createIndex({ "requestNumber": 1 }, { unique: true, sparse: true });
 db.FourEyesRequest.createIndex({ "requesterId": 1 });
 db.FourEyesRequest.createIndex({ "status": 1 });
 db.FourEyesRequest.createIndex({ "customerId": 1 }, { sparse: true });

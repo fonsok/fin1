@@ -92,6 +92,8 @@ unset MONGO_PASS
 
 **Optional:** Skript dauerhaft auf den Server kopieren (`scp` nach `~/fin1-server/backend/mongodb/...`) — danach reicht `cat` auf dem Host ohne SSH-Pipe.
 
+**Auf dem Server (iobox), Repo unter `~/fin1-server`:** nach `git pull` kannst du **`scripts/run-full-mongodb-indexes-on-host.sh`** ausführen — liest `MONGO_INITDB_ROOT_PASSWORD` aus **`~/fin1-server/.env`** und piped **`backend/mongodb/init/01_indexes.js`** in `docker exec … mongosh`.
+
 ## Indizes nachziehen (Mac Terminal, mongosh direkt gegen localhost-Port)
 
 `docker-compose.yml` mappt Mongo oft auf **`127.0.0.1:27018`** (Host) → `27017` (Container). Dann reicht **mongosh auf dem Mac** (`brew install mongosh`), ohne `docker exec`:
