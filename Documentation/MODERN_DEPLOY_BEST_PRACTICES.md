@@ -1,6 +1,6 @@
 # Moderne Deploy-Best-Practices (FIN1 / iobox-orientiert)
 
-**Zielgruppe:** Betrieb, Release, Security · **Kontext:** Parse Server, Docker Compose, Ubuntu-Host ohne zwingendes `git pull` auf Produktionspfaden.
+**Zielgruppe:** Betrieb, Release, Security · **Kontext:** Parse Server, **OCI-Container** (heute Docker Engine + Compose; perspektivisch z. B. **Podman**), Ubuntu-Host ohne zwingendes `git pull` auf Produktionspfaden.
 
 ## 1) Zielbild
 
@@ -60,6 +60,17 @@
 - Betriebs-Übersicht: [`FIN1_APP_DOCS/06_BETRIEB_PROZESSE.md`](FIN1_APP_DOCS/06_BETRIEB_PROZESSE.md)  
 - Rsync-Sicherheit: [`DEPLOYMENT_RSYNC_SICHERHEIT.md`](DEPLOYMENT_RSYNC_SICHERHEIT.md)  
 - Deploy-Ziele (IPs): [`OPERATIONAL_DEPLOY_HOSTS.md`](OPERATIONAL_DEPLOY_HOSTS.md)
+
+## 10) Podman / andere FOSS-Runtime (mittelfristig)
+
+**Jetzt schon sinnvoll:** nicht die Engine wechseln, sondern **Abstraktionen festhalten**, die unter Docker *und* Podman (und anderen **OCI**-fähigen Runtimes) gleich bleiben:
+
+- **Artefakt = OCI-Image** aus `Dockerfile` (heutiger Build) — `podman build` versteht dasselbe Format; euer **Registry-Pull**-Pfad bleibt der gleiche (`podman pull` / `skopeo`).
+- **Orchestrierung = Compose-Spezifikation** (`docker-compose*.yml`): Podman kann die **Compose v2**-Dateien ausführen (`podman compose` bzw. Integration in neueren Podman-Versionen); Befehle im Runbook werden später **1:1** oder nahezu 1:1 ersetzbar (`docker compose …` → `podman compose …`), ohne das Datenmodell zu ändern.
+- **Keine harten Abhängigkeiten** von Docker-only APIs im Anwendungscode (Swarm-only Features, proprietäre Plugins) — FIN1 nutzt das ohnehin kaum; **Swarm „Secrets“** in Abschnitt 5 sind nur ein Beispiel für *irgendein* Secret-Backend, nicht als Zwang zu Docker Swarm.
+- **CI:** GitHub-hosted Runner sind Docker-lastig (`docker/build-push-action`); ein Podman-Umstieg in CI ist **eigenes Projekt** (self-hosted Runner, `podman build`, oder Buildah). **Vorbereitung:** solange die **Dockerfile**-Semantik standardkonform bleibt, ist der CI-Wechsel entkoppelt vom Server-Wechsel.
+
+**Was bewusst später kommt:** Rootless-Netzwerk (`pasta`/`slirp4netns`), UID-Mapping auf Volumes, `podman`-spezifische Systemd-Quadlets — das gehört in eine Migrations-Checkliste, sobald ihr auf dem Host umstellt, nicht schon in jedem PR.
 
 ---
 

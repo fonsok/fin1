@@ -45,6 +45,8 @@ Dieses Runbook dokumentiert den **realen** Backend-Betrieb auf dem Ubuntu-Server
 - Docker: `28.2.2`
 - Docker Compose: `v5.0.1`
 
+**Perspektive (FOSS-Runtime):** mittelfristig z. B. **Podman** statt Docker Engine — technische Leitlinien und was ihr *jetzt* schon tragfähig haltet (OCI-Image, Compose-Dateien): [`../MODERN_DEPLOY_BEST_PRACTICES.md`](../MODERN_DEPLOY_BEST_PRACTICES.md) Abschnitt **10**.
+
 ### Running Containers (Ist-Zustand)
 
 Aus `docker compose -f docker-compose.production.yml ps`:
