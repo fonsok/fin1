@@ -71,6 +71,27 @@ unset MONGO_PASS
 
 Wenn dein Container **anderen Namen** hat: `docker ps` → Namen anpassen. Wenn Mongo **nur auf dem Server** läuft: per **SSH** auf den Host, dort ins ausgecheckte Repo wechseln und denselben `cat … | docker exec -i …` Befehl ausführen (oder unten natives `mongosh` mit Tunnel).
 
+## Indizes nachziehen (Mac → Ubuntu-Server, Pipe per SSH)
+
+Mongo läuft auf dem **Server** im Container **`fin1-mongodb`**; die JS-Dateien müssen **nicht** unter `/home/io/fin1-server/...` liegen — du kannst sie **vom Mac-Repo** per Pipe durch **SSH** direkt in `docker exec … mongosh` schicken (`USER@HOST` z. B. `io@iobox` oder SSH-Config-Alias).
+
+**Gesamtes `01_indexes.js`:**
+
+```bash
+cd /path/to/FIN1
+read -s -p "Mongo admin password (Server): " MONGO_PASS
+echo
+cat backend/mongodb/init/01_indexes.js | \
+  ssh USER@HOST "docker exec -i fin1-mongodb mongosh --quiet -u admin -p \"$MONGO_PASS\" --authenticationDatabase admin"
+unset MONGO_PASS
+```
+
+**Nur Ledger/Document** (`apply_ledger_document_indexes_fin1.js`): gleiches Muster, nur den `cat`-Pfad auf `backend/mongodb/scripts/apply_ledger_document_indexes_fin1.js` ändern.
+
+**Passwort-Quelle auf dem Server:** kanonisch `MONGO_INITDB_ROOT_PASSWORD` in **`~/fin1-server/.env`** (siehe Runbook 06A).
+
+**Optional:** Skript dauerhaft auf den Server kopieren (`scp` nach `~/fin1-server/backend/mongodb/...`) — danach reicht `cat` auf dem Host ohne SSH-Pipe.
+
 ## Indizes nachziehen (Mac Terminal, mongosh direkt gegen localhost-Port)
 
 `docker-compose.yml` mappt Mongo oft auf **`127.0.0.1:27018`** (Host) → `27017` (Container). Dann reicht **mongosh auf dem Mac** (`brew install mongosh`), ohne `docker exec`:
