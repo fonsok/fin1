@@ -4,6 +4,13 @@ name: Deploy manifest (parse-cloud)
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches: [main, master]
+    paths:
+      - 'backend/parse-server/cloud/**'
+      - 'scripts/write-deploy-manifest.sh'
+      - 'scripts/deploy-parse-cloud-to-fin1-server.sh'
+      - '.github/workflows/deploy-manifest-artifact.yml'
   push:
     branches: [main, master]
     paths:
@@ -11,6 +18,10 @@ on:
       - 'scripts/write-deploy-manifest.sh'
       - 'scripts/deploy-parse-cloud-to-fin1-server.sh'
       - '.github/workflows/deploy-manifest-artifact.yml'
+
+concurrency:
+  group: deploy-manifest-${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -29,6 +40,9 @@ jobs:
           ./scripts/write-deploy-manifest.sh --component parse-cloud --output deploy-manifest-parse-cloud.json
           echo "--- manifest ---"
           cat deploy-manifest-parse-cloud.json
+
+      - name: Validate manifest JSON
+        run: python3 -m json.tool deploy-manifest-parse-cloud.json >/dev/null
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

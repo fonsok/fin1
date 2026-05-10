@@ -1,0 +1,45 @@
+# Vorbereitung Schritt 3: gleicher Docker-Build wie docker-compose.production (parse-server),
+# ohne Registry-Push — bricht CI, wenn Image/Dockerfile/npm-Prod-Install nicht mehr baut.
+# Siehe Documentation/MODERN_DEPLOY_BEST_PRACTICES.md § 8.
+name: Parse Server Docker image (CI)
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main, master]
+    paths:
+      - 'backend/parse-server/**'
+      - 'backend/node-service.Dockerfile'
+      - 'docker-compose.production.yml'
+      - '.github/workflows/parse-server-docker-build.yml'
+  push:
+    branches: [main, master]
+    paths:
+      - 'backend/parse-server/**'
+      - 'backend/node-service.Dockerfile'
+      - 'docker-compose.production.yml'
+      - '.github/workflows/parse-server-docker-build.yml'
+
+concurrency:
+  group: parse-server-docker-${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build parse-server image (production Dockerfile, no push)
+        run: |
+          set -euo pipefail
+          docker build \
+            -f backend/node-service.Dockerfile \
+            --build-arg SERVICE_PORT=1337 \
+            --build-arg EXTRA_DIR=certs \
+            -t fin1-parse-server:ci \
+            backend/parse-server

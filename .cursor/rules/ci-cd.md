@@ -20,7 +20,9 @@ Diese Punkte vermeiden produktive Fehler (Admin-Konfiguration, FAQ-Platzhalter, 
 
 GitHub Actions (`.github/workflows/ci.yml`) includes **`parse-server-unit-tests`**: `backend/parse-server` → `npm ci` + `npm test` (Jest) on every push/PR to `main`/`master`, alongside Parse smoke/naming checks. The workflow also supports **`workflow_dispatch`** for manual CI runs from the GitHub Actions UI.
 
-**Deploy manifest artifact:** `.github/workflows/deploy-manifest-artifact.yml` uploads `deploy-manifest-parse-cloud.json` (Git commit + optional `sourceTreeSha256` for Parse Cloud) on `workflow_dispatch` and on pushes to `main`/`master` that touch `backend/parse-server/cloud/` — see `Documentation/MODERN_DEPLOY_BEST_PRACTICES.md`.
+**Deploy manifest artifact:** `.github/workflows/deploy-manifest-artifact.yml` uploads `deploy-manifest-parse-cloud.json` (Git commit + optional `sourceTreeSha256` for Parse Cloud) on `workflow_dispatch`, PRs, and pushes to `main`/`master` that touch `backend/parse-server/cloud/` — see `Documentation/MODERN_DEPLOY_BEST_PRACTICES.md`.
+
+**Parse Server Docker CI build:** `.github/workflows/parse-server-docker-build.yml` runs `docker build` with `backend/node-service.Dockerfile` (same as production compose) without pushing to a registry — catches broken production installs early.
 
 All code changes must pass these local checks (matching what would run in CI if available):
 
