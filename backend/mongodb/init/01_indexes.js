@@ -6,6 +6,9 @@
 // Diese Datei wird beim ersten Start des MongoDB-Containers ausgeführt.
 // Sie erstellt alle notwendigen Indexes für optimale Performance.
 //
+// mongosh: Collections mit führendem Unterstrich (_User, _Session) über
+// db.getCollection('…') — db._User / db._Session ist in mongosh undefined.
+//
 // ============================================================================
 
 // Wechsle zur App-Datenbank (Parse / FIN1)
@@ -20,12 +23,12 @@ print('Creating indexes for optimal performance...');
 
 // _User (Parse Standard Collection)
 print('Creating indexes for _User...');
-db._User.createIndex({ "email": 1 }, { unique: true, sparse: true });
-db._User.createIndex({ "username": 1 }, { unique: true, sparse: true });
-db._User.createIndex({ "customerNumber": 1 }, { unique: true, sparse: true });
-db._User.createIndex({ "role": 1, "status": 1 });
-db._User.createIndex({ "kycStatus": 1 });
-db._User.createIndex({ "createdAt": -1 });
+db.getCollection('_User').createIndex({ "email": 1 }, { unique: true, sparse: true });
+db.getCollection('_User').createIndex({ "username": 1 }, { unique: true, sparse: true });
+db.getCollection('_User').createIndex({ "customerNumber": 1 }, { unique: true, sparse: true });
+db.getCollection('_User').createIndex({ "role": 1, "status": 1 });
+db.getCollection('_User').createIndex({ "kycStatus": 1 });
+db.getCollection('_User').createIndex({ "createdAt": -1 });
 
 // UserProfile (Extended user data)
 print('Creating indexes for UserProfile...');
@@ -60,8 +63,8 @@ db.UserDevice.createIndex({ "userId": 1, "deviceId": 1 }, { unique: true });
 
 // UserSession (Parse _Session)
 print('Creating indexes for _Session...');
-db._Session.createIndex({ "user": 1 });
-db._Session.createIndex({ "expiresAt": 1 }, { expireAfterSeconds: 0 });
+db.getCollection('_Session').createIndex({ "user": 1 });
+db.getCollection('_Session').createIndex({ "expiresAt": 1 }, { expireAfterSeconds: 0 });
 
 // ============================================================================
 // INVESTMENT COLLECTIONS

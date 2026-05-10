@@ -158,7 +158,7 @@ Relevante `.env` Variable:
 - **`/home/io/fin1-server/backend/.env`**: **keine** zweite Zeile `MONGO_INITDB_ROOT_PASSWORD` mehr pflegen (vermeidet Drift). Prüfen: Repo-Skript **`scripts/check-fin1-mongo-root-env-drift.sh`** (optional `--strict`).
 - **Bestehendes Mongo-Daten-Volume:** Änderung nur in `.env` ersetzt den gespeicherten **`admin`**-Hash in Mongo **nicht** automatisch. Nach kontrolliertem Passwort-Reset: Wert in **`~/fin1-server/.env`** anpassen, **`parse-server`** mit **`--force-recreate`** neu starten (siehe Abschnitt „ENV Änderungen in `env_file`“ unten).
 
-**Indizes auf bestehender DB** (ohne `mongosh --file` auf die komplette `01_indexes.js` wegen `db._User` in mongosh): siehe [`../../backend/mongodb/init/README.md`](../../backend/mongodb/init/README.md) und Skript **`backend/mongodb/scripts/apply_ledger_document_indexes_fin1.js`**.
+**Indizes auf bestehender DB:** siehe [`../../backend/mongodb/init/README.md`](../../backend/mongodb/init/README.md) (gesamtes **`01_indexes.js`** oder Teilmenge **`apply_ledger_document_indexes_fin1.js`**).
 
 **Regel**
 

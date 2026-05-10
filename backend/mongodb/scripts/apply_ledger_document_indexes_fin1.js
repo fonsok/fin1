@@ -6,8 +6,8 @@
  *   cat backend/mongodb/scripts/apply_ledger_document_indexes_fin1.js | docker exec -i fin1-mongodb \
  *     mongosh --quiet -u admin -p "$MONGO_PASS" --authenticationDatabase admin
  *
- * Hinweis: `mongosh --file init/01_indexes.js` scheitert an Collections mit Namen `_User`
- * (Dot-Notation `db._User` ist in mongosh undefined — nutze init-Skripte nur beim ersten Volume-Start).
+ * Hinweis: `01_indexes.js` im Repo nutzt `getCollection('_User')`/`_Session` — vollständiges Nachziehen
+ * geht mit `mongosh --file` oder Pipe; dieses Skript bleibt optional für nur Ledger/Document.
  */
 
 db = db.getSiblingDB('fin1');
