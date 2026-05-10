@@ -22,7 +22,7 @@ GitHub Actions (`.github/workflows/ci.yml`) includes **`parse-server-unit-tests`
 
 **Deploy manifest artifact:** `.github/workflows/deploy-manifest-artifact.yml` uploads `deploy-manifest-parse-cloud.json` (Git commit + optional `sourceTreeSha256` for Parse Cloud) on `workflow_dispatch`, PRs, and pushes to `main`/`master` that touch `backend/parse-server/cloud/` — see `Documentation/MODERN_DEPLOY_BEST_PRACTICES.md`.
 
-**Parse Server Docker CI build:** `.github/workflows/parse-server-docker-build.yml` runs `docker build` with `backend/node-service.Dockerfile` (same as production compose) without pushing to a registry — catches broken production installs early.
+**Parse Server Docker CI build:** `.github/workflows/parse-server-docker-build.yml` builds with Buildx + GHA cache, no registry push (same Dockerfile as production compose). Local parity: `./scripts/ci-build-parse-server-docker.sh`.
 
 All code changes must pass these local checks (matching what would run in CI if available):
 

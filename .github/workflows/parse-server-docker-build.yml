@@ -34,12 +34,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Build parse-server image (production Dockerfile, no push)
-        run: |
-          set -euo pipefail
-          docker build \
-            -f backend/node-service.Dockerfile \
-            --build-arg SERVICE_PORT=1337 \
-            --build-arg EXTRA_DIR=certs \
-            -t fin1-parse-server:ci \
-            backend/parse-server
+        uses: docker/build-push-action@v6
+        with:
+          context: backend/parse-server
+          file: backend/node-service.Dockerfile
+          push: false
+          tags: fin1-parse-server:ci
+          build-args: |
+            SERVICE_PORT=1337
+            EXTRA_DIR=certs
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
