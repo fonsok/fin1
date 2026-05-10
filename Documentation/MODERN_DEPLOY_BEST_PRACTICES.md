@@ -37,7 +37,7 @@
 ## 6) Immutability & Konfiguration
 
 - **Anwendungscode** in Containern aus **Image**; Host-Volume nur, wo bewusst nötig (z. B. Cloud-Code-Volume — dann klarer Prozess: nur deployierte Version).
-- **Konfig-Drift** vermeiden: `docker compose config` in CI gegen erwartetes Schema; auf dem Host **keine** dauerhaften Handänderungen ohne Ticket.
+- **Konfig-Drift** vermeiden: `docker compose config` in CI gegen erwartetes Schema (Workflow **`.github/workflows/compose-production-validate.yml`**, Skript **`scripts/ci-validate-docker-compose-production.sh`** mit Stub-Env unter **`scripts/ci/`**); auf dem Host **keine** dauerhaften Handänderungen ohne Ticket.
 
 ## 7) Rollback
 

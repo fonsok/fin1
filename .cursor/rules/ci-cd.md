@@ -24,6 +24,8 @@ GitHub Actions (`.github/workflows/ci.yml`) includes **`parse-server-unit-tests`
 
 **Parse Server Docker CI build:** `.github/workflows/parse-server-docker-build.yml` builds with Buildx + GHA cache, no registry push (same Dockerfile as production compose). Local parity: `./scripts/ci-build-parse-server-docker.sh`. **Podman later:** keep Dockerfiles OCI-standard and Compose portable; migrating CI to Podman is separate from host (`Documentation/MODERN_DEPLOY_BEST_PRACTICES.md` §10).
 
+**Production Compose config:** `.github/workflows/compose-production-validate.yml` runs `docker compose … config -q` with committed CI stubs (`scripts/ci/`) so broken `docker-compose.production.yml` or missing interpolation vars fail before deploy.
+
 All code changes must pass these local checks (matching what would run in CI if available):
 
 1. **SwiftFormat Check**: `swiftformat . --lint`
