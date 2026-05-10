@@ -221,6 +221,8 @@ Im Server-Verzeichnis `/home/io/fin1-server`:
 
 Reifegrad **CI-Artefakte / Images / Immutability** (optionaler Ausbau über den heutigen rsync-Flow): [`../MODERN_DEPLOY_BEST_PRACTICES.md`](../MODERN_DEPLOY_BEST_PRACTICES.md).
 
+**Deploy-Manifest (Schritt 1):** Nach `scripts/deploy-parse-cloud-to-fin1-server.sh` liegen unter **`~/fin1-server/deploy-manifests/`** u. a. **`parse-cloud-latest.json`** (Git-Commit, Branch, Dirty-Flag, SHA über `git archive` der Cloud) und **`history.log`**.
+
 Typischer Update (Beispiel Parse Server):
 
 1. **Code/Config auf Server aktualisieren** (z.B. per `scp` nach `/home/io/fin1-server/...`)

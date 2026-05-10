@@ -46,7 +46,10 @@
 
 ## 8) Migration vom heutigen iobox-Setup
 
-1. **Kurz:** weiter rsync, aber **Release-Tag + Hash** in Runbook/Release-Notes festhalten; optional **Checksum** über gebündelte Dateien.  
+1. **Kurz (Schritt 1 — im Repo):** weiter rsync, plus **Deploy-Manifest** auf dem Server:
+   - Skript: `scripts/write-deploy-manifest.sh --component parse-cloud` (JSON: `gitCommit`, Branch, `gitTreeDirty`, UTC-Zeit, optional **`sourceTreeSha256`** über `git archive … backend/parse-server/cloud`).
+   - Nach **`scripts/deploy-parse-cloud-to-fin1-server.sh`** (Standard: **an**) landen Dateien unter **`~/fin1-server/deploy-manifests/`** auf iobox: `parse-cloud-latest.json` und eine Zeile pro Deploy in **`history.log`**.
+   - Deaktivieren: `WRITE_DEPLOY_MANIFEST=0 ./scripts/deploy-parse-cloud-to-fin1-server.sh`
 2. **Mittel:** Parse-Image in CI bauen, Prod zieht **nur** Images; Cloud-Code **in** Image (oder read-only Volume aus Artefakt).  
 3. **Lang:** vollständige **GitOps**/Registry-Strategie — nur wenn Team/Audit das rechtfertigt.
 
