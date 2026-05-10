@@ -225,7 +225,28 @@ Reifegrad **CI-Artefakte / Images / Immutability** (optionaler Ausbau über den 
 
 **Deploy-Manifest (Schritt 1):** Nach `scripts/deploy-parse-cloud-to-fin1-server.sh` liegen unter **`~/fin1-server/deploy-manifests/`** u. a. **`parse-cloud-latest.json`** (Git-Commit, Branch, Dirty-Flag, SHA über `git archive` der Cloud) und **`history.log`**.
 
-Typischer Update (Beispiel Parse Server):
+### 8.1) Optional: Parse-Server-Image aus **GHCR** (CI baut, Host zieht)
+
+**Wann sinnvoll:** reproduzierbarer Rollout ohne `docker compose build parse-server` auf iobox; Image kommt aus **GitHub Container Registry** (Workflow **`.github/workflows/parse-server-docker-build.yml`** pusht auf **`main`/`master`** nach `ghcr.io/<github-org-klein>/fin1-parse-server:<sha>` und `:<branch>`).
+
+**Einmalig auf dem Server**
+
+1. Repo-Datei **`docker-compose.parse-server-ghcr.yml`** nach **`/home/io/fin1-server/`** legen (z. B. per Deploy/rsync aus dem FIN1-Repo) — sie mergt mit `docker-compose.production.yml` und setzt **`build: !reset null`** + **`image: ${FIN1_PARSE_SERVER_IMAGE}`** (Compose **v2.23+**).
+2. In **`~/fin1-server/.env`** (Host-Projekt-Env, **nicht** `backend/.env` duplizieren für Mongo — siehe oben) ergänzen:
+   - **`FIN1_PARSE_SERVER_IMAGE=ghcr.io/<org-klein>/fin1-parse-server:main`** (oder **`…@sha256:…`** zum Pinnen).
+3. **Registry-Login** auf dem Host (klassisches **PAT** mit **`read:packages`** reicht für Pull; nicht committen):
+   - `docker login ghcr.io -u <github-nutzer> -p <PAT>`
+4. **Image ziehen und Dienst ausrollen** (immer beide `-f` in derselben Reihenfolge):
+   - `cd /home/io/fin1-server`
+   - `docker compose -f docker-compose.production.yml -f docker-compose.parse-server-ghcr.yml pull parse-server`
+   - `docker compose -f docker-compose.production.yml -f docker-compose.parse-server-ghcr.yml up -d --no-deps parse-server`
+
+**Hinweise**
+
+- **Sichtbarkeit des GHCR-Packages:** Standard oft *private* — dann zwingend authentifizierter Pull (PAT/Bot) oder Package auf *internal/public* stellen (Org-Policies beachten).
+- **Cloud-Code:** Solange die Produktions-Compose weiter ein **Bind-Mount** auf **`backend/parse-server/cloud`** hat, überschreibt der Host-Tree das Image — identisch zum heutigen rsync-Flow. Entfernt ihr das Volume später, muss Cloud-Code **im Image** stecken (Build-Pipeline).
+
+Typischer Update (Beispiel Parse Server, **klassischer Host-Build**):
 
 1. **Code/Config auf Server aktualisieren** (z.B. per `scp` nach `/home/io/fin1-server/...`)
 2. **Build**:

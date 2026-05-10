@@ -1,0 +1,18 @@
+# Optional: Parse-Server-Image aus GHCR ziehen statt auf dem Host zu bauen.
+# Merge **nach** docker-compose.production.yml (gleiches Verzeichnis, z. B. ~/fin1-server).
+#
+# Voraussetzung: Docker Compose v2.23+ (`build: !reset null`). Auf iobox typisch Compose v5.
+#
+# Beispiel (iobox), nach `docker login ghcr.io` und Setzen von FIN1_PARSE_SERVER_IMAGE in .env:
+#   docker compose -f docker-compose.production.yml -f docker-compose.parse-server-ghcr.yml pull parse-server
+#   docker compose -f docker-compose.production.yml -f docker-compose.parse-server-ghcr.yml up -d --no-deps parse-server
+#
+# FIN1_PARSE_SERVER_IMAGE z. B. ghcr.io/<github-org-klein>/fin1-parse-server:main
+# oder Pin per Digest: ghcr.io/org/fin1-parse-server@sha256:…
+#
+# Hinweis: Host-Volumes (cloud/, index.js, …) aus der Produktions-Compose bleiben beim Merge erhalten —
+# ihr könnt schrittweise von rsync-Cloud zu „Cloud nur im Image“ wechseln (Volumes in der Haupt-Compose anpassen).
+services:
+  parse-server:
+    image: ${FIN1_PARSE_SERVER_IMAGE}
+    build: !reset null

@@ -8,6 +8,7 @@ on:
     branches: [main, master]
     paths:
       - 'docker-compose.production.yml'
+      - 'docker-compose.parse-server-ghcr.yml'
       - 'backend/node-service.Dockerfile'
       - 'scripts/ci/**'
       - 'scripts/ci-validate-docker-compose-production.sh'
@@ -16,6 +17,7 @@ on:
     branches: [main, master]
     paths:
       - 'docker-compose.production.yml'
+      - 'docker-compose.parse-server-ghcr.yml'
       - 'backend/node-service.Dockerfile'
       - 'scripts/ci/**'
       - 'scripts/ci-validate-docker-compose-production.sh'

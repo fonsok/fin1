@@ -33,3 +33,12 @@ fi
 
 docker compose --env-file "$STUB_INTERP" -f docker-compose.production.yml config -q
 echo "OK: docker compose production config validates"
+
+GHCR_OVERRIDE="$ROOT/docker-compose.parse-server-ghcr.yml"
+if [[ -f "$GHCR_OVERRIDE" ]]; then
+  docker compose --env-file "$STUB_INTERP" \
+    -f docker-compose.production.yml \
+    -f "$GHCR_OVERRIDE" \
+    config -q
+  echo "OK: production + parse-server GHCR override merge validates"
+fi

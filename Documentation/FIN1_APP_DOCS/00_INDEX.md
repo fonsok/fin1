@@ -48,7 +48,7 @@ Wenn Dokumente und Code/Configs widersprechen, gilt:
   - Return%-Release Verification: [`../RELEASE_VERIFICATION_RETURN_PERCENTAGE_CONTRACT_2026-04-20.md`](../RELEASE_VERIFICATION_RETURN_PERCENTAGE_CONTRACT_2026-04-20.md)
    - Parse Cloud: keine Legacy-Datei `cloud/utils/configHelper.js` (Shadowing, Admin-Konfig-Fehler) → Runbook **§ 8.2.1**, Kurzüberblick in `06_BETRIEB_PROZESSE.md`
    - Deployment / rsync (kein `--delete` auf Server-Backend): [`../DEPLOYMENT_RSYNC_SICHERHEIT.md`](../DEPLOYMENT_RSYNC_SICHERHEIT.md)
-   - Moderne Deploy-Reife (CI-Artefakte, Images, Rollback): [`../MODERN_DEPLOY_BEST_PRACTICES.md`](../MODERN_DEPLOY_BEST_PRACTICES.md) — CI: `.github/workflows/deploy-manifest-artifact.yml`, `.github/workflows/parse-server-docker-build.yml`, `.github/workflows/compose-production-validate.yml`
+   - Moderne Deploy-Reife (CI-Artefakte, Images, Rollback): [`../MODERN_DEPLOY_BEST_PRACTICES.md`](../MODERN_DEPLOY_BEST_PRACTICES.md) — CI: `.github/workflows/deploy-manifest-artifact.yml`, `.github/workflows/parse-server-docker-build.yml` (inkl. **GHCR**-Push auf `main`/`master`), `.github/workflows/compose-production-validate.yml`, `docker-compose.parse-server-ghcr.yml`
   - Deploy-Host-Klarheit (iobox `.24`/`.20`, Skripte, `scripts/.env.server`): [`../OPERATIONAL_DEPLOY_HOSTS.md`](../OPERATIONAL_DEPLOY_HOSTS.md)
    - Enthält: Hardening-Stufenplan (Ports/Firewall/OS-Services)
    - CSR Support Workflow & Aufgabenverteilung: [`06B_CSR_SUPPORT_WORKFLOW.md`](06B_CSR_SUPPORT_WORKFLOW.md)
