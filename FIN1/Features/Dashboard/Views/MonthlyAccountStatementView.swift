@@ -5,7 +5,10 @@ import SwiftUI
 /// as `AccountStatementView`, based on existing `AccountStatementEntry` data.
 struct MonthlyAccountStatementView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.appServices) private var services
     @StateObject private var viewModel: MonthlyAccountStatementViewModel
+    @State private var selectedDocument: Document?
+    @State private var showMissingDocumentAlert = false
 
     init(services: AppServices, document: Document) {
         let year = document.statementYear ?? Calendar.current.component(.year, from: Date())
@@ -56,6 +59,14 @@ struct MonthlyAccountStatementView: View {
         }
         .onAppear {
             viewModel.load()
+        }
+        .alert("Beleg nicht gefunden", isPresented: $showMissingDocumentAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("Für diese Buchung wurde kein passender Beleg geladen. Bitte Dokumente aktualisieren und erneut versuchen.")
+        }
+        .sheet(item: $selectedDocument) { document in
+            DocumentNavigationHelper.sheetView(for: document, appServices: services)
         }
     }
 
@@ -121,8 +132,26 @@ struct MonthlyAccountStatementView: View {
     }
 
     private var entriesTable: some View {
-        AccountStatementEntriesTable(entries: viewModel.entries) {
+        AccountStatementEntriesTable(
+            entries: viewModel.entries,
+            showDocumentReferenceLinks: services.configurationService.showDocumentReferenceLinksInAccountStatement,
+            onEntryTap: openReferencedDocument(for:)
+        ) {
             statementMetaHeader
+        }
+    }
+
+    private func openReferencedDocument(for entry: AccountStatementEntry) {
+        if let cached = entry.referencedDocument(documentService: services.documentService) {
+            selectedDocument = cached
+            return
+        }
+        Task { @MainActor in
+            if let resolved = await entry.resolveReferencedDocument(documentService: services.documentService) {
+                selectedDocument = resolved
+            } else {
+                showMissingDocumentAlert = true
+            }
         }
     }
 
@@ -216,7 +245,7 @@ struct MonthlyAccountStatementView: View {
     private var emptyState: some View {
         VStack(spacing: ResponsiveDesign.spacing(12)) {
             Image(systemName: "list.bullet.rectangle")
-                .font(.system(size: ResponsiveDesign.spacing(40)))
+                .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.spacing(40)))
                 .foregroundColor(AppTheme.fontColor.opacity(0.4))
 
             Text("No transactions for this month")

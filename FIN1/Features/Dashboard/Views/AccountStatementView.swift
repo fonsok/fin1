@@ -9,6 +9,8 @@ struct AccountStatementView: View {
     @State private var isGeneratingStatement = false
     @State private var showGenerationSuccess = false
     @State private var showWithdrawalInfo = false
+    @State private var selectedDocument: Document?
+    @State private var showMissingDocumentAlert = false
     private let summaryColumns: [GridItem] = Array(repeating: GridItem(.flexible(), spacing: ResponsiveDesign.spacing(12)), count: 2)
 
     init(services: AppServices) {
@@ -67,6 +69,14 @@ struct AccountStatementView: View {
             Button("OK") { }
         } message: {
             Text("Your monthly account statement has been created and is available in your documents.")
+        }
+        .alert("Beleg nicht gefunden", isPresented: $showMissingDocumentAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("Für diese Buchung wurde kein passender Beleg geladen. Bitte Dokumente aktualisieren und erneut versuchen.")
+        }
+        .sheet(item: $selectedDocument) { document in
+            DocumentNavigationHelper.sheetView(for: document, appServices: services)
         }
     }
 
@@ -157,13 +167,17 @@ struct AccountStatementView: View {
     }
 
     private var entriesTable: some View {
-        AccountStatementEntriesTable(entries: viewModel.filteredEntries)
+        AccountStatementEntriesTable(
+            entries: viewModel.filteredEntries,
+            showDocumentReferenceLinks: services.configurationService.showDocumentReferenceLinksInAccountStatement,
+            onEntryTap: openReferencedDocument(for:)
+        )
     }
 
     private var emptyState: some View {
         VStack(spacing: ResponsiveDesign.spacing(12)) {
             Image(systemName: "list.bullet.rectangle")
-                .font(.system(size: ResponsiveDesign.spacing(40)))
+                .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.spacing(40)))
                 .foregroundColor(AppTheme.fontColor.opacity(0.4))
 
             Text("No transactions")
@@ -204,6 +218,20 @@ struct AccountStatementView: View {
         .cornerRadius(ResponsiveDesign.spacing(12))
     }
 
+    private func openReferencedDocument(for entry: AccountStatementEntry) {
+        if let cached = entry.referencedDocument(documentService: services.documentService) {
+            selectedDocument = cached
+            return
+        }
+        Task { @MainActor in
+            if let resolved = await entry.resolveReferencedDocument(documentService: services.documentService) {
+                selectedDocument = resolved
+            } else {
+                showMissingDocumentAlert = true
+            }
+        }
+    }
+
     private var withdrawalToVerifiedAccountButton: some View {
         Button {
             showWithdrawalInfo = true
@@ -220,7 +248,7 @@ struct AccountStatementView: View {
                 Spacer()
 
                 Image(systemName: "chevron.right")
-                    .font(.system(size: ResponsiveDesign.spacing(12)))
+                    .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.spacing(12)))
                     .foregroundColor(AppTheme.fontColor.opacity(0.6))
             }
             .padding(ResponsiveDesign.spacing(12))
