@@ -2,6 +2,19 @@ import Foundation
 import SwiftUI
 import Combine
 
+// MARK: - Deep link resolution errors
+
+enum DocumentDeepLinkResolveError: LocalizedError {
+    case backendUnavailable
+
+    var errorDescription: String? {
+        switch self {
+        case .backendUnavailable:
+            return "Dokumente können derzeit nicht geladen werden. Bitte später erneut versuchen."
+        }
+    }
+}
+
 // MARK: - Document Service Protocol
 /// Defines the contract for document operations and management
 protocol DocumentServiceProtocol: ObservableObject, ServiceLifecycle {
@@ -21,6 +34,10 @@ protocol DocumentServiceProtocol: ObservableObject, ServiceLifecycle {
     func getDocuments(for userId: String) -> [Document]
     func getDocumentsByType(_ type: DocumentType, for userId: String) -> [Document]
     func getDocument(by id: String) -> Document?
+
+    /// Local cache first, otherwise fetch Parse `Document` by `objectId` and merge into `documents` (notifications deep-link).
+    @MainActor
+    func resolveDocumentForDeepLink(objectId: String) async throws -> Document
     func getDocumentsForTrade(_ tradeId: String) -> [Document]
     func getDocumentsForInvestment(_ investmentId: String) -> [Document]
     func documentExists(for tradeId: String, ofType type: DocumentType) -> Bool
@@ -40,7 +57,7 @@ protocol DocumentServiceProtocol: ObservableObject, ServiceLifecycle {
 
 // MARK: - Document Service Implementation
 /// Handles document operations, storage, and management
-final class DocumentService: DocumentServiceProtocol, ServiceLifecycle {
+final class DocumentService: DocumentServiceProtocol, ServiceLifecycle, @unchecked Sendable {
     static let shared = DocumentService()
 
     @Published var documents: [Document] = []
@@ -50,6 +67,10 @@ final class DocumentService: DocumentServiceProtocol, ServiceLifecycle {
 
     private var cancellables = Set<AnyCancellable>()
     private var documentAPIService: DocumentAPIServiceProtocol?
+
+    /// Parallel `resolveDocumentForDeepLink` calls for the same Parse `objectId` share one
+    /// network fetch (in-flight dedupe). Cleared when each task completes or on `reset()`.
+    private var deepLinkResolveTasks: [String: Task<Document, Error>] = [:]
 
     init(documentAPIService: DocumentAPIServiceProtocol? = nil) {
         self.documentAPIService = documentAPIService
@@ -68,7 +89,13 @@ final class DocumentService: DocumentServiceProtocol, ServiceLifecycle {
     // MARK: - ServiceLifecycle
     func start() { /* preload documents if needed */ }
     func stop() { /* noop */ }
-    func reset() { documents.removeAll() }
+    func reset() {
+        for (_, task) in deepLinkResolveTasks {
+            task.cancel()
+        }
+        deepLinkResolveTasks.removeAll()
+        documents.removeAll()
+    }
 
     // MARK: - Document Management
 
@@ -79,7 +106,12 @@ final class DocumentService: DocumentServiceProtocol, ServiceLifecycle {
         if let apiService = documentAPIService {
             Task {
                 do {
-                    let fetchedDocuments = try await apiService.fetchDocuments(for: user.id)
+                    let stableUserId = "user:\(user.email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased())"
+                    let directDocs = try await apiService.fetchDocuments(for: user.id)
+                    let stableDocs = try await apiService.fetchDocuments(for: stableUserId)
+                    let fetchedDocuments = (directDocs + stableDocs).reduce(into: [String: Document]()) { dict, doc in
+                        dict[doc.id] = doc
+                    }.map(\.value)
                     await MainActor.run {
                         self.documents = fetchedDocuments
                         self.isLoading = false
@@ -178,6 +210,41 @@ final class DocumentService: DocumentServiceProtocol, ServiceLifecycle {
 
     func getDocument(by id: String) -> Document? {
         return documents.first { $0.id == id }
+    }
+
+    @MainActor
+    func resolveDocumentForDeepLink(objectId: String) async throws -> Document {
+        let id = objectId.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !id.isEmpty else {
+            throw DocumentDeepLinkResolveError.backendUnavailable
+        }
+
+        if let cached = getDocument(by: id) {
+            return cached
+        }
+
+        if let inFlight = deepLinkResolveTasks[id] {
+            return try await inFlight.value
+        }
+
+        guard let apiService = documentAPIService else {
+            throw DocumentDeepLinkResolveError.backendUnavailable
+        }
+
+        let task = Task<Document, Error> { @MainActor [id, apiService] in
+            let fetched = try await apiService.fetchDocument(by: id)
+            if let idx = self.documents.firstIndex(where: { $0.id == fetched.id }) {
+                self.documents[idx] = fetched
+            } else {
+                self.documents.append(fetched)
+            }
+            return fetched
+        }
+
+        deepLinkResolveTasks[id] = task
+        defer { deepLinkResolveTasks[id] = nil }
+
+        return try await task.value
     }
 
     func getDocumentsForTrade(_ tradeId: String) -> [Document] {
