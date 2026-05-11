@@ -71,7 +71,9 @@ db.getCollection('_Session').createIndex({ "expiresAt": 1 }, { expireAfterSecond
 // ============================================================================
 
 print('Creating indexes for Investment...');
-db.Investment.createIndex({ "investmentNumber": 1 }, { unique: true });
+// sparse: investmentNumber wird ggf. erst nach Insert gesetzt (DocumentNumber-Service) –
+// ohne sparse kollidieren mehrere Inserts mit `null` am gleichen Unique-Slot (E11000).
+db.Investment.createIndex({ "investmentNumber": 1 }, { unique: true, sparse: true });
 db.Investment.createIndex({ "investorId": 1, "status": 1 });
 db.Investment.createIndex({ "traderId": 1, "status": 1 });
 db.Investment.createIndex({ "status": 1 });
@@ -80,7 +82,7 @@ db.Investment.createIndex({ "activatedAt": -1 });
 
 // InvestmentBatch
 print('Creating indexes for InvestmentBatch...');
-db.InvestmentBatch.createIndex({ "batchNumber": 1 }, { unique: true });
+db.InvestmentBatch.createIndex({ "batchNumber": 1 }, { unique: true, sparse: true });
 db.InvestmentBatch.createIndex({ "investorId": 1 });
 
 // PoolTradeParticipation
@@ -92,7 +94,7 @@ db.PoolTradeParticipation.createIndex({ "isSettled": 1 });
 
 // Commission
 print('Creating indexes for Commission...');
-db.Commission.createIndex({ "commissionNumber": 1 }, { unique: true });
+db.Commission.createIndex({ "commissionNumber": 1 }, { unique: true, sparse: true });
 db.Commission.createIndex({ "traderId": 1 });
 db.Commission.createIndex({ "investorId": 1 });
 db.Commission.createIndex({ "investmentId": 1 });
@@ -114,7 +116,7 @@ db.Security.createIndex({ "securityType": 1 });
 db.Security.createIndex({ "name": "text", "symbol": "text" }); // Full-text search
 
 print('Creating indexes for Order...');
-db.Order.createIndex({ "orderNumber": 1 }, { unique: true });
+db.Order.createIndex({ "orderNumber": 1 }, { unique: true, sparse: true });
 db.Order.createIndex({ "traderId": 1 });
 db.Order.createIndex({ "tradeId": 1 }, { sparse: true });
 db.Order.createIndex({ "status": 1 });
@@ -124,7 +126,7 @@ db.Order.createIndex({ "createdAt": -1 });
 db.Order.createIndex({ "executedAt": -1 }, { sparse: true });
 
 print('Creating indexes for Trade...');
-db.Trade.createIndex({ "tradeNumber": 1 }, { unique: true });
+db.Trade.createIndex({ "tradeNumber": 1 }, { unique: true, sparse: true });
 db.Trade.createIndex({ "traderId": 1 });
 db.Trade.createIndex({ "traderId": 1, "status": 1 });
 db.Trade.createIndex({ "status": 1 });
@@ -134,7 +136,7 @@ db.Trade.createIndex({ "openedAt": -1 }, { sparse: true });
 db.Trade.createIndex({ "closedAt": -1 }, { sparse: true });
 
 print('Creating indexes for Holding...');
-db.Holding.createIndex({ "positionNumber": 1 }, { unique: true });
+db.Holding.createIndex({ "positionNumber": 1 }, { unique: true, sparse: true });
 db.Holding.createIndex({ "traderId": 1 });
 db.Holding.createIndex({ "traderId": 1, "status": 1 });
 db.Holding.createIndex({ "symbol": 1 });
@@ -162,7 +164,7 @@ db.WatchlistItem.createIndex({ "watchlistId": 1, "symbol": 1 }, { unique: true }
 // ============================================================================
 
 print('Creating indexes for Invoice...');
-db.Invoice.createIndex({ "invoiceNumber": 1 }, { unique: true });
+db.Invoice.createIndex({ "invoiceNumber": 1 }, { unique: true, sparse: true });
 db.Invoice.createIndex({ "userId": 1 });
 db.Invoice.createIndex({ "userId": 1, "invoiceType": 1 });
 db.Invoice.createIndex({ "orderId": 1 }, { sparse: true });
@@ -171,7 +173,7 @@ db.Invoice.createIndex({ "invoiceDate": -1 });
 db.Invoice.createIndex({ "status": 1 });
 
 print('Creating indexes for WalletTransaction...');
-db.WalletTransaction.createIndex({ "transactionNumber": 1 }, { unique: true });
+db.WalletTransaction.createIndex({ "transactionNumber": 1 }, { unique: true, sparse: true });
 db.WalletTransaction.createIndex({ "userId": 1 });
 db.WalletTransaction.createIndex({ "userId": 1, "transactionType": 1 });
 db.WalletTransaction.createIndex({ "userId": 1, "status": 1 });
@@ -205,9 +207,13 @@ db.Document.createIndex({ "createdAt": -1 });
 db.Document.createIndex({ "userId": 1, "documentType": 1 });
 
 print('Creating indexes for AccountStatement...');
-db.AccountStatement.createIndex({ "statementNumber": 1 }, { unique: true });
+// sparse: AccountStatement wird (a) für nummerierte Period-Statements und (b) für nicht-nummerierte
+// Ledger-Buchungen ohne `statementNumber` genutzt. Ohne sparse kollidieren mehrere Inserts ohne
+// statementNumber am gleichen `null`-Slot (E11000) — blockiert Trade-Settlement.
+db.AccountStatement.createIndex({ "statementNumber": 1 }, { unique: true, sparse: true });
 db.AccountStatement.createIndex({ "userId": 1 });
 db.AccountStatement.createIndex({ "userId": 1, "periodType": 1, "periodYear": 1, "periodMonth": 1 });
+db.AccountStatement.createIndex({ "tradeId": 1, "createdAt": -1 }, { sparse: true });
 
 // ============================================================================
 // NOTIFICATION COLLECTIONS
@@ -256,7 +262,7 @@ db.FAQFeedback.createIndex({ "faqId": 1, "userId": 1 }, { sparse: true });
 // ============================================================================
 
 print('Creating indexes for SupportTicket...');
-db.SupportTicket.createIndex({ "ticketNumber": 1 }, { unique: true });
+db.SupportTicket.createIndex({ "ticketNumber": 1 }, { unique: true, sparse: true });
 db.SupportTicket.createIndex({ "userId": 1 });
 db.SupportTicket.createIndex({ "assignedTo": 1 }, { sparse: true });
 db.SupportTicket.createIndex({ "status": 1 });
@@ -302,7 +308,7 @@ db.ComplianceEvent.createIndex({ "occurredAt": -1 });
 db.ComplianceEvent.createIndex({ "regulatoryFlags": 1 });
 
 print('Creating indexes for GDPRRequest...');
-db.GDPRRequest.createIndex({ "requestNumber": 1 }, { unique: true });
+db.GDPRRequest.createIndex({ "requestNumber": 1 }, { unique: true, sparse: true });
 db.GDPRRequest.createIndex({ "userId": 1 });
 db.GDPRRequest.createIndex({ "status": 1 });
 db.GDPRRequest.createIndex({ "deadline": 1 });

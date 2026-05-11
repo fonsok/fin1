@@ -13,6 +13,7 @@ Sie erstellen Datenbank, User, Collections, Indexes und Schema-Validierung.
 | `01_indexes.js` | Alle Performance-Indexes |
 | `02_schema_validation.js` | Schema-Validierungsregeln |
 | `../scripts/apply_ledger_document_indexes_fin1.js` | **Nur Indizes** für `AppLedgerEntry`, `BankContraPosting`, `Document` (für bestehende DBs; siehe unten) |
+| `../scripts/fix_unique_number_indexes_sparse_fin1.js` | **Repariert** Unique-Indizes auf `*Number`-Feldern (AccountStatement, Investment, Trade, Order, Invoice, Commission, …) → `unique + sparse`. Pflicht-Migration auf jeder bestehenden DB; verhindert E11000 beim Trade-Settlement. |
 
 ## Ausführungsreihenfolge
 
@@ -162,6 +163,29 @@ Die Init-Skripte unter `/docker-entrypoint-initdb.d` laufen **nur beim ersten St
 | **Indexes** | Neue Indizes aus `01_indexes.js` werden **nicht** automatisch nachgezogen. **Gesamt:** `cat backend/mongodb/init/01_indexes.js \| docker exec -i fin1-mongodb mongosh -u admin -p … --authenticationDatabase admin` (siehe Abschnitte oben). **Teilmenge** Ledger/Document: `backend/mongodb/scripts/apply_ledger_document_indexes_fin1.js`. `createIndex` mit gleicher Spezifikation ist idempotent. |
 | **JSON Schema / `collMod`** | Änderungen in `02_schema_validation.js` (z. B. `SupportTicket` verlangt `userId` statt `customerId`) wirken erst nach **manuellem** `collMod` auf der Collection oder nach Ausführen des entsprechenden `runCommand`-Blocks in `mongosh`. Aktuell: `validationAction: "warn"` — Verstöße loggen, schreiben nicht hart fehl. |
 | **Alte Ticket-Felder `customerId`** | Parse **beforeSave** (`triggers/support.js`) kopiert bei jedem Speichern `customerId` → `userId` und entfernt `customerId`. Unberührte alte Dokumente bleiben, bis sie gespeichert werden. **Bulk:** Script `backend/mongodb/scripts/migrate_customerId_to_userId_fin1.js` **oder** Cloud Function `migrateLegacyCustomerIdToUserId` (Admin, optional `dryRun: true`). |
+
+## Unique-Indizes auf "*Number"-Feldern (sparse-Pflicht)
+
+`AccountStatement.statementNumber`, `Investment.investmentNumber`, `Trade.tradeNumber`, `Order.orderNumber`, `Invoice.invoiceNumber`, `Commission.commissionNumber`, `Holding.positionNumber`, `WalletTransaction.transactionNumber`, `SupportTicket.ticketNumber`, `GDPRRequest.requestNumber`, `InvestmentBatch.batchNumber` sind in `01_indexes.js` als **`unique + sparse`** definiert.
+
+**Warum?** Diese Sammlungen legen Datensätze teilweise an, **bevor** die laufende Nummer vergeben ist — oder nutzen die Sammlung auch ohne Nummer (z. B. `AccountStatement` für Ledger-Buchungen, die nie eine `statementNumber` bekommen). Ohne `sparse` kollidiert der zweite Insert ohne Wert mit dem `null`-Slot des Unique-Index → `E11000 "duplicate value for a field with unique values"`. Symptom: **Trade abgeschlossen, Investment bleibt `active`** (siehe `SettlementRetryJob.lastError = "A duplicate value for a field with unique values was provided"`).
+
+**Bestehende DBs reparieren:**
+
+```bash
+# Lokal
+cat backend/mongodb/scripts/fix_unique_number_indexes_sparse_fin1.js | docker exec -i fin1-mongodb \
+  mongosh --quiet -u admin -p "$MONGO_PASS" --authenticationDatabase admin
+
+# Auf iobox
+scp backend/mongodb/scripts/fix_unique_number_indexes_sparse_fin1.js \
+  io@<HOST>:/tmp/fix_unique_number_indexes_sparse_fin1.js
+ssh io@<HOST> 'source ~/fin1-server/.env; \
+  cat /tmp/fix_unique_number_indexes_sparse_fin1.js | docker exec -i fin1-mongodb \
+  mongosh --quiet -u admin -p "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin'
+```
+
+Skript ist idempotent — sicher mehrfach ausführbar.
 
 ## Troubleshooting
 

@@ -411,6 +411,45 @@ Schnellcheck:
 - Nur Config: `./scripts/restore-from-backup.sh <BACKUP_ID> --config-only`
 - Details und Logs: siehe `scripts/BACKUP_RESTORE.md`, `Documentation/SERVER_HARDENING_2026-02.md`.
 
+## 9.1) Settlement-Pipeline – Wenn Trade `completed`, aber Investment bleibt `active`
+
+Symptom (UI): Trade-Karte zeigt grünen Profit, Investment auf der Investor-Seite steht weiter unter „Active Investments“. Hintergrund: Beim `Trade.afterSave(status=completed)` wirft die Settlement-Funktion intern eine E11000-Duplicate-Exception, der Job landet in `SettlementRetryJob` (`lastError`, `status: pending`) — Participation bleibt `isSettled=false`, Investment-Status wird nie weitergeschaltet.
+
+**Sofort-Diagnose (`io@iobox`, Repo unter `~/fin1-server`):**
+
+```bash
+source ~/fin1-server/.env
+docker exec -i fin1-mongodb mongosh --quiet -u admin -p "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin fin1 --eval '
+  print("--- SettlementRetryJob pending ---");
+  db.SettlementRetryJob.find({status:{$in:["pending","failed"]}}).sort({_updated_at:-1}).limit(10).forEach(function(j){
+    printjson({id:j._id, tradeId:j.tradeId, attempts:j.attempts, status:j.status, lastError:j.lastError});
+  });
+  print("--- Investments still active despite completed trade ---");
+  db.Investment.countDocuments({status:"active"});
+'
+```
+
+**Häufigste Ursache:** Nicht-sparse Unique-Indizes auf `*Number`-Feldern (`AccountStatement.statementNumber`, `Trade.tradeNumber`, …). Fix einmal pro Umgebung:
+
+```bash
+# auf dem Mac (Repo-Root) das Migrations-Skript hochladen + ausführen
+scp backend/mongodb/scripts/fix_unique_number_indexes_sparse_fin1.js \
+  io@192.168.178.24:/tmp/fix_unique_number_indexes_sparse_fin1.js
+ssh io@192.168.178.24 'source ~/fin1-server/.env; \
+  cat /tmp/fix_unique_number_indexes_sparse_fin1.js | docker exec -i fin1-mongodb \
+  mongosh --quiet -u admin -p "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin'
+```
+
+**Steckenden Job sofort ziehen lassen (statt 5–15 min Backoff abzuwarten):**
+
+```bash
+docker exec -i fin1-mongodb mongosh --quiet -u admin -p "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin fin1 --eval '
+  db.SettlementRetryJob.updateMany({status:"pending"}, {$set:{nextRetryAt:new Date(Date.now()-1000)}});
+'
+```
+
+**Verifikation:** `SettlementRetryJob.status="done"`, `PoolTradeParticipation.isSettled=true`, `Investment.status="completed"` + `completedAt` gesetzt. Detail-Hintergrund: `backend/mongodb/init/README.md` Abschnitt „Unique-Indizes auf '*Number'-Feldern (sparse-Pflicht)".
+
 ## 10) Auto-Recovery / Service Monitoring
 
 ### Script
