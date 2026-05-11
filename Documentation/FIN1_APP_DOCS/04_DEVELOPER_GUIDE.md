@@ -1,7 +1,7 @@
 ---
 title: "FIN1 – Developer Guide (Setup, Coding, Build/Release, How-Tos)"
 audience: ["Entwicklung", "QA (technisch)", "Betrieb (technisch)"]
-lastUpdated: "2026-04-04"
+lastUpdated: "2026-05-11"
 ---
 
 ## Zweck
@@ -61,6 +61,11 @@ Die verbindlichen Regeln stehen in `.cursor/rules/` (insb. `architecture.md`, `c
 - **ResponsiveDesign**: keine Fixed Spacing/Fonts/Padding.
 - **Compliance**: Pre-trade Checks + Audit Logging sind Pflicht.
 
+### Dokumente / Account Statement (Beleg-Links)
+
+- **Kontoauszug → Beleg öffnen:** `AccountStatementView` / `MonthlyAccountStatementView` rufen bei Tap auf eine Zeile mit Belegreferenz zuerst den lokalen `DocumentService`-Cache (`AccountStatementEntry.referencedDocument`). Fehlt der Eintrag (z. B. Race nach Login, unvollständiger `loadDocuments`), holt `AccountStatementEntry.resolveReferencedDocument` den Datensatz per Parse-`objectId` nach (`DocumentService.resolveDocumentForDeepLink`).
+- **In-flight-Dedupe:** `DocumentService.resolveDocumentForDeepLink` bündelt parallele Anfragen **pro `objectId`** zu einem Netzwerk-Fetch; `reset()` bricht ausstehende Tasks ab und leert die Map. Zentral für alle Aufrufer (Kontoauszug, Notification-Deep-Links, …).
+
 ## 3) Build & Deployment (Übersicht)
 
 ### iOS Builds/Environments
@@ -88,6 +93,32 @@ Zusätzliche lokale Checks (Scripts):
   - Parse Server: `/health`
   - Nginx: `/health`
   - optional Services: `:8083/health`, `:8084/health`, `:8085/health`
+
+### Deploy: Parse Cloud + Admin-Portal (Lab/Server, Kurz)
+
+**Operative Klarheit (zwei IPs, Env):** [`Documentation/OPERATIONAL_DEPLOY_HOSTS.md`](../OPERATIONAL_DEPLOY_HOSTS.md) — Vorlage `scripts/.env.server.example` → lokal `scripts/.env.server`. Schnellcheck:
+
+```bash
+./scripts/show-fin1-deploy-targets.sh
+```
+
+**Parse Cloud** (Shadow-Check, `rsync`, `configHelper.js`-Schutz, `parse-server`-Restart):
+
+```bash
+cd /path/to/FIN1
+./scripts/deploy-parse-cloud-to-fin1-server.sh
+```
+
+Vollständige Regeln: `.cursor/rules/ci-cd.md`.
+
+**Admin-Portal** (Build + rsync + Verifikation des JS-Bundles; Host = `FIN1_SERVER_IP` aus `scripts/.env.server`):
+
+```bash
+cd /path/to/FIN1/admin-portal
+./deploy.sh
+```
+
+Architekturentscheid Teil-Sell-Kennzahlen, Finance-Smoke, System-Health: [`Documentation/ADR-012-Partial-Sell-Metrics-Finance-Smoke-And-Ops.md`](../ADR-012-Partial-Sell-Metrics-Finance-Smoke-And-Ops.md).
 
 ## 4) How-to Guides (typische Aufgaben)
 
@@ -150,6 +181,17 @@ Templates/Vorlagen (z.B. `CSRResponseTemplate`, `CSREmailTemplate`, `CSRTemplate
 **Serverseitige Guardrails (ENV):**
 - `ALLOW_DEV_TRADING_RESET=true`
 - In `NODE_ENV=production` zusätzlich: `ALLOW_DEV_TRADING_RESET_IN_PRODUCTION=true`
+
+### How-to: Bereinigung doppelter Investment-Splits (nur DEV-Maintenance)
+
+Falls historische Duplikate für denselben Split entstanden sind (gleicher `investorId + batchId + sequenceNumber`),
+kann die Cloud Function `cleanupDuplicateInvestmentSplits` verwendet werden.
+
+- **Dry-Run (Standard):** `dryRun=true` (oder Parameter weglassen)
+- **Execute:** `dryRun=false`
+- **Sicherheitsprinzip:** Es werden nur **stale `reserved`-Duplikate** entfernt, wenn für denselben Split bereits
+  ein stärkerer Status (`active`/`executing`/`closed`/`completed`) existiert. Alles andere bleibt als `reviewOnly`.
+- **Scan-Limit:** optional `scanLimit` (Default `1000`, Max `5000`)
 
 ### Admin-Web-Portal (`admin-portal/`, React/Vite)
 
