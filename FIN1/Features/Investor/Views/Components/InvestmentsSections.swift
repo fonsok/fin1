@@ -6,9 +6,10 @@ private enum InvestmentsTraderDisplay {
         traderDataService: any TraderDataServiceProtocol,
         firstRow: InvestmentRow
     ) -> String {
-        let fromUser = traderDataService.getTrader(by: firstRow.investment.traderId)?.username?
-            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        if !fromUser.isEmpty { return fromUser }
+        if let trader = traderDataService.getTrader(by: firstRow.investment.traderId) {
+            let trimmed = trader.username.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmed.isEmpty { return trimmed }
+        }
         let fromInvestment = firstRow.investment.traderName.trimmingCharacters(in: .whitespacesAndNewlines)
         return fromInvestment.isEmpty ? "—" : fromInvestment
     }
