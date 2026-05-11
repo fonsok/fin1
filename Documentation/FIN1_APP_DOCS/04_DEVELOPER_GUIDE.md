@@ -63,6 +63,7 @@ Die verbindlichen Regeln stehen in `.cursor/rules/` (insb. `architecture.md`, `c
 
 ### Dokumente / Account Statement (Beleg-Links)
 
+- **Reparatur (2026-05):** Im **Trader**-Kontoauszug wirkten Taps auf „Belegnr.: …“ (z. B. `CN-…`, `TSC-…`, `TBC-…`) oft wie ohne Wirkung, obwohl die Belege unter **Notifications → Documents** existierten — **Investor** meist nicht betroffen (vollerer `DocumentService`-Cache). Ursache war nur-Cache-Auflösung; Fix siehe `Documentation/ACCOUNT_STATEMENT_ARCHITECTURE.md` → Abschnitt *Beleg-Links (iOS)*.
 - **Kontoauszug → Beleg öffnen:** `AccountStatementView` / `MonthlyAccountStatementView` rufen bei Tap auf eine Zeile mit Belegreferenz zuerst den lokalen `DocumentService`-Cache (`AccountStatementEntry.referencedDocument`). Fehlt der Eintrag (z. B. Race nach Login, unvollständiger `loadDocuments`), holt `AccountStatementEntry.resolveReferencedDocument` den Datensatz per Parse-`objectId` nach (`DocumentService.resolveDocumentForDeepLink`).
 - **In-flight-Dedupe:** `DocumentService.resolveDocumentForDeepLink` bündelt parallele Anfragen **pro `objectId`** zu einem Netzwerk-Fetch; `reset()` bricht ausstehende Tasks ab und leert die Map. Zentral für alle Aufrufer (Kontoauszug, Notification-Deep-Links, …).
 

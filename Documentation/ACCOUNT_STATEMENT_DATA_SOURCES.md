@@ -3,7 +3,9 @@
 **Datum**: Januar 2026
 **Status**: ✅ Aktualisiert - Zentrale Builder-Architektur dokumentiert
 
-**Hinweis**: Für detaillierte Architektur-Beschreibung siehe `445_ACCOUNT_STATEMENT_ARCHITECTURE.md`
+**Hinweis**: Vollständige Architektur inkl. **Backend-first / Fallback** siehe `ACCOUNT_STATEMENT_ARCHITECTURE.md` (dort auch **Beleg-Links iOS**: Tap auf „Belegnr.: …“ im Kontoauszug, Reparatur 2026-05). Parse-Buchungen und `SettlementAPIService`: `BACKEND_CALCULATION_MIGRATION.md`. Diese Datei fokussiert die **Zuordnung der Datenquellen** (Handels-/Investment-Daten vs. Konto-Zahlungsbewegungen).
+
+**Konto:** Crypto-Wallet-Produktfeature ist deaktiviert; Nutzer führen ein **normales Konto**. Im Code heißt die Builder-Methode noch `buildSnapshotWithWallet` (Legacy-Name) — gemeint sind **Ledger + Zahlungsbewegungen**.
 
 ---
 
@@ -12,67 +14,65 @@
 ### Für Investoren (Investor Role)
 
 ```
-Account Statement lädt:
-├── Investment Ledger (InvestorCashBalanceService)
-│   • Investments (Reservierung)
-│   • Profit Distribution
-│   • Commissions (Investor-Seite)
-│   • Service Charges
-│   • Remaining Balance Distribution
-│   ❌ KEINE Wallet-Transaktionen
+Kontoauszug lädt:
+├── Handels-/Investment-Zeilen (primär Backend, Fallback lokales Ledger)
+│   • Mit SettlementAPIService: Parse AccountStatement (z. B. commission_debit, investment_profit)
+│   • Fallback: InvestorCashBalanceService.getTransactions()
+│   • Investments, Profit Distribution, Commissions, Service Charges, Remaining Balance …
+│   ❌ KEINE Zahlungsbewegungen (die liegen im PaymentService)
 │
-└── Wallet Transactions (PaymentService)
+└── Zahlungsbewegungen (Konto) — PaymentService
     • Einzahlungen (deposit)
     • Auszahlungen (withdrawal)
-    ✅ Nur Wallet-Transaktionen
+    ✅ Nur Ein-/Auszahlungen auf dem Konto
 ```
 
 **Datenquellen:**
-- `InvestorAccountStatementBuilder.buildSnapshotWithWallet()` → Single Source of Truth
-  - Lädt Investment-Transaktionen: `InvestorCashBalanceService.getTransactions()`
-  - Lädt Wallet-Transaktionen: `PaymentService.getTransactionHistory()`
-  - Kombiniert beide und berechnet Balance chronologisch
+- `InvestorAccountStatementBuilder.buildSnapshotWithWallet()` → zentrale Kombination *(Legacy-Methodenname)*
+  - Investment-/Backend-Zeilen: `fetchAccountStatement` wenn `settlementAPIService` gesetzt, sonst `InvestorCashBalanceService.getTransactions()`
+  - Zahlungsbewegungen: `PaymentService.getTransactionHistory()`
+  - Kombination und chronologische Balance wie in `ACCOUNT_STATEMENT_ARCHITECTURE.md`
 
 ---
 
 ### Für Trader (Trader Role)
 
 ```
-Account Statement lädt:
-├── Trading Ledger (TraderAccountStatementBuilder)
-│   • Buy Orders (aus Invoices)
-│   • Sell Orders (aus Invoices)
-│   • Commissions (Trader-Seite, Credit Notes)
-│   ❌ KEINE Wallet-Transaktionen
+Kontoauszug lädt:
+├── Handels-Zeilen (primär Backend, Fallback Rechnungs-/Credit-Note-Pfad)
+│   • Mit SettlementAPIService: Parse AccountStatement (Trader-Provision u. a.)
+│   • Fallback: TraderAccountStatementBuilder.buildSnapshot() (Invoices, Credit Notes)
+│   • Buy/Sell Orders, Commissions (Trader-Seite)
+│   ❌ KEINE Konto-Zahlungsbewegungen
 │
-└── Wallet Transactions (PaymentService)
+└── Zahlungsbewegungen (Konto) — PaymentService
     • Einzahlungen (deposit)
     • Auszahlungen (withdrawal)
-    ✅ Nur Wallet-Transaktionen
+    ✅ Nur Ein-/Auszahlungen auf dem Konto
 ```
 
 **Datenquellen:**
-- `TraderAccountStatementBuilder.buildSnapshotWithWallet()` → Single Source of Truth
-  - Lädt Trading-Transaktionen: `TraderAccountStatementBuilder.buildSnapshot()` (aus Invoices)
-  - Lädt Wallet-Transaktionen: `PaymentService.getTransactionHistory()`
-  - Kombiniert beide und berechnet Balance chronologisch
+- `TraderAccountStatementBuilder.buildSnapshotWithWallet()` → zentrale Kombination *(Legacy-Methodenname)*
+  - Handels-/Backend-Zeilen: `fetchAccountStatement` wenn `settlementAPIService` gesetzt, sonst `buildSnapshot()` aus Invoices
+  - Zahlungsbewegungen: `PaymentService.getTransactionHistory()`
+  - Kombination und chronologische Balance wie in `ACCOUNT_STATEMENT_ARCHITECTURE.md`
 
 ---
 
 ## 📊 Services & Verantwortlichkeiten
 
 ### InvestorCashBalanceService
-- **Zweck**: Investment-Transaktionen für Investoren
+- **Zweck**: Lokales Investment-Ledger für Investoren (Fallback, wenn Backend-Zeilen fehlen)
 - **Speichert**: Investments, Profits, Commissions (Investor-Seite)
-- **NICHT**: Wallet-Transaktionen (werden im PaymentService gespeichert)
+- **NICHT**: Zahlungsbewegungen auf dem Konto (liegen im `PaymentService`)
 
 ### TraderAccountStatementBuilder
-- **Zweck**: Trading-Transaktionen für Trader
-- **Speichert**: Buy/Sell Orders (aus Invoices), Commissions (Trader-Seite)
-- **NICHT**: Wallet-Transaktionen (werden im PaymentService gespeichert)
+- **Zweck**: Handelszeilen für Trader (Fallback-Pfad aus Invoices / Credit Notes)
+- **Enthält**: Buy/Sell Orders, Commissions (Trader-Seite), wenn nicht durch Backend-Zeilen abgedeckt
+- **NICHT**: Zahlungsbewegungen (liegen im `PaymentService`)
 
 ### PaymentService
-- **Zweck**: Wallet-Transaktionen (für beide Rollen)
+- **Zweck**: **Zahlungsbewegungen** auf dem Konto (für beide Rollen)
 - **Speichert**: Einzahlungen, Auszahlungen
 - **Wird verwendet von**: Investor UND Trader
 
@@ -80,38 +80,38 @@ Account Statement lädt:
 
 ## 🔄 Transaktions-Fluss
 
-### Investor: Einzahlung
+### Investor: Einzahlung (Konto)
 
 ```
-1. User klickt "Einzahlen" im Wallet
+1. User löst Einzahlung auf dem Konto aus
    ↓
 2. MockPaymentService.deposit()
-   • Erstellt Transaction (PaymentService)
+   • Erstellt Zahlungsbewegung (PaymentService)
    • Ruft InvestorCashBalanceService.processDeposit() auf
    ↓
 3. InvestorCashBalanceService.processDeposit()
    • Aktualisiert Balance
-   • ❌ Speichert NICHT im Ledger (verhindert Duplikate)
+   • ❌ Speichert NICHT im Investment-Ledger (verhindert Duplikate)
    ↓
-4. Account Statement lädt:
+4. Kontoauszug lädt:
    • InvestorAccountStatementBuilder.buildSnapshotWithWallet()
-   • Kombiniert Investment Ledger + Wallet Transactions automatisch
+   • Kombiniert Investment-/Backend-Zeilen + Zahlungsbewegungen
    ↓
 5. Balance wird chronologisch berechnet → Keine Duplikate ✅
 ```
 
-### Trader: Einzahlung
+### Trader: Einzahlung (Konto)
 
 ```
-1. User klickt "Einzahlen" im Wallet
+1. User löst Einzahlung auf dem Konto aus
    ↓
 2. MockPaymentService.deposit()
-   • Erstellt Transaction (PaymentService)
+   • Erstellt Zahlungsbewegung (PaymentService)
    • Aktualisiert globales CashBalanceService
    ↓
-3. Account Statement lädt:
+3. Kontoauszug lädt:
    • TraderAccountStatementBuilder.buildSnapshotWithWallet()
-   • Kombiniert Trading Ledger (Invoices) + Wallet Transactions automatisch
+   • Kombiniert Handels-/Backend-Zeilen + Zahlungsbewegungen
    ↓
 4. Balance wird chronologisch berechnet → Keine Duplikate ✅
 ```
@@ -121,19 +121,19 @@ Account Statement lädt:
 ## 🎯 Zusammenfassung
 
 ### InvestorCashBalanceService Ledger
-- ✅ **Investment-Transaktionen** (für Investoren)
-- ❌ **KEINE** Wallet-Transaktionen
-- ❌ **KEINE** Trading-Transaktionen
+- ✅ **Investment-Transaktionen** (für Investoren; Fallback neben Backend)
+- ❌ **KEINE** Konto-Zahlungsbewegungen
+- ❌ **KEINE** Trader-Handelszeilen
 
-### TraderAccountStatementBuilder
-- ✅ **Trading-Transaktionen** (für Trader, aus Invoices)
-- ❌ **KEINE** Wallet-Transaktionen
-- ❌ **KEINE** Investment-Transaktionen
+### TraderAccountStatementBuilder (Fallback-Pfad)
+- ✅ **Handelszeilen** (für Trader, aus Invoices / Credit Notes, wenn nicht aus Backend)
+- ❌ **KEINE** Konto-Zahlungsbewegungen
+- ❌ **KEINE** Investor-Investment-Ledger-Einträge
 
 ### PaymentService
-- ✅ **Wallet-Transaktionen** (für beide Rollen)
-- ❌ **KEINE** Investment-Transaktionen
-- ❌ **KEINE** Trading-Transaktionen
+- ✅ **Zahlungsbewegungen** auf dem Konto (für beide Rollen)
+- ❌ **KEINE** Investment-Ledger-Einträge
+- ❌ **KEINE** Handelsbuchungen (Buy/Sell/Provision aus dem Handel)
 
 ---
 
