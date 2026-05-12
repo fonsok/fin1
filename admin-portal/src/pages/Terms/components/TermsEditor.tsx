@@ -1,5 +1,7 @@
 import { useState, useMemo } from 'react';
+import clsx from 'clsx';
 import { Button } from '../../../components/ui/Button';
+import { useTheme } from '../../../context/ThemeContext';
 import type { TermsContentFull, TermsSection, CreateTermsContentRequest } from '../types';
 import { createTermsContent } from '../api';
 
@@ -43,6 +45,8 @@ function getNextSemanticVersion(previous?: string | null): string {
 }
 
 export function TermsEditor({ cloneFrom, initialSectionSearch, onSaved, onClose }: TermsEditorProps) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const [version, setVersion] = useState(
     cloneFrom ? getNextSemanticVersion(cloneFrom.version) : '1.0.0'
   );
@@ -128,61 +132,78 @@ export function TermsEditor({ cloneFrom, initialSectionSearch, onSaved, onClose 
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+      <div
+        className={clsx(
+          'rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto border',
+          isDark ? 'bg-slate-800 border-slate-600' : 'bg-white border-gray-200',
+        )}
+      >
         <form onSubmit={handleSubmit}>
-          <div className="p-6 border-b border-gray-200">
-            <h2 className="text-xl font-bold text-gray-900">
+          <div className={clsx('p-6 border-b', isDark ? 'border-slate-600' : 'border-gray-200')}>
+            <h2 className={clsx('text-xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>
               {cloneFrom ? 'Neue Version aus Klon' : 'Neue Rechtstext-Version'}
             </h2>
-            <p className="text-sm text-gray-500 mt-1">
-              Platzhalter wie {`{{LEGAL_PLATFORM_NAME}}`} werden serverseitig ersetzt. Version wird zunächst inaktiv angelegt; danach „Als aktiv setzen“ nutzen.
+            <p className={clsx('text-sm mt-1', isDark ? 'text-slate-400' : 'text-gray-500')}>
+              Platzhalter wie {`{{APP_NAME}}`} / {`{{LEGAL_PLATFORM_NAME}}`} werden serverseitig ersetzt. Version wird zunächst inaktiv angelegt; danach „Als aktiv setzen“ nutzen.
             </p>
           </div>
           <div className="p-6 space-y-4">
             {error && (
-              <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm">{error}</div>
+              <div className={clsx('p-3 rounded-lg text-sm', isDark ? 'bg-red-900/30 text-red-300' : 'bg-red-50 text-red-600')}>{error}</div>
             )}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Version *</label>
+                <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-300' : 'text-gray-700')}>Version *</label>
                 <input
                   type="text"
                   value={version}
                   onChange={(e) => setVersion(e.target.value)}
                   placeholder="z.B. 1.1"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-fin1-primary focus:border-transparent"
+                  className={clsx(
+                    'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-fin1-primary focus:border-transparent',
+                    isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+                  )}
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Gültig ab *</label>
+                <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-300' : 'text-gray-700')}>Gültig ab *</label>
                 <input
                   type="date"
                   value={effectiveDate}
                   onChange={(e) => setEffectiveDate(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-fin1-primary focus:border-transparent"
+                  className={clsx(
+                    'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-fin1-primary focus:border-transparent',
+                    isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+                  )}
                   required
                 />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Sprache</label>
+                <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-300' : 'text-gray-700')}>Sprache</label>
                 <select
                   value={language}
                   onChange={(e) => setLanguage(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-fin1-primary focus:border-transparent"
+                  className={clsx(
+                    'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-fin1-primary focus:border-transparent',
+                    isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+                  )}
                 >
                   <option value="de">Deutsch</option>
                   <option value="en">English</option>
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Dokumenttyp</label>
+                <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-300' : 'text-gray-700')}>Dokumenttyp</label>
                 <select
                   value={documentType}
                   onChange={(e) => setDocumentType(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-fin1-primary focus:border-transparent"
+                  className={clsx(
+                    'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-fin1-primary focus:border-transparent',
+                    isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+                  )}
                 >
                   {DOCUMENT_TYPES.map((opt) => (
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -193,17 +214,20 @@ export function TermsEditor({ cloneFrom, initialSectionSearch, onSaved, onClose 
 
             <div>
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
-                <label className="block text-sm font-medium text-gray-700">Abschnitte *</label>
+                <label className={clsx('block text-sm font-medium', isDark ? 'text-slate-300' : 'text-gray-700')}>Abschnitte *</label>
                 <div className="flex items-center gap-2 flex-1 sm:max-w-md">
                   <input
                     type="search"
                     placeholder="Abschnitte durchsuchen (Titel, Inhalt, ID)…"
                     value={sectionSearch}
                     onChange={(e) => setSectionSearch(e.target.value)}
-                    className="flex-1 min-w-0 rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-fin1-primary focus:ring-1 focus:ring-fin1-primary"
+                    className={clsx(
+                      'flex-1 min-w-0 rounded-md border px-3 py-1.5 text-sm focus:border-fin1-primary focus:ring-1 focus:ring-fin1-primary',
+                      isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+                    )}
                   />
                   {sectionSearch.trim() && (
-                    <span className="text-sm text-gray-500 whitespace-nowrap">
+                    <span className={clsx('text-sm whitespace-nowrap', isDark ? 'text-slate-400' : 'text-gray-500')}>
                       {filteredSectionsForDisplay.length} / {sections.length}
                     </span>
                   )}
@@ -212,18 +236,18 @@ export function TermsEditor({ cloneFrom, initialSectionSearch, onSaved, onClose 
                   + Abschnitt
                 </Button>
               </div>
-              <div className="space-y-4 border border-gray-200 rounded-lg p-4 max-h-[40vh] overflow-y-auto">
+              <div className={clsx('space-y-4 border rounded-lg p-4 max-h-[40vh] overflow-y-auto', isDark ? 'border-slate-600 bg-slate-900/20' : 'border-gray-200')}>
                 {filteredSectionsForDisplay.length === 0 ? (
-                  <p className="text-sm text-gray-500 py-4">
+                  <p className={clsx('text-sm py-4', isDark ? 'text-slate-400' : 'text-gray-500')}>
                     {sectionSearch.trim()
                       ? 'Kein Abschnitt enthält den Suchbegriff.'
                       : 'Keine Abschnitte.'}
                   </p>
                 ) : (
                   filteredSectionsForDisplay.map(({ section, index }) => (
-                    <div key={index} className="border border-gray-100 rounded p-3 bg-gray-50/50">
+                    <div key={index} className={clsx('border rounded p-3', isDark ? 'border-slate-700 bg-slate-800/40' : 'border-gray-100 bg-gray-50/50')}>
                       <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm font-medium text-gray-600">Abschnitt {index + 1}</span>
+                        <span className={clsx('text-sm font-medium', isDark ? 'text-slate-300' : 'text-gray-600')}>Abschnitt {index + 1}</span>
                         <Button
                           type="button"
                           variant="secondary"
@@ -240,14 +264,14 @@ export function TermsEditor({ cloneFrom, initialSectionSearch, onSaved, onClose 
                           value={section.id}
                           onChange={(e) => updateSection(index, 'id', e.target.value)}
                           placeholder="ID (z.B. intro)"
-                          className="px-3 py-1.5 border border-gray-300 rounded text-sm"
+                          className={clsx('px-3 py-1.5 border rounded text-sm', isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900')}
                         />
                         <input
                           type="text"
                           value={section.icon}
                           onChange={(e) => updateSection(index, 'icon', e.target.value)}
                           placeholder="Icon (z.B. document-text)"
-                          className="px-3 py-1.5 border border-gray-300 rounded text-sm"
+                          className={clsx('px-3 py-1.5 border rounded text-sm', isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900')}
                         />
                       </div>
                       <input
@@ -255,14 +279,14 @@ export function TermsEditor({ cloneFrom, initialSectionSearch, onSaved, onClose 
                         value={section.title}
                         onChange={(e) => updateSection(index, 'title', e.target.value)}
                         placeholder="Titel des Abschnitts"
-                        className="w-full px-3 py-2 border border-gray-300 rounded text-sm mb-2"
+                        className={clsx('w-full px-3 py-2 border rounded text-sm mb-2', isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900')}
                       />
                       <textarea
                         value={section.content}
                         onChange={(e) => updateSection(index, 'content', e.target.value)}
-                        placeholder="Inhalt (Markdown/Text; Platzhalter z.B. {{LEGAL_PLATFORM_NAME}})"
+                        placeholder="Inhalt (Markdown/Text; Platzhalter z.B. {{APP_NAME}}, {{LEGAL_PLATFORM_NAME}})"
                         rows={4}
-                        className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
+                        className={clsx('w-full px-3 py-2 border rounded text-sm', isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900')}
                       />
                     </div>
                   ))
@@ -270,7 +294,7 @@ export function TermsEditor({ cloneFrom, initialSectionSearch, onSaved, onClose 
               </div>
             </div>
           </div>
-          <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
+          <div className={clsx('p-6 border-t flex justify-end gap-3', isDark ? 'border-slate-600' : 'border-gray-200')}>
             <Button type="button" variant="secondary" onClick={onClose} disabled={saving}>
               Abbrechen
             </Button>

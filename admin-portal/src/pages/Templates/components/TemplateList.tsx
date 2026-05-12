@@ -1,6 +1,8 @@
 import { Card } from '../../../components/ui/Card';
 import { Badge } from '../../../components/ui/Badge';
 import { Button } from '../../../components/ui/Button';
+import clsx from 'clsx';
+import { useTheme } from '../../../context/ThemeContext';
 import type { ResponseTemplate, TemplateCategory } from '../types';
 
 interface TemplateListProps {
@@ -11,9 +13,73 @@ interface TemplateListProps {
 }
 
 export function TemplateList({ templates, categories, onEdit, onDelete }: TemplateListProps) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
+  const getShortcutToneClasses = (shortcut: string) => {
+    const key = (shortcut || '').toLowerCase().replace(/^\//, '');
+
+    // Semantic tones for common shortcut intents.
+    // We keep strong contrast in dark mode (light text on saturated backgrounds).
+    if (key.includes('close') || key.includes('resolved') || key.includes('done')) {
+      return isDark
+        ? '!bg-emerald-700 !text-slate-100 border border-emerald-500/60'
+        : 'bg-emerald-100 text-emerald-800 border border-emerald-300';
+    }
+    if (key === 'hi' || key.includes('high') || key.includes('prio1') || key.includes('p1')) {
+      return isDark
+        ? '!bg-amber-700 !text-slate-100 border border-amber-500/60'
+        : 'bg-amber-100 text-amber-800 border border-amber-300';
+    }
+    if (key.includes('med') || key.includes('medium') || key.includes('prio2') || key.includes('p2')) {
+      return isDark
+        ? '!bg-orange-700 !text-slate-100 border border-orange-500/60'
+        : 'bg-orange-100 text-orange-800 border border-orange-300';
+    }
+    if (key.includes('low') || key.includes('lo') || key.includes('prio3') || key.includes('p3')) {
+      return isDark
+        ? '!bg-cyan-700 !text-slate-100 border border-cyan-500/60'
+        : 'bg-cyan-100 text-cyan-800 border border-cyan-300';
+    }
+    if (key.includes('formal') || key.includes('official')) {
+      return isDark
+        ? '!bg-indigo-700 !text-slate-100 border border-indigo-500/60'
+        : 'bg-indigo-100 text-indigo-800 border border-indigo-300';
+    }
+    if (key.includes('urgent') || key.includes('escalate') || key.includes('warn')) {
+      return isDark
+        ? '!bg-rose-700 !text-slate-100 border border-rose-500/60'
+        : 'bg-rose-100 text-rose-800 border border-rose-300';
+    }
+    if (key.includes('friendly') || key.includes('greet')) {
+      return isDark
+        ? '!bg-sky-700 !text-slate-100 border border-sky-500/60'
+        : 'bg-sky-100 text-sky-800 border border-sky-300';
+    }
+
+    return isDark
+      ? '!bg-slate-800 !text-slate-100 border border-slate-500/70'
+      : 'bg-gray-100 text-gray-700 border border-gray-300';
+  };
+
   const getCategoryLabel = (key: string) => {
     const cat = categories.find((c) => c.key === key);
     return cat ? `${cat.icon} ${cat.displayName}` : key;
+  };
+
+  const parseTitleAndInlineShortcut = (title: string, explicitShortcut?: string) => {
+    if (explicitShortcut && String(explicitShortcut).trim().length > 0) {
+      return { cleanTitle: title, shortcut: String(explicitShortcut).replace(/^\//, '') };
+    }
+
+    // Support legacy style where shortcut is appended to title, e.g. "Problem gelöst /resolved"
+    const m = String(title || '').match(/^(.*)\s\/([a-z0-9_-]+)$/i);
+    if (!m) return { cleanTitle: title, shortcut: '' };
+
+    return {
+      cleanTitle: m[1].trim(),
+      shortcut: m[2].trim(),
+    };
   };
 
   if (templates.length === 0) {
@@ -30,23 +96,35 @@ export function TemplateList({ templates, categories, onEdit, onDelete }: Templa
 
   return (
     <div className="space-y-3">
-      {templates.map((template) => (
-        <Card key={template.id} className="p-4 hover:shadow-md transition-shadow">
+      {templates.map((template) => {
+        const parsed = parseTitleAndInlineShortcut(template.title, template.shortcut);
+        return (
+        <Card key={template.id} className="p-4 transition-shadow hover:shadow-md">
           <div className="flex items-start justify-between gap-4">
             {/* Content */}
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <h3 className="font-medium text-gray-900 truncate">{template.title}</h3>
+              <div className="flex flex-wrap items-center gap-2 mb-1">
+                <h3
+                  className={clsx(
+                    'font-medium min-w-0 truncate',
+                    isDark ? 'text-slate-100' : 'text-gray-900',
+                  )}
+                >
+                  {parsed.cleanTitle}
+                </h3>
                 {template.isEmail && (
                   <Badge variant="info" className="text-xs">
                     ✉️ E-Mail
                   </Badge>
                 )}
-                {template.shortcut && (
-                  <Badge variant="neutral" className="text-xs font-mono">
-                    /{template.shortcut}
-                  </Badge>
-                )}
+                <span
+                  className={clsx(
+                    'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-mono font-medium',
+                    getShortcutToneClasses(parsed.shortcut || 'none')
+                  )}
+                >
+                  /{parsed.shortcut || 'kein-status'}
+                </span>
                 {!template.isDefault && (
                   <Badge variant="info" className="text-xs">
                     Custom
@@ -54,7 +132,12 @@ export function TemplateList({ templates, categories, onEdit, onDelete }: Templa
                 )}
               </div>
 
-              <div className="flex items-center gap-3 text-sm text-gray-500 mb-2">
+              <div
+                className={clsx(
+                  'flex flex-wrap items-center gap-x-3 gap-y-1 text-sm mb-2',
+                  isDark ? 'text-slate-400' : 'text-gray-500',
+                )}
+              >
                 <span>{getCategoryLabel(template.category)}</span>
                 <span>•</span>
                 <span>{template.usageCount} Verwendungen</span>
@@ -66,7 +149,7 @@ export function TemplateList({ templates, categories, onEdit, onDelete }: Templa
                 )}
               </div>
 
-              <p className="text-sm text-gray-600 line-clamp-2">{template.body}</p>
+              <p className={clsx('text-sm line-clamp-2', isDark ? 'text-slate-200' : 'text-gray-600')}>{template.body}</p>
 
               {/* Placeholders */}
               {template.placeholders.length > 0 && (
@@ -74,7 +157,10 @@ export function TemplateList({ templates, categories, onEdit, onDelete }: Templa
                   {template.placeholders.slice(0, 4).map((p) => (
                     <span
                       key={p}
-                      className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded font-mono"
+                      className={clsx(
+                        'text-xs px-2 py-0.5 rounded font-mono',
+                        isDark ? 'bg-slate-900 border border-slate-600 text-slate-100' : 'bg-gray-100 text-gray-600'
+                      )}
                     >
                       {p}
                     </span>
@@ -101,7 +187,8 @@ export function TemplateList({ templates, categories, onEdit, onDelete }: Templa
             </div>
           </div>
         </Card>
-      ))}
+      );
+      })}
     </div>
   );
 }

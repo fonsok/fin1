@@ -1,5 +1,8 @@
 import { useState } from 'react';
+import clsx from 'clsx';
 import { Button } from '../../../components/ui/Button';
+import { Card } from '../../../components/ui/Card';
+import { useTheme } from '../../../context/ThemeContext';
 import { updateEmailTemplate, renderEmailTemplate } from '../api';
 import type { EmailTemplate } from '../types';
 
@@ -10,6 +13,16 @@ interface EmailTemplateEditorProps {
 }
 
 export function EmailTemplateEditor({ template, onSave, onClose }: EmailTemplateEditorProps) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
+  const fieldClass = clsx(
+    'w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary focus:border-fin1-primary',
+    isDark
+      ? 'bg-slate-900/90 border border-slate-600 text-slate-100 placeholder:text-slate-500'
+      : 'border border-gray-300 text-gray-900 bg-white',
+  );
+
   const [subject, setSubject] = useState(template.subject);
   const [body, setBody] = useState(template.bodyTemplate);
   const [isActive, setIsActive] = useState(template.isActive);
@@ -55,14 +68,18 @@ export function EmailTemplateEditor({ template, onSave, onClose }: EmailTemplate
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+      <Card className="max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-xl" padding="none">
         {/* Header */}
-        <div className="p-6 border-b border-gray-200 flex-shrink-0">
+        <div className={clsx('p-6 border-b flex-shrink-0', isDark ? 'border-slate-600' : 'border-gray-200')}>
           <div className="flex items-center gap-3">
             <span className="text-3xl">{template.icon || '✉️'}</span>
             <div>
-              <h2 className="text-xl font-bold text-gray-900">{template.displayName}</h2>
-              <span className="text-sm text-gray-500 font-mono">{template.type}</span>
+              <h2 className={clsx('text-xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                {template.displayName}
+              </h2>
+              <span className={clsx('text-sm font-mono', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                {template.type}
+              </span>
             </div>
           </div>
         </div>
@@ -70,54 +87,78 @@ export function EmailTemplateEditor({ template, onSave, onClose }: EmailTemplate
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6">
           {error && (
-            <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-4">{error}</div>
+            <div
+              className={clsx(
+                'p-3 rounded-lg text-sm mb-4 border',
+                isDark
+                  ? 'bg-red-950/50 border-red-800/80 text-red-200'
+                  : 'bg-red-50 border-transparent text-red-600',
+              )}
+            >
+              {error}
+            </div>
           )}
 
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Editor */}
             <div className="space-y-4">
-              <h3 className="font-medium text-gray-900">Vorlage bearbeiten</h3>
+              <h3 className={clsx('font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                Vorlage bearbeiten
+              </h3>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                <label className="flex items-center gap-2">
+                <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-300' : 'text-gray-700')}>
+                  Status
+                </label>
+                <label className={clsx('flex items-center gap-2 cursor-pointer text-sm', isDark ? 'text-slate-200' : 'text-gray-900')}>
                   <input
                     type="checkbox"
                     checked={isActive}
                     onChange={(e) => setIsActive(e.target.checked)}
-                    className="rounded border-gray-300"
+                    className={clsx('rounded accent-fin1-primary', isDark ? 'border-slate-600' : 'border-gray-300')}
                   />
-                  <span className="text-sm">Aktiv</span>
+                  Aktiv
                 </label>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Betreff</label>
+                <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-300' : 'text-gray-700')}>
+                  Betreff
+                </label>
                 <input
                   type="text"
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-fin1-primary focus:border-transparent"
+                  className={fieldClass}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Inhalt</label>
+                <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-300' : 'text-gray-700')}>
+                  Inhalt
+                </label>
                 <textarea
                   value={body}
                   onChange={(e) => setBody(e.target.value)}
                   rows={12}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-fin1-primary focus:border-transparent font-mono text-sm"
+                  className={clsx(fieldClass, 'font-mono text-sm')}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Platzhalter</label>
+                <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-300' : 'text-gray-700')}>
+                  Platzhalter
+                </label>
                 <div className="flex flex-wrap gap-1">
                   {template.availablePlaceholders.map((p) => (
                     <span
                       key={p}
-                      className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded font-mono cursor-pointer hover:bg-blue-100"
+                      className={clsx(
+                        'text-xs px-2 py-1 rounded font-mono cursor-pointer border',
+                        isDark
+                          ? 'bg-blue-950/50 text-blue-200 border-blue-800/80 hover:bg-blue-950/80'
+                          : 'bg-blue-50 text-blue-600 border-transparent hover:bg-blue-100',
+                      )}
                       onClick={() => setBody((b) => b + p)}
                     >
                       {p}
@@ -130,7 +171,9 @@ export function EmailTemplateEditor({ template, onSave, onClose }: EmailTemplate
             {/* Preview */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="font-medium text-gray-900">Vorschau</h3>
+                <h3 className={clsx('font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                  Vorschau
+                </h3>
                 <Button variant="secondary" size="sm" onClick={() => setShowPreview(!showPreview)}>
                   {showPreview ? 'Ausblenden' : 'Anzeigen'}
                 </Button>
@@ -139,13 +182,20 @@ export function EmailTemplateEditor({ template, onSave, onClose }: EmailTemplate
               {showPreview && (
                 <>
                   {/* Preview Values */}
-                  <div className="bg-gray-50 p-4 rounded-lg space-y-2">
-                    <div className="text-sm font-medium text-gray-700 mb-2">Testwerte:</div>
+                  <div
+                    className={clsx(
+                      'p-4 rounded-lg space-y-2 border',
+                      isDark ? 'bg-slate-900/50 border-slate-600' : 'bg-gray-50 border-transparent',
+                    )}
+                  >
+                    <div className={clsx('text-sm font-medium mb-2', isDark ? 'text-slate-200' : 'text-gray-700')}>
+                      Testwerte:
+                    </div>
                     {template.availablePlaceholders.map((p) => {
                       const key = p.replace(/\{\{|\}\}/g, '');
                       return (
                         <div key={p} className="flex items-center gap-2">
-                          <span className="text-xs text-gray-500 font-mono w-32 truncate">
+                          <span className={clsx('text-xs font-mono w-32 truncate', isDark ? 'text-slate-400' : 'text-gray-500')}>
                             {p}
                           </span>
                           <input
@@ -155,7 +205,7 @@ export function EmailTemplateEditor({ template, onSave, onClose }: EmailTemplate
                               setPreviewValues((prev) => ({ ...prev, [key]: e.target.value }))
                             }
                             placeholder={`Wert für ${key}`}
-                            className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded"
+                            className={clsx(fieldClass, 'flex-1 py-1 text-sm')}
                           />
                         </div>
                       );
@@ -167,13 +217,23 @@ export function EmailTemplateEditor({ template, onSave, onClose }: EmailTemplate
 
                   {/* Rendered Preview */}
                   {preview && (
-                    <div className="border border-gray-200 rounded-lg overflow-hidden">
-                      <div className="bg-gray-100 px-4 py-2 border-b border-gray-200">
-                        <div className="text-sm">
-                          <span className="font-medium">Betreff:</span> {preview.subject}
-                        </div>
+                    <div
+                      className={clsx(
+                        'rounded-lg overflow-hidden border',
+                        isDark ? 'border-slate-600' : 'border-gray-200',
+                      )}
+                    >
+                      <div
+                        className={clsx(
+                          'px-4 py-2 border-b text-sm',
+                          isDark
+                            ? 'bg-slate-800 border-slate-600 text-slate-200'
+                            : 'bg-gray-100 border-gray-200 text-gray-900',
+                        )}
+                      >
+                        <span className="font-medium">Betreff:</span> {preview.subject}
                       </div>
-                      <div className="p-4 bg-white">
+                      <div className={clsx('p-4', isDark ? 'bg-slate-950/80 text-slate-100' : 'bg-white text-gray-900')}>
                         <pre className="text-sm whitespace-pre-wrap font-sans">{preview.body}</pre>
                       </div>
                     </div>
@@ -185,7 +245,7 @@ export function EmailTemplateEditor({ template, onSave, onClose }: EmailTemplate
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-gray-200 flex justify-end gap-3 flex-shrink-0">
+        <div className={clsx('p-6 border-t flex justify-end gap-3 flex-shrink-0', isDark ? 'border-slate-600' : 'border-gray-200')}>
           <Button variant="secondary" onClick={onClose} disabled={saving}>
             Abbrechen
           </Button>
@@ -193,7 +253,7 @@ export function EmailTemplateEditor({ template, onSave, onClose }: EmailTemplate
             {saving ? 'Speichern...' : 'Speichern'}
           </Button>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

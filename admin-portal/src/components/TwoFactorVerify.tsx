@@ -2,16 +2,25 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Button, Card } from './ui';
 
+type TwoFactorMode = 'totp' | 'backup';
+
 export function TwoFactorVerify() {
   const { verify2FACode, logout, isLoading, user } = useAuth();
+  const [mode, setMode] = useState<TwoFactorMode>('totp');
   const [code, setCode] = useState(['', '', '', '', '', '']);
+  const [backupCode, setBackupCode] = useState('');
   const [error, setError] = useState('');
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const backupInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Focus first input on mount
+  // Focus first relevant input on mount / mode switch
   useEffect(() => {
-    inputRefs.current[0]?.focus();
-  }, []);
+    if (mode === 'totp') {
+      inputRefs.current[0]?.focus();
+    } else {
+      backupInputRef.current?.focus();
+    }
+  }, [mode]);
 
   const handleChange = (index: number, value: string) => {
     // Only allow digits
@@ -54,18 +63,34 @@ export function TwoFactorVerify() {
     e.preventDefault();
     setError('');
 
-    const fullCode = code.join('');
-    if (fullCode.length !== 6) {
-      setError('Bitte geben Sie den vollständigen 6-stelligen Code ein');
-      return;
+    let payload: string;
+    if (mode === 'totp') {
+      const fullCode = code.join('');
+      if (fullCode.length !== 6) {
+        setError('Bitte geben Sie den vollständigen 6-stelligen Code ein');
+        return;
+      }
+      payload = fullCode;
+    } else {
+      const normalized = backupCode.trim().toUpperCase();
+      if (normalized.length !== 8 || !/^[A-Z0-9]{8}$/.test(normalized)) {
+        setError('Backup-Code: genau 8 Zeichen (Buchstaben und Ziffern)');
+        return;
+      }
+      payload = normalized;
     }
 
     try {
-      await verify2FACode(fullCode);
+      await verify2FACode(payload);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ungültiger Code');
-      setCode(['', '', '', '', '', '']);
-      inputRefs.current[0]?.focus();
+      if (mode === 'totp') {
+        setCode(['', '', '', '', '', '']);
+        inputRefs.current[0]?.focus();
+      } else {
+        setBackupCode('');
+        backupInputRef.current?.focus();
+      }
     }
   };
 
@@ -96,15 +121,35 @@ export function TwoFactorVerify() {
               </svg>
             </div>
             <h2 className="text-lg font-semibold text-gray-900">
-              Code eingeben
+              {mode === 'totp' ? 'Code eingeben' : 'Backup-Code eingeben'}
             </h2>
             <p className="text-gray-500 text-sm mt-1">
-              Öffnen Sie Ihre Authenticator-App und geben Sie den 6-stelligen Code ein
+              {mode === 'totp'
+                ? 'Öffnen Sie Ihre Authenticator-App und geben Sie den 6-stelligen Code ein.'
+                : 'Geben Sie einen Ihrer 8-stelligen Einmal-Backup-Codes ein (Großbuchstaben und Ziffern).'}
             </p>
           </div>
 
+          <div className="flex justify-center gap-2 mb-4 text-sm">
+            <button
+              type="button"
+              className={mode === 'totp' ? 'font-semibold text-fin1-primary' : 'text-gray-500 hover:text-gray-700'}
+              onClick={() => { setMode('totp'); setError(''); }}
+            >
+              Authenticator (6 Ziffern)
+            </button>
+            <span className="text-gray-300">|</span>
+            <button
+              type="button"
+              className={mode === 'backup' ? 'font-semibold text-fin1-primary' : 'text-gray-500 hover:text-gray-700'}
+              onClick={() => { setMode('backup'); setError(''); }}
+            >
+              Backup-Code (8 Zeichen)
+            </button>
+          </div>
+
           <form onSubmit={handleSubmit}>
-            {/* Code Input */}
+            {mode === 'totp' ? (
             <div className="flex justify-center gap-2 mb-6">
               {code.map((digit, index) => (
                 <input
@@ -120,6 +165,27 @@ export function TwoFactorVerify() {
                 />
               ))}
             </div>
+            ) : (
+            <div className="mb-6">
+              <input
+                ref={backupInputRef}
+                type="text"
+                inputMode="text"
+                autoCapitalize="characters"
+                autoCorrect="off"
+                spellCheck={false}
+                maxLength={8}
+                value={backupCode}
+                onChange={(e) => {
+                  const v = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
+                  setBackupCode(v);
+                }}
+                className="w-full h-14 text-center text-xl font-mono font-semibold tracking-widest border-2 border-gray-200 rounded-lg focus:border-fin1-primary focus:outline-none transition-colors"
+                placeholder="XXXXXXXX"
+                aria-label="Backup-Code"
+              />
+            </div>
+            )}
 
             {error && (
               <div className="p-3 bg-red-50 border border-red-200 rounded-lg mb-4">
@@ -133,7 +199,7 @@ export function TwoFactorVerify() {
                 className="w-full"
                 size="lg"
                 loading={isLoading}
-                disabled={code.some(d => !d)}
+                disabled={mode === 'totp' ? code.some(d => !d) : backupCode.length !== 8}
               >
                 Verifizieren
               </Button>

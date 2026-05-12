@@ -12,6 +12,28 @@ import {
 
 // Mock fetch is set up in test/setup.ts
 
+/** Minimal `Response` compatible with `parseRequest` (uses `response.text()`, not `json()`). */
+function mockParseFetchResponse(
+  body: unknown,
+  options: { ok?: boolean; status?: number } = {},
+): Response {
+  const ok = options.ok !== false;
+  const status = options.status ?? (ok ? 200 : 400);
+  const rawText =
+    body === undefined || body === null
+      ? ''
+      : typeof body === 'string'
+        ? body
+        : JSON.stringify(body);
+
+  return {
+    ok,
+    status,
+    text: () => Promise.resolve(rawText),
+    json: () => Promise.resolve(rawText ? (JSON.parse(rawText) as unknown) : {}),
+  } as unknown as Response;
+}
+
 describe('Parse API', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -26,10 +48,7 @@ describe('Parse API', () => {
         sessionToken: 'session123'
       };
 
-      vi.mocked(global.fetch).mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockUser),
-      } as Response);
+      vi.mocked(global.fetch).mockResolvedValueOnce(mockParseFetchResponse(mockUser));
 
       const result = await login('test@test.com', 'password123');
 
@@ -51,10 +70,7 @@ describe('Parse API', () => {
     });
 
     it('normalizes email to lowercase and trims', async () => {
-      vi.mocked(global.fetch).mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ sessionToken: 'token' }),
-      } as Response);
+      vi.mocked(global.fetch).mockResolvedValueOnce(mockParseFetchResponse({ sessionToken: 'token' }));
 
       await login('  TEST@Test.COM  ', 'password');
 
@@ -75,10 +91,7 @@ describe('Parse API', () => {
         sessionToken: 'session123'
       };
 
-      vi.mocked(global.fetch).mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockUser),
-      } as Response);
+      vi.mocked(global.fetch).mockResolvedValueOnce(mockParseFetchResponse(mockUser));
 
       await login('test@test.com', 'password');
 
@@ -87,10 +100,9 @@ describe('Parse API', () => {
     });
 
     it('throws error on failed login', async () => {
-      vi.mocked(global.fetch).mockResolvedValueOnce({
-        ok: false,
-        json: () => Promise.resolve({ error: 'Invalid credentials' }),
-      } as Response);
+      vi.mocked(global.fetch).mockResolvedValueOnce(
+        mockParseFetchResponse({ error: 'Invalid credentials' }, { ok: false, status: 401 }),
+      );
 
       await expect(login('test@test.com', 'wrong')).rejects.toThrow('Invalid credentials');
     });
@@ -99,10 +111,7 @@ describe('Parse API', () => {
   describe('logout', () => {
     it('calls logout endpoint and clears session', async () => {
       vi.mocked(localStorage.getItem).mockReturnValueOnce('session123');
-      vi.mocked(global.fetch).mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({}),
-      } as Response);
+      vi.mocked(global.fetch).mockResolvedValueOnce(mockParseFetchResponse({}));
 
       await logout();
 
@@ -170,10 +179,7 @@ describe('Parse API', () => {
     it('validates session and returns user', async () => {
       const mockUser = { objectId: 'user123', email: 'test@test.com' };
       vi.mocked(localStorage.getItem).mockReturnValueOnce('session123');
-      vi.mocked(global.fetch).mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockUser),
-      } as Response);
+      vi.mocked(global.fetch).mockResolvedValueOnce(mockParseFetchResponse(mockUser));
 
       const result = await validateSession();
 
@@ -190,10 +196,9 @@ describe('Parse API', () => {
 
     it('clears session on validation failure', async () => {
       vi.mocked(localStorage.getItem).mockReturnValueOnce('invalid-session');
-      vi.mocked(global.fetch).mockResolvedValueOnce({
-        ok: false,
-        json: () => Promise.resolve({ error: 'Invalid session' }),
-      } as Response);
+      vi.mocked(global.fetch).mockResolvedValueOnce(
+        mockParseFetchResponse({ error: 'Invalid session' }, { ok: false, status: 401 }),
+      );
 
       const result = await validateSession();
 
@@ -205,10 +210,7 @@ describe('Parse API', () => {
   describe('cloudFunction', () => {
     it('calls cloud function endpoint', async () => {
       vi.mocked(localStorage.getItem).mockReturnValueOnce('session123');
-      vi.mocked(global.fetch).mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ result: { data: 'test' } }),
-      } as Response);
+      vi.mocked(global.fetch).mockResolvedValueOnce(mockParseFetchResponse({ result: { data: 'test' } }));
 
       const result = await cloudFunction<{ data: string }>('testFunction', { param: 'value' });
 
@@ -217,17 +219,58 @@ describe('Parse API', () => {
         expect.objectContaining({
           method: 'POST',
           body: JSON.stringify({ param: 'value' }),
-        })
+        }),
       );
       expect(result).toEqual({ data: 'test' });
     });
 
+    it('sends listSortOrder alongside sortOrder for server-side sort direction', async () => {
+      vi.mocked(localStorage.getItem).mockReturnValueOnce('session123');
+      vi.mocked(global.fetch).mockResolvedValueOnce(mockParseFetchResponse({ result: { items: [] } }));
+
+      await cloudFunction('getTickets', { sortBy: 'createdAt', sortOrder: 'asc' });
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/parse/functions/getTickets',
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({
+            sortBy: 'createdAt',
+            sortOrder: 'asc',
+            listSortOrder: 'asc',
+          }),
+        }),
+      );
+    });
+
+    it('does not rewrite numeric sortOrder when sortBy is absent (FAQ CRUD)', async () => {
+      vi.mocked(localStorage.getItem).mockReturnValueOnce('session123');
+      vi.mocked(global.fetch).mockResolvedValueOnce(mockParseFetchResponse({ result: { objectId: 'x' } }));
+
+      await cloudFunction('createFAQ', {
+        question: 'Q',
+        answer: 'A',
+        categoryId: 'cat1',
+        sortOrder: 100,
+      });
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/parse/functions/createFAQ',
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({
+            question: 'Q',
+            answer: 'A',
+            categoryId: 'cat1',
+            sortOrder: 100,
+          }),
+        }),
+      );
+    });
+
     it('handles cloud function without params', async () => {
       vi.mocked(localStorage.getItem).mockReturnValueOnce('session123');
-      vi.mocked(global.fetch).mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ result: [] }),
-      } as Response);
+      vi.mocked(global.fetch).mockResolvedValueOnce(mockParseFetchResponse({ result: [] }));
 
       await cloudFunction('listItems');
 
@@ -243,10 +286,7 @@ describe('Parse API', () => {
   describe('2FA functions', () => {
     it('verify2FA calls correct endpoint', async () => {
       vi.mocked(localStorage.getItem).mockReturnValueOnce('session123');
-      vi.mocked(global.fetch).mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ verified: true }),
-      } as Response);
+      vi.mocked(global.fetch).mockResolvedValueOnce(mockParseFetchResponse({ verified: true }));
 
       const result = await verify2FA('123456');
 
@@ -261,13 +301,12 @@ describe('Parse API', () => {
 
     it('setup2FA returns secret and QR code', async () => {
       vi.mocked(localStorage.getItem).mockReturnValueOnce('session123');
-      vi.mocked(global.fetch).mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({
+      vi.mocked(global.fetch).mockResolvedValueOnce(
+        mockParseFetchResponse({
           secret: 'ABCD1234',
-          qrCodeUrl: 'data:image/png;base64,...'
+          qrCodeUrl: 'data:image/png;base64,...',
         }),
-      } as Response);
+      );
 
       const result = await setup2FA();
 
@@ -277,13 +316,12 @@ describe('Parse API', () => {
 
     it('enable2FA returns backup codes', async () => {
       vi.mocked(localStorage.getItem).mockReturnValueOnce('session123');
-      vi.mocked(global.fetch).mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({
+      vi.mocked(global.fetch).mockResolvedValueOnce(
+        mockParseFetchResponse({
           success: true,
-          backupCodes: ['code1', 'code2', 'code3']
+          backupCodes: ['code1', 'code2', 'code3'],
         }),
-      } as Response);
+      );
 
       const result = await enable2FA('123456');
 

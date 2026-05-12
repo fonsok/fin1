@@ -1,8 +1,9 @@
 import React from 'react';
 import clsx from 'clsx';
+import { useTheme } from '../../context/ThemeContext';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'danger' | 'success' | 'ghost';
+  variant?: 'primary' | 'secondary' | 'danger' | 'success' | 'warning' | 'ghost';
   size?: 'sm' | 'md' | 'lg';
   loading?: boolean;
   icon?: React.ReactNode;
@@ -18,15 +19,26 @@ export function Button({
   disabled,
   ...props
 }: ButtonProps) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const baseStyles = 'inline-flex items-center justify-center font-medium rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
 
   const variants = {
     primary: 'bg-fin1-primary text-white hover:bg-fin1-secondary focus:ring-fin1-primary',
-    secondary: 'bg-white text-fin1-primary border border-fin1-primary hover:bg-fin1-light focus:ring-fin1-primary',
-    danger: 'bg-fin1-danger text-white hover:bg-red-600 focus:ring-fin1-danger',
+    secondary: isDark
+      ? 'bg-slate-700 text-slate-100 border border-slate-500 hover:bg-slate-600 focus:ring-fin1-primary'
+      : 'bg-white text-fin1-primary border border-fin1-primary hover:bg-fin1-light focus:ring-fin1-primary',
+    danger: isDark
+      ? 'bg-red-600/25 text-red-100 border border-red-500/35 hover:bg-red-600/38 focus:ring-red-500/40'
+      : 'bg-red-500/14 text-red-800 border border-red-400/45 hover:bg-red-500/22 focus:ring-red-400/80',
     success: 'bg-fin1-success text-white hover:bg-emerald-600 focus:ring-fin1-success',
-    ghost: 'bg-transparent text-fin1-primary hover:bg-fin1-light focus:ring-fin1-primary',
+    warning: 'bg-amber-500 text-white hover:bg-amber-600 focus:ring-amber-500',
+    ghost: isDark
+      ? 'bg-transparent text-slate-200 hover:bg-slate-700/80 focus:ring-fin1-primary'
+      : 'bg-transparent text-fin1-primary hover:bg-fin1-light focus:ring-fin1-primary',
   };
+
+  const focusOffset = isDark ? 'focus:ring-offset-slate-800' : 'focus:ring-offset-white';
 
   const sizes = {
     sm: 'px-3 py-1.5 text-sm',
@@ -36,7 +48,7 @@ export function Button({
 
   return (
     <button
-      className={clsx(baseStyles, variants[variant], sizes[size], className)}
+      className={clsx(baseStyles, focusOffset, variants[variant], sizes[size], className)}
       disabled={disabled || loading}
       {...props}
     >

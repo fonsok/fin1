@@ -1,11 +1,15 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import clsx from 'clsx';
 import { cloudFunction } from '../../api/admin';
+import { nextSortState, type SortOrder } from '../../components/table/SortableTh';
+import { PaginationBar } from '../../components/ui';
 import { StatCard } from './components/StatCard';
 import { OverviewTab } from './components/OverviewTab';
 import { LoginsTab } from './components/LoginsTab';
 import { SessionsTab } from './components/SessionsTab';
 import { AlertsTab } from './components/AlertsTab';
+import { useTheme } from '../../context/ThemeContext';
 import { mockStats, mockFailedLogins, mockSessions, mockAlerts } from './mockData';
 import type { SecurityStats, FailedLogin, ActiveSession, SecurityAlert, TabType } from './types';
 
@@ -18,7 +22,51 @@ const TABS = [
 
 export function SecurityDashboardPage(): JSX.Element {
   const [selectedTab, setSelectedTab] = useState<TabType>('overview');
+  const [loginsPage, setLoginsPage] = useState(0);
+  const [sessionsPage, setSessionsPage] = useState(0);
+  const [alertsPage, setAlertsPage] = useState(0);
+  const [loginsPageSize, setLoginsPageSize] = useState(50);
+  const [sessionsPageSize, setSessionsPageSize] = useState(50);
+  const [alertsPageSize, setAlertsPageSize] = useState(50);
+  const [loginsSortBy, setLoginsSortBy] = useState('createdAt');
+  const [loginsSortOrder, setLoginsSortOrder] = useState<SortOrder>('desc');
+  const [sessionsSortBy, setSessionsSortBy] = useState('createdAt');
+  const [sessionsSortOrder, setSessionsSortOrder] = useState<SortOrder>('desc');
+  const [alertsSortBy, setAlertsSortBy] = useState('occurredAt');
+  const [alertsSortOrder, setAlertsSortOrder] = useState<SortOrder>('desc');
   const queryClient = useQueryClient();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
+  const onLoginsSort = useCallback(
+    (field: string) => {
+      const next = nextSortState(field, loginsSortBy, loginsSortOrder);
+      setLoginsSortBy(next.sortBy);
+      setLoginsSortOrder(next.sortOrder);
+      setLoginsPage(0);
+    },
+    [loginsSortBy, loginsSortOrder],
+  );
+
+  const onSessionsSort = useCallback(
+    (field: string) => {
+      const next = nextSortState(field, sessionsSortBy, sessionsSortOrder);
+      setSessionsSortBy(next.sortBy);
+      setSessionsSortOrder(next.sortOrder);
+      setSessionsPage(0);
+    },
+    [sessionsSortBy, sessionsSortOrder],
+  );
+
+  const onAlertsSort = useCallback(
+    (field: string) => {
+      const next = nextSortState(field, alertsSortBy, alertsSortOrder);
+      setAlertsSortBy(next.sortBy);
+      setAlertsSortOrder(next.sortOrder);
+      setAlertsPage(0);
+    },
+    [alertsSortBy, alertsSortOrder],
+  );
 
   const { data: stats } = useQuery({
     queryKey: ['securityDashboard'],
@@ -31,47 +79,68 @@ export function SecurityDashboardPage(): JSX.Element {
       }
     },
     initialData: mockStats,
+    initialDataUpdatedAt: 0,
+    staleTime: 30_000,
   });
 
-  const { data: failedLogins } = useQuery({
-    queryKey: ['failedLogins'],
+  const { data: failedLoginsData } = useQuery({
+    queryKey: ['failedLogins', loginsPage, loginsPageSize, loginsSortBy, loginsSortOrder],
     queryFn: async () => {
       try {
-        const result = await cloudFunction<{ logins: FailedLogin[] }>('getFailedLoginAttempts', {});
-        return result.logins;
+        return await cloudFunction<{ logins: FailedLogin[]; total: number }>('getFailedLoginAttempts', {
+          limit: loginsPageSize,
+          skip: loginsPage * loginsPageSize,
+          sortBy: loginsSortBy,
+          sortOrder: loginsSortOrder,
+        });
       } catch {
-        return mockFailedLogins;
+        return { logins: mockFailedLogins, total: mockFailedLogins.length };
       }
     },
-    initialData: mockFailedLogins,
+    initialData: { logins: mockFailedLogins, total: mockFailedLogins.length },
+    initialDataUpdatedAt: 0,
+    staleTime: 30_000,
     enabled: selectedTab === 'logins' || selectedTab === 'overview',
   });
 
-  const { data: sessions } = useQuery({
-    queryKey: ['activeSessions'],
+  const { data: sessionsData } = useQuery({
+    queryKey: ['activeSessions', sessionsPage, sessionsPageSize, sessionsSortBy, sessionsSortOrder],
     queryFn: async () => {
       try {
-        const result = await cloudFunction<{ sessions: ActiveSession[] }>('getActiveSessions', {});
-        return result.sessions;
+        return await cloudFunction<{ sessions: ActiveSession[]; total: number }>('getActiveSessions', {
+          limit: sessionsPageSize,
+          skip: sessionsPage * sessionsPageSize,
+          sortBy: sessionsSortBy,
+          sortOrder: sessionsSortOrder,
+        });
       } catch {
-        return mockSessions;
+        return { sessions: mockSessions, total: mockSessions.length };
       }
     },
-    initialData: mockSessions,
+    initialData: { sessions: mockSessions, total: mockSessions.length },
+    initialDataUpdatedAt: 0,
+    staleTime: 30_000,
     enabled: selectedTab === 'sessions' || selectedTab === 'overview',
   });
 
-  const { data: alerts } = useQuery({
-    queryKey: ['securityAlerts'],
+  const { data: alertsData } = useQuery({
+    queryKey: ['securityAlerts', alertsPage, alertsPageSize, alertsSortBy, alertsSortOrder],
     queryFn: async () => {
       try {
-        const result = await cloudFunction<{ alerts: SecurityAlert[] }>('getSecurityAlerts', {});
-        return result.alerts;
+        return await cloudFunction<{ alerts: SecurityAlert[]; total: number }>('getSecurityAlerts', {
+          limit: alertsPageSize,
+          skip: alertsPage * alertsPageSize,
+          sortBy: alertsSortBy,
+          sortOrder: alertsSortOrder,
+        });
       } catch {
-        return mockAlerts;
+        return { alerts: mockAlerts, total: mockAlerts.length };
       }
     },
-    initialData: mockAlerts,
+    initialData: { alerts: mockAlerts, total: mockAlerts.length },
+    initialDataUpdatedAt: 0,
+    staleTime: 30_000,
+    enabled: selectedTab === 'alerts' || selectedTab === 'overview',
   });
 
   const terminateSessionMutation = useMutation({
@@ -81,14 +150,20 @@ export function SecurityDashboardPage(): JSX.Element {
     },
   });
 
+  const failedLogins = failedLoginsData?.logins ?? [];
+  const failedLoginsTotal = failedLoginsData?.total ?? 0;
+  const sessions = sessionsData?.sessions ?? [];
+  const sessionsTotal = sessionsData?.total ?? 0;
+  const alerts = alertsData?.alerts ?? [];
+  const alertsTotal = alertsData?.total ?? 0;
   const unreviewedAlerts = alerts.filter((a) => !a.reviewed).length;
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Sicherheit</h1>
-        <p className="text-gray-500 mt-1">
+        <h1 className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>Sicherheit</h1>
+        <p className={clsx('mt-1', isDark ? 'text-slate-400' : 'text-gray-500')}>
           Überwachung von Login-Aktivitäten, Sessions und Sicherheitswarnungen
         </p>
       </div>
@@ -128,17 +203,17 @@ export function SecurityDashboardPage(): JSX.Element {
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-gray-200">
+      <div className={clsx('border-b', isDark ? 'border-slate-600' : 'border-gray-200')}>
         <nav className="flex gap-4">
           {TABS.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setSelectedTab(tab.id)}
-              className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors ${
-                selectedTab === tab.id
-                  ? 'border-fin1-primary text-fin1-primary'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
+              className={clsx('pb-3 px-1 text-sm font-medium border-b-2 transition-colors', {
+                'border-fin1-primary text-fin1-primary': selectedTab === tab.id,
+                'border-transparent text-slate-400 hover:text-slate-200': selectedTab !== tab.id && isDark,
+                'border-transparent text-gray-500 hover:text-gray-700': selectedTab !== tab.id && !isDark,
+              })}
             >
               {tab.label}
               {tab.id === 'alerts' && unreviewedAlerts > 0 && (
@@ -153,15 +228,105 @@ export function SecurityDashboardPage(): JSX.Element {
 
       {/* Tab Content */}
       {selectedTab === 'overview' && <OverviewTab failedLogins={failedLogins} alerts={alerts} />}
-      {selectedTab === 'logins' && <LoginsTab failedLogins={failedLogins} />}
-      {selectedTab === 'sessions' && (
-        <SessionsTab
-          sessions={sessions}
-          onTerminate={(id) => terminateSessionMutation.mutate(id)}
-          isTerminating={terminateSessionMutation.isPending}
-        />
+      {selectedTab === 'logins' && (
+        <>
+          <div className="flex justify-end">
+            <select
+              value={loginsPageSize}
+              onChange={(e) => { setLoginsPageSize(Number(e.target.value)); setLoginsPage(0); }}
+              className={clsx(
+                'px-3 py-1.5 text-sm border rounded-lg',
+                isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+              )}
+            >
+              <option value={50}>50 / Seite</option>
+              <option value={100}>100 / Seite</option>
+              <option value={250}>250 / Seite</option>
+            </select>
+          </div>
+          <LoginsTab
+            failedLogins={failedLogins}
+            sortBy={loginsSortBy}
+            sortOrder={loginsSortOrder}
+            onSort={onLoginsSort}
+          />
+          <PaginationBar
+            page={loginsPage}
+            pageSize={loginsPageSize}
+            total={failedLoginsTotal}
+            itemLabel="Einträgen"
+            isDark={isDark}
+            onPageChange={setLoginsPage}
+          />
+        </>
       )}
-      {selectedTab === 'alerts' && <AlertsTab alerts={alerts} />}
+      {selectedTab === 'sessions' && (
+        <>
+          <div className="flex justify-end">
+            <select
+              value={sessionsPageSize}
+              onChange={(e) => { setSessionsPageSize(Number(e.target.value)); setSessionsPage(0); }}
+              className={clsx(
+                'px-3 py-1.5 text-sm border rounded-lg',
+                isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+              )}
+            >
+              <option value={50}>50 / Seite</option>
+              <option value={100}>100 / Seite</option>
+              <option value={250}>250 / Seite</option>
+            </select>
+          </div>
+          <SessionsTab
+            sessions={sessions}
+            onTerminate={(id) => terminateSessionMutation.mutate(id)}
+            isTerminating={terminateSessionMutation.isPending}
+            sortBy={sessionsSortBy}
+            sortOrder={sessionsSortOrder}
+            onSort={onSessionsSort}
+          />
+          <PaginationBar
+            page={sessionsPage}
+            pageSize={sessionsPageSize}
+            total={sessionsTotal}
+            itemLabel="Sessions"
+            isDark={isDark}
+            onPageChange={setSessionsPage}
+          />
+        </>
+      )}
+      {selectedTab === 'alerts' && (
+        <>
+          <div className="flex justify-end">
+            <select
+              value={alertsPageSize}
+              onChange={(e) => { setAlertsPageSize(Number(e.target.value)); setAlertsPage(0); }}
+              className={clsx(
+                'px-3 py-1.5 text-sm border rounded-lg',
+                isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+              )}
+            >
+              <option value={50}>50 / Seite</option>
+              <option value={100}>100 / Seite</option>
+              <option value={250}>250 / Seite</option>
+            </select>
+          </div>
+          <AlertsTab
+            alerts={alerts}
+            sortBy={alertsSortBy}
+            sortOrder={alertsSortOrder}
+            onSort={onAlertsSort}
+            isDark={isDark}
+          />
+          <PaginationBar
+            page={alertsPage}
+            pageSize={alertsPageSize}
+            total={alertsTotal}
+            itemLabel="Warnungen"
+            isDark={isDark}
+            onPageChange={setAlertsPage}
+          />
+        </>
+      )}
     </div>
   );
 }

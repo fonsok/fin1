@@ -1,6 +1,51 @@
 import { useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 
+/** Finance/Business-Admin: erweiterte Sidebar; diese Nav-IDs bleiben gesperrt. */
+const BUSINESS_ADMIN_SIDEBAR_DISABLED_IDS = new Set([
+  'system',
+  'security',
+  'onboarding',
+  'compliance',
+]);
+
+function isFinanceBusinessAdminRole(role: string | undefined): boolean {
+  return role === 'business_admin';
+}
+
+/** Sidebar / route gate: every entry is listed; `enabled` reflects Parse permissions. */
+export interface NavItem {
+  id: string;
+  label: string;
+  path: string;
+  icon: string;
+  enabled: boolean;
+}
+
+/**
+ * Map current route to the nav item that owns it (longest path wins). Used for active tab, titles, and gates.
+ */
+export function matchNavItemForPath(pathname: string, items: NavItem[]): NavItem | undefined {
+  const normalized =
+    pathname.length > 1 && pathname.endsWith('/') ? pathname.slice(0, -1) : pathname;
+  const path = normalized || '/';
+
+  if (path === '/') {
+    return items.find(i => i.id === 'dashboard');
+  }
+
+  const ordered = [...items]
+    .filter(i => i.path !== '/')
+    .sort((a, b) => b.path.length - a.path.length);
+
+  for (const item of ordered) {
+    if (path === item.path || path.startsWith(`${item.path}/`)) {
+      return item;
+    }
+  }
+  return undefined;
+}
+
 /**
  * Hook to check permissions for UI elements
  */
@@ -41,6 +86,9 @@ export function usePermissions() {
 
     // FAQs - visible to all admins and customer service
     canManageFAQs: user?.role === 'admin' || user?.role === 'customer_service' || hasPermission('manageTemplates'),
+
+    // Company KYB Review
+    canReviewCompanyKyb: hasPermission('reviewCompanyKyb'),
   }), [permissions, hasPermission, user?.role]);
 
   return {
@@ -54,138 +102,161 @@ export function usePermissions() {
 /**
  * Navigation items based on role
  */
-export function useNavigation() {
+export function useNavigation(): NavItem[] {
   const perms = usePermissions();
+  const { user } = useAuth();
 
-  const navItems = useMemo(() => {
-    // Admin navigation only (CSR users are redirected to separate portal)
-    const items = [
+  const navItems = useMemo((): NavItem[] => {
+    const financeAdminSidebarUnlocked = isFinanceBusinessAdminRole(user?.role);
+
+    /** Sidebar-Klick + Route-Gate: Finance-Admin alle Punkte außer fest definierte Sperren. */
+    const navEnabled = (itemId: string, allowedByPermission: boolean): boolean => {
+      if (financeAdminSidebarUnlocked) {
+        return !BUSINESS_ADMIN_SIDEBAR_DISABLED_IDS.has(itemId);
+      }
+      return allowedByPermission;
+    };
+
+    // Alle Einträge immer anzeigen (Transparenz); `enabled` steuert Klick & Seiteninhalt.
+    return [
       {
         id: 'dashboard',
         label: 'Dashboard',
         path: '/',
         icon: 'home',
-        visible: true, // Always visible for admins
+        enabled: navEnabled('dashboard', true),
       },
       {
         id: 'users',
         label: 'Benutzer',
         path: '/users',
         icon: 'users',
-        visible: perms.canViewUsers,
+        enabled: navEnabled('users', perms.canViewUsers),
       },
       {
         id: 'tickets',
         label: 'Tickets',
         path: '/tickets',
         icon: 'ticket',
-        visible: perms.canViewTickets,
+        enabled:
+          user?.role === 'admin'
+            ? false
+            : navEnabled('tickets', perms.canViewTickets),
       },
       {
         id: 'onboarding',
         label: 'Onboarding',
         path: '/onboarding',
         icon: 'user-plus',
-        visible: true, // Alle Admin-Portal-Nutzer (Rolle bereits in ProtectedRoute geprüft)
+        enabled: navEnabled('onboarding', true),
       },
       {
         id: 'compliance',
         label: 'Compliance',
         path: '/compliance',
         icon: 'shield-check',
-        visible: perms.canViewCompliance,
+        enabled: navEnabled('compliance', perms.canViewCompliance),
       },
       {
         id: 'finance',
         label: 'Finanzen',
         path: '/finance',
         icon: 'currency-euro',
-        visible: perms.canViewFinancials,
+        enabled: navEnabled('finance', perms.canViewFinancials),
       },
       {
         id: 'security',
         label: 'Sicherheit',
         path: '/security',
         icon: 'lock-closed',
-        visible: perms.canViewSecurity,
+        enabled: navEnabled('security', perms.canViewSecurity),
       },
       {
         id: 'approvals',
         label: 'Freigaben',
         path: '/approvals',
         icon: 'check-circle',
-        visible: perms.canApprove4Eyes,
+        enabled: navEnabled('approvals', perms.canApprove4Eyes),
+      },
+      {
+        id: 'kyb-review',
+        label: 'KYB-Status',
+        path: '/kyb-review',
+        icon: 'building-office',
+        enabled: navEnabled('kyb-review', perms.canReviewCompanyKyb),
       },
       {
         id: 'audit',
         label: 'Audit-Logs',
         path: '/audit',
         icon: 'document-text',
-        visible: perms.canViewAuditLogs,
+        enabled: navEnabled('audit', perms.canViewAuditLogs),
       },
-      // CSR Tools
       {
         id: 'templates',
         label: 'CSR Templates',
         path: '/templates',
         icon: 'document-text',
-        visible: perms.canManageTemplates,
+        enabled: navEnabled('templates', perms.canManageTemplates),
       },
       {
         id: 'faqs',
         label: 'Hilfe & Anleitung',
         path: '/faqs',
         icon: 'question-mark-circle',
-        visible: perms.canManageFAQs,
+        enabled: navEnabled('faqs', perms.canManageFAQs),
       },
       {
         id: 'terms',
         label: 'AGB & Rechtstexte',
         path: '/terms',
         icon: 'document-text',
-        visible: perms.canManageFAQs,
+        enabled: navEnabled('terms', perms.canManageFAQs),
       },
-      // Berichte & Buchhaltung
       {
         id: 'reports',
         label: 'Summary Report',
         path: '/reports',
         icon: 'chart-bar',
-        visible: perms.canViewFinancials,
+        enabled: navEnabled('reports', perms.canViewFinancials),
       },
       {
-        id: 'bank-ledger',
-        label: 'Bank Contra Ledger',
-        path: '/bank-ledger',
-        icon: 'building-library',
-        visible: perms.canViewFinancials,
+        id: 'document-search',
+        label: 'Beleg-Suche',
+        path: '/documents',
+        icon: 'magnifying-glass',
+        enabled: navEnabled('document-search', perms.canViewFinancials),
       },
-      // Technische Administration
+      {
+        id: 'app-ledger',
+        label: 'App Ledger',
+        path: '/app-ledger',
+        icon: 'banknotes',
+        enabled: navEnabled('app-ledger', perms.canViewFinancials),
+      },
       {
         id: 'configuration',
         label: 'Konfiguration',
         path: '/configuration',
         icon: 'adjustments',
-        visible: perms.canViewConfiguration,
+        enabled: navEnabled('configuration', perms.canViewConfiguration),
       },
       {
         id: 'system',
         label: 'System-Status',
         path: '/system',
         icon: 'server',
-        visible: perms.canViewSystemHealth,
+        enabled: navEnabled('system', perms.canViewSystemHealth),
       },
       {
         id: 'settings',
         label: 'Einstellungen',
         path: '/settings',
         icon: 'cog',
-        visible: true, // Always visible for all admins
+        enabled: navEnabled('settings', true),
       },
     ];
-
-    return items.filter(item => item.visible);
-  }, [perms]);
+  }, [perms, user?.role]);
 
   return navItems;
 }

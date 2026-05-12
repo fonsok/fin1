@@ -9,6 +9,8 @@ import {
   getStatusColor,
   getRoleDisplay,
   getStatusDisplay,
+  getCsrSubRoleSidebarLabel,
+  getSidebarRoleSubtitle,
 } from './format';
 
 describe('formatDateTime', () => {
@@ -76,7 +78,7 @@ describe('formatRelative', () => {
 describe('formatCurrency', () => {
   it('formats positive numbers', () => {
     const result = formatCurrency(1234.56);
-    expect(result).toMatch(/1[\.,]?234/);
+    expect(result).toMatch(/1[.,]?234/);
     expect(result).toMatch(/€/);
   });
 
@@ -99,12 +101,12 @@ describe('formatCurrency', () => {
 describe('formatNumber', () => {
   it('formats integers', () => {
     const result = formatNumber(1234567);
-    expect(result).toMatch(/1[\.,]?234[\.,]?567/);
+    expect(result).toMatch(/1[.,]?234[.,]?567/);
   });
 
   it('formats decimals', () => {
     const result = formatNumber(1234.56);
-    expect(result).toMatch(/1[\.,]?234/);
+    expect(result).toMatch(/1[.,]?234/);
   });
 
   it('formats zero', () => {
@@ -204,6 +206,45 @@ describe('getRoleDisplay', () => {
 
   it('returns original for unknown role', () => {
     expect(getRoleDisplay('unknown_role')).toBe('unknown_role');
+  });
+});
+
+describe('getCsrSubRoleSidebarLabel', () => {
+  it('maps level1 and level_1 to CSR L1', () => {
+    expect(getCsrSubRoleSidebarLabel('level1')).toBe('CSR L1');
+    expect(getCsrSubRoleSidebarLabel('level_1')).toBe('CSR L1');
+  });
+
+  it('maps teamlead to Lead', () => {
+    expect(getCsrSubRoleSidebarLabel('teamlead')).toBe('Lead');
+  });
+
+  it('returns null for unknown subrole', () => {
+    expect(getCsrSubRoleSidebarLabel('unknown')).toBeNull();
+    expect(getCsrSubRoleSidebarLabel('')).toBeNull();
+    expect(getCsrSubRoleSidebarLabel(undefined)).toBeNull();
+  });
+});
+
+describe('getSidebarRoleSubtitle', () => {
+  it('uses CSR subrole for customer_service', () => {
+    expect(
+      getSidebarRoleSubtitle({ role: 'customer_service', csrSubRole: 'level1' }),
+    ).toBe('CSR L1');
+  });
+
+  it('falls back to csrRole when csrSubRole missing', () => {
+    expect(
+      getSidebarRoleSubtitle({ role: 'customer_service', csrRole: 'level2' }),
+    ).toBe('CSR L2');
+  });
+
+  it('shows CSR when customer_service without subrole', () => {
+    expect(getSidebarRoleSubtitle({ role: 'customer_service' })).toBe('CSR');
+  });
+
+  it('uses getRoleDisplay for non-CSR roles', () => {
+    expect(getSidebarRoleSubtitle({ role: 'admin' })).toBe('Administrator');
   });
 });
 

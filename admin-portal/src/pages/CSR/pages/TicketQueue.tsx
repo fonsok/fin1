@@ -1,15 +1,27 @@
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Card, Button, Badge } from '../../../components/ui';
-import { formatDateTime } from '../../../utils/format';
+import clsx from 'clsx';
+import { Card, Button, Badge, PaginationBar } from '../../../components/ui';
+import { useTheme } from '../../../context/ThemeContext';
+import { formatDateTime, formatNumber } from '../../../utils/format';
+import {
+  listRowStripeClasses,
+  tableBodyDivideClasses,
+  tableHeaderCellTextClasses,
+  tableTheadSurfaceClasses,
+} from '../../../utils/tableStriping';
 import { getSupportTickets, assignTicket, getAvailableAgents } from '../api';
 
 export function TicketQueuePage() {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
   const [selectedAgentId, setSelectedAgentId] = useState('');
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(25);
 
   const { data: tickets, isLoading } = useQuery({
     queryKey: ['csr-tickets-queue'],
@@ -31,9 +43,27 @@ export function TicketQueuePage() {
     },
   });
 
-  const unassignedTickets = (tickets || []).filter(
-    (t) => !t.assignedTo && t.status !== 'resolved' && t.status !== 'closed' && t.status !== 'archived'
+  const unassignedTickets = useMemo(
+    () =>
+      (tickets || []).filter(
+        (t) => !t.assignedTo && t.status !== 'resolved' && t.status !== 'closed' && t.status !== 'archived'
+      ),
+    [tickets]
   );
+
+  const serverTicketTotal = (tickets || []).length;
+  const queueTotal = unassignedTickets.length;
+  const queueTotalPages = Math.max(1, Math.ceil(queueTotal / pageSize));
+  const pagedQueueTickets = useMemo(
+    () => unassignedTickets.slice(page * pageSize, (page + 1) * pageSize),
+    [unassignedTickets, page, pageSize]
+  );
+
+  useEffect(() => {
+    if (page > 0 && page >= queueTotalPages) {
+      setPage(Math.max(0, queueTotalPages - 1));
+    }
+  }, [page, queueTotalPages]);
 
   const getPriorityVariant = (priority: string): 'success' | 'warning' | 'danger' | 'info' | 'neutral' => {
     switch (priority?.toLowerCase()) {
@@ -70,7 +100,7 @@ export function TicketQueuePage() {
         <Badge variant="warning">{unassignedTickets.length} unzugewiesen</Badge>
       </div>
 
-      <Card>
+      <Card padding="none">
         {unassignedTickets.length === 0 ? (
           <div className="text-center py-8">
             <svg
@@ -89,33 +119,90 @@ export function TicketQueuePage() {
             <p className="text-gray-500">Keine unzugewiesenen Tickets</p>
           </div>
         ) : (
+          <>
+          <div
+            className={clsx(
+              'flex flex-wrap items-center gap-3 justify-between border-b px-3 py-2',
+              isDark ? 'border-slate-600 bg-slate-900/40' : 'border-gray-200 bg-gray-50',
+            )}
+          >
+            <select
+              value={pageSize}
+              onChange={(e) => {
+                setPageSize(Number(e.target.value));
+                setPage(0);
+              }}
+              className={clsx(
+                'border rounded-lg px-3 py-2 text-sm',
+                isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+              )}
+            >
+              <option value={25}>25 / Seite</option>
+              <option value={50}>50 / Seite</option>
+              <option value={100}>100 / Seite</option>
+            </select>
+            <p className={clsx('text-sm text-right', isDark ? 'text-slate-400' : 'text-gray-500')}>
+              {formatNumber(queueTotal)} Treffer nach Filter · bis zu {formatNumber(serverTicketTotal)} aus Server (
+              {formatNumber(pageSize)} pro Seite, lokal)
+            </p>
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className={tableTheadSurfaceClasses(isDark)}>
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th
+                    className={clsx(
+                      'px-6 py-3 text-left text-xs font-medium uppercase tracking-wider',
+                      tableHeaderCellTextClasses(isDark),
+                    )}
+                  >
                     Ticket
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th
+                    className={clsx(
+                      'px-6 py-3 text-left text-xs font-medium uppercase tracking-wider',
+                      tableHeaderCellTextClasses(isDark),
+                    )}
+                  >
                     Betreff
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th
+                    className={clsx(
+                      'px-6 py-3 text-left text-xs font-medium uppercase tracking-wider',
+                      tableHeaderCellTextClasses(isDark),
+                    )}
+                  >
                     Priorität
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th
+                    className={clsx(
+                      'px-6 py-3 text-left text-xs font-medium uppercase tracking-wider',
+                      tableHeaderCellTextClasses(isDark),
+                    )}
+                  >
                     Kunde
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th
+                    className={clsx(
+                      'px-6 py-3 text-left text-xs font-medium uppercase tracking-wider',
+                      tableHeaderCellTextClasses(isDark),
+                    )}
+                  >
                     Erstellt
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th
+                    className={clsx(
+                      'px-6 py-3 text-left text-xs font-medium uppercase tracking-wider',
+                      tableHeaderCellTextClasses(isDark),
+                    )}
+                  >
                     Aktionen
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
-                {unassignedTickets.map((ticket) => (
-                  <tr key={ticket.objectId} className="hover:bg-gray-50">
+              <tbody className={tableBodyDivideClasses(isDark)}>
+                {pagedQueueTickets.map((ticket, index) => (
+                  <tr key={ticket.objectId} className={listRowStripeClasses(isDark, index)}>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="text-sm font-mono text-fin1-primary">
                         #{ticket.ticketNumber || ticket.objectId.slice(0, 8)}
@@ -124,7 +211,10 @@ export function TicketQueuePage() {
                     <td className="px-6 py-4">
                       <button
                         onClick={() => navigate(`/csr/tickets/${ticket.objectId}`)}
-                        className="text-sm text-gray-900 hover:text-fin1-primary hover:underline"
+                        className={clsx(
+                          'text-sm hover:text-fin1-primary hover:underline',
+                          isDark ? 'text-slate-100' : 'text-gray-900',
+                        )}
                       >
                         {ticket.subject}
                       </button>
@@ -134,10 +224,20 @@ export function TicketQueuePage() {
                         {getPriorityLabel(ticket.priority)}
                       </Badge>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td
+                      className={clsx(
+                        'px-6 py-4 whitespace-nowrap text-sm',
+                        isDark ? 'text-slate-400' : 'text-gray-500',
+                      )}
+                    >
                       {ticket.userEmail || ticket.userId}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td
+                      className={clsx(
+                        'px-6 py-4 whitespace-nowrap text-sm',
+                        isDark ? 'text-slate-400' : 'text-gray-500',
+                      )}
+                    >
                       {formatDateTime(ticket.createdAt)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -178,6 +278,15 @@ export function TicketQueuePage() {
               </tbody>
             </table>
           </div>
+            <PaginationBar
+              page={page}
+              pageSize={pageSize}
+              total={queueTotal}
+              itemLabel="Tickets"
+              isDark={isDark}
+              onPageChange={setPage}
+            />
+          </>
         )}
       </Card>
     </div>

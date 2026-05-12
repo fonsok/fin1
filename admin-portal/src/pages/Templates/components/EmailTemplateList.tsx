@@ -1,9 +1,12 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card } from '../../../components/ui/Card';
 import { Badge } from '../../../components/ui/Badge';
 import { Button } from '../../../components/ui/Button';
+import clsx from 'clsx';
+import { useTheme } from '../../../context/ThemeContext';
 import { EmailTemplateEditor } from './EmailTemplateEditor';
 import type { EmailTemplate } from '../types';
+import { sortByDisplayNameDe } from '../utils/templateDisplayOrder';
 
 interface EmailTemplateListProps {
   templates: EmailTemplate[];
@@ -11,7 +14,11 @@ interface EmailTemplateListProps {
 }
 
 export function EmailTemplateList({ templates, onRefresh }: EmailTemplateListProps) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const [editingTemplate, setEditingTemplate] = useState<EmailTemplate | null>(null);
+
+  const sortedTemplates = useMemo(() => sortByDisplayNameDe(templates), [templates]);
 
   if (templates.length === 0) {
     return (
@@ -26,7 +33,7 @@ export function EmailTemplateList({ templates, onRefresh }: EmailTemplateListPro
   return (
     <>
       <div className="grid gap-4 md:grid-cols-2">
-        {templates.map((template) => (
+        {sortedTemplates.map((template) => (
           <Card key={template.id} className="p-4 hover:shadow-md transition-shadow">
             <div className="flex items-start justify-between gap-4 mb-3">
               <div className="flex items-center gap-2">
@@ -41,18 +48,23 @@ export function EmailTemplateList({ templates, onRefresh }: EmailTemplateListPro
               </Badge>
             </div>
 
-            <div className="text-sm text-gray-600 mb-3">
-              <div className="font-medium text-gray-700 mb-1">Betreff:</div>
-              <div className="bg-gray-50 p-2 rounded text-sm">{template.subject}</div>
+              <div className={clsx('text-sm mb-3', isDark ? 'text-slate-200' : 'text-gray-600')}>
+                <div className={clsx('font-medium mb-1', isDark ? 'text-slate-100' : 'text-gray-700')}>Betreff:</div>
+                <div className={clsx('p-2 rounded text-sm', isDark ? 'bg-slate-900 border border-slate-600 text-slate-100' : 'bg-gray-50')}>
+                  {template.subject}
+                </div>
             </div>
 
-            <div className="text-sm text-gray-600 mb-3">
-              <div className="font-medium text-gray-700 mb-1">Platzhalter:</div>
+            <div className={clsx('text-sm mb-3', isDark ? 'text-slate-200' : 'text-gray-600')}>
+              <div className={clsx('font-medium mb-1', isDark ? 'text-slate-100' : 'text-gray-700')}>Platzhalter:</div>
               <div className="flex flex-wrap gap-1">
                 {template.availablePlaceholders.map((p) => (
                   <span
                     key={p}
-                    className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded font-mono"
+                    className={clsx(
+                      'text-xs px-2 py-0.5 rounded font-mono',
+                      isDark ? 'bg-slate-900 border border-slate-600 text-slate-100' : 'bg-blue-50 text-blue-600'
+                    )}
                   >
                     {p}
                   </span>

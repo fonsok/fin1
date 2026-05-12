@@ -2,9 +2,11 @@ import { format, formatDistanceToNow, parseISO, isValid } from 'date-fns';
 import { de } from 'date-fns/locale';
 
 /**
- * Safely parse a date value
+ * Safely parse a date value.
+ * Handles plain strings, Date instances, and Parse Server encoded dates
+ * (`{ __type: "Date", iso: "…" }`).
  */
-function safeParseDate(dateValue: string | Date | undefined | null): Date | null {
+function safeParseDate(dateValue: unknown): Date | null {
   if (!dateValue) return null;
 
   try {
@@ -13,13 +15,17 @@ function safeParseDate(dateValue: string | Date | undefined | null): Date | null
     if (dateValue instanceof Date) {
       date = dateValue;
     } else if (typeof dateValue === 'string') {
-      // Try parsing ISO string
       date = parseISO(dateValue);
-
-      // If invalid, try native Date constructor
       if (!isValid(date)) {
         date = new Date(dateValue);
       }
+    } else if (
+      typeof dateValue === 'object' &&
+      dateValue !== null &&
+      (dateValue as Record<string, unknown>).__type === 'Date' &&
+      typeof (dateValue as Record<string, unknown>).iso === 'string'
+    ) {
+      date = parseISO((dateValue as Record<string, string>).iso);
     } else {
       return null;
     }
@@ -33,7 +39,7 @@ function safeParseDate(dateValue: string | Date | undefined | null): Date | null
 /**
  * Format a date string to German locale
  */
-export function formatDate(dateString: string | Date | undefined | null): string {
+export function formatDate(dateString: unknown): string {
   const date = safeParseDate(dateString);
   if (!date) return '-';
 
@@ -47,7 +53,7 @@ export function formatDate(dateString: string | Date | undefined | null): string
 /**
  * Format a date with time
  */
-export function formatDateTime(dateString: string | Date | undefined | null): string {
+export function formatDateTime(dateString: unknown): string {
   const date = safeParseDate(dateString);
   if (!date) return '-';
 
@@ -61,7 +67,7 @@ export function formatDateTime(dateString: string | Date | undefined | null): st
 /**
  * Format relative time (e.g., "vor 5 Minuten")
  */
-export function formatRelative(dateString: string | Date | undefined | null): string {
+export function formatRelative(dateString: unknown): string {
   const date = safeParseDate(dateString);
   if (!date) return '-';
 
@@ -168,6 +174,53 @@ export function getRoleDisplay(role: string): string {
   };
 
   return roles[role] || role;
+}
+
+/**
+ * Maps `csrSubRole` (and legacy `csrRole`) from Parse to a short sidebar label.
+ * Accepts both seeded keys (`level1`, `fraud`, …) and legacy underscore forms (`level_1`, `fraud_analyst`, …).
+ */
+export function getCsrSubRoleSidebarLabel(csrSubRole?: string | null): string | null {
+  if (csrSubRole == null || typeof csrSubRole !== 'string') return null;
+  const key = csrSubRole.trim();
+  if (!key) return null;
+
+  switch (key) {
+    case 'level_1':
+    case 'level1':
+      return 'CSR L1';
+    case 'level_2':
+    case 'level2':
+      return 'CSR L2';
+    case 'fraud_analyst':
+    case 'fraudAnalyst':
+    case 'fraud':
+      return 'Fraud';
+    case 'compliance_officer':
+    case 'complianceOfficer':
+    case 'compliance':
+      return 'Compliance';
+    case 'tech_support':
+    case 'techSupport':
+    case 'tech':
+      return 'Tech';
+    case 'teamlead':
+      return 'Lead';
+    default:
+      return null;
+  }
+}
+
+/**
+ * Second line under the user name in admin / CSR sidebars.
+ */
+export function getSidebarRoleSubtitle(user: { role: string; csrSubRole?: string; csrRole?: string }): string {
+  if (user.role === 'customer_service') {
+    const sub = getCsrSubRoleSidebarLabel(user.csrSubRole || user.csrRole);
+    if (sub) return sub;
+    return 'CSR';
+  }
+  return getRoleDisplay(user.role);
 }
 
 /**

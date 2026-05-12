@@ -1,18 +1,48 @@
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Card, Button, Badge } from '../../../components/ui';
+import clsx from 'clsx';
+import { Card, Button, Badge, PaginationBar } from '../../../components/ui';
+import { useTheme } from '../../../context/ThemeContext';
+import {
+  listRowStripeClasses,
+  tableBodyDivideClasses,
+  tableHeaderCellTextClasses,
+  tableTheadSurfaceClasses,
+} from '../../../utils/tableStriping';
 import { searchCustomers } from '../api';
 
+const CUSTOMER_PAGE_SIZE = 50;
+
 export function CustomerListPage() {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
+  const [page, setPage] = useState(0);
 
   const { data: customers, isLoading } = useQuery({
     queryKey: ['customers-search', searchQuery],
     queryFn: () => searchCustomers(searchQuery),
     enabled: searchQuery.length >= 2,
   });
+
+  const customerTotal = customers?.length ?? 0;
+  const customerTotalPages = Math.max(1, Math.ceil(customerTotal / CUSTOMER_PAGE_SIZE));
+  const pagedCustomers = useMemo(
+    () => (customers ?? []).slice(page * CUSTOMER_PAGE_SIZE, (page + 1) * CUSTOMER_PAGE_SIZE),
+    [customers, page]
+  );
+
+  useEffect(() => {
+    setPage(0);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    if (page > 0 && page >= customerTotalPages) {
+      setPage(Math.max(0, customerTotalPages - 1));
+    }
+  }, [page, customerTotalPages]);
 
   return (
     <div className="space-y-6">
@@ -41,34 +71,72 @@ export function CustomerListPage() {
         )}
 
         {customers && customers.length > 0 && (
+          <>
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50 border-b">
+              <thead className={tableTheadSurfaceClasses(isDark)}>
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th
+                    className={clsx(
+                      'px-6 py-3 text-left text-xs font-medium uppercase tracking-wider',
+                      tableHeaderCellTextClasses(isDark),
+                    )}
+                  >
                     Name
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th
+                    className={clsx(
+                      'px-6 py-3 text-left text-xs font-medium uppercase tracking-wider',
+                      tableHeaderCellTextClasses(isDark),
+                    )}
+                  >
                     E-Mail
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th
+                    className={clsx(
+                      'px-6 py-3 text-left text-xs font-medium uppercase tracking-wider',
+                      tableHeaderCellTextClasses(isDark),
+                    )}
+                  >
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th
+                    className={clsx(
+                      'px-6 py-3 text-left text-xs font-medium uppercase tracking-wider',
+                      tableHeaderCellTextClasses(isDark),
+                    )}
+                  >
                     KYC-Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th
+                    className={clsx(
+                      'px-6 py-3 text-left text-xs font-medium uppercase tracking-wider',
+                      tableHeaderCellTextClasses(isDark),
+                    )}
+                  >
                     Aktionen
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y">
-                {customers.map((customer) => (
-                  <tr key={customer.objectId} className="hover:bg-gray-50">
-                    <td className="px-6 py-4">
+              <tbody className={tableBodyDivideClasses(isDark)}>
+                {pagedCustomers.map((customer, index) => (
+                  <tr key={customer.objectId} className={listRowStripeClasses(isDark, index)}>
+                    <td
+                      className={clsx(
+                        'px-6 py-4 text-sm',
+                        isDark ? 'text-slate-100' : 'text-gray-900',
+                      )}
+                    >
                       {customer.fullName || `${customer.firstName} ${customer.lastName}` || '-'}
                     </td>
-                    <td className="px-6 py-4">{customer.email}</td>
+                    <td
+                      className={clsx(
+                        'px-6 py-4 text-sm',
+                        isDark ? 'text-slate-300' : 'text-gray-900',
+                      )}
+                    >
+                      {customer.email}
+                    </td>
                     <td className="px-6 py-4">
                       <Badge variant={customer.status === 'active' ? 'success' : 'neutral'}>
                         {customer.status}
@@ -95,6 +163,15 @@ export function CustomerListPage() {
               </tbody>
             </table>
           </div>
+            <PaginationBar
+              page={page}
+              pageSize={CUSTOMER_PAGE_SIZE}
+              total={customerTotal}
+              itemLabel="Kunden"
+              isDark={isDark}
+              onPageChange={setPage}
+            />
+          </>
         )}
 
         {customers && customers.length === 0 && searchQuery.length >= 2 && (

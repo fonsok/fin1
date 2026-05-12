@@ -1,16 +1,15 @@
 # FIN1 Admin Portal
 
-Web-basiertes Administrations-Portal für FIN1 App-Level-Admins.
+Web-basiertes Administrations-Portal für FIN1 App-Level-Admins und CSR (`customer_service`).
 
 ## Live URL
 
 | Environment | URL |
 |-------------|-----|
 | Production (HTTPS) | `https://192.168.178.24/admin/` |
-| Production (HTTPS) | `https://192.168.178.24/admin/` |
 | Local Dev | `http://localhost:3000/` |
 
-**Hinweis:** HTTPS verwendet ein Self-signed Zertifikat (Browser-Ausnahme erforderlich).
+**Hinweis:** HTTPS verwendet ein Self-signed Zertifikat (Browser-Ausnahme erforderlich). CSR-Login: `/admin/csr/login` (siehe `CSR_PORTAL_SETUP.md`).
 
 ## Übersicht
 
@@ -19,10 +18,10 @@ Das Admin-Portal bietet rollen-basiertes Management für:
 | Rolle | Funktionen |
 |-------|------------|
 | **admin** | Vollzugriff auf alle Funktionen |
-| **business_admin** | Financial Dashboard, Korrekturen, Reports |
+| **business_admin** | Financial Dashboard, Korrekturen, Reports, KYB-Prüfung/Entscheid |
 | **security_officer** | Security Dashboard, Session-Management |
-| **compliance** | Compliance-Events, 4-Augen-Freigaben |
-| **customer_service** | User-Support, Tickets |
+| **compliance** | Compliance-Events, 4-Augen-Freigaben, KYB-Prüfung/Entscheid |
+| **customer_service** | User-Support, Tickets, KYC-/KYB-**Lesen** im CSR-Web (kein `reviewCompanyKyb`) |
 
 ## Setup
 
@@ -51,128 +50,31 @@ Das Portal ist dann unter `http://localhost:3000` erreichbar.
 ## Technologie-Stack
 
 - **React 18** + TypeScript
-- **Vite** - Build Tool
-- **TailwindCSS** - Styling
-- **React Router** - Navigation
-- **TanStack Query** - Data Fetching
-- **Parse JS SDK** - Backend-Anbindung
+- **Vite** – Build Tool
+- **TailwindCSS** – Styling
+- **React Router** – Navigation
+- **TanStack Query** – Data Fetching
+- **Parse REST** – Backend (`src/api/parse.ts`, kein Parse JS SDK im Bundle)
 
-## Projektstruktur
+## Lint
 
+ESLint **9** mit **Flat Config** (`eslint.config.js`): TypeScript (`typescript-eslint`), React Hooks, React Refresh.
+
+```bash
+npm run lint
 ```
-admin-portal/
-├── src/
-│   ├── api/              # Parse API Integration
-│   │   ├── parse.ts      # Parse SDK Setup
-│   │   └── admin.ts      # Admin Cloud Functions
-│   ├── components/       # Wiederverwendbare UI
-│   │   ├── ui/           # Button, Input, Card, Badge
-│   │   ├── Layout.tsx    # App-Layout mit Navigation
-│   │   └── TwoFactorVerify.tsx
-│   ├── context/          # React Context
-│   │   └── AuthContext.tsx
-│   ├── hooks/            # Custom Hooks
-│   │   └── usePermissions.ts
-│   ├── i18n/             # Übersetzungen (i18n-ready)
-│   │   └── de.ts
-│   ├── pages/            # Seiten/Screens
-│   │   ├── Login.tsx
-│   │   ├── Dashboard.tsx
-│   │   └── Users/
-│   └── utils/            # Hilfsfunktionen
-│       └── format.ts
-├── public/
-├── index.html
-├── package.json
-├── vite.config.ts
-├── tailwind.config.js
-└── tsconfig.json
-```
-
-## Features
-
-### ✅ Phase 1: MVP (Abgeschlossen)
-
-- [x] Login mit E-Mail/Passwort
-- [x] 2FA-Verifizierung (TOTP)
-- [x] Rollen-basierte Navigation
-- [x] Dashboard mit Statistiken
-- [x] Benutzer-Suche und -Liste
-- [x] Benutzer-Details
-- [x] Status-Änderungen (Suspend/Reactivate)
-- [x] Passwort-Reset
-
-### ✅ Phase 2: Compliance & Finance (Abgeschlossen)
-
-- [x] Ticket-Verwaltung
-- [x] Compliance-Events
-- [x] 4-Augen-Freigaben
-- [x] Audit-Logs
-
-### ✅ Phase 3: Security & Advanced (Abgeschlossen)
-
-- [x] Financial Dashboard (Revenue, Fees, Korrekturen)
-- [x] Security Dashboard (Sessions, Login-Historie, Alerts)
-- [x] 2FA Setup UI (QR-Code, Backup-Codes)
-- [x] HTTPS (Self-signed SSL)
-- [x] Einstellungen-Seite
-
-### ✅ Phase 4: Configuration & System (Abgeschlossen)
-
-- [x] **Konfiguration** - System-Parameter verwalten mit 4-Augen-Workflow
-- [x] **System-Status** - Server Health, Services, Datenbank-Status
-- [x] Unit Tests (Vitest) - 183 Tests, 90% Coverage
-- [x] E-Mail-Benachrichtigungen - Brevo SMTP, Templates, Cloud Functions
-
-### ⏳ Phase 5: Refinement (In Arbeit)
-
-- [ ] Echte Backend-Daten für System-Health (`getSystemHealth` Cloud Function)
-- [ ] Configuration History (Audit-Trail UI)
 
 ## Testing
 
-Das Projekt verwendet **Vitest** mit **React Testing Library**.
-
-### Test-Befehle
+**Vitest** + **React Testing Library**. Gemeinsamer `render` in `src/test/test-utils.tsx` (u. a. `MemoryRouter`, `ThemeProvider`).
 
 ```bash
 npm run test          # Watch-Modus
-npm run test:run      # Einmalig ausführen
-npm run test:coverage # Mit Coverage-Report
+npm run test:run      # Einmalig (CI)
+npm run test:coverage # Coverage-Report
 ```
 
-### Test-Statistiken
-
-| Metrik | Wert |
-|--------|------|
-| Tests | 183 |
-| Test Files | 11 |
-| Statement Coverage | 89% |
-| Line Coverage | 90% |
-
-### Test-Struktur
-
-```
-src/
-├── api/
-│   └── parse.test.ts           # API Layer Tests
-├── components/
-│   ├── TwoFactorVerify.test.tsx
-│   └── ui/
-│       ├── Badge.test.tsx
-│       ├── Button.test.tsx
-│       ├── Card.test.tsx
-│       └── Input.test.tsx
-├── context/
-│   └── AuthContext.test.tsx    # Auth Flow Tests
-├── hooks/
-│   └── usePermissions.test.tsx
-├── pages/
-│   ├── Dashboard.test.tsx
-│   └── Login.test.tsx
-└── utils/
-    └── format.test.ts
-```
+**Stand (Orientierung):** ca. **191** Tests in **12** Dateien – exakte Zahlen: `npm run test:run` bzw. `test:coverage`.
 
 ## Build für Production
 
@@ -180,51 +82,45 @@ src/
 npm run build
 ```
 
-Die gebauten Dateien liegen in `dist/` und können statisch gehostet werden.
+Führt `tsc` und `vite build` aus; `postbuild` synchronisiert `dist/` nach `../admin/` (siehe `scripts/sync-admin-portal-to-admin.sh`).
+
+## Projektstruktur (Auszug)
+
+```
+admin-portal/
+├── eslint.config.js
+├── vitest.config.ts
+├── src/
+│   ├── api/
+│   │   ├── admin/          # Admin Cloud-API modular (types, dashboard, users, tickets, …)
+│   │   ├── admin.ts        # Barrel: re-exportiert ./admin/* und cloudFunction
+│   │   └── parse.ts
+│   ├── components/
+│   ├── context/
+│   ├── hooks/
+│   ├── pages/          # u. a. KYBReview/, CSR/, FAQs/
+│   ├── test/           # setup.ts, test-utils.tsx
+│   ├── App.tsx
+│   └── main.tsx
+├── package.json
+└── vite.config.ts
+```
+
+## CSR-Web / KYB
+
+- **KYC-Status:** Route ` /csr/kyc` (nach Login unter `/admin/csr/`).
+- **KYB-Status (Firmen):** Route `/csr/kyb` – nutzt die gleiche Oberfläche wie `/kyb-review`, aber **ohne** Prüfen/Zurücksetzen, sofern die Session keine entsprechenden Cloud-Permissions hat.
+
+## Hilfe & Anleitung (FAQs)
+
+- **Export (Backup):** lädt ein JSON mit allen `FAQCategory`- und `FAQ`-Daten vom Backend (`exportFAQBackup`). Hover-Tooltip beschreibt den Umfang.
+- **Import (Restore):** wählt eine Backup-Datei → **Dry-Run**-Preview (`importFAQBackup`) → nach Bestätigung Schreiblauf. Kategorien per `slug`, FAQs per `faqId` (Upsert).
+- **Development Maintenance:** gelbe Karte — DEV-Baseline-Reset (`devResetFAQsBaseline`), analog zur Karte bei **AGB & Rechtstexte**. Erfordert auf dem Parse-Host **`ALLOW_FAQ_HARD_DELETE=true`**; bei `NODE_ENV=production` zusätzlich **`ALLOW_FAQ_HARD_DELETE_IN_PRODUCTION=true`**. Nach `.env`-Änderung den `parse-server`-Container neu starten.
 
 ## Deployment
 
-### Option 1: Gleicher Server (empfohlen)
-
-Nginx-Konfiguration:
-
-```nginx
-location /admin {
-    alias /var/www/admin-portal/dist;
-    try_files $uri $uri/ /admin/index.html;
-}
-```
-
-### Option 2: Separates Hosting
-
-```bash
-# Build
-npm run build
-
-# Upload dist/ zu Vercel, Netlify, oder anderem Static Host
-```
-
-## Sicherheit
-
-- **2FA Pflicht** für elevated roles (admin, business_admin, security_officer, compliance)
-- **Session-Timeout** nach 30 Minuten Inaktivität
-- **Rollen-basierte Permissions** auf API-Ebene (Cloud Functions)
-- **Audit-Logging** aller Admin-Aktionen
-
-## Entwicklung
-
-### Neue Seite hinzufügen
-
-1. Erstelle Datei in `src/pages/`
-2. Füge Route in `src/App.tsx` hinzu
-3. Füge Navigation in `src/hooks/usePermissions.ts` hinzu
-
-### Neue API-Funktion
-
-1. Füge Cloud Function im Backend hinzu
-2. Füge TypeScript-Wrapper in `src/api/admin.ts` hinzu
+Siehe `Documentation/FIN1_APP_DOCS/10_ADMIN_PORTAL_REQUIREMENTS.md` (Nginx, Pfade, Sicherheit).
 
 ---
 
-*Erstellt: 2026-02-02*
-*Dokumentation: Documentation/FIN1_APP_DOCS/10_ADMIN_PORTAL_REQUIREMENTS.md*
+*Vollständige produktseitige Doku: `Documentation/FIN1_APP_DOCS/10_ADMIN_PORTAL_REQUIREMENTS.md`*

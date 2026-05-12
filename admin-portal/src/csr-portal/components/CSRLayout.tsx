@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
+import { getSidebarRoleSubtitle } from '../../utils/format';
 import clsx from 'clsx';
 
 interface CSRLayoutProps {
@@ -12,6 +14,8 @@ export function CSRLayout({ children }: CSRLayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { theme, toggleTheme } = useTheme();
+  const isDark = theme === 'dark';
 
   const handleLogout = async () => {
     await logout();
@@ -50,6 +54,12 @@ export function CSRLayout({ children }: CSRLayoutProps) {
       icon: 'shield-check',
     },
     {
+      id: 'kyb',
+      label: 'KYB-Status',
+      path: '/csr/kyb',
+      icon: 'building-office',
+    },
+    {
       id: 'analytics',
       label: 'Analytics',
       path: '/csr/analytics',
@@ -75,20 +85,8 @@ export function CSRLayout({ children }: CSRLayoutProps) {
     },
   ];
 
-  const getCSRRoleDisplay = (csrSubRole?: string): string => {
-    switch (csrSubRole) {
-      case 'level_1': return 'Level 1 Support';
-      case 'level_2': return 'Level 2 Support';
-      case 'fraud_analyst': return 'Fraud Analyst';
-      case 'compliance_officer': return 'Compliance Officer';
-      case 'tech_support': return 'Tech Support';
-      case 'teamlead': return 'Team Lead';
-      default: return 'Customer Service';
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={clsx('min-h-screen', isDark ? 'bg-slate-800' : 'bg-gray-50')}>
       {/* Sidebar */}
       <aside
         className={clsx(
@@ -147,7 +145,7 @@ export function CSRLayout({ children }: CSRLayoutProps) {
                 {user?.firstName || user?.email}
               </p>
               <p className="text-xs text-white/60 truncate">
-                {getCSRRoleDisplay(user?.csrSubRole)}
+                {user ? getSidebarRoleSubtitle(user) : ''}
               </p>
             </div>
             <button
@@ -172,13 +170,21 @@ export function CSRLayout({ children }: CSRLayoutProps) {
       )}
 
       {/* Main Content */}
-      <div className="lg:pl-64">
+      <div className={clsx('lg:pl-64', isDark ? 'bg-slate-800' : 'bg-gray-50')}>
         {/* Top Bar */}
-        <header className="h-16 bg-white border-b border-gray-200 flex items-center px-4 lg:px-6 shadow-sm">
+        <header
+          className={clsx(
+            'h-16 border-b flex items-center px-4 lg:px-6 shadow-sm',
+            isDark ? 'bg-slate-700/80 border-slate-600' : 'bg-white border-gray-200',
+          )}
+        >
           {/* Mobile Menu Button */}
           <button
             onClick={() => setSidebarOpen(true)}
-            className="lg:hidden p-2 -ml-2 text-gray-600 hover:text-gray-900"
+            className={clsx(
+              'lg:hidden p-2 -ml-2',
+              isDark ? 'text-slate-300 hover:text-white' : 'text-gray-600 hover:text-gray-900',
+            )}
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -187,12 +193,17 @@ export function CSRLayout({ children }: CSRLayoutProps) {
 
           {/* Page Title */}
           <div className="flex-1 ml-4 lg:ml-0">
-            <h1 className="text-lg font-semibold text-gray-900">
+            <h1
+              className={clsx(
+                'text-lg font-semibold',
+                isDark ? 'text-slate-100' : 'text-gray-900',
+              )}
+            >
               {navItems.find(item => item.path === location.pathname)?.label || 'Dashboard'}
             </h1>
           </div>
 
-          {/* Quick Actions */}
+          {/* Quick Actions + Theme Toggle */}
           <div className="flex items-center gap-2">
             <Link
               to="/csr/tickets/new"
@@ -200,11 +211,29 @@ export function CSRLayout({ children }: CSRLayoutProps) {
             >
               + Neues Ticket
             </Link>
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className={clsx(
+                'px-3 py-1 text-xs font-medium rounded-lg border',
+                isDark
+                  ? 'border-slate-500 text-slate-100 hover:bg-slate-600'
+                  : 'border-gray-300 text-gray-700 hover:bg-gray-100',
+              )}
+            >
+              {isDark ? 'Hell' : 'Dunkel'}
+            </button>
           </div>
         </header>
 
         {/* Page Content */}
-        <main className="p-4 lg:p-6">
+        <main
+          data-content-area={isDark ? 'dark' : undefined}
+          className={clsx(
+            'p-4 lg:p-6 min-h-[calc(100vh-4rem)]',
+            isDark ? 'bg-slate-800' : 'bg-gray-50',
+          )}
+        >
           {children}
         </main>
       </div>
@@ -238,6 +267,11 @@ function CSRNavIcon({ name }: { name: string }) {
     'shield-check': (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+      </svg>
+    ),
+    'building-office': (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21h18M3 10h18M10 21V10m4 11V10M6 7h12l-6-4-6 4zM6 10v11M18 10v11" />
       </svg>
     ),
     chart: (

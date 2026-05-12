@@ -13,6 +13,7 @@ import { AnalyticsPage } from '../pages/CSR/pages/Analytics';
 import { TicketArchivePage } from '../pages/CSR/pages/TicketArchive';
 import { BulkOperationsPage } from '../pages/CSR/pages/BulkOperations';
 import { KYCStatusPage } from '../pages/CSR/pages/KYCStatus';
+import { KYBReviewPage } from '../pages/KYBReview/KYBReviewPage';
 import { TrendsPage } from '../pages/CSR/pages/Trends';
 import { TemplatesPage } from '../pages/Templates';
 import { FAQsPage } from '../pages/FAQs';
@@ -83,8 +84,9 @@ export function CSRApp() {
         <Route path="tickets/archive" element={<TicketArchivePage />} />
         <Route path="tickets/bulk" element={<BulkOperationsPage />} />
         <Route path="customers" element={<CustomerListPage />} />
-        <Route path="customers/:customerId" element={<CustomerDetailPage />} />
+        <Route path="customers/:userId" element={<CustomerDetailPage />} />
         <Route path="kyc" element={<KYCStatusPage />} />
+        <Route path="kyb" element={<KYBReviewPage />} />
         <Route path="analytics" element={<AnalyticsPage />} />
         <Route path="trends" element={<TrendsPage />} />
         <Route path="templates" element={<TemplatesPage />} />

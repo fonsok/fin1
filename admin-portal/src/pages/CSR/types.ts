@@ -2,7 +2,10 @@
 
 export interface CustomerSearchResult {
   objectId: string;
-  customerId: string;
+  /** Parse _User.objectId */
+  userId: string;
+  /** Business number (ANL-/TRD-…) */
+  customerNumber: string;
   email: string;
   firstName?: string;
   lastName?: string;
@@ -14,7 +17,8 @@ export interface CustomerSearchResult {
 
 export interface CustomerProfile {
   objectId: string;
-  customerId: string;
+  userId: string;
+  customerNumber: string;
   email: string;
   firstName?: string;
   lastName?: string;

@@ -4,8 +4,14 @@ export interface FAQ {
   objectId: string;
   faqId: string;
   question: string;
-  questionDe?: string;
+  /** Optional English question (canonical Parse field). */
+  questionEn?: string;
   answer: string;
+  /** Optional English answer (canonical Parse field). */
+  answerEn?: string;
+  /** @deprecated Legacy misnamed field (stored English); still accepted on import until migrated. */
+  questionDe?: string;
+  /** @deprecated Legacy misnamed field (stored English); still accepted on import until migrated. */
   answerDe?: string;
   // Legacy single category (kept for backwards compatibility)
   categoryId: string;
@@ -40,9 +46,9 @@ export interface FAQCategory {
 export interface CreateFAQRequest {
   faqId?: string;
   question: string;
-  questionDe?: string;
+  questionEn?: string;
   answer: string;
-  answerDe?: string;
+  answerEn?: string;
   // Primary category for backwards compatibility
   categoryId: string;
   // Full set of assigned categories
@@ -59,9 +65,9 @@ export interface CreateFAQRequest {
 
 export interface UpdateFAQRequest {
   question?: string;
-  questionDe?: string;
+  questionEn?: string;
   answer?: string;
-  answerDe?: string;
+  answerEn?: string;
   categoryId?: string;
   categoryIds?: string[];
   sortOrder?: number;

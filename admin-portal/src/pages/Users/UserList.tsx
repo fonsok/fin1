@@ -1,26 +1,49 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
+import clsx from 'clsx';
 import { searchUsers, type AdminUser } from '../../api/admin';
-import { Card, Input, Button, Badge, getStatusVariant } from '../../components/ui';
+import { Card, Input, Button, Badge, PaginationBar, getStatusVariant } from '../../components/ui';
+import { SortableTh, nextSortState, type SortOrder } from '../../components/table/SortableTh';
 import { formatDateTime, getRoleDisplay, getStatusDisplay } from '../../utils/format';
+import { useTheme } from '../../context/ThemeContext';
+import { listRowStripeClasses, tableBodyDivideClasses } from '../../utils/tableStriping';
+import { useDebounce } from '../../hooks/useDebounce';
 
 export function UserListPage() {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebounce(searchQuery);
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [page, setPage] = useState(0);
-  const limit = 20;
+  const [pageSize, setPageSize] = useState(20);
+  const [sortBy, setSortBy] = useState('createdAt');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+
+  useEffect(() => { setPage(0); }, [debouncedSearch]);
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['users', searchQuery, statusFilter, page],
-    queryFn: () => searchUsers({
-      query: searchQuery || undefined,
-      status: statusFilter || undefined,
-      limit,
-      skip: page * limit,
-    }),
-    placeholderData: (previousData) => previousData,
+    queryKey: ['users', debouncedSearch, statusFilter, page, pageSize, sortBy, sortOrder],
+    queryFn: () =>
+      searchUsers({
+        query: debouncedSearch || undefined,
+        status: statusFilter || undefined,
+        limit: pageSize,
+        skip: page * pageSize,
+        sortBy,
+        sortOrder,
+      }),
+    staleTime: 30_000,
   });
+  const total = data?.total ?? 0;
+
+  const onSort = useCallback((field: string) => {
+    const next = nextSortState(field, sortBy, sortOrder);
+    setSortBy(next.sortBy);
+    setSortOrder(next.sortOrder);
+    setPage(0);
+  }, [sortBy, sortOrder]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,7 +73,10 @@ export function UserListPage() {
               setStatusFilter(e.target.value);
               setPage(0);
             }}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary"
+            className={clsx(
+              'px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary',
+              isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900'
+            )}
           >
             <option value="">Alle Status</option>
             <option value="active">Aktiv</option>
@@ -61,6 +87,21 @@ export function UserListPage() {
           <Button type="submit">
             Suchen
           </Button>
+          <select
+            value={pageSize}
+            onChange={(e) => {
+              setPageSize(Number(e.target.value));
+              setPage(0);
+            }}
+            className={clsx(
+              'px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary',
+              isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900'
+            )}
+          >
+            <option value={20}>20 / Seite</option>
+            <option value={50}>50 / Seite</option>
+            <option value={100}>100 / Seite</option>
+          </select>
         </form>
       </Card>
 
@@ -87,11 +128,16 @@ export function UserListPage() {
             {/* Table */}
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
+                <thead className={clsx(isDark ? 'bg-slate-900/70 border-b border-slate-700' : 'bg-gray-50 border-b border-gray-200')}>
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Benutzer
-                    </th>
+                    <SortableTh
+                      label="Benutzer"
+                      field="lastName"
+                      sortBy={sortBy}
+                      sortOrder={sortOrder}
+                      onSort={onSort}
+                      className="px-6 py-3 text-gray-500"
+                    />
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Kunden-ID
                     </th>
@@ -104,41 +150,51 @@ export function UserListPage() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       KYC
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Registriert
-                    </th>
+                    <SortableTh
+                      label="Registriert"
+                      field="createdAt"
+                      sortBy={sortBy}
+                      sortOrder={sortOrder}
+                      onSort={onSort}
+                      className="px-6 py-3 text-gray-500"
+                    />
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Aktionen
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {data.users.map((user: AdminUser) => (
-                    <tr key={user.objectId} className="hover:bg-gray-50">
+                <tbody className={tableBodyDivideClasses(isDark)}>
+                  {data.users.map((user: AdminUser, index: number) => (
+                    <tr key={user.objectId} className={listRowStripeClasses(isDark, index)}>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          <div className="w-10 h-10 bg-fin1-light rounded-full flex items-center justify-center">
-                            <span className="text-fin1-primary font-medium">
+                          <div
+                            className={clsx(
+                              'w-10 h-10 rounded-full flex items-center justify-center',
+                              isDark ? 'bg-slate-800 border border-slate-600' : 'bg-fin1-light'
+                            )}
+                          >
+                            <span className={clsx('font-medium', isDark ? 'text-slate-100' : 'text-fin1-primary')}>
                               {user.firstName?.[0] || user.email?.[0]?.toUpperCase() || '?'}
                             </span>
                           </div>
                           <div className="ml-4">
-                            <p className="text-sm font-medium text-gray-900">
+                            <p className={clsx('text-sm font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>
                               {user.firstName && user.lastName
                                 ? `${user.firstName} ${user.lastName}`
                                 : user.username || 'Unbekannt'}
                             </p>
-                            <p className="text-sm text-gray-500">{user.email}</p>
+                            <p className={clsx('text-sm', isDark ? 'text-slate-300' : 'text-gray-500')}>{user.email}</p>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm text-gray-900 font-mono">
-                          {user.customerId || '-'}
+                        <span className={clsx('text-sm font-mono', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                          {user.customerNumber || '-'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm text-gray-900">
+                        <span className={clsx('text-sm', isDark ? 'text-slate-100' : 'text-gray-900')}>
                           {getRoleDisplay(user.role)}
                         </span>
                       </td>
@@ -152,7 +208,7 @@ export function UserListPage() {
                           {getStatusDisplay(user.kycStatus)}
                         </Badge>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className={clsx('px-6 py-4 whitespace-nowrap text-sm', isDark ? 'text-slate-300' : 'text-gray-500')}>
                         {formatDateTime(user.createdAt)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
@@ -170,29 +226,14 @@ export function UserListPage() {
             </div>
 
             {/* Pagination */}
-            <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-              <p className="text-sm text-gray-500">
-                Zeige {page * limit + 1} bis {Math.min((page + 1) * limit, data.total)} von {data.total} Benutzern
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  disabled={page === 0}
-                  onClick={() => setPage(p => Math.max(0, p - 1))}
-                >
-                  Zurück
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  disabled={(page + 1) * limit >= data.total}
-                  onClick={() => setPage(p => p + 1)}
-                >
-                  Weiter
-                </Button>
-              </div>
-            </div>
+            <PaginationBar
+              page={page}
+              pageSize={pageSize}
+              total={total}
+              itemLabel="Benutzern"
+              isDark={isDark}
+              onPageChange={setPage}
+            />
           </>
         )}
       </Card>

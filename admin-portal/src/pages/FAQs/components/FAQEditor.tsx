@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import * as React from 'react';
+import clsx from 'clsx';
 import { Button } from '../../../components/ui/Button';
+import { Card } from '../../../components/ui/Card';
+import { useTheme } from '../../../context/ThemeContext';
 import type {
   FAQ,
   FAQCategory,
@@ -9,6 +12,7 @@ import type {
   CreateFAQCategoryRequest,
 } from '../types';
 import { createFAQCategory } from '../api';
+import { isRetiredFaqCategorySlug } from '../retiredFaqCategories';
 
 interface FAQEditorProps {
   faq: FAQ | null;
@@ -18,20 +22,46 @@ interface FAQEditorProps {
 }
 
 export function FAQEditor({ faq, categories, onSave, onClose }: FAQEditorProps) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const isEdit = Boolean(faq);
+
+  const fieldClass = clsx(
+    'w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary focus:border-fin1-primary',
+    isDark
+      ? 'bg-slate-900/90 border border-slate-600 text-slate-100 placeholder:text-slate-500'
+      : 'border border-gray-300 text-gray-900 bg-white placeholder:text-gray-400',
+  );
+
+  const fieldClassSm = clsx(
+    'w-full px-3 py-1.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-fin1-primary focus:border-fin1-primary',
+    isDark
+      ? 'bg-slate-900/90 border border-slate-600 text-slate-100 placeholder:text-slate-500'
+      : 'border border-gray-300 text-gray-900 bg-white',
+  );
+
+  const hintBadgeClass = clsx(
+    'inline-flex h-4 w-4 shrink-0 cursor-help select-none items-center justify-center rounded-full border text-[9px] font-semibold leading-none',
+    isDark ? 'border-slate-500 text-slate-400' : 'border-gray-400 text-gray-500',
+  );
 
   // Form state
   const [faqId, setFaqId] = useState(faq?.faqId || '');
   const [question, setQuestion] = useState(faq?.question || '');
-  const [questionDe, setQuestionDe] = useState(faq?.questionDe || '');
+  const [questionEn, setQuestionEn] = useState(faq?.questionEn ?? faq?.questionDe ?? '');
   const [answer, setAnswer] = useState(faq?.answer || '');
-  const [answerDe, setAnswerDe] = useState(faq?.answerDe || '');
+  const [answerEn, setAnswerEn] = useState(faq?.answerEn ?? faq?.answerDe ?? '');
   // Multi-category support: keep a list of selected category IDs.
   const initialCategoryIds =
     (faq?.categoryIds && faq.categoryIds.length > 0 && faq.categoryIds) ||
     (faq?.categoryId ? [faq.categoryId] : []);
   const [categoryIds, setCategoryIds] = useState<string[]>(initialCategoryIds);
-  const [sortOrder, setSortOrder] = useState(faq?.sortOrder || 100);
+  const [sortOrder, setSortOrder] = useState(() => {
+    const raw = faq?.sortOrder;
+    if (raw === undefined || raw === null) return 100;
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : 100;
+  });
   const [isPublished, setIsPublished] = useState(faq?.isPublished ?? true);
   const [isPublic, setIsPublic] = useState(faq?.isPublic ?? true);
   const [isUserVisible, setIsUserVisible] = useState(faq?.isUserVisible ?? true);
@@ -55,11 +85,13 @@ export function FAQEditor({ faq, categories, onSave, onClose }: FAQEditorProps) 
 
     const hasContext = (ctx: string) => contexts.includes(ctx);
 
+    // Must match backend getFAQCategories(help_center): active AND (showOnLanding OR showInHelpCenter).
+    // Previously this used tautologies (x || !x) and allowed „dead“ categories → FAQs visible in Admin but dropped in the iOS client.
     if (hasContext('help_center')) {
-      filteredCategories = filteredCategories.filter((cat) => cat.showInHelpCenter || !cat.showInHelpCenter);
+      filteredCategories = filteredCategories.filter((cat) => cat.showInHelpCenter || cat.showOnLanding);
     }
     if (hasContext('landing')) {
-      filteredCategories = filteredCategories.filter((cat) => cat.showOnLanding || !cat.showOnLanding);
+      filteredCategories = filteredCategories.filter((cat) => cat.showOnLanding);
     }
 
     // Investor / Trader contexts are defined via category slugs
@@ -89,9 +121,17 @@ export function FAQEditor({ faq, categories, onSave, onClose }: FAQEditorProps) 
       return true;
     });
 
+    const selectedIdSet = new Set(categoryIds);
+    const withLegacyRetired = unique.filter((cat) => {
+      if (isRetiredFaqCategorySlug(cat.slug)) {
+        return selectedIdSet.has(cat.objectId);
+      }
+      return true;
+    });
+
     // Sort by sortOrder
-    return unique.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
-  }, [categories, contexts]);
+    return withLegacyRetired.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+  }, [categories, contexts, categoryIds]);
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -127,18 +167,26 @@ export function FAQEditor({ faq, categories, onSave, onClose }: FAQEditorProps) 
       return;
     }
 
+    const normalizedContexts = contexts.length ? contexts : ['help_center'];
+    const targetsHelpCenter = normalizedContexts.includes('help_center');
+    if (targetsHelpCenter && !isPublic && !isUserVisible) {
+      setError(
+        'Für die App (Help Center): mindestens „Öffentlich“ oder „Für Benutzer sichtbar“ aktivieren — sonst liefert die API die FAQ nicht aus.',
+      );
+      return;
+    }
+
     setSaving(true);
 
     try {
       const primaryCategoryId = categoryIds[0];
-      const normalizedContexts = contexts.length ? contexts : ['help_center'];
 
       const data: CreateFAQRequest | UpdateFAQRequest = {
         ...(isEdit ? {} : { faqId: faqId || undefined }),
         question: question.trim(),
-        questionDe: questionDe.trim() || undefined,
+        questionEn: questionEn.trim() || undefined,
         answer: answer.trim(),
-        answerDe: answerDe.trim() || undefined,
+        answerEn: answerEn.trim() || undefined,
         categoryId: primaryCategoryId,
         categoryIds,
         sortOrder,
@@ -159,11 +207,11 @@ export function FAQEditor({ faq, categories, onSave, onClose }: FAQEditorProps) 
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+      <Card className="max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-xl" padding="none">
         <form onSubmit={handleSubmit}>
           {/* Header */}
-          <div className="p-6 border-b border-gray-200">
-            <h2 className="text-xl font-bold text-gray-900">
+          <div className={clsx('p-6 border-b', isDark ? 'border-slate-600' : 'border-gray-200')}>
+            <h2 className={clsx('text-xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>
               {isEdit ? 'FAQ bearbeiten' : 'Neue FAQ'}
             </h2>
           </div>
@@ -171,13 +219,22 @@ export function FAQEditor({ faq, categories, onSave, onClose }: FAQEditorProps) 
           {/* Content */}
           <div className="p-6 space-y-4">
             {error && (
-              <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm">{error}</div>
+              <div
+                className={clsx(
+                  'p-3 rounded-lg text-sm border',
+                  isDark
+                    ? 'bg-red-950/50 border-red-800/80 text-red-200'
+                    : 'bg-red-50 border-transparent text-red-600',
+                )}
+              >
+                {error}
+              </div>
             )}
 
             {/* FAQ ID (only for new FAQs) */}
             {!isEdit && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-300' : 'text-gray-700')}>
                   FAQ ID (optional)
                 </label>
                 <input
@@ -185,9 +242,9 @@ export function FAQEditor({ faq, categories, onSave, onClose }: FAQEditorProps) 
                   value={faqId}
                   onChange={(e) => setFaqId(e.target.value)}
                   placeholder="z.B. inv-1, landing-1"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-fin1-primary focus:border-transparent"
+                  className={fieldClass}
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className={clsx('text-xs mt-1', isDark ? 'text-slate-400' : 'text-gray-500')}>
                   Eindeutige ID für diese FAQ (wird automatisch generiert wenn leer)
                 </p>
               </div>
@@ -195,7 +252,9 @@ export function FAQEditor({ faq, categories, onSave, onClose }: FAQEditorProps) 
 
             {/* Kontext(e) – multiple contexts per FAQ */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Kontexte</label>
+              <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-300' : 'text-gray-700')}>
+                Kontexte
+              </label>
               <div className="grid grid-cols-2 gap-2 text-sm">
                 {[
                   { id: 'help_center', label: 'Help Center' },
@@ -203,10 +262,13 @@ export function FAQEditor({ faq, categories, onSave, onClose }: FAQEditorProps) 
                   { id: 'investor', label: 'Investor' },
                   { id: 'trader', label: 'Trader' },
                 ].map((ctx) => (
-                  <label key={ctx.id} className="flex items-center">
+                  <label
+                    key={ctx.id}
+                    className={clsx('flex items-center cursor-pointer', isDark ? 'text-slate-200' : 'text-gray-900')}
+                  >
                     <input
                       type="checkbox"
-                      className="mr-2"
+                      className="mr-2 accent-fin1-primary"
                       checked={contexts.includes(ctx.id)}
                       onChange={(e) => {
                         setContexts((prev) =>
@@ -224,7 +286,7 @@ export function FAQEditor({ faq, categories, onSave, onClose }: FAQEditorProps) 
                   value={newContext}
                   onChange={(e) => setNewContext(e.target.value)}
                   placeholder="Neuen Kontext hinzufügen (z.B. csr_help)"
-                  className="flex-1 px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-fin1-primary focus:border-transparent"
+                  className={clsx(fieldClassSm, 'flex-1')}
                 />
                 <Button
                   type="button"
@@ -241,7 +303,7 @@ export function FAQEditor({ faq, categories, onSave, onClose }: FAQEditorProps) 
                   Hinzufügen
                 </Button>
               </div>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className={clsx('text-xs mt-1', isDark ? 'text-slate-400' : 'text-gray-500')}>
                 Die verfügbaren Kategorien ändern sich je nach gewählten Kontexten. Eine FAQ kann mehreren
                 Kontexten gleichzeitig zugeordnet sein. Eigene Kontext‑Tags können für zukünftige
                 Erweiterungen ergänzt werden.
@@ -251,18 +313,26 @@ export function FAQEditor({ faq, categories, onSave, onClose }: FAQEditorProps) 
             {/* Category & Sort Order */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-300' : 'text-gray-700')}>
                   Kategorien *
                 </label>
-                <div className="border border-gray-300 rounded-lg max-h-48 overflow-y-auto px-3 py-2 space-y-1">
+                <div
+                  className={clsx(
+                    'rounded-lg max-h-48 overflow-y-auto px-3 py-2 space-y-1 border',
+                    isDark ? 'border-slate-600 bg-slate-900/45' : 'border-gray-300 bg-white',
+                  )}
+                >
                   {availableCategories.map((cat) => {
                     const id = cat.objectId;
                     const checked = categoryIds.includes(id);
                     return (
-                      <label key={id} className="flex items-center text-sm">
+                      <label
+                        key={id}
+                        className={clsx('flex items-center text-sm cursor-pointer', isDark ? 'text-slate-200' : 'text-gray-900')}
+                      >
                         <input
                           type="checkbox"
-                          className="mr-2"
+                          className="mr-2 accent-fin1-primary"
                           checked={checked}
                           onChange={(e) => {
                             setCategoryIds((prev) =>
@@ -281,14 +351,14 @@ export function FAQEditor({ faq, categories, onSave, onClose }: FAQEditorProps) 
                     value={newCategoryName}
                     onChange={(e) => setNewCategoryName(e.target.value)}
                     placeholder="Neue Kategorie (Titel)"
-                    className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-fin1-primary focus:border-transparent"
+                    className={fieldClassSm}
                   />
                   <input
                     type="text"
                     value={newCategorySlug}
                     onChange={(e) => setNewCategorySlug(e.target.value)}
                     placeholder="Slug (z.B. investments_pro)"
-                    className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-fin1-primary focus:border-transparent"
+                    className={fieldClassSm}
                   />
                   <Button
                     type="button"
@@ -320,7 +390,7 @@ export function FAQEditor({ faq, categories, onSave, onClose }: FAQEditorProps) 
                   >
                     {creatingCategory ? 'Kategorie wird angelegt…' : 'Neue Kategorie anlegen'}
                   </Button>
-                  <p className="text-xs text-gray-500">
+                  <p className={clsx('text-xs', isDark ? 'text-slate-400' : 'text-gray-500')}>
                     Neue Kategorien werden serverseitig in `FAQCategory` angelegt und sind auch für zukünftige
                     App‑Versionen nutzbar.
                   </p>
@@ -328,110 +398,166 @@ export function FAQEditor({ faq, categories, onSave, onClose }: FAQEditorProps) 
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Sortierung
+                <label
+                  className={clsx(
+                    'flex items-center gap-1.5 text-sm font-medium mb-1',
+                    isDark ? 'text-slate-300' : 'text-gray-700',
+                  )}
+                >
+                  <span>Sortierung</span>
+                  <span
+                    role="img"
+                    aria-label="Hilfe: Legt die Anzeigereihenfolge fest. Kleinere Zahlen erscheinen weiter oben. 100 ist nur ein Standardwert."
+                    title="Legt die Anzeigereihenfolge in Listen (z. B. Help Center) fest: kleinere Zahlen erscheinen weiter oben, größere weiter unten. 100 ist ein beliebiger Standardwert — für die Reihenfolge z. B. 10, 20, 30 oder 1, 2, 3 nutzen."
+                    className={hintBadgeClass}
+                  >
+                    i
+                  </span>
                 </label>
                 <input
                   type="number"
                   value={sortOrder}
                   onChange={(e) => setSortOrder(parseInt(e.target.value) || 100)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-fin1-primary focus:border-transparent"
+                  className={fieldClass}
+                  title="Anzeigereihenfolge: niedrigere Zahl = weiter oben. 100 ist Standard."
                 />
               </div>
             </div>
 
-            {/* Question (EN) */}
+            {/* Question (DE) */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Frage (EN) *
+              <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-300' : 'text-gray-700')}>
+                Frage (DE) *
               </label>
               <textarea
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}
-                placeholder="What is FIN1?"
-                rows={2}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-fin1-primary focus:border-transparent"
-                required
-              />
-            </div>
-
-            {/* Question (DE) */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Frage (DE)
-              </label>
-              <textarea
-                value={questionDe}
-                onChange={(e) => setQuestionDe(e.target.value)}
                 placeholder="Was ist FIN1?"
                 rows={2}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-fin1-primary focus:border-transparent"
+                className={fieldClass}
+                required
               />
             </div>
 
-            {/* Answer (EN) */}
+            {/* Question (EN optional) */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Antwort (EN) *
+              <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-300' : 'text-gray-700')}>
+                Frage (EN optional)
               </label>
               <textarea
-                value={answer}
-                onChange={(e) => setAnswer(e.target.value)}
-                placeholder="FIN1 is an investment pool platform..."
-                rows={6}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-fin1-primary focus:border-transparent"
-                required
+                value={questionEn}
+                onChange={(e) => setQuestionEn(e.target.value)}
+                placeholder="What is FIN1?"
+                rows={2}
+                className={fieldClass}
               />
             </div>
 
             {/* Answer (DE) */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Antwort (DE)
+              <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-300' : 'text-gray-700')}>
+                Antwort (DE) *
               </label>
               <textarea
-                value={answerDe}
-                onChange={(e) => setAnswerDe(e.target.value)}
-                placeholder="FIN1 ist eine Investment-Pool-Plattform..."
+                value={answer}
+                onChange={(e) => setAnswer(e.target.value)}
+                placeholder="FIN1 ist eine Investment-Pool-App..."
                 rows={6}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-fin1-primary focus:border-transparent"
+                className={fieldClass}
+                required
+              />
+            </div>
+
+            {/* Answer (EN optional) */}
+            <div>
+              <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-300' : 'text-gray-700')}>
+                Antwort (EN optional)
+              </label>
+              <textarea
+                value={answerEn}
+                onChange={(e) => setAnswerEn(e.target.value)}
+                placeholder="FIN1 is an investment pool platform..."
+                rows={6}
+                className={fieldClass}
               />
             </div>
 
             {/* Status Flags */}
-            <div className="grid grid-cols-3 gap-4 pt-2">
-              <label className="flex items-center">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+              <label
+                className={clsx(
+                  'flex cursor-pointer items-center gap-1.5 text-sm',
+                  isDark ? 'text-slate-200' : 'text-gray-900',
+                )}
+              >
                 <input
                   type="checkbox"
                   checked={isPublished}
                   onChange={(e) => setIsPublished(e.target.checked)}
-                  className="mr-2"
+                  className="accent-fin1-primary"
+                  title="Deaktiviert = Entwurf: wird Endnutzern und Standard-API-Aufrufen nicht ausgeliefert (im Admin weiter sichtbar)."
                 />
-                <span className="text-sm text-gray-700">Veröffentlicht</span>
+                <span>Veröffentlicht</span>
+                <span
+                  role="img"
+                  aria-label="Hilfe Veröffentlicht: Entwurf vs. live."
+                  title="Wenn deaktiviert, gilt die FAQ als Entwurf: Endnutzer und reguläre App-Abfragen erhalten sie nicht. Im Admin-Portal bleibt sie zur Bearbeitung sichtbar."
+                  className={hintBadgeClass}
+                >
+                  i
+                </span>
               </label>
-              <label className="flex items-center">
+              <label
+                className={clsx(
+                  'flex cursor-pointer items-center gap-1.5 text-sm',
+                  isDark ? 'text-slate-200' : 'text-gray-900',
+                )}
+              >
                 <input
                   type="checkbox"
                   checked={isPublic}
                   onChange={(e) => setIsPublic(e.target.checked)}
-                  className="mr-2"
+                  className="accent-fin1-primary"
+                  title="Öffentliche Kontexte (z. B. Landing ohne Login); im Help Center zusätzlich zu nutzersichtbaren FAQs."
                 />
-                <span className="text-sm text-gray-700">Öffentlich</span>
+                <span>Öffentlich</span>
+                <span
+                  role="img"
+                  aria-label="Hilfe Öffentlich: ohne Anmeldung abrufbar."
+                  title="Erlaubt die Auslieferung in öffentlichen Kontexten ohne Anmeldung (z. B. Landing). Im Help Center werden öffentliche FAQs zusätzlich zu den als „für Benutzer sichtbar“ markierten Einträgen berücksichtigt."
+                  className={hintBadgeClass}
+                >
+                  i
+                </span>
               </label>
-              <label className="flex items-center">
+              <label
+                className={clsx(
+                  'flex cursor-pointer items-center gap-1.5 text-sm',
+                  isDark ? 'text-slate-200' : 'text-gray-900',
+                )}
+              >
                 <input
                   type="checkbox"
                   checked={isUserVisible}
                   onChange={(e) => setIsUserVisible(e.target.checked)}
-                  className="mr-2"
+                  className="accent-fin1-primary"
+                  title="Für eingeloggte Nutzer in der App (z. B. Help Center); kombinierbar mit „Öffentlich“."
                 />
-                <span className="text-sm text-gray-700">Für Benutzer sichtbar</span>
+                <span>Für Benutzer sichtbar</span>
+                <span
+                  role="img"
+                  aria-label="Hilfe: Sichtbarkeit für eingeloggte Nutzer."
+                  title="Erlaubt die Anzeige für eingeloggte Nutzer in der App (z. B. Help Center). Sinnvoll für Inhalte nur für registrierte Nutzer; mit „Öffentlich“ lassen sich beide Zielgruppen abdecken."
+                  className={hintBadgeClass}
+                >
+                  i
+                </span>
               </label>
             </div>
           </div>
 
           {/* Footer */}
-          <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
+          <div className={clsx('p-6 border-t flex justify-end gap-3', isDark ? 'border-slate-600' : 'border-gray-200')}>
             <Button type="button" variant="secondary" onClick={onClose} disabled={saving}>
               Abbrechen
             </Button>
@@ -440,7 +566,7 @@ export function FAQEditor({ faq, categories, onSave, onClose }: FAQEditorProps) 
             </Button>
           </div>
         </form>
-      </div>
+      </Card>
     </div>
   );
 }

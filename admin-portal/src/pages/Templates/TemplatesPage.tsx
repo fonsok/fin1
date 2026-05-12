@@ -1,26 +1,33 @@
-import { useState, useEffect } from 'react';
-import { Card } from '../../components/ui/Card';
-import { Button } from '../../components/ui/Button';
-import { Badge } from '../../components/ui/Badge';
+import { useState, useMemo, useEffect } from 'react';
+import clsx from 'clsx';
+import { Card, PaginationBar } from '../../components/ui';
+import { useTheme } from '../../context/ThemeContext';
+import { formatNumber } from '../../utils/format';
 import { TemplateEditor } from './components/TemplateEditor';
 import { TemplateList } from './components/TemplateList';
 import { EmailTemplateList } from './components/EmailTemplateList';
+import { EmailTemplateCreateEditor } from './components/EmailTemplateCreateEditor';
+import { TemplatesHeaderActions } from './components/TemplatesHeaderActions';
+import { TemplatesTabs } from './components/TemplatesTabs';
 import { UsageStats } from './components/UsageStats';
+import { useTemplatesData } from './hooks/useTemplatesData';
 import {
-  getResponseTemplates,
-  getEmailTemplates,
-  getTemplateCategories,
-  getTemplateUsageStats,
+  downloadJson,
+  buildFilteredTemplatesExportPayload,
+  getFilteredExportFilename,
+  importFilteredTemplatesAsNew,
+} from './utils/templatesImportExport';
+import {
   createResponseTemplate,
   updateResponseTemplate,
   deleteResponseTemplate,
   seedCSRTemplates,
+  exportCSRTemplatesBackup,
+  backfillCSRTemplateShortcuts,
 } from './api';
+import { sortByTitleDe } from './utils/templateDisplayOrder';
 import type {
   ResponseTemplate,
-  EmailTemplate,
-  TemplateCategory,
-  TemplateUsageStats as UsageStatsType,
   CreateTemplateRequest,
   UpdateTemplateRequest,
 } from './types';
@@ -28,96 +35,88 @@ import type {
 type TabType = 'response' | 'email' | 'stats';
 
 export function TemplatesPage() {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
   // State
   const [activeTab, setActiveTab] = useState<TabType>('response');
-  const [templates, setTemplates] = useState<ResponseTemplate[]>([]);
-  const [emailTemplates, setEmailTemplates] = useState<EmailTemplate[]>([]);
-  const [categories, setCategories] = useState<TemplateCategory[]>([]);
-  const [usageStats, setUsageStats] = useState<UsageStatsType | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [responsePage, setResponsePage] = useState(0);
+  const [responsePageSize, setResponsePageSize] = useState(25);
+  const [emailPage, setEmailPage] = useState(0);
+  const [emailPageSize, setEmailPageSize] = useState(25);
 
   // Editor state
   const [showEditor, setShowEditor] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<ResponseTemplate | null>(null);
+  const [showEmailCreateEditor, setShowEmailCreateEditor] = useState(false);
 
   // Filter state
   const [categoryFilter, setCategoryFilter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
+  const {
+    templates,
+    setTemplates,
+    emailTemplates,
+    categories,
+    loading,
+    error,
+    loadData,
+    filteredTemplates,
+    uniqueCategories,
+  } = useTemplatesData(categoryFilter, searchQuery);
 
-  // Load data
+  const responseTotal = filteredTemplates.length;
+  const responseTotalPages = Math.max(1, Math.ceil(responseTotal / responsePageSize));
+  const pagedResponseTemplates = useMemo(
+    () =>
+      filteredTemplates.slice(
+        responsePage * responsePageSize,
+        (responsePage + 1) * responsePageSize
+      ),
+    [filteredTemplates, responsePage, responsePageSize]
+  );
+
+  const emailTotal = emailTemplates.length;
+  const emailTotalPages = Math.max(1, Math.ceil(emailTotal / emailPageSize));
+  const pagedEmailTemplates = useMemo(
+    () =>
+      emailTemplates.slice(emailPage * emailPageSize, (emailPage + 1) * emailPageSize),
+    [emailTemplates, emailPage, emailPageSize]
+  );
+
   useEffect(() => {
-    loadData();
-  }, []);
+    setResponsePage(0);
+  }, [categoryFilter, searchQuery, responsePageSize]);
 
-  async function loadData() {
-    setLoading(true);
-    setError(null);
-
-    try {
-      // Load templates, emails, and categories (required)
-      const [templatesData, emailData, categoriesData] = await Promise.all([
-        getResponseTemplates('teamlead', true),
-        getEmailTemplates(true),
-        getTemplateCategories(),
-      ]);
-
-      setTemplates(templatesData);
-      setEmailTemplates(emailData);
-      setCategories(categoriesData);
-
-      // Load stats optionally (may fail for CSR users without viewAnalytics permission)
-      try {
-        const statsData = await getTemplateUsageStats(30);
-        setUsageStats(statsData);
-      } catch (statsError) {
-        // Stats are optional - only show error if user tries to view stats tab
-        console.warn('Could not load template usage stats:', statsError);
-        // Don't set error here - templates are more important
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Fehler beim Laden der Templates');
-      console.error('Error loading templates:', err);
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    if (responsePage > 0 && responsePage >= responseTotalPages) {
+      setResponsePage(Math.max(0, responseTotalPages - 1));
     }
-  }
+  }, [responsePage, responseTotalPages]);
 
-  // Filter templates
-  const filteredTemplates = templates.filter((t) => {
-    if (categoryFilter && t.category !== categoryFilter) return false;
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      return (
-        t.title.toLowerCase().includes(query) ||
-        t.body.toLowerCase().includes(query) ||
-        (t.shortcut?.toLowerCase().includes(query) ?? false)
-      );
+  useEffect(() => {
+    setEmailPage(0);
+  }, [emailTemplates.length, emailPageSize]);
+
+  useEffect(() => {
+    if (emailPage > 0 && emailPage >= emailTotalPages) {
+      setEmailPage(Math.max(0, emailTotalPages - 1));
     }
-    return true;
-  });
+  }, [emailPage, emailTotalPages]);
 
   // Handlers
   async function handleCreate(data: CreateTemplateRequest) {
-    try {
-      const newTemplate = await createResponseTemplate(data);
-      setTemplates((prev) => [...prev, newTemplate]);
-      setShowEditor(false);
-      setEditingTemplate(null);
-    } catch (err) {
-      throw err;
-    }
+    const newTemplate = await createResponseTemplate(data);
+    setTemplates((prev) => sortByTitleDe([...prev, newTemplate]));
+    setShowEditor(false);
+    setEditingTemplate(null);
   }
 
   async function handleUpdate(templateId: string, data: UpdateTemplateRequest) {
-    try {
-      const updated = await updateResponseTemplate(templateId, data);
-      setTemplates((prev) => prev.map((t) => (t.id === templateId ? updated : t)));
-      setShowEditor(false);
-      setEditingTemplate(null);
-    } catch (err) {
-      throw err;
-    }
+    const updated = await updateResponseTemplate(templateId, data);
+    setTemplates((prev) => sortByTitleDe(prev.map((t) => (t.id === templateId ? updated : t))));
+    setShowEditor(false);
+    setEditingTemplate(null);
   }
 
   async function handleDelete(templateId: string) {
@@ -128,7 +127,7 @@ export function TemplatesPage() {
       setTemplates((prev) => prev.filter((t) => t.id !== templateId));
     } catch (err) {
       console.error('Error deleting template:', err);
-      alert('Fehler beim Löschen des Templates');
+      alert('Fehler beim Löschen des Templates: ' + (err instanceof Error ? err.message : 'Unbekannter Fehler'));
     }
   }
 
@@ -150,6 +149,92 @@ export function TemplatesPage() {
     }
   }
 
+  // Export backup (from backend)
+  async function handleExportBackup() {
+    try {
+      const payload = await exportCSRTemplatesBackup();
+      downloadJson(`csr-templates-backup-${new Date().toISOString().slice(0, 10)}.json`, payload);
+    } catch (err) {
+      alert('Export fehlgeschlagen: ' + (err instanceof Error ? err.message : 'Unbekannter Fehler'));
+    }
+  }
+
+  async function handleExportFiltered() {
+    try {
+      const payload = buildFilteredTemplatesExportPayload(
+        filteredTemplates,
+        categoryFilter,
+        searchQuery
+      );
+      downloadJson(getFilteredExportFilename(categoryFilter), payload);
+    } catch (err) {
+      alert('Export filtered fehlgeschlagen: ' + (err instanceof Error ? err.message : 'Unbekannter Fehler'));
+    }
+  }
+
+  async function handleImportFilteredAsNew() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json,application/json';
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const parsed = JSON.parse(text);
+        const list = Array.isArray(parsed?.templates) ? parsed.templates : [];
+        if (!list.length) {
+          alert('Keine Templates im Import gefunden.');
+          return;
+        }
+
+        const proceed = confirm(
+          `Import filtered (as new): ${list.length} Templates werden als neue Einträge angelegt. Fortfahren?`
+        );
+        if (!proceed) return;
+
+        const { created, failed } = await importFilteredTemplatesAsNew(parsed);
+
+        alert(`Import abgeschlossen.\nErstellt: ${created}\nFehlgeschlagen: ${failed}`);
+        await loadData();
+      } catch (err) {
+        alert('Import filtered fehlgeschlagen: ' + (err instanceof Error ? err.message : 'Unbekannter Fehler'));
+      }
+    };
+    input.click();
+  }
+
+  async function handleBackfillShortcuts() {
+    try {
+      const preview = await backfillCSRTemplateShortcuts({ dryRun: true });
+      const lines = (preview.candidates || []).slice(0, 20).map(
+        (c) => `- ${c.templateKey}: "${c.title}" -> /${c.suggestedShortcut}`
+      );
+      const proceed = confirm(
+        [
+          'Shortcut Backfill (Dry-Run)',
+          '',
+          `Aktive Templates gescannt: ${preview.activeTemplatesScanned ?? 0}`,
+          `Kandidaten ohne Shortcut: ${preview.candidateCount ?? 0}`,
+          '',
+          ...lines,
+          preview.candidates && preview.candidates.length > 20
+            ? `... +${preview.candidates.length - 20} weitere`
+            : '',
+          '',
+          'Jetzt anwenden?',
+        ].filter(Boolean).join('\n')
+      );
+      if (!proceed) return;
+
+      const applied = await backfillCSRTemplateShortcuts({ dryRun: false });
+      alert(`Shortcut Backfill abgeschlossen. Aktualisiert: ${applied.updatedCount ?? 0}`);
+      await loadData();
+    } catch (err) {
+      alert('Shortcut Backfill fehlgeschlagen: ' + (err instanceof Error ? err.message : 'Unbekannter Fehler'));
+    }
+  }
+
   // Render
   if (loading) {
     return (
@@ -167,16 +252,17 @@ export function TemplatesPage() {
           <h1 className="text-2xl font-bold text-gray-900">CSR Templates</h1>
           <p className="text-gray-500">Textbausteine und E-Mail-Vorlagen verwalten</p>
         </div>
-        <div className="flex gap-2">
-          {templates.length === 0 && emailTemplates.length === 0 && (
-            <Button variant="secondary" onClick={handleSeedTemplates}>
-              📥 Standard-Templates laden
-            </Button>
-          )}
-          {activeTab === 'response' && (
-            <Button onClick={() => setShowEditor(true)}>+ Neues Template</Button>
-          )}
-        </div>
+        <TemplatesHeaderActions
+          activeTab={activeTab}
+          hasAnyTemplate={templates.length > 0 || emailTemplates.length > 0}
+          onExportFiltered={handleExportFiltered}
+          onImportFilteredAsNew={handleImportFilteredAsNew}
+          onBackfillShortcuts={handleBackfillShortcuts}
+          onExportBackup={handleExportBackup}
+          onSeedTemplates={handleSeedTemplates}
+          onCreateResponseTemplate={() => setShowEditor(true)}
+          onCreateEmailTemplate={() => setShowEmailCreateEditor(true)}
+        />
       </div>
 
       {/* Error */}
@@ -190,46 +276,12 @@ export function TemplatesPage() {
       )}
 
       {/* Tabs */}
-      <div className="border-b border-gray-200">
-        <nav className="flex space-x-8">
-          <button
-            className={`py-4 px-1 border-b-2 font-medium text-sm ${
-              activeTab === 'response'
-                ? 'border-fin1-primary text-fin1-primary'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
-            onClick={() => setActiveTab('response')}
-          >
-            Textbausteine
-            <Badge variant="neutral" className="ml-2">
-              {templates.length}
-            </Badge>
-          </button>
-          <button
-            className={`py-4 px-1 border-b-2 font-medium text-sm ${
-              activeTab === 'email'
-                ? 'border-fin1-primary text-fin1-primary'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
-            onClick={() => setActiveTab('email')}
-          >
-            E-Mail Vorlagen
-            <Badge variant="neutral" className="ml-2">
-              {emailTemplates.length}
-            </Badge>
-          </button>
-          <button
-            className={`py-4 px-1 border-b-2 font-medium text-sm ${
-              activeTab === 'stats'
-                ? 'border-fin1-primary text-fin1-primary'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
-            onClick={() => setActiveTab('stats')}
-          >
-            Statistiken
-          </button>
-        </nav>
-      </div>
+      <TemplatesTabs
+        activeTab={activeTab}
+        responseCount={templates.length}
+        emailCount={emailTemplates.length}
+        onChangeTab={setActiveTab}
+      />
 
       {/* Tab Content */}
       {activeTab === 'response' && (
@@ -252,7 +304,7 @@ export function TemplatesPage() {
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-fin1-primary focus:border-transparent"
               >
                 <option value="">Alle Kategorien</option>
-                {categories.map((cat) => (
+                {uniqueCategories.map((cat) => (
                   <option key={cat.key} value={cat.key}>
                     {cat.displayName}
                   </option>
@@ -262,33 +314,108 @@ export function TemplatesPage() {
           </Card>
 
           {/* Template List */}
-          <TemplateList
-            templates={filteredTemplates}
-            categories={categories}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-          />
+          {filteredTemplates.length === 0 ? (
+            <TemplateList
+              templates={filteredTemplates}
+              categories={categories}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+            />
+          ) : (
+            <div className="space-y-3">
+              <div
+                className={clsx(
+                  'flex flex-wrap items-center gap-3 justify-between rounded-lg border px-3 py-2',
+                  isDark ? 'border-slate-600 bg-slate-900/40' : 'border-gray-200 bg-gray-50',
+                )}
+              >
+                <select
+                  value={responsePageSize}
+                  onChange={(e) => {
+                    setResponsePageSize(Number(e.target.value));
+                    setResponsePage(0);
+                  }}
+                  className={clsx(
+                    'border rounded-lg px-3 py-2 text-sm',
+                    isDark
+                      ? 'bg-slate-900/70 border-slate-600 text-slate-100'
+                      : 'bg-white border-gray-300 text-gray-900',
+                  )}
+                >
+                  <option value={25}>25 / Seite</option>
+                  <option value={50}>50 / Seite</option>
+                  <option value={100}>100 / Seite</option>
+                </select>
+                <p className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                  {formatNumber(responseTotal)} Treffer nach Filter · bis zu {formatNumber(templates.length)} aus
+                  Server ({formatNumber(responsePageSize)} pro Seite, lokal)
+                </p>
+              </div>
+              <TemplateList
+                templates={pagedResponseTemplates}
+                categories={categories}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+              />
+              <PaginationBar
+                page={responsePage}
+                pageSize={responsePageSize}
+                total={responseTotal}
+                itemLabel="Templates"
+                isDark={isDark}
+                onPageChange={setResponsePage}
+              />
+            </div>
+          )}
         </div>
       )}
 
-      {activeTab === 'email' && (
-        <EmailTemplateList templates={emailTemplates} onRefresh={loadData} />
-      )}
-
-      {activeTab === 'stats' && (
-        usageStats ? (
-          <UsageStats stats={usageStats} />
+      {activeTab === 'email' &&
+        (emailTemplates.length === 0 ? (
+          <EmailTemplateList templates={emailTemplates} onRefresh={loadData} />
         ) : (
-          <Card>
-            <div className="text-center py-8">
-              <p className="text-gray-500">Statistiken nicht verfügbar</p>
-              <p className="text-sm text-gray-400 mt-2">
-                Sie haben keine Berechtigung, Statistiken anzuzeigen, oder es sind noch keine Daten vorhanden.
+          <div className="space-y-3">
+            <div
+              className={clsx(
+                'flex flex-wrap items-center gap-3 justify-between rounded-lg border px-3 py-2',
+                isDark ? 'border-slate-600 bg-slate-900/40' : 'border-gray-200 bg-gray-50',
+              )}
+            >
+              <select
+                value={emailPageSize}
+                onChange={(e) => {
+                  setEmailPageSize(Number(e.target.value));
+                  setEmailPage(0);
+                }}
+                className={clsx(
+                  'border rounded-lg px-3 py-2 text-sm',
+                  isDark
+                    ? 'bg-slate-900/70 border-slate-600 text-slate-100'
+                    : 'bg-white border-gray-300 text-gray-900',
+                )}
+              >
+                <option value={25}>25 / Seite</option>
+                <option value={50}>50 / Seite</option>
+                <option value={100}>100 / Seite</option>
+              </select>
+              <p className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                {formatNumber(emailTotal)} Treffer nach Filter · bis zu {formatNumber(emailTemplates.length)} aus Server
+                ({formatNumber(emailPageSize)} pro Seite, lokal)
               </p>
             </div>
-          </Card>
-        )
-      )}
+            <EmailTemplateList templates={pagedEmailTemplates} onRefresh={loadData} />
+            <PaginationBar
+              page={emailPage}
+              pageSize={emailPageSize}
+              total={emailTotal}
+              itemLabel="E-Mail-Vorlagen"
+              isDark={isDark}
+              onPageChange={setEmailPage}
+            />
+          </div>
+        ))}
+
+      {activeTab === 'stats' && <UsageStats />}
 
       {/* Editor Modal */}
       {showEditor && (
@@ -306,6 +433,18 @@ export function TemplatesPage() {
             setShowEditor(false);
             setEditingTemplate(null);
           }}
+        />
+      )}
+
+      {showEmailCreateEditor && (
+        <EmailTemplateCreateEditor
+          onSave={async () => {
+            setShowEmailCreateEditor(false);
+            await loadData();
+            setActiveTab('email');
+            alert('Neue E-Mail Vorlage erstellt.');
+          }}
+          onClose={() => setShowEmailCreateEditor(false)}
         />
       )}
     </div>

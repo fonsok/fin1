@@ -21,6 +21,7 @@ export interface TermsContentListItem {
   documentType: string;
   effectiveDate: string | null;
   isActive: boolean;
+  archived?: boolean;
   documentHash: string | null;
   sectionCount: number;
   createdAt: string | null;

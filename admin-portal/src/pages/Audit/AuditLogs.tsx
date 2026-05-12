@@ -1,37 +1,60 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { cloudFunction } from '../../api/admin';
-import { Card, Button, Badge, Input } from '../../components/ui';
+import clsx from 'clsx';
+import { getAuditLogs } from '../../api/admin';
+import { Card, Button, Badge, Input, PaginationBar } from '../../components/ui';
+import { SortableTh, nextSortState, type SortOrder } from '../../components/table/SortableTh';
 import { formatDateTime } from '../../utils/format';
-
-interface AuditLog {
-  objectId: string;
-  logType: string;
-  action: string;
-  userId: string;
-  userEmail?: string;
-  userRole?: string;
-  resourceType?: string;
-  resourceId?: string;
-  metadata?: Record<string, unknown>;
-  ipAddress?: string;
-  createdAt: string;
-}
+import { useTheme } from '../../context/ThemeContext';
+import {
+  listRowStripeClasses,
+  tableBodyDivideClasses,
+  tableHeaderCellTextClasses,
+  tableTheadSurfaceClasses,
+} from '../../utils/tableStriping';
+import { useDebounce } from '../../hooks/useDebounce';
 
 export function AuditLogsPage() {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const [logTypeFilter, setLogTypeFilter] = useState<string>('');
   const [actionFilter, setActionFilter] = useState<string>('');
   const [userIdFilter, setUserIdFilter] = useState<string>('');
+  const debouncedAction = useDebounce(actionFilter);
+  const debouncedUserId = useDebounce(userIdFilter);
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(100);
+  const [sortBy, setSortBy] = useState('createdAt');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+
+  useEffect(() => { setPage(0); }, [debouncedAction, debouncedUserId]);
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['auditLogs', logTypeFilter, actionFilter, userIdFilter],
-    queryFn: () => cloudFunction<{ logs: AuditLog[]; total: number }>('getAuditLogs', {
-      logType: logTypeFilter || undefined,
-      action: actionFilter || undefined,
-      userId: userIdFilter || undefined,
-      limit: 100,
-    }),
+    queryKey: ['auditLogs', logTypeFilter, debouncedAction, debouncedUserId, page, pageSize, sortBy, sortOrder],
+    queryFn: () =>
+      getAuditLogs({
+        logType: logTypeFilter || undefined,
+        action: debouncedAction || undefined,
+        userId: debouncedUserId || undefined,
+        limit: pageSize,
+        skip: page * pageSize,
+        sortBy,
+        sortOrder,
+      }),
+    staleTime: 30_000,
   });
+
+  const onSort = useCallback(
+    (field: string) => {
+      const next = nextSortState(field, sortBy, sortOrder);
+      setSortBy(next.sortBy);
+      setSortOrder(next.sortOrder);
+      setPage(0);
+    },
+    [sortBy, sortOrder],
+  );
+
+  const total = data?.total ?? 0;
 
   const getLogTypeVariant = (type: string): 'success' | 'warning' | 'danger' | 'info' | 'neutral' => {
     switch (type?.toLowerCase()) {
@@ -84,8 +107,14 @@ export function AuditLogsPage() {
         <div className="flex flex-col sm:flex-row gap-4">
           <select
             value={logTypeFilter}
-            onChange={(e) => setLogTypeFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary"
+            onChange={(e) => {
+              setLogTypeFilter(e.target.value);
+              setPage(0);
+            }}
+            className={clsx(
+              'px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary',
+              isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+            )}
           >
             <option value="">Alle Typen</option>
             <option value="security">Sicherheit</option>
@@ -110,6 +139,22 @@ export function AuditLogsPage() {
               onChange={(e) => setUserIdFilter(e.target.value)}
             />
           </div>
+
+          <select
+            value={pageSize}
+            onChange={(e) => {
+              setPageSize(Number(e.target.value));
+              setPage(0);
+            }}
+            className={clsx(
+              'px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary',
+              isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+            )}
+          >
+            <option value={100}>100 / Seite</option>
+            <option value={250}>250 / Seite</option>
+            <option value={500}>500 / Seite</option>
+          </select>
 
           <Button variant="secondary" onClick={() => refetch()}>
             Suchen
@@ -139,28 +184,33 @@ export function AuditLogsPage() {
           <>
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
+                <thead className={tableTheadSurfaceClasses(isDark)}>
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Zeitstempel
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <SortableTh
+                      label="Zeitstempel"
+                      field="createdAt"
+                      sortBy={sortBy}
+                      sortOrder={sortOrder}
+                      onSort={onSort}
+                      className={clsx('px-6 py-3', tableHeaderCellTextClasses(isDark))}
+                    />
+                    <th className={clsx('px-6 py-3 text-left text-xs font-medium uppercase tracking-wider', tableHeaderCellTextClasses(isDark))}>
                       Typ
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className={clsx('px-6 py-3 text-left text-xs font-medium uppercase tracking-wider', tableHeaderCellTextClasses(isDark))}>
                       Aktion
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className={clsx('px-6 py-3 text-left text-xs font-medium uppercase tracking-wider', tableHeaderCellTextClasses(isDark))}>
                       Benutzer
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className={clsx('px-6 py-3 text-left text-xs font-medium uppercase tracking-wider', tableHeaderCellTextClasses(isDark))}>
                       Ressource
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {data.logs.map((log) => (
-                    <tr key={log.objectId} className="hover:bg-gray-50">
+                <tbody className={tableBodyDivideClasses(isDark)}>
+                  {data.logs.map((log, index: number) => (
+                    <tr key={log.objectId} className={listRowStripeClasses(isDark, index)}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {formatDateTime(log.createdAt)}
                       </td>
@@ -201,11 +251,14 @@ export function AuditLogsPage() {
                 </tbody>
               </table>
             </div>
-            <div className="px-6 py-4 border-t border-gray-200">
-              <p className="text-sm text-gray-500">
-                Zeige {data.logs.length} von {data.total} Einträgen
-              </p>
-            </div>
+            <PaginationBar
+              page={page}
+              pageSize={pageSize}
+              total={total}
+              itemLabel="Einträgen"
+              isDark={isDark}
+              onPageChange={setPage}
+            />
           </>
         )}
       </Card>

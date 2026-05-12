@@ -1,3 +1,5 @@
+import clsx from 'clsx';
+import type { ReactNode } from 'react';
 import { Card } from '../../../components/ui';
 import { useNavigate } from 'react-router-dom';
 
@@ -5,10 +7,23 @@ interface QuickActionsProps {
   unassignedTicketCount: number;
 }
 
+type ActionStyle = {
+  bg: string;
+  fg: string;
+  fgMuted: string;
+};
+
 export function QuickActions({ unassignedTicketCount }: QuickActionsProps) {
   const navigate = useNavigate();
 
-  const actions = [
+  const actions: Array<{
+    icon: ReactNode;
+    title: string;
+    subtitle: string;
+    style: ActionStyle;
+    badge?: string;
+    onClick: () => void;
+  }> = [
     {
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -22,7 +37,11 @@ export function QuickActions({ unassignedTicketCount }: QuickActionsProps) {
       ),
       title: 'Neues Ticket',
       subtitle: 'Support-Anfrage',
-      color: 'bg-blue-100 text-blue-600',
+      style: {
+        bg: 'bg-blue-100',
+        fg: 'text-blue-950',
+        fgMuted: 'text-slate-950',
+      },
       onClick: () => navigate('/csr/tickets/new'),
     },
     {
@@ -38,7 +57,11 @@ export function QuickActions({ unassignedTicketCount }: QuickActionsProps) {
       ),
       title: 'KYC-Prüfung',
       subtitle: 'Status anzeigen',
-      color: 'bg-green-100 text-green-600',
+      style: {
+        bg: 'bg-green-100',
+        fg: 'text-green-900',
+        fgMuted: 'text-green-800',
+      },
       onClick: () => navigate('/csr/kyc'),
     },
     {
@@ -54,7 +77,11 @@ export function QuickActions({ unassignedTicketCount }: QuickActionsProps) {
       ),
       title: 'Warteschlange',
       subtitle: 'Ticket-Zuweisung',
-      color: 'bg-orange-100 text-orange-600',
+      style: {
+        bg: 'bg-orange-100',
+        fg: 'text-orange-900',
+        fgMuted: 'text-orange-800',
+      },
       badge: unassignedTicketCount > 0 ? unassignedTicketCount.toString() : undefined,
       onClick: () => navigate('/csr/tickets/queue'),
     },
@@ -71,7 +98,11 @@ export function QuickActions({ unassignedTicketCount }: QuickActionsProps) {
       ),
       title: 'Analytics',
       subtitle: 'Metriken & Berichte',
-      color: 'bg-purple-100 text-purple-600',
+      style: {
+        bg: 'bg-purple-100',
+        fg: 'text-purple-900',
+        fgMuted: 'text-purple-800',
+      },
       onClick: () => navigate('/csr/analytics'),
     },
     {
@@ -87,7 +118,11 @@ export function QuickActions({ unassignedTicketCount }: QuickActionsProps) {
       ),
       title: 'Archiv',
       subtitle: 'Geschlossene Tickets',
-      color: 'bg-gray-100 text-gray-600',
+      style: {
+        bg: 'bg-gray-100',
+        fg: 'text-neutral-950',
+        fgMuted: 'text-neutral-800',
+      },
       onClick: () => navigate('/csr/tickets/archive'),
     },
     {
@@ -103,7 +138,11 @@ export function QuickActions({ unassignedTicketCount }: QuickActionsProps) {
       ),
       title: 'Trends',
       subtitle: 'Muster & Alerts',
-      color: 'bg-red-100 text-red-600',
+      style: {
+        bg: 'bg-red-100',
+        fg: 'text-red-950',
+        fgMuted: 'text-red-950',
+      },
       onClick: () => navigate('/csr/trends'),
     },
     {
@@ -119,7 +158,11 @@ export function QuickActions({ unassignedTicketCount }: QuickActionsProps) {
       ),
       title: 'Agent-Performance',
       subtitle: 'Team-Statistiken',
-      color: 'bg-cyan-100 text-cyan-600',
+      style: {
+        bg: 'bg-cyan-100',
+        fg: 'text-cyan-900',
+        fgMuted: 'text-cyan-800',
+      },
       onClick: () => navigate('/csr/analytics'),
     },
     {
@@ -135,7 +178,11 @@ export function QuickActions({ unassignedTicketCount }: QuickActionsProps) {
       ),
       title: 'Massenbearbeitung',
       subtitle: 'Mehrere Tickets',
-      color: 'bg-indigo-100 text-indigo-600',
+      style: {
+        bg: 'bg-indigo-100',
+        fg: 'text-indigo-900',
+        fgMuted: 'text-indigo-800',
+      },
       onClick: () => navigate('/csr/tickets/bulk'),
     },
     {
@@ -151,7 +198,11 @@ export function QuickActions({ unassignedTicketCount }: QuickActionsProps) {
       ),
       title: 'FAQ Wissensdatenbank',
       subtitle: 'Artikel & Lösungen',
-      color: 'bg-emerald-100 text-emerald-600',
+      style: {
+        bg: 'bg-emerald-100',
+        fg: 'text-emerald-900',
+        fgMuted: 'text-emerald-800',
+      },
       onClick: () => navigate('/csr/faqs'),
     },
   ];
@@ -163,20 +214,27 @@ export function QuickActions({ unassignedTicketCount }: QuickActionsProps) {
         {actions.map((action, index) => (
           <button
             key={index}
+            type="button"
             onClick={action.onClick}
-            className={`p-4 rounded-lg border-2 border-transparent hover:border-fin1-primary transition-all ${action.color} hover:shadow-md`}
+            className={clsx(
+              'p-4 rounded-lg border-2 border-transparent hover:border-fin1-primary transition-all text-left hover:shadow-md',
+              action.style.bg,
+              action.style.fg,
+            )}
           >
             <div className="flex items-center justify-between mb-2">
               {action.icon}
               {action.badge && (
-                <span className="bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                <span className="bg-red-600 text-white text-xs font-bold rounded-full min-w-[1.25rem] h-5 px-1 flex items-center justify-center">
                   {action.badge}
                 </span>
               )}
             </div>
-            <div className="text-left">
-              <div className="font-semibold text-sm">{action.title}</div>
-              <div className="text-xs opacity-75">{action.subtitle}</div>
+            <div>
+              <div className="font-semibold text-sm leading-snug">{action.title}</div>
+              <div className={clsx('text-xs mt-0.5 font-medium leading-snug', action.style.fgMuted)}>
+                {action.subtitle}
+              </div>
             </div>
           </button>
         ))}

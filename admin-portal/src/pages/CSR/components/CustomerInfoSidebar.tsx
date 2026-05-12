@@ -61,7 +61,7 @@ export function CustomerInfoSidebar({
           </div>
           <div>
             <p className="text-xs text-gray-500 uppercase tracking-wide">Kunden-ID</p>
-            <p className="text-sm font-mono">{selectedCustomer.customerId || selectedCustomer.objectId}</p>
+            <p className="text-sm font-mono">{selectedCustomer.customerNumber || '—'}</p>
           </div>
           <div>
             <p className="text-xs text-gray-500 uppercase tracking-wide">KYC-Status</p>

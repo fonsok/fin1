@@ -1,4 +1,6 @@
+import { useMemo } from 'react';
 import { getCategoryIcon } from '../templates';
+import { sortByTitleDe } from '../../Templates/utils/templateDisplayOrder';
 
 // ============================================================================
 // TemplateDropdown Component
@@ -42,6 +44,8 @@ export function TemplateDropdown<T extends BaseTemplate>({
   showBodyPreview = false,
   widthClass = 'w-72',
 }: TemplateDropdownProps<T>): JSX.Element {
+  const sortedTemplates = useMemo(() => sortByTitleDe(templates), [templates]);
+
   const handleSelect = (template: T): void => {
     onSelect(template);
     onClose();
@@ -65,14 +69,14 @@ export function TemplateDropdown<T extends BaseTemplate>({
       {error && <div className="p-4 text-center text-sm text-red-500">{error}</div>}
 
       {/* Empty State */}
-      {!isLoading && !error && templates.length === 0 && (
+      {!isLoading && !error && sortedTemplates.length === 0 && (
         <div className="p-4 text-center text-sm text-gray-500">
           Keine Vorlagen verfügbar.
         </div>
       )}
 
       {/* Template List */}
-      {templates.map((template) => (
+      {sortedTemplates.map((template) => (
         <button
           key={template.id}
           type="button"

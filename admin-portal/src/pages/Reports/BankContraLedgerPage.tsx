@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { cloudFunction } from '../../api/admin';
 import { Card, Button, Badge } from '../../components/ui';
 import { formatCurrency, formatDateTime } from '../../utils/format';
+import { formatLedgerAccountDisplayLabel } from './appLedger/constants';
 
 interface ContraPosting {
   id: string;
@@ -10,6 +11,7 @@ interface ContraPosting {
   side: 'credit' | 'debit';
   amount: number;
   investorId: string;
+  investorName: string;
   batchId: string;
   investmentIds: string[];
   reference: string;
@@ -26,6 +28,7 @@ interface AccountTotals {
 interface AccountDef {
   code: string;
   name: string;
+  externalAccountNumber?: string;
 }
 
 interface LedgerResponse {
@@ -40,31 +43,53 @@ export function BankContraLedgerPage(): JSX.Element {
   const [investorFilter, setInvestorFilter] = useState('');
 
   const { data, isLoading, refetch } = useQuery({
-    queryKey: ['bankContraLedger', selectedAccount, investorFilter],
+    queryKey: ['bankContraLedger', selectedAccount],
     queryFn: () =>
       cloudFunction<LedgerResponse>('getBankContraLedger', {
         ...(selectedAccount ? { account: selectedAccount } : {}),
-        ...(investorFilter ? { investorId: investorFilter } : {}),
       }),
     staleTime: 60000,
   });
 
   const postings = data?.postings || [];
-  const totals = data?.totals || {};
   const accounts = data?.accounts || [
     { code: 'BANK-PS-NET', name: 'Bank Clearing – Service Charge NET' },
     { code: 'BANK-PS-VAT', name: 'Bank Clearing – Service Charge VAT' },
   ];
 
+  const normalizedFilter = investorFilter.trim().toLowerCase();
+  const filteredPostings = normalizedFilter
+    ? postings.filter((p) =>
+        (p.investorName || '').toLowerCase().includes(normalizedFilter) ||
+        (p.investorId || '').toLowerCase().includes(normalizedFilter))
+    : postings;
+
+  // Recompute totals from filtered postings so cards + Tabelle konsistent sind
+  const totals: Record<string, AccountTotals> = {};
+  for (const p of filteredPostings) {
+    const key = p.account;
+    if (!totals[key]) {
+      totals[key] = { credit: 0, debit: 0, net: 0 };
+    }
+    if (p.side === 'credit') {
+      totals[key].credit += p.amount;
+      totals[key].net += p.amount;
+    } else {
+      totals[key].debit += p.amount;
+      totals[key].net -= p.amount;
+    }
+  }
+
   const exportCSV = () => {
-    if (postings.length === 0) return;
-    const header = ['Datum', 'Konto', 'Seite', 'Betrag', 'Investor', 'Batch', 'Referenz'].join(',');
-    const rows = postings.map((p) =>
+    if (filteredPostings.length === 0) return;
+    const header = ['Datum', 'Konto', 'Seite', 'Betrag', 'Investor', 'Investor-ID', 'Batch', 'Referenz'].join(',');
+    const rows = filteredPostings.map((p) =>
       [
         formatDateTime(p.createdAt),
         p.account,
         p.side === 'credit' ? 'Haben' : 'Soll',
         p.amount.toFixed(2),
+        p.investorName || p.investorId,
         p.investorId,
         p.batchId,
         p.reference,
@@ -89,7 +114,7 @@ export function BankContraLedgerPage(): JSX.Element {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Bank Contra Ledger</h1>
           <p className="text-gray-500 mt-1">
-            Verrechnungskonten für Platform Service Charges (NET + USt.)
+            Verrechnungskonten für App Service Charges (NET + USt.)
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -113,7 +138,7 @@ export function BankContraLedgerPage(): JSX.Element {
                 onClick={() => setSelectedAccount(selectedAccount === acc.code ? '' : acc.code)}
               >
                 <div className="flex items-center justify-between mb-2">
-                  <span className="font-medium text-gray-900">{acc.name}</span>
+                  <span className="font-medium text-gray-900">{formatLedgerAccountDisplayLabel(acc)}</span>
                   <span className="text-xs font-mono text-gray-400">{acc.code}</span>
                 </div>
                 {t ? (
@@ -152,18 +177,21 @@ export function BankContraLedgerPage(): JSX.Element {
             >
               <option value="">Alle Konten</option>
               {accounts.map((a) => (
-                <option key={a.code} value={a.code}>{a.name}</option>
+                <option key={a.code} value={a.code}>
+                  {formatLedgerAccountDisplayLabel(a)}
+                </option>
               ))}
             </select>
           </div>
           <div className="flex-1">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Investor-ID</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Investor</label>
             <input
               type="text"
               value={investorFilter}
               onChange={(e) => setInvestorFilter(e.target.value)}
-              placeholder="Investor-ID filtern..."
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              placeholder="Name oder ID filtern..."
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white placeholder:text-gray-400"
+              style={{ color: '#111827' }}
             />
           </div>
           <Button
@@ -179,17 +207,17 @@ export function BankContraLedgerPage(): JSX.Element {
       <Card>
         <div className="p-4 border-b border-gray-100 flex justify-between items-center">
           <h2 className="text-lg font-semibold">
-            Buchungen ({postings.length})
+            Buchungen ({filteredPostings.length})
           </h2>
         </div>
 
         {isLoading ? (
           <div className="p-8 text-center text-gray-500">Daten werden geladen...</div>
-        ) : postings.length === 0 ? (
+        ) : filteredPostings.length === 0 ? (
           <div className="p-8 text-center text-gray-500">
             Keine Buchungen gefunden.
             {!selectedAccount && !investorFilter && (
-              <p className="mt-2 text-sm">Buchungen werden erzeugt, wenn Investments mit Platform Service Charge abgerechnet werden.</p>
+              <p className="mt-2 text-sm">Buchungen werden erzeugt, wenn Investments mit App Service Charge abgerechnet werden.</p>
             )}
           </div>
         ) : (
@@ -207,7 +235,7 @@ export function BankContraLedgerPage(): JSX.Element {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {postings.map((p) => (
+                {filteredPostings.map((p) => (
                   <tr key={p.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3 text-sm text-gray-500">{formatDateTime(p.createdAt)}</td>
                     <td className="px-4 py-3 text-sm font-mono text-gray-700">{p.account}</td>
@@ -219,7 +247,9 @@ export function BankContraLedgerPage(): JSX.Element {
                     <td className={`px-4 py-3 text-sm text-right font-medium ${p.side === 'credit' ? 'text-green-600' : 'text-red-600'}`}>
                       {formatCurrency(p.amount)}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-700">{p.investorId || '-'}</td>
+                    <td className="px-4 py-3 text-sm text-gray-700">
+                      {p.investorName || p.investorId || '-'}
+                    </td>
                     <td className="px-4 py-3 text-sm font-mono text-gray-500">{p.reference}</td>
                     <td className="px-4 py-3 text-sm text-gray-400">
                       {p.metadata?.component === 'net' ? 'Netto-Anteil' :

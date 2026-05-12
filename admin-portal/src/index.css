@@ -3,6 +3,10 @@
 @tailwind utilities;
 
 /* Base styles */
+html {
+  font-size: 100%;
+}
+
 body {
   @apply antialiased text-fin1-dark;
 }
@@ -34,7 +38,7 @@ body {
   }
 
   .card {
-    @apply bg-white rounded-xl shadow-sm border border-gray-100 p-6;
+    @apply fin1-card bg-slate-700/90 rounded-xl shadow-sm border border-slate-600 text-slate-100 p-6;
   }
 
   .badge {
@@ -60,6 +64,131 @@ body {
   .badge-neutral {
     @apply badge bg-gray-100 text-gray-800;
   }
+}
+
+/* Dark content area: page-level headings and text on slate-800 background */
+main[data-content-area="dark"] h1,
+main[data-content-area="dark"] h2 {
+  color: #f1f5f9; /* slate-100 */
+}
+main[data-content-area="dark"] p.text-gray-500 {
+  color: #94a3b8; /* slate-400 */
+}
+/* Dark cards: ensure text and borders are readable on slate-700 */
+main[data-content-area="dark"] .fin1-card .text-gray-900,
+main[data-content-area="dark"] .fin1-card h3 {
+  color: #f1f5f9; /* slate-100 */
+}
+main[data-content-area="dark"] .fin1-card .text-gray-500,
+main[data-content-area="dark"] .fin1-card .text-gray-600 {
+  color: #94a3b8; /* slate-400 */
+}
+main[data-content-area="dark"] .fin1-card .text-gray-700 {
+  color: #cbd5e1; /* slate-300 */
+}
+main[data-content-area="dark"] .fin1-card table th,
+main[data-content-area="dark"] .fin1-card table td {
+  color: #e2e8f0; /* slate-200 */
+}
+main[data-content-area="dark"] .fin1-card thead {
+  border-color: #475569;
+}
+main[data-content-area="dark"] .fin1-card tbody tr:hover {
+  background: rgba(51, 65, 85, 0.5);
+}
+
+/* Dark theme: improve contrast for brand blue text on bluish backgrounds */
+.fin1-theme-dark .text-fin1-primary {
+  color: #93c5fd; /* tailwind sky-300 */
+}
+.fin1-theme-dark .text-blue-600,
+.fin1-theme-dark .text-blue-700,
+.fin1-theme-dark .text-blue-800 {
+  color: #bfdbfe; /* tailwind blue-200 */
+}
+
+/* Dark theme: improve contrast for warning/error text */
+.fin1-theme-dark .text-amber-700,
+.fin1-theme-dark .text-amber-800,
+.fin1-theme-dark .text-amber-900 {
+  color: #fcd34d; /* amber-300 */
+}
+.fin1-theme-dark .text-red-600,
+.fin1-theme-dark .text-red-700,
+.fin1-theme-dark .text-red-800 {
+  color: #fecaca; /* red-200 */
+}
+
+/* Dark theme: globally lift low-contrast gray text to slate-200 */
+.fin1-theme-dark .text-gray-400,
+.fin1-theme-dark .text-gray-500,
+.fin1-theme-dark .text-gray-600,
+.fin1-theme-dark .text-gray-700 {
+  color: #e2e8f0 !important; /* slate-200 */
+}
+
+/* Dark theme: make info badges (e.g. "Aktiv") dunkler mit heller Schrift
+   Badge-Komponente nutzt aktuell bg-blue-100 + text-blue-800, nicht die .badge-info-Klasse */
+.fin1-theme-dark .bg-blue-100.text-blue-800 {
+  background-color: #1d4ed8; /* blue-700 */
+  color: #e0f2fe;            /* sky-100 */
+}
+/* Dark theme form controls: dark background + light text for readability */
+main[data-content-area="dark"] input:not([type="checkbox"]):not([type="radio"]),
+main[data-content-area="dark"] textarea,
+main[data-content-area="dark"] select {
+  color: #f1f5f9; /* slate-100 */
+  background-color: rgba(15, 23, 42, 0.9); /* slate-900/90 */
+  border-color: #475569; /* slate-600 */
+}
+main[data-content-area="dark"] input::placeholder,
+main[data-content-area="dark"] textarea::placeholder {
+  color: #94a3b8; /* slate-400 */
+}
+main[data-content-area="dark"] select option {
+  color: #f1f5f9;
+  background: #0f172a; /* slate-900 */
+}
+/* Modals/dropdowns that stay white: keep dark text */
+main[data-content-area="dark"] .bg-white h1,
+main[data-content-area="dark"] .bg-white h2,
+main[data-content-area="dark"] .bg-white h3,
+main[data-content-area="dark"] .bg-white .text-gray-900 {
+  color: #111827;
+}
+main[data-content-area="dark"] .bg-white p.text-gray-500,
+main[data-content-area="dark"] .bg-white .text-gray-500 {
+  color: #6b7280;
+}
+
+/* Modals/dropdowns that stay white: keep dark text for form controls too */
+main[data-content-area="dark"] .bg-white input,
+main[data-content-area="dark"] .bg-white textarea,
+main[data-content-area="dark"] .bg-white select {
+  color: #111827 !important;
+  background-color: #ffffff !important;
+  border-color: #d1d5db !important;
+}
+
+/* Dark theme tables: avoid bright header rows and low-contrast text */
+main[data-content-area="dark"] table {
+  color: #e2e8f0; /* slate-200 */
+}
+main[data-content-area="dark"] table thead,
+main[data-content-area="dark"] table thead.bg-gray-50 {
+  background-color: rgba(15, 23, 42, 0.7) !important; /* slate-900/70 */
+}
+main[data-content-area="dark"] table thead tr {
+  border-color: #475569 !important; /* slate-600 */
+}
+main[data-content-area="dark"] table th {
+  color: #cbd5e1 !important; /* slate-300 */
+}
+main[data-content-area="dark"] table tbody tr {
+  border-color: #334155 !important; /* slate-700 */
+}
+main[data-content-area="dark"] table tbody tr:hover {
+  background: rgba(51, 65, 85, 0.45) !important; /* slate-700/45 */
 }
 
 /* Scrollbar styling */

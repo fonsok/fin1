@@ -18,7 +18,8 @@ import { TemplatesPage } from './pages/Templates';
 import { FAQsPage } from './pages/FAQs';
 import { TermsPage } from './pages/Terms';
 import { OnboardingFunnelPage } from './pages/Onboarding';
-import { SummaryReportPage, BankContraLedgerPage } from './pages/Reports';
+import { SummaryReportPage, AppLedgerPage, DocumentSearchPage } from './pages/Reports';
+import { KYBReviewPage } from './pages/KYBReview/KYBReviewPage';
 import { CSRApp } from './csr-portal/CSRApp';
 
 // Protected Route Wrapper for ADMIN routes only
@@ -82,49 +83,52 @@ export default function App() {
       {/* CSR Portal Routes - Separate App */}
       <Route path="/csr/*" element={<CSRApp />} />
 
-      {/* Admin Portal Routes */}
-      <Route
-        path="/login"
-        element={
-          <PublicRoute>
-            <LoginPage />
-          </PublicRoute>
-        }
-      />
+        {/* Admin Portal Routes */}
+        <Route
+          path="/login"
+          element={
+            <PublicRoute>
+              <LoginPage />
+            </PublicRoute>
+          }
+        />
 
-      {/* Protected Admin Routes */}
-      <Route
-        path="/*"
-        element={
-          <CSRRedirectGuard>
-            <ProtectedRoute>
-              <Layout>
-                <Routes>
-                  <Route path="/" element={<DashboardPage />} />
-                  <Route path="/users" element={<UserListPage />} />
-                  <Route path="/users/:userId" element={<UserDetailPage />} />
-                  <Route path="/tickets" element={<TicketListPage />} />
-                  <Route path="/onboarding" element={<OnboardingFunnelPage />} />
-                  <Route path="/compliance" element={<ComplianceEventsPage />} />
-                  <Route path="/finance" element={<FinanceDashboardPage />} />
-                  <Route path="/security" element={<SecurityDashboardPage />} />
-                  <Route path="/approvals" element={<ApprovalsListPage />} />
-                  <Route path="/audit" element={<AuditLogsPage />} />
-                  <Route path="/configuration" element={<ConfigurationPage />} />
-                  <Route path="/reports" element={<SummaryReportPage />} />
-                  <Route path="/bank-ledger" element={<BankContraLedgerPage />} />
-                  <Route path="/system" element={<SystemHealthPage />} />
-                  <Route path="/templates" element={<TemplatesPage />} />
-                  <Route path="/faqs" element={<FAQsPage />} />
-                  <Route path="/terms" element={<TermsPage />} />
-                  <Route path="/settings" element={<SettingsPage />} />
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
-              </Layout>
-            </ProtectedRoute>
-          </CSRRedirectGuard>
-        }
-      />
+        {/* Protected Admin Routes */}
+        <Route
+          path="/*"
+          element={
+            <CSRRedirectGuard>
+              <ProtectedRoute>
+                <Layout>
+                  <Routes>
+                    <Route path="/" element={<DashboardPage />} />
+                    <Route path="/users" element={<UserListPage />} />
+                    <Route path="/users/:userId" element={<UserDetailPage />} />
+                    <Route path="/tickets" element={<TicketListPage />} />
+                    <Route path="/onboarding" element={<OnboardingFunnelPage />} />
+                    <Route path="/compliance" element={<ComplianceEventsPage />} />
+                    <Route path="/finance" element={<FinanceDashboardPage />} />
+                    <Route path="/security" element={<SecurityDashboardPage />} />
+                    <Route path="/approvals" element={<ApprovalsListPage />} />
+                    <Route path="/kyb-review" element={<KYBReviewPage />} />
+                    <Route path="/audit" element={<AuditLogsPage />} />
+                    <Route path="/configuration" element={<ConfigurationPage />} />
+                    <Route path="/reports" element={<SummaryReportPage />} />
+                    <Route path="/bank-ledger" element={<Navigate to="/app-ledger" replace />} />
+                    <Route path="/app-ledger" element={<AppLedgerPage />} />
+                    <Route path="/documents" element={<DocumentSearchPage />} />
+                    <Route path="/system" element={<SystemHealthPage />} />
+                    <Route path="/templates" element={<TemplatesPage />} />
+                    <Route path="/faqs" element={<FAQsPage />} />
+                    <Route path="/terms" element={<TermsPage />} />
+                    <Route path="/settings" element={<SettingsPage />} />
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                  </Routes>
+                </Layout>
+              </ProtectedRoute>
+            </CSRRedirectGuard>
+          }
+        />
     </Routes>
   );
 }

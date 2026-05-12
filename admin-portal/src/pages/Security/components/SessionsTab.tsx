@@ -1,36 +1,75 @@
+import clsx from 'clsx';
 import { Card, Button } from '../../../components/ui';
+import { SortableTh, type SortOrder } from '../../../components/table/SortableTh';
+import { useTheme } from '../../../context/ThemeContext';
 import { formatDateTime } from '../../../utils/format';
+import {
+  listRowStripeClasses,
+  tableBodyDivideClasses,
+  tableTheadSurfaceClasses,
+} from '../../../utils/tableStriping';
 import type { ActiveSession } from '../types';
 
 interface SessionsTabProps {
   sessions: ActiveSession[];
   onTerminate: (sessionId: string) => void;
   isTerminating: boolean;
+  sortBy: string;
+  sortOrder: SortOrder;
+  onSort: (field: string) => void;
 }
 
-export function SessionsTab({ sessions, onTerminate, isTerminating }: SessionsTabProps): JSX.Element {
+export function SessionsTab({
+  sessions,
+  onTerminate,
+  isTerminating,
+  sortBy,
+  sortOrder,
+  onSort,
+}: SessionsTabProps): JSX.Element {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+  const thClass = clsx('px-4 py-3 text-xs font-medium uppercase', isDark ? 'text-slate-400' : 'text-gray-500');
+
   return (
     <Card>
       <div className="overflow-x-auto">
         <table className="w-full">
-          <thead className="bg-gray-50">
+          <thead className={tableTheadSurfaceClasses(isDark)}>
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Benutzer</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">IP-Adresse</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Gerät</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Angemeldet seit</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Letzte Aktivität</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Aktionen</th>
+              <th className={clsx(thClass, 'text-left')}>Benutzer</th>
+              <th className={clsx(thClass, 'text-left')}>IP-Adresse</th>
+              <th className={clsx(thClass, 'text-left')}>Gerät</th>
+              <SortableTh
+                label="Angemeldet seit"
+                field="createdAt"
+                sortBy={sortBy}
+                sortOrder={sortOrder}
+                onSort={onSort}
+                className={clsx(thClass, 'text-left')}
+              />
+              <th className={clsx(thClass, 'text-left')}>Letzte Aktivität</th>
+              <th className={clsx(thClass, 'text-left')}>Aktionen</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
-            {sessions.map((session) => (
-              <tr key={session.objectId} className="hover:bg-gray-50">
-                <td className="px-4 py-3 font-medium text-gray-900">{session.email}</td>
-                <td className="px-4 py-3 text-gray-500 font-mono text-sm">{session.ipAddress}</td>
-                <td className="px-4 py-3 text-gray-500">{session.device}</td>
-                <td className="px-4 py-3 text-gray-500">{formatDateTime(session.createdAt)}</td>
-                <td className="px-4 py-3 text-gray-500">{formatDateTime(session.lastActivity)}</td>
+          <tbody className={tableBodyDivideClasses(isDark)}>
+            {sessions.map((session, index) => (
+              <tr key={session.objectId} className={listRowStripeClasses(isDark, index)}>
+                <td className={clsx('px-4 py-3 font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                  {session.email}
+                </td>
+                <td className={clsx('px-4 py-3 font-mono text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                  {session.ipAddress}
+                </td>
+                <td className={clsx('px-4 py-3', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                  {session.device}
+                </td>
+                <td className={clsx('px-4 py-3', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                  {formatDateTime(session.createdAt)}
+                </td>
+                <td className={clsx('px-4 py-3', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                  {formatDateTime(session.lastActivity)}
+                </td>
                 <td className="px-4 py-3">
                   <Button
                     variant="ghost"

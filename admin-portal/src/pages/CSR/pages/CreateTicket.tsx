@@ -1,9 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
+import clsx from 'clsx';
 import { Card, Button } from '../../../components/ui';
+import { useTheme } from '../../../context/ThemeContext';
 import { searchCustomers, getCustomerProfile, getSupportTickets, createSupportTicket } from '../api';
 import { getResponseTemplates } from '../../Templates/api';
+import { sortByTitleDe } from '../../Templates/utils/templateDisplayOrder';
 import { TemplateDropdown, TemplateButton } from '../components/TemplateDropdown';
 import { SelectedCustomerCard, CustomerSearchInput } from '../components/CustomerSelection';
 import { CustomerInfoSidebar } from '../components/CustomerInfoSidebar';
@@ -26,9 +29,12 @@ import type { CustomerSearchResult } from '../types';
 // - Customer info sidebar with recent tickets
 
 export function CreateTicketPage(): JSX.Element {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const preselectedCustomerId = searchParams.get('customerId');
+  const preselectedUserId =
+    searchParams.get('userId') || searchParams.get('customerId');
 
   // UI State
   const [customerSearch, setCustomerSearch] = useState('');
@@ -55,15 +61,22 @@ export function CreateTicketPage(): JSX.Element {
     queryFn: () => getResponseTemplates('teamlead', true),
   });
 
-  // Use fetched templates or fallback to defaults
-  const subjectTemplates: TicketSubjectTemplate[] =
-    templates && templates.length > 0 ? templates : defaultSubjectTemplates;
-  const descriptionTemplates: TicketDescriptionTemplate[] =
-    templates && templates.length > 0
-      ? templates
+  // Fetched templates or defaults, always A–Z by title (de locale) for list + dropdowns
+  const subjectTemplates: TicketSubjectTemplate[] = useMemo(() => {
+    const raw = templates && templates.length > 0 ? templates : defaultSubjectTemplates;
+    return sortByTitleDe(raw);
+  }, [templates]);
+
+  const descriptionTemplates: TicketDescriptionTemplate[] = useMemo(() => {
+    if (templates && templates.length > 0) {
+      return sortByTitleDe(
+        templates
           .filter((t) => !!t.body && t.body.length > 0)
-          .map((t) => ({ id: t.id, title: t.title, category: t.category, body: t.body! }))
-      : defaultDescriptionTemplates;
+          .map((t) => ({ id: t.id, title: t.title, category: t.category, body: t.body! })),
+      );
+    }
+    return sortByTitleDe(defaultDescriptionTemplates);
+  }, [templates]);
 
   // Customer search query
   const { data: searchResults, isLoading: isSearching } = useQuery({
@@ -86,14 +99,15 @@ export function CreateTicketPage(): JSX.Element {
     enabled: !!selectedCustomer?.objectId,
   });
 
-  // Pre-select customer if ID is provided in URL
+  // Pre-select customer if Parse user id is provided in URL (?userId= or legacy ?customerId=)
   useEffect(() => {
-    if (preselectedCustomerId) {
-      getCustomerProfile(preselectedCustomerId).then((profile) => {
+    if (preselectedUserId) {
+      getCustomerProfile(preselectedUserId).then((profile) => {
         if (profile) {
           setSelectedCustomer({
             objectId: profile.objectId,
-            customerId: profile.customerId,
+            userId: profile.userId,
+            customerNumber: profile.customerNumber,
             email: profile.email,
             firstName: profile.firstName,
             lastName: profile.lastName,
@@ -105,19 +119,21 @@ export function CreateTicketPage(): JSX.Element {
         }
       });
     }
-  }, [preselectedCustomerId]);
+  }, [preselectedUserId]);
 
   // Create ticket mutation
   const createMutation = useMutation({
-    mutationFn: () =>
-      createSupportTicket({
+    mutationFn: () => {
+      const uid = selectedCustomer?.objectId;
+      if (!uid) throw new Error('Kein Kunde ausgewählt');
+      return createSupportTicket({
         subject: formData.subject,
         description: formData.description,
         category: formData.category,
         priority: formData.priority,
-        customerId: selectedCustomer?.objectId,
-        userId: selectedCustomer?.objectId,
-      }),
+        userId: uid,
+      });
+    },
     onSuccess: (ticket) => {
       navigate(`/csr/tickets/${ticket.objectId}`);
     },
@@ -193,8 +209,12 @@ export function CreateTicketPage(): JSX.Element {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Neues Ticket erstellen</h1>
-          <p className="text-gray-500 mt-1">Support-Anfrage für einen Kunden erfassen</p>
+          <h1 className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+            Neues Ticket erstellen
+          </h1>
+          <p className={clsx('mt-1', isDark ? 'text-slate-400' : 'text-gray-500')}>
+            Support-Anfrage für einen Kunden erfassen
+          </p>
         </div>
         <Button variant="secondary" onClick={() => navigate('/csr/tickets')}>
           Abbrechen
@@ -206,7 +226,7 @@ export function CreateTicketPage(): JSX.Element {
         <div className="lg:col-span-2 space-y-6">
           {/* Customer Selection */}
           <Card>
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            <h2 className={clsx('text-lg font-semibold mb-4', isDark ? 'text-slate-100' : 'text-gray-900')}>
               Kunde auswählen <span className="text-red-500">*</span>
             </h2>
 
@@ -237,13 +257,17 @@ export function CreateTicketPage(): JSX.Element {
 
           {/* Ticket Details */}
           <Card>
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Ticket-Details</h2>
+            <h2 className={clsx('text-lg font-semibold mb-4', isDark ? 'text-slate-100' : 'text-gray-900')}>
+              Ticket-Details
+            </h2>
 
             <form className="space-y-4">
               {/* Subject with Templates */}
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label
+                    className={clsx('block text-sm font-medium', isDark ? 'text-slate-300' : 'text-gray-700')}
+                  >
                     Betreff <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
@@ -265,14 +289,21 @@ export function CreateTicketPage(): JSX.Element {
                   value={formData.subject}
                   onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                   placeholder="Kurze Beschreibung des Problems"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary"
+                  className={clsx(
+                    'w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary',
+                    isDark
+                      ? 'bg-slate-800/80 border border-slate-500 text-slate-100 placeholder:text-slate-500'
+                      : 'border border-gray-300',
+                  )}
                 />
               </div>
 
               {/* Description with Templates */}
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label
+                    className={clsx('block text-sm font-medium', isDark ? 'text-slate-300' : 'text-gray-700')}
+                  >
                     Beschreibung <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
@@ -295,20 +326,35 @@ export function CreateTicketPage(): JSX.Element {
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   placeholder="Detaillierte Beschreibung des Anliegens..."
-                  className="w-full h-32 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary resize-none"
+                  className={clsx(
+                    'w-full h-32 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary resize-none',
+                    isDark
+                      ? 'bg-slate-800/80 border border-slate-500 text-slate-100 placeholder:text-slate-500'
+                      : 'border border-gray-300',
+                  )}
                 />
               </div>
 
               {/* Category and Priority */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    className={clsx(
+                      'block text-sm font-medium mb-1',
+                      isDark ? 'text-slate-300' : 'text-gray-700',
+                    )}
+                  >
                     Kategorie <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary"
+                    className={clsx(
+                      'w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary',
+                      isDark
+                        ? 'bg-slate-800/80 border border-slate-500 text-slate-100'
+                        : 'border border-gray-300',
+                    )}
                   >
                     <option value="">Kategorie wählen...</option>
                     {categories.map((cat) => (
@@ -320,11 +366,23 @@ export function CreateTicketPage(): JSX.Element {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Priorität</label>
+                  <label
+                    className={clsx(
+                      'block text-sm font-medium mb-1',
+                      isDark ? 'text-slate-300' : 'text-gray-700',
+                    )}
+                  >
+                    Priorität
+                  </label>
                   <select
                     value={formData.priority}
                     onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary"
+                    className={clsx(
+                      'w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary',
+                      isDark
+                        ? 'bg-slate-800/80 border border-slate-500 text-slate-100'
+                        : 'border border-gray-300',
+                    )}
                   >
                     <option value="low">Niedrig</option>
                     <option value="medium">Mittel</option>

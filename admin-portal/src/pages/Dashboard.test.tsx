@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '../test/test-utils';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DashboardPage } from './Dashboard';
 
@@ -60,6 +60,7 @@ describe('DashboardPage', () => {
       user: {
         firstName: 'Admin',
         email: 'admin@test.com',
+        role: 'admin',
       },
     });
     mockUsePermissions.mockReturnValue({
@@ -132,7 +133,26 @@ describe('DashboardPage', () => {
     });
   });
 
-  it('shows tickets section when user can view tickets', async () => {
+  it('hides tickets section for full admin (no ticket menu)', async () => {
+    render(<DashboardPage />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByText('Schnellzugriff')).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText('Offene Tickets')).not.toBeInTheDocument();
+    expect(screen.queryByText('Alle Tickets anzeigen →')).not.toBeInTheDocument();
+  });
+
+  it('shows tickets section for business_admin when canViewTickets', async () => {
+    mockUseAuth.mockReturnValue({
+      user: {
+        firstName: 'Finance',
+        email: 'finance@test.com',
+        role: 'business_admin',
+      },
+    });
+
     render(<DashboardPage />, { wrapper: createWrapper() });
 
     await waitFor(() => {
@@ -211,18 +231,29 @@ describe('DashboardPage', () => {
     expect(screen.queryByText('Benutzer suchen')).not.toBeInTheDocument();
   });
 
-  it('displays ticket count badge', async () => {
+  it('displays ticket count badge for business_admin', async () => {
+    vi.mocked(getAdminDashboard).mockResolvedValue(mockStats);
+    mockUseAuth.mockReturnValue({
+      user: { firstName: 'Finance', email: 'f@test.com', role: 'business_admin' },
+    });
+
     render(<DashboardPage />, { wrapper: createWrapper() });
 
     await waitFor(() => {
-      expect(screen.getByText('25')).toBeInTheDocument(); // Open tickets
+      expect(screen.getByText('Offene Tickets')).toBeInTheDocument();
+    });
+    await waitFor(() => {
+      expect(screen.getByText('25')).toBeInTheDocument();
     });
   });
 
-  it('shows message when no open tickets', async () => {
+  it('shows message when no open tickets (business_admin)', async () => {
     vi.mocked(getAdminDashboard).mockResolvedValue({
       ...mockStats,
       tickets: { open: 0, pending: 5, resolved: 95 },
+    });
+    mockUseAuth.mockReturnValue({
+      user: { firstName: 'Finance', email: 'f@test.com', role: 'business_admin' },
     });
 
     render(<DashboardPage />, { wrapper: createWrapper() });

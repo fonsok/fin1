@@ -6,7 +6,7 @@ export interface ConfigurationParameter {
   displayName: string;
   description: string;
   type: 'number' | 'percentage' | 'percent_display' | 'currency' | 'boolean' | 'string';
-  category: 'financial' | 'display' | 'system' | 'feature';
+  category: 'financial' | 'tax' | 'display' | 'system' | 'feature';
   isCritical: boolean;
   min?: number;
   max?: number;

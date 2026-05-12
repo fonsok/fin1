@@ -1,40 +1,60 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { cloudFunction } from '../../api/admin';
-import { Card, Button, Badge, getStatusVariant } from '../../components/ui';
+import clsx from 'clsx';
+import { getTickets } from '../../api/admin';
+import { Card, Button, Badge, PaginationBar, getStatusVariant } from '../../components/ui';
+import { SortableTh, nextSortState, type SortOrder } from '../../components/table/SortableTh';
 import { formatDateTime } from '../../utils/format';
-
-interface Ticket {
-  objectId: string;
-  ticketNumber: string;
-  subject: string;
-  status: string;
-  priority: string;
-  category: string;
-  userId: string;
-  userEmail?: string;
-  assignedTo?: string;
-  assignedToName?: string;
-  createdAt: string;
-  updatedAt: string;
-}
+import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
+import {
+  listRowStripeClasses,
+  tableBodyDivideClasses,
+  tableHeaderCellTextClasses,
+  tableTheadSurfaceClasses,
+} from '../../utils/tableStriping';
 
 export function TicketListPage() {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+  const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const isCSRRoute = location.pathname.startsWith('/csr');
+  /** Business Admin: dieselbe Listenansicht wie früher beim Admin, aber ohne Ticket-Detail/Bearbeitung (CSR). */
+  const isTicketsReadOnlyOverview = !isCSRRoute && user?.role === 'business_admin';
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [priorityFilter, setPriorityFilter] = useState<string>('');
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(50);
+  const [sortBy, setSortBy] = useState('createdAt');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['tickets', statusFilter, priorityFilter],
-    queryFn: () => cloudFunction<{ tickets: Ticket[]; total: number }>('getTickets', {
-      status: statusFilter || undefined,
-      priority: priorityFilter || undefined,
-      limit: 50,
-    }),
+    queryKey: ['tickets', statusFilter, priorityFilter, page, pageSize, sortBy, sortOrder],
+    queryFn: () =>
+      getTickets({
+        status: statusFilter || undefined,
+        priority: priorityFilter || undefined,
+        limit: pageSize,
+        skip: page * pageSize,
+        sortBy,
+        sortOrder,
+      }),
+    staleTime: 30_000,
   });
+  const total = data?.total ?? 0;
+
+  const onSort = useCallback(
+    (field: string) => {
+      const next = nextSortState(field, sortBy, sortOrder);
+      setSortBy(next.sortBy);
+      setSortOrder(next.sortOrder);
+      setPage(0);
+    },
+    [sortBy, sortOrder],
+  );
 
   const getPriorityVariant = (priority: string): 'success' | 'warning' | 'danger' | 'info' | 'neutral' => {
     switch (priority?.toLowerCase()) {
@@ -74,8 +94,14 @@ export function TicketListPage() {
         <div className="flex flex-col sm:flex-row gap-4">
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary"
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setPage(0);
+            }}
+            className={clsx(
+              'px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary',
+              isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+            )}
           >
             <option value="">Alle Status</option>
             <option value="open">Offen</option>
@@ -87,8 +113,14 @@ export function TicketListPage() {
 
           <select
             value={priorityFilter}
-            onChange={(e) => setPriorityFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary"
+            onChange={(e) => {
+              setPriorityFilter(e.target.value);
+              setPage(0);
+            }}
+            className={clsx(
+              'px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary',
+              isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+            )}
           >
             <option value="">Alle Prioritäten</option>
             <option value="urgent">Dringend</option>
@@ -100,8 +132,30 @@ export function TicketListPage() {
           <Button variant="secondary" onClick={() => refetch()}>
             Aktualisieren
           </Button>
+          <select
+            value={pageSize}
+            onChange={(e) => {
+              setPageSize(Number(e.target.value));
+              setPage(0);
+            }}
+            className={clsx(
+              'px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary',
+              isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+            )}
+          >
+            <option value={50}>50 / Seite</option>
+            <option value={100}>100 / Seite</option>
+            <option value={250}>250 / Seite</option>
+          </select>
         </div>
       </Card>
+
+      {isTicketsReadOnlyOverview && (
+        <p className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-600')}>
+          Nur Überblick über offene und laufende Tickets. Erstellung und Bearbeitung erfolgt durch den
+          Kundenservice (CSR).
+        </p>
+      )}
 
       {/* Results */}
       <Card padding="none">
@@ -125,71 +179,95 @@ export function TicketListPage() {
             <p className="text-gray-500">Keine Tickets gefunden</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Ticket
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Betreff
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Priorität
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Zugewiesen
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Erstellt
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {data.tickets.map((ticket) => (
-                  <tr
-                    key={ticket.objectId}
-                    className="hover:bg-gray-50 cursor-pointer"
-                    onClick={() => navigate(isCSRRoute ? `/csr/tickets/${ticket.objectId}` : `/tickets/${ticket.objectId}`)}
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm font-mono text-fin1-primary">
-                        #{ticket.ticketNumber || ticket.objectId.slice(0, 8)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="text-sm text-gray-900 truncate max-w-xs">
-                        {ticket.subject || 'Kein Betreff'}
-                      </p>
-                      {ticket.userEmail && (
-                        <p className="text-xs text-gray-500">{ticket.userEmail}</p>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <Badge variant={getStatusVariant(ticket.status)}>
-                        {getTicketStatusLabel(ticket.status)}
-                      </Badge>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <Badge variant={getPriorityVariant(ticket.priority)}>
-                        {getPriorityLabel(ticket.priority)}
-                      </Badge>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {ticket.assignedToName || ticket.assignedTo || '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {formatDateTime(ticket.createdAt)}
-                    </td>
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className={tableTheadSurfaceClasses(isDark)}>
+                  <tr>
+                    <th className={clsx('px-6 py-3 text-left text-xs font-medium uppercase tracking-wider', tableHeaderCellTextClasses(isDark))}>
+                      Ticket
+                    </th>
+                    <th className={clsx('px-6 py-3 text-left text-xs font-medium uppercase tracking-wider', tableHeaderCellTextClasses(isDark))}>
+                      Betreff
+                    </th>
+                    <th className={clsx('px-6 py-3 text-left text-xs font-medium uppercase tracking-wider', tableHeaderCellTextClasses(isDark))}>
+                      Status
+                    </th>
+                    <th className={clsx('px-6 py-3 text-left text-xs font-medium uppercase tracking-wider', tableHeaderCellTextClasses(isDark))}>
+                      Priorität
+                    </th>
+                    <th className={clsx('px-6 py-3 text-left text-xs font-medium uppercase tracking-wider', tableHeaderCellTextClasses(isDark))}>
+                      Zugewiesen
+                    </th>
+                    <SortableTh
+                      label="Erstellt"
+                      field="createdAt"
+                      sortBy={sortBy}
+                      sortOrder={sortOrder}
+                      onSort={onSort}
+                      className={clsx('px-6 py-3', tableHeaderCellTextClasses(isDark))}
+                    />
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className={tableBodyDivideClasses(isDark)}>
+                  {data.tickets.map((ticket, index: number) => (
+                    <tr
+                      key={ticket.objectId}
+                      className={listRowStripeClasses(isDark, index, {
+                        className: isTicketsReadOnlyOverview ? '' : 'cursor-pointer',
+                      })}
+                      onClick={
+                        isTicketsReadOnlyOverview
+                          ? undefined
+                          : () =>
+                              navigate(
+                                isCSRRoute ? `/csr/tickets/${ticket.objectId}` : `/tickets/${ticket.objectId}`,
+                              )
+                      }
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="text-sm font-mono text-fin1-primary">
+                          #{ticket.ticketNumber || ticket.objectId.slice(0, 8)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <p className={clsx('text-sm truncate max-w-xs', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                          {ticket.subject || 'Kein Betreff'}
+                        </p>
+                        {ticket.userEmail && (
+                          <p className={clsx('text-xs', isDark ? 'text-slate-400' : 'text-gray-500')}>{ticket.userEmail}</p>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <Badge variant={getStatusVariant(ticket.status)}>
+                          {getTicketStatusLabel(ticket.status)}
+                        </Badge>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <Badge variant={getPriorityVariant(ticket.priority)}>
+                          {getPriorityLabel(ticket.priority)}
+                        </Badge>
+                      </td>
+                      <td className={clsx('px-6 py-4 whitespace-nowrap text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                        {ticket.assignedToName || ticket.assignedTo || '-'}
+                      </td>
+                      <td className={clsx('px-6 py-4 whitespace-nowrap text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                        {formatDateTime(ticket.createdAt)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <PaginationBar
+              page={page}
+              pageSize={pageSize}
+              total={total}
+              itemLabel="Tickets"
+              isDark={isDark}
+              onPageChange={setPage}
+            />
+          </>
         )}
       </Card>
     </div>

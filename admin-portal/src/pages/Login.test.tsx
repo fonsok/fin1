@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '../test/test-utils';
 import userEvent from '@testing-library/user-event';
 import { LoginPage } from './Login';
+import { PORTAL_LOGIN_EMAIL_PLACEHOLDER } from '../constants/portalLogin';
 
 // Mock AuthContext
 const mockLogin = vi.fn();
@@ -32,7 +33,7 @@ describe('LoginPage', () => {
     expect(screen.getByText('FIN1 Admin Portal')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Anmelden' })).toBeInTheDocument();
     expect(screen.getByLabelText(/e-mail/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/passwort/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^Passwort$/i)).toBeInTheDocument();
   });
 
   it('renders logo and branding', () => {
@@ -46,7 +47,7 @@ describe('LoginPage', () => {
     render(<LoginPage />);
 
     const currentYear = new Date().getFullYear();
-    expect(screen.getByText(new RegExp(`${currentYear}`))).toBeInTheDocument();
+    expect(screen.getByText(new RegExp(`©\\s*${currentYear}\\s*FIN1`))).toBeInTheDocument();
   });
 
   it('submits form with credentials', async () => {
@@ -56,7 +57,7 @@ describe('LoginPage', () => {
     render(<LoginPage />);
 
     await user.type(screen.getByLabelText(/e-mail/i), 'admin@test.com');
-    await user.type(screen.getByLabelText(/passwort/i), 'password123');
+    await user.type(screen.getByLabelText(/^Passwort$/i), 'password123');
     await user.click(screen.getByRole('button', { name: /anmelden/i }));
 
     expect(mockLogin).toHaveBeenCalledWith('admin@test.com', 'password123');
@@ -69,11 +70,11 @@ describe('LoginPage', () => {
     render(<LoginPage />);
 
     await user.type(screen.getByLabelText(/e-mail/i), 'wrong@test.com');
-    await user.type(screen.getByLabelText(/passwort/i), 'wrongpass');
+    await user.type(screen.getByLabelText(/^Passwort$/i), 'wrongpass');
     await user.click(screen.getByRole('button', { name: /anmelden/i }));
 
     await waitFor(() => {
-      expect(screen.getByText('Invalid credentials')).toBeInTheDocument();
+      expect(screen.getByText('E-Mail oder Passwort ist nicht korrekt.')).toBeInTheDocument();
     });
   });
 
@@ -84,11 +85,28 @@ describe('LoginPage', () => {
     render(<LoginPage />);
 
     await user.type(screen.getByLabelText(/e-mail/i), 'test@test.com');
-    await user.type(screen.getByLabelText(/passwort/i), 'pass');
+    await user.type(screen.getByLabelText(/^Passwort$/i), 'pass');
     await user.click(screen.getByRole('button', { name: /anmelden/i }));
 
     await waitFor(() => {
       expect(screen.getByText('Anmeldung fehlgeschlagen')).toBeInTheDocument();
+    });
+  });
+
+  it('maps lockout error to user-friendly message', async () => {
+    mockLogin.mockRejectedValueOnce(new Error('Your account is locked due to multiple failed login attempts. Please try again after 5 minute(s)'));
+    const user = userEvent.setup();
+
+    render(<LoginPage />);
+
+    await user.type(screen.getByLabelText(/e-mail/i), 'finance@fin1.de');
+    await user.type(screen.getByLabelText(/^Passwort$/i), 'wrongpass');
+    await user.click(screen.getByRole('button', { name: /anmelden/i }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('Zu viele Fehlversuche. Konto ist kurzzeitig gesperrt (ca. 5 Minuten).')
+      ).toBeInTheDocument();
     });
   });
 
@@ -115,7 +133,7 @@ describe('LoginPage', () => {
 
     // First submit fails
     await user.type(screen.getByLabelText(/e-mail/i), 'test@test.com');
-    await user.type(screen.getByLabelText(/passwort/i), 'pass');
+    await user.type(screen.getByLabelText(/^Passwort$/i), 'pass');
     await user.click(screen.getByRole('button', { name: /anmelden/i }));
 
     await waitFor(() => {
@@ -153,14 +171,24 @@ describe('LoginPage', () => {
   it('requires password field', () => {
     render(<LoginPage />);
 
-    const passwordInput = screen.getByLabelText(/passwort/i);
+    const passwordInput = screen.getByLabelText(/^Passwort$/i);
     expect(passwordInput).toHaveAttribute('required');
   });
 
   it('shows placeholder text', () => {
     render(<LoginPage />);
 
-    expect(screen.getByPlaceholderText('admin@fin1.de')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(PORTAL_LOGIN_EMAIL_PLACEHOLDER)).toBeInTheDocument();
     expect(screen.getByPlaceholderText('••••••••')).toBeInTheDocument();
+  });
+
+  it('in dev, shows quick reference with Finance Admin and Technical Admin', () => {
+    render(<LoginPage />);
+
+    expect(screen.getByTestId('dev-login-reference')).toBeInTheDocument();
+    expect(screen.getByText('Finance Admin')).toBeInTheDocument();
+    expect(screen.getByText('Technischer Admin')).toBeInTheDocument();
+    expect(screen.getByText('finance@fin1.de')).toBeInTheDocument();
+    expect(screen.getByText('admin@fin1.de')).toBeInTheDocument();
   });
 });

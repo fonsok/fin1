@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent } from '../../test/test-utils';
 import { Button } from './Button';
 
 describe('Button', () => {
@@ -33,10 +33,11 @@ describe('Button', () => {
     expect(button).toHaveClass('bg-transparent');
   });
 
-  it('renders with danger variant', () => {
+  it('renders with danger variant (subtle translucent surface)', () => {
     render(<Button variant="danger">Danger</Button>);
     const button = screen.getByRole('button');
-    expect(button).toHaveClass('bg-fin1-danger');
+    expect(button.className).toMatch(/bg-red-\d+\/\d+/);
+    expect(button).toHaveClass('border');
   });
 
   it('renders with different sizes', () => {

@@ -1,9 +1,19 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import clsx from 'clsx';
 import { Card } from '../../../components/ui';
+import { useTheme } from '../../../context/ThemeContext';
+import {
+  listRowStripeClasses,
+  tableBodyDivideClasses,
+  tableHeaderCellTextClasses,
+  tableTheadSurfaceClasses,
+} from '../../../utils/tableStriping';
 import { getTicketMetrics, getAgentMetrics, getAvailableAgents } from '../api';
 
 export function AnalyticsPage() {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const [dateRange, setDateRange] = useState<'week' | 'month' | 'quarter'>('week');
   const [selectedAgentId, setSelectedAgentId] = useState<string>('');
 
@@ -41,6 +51,22 @@ export function AnalyticsPage() {
     queryFn: () => getAgentMetrics(selectedAgentId, start, end),
     enabled: !!selectedAgentId,
   });
+
+  const agentPerformanceRows = useMemo(() => {
+    if (!agentMetrics) return [];
+    return [
+      { label: 'Zugewiesene Tickets', value: String(agentMetrics.ticketsAssigned) },
+      { label: 'Gelöste Tickets', value: String(agentMetrics.ticketsResolved) },
+      {
+        label: 'Ø Lösungszeit',
+        value: `${Math.round(agentMetrics.averageResolutionTime / 60)}h`,
+      },
+      {
+        label: 'Kundenzufriedenheit',
+        value: `${agentMetrics.customerSatisfaction.toFixed(1)}/5`,
+      },
+    ];
+  }, [agentMetrics]);
 
   return (
     <div className="space-y-6">
@@ -109,26 +135,52 @@ export function AnalyticsPage() {
           </select>
         </div>
 
-        {agentMetrics && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-              <div className="text-sm text-gray-500">Zugewiesene Tickets</div>
-              <div className="text-2xl font-bold">{agentMetrics.ticketsAssigned}</div>
-            </div>
-            <div>
-              <div className="text-sm text-gray-500">Gelöste Tickets</div>
-              <div className="text-2xl font-bold">{agentMetrics.ticketsResolved}</div>
-            </div>
-            <div>
-              <div className="text-sm text-gray-500">Ø Lösungszeit</div>
-              <div className="text-2xl font-bold">
-                {Math.round(agentMetrics.averageResolutionTime / 60)}h
-              </div>
-            </div>
-            <div>
-              <div className="text-sm text-gray-500">Kundenzufriedenheit</div>
-              <div className="text-2xl font-bold">{agentMetrics.customerSatisfaction.toFixed(1)}/5</div>
-            </div>
+        {agentMetrics && agentPerformanceRows.length > 0 && (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className={tableTheadSurfaceClasses(isDark)}>
+                <tr>
+                  <th
+                    className={clsx(
+                      'px-6 py-3 text-left text-xs font-medium uppercase tracking-wider',
+                      tableHeaderCellTextClasses(isDark),
+                    )}
+                  >
+                    Kennzahl
+                  </th>
+                  <th
+                    className={clsx(
+                      'px-6 py-3 text-left text-xs font-medium uppercase tracking-wider',
+                      tableHeaderCellTextClasses(isDark),
+                    )}
+                  >
+                    Wert
+                  </th>
+                </tr>
+              </thead>
+              <tbody className={tableBodyDivideClasses(isDark)}>
+                {agentPerformanceRows.map((row, index) => (
+                  <tr key={row.label} className={listRowStripeClasses(isDark, index)}>
+                    <td
+                      className={clsx(
+                        'px-6 py-4 text-sm',
+                        isDark ? 'text-slate-300' : 'text-gray-600',
+                      )}
+                    >
+                      {row.label}
+                    </td>
+                    <td
+                      className={clsx(
+                        'px-6 py-4 text-base font-semibold tabular-nums',
+                        isDark ? 'text-slate-100' : 'text-gray-900',
+                      )}
+                    >
+                      {row.value}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
 

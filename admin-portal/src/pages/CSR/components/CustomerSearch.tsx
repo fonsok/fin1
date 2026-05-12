@@ -78,8 +78,8 @@ export function CustomerSearch({ onSelectCustomer }: CustomerSearchProps) {
                       {customer.fullName || `${customer.firstName} ${customer.lastName}` || customer.email}
                     </div>
                     <div className="text-sm text-gray-500">{customer.email}</div>
-                    {customer.customerId && (
-                      <div className="text-xs text-gray-400">ID: {customer.customerId}</div>
+                    {customer.customerNumber && (
+                      <div className="text-xs text-gray-400">Nr.: {customer.customerNumber}</div>
                     )}
                   </div>
                   <div className="flex items-center gap-2">

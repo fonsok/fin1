@@ -1,8 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import clsx from 'clsx';
 import { cloudFunction } from '../../api/admin';
-import { Card, Button, Badge } from '../../components/ui';
+import { Card, Button, Badge, PaginationBar } from '../../components/ui';
+import { SortableTh, nextSortState, type SortOrder } from '../../components/table/SortableTh';
 import { formatCurrency, formatDateTime, formatNumber } from '../../utils/format';
+import { useTheme } from '../../context/ThemeContext';
+import {
+  listRowStripeClasses,
+  tableBodyDivideClasses,
+  tableHeaderCellTextClasses,
+  tableTheadSurfaceClasses,
+} from '../../utils/tableStriping';
 
 interface InvestmentSummary {
   investmentId: string;
@@ -46,11 +55,30 @@ interface SummaryData {
   commissionRate: number;
 }
 
-interface SummaryReportResponse {
+interface SummaryReportKpisResponse {
   summary: SummaryData;
-  investments: InvestmentSummary[];
-  trades: TradeSummary[];
   generatedAt: string;
+}
+
+interface PagedListResponse<T> {
+  items: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+function dateParamsForRange(dateRange: 'all' | '30d' | '90d' | '1y'): Record<string, string> {
+  const now = new Date();
+  switch (dateRange) {
+    case '30d':
+      return { dateFrom: new Date(now.getTime() - 30 * 86400000).toISOString() };
+    case '90d':
+      return { dateFrom: new Date(now.getTime() - 90 * 86400000).toISOString() };
+    case '1y':
+      return { dateFrom: new Date(now.getTime() - 365 * 86400000).toISOString() };
+    default:
+      return {};
+  }
 }
 
 type TabId = 'overview' | 'investments' | 'trades';
@@ -59,19 +87,11 @@ export function SummaryReportPage(): JSX.Element {
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [dateRange, setDateRange] = useState<'all' | '30d' | '90d' | '1y'>('all');
 
-  const dateParams = (() => {
-    const now = new Date();
-    switch (dateRange) {
-      case '30d': return { dateFrom: new Date(now.getTime() - 30 * 86400000).toISOString() };
-      case '90d': return { dateFrom: new Date(now.getTime() - 90 * 86400000).toISOString() };
-      case '1y': return { dateFrom: new Date(now.getTime() - 365 * 86400000).toISOString() };
-      default: return {};
-    }
-  })();
+  const dateParams = useMemo(() => dateParamsForRange(dateRange), [dateRange]);
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['summaryReport', dateRange],
-    queryFn: () => cloudFunction<SummaryReportResponse>('getSummaryReport', dateParams),
+    queryFn: () => cloudFunction<SummaryReportKpisResponse>('getSummaryReport', dateParams),
     staleTime: 60000,
   });
 
@@ -145,9 +165,9 @@ export function SummaryReportPage(): JSX.Element {
       ) : activeTab === 'overview' && summary ? (
         <OverviewTab summary={summary} commissionRate={summary.commissionRate} />
       ) : activeTab === 'investments' ? (
-        <InvestmentsTab investments={data?.investments || []} />
+        <InvestmentsTab dateParams={dateParams} dateRangeKey={dateRange} />
       ) : activeTab === 'trades' ? (
-        <TradesTab trades={data?.trades || []} />
+        <TradesTab dateParams={dateParams} dateRangeKey={dateRange} />
       ) : null}
     </div>
   );
@@ -168,42 +188,62 @@ function KPICard({ label, value, sub, color }: { label: string; value: string; s
 }
 
 function OverviewTab({ summary, commissionRate }: { summary: SummaryData; commissionRate: number }) {
+  const investmentRows = [
+    { label: 'Anzahl Investments', value: formatNumber(summary.totalInvestments) },
+    { label: 'Investiertes Kapital', value: formatCurrency(summary.totalInvestedAmount) },
+    { label: 'Aktueller Gesamtwert', value: formatCurrency(summary.totalCurrentValue) },
+    { label: 'Brutto-Gewinn', value: formatCurrency(summary.totalGrossProfit) },
+    { label: 'Netto-Rendite', value: `${summary.netReturn.toFixed(2)}%` },
+    { label: 'Provision (gesamt)', value: formatCurrency(summary.totalCommission) },
+    { label: 'Provisionssatz', value: `${(commissionRate * 100).toFixed(0)}%` },
+  ];
+
+  const tradeRows = [
+    { label: 'Anzahl Trades', value: formatNumber(summary.totalTrades) },
+    { label: 'Handelsvolumen', value: formatCurrency(summary.totalTradeVolume) },
+    { label: 'Trade-Gewinn', value: formatCurrency(summary.totalTradeProfit) },
+    {
+      label: 'Durchschn. Gewinn/Trade',
+      value: formatCurrency(summary.totalTrades > 0 ? summary.totalTradeProfit / summary.totalTrades : 0),
+    },
+  ];
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <Card>
         <h3 className="text-md font-semibold mb-4">Investment-Kennzahlen</h3>
-        <div className="space-y-3">
-          <InfoRow label="Anzahl Investments" value={formatNumber(summary.totalInvestments)} />
-          <InfoRow label="Investiertes Kapital" value={formatCurrency(summary.totalInvestedAmount)} />
-          <InfoRow label="Aktueller Gesamtwert" value={formatCurrency(summary.totalCurrentValue)} />
-          <InfoRow label="Brutto-Gewinn" value={formatCurrency(summary.totalGrossProfit)} />
-          <InfoRow label="Netto-Rendite" value={`${summary.netReturn.toFixed(2)}%`} />
-          <InfoRow label="Provision (gesamt)" value={formatCurrency(summary.totalCommission)} />
-          <InfoRow label="Provisionssatz" value={`${(commissionRate * 100).toFixed(0)}%`} />
+        <div className="space-y-1">
+          {investmentRows.map((row, index) => (
+            <InfoRow key={row.label} label={row.label} value={row.value} index={index} />
+          ))}
         </div>
       </Card>
 
       <Card>
         <h3 className="text-md font-semibold mb-4">Trade-Kennzahlen</h3>
-        <div className="space-y-3">
-          <InfoRow label="Anzahl Trades" value={formatNumber(summary.totalTrades)} />
-          <InfoRow label="Handelsvolumen" value={formatCurrency(summary.totalTradeVolume)} />
-          <InfoRow label="Trade-Gewinn" value={formatCurrency(summary.totalTradeProfit)} />
-          <InfoRow
-            label="Durchschn. Gewinn/Trade"
-            value={formatCurrency(summary.totalTrades > 0 ? summary.totalTradeProfit / summary.totalTrades : 0)}
-          />
+        <div className="space-y-1">
+          {tradeRows.map((row, index) => (
+            <InfoRow key={row.label} label={row.label} value={row.value} index={index} />
+          ))}
         </div>
       </Card>
     </div>
   );
 }
 
-function InfoRow({ label, value }: { label: string; value: string }) {
+function InfoRow({ label, value, index }: { label: string; value: string; index: number }) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
   return (
-    <div className="flex justify-between items-center py-1 border-b border-gray-50 last:border-0">
-      <span className="text-sm text-gray-600">{label}</span>
-      <span className="text-sm font-medium text-gray-900">{value}</span>
+    <div
+      className={clsx(
+        'flex justify-between items-center py-2.5 px-3 rounded-lg gap-4',
+        listRowStripeClasses(isDark, index, { hover: false }),
+      )}
+    >
+      <span className={clsx('text-sm', isDark ? 'text-slate-300' : 'text-gray-600')}>{label}</span>
+      <span className={clsx('text-sm font-medium text-right', isDark ? 'text-slate-100' : 'text-gray-900')}>{value}</span>
     </div>
   );
 }
@@ -224,90 +264,339 @@ function StatusBadge({ status }: { status: string }) {
   return <Badge variant={variants[status] || 'neutral'}>{labels[status] || status}</Badge>;
 }
 
-function InvestmentsTab({ investments }: { investments: InvestmentSummary[] }) {
-  if (investments.length === 0) {
-    return <Card><div className="p-8 text-center text-gray-500">Keine Investments gefunden</div></Card>;
+function InvestmentsTab({
+  dateParams,
+  dateRangeKey,
+}: {
+  dateParams: Record<string, string>;
+  dateRangeKey: string;
+}) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(50);
+  const [sortBy, setSortBy] = useState('createdAt');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+
+  useEffect(() => {
+    setPage(0);
+  }, [dateRangeKey]);
+
+  const onSort = useCallback(
+    (field: string) => {
+      const next = nextSortState(field, sortBy, sortOrder);
+      setSortBy(next.sortBy);
+      setSortOrder(next.sortOrder);
+      setPage(0);
+    },
+    [sortBy, sortOrder],
+  );
+
+  const { data, isLoading, isFetching } = useQuery({
+    queryKey: ['summaryReportInvestments', dateRangeKey, page, pageSize, sortBy, sortOrder],
+    queryFn: () =>
+      cloudFunction<PagedListResponse<InvestmentSummary>>('getSummaryReportInvestmentsPage', {
+        ...dateParams,
+        page,
+        pageSize,
+        sortBy,
+        sortOrder,
+      }),
+    staleTime: 30_000,
+  });
+
+  const total = data?.total ?? 0;
+  const items = data?.items ?? [];
+  const thClass = clsx('px-4 py-3 text-xs font-medium uppercase', tableHeaderCellTextClasses(isDark));
+
+  if (isLoading && !data) {
+    return (
+      <Card>
+        <div className="p-8 text-center text-gray-500">Investments werden geladen...</div>
+      </Card>
+    );
+  }
+
+  if (total === 0) {
+    return (
+      <Card>
+        <div className="p-8 text-center text-gray-500">Keine Investments gefunden</div>
+      </Card>
+    );
   }
 
   return (
     <Card>
+      <div className={clsx('p-3 border-b flex flex-wrap items-center gap-3 justify-between', isDark ? 'border-slate-600' : 'border-gray-100')}>
+        <select
+          value={pageSize}
+          onChange={(e) => {
+            setPageSize(Number(e.target.value));
+            setPage(0);
+          }}
+          className={clsx(
+            'border rounded-lg px-3 py-2 text-sm',
+            isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+          )}
+        >
+          <option value={25}>25 / Seite</option>
+          <option value={50}>50 / Seite</option>
+          <option value={100}>100 / Seite</option>
+        </select>
+        <p className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>
+          {isFetching ? 'Aktualisiere…' : `${formatNumber(total)} Investments gesamt (serverseitig)`}
+        </p>
+      </div>
       <div className="overflow-x-auto">
         <table className="w-full">
-          <thead className="bg-gray-50">
+          <thead className={tableTheadSurfaceClasses(isDark)}>
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nr.</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Investor</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Trader</th>
-              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Betrag</th>
-              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Aktueller Wert</th>
-              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Rendite</th>
-              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Provision</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Datum</th>
+              <th className={clsx(thClass, 'text-left')}>Nr.</th>
+              <th className={clsx(thClass, 'text-left')}>Investor</th>
+              <th className={clsx(thClass, 'text-left')}>Trader</th>
+              <SortableTh
+                label="Betrag"
+                field="amount"
+                sortBy={sortBy}
+                sortOrder={sortOrder}
+                onSort={onSort}
+                align="right"
+                className={clsx(thClass, 'text-right')}
+              />
+              <th className={clsx(thClass, 'text-right')}>Aktueller Wert</th>
+              <th className={clsx(thClass, 'text-right')}>Rendite</th>
+              <th className={clsx(thClass, 'text-right')}>Provision</th>
+              <th className={clsx(thClass, 'text-left')}>Status</th>
+              <SortableTh
+                label="Datum"
+                field="createdAt"
+                sortBy={sortBy}
+                sortOrder={sortOrder}
+                onSort={onSort}
+                className={clsx(thClass, 'text-left')}
+              />
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
-            {investments.map((inv) => (
-              <tr key={inv.investmentId} className="hover:bg-gray-50">
-                <td className="px-4 py-3 text-sm font-mono">{inv.investmentNumber}</td>
-                <td className="px-4 py-3 text-sm">{inv.investorName}</td>
-                <td className="px-4 py-3 text-sm">{inv.traderName}</td>
-                <td className="px-4 py-3 text-sm text-right">{formatCurrency(inv.amount)}</td>
-                <td className="px-4 py-3 text-sm text-right">{formatCurrency(inv.currentValue)}</td>
-                <td className={`px-4 py-3 text-sm text-right font-medium ${inv.returnPercentage >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+          <tbody className={tableBodyDivideClasses(isDark)}>
+            {items.map((inv, index) => (
+              <tr key={inv.investmentId} className={listRowStripeClasses(isDark, index)}>
+                <td className={clsx('px-4 py-3 text-sm font-mono', isDark ? 'text-slate-200' : 'text-gray-900')}>
+                  {inv.investmentNumber}
+                </td>
+                <td className={clsx('px-4 py-3 text-sm', isDark ? 'text-slate-200' : 'text-gray-900')}>
+                  {inv.investorName}
+                </td>
+                <td className={clsx('px-4 py-3 text-sm', isDark ? 'text-slate-200' : 'text-gray-900')}>
+                  {inv.traderName}
+                </td>
+                <td className={clsx('px-4 py-3 text-sm text-right', isDark ? 'text-slate-200' : 'text-gray-900')}>
+                  {formatCurrency(inv.amount)}
+                </td>
+                <td className={clsx('px-4 py-3 text-sm text-right', isDark ? 'text-slate-200' : 'text-gray-900')}>
+                  {formatCurrency(inv.currentValue)}
+                </td>
+                <td
+                  className={clsx(
+                    'px-4 py-3 text-sm text-right font-medium',
+                    inv.returnPercentage >= 0
+                      ? isDark
+                        ? 'text-green-400'
+                        : 'text-green-600'
+                      : isDark
+                        ? 'text-red-400'
+                        : 'text-red-600',
+                  )}
+                >
                   {inv.returnPercentage.toFixed(2)}%
                 </td>
-                <td className="px-4 py-3 text-sm text-right">{formatCurrency(inv.commission)}</td>
-                <td className="px-4 py-3"><StatusBadge status={inv.status} /></td>
-                <td className="px-4 py-3 text-sm text-gray-500">{formatDateTime(inv.createdAt)}</td>
+                <td className={clsx('px-4 py-3 text-sm text-right', isDark ? 'text-slate-200' : 'text-gray-900')}>
+                  {formatCurrency(inv.commission)}
+                </td>
+                <td className="px-4 py-3">
+                  <StatusBadge status={inv.status} />
+                </td>
+                <td className={clsx('px-4 py-3 text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                  {formatDateTime(inv.createdAt)}
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+      <PaginationBar
+        page={page}
+        pageSize={pageSize}
+        total={total}
+        itemLabel="Investments"
+        isDark={isDark}
+        onPageChange={setPage}
+      />
     </Card>
   );
 }
 
-function TradesTab({ trades }: { trades: TradeSummary[] }) {
-  if (trades.length === 0) {
-    return <Card><div className="p-8 text-center text-gray-500">Keine Trades gefunden</div></Card>;
+function TradesTab({
+  dateParams,
+  dateRangeKey,
+}: {
+  dateParams: Record<string, string>;
+  dateRangeKey: string;
+}) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(50);
+  const [sortBy, setSortBy] = useState('createdAt');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+
+  useEffect(() => {
+    setPage(0);
+  }, [dateRangeKey]);
+
+  const onSort = useCallback(
+    (field: string) => {
+      const next = nextSortState(field, sortBy, sortOrder);
+      setSortBy(next.sortBy);
+      setSortOrder(next.sortOrder);
+      setPage(0);
+    },
+    [sortBy, sortOrder],
+  );
+
+  const { data, isLoading, isFetching } = useQuery({
+    queryKey: ['summaryReportTrades', dateRangeKey, page, pageSize, sortBy, sortOrder],
+    queryFn: () =>
+      cloudFunction<PagedListResponse<TradeSummary>>('getSummaryReportTradesPage', {
+        ...dateParams,
+        page,
+        pageSize,
+        sortBy,
+        sortOrder,
+      }),
+    staleTime: 30_000,
+  });
+
+  const total = data?.total ?? 0;
+  const items = data?.items ?? [];
+  const thClass = clsx('px-4 py-3 text-xs font-medium uppercase', tableHeaderCellTextClasses(isDark));
+
+  if (isLoading && !data) {
+    return (
+      <Card>
+        <div className="p-8 text-center text-gray-500">Trades werden geladen...</div>
+      </Card>
+    );
+  }
+
+  if (total === 0) {
+    return (
+      <Card>
+        <div className="p-8 text-center text-gray-500">Keine Trades gefunden</div>
+      </Card>
+    );
   }
 
   return (
     <Card>
+      <div className={clsx('p-3 border-b flex flex-wrap items-center gap-3 justify-between', isDark ? 'border-slate-600' : 'border-gray-100')}>
+        <select
+          value={pageSize}
+          onChange={(e) => {
+            setPageSize(Number(e.target.value));
+            setPage(0);
+          }}
+          className={clsx(
+            'border rounded-lg px-3 py-2 text-sm',
+            isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+          )}
+        >
+          <option value={25}>25 / Seite</option>
+          <option value={50}>50 / Seite</option>
+          <option value={100}>100 / Seite</option>
+        </select>
+        <p className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>
+          {isFetching ? 'Aktualisiere…' : `${formatNumber(total)} Trades gesamt (serverseitig)`}
+        </p>
+      </div>
       <div className="overflow-x-auto">
         <table className="w-full">
-          <thead className="bg-gray-50">
+          <thead className={tableTheadSurfaceClasses(isDark)}>
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nr.</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Symbol</th>
-              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Kauf</th>
-              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Verkauf</th>
-              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Gewinn</th>
-              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Investoren</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Datum</th>
+              <SortableTh
+                label="Nr."
+                field="tradeNumber"
+                sortBy={sortBy}
+                sortOrder={sortOrder}
+                onSort={onSort}
+                className={clsx(thClass, 'text-left')}
+              />
+              <th className={clsx(thClass, 'text-left')}>Symbol</th>
+              <th className={clsx(thClass, 'text-right')}>Kauf</th>
+              <th className={clsx(thClass, 'text-right')}>Verkauf</th>
+              <th className={clsx(thClass, 'text-right')}>Gewinn</th>
+              <th className={clsx(thClass, 'text-center')}>Investoren</th>
+              <th className={clsx(thClass, 'text-left')}>Status</th>
+              <SortableTh
+                label="Datum"
+                field="createdAt"
+                sortBy={sortBy}
+                sortOrder={sortOrder}
+                onSort={onSort}
+                className={clsx(thClass, 'text-left')}
+              />
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
-            {trades.map((trade) => (
-              <tr key={trade.tradeId} className="hover:bg-gray-50">
-                <td className="px-4 py-3 text-sm font-mono">{String(trade.tradeNumber).padStart(3, '0')}</td>
-                <td className="px-4 py-3 text-sm font-medium">{trade.symbol}</td>
-                <td className="px-4 py-3 text-sm text-right">{formatCurrency(trade.buyAmount)}</td>
-                <td className="px-4 py-3 text-sm text-right">{formatCurrency(trade.sellAmount)}</td>
-                <td className={`px-4 py-3 text-sm text-right font-medium ${trade.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+          <tbody className={tableBodyDivideClasses(isDark)}>
+            {items.map((trade, index) => (
+              <tr key={trade.tradeId} className={listRowStripeClasses(isDark, index)}>
+                <td className={clsx('px-4 py-3 text-sm font-mono', isDark ? 'text-slate-200' : 'text-gray-900')}>
+                  {String(trade.tradeNumber).padStart(3, '0')}
+                </td>
+                <td className={clsx('px-4 py-3 text-sm font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                  {trade.symbol}
+                </td>
+                <td className={clsx('px-4 py-3 text-sm text-right', isDark ? 'text-slate-200' : 'text-gray-900')}>
+                  {formatCurrency(trade.buyAmount)}
+                </td>
+                <td className={clsx('px-4 py-3 text-sm text-right', isDark ? 'text-slate-200' : 'text-gray-900')}>
+                  {formatCurrency(trade.sellAmount)}
+                </td>
+                <td
+                  className={clsx(
+                    'px-4 py-3 text-sm text-right font-medium',
+                    trade.profit >= 0
+                      ? isDark
+                        ? 'text-green-400'
+                        : 'text-green-600'
+                      : isDark
+                        ? 'text-red-400'
+                        : 'text-red-600',
+                  )}
+                >
                   {formatCurrency(trade.profit)}
                 </td>
-                <td className="px-4 py-3 text-sm text-center">{trade.investorIds.length}</td>
-                <td className="px-4 py-3"><StatusBadge status={trade.status} /></td>
-                <td className="px-4 py-3 text-sm text-gray-500">{formatDateTime(trade.createdAt)}</td>
+                <td className={clsx('px-4 py-3 text-sm text-center', isDark ? 'text-slate-200' : 'text-gray-900')}>
+                  {trade.investorIds.length}
+                </td>
+                <td className="px-4 py-3">
+                  <StatusBadge status={trade.status} />
+                </td>
+                <td className={clsx('px-4 py-3 text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                  {formatDateTime(trade.createdAt)}
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+      <PaginationBar
+        page={page}
+        pageSize={pageSize}
+        total={total}
+        itemLabel="Trades"
+        isDark={isDark}
+        onPageChange={setPage}
+      />
     </Card>
   );
 }

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import clsx from 'clsx';
 import { Card } from '../../../components/ui/Card';
 import { Badge } from '../../../components/ui/Badge';
 import { Button } from '../../../components/ui/Button';
@@ -11,6 +12,9 @@ import type {
 import { DOCUMENT_TYPE_LABELS } from '../types';
 import { getTermsContent } from '../api';
 import { compareVersions } from '../utils';
+import { useTheme } from '../../../context/ThemeContext';
+import type { LegalBrandingPreviewValues } from '../utils/hydrateTermsPreview';
+import { hydrateTermsPreviewText } from '../utils/hydrateTermsPreview';
 
 interface TermsListProps {
   items: TermsContentListItem[];
@@ -20,32 +24,69 @@ interface TermsListProps {
   settingActiveId: string | null;
   /** Optional: öffnet den Editor direkt auf einem bestimmten Abschnitt. */
   onEditSection?: (item: TermsContentListItem, section: TermsSection) => void;
+  /** Live preview values for common legal placeholders (does not change persisted content). */
+  legalPreview?: LegalBrandingPreviewValues | null;
 }
 
 function SectionBlock({
   section,
   index,
   onEdit,
+  legalPreview,
 }: {
   section: TermsSection;
   index: number;
   onEdit?: () => void;
+  legalPreview?: LegalBrandingPreviewValues | null;
 }) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const [expanded, setExpanded] = useState(false);
   const previewLength = 200;
-  const isLong = section.content.length > previewLength;
-  const text = isLong && !expanded ? section.content.slice(0, previewLength) + '…' : section.content;
+  const hydratedTitle = hydrateTermsPreviewText(section.title || '', legalPreview);
+  const hydratedContent = hydrateTermsPreviewText(section.content || '', legalPreview);
+  const isHydrated =
+    hydratedTitle !== (section.title || '') || hydratedContent !== (section.content || '');
+  const isLong = hydratedContent.length > previewLength;
+  const text = isLong && !expanded ? hydratedContent.slice(0, previewLength) + '…' : hydratedContent;
 
   return (
-    <div className="border border-gray-200 rounded-lg p-3 bg-gray-50/50">
-      <div className="flex items-center justify-between gap-2 mb-2">
-        <span className="font-medium text-gray-800">
-          <span className="text-gray-500 font-normal text-xs uppercase tracking-wide mr-1.5">
+    <div
+      className={clsx(
+        'border rounded-lg p-3',
+        isDark ? 'border-slate-600 bg-slate-700/60' : 'border-gray-200 bg-gray-50/50',
+      )}
+    >
+      <div
+        className={clsx(
+          'flex items-center justify-between gap-2 mb-2 rounded-md px-2.5 py-2 border',
+          isDark ? 'bg-slate-800/80 border-slate-600' : 'bg-slate-100 border-slate-200',
+        )}
+      >
+        <span
+          className={clsx(
+            'font-medium',
+            isDark ? 'text-slate-100' : 'text-gray-800',
+          )}
+        >
+          <span
+            className={clsx(
+              'font-normal text-xs uppercase tracking-wide mr-1.5',
+              isDark ? 'text-slate-300' : 'text-gray-500',
+            )}
+          >
             Titel:
           </span>
-          {section.title || `Abschnitt ${index + 1}`}
+          {hydratedTitle || `Abschnitt ${index + 1}`}
           {section.id && (
-            <span className="text-gray-500 font-normal text-sm ml-2">({section.id})</span>
+            <span
+              className={clsx(
+                'font-normal text-sm ml-2',
+                isDark ? 'text-slate-300' : 'text-gray-500',
+              )}
+            >
+              ({section.id})
+            </span>
           )}
         </span>
         <div className="flex items-center gap-2">
@@ -61,7 +102,24 @@ function SectionBlock({
           )}
         </div>
       </div>
-      <div className="text-sm text-gray-700 whitespace-pre-wrap break-words max-h-[40vh] overflow-y-auto">
+      <div
+        className={clsx(
+          'text-sm whitespace-pre-wrap break-words max-h-[40vh] overflow-y-auto',
+          isDark ? 'text-slate-100' : 'text-gray-700',
+        )}
+      >
+        {isHydrated && (
+          <div
+            className={clsx(
+              'mb-2 rounded-md border px-2 py-1 text-xs',
+              isDark ? 'border-slate-600 bg-slate-900/40 text-slate-300' : 'border-slate-200 bg-white text-slate-600',
+            )}
+          >
+            Vorschau: Platzhalter (z. B. <span className="font-mono">{'{{APP_NAME}}'}</span>) werden hier mit den
+            aktuellen Konfigurationswerten ersetzt. Gespeicherte Texte bleiben unverändert, bis Sie eine neue Version
+            anlegen.
+          </div>
+        )}
         {text}
       </div>
     </div>
@@ -86,7 +144,10 @@ export function TermsList({
   onSetActive,
   settingActiveId,
   onEditSection,
+  legalPreview,
 }: TermsListProps) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [fullCache, setFullCache] = useState<Record<string, TermsContentFull>>({});
   const [loadingId, setLoadingId] = useState<string | null>(null);
@@ -231,18 +292,6 @@ export function TermsList({
               </div>
             </div>
             <div className="flex gap-2 flex-shrink-0 flex-wrap">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => toggleSections(item)}
-                disabled={loadingId !== null && loadingId !== item.objectId}
-              >
-                {loadingId === item.objectId
-                  ? 'Laden…'
-                  : expandedId === item.objectId
-                    ? 'Einklappen'
-                    : 'Inhalt anzeigen'}
-              </Button>
               <Button variant="secondary" size="sm" onClick={() => onClone(item)}>
                 Klonen (neue Version)
               </Button>
@@ -265,19 +314,28 @@ export function TermsList({
             const loadingChanges = loadingChangesId === item.objectId;
             return (
               <div className="mt-4 pt-4 border-t border-gray-200 space-y-3">
-                <div className="rounded-md bg-slate-50 border border-slate-200 px-3 py-2 text-sm">
-                  <h4 className="font-semibold text-gray-800 mb-1">Änderungen zur Vorgängerversion</h4>
+                <div
+                  className={clsx(
+                    'rounded-md border px-3 py-2 text-sm',
+                    isDark ? 'bg-slate-800/60 border-slate-600' : 'bg-slate-50 border-slate-200',
+                  )}
+                >
+                  <h4 className={clsx('font-semibold mb-1', isDark ? 'text-slate-100' : 'text-gray-800')}>
+                    Änderungen zur Vorgängerversion
+                  </h4>
                   {!hasPrevious ? (
-                    <p className="text-gray-500">Keine Vorgängerversion (erste Version).</p>
+                    <p className={clsx(isDark ? 'text-slate-400' : 'text-gray-500')}>
+                      Keine Vorgängerversion (erste Version).
+                    </p>
                   ) : result ? (
                     <div className="space-y-2">
-                      <p className="text-gray-600">
+                      <p className={clsx(isDark ? 'text-slate-300' : 'text-gray-600')}>
                         Vergleich mit v{result.previousVersion}
                         {result.previousEffectiveDate &&
                           ` (gültig ab ${new Date(result.previousEffectiveDate).toLocaleDateString('de-DE')})`}
                         : {result.changes.length} Änderung(en).
                       </p>
-                      <ul className="list-disc list-inside space-y-1 text-gray-700">
+                      <ul className={clsx('list-disc list-inside space-y-1', isDark ? 'text-slate-200' : 'text-gray-700')}>
                         {result.changes.map((c, i) => (
                           <li key={i}>
                             <span className="font-medium">
@@ -287,10 +345,14 @@ export function TermsList({
                             </span>
                             {c.sectionTitle}
                             {c.sectionId && c.sectionId !== c.sectionTitle && (
-                              <span className="text-gray-500 ml-1">({c.sectionId})</span>
+                              <span className={clsx('ml-1', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                                ({c.sectionId})
+                              </span>
                             )}
                             {c.description && (
-                              <span className="block text-gray-500 text-xs mt-0.5 ml-4">{c.description}</span>
+                              <span className={clsx('block text-xs mt-0.5 ml-4', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                                {c.description}
+                              </span>
                             )}
                           </li>
                         ))}
@@ -307,26 +369,36 @@ export function TermsList({
                     </Button>
                   )}
                 </div>
-                <div className="rounded-md bg-amber-50 border border-amber-200 px-3 py-2 text-sm text-amber-800">
+                <div
+                  className={clsx(
+                    'rounded-md border px-3 py-2 text-sm',
+                    isDark ? 'bg-amber-950/30 border-amber-700 text-amber-200' : 'bg-amber-50 border-amber-200 text-amber-800',
+                  )}
+                >
                   <strong>Titel und Inhalt bearbeiten:</strong> Nutzen Sie entweder{' '}
                   <strong>„Klonen (neue Version)“</strong> oder den{' '}
-                  <strong>„Bearbeiten“‑Button</strong> direkt am Abschnitt. Im Editor hat jeder
-                  Abschnitt ein Feld <strong>„Titel des Abschnitts“</strong> (z. B. „Wichtige
+                  <strong>„Bearbeiten“-Button</strong> direkt am Abschnitt. Im Editor hat jeder
+                  Abschnitt ein Feld <strong>„Titel des Abschnitts“</strong> (z. B. „Wichtige
                   Hinweise“) und „Inhalt“. Nach dem Anpassen speichern Sie die neue Version und
                   setzen sie bei Bedarf auf „Als aktiv setzen“.
                 </div>
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                  <h4 className="text-sm font-semibold text-gray-700">Inhalt der Abschnitte</h4>
+                  <h4 className={clsx('text-sm font-semibold', isDark ? 'text-slate-200' : 'text-gray-700')}>
+                    Inhalt der Abschnitte
+                  </h4>
                   <div className="flex-1 flex items-center gap-2">
                     <input
                       type="search"
                       placeholder="Abschnitte durchsuchen (Titel, Inhalt, ID)…"
                       value={sectionSearch}
                       onChange={(e) => setSectionSearch(e.target.value)}
-                      className="flex-1 min-w-0 rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-fin1-primary focus:ring-1 focus:ring-fin1-primary"
+                      className={clsx(
+                        'flex-1 min-w-0 rounded-md border px-3 py-1.5 text-sm focus:border-fin1-primary focus:ring-1 focus:ring-fin1-primary',
+                        isDark ? 'border-slate-600 bg-slate-900/60 text-slate-100 placeholder:text-slate-400' : 'border-gray-300 bg-white text-gray-900 placeholder:text-gray-400',
+                      )}
                     />
                     {sectionSearch.trim() && (
-                      <span className="text-sm text-gray-500 whitespace-nowrap">
+                      <span className={clsx('text-sm whitespace-nowrap', isDark ? 'text-slate-400' : 'text-gray-500')}>
                         {filtered.length} / {sections.length}
                       </span>
                     )}
@@ -334,7 +406,7 @@ export function TermsList({
                 </div>
                 <div className="space-y-3 max-h-[60vh] overflow-y-auto">
                   {filtered.length === 0 ? (
-                    <p className="text-sm text-gray-500 py-4">
+                    <p className={clsx('text-sm py-4', isDark ? 'text-slate-400' : 'text-gray-500')}>
                       {sectionSearch.trim()
                         ? 'Kein Abschnitt enthält den Suchbegriff.'
                         : 'Keine Abschnitte.'}
@@ -345,6 +417,7 @@ export function TermsList({
                         key={section.id || index}
                         section={section}
                         index={index}
+                        legalPreview={legalPreview}
                         onEdit={
                           onEditSection ? () => onEditSection(item, section) : undefined
                         }

@@ -2,6 +2,14 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { cloudFunction } from '../../api/parse';
 import { Card, Badge } from '../../components/ui';
+import { useTheme } from '../../context/ThemeContext';
+import {
+  listRowStripeClasses,
+  tableBodyDivideClasses,
+  tableHeaderCellTextClasses,
+  tableTheadSurfaceClasses,
+} from '../../utils/tableStriping';
+import clsx from 'clsx';
 
 interface FunnelStep {
   step: string;
@@ -44,6 +52,8 @@ const STEP_LABELS: Record<string, string> = {
 
 export function OnboardingFunnelPage() {
   const [days, setDays] = React.useState(30);
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
   const { data, isLoading, error } = useQuery<FunnelData>({
     queryKey: ['onboardingFunnel', days],
@@ -56,13 +66,18 @@ export function OnboardingFunnelPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Onboarding-Funnel</h1>
-          <p className="text-gray-500 mt-1">Registrierungsfortschritt und Abbruchraten</p>
+          <h1 className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>Onboarding-Funnel</h1>
+          <p className={clsx('mt-1', isDark ? 'text-slate-400' : 'text-gray-500')}>
+            Registrierungsfortschritt und Abbruchraten
+          </p>
         </div>
         <select
           value={days}
           onChange={(e) => setDays(Number(e.target.value))}
-          className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white"
+          className={clsx(
+            'px-3 py-2 border rounded-lg text-sm',
+            isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+          )}
         >
           <option value={7}>Letzte 7 Tage</option>
           <option value={30}>Letzte 30 Tage</option>
@@ -125,7 +140,7 @@ export function OnboardingFunnelPage() {
                         {STEP_LABELS[step.step] || step.step}
                       </div>
                       <div className="flex-1 relative">
-                        <div className="h-8 bg-gray-100 rounded-lg overflow-hidden">
+                        <div className={clsx('h-8 rounded-lg overflow-hidden', isDark ? 'bg-slate-900/60' : 'bg-gray-100')}>
                           <div
                             className="h-full bg-gradient-to-r from-fin1-primary to-fin1-secondary rounded-lg transition-all duration-500"
                             style={{ width: `${widthPct}%` }}
@@ -149,37 +164,53 @@ export function OnboardingFunnelPage() {
           {data.stuckUsers.length > 0 && (
             <Card>
               <div className="p-5">
-                <h2 className="text-lg font-semibold text-gray-900 mb-1">Feststeckende Benutzer</h2>
-                <p className="text-sm text-gray-500 mb-4">Keine Aktivität seit &gt;24h, Onboarding nicht abgeschlossen</p>
+                <h2 className={clsx('text-lg font-semibold mb-1', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                  Feststeckende Benutzer
+                </h2>
+                <p className={clsx('text-sm mb-4', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                  Keine Aktivität seit &gt;24h, Onboarding nicht abgeschlossen
+                </p>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-gray-200">
-                        <th className="text-left py-2 px-3 font-medium text-gray-500">E-Mail</th>
-                        <th className="text-left py-2 px-3 font-medium text-gray-500">Letzter Schritt</th>
-                        <th className="text-left py-2 px-3 font-medium text-gray-500">E-Mail bestätigt</th>
-                        <th className="text-left py-2 px-3 font-medium text-gray-500">Letzte Aktivität</th>
-                        <th className="text-left py-2 px-3 font-medium text-gray-500">Registriert</th>
+                    <thead className={tableTheadSurfaceClasses(isDark)}>
+                      <tr>
+                        {(['E-Mail', 'Letzter Schritt', 'E-Mail bestätigt', 'Letzte Aktivität', 'Registriert'] as const).map(
+                          (label) => (
+                            <th
+                              key={label}
+                              className={clsx(
+                                'text-left py-3 px-4 text-xs font-medium uppercase',
+                                tableHeaderCellTextClasses(isDark),
+                              )}
+                            >
+                              {label}
+                            </th>
+                          ),
+                        )}
                       </tr>
                     </thead>
-                    <tbody>
-                      {data.stuckUsers.map((u) => (
-                        <tr key={u.userId} className="border-b border-gray-100 hover:bg-gray-50">
-                          <td className="py-2 px-3 font-medium text-gray-800">{u.email}</td>
-                          <td className="py-2 px-3">
-                            <Badge variant="info">
-                              {STEP_LABELS[u.lastStep] || u.lastStep}
-                            </Badge>
+                    <tbody className={tableBodyDivideClasses(isDark)}>
+                      {data.stuckUsers.map((u, index) => (
+                        <tr key={u.userId} className={listRowStripeClasses(isDark, index)}>
+                          <td className={clsx('py-3 px-4 font-medium', isDark ? 'text-slate-100' : 'text-gray-800')}>
+                            {u.email}
                           </td>
-                          <td className="py-2 px-3">
+                          <td className="py-3 px-4">
+                            <Badge variant="info">{STEP_LABELS[u.lastStep] || u.lastStep}</Badge>
+                          </td>
+                          <td className="py-3 px-4">
                             {u.emailVerified ? (
                               <Badge variant="success">Ja</Badge>
                             ) : (
                               <Badge variant="warning">Nein</Badge>
                             )}
                           </td>
-                          <td className="py-2 px-3 text-gray-500">{formatRelative(u.lastActivity)}</td>
-                          <td className="py-2 px-3 text-gray-500">{formatRelative(u.createdAt)}</td>
+                          <td className={clsx('py-3 px-4', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                            {formatRelative(u.lastActivity)}
+                          </td>
+                          <td className={clsx('py-3 px-4', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                            {formatRelative(u.createdAt)}
+                          </td>
                         </tr>
                       ))}
                     </tbody>

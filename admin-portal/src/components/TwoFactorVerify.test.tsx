@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '../test/test-utils';
 import userEvent from '@testing-library/user-event';
 import { TwoFactorVerify } from './TwoFactorVerify';
 
@@ -220,5 +220,23 @@ describe('TwoFactorVerify', () => {
     render(<TwoFactorVerify />);
 
     expect(screen.getByText(/Authenticator-App/)).toBeInTheDocument();
+  });
+
+  it('submits 8-character backup code in backup mode', async () => {
+    mockVerify2FACode.mockResolvedValueOnce(undefined);
+    const user = userEvent.setup();
+    render(<TwoFactorVerify />);
+
+    await user.click(screen.getByRole('button', { name: /Backup-Code \(8 Zeichen\)/i }));
+
+    const backupInput = screen.getByLabelText('Backup-Code');
+    await user.type(backupInput, 'ab12cd34');
+
+    const submitButton = screen.getByRole('button', { name: /verifizieren/i });
+    await user.click(submitButton);
+
+    await waitFor(() => {
+      expect(mockVerify2FACode).toHaveBeenCalledWith('AB12CD34');
+    });
   });
 });

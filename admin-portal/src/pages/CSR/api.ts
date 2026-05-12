@@ -18,33 +18,33 @@ export async function searchCustomers(query: string): Promise<CustomerSearchResu
   return result.results || [];
 }
 
-export async function getCustomerProfile(customerId: string): Promise<CustomerProfile | null> {
-  return cloudFunction<CustomerProfile | null>('getCustomerProfile', { customerId });
+/** @param userId Parse _User.objectId */
+export async function getCustomerProfile(userId: string): Promise<CustomerProfile | null> {
+  return cloudFunction<CustomerProfile | null>('getCustomerProfile', { userId });
 }
 
-export async function getCustomerInvestments(customerId: string): Promise<CustomerInvestmentSummary[]> {
-  const result = await cloudFunction<{ investments: CustomerInvestmentSummary[] }>('getCustomerInvestments', { customerId });
+export async function getCustomerInvestments(userId: string): Promise<CustomerInvestmentSummary[]> {
+  const result = await cloudFunction<{ investments: CustomerInvestmentSummary[] }>('getCustomerInvestments', { userId });
   return result.investments || [];
 }
 
-export async function getCustomerTrades(customerId: string): Promise<CustomerTradeSummary[]> {
-  const result = await cloudFunction<{ trades: CustomerTradeSummary[] }>('getCustomerTrades', { customerId });
+export async function getCustomerTrades(userId: string): Promise<CustomerTradeSummary[]> {
+  const result = await cloudFunction<{ trades: CustomerTradeSummary[] }>('getCustomerTrades', { userId });
   return result.trades || [];
 }
 
-export async function getCustomerDocuments(customerId: string): Promise<CustomerDocumentSummary[]> {
-  const result = await cloudFunction<{ documents: CustomerDocumentSummary[] }>('getCustomerDocuments', { customerId });
+export async function getCustomerDocuments(userId: string): Promise<CustomerDocumentSummary[]> {
+  const result = await cloudFunction<{ documents: CustomerDocumentSummary[] }>('getCustomerDocuments', { userId });
   return result.documents || [];
 }
 
-export async function getCustomerKYCStatus(customerId: string): Promise<CustomerKYCStatus | null> {
-  return cloudFunction<CustomerKYCStatus | null>('getCustomerKYCStatus', { customerId });
+export async function getCustomerKYCStatus(userId: string): Promise<CustomerKYCStatus | null> {
+  return cloudFunction<CustomerKYCStatus | null>('getCustomerKYCStatus', { userId });
 }
 
-// Tickets
-export async function getSupportTickets(customerId?: string): Promise<SupportTicket[]> {
+export async function getSupportTickets(userId?: string): Promise<SupportTicket[]> {
   const result = await cloudFunction<{ tickets: SupportTicket[] }>('getSupportTickets', {
-    customerId: customerId || undefined,
+    userId: userId || undefined,
   });
   return result.tickets || [];
 }
@@ -54,8 +54,7 @@ export async function getTicket(ticketId: string): Promise<SupportTicket | null>
 }
 
 export async function createSupportTicket(ticket: {
-  customerId?: string;
-  userId?: string;
+  userId: string;
   subject: string;
   description: string;
   category: string;

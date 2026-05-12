@@ -8,6 +8,13 @@ import type {
   UpdateTemplateRequest,
 } from './types';
 
+function normalizeResponseTemplate(template: Partial<ResponseTemplate> & { objectId?: string }): ResponseTemplate {
+  return {
+    ...template,
+    id: template.id || template.objectId || '',
+  } as ResponseTemplate;
+}
+
 // ============================================================================
 // Response Templates API
 // ============================================================================
@@ -30,7 +37,8 @@ export async function getResponseTemplates(
  * Get a single response template by ID
  */
 export async function getResponseTemplate(templateId: string): Promise<ResponseTemplate> {
-  return cloudFunction<ResponseTemplate>('getResponseTemplate', { templateId });
+  const template = await cloudFunction<ResponseTemplate & { objectId?: string }>('getResponseTemplate', { templateId });
+  return normalizeResponseTemplate(template);
 }
 
 /**
@@ -39,7 +47,8 @@ export async function getResponseTemplate(templateId: string): Promise<ResponseT
 export async function createResponseTemplate(
   data: CreateTemplateRequest
 ): Promise<ResponseTemplate> {
-  return cloudFunction<ResponseTemplate>('createResponseTemplate', { ...data });
+  const template = await cloudFunction<ResponseTemplate & { objectId?: string }>('createResponseTemplate', { ...data });
+  return normalizeResponseTemplate(template);
 }
 
 /**
@@ -49,10 +58,11 @@ export async function updateResponseTemplate(
   templateId: string,
   updates: UpdateTemplateRequest
 ): Promise<ResponseTemplate> {
-  return cloudFunction<ResponseTemplate>('updateResponseTemplate', {
+  const template = await cloudFunction<ResponseTemplate & { objectId?: string }>('updateResponseTemplate', {
     templateId,
     ...updates,
   });
+  return normalizeResponseTemplate(template);
 }
 
 /**
@@ -101,6 +111,21 @@ export async function updateEmailTemplate(
 }
 
 /**
+ * Create a new email template
+ */
+export async function createEmailTemplate(data: {
+  type: string;
+  displayName: string;
+  subject: string;
+  bodyTemplate: string;
+  availablePlaceholders?: string[];
+  icon?: string;
+  isActive?: boolean;
+}): Promise<EmailTemplate> {
+  return cloudFunction<EmailTemplate>('createEmailTemplate', data);
+}
+
+/**
  * Render an email template with values
  */
 export async function renderEmailTemplate(
@@ -125,11 +150,27 @@ export async function getTemplateCategories(): Promise<TemplateCategory[]> {
 // Analytics API
 // ============================================================================
 
+/** Rolling window ending „now“, or explicit inclusive local-day range (ISO sent to Parse). */
+export type GetTemplateUsageStatsParams =
+  | { days: number }
+  | { startDate: string; endDate: string };
+
 /**
- * Get template usage statistics
+ * Get template usage statistics (rolling `days` or custom `startDate`/`endDate` ISO strings).
  */
-export async function getTemplateUsageStats(days: number = 30): Promise<TemplateUsageStats> {
-  return cloudFunction<TemplateUsageStats>('getTemplateUsageStats', { days });
+export async function getTemplateUsageStats(
+  params: GetTemplateUsageStatsParams | number = { days: 30 },
+): Promise<TemplateUsageStats> {
+  if (typeof params === 'number') {
+    return cloudFunction<TemplateUsageStats>('getTemplateUsageStats', { days: params });
+  }
+  if ('startDate' in params && 'endDate' in params) {
+    return cloudFunction<TemplateUsageStats>('getTemplateUsageStats', {
+      startDate: params.startDate,
+      endDate: params.endDate,
+    });
+  }
+  return cloudFunction<TemplateUsageStats>('getTemplateUsageStats', { days: params.days });
 }
 
 // ============================================================================
@@ -147,4 +188,48 @@ interface SeedResult {
  */
 export async function seedCSRTemplates(): Promise<SeedResult> {
   return cloudFunction<SeedResult>('seedCSRTemplates');
+}
+
+// ============================================================================
+// Export Backup (Backend)
+// ============================================================================
+
+export interface CSRTemplatesBackupPayload {
+  exportedAt: string;
+  version: string;
+  note: string;
+  categories: unknown[];
+  responseTemplates: unknown[];
+  emailTemplates: unknown[];
+}
+
+/**
+ * Export full CSR templates backup from backend (categories, response + email templates).
+ */
+export async function exportCSRTemplatesBackup(): Promise<CSRTemplatesBackupPayload> {
+  return cloudFunction<CSRTemplatesBackupPayload>('exportCSRTemplatesBackup');
+}
+
+export interface BackfillCSRTemplateShortcutsResult {
+  dryRun: boolean;
+  activeTemplatesScanned?: number;
+  candidateCount?: number;
+  candidates?: Array<{
+    objectId: string;
+    templateKey: string;
+    title: string;
+    suggestedShortcut: string;
+  }>;
+  updatedCount?: number;
+  updated?: Array<{
+    objectId: string;
+    templateKey: string;
+    shortcut: string;
+  }>;
+}
+
+export async function backfillCSRTemplateShortcuts(params: {
+  dryRun: boolean;
+}): Promise<BackfillCSRTemplateShortcutsResult> {
+  return cloudFunction<BackfillCSRTemplateShortcutsResult>('backfillCSRTemplateShortcuts', params);
 }

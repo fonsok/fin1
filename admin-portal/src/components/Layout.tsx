@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
-import { useNavigation } from '../hooks/usePermissions';
+import { matchNavItemForPath, useNavigation } from '../hooks/usePermissions';
+import { AdminFeatureGate } from './AdminFeatureGate';
 import { cloudFunction } from '../api/admin';
-import { getRoleDisplay } from '../utils/format';
+import { getSidebarRoleSubtitle } from '../utils/format';
+import { useTheme } from '../context/ThemeContext';
 import clsx from 'clsx';
 
 interface LayoutProps {
@@ -16,6 +18,10 @@ export function Layout({ children }: LayoutProps) {
   const location = useLocation();
   const navItems = useNavigation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { theme, toggleTheme } = useTheme();
+  const isDark = theme === 'dark';
+
+  const approvalsEnabled = navItems.find((i) => i.id === 'approvals')?.enabled === true;
 
   const { data: pendingCount } = useQuery({
     queryKey: ['approvalsBadge'],
@@ -28,7 +34,7 @@ export function Layout({ children }: LayoutProps) {
     },
     refetchInterval: 30000,
     staleTime: 15000,
-    enabled: !!user,
+    enabled: !!user && approvalsEnabled,
   });
 
   const handleLogout = async () => {
@@ -36,7 +42,7 @@ export function Layout({ children }: LayoutProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={clsx('min-h-screen', isDark ? 'bg-slate-800' : 'bg-gray-50')}>
       {/* Sidebar */}
       <aside
         className={clsx(
@@ -57,19 +63,45 @@ export function Layout({ children }: LayoutProps) {
         {/* Navigation - scrollable so Konfiguration/System/Einstellungen stay clickable above user block */}
         <nav className="flex-1 overflow-y-auto mt-6 px-3 pb-4">
           {navItems.map((item) => {
-            const isActive = location.pathname === item.path;
-            const badge = item.id === 'approvals' && pendingCount ? pendingCount : 0;
+            const isActive =
+              matchNavItemForPath(location.pathname, navItems)?.id === item.id;
+            const badge =
+              item.enabled && item.id === 'approvals' && pendingCount ? pendingCount : 0;
+            const rowClass = clsx(
+              'flex items-center gap-3 px-3 py-2.5 rounded-lg mb-1 transition-colors',
+              !item.enabled && 'cursor-not-allowed opacity-55',
+              item.enabled && isActive && 'bg-white/20 text-white',
+              item.enabled &&
+                !isActive &&
+                'text-white/70 hover:bg-white/10 hover:text-white',
+              !item.enabled && 'text-white/50',
+            );
+            if (!item.enabled) {
+              return (
+                <div
+                  key={item.id}
+                  className={rowClass}
+                  title="Keine Berechtigung für diesen Bereich. Bitte Administrator kontaktieren."
+                  role="presentation"
+                >
+                  <div className="relative">
+                    <NavIcon name={item.icon} />
+                  </div>
+                  <span className="font-medium flex items-center gap-1.5 min-w-0">
+                    <span className="truncate">{item.label}</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-wide shrink-0 text-white/40">
+                      gesperrt
+                    </span>
+                  </span>
+                </div>
+              );
+            }
             return (
               <Link
                 key={item.id}
                 to={item.path}
                 onClick={() => setSidebarOpen(false)}
-                className={clsx(
-                  'flex items-center gap-3 px-3 py-2.5 rounded-lg mb-1 transition-colors',
-                  isActive
-                    ? 'bg-white/20 text-white'
-                    : 'text-white/70 hover:bg-white/10 hover:text-white'
-                )}
+                className={rowClass}
               >
                 <div className="relative">
                   <NavIcon name={item.icon} />
@@ -98,7 +130,7 @@ export function Layout({ children }: LayoutProps) {
                 {user?.firstName || user?.email}
               </p>
               <p className="text-xs text-white/60 truncate leading-tight mt-0.5">
-                {user ? getRoleDisplay(user.role) : ''}
+                {user ? getSidebarRoleSubtitle(user) : ''}
               </p>
             </div>
             <button
@@ -123,13 +155,21 @@ export function Layout({ children }: LayoutProps) {
       )}
 
       {/* Main Content */}
-      <div className="lg:pl-64">
+      <div className={clsx('lg:pl-64', isDark ? 'bg-slate-800' : 'bg-gray-50')}>
         {/* Top Bar */}
-        <header className="h-16 bg-white border-b border-gray-200 flex items-center px-4 lg:px-6">
+        <header
+          className={clsx(
+            'h-16 border-b flex items-center px-4 lg:px-6',
+            isDark ? 'bg-slate-700/80 border-slate-600' : 'bg-white border-gray-200',
+          )}
+        >
           {/* Mobile Menu Button */}
           <button
             onClick={() => setSidebarOpen(true)}
-            className="lg:hidden p-2 -ml-2 text-gray-600 hover:text-gray-900"
+            className={clsx(
+              'lg:hidden p-2 -ml-2',
+              isDark ? 'text-slate-300 hover:text-white' : 'text-gray-600 hover:text-gray-900',
+            )}
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -138,24 +178,54 @@ export function Layout({ children }: LayoutProps) {
 
           {/* Breadcrumb / Page Title */}
           <div className="flex-1 ml-4 lg:ml-0">
-            <h1 className="text-lg font-semibold text-gray-900">
-              {navItems.find(item => item.path === location.pathname)?.label || 'Dashboard'}
+            <h1
+              className={clsx(
+                'text-lg font-semibold',
+                isDark ? 'text-slate-100' : 'text-gray-900',
+              )}
+            >
+              {matchNavItemForPath(location.pathname, navItems)?.label || 'Dashboard'}
             </h1>
           </div>
 
-          {/* Quick Actions */}
+          {/* Quick Actions + Theme Toggle */}
           <div className="flex items-center gap-2">
-            <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100">
+            <button
+              className={clsx(
+                'p-2 rounded-lg',
+                isDark
+                  ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-600'
+                  : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100',
+              )}
+            >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
               </svg>
+            </button>
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className={clsx(
+                'px-3 py-1 text-xs font-medium rounded-lg border',
+                isDark
+                  ? 'border-slate-500 text-slate-100 hover:bg-slate-600'
+                  : 'border-gray-300 text-gray-700 hover:bg-gray-100',
+              )}
+            >
+              {isDark ? 'Hell' : 'Dunkel'}
             </button>
           </div>
         </header>
 
         {/* Page Content */}
-        <main className="p-4 lg:p-6">
-          {children}
+        <main
+          data-content-area={isDark ? 'dark' : undefined}
+          className={clsx(
+            'p-4 lg:p-6 min-h-[calc(100vh-4rem)]',
+            isDark ? 'bg-slate-800' : 'bg-gray-50',
+          )}
+        >
+          <AdminFeatureGate navItems={navItems}>{children}</AdminFeatureGate>
         </main>
       </div>
     </div>
@@ -244,6 +314,21 @@ function NavIcon({ name }: { name: string }) {
     'building-library': (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
+      </svg>
+    ),
+    'building-office': (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21h18M3 10h18M10 21V10m4 11V10M6 7h12l-6-4-6 4zM6 10v11M18 10v11" />
+      </svg>
+    ),
+    banknotes: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-3a2 2 0 00-2-2H9m-4-4v4m0 0v4m8-8v4m0 0v4m0-4h4m-4 0H9" />
+      </svg>
+    ),
+    'magnifying-glass': (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
       </svg>
     ),
   };

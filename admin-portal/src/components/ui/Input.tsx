@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import clsx from 'clsx';
+import { useTheme } from '../../context/ThemeContext';
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -16,6 +17,8 @@ export function Input({
   type,
   ...props
 }: InputProps) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const inputId = id || label?.toLowerCase().replace(/\s+/g, '-');
   const isPassword = type === 'password';
   const [showPassword, setShowPassword] = useState(false);
@@ -24,13 +27,24 @@ export function Input({
   return (
     <div className="w-full">
       {label && (
-        <label htmlFor={inputId} className="block text-sm font-medium text-gray-700 mb-1">
+        <label
+          htmlFor={inputId}
+          className={clsx(
+            'block text-sm font-medium mb-1',
+            isDark ? 'text-slate-200' : 'text-gray-700',
+          )}
+        >
           {label}
         </label>
       )}
       <div className="relative">
         {icon && (
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+          <div
+            className={clsx(
+              'absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none',
+              isDark ? 'text-slate-400' : 'text-gray-400',
+            )}
+          >
             {icon}
           </div>
         )}
@@ -40,7 +54,10 @@ export function Input({
           className={clsx(
             'w-full px-4 py-2 border rounded-lg transition-colors duration-200',
             'focus:outline-none focus:ring-2 focus:ring-fin1-primary focus:border-transparent',
-            error ? 'border-fin1-danger' : 'border-gray-300',
+            isDark
+              ? 'bg-slate-800/90 border-slate-600 text-slate-100 placeholder:text-slate-400'
+              : 'bg-white border-gray-300 text-gray-900 placeholder:text-gray-400',
+            error && 'border-fin1-danger',
             icon && 'pl-10',
             isPassword && 'pr-10',
             className
@@ -51,7 +68,10 @@ export function Input({
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+            className={clsx(
+              'absolute inset-y-0 right-0 pr-3 flex items-center transition-colors',
+              isDark ? 'text-slate-400 hover:text-slate-200' : 'text-gray-400 hover:text-gray-600',
+            )}
             aria-label={showPassword ? 'Passwort verbergen' : 'Passwort anzeigen'}
           >
             {showPassword ? (

@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Card } from '../../components/ui';
@@ -37,10 +38,15 @@ export function CSRDashboard() {
     },
   });
 
-  const activeTickets = (tickets || []).filter(
-    (t) => t.status !== 'resolved' && t.status !== 'closed' && t.status !== 'archived'
+  const activeTickets = useMemo(
+    () =>
+      (tickets || []).filter(
+        (t) => t.status !== 'resolved' && t.status !== 'closed' && t.status !== 'archived'
+      ),
+    [tickets]
   );
   const unassignedCount = activeTickets.filter((t) => !t.assignedTo).length;
+  const serverTicketTotal = (tickets || []).length;
 
   return (
     <div className="space-y-6">
@@ -82,7 +88,11 @@ export function CSRDashboard() {
       <QuickActions unassignedTicketCount={unassignedCount} />
 
       {/* Recent Tickets */}
-      <RecentTickets tickets={activeTickets.slice(0, 5)} isLoading={ticketsLoading} />
+      <RecentTickets
+        tickets={activeTickets}
+        serverTicketTotal={serverTicketTotal}
+        isLoading={ticketsLoading}
+      />
 
       {/* Metrics Summary */}
       {metrics && (

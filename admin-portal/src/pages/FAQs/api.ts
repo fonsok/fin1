@@ -69,3 +69,65 @@ export async function deleteFAQ(objectId: string): Promise<{ success: boolean; m
 export async function createFAQCategory(data: CreateFAQCategoryRequest) {
   return cloudFunction('createFAQCategory', { ...data } as Record<string, unknown>);
 }
+
+// ============================================================================
+// Export Backup (Backend)
+// ============================================================================
+
+export interface FAQBackupPayload {
+  exportedAt: string;
+  version: string;
+  note: string;
+  categories: unknown[];
+  faqs: unknown[];
+}
+
+export interface FAQImportResult {
+  success: boolean;
+  dryRun: boolean;
+  counts: {
+    categoriesInput: number;
+    categoriesCreated: number;
+    categoriesUpdated: number;
+    faqsInput: number;
+    faqsCreated: number;
+    faqsUpdated: number;
+    faqsSkipped: number;
+  };
+  warnings: string[];
+}
+
+/**
+ * Export full FAQ backup from backend (categories + faqs).
+ */
+export async function exportFAQBackup(): Promise<FAQBackupPayload> {
+  return cloudFunction<FAQBackupPayload>('exportFAQBackup');
+}
+
+export async function importFAQBackup(params: {
+  backup: FAQBackupPayload;
+  dryRun: boolean;
+}): Promise<FAQImportResult> {
+  return cloudFunction<FAQImportResult>('importFAQBackup', params as Record<string, unknown>);
+}
+
+// ============================================================================
+// DEV Maintenance (FAQs) — gated by ALLOW_FAQ_HARD_DELETE on server
+// ============================================================================
+
+export async function devResetFAQsBaseline(params: {
+  dryRun?: boolean;
+  deleteInactiveCategories?: boolean;
+}): Promise<{
+  dryRun: boolean;
+  deleteInactiveCategories?: boolean;
+  activeFound: number;
+  inactiveFaqsPlanned?: number;
+  clonesPlanned?: number;
+  inactiveCategoriesPlanned?: number;
+  clonesCreated?: number;
+  deletedInactiveFaqs?: number;
+  deletedInactiveCategories?: number;
+}> {
+  return cloudFunction('devResetFAQsBaseline', params as Record<string, unknown>);
+}

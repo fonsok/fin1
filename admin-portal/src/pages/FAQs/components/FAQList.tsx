@@ -1,6 +1,8 @@
 import { Card } from '../../../components/ui/Card';
 import { Badge } from '../../../components/ui/Badge';
 import { Button } from '../../../components/ui/Button';
+import clsx from 'clsx';
+import { useTheme } from '../../../context/ThemeContext';
 import type { FAQ, FAQCategory } from '../types';
 
 interface FAQListProps {
@@ -11,13 +13,16 @@ interface FAQListProps {
 }
 
 export function FAQList({ faqs, categories, onEdit, onDelete }: FAQListProps) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
   const getCategoryLabels = (faq: FAQ) => {
     const ids = faq.categoryIds && faq.categoryIds.length > 0 ? faq.categoryIds : [faq.categoryId];
     const labels = ids
       .map((id) => {
         const cat = categories.find((c) => c.objectId === id);
         if (!cat) return null;
-        return `${cat.icon || '📁'} ${cat.displayName || cat.title || cat.slug}`;
+        return cat.displayName || cat.title || cat.slug;
       })
       .filter((label): label is string => Boolean(label));
 
@@ -74,19 +79,26 @@ export function FAQList({ faqs, categories, onEdit, onDelete }: FAQListProps) {
                 )}
               </div>
 
-              <p className="text-sm text-gray-600 line-clamp-3">{faq.answer}</p>
+              <p className={clsx('text-sm line-clamp-3', isDark ? 'text-slate-200' : 'text-gray-600')}>
+                {faq.answer}
+              </p>
 
-              {/* German translation indicator */}
-              {faq.questionDe || faq.answerDe ? (
+              {/* Optional EN: canonical questionEn/answerEn; legacy De-suffixed fields until DB migrated */}
+              {(
+                faq.questionEn?.trim() ||
+                faq.answerEn?.trim() ||
+                faq.questionDe?.trim() ||
+                faq.answerDe?.trim()
+              ) ? (
                 <div className="mt-2">
                   <Badge variant="neutral" className="text-xs">
-                    🇩🇪 DE verfügbar
+                    🇬🇧 EN verfügbar
                   </Badge>
                 </div>
               ) : (
                 <div className="mt-2">
-                  <Badge variant="neutral" className="text-xs opacity-50">
-                    🇩🇪 DE fehlt
+                  <Badge variant="neutral" className={clsx('text-xs', isDark && 'opacity-80')}>
+                    🇬🇧 EN fehlt
                   </Badge>
                 </div>
               )}

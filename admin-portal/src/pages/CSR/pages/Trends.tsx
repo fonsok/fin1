@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Card, Badge } from '../../../components/ui';
+import { Card, Badge, PaginationBar } from '../../../components/ui';
+import { useTheme } from '../../../context/ThemeContext';
 import { getSupportTickets } from '../api';
+import type { SupportTicket } from '../types';
 
 interface SupportTrend {
   id: string;
@@ -18,18 +20,11 @@ interface SupportTrend {
   suggestedAction: string;
 }
 
-export function TrendsPage() {
-  const navigate = useNavigate();
-  const [selectedTrend, setSelectedTrend] = useState<SupportTrend | null>(null);
+const TRENDS_PAGE_SIZE = 50;
 
-  const { data: tickets } = useQuery({
-    queryKey: ['csr-tickets-all'],
-    queryFn: () => getSupportTickets(),
-  });
-
-  // Simple trend detection (can be enhanced with backend API)
-  const detectTrends = (): SupportTrend[] => {
-    if (!tickets || tickets.length === 0) return [];
+/** Simple trend detection (can be enhanced with backend API) */
+function detectSupportTrends(tickets: SupportTicket[]): SupportTrend[] {
+  if (!tickets.length) return [];
 
     const trends: SupportTrend[] = [];
     const now = new Date();
@@ -133,9 +128,37 @@ export function TrendsPage() {
     }
 
     return trends;
-  };
+}
 
-  const trends = detectTrends();
+export function TrendsPage() {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+  const navigate = useNavigate();
+  const [selectedTrend, setSelectedTrend] = useState<SupportTrend | null>(null);
+  const [page, setPage] = useState(0);
+
+  const { data: tickets } = useQuery({
+    queryKey: ['csr-tickets-all'],
+    queryFn: () => getSupportTickets(),
+  });
+
+  const trends = useMemo(() => detectSupportTrends(tickets ?? []), [tickets]);
+  const trendsTotal = trends.length;
+  const trendsTotalPages = Math.max(1, Math.ceil(trendsTotal / TRENDS_PAGE_SIZE));
+  const pagedTrends = useMemo(
+    () => trends.slice(page * TRENDS_PAGE_SIZE, (page + 1) * TRENDS_PAGE_SIZE),
+    [trends, page]
+  );
+
+  useEffect(() => {
+    setPage(0);
+  }, [trendsTotal]);
+
+  useEffect(() => {
+    if (page > 0 && page >= trendsTotalPages) {
+      setPage(Math.max(0, trendsTotalPages - 1));
+    }
+  }, [page, trendsTotalPages]);
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
@@ -209,41 +232,53 @@ export function TrendsPage() {
           </div>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 gap-4">
-          {trends.map((trend) => (
-            <Card
-              key={trend.id}
-              className={`border-2 cursor-pointer hover:shadow-lg transition-shadow ${getSeverityColor(trend.severity)}`}
-              onClick={() => setSelectedTrend(trend)}
-            >
-              <div className="flex items-start gap-4">
-                <div className={`p-2 rounded-lg ${getSeverityColor(trend.severity)}`}>
-                  {getTrendIcon(trend.type)}
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-lg font-semibold">{trend.title}</h3>
-                    <Badge variant={trend.severity === 'critical' ? 'danger' : trend.severity === 'warning' ? 'warning' : 'info'}>
-                      {trend.severity === 'critical' ? 'Kritisch' : trend.severity === 'warning' ? 'Warnung' : 'Info'}
-                    </Badge>
+        <Card padding="none">
+          <>
+            <div className="grid grid-cols-1 gap-4 p-4">
+              {pagedTrends.map((trend) => (
+                <Card
+                  key={trend.id}
+                  className={`border-2 cursor-pointer hover:shadow-lg transition-shadow ${getSeverityColor(trend.severity)}`}
+                  onClick={() => setSelectedTrend(trend)}
+                >
+                  <div className="flex items-start gap-4">
+                    <div className={`p-2 rounded-lg ${getSeverityColor(trend.severity)}`}>
+                      {getTrendIcon(trend.type)}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-lg font-semibold">{trend.title}</h3>
+                        <Badge variant={trend.severity === 'critical' ? 'danger' : trend.severity === 'warning' ? 'warning' : 'info'}>
+                          {trend.severity === 'critical' ? 'Kritisch' : trend.severity === 'warning' ? 'Warnung' : 'Info'}
+                        </Badge>
+                      </div>
+                      <p className="text-sm mb-3">{trend.description}</p>
+                      <div className="flex items-center gap-4 text-sm">
+                        <span>{trend.ticketCount} Tickets</span>
+                        <span>{trend.affectedCustomers} betroffene Kunden</span>
+                        {trend.percentageChange > 0 && (
+                          <span>+{Math.round(trend.percentageChange)}%</span>
+                        )}
+                      </div>
+                      <div className="mt-3 pt-3 border-t">
+                        <p className="text-sm font-medium">Empfohlene Maßnahme:</p>
+                        <p className="text-sm">{trend.suggestedAction}</p>
+                      </div>
+                    </div>
                   </div>
-                  <p className="text-sm mb-3">{trend.description}</p>
-                  <div className="flex items-center gap-4 text-sm">
-                    <span>{trend.ticketCount} Tickets</span>
-                    <span>{trend.affectedCustomers} betroffene Kunden</span>
-                    {trend.percentageChange > 0 && (
-                      <span>+{Math.round(trend.percentageChange)}%</span>
-                    )}
-                  </div>
-                  <div className="mt-3 pt-3 border-t">
-                    <p className="text-sm font-medium">Empfohlene Maßnahme:</p>
-                    <p className="text-sm">{trend.suggestedAction}</p>
-                  </div>
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
+                </Card>
+              ))}
+            </div>
+            <PaginationBar
+              page={page}
+              pageSize={TRENDS_PAGE_SIZE}
+              total={trendsTotal}
+              itemLabel="Trends"
+              isDark={isDark}
+              onPageChange={setPage}
+            />
+          </>
+        </Card>
       )}
 
       {/* Trend Detail Modal */}

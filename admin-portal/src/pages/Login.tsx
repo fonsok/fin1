@@ -2,6 +2,29 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Button, Input, Card } from '../components/ui';
 import { TwoFactorVerify } from '../components/TwoFactorVerify';
+import { DevPortalLoginReference } from '../components/DevPortalLoginReference';
+import {
+  PORTAL_LOGIN_CARD_INTRO,
+  PORTAL_LOGIN_EMAIL_PLACEHOLDER,
+} from '../constants/portalLogin';
+
+function mapLoginErrorMessage(rawMessage: string): string {
+  const msg = rawMessage.toLowerCase();
+
+  if (msg.includes('locked due to multiple failed login attempts') || msg.includes('account is locked')) {
+    return 'Zu viele Fehlversuche. Konto ist kurzzeitig gesperrt (ca. 5 Minuten).';
+  }
+
+  if (msg.includes('invalid username/password') || msg.includes('invalid credentials')) {
+    return 'E-Mail oder Passwort ist nicht korrekt.';
+  }
+
+  if (msg.includes('failed to fetch') || msg.includes('netzwerk') || msg.includes('network')) {
+    return 'Login aktuell nicht möglich. Bitte später erneut versuchen.';
+  }
+
+  return rawMessage;
+}
 
 export function LoginPage() {
   const { login, isLoading, needs2FAVerification, user, isAuthenticated } = useAuth();
@@ -25,7 +48,11 @@ export function LoginPage() {
       await login(email, password);
       // Navigation will be handled by useEffect
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Anmeldung fehlgeschlagen');
+      if (err instanceof Error) {
+        setError(mapLoginErrorMessage(err.message));
+      } else {
+        setError('Anmeldung fehlgeschlagen');
+      }
     }
   };
 
@@ -49,9 +76,7 @@ export function LoginPage() {
         {/* Login Card */}
         <Card className="shadow-xl">
           <h2 className="text-xl font-semibold text-gray-900 mb-1">Anmelden</h2>
-          <p className="text-gray-500 text-sm mb-6">
-            Melden Sie sich mit Ihrem Admin-Konto an
-          </p>
+          <p className="text-gray-500 text-sm mb-6">{PORTAL_LOGIN_CARD_INTRO}</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
@@ -59,7 +84,7 @@ export function LoginPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="admin@fin1.de"
+              placeholder={PORTAL_LOGIN_EMAIL_PLACEHOLDER}
               required
               autoComplete="email"
               icon={
@@ -99,6 +124,8 @@ export function LoginPage() {
               Anmelden
             </Button>
           </form>
+
+          <DevPortalLoginReference />
 
           <p className="text-xs text-gray-400 text-center mt-6">
             Nur für autorisierte Administratoren

@@ -17,7 +17,8 @@ export interface DatabaseStatus {
 }
 
 export interface SystemHealth {
-  overall: 'healthy' | 'degraded' | 'down';
+  /** `unknown` = client could not load status (e.g. network/auth), not a confirmed outage */
+  overall: 'healthy' | 'degraded' | 'down' | 'unknown';
   services: ServiceStatus[];
   databases: DatabaseStatus[];
   serverTime: string;

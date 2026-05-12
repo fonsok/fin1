@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
-import { usePermissions, useNavigation } from './usePermissions';
+import { matchNavItemForPath, usePermissions, useNavigation } from './usePermissions';
 
 // Mock the AuthContext
 const mockUseAuth = vi.fn();
@@ -89,6 +89,23 @@ describe('usePermissions', () => {
   });
 });
 
+describe('matchNavItemForPath', () => {
+  const items = [
+    { id: 'dashboard', label: 'Dashboard', path: '/', icon: 'home', enabled: true },
+    { id: 'users', label: 'Benutzer', path: '/users', icon: 'users', enabled: true },
+    { id: 'app-ledger', label: 'App Ledger', path: '/app-ledger', icon: 'banknotes', enabled: true },
+  ];
+
+  it('resolves nested paths to the longest matching nav entry', () => {
+    expect(matchNavItemForPath('/users/abc123', items)?.id).toBe('users');
+    expect(matchNavItemForPath('/app-ledger', items)?.id).toBe('app-ledger');
+  });
+
+  it('maps root to dashboard', () => {
+    expect(matchNavItemForPath('/', items)?.id).toBe('dashboard');
+  });
+});
+
 describe('useNavigation', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -112,7 +129,26 @@ describe('useNavigation', () => {
     expect(result.current.map(i => i.id)).toContain('settings');
   });
 
-  it('returns limited nav items for customer_service', () => {
+  it('enables all nav except locked ids for business_admin (Finance Admin sidebar)', () => {
+    mockUseAuth.mockReturnValue({
+      user: { role: 'business_admin' },
+      permissions: { isElevated: true, isFullAdmin: false },
+      hasPermission: vi.fn().mockReturnValue(false),
+    });
+
+    const { result } = renderHook(() => useNavigation());
+
+    expect(result.current.find((i) => i.id === 'users')?.enabled).toBe(true);
+    expect(result.current.find((i) => i.id === 'finance')?.enabled).toBe(true);
+    expect(result.current.find((i) => i.id === 'faqs')?.enabled).toBe(true);
+    expect(result.current.find((i) => i.id === 'system')?.enabled).toBe(false);
+    expect(result.current.find((i) => i.id === 'security')?.enabled).toBe(false);
+    expect(result.current.find((i) => i.id === 'onboarding')?.enabled).toBe(false);
+    expect(result.current.find((i) => i.id === 'compliance')?.enabled).toBe(false);
+    expect(result.current.find((i) => i.id === 'tickets')?.enabled).toBe(true);
+  });
+
+  it('lists all sections but disables finance and security without permission', () => {
     const mockHasPermission = vi.fn((permission: string) => {
       return ['searchUsers', 'getTickets'].includes(permission);
     });
@@ -127,14 +163,14 @@ describe('useNavigation', () => {
 
     const navIds = result.current.map(i => i.id);
     expect(navIds).toContain('dashboard');
-    expect(navIds).toContain('users');
-    expect(navIds).toContain('tickets');
-    expect(navIds).toContain('settings');
-    expect(navIds).not.toContain('finance');
-    expect(navIds).not.toContain('security');
+    expect(navIds).toContain('finance');
+    expect(navIds).toContain('security');
+    expect(result.current.find(i => i.id === 'finance')?.enabled).toBe(false);
+    expect(result.current.find(i => i.id === 'security')?.enabled).toBe(false);
+    expect(result.current.find(i => i.id === 'users')?.enabled).toBe(true);
   });
 
-  it('always includes dashboard and settings', () => {
+  it('always includes dashboard and settings; compliance entry visible but may be disabled', () => {
     mockUseAuth.mockReturnValue({
       user: { role: 'compliance' },
       permissions: { isElevated: false, isFullAdmin: false },
@@ -146,6 +182,8 @@ describe('useNavigation', () => {
     const navIds = result.current.map(i => i.id);
     expect(navIds).toContain('dashboard');
     expect(navIds).toContain('settings');
+    expect(navIds).toContain('compliance');
+    expect(result.current.find(i => i.id === 'compliance')?.enabled).toBe(false);
   });
 
   it('returns correct paths for nav items', () => {

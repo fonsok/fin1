@@ -1,9 +1,16 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import clsx from 'clsx';
 import { cloudFunction } from '../../api/admin';
 import { useAuth } from '../../context/AuthContext';
-import { Card, Button, Badge } from '../../components/ui';
-import { formatDateTime, formatCurrency, formatPercentage, formatRelative } from '../../utils/format';
+import { useTheme } from '../../context/ThemeContext';
+import { Card, Button, Badge, PaginationBar } from '../../components/ui';
+import { formatCurrency, formatPercentage } from '../../utils/format';
+import { ApprovalsTabs } from './components/ApprovalsTabs';
+import { ApprovalDecisionModal } from './components/ApprovalDecisionModal';
+import { WithdrawRequestModal } from './components/WithdrawRequestModal';
+import { ApprovalsEmptyState } from './components/ApprovalsEmptyState';
+import { ApprovalsRequestTable } from './components/ApprovalsRequestTable';
 
 interface ApprovalRequest {
   objectId: string;
@@ -34,18 +41,37 @@ type TabId = 'pending' | 'own' | 'all' | 'history';
 
 const CONFIG_PARAM_TYPES: Record<string, 'percentage' | 'currency'> = {
   traderCommissionRate: 'percentage',
-  platformServiceChargeRate: 'percentage',
+  appServiceChargeRate: 'percentage',
   initialAccountBalance: 'currency',
   minimumCashReserve: 'currency',
+  minInvestment: 'currency',
+  maxInvestment: 'currency',
   poolBalanceDistributionThreshold: 'currency',
+  daily_transaction_limit: 'currency',
+  weekly_transaction_limit: 'currency',
+  monthly_transaction_limit: 'currency',
 };
 
 const PARAM_DISPLAY_NAMES: Record<string, string> = {
   traderCommissionRate: 'Trader-Provision',
-  platformServiceChargeRate: 'Plattform-Servicegebühr',
+  appServiceChargeRate: 'App-Servicegebühr',
   initialAccountBalance: 'Startguthaben',
   minimumCashReserve: 'Mindest-Bargeldreserve',
+  minInvestment: 'Mindestinvestmentbetrag',
+  maxInvestment: 'Maximuminvestmentbetrag',
   poolBalanceDistributionThreshold: 'Pool-Verteilungsschwelle',
+  daily_transaction_limit: 'Tages-Transaktionslimit',
+  weekly_transaction_limit: 'Wochen-Transaktionslimit',
+  monthly_transaction_limit: 'Monats-Transaktionslimit',
+  walletFeatureEnabled: 'Ein-/Auszahlungen erlaubt',
+  walletActionMode: 'Konto-Aktionsmodus',
+  walletActionModeGlobal: 'Konto-Aktionsmodus (Global)',
+  walletActionModeInvestor: 'Konto-Aktionsmodus (Investor)',
+  walletActionModeTrader: 'Konto-Aktionsmodus (Trader)',
+  walletActionModeIndividual: 'Konto-Aktionsmodus (Privatperson)',
+  walletActionModeCompany: 'Konto-Aktionsmodus (Company)',
+  walletActionModeOverride: 'Nutzer-Konto-Aktionsmodus',
+  serviceChargeInvoiceFromBackend: 'Servicegebühr-Rechnung über Server',
 };
 
 function formatConfigValue(paramName: string, value: unknown): string {
@@ -81,6 +107,7 @@ function getRequestTypeLabel(type: string): string {
     config_change: 'Konfigurationsänderung',
     configuration_change: 'Konfigurationsänderung',
     role_change: 'Rollenänderung',
+    user_wallet_action_mode_change: 'Nutzer-Konto-Sperre',
   };
   return labels[type] || type || '-';
 }
@@ -111,6 +138,26 @@ function RequestDetails({ request }: { request: ApprovalRequest }) {
     );
   }
 
+  if (request.requestType === 'user_wallet_action_mode_change' && request.metadata) {
+    return (
+      <div className="text-sm space-y-1">
+        <p className="font-medium text-gray-900">
+          Nutzer: {String(request.metadata.targetUserEmail || request.metadata.targetUserId || '-')}
+        </p>
+        <div className="flex items-center gap-2">
+          <span className="text-gray-500">{String(request.metadata.oldMode ?? 'kein Override')}</span>
+          <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+          </svg>
+          <span className="font-semibold text-fin1-primary">{String(request.metadata.newMode ?? '-')}</span>
+        </div>
+        {typeof request.metadata.reason === 'string' && request.metadata.reason && (
+          <p className="text-gray-500 text-xs truncate max-w-xs">Grund: {request.metadata.reason}</p>
+        )}
+      </div>
+    );
+  }
+
   return (
     <p className="text-sm text-gray-600 truncate max-w-xs">
       {(typeof request.metadata?.reason === 'string' ? request.metadata.reason : null) || '-'}
@@ -118,20 +165,58 @@ function RequestDetails({ request }: { request: ApprovalRequest }) {
   );
 }
 
+/** Match a single request against the active type filter. */
+function matchesTypeFilter(r: ApprovalRequest, filter: string): boolean {
+  if (!filter) return true;
+  if (filter.startsWith('config:')) {
+    const paramKey = filter.slice(7);
+    const isConfig = r.requestType === 'configuration_change' || r.requestType === 'config_change';
+    return isConfig && (r.metadata?.parameterName as string) === paramKey;
+  }
+  if (filter === 'configuration_change') {
+    return r.requestType === 'configuration_change' || r.requestType === 'config_change';
+  }
+  return r.requestType === filter;
+}
+
 export function ApprovalsListPage() {
   const { user } = useAuth();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const queryClient = useQueryClient();
   const [selectedRequest, setSelectedRequest] = useState<ApprovalRequest | null>(null);
   const [actionType, setActionType] = useState<'approve' | 'reject' | null>(null);
   const [withdrawTarget, setWithdrawTarget] = useState<ApprovalRequest | null>(null);
   const [notes, setNotes] = useState('');
   const [activeTab, setActiveTab] = useState<TabId>('pending');
+  const [typeFilter, setTypeFilter] = useState('');
+  const [pageByTab, setPageByTab] = useState<Record<TabId, number>>({
+    pending: 0,
+    own: 0,
+    all: 0,
+    history: 0,
+  });
+  const [pageSize, setPageSize] = useState(50);
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['pendingApprovals'],
     queryFn: () => cloudFunction<ApprovalsResponse>('getPendingApprovals'),
     refetchInterval: 30000,
   });
+
+  const configParamOptions = useMemo(() => {
+    if (!data) return [];
+    const all = [...(data.requests ?? []), ...(data.ownPending ?? []), ...(data.allRequests ?? []), ...(data.history ?? [])];
+    const seen = new Set<string>();
+    for (const r of all) {
+      if ((r.requestType === 'configuration_change' || r.requestType === 'config_change') && r.metadata?.parameterName) {
+        seen.add(r.metadata.parameterName as string);
+      }
+    }
+    return Array.from(seen).sort((a, b) =>
+      (PARAM_DISPLAY_NAMES[a] ?? a).localeCompare(PARAM_DISPLAY_NAMES[b] ?? b, 'de'),
+    );
+  }, [data]);
 
   const approveMutation = useMutation({
     mutationFn: ({ requestId, notes }: { requestId: string; notes?: string }) =>
@@ -173,10 +258,13 @@ export function ApprovalsListPage() {
     setNotes('');
   };
 
-  const pendingCount = data?.requests?.length ?? 0;
-  const ownCount = data?.ownPending?.length ?? 0;
-  const allCount = data?.allRequests?.length ?? 0;
-  const historyCount = data?.history?.length ?? 0;
+  const filterList = (list: ApprovalRequest[]) =>
+    typeFilter ? list.filter((r) => matchesTypeFilter(r, typeFilter)) : list;
+
+  const pendingCount = filterList(data?.requests ?? []).length;
+  const ownCount = filterList(data?.ownPending ?? []).length;
+  const allCount = filterList(data?.allRequests ?? []).length;
+  const historyCount = filterList(data?.history ?? []).length;
 
   const tabs: { id: TabId; label: string; count: number; icon: string }[] = [
     { id: 'pending', label: 'Freigaben erteilen', count: pendingCount, icon: '🔔' },
@@ -184,6 +272,22 @@ export function ApprovalsListPage() {
     { id: 'all', label: 'Alle Anträge', count: allCount, icon: '📋' },
     { id: 'history', label: 'Abgeschlossen', count: historyCount, icon: '✅' },
   ];
+
+  const tabRequests: Record<TabId, ApprovalRequest[]> = {
+    pending: data?.requests ?? [],
+    own: data?.ownPending ?? [],
+    all: data?.allRequests ?? [],
+    history: data?.history ?? [],
+  };
+  const activeRequests = typeFilter
+    ? tabRequests[activeTab].filter((r) => matchesTypeFilter(r, typeFilter))
+    : tabRequests[activeTab];
+  const activePage = pageByTab[activeTab] ?? 0;
+  const pagedActiveRequests = activeRequests.slice(activePage * pageSize, (activePage + 1) * pageSize);
+
+  const setPageForActiveTab = (nextPage: number) => {
+    setPageByTab((prev) => ({ ...prev, [activeTab]: nextPage }));
+  };
 
   return (
     <div className="space-y-6">
@@ -202,34 +306,64 @@ export function ApprovalsListPage() {
         </div>
       </Card>
 
-      {/* Tab Navigation */}
-      <div className="flex border-b border-gray-200 overflow-x-auto">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-              activeTab === tab.id
-                ? 'border-fin1-primary text-fin1-primary'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-          >
-            <span>{tab.icon}</span>
-            <span>{tab.label}</span>
-            {tab.count > 0 && (
-              <span className={`ml-1 px-2 py-0.5 text-xs font-semibold rounded-full ${
-                activeTab === tab.id
-                  ? 'bg-fin1-primary text-white'
-                  : tab.id === 'pending' && tab.count > 0
-                    ? 'bg-amber-100 text-amber-800'
-                    : 'bg-gray-100 text-gray-600'
-              }`}>
-                {tab.count}
-              </span>
+      <ApprovalsTabs
+        activeTab={activeTab}
+        tabs={tabs}
+        onSelect={(tab) => {
+          setActiveTab(tab);
+          setPageByTab((prev) => ({ ...prev, [tab]: 0 }));
+        }}
+      />
+
+      {/* Type filter */}
+      <Card>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <label className={clsx('text-sm font-medium', isDark ? 'text-slate-300' : 'text-gray-700')}>
+            Typ filtern:
+          </label>
+          <select
+            value={typeFilter}
+            onChange={(e) => {
+              setTypeFilter(e.target.value);
+              setPageByTab((prev) => ({ ...prev, [activeTab]: 0 }));
+            }}
+            className={clsx(
+              'px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary text-sm',
+              isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
             )}
-          </button>
-        ))}
-      </div>
+          >
+            <option value="">Alle Typen</option>
+            <optgroup label="Antragsart">
+              <option value="configuration_change">Konfigurationsänderung (alle)</option>
+              <option value="correction">Korrekturbuchung</option>
+              <option value="user_delete">Benutzer löschen</option>
+              <option value="large_transaction">Große Transaktion</option>
+              <option value="role_change">Rollenänderung</option>
+            </optgroup>
+            {configParamOptions.length > 0 && (
+              <optgroup label="Konfigurationsparameter">
+                {configParamOptions.map((key) => (
+                  <option key={key} value={`config:${key}`}>
+                    {PARAM_DISPLAY_NAMES[key] ?? key}
+                  </option>
+                ))}
+              </optgroup>
+            )}
+          </select>
+          {typeFilter && (
+            <button
+              type="button"
+              onClick={() => {
+                setTypeFilter('');
+                setPageByTab((prev) => ({ ...prev, [activeTab]: 0 }));
+              }}
+              className="text-xs text-fin1-primary hover:underline"
+            >
+              Filter zurücksetzen
+            </button>
+          )}
+        </div>
+      </Card>
 
       {/* Content */}
       {isLoading ? (
@@ -254,18 +388,21 @@ export function ApprovalsListPage() {
           {activeTab === 'pending' && (
             <Card padding="none">
               {pendingCount === 0 ? (
-                <EmptyState
+                <ApprovalsEmptyState
                   icon="check-circle"
                   message="Keine ausstehenden Freigaben"
                   description="Alle Anträge anderer Admins wurden bereits bearbeitet."
                 />
               ) : (
-                <RequestTable
-                  requests={data!.requests}
+                <ApprovalsRequestTable
+                  requests={pagedActiveRequests}
                   showActions
                   onApprove={(r) => { setSelectedRequest(r); setActionType('approve'); }}
                   onReject={(r) => { setSelectedRequest(r); setActionType('reject'); }}
                   currentUserId={user?.objectId}
+                  getRequestTypeLabel={getRequestTypeLabel}
+                  getStatusBadge={getStatusBadge}
+                  renderRequestDetails={(request) => <RequestDetails request={request as ApprovalRequest} />}
                 />
               )}
             </Card>
@@ -275,18 +412,21 @@ export function ApprovalsListPage() {
           {activeTab === 'own' && (
             <Card padding="none">
               {ownCount === 0 ? (
-                <EmptyState
+                <ApprovalsEmptyState
                   icon="document"
                   message="Keine eigenen offenen Anträge"
                   description="Sie haben aktuell keine Änderungen beantragt, die auf Freigabe warten."
                 />
               ) : (
-                <RequestTable
-                  requests={data!.ownPending}
+                <ApprovalsRequestTable
+                  requests={pagedActiveRequests}
                   showStatus
                   showWithdraw
                   onWithdraw={(r) => setWithdrawTarget(r)}
                   currentUserId={user?.objectId}
+                  getRequestTypeLabel={getRequestTypeLabel}
+                  getStatusBadge={getStatusBadge}
+                  renderRequestDetails={(request) => <RequestDetails request={request as ApprovalRequest} />}
                 />
               )}
             </Card>
@@ -296,19 +436,22 @@ export function ApprovalsListPage() {
           {activeTab === 'all' && (
             <Card padding="none">
               {allCount === 0 ? (
-                <EmptyState
+                <ApprovalsEmptyState
                   icon="archive"
                   message="Noch keine Anträge vorhanden"
                   description="Alle Anträge aller Admins erscheinen hier chronologisch."
                 />
               ) : (
-                <RequestTable
-                  requests={data!.allRequests}
+                <ApprovalsRequestTable
+                  requests={pagedActiveRequests}
                   showStatus
                   showDecision
                   showWithdraw
                   onWithdraw={(r) => setWithdrawTarget(r)}
                   currentUserId={user?.objectId}
+                  getRequestTypeLabel={getRequestTypeLabel}
+                  getStatusBadge={getStatusBadge}
+                  renderRequestDetails={(request) => <RequestDetails request={request as ApprovalRequest} />}
                 />
               )}
             </Card>
@@ -318,17 +461,20 @@ export function ApprovalsListPage() {
           {activeTab === 'history' && (
             <Card padding="none">
               {historyCount === 0 ? (
-                <EmptyState
+                <ApprovalsEmptyState
                   icon="archive"
                   message="Noch keine abgeschlossenen Anträge"
                   description="Genehmigte und abgelehnte Anträge der letzten 30 Tage erscheinen hier."
                 />
               ) : (
-                <RequestTable
-                  requests={data!.history}
+                <ApprovalsRequestTable
+                  requests={pagedActiveRequests}
                   showStatus
                   showDecision
                   currentUserId={user?.objectId}
+                  getRequestTypeLabel={getRequestTypeLabel}
+                  getStatusBadge={getStatusBadge}
+                  renderRequestDetails={(request) => <RequestDetails request={request as ApprovalRequest} />}
                 />
               )}
             </Card>
@@ -336,334 +482,73 @@ export function ApprovalsListPage() {
         </>
       )}
 
-      {/* Approve / Reject Modal */}
-      {selectedRequest && actionType && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <Card className="w-full max-w-lg">
-            <h3 className="text-lg font-semibold mb-4">
-              {actionType === 'approve' ? 'Anfrage genehmigen' : 'Anfrage ablehnen'}
-            </h3>
-
-            <div className="space-y-3 mb-4 p-4 bg-gray-50 rounded-lg">
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-500">Typ:</span>
-                <span className="text-sm font-medium">
-                  {getRequestTypeLabel(selectedRequest.requestType)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-500">Beantragt von:</span>
-                <span className="text-sm">
-                  {selectedRequest.requesterEmail || selectedRequest.requesterId}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-500">Beantragt am:</span>
-                <span className="text-sm">
-                  {formatDateTime(selectedRequest.createdAt)}
-                </span>
-              </div>
-
-              {(selectedRequest.requestType === 'configuration_change' || selectedRequest.requestType === 'config_change') && selectedRequest.metadata && (
-                <div className="mt-3 p-3 bg-white border border-gray-200 rounded-lg">
-                  <p className="text-sm font-medium text-gray-700 mb-2">
-                    {getParamDisplayName(selectedRequest.metadata.parameterName as string)}
-                  </p>
-                  <div className="flex items-center gap-4 justify-center">
-                    <div className="text-center">
-                      <p className="text-xs text-gray-500 mb-1">Aktuell</p>
-                      <p className="text-base font-semibold text-gray-700">
-                        {formatConfigValue(selectedRequest.metadata.parameterName as string, selectedRequest.metadata.oldValue)}
-                      </p>
-                    </div>
-                    <svg className="w-6 h-6 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                    </svg>
-                    <div className="text-center">
-                      <p className="text-xs text-gray-500 mb-1">Neuer Wert</p>
-                      <p className="text-base font-semibold text-fin1-primary">
-                        {formatConfigValue(selectedRequest.metadata.parameterName as string, selectedRequest.metadata.newValue)}
-                      </p>
-                    </div>
-                  </div>
-                </div>
+      {!isLoading && !error && activeRequests.length > 0 && (
+        <Card>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <select
+              value={pageSize}
+              onChange={(e) => {
+                setPageSize(Number(e.target.value));
+                setPageByTab((prev) => ({ ...prev, [activeTab]: 0 }));
+              }}
+              className={clsx(
+                'px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary',
+                isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
               )}
-              {typeof selectedRequest.metadata?.reason === 'string' && selectedRequest.metadata.reason && (
-                <div className="mt-2">
-                  <span className="text-sm text-gray-500">Begründung:</span>
-                  <p className="text-sm mt-1">{selectedRequest.metadata.reason}</p>
-                </div>
-              )}
-            </div>
-
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {actionType === 'approve' ? 'Notizen (optional)' : 'Ablehnungsgrund (erforderlich)'}
-            </label>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary mb-4"
-              rows={3}
-              placeholder={actionType === 'approve' ? 'Optionale Notizen...' : 'Grund für die Ablehnung...'}
-              required={actionType === 'reject'}
+            >
+              <option value={20}>20 / Seite</option>
+              <option value={50}>50 / Seite</option>
+              <option value={100}>100 / Seite</option>
+            </select>
+            <PaginationBar
+              page={activePage}
+              pageSize={pageSize}
+              total={activeRequests.length}
+              itemLabel="Einträgen"
+              onPageChange={setPageForActiveTab}
             />
-
-            <div className="flex gap-3 justify-end">
-              <Button variant="secondary" onClick={closeModal}>
-                Abbrechen
-              </Button>
-              <Button
-                variant={actionType === 'approve' ? 'success' : 'danger'}
-                loading={approveMutation.isPending || rejectMutation.isPending}
-                disabled={actionType === 'reject' && !notes.trim()}
-                onClick={() => {
-                  if (actionType === 'approve') {
-                    approveMutation.mutate({
-                      requestId: selectedRequest.objectId,
-                      notes: notes || undefined,
-                    });
-                  } else {
-                    rejectMutation.mutate({
-                      requestId: selectedRequest.objectId,
-                      reason: notes,
-                    });
-                  }
-                }}
-              >
-                {actionType === 'approve' ? 'Genehmigen' : 'Ablehnen'}
-              </Button>
-            </div>
-          </Card>
-        </div>
+          </div>
+        </Card>
       )}
 
-      {/* Withdraw Confirmation Modal */}
-      {withdrawTarget && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <Card className="w-full max-w-lg">
-            <h3 className="text-lg font-semibold mb-4">Antrag zurückziehen</h3>
+      <ApprovalDecisionModal
+        selectedRequest={selectedRequest}
+        actionType={actionType}
+        notes={notes}
+        loading={approveMutation.isPending || rejectMutation.isPending}
+        onChangeNotes={setNotes}
+        onClose={closeModal}
+        onConfirm={() => {
+          if (!selectedRequest || !actionType) return;
+          if (actionType === 'approve') {
+            approveMutation.mutate({ requestId: selectedRequest.objectId, notes: notes || undefined });
+          } else {
+            rejectMutation.mutate({ requestId: selectedRequest.objectId, reason: notes });
+          }
+        }}
+        getRequestTypeLabel={getRequestTypeLabel}
+        getParamDisplayName={getParamDisplayName}
+        formatConfigValue={formatConfigValue}
+      />
 
-            <div className="space-y-3 mb-4 p-4 bg-gray-50 rounded-lg">
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-500">Typ:</span>
-                <span className="text-sm font-medium">
-                  {getRequestTypeLabel(withdrawTarget.requestType)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-500">Beantragt am:</span>
-                <span className="text-sm">{formatDateTime(withdrawTarget.createdAt)}</span>
-              </div>
-              {(withdrawTarget.requestType === 'configuration_change' || withdrawTarget.requestType === 'config_change') && withdrawTarget.metadata && (
-                <div className="mt-2 p-3 bg-white border border-gray-200 rounded-lg">
-                  <p className="text-sm font-medium text-gray-700 mb-1">
-                    {getParamDisplayName(withdrawTarget.metadata.parameterName as string)}
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    {formatConfigValue(withdrawTarget.metadata.parameterName as string, withdrawTarget.metadata.oldValue)}
-                    {' → '}
-                    <span className="font-semibold">
-                      {formatConfigValue(withdrawTarget.metadata.parameterName as string, withdrawTarget.metadata.newValue)}
-                    </span>
-                  </p>
-                </div>
-              )}
-            </div>
-
-            <p className="text-sm text-gray-600 mb-3">
-              Möchten Sie diesen Antrag wirklich zurückziehen? Diese Aktion kann nicht rückgängig gemacht werden.
-            </p>
-
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Grund (optional)
-            </label>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary mb-4"
-              rows={2}
-              placeholder="Grund für das Zurückziehen..."
-            />
-
-            <div className="flex gap-3 justify-end">
-              <Button variant="secondary" onClick={() => { setWithdrawTarget(null); setNotes(''); }}>
-                Abbrechen
-              </Button>
-              <Button
-                variant="danger"
-                loading={withdrawMutation.isPending}
-                onClick={() => {
-                  withdrawMutation.mutate({
-                    requestId: withdrawTarget.objectId,
-                    reason: notes || undefined,
-                  });
-                }}
-              >
-                Zurückziehen
-              </Button>
-            </div>
-          </Card>
-        </div>
-      )}
+      <WithdrawRequestModal
+        withdrawTarget={withdrawTarget}
+        notes={notes}
+        loading={withdrawMutation.isPending}
+        onChangeNotes={setNotes}
+        onClose={() => { setWithdrawTarget(null); setNotes(''); }}
+        onConfirm={() => {
+          if (!withdrawTarget) return;
+          withdrawMutation.mutate({
+            requestId: withdrawTarget.objectId,
+            reason: notes || undefined,
+          });
+        }}
+        getRequestTypeLabel={getRequestTypeLabel}
+        getParamDisplayName={getParamDisplayName}
+        formatConfigValue={formatConfigValue}
+      />
     </div>
   );
 }
 
-// ─── Sub-Components ──────────────────────────────────────────────────
-
-function EmptyState({ icon, message, description }: { icon: string; message: string; description: string }) {
-  const icons: Record<string, JSX.Element> = {
-    'check-circle': (
-      <svg className="w-12 h-12 text-green-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-    ),
-    'document': (
-      <svg className="w-12 h-12 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-      </svg>
-    ),
-    'archive': (
-      <svg className="w-12 h-12 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-      </svg>
-    ),
-  };
-
-  return (
-    <div className="p-8 text-center">
-      {icons[icon]}
-      <p className="text-gray-600 font-medium">{message}</p>
-      <p className="text-gray-400 text-sm mt-1">{description}</p>
-    </div>
-  );
-}
-
-interface RequestTableProps {
-  requests: ApprovalRequest[];
-  showActions?: boolean;
-  showStatus?: boolean;
-  showDecision?: boolean;
-  showWithdraw?: boolean;
-  onApprove?: (r: ApprovalRequest) => void;
-  onReject?: (r: ApprovalRequest) => void;
-  onWithdraw?: (r: ApprovalRequest) => void;
-  currentUserId?: string;
-}
-
-/** Normalize requesterId to string (handles Parse Pointer shape from API). */
-function requesterIdString(r: ApprovalRequest): string {
-  const id = r.requesterId;
-  if (typeof id === 'string') return id;
-  if (id && typeof id === 'object' && 'objectId' in id) return (id as { objectId: string }).objectId;
-  return String(id ?? '');
-}
-
-function RequestTable({
-  requests, showActions, showStatus, showDecision, showWithdraw,
-  onApprove, onReject, onWithdraw, currentUserId,
-}: RequestTableProps) {
-  const hasActionColumn = showActions || showWithdraw;
-
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full">
-        <thead className="bg-gray-50 border-b border-gray-200">
-          <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Typ</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Beantragt von</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Datum</th>
-            {showStatus && (
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-            )}
-            {showDecision && (
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Entscheidung</th>
-            )}
-            {hasActionColumn && (
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Aktionen</th>
-            )}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-200">
-          {requests.map((request) => {
-            const isOwn = currentUserId != null && requesterIdString(request) === currentUserId;
-            const canWithdraw = showWithdraw && isOwn && request.status === 'pending';
-            const canApproveReject = showActions && !isOwn;
-
-            return (
-              <tr key={request.objectId} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="text-sm font-medium text-gray-900">
-                    {getRequestTypeLabel(request.requestType)}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <p className="text-sm text-gray-900">
-                    {request.requesterEmail || requesterIdString(request)}
-                    {isOwn && <span className="ml-1 text-xs text-gray-400">(Sie)</span>}
-                  </p>
-                  <p className="text-xs text-gray-500">{request.requesterRole}</p>
-                </td>
-                <td className="px-6 py-4">
-                  <RequestDetails request={request} />
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <p className="text-sm text-gray-900">{formatDateTime(request.createdAt)}</p>
-                  <p className="text-xs text-gray-500">{formatRelative(request.createdAt)}</p>
-                </td>
-                {showStatus && (
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {getStatusBadge(request.status)}
-                  </td>
-                )}
-                {showDecision && (
-                  <td className="px-6 py-4">
-                    <div className="text-sm">
-                      {request.approverEmail && (
-                        <p className="text-gray-600">{request.approverEmail}</p>
-                      )}
-                      {request.approverNotes && (
-                        <p className="text-xs text-gray-500 truncate max-w-xs">{request.approverNotes}</p>
-                      )}
-                      {request.rejectionReason && (
-                        <p className="text-xs text-red-600 truncate max-w-xs">{request.rejectionReason}</p>
-                      )}
-                      {request.withdrawnReason && (
-                        <p className="text-xs text-blue-600 truncate max-w-xs">{request.withdrawnReason}</p>
-                      )}
-                      {request.updatedAt && request.status !== 'pending' && (
-                        <p className="text-xs text-gray-400">{formatDateTime(request.updatedAt)}</p>
-                      )}
-                    </div>
-                  </td>
-                )}
-                {hasActionColumn && (
-                  <td className="px-6 py-4 whitespace-nowrap text-right">
-                    <div className="flex gap-2 justify-end">
-                      {canApproveReject && (
-                        <>
-                          <Button variant="success" size="sm" onClick={() => onApprove?.(request)}>
-                            Genehmigen
-                          </Button>
-                          <Button variant="danger" size="sm" onClick={() => onReject?.(request)}>
-                            Ablehnen
-                          </Button>
-                        </>
-                      )}
-                      {canWithdraw && (
-                        <Button variant="secondary" size="sm" onClick={() => onWithdraw?.(request)}>
-                          Zurückziehen
-                        </Button>
-                      )}
-                    </div>
-                  </td>
-                )}
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-  );
-}

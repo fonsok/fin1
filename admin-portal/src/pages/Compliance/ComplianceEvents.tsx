@@ -1,43 +1,59 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { cloudFunction } from '../../api/admin';
-import { Card, Button, Badge } from '../../components/ui';
+import clsx from 'clsx';
+import { getComplianceEvents, reviewComplianceEvent, type ComplianceEvent } from '../../api/admin';
+import { Card, Button, Badge, PaginationBar } from '../../components/ui';
+import { SortableTh, nextSortState, type SortOrder } from '../../components/table/SortableTh';
 import { formatDateTime } from '../../utils/format';
-
-interface ComplianceEvent {
-  objectId: string;
-  eventType: string;
-  severity: string;
-  userId?: string;
-  userEmail?: string;
-  description: string;
-  reviewed: boolean;
-  reviewedBy?: string;
-  reviewedAt?: string;
-  reviewNotes?: string;
-  metadata?: Record<string, unknown>;
-  createdAt: string;
-}
+import { useTheme } from '../../context/ThemeContext';
+import {
+  listRowStripeClasses,
+  tableBodyDivideClasses,
+  tableHeaderCellTextClasses,
+  tableTheadSurfaceClasses,
+} from '../../utils/tableStriping';
 
 export function ComplianceEventsPage() {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const queryClient = useQueryClient();
   const [severityFilter, setSeverityFilter] = useState<string>('');
   const [reviewedFilter, setReviewedFilter] = useState<string>('');
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(50);
   const [selectedEvent, setSelectedEvent] = useState<ComplianceEvent | null>(null);
   const [reviewNotes, setReviewNotes] = useState('');
+  const [sortBy, setSortBy] = useState('occurredAt');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['complianceEvents', severityFilter, reviewedFilter],
-    queryFn: () => cloudFunction<{ events: ComplianceEvent[]; total: number }>('getComplianceEvents', {
-      severity: severityFilter || undefined,
-      reviewed: reviewedFilter === 'true' ? true : reviewedFilter === 'false' ? false : undefined,
-      limit: 50,
-    }),
+    queryKey: ['complianceEvents', severityFilter, reviewedFilter, page, pageSize, sortBy, sortOrder],
+    queryFn: () =>
+      getComplianceEvents({
+        severity: severityFilter || undefined,
+        reviewed: reviewedFilter === 'true' ? true : reviewedFilter === 'false' ? false : undefined,
+        limit: pageSize,
+        skip: page * pageSize,
+        sortBy,
+        sortOrder,
+      }),
+    staleTime: 30_000,
   });
+  const total = data?.total ?? 0;
+
+  const onSort = useCallback(
+    (field: string) => {
+      const next = nextSortState(field, sortBy, sortOrder);
+      setSortBy(next.sortBy);
+      setSortOrder(next.sortOrder);
+      setPage(0);
+    },
+    [sortBy, sortOrder],
+  );
 
   const reviewMutation = useMutation({
     mutationFn: ({ eventId, notes }: { eventId: string; notes: string }) =>
-      cloudFunction('reviewComplianceEvent', { eventId, notes }),
+      reviewComplianceEvent(eventId, notes),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['complianceEvents'] });
       setSelectedEvent(null);
@@ -86,8 +102,14 @@ export function ComplianceEventsPage() {
         <div className="flex flex-col sm:flex-row gap-4">
           <select
             value={severityFilter}
-            onChange={(e) => setSeverityFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary"
+            onChange={(e) => {
+              setSeverityFilter(e.target.value);
+              setPage(0);
+            }}
+            className={clsx(
+              'px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary',
+              isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+            )}
           >
             <option value="">Alle Schweregrade</option>
             <option value="critical">Kritisch</option>
@@ -98,8 +120,14 @@ export function ComplianceEventsPage() {
 
           <select
             value={reviewedFilter}
-            onChange={(e) => setReviewedFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary"
+            onChange={(e) => {
+              setReviewedFilter(e.target.value);
+              setPage(0);
+            }}
+            className={clsx(
+              'px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary',
+              isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+            )}
           >
             <option value="">Alle</option>
             <option value="false">Nicht geprüft</option>
@@ -109,6 +137,21 @@ export function ComplianceEventsPage() {
           <Button variant="secondary" onClick={() => refetch()}>
             Aktualisieren
           </Button>
+          <select
+            value={pageSize}
+            onChange={(e) => {
+              setPageSize(Number(e.target.value));
+              setPage(0);
+            }}
+            className={clsx(
+              'px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary',
+              isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+            )}
+          >
+            <option value={50}>50 / Seite</option>
+            <option value={100}>100 / Seite</option>
+            <option value={250}>250 / Seite</option>
+          </select>
         </div>
       </Card>
 
@@ -131,44 +174,55 @@ export function ComplianceEventsPage() {
             <p className="text-gray-500">Keine Compliance-Events gefunden</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+              <thead className={tableTheadSurfaceClasses(isDark)}>
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className={clsx('px-6 py-3 text-left text-xs font-medium uppercase tracking-wider', tableHeaderCellTextClasses(isDark))}>
                     Typ
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className={clsx('px-6 py-3 text-left text-xs font-medium uppercase tracking-wider', tableHeaderCellTextClasses(isDark))}>
                     Beschreibung
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Schweregrad
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <SortableTh
+                    label="Schweregrad"
+                    field="severity"
+                    sortBy={sortBy}
+                    sortOrder={sortOrder}
+                    onSort={onSort}
+                    className={clsx('px-6 py-3', tableHeaderCellTextClasses(isDark))}
+                  />
+                  <th className={clsx('px-6 py-3 text-left text-xs font-medium uppercase tracking-wider', tableHeaderCellTextClasses(isDark))}>
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Datum
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <SortableTh
+                    label="Datum"
+                    field="occurredAt"
+                    sortBy={sortBy}
+                    sortOrder={sortOrder}
+                    onSort={onSort}
+                    className={clsx('px-6 py-3', tableHeaderCellTextClasses(isDark))}
+                  />
+                  <th className={clsx('px-6 py-3 text-right text-xs font-medium uppercase tracking-wider', tableHeaderCellTextClasses(isDark))}>
                     Aktionen
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
-                {data.events.map((event) => (
-                  <tr key={event.objectId} className="hover:bg-gray-50">
+              <tbody className={tableBodyDivideClasses(isDark)}>
+                {data.events.map((event, index: number) => (
+                  <tr key={event.objectId} className={listRowStripeClasses(isDark, index)}>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="text-sm font-medium text-gray-900">
                         {getEventTypeLabel(event.eventType)}
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <p className="text-sm text-gray-600 truncate max-w-xs">
+                      <p className={clsx('text-sm truncate max-w-xs', isDark ? 'text-slate-200' : 'text-gray-600')}>
                         {event.description || '-'}
                       </p>
                       {event.userEmail && (
-                        <p className="text-xs text-gray-400">{event.userEmail}</p>
+                        <p className={clsx('text-xs', isDark ? 'text-slate-300' : 'text-gray-400')}>{event.userEmail}</p>
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -181,8 +235,8 @@ export function ComplianceEventsPage() {
                         {event.reviewed ? 'Geprüft' : 'Offen'}
                       </Badge>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {formatDateTime(event.createdAt)}
+                    <td className={clsx('px-6 py-4 whitespace-nowrap text-sm', isDark ? 'text-slate-200' : 'text-gray-500')}>
+                      {formatDateTime(event.occurredAt || event.createdAt)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       {!event.reviewed && (
@@ -197,9 +251,18 @@ export function ComplianceEventsPage() {
                     </td>
                   </tr>
                 ))}
-              </tbody>
-            </table>
-          </div>
+                </tbody>
+              </table>
+            </div>
+            <PaginationBar
+              page={page}
+              pageSize={pageSize}
+              total={total}
+              itemLabel="Einträgen"
+              isDark={isDark}
+              onPageChange={setPage}
+            />
+          </>
         )}
       </Card>
 

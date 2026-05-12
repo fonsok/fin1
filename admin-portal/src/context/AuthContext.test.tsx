@@ -13,7 +13,7 @@ vi.mock('../api/parse', () => ({
 
 import * as parseApi from '../api/parse';
 
-const mockAdminUser = {
+const mockParseSessionUser = {
   objectId: 'admin123',
   email: 'admin@test.com',
   username: 'admin@test.com',
@@ -21,6 +21,11 @@ const mockAdminUser = {
   firstName: 'Admin',
   lastName: 'User',
   twoFactorEnabled: false,
+};
+
+const mockAdminLoginResult = {
+  ...mockParseSessionUser,
+  sessionToken: 'session-mock-123',
 };
 
 const mockPermissions = {
@@ -67,7 +72,7 @@ describe('AuthContext', () => {
 
   describe('login', () => {
     it('successfully logs in admin user', async () => {
-      vi.mocked(parseApi.login).mockResolvedValue(mockAdminUser);
+      vi.mocked(parseApi.login).mockResolvedValue(mockAdminLoginResult);
       vi.mocked(parseApi.cloudFunction).mockResolvedValue(mockPermissions);
 
       const { result } = renderHook(() => useAuth(), { wrapper });
@@ -85,7 +90,7 @@ describe('AuthContext', () => {
 
     it('rejects non-admin users', async () => {
       vi.mocked(parseApi.login).mockResolvedValue({
-        ...mockAdminUser,
+        ...mockAdminLoginResult,
         role: 'investor', // Not an admin role
       });
       vi.mocked(parseApi.logout).mockResolvedValue(undefined);
@@ -105,7 +110,7 @@ describe('AuthContext', () => {
 
     it('requires 2FA for elevated roles with 2FA enabled', async () => {
       vi.mocked(parseApi.login).mockResolvedValue({
-        ...mockAdminUser,
+        ...mockAdminLoginResult,
         twoFactorEnabled: true,
       });
 
@@ -123,7 +128,7 @@ describe('AuthContext', () => {
 
     it('allows customer_service without 2FA', async () => {
       vi.mocked(parseApi.login).mockResolvedValue({
-        ...mockAdminUser,
+        ...mockAdminLoginResult,
         role: 'customer_service',
         twoFactorEnabled: false,
       });
@@ -150,7 +155,7 @@ describe('AuthContext', () => {
   describe('verify2FACode', () => {
     it('completes login after successful 2FA verification', async () => {
       vi.mocked(parseApi.login).mockResolvedValue({
-        ...mockAdminUser,
+        ...mockAdminLoginResult,
         twoFactorEnabled: true,
       });
       vi.mocked(parseApi.verify2FA).mockResolvedValue({ verified: true });
@@ -180,7 +185,7 @@ describe('AuthContext', () => {
 
     it('throws on invalid 2FA code', async () => {
       vi.mocked(parseApi.login).mockResolvedValue({
-        ...mockAdminUser,
+        ...mockAdminLoginResult,
         twoFactorEnabled: true,
       });
       vi.mocked(parseApi.verify2FA).mockResolvedValue({ verified: false });
@@ -203,7 +208,7 @@ describe('AuthContext', () => {
 
   describe('logout', () => {
     it('clears auth state', async () => {
-      vi.mocked(parseApi.login).mockResolvedValue(mockAdminUser);
+      vi.mocked(parseApi.login).mockResolvedValue(mockAdminLoginResult);
       vi.mocked(parseApi.cloudFunction).mockResolvedValue(mockPermissions);
       vi.mocked(parseApi.logout).mockResolvedValue(undefined);
 
@@ -243,7 +248,7 @@ describe('AuthContext', () => {
 
   describe('hasPermission', () => {
     it('returns true for full admin', async () => {
-      vi.mocked(parseApi.login).mockResolvedValue(mockAdminUser);
+      vi.mocked(parseApi.login).mockResolvedValue(mockAdminLoginResult);
       vi.mocked(parseApi.cloudFunction).mockResolvedValue({
         ...mockPermissions,
         isFullAdmin: true,
@@ -263,7 +268,7 @@ describe('AuthContext', () => {
 
     it('checks specific permissions for non-full-admin', async () => {
       vi.mocked(parseApi.login).mockResolvedValue({
-        ...mockAdminUser,
+        ...mockAdminLoginResult,
         role: 'customer_service',
       });
       vi.mocked(parseApi.cloudFunction).mockResolvedValue({
@@ -298,7 +303,7 @@ describe('AuthContext', () => {
 
   describe('session restoration', () => {
     it('restores session on mount', async () => {
-      vi.mocked(parseApi.validateSession).mockResolvedValue(mockAdminUser);
+      vi.mocked(parseApi.validateSession).mockResolvedValue(mockParseSessionUser);
       vi.mocked(parseApi.cloudFunction).mockResolvedValue(mockPermissions);
 
       const { result } = renderHook(() => useAuth(), { wrapper });
@@ -312,7 +317,7 @@ describe('AuthContext', () => {
 
     it('requires 2FA verification on session restore if not verified', async () => {
       vi.mocked(parseApi.validateSession).mockResolvedValue({
-        ...mockAdminUser,
+        ...mockParseSessionUser,
         twoFactorEnabled: true,
       });
 
@@ -332,7 +337,7 @@ describe('AuthContext', () => {
         return null;
       });
       vi.mocked(parseApi.validateSession).mockResolvedValue({
-        ...mockAdminUser,
+        ...mockParseSessionUser,
         twoFactorEnabled: true,
       });
       vi.mocked(parseApi.cloudFunction).mockResolvedValue(mockPermissions);

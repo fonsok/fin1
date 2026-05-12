@@ -1,209 +1,41 @@
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { cloudFunction } from '../../api/admin';
-import { Card, Button, Input, Badge } from '../../components/ui';
-import { formatCurrency, formatPercentage, formatDateTime } from '../../utils/format';
-import type { ConfigurationParameter, PendingConfigChange } from './types';
-
-// Parameter definitions with metadata
-const PARAMETER_DEFINITIONS: Record<string, Omit<ConfigurationParameter, 'value'>> = {
-  traderCommissionRate: {
-    key: 'traderCommissionRate',
-    displayName: 'Trader Commission Rate',
-    description: 'Prozentsatz des Gewinns, den Trader als Provision erhalten',
-    type: 'percentage',
-    category: 'financial',
-    isCritical: true,
-    min: 0,
-    max: 1,
-  },
-  initialAccountBalance: {
-    key: 'initialAccountBalance',
-    displayName: 'Initial Account Balance',
-    description: 'Startguthaben für neue Benutzerkonten (Trader & Investor)',
-    type: 'currency',
-    category: 'financial',
-    isCritical: true,
-    min: 0.01,
-    max: 1000000,
-  },
-  platformServiceChargeRate: {
-    key: 'platformServiceChargeRate',
-    displayName: 'Platform Service Charge',
-    description: 'Plattform-Servicegebühr als Prozentsatz',
-    type: 'percentage',
-    category: 'financial',
-    isCritical: true,
-    min: 0,
-    max: 0.1,
-  },
-  minimumCashReserve: {
-    key: 'minimumCashReserve',
-    displayName: 'Minimum Cash Reserve',
-    description: 'Mindestbetrag, den Benutzer auf dem Konto behalten müssen',
-    type: 'currency',
-    category: 'financial',
-    isCritical: false,
-    min: 0.01,
-    max: 1000,
-  },
-  poolBalanceDistributionThreshold: {
-    key: 'poolBalanceDistributionThreshold',
-    displayName: 'Pool Distribution Threshold',
-    description: 'Schwellenwert für die Pool-Verteilung. Logik noch nicht implementiert; reserviert für spätere Option „Restbeträge sammeln bis Schwellenwert“, dann Auszahlung.',
-    type: 'currency',
-    category: 'financial',
-    isCritical: false,
-    min: 1,
-    max: 100,
-  },
-  maximumRiskExposurePercent: {
-    key: 'maximumRiskExposurePercent',
-    displayName: 'Maximum Risk Exposure (%)',
-    description: 'Empfohlener maximaler Prozentsatz des Vermögens, der dem Risiko ausgesetzt werden soll (Dashboard-Hinweis)',
-    type: 'percent_display',
-    category: 'display',
-    isCritical: false,
-    min: 0,
-    max: 100,
-  },
-  walletFeatureEnabled: {
-    key: 'walletFeatureEnabled',
-    displayName: 'Wallet-Feature aktiv',
-    description: 'Wallet-Anzeige (Ein-/Auszahlung, Konto) in der App. Deaktivieren, bis Krypto-Handel optional angeboten wird.',
-    type: 'boolean',
-    category: 'display',
-    isCritical: false,
-  },
-};
-
-interface ConfigResponse {
-  config?: Record<string, number | string | boolean>;
-  financial?: Record<string, number>;
-  limits?: Record<string, number>;
-  display?: Record<string, number | string | boolean>;
-  pendingChanges?: PendingConfigChange[];
-}
-
-// Client-side defaults matching backend configHelper.js DEFAULT_CONFIG
-const DEFAULT_VALUES: Record<string, number> = {
-  traderCommissionRate: 0.10,
-  initialAccountBalance: 1.0,
-  platformServiceChargeRate: 0.02,
-  minimumCashReserve: 20.0,
-  poolBalanceDistributionThreshold: 5.0,
-  maximumRiskExposurePercent: 2.0,
-  walletFeatureEnabled: 0,
-};
-
-/**
- * Extract a flat config map from the backend response.
- * Handles both formats:
- *   - New: { config: { traderCommissionRate: 0.10, ... } }
- *   - Old: { financial: { traderCommissionRate: 0.10, ... }, limits: { ... } }
- * Falls back to client-side defaults for any missing keys.
- */
-function resolveConfig(data: ConfigResponse | undefined): Record<string, number | string | boolean> {
-  if (!data) return { ...DEFAULT_VALUES };
-
-  // Prefer flat `config` if present, otherwise merge financial + limits; always merge display
-  const base = (data.config && Object.keys(data.config).length > 0)
-    ? data.config
-    : { ...data.financial, ...data.limits };
-  const display = data.display || {};
-  const raw: Record<string, number | string | boolean> = { ...base, ...display };
-
-  // Fill any missing keys from defaults (so every defined parameter has a value)
-  const merged: Record<string, number | string | boolean> = { ...DEFAULT_VALUES };
-  for (const [k, v] of Object.entries(raw)) {
-    if (v !== undefined && v !== null) merged[k] = v;
-  }
-  return merged;
-}
+import { Card, Button } from '../../components/ui';
+import { ConfigurationHeaderCard } from './components/ConfigurationHeaderCard';
+import { PendingChangesCard } from './components/PendingChangesCard';
+import { FinancialParametersCard } from './components/FinancialParametersCard';
+import { DisplayParametersCard } from './components/DisplayParametersCard';
+import { WalletActionModeBatchCard } from './components/WalletActionModeBatchCard';
+import { PARAMETER_DEFINITIONS } from './parameterDefinitions';
+import { useConfigurationPage } from './hooks/useConfigurationPage';
 
 export function ConfigurationPage() {
-  const queryClient = useQueryClient();
-  const [editingParam, setEditingParam] = useState<string | null>(null);
-  const [editValue, setEditValue] = useState<string>('');
-  const [changeReason, setChangeReason] = useState<string>('');
-  const [showPending, setShowPending] = useState(false);
-
-  // Fetch configuration
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['configuration'],
-    queryFn: () => cloudFunction<ConfigResponse>('getConfiguration'),
-  });
-
-  // Fetch pending changes
-  const { data: pendingData } = useQuery({
-    queryKey: ['pendingConfigChanges'],
-    queryFn: () => cloudFunction<{ requests: PendingConfigChange[]; total: number }>('getPendingConfigurationChanges'),
-  });
-
-  // Request change mutation
-  const requestChangeMutation = useMutation({
-    mutationFn: (params: { parameterName: string; newValue: number | boolean; reason: string }) =>
-      cloudFunction('requestConfigurationChange', params),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['configuration'] });
-      queryClient.invalidateQueries({ queryKey: ['pendingConfigChanges'] });
-      setEditingParam(null);
-      setEditValue('');
-      setChangeReason('');
-    },
-  });
-
-  const handleStartEdit = (key: string, currentValue: number | string | boolean) => {
-    setEditingParam(key);
-    setEditValue(String(currentValue));
-    setChangeReason('');
-  };
-
-  const handleSaveChange = () => {
-    if (!editingParam || !changeReason.trim()) return;
-
-    const def = PARAMETER_DEFINITIONS[editingParam];
-    let newValue: number | boolean;
-
-    if (def.type === 'boolean') {
-      newValue = editValue === 'true' || editValue === '1';
-    } else {
-      newValue = parseFloat(editValue);
-      if (isNaN(newValue)) return;
-      if (def.min !== undefined && newValue < def.min) return;
-      if (def.max !== undefined && newValue > def.max) return;
-    }
-
-    requestChangeMutation.mutate({
-      parameterName: editingParam,
-      newValue,
-      reason: changeReason,
-    });
-  };
-
-  const formatValue = (key: string, value: number | string | boolean): string => {
-    const def = PARAMETER_DEFINITIONS[key];
-    if (!def) return String(value ?? '');
-
-    if (def.type === 'boolean') {
-      const on = value === true || value === 'true' || value === 1 || value === '1';
-      return on ? 'Aktiv' : 'Deaktiviert';
-    }
-
-    const num = Number(value);
-    switch (def.type) {
-      case 'percentage':
-        return formatPercentage(num);
-      case 'percent_display':
-        return `${Number.isFinite(num) ? num : 0} %`;
-      case 'currency':
-        return formatCurrency(num);
-      default:
-        return String(value ?? '');
-    }
-  };
-
-  const pendingCount = pendingData?.requests?.length || 0;
+  const {
+    isDark,
+    isLoading,
+    error,
+    queryClient,
+    showPending,
+    setShowPending,
+    config,
+    pendingData,
+    pendingCount,
+    financialParams,
+    taxParams,
+    systemParams,
+    displayParams,
+    editingParam,
+    editValue,
+    changeReason,
+    setChangeReason,
+    crossLimitError,
+    editError,
+    requestChangeMutation,
+    handleStartEdit,
+    handleSaveChange,
+    handleCancelEdit,
+    formatValue,
+    onFinancialEditValueChange,
+    onDisplayEditValueChange,
+  } = useConfigurationPage();
 
   if (isLoading) {
     return (
@@ -218,7 +50,11 @@ export function ConfigurationPage() {
       <Card>
         <div className="text-center py-8">
           <p className="text-red-500">Fehler beim Laden der Konfiguration</p>
-          <Button variant="secondary" className="mt-4" onClick={() => queryClient.invalidateQueries({ queryKey: ['configuration'] })}>
+          <Button
+            variant="secondary"
+            className="mt-4"
+            onClick={() => queryClient.invalidateQueries({ queryKey: ['configuration'] })}
+          >
             Erneut versuchen
           </Button>
         </div>
@@ -226,312 +62,129 @@ export function ConfigurationPage() {
     );
   }
 
-  const config = resolveConfig(data);
-
-  // Group parameters by category
-  const financialParams = Object.entries(PARAMETER_DEFINITIONS).filter(([_, def]) => def.category === 'financial');
-  const displayParams = Object.entries(PARAMETER_DEFINITIONS).filter(([_, def]) => def.category === 'display');
-
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <Card>
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-semibold">System-Konfiguration</h2>
-            <p className="text-sm text-gray-500 mt-1">
-              Kritische Parameter erfordern 4-Augen-Genehmigung
-            </p>
-          </div>
-          <div className="flex gap-2">
-            {pendingCount > 0 && (
-              <Button variant="secondary" onClick={() => setShowPending(!showPending)}>
-                <span className="flex items-center gap-2">
-                  Ausstehend
-                  <Badge variant="warning">{pendingCount}</Badge>
-                </span>
-              </Button>
-            )}
-          </div>
-        </div>
-      </Card>
+      <ConfigurationHeaderCard
+        pendingCount={pendingCount}
+        onTogglePending={() => setShowPending(!showPending)}
+      />
 
-      {/* Pending Changes */}
       {showPending && pendingData?.requests && pendingData.requests.length > 0 && (
-        <Card>
-          <h3 className="text-md font-semibold mb-4">Ausstehende Änderungen</h3>
-          <div className="space-y-3">
-            {pendingData.requests.map((change) => (
-              <div key={change.id} className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="font-medium">{PARAMETER_DEFINITIONS[change.parameterName]?.displayName || change.parameterName}</p>
-                    <p className="text-sm text-gray-600 mt-1">
-                      {formatValue(change.parameterName, change.oldValue)} → {formatValue(change.parameterName, change.newValue)}
-                    </p>
-                    <p className="text-sm text-gray-500 mt-1">Grund: {change.reason}</p>
-                    <p className="text-xs text-gray-400 mt-2">
-                      Von: {change.requesterEmail} • {formatDateTime(change.createdAt)}
-                    </p>
-                  </div>
-                  <Badge variant="warning">Ausstehend</Badge>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
+        <PendingChangesCard
+          requests={pendingData.requests}
+          parameterDefinitions={PARAMETER_DEFINITIONS}
+          formatValue={formatValue}
+        />
       )}
 
-      {/* Financial Parameters */}
-      <Card>
-        <h3 className="text-md font-semibold mb-4 flex items-center gap-2">
-          <svg className="w-5 h-5 text-fin1-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          Finanzparameter
-        </h3>
+      <FinancialParametersCard
+        financialParams={financialParams}
+        title="Finanzparameter"
+        config={config}
+        isDark={isDark}
+        editingParam={editingParam}
+        editValue={editValue}
+        changeReason={changeReason}
+        crossLimitError={crossLimitError}
+        editError={editError}
+        pendingRequests={pendingData?.requests}
+        onEditValueChange={onFinancialEditValueChange}
+        onChangeReason={setChangeReason}
+        onSave={handleSaveChange}
+        onCancel={handleCancelEdit}
+        onStartEdit={handleStartEdit}
+        formatValue={formatValue}
+        isSaving={requestChangeMutation.isPending}
+        isError={requestChangeMutation.isError}
+        isSuccess={requestChangeMutation.isSuccess}
+      />
 
-        <div className="divide-y divide-gray-100">
-          {financialParams.map(([key, def]) => {
-            const value = config[key];
-            const isEditing = editingParam === key;
-            const hasPendingChange = pendingData?.requests?.some(c => c.parameterName === key);
+      <FinancialParametersCard
+        financialParams={taxParams}
+        title="Steuerparameter"
+        config={config}
+        isDark={isDark}
+        editingParam={editingParam}
+        editValue={editValue}
+        changeReason={changeReason}
+        crossLimitError={crossLimitError}
+        editError={editError}
+        pendingRequests={pendingData?.requests}
+        onEditValueChange={onFinancialEditValueChange}
+        onChangeReason={setChangeReason}
+        onSave={handleSaveChange}
+        onCancel={handleCancelEdit}
+        onStartEdit={handleStartEdit}
+        formatValue={formatValue}
+        isSaving={requestChangeMutation.isPending}
+        isError={requestChangeMutation.isError}
+        isSuccess={requestChangeMutation.isSuccess}
+      />
 
-            return (
-              <div key={key} className="py-4 first:pt-0 last:pb-0">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">{def.displayName}</span>
-                      {def.isCritical && (
-                        <Badge variant="warning" size="sm">4-Augen</Badge>
-                      )}
-                      {hasPendingChange && (
-                        <Badge variant="info" size="sm">Änderung ausstehend</Badge>
-                      )}
-                    </div>
-                    <p className="text-sm text-gray-500 mt-1">{def.description}</p>
+      <FinancialParametersCard
+        financialParams={systemParams}
+        title="Systemparameter"
+        config={config}
+        isDark={isDark}
+        editingParam={editingParam}
+        editValue={editValue}
+        changeReason={changeReason}
+        crossLimitError={crossLimitError}
+        editError={editError}
+        pendingRequests={pendingData?.requests}
+        onEditValueChange={onFinancialEditValueChange}
+        onChangeReason={setChangeReason}
+        onSave={handleSaveChange}
+        onCancel={handleCancelEdit}
+        onStartEdit={handleStartEdit}
+        formatValue={formatValue}
+        isSaving={requestChangeMutation.isPending}
+        isError={requestChangeMutation.isError}
+        isSuccess={requestChangeMutation.isSuccess}
+      />
 
-                    {isEditing ? (
-                      <div className="mt-3 space-y-3">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-gray-500">Aktuell:</span>
-                          <span className="font-medium">{formatValue(key, value)}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Input
-                            type="number"
-                            value={editValue}
-                            onChange={(e) => setEditValue(e.target.value)}
-                            className="w-32"
-                            step={def.type === 'percentage' ? '0.01' : def.type === 'percent_display' ? '1' : '0.01'}
-                            min={def.min}
-                            max={def.max}
-                          />
-                          {def.type === 'percentage' && (
-                            <span className="text-sm text-gray-500">
-                              ({(parseFloat(editValue) * 100).toFixed(0)} %)
-                            </span>
-                          )}
-                          {def.type === 'percent_display' && (
-                            <span className="text-sm text-gray-500">
-                              ({parseFloat(editValue || '0').toFixed(0)} %)
-                            </span>
-                          )}
-                        </div>
-                        <div>
-                          <Input
-                            placeholder="Begründung für die Änderung..."
-                            value={changeReason}
-                            onChange={(e) => setChangeReason(e.target.value)}
-                            className="w-full"
-                          />
-                        </div>
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            onClick={handleSaveChange}
-                            loading={requestChangeMutation.isPending}
-                            disabled={!changeReason.trim()}
-                          >
-                            {def.isCritical ? 'Änderung beantragen' : 'Speichern'}
-                          </Button>
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => setEditingParam(null)}
-                          >
-                            Abbrechen
-                          </Button>
-                        </div>
-                        {requestChangeMutation.isError && (
-                          <p className="text-sm text-red-500">Fehler beim Speichern</p>
-                        )}
-                        {requestChangeMutation.isSuccess && def.isCritical && (
-                          <p className="text-sm text-green-600">Änderungsantrag wurde erstellt</p>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="mt-2 flex items-center gap-4">
-                        <span className="text-lg font-semibold text-fin1-primary">
-                          {formatValue(key, value)}
-                        </span>
-                      </div>
-                    )}
-                  </div>
+      <DisplayParametersCard
+        displayParams={displayParams}
+        config={config}
+        isDark={isDark}
+        editingParam={editingParam}
+        editValue={editValue}
+        changeReason={changeReason}
+        editError={editError}
+        pendingRequests={pendingData?.requests}
+        onEditValueChange={onDisplayEditValueChange}
+        onChangeReason={setChangeReason}
+        onSave={handleSaveChange}
+        onCancel={handleCancelEdit}
+        onStartEdit={handleStartEdit}
+        formatValue={formatValue}
+        isSaving={requestChangeMutation.isPending}
+        isError={requestChangeMutation.isError}
+        isSuccess={requestChangeMutation.isSuccess}
+      />
 
-                  {!isEditing && (
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => handleStartEdit(key, value)}
-                      disabled={hasPendingChange}
-                    >
-                      Bearbeiten
-                    </Button>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </Card>
+      <WalletActionModeBatchCard />
 
-      {/* Display Parameters */}
-      {displayParams.length > 0 && (
-        <Card>
-          <h3 className="text-md font-semibold mb-4 flex items-center gap-2">
-            <svg className="w-5 h-5 text-fin1-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-            </svg>
-            Anzeige
-          </h3>
-
-          <div className="divide-y divide-gray-100">
-            {displayParams.map(([key, def]) => {
-              const value = config[key];
-              const isEditing = editingParam === key;
-              const hasPendingChange = pendingData?.requests?.some(c => c.parameterName === key);
-
-              return (
-                <div key={key} className="py-4 first:pt-0 last:pb-0">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{def.displayName}</span>
-                        {hasPendingChange && (
-                          <Badge variant="info" size="sm">Änderung ausstehend</Badge>
-                        )}
-                      </div>
-                      <p className="text-sm text-gray-500 mt-1">{def.description}</p>
-
-                      {isEditing ? (
-                        <div className="mt-3 space-y-3">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm text-gray-500">Aktuell:</span>
-                            <span className="font-medium">{formatValue(key, value)}</span>
-                          </div>
-                          {def.type === 'boolean' ? (
-                            <div className="flex items-center gap-2">
-                              <label className="flex items-center gap-2 cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={editValue === 'true' || editValue === '1'}
-                                  onChange={(e) => setEditValue(e.target.checked ? 'true' : 'false')}
-                                  className="rounded border-gray-300"
-                                />
-                                <span className="text-sm">{editValue === 'true' || editValue === '1' ? 'Aktiv' : 'Deaktiviert'}</span>
-                              </label>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-2">
-                              <Input
-                                type="number"
-                                value={editValue}
-                                onChange={(e) => setEditValue(e.target.value)}
-                                className="w-32"
-                                step={def.type === 'percent_display' ? '1' : '0.01'}
-                                min={def.min}
-                                max={def.max}
-                              />
-                              {def.type === 'percent_display' && (
-                                <span className="text-sm text-gray-500">
-                                  ({parseFloat(editValue || '0').toFixed(0)} %)
-                                </span>
-                              )}
-                            </div>
-                          )}
-                          <div>
-                            <Input
-                              placeholder="Begründung für die Änderung..."
-                              value={changeReason}
-                              onChange={(e) => setChangeReason(e.target.value)}
-                              className="w-full"
-                            />
-                          </div>
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              onClick={handleSaveChange}
-                              loading={requestChangeMutation.isPending}
-                              disabled={!changeReason.trim()}
-                            >
-                              Speichern
-                            </Button>
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              onClick={() => setEditingParam(null)}
-                            >
-                              Abbrechen
-                            </Button>
-                          </div>
-                          {requestChangeMutation.isError && (
-                            <p className="text-sm text-red-500">Fehler beim Speichern</p>
-                          )}
-                          {requestChangeMutation.isSuccess && (
-                            <p className="text-sm text-green-600">Wert aktualisiert</p>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="mt-2 flex items-center gap-4">
-                          <span className="text-lg font-semibold text-fin1-primary">
-                            {formatValue(key, value)}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-
-                    {!isEditing && (
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => handleStartEdit(key, value)}
-                        disabled={hasPendingChange}
-                      >
-                        Bearbeiten
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </Card>
-      )}
-
-      {/* Info Box */}
-      <Card className="bg-blue-50 border-blue-200">
+      <Card className="bg-slate-600/80 border-slate-500 border-blue-400/40">
         <div className="flex gap-3">
-          <svg className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          <svg
+            className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
           </svg>
           <div className="text-sm text-blue-800">
             <p className="font-medium">4-Augen-Prinzip</p>
             <p className="mt-1">
-              Kritische Konfigurationsänderungen erfordern die Genehmigung eines zweiten Administrators.
-              Ausstehende Änderungen können unter "Freigaben" genehmigt oder abgelehnt werden.
+              Kritische Konfigurationsänderungen erfordern die Genehmigung eines zweiten Administrators. Ausstehende
+              Änderungen können unter &quot;Freigaben&quot; genehmigt oder abgelehnt werden.
             </p>
           </div>
         </div>

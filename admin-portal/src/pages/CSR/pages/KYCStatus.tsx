@@ -1,14 +1,27 @@
-import { useState } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Card, Badge, Button } from '../../../components/ui';
+import clsx from 'clsx';
+import { Card, Badge, Button, PaginationBar } from '../../../components/ui';
+import { useTheme } from '../../../context/ThemeContext';
 import { formatDateTime } from '../../../utils/format';
+import {
+  listRowStripeClasses,
+  tableBodyDivideClasses,
+  tableHeaderCellTextClasses,
+  tableTheadSurfaceClasses,
+} from '../../../utils/tableStriping';
 import { searchCustomers, getCustomerKYCStatus } from '../api';
 
+const KYC_PAGE_SIZE = 50;
+
 export function KYCStatusPage() {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState<'all' | 'verified' | 'pending' | 'rejected'>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [page, setPage] = useState(0);
 
   const { data: customers, isLoading } = useQuery({
     queryKey: ['customers-kyc', searchQuery],
@@ -17,35 +30,57 @@ export function KYCStatusPage() {
   });
 
   // Fetch KYC status for each customer
-  const customerIds = customers?.map(c => c.objectId) || [];
+  const userIds = customers?.map(c => c.objectId) || [];
   const { data: kycStatuses } = useQuery({
-    queryKey: ['kyc-statuses', customerIds],
+    queryKey: ['kyc-statuses', userIds],
     queryFn: async () => {
       const statuses = await Promise.all(
-        customerIds.map(async (id) => {
+        userIds.map(async (id) => {
           try {
             const status = await getCustomerKYCStatus(id);
-            return { customerId: id, status };
+            return { userId: id, status };
           } catch {
-            return { customerId: id, status: null };
+            return { userId: id, status: null };
           }
         })
       );
       return statuses;
     },
-    enabled: customerIds.length > 0,
+    enabled: userIds.length > 0,
   });
 
-  const getKYCStatus = (customerId: string) => {
-    return kycStatuses?.find(s => s.customerId === customerId)?.status;
-  };
+  const getKYCStatus = useCallback(
+    (uid: string) => kycStatuses?.find((s) => s.userId === uid)?.status,
+    [kycStatuses],
+  );
 
-  const filteredCustomers = customers?.filter(customer => {
-    if (statusFilter === 'all') return true;
-    const kyc = getKYCStatus(customer.objectId);
-    if (!kyc) return statusFilter === 'pending';
-    return kyc.status === statusFilter;
-  }) || [];
+  const filteredCustomers = useMemo(
+    () =>
+      customers?.filter((customer) => {
+        if (statusFilter === 'all') return true;
+        const kyc = getKYCStatus(customer.objectId);
+        if (!kyc) return statusFilter === 'pending';
+        return kyc.status === statusFilter;
+      }) || [],
+    [customers, statusFilter, getKYCStatus],
+  );
+
+  const kycListTotal = filteredCustomers.length;
+  const kycTotalPages = Math.max(1, Math.ceil(kycListTotal / KYC_PAGE_SIZE));
+  const pagedFilteredCustomers = useMemo(
+    () => filteredCustomers.slice(page * KYC_PAGE_SIZE, (page + 1) * KYC_PAGE_SIZE),
+    [filteredCustomers, page]
+  );
+
+  useEffect(() => {
+    setPage(0);
+  }, [searchQuery, statusFilter]);
+
+  useEffect(() => {
+    if (page > 0 && page >= kycTotalPages) {
+      setPage(Math.max(0, kycTotalPages - 1));
+    }
+  }, [page, kycTotalPages]);
 
   const getStatusBadge = (status: string | undefined) => {
     switch (status) {
@@ -62,10 +97,14 @@ export function KYCStatusPage() {
 
   const getStatusColor = (status: string | undefined) => {
     switch (status) {
-      case 'verified': return 'text-green-600';
-      case 'pending': return 'text-orange-600';
-      case 'rejected': return 'text-red-600';
-      default: return 'text-gray-600';
+      case 'verified':
+        return isDark ? 'text-emerald-400' : 'text-green-600';
+      case 'pending':
+        return isDark ? 'text-orange-400' : 'text-orange-600';
+      case 'rejected':
+        return isDark ? 'text-red-400' : 'text-red-600';
+      default:
+        return isDark ? 'text-slate-400' : 'text-gray-600';
     }
   };
 
@@ -83,7 +122,9 @@ export function KYCStatusPage() {
           />
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as any)}
+            onChange={(e) =>
+              setStatusFilter(e.target.value as 'all' | 'verified' | 'pending' | 'rejected')
+            }
             className="px-4 py-2 border rounded-lg"
           >
             <option value="all">Alle Status</option>
@@ -94,12 +135,14 @@ export function KYCStatusPage() {
         </div>
       </div>
 
-      <Card>
-        {isLoading ? (
+      {isLoading ? (
+        <Card>
           <div className="text-center py-8">
             <div className="animate-spin w-8 h-8 border-4 border-fin1-primary border-t-transparent rounded-full mx-auto"></div>
           </div>
-        ) : filteredCustomers.length === 0 ? (
+        </Card>
+      ) : filteredCustomers.length === 0 ? (
+        <Card>
           <div className="text-center py-8">
             <p className="text-gray-500">
               {searchQuery.length < 2
@@ -107,54 +150,125 @@ export function KYCStatusPage() {
                 : 'Keine Kunden gefunden'}
             </p>
           </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kunde</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">E-Mail</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">KYC-Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Level</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Verifiziert</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Aktionen</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {filteredCustomers.map((customer) => {
-                  const kyc = getKYCStatus(customer.objectId);
-                  return (
-                    <tr key={customer.objectId} className="hover:bg-gray-50">
-                      <td className="px-6 py-4">
-                        {customer.fullName || `${customer.firstName} ${customer.lastName}` || '-'}
-                      </td>
-                      <td className="px-6 py-4">{customer.email}</td>
-                      <td className="px-6 py-4">{getStatusBadge(kyc?.status)}</td>
-                      <td className="px-6 py-4">
-                        <span className={getStatusColor(kyc?.status)}>
-                          {kyc?.level || '-'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-500">
-                        {kyc?.verifiedAt ? formatDateTime(kyc.verifiedAt) : '-'}
-                      </td>
-                      <td className="px-6 py-4">
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => navigate(`/csr/customers/${customer.objectId}`)}
+        </Card>
+      ) : (
+        <Card padding="none">
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className={tableTheadSurfaceClasses(isDark)}>
+                  <tr>
+                    <th
+                      className={clsx(
+                        'px-6 py-3 text-left text-xs font-medium uppercase tracking-wider',
+                        tableHeaderCellTextClasses(isDark),
+                      )}
+                    >
+                      Kunde
+                    </th>
+                    <th
+                      className={clsx(
+                        'px-6 py-3 text-left text-xs font-medium uppercase tracking-wider',
+                        tableHeaderCellTextClasses(isDark),
+                      )}
+                    >
+                      E-Mail
+                    </th>
+                    <th
+                      className={clsx(
+                        'px-6 py-3 text-left text-xs font-medium uppercase tracking-wider',
+                        tableHeaderCellTextClasses(isDark),
+                      )}
+                    >
+                      KYC-Status
+                    </th>
+                    <th
+                      className={clsx(
+                        'px-6 py-3 text-left text-xs font-medium uppercase tracking-wider',
+                        tableHeaderCellTextClasses(isDark),
+                      )}
+                    >
+                      Level
+                    </th>
+                    <th
+                      className={clsx(
+                        'px-6 py-3 text-left text-xs font-medium uppercase tracking-wider',
+                        tableHeaderCellTextClasses(isDark),
+                      )}
+                    >
+                      Verifiziert
+                    </th>
+                    <th
+                      className={clsx(
+                        'px-6 py-3 text-left text-xs font-medium uppercase tracking-wider',
+                        tableHeaderCellTextClasses(isDark),
+                      )}
+                    >
+                      Aktionen
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className={tableBodyDivideClasses(isDark)}>
+                  {pagedFilteredCustomers.map((customer, index) => {
+                    const kyc = getKYCStatus(customer.objectId);
+                    return (
+                      <tr key={customer.objectId} className={listRowStripeClasses(isDark, index)}>
+                        <td
+                          className={clsx(
+                            'px-6 py-4 text-sm',
+                            isDark ? 'text-slate-100' : 'text-gray-900',
+                          )}
                         >
-                          Details
-                        </Button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </Card>
+                          {customer.fullName || `${customer.firstName} ${customer.lastName}` || '-'}
+                        </td>
+                        <td
+                          className={clsx(
+                            'px-6 py-4 text-sm',
+                            isDark ? 'text-slate-300' : 'text-gray-900',
+                          )}
+                        >
+                          {customer.email}
+                        </td>
+                        <td className="px-6 py-4">{getStatusBadge(kyc?.status)}</td>
+                        <td className="px-6 py-4">
+                          <span className={getStatusColor(kyc?.status)}>
+                            {kyc?.level || '-'}
+                          </span>
+                        </td>
+                        <td
+                          className={clsx(
+                            'px-6 py-4 text-sm',
+                            isDark ? 'text-slate-400' : 'text-gray-500',
+                          )}
+                        >
+                          {kyc?.verifiedAt ? formatDateTime(kyc.verifiedAt) : '-'}
+                        </td>
+                        <td className="px-6 py-4">
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => navigate(`/csr/customers/${customer.objectId}`)}
+                          >
+                            Details
+                          </Button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <PaginationBar
+              page={page}
+              pageSize={KYC_PAGE_SIZE}
+              total={kycListTotal}
+              itemLabel="Einträge"
+              isDark={isDark}
+              onPageChange={setPage}
+            />
+          </>
+        </Card>
+      )}
 
       {/* Summary Stats */}
       {customers && customers.length > 0 && (

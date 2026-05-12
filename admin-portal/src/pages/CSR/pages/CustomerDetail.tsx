@@ -13,13 +13,13 @@ import {
 } from '../api';
 
 export function CustomerDetailPage() {
-  const { customerId } = useParams<{ customerId: string }>();
+  const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
 
   const { data: customer, isLoading: customerLoading } = useQuery({
-    queryKey: ['customer', customerId],
-    queryFn: () => getCustomerProfile(customerId!),
-    enabled: !!customerId,
+    queryKey: ['customer', userId],
+    queryFn: () => getCustomerProfile(userId!),
+    enabled: !!userId,
   });
 
   // Determine available tabs based on customer role
@@ -67,33 +67,33 @@ export function CustomerDetailPage() {
   }, [customer?.role, customer, activeTab]);
 
   const { data: investments } = useQuery({
-    queryKey: ['customer-investments', customerId],
-    queryFn: () => getCustomerInvestments(customerId!),
-    enabled: !!customerId && activeTab === 'investments',
+    queryKey: ['customer-investments', userId],
+    queryFn: () => getCustomerInvestments(userId!),
+    enabled: !!userId && activeTab === 'investments',
   });
 
   const { data: trades } = useQuery({
-    queryKey: ['customer-trades', customerId],
-    queryFn: () => getCustomerTrades(customerId!),
-    enabled: !!customerId && activeTab === 'trades',
+    queryKey: ['customer-trades', userId],
+    queryFn: () => getCustomerTrades(userId!),
+    enabled: !!userId && activeTab === 'trades',
   });
 
   const { data: documents } = useQuery({
-    queryKey: ['customer-documents', customerId],
-    queryFn: () => getCustomerDocuments(customerId!),
-    enabled: !!customerId && activeTab === 'documents',
+    queryKey: ['customer-documents', userId],
+    queryFn: () => getCustomerDocuments(userId!),
+    enabled: !!userId && activeTab === 'documents',
   });
 
   const { data: kycStatus } = useQuery({
-    queryKey: ['customer-kyc', customerId],
-    queryFn: () => getCustomerKYCStatus(customerId!),
-    enabled: !!customerId && activeTab === 'overview',
+    queryKey: ['customer-kyc', userId],
+    queryFn: () => getCustomerKYCStatus(userId!),
+    enabled: !!userId && activeTab === 'overview',
   });
 
   const { data: tickets } = useQuery({
-    queryKey: ['customer-tickets', customerId],
-    queryFn: () => getSupportTickets(customerId),
-    enabled: !!customerId && activeTab === 'tickets',
+    queryKey: ['customer-tickets', userId],
+    queryFn: () => getSupportTickets(userId),
+    enabled: !!userId && activeTab === 'tickets',
   });
 
   if (customerLoading) {
@@ -145,7 +145,7 @@ export function CustomerDetailPage() {
         <div className="flex gap-2">
           <Button
             variant="primary"
-            onClick={() => navigate(`/csr/tickets/new?customerId=${customerId}`)}
+            onClick={() => navigate(`/csr/tickets/new?userId=${userId}`)}
           >
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -185,8 +185,8 @@ export function CustomerDetailPage() {
                 <div className="font-medium">{customer.email}</div>
               </div>
               <div>
-                <div className="text-sm text-gray-500">Kunden-ID</div>
-                <div className="font-medium">{customer.customerId}</div>
+                <div className="text-sm text-gray-500">Kundennummer</div>
+                <div className="font-medium">{customer.customerNumber}</div>
               </div>
               <div>
                 <div className="text-sm text-gray-500">Rolle</div>
