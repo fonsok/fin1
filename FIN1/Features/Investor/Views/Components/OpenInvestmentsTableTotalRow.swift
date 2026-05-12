@@ -13,7 +13,7 @@ struct OpenInvestmentsTableTotalRow: View {
                 .font(ResponsiveDesign.bodyFont())
                 .fontWeight(.semibold)
                 .foregroundColor(forMeasurement ? nil : AppTheme.fontColor)
-                .modifier(cellFrame("pot", .leading))
+                .modifier(cellFrame("pool", .leading))
 
             Text("")
                 .modifier(cellFrame("status", .leading))

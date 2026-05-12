@@ -25,7 +25,7 @@ struct OpenInvestmentsHeaderCellModifier: ViewModifier {
 
     private var defaultWidth: CGFloat {
         switch columnKey {
-        case "pot": return 60
+        case "pool": return 60
         case "status": return 80
         case "amount": return 110
         case "profit": return 110

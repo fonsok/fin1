@@ -355,7 +355,7 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
                     print("🎯 Trade #\(trade.tradeNumber) settled by backend — skipping local document creation")
                 }
 
-                // Distribute profit to investors if trade involved pots
+                // Distribute profit to investors if trade involved pool capital
                 if let profitDistributionService = profitDistributionService, !settledByBackend {
                     _ = await profitDistributionService.distributeProfit(for: trade, order: order)
                 }

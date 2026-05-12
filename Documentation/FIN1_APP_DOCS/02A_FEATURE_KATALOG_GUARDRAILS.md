@@ -158,7 +158,7 @@ Diese Regeln schützen **bereits korrekte Finanzwerte** vor “Formel-Drift” (
   - **App Service Charge** (Investor-only) bleibt korrekt:
     - Berechnung im UI/VM: `CalculationConstants.ServiceCharges.appServiceChargeRate` (siehe `InvestmentSheetViewModel.appServiceCharge`).
     - Validation darf nicht nur “Investment Amount” prüfen, sondern **Investment + Service Charge** (siehe `totalRequiredAmount`/`hasSufficientCashBalance`).
-  - Pool-/Pot-Logik bleibt konsistent (keine Formel-Drift; siehe `1.1 Financial Calculations & Accounting Guardrails`).
+  - Pool-Logik bleibt konsistent (keine Formel-Drift; siehe `1.1 Financial Calculations & Accounting Guardrails`).
   - Collection Bill/Investment Statements bleiben **authoritativ** via `InvestorCollectionBillCalculationService` (kein Re-Implementieren in UI/VM).
 - **Backend Contracts (wenn Parse aktiv)**
   - Cloud Functions wie `createInvestment`, `getInvestorPortfolio` dürfen nicht ohne Migration geändert werden.

@@ -32,10 +32,10 @@ final class MockInvestmentService: InvestmentServiceProtocol, @unchecked Sendabl
         amountPerInvestment: Double,
         numberOfInvestments: Int,
         specialization: String,
-        potSelection: InvestmentSelectionStrategy
+        poolSelection: InvestmentSelectionStrategy
     ) async throws {
         if let handler = createInvestmentHandler {
-            try await handler(investor, trader, amountPerInvestment, numberOfInvestments, specialization, potSelection)
+            try await handler(investor, trader, amountPerInvestment, numberOfInvestments, specialization, poolSelection)
         } else {
             // Default: create simple investment
             await MainActor.run {

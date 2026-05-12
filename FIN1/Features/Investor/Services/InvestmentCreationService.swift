@@ -56,7 +56,7 @@ final class InvestmentCreationService: InvestmentCreationServiceProtocol {
         amountPerInvestment: Double,
         numberOfInvestments: Int,
         specialization: String,
-        potSelection: InvestmentSelectionStrategy,
+        poolSelection: InvestmentSelectionStrategy,
         repository: any InvestmentRepositoryProtocol,
         deferCashDeductions: Bool
     ) async throws -> (InvestmentBatch, [Investment], [String]) {

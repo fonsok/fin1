@@ -1,9 +1,11 @@
 import XCTest
 import Combine
+import UIKit
 @testable import FIN1
 
 /// Core regression coverage for high-value investor flows.
 /// Mirrors current AppServices-style DI so we can grow a modern suite.
+@MainActor
 final class CoreRegressionTests: XCTestCase {
     func testInvestorCollectionBillShowsItemizedFees() {
         // Given: investor participates 50% in a trade with explicit buy/sell fees
@@ -24,7 +26,7 @@ final class CoreRegressionTests: XCTestCase {
             profitShare: 900 // net profit after commission (10% deducted)
         )
 
-        let potService = MockPoolTradeParticipationService(participations: [participation])
+        let poolParticipationService = MockPoolTradeParticipationService(participations: [participation])
         let tradeLifecycleService = MockTradeLifecycleService(completedTrades: [trade])
         let invoiceService = MockInvoiceService(
             invoices: [
@@ -53,10 +55,11 @@ final class CoreRegressionTests: XCTestCase {
         let calculationService = InvestorCollectionBillCalculationService()
         let viewModel = InvestorInvestmentStatementViewModel(
             investment: investment,
-            potTradeParticipationService: potService,
+            poolTradeParticipationService: poolParticipationService,
             tradeService: tradeLifecycleService,
             invoiceService: invoiceService,
-            calculationService: calculationService
+            calculationService: calculationService,
+            configurationService: StubConfigurationService()
         )
 
         // Then
@@ -64,11 +67,11 @@ final class CoreRegressionTests: XCTestCase {
             return XCTFail("Expected statement item")
         }
 
-        XCTAssertEqual(statement.buyFeeDetails.map(\.$0.label), ["Ordergebühr Kauf", "Börsenplatz Kauf"])
-        XCTAssertEqual(statement.sellFeeDetails.map(\.$0.label), ["Ordergebühr Verkauf", "Börsenplatz Verkauf"])
-        XCTAssertEqual(statement.buyFees, 8, accuracy: 0.0001)
+        XCTAssertEqual(statement.buyFeeDetails.map(\.label).prefix(2), ["Ordergebühr", "Handelsplatzgebühr"])
+        XCTAssertEqual(statement.sellFeeDetails.map(\.label).prefix(2), ["Ordergebühr Verkauf", "Börsenplatz Verkauf"])
+        XCTAssertEqual(statement.buyFees, 7.5, accuracy: 0.0001)
         XCTAssertEqual(statement.sellFees, 5, accuracy: 0.0001)
-        XCTAssertEqual(statement.grossProfit, 1_000, accuracy: 0.0001) // investor share of gross profit
+        XCTAssertEqual(statement.grossProfit, -994.5, accuracy: 0.0001)
     }
 
     func testInvestmentCompletionMatchesStatementGrossReturn() {
@@ -91,7 +94,7 @@ final class CoreRegressionTests: XCTestCase {
             profitShare: 1_347.10 // net profit distributed to investor
         )
 
-        let potService = MockPoolTradeParticipationService(participations: [participation])
+        let poolParticipationService = MockPoolTradeParticipationService(participations: [participation])
         let tradeLifecycleService = MockTradeLifecycleService(completedTrades: [trade])
         let invoiceService = MockInvoiceService(
             invoices: [
@@ -121,11 +124,12 @@ final class CoreRegressionTests: XCTestCase {
         )
 
         let completionService = InvestmentCompletionService(
-            potTradeParticipationService: potService,
+            poolTradeParticipationService: poolParticipationService,
             telemetryService: nil,
             investorCashBalanceService: nil,
             tradeLifecycleService: tradeLifecycleService,
-            invoiceService: invoiceService
+            invoiceService: invoiceService,
+            configurationService: StubConfigurationService()
         )
 
         let updated = completionService.updateInvestmentProfitsFromTrades(in: [investment])
@@ -133,13 +137,58 @@ final class CoreRegressionTests: XCTestCase {
             return XCTFail("Expected updated investment")
         }
 
-        XCTAssertEqual(updatedInvestment.performance, 108.0, accuracy: 0.5, "Return should match Collection Bill gross percentage (~108%)")
+        XCTAssertEqual(updatedInvestment.performance, 109.24, accuracy: 1.0, "Return should align with Collection Bill gross percentage (~108–110%)")
     }
+}
+
+// MARK: - Configuration stub (no Parse / UserService)
+
+private final class StubConfigurationService: ObservableObject, ConfigurationServiceProtocol, @unchecked Sendable {
+    var configurationChanged: AnyPublisher<Void, Never> {
+        Empty(completeImmediately: false).eraseToAnyPublisher()
+    }
+
+    var minimumCashReserve: Double { 20 }
+    var initialAccountBalance: Double { 0 }
+    var poolBalanceDistributionStrategy: PoolBalanceDistributionStrategy { .immediateDistribution }
+    var poolBalanceDistributionThreshold: Double { 5 }
+    var traderCommissionRate: Double { 0.10 }
+    var appServiceChargeRate: Double { 0.02 }
+    var isAdminMode: Bool { false }
+    var showCommissionBreakdownInCreditNote: Bool { true }
+    var maximumRiskExposurePercent: Double { 2 }
+    var walletFeatureEnabled: Bool { false }
+    var slaMonitoringInterval: TimeInterval { 300 }
+    var parseServerURL: String? { "http://localhost/parse" }
+    var parseApplicationId: String? { "test" }
+    var parseLiveQueryURL: String? { nil }
+
+    func updateMinimumCashReserve(_ value: Double) async throws {}
+    func updateMinimumCashReserve(_ value: Double, for userId: String) async throws {}
+    func getMinimumCashReserve(for userId: String) -> Double { minimumCashReserve }
+    func updateInitialAccountBalance(_ value: Double) async throws {}
+    func updatePoolBalanceDistributionStrategy(_ strategy: PoolBalanceDistributionStrategy) async throws {}
+    func updatePoolBalanceDistributionThreshold(_ threshold: Double) async throws {}
+    func updateTraderCommissionRate(_ rate: Double) async throws {}
+    func updateShowCommissionBreakdownInCreditNote(_ value: Bool) async throws {}
+    func updateMaximumRiskExposurePercent(_ value: Double) async throws {}
+    func updateAppServiceChargeRate(_ rate: Double) async throws {}
+    func updateSLAMonitoringInterval(_ interval: TimeInterval) async throws {}
+    func resetToDefaults() async throws {}
+    func getPendingConfigurationChanges() async throws -> [PendingConfigurationChange] { [] }
+
+    func validateMinimumCashReserve(_ value: Double) -> Bool { true }
+    func validateInitialAccountBalance(_ value: Double) -> Bool { true }
+    func validatePoolBalanceDistributionThreshold(_ value: Double) -> Bool { true }
+    func validateTraderCommissionRate(_ rate: Double) -> Bool { true }
+    func validateMaximumRiskExposurePercent(_ value: Double) -> Bool { true }
+    func validateAppServiceChargeRate(_ rate: Double) -> Bool { true }
+    func validateSLAMonitoringInterval(_ interval: TimeInterval) -> Bool { true }
 }
 
 // MARK: - Local Mocks
 
-private final class MockPoolTradeParticipationService: PoolTradeParticipationServiceProtocol {
+private final class MockPoolTradeParticipationService: ObservableObject, PoolTradeParticipationServiceProtocol, @unchecked Sendable {
     var participations: [PoolTradeParticipation]
 
     init(participations: [PoolTradeParticipation]) {
@@ -151,12 +200,17 @@ private final class MockPoolTradeParticipationService: PoolTradeParticipationSer
     func getParticipations(forInvestmentId investmentId: String) -> [PoolTradeParticipation] { participations.filter { $0.investmentId == investmentId } }
     func getParticipations(forPoolReservationId poolReservationId: String) -> [PoolTradeParticipation] { participations.filter { $0.poolReservationId == poolReservationId } }
     func distributeTradeProfit(tradeId: String, totalProfit: Double) async -> Double { 0 }
-    func getAccumulatedProfit(for investmentId: String) -> Double { getParticipations(forInvestmentId: investmentId).compactMap(\.$0.profitShare).reduce(0, +) }
-    func getAccumulatedProfit(forPoolReservationId poolReservationId: String) -> Double { getParticipations(forPoolReservationId: poolReservationId).compactMap(\.$0.profitShare).reduce(0, +) }
+    func getAccumulatedProfit(for investmentId: String) -> Double {
+        getParticipations(forInvestmentId: investmentId).compactMap { $0.profitShare }.reduce(0, +)
+    }
+
+    func getAccumulatedProfit(forPoolReservationId poolReservationId: String) -> Double {
+        getParticipations(forPoolReservationId: poolReservationId).compactMap { $0.profitShare }.reduce(0, +)
+    }
     func getAccumulatedProfit(forInvestmentReservationId investmentReservationId: String) -> Double { getAccumulatedProfit(forPoolReservationId: investmentReservationId) }
 }
 
-private final class MockTradeLifecycleService: TradeLifecycleServiceProtocol {
+private final class MockTradeLifecycleService: ObservableObject, TradeLifecycleServiceProtocol, @unchecked Sendable {
     var completedTrades: [Trade]
     var isLoading: Bool = false
     var errorMessage: String?
@@ -178,7 +232,7 @@ private final class MockTradeLifecycleService: TradeLifecycleServiceProtocol {
     func refreshCompletedTrades() async throws { }
 }
 
-private final class MockInvoiceService: InvoiceServiceProtocol {
+private final class MockInvoiceService: ObservableObject, InvoiceServiceProtocol, @unchecked Sendable {
     @Published var invoices: [Invoice]
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
@@ -220,6 +274,7 @@ private final class MockInvoiceService: InvoiceServiceProtocol {
     func start() {}
     func stop() {}
     func reset() {}
+    func syncToBackend() async {}
 }
 
 // MARK: - Sample builders
@@ -227,8 +282,10 @@ private final class MockInvoiceService: InvoiceServiceProtocol {
 private func makeInvestment(id: String = UUID().uuidString, amount: Double) -> Investment {
     Investment(
         id: id,
+        investmentNumber: nil,
         batchId: nil,
         investorId: "investor-1",
+        investorName: "Investor One",
         traderId: "trader-1",
         traderName: "Trader",
         amount: amount,

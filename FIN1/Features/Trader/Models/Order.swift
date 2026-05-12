@@ -5,7 +5,7 @@ import Foundation
 ///
 /// Architecture Overview:
 /// - **Order**: Individual buy/sell transactions with statuses and option details
-/// - **Trade**: Buy + Sell order results for investor pot distribution
+/// - **Trade**: Buy + Sell order results for investor pool distribution
 /// - **DepotBestand**: Holdings with split option information (final state)
 ///
 /// Order Types:

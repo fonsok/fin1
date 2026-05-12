@@ -12,7 +12,7 @@ struct OpenInvestmentsTableHeaderRow: View {
                     .font(ResponsiveDesign.bodyFont())
             }
             .modifier(OpenInvestmentsHeaderCellModifier(
-                columnKey: "pot",
+                columnKey: "pool",
                 columnWidths: columnWidths,
                 forMeasurement: forMeasurement,
                 alignment: .leading

@@ -220,7 +220,7 @@ final class InvestmentSheetViewModel: ObservableObject {
                     amountPerInvestment: amountPerInvestment,
                     numberOfInvestments: numberOfInvestments,
                     specialization: trader.specialization,
-                    potSelection: selectedInvestmentSelection
+                    poolSelection: selectedInvestmentSelection
                 )
 
                 await MainActor.run {

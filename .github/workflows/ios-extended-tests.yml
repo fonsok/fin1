@@ -1,0 +1,50 @@
+# Extended iOS test matrix — slower than PR CI; catches gaps after removing disabled tests.
+#
+# Schedule: weekly Monday 05:15 UTC (off-peak). Also runnable manually (workflow_dispatch).
+#
+# PR / push CI remains .github/workflows/ci.yml → scripts/run-ios-tests.sh (FIN1Tests only).
+#
+# Runs FIN1Tests, FIN1InvestorTests, and FIN1CoreRegressionTests (unit targets).
+
+name: iOS extended tests
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '15 5 * * 1'
+
+concurrency:
+  group: ios-extended-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ios-extended:
+    name: iOS extended (unit + investor + core regression)
+    runs-on: macos-14
+    timeout-minutes: 90
+    env:
+      DEVELOPER_DIR: /Applications/Xcode.app/Contents/Developer
+      IOS_TEST_DESTINATION: platform=iOS Simulator,name=iPhone 16,OS=18.6
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app
+
+      - name: Extended unit targets (no UI by default)
+        env:
+          IOS_TEST_TARGETS: 'FIN1Tests,FIN1InvestorTests,FIN1CoreRegressionTests'
+        run: |
+          set -euo pipefail
+          chmod +x scripts/run-ios-tests.sh
+          ./scripts/run-ios-tests.sh
+
+      - name: UI tests (optional — enable via repo variable IOS_EXTENDED_RUN_UI_TESTS)
+        if: vars.IOS_EXTENDED_RUN_UI_TESTS == 'true'
+        env:
+          IOS_TEST_TARGETS: 'FIN1UITests'
+        run: |
+          set -euo pipefail
+          chmod +x scripts/run-ios-tests.sh
+          ./scripts/run-ios-tests.sh

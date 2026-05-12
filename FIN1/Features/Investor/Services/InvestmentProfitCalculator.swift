@@ -229,7 +229,7 @@ struct InvestmentProfitCalculator {
     ///   - investmentId: ID of the investment
     ///   - participations: Trade participations for the investment
     ///   - tradeLifecycleService: Service providing completed trades
-    ///   - potTradeParticipationService: Fallback service for accumulated profit
+    ///   - poolTradeParticipationService: Fallback service for accumulated profit
     /// - Returns: Gross profit amount
     static func calculateGrossProfitFromTrades(
         for investmentId: String,

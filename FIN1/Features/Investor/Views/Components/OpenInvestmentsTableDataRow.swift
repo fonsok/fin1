@@ -12,7 +12,7 @@ struct OpenInvestmentsTableDataRow: View {
             Text(pool.uniqueDisplayLabel)
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(forMeasurement ? nil : AppTheme.fontColor)
-                .modifier(cellFrame("pot", .leading))
+                .modifier(cellFrame("pool", .leading))
 
             statusCell
                 .modifier(cellFrame("status", pool.isDeletable ? .center : .leading))

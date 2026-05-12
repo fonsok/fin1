@@ -126,7 +126,7 @@ mockInvestmentService.createInvestmentDelay = 0.1
 
 **After:**
 ```swift
-mockInvestmentService.createInvestmentHandler = { investor, trader, amount, pots, spec in
+mockInvestmentService.createInvestmentHandler = { investor, trader, amountPerInvestment, numberOfInvestments, specialization, poolSelection in
     // Custom behavior if needed
 }
 // Or omit handler to use default behavior

@@ -9,7 +9,7 @@ extension InvestmentService {
         amountPerInvestment: Double,
         numberOfInvestments: Int,
         specialization: String,
-        potSelection: InvestmentSelectionStrategy
+        poolSelection: InvestmentSelectionStrategy
     ) async throws {
         let existingIds = await MainActor.run { Set(repository.investments.map(\.id)) }
 
@@ -20,7 +20,7 @@ extension InvestmentService {
             amountPerInvestment: amountPerInvestment,
             numberOfInvestments: numberOfInvestments,
             specialization: specialization,
-            potSelection: potSelection,
+            poolSelection: poolSelection,
             repository: repository,
             deferCashDeductions: deferCashDeductions
         )

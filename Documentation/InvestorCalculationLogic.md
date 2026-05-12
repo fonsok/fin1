@@ -29,7 +29,7 @@ Scope: Investor-specific calculations for buy/sell legs, profit, ROI bases, comm
 ### Inputs/Outputs & Preconditions
 - Collection bill input: `investmentCapital` (source of truth, must be >0), `buyPrice` >0, `tradeTotalQuantity` >0, `ownershipPercentage` (0–1], invoices optional but used for fees/sell prices, `investorAllocatedAmount` optional.
 - Output includes buy amount/quantity/fees/details, sell amount/quantity/avg price/fees, residual, grossProfit, roiGrossProfit, roiInvestedAmount.
-- Totals require `potTradeParticipationService`, `tradeLifecycleService`, `invoiceService`, optional `investmentCapital` and `InvestorCollectionBillCalculationService`.
+- Totals require `poolTradeParticipationService`, `tradeLifecycleService`, `invoiceService`, optional `investmentCapital` and `InvestorCollectionBillCalculationService`.
 - Gross profit service needs aggregation via statement items; returns error if missing data.
 - Commission uses `CalculationConstants.FeeRates.traderCommissionRate` by default.
 

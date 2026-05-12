@@ -78,7 +78,7 @@ final class ProfitDistributionService: ProfitDistributionServiceProtocol, @unche
                     )
                 }
 
-                // Distribute net profit to participating pots (local state for UI)
+                // Distribute net profit to participating pools (local state for UI)
                 let distributed = await poolTradeParticipationService.distributeTradeProfit(
                     tradeId: trade.id,
                     totalProfit: backendNetProfit

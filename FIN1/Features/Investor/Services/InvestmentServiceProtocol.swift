@@ -28,7 +28,7 @@ protocol InvestmentServiceProtocol: ObservableObject, Sendable {
         amountPerInvestment: Double,
         numberOfInvestments: Int,
         specialization: String,
-        potSelection: InvestmentSelectionStrategy
+        poolSelection: InvestmentSelectionStrategy
     ) async throws
 
     // MARK: - Investment Queries

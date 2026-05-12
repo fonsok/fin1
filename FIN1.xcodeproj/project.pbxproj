@@ -28,6 +28,13 @@
 			remoteGlobalIDString = 114BEE662E51EBCC00C3E8F1;
 			remoteInfo = FIN1;
 		};
+		11COREPROXY00000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 114BEE5F2E51EBCC00C3E8F1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 114BEE662E51EBCC00C3E8F1;
+			remoteInfo = FIN1;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
@@ -94,6 +101,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		11INVPHASEFRMW0000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		11COREPHASEFRMW0000000000001 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -220,6 +234,27 @@
 			productReference = 11INVPROD000000000000001 /* FIN1InvestorTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		11CORETGT0000000000001 /* FIN1CoreRegressionTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 11CORECONF000000000000001 /* Build configuration list for PBXNativeTarget "FIN1CoreRegressionTests" */;
+			buildPhases = (
+				11COREPHASESRC0000000000001 /* Sources */,
+				11COREPHASEFRMW0000000000001 /* Frameworks */,
+				11COREPHASERES0000000000001 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				11COREDEP000000000000001 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				11COREGRP0000000000001 /* FIN1CoreRegressionTests */,
+			);
+			name = FIN1CoreRegressionTests;
+			productName = FIN1CoreRegressionTests;
+			productReference = 11COREPROD0000000000001 /* FIN1CoreRegressionTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -261,6 +296,7 @@
 				114BEE732E51EBCE00C3E8F1 /* FIN1Tests */,
 				114BEE7D2E51EBCE00C3E8F1 /* FIN1UITests */,
 				11INVTGT000000000000001 /* FIN1InvestorTests */,
+				11CORETGT0000000000001 /* FIN1CoreRegressionTests */,
 			);
 		};
 /* End PBXProject section */
@@ -288,6 +324,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		11INVPHASERES0000000000001 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		11COREPHASERES0000000000001 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -325,6 +368,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		11COREPHASESRC0000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -342,6 +392,11 @@
 			isa = PBXTargetDependency;
 			target = 114BEE662E51EBCC00C3E8F1 /* FIN1 */;
 			targetProxy = 11INVPROXY00000000000001 /* PBXContainerItemProxy */;
+		};
+		11COREDEP000000000000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 114BEE662E51EBCC00C3E8F1 /* FIN1 */;
+			targetProxy = 11COREPROXY00000000000001 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -639,6 +694,44 @@
 			};
 			name = Release;
 		};
+		11CORECONFDBG0000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = RQ63APAG77;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ra.FIN1CoreRegressionTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/FIN1.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/FIN1";
+			};
+			name = Debug;
+		};
+		11CORECONFREL0000000000001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = RQ63APAG77;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ra.FIN1CoreRegressionTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/FIN1.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/FIN1";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -683,6 +776,15 @@
 			buildConfigurations = (
 				11INVCONFDBG0000000000001 /* Debug */,
 				11INVCONFREL0000000000001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		11CORECONF000000000000001 /* Build configuration list for PBXNativeTarget "FIN1CoreRegressionTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				11CORECONFDBG0000000000001 /* Debug */,
+				11CORECONFREL0000000000001 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

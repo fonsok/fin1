@@ -180,7 +180,7 @@ enum InvestmentCashDistributor {
         var residualAmount: Double = 0.0
 
         // Guard against nil services
-        guard let potTradeService = poolTradeParticipationService,
+        guard let poolTradeSvc = poolTradeParticipationService,
               let tradeService = tradeLifecycleService,
               let invoiceSvc = invoiceService else {
             print("⚠️ InvestmentCashDistributor: Missing required services for investment \(investment.id)")
@@ -196,7 +196,7 @@ enum InvestmentCashDistributor {
         // Get statement summary from aggregator
         guard let summary = InvestorInvestmentStatementAggregator.summarizeInvestment(
             investmentId: investment.id,
-            poolTradeParticipationService: potTradeService,
+            poolTradeParticipationService: poolTradeSvc,
             tradeLifecycleService: tradeService,
             invoiceService: invoiceSvc,
             commissionCalculationService: nil,

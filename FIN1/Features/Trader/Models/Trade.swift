@@ -32,7 +32,7 @@ enum TradeStatus: String, CaseIterable, Codable, Sendable {
 /// **Trade** = Buy + Sell order results for investor pool distribution
 ///
 /// Architecture Overview:
-/// - **Trade**: Represents a complete trading cycle (buy + sell) for investor pot distribution
+/// - **Trade**: Represents a complete trading cycle (buy + sell) for investor pool distribution
 /// - **Order**: Individual buy/sell transactions with statuses and option details
 /// - **DepotBestand**: Holdings with split option information (final state after trade completion)
 ///
