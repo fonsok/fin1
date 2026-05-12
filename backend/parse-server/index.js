@@ -27,6 +27,16 @@ app.use(cors({
 app.use(compression());
 app.use(morgan('combined'));
 
+// URLs: `serverURL` is what Parse Server and the Node SDK use for self-checks and in-process
+// REST calls (must be reachable from this process without TLS issues, e.g. loopback in Docker).
+// `publicServerURL` is optional; clients, email links, and dashboard in the browser use the
+// HTTPS/nginx URL when it differs (self-signed or internal-only cert on the public hostname).
+const port = Number(process.env.PORT || 1337);
+const internalParseServerURL =
+  process.env.PARSE_SERVER_INTERNAL_URL?.trim() || `http://127.0.0.1:${port}/parse`;
+const publicFromEnv = process.env.PARSE_SERVER_PUBLIC_SERVER_URL?.trim() || '';
+const clientVisibleParseURL = publicFromEnv || internalParseServerURL;
+
 // Parse Server configuration
 const parseServerConfig = {
   databaseURI: process.env.PARSE_SERVER_DATABASE_URI || 'mongodb://localhost:27017/fin1',
@@ -43,7 +53,10 @@ const parseServerConfig = {
   masterKeyIps: (process.env.PARSE_SERVER_MASTER_KEY_IPS
     ? process.env.PARSE_SERVER_MASTER_KEY_IPS.split(',').map((s) => s.trim()).filter(Boolean)
     : ['127.0.0.1/32', '::1/128', '172.16.0.0/12']),
-  serverURL: process.env.PARSE_SERVER_PUBLIC_SERVER_URL || 'http://localhost:1337/parse',
+  serverURL: internalParseServerURL,
+  ...(publicFromEnv && publicFromEnv !== internalParseServerURL
+    ? { publicServerURL: publicFromEnv }
+    : {}),
   liveQuery: {
     classNames: ['Investment', 'Trade', 'Notification', 'Document', 'User', 'WalletTransaction', 'ComplianceEvent', 'Order', 'MarketData', 'PriceAlert'],
   },
@@ -92,6 +105,8 @@ const parseServerConfig = {
   accountLockout: {
     duration: 5,
     threshold: 3,
+    // After password reset via token flow, clear failed-login / lockout fields (Parse built-in).
+    unlockOnPasswordReset: true,
   },
   sessionLength: 30 * 24 * 60 * 60 * 1000, // 30 days
   expireInactiveSessions: true,
@@ -105,9 +120,8 @@ const parseDashboardConfig = {
   apps: [
     {
       // IMPORTANT: serverURL is baked into the dashboard frontend (browser makes requests to it).
-      // For a secure setup, access dashboard via SSH tunnel and set:
-      // PARSE_DASHBOARD_SERVER_URL=http://localhost:1338/parse
-      serverURL: process.env.PARSE_DASHBOARD_SERVER_URL || parseServerConfig.serverURL,
+      // Use your public nginx URL when opening dashboard via HTTPS, or a tunnel URL when using SSH.
+      serverURL: process.env.PARSE_DASHBOARD_SERVER_URL?.trim() || clientVisibleParseURL,
       appId: parseServerConfig.appId,
       masterKey: parseServerConfig.masterKey,
       appName: 'FIN1 Backend',
@@ -149,8 +163,6 @@ app.get('/api-docs', (req, res) => {
 
 // Async startup function for Parse Server 6.x
 async function startServer() {
-  const port = process.env.PORT || 1337;
-
   // Initialize and start Parse Server (required for Parse Server 6.x)
   const parseServer = new ParseServer(parseServerConfig);
   await parseServer.start();
@@ -194,6 +206,7 @@ async function startServer() {
     await ParseServer.createLiveQueryServer(httpServer, {
       appId: parseServerConfig.appId,
       masterKey: parseServerConfig.masterKey,
+      // Same as main server URL: keep in-process REST on loopback behind a TLS-terminating proxy.
       serverURL: parseServerConfig.serverURL,
       websocketTimeout: 10 * 1000,
       cacheTimeout: 5 * 1000,

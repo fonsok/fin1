@@ -15,7 +15,7 @@ Das Schema ist normalisiert (3NF) und für die Migration nach MongoDB dokumentie
 | Notifications | 4 | In-App, Push, Email |
 | Trading | 11 | Securities, Orders, Trades, Holdings |
 | Investments | 7 | Investments, Commissions, Pools |
-| Finance | 9 | Invoices, Wallet, Documents |
+| Finance | 9 | Invoices, Konto (Wallet deaktiviert), Documents |
 | FAQ | 4 | FAQs, Feedback, Views |
 | CSR | 12 | Support Tickets, Agents, 4-Eyes |
 | Compliance | 8 | Audit Logs, GDPR, KYC Changes |

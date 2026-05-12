@@ -172,9 +172,9 @@ db.Config.updateOne(
         orderFeeMax: 50.0,
         exchangeFeeRate: 0.001,
         traderCommissionRate: 0.10,
-        platformServiceChargeRate: 0.02,
+        appServiceChargeRate: 0.02,
         minimumCashReserve: 20.0,
-        initialAccountBalance: 1.0
+        initialAccountBalance: 0.0
       },
 
       features: {
@@ -190,7 +190,8 @@ db.Config.updateOne(
         minWithdrawal: 10.0,
         maxWithdrawal: 50000.0,
         dailyTransactionLimit: 10000.0,
-        minInvestment: 100.0
+        minInvestment: 20.0,
+        maxInvestment: 100000.0
       },
 
       company: {
@@ -233,11 +234,11 @@ print('Initial configuration created.');
 print('Creating FAQ categories...');
 
 const faqCategories = [
-  { slug: "platform_overview", name: "Platform Overview", nameDe: "Plattform-Übersicht", icon: "info.circle", showOnLanding: true, showInHelpCenter: false, sortOrder: 1 },
+  { slug: "app_overview", name: "App Overview", nameDe: "App-Übersicht", icon: "info.circle", showOnLanding: true, showInHelpCenter: false, sortOrder: 1 },
   { slug: "getting_started", name: "Getting Started", nameDe: "Erste Schritte", icon: "play.circle", showOnLanding: true, showInHelpCenter: false, sortOrder: 2 },
   { slug: "investments", name: "Investments", nameDe: "Investitionen", icon: "chart.line.uptrend.xyaxis", showOnLanding: true, showInHelpCenter: true, sortOrder: 3 },
   { slug: "trading", name: "Trading", nameDe: "Trading", icon: "arrow.left.arrow.right", showOnLanding: false, showInHelpCenter: true, sortOrder: 4 },
-  { slug: "portfolio", name: "Portfolio & Performance", nameDe: "Portfolio & Performance", icon: "chart.pie", showOnLanding: false, showInHelpCenter: true, sortOrder: 5 },
+  { slug: "portfolio", name: "Investments & Performance", nameDe: "Investments & Performance", icon: "chart.pie", showOnLanding: false, showInHelpCenter: true, sortOrder: 5 },
   { slug: "invoices", name: "Invoices & Statements", nameDe: "Rechnungen & Auszüge", icon: "doc.text", showOnLanding: false, showInHelpCenter: true, sortOrder: 6 },
   { slug: "security", name: "Security & Authentication", nameDe: "Sicherheit & Authentifizierung", icon: "lock.shield", showOnLanding: false, showInHelpCenter: true, sortOrder: 7 },
   { slug: "notifications", name: "Notifications", nameDe: "Benachrichtigungen", icon: "bell", showOnLanding: false, showInHelpCenter: true, sortOrder: 8 },

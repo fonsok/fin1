@@ -16,6 +16,21 @@ The backend consists of the following microservices:
 - **Notification Service** - Push notifications
 - **Analytics Service** - Data processing and reporting
 
+## Deployment safety (production server)
+
+When syncing `backend/` to a host (e.g. `rsync`, CI, or manual copy):
+
+- **Do not use `rsync --delete`** unless you are certain the server tree is a strict mirror of the repo. Servers often have files **not** in Git (TLS material under `nginx/ssl/`, extra keys under `parse-server/certs/`, local-only service files, log rotation files, etc.). `--delete` will remove those and can break HTTPS, logging, or image rebuilds.
+- Prefer the project script [`scripts/deploy-to-ubuntu.sh`](../scripts/deploy-to-ubuntu.sh), which syncs **without** `--delete`.
+- After cloud-code changes, restart the Parse container (or rely on your documented compose workflow) so Cloud Code reloads.
+- **Which SSH host for iobox:** [`Documentation/OPERATIONAL_DEPLOY_HOSTS.md`](../Documentation/OPERATIONAL_DEPLOY_HOSTS.md) — script `scripts/deploy-parse-cloud-to-fin1-server.sh`.
+
+## Onboarding validation (Parse Cloud Code)
+
+- User onboarding Cloud Functions live under `parse-server/cloud/functions/user/onboarding.js`.
+- **Joi** per-step schemas: `parse-server/cloud/utils/onboardingStepSchemas.js` (wired via `parse-server/cloud/utils/validation.js` as `validateStepData` and `validatePartialOnboardingData`).
+- Product docs: [`Documentation/ENGINEERING_GUIDE.md`](../Documentation/ENGINEERING_GUIDE.md), [`Documentation/ADR-002-Onboarding-Codable-DTO.md`](../Documentation/ADR-002-Onboarding-Codable-DTO.md), technical API notes in [`Documentation/FIN1_APP_DOCS/03_TECHNISCHE_SPEZIFIKATION.md`](../Documentation/FIN1_APP_DOCS/03_TECHNISCHE_SPEZIFIKATION.md).
+
 ## 🚀 Quick Start
 
 ### Prerequisites

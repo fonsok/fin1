@@ -55,6 +55,10 @@ db.runCommand({
           minimum: 0,
           maximum: 1,
           description: "Service charge rate must be between 0 and 1"
+        },
+        businessCaseId: {
+          bsonType: "string",
+          description: "Korrelations-ID für Buchungen/Belege (optional auf Altbeständen)"
         }
       }
     }
@@ -212,12 +216,16 @@ db.runCommand({
   validator: {
     $jsonSchema: {
       bsonType: "object",
-      required: ["ticketNumber", "customerId", "subject", "description", "category", "priority", "status"],
+      required: ["ticketNumber", "userId", "subject", "description", "category", "priority", "status"],
       properties: {
         ticketNumber: {
           bsonType: "string",
           pattern: "^TKT-[0-9]{4}-[0-9]{5}$",
           description: "Ticket number must match pattern"
+        },
+        userId: {
+          bsonType: "string",
+          description: "Parse _User.objectId of the end customer"
         },
         category: {
           enum: [

@@ -427,7 +427,7 @@ CREATE TRIGGER faqs_updated_at
 
 INSERT INTO faq_categories (slug, name, name_de, name_en, icon, show_on_landing, show_in_help_center, show_for_csr, sort_order) VALUES
 -- Landing Page Kategorien
-('platform_overview', 'Platform Overview', 'Plattform-Übersicht', 'Platform Overview', 'info.circle', true, false, true, 1),
+('app_overview', 'App Overview', 'App-Übersicht', 'App Overview', 'info.circle', true, false, true, 1),
 ('getting_started', 'Getting Started', 'Erste Schritte', 'Getting Started', 'play.circle', true, false, true, 2),
 
 -- Help Center Kategorien

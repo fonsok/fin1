@@ -8,10 +8,15 @@
 // Related data removed:
 //   - PoolTradeParticipation, Commission, AccountStatement
 //   - WalletTransaction (Konto-Buchungen: investment, investment_return, refund, etc.)
-//   - Documents (trader_credit_note, investor_collection_bill)
-//   - Invoices, Orders, Trades, Investments, InvestmentBatch
+//   - AppLedgerEntry, BankContraPosting (Hauptbuch / Bank-Gegenbuch wie devResetTradingTestData)
+//   - Notification, ComplianceEvent (Handels-/Investment-Nebenwirkungen)
+//   - Document (Buchhaltungs-Belege: siehe Typ-Liste unten)
+//   - Invoices, Orders, Holdings, Trades, Investments, InvestmentBatch
 //
 // Run with mongosh (see clear-investments-trades-documents.sh for examples).
+// Wallet: this script clears WalletTransaction; to set balances to Configuration „initialAccountBalance“,
+// use Admin Portal → System → DEV Reset with „Nach Reset: Kontostand = Initial Account Balance“ (Cloud devResetTradingTestData),
+// or insert deposits manually.
 //
 // ============================================================================
 
@@ -58,17 +63,43 @@ deleteAll(accountStmt, 'AccountStatement');
 const walletTx = db.getCollection('WalletTransaction');
 deleteAll(walletTx, 'WalletTransaction');
 
-// 3. Documents: only accounting docs (credit notes, collection bills)
+// 2b. Ledger (Parse-Klassen wie Cloud devResetTradingTestData scope=all)
+const appLedger = db.getCollection('AppLedgerEntry');
+deleteAll(appLedger, 'AppLedgerEntry');
+const bankContra = db.getCollection('BankContraPosting');
+deleteAll(bankContra, 'BankContraPosting');
+
+// 2c. In-app notifications & compliance events (often trade/investment related)
+const notification = db.getCollection('Notification');
+deleteAll(notification, 'Notification');
+const compliance = db.getCollection('ComplianceEvent');
+deleteAll(compliance, 'ComplianceEvent');
+
+// 3. Documents: accounting / trade-linked (camelCase wie cloud/utils/accountingHelper/documents.js)
 const document = db.getCollection('Document');
 deleteWithQuery(
   document,
   {
     $or: [
-      { type: 'trader_credit_note' },
-      { type: 'investor_collection_bill' },
+      { tradeId: { $exists: true, $ne: null } },
+      { investmentId: { $exists: true, $ne: null } },
+      {
+        type: {
+          $in: [
+            'traderCreditNote',
+            'investorCollectionBill',
+            'traderCollectionBill',
+            'financial',
+            'invoice',
+            // Legacy / falsch benannte Typen (falls altbestand)
+            'trader_credit_note',
+            'investor_collection_bill',
+          ],
+        },
+      },
     ],
   },
-  'Document (credit notes, collection bills)',
+  'Document (trade/investment-linked & accounting types)',
 );
 
 // 5. Invoices (order/trade related)
@@ -78,6 +109,10 @@ deleteAll(invoice, 'Invoice');
 // 6. Orders (reference trades)
 const order = db.getCollection('Order');
 deleteAll(order, 'Order');
+
+// 6b. Holdings (server-side trader depot rows; reference trades)
+const holding = db.getCollection('Holding');
+deleteAll(holding, 'Holding');
 
 // 7. Trades
 const trade = db.getCollection('Trade');

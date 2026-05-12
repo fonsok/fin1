@@ -31,7 +31,7 @@ INSERT INTO config_items (category_id, key, display_name, data_type, default_val
 ((SELECT id FROM config_categories WHERE name = 'financial'), 'order_fee_maximum', 'Order Fee Maximum (€)', 'number', '50.0', '{"min": 0, "max": 500}', 'textfield', 3),
 ((SELECT id FROM config_categories WHERE name = 'financial'), 'exchange_fee_rate', 'Exchange Fee Rate', 'number', '0.001', '{"min": 0, "max": 0.05}', 'slider', 4),
 ((SELECT id FROM config_categories WHERE name = 'financial'), 'trader_commission_rate', 'Trader Commission Rate', 'number', '0.05', '{"min": 0, "max": 0.5}', 'slider', 5),
-((SELECT id FROM config_categories WHERE name = 'financial'), 'platform_service_charge', 'Platform Service Charge', 'number', '0.015', '{"min": 0, "max": 0.1}', 'slider', 6),
+((SELECT id FROM config_categories WHERE name = 'financial'), 'app_service_charge', 'App Service Charge', 'number', '0.015', '{"min": 0, "max": 0.1}', 'slider', 6),
 ((SELECT id FROM config_categories WHERE name = 'financial'), 'minimum_cash_reserve', 'Minimum Cash Reserve (€)', 'number', '12.0', '{"min": 1, "max": 1000}', 'textfield', 7),
 ((SELECT id FROM config_categories WHERE name = 'financial'), 'initial_trader_balance', 'Initial Trader Balance (€)', 'number', '50000.0', '{"min": 1000, "max": 1000000}', 'textfield', 8),
 ((SELECT id FROM config_categories WHERE name = 'financial'), 'initial_investor_balance', 'Initial Investor Balance (€)', 'number', '25000.0', '{"min": 1000, "max": 1000000}', 'textfield', 9),
@@ -59,7 +59,9 @@ INSERT INTO config_items (category_id, key, display_name, data_type, default_val
 ((SELECT id FROM config_categories WHERE name = 'limits'), 'min_withdrawal', 'Min Withdrawal (€)', 'number', '10.0', '{"min": 1, "max": 1000}', 'textfield', 3),
 ((SELECT id FROM config_categories WHERE name = 'limits'), 'max_withdrawal', 'Max Withdrawal (€)', 'number', '50000.0', '{"min": 1000, "max": 500000}', 'textfield', 4),
 ((SELECT id FROM config_categories WHERE name = 'limits'), 'daily_transaction_limit', 'Daily Limit (€)', 'number', '10000.0', '{"min": 100, "max": 100000}', 'textfield', 5),
-((SELECT id FROM config_categories WHERE name = 'limits'), 'min_investment', 'Min Investment (€)', 'number', '100.0', '{"min": 10, "max": 10000}', 'textfield', 6),
+((SELECT id FROM config_categories WHERE name = 'limits'), 'weekly_transaction_limit', 'Weekly Limit (€)', 'number', '50000.0', '{"min": 1000, "max": 500000}', 'textfield', 6),
+((SELECT id FROM config_categories WHERE name = 'limits'), 'monthly_transaction_limit', 'Monthly Limit (€)', 'number', '200000.0', '{"min": 5000, "max": 2000000}', 'textfield', 7),
+((SELECT id FROM config_categories WHERE name = 'limits'), 'min_investment', 'Min Investment (€)', 'number', '100.0', '{"min": 10, "max": 10000}', 'textfield', 8),
 
 -- Security
 ((SELECT id FROM config_categories WHERE name = 'security'), 'session_timeout_minutes', 'Session Timeout (min)', 'integer', '30', '{"min": 5, "max": 120}', 'textfield', 1),
@@ -143,12 +145,12 @@ ON CONFLICT (role_id, permission_id) DO NOTHING;
 
 -- Landing Page FAQs
 INSERT INTO faqs (category_id, question, answer, is_public, is_user_visible, sort_order) VALUES
-((SELECT id FROM faq_categories WHERE slug = 'platform_overview'),
+((SELECT id FROM faq_categories WHERE slug = 'app_overview'),
  'Was ist die Plattform?',
  'Die Plattform ist eine innovative Investmentplattform, die Investoren mit erfahrenen Tradern verbindet. Investoren können ihr Kapital in von Tradern verwaltete Pools investieren und an deren Erfolg partizipieren.',
  true, true, 1),
 
-((SELECT id FROM faq_categories WHERE slug = 'platform_overview'),
+((SELECT id FROM faq_categories WHERE slug = 'app_overview'),
  'Wie funktioniert das Investment-Pool-System?',
  'Trader erstellen Investment-Pools, in die Investoren einzahlen können. Der Trader handelt mit dem gesammelten Kapital an den Finanzmärkten. Gewinne werden proportional auf alle Investoren verteilt, abzüglich einer Provision für den Trader.',
  true, true, 2),

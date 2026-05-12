@@ -34,7 +34,7 @@ const DEFAULT_SNIPPETS_DE = [
   { id: 'doc_tax_note_sell', title: 'Steuerhinweis Verkauf', content: 'Beim Verkauf erfolgt die Besteuerung gemäß Abgeltungsteuer (dzt. {{TAX_RATE}}) auf den realisierten Gewinn. Die Steuer wird automatisch von der Bank einbehalten.', icon: 'percent' },
   { id: 'doc_tax_note_buy', title: 'Steuerhinweis Kauf', content: 'Beim Kauf werden keine Steuern abgezogen. Die Besteuerung erfolgt erst beim Verkauf bzw. Gewinnrealisierung gemäß Abgeltungsteuer (dzt. {{TAX_RATE}}).', icon: 'percent' },
   { id: 'doc_legal_note_wphg', title: 'Rechtlicher Hinweis WpHG', content: 'Die Versteuerung erfolgt mit Gewinnrealisierung laut aktueller Regelung (§ 20 EStG).\n\nDiese Abrechnung erfolgt nach den Bestimmungen des Wertpapierhandelsgesetzes (WpHG) und der Wertpapierhandelsverordnung (WpDVerOV).', icon: 'scale.3d' },
-  { id: 'doc_tax_note_service_charge', title: 'Steuerhinweis Servicegebühr', content: 'Die Plattform-Servicegebühr unterliegt der Umsatzsteuer ({{VAT_RATE}}). Der Rechnungsbetrag ist bereits die Bruttosumme inklusive Umsatzsteuer.', icon: 'percent' },
+  { id: 'doc_tax_note_service_charge', title: 'Steuerhinweis Servicegebühr', content: 'Die App-Servicegebühr unterliegt der Umsatzsteuer ({{VAT_RATE}}). Der Rechnungsbetrag ist bereits die Bruttosumme inklusive Umsatzsteuer.', icon: 'percent' },
   { id: 'riskclass7_max_loss_warning', title: 'Risikoklasse 7 – Totalverlust', content: 'Das Verlustrisiko bis zu 100 % des eingesetzten Kapitals ist bekannt.', icon: 'exclamationmark.triangle' },
   { id: 'riskclass7_experienced_only', title: 'Risikoklasse 7 – Eignung', content: 'Diese Risikoklasse ist nur für erfahrene Anleger geeignet.', icon: 'person.fill.checkmark' },
   {

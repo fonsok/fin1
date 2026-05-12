@@ -176,7 +176,7 @@ effizienter sein kann.
   executedAt: ISODate
 }
 
-// 5. walletTransactions - Transaktionen
+// 5. walletTransactions - Konto-Transaktionen (Wallet-Feature deaktiviert)
 {
   _id: ObjectId,
   transactionNumber: "TXN-2024-0000001",
