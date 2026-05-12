@@ -55,6 +55,7 @@
   - Blocks nested test folders (`FIN1/FIN1Tests/`)
   - Flags `.shared` usage in non-root files
   - Warns if ViewModels changed without tests
+- **Policy C — kleine PRs (Review-Phase):** Sobald wieder regelmäßig reviewed wird, größere Themen **in mehrere kleine PRs** splitten (z. B. nur Parse Cloud, nur iOS-Admin, nur CI/Workflows), statt breiter „alles in einem“-Änderungen. Ziel: schnellere Reviews, klarere Rollbacks, weniger Merge-Konflikte.
 
 #### CI (GitHub Actions ready)
 - Workflow: `.github/workflows/ci.yml` includes:
