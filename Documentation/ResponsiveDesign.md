@@ -4,6 +4,16 @@
 
 The ResponsiveDesign system ensures consistent, adaptive UI across all device sizes, orientations, and accessibility settings. **All UI code MUST use this system** - fixed values are forbidden.
 
+## Swift 6 concurrency (`@MainActor`)
+
+- **`ResponsiveDesign`** (in `FIN1/Shared/Components/ResponsiveDesign.swift`) is marked **`@MainActor`** because it reads **`UIScreen`** / **`UIApplication`**. Call it from **`View.body`**, other **`@MainActor`** types, or top-level helpers marked **`@MainActor`** (see e.g. `CompanyKybStepHelpers.swift`).
+- **`ComponentFactory`** is **`@MainActor`** for the same reason.
+- **Exception — `TextFieldStyle`:** `TextFieldStyle._body` is **not** MainActor-isolated. Styles such as **`SettingsTextFieldStyle`** / **`SettingsSecureFieldStyle`** in `SettingsToggleRow.swift` use **fixed point** padding and corner radius (aligned with the 1.0 scale of `ResponsiveDesign.spacing`) **with an inline comment** instead of calling `ResponsiveDesign.spacing` inside `_body`.
+
+### Wrapping filter chips (`Layout` protocol)
+
+`ChipFlowLayout` in **`FIN1/Shared/Components/Search/FilterChip.swift`** uses a private **`HorizontalChipFlowLayout: Layout`** so chips wrap horizontally within the proposed width. This replaces the older `GeometryReader` + `alignmentGuide` approach (which tripped Swift 6 concurrency checks) while keeping **`ResponsiveDesign.spacing`** for inter-chip spacing in the **`@MainActor`** view.
+
 ## Quick Reference
 
 ### Fonts

@@ -34,3 +34,8 @@ Return percentage drift occurred when different clients computed return values f
 - Trade-offs:
   - Stricter dependency on backend data readiness
   - Legacy malformed data must be migrated/archived to keep monitoring healthy
+
+## Related
+
+- [`ADR-009-iOS-Reads-Server-BuyLeg-SellLeg.md`](ADR-009-iOS-Reads-Server-BuyLeg-SellLeg.md) — erweitert die SSOT-Linie für **Sammlungsrechnungen** (`metadata.*`)
+- [`ADR-012-Partial-Sell-Metrics-Finance-Smoke-And-Ops.md`](ADR-012-Partial-Sell-Metrics-Finance-Smoke-And-Ops.md) — SSOT/QA für **Investment**-Felder (Teil-Sell), zentrale **Finance-Smoke**- und **System-Health**-Checks

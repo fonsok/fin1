@@ -10,7 +10,7 @@ Dieses Dokument beschreibt das Deployment der neuen 4-Augen-Konfigurationsverwal
 
 | Datei | Beschreibung |
 |-------|-------------|
-| `cloud/utils/configHelper.js` | Zentrale Konfigurationsverwaltung mit Caching |
+| `cloud/utils/configHelper/` | Zentrale Konfigurationsverwaltung mit Caching (Modulordner; `require('.../configHelper')` → `index.js`) |
 | `cloud/functions/configuration.js` | 4-Augen Cloud Functions |
 
 ### Geänderte Backend-Dateien
@@ -19,7 +19,18 @@ Dieses Dokument beschreibt das Deployment der neuen 4-Augen-Konfigurationsverwal
 |-------|----------|
 | `cloud/main.js` | Import der neuen configuration.js |
 | `cloud/triggers/trade.js` | Liest Commission Rate aus Configuration |
-| `cloud/utils/permissions.js` | Neue Berechtigungen für business_admin und compliance |
+| `cloud/utils/permissions.js` | Neue Berechtigungen für business_admin und compliance (jetzt als Loader) |
+| `cloud/functions/admin/fourEyes.js` | 4-Eyes Approval-Funktionen (jetzt als Loader) |
+
+### Refactor-Update (2026-03-19)
+
+Die funktionale Logik blieb unverändert, wurde aber zur besseren Wartbarkeit modularisiert:
+
+- `cloud/utils/permissions.js` → `cloud/utils/permissions/{constants,checks,roles,audit}.js`
+- `cloud/functions/admin/fourEyes.js` → `cloud/functions/admin/fourEyes/{pending,withdraw,approve,reject,corrections,audit,notifications}.js`
+- `cloud/utils/configHelper/` ist als Modulordner organisiert (u. a. `defaultConfig.js`, `loadConfig.js`, `index.js`); `require('.../utils/configHelper')` lädt weiterhin den Barrel-Export.
+
+Hinweis: Externe Aufrufer bleiben kompatibel, da die bisherigen Entry-Dateien (`permissions.js`, `fourEyes.js`) weiterhin als Loader/Export-Surface bestehen. Bei `configHelper` ersetzt der Ordner die ehemalige Einzeldatei (Node lädt `index.js` automatisch).
 
 ### App (Swift)
 
@@ -35,8 +46,8 @@ Dieses Dokument beschreibt das Deployment der neuen 4-Augen-Konfigurationsverwal
 | `ConfigurationService.swift` | Neue Response-Modelle |
 | `ConfigurationService+Updates.swift` | 4-Augen für kritische Parameter |
 | `ConfigurationServiceProtocol.swift` | Neue Error-Cases |
-| `ConfigurationInputSections.swift` | PendingApprovalsSection |
-| `ConfigurationManagementView.swift` | Integration der PendingApprovalsSection |
+| `ConfigurationSettings/ConfigurationInputSections.swift` | PendingApprovalsSection |
+| `ConfigurationSettingsView.swift` | Integration der PendingApprovalsSection |
 
 ---
 
@@ -121,9 +132,9 @@ curl -k https://192.168.178.24/parse/classes/Configuration \
   -d '{
     "isActive": true,
     "traderCommissionRate": 0.10,
-    "platformServiceChargeRate": 0.02,
+    "appServiceChargeRate": 0.02,
     "minimumCashReserve": 20.0,
-    "initialAccountBalance": 1.0
+    "initialAccountBalance": 0.0
   }'
 ```
 
@@ -136,11 +147,12 @@ Die folgenden Parameter erfordern 4-Augen-Genehmigung:
 | Parameter | Beschreibung | Standardwert |
 |-----------|-------------|--------------|
 | `traderCommissionRate` | Trader Commission | 10% |
-| `platformServiceChargeRate` | Service Charge | 2% |
-| `initialAccountBalance` | Startguthaben | €1,00 |
+| `appServiceChargeRate` | Service Charge | 2% |
+| `initialAccountBalance` | Startguthaben (nur via Admin-Portal setzbar; ohne Eintrag/Default **€0,00**) | €0,00 |
 | `orderFeeRate` | Ordergebühr Rate | 0.5% |
 | `orderFeeMin` | Ordergebühr Min | €5.00 |
 | `orderFeeMax` | Ordergebühr Max | €50.00 |
+| `showDocumentReferenceLinksInAccountStatement` | Kontoauszug: tappbare Links zu Buchungsbelegen (App) | `true` |
 
 ---
 

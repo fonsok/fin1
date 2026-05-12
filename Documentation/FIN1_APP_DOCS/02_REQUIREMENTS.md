@@ -100,7 +100,7 @@ Wenn es nicht nur um “was soll das Produkt”, sondern um “was darf nicht ka
 
 ### D) Konto (Kontostand, Ein- und Auszahlungen)
 
-Der Nutzer hat ein **normales Konto** (kein separates Wallet-Feature). Kontostand und Ein-/Auszahlungen werden über dieses Konto abgewickelt.
+Der Nutzer hat ein **normales Konto** (kein separates Konto-Feature). Kontostand und Ein-/Auszahlungen werden über dieses Konto abgewickelt.
 
 - **US-D1 Kontostand sehen**
   Als Nutzer möchte ich meinen Kontostand sehen.

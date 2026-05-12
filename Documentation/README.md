@@ -8,6 +8,7 @@ Die Menge an `.md` Dateien in diesem Workspace ist sehr groß. Damit es nicht ve
 - **Kuratierte Gesamtdoku (“Current”)**: `Documentation/FIN1_APP_DOCS/00_INDEX.md`
 - **Snapshots/Tags Index**: `Documentation/SNAPSHOTS_INDEX.md`
 - **Deployment / rsync (kein `--delete` auf dem Server-Backend)**: `Documentation/DEPLOYMENT_RSYNC_SICHERHEIT.md`
+- **Deploy-Host-Klarheit (iobox, zwei IPs, Env-Variablen)**: `Documentation/OPERATIONAL_DEPLOY_HOSTS.md`
 - **Company-KYB (Firmen-Onboarding, Plan):** `Documentation/COMPANY_KYB_ONBOARDING.md`
 - **Return%-Contract Monitoring & Alerting:** `Documentation/RETURN_PERCENTAGE_MONITORING_AND_ALERTING.md`
 - **Return%-Incident SOP:** `Documentation/RETURN_PERCENTAGE_INCIDENT_SOP.md`

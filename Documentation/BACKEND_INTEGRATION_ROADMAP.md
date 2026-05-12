@@ -10,7 +10,7 @@
 | Phase | Services | Status |
 |-------|----------|--------|
 | **Phase 1** | Trade, Investment, Order, Pool Participation | ✅ Abgeschlossen |
-| **Phase 2** | Wallet, Documents, User Profile | ✅ Abgeschlossen |
+| **Phase 2** | Konto (Backend), Documents, User Profile | ✅ Abgeschlossen |
 | **Phase 3** | Securities Watchlist, Saved Filters, Push Tokens | ✅ Abgeschlossen |
 | **Phase 4** | Price Alerts, Investor Watchlist | ✅ Abgeschlossen |
 
@@ -108,7 +108,7 @@ Bei App-Background werden folgende Services parallel synchronisiert:
 | `Investment` | Investor-Investments | ✅ |
 | `Order` | Kauf-/Verkaufsaufträge | ✅ |
 | `PoolTradeParticipation` | Pool-Beteiligungen | ✅ |
-| `WalletTransaction` | Wallet-Transaktionen | ✅ |
+| *(Konto)* | Kontodaten (Konto-Feature deaktiviert) | — |
 | `Document` | Dokumente | ✅ |
 | `_User` | Benutzerprofile | ✅ (Parse built-in) |
 | `Watchlist` | Securities Watchlist | ✅ (erstellt 2026-02-05) |

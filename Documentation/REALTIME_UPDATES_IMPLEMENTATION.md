@@ -1,7 +1,7 @@
 # Real-time Updates Implementation
 
-**Datum**: Januar 2026  
-**Status**: Parse Live Query Client erstellt ✅, Wallet Updates integriert ✅
+**Datum**: Januar 2026
+**Status**: Parse Live Query Client erstellt ✅, Konto-Updates integriert ✅ (Konto-Feature deaktiviert)
 
 ---
 
@@ -23,10 +23,10 @@
 - `LiveQuerySubscription` - Subscription-Management
 - NotificationCenter für Event-Distribution
 
-### 2. Wallet Live Updates integriert ✅
+### 2. Konto Live Updates integriert ✅ (Konto-Feature deaktiviert)
 
-**WalletViewModel erweitert:**
-- `subscribeToLiveUpdates()` - Abonniert WalletTransaction Updates
+**Konto-ViewModel erweitert:**
+- `subscribeToLiveUpdates()` - Abonniert Konto-Transaktions-Updates
 - Automatisches Reload bei Live-Updates
 - NotificationCenter-Observer für Parse Live Query Events
 
@@ -91,7 +91,7 @@
   "op": "subscribe",
   "requestId": "subscription-id",
   "query": {
-    "className": "WalletTransaction",
+    "className": "WalletTransaction",  // Backend-Klasse; Konto-Feature deaktiviert
     "where": {
       "userId": "user-id"
     }
@@ -104,7 +104,7 @@
 {
   "op": "update",
   "object": {
-    "className": "WalletTransaction",
+    "className": "WalletTransaction",  // Backend-Klasse; Konto-Feature deaktiviert
     "objectId": "transaction-id",
     "userId": "user-id",
     "amount": 100.0,

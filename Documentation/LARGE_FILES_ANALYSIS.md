@@ -1,6 +1,6 @@
 # Analyse: Zu große Script-/Code-Dateien (Backend & FIN1 App)
 
-**Stand:** 2026-02-26
+**Stand:** 2026-03-19
 **Kontext:** Cursor Rules (architecture.md) – File Size Limits: Models ≤200, Views ≤300, ViewModels/Services ≤400, Protocols ≤100.
 
 ---
@@ -11,18 +11,20 @@
 
 | Datei | Zeilen | Empfehlung |
 |-------|--------|------------|
-| `backend/parse-server/cloud/functions/admin.js` | **~35** (Loader) | **Erledigt:** Aufgeteilt in `admin/` (helpers, dashboard, users, compliance, fourEyes, financial, security, permissions, userManagement, devHelpers, system, reports, onboarding). |
+| `backend/parse-server/cloud/functions/admin.js` | **~35** (Loader) | **Erledigt:** Aufgeteilt in `admin/` (helpers, dashboard, users, compliance, fourEyes, financial, security, permissions, `usersAdminAccounts.js` + `usersAdmin*.js` Handler, devHelpers, system, reports, onboarding). |
 | `backend/parse-server/cloud/functions/seed.js` | **~17** (Loader) | **Erledigt:** Aufgeteilt in `seed/` (tickets, compliance, csrTemplates, faq, all, csrPermissions). |
 | `backend/parse-server/cloud/functions/support.js` | **~17** (Loader) | **Erledigt:** Aufgeteilt in `support/` (customers, tickets, csrPermissions). |
-| `backend/parse-server/cloud/functions/user.js` | **~18** (Loader) | **Erledigt:** Aufgeteilt in `user/` (verificationEmail, verificationPhone, profile, onboarding, faq, faqAdmin). |
+| `backend/parse-server/cloud/functions/user.js` | **~18** (Loader) | **Erledigt:** Aufgeteilt in `user/` (verificationEmail, verificationPhone, profile, onboarding, faq, faqAdmin/ (crud, importExport, migrate)). |
 
-### Moderat (500–800 Zeilen)
+### Moderat (historisch 500–800 Zeilen)
 
 | Datei | Zeilen | Empfehlung |
 |-------|--------|------------|
 | `backend/parse-server/cloud/functions/templates.js` | 606 | Optional: Handlers in Untermodule. |
-| `backend/parse-server/cloud/functions/configuration.js` | 566 | Überschaubar; bei Wachstum nach Lesen/Schreiben/Validierung trennen. |
-| `backend/parse-server/cloud/utils/permissions.js` | 529 | Bei weiterem Wachstum: Rollen-Checks vs. Hilfsfunktionen trennen. |
+| `backend/parse-server/cloud/functions/configuration.js` | 566 | **Erledigt:** Als Loader mit Modulen unter `functions/configuration/` aufgeteilt. |
+| `backend/parse-server/cloud/utils/permissions.js` | 529 | **Erledigt:** Als Loader mit Modulen unter `utils/permissions/` aufgeteilt. |
+| `backend/parse-server/cloud/utils/accountingHelper.js` | 497 | **Erledigt:** Als Loader mit Modulen unter `utils/accountingHelper/` aufgeteilt. |
+| `backend/parse-server/cloud/functions/admin/fourEyes.js` | 459 | **Erledigt:** Als Loader mit Modulen unter `functions/admin/fourEyes/` aufgeteilt. |
 
 **Vorteil Aufteilung Backend:** Bessere Wartbarkeit, kleinere Merge-Konflikte, klarere Verantwortlichkeiten, einfacheres Testen einzelner Bereiche. Kein negativer Runtime-Effekt (Node lädt Module einmal).
 
@@ -56,7 +58,7 @@
 
 | Datei | Zeilen | Limit | Empfehlung |
 |-------|--------|-------|------------|
-| `WalletView.swift` | **~139** (war 668) | 300 | **Erledigt:** Subviews in `Wallet/` (WalletBalanceCard, WalletQuickActionsSection, WalletRecentTransactionsSection, WalletDepositSheet, WalletWithdrawalSheet, WalletTransactionRow). |
+| *Konto-Views* (Konto-Feature deaktiviert) | — | — | Nutzer hat normales Konto; Wallet-UI nicht aktiv. |
 | `CustomerDetailSheet.swift` | **~88** (war 567) | 300 | **Erledigt:** Sections in `CustomerDetail/` (Header, KYCSection, ContactSection, InvestmentsSection, TradesSection, DocumentsSection, TicketsSection, ActionsSection). |
 | `FourEyesApprovalQueueView.swift` | **~66** (war 559) | 300 | **Erledigt:** Sections in `FourEyesApproval/` (StatsSection, FilterSection, RequestsSection, ApprovalRequestCard, ApprovalDetailSheet, HelperViews). |
 | `CannedResponsePicker.swift` | **~275** (war 546) | 300 | **Erledigt:** Subviews in `CannedResponse/` (CategoryChip, CannedResponseCard, BackendTemplateCard, PickerSearchBar). |
@@ -82,7 +84,7 @@
 2. **Backend:** `seed.js` und `support.js` – bei nächsten Touchen schrittweise in Domains/Stages aufteilen.
 3. **FIN1:** `ParseAPIClient.swift` – zentral für alle Backend-Calls; Protocol + Models abtrennen, dann Implementation in Extensions.
 4. **FIN1:** `SignUpCoordinator.swift` – wichtig für Onboarding; Schritt-/Verification-Logik auslagern.
-5. **FIN1:** Große Views (WalletView, CustomerDetailSheet, …) – bei Änderungen Subviews extrahieren.
+5. **FIN1:** Große Views (CustomerDetailSheet, …) – bei Änderungen Subviews extrahieren.
 
 ---
 
@@ -97,11 +99,11 @@
   - `financial.js` – getFinancialDashboard, getRoundingDifferences, createCorrectionRequest, getCorrectionRequests
   - `security.js` – getSecurityDashboard, getLoginHistory, terminateUserSession, forcePasswordReset
   - `permissions.js` – getMyPermissions, getAdminRoles
-  - `userManagement.js` – getTestUserDetails, resetDevUserPassword, createTestUsers, createAdminUser, createCSRUser
+  - `usersAdminAccounts.js` (Loader) – registriert: `unlockParseAccountLockout`, `resetPortalUserCredentialsMaster`, `getTestUserDetails`, `resetDevUserPassword`, `createTestUsers`, `createAdminUser`, `createCSRUser`. Implementierung: `usersAdminAccountLockout.js`, `usersAdminPortalCredentialsMaster.js`, `usersAdminGetTestUserDetails.js`, `usersAdminResetDevUserPassword.js`, `usersAdminCreateTestUsers.js`, `usersAdminCreateAdminUser.js`, `usersAdminCreateCsrUser.js`.
   - `devHelpers.js` – getTradesWithInvestors, createTestPoolParticipations, initializeNewSchemas
   - `system.js` – getSystemHealth
   - `reports.js` – getSummaryReport, getBankContraLedger
   - `onboarding.js` – getOnboardingFunnel
 - Die Datei `admin.js` ist nun ein schlanker Loader (~35 Zeilen); `main.js` bleibt unverändert mit `require('./functions/admin')`.
 
-**Nächste Schritte:** Gleiches Muster für `seed.js` und `support.js` anwenden, wenn dort gearbeitet wird.
+**Nächste Schritte:** Nächste großen Backend-Dateien >300 LOC priorisieren (z. B. weitere `utils/` oder `functions/` Brocken). `triggers/invoice/` mit `index.js`, `invoiceOrderFeePosting.js`, `invoiceServiceChargePosting.js`, `invoiceTrigger*.js` (Loader unverändert `require('./triggers/invoice')` in `main.js`). `triggers/user/` mit `index.js` und `userTrigger*.js`. `twoFactor` unter `functions/twoFactor/`. `utils/configHelper` mit Barrel (`index.js`).

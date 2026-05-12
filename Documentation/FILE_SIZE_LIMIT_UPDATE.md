@@ -52,7 +52,7 @@ Some files currently exceed the 400-line limit. These should be refactored:
 - `TradeStatementDisplayDataBuilder.swift` (409 lines)
 - `MockDataGenerator.swift` (431 lines)
 - `UnifiedOrderService.swift` (401 lines)
-- `ConfigurationManagementView.swift` (443 lines)
+- `ConfigurationSettingsView.swift` (443 lines)
 - `InvestmentsViewModel.swift` (408 lines)
 - `Investment.swift` (422 lines)
 - `CompletedInvestmentsTable.swift` (461 lines)

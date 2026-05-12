@@ -97,12 +97,12 @@
 - DashboardStatsViewModel reagiert auf:
   - `.investorBalanceDidChange` - Investor Balance Updates
   - `.traderBalanceDidChange` - Trader Balance Updates
-  - `.walletTransactionCompleted` - Wallet Transaction Updates
+  - `.walletTransactionCompleted` - Konto-Transaktions-Updates
   - `.parseLiveQueryObjectUpdated` - Parse Live Query Updates für WalletTransactions
 - AccountStatementViewModel reagiert auf:
   - `.investorBalanceDidChange` - Investor Balance Updates
   - `.traderBalanceDidChange` - Trader Balance Updates
-  - `.walletTransactionCompleted` - Wallet Transaction Updates
+  - `.walletTransactionCompleted` - Konto-Transaktions-Updates
   - `.parseLiveQueryObjectUpdated` - Parse Live Query Updates für WalletTransactions
 - Automatisches Refresh der Balance-Daten bei Live-Updates
 - Role-basierte Updates (Investor vs Trader)

@@ -15,7 +15,7 @@
   - `FIN1UITests` (UI smoke tests)
 
 ## Follow‑up
-- When re‑introducing platform‑wide regression tests, create a new target that uses the modern DI setup and current domain models instead of reviving `FIN1Tests`.
+- When re‑introducing app‑wide regression tests, create a new target that uses the modern DI setup and current domain models instead of reviving `FIN1Tests`.
 
 
 

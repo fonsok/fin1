@@ -1,6 +1,6 @@
 # FIN1 Admin-Web-Portal: Dokumentation
 
-> **Datum:** 2026-04-04 (**Benutzer-Detailseite**: Trading-/Investment-Übersicht und Kontoauszug ausführlich dokumentiert; zuvor Payload/`getUserDetails`; 2026-04-03 Freigaben: Typ-Filter, Listen-Sortierung / Parse-Datum / Deploy-Check in §5; 2026-04-01 Hilfe & Anleitung; 2026-03-28 KYB-Status CSR, Vitest/ESLint/CI, `getCompanyKyb*`)
+> **Datum:** 2026-05-02 (Ergänzung: **System**-Seite Health/Smoke, **App Ledger** Summen/User-Filter; siehe unten „Stand 2026-05“) · zuvor 2026-04-15 (**Legal Branding / `{{APP_NAME}}`**: kanonische Pflege unter **Konfiguration → Systemparameter** (`legalAppName`, 4‑Augen); AGB & Rechtstexte nur Hinweis/Link; `updateLegalBranding` deprecated) (**vorher 2026-04-04:** Benutzer-Detailseite: Trading-/Investment-Übersicht und Kontoauszug ausführlich dokumentiert; zuvor Payload/`getUserDetails`; 2026-04-03 Freigaben: Typ-Filter, Listen-Sortierung / Parse-Datum / Deploy-Check in §5; 2026-04-01 Hilfe & Anleitung; 2026-03-28 KYB-Status CSR, Vitest/ESLint/CI, `getCompanyKyb*`)
 > **Status:** MVP Implementiert ✅
 > **URL:** `https://192.168.178.24/admin/`
 
@@ -59,6 +59,13 @@ Ein web-basiertes Administrations-Portal für FIN1, das rollen-basierte Zugriffs
 | Ticket-Liste | ✅ | Filter nach Status, Priorität |
 | 2FA-Flow | ✅ | Verification bei Login |
 
+### Stand 2026-05: System, App Ledger, Konfiguration (Wallet)
+
+- **System / Status & Wartung:** Seite **System** (`admin-portal/src/pages/System/`): `getSystemHealth` mit klarer Semantik bei Ladefehlern (`unknown` vs. bestätigter Ausfall), Retries nach Reboot; Karten **Settlement-Konsistenz** (`getTradeSettlementConsistencyStatus`) und **Finance Consistency Smoke** (`runFinanceConsistencySmoke`). DEV-Wartung (Reset Trading/Investments, Duplicate-Splits) ausgelagert in Subkomponenten.
+- **App Ledger:** Übersichtskarten-**Summen** und **Gesamtanzahl** serverseitig aggregiert (nicht nur aktuelle Seite). **User-ID-Filter:** bei nicht-ObjectId-ähnlicher Eingabe kein striktes `equalTo(userId)`; stattdessen breitere Abfrage + serverseitiger **Fuzzy**-Match (E-Mail, Username, …). CSV enthält u. a. Business-Referenz / Gegenkonto-Hinweise je nach Backend-Version.
+- **Konfiguration / Wallet:** Stufenweise **Wallet-Action-Modes** (global, Rollen, Kontotyp, nutzerbezogen + 4-Augen) ersetzen/ergänzen einfaches Ein/Aus; Admin-Portal-Konfiguration + 4-Augen-Freigaben wie in Cloud Code `wallet.js` / `fourEyes`.
+- **ADR:** [`Documentation/ADR-012-Partial-Sell-Metrics-Finance-Smoke-And-Ops.md`](../ADR-012-Partial-Sell-Metrics-Finance-Smoke-And-Ops.md) (Teil-Sell-Kennzahlen iOS, Smoke-Endpoints, System-Health, Ledger-Totals).
+
 ### Benutzer-Detailseite (`/users/:userId`)
 
 **Route:** `userId` = Parse **`objectId`** des `_User` (Link aus der Benutzerliste).
@@ -70,7 +77,7 @@ Ein web-basiertes Administrations-Portal für FIN1, das rollen-basierte Zugriffs
 | Bereich | Quelle / Logik | Anzeige im Portal |
 |--------|----------------|-------------------|
 | Stammdaten | `_User`, `UserProfile`, primäre `UserAddress` | Karten **Benutzerdaten** und **Adresse & Status** (u. a. Kunden-ID, Anrede, Name, E-Mail, Telefon, Geburtsdatum, Rolle, Adresse, Nationalität, Account-Status, KYC-Status, Registrierung, letzter Login) |
-| Kontostand (Saldo) | Parse-Klasse **`Wallet`** (falls Datensatz existiert) | Karte **Kontostand** (Saldo, Währung, letzte Aktualisierung). *Hinweis:* Produktseitig kein Crypto-Wallet-Feature; es handelt sich um **Konto-/Saldoanzeige** auf Basis der gespeicherten Wallet-Entität. |
+| Kontostand (Saldo) | Parse-Klasse **`Wallet`** (falls Datensatz existiert) | Karte **Kontostand** (Saldo, Währung, letzte Aktualisierung). *Hinweis:* Produktseitig kein Crypto-Konto-Feature; es handelt sich um **Konto-/Saldoanzeige** auf Basis der gespeicherten Wallet-Entität. |
 | Trader | `Trade` zu `traderId` = `user:<email>`, `PoolTradeParticipation` | Karte **Trading-Übersicht** (KPIs), Liste **Letzte Trades** mit Investoren-Zuordnung (`UserTradeCard`) |
 | Investor | `Investment` zu `investorId` = `objectId` **oder** `user:<email>` | Karte **Investment-Übersicht** (KPIs inkl. reserviert/aktiv/abgeschlossen), Tabellen **Ongoing** / **Completed** (`InvestmentTable`) |
 | Kontoauszug | `AccountStatement` mit `userId` = **`user:<email>`** (stableId), Anfangssaldo aus **`loadConfig`/ aktiver `Configuration`-Zeile** (`initialAccountBalance`; ohne Konfiguration **0 €**) | Karte **Cash Balance & Kontoauszug** bzw. **Account Balance & Kontoauszug** (`AccountStatementCard`): siehe Unterabschnitt **Kontoauszug** unten |
@@ -515,6 +522,12 @@ Das CSR Web Panel ist ein eigenständiges Portal für Kundenservice-Mitarbeiter 
 - **Suchfunktion im Editor:** Beim Anlegen einer neuen Version (Klonen) kann im Editor nach Abschnitten gesucht werden (Titel, Inhalt, ID); die Abschnittsliste wird gefiltert, ohne die Reihenfolge oder Daten zu ändern.
 - **Änderungen zur Vorgängerversion:** Beim Aufklappen einer Version erscheint der Bereich „Änderungen zur Vorgängerversion“. Über **„Änderungen anzeigen“** wird die unmittelbar vorherige Version geladen und ein Vergleich angezeigt (hinzugefügte, entfernte, geänderte Abschnitte) – ohne manuelles Durchsuchen der Vorgängerversion.
 - **Development Maintenance:** Gelbe Karte — `devResetLegalDocumentsBaseline` (Dry‑Run, dann bestätigter Lauf). Hard‑Deletes nur mit **`ALLOW_LEGAL_HARD_DELETE`** (+ in Production **`ALLOW_LEGAL_HARD_DELETE_IN_PRODUCTION`**). Hover‑Texte der Export/Import‑Buttons erläutern Umfang und Ablauf.
+- **Legal Branding (`{{APP_NAME}}`)**: kein direktes Editieren mehr auf dieser Seite; stattdessen Deep‑Link zu **Konfiguration** (`/configuration`) und Pflege als **`legalAppName`** (4‑Augen). Serverseitig ist `updateLegalBranding` deprecated/blockiert.
+- **Import-Button-Policy (Best Practice):**
+  - **`Import (Restore)`** nur für vollständige Backups (globaler Restore mit Archivierung/Deaktivierung bestehender Versionen).
+  - **`Import active (as new)`** für Release/Migration einzelner Dokumentgruppen (z. B. nur Terms DE+EN als neue Versionen).
+- **Limit-Warnungen im UI:** Bei Export/Restore/Active-Import werden serverseitige `warnings` im Dialog angezeigt (z. B. wenn ein Server-Limit erreicht wurde).
+- **Namens-Sache:** Rechtstexte sollen `{{APP_NAME}}` verwenden; die Anzeige wird aus `legalAppName` hydratisiert. Feste Literale wie `bbb` sind als Altbestand zu behandeln und per neuer Version zu bereinigen.
 
 ### 10.3 Textbausteine (Ticket-Erstellung)
 
@@ -809,6 +822,62 @@ curl -k -X POST "https://192.168.178.24/parse/functions/forceReseedCSRPermission
 
 ## 14. UI Design & Style Guide – Admin Content Area
 
+---
+
+## 15. Doku-Checkpoint 2026-04-15: Steuerparameter-Hardening
+
+### 15.1 Was wurde geändert
+
+- Im Bereich **Konfiguration → Steuerparameter** werden standardmäßig nur zwei Parameter gezeigt:
+  1. `Umsatzsteuer (MwSt.)`
+  2. `Abgeltungsteuer` (Dropdown: `Kunde führt selbst ab` / `Plattform führt automatisch ab`)
+- Die Detailwerte werden nur bei `Plattform führt automatisch ab` angezeigt:
+  - `Abgeltungsteuersatz`
+  - `Solidaritätszuschlag`
+  - `Kirchensteuer` (automatisch aus Profil/Region abgeleitet, nicht als freier Satz konfigurierbar)
+- Reihenfolge wurde fest auf **Umsatzsteuer vor Abgeltungsteuer** gesetzt.
+- Bei ausstehender 4-Augen-Anfrage für `taxCollectionMode` ist der Dropdown gesperrt (konsistent mit anderen kritischen Parametern).
+
+### 15.2 Warum
+
+- Reduzierte Komplexität im Admin-UI (nur zentrale Steuerhebel sichtbar, Details bedingt).
+- Klarere Governance im 4-Augen-Prozess.
+- Vermeidung von Missverständnissen zwischen UI-Default und aktiv gespeichertem Konfigurationswert.
+
+### 15.3 Source of Truth / Invarianten
+
+- **Backend `Configuration.tax.taxCollectionMode` ist führend** (persistierter Live-Wert).
+- UI-Defaults sind nur Fallback bei fehlendem/invalidem Payload.
+- Zulässige Enum-Werte:
+  - `customer_self_reports`
+  - `platform_withholds`
+- Unzulässige Werte werden fail-safe auf `customer_self_reports` normalisiert.
+
+### 15.4 Mini-Testplan
+
+1. Steuerparameter öffnen: `Umsatzsteuer` steht oberhalb `Abgeltungsteuer`.
+2. Default `Kunde führt selbst ab`: Detailsteuern nicht sichtbar.
+3. Auf `Plattform führt automatisch ab` wechseln: Detailsteuern sichtbar.
+4. Ausstehende Änderung für `taxCollectionMode` erzeugen: Dropdown ist deaktiviert.
+5. Seite neu laden: persistierter Modus bleibt sichtbar (kein Rückfall auf falschen UI-Default).
+
+## 16. Doku-Checkpoint 2026-04-15: Legal Branding → Konfiguration
+
+### 16.1 Zielbild
+
+- **`{{APP_NAME}}` / Legal Branding** ist **kein** primärer Edit-Pfad mehr unter **AGB & Rechtstexte**.
+- Stattdessen ist **`legalAppName`** ein **kritischer Konfigurationsparameter** (4‑Augen) unter **Konfiguration → Systemparameter**.
+
+### 16.2 UX / Navigation
+
+- **AGB & Rechtstexte:** Hinweis-Karte + Link nach `/configuration`.
+- **Konfiguration:** zusätzliche Karte **Systemparameter** mit `App Name` (`legalAppName`).
+
+### 16.3 Governance / Bypass-Schutz
+
+- Cloud Function **`updateLegalBranding`** ist **deprecated** und wird serverseitig mit klarer Fehlermeldung blockiert.
+- Kanonischer Write-Path bleibt **`requestConfigurationChange` → `approveConfigurationChange`**.
+
 ### 14.1 Layout-Übersicht
 
 - **Grundlayout**: Zweispaltiges Layout mit fixer Sidebar links (ca. 260 px Breite) und einem flexiblen Content-Bereich rechts (`.admin-container`, `.sidebar`, `.main-content`).
@@ -908,4 +977,4 @@ curl -k -X POST "https://192.168.178.24/parse/functions/forceReseedCSRPermission
 ---
 
 *Erstellt: 2026-02-02*
-*Letzte Änderung: 2026-04-03*
+*Letzte Änderung: 2026-04-15*

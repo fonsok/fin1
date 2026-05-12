@@ -14,23 +14,23 @@
 let snapshot = TraderAccountStatementBuilder.buildSnapshot(...)
 var balance = snapshot.closingBalance
 let walletTransactions = try await paymentService.getTransactionHistory(...)
-let walletDelta = walletTransactions.reduce(...) { ... }
-accountBalance = balance + walletDelta
+let kontoDelta = walletTransactions.reduce(...) { ... }
+accountBalance = balance + kontoDelta
 ```
 
 #### 2. **AccountStatementViewModel.buildTraderStatement()** (Zeile 148-180)
 ```swift
 let snapshot = TraderAccountStatementBuilder.buildSnapshot(...)
 let walletTransactions = try await paymentService.getTransactionHistory(...)
-let walletEntries = walletTransactions.map { ... }
-let allEntries = snapshot.entries + walletEntries
-currentBalance = snapshot.closingBalance  // ⚠️ FEHLER: Berücksichtigt Wallet nicht!
+let kontoEntries = walletTransactions.map { ... }
+let allEntries = snapshot.entries + kontoEntries
+currentBalance = snapshot.closingBalance  // ⚠️ FEHLER: Berücksichtigt Konto nicht!
 ```
 
-#### 3. **WalletViewModel.getUserSpecificBalance()** (Zeile 121-130)
+#### 3. **WalletViewModel.getUserSpecificBalance()** (Konto; Feature deaktiviert) (Zeile 121-130)
 ```swift
 let snapshot = TraderAccountStatementBuilder.buildSnapshot(...)
-return snapshot.closingBalance  // ⚠️ FEHLER: Berücksichtigt Wallet nicht!
+return snapshot.closingBalance  // ⚠️ FEHLER: Berücksichtigt Konto nicht!
 ```
 
 ---
@@ -39,17 +39,17 @@ return snapshot.closingBalance  // ⚠️ FEHLER: Berücksichtigt Wallet nicht!
 
 ### 1. **Wiederholte Balance-Berechnung**
 - **3x** `TraderAccountStatementBuilder.buildSnapshot()` Aufruf
-- **2x** Wallet-Transaktionen laden (`paymentService.getTransactionHistory()`)
+- **2x** Konto-Transaktionen laden (`paymentService.getTransactionHistory()`)
 - **3x** Balance-Berechnung (aber unterschiedlich implementiert!)
 
 ### 2. **Inkonsistente Implementierung**
-- **DashboardStatsViewModel**: ✅ Berechnet korrekt (Trading + Wallet)
-- **AccountStatementViewModel**: ❌ Berechnet falsch (nur Trading, ignoriert Wallet)
-- **WalletViewModel**: ❌ Berechnet falsch (nur Trading, ignoriert Wallet)
+- **DashboardStatsViewModel**: ✅ Berechnet korrekt (Trading + Konto)
+- **AccountStatementViewModel**: ❌ Berechnet falsch (nur Trading, ignoriert Konto)
+- **KontoViewModel**: ❌ Berechnet falsch (nur Trading, ignoriert Konto)
 
 ### 3. **Code-Duplikation**
-- Wallet-Transaktionen laden: 2x identisch
-- Wallet-Delta berechnen: 1x (nur in DashboardStatsViewModel)
+- Konto-Transaktionen laden: 2x identisch
+- Konto-Delta berechnen: 1x (nur in DashboardStatsViewModel)
 - Balance kombinieren: 3x unterschiedlich
 
 ---
@@ -95,11 +95,11 @@ static func buildSnapshotWithWallet(
     if let paymentService = paymentService,
        let userId = user?.id {
         let walletTransactions = try? await paymentService.getTransactionHistory(...)
-        let walletDelta = walletTransactions?.reduce(...) ?? 0.0
+        let kontoDelta = walletTransactions?.reduce(...) ?? 0.0
         return TraderAccountStatementSnapshot(
-            entries: snapshot.entries + walletEntries,
+            entries: snapshot.entries + kontoEntries,
             openingBalance: snapshot.openingBalance,
-            closingBalance: snapshot.closingBalance + walletDelta
+            closingBalance: snapshot.closingBalance + kontoDelta
         )
     }
 
@@ -171,15 +171,15 @@ protocol TraderBalanceServiceProtocol {
 
 1. **Erweitere TraderAccountStatementBuilder**
    - Neue Methode `buildSnapshotWithWallet(...)`
-   - Berücksichtigt Wallet-Transaktionen
+   - Berücksichtigt Konto-Transaktionen
 
 2. **Aktualisiere ViewModels**
    - `DashboardStatsViewModel`: Verwendet `buildSnapshotWithWallet()`
    - `AccountStatementViewModel`: Verwendet `buildSnapshotWithWallet()`
-   - `WalletViewModel`: Verwendet `buildSnapshotWithWallet()`
+   - `WalletViewModel` (Konto; Feature deaktiviert): Verwendet `buildSnapshotWithWallet()`
 
 3. **Entferne Duplikation**
-   - Entferne wiederholte Wallet-Loading-Logik
+   - Entferne wiederholte Konto-Loading-Logik
    - Entferne wiederholte Balance-Berechnung
 
 ---

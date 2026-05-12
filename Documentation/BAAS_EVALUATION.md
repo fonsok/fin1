@@ -195,6 +195,13 @@ For a smaller FIN1 with limited budget (<€50K setup, <€2K/month), consider t
 
 ---
 
+
+
+
+
+
+
+
 ### Option B: Payment Aggregator Model (Simplest)
 
 **Architecture:**
@@ -293,6 +300,18 @@ Custodian executes transfer (SEPA, wire, etc.)
 **Recommendation:** For Option B (Payment Aggregator), if FIN1 plans to hold funds for >30 days or aggregate >€50K, use escrow + custodian to avoid BaFin licensing requirements. For shorter holding periods (<7 days), direct holding may be acceptable with proper legal structure (consult counsel).
 
 ---
+
+
+
+
+
+
+
+
+
+
+
+
 
 ### Option C: Hybrid Approach (Start Simple, Scale Up)
 

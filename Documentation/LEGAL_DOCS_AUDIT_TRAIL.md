@@ -59,7 +59,7 @@ Zusätzlich zu den Haupt-Abschnitten der AGB können in der aktiven **TermsConte
 | `doc_legal_note_wphg` | Dokumente: Rechtlicher Hinweis (WpHG/WpDVerOV) | – |
 | `doc_tax_note_service_charge` | Rechnungen: Servicegebühr, Steuerhinweis | `{{VAT_RATE}}` |
 | `riskclass7_max_loss_warning` | Onboarding: RiskClass7-Bestätigung – Totalverlustrisiko | – |
-| `riskclass7_experienced_only` | Onboarding: RiskClass7-Bestätigung – nur für erfahrene Anleger | – |
+| `riskclass7_experienced_only` | Onboarding: RiskClass7-Bestätigung – nur für erfahrene Investoren | – |
 | `doc_collection_bill_reference_info` | Collection Bill (Trader): Referenztext zum Steuerabzug / Differenzbetrag | – |
 | `doc_collection_bill_legal_disclaimer` | Collection Bill (Trader): Rechtlicher Hinweis zu Abrechnung, Einspruch, Knock-out etc. | – |
 | `doc_collection_bill_footer_note` | Collection Bill (Trader): Hinweis „maschinell erstellt, nicht unterschrieben“ / Kontakt Fin1-Service-Team | – |
@@ -105,7 +105,8 @@ Bundled Fallback (iOS):
 
 **Wo setzen?**
 - Ubuntu / Docker (Prod): Datei `backend/.env` (wird via `docker-compose.production.yml` als `env_file` in den `parse-server` Container geladen).
-- Nach Änderung: `docker compose -f docker-compose.production.yml restart parse-server`
+- Nach Änderung: Container neu erstellen, damit `env_file` sicher neu eingelesen wird:
+  - `docker compose -f docker-compose.production.yml up -d --force-recreate --no-deps parse-server`
 
 **Wichtig (Audit):**
 - Diese Werte dürfen sich inhaltlich ändern, aber dann muss das über eine **neue** `TermsContent` Version passieren (append-only), z.B. via `scripts/clone_termscontent_version_parse.py`.
@@ -113,7 +114,8 @@ Bundled Fallback (iOS):
 
 **Verfügbare Keys (mit Defaults):**
 - `FIN1_LEGAL_COMMISSION_RATE_PERCENT` (z.B. `10`)
-- `FIN1_LEGAL_PLATFORM_NAME` (z.B. `FIN1`)
+- `FIN1_LEGAL_APP_NAME` (Fallback, wenn kein DB‑Branding gesetzt ist)
+- `FIN1_LEGAL_PLATFORM_NAME` (Legacy/Fallback)
 - `FIN1_LEGAL_COMPANY_LEGAL_NAME` (z.B. `FIN1 Investing GmbH`)
 - `FIN1_LEGAL_COMPANY_ADDRESS`
 - `FIN1_LEGAL_COMPANY_CITY`
@@ -127,6 +129,43 @@ Bundled Fallback (iOS):
 - `FIN1_LEGAL_COMPANY_EMAIL`
 - `FIN1_LEGAL_COMPANY_PHONE`
 - `FIN1_LEGAL_COMPANY_WEBSITE`
+
+### DB‑Branding (Source of Truth)
+
+Für Platzhalter‑Auflösung (z.B. `{{APP_NAME}}`) werden Branding‑Werte bevorzugt aus der Parse‑Klasse `Configuration` geladen (DB‑basiert). ENV‑Keys dienen als Fallback.
+
+**Admin‑Governance (kanonisch):** Der App‑Name wird als `Configuration.legalAppName` gepflegt und erscheint in `loadConfig()` als `legal.appName`. Änderungen laufen über `requestConfigurationChange` mit `parameterName: "legalAppName"` (4‑Augen). `updateLegalBranding` ist deprecated/serverseitig blockiert, um Bypass der Freigabe zu verhindern.
+
+**Namens-Sache (wichtig):**
+- In Rechtstexten keinen festen Literalnamen wie `bbb` pflegen, sondern Platzhalter **`{{APP_NAME}}`** nutzen.
+- Quelle für `{{APP_NAME}}` ist `legalAppName` (Konfiguration), nicht eine lokale Textsuche/Ersetzung im Frontend.
+- Wenn Alttexte noch `bbb` enthalten: neue Version anlegen (append-only) und auf Platzhalter umstellen.
+
+### Admin: Backup/Restore & Active‑Only Export/Import
+
+Neben der klassischen Versionierung (Klonen/Neue Version anlegen/aktiv setzen) existieren Admin‑Funktionen für Backup/Restore und Release‑Workflows:
+
+- **Full Backup/Restore** (für Migration/Notfall‑Restore)
+- **Active‑Only Export/Import** (für “nur aktive” Inhalte, optional gefiltert)
+
+Die Funktionen erzeugen neue Datensätze (append‑only) und deaktivieren/archivieren bestehende Inhalte, statt Historie zu überschreiben.
+
+**Sicherheits-/Governance-Stand (2026-04):**
+- `importActiveLegalDocumentsBackup` ist wie die übrigen Legal-Admin-Funktionen nur mit **Admin-Session + `manageTemplates`** nutzbar.
+- Export-Funktionen liefern bei erreichter Server-Obergrenze ein Feld **`warnings`** (Hinweis auf potenziell unvollständigen Export).
+- Restore liefert ebenfalls `warnings`, z. B. wenn das Archivierungs-Scan-Limit erreicht wurde.
+- Die post-restore Konfliktbereinigung (mehrere aktive Versionen) ist paginiert und nicht mehr auf 1000 Datensätze gedeckelt.
+
+### DEV‑Only Hard Delete (guardrailed)
+
+Für Entwicklungsphasen kann ein kontrollierter Hard‑Delete für **inaktive** Legal‑Dokumente erlaubt werden (z.B. DEV Reset Baseline).
+
+**Guardrails:**
+- `ALLOW_LEGAL_HARD_DELETE=true`
+- `NODE_ENV != production` **oder** zusätzlich `ALLOW_LEGAL_HARD_DELETE_IN_PRODUCTION=true`
+- Delete nur mit explizitem Request‑Context (`allowLegalHardDelete`) und nur für `isActive=false`
+
+**Hilfe & Anleitung (FAQ), analog guardrailed:** Hard‑Deletes und der DEV‑Baseline‑Reset `devResetFAQsBaseline` erfordern **`ALLOW_FAQ_HARD_DELETE=true`**; bei `NODE_ENV=production` zusätzlich **`ALLOW_FAQ_HARD_DELETE_IN_PRODUCTION=true`**. Delete‑Schutz: `cloud/triggers/faq.js`; Seed nutzt `allowFaqSeedDelete`. Siehe `Documentation/FIN1_APP_DOCS/06A_BACKEND_UBUNTU_IOBOX_RUNBOOK.md` § 8.4.
 
 #### 2) `LegalDocumentDeliveryLog` (append‑only)
 
@@ -221,7 +260,7 @@ Egal wie eine neue Version entsteht (Admin-Portal, Script, Dashboard, direkte AP
 - **`legal_document_deactivated`** — wenn eine alte Version deaktiviert wird (`isActive: true → false`)
 
 #### 2) Config-Reconciliation beim Server-Start
-Bei jedem Neustart des Parse Servers wird automatisch geprüft, ob die **Code-Defaults** (`configHelper.js`) von den **DB-Werten** (`Configuration`-Klasse) abweichen. Bei Drift wird ein `AuditLog` mit `action: config_defaults_reconciliation` + allen Abweichungen geschrieben. Auch manuell aufrufbar via `reconcileConfigDefaults`.
+Bei jedem Neustart des Parse Servers wird automatisch geprüft, ob die **Code-Defaults** (`cloud/utils/configHelper`, `DEFAULT_CONFIG`) von den **DB-Werten** (`Configuration`-Klasse) abweichen. Bei Drift wird ein `AuditLog` mit `action: config_defaults_reconciliation` + allen Abweichungen geschrieben. Auch manuell aufrufbar via `reconcileConfigDefaults`.
 
 #### 3) Löschschutz (Aufbewahrungspflicht)
 Folgende Parse-Klassen sind durch `beforeDelete`-Trigger vor Löschung geschützt:

@@ -3,7 +3,7 @@
 ## Kurzfassung
 
 - **Implementierung „2 % konfigurierbar“:** Die **Funktion ist Code** (Swift, Admin-Portal, Backend) und liegt im Repo bzw. auf dem Server. Sie ist **nicht** in der Datenbank gespeichert und daher **nicht verloren**. Nach einem DB-Reset nutzt die App weiterhin den Code; nur der **gespeicherte Wert** (z. B. 2 %) fehlt in der DB – die App verwendet dann den Default 2 %.
-- **Verloren:** Nur die **Daten** in MongoDB/PostgreSQL/Redis (Benutzer, Rollen, Konfigurationswerte, Wallets, Investments, Trades, etc.), sofern die DB neu initialisiert wurde.
+- **Verloren:** Nur die **Daten** in MongoDB/PostgreSQL/Redis (Benutzer, Rollen, Konfigurationswerte, Kontodaten, Investments, Trades, etc.), sofern die DB neu initialisiert wurde.
 - **Wiederherstellung:** Über die vorhandenen Backups unter `~/fin1-backups/` (täglich 03:00 Uhr).
 
 ---
@@ -15,7 +15,7 @@
 | **Code** (z. B. Maximum Risk Exposure %) | Repo + Server (Cloud Functions, Admin-Portal, iOS-Build) | Unverändert | Nicht nötig |
 | **Konfigurationswerte** (z. B. 2 % in Config/Configuration) | MongoDB (Collections `Configuration`, `Config`) | Leer/Default | Mit DB-Restore aus Backup |
 | **Benutzer, Rollen, Sessions** | MongoDB (`_User`, `Role`, `_Session`) | Leer | Mit DB-Restore aus Backup |
-| **Wallets, Investments, Trades, Dokumente** | MongoDB (entsprechende Collections) | Leer | Mit DB-Restore aus Backup |
+| **Kontodaten, Investments, Trades, Dokumente** | MongoDB (entsprechende Collections) | Leer | Mit DB-Restore aus Backup |
 | **Analytics** | PostgreSQL `fin1_analytics` | Leer | Mit DB-Restore aus Backup |
 | **Cache** | Redis | Leer | Mit DB-Restore aus Backup (optional) |
 
@@ -39,7 +39,7 @@ Details: **`scripts/BACKUP_RESTORE.md`** (Abschnitt „Backup manuell auslösen�
 
 Jedes Backup enthält u. a.:
 
-- `mongodb.gz` – MongoDB-Dump (User, Configuration, Config, Wallet, Investment, Trade, …)
+- `mongodb.gz` – MongoDB-Dump (User, Configuration, Config, Investment, Trade, …)
 - `postgresql.sql.gz` – PostgreSQL (Analytics)
 - `redis-dump.rdb` – Redis
 - `backend.env`, `nginx.conf`, `docker-compose.production.yml` (optional)
@@ -110,6 +110,6 @@ Die konfigurierbare Variable ist **nicht** in der Datenbank „gespeichert“ al
 
 - **iOS:** `FIN1/Features/Dashboard/Views/Components/DashboardContainer.swift`, `ConfigurationService*`, `ConfigurationServiceProtocol`
 - **Admin-Portal:** `admin-portal/src/pages/Configuration/ConfigurationPage.tsx` (Sektion „Anzeige“, Parameter `maximumRiskExposurePercent`)
-- **Backend:** `backend/parse-server/cloud/functions/configuration.js`, `backend/parse-server/cloud/utils/configHelper.js`, `backend/parse-server/cloud/main.js` (getConfig/updateConfig)
+- **Backend:** `backend/parse-server/cloud/functions/configuration.js`, `backend/parse-server/cloud/utils/configHelper/`, `backend/parse-server/cloud/main.js` (getConfig/updateConfig)
 
 Nach einem DB-Restore verwendet die App wieder die Daten aus dem Backup (inkl. Konfigurationswerte). Die genannte Implementierung bleibt bestehen; nur wenn im Backup noch keine `Configuration`/`Config` mit `maximumRiskExposurePercent` existierte, greift der Default 2 %.

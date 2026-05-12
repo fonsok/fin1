@@ -1,8 +1,8 @@
 # FIN1 Authentication Architecture
 
-**Version**: 1.1
+**Version**: 1.2
 **Status**: ✅ Vollständig integriert in AppServices
-**Letzte Aktualisierung**: Januar 2026 (Code Review Fixes)
+**Letzte Aktualisierung**: April 2026 (Test-User-Doku, Passwort-Konsolidierung)
 
 ---
 
@@ -289,17 +289,23 @@ static func create() -> AuthServiceProtocol {
 
 ## Test-Benutzer (DEBUG)
 
+**Einheitliches Passwort** für alle unten genannten Mock-/Seed-User (iOS DEBUG + nach `seedTestUsers`): `TestPassword123!`
+
+**Single Source of Truth (iOS):** `FIN1/Shared/Constants/TestUserConstants.swift` (`TestConstants.password`, Investoren-/Trader-Namen, Kunden-ID-Prefixe `ANL` / `TRD`).
+
+**Backend-Vollprofile:** Cloud Function `seedTestUsers` legt **5 Investoren** (`investor1@test.com` … `investor5@test.com`) und **10 Trader** (`trader1@test.com` … `trader10@test.com`) mit abgeschlossenem Onboarding an — siehe `backend/parse-server/cloud/functions/seed/users.js`.
+
 | E-Mail | Passwort | Rolle |
 |--------|----------|-------|
-| `investor1@test.com` | `password123` | Investor |
-| `trader1@test.com` | `password123` | Trader |
-| `admin@test.com` | `password123` | Admin |
-| `csr-l1@test.com` | `password123` | CSR Level 1 |
-| `csr-l2@test.com` | `password123` | CSR Level 2 |
-| `csr-fraud@test.com` | `password123` | Fraud Analyst |
-| `csr-compliance@test.com` | `password123` | Compliance |
-| `csr-tech-support@test.com` | `password123` | Tech Support |
-| `csr-teamlead@test.com` | `password123` | Teamlead |
+| `investor1@test.com` … `investor5@test.com` | `TestPassword123!` | Investor |
+| `trader1@test.com` … `trader10@test.com` | `TestPassword123!` | Trader |
+| `admin@test.com` | `TestPassword123!` | Admin |
+| `csr-l1@test.com` | `TestPassword123!` | CSR Level 1 |
+| `csr-l2@test.com` | `TestPassword123!` | CSR Level 2 |
+| `csr-fraud@test.com` | `TestPassword123!` | Fraud Analyst |
+| `csr-compliance@test.com` | `TestPassword123!` | Compliance |
+| `csr-tech-support@test.com` | `TestPassword123!` | Tech Support |
+| `csr-teamlead@test.com` | `TestPassword123!` | Teamlead |
 
 ---
 

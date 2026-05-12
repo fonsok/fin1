@@ -195,6 +195,15 @@ Für eine kleinere FIN1 mit begrenztem Budget (<€50K Setup, <€2K/Monat) soll
 
 ---
 
+
+
+
+
+
+
+
+
+
 ### Option B: Payment-Aggregator-Modell (Einfachste)
 
 **Architektur:**
@@ -226,10 +235,10 @@ Für eine kleinere FIN1 mit begrenztem Budget (<€50K Setup, <€2K/Monat) soll
 #### Erklärung: Escrow-Konto mit lizenziertem Verwahrer
 
 **Was ist ein Escrow-Konto?**
-Ein Escrow-Konto ist ein segregiertes Bankkonto, das von einem Drittverwahrer (lizenzierte Finanzinstitution) im Namen von FIN1s Kunden gehalten wird. Der Verwahrer hält die Gelder getrennt von FIN1s eigenen Geschäftskonten und fungiert als neutraler Vermittler.
+Ein Escrow-Konto ist ein segregiertes Bankkonto, das von einem Drittverwahrer (lizenzierte Finanzinstitution) im Namen von FIN1s Kunden gehalten wird. Der Verwahrer hält die Gelder getrennt von FIN1s eigenen Geschäftskonten und fungiert als neutraler Vermittler (Treuhandkonto).
 
 **Wie es funktioniert:**
-1. **Kunde zahlt Gelder ein** → Gelder gehen direkt auf Escrow-Konto des Verwahrers (nicht FIN1s Konto)
+1. **Kunde zahlt Gelder ein** → Gelder gehen direkt auf Treuhand-Konto des Verwahrers (nicht FIN1s Konto)
 2. **Verwahrer hält Gelder** → Gelder sind rechtlich segregiert, geschützt vor FIN1s Gläubigern
 3. **FIN1 weist Verwahrer an** → Bei Trade-Ausführung sendet FIN1 Anweisung an Verwahrer
 4. **Verwahrer verteilt Gelder** → Verwahrer transferiert Gelder gemäß FIN1s Anweisungen (an Trader, Investoren, etc.)
@@ -263,7 +272,7 @@ Verwahrer führt Transfer aus (SEPA, Überweisung, etc.)
 - **Clearstream Banking** (Deutsche Börse Group) - BaFin-lizenziert
 - **State Street Bank** - ECB-lizenziert, EU-Präsenz
 - **BNP Paribas Securities Services** - Lizenziert in mehreren EU-Jurisdiktionen
-- **Spezialisierte Fintech-Verwahrer:** Fireblocks, Anchorage Digital (für Krypto/Digital Assets)
+- **Spezialisierte Fintech-Verwahrer:** Fireblocks, Anchorage Digital (für Digital Assets)
 
 **Kostenstruktur:**
 - Setup: €10K-30K (Verwahrer-Onboarding, rechtliche Vereinbarungen)
@@ -293,6 +302,13 @@ Verwahrer führt Transfer aus (SEPA, Überweisung, etc.)
 **Empfehlung:** Für Option B (Payment Aggregator), falls FIN1 plant Gelder >30 Tage zu halten oder >€50K zu aggregieren, Escrow + Verwahrer verwenden um BaFin-Lizenzierungsanforderungen zu vermeiden. Für kürzere Haltedauern (<7 Tage) kann direkte Kontoführung mit ordentlicher rechtlicher Struktur akzeptabel sein (Beratung konsultieren).
 
 ---
+
+
+
+
+
+
+
 
 ### Option C: Hybrid-Ansatz (Einfach starten, hochskalieren)
 

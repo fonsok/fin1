@@ -68,6 +68,48 @@ Rechtstexte werden **nicht** in-place bearbeitet. Jede inhaltliche Änderung erf
 
 ---
 
+## Backup/Restore & Release-Workflow (Export/Import)
+
+Im Admin‑Portal (Seite **„AGB & Rechtstexte“**) stehen zusätzlich folgende Funktionen zur Verfügung:
+
+- **Export (Backup)**: exportiert die Rechtstexte als JSON‑Backup (für Archivierung / Migration).
+- **Import (Restore)**: importiert ein JSON‑Backup und ersetzt die bestehenden Versionen (bestehende werden serverseitig archiviert/deaktiviert, neue werden angelegt).
+- **Export active (filtered)**: exportiert **nur aktive** Versionen (optional nach Dokumenttyp/Sprache gefiltert).
+- **Import active (as new)**: importiert aktive Versionen und legt sie als **neue** Versionen an (Release‑Workflow).
+
+**Wahl des richtigen Buttons:**
+- **`Import (Restore)`** nur für **vollständige** Backups (Notfall/Migration gesamter Bestand).
+- **`Import active (as new)`** für kontrollierte Releases einzelner Dokumente (z. B. Terms DE+EN auf neue Version heben).
+
+**Hinweis (Audit/Append‑only):** Historische Versionen werden nicht überschrieben. Restore/Import erzeugt neue Datensätze und (je nach Funktion) archiviert/deaktiviert die bisherigen.
+
+**Warnings beachten:** Export/Import zeigt serverseitige `warnings` (z. B. bei erreichten Server-Limits). Diese Hinweise vor Bestätigung prüfen.
+
+---
+
+## Legal Branding (Platzhalter wie `{{APP_NAME}}`)
+
+Bestimmte Platzhalter werden serverseitig aufgelöst (z. B. `{{APP_NAME}}` / `{{LEGAL_*}}`). Der **kanonische App‑Name** wird zentral in der aktiven `Configuration` gepflegt:
+
+- Im Admin‑Portal unter **„Konfiguration“ → „Systemparameter“** als **`legalAppName`** (4‑Augen‑Workflow wie andere kritische Parameter).
+- Unter **„AGB & Rechtstexte“** gibt es nur noch einen **Hinweis/Deep‑Link** zur Konfiguration (kein direktes Schreiben mehr).
+
+**Namens-Sache (praktisch):**
+- In Texten möglichst **`{{APP_NAME}}`** statt festem App-Namen verwenden.
+- Feste Legacy-Literale wie `bbb` werden **nicht** automatisch durch Konfig-Änderungen ersetzt; dafür eine neue Version anlegen und auf Platzhalter umstellen.
+
+---
+
+## Development Maintenance (nur DEV/Test)
+
+Für Entwicklungs-/Testdaten gibt es eine Wartungsfunktion:
+
+- **DEV: Reset legal docs baseline (v1.0.0)**: klont die aktuell aktiven Versionen als neue `v1.0.0` Baseline und löscht danach inaktive Altversionen (nur mit serverseitigen Guardrails).
+
+Diese Funktion ist für PROD nicht gedacht und ist serverseitig durch ENV‑Flags und Schutzbedingungen abgesichert.
+
+---
+
 ## Referenzen
 
 - Backend/Trigger: `backend/parse-server/cloud/functions/legal.js`, `backend/parse-server/cloud/triggers/legal.js`

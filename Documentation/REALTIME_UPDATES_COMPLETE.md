@@ -1,6 +1,6 @@
 # Real-time Updates - Vollständige Implementierung
 
-**Datum**: Januar 2026  
+**Datum**: Januar 2026
 **Status**: ✅ **VOLLSTÄNDIG IMPLEMENTIERT**
 
 ---
@@ -18,14 +18,14 @@
 - Notification-basierte Event-Distribution
 - Battery-optimiert mit automatischem Disconnect im Background
 
-### 2. Wallet Live Updates ✅
+### 2. Konto Live Updates ✅ (Konto-Feature deaktiviert)
 
 **Dateien:**
-- `FIN1/Features/Shared/ViewModels/WalletViewModel.swift`
+- `FIN1/Features/Shared/ViewModels/WalletViewModel.swift` (Konto; Wallet-UI deaktiviert)
 - `FIN1/Features/Shared/Views/WalletViewWrapper.swift`
 
 **Features:**
-- Live Query Subscription für WalletTransaction Updates
+- Live Query Subscription für Konto-Transaktions-Updates
 - Automatisches Reload bei Live-Updates
 - NotificationCenter-Observer für Parse Events
 
@@ -53,7 +53,7 @@
 - Live Query für Cash Balance Updates
 - Multi-Investor Support (InvestorCashBalanceService)
 - Multi-Trader Support (TraderCashBalanceService)
-- Automatische Balance-Updates basierend auf `balanceAfter` aus WalletTransaction
+- Automatische Balance-Updates (Konto; Konto-Feature deaktiviert)
 
 ### 5. Dashboard Integration ✅
 
@@ -101,7 +101,7 @@ SwiftUI Views (automatische Updates)
 - `.parseLiveQueryObjectDeleted` - Parse Live Query Object Deletions
 - `.investorBalanceDidChange` - Investor Balance Changes
 - `.traderBalanceDidChange` - Trader Balance Changes
-- `.walletTransactionCompleted` - Wallet Transaction Completed
+- `.walletTransactionCompleted` - Konto-Transaktion abgeschlossen (Konto-Feature deaktiviert)
 
 ---
 
@@ -135,7 +135,7 @@ liveQuery: {
     'Notification',
     'Document',
     'User',
-    'WalletTransaction',
+    'WalletTransaction',  // Backend; Konto-Feature deaktiviert
     'ComplianceEvent',
     'Order'  // ✅ Neu hinzugefügt
   ]
@@ -152,7 +152,7 @@ liveQuery: {
 - ✅ TraderCashBalanceService
 
 ### Trading Services
-- ✅ WalletViewModel
+- ✅ Konto-ViewModel (Konto-Feature deaktiviert)
 - ✅ TraderDepotViewModel
 - ✅ TradesOverviewViewModel
 
@@ -216,7 +216,7 @@ liveQuery: {
 Alle Real-time Updates sind vollständig implementiert:
 
 1. ✅ **Parse Live Query Client** - WebSocket-Integration
-2. ✅ **Wallet Live Updates** - WalletTransaction Updates
+2. ✅ **Konto Live Updates** - Konto-Transaktionen (Konto-Feature deaktiviert)
 3. ✅ **Order-Status-Updates** - Order & Trade Updates
 4. ✅ **Balance-Updates** - Cash, Investor, Trader Balance Updates
 5. ✅ **Dashboard Integration** - DashboardStatsViewModel & AccountStatementViewModel

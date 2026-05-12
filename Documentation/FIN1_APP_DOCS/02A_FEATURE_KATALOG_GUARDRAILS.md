@@ -48,7 +48,7 @@ Diese Regeln schützen **bereits korrekte Finanzwerte** vor “Formel-Drift” (
   - **Account Statements**:
     - Investor: `FIN1/Shared/Accounting/InvestorAccountStatementBuilder.swift`
     - Trader: `FIN1/Shared/Accounting/TraderAccountStatementBuilder.swift`
-    - Monthly Docs: `FIN1/Shared/Services/MonthlyAccountStatementGenerator.swift` (skip current month, no duplicates, Document validation)
+    - Monthly Docs: `FIN1/Shared/Services/MonthlyAccountStatementGenerator.swift` (@MainActor; skip current month, no duplicates, Document validation). **Scheduling:** nach parallelem Preload in `FIN1/FIN1App.swift` via **`MonthlyStatementPrefetch`** (non-blocking `@MainActor` `Task`, max. eine laufende Ausführung). Details: `Documentation/AccountStatementsAndReports.md`.
 
 - **Do-not-touch: Datenquellen-Hierarchie (entscheidet, welche Zahlen “gewinnen”)**
   - **Trader Profit/PNL Display**: `Trade.displayProfit` in `FIN1/Features/Trader/Models/Trade.swift` ist der Contract.
@@ -279,6 +279,7 @@ Diese Regeln schützen **bereits korrekte Finanzwerte** vor “Formel-Drift” (
     - Investor Snapshot: `FIN1/Shared/Accounting/InvestorAccountStatementBuilder.swift`
     - Trader Snapshot: `FIN1/Shared/Accounting/TraderAccountStatementBuilder.swift`
   - Monthly Statement Creation: `FIN1/Shared/Services/MonthlyAccountStatementGenerator.swift`
+  - Monthly Statement **Trigger** (Lifecycle): `MonthlyStatementPrefetch` in `FIN1/FIN1App.swift` — siehe `Documentation/AccountStatementsAndReports.md`.
 
 - **Protected Behaviors**
   - Monatsdokumente werden nur für **abgeschlossene Monate** erzeugt (current month wird übersprungen).

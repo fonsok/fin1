@@ -30,22 +30,23 @@ Trade.afterSave:                        Reads and displays:
 ## Current State Analysis
 
 ### Backend ALREADY does (trade.js, investment.js, order.js):
-- ✅ Commission rate from Configuration class (configHelper.js)
+- ✅ Commission rate from Configuration class (`cloud/utils/configHelper`)
 - ✅ Gross profit / commission / net profit calculation (trade.js beforeSave)
 - ✅ Profit distribution to investors (trade.js afterSave → distributeTradeProfit)
 - ✅ PoolTradeParticipation settlement (profitShare, commissionAmount, etc.)
 - ✅ Investment value updates (currentValue, profit, totalCommissionPaid)
 - ✅ Commission record creation
 - ✅ Investor notifications
-- ✅ Wallet transactions for investment lifecycle
+- ✅ Kontobuchungen für Investment-Lifecycle (Feature Wallet deaktiviert; Nutzer hat normales Konto)
 - ✅ Order invoice creation
 - ✅ Audit logging
 
-### Backend NOW does (Phase 1 — completed 2026-03-01):
-- ✅ **AccountStatement entries** — `accountingHelper.js:bookAccountStatementEntry()` creates trader commission credit and investor debit/credit entries
-- ✅ **Credit Note document** — `accountingHelper.js:createCreditNoteDocument()` creates trader commission documents
-- ✅ **Collection Bill document** — `accountingHelper.js:createCollectionBillDocument()` creates investor per-trade statements
-- ✅ **Idempotent settlement** — `accountingHelper.js:settleCompletedTrade()` checks for existing entries before re-booking
+### Backend NOW does (Phase 1 — completed 2026-03-01, refactor update 2026-03-19):
+- ✅ **AccountStatement entries** — `utils/accountingHelper.js:bookAccountStatementEntry()` creates trader commission credit and investor debit/credit entries
+- ✅ **Credit Note document** — `utils/accountingHelper.js:createCreditNoteDocument()` creates trader commission documents
+- ✅ **Collection Bill document** — `utils/accountingHelper.js:createCollectionBillDocument()` creates investor per-trade statements
+- ✅ **Idempotent settlement** — `utils/accountingHelper.js:settleCompletedTrade()` checks for existing entries before re-booking
+- ✅ **Modularized helper internals** — moved to `utils/accountingHelper/` (`statements.js`, `documents.js`, `legs.js`, `settlement.js`, `shared.js`) with `accountingHelper.js` as compatibility loader
 - ✅ **Cloud Functions** — `getTradeSettlement` and `getAccountStatement` defined in `functions/trading.js` (require real Parse auth — see Phase 2 prerequisites)
 - ✅ **Parse schemas** — `AccountStatement`, `Document`, `WalletTransaction` classes with indexes created
 
@@ -54,6 +55,7 @@ Trade.afterSave:                        Reads and displays:
 - ✅ **stableId mapping** — Parse `_User` records have `stableId` field matching frontend `user:email` format; cloud functions use `getUserStableId()` helper to resolve
 - ✅ **Frontend reads backend AccountStatement (Trader)** — `TraderAccountStatementBuilder.buildSnapshotWithWallet` accepts `SettlementAPIService`, uses backend commission entries when available, falls back to local credit notes
 - ✅ **Frontend reads backend AccountStatement (Investor)** — `InvestorAccountStatementBuilder.buildSnapshotWithWallet` accepts `SettlementAPIService`, fetches backend `commission_debit` and `investment_profit` entries, falls back to local `InvestorCashBalanceService` ledger
+  - *(Methodenname „buildSnapshotWithWallet“ bleibt; Konto-Feature ist deaktiviert, Nutzer hat normales Konto.)*
 - ✅ **Cloud functions verified** — `getAccountStatement` and `getTradeSettlement` return correct data with real session tokens
 - ✅ **TransactionLimitService thread safety** — Removed Parse Server dependency (classes don't exist), added `NSLock` for dictionary access to prevent data races from concurrent calls
 
@@ -79,8 +81,9 @@ Trade.afterSave:                        Reads and displays:
 
 **Goal**: When a trade completes, the backend creates ALL financial records. Frontend reads them.
 
-**Completed 2026-03-01**:
-- `accountingHelper.js` deployed to Parse Server with `bookAccountStatementEntry`, `createCreditNoteDocument`, `createCollectionBillDocument`, `settleCompletedTrade`
+**Completed 2026-03-01 (+ refactor deployed 2026-03-19)**:
+- `utils/accountingHelper.js` deployed to Parse Server with `bookAccountStatementEntry`, `createCreditNoteDocument`, `createCollectionBillDocument`, `settleCompletedTrade`
+- Internal split deployed: `utils/accountingHelper/{statements,documents,legs,settlement,shared}.js`
 - `trade.js` `afterSave` trigger calls `settleCompletedTrade()` on trade completion
 - `trading.js` exposes `getTradeSettlement` and `getAccountStatement` cloud functions
 - Parse schemas created: `AccountStatement` (with `userId_createdAt` and `tradeId_source` indexes), `Document`, `WalletTransaction`
@@ -176,7 +179,7 @@ Parse.Cloud.define('getTradeSettlement', async (request) => {
 #### Frontend state (Phase 1):
 
 - Frontend local booking (via `ProfitDistributionService`, `OrderLifecycleCoordinator`) continues to run alongside backend settlement for UI consistency
-- `TraderAccountStatementBuilder` gracefully handles `WalletTransaction` API failures (no statement wipe)
+- `TraderAccountStatementBuilder` gracefully handles Konto-API-Failures (no statement wipe)
 - `AccountStatementViewModel` observes `.invoiceDidChange` for immediate credit note display
 - Commission entries display in correct chronological order (after trade settlement entries)
 - `SettlementAPIService` exists but cloud function calls require real Parse auth (Phase 2)
@@ -186,7 +189,7 @@ Parse.Cloud.define('getTradeSettlement', async (request) => {
 - ✅ **Real Parse authentication**: `UserService.signIn()` calls Parse REST `/login`; real `r:` tokens used for cloud function calls
 - ✅ **Frontend reads from backend**: `TraderAccountStatementBuilder` fetches backend `AccountStatement` entries via `SettlementAPIService.fetchAccountStatement()` and uses them for commission data; falls back to local credit notes if backend unavailable
 
-### Phase 2: Real Auth + Backend Document Generation — IN PROGRESS
+### Phase 2: Real Auth + Backend Document Generation — COMPLETE
 
 **Goal**: Real Parse authentication + backend generates document metadata with all line items.
 
@@ -194,7 +197,7 @@ Parse.Cloud.define('getTradeSettlement', async (request) => {
 - Real Parse login in `UserService.signIn()` via REST API (`ParseAPIClient.login()`)
 - `ParseAPIClient.sessionToken` no longer filters `r:` tokens — real session tokens pass through
 - Fallback session tokens use `sim:` prefix (for offline/no-backend scenarios)
-- All Parse `_User` records have `stableId` field (`user:email`); passwords reset to `Test123!`
+- All Parse `_User` records have `stableId` field (`user:email`); seeded/mock test users use password `TestPassword123!` (aligned with `TestUserConstants.swift` and `seedTestUsers`)
 - Cloud functions in `trading.js` use `getUserStableId(user)` helper for all data queries
 - `TraderAccountStatementBuilder.buildSnapshotWithWallet` accepts optional `SettlementAPIServiceProtocol`; uses backend commission entries when available
 - `AccountStatementViewModel` passes `settlementAPIService` to the builder
@@ -210,6 +213,33 @@ Parse.Cloud.define('getTradeSettlement', async (request) => {
 - `BackendInvoice.toLocalInvoice()` converter maps backend `lineItems` (securities, orderFee, exchangeFee, foreignCosts) to local `InvoiceItem` models with correct `InvoiceItemType`
 - `InvoiceAPIService.fetchInvoices()` now calls `getUserInvoices` cloud function first (session-based, resolves stableId), falls back to direct Parse query
 - `InvoiceService.loadInvoices()` merges backend invoices with local-only invoices to prevent duplicates
+
+**Erweiterung 2026-05-07 — `getUserInvoices` / `getTradeInvoices` für Investoren (Settlement-Rechnungen sichtbar):**
+
+- **Hintergrund:** `order.js` → `createOrderInvoice()` setzt auf der Parse-Klasse `Invoice` das Feld **`userId` = `order.traderId`** (Trader-Stable-ID). Rein equality-basierte Abfragen `Invoice.userId == getUserStableId(currentUser)` liefern für **Investor-Sessions** daher **keine** Kauf-/Verkaufs-Rechnungen (`buy_invoice` / `sell_invoice`), obwohl PDF/`Document`-Zeilen für den Investor existieren können.
+- **Cloud:** In `functions/trading.js`:
+  - Hilfsfunktion **`getTradeIdsForInvestorStableId(stableId)`**: Investments mit `investorId == stableId` → zugehörige `tradeId`s aus **`PoolTradeParticipation`**.
+  - **`getUserInvoices`**: für `role === 'investor'` **`Parse.Query.or`**: (a) bestehende Eigene (`userId == stableId`, z. B. Service Charge), **plus** (b) Invoices mit **`tradeId ∈ tradeIds`** und **`invoiceType` ∈** `buy_invoice` / `sell_invoice` / `buy` / `sell`.
+  - **`getTradeInvoices`**: Investoren dürfen nur Trades laden, an denen sie teilnehmen (Teilnahme-Check); ohne `equalTo('userId', stableId)`, da Zeilen weiterhin den Trader als `userId` tragen.
+- **Frontend:** Hydration/Zuordnung `Document` ↔ `Invoice` weiterhin wie implementiert (`InvoiceService.invoice(matching:)`, laden über `loadInvoices`); die Cloud-Erweiterung behebt „0 Invoices vom Backend für Investor“ ohne falsche Datenmodell-Doppelungen.
+
+**Paired Buy / Mirror-Trade-Leg (Cloud Code — ergänzend zu Mirror-*Basis* für Belege):**
+
+Zwei Themen nicht verwechseln:
+
+1. **Mirror-Basis / buyLeg–sellLeg / Return-SSOT** (Berechnung für Collection Bills, Kontoauszug, `deriveMirrorTradeBasis`): gebündelt in **`Documentation/RETURN_CALCULATION_SCHEMAS.md`**, **`Documentation/ADR-009-iOS-Reads-Server-BuyLeg-SellLeg.md`**, `utils/accountingHelper/legs.js`, Tests `legs.mirrorBasis.test.js`.
+2. **Paired execution: Trader-Leg ↔ Spiegel-Trade synchron halten** (Orders mit `pairExecutionId`, Pool-/Mirror-Trade-Objekt wird mitgeschrieben):
+   - **`utils/pairedTradeMirrorSync.js`**: `syncMirrorTradeWhenTraderLegCompletes(traderTrade)` — findet Mirror-Buy-Order per `pairExecutionId`, übernimmt u. a. Sell-Seite / Kennzahlen auf den Mirror-`Trade`, setzt bei Vollständigkeit `completed`.
+   - **`triggers/trade.js`**: ruft die Sync-Funktion nach relevanten Saves auf; wenn der Trade **in demselben Save** von partial auf **`completed`** springt, wird der **Partial-Sell-Delta-Pfad** übersprungen, damit nicht parallele/abweichende Abrechnungsstände zu **`settleAndDistribute`** entstehen (Kommentar im Trigger).
+   - **`utils/accountingHelper/settlement.js`**: **`isPairedTraderLegTrade(trade)`** (Import aus `pairedTradeMirrorSync`) steuert u. a. **`skipPoolFallback`**, damit Settlement bei Paired-/Mirror-Kontext nicht mit inkonsistenten Pool-Fallback-Pfaden kollidiert.
+
+3. **Server-Orchestrierung — Cloud Function `executePairedBuy`** (`functions/trading.js`, nur Rolle **trader**):
+   - **Atomarer Vertrag:** neue Zeile **`PairedExecution`**, zwei persistierte Buy-**`Order`**-Beine (`legType` **`TRADER`** vs **`MIRROR_POOL`**, gemeinsames `pairExecutionId`, `clientOrderIntentId` zur **Idempotenz** / Retry).
+   - **`saveAll`** beider Beine oder **Abbruch:** bei Fehler nach Teilerfolg werden angelegte Orders per **`destroyAll`** bereinigt, `PairedExecution` → `ABORTED` (best-effort Compensation).
+   - **Nach durable commit (nicht rollbackbar):** **`finalizePairedBuyAfterCommit`** in **`utils/pairedBuyOrchestration.js`** — sortiert Beine (**TRADER vor MIRROR_POOL**), setzt jede Buy-Leg von `submitted` auf **`executed`** (Fees/`grossAmount`/`netAmount` via `calculateOrderFees`), sodass **`order.js` `afterSave`** läuft: **Trade + Invoice**; laut dortigem Kommentar: **Trader-Leg** ohne proportionale Pool-Allokation, **Pool nur auf der MIRROR_POOL-Leg**.
+   - **`effectsApplied`** auf **`PairedExecution`** markiert erfolgreichen Abschluss (kein doppeltes Finalize); wiederholter Aufruf mit gleichem **`clientOrderIntentId`** kann Finalize nachholen (**idempotentReplay**).
+
+Deploy: dieselbe Cloud-Ordnerstruktur; Änderungen wie üblich **rsync `cloud/` + `restart parse-server`**. (**Docker Compose** für die VM ist die **Infra-Orchestrierung** der Services; gemeint hier ist die **Geschäfts-Orchestrierung** Paired Buy im Parse Cloud Code.)
 
 **Completed 2026-03-01 (collection bill read-only mapper)**:
 - Backend `createCollectionBillDocument` enhanced: stores `buyLeg` and `sellLeg` detail in metadata (quantity, price, amount, fees breakdown, residualAmount)
@@ -257,7 +287,7 @@ Source of truth:                        Primary path (online):
 |-------|--------|---------|
 | `AccountStatement` | ✅ Created | Trader/investor account entries (indexes: `userId_createdAt`, `tradeId_source`) |
 | `Document` | ✅ Created | Accounting documents (Credit Notes, Collection Bills) from backend |
-| `WalletTransaction` | ✅ Created | Wallet deposit/withdrawal records |
+| *(Konto)* | *(Feature deaktiviert)* | Nutzer hat normales Konto; keine separate Wallet-UI. |
 | `Commission` | Existing | Already created in trade.js |
 | `PoolTradeParticipation` | Existing | Already settled in trade.js |
 | `Trade` | Existing | No changes needed |

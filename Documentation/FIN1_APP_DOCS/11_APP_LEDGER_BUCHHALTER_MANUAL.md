@@ -1,7 +1,7 @@
 ---
 title: "FIN1 – App Ledger – Handbuch für Buchhalter"
 audience: ["Buchhaltung", "Controlling", "Admin"]
-lastUpdated: "2026-03-14"
+lastUpdated: "2026-05-02"
 ---
 
 ## 1. Zweck und Zielgruppe
@@ -112,18 +112,18 @@ Für die **Plattformgebühr (Service Charge)** gilt in FIN1 folgende Logik:
 
 ### 6.2 Oberfläche
 
-- **Oben:** Übersichtskarten (z. B. Gesamterlös, Erstattungen, USt-Verbindlichkeit, USt abgeführt).
+- **Oben:** Übersichtskarten (z. B. Gesamterlös, Erstattungen, USt-Verbindlichkeit, USt abgeführt). **Wichtig (Stand 2026-05):** Die **Summen** in diesen Karten beziehen sich auf **alle** zur Filter/Suche passenden Buchungen (serverseitige **Aggregation**), **nicht** nur auf die aktuell sichtbare Tabellen-Seite — damit z. B. Salden auf Kunden-Unterkonten (1591/1592) nicht irreführend „0“ zeigen, während weiter hinten im Datensatz Buchungen existieren.
 - **Darunter:** **Konten-Karten** nach Gruppen (Erlöskonten, Steuerkonten, Aufwandskonten, Verrechnungskonten). Pro Konto werden angezeigt:
   - Kontobezeichnung und Konto-Code
   - Haben / Soll / Saldo (aus den gefilterten Buchungen)
   - „Keine Buchungen“, falls für das gewählte Filterkriterium keine Buchungen vorliegen
 - **Filter:**
   - **Konto:** Einzelkonto wählen (z. B. nur „Bank Clearing – Service Charge NET“ oder nur „Erlös Plattformgebühr (netto)“) oder „Alle Konten“.
-  - **User-ID:** Eingabe einer User-ID (Investor) zur Einschränkung.
+  - **User-ID:** Eingabe zur Einschränkung — **nicht** nur Parse-`objectId`: bei Eingaben wie Benutzername/E-Mail wird **fuzzy** über mehrere Nutzer-Felder gematcht (serverseitig); striktes `equalTo(userId)` nur, wenn die Eingabe wie eine Parse-ObjectId aussieht.
   - **Transaktionstyp:** z. B. „Plattformgebühr“.
   - **Filter zurücksetzen** setzt alle Filter zurück.
-- **Tabelle:** Liste der Buchungen mit Datum, Konto, Seite (Soll/Haben), Betrag, User, Typ, Referenz, Beschreibung.
-- **CSV-Export:** Button „CSV Export“ lädt die aktuell gefilterten Buchungen als CSV herunter (für Excel/Weiterverarbeitung).
+- **Tabelle:** Liste der Buchungen mit Datum, Konto, Seite (Soll/Haben), Betrag, User, Typ, Referenz, Beschreibung; ergänzend **Gegenkonto** / **Beleg-Referenz** (Business-Referenz), soweit das Backend liefert — sinnvoll für Trade-/Investment-Zeilen und GoBD-Nachvollziehbarkeit.
+- **CSV-Export:** Button „CSV Export“ lädt die aktuell gefilterten Buchungen als CSV herunter (für Excel/Weiterverarbeitung); Spalten inkl. **Business-Referenz**, soweit vorhanden.
 
 ### 6.3 Typische Nutzung
 
@@ -198,8 +198,57 @@ Bei Fragen zur technischen Anbindung oder zu weiteren Konten (Ordergebühren, Er
 
 ---
 
-## 11. Reservierte Investments / Escrow (Zielbild, Entwickler)
+## 11. Investment-Status und Escrow-Buchungslogik (verbindliche Policy)
 
-Für die geplante **Umschichtung** von Kundenguthaben (verfügbar → reserviert → im Handel) mit doppelter Buchführung auf Plattformebene siehe die technische Kontenskizze:
+Diese Policy definiert die Buchungslogik für Investment-Status auf den internen
+Kundenguthaben-Konten:
 
-- [`../INVESTMENT_ESCROW_LEDGER_SKETCH.md`](../INVESTMENT_ESCROW_LEDGER_SKETCH.md)
+- `CLT-LIAB-AVA` (verfügbar)
+- `CLT-LIAB-RSV` (reserviert)
+- `CLT-LIAB-TRD` (im Handel/Pool)
+
+### 11.1 Statusbedeutung
+
+- `reserved`: Investment ist vorgemerkt, noch nicht im Handel.
+- `active`: Kapital ist im Handel/Pool gebunden.
+- `completed`: Vorgang abgeschlossen, Bindung aufgelöst.
+- `cancelled`: Vorgang abgebrochen, Bindung/Rückstellung wird aufgelöst.
+
+**Wichtig (fachlich verbindlich):**  
+Im Status `reserved` darf der Nutzer das relevante (Split-)Investment löschen bzw. stornieren.
+Bei dieser Löschung/Stornierung wird der reservierte Betrag auf das Nutzerkonto
+zurückgebucht; dies ist sowohl in der **Cash Balance** als auch im
+**Account Statement/Kontoauszug** ersichtlich.
+
+### 11.2 Buchungsmatrix (Soll/Haben)
+
+| Ereignis | Soll | Haben | Zweck |
+|----------|------|-------|-------|
+| Investment angelegt (`reserved`) | `CLT-LIAB-AVA` | `CLT-LIAB-RSV` | verfügbar → reserviert |
+| User löscht/storniert in `reserved` | `CLT-LIAB-RSV` | `CLT-LIAB-AVA` | Reservierung rückgängig + Rückbuchung ins Nutzerkonto (Cash Balance/Account Statement sichtbar) |
+| Statuswechsel `reserved` → `active` | `CLT-LIAB-RSV` | `CLT-LIAB-TRD` | reserviert → im Handel |
+| Statuswechsel `active` → `completed` | `CLT-LIAB-TRD` | `CLT-LIAB-AVA` | Handelsbindung auflösen |
+| Statuswechsel `active` → `cancelled` | `CLT-LIAB-TRD` | `CLT-LIAB-AVA` | Abbruch nach Aktivierung |
+| Sonderfall `reserved` → `completed` | `CLT-LIAB-RSV` | `CLT-LIAB-AVA` | Abschluss ohne Aktivierungspfad |
+
+### 11.3 Externes Kontenmapping (SKR03/SKR04)
+
+Für die FiBu-Anbindung gibt es zwei valide Betriebsmodelle:
+
+1. **Sammelkonto-Modell (stabiler Start):**  
+   Alle drei internen Konten (`AVA`, `RSV`, `TRD`) mappen auf ein externes Sammelkonto (z. B. `1590`).
+
+2. **Unterkonto-Modell (Best Practice bei höherem Volumen):**  
+   Je Status ein eigenes externes Unterkonto (z. B. `1590/1591/1592`).
+
+Die finale externe Nummernwahl erfolgt mit Steuerberater/FiBu-Vorgabe.
+
+### 11.4 Invarianten (GoB/Prüfbarkeit)
+
+- Kein Statuswechsel ohne korrespondierende Gegenbuchung.
+- Neue Buchungen müssen Mapping-Snapshots enthalten (`mappingIdSnapshot`, `vatKeySnapshot`, etc.).
+- Historische Buchungen werden nicht rückwirkend umgemappt.
+- `reserved`-Storno durch User muss immer als `RSV` → `AVA` nachvollziehbar sein.
+
+Technische Ergänzung:  
+[`../INVESTMENT_ESCROW_LEDGER_SKETCH.md`](../INVESTMENT_ESCROW_LEDGER_SKETCH.md)

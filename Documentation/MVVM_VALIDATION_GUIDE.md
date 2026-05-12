@@ -205,7 +205,7 @@ chmod +x scripts/validate-mvvm-architecture.sh
 
 ```bash
 # Reinstall git hooks
-./scripts/setup-git-hooks.sh
+./scripts/install-githooks.sh
 ```
 
 ## Summary

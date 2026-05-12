@@ -1,18 +1,20 @@
 # Wallet vs. Einfacher Button: BaaS-Integration Analyse
 
 **Datum**: Januar 2026
-**Frage**: Reicht ein einfacher "Auszahlen"-Button beim Cash Balance Feature, oder ist das Wallet-Feature wichtig für BaaS-Integration?
+**Hinweis (aktuell):** Das **Wallet-Feature ist deaktiviert**. Nutzer haben nur ein **normales Konto**; diese Analyse beschreibt die historische Option (Wallet vs. einfacher Button). Für die aktuelle Produktdokumentation siehe FIN1_APP_DOCS (Konto, kein Wallet).
+
+**Frage (historisch):** Reicht ein einfacher "Auszahlen"-Button beim Cash Balance Feature, oder ist das Wallet-Feature wichtig für BaaS-Integration?
 
 ---
 
-## 🎯 Kurze Antwort
+## 🎯 Kurze Antwort (historisch)
 
 **❌ Ein einfacher Button reicht NICHT aus.**
-**✅ Das Wallet-Feature ist WICHTIG für BaaS-Integration.**
+**✅ Das Wallet-Feature war für BaaS-Integration vorgesehen (aktuell deaktiviert; Nutzer: normales Konto).**
 
 ---
 
-## 📊 Vergleich: Einfacher Button vs. Wallet-Feature
+## 📊 Vergleich: Einfacher Button vs. Wallet-Feature (Referenz)
 
 ### Option 1: Einfacher "Auszahlen"-Button beim Cash Balance
 
@@ -42,11 +44,11 @@
 
 ---
 
-### Option 2: Wallet-Feature (Aktuelle Implementierung)
+### Option 2: Wallet-Feature (Referenz; Feature deaktiviert)
 
 ```
 ┌─────────────────────────────────────┐
-│  Wallet Feature                     │
+│  Wallet Feature (deaktiviert)        │
 │  • Balance anzeigen                 │
 │  • [Einzahlen] [Auszahlen] Buttons  │
 │  • Transaktionshistorie             │

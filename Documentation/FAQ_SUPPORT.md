@@ -263,7 +263,7 @@ Yes, you can update your risk tolerance in Profile → Settings → Risk Profile
 Traders must have:
 - Sufficient experience with leveraged products (if trading derivatives)
 - Appropriate risk classification
-- Compliance with platform trading rules
+- Compliance with app trading rules
 
 ### What KYC (Know Your Customer) information is required?
 
@@ -387,7 +387,7 @@ Notifications are automatically archived after 24 hours of being read. You can a
 
 - **Investment Notifications**: New investment opportunities, investment updates
 - **Trade Notifications**: Trade executions, order confirmations
-- **System Notifications**: Account updates, security alerts, platform announcements
+- **System Notifications**: Account updates, security alerts, app announcements
 
 ### Can I filter notifications by type?
 
@@ -411,7 +411,7 @@ Please contact our customer support team for assistance with document-related qu
 
 ### What are the system requirements for FIN1?
 
-- **Platform**: iOS 16.0 or later
+- **OS**: iOS 16.0 or later
 - **Device**: iPhone or iPad
 - **Internet**: Required for all operations
 - **Biometric**: Face ID or Touch ID supported (optional)
@@ -493,7 +493,7 @@ FIN1 uses industry-standard security measures:
 ### How is my personal data used?
 
 FIN1 follows GDPR principles:
-- Data is used only for platform operations and legal compliance
+- Data is used only for app operations and legal compliance
 - You can request data access, correction, or deletion
 - Data is not shared with third parties without consent
 - See our Privacy Policy for complete details
@@ -582,7 +582,7 @@ All fees are disclosed before you confirm any transaction.
 
 FIN1 complies with:
 - GDPR (General Data Protection Regulation)
-- Financial services regulations applicable to investment platforms
+- Financial services regulations applicable to investment apps
 - KYC/AML (Know Your Customer/Anti-Money Laundering) requirements
 - Tax reporting obligations
 
@@ -598,7 +598,7 @@ Please contact our customer support team or legal department for assistance with
 
 ---
 
-© 2024 FIN1 - Investment Pool Platform
+© 2024 FIN1 - Investment Pool App
 
 For additional support, please contact our customer service team through the app or visit our support center.
 

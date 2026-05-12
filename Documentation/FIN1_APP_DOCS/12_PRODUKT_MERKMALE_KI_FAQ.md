@@ -160,7 +160,7 @@ Wenn alle Punkte zutreffen, eignet sich das Merkmal gut für KI-Verständnis und
 | **2) Ablauf/Zustand eindeutig** | ✅ Ja | Investment: reserved → active/cancelled; Trade: pending/active/partial/completed; in 02 und Glossar (Abschnitt 3) konsistent. |
 | **3) Begriffe Doku/Code gleich** | ⚠️ Teilweise | **Lücke:** In Abschnitt 2.2 (Rollen-FAQ) und Glossar „Investor“ steht noch die alte Formulierung („Kapital in Pools“, „handelt mit Pool-Kapital“). **Lösung:** An 02 (US-B2) und FAQ-Seed anpassen: Rollen-FAQ und Investor-Definition auf „Kapital dem gewählten Trader zugeordnet“, „simultaner Trade“, „Trader führt Trades aus“ umstellen (siehe Korrekturen unten). |
 | **4) Als Frage + Antwort formulierbar** | ✅ Ja | Abschnitt 2 listet FAQ-Themen in 2–4 Sätzen; Abschnitt 6 (AI-Einordnung) ist keine Feature-Checkliste, sondern Positionierung. |
-| **5) Keine doppelte Definition** | ⚠️ Teilweise | **Konto:** ein normales Konto (kein Wallet-Feature). **Pool:** „Investment-Pool“ (Glossar) und „Pool“ / „Trader-Pool“ werden teils synonym verwendet. **Lösung:** Im Glossar explizit festhalten: „Pool“ = Kurzform für „Investment-Pool“, damit nur eine Definition gilt (siehe Korrektur unten). |
+| **5) Keine doppelte Definition** | ⚠️ Teilweise | **Konto:** ein normales Konto (kein Konto-Feature). **Pool:** „Investment-Pool“ (Glossar) und „Pool“ / „Trader-Pool“ werden teils synonym verwendet. **Lösung:** Im Glossar explizit festhalten: „Pool“ = Kurzform für „Investment-Pool“, damit nur eine Definition gilt (siehe Korrektur unten). |
 
 **Umgesetzte Korrekturen (Begriffe & Rollen):**
 

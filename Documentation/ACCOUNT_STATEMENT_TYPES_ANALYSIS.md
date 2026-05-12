@@ -11,7 +11,7 @@
 
 **Account Statement / Kontoübersicht** = Der offizielle Kontoauszug
 
-**Wallet Transaktionshistorie** = KEIN Kontoauszug, nur eine Übersicht
+**Konto-Transaktionshistorie (UI)** = KEIN Kontoauszug, nur eine Übersicht
 
 ---
 
@@ -37,7 +37,7 @@ Ein **Kontoauszug** ist ein offizielles Dokument, das:
 │  (Kontoübersicht / Kontoauszug)    │
 │                                     │
 │  ✅ Zeigt ALLE Transaktionen        │
-│     - Wallet (Ein-/Auszahlungen)   │
+│     - Konto (Ein-/Auszahlungen)   │
 │     - Trading (Buy/Sell Orders)    │
 │     - Profit Distribution           │
 │     - Commissions                   │
@@ -53,13 +53,13 @@ Ein **Kontoauszug** ist ein offizielles Dokument, das:
 
 ---
 
-### 2. **Wallet Transaktionshistorie** ❌ = KEIN Kontoauszug
+### 2. **Konto-Transaktionshistorie (UI)** ❌ = KEIN Kontoauszug
 
 ```
 ┌─────────────────────────────────────┐
-│  Wallet                              │
+│  Kontoansicht                        │
 │  • Transaktionshistorie              │
-│    (nur Wallet-Transaktionen)        │
+│    (nur Konto-Transaktionen)        │
 │                                     │
 │  ✅ Zeigt nur Ein-/Auszahlungen     │
 │  ❌ Kein PDF-Export                  │
@@ -75,10 +75,10 @@ Ein **Kontoauszug** ist ein offizielles Dokument, das:
 
 ## 📋 Vergleich
 
-| Aspekt | Account Statement | Wallet Historie |
+| Aspekt | Account Statement | Konto-Historie (UI) |
 |--------|------------------|-----------------|
 | **Ist Kontoauszug?** | ✅ Ja | ❌ Nein |
-| **Zeigt alle Transaktionen?** | ✅ Ja | ❌ Nur Wallet |
+| **Zeigt alle Transaktionen?** | ✅ Ja | ❌ Nur Kontoansicht |
 | **PDF-Export?** | ✅ Ja | ❌ Nein |
 | **Read-only?** | ✅ Ja | ❌ Nein (interaktiv) |
 | **Für Steuerberater?** | ✅ Ja | ❌ Nein |
@@ -97,11 +97,11 @@ Ein **Kontoauszug** ist ein offizielles Dokument, das:
 - PDF-Export möglich
 - Für Steuerberater/Compliance
 
-### Wallet Transaktionshistorie ist KEIN Kontoauszug:
+### Konto-Transaktionshistorie (UI) ist KEIN Kontoauszug:
 
-**Wallet → "Letzte Transaktionen" / "Transaktionshistorie"**
+**Konto → "Letzte Transaktionen" / "Transaktionshistorie"**
 - Nur eine Übersicht für den User
-- Zeigt nur Wallet-Transaktionen
+- Zeigt nur Konto-Transaktionen
 - Kein PDF-Export
 - Interaktiv (Ein-/Auszahlen möglich)
 
@@ -113,19 +113,19 @@ Ein **Kontoauszug** ist ein offizielles Dokument, das:
 
 1. **Dashboard** → "Kontoübersicht" / "Kontoauszug" klicken
 2. **Account Statement** öffnet sich
-3. **Zeigt ALLE Transaktionen** (Wallet + Trading)
+3. **Zeigt ALLE Transaktionen** (Konto + Trading)
 4. **PDF-Export** möglich → für Steuerberater
 
 **Das ist der EINZIGE Kontoauszug!** ✅
 
 ---
 
-### Szenario 2: User möchte Wallet-Transaktionen sehen
+### Szenario 2: User möchte Konto-Transaktionen sehen
 
-1. **Dashboard** → "Wallet" klicken
-2. **Wallet** öffnet sich
+1. **Dashboard** → "Konto" klicken
+2. **Konto** öffnet sich
 3. **"Letzte Transaktionen"** zeigt nur Ein-/Auszahlungen
-4. **"Alle anzeigen"** → Transaktionshistorie (nur Wallet)
+4. **"Alle anzeigen"** → Transaktionshistorie (nur Konto)
 5. **Kein PDF-Export** → nur Übersicht
 
 **Das ist KEIN Kontoauszug, nur eine Übersicht!** ❌
@@ -136,15 +136,15 @@ Ein **Kontoauszug** ist ein offizielles Dokument, das:
 
 ### eToro:
 - **Account Statement** = Kontoauszug (PDF-Export, alle Transaktionen)
-- **eToro Money** = Wallet (nur Ein-/Auszahlungen, kein Kontoauszug)
+- **eToro Money** = Kontoansicht (nur Ein-/Auszahlungen, kein Kontoauszug)
 
 ### Trading 212:
 - **Account Statement** = Kontoauszug (PDF-Export, alle Transaktionen)
-- **Manage Funds** = Wallet (nur Deposits/Withdrawals, kein Kontoauszug)
+- **Manage Funds** = Kontoansicht (nur Deposits/Withdrawals, kein Kontoauszug)
 
 ### Coinbase:
 - **Account Ledger** = Kontoauszug (PDF-Export, alle Transaktionen)
-- **Wallet** = Übersicht (nur Wallet-Transaktionen, kein Kontoauszug)
+- **Kontoansicht** = Übersicht (nur Konto-Transaktionen, kein Kontoauszug)
 
 **→ Alle Apps haben NUR EINEN Kontoauszug!**
 
@@ -160,29 +160,29 @@ Ein **Kontoauszug** ist ein offizielles Dokument, das:
 - PDF-Export möglich
 - Für Steuerberater/Compliance
 
-### ❌ **Wallet Transaktionshistorie ist KEIN Kontoauszug:**
+### ❌ **Konto-Transaktionshistorie (UI) ist KEIN Kontoauszug:**
 
-**Wallet → Transaktionshistorie**
+**Konto → Transaktionshistorie**
 - Nur User-Übersicht
-- Zeigt nur Wallet-Transaktionen
+- Zeigt nur Konto-Transaktionen
 - Kein PDF-Export
 - Interaktiv
 
 ---
 
-## 🔄 Optional: PDF-Export für Wallet?
+## 🔄 Optional: PDF-Export für Kontoansicht?
 
-**Frage:** Sollte das Wallet auch PDF-Export haben?
+**Frage:** Sollte die Kontoansicht auch PDF-Export haben?
 
 **Antwort:** Nein, nicht nötig.
 
 **Warum:**
 - Account Statement hat bereits PDF-Export (alle Transaktionen)
-- Wallet-Transaktionen sind bereits im Account Statement enthalten
+- Konto-Transaktionen sind bereits im Account Statement enthalten
 - Doppelter PDF-Export wäre redundant
 - User kann Account Statement für PDF verwenden
 
-**Aber:** Wenn gewünscht, könnte man optional einen "Wallet-Report" (nur Wallet-Transaktionen) als PDF anbieten. Das wäre dann aber kein "Kontoauszug", sondern ein "Wallet-Report".
+**Aber:** Wenn gewünscht, könnte man optional einen "Konto-Report" (nur Konto-Transaktionen) als PDF anbieten. Das wäre dann aber kein "Kontoauszug", sondern ein "Konto-Report".
 
 ---
 
@@ -192,15 +192,15 @@ Ein **Kontoauszug** ist ein offizielles Dokument, das:
 
 **Account Statement / Kontoübersicht**
 - Der offizielle, rechtlich relevante Kontoauszug
-- Zeigt ALLE Transaktionen (Wallet + Trading)
+- Zeigt ALLE Transaktionen (Konto + Trading)
 - PDF-Export möglich
 - Für Steuerberater/Compliance geeignet
 
-### ❌ **Wallet Transaktionshistorie ist KEIN Kontoauszug:**
+### ❌ **Konto-Transaktionshistorie (UI) ist KEIN Kontoauszug:**
 
-**Wallet → "Letzte Transaktionen" / "Transaktionshistorie"**
+**Konto → "Letzte Transaktionen" / "Transaktionshistorie"**
 - Nur eine User-Übersicht
-- Zeigt nur Wallet-Transaktionen (Ein-/Auszahlungen)
+- Zeigt nur Konto-Transaktionen (Ein-/Auszahlungen)
 - Kein PDF-Export
 - Interaktiv (Ein-/Auszahlen möglich)
 

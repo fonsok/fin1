@@ -162,6 +162,12 @@ NavigationStack {
 }
 ```
 
+## Related ADRs (finance / ops)
+
+Dieses ADR betrifft **Navigation**; für **geld-/buchhaltungsnahe** iOS-Sync-, Smoke- und Admin-Betriebsdoku siehe:
+
+- [`ADR-012-Partial-Sell-Metrics-Finance-Smoke-And-Ops.md`](ADR-012-Partial-Sell-Metrics-Finance-Smoke-And-Ops.md)
+
 ## Review Date
 This ADR will be reviewed in 3 months to assess migration progress and update guidelines as needed.
 

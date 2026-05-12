@@ -25,7 +25,7 @@
   - Model für Compliance Events in Parse Server
   - Konvertierung zu/from ComplianceEvent
 
-- **ParseWalletTransaction.swift** ✅ (Konto; Wallet-Feature deaktiviert)
+- **ParseWalletTransaction.swift** ✅ (Konto; Konto-Feature deaktiviert)
   - Model für Konto-Transaktionen in Parse Server
   - Konvertierung zu/from Transaction
 
@@ -68,7 +68,7 @@
 ### 4. MockPaymentService erweitert ✅
 
 **Implementiert:**
-- Konto-Transaktionen werden in Parse Server gespeichert (Wallet-Feature deaktiviert; Nutzer hat normales Konto)
+- Konto-Transaktionen werden in Parse Server gespeichert (Konto-Feature deaktiviert; Nutzer hat normales Konto)
 - `loadTransactionsFromParseServer()` - Lädt Transactions beim Start
 - `deposit()` und `withdraw()` - Speichern Transactions in Parse Server
 - `getTransactionHistory()` - Liest auch aus Parse Server
@@ -87,7 +87,7 @@
   - `TransactionLimit` Klasse ✅
   - `TransactionHistory` Klasse ✅
   - `ComplianceEvent` Klasse ✅
-  - Konto-Transaktionen (Backend-Klasse; Wallet-Feature deaktiviert) ✅
+  - Konto-Transaktionen (Backend-Klasse; Konto-Feature deaktiviert) ✅
 - Live Query für Konto-Transaktionen und `ComplianceEvent` aktiviert
 
 ### 6. Notifications (Parse) Integration erweitert ✅

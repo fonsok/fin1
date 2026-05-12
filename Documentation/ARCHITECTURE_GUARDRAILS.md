@@ -60,14 +60,15 @@ This document outlines all automated checks and guardrails that protect architec
 ### 3. File Size Limits ✅
 
 **What's Protected:**
-- Classes ≤ 400 lines
+- Swift source files target ≤ 300 lines
 - Functions ≤ 50 lines
 - Large types split into extensions
+- Pragmatic exceptions allowed for static content/data-only files (e.g. legal text constants), but only with explicit rationale in PR
 
 **Automated Checks:**
 - ✅ **Pre-commit Hook**: `check-file-sizes.sh` runs before every commit
 - ✅ **CI/CD**: Runs in GitHub Actions
-- ✅ **Danger**: Warns on PRs if files exceed 400 lines
+- ✅ **Danger**: Warns on PRs if files exceed configured threshold
 
 **How It Works:**
 ```bash
@@ -75,7 +76,7 @@ This document outlines all automated checks and guardrails that protect architec
 ./scripts/check-file-sizes.sh
 
 # Checks:
-# - All Swift files ≤ 400 lines
+# - All Swift files target ≤ 300 lines
 # - All functions ≤ 50 lines
 ```
 
@@ -105,6 +106,8 @@ This document outlines all automated checks and guardrails that protect architec
 **What's Protected:**
 - Consistent spacing, fonts, and design tokens
 - No fixed values in UI code
+
+**Swift 6 note:** `ResponsiveDesign` (and `ComponentFactory`) are **`@MainActor`**; see **`Documentation/ResponsiveDesign.md`** for the **`TextFieldStyle`** exception and **`FilterChip`** flow layout (`Layout` protocol).
 
 **Automated Checks:**
 - ✅ **SwiftLint Rules**: 5 custom rules catch violations

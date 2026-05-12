@@ -1,7 +1,7 @@
 ---
 title: "FIN1 – Technische Spezifikation"
 audience: ["Entwicklung", "Architektur", "Security", "QA", "Betrieb"]
-lastUpdated: "2026-04-11"
+lastUpdated: "2026-04-15"
 ---
 
 ## Konfigurierbare Finanzparameter
@@ -17,6 +17,7 @@ Diese Parameter erfordern eine Genehmigung durch einen zweiten Administrator:
 | `traderCommissionRate` | 10% (0.10) | `requestConfigurationChange` | Trader-Provision |
 | `initialAccountBalance` | €0,00 (Code-/DB-Default; Anhebung nur Admin-Portal / 4-Augen) | `requestConfigurationChange` | Startguthaben für Kontoführung (kein „geschenktes“ Guthaben ohne Admin-Entscheid) |
 | `appServiceChargeRate` | 2% (0.02) | `requestConfigurationChange` | Appgebühr |
+| `legalAppName` | `FIN1` (Default) / `VITE_APP_NAME` (Portal-Fallback) | `requestConfigurationChange` | Kanonischer App-Name für Platzhalter wie `{{APP_NAME}}` (wird in `loadConfig()` als `legal.appName` exponiert) |
 
 **Workflow:**
 1. Admin A beantragt Änderung → `FourEyesRequest` wird erstellt
@@ -42,6 +43,25 @@ Alle Rates verwenden `effective*` Properties mit Fallback auf `CalculationConsta
 |---------|-----|---------------|
 | **Web-Admin-Portal** | `https://192.168.178.24/admin/configuration` | Alle Config-Änderungen |
 | Swift Admin-UI | In-App → Configuration | Read-Only / Legacy |
+
+### Tax-Mode Guardrails (Hardening, 2026-04-15)
+
+- **Erlaubte Werte (`taxCollectionMode`)**: nur
+  - `customer_self_reports`
+  - `platform_withholds`
+- **Serverseitige Normalisierung (fail-safe)**:
+  - Beim Laden (`loadConfig`) und Anwenden (`applyConfigurationChange`) werden ungültige Werte auf `customer_self_reports` gesetzt.
+- **Audit-Transparenz**:
+  - Logging in `applyConfigurationChange` verwendet den tatsächlich angewendeten Wert (normalisiert), nicht nur den rohen Input.
+- **Admin-UI-Fallback**:
+  - `resolveConfig` liefert bei leerem Payload numerische **und** String-Defaults (`taxCollectionMode`).
+  - UI normalisiert zusätzlich defensiv, damit ungültige Werte keine inkonsistenten Zustände erzeugen.
+
+### Legal Branding (App Name) Governance (2026-04-15)
+
+- **Kanonische Pflege:** `legalAppName` wird im Admin-Portal unter **Konfiguration → Systemparameter** geändert (4-Augen, wie andere kritische Parameter).
+- **Runtime-Mapping:** Persistenzfeld `Configuration.legalAppName` → `loadConfig().legal.appName` (für Public/Legal Hydration und konsistente Platzhalter).
+- **Bypass verhindern:** `updateLegalBranding` ist deprecated und serverseitig blockiert; direkte Writes umgehen Governance/Audit-Pfade.
 
 ### Trader-Dokumente (Rechnung, Sammelabrechnung)
 
@@ -86,6 +106,13 @@ Diese Spezifikation beschreibt die **Detail-Architektur**, **APIs**, **Datenmode
 - **@MainActor**: Alle ViewModels (59/60) sind mit `@MainActor` markiert für Compiler-enforced Thread-Safety. Ausnahme: `SellOrderViewModel` (LimitOrderMonitor Protocol Constraints).
 - **Sendable**: Alle Kern-Models (Investment, Trade, Order, User, Transaction, etc.) konform zu `Sendable` für sicheren Datenaustausch zwischen Actor-Grenzen.
 - **App-Lifecycle Hooks**: `FIN1App.swift` nutzt `scenePhase` für automatische Backend-Synchronisation bei App-Background (Investments + Orders parallel).
+
+**iOS-Client ↔ Parse REST (Swift 6, canonical für API-DTO-Anforderungen)**
+
+- **`ParseAPIClient` / `ParseAPIClientProtocol`:** `fetchObjects` / `fetchObject` verlangen **`T: Decodable & Sendable`** (Request-Deduplizierung). **`updateObject`** / Konflikt-Pfade, die erneut fetchen, verlangen **`Codable & Sendable`** wo an die Fetch-API gekoppelt.
+- **Neue Parse-DTOs** für diese Aufrufe: bevorzugt **`Sendable`**-Structs; **`@unchecked Sendable`** nur bei bewusst nicht-sendbaren Feldern (z. B. **`AnyCodable`** mit `Any`, **`ParsePriceAlert`** mit `[String: Any]?`).
+- **UI-Metriken:** `ResponsiveDesign` / `ComponentFactory` sind **`@MainActor`** (UIKit); Ausnahme **`TextFieldStyle`** → siehe **`Documentation/ResponsiveDesign.md`**.
+- **Cursor-Detail & Brücken-Pattern:** `.cursor/rules/architecture.md` (Abschnitte Swift 6 / Parse fetch / Non-Sendable-Protokolle).
 
 **Architektur-Patterns**
 
@@ -159,12 +186,20 @@ sequenceDiagram
   PS->>DB: afterSave Investment: Kontobelastung (investment debit)
   PS-->>App: {success:true, status:"active"}
 
-  Note over App: InvestmentCashDeductionProcessor: App Service Charge wird gebucht\n(Service Charge Rate aus ConfigurationService, konfigurierbar)
-  App->>App: InvoiceService.addInvoice(appServiceCharge)\n(mit detaillierter Beschreibung: Berechnungsgrundlage, Investment-Beträge, Buchungsnummern)\n(UI: mehrzeilige Anzeige in InvoiceItemRowView/InvoiceItemDisplayRowView)\n(PDF: dynamische Zeilenhöhe in PDFProfessionalComponents.drawTable)
-  App->>PS: callFunction(createServiceChargeInvoice){invoiceNumber, amounts, customerInfo, investmentIds, ...}
-  PS->>DB: Insert Invoice (invoiceType=service_charge, status=issued)
-  DB-->>PS: invoiceId
-  PS-->>App: {invoiceId, invoiceNumber, status:"issued"}
+  Note over App: InvestmentCashDeductionProcessor: Cash Balance Abbuchungen\n(Investments + App Service Charge; Rate aus ConfigurationService)
+  Note over App: PDF/Anzeige-Beleg: lokales Invoice-Objekt + Document-Upload\n(UI: InvoiceItemRowView/InvoiceItemDisplayRowView; PDF: PDFProfessionalComponents.drawTable)
+  alt display.serviceChargeInvoiceFromBackend == true (getConfig / Configuration)
+    App->>PS: callFunction(bookAppServiceCharge){investmentId}
+    PS->>DB: Insert Invoice (invoiceType=service_charge, source=backend, batchId)\n+ beforeSave duplicate-guard (batchId + invoiceType)
+    Note over PS,DB: afterSave Invoice → BankContraPosting + AppLedgerEntry\n(ADR-007; idempotent pro Batch)
+    PS-->>App: {success, invoiceId, skipped?}
+  else Legacy / Übergang
+    App->>App: InvoiceService.addInvoice(appServiceCharge)\n(optional zusätzlich: createServiceChargeInvoice)
+    App->>PS: callFunction(createServiceChargeInvoice){invoiceNumber, amounts, customerInfo, investmentIds, ...}
+    PS->>DB: Insert Invoice (invoiceType=service_charge, status=issued)
+    DB-->>PS: invoiceId
+    PS-->>App: {invoiceId, invoiceNumber, status:"issued"}
+  end
 ```
 
 ### (C) Trading: placeOrder → Trigger erstellt Trade/Invoice/Notifications
@@ -245,6 +280,7 @@ sequenceDiagram
 
 - **`markNotificationRead`**: auth required, params `{notificationId}` → `{success:true}`
 - **`getUnreadNotificationCount`**: auth required → `{total, byCategory:{...}}`
+- **In-App Deep-Link (optional):** Wenn eine Notification beim Antippen einen Beleg (`Document`) öffnen soll, setzt das Backend in `Notification.metadata` entweder **`documentId`** = Parse-`objectId` der Klasse **`Document`**, oder **`referenceType`=`document`** und **`referenceId`** = dieselbe `objectId`. Client: `NotificationMetadataActionResolver` → `DocumentService.resolveDocumentForDeepLink` → gleiche Navigation wie Dokumente-Tab (siehe **ADR-004**, Abschnitt 6).
 
 #### Admin/Compliance
 
@@ -265,7 +301,8 @@ sequenceDiagram
 - **`getAccountStatements`**: auth required, params `{year?}` → `{statements:[...]}`
 - **`getTraderPerformance`**: auth required, trader-only, params `{period?}` → `{trades:{...}, profit:{...}}`
 - **`getInvestorPerformance`**: auth required, params `{period?}` → `{investments:{...}, financials:{...}}`
-- **`createServiceChargeInvoice`**: auth required, params `{invoiceNumber, grossServiceChargeAmount, netServiceChargeAmount, vatAmount, vatRate, batchId?, investmentIds?, customerInfo}` → `{invoiceId, invoiceNumber, status:"issued"}` (persistiert App Service Charge Invoice im Backend mit detaillierter Beschreibung: Berechnungsgrundlage, Investment-Beträge, Buchungsnummern, Split-Informationen). Die Beschreibung wird in der UI mehrzeilig angezeigt und im PDF mit dynamischer Zeilenhöhe gerendert.
+- **`bookAppServiceCharge`**: auth required (Investor-Eigentümer) oder Master-Key; params `{investmentId}` → `{success, invoiceId, skipped?, reason?}` — legt die App-Service-Charge-`Invoice` **serverseitig** und **idempotent** an (`batchId + invoiceType=service_charge`); `afterSave Invoice` bucht BankContra + AppLedger. Siehe `Documentation/ADR-007-App-Service-Charge-Cash-Balance-Debit.md`.
+- **`createServiceChargeInvoice`**: auth required, params `{invoiceNumber, grossServiceChargeAmount, netServiceChargeAmount, vatAmount, vatRate, batchId?, investmentIds?, customerInfo}` → `{invoiceId, invoiceNumber, status:"issued"}` (**Legacy-/Kompatibilitäts-Pfad** in `backend/parse-server/cloud/functions/reports.js`; weiterhin vorhanden, aber nicht mehr der empfohlene Primary-Path sobald `display.serviceChargeInvoiceFromBackend=true` ausgerollt ist). Die Beschreibung wird in der UI mehrzeilig angezeigt und im PDF mit dynamischer Zeilenhöhe gerendert.
 
 #### Legal
 
@@ -390,11 +427,21 @@ sequenceDiagram
 
 ### 6.1 Document-Modell und Belegnummern
 
-- **Document** (`FIN1/Shared/Models/Document.swift`): `documentNumber: String?`, automatisch aus `invoiceData.invoiceNumber`; Helper `accountingDocumentNumber`, `hasAccountingDocumentNumber`.
+- **Document** (`FIN1/Shared/Models/Document.swift`): `documentNumber: String?`, bei Initialisierung aus `invoiceData?.invoiceNumber` sonst separates Feld; Helper `accountingDocumentNumber`, `hasAccountingDocumentNumber`.
+
+**Parse-`Document` vs. eingebettetes `Invoice` (wichtig für alle Einstiegspunkte „Beleg öffnen“):**
+
+- Beim Dekodieren vom Parse-Server setzt **`DocumentAPIService` / `ParseDocumentResponse.toDocument()`** **`invoiceData` ausdrücklich auf `nil`** ( strukturierte `Invoice`-Payload liegt nicht in der `Document`-Zeile; Kommentar im Code).
+- **Folge:** Navigation über **`DocumentNavigationHelper`** für `DocumentType.invoice` muss strukturierten Inhalt **hydrieren**: nach Laden der Session-Invoices Zuordnung per **`InvoiceService.invoice(matching:)`** (u. a. `tradeId`, `accountingDocumentNumber` / Dateiname); Implementierung **`HydratedInvoiceDocumentView`** in `DocumentNavigationHelper.swift` (lädt `getDocument(by:)`, dann `loadInvoices`, dann Match). Ohne Hydration nur generischer Viewer / PDF-Pfad — **kein zweites Backend**, sondern fehlende Anreicherung.
+- **`DocumentType.trader_credit_note`:** bleibt mit `TraderCreditNoteDetailView` konsistent (Metadaten am `Document`); Gutschriften nutzen dort weiterhin dokumentseitige Daten wie zuvor.
+- **`investor_collection_bill`:** **`CollectionBillDocumentViewModel`** merged vor der Auflösung die **kanonische Zeile** aus **`DocumentService.getDocument(by: document.id)`** mit der evtl. dünneren Payload aus Notifications/Kontoauszug. Investment-Auflösung nutzt zusätzlich Abgleich **`batchId`** mit extrahierter ID (Fallback wenn nur Batch-Kontext vorliegt).
+- **Notification-only Karten:** Zusätzlich kann eine Parse-`Notification` mit **`metadata.documentId`** bzw. **`referenceType=document` / `referenceId`** direkt ein **`Document`** öffnen (`resolveDocumentForDeepLink`), ohne dass die Zeile in der Dokumentliste erscheinen muss — siehe ADR-004 §6.
+
+**Übereinstimmung mit GoB:** Belegnummern und Referenzen auf dem `Document` (`documentNumber` / Filename) bleiben maßgeblich; die **Darstellung strukturierter Rechnungen** kommt nach Hydration vom **`Invoice`**-Modell aus **`InvoiceService`** (Backend weiterhin Quelle über Cloud **`getUserInvoices`** bzw. Parse-Klasse **`Invoice`**).
 - **Belegnummer-Formate**: Der Prefix ist **nicht** fest „FIN1“, sondern der aktuelle Firmen-/Dokument-Prefix aus `LegalIdentity.documentPrefix` (Info.plist `LegalDocumentPrefix` oder abgeleitet von `AppBrand.appName`, Fallback „FIN1“). Format: `<Prefix>-<Typ>-YYYYMMDD-XXXXX`.
   - Rechnungen/Gutschriften: `<Prefix>-INV-YYYYMMDD-XXXXX` via `TransactionIdService.generateInvoiceNumber()` (nutzt intern `LegalIdentity.documentPrefix`).
   - Investor Collection Bills: `<Prefix>-INVST-YYYYMMDD-XXXXX` via `TransactionIdService.generateInvestorDocumentNumber()`.
-- Belegnummer wird gesetzt in: TradingNotificationService (Invoice, Collection Bill, Credit Note), InvestmentDocumentService/CreationService/InvestorNotificationService, CommissionSettlementService, InvestmentCashDeductionProcessor; Backend: Cloud Function `createServiceChargeInvoice`.
+- Belegnummer wird gesetzt in: TradingNotificationService (Invoice, Collection Bill, Credit Note), InvestmentDocumentService/CreationService/InvestorNotificationService, CommissionSettlementService, InvestmentCashDeductionProcessor; Backend: primär `bookAppServiceCharge` (ADR-007, idempotent) bzw. optional zusätzlich `afterSave Investment` (Server-Autobuchung bei Aktivierung); Legacy: Cloud Function `createServiceChargeInvoice` (`reports.js`).
 
 ### 6.2 Emittent (Issuer) und Handelsplatz
 
@@ -412,7 +459,7 @@ sequenceDiagram
 
 ### 6.4 Mehrzeilige Beschreibung und Service Charge
 
-- Rechnungspositionen **Securities** und **Service Charge**: mehrzeilige Anzeige (InvoiceItemRowView, InvoiceItemDisplayRowView). PDF: dynamische Zeilenhöhe in PDFProfessionalComponents. Service Charge Rate konfigurierbar über `ConfigurationService.updateAppServiceChargeRate()`.
+- Rechnungspositionen **Securities** und **Service Charge**: mehrzeilige Anzeige (InvoiceItemRowView, InvoiceItemDisplayRowView). PDF: dynamische Zeilenhöhe in PDFProfessionalComponents. Service Charge Rate konfigurierbar über `ConfigurationService.updateAppServiceChargeRate()`. Persistierung der Parse-`Invoice` für die Appgebühr wird über `getConfig.display.serviceChargeInvoiceFromBackend` gesteuert (siehe ADR-007); die PDF/Anzeige kann weiterhin clientseitig aus dem lokal gebauten `Invoice`-Wert generiert werden.
 
 ### 6.5 Trader-Gutschrift (Commission Credit Note)
 
@@ -422,5 +469,5 @@ sequenceDiagram
 ### 6.6 GoB / Rückwärtskompatibilität
 
 - **Invarianten**: (1) Eindeutige Belegnummer pro Beleg, (2) Jeder buchungstechnisch wirksame Vorgang → mindestens ein Beleg mit Belegnummer. Bei neuen buchungsrelevanten Features: Beleg erzeugen und Nummer vergeben.
-- Eindeutigkeit, Fortlauf, Nachvollziehbarkeit; `documentNumber` optional im Modell, Fallback auf `invoiceData.invoiceNumber`; in der Erzeugung (Notification/Document-Services) wird die Nummer immer gesetzt. Gutschrift: Zuordnung Provision ↔ Investment über Investment-Nr. in der Breakdown-Tabelle (siehe 6.5).
+- Eindeutigkeit, Fortlauf, Nachvollziehbarkeit; `documentNumber` optional im Modell, Fallback auf `invoiceData?.invoiceNumber` wenn eingebettet; von Parse gelieferte `Document`-Zeilen haben typischerweise **kein** `invoiceData` (siehe 6.1). Gutschrift: Zuordnung Provision ↔ Investment über Investment-Nr. in der Breakdown-Tabelle (siehe 6.5).
 

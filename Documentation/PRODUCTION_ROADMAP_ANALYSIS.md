@@ -32,7 +32,7 @@ Die vorgeschlagene MVP-Modul-Liste ist **gut priorisiert** und deckt die essenzi
 | **User Onboarding & KYC** | 🟡 Teilweise | Multi-Step Registration vorhanden, KYC-Integration fehlt | BaaS-Integration (Solaris/Basikon), VideoIdent-Provider |
 | **Portfolio Dashboard** | ✅ Implementiert | Dashboard mit Performance-Tracking vorhanden | Echtzeit-Updates, erweiterte Charts |
 | **Order-Platzierung** | 🟡 Teilweise | Trading-UI vorhanden, Broker-Integration fehlt | Broker-API-Integration, Echtzeit-Kurse |
-| **Zahlungen** | ❌ Nicht implementiert | - | SEPA-Integration, PSD2-Banklogin, Wallet-Balance |
+| **Zahlungen** | ❌ Nicht implementiert | - | SEPA-Integration, PSD2-Banklogin, Konto-/Cash-Balance |
 | **Basis-Sicherheit** | ✅ Implementiert | 2FA (Biometrie), Session-Management vorhanden | Transaktionslimits, erweiterte Security-Audits |
 | **Compliance-Logging** | 🟡 Teilweise | Audit-Logging für Customer Support vorhanden | MiFID II-spezifisches Logging, Trade-Protokollierung |
 
@@ -50,7 +50,7 @@ Die vorgeschlagene MVP-Modul-Liste ist **gut priorisiert** und deckt die essenzi
    - SEPA-Einzahlungen (via BaaS)
    - SEPA-Auszahlungen (via BaaS)
    - PSD2-Banklogin (optional für MVP, kann später kommen)
-   - Wallet-Balance-Management
+   - Konto-/Cash-Balance-Management
 
 #### Phase 2: Trading-Integration (Wochen 9-16)
 
@@ -251,7 +251,7 @@ Parse Server → Kafka → [Order Service, Portfolio Service, Notification Servi
 8. **Zahlungsintegration**
    - SEPA-Einzahlungen (via BaaS)
    - SEPA-Auszahlungen (via BaaS)
-   - Wallet-Balance-Management
+   - Konto-/Cash-Balance-Management
 
 ### Woche 9-12: Trading-Features
 

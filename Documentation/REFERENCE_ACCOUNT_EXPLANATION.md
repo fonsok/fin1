@@ -9,8 +9,8 @@
 
 **Ja, genau! Es ist das Referenzkonto (externes Bankkonto des Users).**
 
-- **Einzahlung**: Referenzkonto (User's Bankkonto) → FIN1 Wallet
-- **Auszahlung**: FIN1 Wallet → Referenzkonto (User's Bankkonto)
+- **Einzahlung**: Referenzkonto (User's Bankkonto) → FIN1 Konto
+- **Auszahlung**: FIN1 Konto → Referenzkonto (User's Bankkonto)
 
 ---
 
@@ -32,7 +32,7 @@
                             │ │
                             │ ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                    FIN1 Wallet                               │
+│                    FIN1 Konto                               │
 │  • Balance: €25.000,00                                       │
 │  • Einzahlung: +€1.000,00                                    │
 │  • Auszahlung: -€500,00                                      │
@@ -46,7 +46,7 @@
 ### Einzahlung (Deposit)
 
 **User Journey:**
-1. User öffnet Wallet
+1. User öffnet Kontoansicht
 2. Klickt "Einzahlen"
 3. Gibt Betrag ein (z.B. 1.000€)
 4. Bestätigt Einzahlung
@@ -57,11 +57,11 @@
   - User wird zu SEPA-Direktlastschrift weitergeleitet
   - Oder: User überweist manuell von Referenzkonto
   - BaaS-Provider bestätigt Zahlungseingang
-  - FIN1 Wallet-Balance wird erhöht
+  - FIN1 Konto-Balance wird erhöht
 
 **Geldfluss:**
 ```
-Referenzkonto (User's Bank) → SEPA-Überweisung → FIN1 Wallet
+Referenzkonto (User's Bank) → SEPA-Überweisung → FIN1 Konto
 ```
 
 ---
@@ -69,7 +69,7 @@ Referenzkonto (User's Bank) → SEPA-Überweisung → FIN1 Wallet
 ### Auszahlung (Withdrawal)
 
 **User Journey:**
-1. User öffnet Wallet
+1. User öffnet Kontoansicht
 2. Klickt "Auszahlen"
 3. Gibt Betrag ein (z.B. 500€)
 4. Bestätigt Auszahlung
@@ -80,11 +80,11 @@ Referenzkonto (User's Bank) → SEPA-Überweisung → FIN1 Wallet
   - FIN1 sendet Auszahlungsanfrage an BaaS-Provider
   - BaaS-Provider führt SEPA-Überweisung durch
   - Geld wird auf Referenzkonto überwiesen (1-3 Werktage)
-  - FIN1 Wallet-Balance wird reduziert
+  - FIN1 Konto-Balance wird reduziert
 
 **Geldfluss:**
 ```
-FIN1 Wallet → SEPA-Überweisung → Referenzkonto (User's Bank)
+FIN1 Konto → SEPA-Überweisung → Referenzkonto (User's Bank)
 ```
 
 ---

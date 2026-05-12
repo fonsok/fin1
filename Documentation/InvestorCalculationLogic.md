@@ -9,7 +9,22 @@ Scope: Investor-specific calculations for buy/sell legs, profit, ROI bases, comm
 - Investor gross profit (async service): `InvestorGrossProfitService.getGrossProfit(for:tradeId:) -> Double`, `getGrossProfitsForTrade(tradeId:) -> [investmentId: Double]`
 - Commission: `CommissionCalculationService.calculateCommission(grossProfit:rate:)`, `calculateNetProfitAfterCommission`, `calculateCommissionAndNetProfit`, `calculateCommissionForInvestor`, `calculateTotalCommissionForTrade`
 - Statement aggregation: `InvestorInvestmentStatementAggregator.summarizeInvestment(...) -> InvestorInvestmentStatementSummary?`
-- Per-investment UI: `InvestorInvestmentStatementViewModel` (constructor builds immediately; `rebuildStatement()`)
+- Per-investment UI: `InvestorInvestmentStatementViewModel` (constructor builds immediately; `rebuildStatement()`, optional `refreshFromBackend()` wenn `SettlementAPIService` injiziert)
+
+## Backend-first / Fallback
+
+**Autoritativ** für abgeschlossene Trades sind die vom **Backend** angelegten Datensätze (`AccountStatement`, Dokumente, Settlement-Summary). Überblick: `Documentation/BACKEND_CALCULATION_MIGRATION.md`.
+
+**Investor-Berechnungen im Client** nutzen das Backend, wo angebunden, und fallen sonst auf **lokale** Rechnung zurück (nur für Anzeige/Resilienz, nicht als zweite Buchungswahrheit):
+
+| Thema | Primär (Backend) | Fallback (lokal) |
+|--------|-------------------|------------------|
+| Collection Bill / Sammelabrechnung | `InvestorCollectionBillCalculationService.calculateCollectionBillWithBackend(...)` bzw. Backend-Metadaten über `SettlementAPIService.fetchInvestorCollectionBills` | `calculateCollectionBill(input:)` (Invoices + Kapital, wie unten beschrieben) |
+| Investment-Statement (UI) | `InvestorInvestmentStatementViewModel.refreshFromBackend()` lädt backend-autoritative Zeilen, wenn `settlementAPIService` gesetzt ist | `rebuildStatement()` / lokaler Aggregator + Collection-Bill-Math |
+| Commission (Summen je Trade/Investor) | `CommissionCalculationService` kann `commission_debit`-Einträge über `SettlementAPIService` auswerten (Konfiguration über `AppServices` / `configure(settlementAPIService:)`) | `InvestorGrossProfitService` + Tarif aus `CalculationConstants` |
+| Cash beim Abschluss / Verteilung | `InvestmentCashDistributor` liest relevante `AccountStatement`-Typen (`sell_proceeds`, `profit_distribution`, `commission_debit`, `residual_return`, …), wenn Settlement-API verfügbar | `InvestorInvestmentStatementAggregator` / lokale Pfade |
+
+**Hinweis:** Reine **Arithmetik**-Helfer (z. B. `calculateCommission(grossProfit:rate:)`) bleiben für **Schätzungen/Previews**; gebuchte Beträge kommen online aus dem Backend.
 
 ### Inputs/Outputs & Preconditions
 - Collection bill input: `investmentCapital` (source of truth, must be >0), `buyPrice` >0, `tradeTotalQuantity` >0, `ownershipPercentage` (0–1], invoices optional but used for fees/sell prices, `investorAllocatedAmount` optional.
@@ -31,6 +46,7 @@ Scope: Investor-specific calculations for buy/sell legs, profit, ROI bases, comm
 
 ## Collection Bill Calculations
 - Source: `FIN1/Features/Investor/Services/InvestorCollectionBillCalculationService.swift`
+- **Reihenfolge:** Wo konfiguriert, zuerst Backend-Pfad (siehe Abschnitt *Backend-first / Fallback*), sonst ausschließlich lokale Rechnung unten.
 - Input validation: positive capital/price/ownership/trade quantity; warns on invoice quantity mismatch vs calculated quantity.
 - Buy leg:
   - Solves for buyAmount such that `buyAmount + fees(buyAmount) = investmentCapital` (fees via `FeeCalculationService`), using binary search with cent tolerance.
@@ -59,7 +75,7 @@ Scope: Investor-specific calculations for buy/sell legs, profit, ROI bases, comm
 ## Commission Calculation
 - Source: `FIN1/Shared/Services/CommissionCalculationService.swift`
 - Basic commission: rate × gross profit (floored at zero), net profit = gross − commission.
-- Investor/trade totals: fetches investor gross profits via `InvestorGrossProfitService`, sums commissions per trade; logs and handles partial data.
+- Investor/trade totals: wo `settlementAPIService` angebunden ist, zuerst Backend-`AccountStatement`-Pfad für gebuchte Provisionen; sonst Abruf der Grob-Gewinne via `InvestorGrossProfitService` und Summierung pro Trade; Logging bei partiellen Daten.
 
 ## Investment Statement Aggregation
 - Source: `FIN1/Features/Investor/Services/InvestorInvestmentStatementAggregator.swift`

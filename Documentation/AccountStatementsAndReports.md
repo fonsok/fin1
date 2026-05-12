@@ -4,6 +4,7 @@ Scope: How account statements, monthly documents, and per-investment statements 
 
 ## Consumer API Reference
 - Monthly statement generation: `MonthlyAccountStatementGenerator.ensureMonthlyStatements(for:services:)` (async), `createMockCurrentMonthStatement(for:services:)` (async)
+- **App lifecycle scheduling**: After login-related preloads, `FIN1App` schedules generation via **`MonthlyStatementPrefetch`** (`FIN1App.swift`)—a **non-blocking `@MainActor` `Task`** so `handleAppBecameActive` can finish (telemetry, SLA, etc.) without waiting on statements. Only **one** prefetch run is in flight at a time; the task **re-reads** `userService.currentUser` when it starts (logout before run → no work).
 - Account statements (UI):
   - `AccountStatementViewModel.refresh()` builds entries/balances for current user (investor/trader) and applies filters.
   - `MonthlyAccountStatementViewModel.load()` builds entries/balances for a specific year/month.
@@ -20,7 +21,7 @@ Scope: How account statements, monthly documents, and per-investment statements 
 ## Porting Checklist
 - Monthly generation: month grouping (year-month), skip current month; create document records with statement year/month/role; notify user; ensure non-zero placeholder size; validate before upload.
 - Trader ledger: opening balance from config; running balance through invoices; treat sells as credits, buys as debits; parse commission credit notes; enrich metadata (trade number, WKN/ISIN, direction, underlying, strike, issuer, quantity).
-- Investor ledger: use cash ledger from investorCashBalanceService; opening = closing − total delta; sort descending.
+- Investor ledger: `InvestorAccountStatementBuilder.buildSnapshotWithWallet` — opening = **`Configuration.initialAccountBalance`** (via `getConfig`, Default **0 €**); closing = replayed ledger + wallet deltas; sort descending for display.
 - Balances per month: opening = base opening + pre-month delta; closing = opening + month delta; entries filtered to month window.
 - Filters: date-based filtering for ranges; expose totals (credits, debits, net change).
 - Investment statements: aggregate via collection-bill-backed items; sum gross profit, buy/sell amounts, fees, residuals, net sell amount, ROI bases, commission; require all invoices present.
@@ -28,7 +29,8 @@ Scope: How account statements, monthly documents, and per-investment statements 
 
 
 ## Monthly Account Statement Generation
-- Source: `FIN1/Shared/Services/MonthlyAccountStatementGenerator.swift`
+- Source: `FIN1/Shared/Services/MonthlyAccountStatementGenerator.swift` (**`@MainActor`**; uses `AppServices` on the main thread).
+- Trigger: `MonthlyStatementPrefetch.schedule(services:)` from `FIN1App` after parallel notification/document/invoice preload (see **Consumer API Reference** above).
 - Builds all completed-month statements (skips current month) for the current user role:
   - Investor: uses `investorCashBalanceService.getTransactions`.
   - Trader: uses `TraderAccountStatementBuilder.buildSnapshot` (invoices-derived ledger).
@@ -50,9 +52,12 @@ Scope: How account statements, monthly documents, and per-investment statements 
   - Computes opening/closing balances for the month by summing deltas before and within the month; slices entries to the month window.
 - Provides header labels (title, period, opening balance date) and mock account identifiers.
 
+### Document reference taps (monthly vs. rolling statement)
+- **`AccountStatementView`** and **`MonthlyAccountStatementView`** both use `AccountStatementEntriesTable` with **`onEntryTap`** when `configurationService.showDocumentReferenceLinksInAccountStatement` is true. Tapping a row with a Beleg reference resolves the target via **`AccountStatementEntry.referencedDocument(documentService:)`** (`id` or `referenceDocumentNumber` / metadata), then presents **`DocumentNavigationHelper.sheetView`** (aligned with invoice hydration and collection-bill resolution). If no matching `Document` is loaded locally, the user sees **„Beleg nicht gefunden“**.
+
 ## Trader Ledger Construction
 - Source: `FIN1/Shared/Accounting/TraderAccountStatementBuilder.swift`
-- Opening balance from `configurationService.initialAccountBalance`.
+- Opening balance from `configurationService.initialAccountBalance` (serverseitig via `getConfig` / Klasse `Configuration`; Default **0 €**, nur das Admin-Portal kann einen höheren Startwert festlegen).
 - Reads invoices (buy/sell and credit-note commissions), sorted by createdAt, and produces `AccountStatementEntry` with running balance:
   - Credit notes: treated as credits (commissions), parses trade numbers into metadata.
   - Trades: direction by transaction type (sell = credit, buy = debit), amount = `invoice.totalAmount`, reference from tradeId/invoice number, metadata enriched with trade/securities details when present.

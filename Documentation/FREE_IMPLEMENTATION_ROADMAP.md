@@ -16,19 +16,17 @@ Dieses Dokument listet alle Features auf, die **sofort implementiert werden kön
 
 ### 🔴 Höchste Priorität (MVP-kritisch)
 
-#### 1. **Wallet-Balance-Management** (2-3 Tage)
+#### 1. **Konto / Balance** (Konto-Feature deaktiviert)
 **Status**: Teilweise vorhanden (`CashBalanceService`)
 
 **Was zu implementieren ist:**
 - ✅ CashBalanceService existiert bereits
-- ⚠️ **Fehlt**: Wallet-UI für Nutzer
-- ⚠️ **Fehlt**: Transaktionshistorie-UI
-- ⚠️ **Fehlt**: Einzahlungs-/Auszahlungs-UI (Mock-Flow)
+- *(Konto-Feature deaktiviert; Nutzer hat normales Konto.)*
 
 **Konkrete Tasks:**
 ```swift
-// 1. WalletView erstellen
-FIN1/Features/Shared/Views/WalletView.swift
+// Konto (Wallet deaktiviert)
+FIN1/Features/Shared/Views/
 - Zeigt aktuelles Guthaben
 - Zeigt Transaktionshistorie
 - Buttons für Einzahlung/Auszahlung (Mock)
@@ -370,8 +368,8 @@ FIN1/Features/Shared/Services/SecurityAuditService.swift
 
 ## 📋 Implementierungs-Plan (4 Wochen)
 
-### Woche 1: Wallet & Limits
-- **Tag 1-2**: Wallet-UI implementieren
+### Woche 1: Konto & Limits
+- **Tag 1-2**: Konto-/Limits-UI (Konto-Feature deaktiviert)
 - **Tag 3-4**: Transaktionslimits implementieren
 - **Tag 5**: Testing & Integration
 
@@ -454,8 +452,8 @@ class RealPaymentService: PaymentServiceProtocol {
 
 Nach 4 Wochen sollten folgende Features funktionieren:
 
-1. ✅ Nutzer können Wallet-Balance sehen
-2. ✅ Nutzer können Mock-Einzahlungen/Auszahlungen durchführen
+1. ✅ Nutzer haben normales Konto (Kontostand; Konto-Feature deaktiviert)
+2. ✅ Nutzer können Einzahlungen/Auszahlungen am Konto durchführen
 3. ✅ Transaktionslimits werden durchgesetzt
 4. ✅ Pre-Trade-Risiko-Checks funktionieren
 5. ✅ Alle Orders/Trades werden für Compliance protokolliert
@@ -467,7 +465,7 @@ Nach 4 Wochen sollten folgende Features funktionieren:
 
 ## 📝 Nächste Schritte
 
-1. **Diese Woche starten**: Wallet-UI implementieren
+1. **Diese Woche starten**: Konto-/Limits-Features (Konto-Feature deaktiviert)
 2. **Parallel**: Transaktionslimits-Design finalisieren
 3. **Woche 2**: Risiko-Checks erweitern
 
