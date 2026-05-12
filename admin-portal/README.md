@@ -84,6 +84,8 @@ npm run build
 
 Führt `tsc` und `vite build` aus; `postbuild` synchronisiert `dist/` nach `../admin/` (siehe `scripts/sync-admin-portal-to-admin.sh`).
 
+**Quellcode-Policy:** Gebaute Dateien unter `../admin/` (und `dist/`) stehen **nicht** im Git — Build in CI (`npm run build` im Admin-Portal-Job) bzw. lokal vor Docker/Nginx. Kurzüberblick: `admin/README.md`.
+
 ## Projektstruktur (Auszug)
 
 ```

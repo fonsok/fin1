@@ -131,7 +131,7 @@ services:
     volumes:
       - ./backend/nginx/nginx.conf:/etc/nginx/nginx.conf
       - ./backend/nginx/ssl:/etc/nginx/ssl
-      # Built SPA copied to admin/ (Ubuntu: ~/fin1-server/admin/). Sync: scripts/sync-admin-portal-to-admin.sh
+      # SPA output: run `npm run build` in admin-portal (syncs to admin/). Not committed — see admin/README.md
       - ./admin:/var/www/admin:ro
     depends_on:
       - parse-server
