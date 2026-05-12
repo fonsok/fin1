@@ -3,6 +3,11 @@
 #   ~/fin1-server/admin/  ←  contents of admin-portal/dist/
 # Docker mounts: ./admin:/var/www/admin
 #
+# Policy A (repo): admin/ build output is listed in .gitignore — never commit the
+# synced files. CI runs `npm run build` in admin-portal only to verify the build;
+# the postbuild hook may populate admin/ on the runner, but that tree is discarded
+# with the job. Production deploy: admin-portal/deploy.sh (rsync dist/ to server).
+#
 # Usage (from repo root):
 #   bash scripts/sync-admin-portal-to-admin.sh
 # Or after build only:
