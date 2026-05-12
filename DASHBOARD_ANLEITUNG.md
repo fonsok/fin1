@@ -31,7 +31,7 @@ Empfehlung: **`https://192.168.178.24/dashboard/`** im LAN nutzen, oder **`ssh -
 
 ### 403 Forbidden trotz SSH-Tunnel?
 
-Nginx erlaubt `/dashboard/` nur von bestimmten Quell-IPs. Nach `ssh -L …:127.0.0.1:443` sieht der **Nginx-Container** die Verbindung oft als **Docker-Gateway** der Compose-Bridge (z. B. `172.19.0.1`, `172.18.0.1`, `172.17.0.1`), nicht als `127.0.0.1`. Im Repo sind typische Gateways in `backend/nginx/nginx.conf` freigegeben — nach Änderung **Nginx-Container neu laden**. Wenn es weiter 403 gibt: `docker inspect fin1-nginx` → `Networks` → `Gateway` prüfen und diese IP ergänzen; optional Access-Log.
+Nginx erlaubt `/dashboard/` nur von bestimmten Quell-IPs. Nach `ssh -L …:127.0.0.1:443` sieht der **Nginx-Container** die Verbindung oft als **Docker-Gateway** der Compose-Bridge (z. B. `172.19.0.1`, `172.18.0.1`, `172.17.0.1`), nicht als `127.0.0.1`. Zusätzlich sind **private LANs** (`192.168.0.0/16`, `10.0.0.0/8`) freigegeben, damit **`https://192.168.x.x/dashboard/`** vom Heimnetz aus funktioniert. Im Repo: `backend/nginx/nginx.conf` — nach Änderung **Nginx-Container neu laden**. Wenn es weiter 403 gibt: `docker inspect fin1-nginx` → `Networks` → `Gateway` prüfen und ggf. ergänzen; Access-Log für `$remote_addr`.
 
 ---
 
