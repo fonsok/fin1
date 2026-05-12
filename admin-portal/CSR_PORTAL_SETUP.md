@@ -63,12 +63,12 @@ Das CSR-Portal ist jetzt **vollständig getrennt** vom Admin-Portal mit eigenem 
 
 | E-Mail | Rolle | Passwort |
 |--------|-------|----------|
-| L1@fin1.de | Level 1 Support | `L1Secure2024!` |
-| L2@fin1.de | Level 2 Support | `L2Secure2024!` |
-| Fraud@fin1.de | Fraud Analyst | `FraudSecure2024!` |
-| Compliance@fin1.de | Compliance Officer | `ComplianceSecure2024!` |
-| Tech@fin1.de | Tech Support | `TechSecure2024!` |
-| Lead@fin1.de | Team Lead | `LeadSecure2024!` |
+| L1@fin1.de | Level 1 Support | Beim Anlegen gesetzt (`createCSRUser`); siehe `WEB_PANEL_LOGIN_CREDENTIALS.md` / `Documentation/DEV_LOGIN_ACCOUNTS.md` |
+| L2@fin1.de | Level 2 Support | (wie oben) |
+| Fraud@fin1.de | Fraud Analyst | (wie oben) |
+| Compliance@fin1.de | Compliance Officer | (wie oben) |
+| Tech@fin1.de | Tech Support | (wie oben) |
+| Lead@fin1.de | Team Lead | (wie oben) |
 
 ## Features im CSR-Portal
 

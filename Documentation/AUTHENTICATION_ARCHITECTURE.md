@@ -289,23 +289,23 @@ static func create() -> AuthServiceProtocol {
 
 ## Test-Benutzer (DEBUG)
 
-**Einheitliches Passwort** für alle unten genannten Mock-/Seed-User (iOS DEBUG + nach `seedTestUsers`): `TestPassword123!`
+**Passwort für alle unten genannten Mock-/Seed-User:** nur in **`FIN1/Shared/Constants/TestUserConstants.swift`** (`TestConstants.password`) — nicht in Markdown-Dokumenten duplizieren.
 
-**Single Source of Truth (iOS):** `FIN1/Shared/Constants/TestUserConstants.swift` (`TestConstants.password`, Investoren-/Trader-Namen, Kunden-ID-Prefixe `ANL` / `TRD`).
+**Single Source of Truth (iOS):** dieselbe Datei (Investoren-/Trader-Namen, Kunden-ID-Prefixe `ANL` / `TRD`).
 
 **Backend-Vollprofile:** Cloud Function `seedTestUsers` legt **5 Investoren** (`investor1@test.com` … `investor5@test.com`) und **10 Trader** (`trader1@test.com` … `trader10@test.com`) mit abgeschlossenem Onboarding an — siehe `backend/parse-server/cloud/functions/seed/users.js`.
 
-| E-Mail | Passwort | Rolle |
-|--------|----------|-------|
-| `investor1@test.com` … `investor5@test.com` | `TestPassword123!` | Investor |
-| `trader1@test.com` … `trader10@test.com` | `TestPassword123!` | Trader |
-| `admin@test.com` | `TestPassword123!` | Admin |
-| `csr-l1@test.com` | `TestPassword123!` | CSR Level 1 |
-| `csr-l2@test.com` | `TestPassword123!` | CSR Level 2 |
-| `csr-fraud@test.com` | `TestPassword123!` | Fraud Analyst |
-| `csr-compliance@test.com` | `TestPassword123!` | Compliance |
-| `csr-tech-support@test.com` | `TestPassword123!` | Tech Support |
-| `csr-teamlead@test.com` | `TestPassword123!` | Teamlead |
+| E-Mail | Passwort / Quelle | Rolle |
+|--------|-------------------|-------|
+| `investor1@test.com` … `investor5@test.com` | `TestConstants.password` (Swift) | Investor |
+| `trader1@test.com` … `trader10@test.com` | dieselbe Konstante | Trader |
+| `admin@test.com` | dieselbe Konstante | Admin |
+| `csr-l1@test.com` | dieselbe Konstante | CSR Level 1 |
+| `csr-l2@test.com` | dieselbe Konstante | CSR Level 2 |
+| `csr-fraud@test.com` | dieselbe Konstante | Fraud Analyst |
+| `csr-compliance@test.com` | dieselbe Konstante | Compliance |
+| `csr-tech-support@test.com` | dieselbe Konstante | Tech Support |
+| `csr-teamlead@test.com` | dieselbe Konstante | Teamlead |
 
 ---
 

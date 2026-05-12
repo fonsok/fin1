@@ -1,6 +1,7 @@
 # Web-Panel Login-Credentials
 
-**Kompakte Dev-Übersicht (E-Mail + Passwort pro Rolle):** [`Documentation/DEV_LOGIN_ACCOUNTS.md`](Documentation/DEV_LOGIN_ACCOUNTS.md)
+**Kompakte Dev-Übersicht (E-Mails, Rollen, Abläufe):** [`Documentation/DEV_LOGIN_ACCOUNTS.md`](Documentation/DEV_LOGIN_ACCOUNTS.md)  
+**Hinweis:** Passwörter und Master-Keys werden **nicht** in diesem Markdown im Klartext dokumentiert. Beispiele unten nutzen Platzhalter (`DEIN_MASTER_KEY`, `<…>`).
 
 ## Login-URL
 **URL:** `https://192.168.178.24/admin/login`
@@ -49,36 +50,31 @@ Ohne Deploy: nur Wartezeit (~5 Minuten) oder manuell in MongoDB die Felder `_fai
 
 ## Admin
 
-### ⚠️ WICHTIG: Zwei mögliche Credential-Sets
+### Zwei typische Credential-Herkünfte
 
-Es gibt **zwei mögliche Varianten** für Admin-User, je nachdem welche erstellt wurden:
+Für `admin@fin1.de` kann das Passwort je nach Anlagezeitpunkt und Skript variieren. **Nicht** raten aus Doku — stattdessen:
 
-### Variante 1: Aktuelle Scripts (Neue Passwörter)
-- **E-Mail:** `admin@fin1.de`
-- **Passwort:** `AdminSecure2024!`
+- Passwort bewusst setzen: `createAdminUser` mit **`forcePasswordReset: true`** und eigenem Passwort (siehe unten), oder
+- Neuinstallation / Seed-Dokumentation in `Documentation/DEV_LOGIN_ACCOUNTS.md` beachten.
 
-### Variante 2: Ältere User (Test123!)
-- **E-Mail:** `admin@fin1.de`
-- **Passwort:** `Test123!`
-
-**Hinweis:** Die genannten Passwörter sind **Beispiele** aus Scripts/Doku. Auf einem **bestehenden** Server (Restore, manuelle Änderung) kann das reale Passwort abweichen — dann `createAdminUser` mit `forcePasswordReset: true` nutzen (siehe unten).
-Falls beide Varianten nicht funktionieren, prüfen Sie zuerst **Lockout** (Abschnitt oben) und die **richtige Application ID** (`fin1-app-id`).
+**Hinweis:** Auf einem **bestehenden** Server (Restore, manuelle Änderung) weicht das Live-Passwort oft von alten Beispielen ab.  
+Falls Login scheitert: zuerst **Lockout** (Abschnitt oben) und die **richtige Application ID** (`fin1-app-id`) prüfen.
 
 ### Zugriff
 - ✅ Vollzugriff auf Admin-Portal
 - ✅ Alle Features: Dashboard, Benutzer, Tickets, Compliance, Finance, Security, Configuration
 - ⚠️ 2FA erforderlich (falls aktiviert)
 
-### Erstellung
-Falls der Admin-User nicht existiert, kann er über die Cloud Function erstellt werden:
+### Erstellung (Beispiel — Passwort selbst wählen)
+
 ```bash
 curl -k -X POST https://192.168.178.24/parse/functions/createAdminUser \
   -H 'Content-Type: application/json' \
   -H 'X-Parse-Application-Id: fin1-app-id' \
-  -H 'X-Parse-Master-Key: fin1-master-key' \
+  -H 'X-Parse-Master-Key: DEIN_MASTER_KEY' \
   -d '{
     "email": "admin@fin1.de",
-    "password": "AdminSecure2024!",
+    "password": "<SICHERES_PASSWORT>",
     "firstName": "Admin",
     "lastName": "User"
   }'
@@ -88,7 +84,7 @@ curl -k -X POST https://192.168.178.24/parse/functions/createAdminUser \
 
 ## Trader
 
-### ⚠️ WICHTIG: Trader können sich NICHT im Web-Panel anmelden!
+### WICHTIG: Trader können sich NICHT im Web-Panel anmelden!
 
 Trader sind **nicht** in den `ADMIN_ROLES` enthalten und werden beim Login abgelehnt:
 
@@ -103,14 +99,13 @@ const ADMIN_ROLES = ['admin', 'business_admin', 'security_officer', 'compliance'
 Trader haben **keinen** Web-Panel-Zugang; die Accounts dienen der **mobilen App** und ggf. API-Tests.
 
 - **E-Mail:** `trader1@test.com` … `trader10@test.com` (10 Trader)
-- **Passwort:** `TestPassword123!` (einheitlich mit iOS `TestConstants.password` und Backend `seedTestUsers`)
-- **Quelle:** `FIN1/Shared/Constants/TestUserConstants.swift`; Vollprofile per Cloud Function `seedTestUsers` (`backend/parse-server/cloud/functions/seed/users.js`).
+- **Passwort:** Wert aus `TestConstants.password` in `FIN1/Shared/Constants/TestUserConstants.swift`; Backend-Vollprofile per Cloud Function `seedTestUsers` (`backend/parse-server/cloud/functions/seed/users.js`).
 
 ---
 
 ## Investor
 
-### ⚠️ WICHTIG: Investoren können sich NICHT im Web-Panel anmelden!
+### WICHTIG: Investoren können sich NICHT im Web-Panel anmelden!
 
 Investoren sind **nicht** in den `ADMIN_ROLES` enthalten und werden beim Login abgelehnt.
 
@@ -119,38 +114,20 @@ Investoren sind **nicht** in den `ADMIN_ROLES` enthalten und werden beim Login a
 ### Test-User (nur für iOS-App / Parse-Login, nicht Web-Panel)
 
 - **E-Mail:** `investor1@test.com` … `investor5@test.com` (5 Investoren)
-- **Passwort:** `TestPassword123!` (einheitlich mit iOS `TestConstants.password` und Backend `seedTestUsers`)
-- **Quelle:** wie bei Trader (siehe oben).
+- **Passwort:** wie bei Trader — `TestUserConstants.swift` und `seedTestUsers`.
 
 ---
 
 ## CSR (Customer Service)
 
-### ⚠️ WICHTIG: Zwei mögliche Credential-Sets
+### Zwei typische E-Mail-Schreibweisen
 
-Es gibt **zwei mögliche Varianten** der CSR-User, je nachdem welche erstellt wurden:
+| Variante | E-Mails | Passwort |
+|----------|---------|----------|
+| Neuere Anlage (typisch) | `L1@fin1.de`, `L2@fin1.de`, … | Beim `createCSRUser` gesetzt; siehe Seed/Skript-Historie eurer Umgebung. |
+| Ältere Anlage | `l1@fin1.de`, `l2@fin1.de`, … | Ebenfalls beim Anlegen gesetzt; oft ein einheitliches einfaches Dev-Passwort — **nicht** hier dokumentiert. |
 
-### Variante 1: Aktuelle Scripts (Großbuchstaben + neue Passwörter)
-| E-Mail | Rolle | Passwort | Sub-Rolle |
-|--------|-------|----------|-----------|
-| `L1@fin1.de` | customer_service | `L1Secure2024!` | Level 1 Support |
-| `L2@fin1.de` | customer_service | `L2Secure2024!` | Level 2 Support |
-| `Fraud@fin1.de` | customer_service | `FraudSecure2024!` | Fraud Analyst |
-| `Compliance@fin1.de` | customer_service | `ComplianceSecure2024!` | Compliance Officer |
-| `Tech@fin1.de` | customer_service | `TechSecure2024!` | Tech Support |
-| `Lead@fin1.de` | customer_service | `LeadSecure2024!` | Team Lead |
-
-### Variante 2: Ältere User (Kleinbuchstaben + Test123!)
-| E-Mail | Rolle | Passwort | Sub-Rolle |
-|--------|-------|----------|-----------|
-| `l1@fin1.de` | customer_service | `Test123!` | Level 1 Support |
-| `l2@fin1.de` | customer_service | `Test123!` | Level 2 Support |
-| `fraud@fin1.de` | customer_service | `Test123!` | Fraud Analyst |
-| `compliance@fin1.de` | customer_service | `Test123!` | Compliance Officer |
-| `tech@fin1.de` | customer_service | `Test123!` | Tech Support |
-| `lead@fin1.de` | customer_service | `Test123!` | Team Lead |
-
-**Hinweis:** Parse Server speichert E-Mail-Adressen normalerweise case-insensitive, aber die tatsächliche Schreibweise kann variieren. Versuchen Sie beide Varianten, falls eine nicht funktioniert.
+**Hinweis:** Parse speichert E-Mails in der Regel case-insensitive; bei Problemen beide Schreibweisen testen.
 
 ### Zugriff
 - ✅ Automatische Umleitung zum CSR-Portal (`/admin/csr`)
@@ -167,8 +144,8 @@ Es gibt **zwei mögliche Varianten** der CSR-User, je nachdem welche erstellt wu
 
 ### Business Admin (`finance@fin1.de`)
 
-- Anlage auf dem Server: `bash scripts/create-business-admin.sh` (Standard-E-Mail `finance@fin1.de`, Standard-Passwort **`Finance2026!`** nur wenn der User **neu** angelegt wird).
-- **Wichtig:** Existiert der User bereits, bleibt das Passwort unverändert, sofern ihr **nicht** `forcePasswordReset: true` setzt. Nach DB-Restore oder manueller Änderung stimmen Doku/Script-Defaults oft **nicht** mit dem Live-Passwort überein — dann Zurücksetzen per Cloud Function (siehe unten).
+- Anlage auf dem Server: `BA_PASSWORD='<…>' bash scripts/create-business-admin.sh` — **`BA_PASSWORD` ist erforderlich** (kein stiller Default im Skript).
+- **Wichtig:** Existiert der User bereits, bleibt das Passwort unverändert, sofern ihr **nicht** `forcePasswordReset: true` setzt. Nach DB-Restore oder manueller Änderung: Zurücksetzen per Cloud Function (siehe unten).
 - ⚠️ 2FA: erhöhte Rollen können 2FA nutzen; im Portal sind **6-stellige TOTP-Codes** und **8-stellige Backup-Codes** (alphanumerisch) möglich.
 
 **Passwort gezielt setzen / zurücksetzen (Master-Key):**
@@ -180,7 +157,7 @@ curl -k -X POST https://192.168.178.24/parse/functions/createAdminUser \
   -H 'X-Parse-Master-Key: DEIN_MASTER_KEY' \
   -d '{
     "email": "finance@fin1.de",
-    "password": "NeuesSicheresPasswort!1",
+    "password": "<NEUES_SICHERES_PASSWORT>",
     "firstName": "Finance",
     "lastName": "Admin",
     "role": "business_admin",
@@ -237,10 +214,10 @@ const ELEVATED_ROLES = [
 curl -k -X POST https://192.168.178.24/parse/functions/createAdminUser \
   -H 'Content-Type: application/json' \
   -H 'X-Parse-Application-Id: fin1-app-id' \
-  -H 'X-Parse-Master-Key: fin1-master-key' \
+  -H 'X-Parse-Master-Key: DEIN_MASTER_KEY' \
   -d '{
     "email": "admin@fin1.de",
-    "password": "AdminSecure2024!",
+    "password": "<SICHERES_PASSWORT>",
     "firstName": "Admin",
     "lastName": "User"
   }'
@@ -251,10 +228,10 @@ curl -k -X POST https://192.168.178.24/parse/functions/createAdminUser \
 curl -k -X POST https://192.168.178.24/parse/functions/createCSRUser \
   -H 'Content-Type: application/json' \
   -H 'X-Parse-Application-Id: fin1-app-id' \
-  -H 'X-Parse-Master-Key: fin1-master-key' \
+  -H 'X-Parse-Master-Key: DEIN_MASTER_KEY' \
   -d '{
     "email": "L1@fin1.de",
-    "password": "L1Secure2024!",
+    "password": "<SICHERES_PASSWORT>",
     "firstName": "Lisa",
     "lastName": "Level-1"
   }'
@@ -284,36 +261,13 @@ Die Sub-Rolle wird automatisch aus der E-Mail erkannt:
 
 ---
 
-## 🔍 Welche Credentials sind gültig?
+## Welche Credentials sind gültig?
 
-### Admin-User: Zwei mögliche Varianten
+Es gibt **keine** fest im Repo dokumentierten Portal-Passwörter, die garantiert auf eurem Server stimmen.
 
-**Variante 1 (Neue Scripts):**
-- E-Mail: `admin@fin1.de`
-- Passwort: `AdminSecure2024!`
+### Vorgehen
 
-**Variante 2 (Ältere User):**
-- E-Mail: `admin@fin1.de`
-- Passwort: `Test123!`
-
-### CSR-User: Zwei mögliche Varianten
-
-**Variante 1 (Neue Scripts):**
-- E-Mail: `L1@fin1.de`, `L2@fin1.de`, etc. (Großbuchstaben)
-- Passwort: `L1Secure2024!`, `L2Secure2024!`, etc.
-
-**Variante 2 (Ältere User):**
-- E-Mail: `l1@fin1.de`, `l2@fin1.de`, etc. (Kleinbuchstaben)
-- Passwort: `Test123!` (für alle)
-
-### Empfehlung zum Testen
-
-1. **Versuchen Sie zuerst Variante 2** (die gestern funktioniert hat):
-   - **Admin:** `admin@fin1.de` / `Test123!`
-   - **CSR:** `l1@fin1.de` / `Test123!`, `l2@fin1.de` / `Test123!`, etc.
-
-2. **Falls das nicht funktioniert**, versuchen Sie Variante 1:
-   - **Admin:** `admin@fin1.de` / `AdminSecure2024!`
-   - **CSR:** `L1@fin1.de` / `L1Secure2024!`, `L2@fin1.de` / `L2Secure2024!`, etc.
-
-3. **Falls beide nicht funktionieren**, müssen die User neu erstellt werden (siehe "User-Erstellung" weiter unten).
+1. **Bekanntes Passwort:** direkt einloggen.
+2. **Unbekannt / nach Restore:** `createAdminUser` bzw. `createCSRUser` mit **`forcePasswordReset: true`** und **neu gewähltem** Passwort (Master-Key), oder `scripts/create-business-admin.sh` mit **`BA_PASSWORD=…`**.
+3. **Lockout:** Abschnitt „Account-Lockout“ oben.
+4. **Application ID:** immer `fin1-app-id` bei REST-Calls, sofern der Server so konfiguriert ist.

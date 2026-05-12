@@ -1,6 +1,6 @@
 /**
  * Portal login copy — single source (Admin + Finance Admin share this page and AuthContext).
- * Dev passwords & full account table: Documentation/DEV_LOGIN_ACCOUNTS.md (not committed secrets for prod).
+ * Dev account table (no passwords in UI copy): Documentation/DEV_LOGIN_ACCOUNTS.md.
  */
 
 export const PORTAL_LOGIN_CARD_INTRO =
@@ -15,4 +15,4 @@ export const PORTAL_DEV_PORTAL_ACCOUNTS = [
 ] as const;
 
 export const PORTAL_DEV_PASSWORD_SOURCE =
-  'Passwörter (Dev): siehe Documentation/DEV_LOGIN_ACCOUNTS.md — Finance Admin Standard: Finance2026! (create-business-admin.sh).';
+  'Passwörter (Dev): nicht in der UI — siehe Documentation/DEV_LOGIN_ACCOUNTS.md und scripts/create-business-admin.sh (BA_PASSWORD).';

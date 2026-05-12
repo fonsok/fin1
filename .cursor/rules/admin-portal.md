@@ -23,7 +23,7 @@ Architecture and coding standards for the FIN1 Admin Web Portal (`admin-portal/`
 
 - **One URL, one flow:** `Login.tsx` + `AuthContext` — technical admin (`admin`) and Finance Admin (`business_admin`) use the **same** page and the same `login()` path; CSR uses the same entry then redirects to `/csr`.
 - **Copy & dev reference:** `src/constants/portalLogin.ts` and `src/components/DevPortalLoginReference.tsx` (Vite `import.meta.env.DEV` only). Keeps Finance Admin visibility aligned with `scripts/create-business-admin.sh` without branching auth logic.
-- **Dev passwords (table):** `Documentation/DEV_LOGIN_ACCOUNTS.md` — canonical `finance@fin1.de` / `Finance2026!` and all other test accounts.
+- **Dev accounts (no plaintext passwords in docs):** `Documentation/DEV_LOGIN_ACCOUNTS.md` — e-mails/roles and pointers to `TestUserConstants.swift`, `create-business-admin.sh` (`BA_PASSWORD`), and `WEB_PANEL_LOGIN_CREDENTIALS.md`.
 
 ### Login troubleshooting (Admin-Portal)
 

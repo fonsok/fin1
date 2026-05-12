@@ -197,7 +197,7 @@ Parse.Cloud.define('getTradeSettlement', async (request) => {
 - Real Parse login in `UserService.signIn()` via REST API (`ParseAPIClient.login()`)
 - `ParseAPIClient.sessionToken` no longer filters `r:` tokens — real session tokens pass through
 - Fallback session tokens use `sim:` prefix (for offline/no-backend scenarios)
-- All Parse `_User` records have `stableId` field (`user:email`); seeded/mock test users use password `TestPassword123!` (aligned with `TestUserConstants.swift` and `seedTestUsers`)
+- All Parse `_User` records have `stableId` field (`user:email`); seeded/mock test users use the password from `TestUserConstants.swift` / `seedTestUsers` (not duplicated in Markdown docs)
 - Cloud functions in `trading.js` use `getUserStableId(user)` helper for all data queries
 - `TraderAccountStatementBuilder.buildSnapshotWithWallet` accepts optional `SettlementAPIServiceProtocol`; uses backend commission entries when available
 - `AccountStatementViewModel` passes `settlementAPIService` to the builder

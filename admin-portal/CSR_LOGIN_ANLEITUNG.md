@@ -30,10 +30,7 @@ Die CSR-User wurden mit folgenden E-Mail-Adressen erstellt:
 - **Tech@fin1.de** - Tech Support
 - **Lead@fin1.de** - Team Lead
 
-**Passwort-Format:** `{Prefix}Secure2024!`
-- Beispiel: `L1Secure2024!` für L1@fin1.de
-- Beispiel: `L2Secure2024!` für L2@fin1.de
-- Beispiel: `FraudSecure2024!` für Fraud@fin1.de
+**Passwörter:** werden bei `createCSRUser` gesetzt; historisch gab es unterschiedliche Konventionen auf verschiedenen Umgebungen. Keine festen Werte in dieser Datei — bei unbekanntem Passwort zurücksetzen (`createCSRUser` / Master-Key, siehe `WEB_PANEL_LOGIN_CREDENTIALS.md`).
 
 ## Nach der Anmeldung
 

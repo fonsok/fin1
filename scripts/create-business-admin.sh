@@ -7,14 +7,14 @@
 #   - admin@fin1.de      -> beantragt Konfigurationsänderungen
 #   - finance@fin1.de    -> genehmigt oder lehnt ab (und umgekehrt)
 #
-# Auf dem Server ausführen:
-#   bash scripts/create-business-admin.sh
+# Auf dem Server ausführen (Passwort immer explizit setzen):
+#   BA_PASSWORD='…' bash scripts/create-business-admin.sh
 #
 # Nur Passwort/Login reparieren (Lockout + neues Passwort):
 #   bash scripts/reset-portal-login.sh finance@fin1.de 'NeuesPasswort!9'
 #
 # Eigene Zugangsdaten:
-#   BA_EMAIL="cfo@fin1.de" BA_PASSWORD="MeinPasswort!" bash scripts/create-business-admin.sh
+#   BA_EMAIL="cfo@fin1.de" BA_PASSWORD="<IhrPasswort>" bash scripts/create-business-admin.sh
 #
 # Hinweise:
 #   - Parse accountLockout: nach 3 Fehlversuchen ca. 5 Minuten Sperre (backend/parse-server/index.js).
@@ -25,7 +25,11 @@
 set -e
 
 BA_EMAIL="${BA_EMAIL:-finance@fin1.de}"
-BA_PASSWORD="${BA_PASSWORD:-Finance2026!}"
+if [[ -z "${BA_PASSWORD:-}" ]]; then
+  echo "BA_PASSWORD muss gesetzt sein (kein Default mehr). Beispiel:" >&2
+  echo "  BA_PASSWORD='<IhrPasswort>' bash scripts/create-business-admin.sh" >&2
+  exit 1
+fi
 BA_FIRST="${BA_FIRST:-Finance}"
 BA_LAST="${BA_LAST:-Admin}"
 CONTAINER_NAME="${PARSE_CONTAINER_NAME:-fin1-parse-server}"
@@ -59,7 +63,7 @@ if command -v docker >/dev/null 2>&1 && docker ps --format '{{.Names}}' 2>/dev/n
   echo ""
   echo "  Login-URL:  https://192.168.178.24/admin/"
   echo "  E-Mail:     $BA_EMAIL"
-  echo "  Passwort:   $BA_PASSWORD"
+  echo "  Passwort:   (gesetzt; aus Sicherheitsgründen nicht erneut ausgegeben)"
   echo "  Rolle:      business_admin"
   echo ""
   echo "  Berechtigungen:"
@@ -76,7 +80,7 @@ else
   echo "Docker oder Parse-Container nicht gefunden."
   echo ""
   echo "Auf dem Server ausführen:"
-  echo "  cd ~/fin1-server && bash scripts/create-business-admin.sh"
+  echo "  cd ~/fin1-server && BA_PASSWORD='<IhrPasswort>' bash scripts/create-business-admin.sh"
   echo ""
   echo "Oder manuell per curl (Master-Key aus backend/.env):"
   echo ""
@@ -84,6 +88,6 @@ else
   echo "    -H 'X-Parse-Application-Id: fin1-app-id' \\"
   echo "    -H 'X-Parse-Master-Key: DEIN_MASTER_KEY' \\"
   echo "    -H 'Content-Type: application/json' \\"
-  echo "    -d '{\"email\":\"$BA_EMAIL\",\"password\":\"$BA_PASSWORD\",\"firstName\":\"$BA_FIRST\",\"lastName\":\"$BA_LAST\",\"role\":\"business_admin\",\"forcePasswordReset\":true}'"
+  echo "    -d '{\"email\":\"$BA_EMAIL\",\"password\":\"<BA_PASSWORD>\",\"firstName\":\"$BA_FIRST\",\"lastName\":\"$BA_LAST\",\"role\":\"business_admin\",\"forcePasswordReset\":true}'"
   exit 1
 fi

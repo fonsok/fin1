@@ -54,11 +54,11 @@ curl -k -X POST https://192.168.178.24/parse/functions/createTestUsers \
 
 **Falls Test-User bereits existieren:**
 
-| E-Mail | Passwort | Rolle | Portal-Zugang |
-|--------|----------|-------|----------------|
-| `admin@test.com` | `TestPassword123!` | admin | Ja (wenn Rolle `admin` und Status `active`) |
-| `investor1@test.com` … `investor5@test.com` | `TestPassword123!` | investor | Nein (nur App) |
-| `trader1@test.com` … `trader10@test.com` | `TestPassword123!` | trader | Nein (nur App) |
+| E-Mail | Passwort / Quelle | Rolle | Portal-Zugang |
+|--------|-------------------|-------|----------------|
+| `admin@test.com` | `TestConstants.password` in `FIN1/Shared/Constants/TestUserConstants.swift` | admin | Ja (wenn Rolle `admin` und Status `active`) |
+| `investor1@test.com` … `investor5@test.com` | dieselbe Konstante | investor | Nein (nur App) |
+| `trader1@test.com` … `trader10@test.com` | dieselbe Konstante | trader | Nein (nur App) |
 
 **Hinweis:** Passwort und Namen sind mit `FIN1/Shared/Constants/TestUserConstants.swift` und Backend-Seed `seedTestUsers` abgestimmt. User müssen existieren (z. B. über `seedTestUsers` oder manuelle Anlage). **Investor/Trader** können sich **nicht** im Admin-Web-Portal anmelden — nur über die iOS-App bzw. Parse-API.
 
@@ -75,15 +75,11 @@ curl -k -X POST https://192.168.178.24/parse/functions/resetDevUserPassword \
   -H "Content-Type: application/json" \
   -d '{"email": "admin@test.com"}'
 
-# Antwort:
-# {
-#   "success": true,
-#   "message": "Password reset for admin@test.com",
-#   "newPassword": "DevTest123!Secure"
-# }
+# Antwort enthält u.a.:
+#   "newPassword": "<vom Server generiertes Passwort>"
 ```
 
-Das zurückgesetzte Passwort liefert die Cloud Function in der Antwort (`newPassword`) — kann von `TestPassword123!` abweichen.
+Das zurückgesetzte Passwort liefert die Cloud Function **nur** in der Antwort (`newPassword`); nicht in Doku hardcoden.
 
 ---
 
@@ -139,7 +135,7 @@ Nach **3 fehlgeschlagenen** Login-Versuchen sperrt Parse Server das Konto für *
 
 ### Problem: Business Admin (`finance@fin1.de`) – Passwort unbekannt
 
-Das Standard-Skript `scripts/create-business-admin.sh` setzt nur bei **neuer** Anlage das Default-Passwort; auf bestehenden Servern weicht es oft ab. **Zurücksetzen:** `createAdminUser` mit `role: "business_admin"` und `forcePasswordReset: true` (vollständiges `curl`-Beispiel in `WEB_PANEL_LOGIN_CREDENTIALS.md`).
+Das Skript `scripts/create-business-admin.sh` setzt das Passwort nur, wenn `createAdminUser`/`forcePasswordReset` greift; **`BA_PASSWORD` ist Pflicht** beim Aufruf. Auf bestehenden Servern weicht das Live-Passwort oft ab. **Zurücksetzen:** `createAdminUser` mit `role: "business_admin"` und `forcePasswordReset: true` (vollständiges `curl`-Beispiel in `WEB_PANEL_LOGIN_CREDENTIALS.md`).
 
 ### Problem: "Login fehlgeschlagen" / "Invalid credentials"
 
@@ -176,11 +172,11 @@ Das Standard-Skript `scripts/create-business-admin.sh` setzt nur bei **neuer** A
 
 ### Investoren + Trader mit vollem Profil (empfohlen)
 
-Cloud Function **`seedTestUsers`** (Master-Key, Admin-Kontext): legt **5 Investoren** und **10 Trader** mit abgeschlossenem Onboarding an, Passwort **`TestPassword123!`**. Siehe `backend/parse-server/cloud/functions/seed/users.js`.
+Cloud Function **`seedTestUsers`** (Master-Key, Admin-Kontext): legt **5 Investoren** und **10 Trader** mit abgeschlossenem Onboarding an; Passwort wie in `TestUserConstants.swift` / Seed-Code. Siehe `backend/parse-server/cloud/functions/seed/users.js`.
 
 ### Legacy / andere Skripte
 
-Falls in eurer Umgebung noch **`createTestUsers`** o. Ä. existiert: Dokumentation der erzeugten Mails/Passwörter der jeweiligen Funktion im Repo prüfen — kanonisch für die aktuelle App sind **`TestPassword123!`** und die Listen in `TestUserConstants.swift` / `seedTestUsers`.
+Falls in eurer Umgebung noch **`createTestUsers`** o. Ä. existiert: Dokumentation der erzeugten Mails/Passwörter der jeweiligen Funktion im Repo prüfen — kanonisch für die aktuelle App sind **`TestUserConstants.swift`** und `seedTestUsers` (keine Klartext-Passwörter in Markdown).
 
 **Hinweis:** Investor/Trader haben **keine** Admin-Rolle und **keinen** Web-Portal-Login. Für das Portal weiterhin **`createAdminUser`** oder Dashboard mit Rolle `admin` verwenden.
 
@@ -241,7 +237,7 @@ Falls in eurer Umgebung noch **`createTestUsers`** o. Ä. existiert: Dokumentati
 
 **Falls Test-Admin gewünscht:**
 - E-Mail: `admin@test.com`
-- Passwort: `TestPassword123!` (nach Seed/Mock; sonst wie von `createAdminUser` gesetzt)
+- Passwort: wie `TestConstants.password` in `TestUserConstants.swift` nach Seed/Mock; sonst wie von `createAdminUser` gesetzt
 - Rolle: `admin` (muss gesetzt werden)
 
 ---
