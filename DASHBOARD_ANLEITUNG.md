@@ -18,6 +18,17 @@ Dann im Browser: **`https://localhost/dashboard/`**
 
 **Hinweis:** Das Passwort steht in `backend/.env` unter `DASHBOARD_PASSWORD`
 
+### „Server not reachable“ / unable to connect to server
+
+Das Dashboard lädt die **Parse-API-URL** aus `PARSE_DASHBOARD_SERVER_URL` (sonst `PARSE_SERVER_PUBLIC_SERVER_URL`) in **`backend/.env`** und ruft sie **vom Browser aus** auf — nicht vom Server.
+
+| Du öffnest das Dashboard unter … | Der Browser muss dann `…/parse` unter derselben Basis erreichen können |
+|-----------------------------------|---------------------------------------------------------------------------|
+| `https://192.168.178.24/dashboard/` | `PARSE_DASHBOARD_SERVER_URL=https://192.168.178.24/parse` passt (Zertifikat im Browser akzeptieren). |
+| `https://127.0.0.1:8443/dashboard/` (Tunnel) | `https://192.168.178.24/parse` geht nur, wenn dein Rechner **192.168.178.24** per HTTPS erreicht. Sonst: **Dashboard unter derselben Host-URL öffnen wie in `PARSE_DASHBOARD_SERVER_URL`**, oder Tunnel so legen, dass **`https://127.0.0.1:8443/parse`** wirklich auf den Server zeigt — dann in `backend/.env` z. B. `PARSE_DASHBOARD_SERVER_URL=https://127.0.0.1:8443/parse` setzen und **parse-server** neu starten (nur sinnvoll, wenn alle denselben Tunnel-Port nutzen). |
+
+Empfehlung: **`https://192.168.178.24/dashboard/`** im LAN nutzen, oder **`ssh -L 443:127.0.0.1:443`** und **`https://localhost/dashboard/`** mit `PARSE_DASHBOARD_SERVER_URL=https://127.0.0.1/parse` (bzw. `https://localhost/parse`), damit Dashboard und API für den Browser **dieselbe Origin** haben.
+
 ### 403 Forbidden trotz SSH-Tunnel?
 
 Nginx erlaubt `/dashboard/` nur von bestimmten Quell-IPs. Nach `ssh -L …:127.0.0.1:443` sieht der **Nginx-Container** die Verbindung oft als **Docker-Gateway** der Compose-Bridge (z. B. `172.19.0.1`, `172.18.0.1`, `172.17.0.1`), nicht als `127.0.0.1`. Im Repo sind typische Gateways in `backend/nginx/nginx.conf` freigegeben — nach Änderung **Nginx-Container neu laden**. Wenn es weiter 403 gibt: `docker inspect fin1-nginx` → `Networks` → `Gateway` prüfen und diese IP ergänzen; optional Access-Log.
