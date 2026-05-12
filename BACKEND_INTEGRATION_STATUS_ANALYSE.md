@@ -15,11 +15,11 @@
 | **Orders** | `OrderManagementService` | `OrderAPIService` | `Order` | ✅ Write-through + Background | ✅ Vollständig |
 | **Pool Participation** | `PoolTradeParticipationService` | - | `PoolTradeParticipation` | ✅ Write-through | ✅ Vollständig |
 
-### User & Wallet
+### User & Konto
 | Feature | Service | API Service | Parse Klasse | Sync-Methode | Status |
 |---------|---------|-------------|--------------|--------------|--------|
 | **User Profile** | `UserService` | - | `_User` | ✅ Write-through + Background | ✅ Vollständig |
-| **Wallet Transactions** | `MockPaymentService` | - | `WalletTransaction` | ✅ Write-through + Background | ✅ Vollständig |
+| **Konto-Transaktionen** (Wallet deaktiviert) | `MockPaymentService` | - | Backend | — | Nutzer: normales Konto |
 
 ### Documents & Content
 | Feature | Service | API Service | Parse Klasse | Sync-Methode | Status |

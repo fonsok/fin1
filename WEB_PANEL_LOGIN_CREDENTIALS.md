@@ -1,9 +1,49 @@
 # Web-Panel Login-Credentials
 
+**Kompakte Dev-Übersicht (E-Mail + Passwort pro Rolle):** [`Documentation/DEV_LOGIN_ACCOUNTS.md`](Documentation/DEV_LOGIN_ACCOUNTS.md)
+
 ## Login-URL
 **URL:** `https://192.168.178.24/admin/login`
 
 Alle Rollen melden sich über die gleiche Login-Seite an. Die Umleitung erfolgt automatisch basierend auf der Rolle.
+
+### Parse REST: Application ID und Master-Key
+
+In diesem Repository ist die Standard-**Application ID** **`fin1-app-id`** (siehe `docker-compose.yml`, `Config/FIN1-Base.xcconfig`, `backend/env.example`).
+Ältere Beispiele in Dokumentationen nutzen teils `fin1` — das führt zu **`unauthorized`**, wenn der Server `fin1-app-id` erwartet.
+
+Der **Master-Key** stammt aus der Server-Konfiguration (z. B. `PARSE_SERVER_MASTER_KEY` in `backend/.env` / Docker), nicht aus diesem Dokument.
+
+---
+
+## Account-Lockout (Parse Server)
+
+Nach **fehlgeschlagenen Login-Versuchen** sperrt Parse Server das Konto **temporär** (nicht nginx, nicht das Admin-Portal).
+
+Konfiguration in `backend/parse-server/index.js` (`accountLockout`):
+
+| Parameter | Wert | Bedeutung |
+|-----------|------|-----------|
+| `threshold` | **3** | Fehlversuche bis zur Sperre |
+| `duration` | **5** | Sperrdauer in **Minuten** |
+
+Typische Fehlermeldung (englisch): *Your account is locked due to multiple failed login attempts. Please try again after 5 minute(s).*
+
+**Was tun (ohne Wartezeit):** Parse-Container mit **aktuellem Cloud-Code** neu starten, dann eine der folgenden Optionen:
+
+1. **Nur Lockout aufheben (Master-Key):** Cloud Function `unlockParseAccountLockout` — entfernt `_failed_login_count` und `_account_lockout_expires_at` sofort.
+
+```bash
+curl -sk -X POST 'https://DEIN_HOST/parse/functions/unlockParseAccountLockout' \
+  -H 'X-Parse-Application-Id: fin1-app-id' \
+  -H 'X-Parse-Master-Key: DEIN_MASTER_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"finance@fin1.de"}'
+```
+
+2. **`createAdminUser` mit `forcePasswordReset: true`:** Setzt Passwort **und** hebt die Sperre auf (gleicher Cloud-Code wie oben).
+
+Ohne Deploy: nur Wartezeit (~5 Minuten) oder manuell in MongoDB die Felder `_failed_login_count` / `_account_lockout_expires_at` am `_User`-Dokument entfernen.
 
 ---
 
@@ -21,7 +61,8 @@ Es gibt **zwei mögliche Varianten** für Admin-User, je nachdem welche erstellt
 - **E-Mail:** `admin@fin1.de`
 - **Passwort:** `Test123!`
 
-**Hinweis:** Falls beide Varianten nicht funktionieren, muss der Admin-User neu erstellt werden (siehe "User-Erstellung" weiter unten).
+**Hinweis:** Die genannten Passwörter sind **Beispiele** aus Scripts/Doku. Auf einem **bestehenden** Server (Restore, manuelle Änderung) kann das reale Passwort abweichen — dann `createAdminUser` mit `forcePasswordReset: true` nutzen (siehe unten).
+Falls beide Varianten nicht funktionieren, prüfen Sie zuerst **Lockout** (Abschnitt oben) und die **richtige Application ID** (`fin1-app-id`).
 
 ### Zugriff
 - ✅ Vollzugriff auf Admin-Portal
@@ -33,7 +74,7 @@ Falls der Admin-User nicht existiert, kann er über die Cloud Function erstellt 
 ```bash
 curl -k -X POST https://192.168.178.24/parse/functions/createAdminUser \
   -H 'Content-Type: application/json' \
-  -H 'X-Parse-Application-Id: fin1' \
+  -H 'X-Parse-Application-Id: fin1-app-id' \
   -H 'X-Parse-Master-Key: fin1-master-key' \
   -d '{
     "email": "admin@fin1.de",
@@ -57,9 +98,13 @@ const ADMIN_ROLES = ['admin', 'business_admin', 'security_officer', 'compliance'
 
 **Fehlermeldung:** `"Kein Zugriff. Nur Admin-Rollen erlaubt."`
 
-### Test-User (nur für iOS-App)
-- **E-Mail:** `trader1@test.com`, `trader2@test.com`, `trader3@test.com`
-- **Passwort:** `TestPassword123!Secure` (falls über `createTestUsers` erstellt)
+### Test-User (nur für iOS-App / Parse-Login, nicht Web-Panel)
+
+Trader haben **keinen** Web-Panel-Zugang; die Accounts dienen der **mobilen App** und ggf. API-Tests.
+
+- **E-Mail:** `trader1@test.com` … `trader10@test.com` (10 Trader)
+- **Passwort:** `TestPassword123!` (einheitlich mit iOS `TestConstants.password` und Backend `seedTestUsers`)
+- **Quelle:** `FIN1/Shared/Constants/TestUserConstants.swift`; Vollprofile per Cloud Function `seedTestUsers` (`backend/parse-server/cloud/functions/seed/users.js`).
 
 ---
 
@@ -71,9 +116,11 @@ Investoren sind **nicht** in den `ADMIN_ROLES` enthalten und werden beim Login a
 
 **Fehlermeldung:** `"Kein Zugriff. Nur Admin-Rollen erlaubt."`
 
-### Test-User (nur für iOS-App)
-- **E-Mail:** `investor1@test.com`, `investor2@test.com`
-- **Passwort:** `TestPassword123!Secure` (falls über `createTestUsers` erstellt)
+### Test-User (nur für iOS-App / Parse-Login, nicht Web-Panel)
+
+- **E-Mail:** `investor1@test.com` … `investor5@test.com` (5 Investoren)
+- **Passwort:** `TestPassword123!` (einheitlich mit iOS `TestConstants.password` und Backend `seedTestUsers`)
+- **Quelle:** wie bei Trader (siehe oben).
 
 ---
 
@@ -118,9 +165,30 @@ Es gibt **zwei mögliche Varianten** der CSR-User, je nachdem welche erstellt wu
 
 ## Weitere Admin-Rollen
 
-### Business Admin
-- Kann über `createAdminUser` mit `role: 'business_admin'` erstellt werden
-- ⚠️ 2FA erforderlich (falls aktiviert)
+### Business Admin (`finance@fin1.de`)
+
+- Anlage auf dem Server: `bash scripts/create-business-admin.sh` (Standard-E-Mail `finance@fin1.de`, Standard-Passwort **`Finance2026!`** nur wenn der User **neu** angelegt wird).
+- **Wichtig:** Existiert der User bereits, bleibt das Passwort unverändert, sofern ihr **nicht** `forcePasswordReset: true` setzt. Nach DB-Restore oder manueller Änderung stimmen Doku/Script-Defaults oft **nicht** mit dem Live-Passwort überein — dann Zurücksetzen per Cloud Function (siehe unten).
+- ⚠️ 2FA: erhöhte Rollen können 2FA nutzen; im Portal sind **6-stellige TOTP-Codes** und **8-stellige Backup-Codes** (alphanumerisch) möglich.
+
+**Passwort gezielt setzen / zurücksetzen (Master-Key):**
+
+```bash
+curl -k -X POST https://192.168.178.24/parse/functions/createAdminUser \
+  -H 'Content-Type: application/json' \
+  -H 'X-Parse-Application-Id: fin1-app-id' \
+  -H 'X-Parse-Master-Key: DEIN_MASTER_KEY' \
+  -d '{
+    "email": "finance@fin1.de",
+    "password": "NeuesSicheresPasswort!1",
+    "firstName": "Finance",
+    "lastName": "Admin",
+    "role": "business_admin",
+    "forcePasswordReset": true
+  }'
+```
+
+Hinweis: `passwordPolicy.maxPasswordHistory` (siehe `backend/parse-server/index.js`) verbietet Wiederholung der **letzten 5** Passwörter — bei Fehler *New password should not be the same as last 5 passwords* ein noch nicht verwendetes Passwort wählen.
 
 ### Security Officer
 - Kann über `createAdminUser` mit `role: 'security_officer'` erstellt werden
@@ -168,7 +236,7 @@ const ELEVATED_ROLES = [
 ```bash
 curl -k -X POST https://192.168.178.24/parse/functions/createAdminUser \
   -H 'Content-Type: application/json' \
-  -H 'X-Parse-Application-Id: fin1' \
+  -H 'X-Parse-Application-Id: fin1-app-id' \
   -H 'X-Parse-Master-Key: fin1-master-key' \
   -d '{
     "email": "admin@fin1.de",
@@ -182,7 +250,7 @@ curl -k -X POST https://192.168.178.24/parse/functions/createAdminUser \
 ```bash
 curl -k -X POST https://192.168.178.24/parse/functions/createCSRUser \
   -H 'Content-Type: application/json' \
-  -H 'X-Parse-Application-Id: fin1' \
+  -H 'X-Parse-Application-Id: fin1-app-id' \
   -H 'X-Parse-Master-Key: fin1-master-key' \
   -d '{
     "email": "L1@fin1.de",

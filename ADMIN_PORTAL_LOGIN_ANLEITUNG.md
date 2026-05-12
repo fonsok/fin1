@@ -1,6 +1,6 @@
 # 🔐 Admin-Portal Login-Anleitung
 
-**Datum:** 2026-02-05
+**Datum:** 2026-04-04
 **Status:** ✅ Aktuell
 
 ---
@@ -54,13 +54,13 @@ curl -k -X POST https://192.168.178.24/parse/functions/createTestUsers \
 
 **Falls Test-User bereits existieren:**
 
-| E-Mail | Passwort | Rolle | Status |
-|--------|----------|-------|--------|
-| `admin@test.com` | `Password123!` | admin | active |
-| `trader1@test.com` | `Password123!` | trader | active |
-| `investor1@test.com` | `Password123!` | investor | active |
+| E-Mail | Passwort | Rolle | Portal-Zugang |
+|--------|----------|-------|----------------|
+| `admin@test.com` | `TestPassword123!` | admin | Ja (wenn Rolle `admin` und Status `active`) |
+| `investor1@test.com` … `investor5@test.com` | `TestPassword123!` | investor | Nein (nur App) |
+| `trader1@test.com` … `trader10@test.com` | `TestPassword123!` | trader | Nein (nur App) |
 
-**Hinweis:** Diese Test-User müssen zuerst erstellt werden (siehe Option 1 oder Cloud Function).
+**Hinweis:** Passwort und Namen sind mit `FIN1/Shared/Constants/TestUserConstants.swift` und Backend-Seed `seedTestUsers` abgestimmt. User müssen existieren (z. B. über `seedTestUsers` oder manuelle Anlage). **Investor/Trader** können sich **nicht** im Admin-Web-Portal anmelden — nur über die iOS-App bzw. Parse-API.
 
 ---
 
@@ -83,7 +83,7 @@ curl -k -X POST https://192.168.178.24/parse/functions/resetDevUserPassword \
 # }
 ```
 
-**Neues Passwort:** `DevTest123!Secure`
+Das zurückgesetzte Passwort liefert die Cloud Function in der Antwort (`newPassword`) — kann von `TestPassword123!` abweichen.
 
 ---
 
@@ -107,8 +107,9 @@ https://192.168.178.24/admin/
 
 ### 4. 2FA-Verifizierung (falls aktiviert)
 
-- Wenn 2FA aktiviert ist, wird ein QR-Code oder Eingabefeld angezeigt
-- Gib den 6-stelligen Code aus deiner Authenticator-App ein
+- Nach dem Passwort erscheint die 2FA-Maske im Portal.
+- **Authenticator:** 6-stelliger Code aus der Authenticator-App.
+- **Backup-Code:** Umschalten auf „Backup-Code (8 Zeichen)“ und einen der beim Aktivieren gespeicherten **8-stelligen** Codes eingeben (alphanumerisch).
 
 ---
 
@@ -130,20 +131,31 @@ Das Admin-Portal unterstützt folgende Rollen:
 
 ## ⚠️ Häufige Probleme
 
+### Problem: Account temporär gesperrt (Lockout)
+
+Nach **3 fehlgeschlagenen** Login-Versuchen sperrt Parse Server das Konto für **5 Minuten** (Standard in `backend/parse-server/index.js`, `accountLockout`). Meldung oft auf Englisch (*locked … try again after 5 minute(s)*).
+
+**Lösungen:** Warten oder Passwort mit Master-Key per `createAdminUser` und `forcePasswordReset: true` setzen (siehe `WEB_PANEL_LOGIN_CREDENTIALS.md`, Abschnitt Account-Lockout und Business Admin).
+
+### Problem: Business Admin (`finance@fin1.de`) – Passwort unbekannt
+
+Das Standard-Skript `scripts/create-business-admin.sh` setzt nur bei **neuer** Anlage das Default-Passwort; auf bestehenden Servern weicht es oft ab. **Zurücksetzen:** `createAdminUser` mit `role: "business_admin"` und `forcePasswordReset: true` (vollständiges `curl`-Beispiel in `WEB_PANEL_LOGIN_CREDENTIALS.md`).
+
 ### Problem: "Login fehlgeschlagen" / "Invalid credentials"
 
 **Lösungen:**
-1. **Prüfe, ob User existiert:**
+1. **Application ID bei API-Calls:** `fin1-app-id` verwenden (nicht `fin1`), siehe `WEB_PANEL_LOGIN_CREDENTIALS.md`.
+2. **Prüfe, ob User existiert:**
    ```bash
    # Parse Dashboard → Browser → _User
    # Suche nach deiner E-Mail
    ```
 
-2. **Prüfe Rolle:**
+3. **Prüfe Rolle:**
    - User muss eine Admin-Rolle haben (`admin`, `business_admin`, etc.)
    - Normale `investor` oder `trader` User können sich nicht anmelden
 
-3. **Passwort zurücksetzen:**
+4. **Passwort zurücksetzen:**
    - Siehe Option 3 oben (Development)
    - Oder über Parse Dashboard: User bearbeiten → Passwort ändern
 
@@ -162,20 +174,15 @@ Das Admin-Portal unterstützt folgende Rollen:
 
 ## 🧪 Test-User erstellen (Development)
 
-### Via Cloud Function:
+### Investoren + Trader mit vollem Profil (empfohlen)
 
-```bash
-curl -k -X POST https://192.168.178.24/parse/functions/createTestUsers \
-  -H "X-Parse-Application-Id: fin1-app-id" \
-  -H "Content-Type: application/json"
-```
+Cloud Function **`seedTestUsers`** (Master-Key, Admin-Kontext): legt **5 Investoren** und **10 Trader** mit abgeschlossenem Onboarding an, Passwort **`TestPassword123!`**. Siehe `backend/parse-server/cloud/functions/seed/users.js`.
 
-**Erstellt:**
-- `trader3@test.com` / `TestPassword123!Secure`
-- `investor1@test.com` / `TestPassword123!Secure`
-- `investor2@test.com` / `TestPassword123!Secure`
+### Legacy / andere Skripte
 
-**Hinweis:** Diese User haben keine Admin-Rolle! Für Admin-Portal-Zugriff muss Rolle auf `admin` gesetzt werden.
+Falls in eurer Umgebung noch **`createTestUsers`** o. Ä. existiert: Dokumentation der erzeugten Mails/Passwörter der jeweiligen Funktion im Repo prüfen — kanonisch für die aktuelle App sind **`TestPassword123!`** und die Listen in `TestUserConstants.swift` / `seedTestUsers`.
+
+**Hinweis:** Investor/Trader haben **keine** Admin-Rolle und **keinen** Web-Portal-Login. Für das Portal weiterhin **`createAdminUser`** oder Dashboard mit Rolle `admin` verwenden.
 
 ---
 
@@ -216,6 +223,7 @@ curl -k -X POST https://192.168.178.24/parse/functions/createTestUsers \
 ## 📚 Referenzen
 
 - **Admin-Portal README:** `admin-portal/README.md`
+- **Web-Panel / CSR Login-Übersicht:** `WEB_PANEL_LOGIN_CREDENTIALS.md`
 - **Parse Dashboard:** `DASHBOARD_ANLEITUNG.md`
 - **Authentication:** `Documentation/AUTHENTICATION_ARCHITECTURE.md`
 - **Admin Roles:** `Documentation/FIN1_APP_DOCS/09_ADMIN_ROLES_SEPARATION.md`
@@ -231,9 +239,9 @@ curl -k -X POST https://192.168.178.24/parse/functions/createTestUsers \
 3. Admin-Portal öffnen: `https://192.168.178.24/admin/`
 4. Mit erstellten Credentials anmelden
 
-**Falls Test-User gewünscht:**
+**Falls Test-Admin gewünscht:**
 - E-Mail: `admin@test.com`
-- Passwort: `Password123!` (muss zuerst erstellt werden)
+- Passwort: `TestPassword123!` (nach Seed/Mock; sonst wie von `createAdminUser` gesetzt)
 - Rolle: `admin` (muss gesetzt werden)
 
 ---

@@ -43,6 +43,7 @@ Eine sachkundige dritte Person (oder eine IDE wie Cursor) soll den **aktuellen S
   - `backend/README.md` (Quickstart)
   - `Documentation/FIN1_APP_DOCS/06A_BACKEND_UBUNTU_IOBOX_RUNBOOK.md` (Production/Server-Realität)
   - `Documentation/FIN1_APP_DOCS/03_TECHNISCHE_SPEZIFIKATION.md` (Cloud Functions, Datenmodell, Security)
+  - Deploy-Ziele iobox (zwei IPs): `Documentation/OPERATIONAL_DEPLOY_HOSTS.md` — `./scripts/show-fin1-deploy-targets.sh`
 
 - **Betrieb / Netzwerk / Security**
   - `Documentation/FIN1_APP_DOCS/06A_BACKEND_UBUNTU_IOBOX_RUNBOOK.md` (Ports, Nginx, SSH Tunnel, Backups, Hardening)

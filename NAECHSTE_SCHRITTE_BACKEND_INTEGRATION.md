@@ -9,7 +9,7 @@
 ## 📊 Aktueller Stand
 
 ### ✅ Abgeschlossen (Phase 1-4)
-- **Alle Services integriert**: Trade, Investment, Order, Wallet, Documents, User, Watchlist, Filters, Push Tokens, Price Alerts
+- **Alle Services integriert**: Trade, Investment, Order, Konto (Wallet deaktiviert), Documents, User, Watchlist, Filters, Push Tokens, Price Alerts
 - **Write-Through Pattern**: Sofortige Synchronisation bei CRUD-Operationen
 - **Background Sync**: Parallel-Synchronisation aller Services bei App-Background
 - **Parse Server**: Läuft stabil über Nginx (`https://192.168.178.24/parse`); intern Container :1337

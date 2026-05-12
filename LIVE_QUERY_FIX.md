@@ -136,5 +136,5 @@ Der HTTP-Server akzeptiert jetzt WebSocket-Upgrade-Anfragen:
 
 Die App kann dann:
 - ✅ Live Updates von Parse Server empfangen
-- ✅ Real-time Updates für WalletTransaction, Order, Trade, etc.
+- ✅ Real-time Updates für Konto-Transaktionen, Order, Trade, etc. (Wallet-Feature deaktiviert)
 - ✅ Automatische UI-Updates bei Datenänderungen

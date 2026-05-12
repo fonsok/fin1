@@ -1,17 +1,61 @@
 // FIN1 Admin Portal - API Client
 
 const API = {
-    // Configuration
-    baseURL: window.location.hostname === 'localhost'
-        ? 'http://localhost:1338/parse'
-        : '/parse',
+    // Always use same origin as this page (e.g. https://localhost/parse via Nginx).
+    // Avoids mixed-content blocks when the admin HTML is served over HTTPS but Parse was hardcoded to http://localhost:1338.
+    // Fallback: direct Parse port for local file:// or unusual hosts.
+    baseURL: (() => {
+        const { protocol, hostname } = window.location;
+        if (protocol === 'file:' || !hostname) {
+            return 'http://localhost:1338/parse';
+        }
+        return `${window.location.origin}/parse`;
+    })(),
     applicationId: 'fin1-app-id',
     sessionToken: null,
+
+    isLoginPage() {
+        return /login\.html$/i.test(window.location.pathname || '');
+    },
 
     // Initialize
     init() {
         this.sessionToken = localStorage.getItem('sessionToken');
+        this.applyStoredUserLabel();
         this.updateConnectionStatus();
+    },
+
+    applyStoredUserLabel() {
+        const userEl = document.getElementById('current-user');
+        const name = localStorage.getItem('adminUsername');
+        if (userEl && name) {
+            userEl.textContent = name;
+        }
+    },
+
+    async login(username, password) {
+        const response = await fetch(`${this.baseURL}/login`, {
+            method: 'POST',
+            headers: {
+                'X-Parse-Application-Id': this.applicationId,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ username, password })
+        });
+        let data;
+        try {
+            data = await response.json();
+        } catch {
+            throw new Error('Ungültige Antwort vom Server');
+        }
+        if (!response.ok) {
+            throw new Error(data.error || 'Anmeldung fehlgeschlagen');
+        }
+        this.sessionToken = data.sessionToken;
+        localStorage.setItem('sessionToken', data.sessionToken);
+        const label = data.username || data.email || username;
+        localStorage.setItem('adminUsername', label);
+        return data;
     },
 
     // Headers for requests
@@ -35,8 +79,14 @@ const API = {
         });
 
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'API request failed');
+            let message = 'API request failed';
+            try {
+                const err = await response.json();
+                message = err.error || message;
+            } catch {
+                /* ignore */
+            }
+            throw new Error(message);
         }
 
         const data = await response.json();
@@ -168,11 +218,19 @@ const Modal = {
 // Initialize on load
 document.addEventListener('DOMContentLoaded', () => {
     API.init();
-    Toast.init();
+    if (!API.isLoginPage() && !localStorage.getItem('sessionToken')) {
+        const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
+        window.location.replace(`login.html?return=${returnTo}`);
+        return;
+    }
+    if (!API.isLoginPage()) {
+        Toast.init();
+    }
 });
 
 // Logout function
 function logout() {
     localStorage.removeItem('sessionToken');
-    window.location.href = 'index.html';
+    localStorage.removeItem('adminUsername');
+    window.location.href = 'login.html';
 }

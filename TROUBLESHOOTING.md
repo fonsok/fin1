@@ -22,8 +22,14 @@ ssh io@192.168.178.24 "cd ~/fin1-server && docker compose -f docker-compose.prod
 ssh io@192.168.178.24 "sudo ufw status | grep 443"
 
 # 4. Parse Server neu starten
-ssh io@192.168.178.24 "cd ~/fin1-server && docker compose -f docker-compose.production.yml restart parse-server"
+# Hinweis: Wenn du zuvor `backend/.env` geändert hast, nutze force-recreate, damit env_file sicher neu eingelesen wird.
+ssh io@192.168.178.24 "cd ~/fin1-server && docker compose -f docker-compose.production.yml up -d --force-recreate --no-deps parse-server"
 ```
+
+### Zusatz: `.env` kann shell-inkompatibel sein
+
+Wenn in `backend/.env` Werte mit Leerzeichen/Klammern stehen, schlagen Befehle wie `source backend/.env` fehl.
+Greife dann entweder auf Container-Umgebungsvariablen zu oder extrahiere einzelne Werte gezielt.
 
 ### 2. Service im "restarting" Status
 

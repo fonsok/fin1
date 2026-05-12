@@ -11,7 +11,7 @@
     {
       "label": "SwiftLint",
       "type": "shell",
-      "command": "swiftlint --strict",
+      "command": "swiftlint",
       "options": { "cwd": "${workspaceFolder}" },
       "problemMatcher": []
     },

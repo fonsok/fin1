@@ -16,10 +16,6 @@ cyclomatic_complexity:
   warning: 20
   error: 50
 
-# Force unwrapping as warning only (many pre-existing cases)
-force_unwrapping:
-  severity: warning
-
 included:
   - FIN1/
   - FIN1Tests/
@@ -66,7 +62,8 @@ function_parameter_count:
   ignores_default_parameters: true
 
 # Custom rules for ResponsiveDesign compliance
-# NOTE: These rules are set to warning to allow commits while gradually improving compliance
+# NOTE: These rules use severity: warning. CI runs `swiftlint` without --strict so warnings do not
+# fail the build; use `swiftlint --strict` locally when you want a zero-warning gate.
 custom_rules:
   no_fixed_fonts:
     name: "No Fixed Fonts"
@@ -117,36 +114,31 @@ custom_rules:
     message: "ViewModels must be created in init() method, not in property declaration"
     severity: warning
 
+  # `excluded` entries are regular expressions matched against the full file path (not globs).
   no_singleton_usage_outside_root:
     name: "No Singleton Usage Outside Composition Root"
     regex: "\\.shared"
     message: "Use dependency injection instead of singletons outside composition root"
     severity: warning
     excluded:
-      - "FIN1App.swift"
-      - "**/AppTheme.swift"
-      - "**/ResponsiveDesign.swift"
-      - "**/ThemeManager.swift"
-      - "**/EventBus.swift"
-      - "**/OptimizedImageView.swift"
-      - "**/WatchlistCards.swift"
-      - "**/NotificationServiceProtocol.swift"
-      - "**/CleanServiceProtocol.swift"
-      - "**/KeyboardDismissalModifier.swift"
-      - "**/PerformanceMonitor.swift"
-      - "**/PerformanceOptimizedView.swift"
-      - "**/PDFDownloadService.swift"
-      - "**/UserValidationService.swift"
-      - "**/NotificationCardComponents.swift"
-      - "**/NotificationsTrader.swift"
-      - "**/NotificationsView.swift"
-      - "**/NotificationsInvestor.swift"
-    # Exclude system singletons that are part of iOS SDK
-    excluded_patterns:
-      - "UIApplication\\.shared"
-      - "NotificationCenter\\.default"
-      - "UserDefaults\\.standard"
-      - "FileManager\\.default"
+      - ".*FIN1App\\.swift"
+      - ".*/AppTheme\\.swift"
+      - ".*/ResponsiveDesign\\.swift"
+      - ".*/ThemeManager\\.swift"
+      - ".*/EventBus\\.swift"
+      - ".*/OptimizedImageView\\.swift"
+      - ".*/WatchlistCards\\.swift"
+      - ".*/NotificationServiceProtocol\\.swift"
+      - ".*/CleanServiceProtocol\\.swift"
+      - ".*/KeyboardDismissalModifier\\.swift"
+      - ".*/PerformanceMonitor\\.swift"
+      - ".*/PerformanceOptimizedView\\.swift"
+      - ".*/PDFDownloadService\\.swift"
+      - ".*/UserValidationService\\.swift"
+      - ".*/NotificationCardComponents\\.swift"
+      - ".*/NotificationsTrader\\.swift"
+      - ".*/NotificationsView\\.swift"
+      - ".*/NotificationsInvestor\\.swift"
 
   no_private_service_init:
     name: "No Private Service Initializers"
@@ -184,12 +176,12 @@ custom_rules:
     message: "Data formatting must be done in ViewModel, not in View. Move formatting logic to ViewModel properties"
     severity: warning
     excluded:
-      - "**/ViewModels/**"
-      - "**/Models/**"
-      - "**/Extensions/**"
-      - "**/*ViewModel.swift"
-      - "**/*Model.swift"
-      - "**/*Extension.swift"
+      - ".*/ViewModels/.*"
+      - ".*/Models/.*"
+      - ".*/Extensions/.*"
+      - ".*/[^/]+ViewModel\\.swift"
+      - ".*/[^/]+Model\\.swift"
+      - ".*/[^/]+Extension\\.swift"
 
   no_date_formatting_in_view:
     name: "No Date Formatting in Views"
@@ -197,12 +189,12 @@ custom_rules:
     message: "Date formatting must be done in ViewModel, not in View. Move formatting logic to ViewModel properties"
     severity: warning
     excluded:
-      - "**/ViewModels/**"
-      - "**/Models/**"
-      - "**/Extensions/**"
-      - "**/*ViewModel.swift"
-      - "**/*Model.swift"
-      - "**/*Extension.swift"
+      - ".*/ViewModels/.*"
+      - ".*/Models/.*"
+      - ".*/Extensions/.*"
+      - ".*/[^/]+ViewModel\\.swift"
+      - ".*/[^/]+Model\\.swift"
+      - ".*/[^/]+Extension\\.swift"
 
   no_direct_model_property_access_in_view:
     name: "No Direct Model Property Access in Views"
@@ -210,11 +202,11 @@ custom_rules:
     message: "Views should not directly access model properties. Create a ViewModel to handle data transformation and formatting"
     severity: warning
     excluded:
-      - "**/ViewModels/**"
-      - "**/Models/**"
-      - "**/*ViewModel.swift"
-      - "**/*Model.swift"
-      - "**/*Wrapper.swift"
+      - ".*/ViewModels/.*"
+      - ".*/Models/.*"
+      - ".*/[^/]+ViewModel\\.swift"
+      - ".*/[^/]+Model\\.swift"
+      - ".*/[^/]+Wrapper\\.swift"
 
   no_missing_viewmodel_for_model_view:
     name: "No Missing ViewModel for Model-Based Views"
@@ -224,12 +216,12 @@ custom_rules:
     match_kinds:
       - identifier
     excluded:
-      - "**/ViewModels/**"
-      - "**/Models/**"
-      - "**/*ViewModel.swift"
-      - "**/*Model.swift"
-      - "**/*Wrapper.swift"
-      - "**/*Preview.swift"
+      - ".*/ViewModels/.*"
+      - ".*/Models/.*"
+      - ".*/[^/]+ViewModel\\.swift"
+      - ".*/[^/]+Model\\.swift"
+      - ".*/[^/]+Wrapper\\.swift"
+      - ".*/[^/]+Preview\\.swift"
 
   no_model_formatting_without_viewmodel:
     name: "No Model Formatting Without ViewModel"
@@ -237,11 +229,11 @@ custom_rules:
     message: "Model property formatting detected without ViewModel. Move formatting to ViewModel properties"
     severity: warning
     excluded:
-      - "**/ViewModels/**"
-      - "**/Models/**"
-      - "**/*ViewModel.swift"
-      - "**/*Model.swift"
-      - "**/*Extension.swift"
+      - ".*/ViewModels/.*"
+      - ".*/Models/.*"
+      - ".*/[^/]+ViewModel\\.swift"
+      - ".*/[^/]+Model\\.swift"
+      - ".*/[^/]+Extension\\.swift"
 
 reporter: xcode
 

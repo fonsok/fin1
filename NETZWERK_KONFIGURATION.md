@@ -3,6 +3,14 @@
 **Datum:** 24. Januar 2026
 **Status:** Produktiv ✅
 
+## Kanone (Repo & Clients)
+
+- **Ein physischer Server** (`iobox`): zwei LAN-Adressen (zwei NICs).
+- **Parse-/HTTPS-Ziel für Apps, Admin-URLs, Dokumentation:** **`192.168.178.24`** (WLAN).
+- **Derselbe Host per Kabel:** **`192.168.178.20`** (Ethernet) — gültig für SSH/rsync, gleicher Docker-Stack.
+
+**Deploy-Ziele (welches Skript welche IP):** festgehalten in [`Documentation/OPERATIONAL_DEPLOY_HOSTS.md`](Documentation/OPERATIONAL_DEPLOY_HOSTS.md) inkl. `scripts/.env.server` / `show-fin1-deploy-targets.sh`.
+
 ## Server-Informationen
 
 - **Ubuntu-Server-IP:** 192.168.178.24 (WLAN: wlp2s0)

@@ -1,23 +1,27 @@
-version: '3.8'
-
+# Stack for the Ubuntu fin1-server (`~/fin1-server`; runbook: Documentation/FIN1_APP_DOCS/06A_BACKEND_UBUNTU_IOBOX_RUNBOOK.md).
+# iOS Simulator: SSH -L 8443:127.0.0.1:443 user@server → https://localhost:8443/parse — siehe Config/FIN1-Dev.xcconfig.
 services:
   # Parse Server - Main Backend API
   parse-server:
     build:
       context: ./backend/parse-server
-      dockerfile: Dockerfile
+      dockerfile: ../node-service.Dockerfile
+      args:
+        SERVICE_PORT: 1337
+        EXTRA_DIR: certs
+        HEALTHCHECK_START: 60s
     container_name: fin1-parse-server
     ports:
       - "1338:1337"  # External port 1338 (like production)
     environment:
       - PARSE_SERVER_APPLICATION_ID=fin1-app-id
       - PARSE_SERVER_MASTER_KEY=fin1-master-key
-      - PARSE_SERVER_DATABASE_URI=mongodb://admin:fin1-mongo-password@mongodb:27017/fin1?authSource=admin
+      - PARSE_SERVER_DATABASE_URI=mongodb://admin:QgQl3nnPdIuA7ZxIq9IviL3OItM5FLTI@mongodb:27017/fin1?authSource=admin
       - PARSE_SERVER_CLOUD_CODE_MAIN=./cloud/main.js
       # When using nginx on port 80:
       - PARSE_SERVER_PUBLIC_SERVER_URL=http://localhost/parse
       - PARSE_SERVER_LIVE_QUERY_SERVER_URL=ws://localhost/parse
-      - PARSE_SERVER_PUSH_APNS_CERT_PATH=/app/certs/apns.p12
+      - PARSE_SERVER_PUSH_APNS_CERT_PATH=
       - PARSE_SERVER_PUSH_APNS_KEY_ID=your-key-id
       - PARSE_SERVER_PUSH_APNS_TEAM_ID=your-team-id
       - PARSE_SERVER_PUSH_APNS_BUNDLE_ID=com.fin1.app
@@ -31,6 +35,14 @@ services:
       - redis
     networks:
       - fin1-network
+    # Robust probe: supports both Parse /health and /parse/health paths,
+    # and allows slower cold-starts before marking unhealthy.
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://127.0.0.1:1337/health || wget --quiet --tries=1 --spider http://127.0.0.1:1337/parse/health"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 45s
     restart: unless-stopped
 
   # MongoDB - Primary Database
@@ -41,13 +53,19 @@ services:
       - "127.0.0.1:27018:27017"  # Security: Only localhost access
     environment:
       - MONGO_INITDB_ROOT_USERNAME=admin
-      - MONGO_INITDB_ROOT_PASSWORD=fin1-mongo-password
+      - MONGO_INITDB_ROOT_PASSWORD=QgQl3nnPdIuA7ZxIq9IviL3OItM5FLTI
       - MONGO_INITDB_DATABASE=fin1
     volumes:
       - mongodb_data:/data/db
       - ./backend/mongodb/init:/docker-entrypoint-initdb.d
     networks:
       - fin1-network
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh -u $$MONGO_INITDB_ROOT_USERNAME -p $$MONGO_INITDB_ROOT_PASSWORD --authenticationDatabase admin --eval \"db.adminCommand({ ping: 1 })\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     restart: unless-stopped
 
   # Redis - Caching and Session Storage
@@ -61,6 +79,12 @@ services:
       - redis_data:/data
     networks:
       - fin1-network
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a fin1-redis-password ping | grep -q PONG"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
     restart: unless-stopped
 
   # PostgreSQL - Analytics and Reporting Database
@@ -107,17 +131,28 @@ services:
     volumes:
       - ./backend/nginx/nginx.conf:/etc/nginx/nginx.conf
       - ./backend/nginx/ssl:/etc/nginx/ssl
+      # Built SPA copied to admin/ (Ubuntu: ~/fin1-server/admin/). Sync: scripts/sync-admin-portal-to-admin.sh
+      - ./admin:/var/www/admin:ro
     depends_on:
       - parse-server
     networks:
       - fin1-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --tries=1 --spider http://127.0.0.1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     restart: unless-stopped
 
   # Market Data Service - Real-time trading data
   market-data:
     build:
       context: ./backend/market-data
-      dockerfile: Dockerfile
+      dockerfile: ../node-service.Dockerfile
+      args:
+        SERVICE_PORT: 8080
+        EXTRA_DIR: cache
     container_name: fin1-market-data
     ports:
       - "127.0.0.1:8083:8080"  # Security: Only localhost access
@@ -136,7 +171,10 @@ services:
   notification-service:
     build:
       context: ./backend/notification-service
-      dockerfile: Dockerfile
+      dockerfile: ../node-service.Dockerfile
+      args:
+        SERVICE_PORT: 8081
+        EXTRA_DIR: certs
     container_name: fin1-notification-service
     ports:
       - "127.0.0.1:8084:8081"  # Security: Only localhost access
@@ -158,7 +196,10 @@ services:
   analytics-service:
     build:
       context: ./backend/analytics-service
-      dockerfile: Dockerfile
+      dockerfile: ../node-service.Dockerfile
+      args:
+        SERVICE_PORT: 8082
+        EXTRA_DIR: reports
     container_name: fin1-analytics-service
     ports:
       - "127.0.0.1:8085:8082"  # Security: Only localhost access

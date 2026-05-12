@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FIN1 Admin Portal</title>
+    <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+    <div class="admin-container">
+        <nav class="sidebar">
+            <div class="logo">
+                <h2>FIN1 Admin</h2>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item active">
+                    <a href="index.html">
+                        <span class="icon">📊</span>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="templates.html">
+                        <span class="icon">📝</span>
+                        <span>Templates</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="email-templates.html">
+                        <span class="icon">📧</span>
+                        <span>E-Mail Vorlagen</span>
+                    </a>
+                </li>
+            </ul>
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <span class="icon">👤</span>
+                    <span id="current-user">Admin</span>
+                </div>
+                <button class="btn btn-sm" onclick="logout()">Logout</button>
+            </div>
+        </nav>
+
+        <main class="main-content">
+            <header class="top-bar">
+                <h1>Dashboard</h1>
+                <div class="header-actions">
+                    <span id="connection-status" class="status-badge">Verbinde...</span>
+                </div>
+            </header>
+
+            <section class="content">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">📝</div>
+                        <div class="stat-info">
+                            <h3 id="template-count">-</h3>
+                            <p>Textbausteine</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">📧</div>
+                        <div class="stat-info">
+                            <h3 id="email-template-count">-</h3>
+                            <p>E-Mail Vorlagen</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">📂</div>
+                        <div class="stat-info">
+                            <h3 id="category-count">-</h3>
+                            <p>Kategorien</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">📈</div>
+                        <div class="stat-info">
+                            <h3 id="usage-count">-</h3>
+                            <p>Nutzungen (30 Tage)</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>Willkommen im FIN1 Admin Portal</h2>
+                    <p>Verwalten Sie Textbausteine und E-Mail-Vorlagen für den Customer Support.</p>
+
+                    <div class="quick-actions">
+                        <a href="templates.html" class="btn btn-primary">
+                            📝 Textbausteine verwalten
+                        </a>
+                        <a href="email-templates.html" class="btn btn-secondary">
+                            📧 E-Mail Vorlagen bearbeiten
+                        </a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>Letzte Aktivitäten</h2>
+                    <div id="recent-activity">
+                        <p class="text-muted">Lade Aktivitäten...</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/dashboard.js"></script>
+</body>
+</html>

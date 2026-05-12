@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anmeldung – FIN1 Admin</title>
+    <link rel="stylesheet" href="css/admin.css">
+</head>
+<body class="login-page-body">
+    <div class="login-page">
+        <div class="login-card card">
+            <div class="login-card-header">
+                <h1>FIN1 Admin</h1>
+                <p class="text-muted">Bitte mit Ihrem Parse-Konto anmelden (z.&nbsp;B. Teamlead/Admin).</p>
+            </div>
+            <form id="login-form" class="login-form" novalidate>
+                <div class="form-group">
+                    <label for="username">E-Mail oder Benutzername</label>
+                    <input type="text" id="username" name="username" autocomplete="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Passwort</label>
+                    <input type="password" id="password" name="password" autocomplete="current-password" required>
+                </div>
+                <p id="login-error" class="login-error" hidden></p>
+                <button type="submit" class="btn btn-primary" id="login-submit" style="width: 100%;">Anmelden</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('login-form');
+            const errEl = document.getElementById('login-error');
+            const submitBtn = document.getElementById('login-submit');
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                errEl.hidden = true;
+                const username = document.getElementById('username').value.trim();
+                const password = document.getElementById('password').value;
+                if (!username || !password) return;
+
+                submitBtn.disabled = true;
+                try {
+                    await API.login(username, password);
+                    const params = new URLSearchParams(window.location.search);
+                    const ret = params.get('return');
+                    if (ret && !ret.startsWith('file:')) {
+                        window.location.href = ret;
+                    } else {
+                        window.location.href = 'index.html';
+                    }
+                } catch (err) {
+                    errEl.textContent = err.message || 'Anmeldung fehlgeschlagen';
+                    errEl.hidden = false;
+                } finally {
+                    submitBtn.disabled = false;
+                }
+            });
+        });
+    </script>
+</body>
+</html>

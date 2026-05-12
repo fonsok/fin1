@@ -1,6 +1,7 @@
 // Production build configuration for FIN1.
 #include "FIN1-Base.xcconfig"
 
+// Same host as Ethernet 192.168.178.20 — canonical WiFi/Parse LAN IP for clients: 192.168.178.24 (see NETZWERK_KONFIGURATION.md).
 // TODO: Switch to HTTPS + domain when certificates are in place.
-FIN1_PARSE_SERVER_URL = http:$(FIN1_URL_SLASH)$(FIN1_URL_SLASH)192.168.178.20$(FIN1_URL_SLASH)parse
+FIN1_PARSE_SERVER_URL = http:$(FIN1_URL_SLASH)$(FIN1_URL_SLASH)192.168.178.24$(FIN1_URL_SLASH)parse
 

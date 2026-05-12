@@ -170,7 +170,7 @@ ssh io@192.168.178.24 "cd ~/fin1-server && cat backend/.env | grep LIVE_QUERY"
 
 Die App kann dann:
 - ✅ Live Updates von Parse Server empfangen
-- ✅ Real-time Updates für WalletTransaction, Order, Trade, etc.
+- ✅ Real-time Updates für Konto-Transaktionen, Order, Trade, etc. (Wallet-Feature deaktiviert)
 - ✅ Automatische UI-Updates bei Datenänderungen
 
 ---
@@ -196,7 +196,7 @@ Der HTTP-Server akzeptiert jetzt WebSocket-Upgrade-Anfragen:
 ### Live Query Klassen
 
 Folgende Klassen unterstützen Live Query:
-- `WalletTransaction`
+- Konto-Transaktionen (Wallet deaktiviert)
 - `Order`
 - `Trade`
 - `ComplianceEvent`
