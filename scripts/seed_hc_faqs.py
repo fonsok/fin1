@@ -47,26 +47,26 @@ FAQS = [
      "Navigiere zu **Trader entdecken**, wähle einen Trader aus und tippe auf **Investieren**. Gib den gewünschten Betrag ein und bestätige deine Investition.",
      "investments", 1, ["all"]),
     ("hc_investments_2", "Wie sehe ich meine aktuelle Rendite?",
-     "Deine aktuelle Rendite findest du unter **Portfolio > Meine Investments**. Dort siehst du den aktuellen Wert, die Gesamtrendite und die Performance-Historie.",
+     "Deine aktuelle Rendite findest du unter **Investments**. Dort siehst du den aktuellen Wert, die Gesamtrendite und die Performance-Historie.",
      "investments", 2, ["all"]),
     ("hc_investments_3", "Kann ich mein Investment vorzeitig beenden?",
-     "Ja. Gehe zu **Portfolio > Investment auswählen > Auszahlung anfordern**. Je nach Pool-Bedingungen kann eine Mindestanlagedauer gelten und es können Gebühren anfallen.",
+     "Ja. Gehe zu **Investments > Investment auswählen > Auszahlung anfordern**. Je nach Pool-Bedingungen kann eine Mindestanlagedauer gelten und es können Gebühren anfallen.",
      "investments", 3, ["all"]),
 
-    # Investor Portfolio (investor)
-    ("hc_investor_portfolio_1", "Wie diversifiziere ich mein Portfolio?",
+    # Investor: Investments & Performance (investor)
+    ("hc_investor_portfolio_1", "Wie diversifiziere ich meine Investments?",
      "Wir empfehlen, in mehrere Trader mit unterschiedlichen Handelsstrategien zu investieren. Unter **Trader entdecken** kannst du nach Risikoprofil, Performance und Strategie filtern.",
      "investor_portfolio", 1, ["investor"]),
     ("hc_investor_portfolio_2", "Was bedeuten die verschiedenen Risikostufen?",
      "**Konservativ**: Niedrigere, stabilere Renditen. **Moderat**: Ausgewogenes Verhältnis. **Aggressiv**: Höheres Renditepotenzial bei höherem Risiko. Dein Risikoprofil aus dem Onboarding hilft bei der Auswahl.",
      "investor_portfolio", 2, ["investor"]),
 
-    # Trading (trader)
+    # Trading (trader) — Produkt: strukturierte Derivate (kein Kassamarkt-Aktien / Spot-Forex)
     ("hc_trading_1", "Wie erstelle ich eine neue Order?",
-     "Gehe zu **Trading > Neue Order**. Wähle das Wertpapier, den Ordertyp (Market, Limit, Stop), die Menge und bestätige. Limit- und Stop-Orders erfordern die Angabe eines Preises.",
+     "Gehe zu **Trading > Neue Order**. Suche **Derivate** (z. B. Optionsscheine, Zertifikate) per WKN, ISIN oder Name, wähle das Produkt, den Ordertyp (Market, Limit, Stop), die Menge und bestätige. **Kein** eigenständiger Kassamarkthandel mit Aktien oder Spot-Devisen. Limit- und Stop-Orders erfordern die Angabe eines Preises.",
      "trading", 1, ["trader"]),
     ("hc_trading_2", "Was sind die Handelszeiten?",
-     "Die regulären Handelszeiten sind Mo-Fr 08:00-22:00 Uhr (MEZ). Außerhalb dieser Zeiten werden Orders in die Warteschlange gestellt und bei Marktöffnung ausgeführt.",
+     "Der Handel mit Derivaten richtet sich nach den relevanten Börsenzeiten (z. B. Mo–Fr, Xetra übliche Zeiten). Außerhalb dieser Zeiten werden Orders in die Warteschlange gestellt und bei Marktöffnung ausgeführt, sofern der Kurs erreicht wird.",
      "trading", 2, ["trader"]),
     ("hc_trading_3", "Wie funktionieren Stop-Loss Orders?",
      "Eine Stop-Loss Order wird automatisch als Market-Order ausgeführt, wenn der Kurs einen bestimmten Preis erreicht, um potenzielle Verluste zu begrenzen.",

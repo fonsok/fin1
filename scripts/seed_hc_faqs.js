@@ -10,16 +10,16 @@ const helpCenterFAQs = [
 
   // Investments (all roles)
   { q: "Wie investiere ich in einen Trading-Pool?", a: "Navigiere zu **Trader entdecken**, w\u00e4hle einen Trader aus und tippe auf **Investieren**. Gib den gew\u00fcnschten Betrag ein (Mindestbetrag beachten) und best\u00e4tige deine Investition.", cat: "investments", roles: ["all"], order: 1 },
-  { q: "Wie sehe ich meine aktuelle Rendite?", a: "Deine aktuelle Rendite findest du unter **Portfolio > Meine Investments**. Dort siehst du den aktuellen Wert, die Gesamtrendite und die Performance-Historie jeder Investition.", cat: "investments", roles: ["all"], order: 2 },
-  { q: "Kann ich mein Investment vorzeitig beenden?", a: "Ja. Gehe zu **Portfolio > Investment ausw\u00e4hlen > Auszahlung anfordern**. Beachte: Je nach Pool-Bedingungen kann eine Mindestanlagedauer gelten und es k\u00f6nnen Geb\u00fchren anfallen.", cat: "investments", roles: ["all"], order: 3 },
+  { q: "Wie sehe ich meine aktuelle Rendite?", a: "Deine aktuelle Rendite findest du unter **Investments**. Dort siehst du den aktuellen Wert, die Gesamtrendite und die Performance-Historie jeder Investition.", cat: "investments", roles: ["all"], order: 2 },
+  { q: "Kann ich mein Investment vorzeitig beenden?", a: "Ja. Gehe zu **Investments > Investment ausw\u00e4hlen > Auszahlung anfordern**. Beachte: Je nach Pool-Bedingungen kann eine Mindestanlagedauer gelten und es k\u00f6nnen Geb\u00fchren anfallen.", cat: "investments", roles: ["all"], order: 3 },
 
-  // Investor Portfolio (investor only)
-  { q: "Wie diversifiziere ich mein Portfolio?", a: "Wir empfehlen, in mehrere Trader mit unterschiedlichen Handelsstrategien zu investieren. Unter **Trader entdecken** kannst du nach Risikoprofil, Performance und Strategie filtern.", cat: "investor_portfolio", roles: ["investor"], order: 1 },
+  // Investor: Investments & Performance (investor only)
+  { q: "Wie diversifiziere ich meine Investments?", a: "Wir empfehlen, in mehrere Trader mit unterschiedlichen Handelsstrategien zu investieren. Unter **Trader entdecken** kannst du nach Risikoprofil, Performance und Strategie filtern.", cat: "investor_portfolio", roles: ["investor"], order: 1 },
   { q: "Was bedeuten die verschiedenen Risikostufen?", a: "**Konservativ**: Niedrigere, stabilere Renditen. **Moderat**: Ausgewogenes Verh\u00e4ltnis. **Aggressiv**: H\u00f6heres Renditepotenzial bei h\u00f6herem Risiko. Dein Risikoprofil aus dem Onboarding hilft bei der Auswahl.", cat: "investor_portfolio", roles: ["investor"], order: 2 },
 
-  // Trading (trader only)
-  { q: "Wie erstelle ich eine neue Order?", a: "Gehe zu **Trading > Neue Order**. W\u00e4hle das Wertpapier, den Ordertyp (Market, Limit, Stop), die Menge und best\u00e4tige. Limit- und Stop-Orders erfordern die Angabe eines Preises.", cat: "trading", roles: ["trader"], order: 1 },
-  { q: "Was sind die Handelszeiten?", a: "Die regul\u00e4ren Handelszeiten sind Mo-Fr 08:00-22:00 Uhr (MEZ). Au\u00dferhalb dieser Zeiten werden Orders in die Warteschlange gestellt und bei Markt\u00f6ffnung ausgef\u00fchrt.", cat: "trading", roles: ["trader"], order: 2 },
+  // Trading (trader only) — Produkt: strukturierte Derivate (kein Kassamarkt-Aktien / Spot-Forex)
+  { q: "Wie erstelle ich eine neue Order?", a: "Gehe zu **Trading > Neue Order**. Suche **Derivate** (z. B. Optionsscheine, Zertifikate) per WKN, ISIN oder Name, w\u00e4hle das Produkt, den Ordertyp (Market, Limit, Stop), die Menge und best\u00e4tige. **Kein** eigenst\u00e4ndiger Kassamarkthandel mit Aktien oder Spot-Devisen. Limit- und Stop-Orders erfordern die Angabe eines Preises.", cat: "trading", roles: ["trader"], order: 1 },
+  { q: "Was sind die Handelszeiten?", a: "Der Handel mit Derivaten richtet sich nach den relevanten B\u00f6rsenzeiten (z. B. Mo\u2013Fr, Xetra \u00fcbliche Zeiten). Au\u00dferhalb dieser Zeiten werden Orders in die Warteschlange gestellt und bei Markt\u00f6ffnung ausgef\u00fchrt, sofern der Kurs erreicht wird.", cat: "trading", roles: ["trader"], order: 2 },
   { q: "Wie funktionieren Stop-Loss Orders?", a: "Eine Stop-Loss Order wird automatisch als Market-Order ausgef\u00fchrt, wenn der Kurs einen bestimmten Preis erreicht. So begrenzt du potenzielle Verluste. Setze unter **Order > Stop-Loss** deinen gew\u00fcnschten Ausl\u00f6sepreis.", cat: "trading", roles: ["trader"], order: 3 },
 
   // Trader Pools (trader only)

@@ -5,6 +5,13 @@ Deploy updated legal sections to Parse `TermsContent` as new immutable versions.
 Audit-safe: creates NEW TermsContent records (never edits existing ones),
 then deactivates the previous active version.
 
+Optional maintenance (dangerous / audit-sensitive):
+- `--purge-inactive-after` can hard-delete historical inactive rows via Parse REST DELETE.
+  This requires Parse Cloud `TermsContent` delete guardrails to be explicitly enabled on the server:
+  - `ALLOW_LEGAL_HARD_DELETE=true`
+  - `ALLOW_LEGAL_MASTER_DELETE_NON_ACTIVE_TERMSCONTENT=true`
+  - plus the existing production gate (`NODE_ENV` / `ALLOW_LEGAL_HARD_DELETE_IN_PRODUCTION`)
+
 Runs on the FIN1 Ubuntu server (expects):
   /home/io/fin1-server/backend/.env   (contains Parse Application ID + Master Key)
   Parse available locally at:         http://127.0.0.1:1338/parse
@@ -70,6 +77,11 @@ class ParseClient:
         with urllib.request.urlopen(req, timeout=30) as resp:
             return json.loads(resp.read().decode("utf-8"))
 
+    def delete(self, path: str) -> None:
+        req = urllib.request.Request(f"{self.base}{path}", headers=self.headers, method="DELETE")
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            _ = resp.read()
+
 
 def bump_version(version: str) -> str:
     v = version.strip()
@@ -90,7 +102,36 @@ def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
-def deploy_one(client: ParseClient, payload: dict, new_version: str | None, reason: str, deployed_by: str) -> None:
+def parse_expected_section_counts(raw: str | None) -> dict[str, int]:
+    """
+    Format: "terms_de=34,terms_en=34,privacy_de=17"
+    Keys are export filenames without extension, e.g. "terms_de".
+    """
+    if not raw:
+        return {}
+    out: dict[str, int] = {}
+    for part in raw.split(","):
+        item = part.strip()
+        if not item:
+            continue
+        if "=" not in item:
+            raise SystemExit(f"Invalid --expect-section-count entry (missing '='): {item!r}")
+        k, v = item.split("=", 1)
+        k = k.strip()
+        v = v.strip()
+        if not k:
+            raise SystemExit(f"Invalid --expect-section-count entry (empty key): {item!r}")
+        try:
+            n = int(v)
+        except ValueError as e:
+            raise SystemExit(f"Invalid --expect-section-count value for {k!r}: {v!r}") from e
+        if n <= 0:
+            raise SystemExit(f"Invalid --expect-section-count value for {k!r}: must be > 0")
+        out[k] = n
+    return out
+
+
+def deploy_one(client: ParseClient, payload: dict, new_version: str | None, reason: str, deployed_by: str) -> str:
     doc_type = payload["documentType"]
     lang = payload["language"]
     new_sections = payload["sections"]
@@ -162,6 +203,37 @@ def deploy_one(client: ParseClient, payload: dict, new_version: str | None, reas
         print(f"  WARNING: Failed to create AuditLog entry: {e}")
 
     print(f"  DEPLOYED {doc_type} {lang}: {active_id or '(none)'} ({current_version}) -> {new_id} ({target_version}) [{len(new_sections)} sections]")
+    return new_id
+
+
+def purge_inactive_termscontent(
+    client: ParseClient,
+    *,
+    document_type: str | None,
+    language: str | None,
+) -> int:
+    where: dict = {"isActive": False}
+    if document_type:
+        where["documentType"] = document_type
+    if language:
+        where["language"] = language
+
+    deleted = 0
+    page = 200
+    # Always fetch page 1 again: deleting shifts results, `skip` pagination would miss rows.
+    while True:
+        params = {"where": json.dumps(where), "limit": page, "order": "createdAt"}
+        res = client.get("/classes/TermsContent", params=params)
+        batch = res.get("results") or []
+        if not batch:
+            break
+        for row in batch:
+            oid = row.get("objectId")
+            if not oid:
+                continue
+            client.delete(f"/classes/TermsContent/{oid}")
+            deleted += 1
+    return deleted
 
 
 def main() -> int:
@@ -176,6 +248,33 @@ def main() -> int:
                         help="Reason for this deployment (required for audit trail / GoB compliance)")
     parser.add_argument("--deployed-by", required=True,
                         help="Name or identifier of the person deploying (required for audit trail)")
+    parser.add_argument(
+        "--expect-section-count",
+        default=None,
+        help=(
+            "Fail if section counts don't match. Example: "
+            "'terms_de=34,terms_en=34'. Keys are JSON stems like 'terms_de'."
+        ),
+    )
+    parser.add_argument(
+        "--purge-inactive-after",
+        action="store_true",
+        help=(
+            "After deployment, hard-delete inactive TermsContent rows via Parse REST DELETE. "
+            "Requires server env: ALLOW_LEGAL_HARD_DELETE=true AND "
+            "ALLOW_LEGAL_MASTER_DELETE_NON_ACTIVE_TERMSCONTENT=true (and production override rules)."
+        ),
+    )
+    parser.add_argument(
+        "--purge-inactive-scope",
+        choices=["deployed-only", "all"],
+        default="deployed-only",
+        help=(
+            "Which inactive rows to purge after deploy. "
+            "'deployed-only' purges per deployed (documentType,language). "
+            "'all' purges every inactive TermsContent row."
+        ),
+    )
     args = parser.parse_args()
 
     env = load_env(Path("/home/io/fin1-server/backend/.env"))
@@ -191,6 +290,8 @@ def main() -> int:
     if not files:
         raise SystemExit(f"No JSON files found in {input_dir}")
 
+    expected = parse_expected_section_counts(args.expect_section_count)
+
     only_filter = None
     if args.only:
         only_filter = {s.strip() for s in args.only.split(",")}
@@ -198,13 +299,54 @@ def main() -> int:
     print(f"Deploying legal docs from {input_dir} ...")
     print(f"  Reason: {args.reason}")
     print(f"  Deployed by: {args.deployed_by}")
+
+    deployed_keys: list[tuple[str, str]] = []
+
     for fp in files:
         stem = fp.stem
         if only_filter and stem not in only_filter:
             print(f"  SKIPPED {fp.name} (not in --only filter)")
             continue
         payload = json.loads(fp.read_text(encoding="utf-8"))
+        sections = payload.get("sections")
+        if stem in expected:
+            if not isinstance(sections, list):
+                raise SystemExit(f"{fp.name}: sections must be a list")
+            if len(sections) != expected[stem]:
+                raise SystemExit(
+                    f"{fp.name}: expected {expected[stem]} sections, got {len(sections)} "
+                    f"(remove/adjust --expect-section-count or fix export)"
+                )
         deploy_one(client, payload, args.new_version, args.reason, args.deployed_by)
+        deployed_keys.append((payload["documentType"], payload["language"]))
+
+    if args.purge_inactive_after:
+        hard = str(env.get("ALLOW_LEGAL_HARD_DELETE", "")).lower() == "true"
+        master_del = str(env.get("ALLOW_LEGAL_MASTER_DELETE_NON_ACTIVE_TERMSCONTENT", "")).lower() == "true"
+        if not hard or not master_del:
+            raise SystemExit(
+                "Refusing --purge-inactive-after: set in server .env:\n"
+                "  ALLOW_LEGAL_HARD_DELETE=true\n"
+                "  ALLOW_LEGAL_MASTER_DELETE_NON_ACTIVE_TERMSCONTENT=true\n"
+                "(and production override rules as enforced by Parse Cloud beforeDelete)"
+            )
+
+        print("Purging inactive TermsContent rows ...")
+        total_deleted = 0
+        if args.purge_inactive_scope == "all":
+            total_deleted += purge_inactive_termscontent(client, document_type=None, language=None)
+        else:
+            # de-dupe keys while keeping stable order
+            seen: set[tuple[str, str]] = set()
+            for doc_type, lang in deployed_keys:
+                key = (doc_type, lang)
+                if key in seen:
+                    continue
+                seen.add(key)
+                deleted = purge_inactive_termscontent(client, document_type=doc_type, language=lang)
+                print(f"  PURGED inactive {doc_type} {lang}: deleted={deleted}")
+                total_deleted += deleted
+        print(f"  PURGE DONE: deleted={total_deleted}")
 
     print("DONE")
     return 0

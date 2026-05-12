@@ -1,22 +1,31 @@
 #!/usr/bin/env bash
 # ===========================================================================
-# Business-Admin-Benutzer für das Admin-Portal anlegen
+# Finance Admin (Parse-Rolle business_admin) — gleiche Portal-Login-URL wie Technischer Admin
 #
-# Dieser Benutzer ist der "zweite Genehmiger" im 4-Augen-Prinzip:
+# Vorgesehene Demo-Mail: finance@fin1.de (siehe admin-portal/src/constants/portalLogin.ts).
+# 4-Augen-Prinzip typisch:
 #   - admin@fin1.de      -> beantragt Konfigurationsänderungen
 #   - finance@fin1.de    -> genehmigt oder lehnt ab (und umgekehrt)
 #
 # Auf dem Server ausführen:
 #   bash scripts/create-business-admin.sh
 #
+# Nur Passwort/Login reparieren (Lockout + neues Passwort):
+#   bash scripts/reset-portal-login.sh finance@fin1.de 'NeuesPasswort!9'
+#
 # Eigene Zugangsdaten:
 #   BA_EMAIL="cfo@fin1.de" BA_PASSWORD="MeinPasswort!" bash scripts/create-business-admin.sh
+#
+# Hinweise:
+#   - Parse accountLockout: nach 3 Fehlversuchen ca. 5 Minuten Sperre (backend/parse-server/index.js).
+#   - Existiert der User schon, wird das Passwort nur bei forcePasswordReset oder Rollenwechsel gesetzt.
+#   - Neues Passwort darf nicht einer der letzten 5 Passwörter sein (maxPasswordHistory).
 # ===========================================================================
 
 set -e
 
 BA_EMAIL="${BA_EMAIL:-finance@fin1.de}"
-BA_PASSWORD="${BA_PASSWORD:-FinanceAdmin2025!}"
+BA_PASSWORD="${BA_PASSWORD:-Finance2026!}"
 BA_FIRST="${BA_FIRST:-Finance}"
 BA_LAST="${BA_LAST:-Admin}"
 CONTAINER_NAME="${PARSE_CONTAINER_NAME:-fin1-parse-server}"

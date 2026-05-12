@@ -14,7 +14,7 @@ Umfassender Backend-Verbindungstest mit netcat, nmap und mtr.
 ./scripts/network/health-check-backend.sh [HOST]
 
 # Mit mtr-Diagnose (benötigt sudo)
-sudo ./scripts/network/health-check-backend.sh 192.168.178.20
+sudo ./scripts/network/health-check-backend.sh 192.168.178.24
 ```
 
 **Was wird getestet:**

@@ -30,9 +30,9 @@ Detects duplicate Swift files by checking for:
 
 ### 1. Pre-commit Hook
 
-Automatically runs duplicate detection before each commit:
+Automatically runs duplicate detection before each commit (installed via `scripts/install-githooks.sh`):
 ```bash
-./scripts/pre-commit-hook.sh
+./scripts/install-githooks.sh
 ```
 
 ### 2. Danger CI

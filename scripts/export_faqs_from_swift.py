@@ -27,7 +27,7 @@ class FAQ:
     faqId: str
     question: str
     answer: str
-    categoryCase: str  # e.g. "platformOverview"
+    categoryCase: str  # e.g. "appOverview"
     source: str        # "landing" | "help_center"
     sortOrder: int
 
@@ -47,7 +47,7 @@ def replace_placeholders(text: str) -> str:
 
 
 def camel_to_snake(name: str) -> str:
-    # platformOverview -> platform_overview
+    # appOverview -> app_overview
     out: list[str] = []
     for ch in name:
         if ch.isupper():
@@ -140,7 +140,7 @@ def category_case_to_display_name(case_name: str) -> str:
     # Must match FIN1/Shared/Models/FAQCategory.swift raw values
     mapping = {
         "gettingStarted": "Getting Started",
-        "platformOverview": "Platform Overview",
+        "appOverview": "App Overview",
         "investments": "Investments",
         "trading": "Trading",
         "portfolio": "Portfolio & Performance",
@@ -157,7 +157,7 @@ def category_case_to_display_name(case_name: str) -> str:
 def category_case_to_icon(case_name: str) -> str:
     mapping = {
         "gettingStarted": "arrow.right.circle.fill",
-        "platformOverview": "star.fill",
+        "appOverview": "star.fill",
         "investments": "dollarsign.circle.fill",
         "trading": "chart.line.uptrend.xyaxis",
         "portfolio": "chart.bar.fill",
@@ -173,7 +173,7 @@ def category_case_to_icon(case_name: str) -> str:
 
 def category_case_to_sort_order(case_name: str) -> int:
     ordering = [
-        "platformOverview",
+        "appOverview",
         "gettingStarted",
         "investments",
         "trading",

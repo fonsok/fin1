@@ -97,16 +97,16 @@ create_faq "hc_security_3" "Mein Account wurde gesperrt — was tun?" "Dein Acco
 
 # Investments (all)
 create_faq "hc_investments_1" "Wie investiere ich in einen Trading-Pool?" "Navigiere zu **Trader entdecken**, wähle einen Trader aus und tippe auf **Investieren**. Gib den gewünschten Betrag ein und bestätige deine Investition." "$CAT_INVESTMENTS" 1 '["all"]'
-create_faq "hc_investments_2" "Wie sehe ich meine aktuelle Rendite?" "Deine aktuelle Rendite findest du unter **Portfolio > Meine Investments**. Dort siehst du den aktuellen Wert, die Gesamtrendite und die Performance-Historie." "$CAT_INVESTMENTS" 2 '["all"]'
-create_faq "hc_investments_3" "Kann ich mein Investment vorzeitig beenden?" "Ja. Gehe zu **Portfolio > Investment auswählen > Auszahlung anfordern**. Je nach Pool-Bedingungen kann eine Mindestanlagedauer gelten." "$CAT_INVESTMENTS" 3 '["all"]'
+create_faq "hc_investments_2" "Wie sehe ich meine aktuelle Rendite?" "Deine aktuelle Rendite findest du unter **Investments**. Dort siehst du den aktuellen Wert, die Gesamtrendite und die Performance-Historie." "$CAT_INVESTMENTS" 2 '["all"]'
+create_faq "hc_investments_3" "Kann ich mein Investment vorzeitig beenden?" "Ja. Gehe zu **Investments > Investment auswählen > Auszahlung anfordern**. Je nach Pool-Bedingungen kann eine Mindestanlagedauer gelten." "$CAT_INVESTMENTS" 3 '["all"]'
 
-# Investor Portfolio (investor)
-create_faq "hc_investor_portfolio_1" "Wie diversifiziere ich mein Portfolio?" "Wir empfehlen, in mehrere Trader mit unterschiedlichen Handelsstrategien zu investieren. Unter **Trader entdecken** kannst du nach Risikoprofil, Performance und Strategie filtern." "$CAT_INVESTOR_PORTFOLIO" 1 '["investor"]'
+# Investor: Investments & Performance (investor)
+create_faq "hc_investor_portfolio_1" "Wie diversifiziere ich meine Investments?" "Wir empfehlen, in mehrere Trader mit unterschiedlichen Handelsstrategien zu investieren. Unter **Trader entdecken** kannst du nach Risikoprofil, Performance und Strategie filtern." "$CAT_INVESTOR_PORTFOLIO" 1 '["investor"]'
 create_faq "hc_investor_portfolio_2" "Was bedeuten die verschiedenen Risikostufen?" "**Konservativ**: Niedrigere, stabilere Renditen. **Moderat**: Ausgewogenes Verhältnis. **Aggressiv**: Höheres Renditepotenzial bei höherem Risiko." "$CAT_INVESTOR_PORTFOLIO" 2 '["investor"]'
 
-# Trading (trader)
-create_faq "hc_trading_1" "Wie erstelle ich eine neue Order?" "Gehe zu **Trading > Neue Order**. Wähle das Wertpapier, den Ordertyp (Market, Limit, Stop), die Menge und bestätige." "$CAT_TRADING" 1 '["trader"]'
-create_faq "hc_trading_2" "Was sind die Handelszeiten?" "Die regulären Handelszeiten sind Mo-Fr 08:00-22:00 Uhr (MEZ). Außerhalb dieser Zeiten werden Orders bei Marktöffnung ausgeführt." "$CAT_TRADING" 2 '["trader"]'
+# Trading (trader) — Produkt: strukturierte Derivate
+create_faq "hc_trading_1" "Wie erstelle ich eine neue Order?" "Gehe zu **Trading > Neue Order**. Suche **Derivate** (z. B. Optionsscheine, Zertifikate) per WKN, ISIN oder Name. **Kein** Kassamarkthandel mit Aktien oder Spot-Devisen. Wähle Ordertyp (Market, Limit, Stop), Menge, bestätige." "$CAT_TRADING" 1 '["trader"]'
+create_faq "hc_trading_2" "Was sind die Handelszeiten?" "Handel mit Derivaten nach relevanten Börsenzeiten (z. B. Mo–Fr). Außerhalb: Orders in Warteschlange, Ausführung bei Marktöffnung wenn Kurs erreicht." "$CAT_TRADING" 2 '["trader"]'
 create_faq "hc_trading_3" "Wie funktionieren Stop-Loss Orders?" "Eine Stop-Loss Order wird automatisch als Market-Order ausgeführt, wenn der Kurs einen bestimmten Preis erreicht, um Verluste zu begrenzen." "$CAT_TRADING" 3 '["trader"]'
 
 # Trader Pools (trader)

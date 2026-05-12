@@ -74,11 +74,29 @@ restore_redis() {
 
 restore_config() {
     local backup_dir="$1"
-    log "Restoring config files (backup.env, nginx.conf, docker-compose)..."
+    log "Restoring config files (env, compose, nginx, TLS/certs if present in backup)..."
     [[ -f "${backup_dir}/backend.env" ]] && cp "${backup_dir}/backend.env" "${FIN1_SERVER}/backend/.env" && log "  backend/.env restored"
     [[ -f "${backup_dir}/nginx.conf" ]] && cp "${backup_dir}/nginx.conf" "${FIN1_SERVER}/backend/nginx/nginx.conf" && log "  nginx.conf restored"
     [[ -f "${backup_dir}/docker-compose.production.yml" ]] && cp "${backup_dir}/docker-compose.production.yml" "${FIN1_SERVER}/docker-compose.production.yml" && log "  docker-compose.production.yml restored"
-    log "Config restore complete. Restart stack if needed: docker compose -f docker-compose.production.yml up -d"
+    [[ -f "${backup_dir}/docker-compose.production.snap.yml" ]] && cp "${backup_dir}/docker-compose.production.snap.yml" "${FIN1_SERVER}/docker-compose.production.snap.yml" && log "  docker-compose.production.snap.yml restored"
+    [[ -f "${backup_dir}/fin1-server-root.env" ]] && cp "${backup_dir}/fin1-server-root.env" "${FIN1_SERVER}/.env" && log "  fin1-server/.env (root) restored"
+
+    restore_cert_tree() {
+        local name="$1"
+        local dest="$2"
+        if [[ -d "${backup_dir}/${name}" ]] && [[ -n "$(ls -A "${backup_dir}/${name}" 2>/dev/null)" ]]; then
+            mkdir -p "${dest}"
+            cp -a "${backup_dir}/${name}/." "${dest}/"
+            log "  ${dest} restored from backup ${name}/"
+        else
+            log "  (no ${name}/ in this backup — skip)"
+        fi
+    }
+    restore_cert_tree "nginx-ssl" "${FIN1_SERVER}/backend/nginx/ssl"
+    restore_cert_tree "parse-server-certs" "${FIN1_SERVER}/backend/parse-server/certs"
+    restore_cert_tree "notification-service-certs" "${FIN1_SERVER}/backend/notification-service/certs"
+
+    log "Config restore complete. If TLS/certs changed: docker compose -f docker-compose.production.yml restart nginx parse-server notification-service"
 }
 
 # --- main ---

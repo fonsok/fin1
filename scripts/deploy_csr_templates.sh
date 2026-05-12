@@ -16,9 +16,13 @@
 
 set -e
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=.env.server
+[ -f "$SCRIPT_DIR/.env.server" ] && source "$SCRIPT_DIR/.env.server"
+
 # Configuration
-SERVER_USER="io"
-SERVER_IP="192.168.178.24"
+SERVER_USER="${FIN1_SERVER_USER:-io}"
+SERVER_IP="${FIN1_SERVER_IP:-192.168.178.24}"
 SCHEMA_FILE="backend/postgres/init/017_schema_csr_templates.sql"
 REMOTE_DIR="/home/io/fin1-server"
 CONTAINER_NAME="fin1-postgres"

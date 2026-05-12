@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # File Size Check Script
-# Ensures classes ≤ 400 lines, functions ≤ 50 lines per architecture rules
+# Ensures Swift files ≤ 300 lines, functions ≤ 50 lines per architecture rules
 
 set -e
 
-MAX_CLASS_LINES=400
+MAX_CLASS_LINES=300
 MAX_FUNCTION_LINES=50
 VIOLATIONS=0
 
@@ -16,7 +16,7 @@ echo ""
 SWIFT_FILES=$(find FIN1 -name "*.swift" -type f | grep -v "Tests\|Preview\|Extension" || true)
 
 # Check class/file sizes
-echo "📋 Checking class/file sizes (limit: ${MAX_CLASS_LINES} lines)..."
+echo "📋 Checking Swift file sizes (limit: ${MAX_CLASS_LINES} lines)..."
 for file in $SWIFT_FILES; do
     LINES=$(wc -l < "$file" | tr -d ' ')
     if [ "$LINES" -gt "$MAX_CLASS_LINES" ]; then
@@ -67,7 +67,7 @@ else
     echo "❌ Found $VIOLATIONS file/function size violations"
     echo ""
     echo "📖 Architecture rules:"
-    echo "   - Classes must be ≤ ${MAX_CLASS_LINES} lines"
+    echo "   - Swift files should be ≤ ${MAX_CLASS_LINES} lines"
     echo "   - Functions must be ≤ ${MAX_FUNCTION_LINES} lines"
     echo ""
     echo "💡 See .cursor/rules/architecture.md for refactoring guidelines"

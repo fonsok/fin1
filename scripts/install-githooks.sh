@@ -24,7 +24,9 @@ ln -sf "../../.githooks/pre-commit" "$hooks_dir/pre-commit"
 
 chmod +x "$hooks_dir/pre-commit" \
   "$repo_root/.githooks/pre-commit" \
-  "$repo_root/scripts/check-xcode-display-name.sh"
+  "$repo_root/scripts/check-xcode-display-name.sh" \
+  "$repo_root/scripts/check-parse-cloud-config-helper-shadow.sh" \
+  "$repo_root/scripts/check-parse-cloud-naming-conventions.sh"
 
 echo "✅ Installed pre-commit hook to $hooks_dir/pre-commit (symlink to .githooks/pre-commit)"
 

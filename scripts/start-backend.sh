@@ -14,7 +14,7 @@ if ! docker info > /dev/null 2>&1; then
 fi
 
 # Check if Docker Compose is available
-if ! command -v docker-compose &> /dev/null; then
+if ! docker compose version &> /dev/null; then
     echo "❌ Docker Compose is not installed. Please install Docker Compose first."
     exit 1
 fi
@@ -52,15 +52,15 @@ done
 
 # Pull latest images
 echo "📥 Pulling latest Docker images..."
-docker-compose pull
+docker compose pull
 
 # Build custom images
 echo "🔨 Building custom images..."
-docker-compose build
+docker compose build
 
 # Start services
 echo "🚀 Starting services..."
-docker-compose up -d
+docker compose up -d
 
 # Wait for services to be ready
 echo "⏳ Waiting for services to be ready..."
@@ -70,11 +70,11 @@ sleep 10
 echo "🏥 Checking service health..."
 services=("parse-server" "mongodb" "redis" "postgres" "minio" "nginx")
 for service in "${services[@]}"; do
-    if docker-compose ps $service | grep -q "Up"; then
+    if docker compose ps $service | grep -q "Up"; then
         echo "✅ $service is running"
     else
         echo "❌ $service failed to start"
-        echo "   Check logs with: docker-compose logs $service"
+        echo "   Check logs with: docker compose logs $service"
     fi
 done
 
@@ -90,10 +90,10 @@ echo "   MinIO Console:       http://localhost:9001"
 echo "   Health Check:        http://localhost/health"
 echo ""
 echo "🔧 Useful Commands:"
-echo "   View logs:           docker-compose logs -f"
-echo "   Stop services:       docker-compose down"
-echo "   Restart services:    docker-compose restart"
-echo "   Check status:        docker-compose ps"
+echo "   View logs:           docker compose logs -f"
+echo "   Stop services:       docker compose down"
+echo "   Restart services:    docker compose restart"
+echo "   Check status:        docker compose ps"
 echo ""
 echo "📚 For more information, see backend/README.md"
 

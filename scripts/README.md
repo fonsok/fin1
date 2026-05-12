@@ -4,7 +4,7 @@
 
 ## 📊 Statistik
 
-- **27 Shell-Scripts** (`.sh`)
+- **Diverse Shell-Scripts** (`.sh`) unter `scripts/`
 - **9 Dokumentations-Dateien** (`.md`)
 
 ## 🔧 Scripts nach Kategorie
@@ -36,7 +36,7 @@
   - Dokumentation: `README-Bundle-Size.md`
 
 - **`check-file-sizes.sh`** - Prüft File-Size-Limits
-  - Klassen ≤ 400 Zeilen
+  - Swift-Dateien ≤ 300 Zeilen (Standard-Guardrail)
   - Funktionen ≤ 50 Zeilen
 
 - **`check-responsive-design.sh`** - ResponsiveDesign-Compliance-Check
@@ -60,12 +60,10 @@
 
 ### Git & Pre-Commit
 
-- **`pre-commit-hook.sh`** - Pre-Commit-Hook für Code-Qualität
+- **`install-githooks.sh`** - Installiert Git-Hooks (symlinkt `.githooks/pre-commit`)
   - ResponsiveDesign-Compliance
   - Separation of Concerns
   - File-Size-Validierung
-
-- **`setup-git-hooks.sh`** - Setup für Git-Hooks
 
 ### Netzwerk & Backend
 
@@ -112,6 +110,8 @@
 - Backups laufen automatisch täglich 3:00 Uhr auf dem Server (`/home/io/fin1-server/scripts/backup.sh`). Siehe `Documentation/SERVER_HARDENING_2026-02.md`.
 
 ### Deployment & Ubuntu
+
+**Backend-Ziel ist der Ubuntu-Rechner (`~/fin1-server`, Docker Compose).** Ein früherer Mac/Colima-Workflow im Repo wurde entfernt. iOS-Simulator: typisch `ssh -L 8443:127.0.0.1:443 …` und `https://localhost:8443/parse` gemäß `Config/FIN1-Dev.xcconfig` und `Documentation/HELP_N_INSTRUCTIONS_SERVER_DRIVEN.md`. Runbook: `Documentation/FIN1_APP_DOCS/06A_BACKEND_UBUNTU_IOBOX_RUNBOOK.md`.
 
 - **`deploy-to-ubuntu.sh`** - Deployment auf Ubuntu-Server
   - Kopiert Dateien auf Server
@@ -184,7 +184,7 @@
 
 - Alle Scripts sollten mit `./scripts/script-name.sh` ausgeführt werden
 - Einige Scripts benötigen `sudo` (z.B. `scripts/network/network-tuning.sh`, `mtr` in `scripts/network/health-check-backend.sh`)
-- Pre-Commit-Hooks werden automatisch von `setup-git-hooks.sh` eingerichtet
+- Pre-Commit-Hooks werden mit `install-githooks.sh` eingerichtet (symlinkt `.githooks/pre-commit`)
 
 ## 🔄 Letzte Aktualisierungen
 

@@ -187,7 +187,7 @@ async function main() {
           _id: 'sample_faq_1',
           categoryId: '5XLncFhYLE', // getting_started category
           question: 'Was ist FIN1?',
-          answer: 'FIN1 ist eine innovative Investment-Plattform, die es Ihnen ermöglicht, in erfahrene Trader zu investieren und von deren Expertise zu profitieren.',
+          answer: 'FIN1 ist eine innovative Investment-App, die es Ihnen ermöglicht, in erfahrene Trader zu investieren und von deren Expertise zu profitieren.',
           sortOrder: 1,
           isActive: true,
           isPublished: true,

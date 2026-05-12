@@ -47,8 +47,7 @@ git commit -m "Your changes"
 ## Integration
 
 The validation script is integrated into:
-- ✅ Pre-commit hook (`scripts/pre-commit-hook.sh`)
-- ✅ Git hooks (`.githooks/pre-commit`)
+- ✅ Git hooks (`.githooks/pre-commit`, installed via `scripts/install-githooks.sh`)
 - ✅ SwiftLint rules (`.swiftlint.yml`)
 
 ## Documentation

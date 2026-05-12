@@ -1,9 +1,15 @@
 #!/bin/bash
-# FIN1 Backup Script (MongoDB, PostgreSQL, Redis, Config)
-# - Cron: täglich 3:00 (0 3 * * * .../backup.sh)
-# - Manuell: ~/fin1-server/scripts/backup.sh
-# Aufbewahrung: Backups älter als RETENTION_DAYS werden gelöscht,
-#   es bleiben aber immer mindestens MIN_BACKUPS_KEEP erhalten.
+# FIN1 Backup Script (Cron: täglich)
+# - Daten: MongoDB, PostgreSQL, Redis
+# - Konfiguration: docker-compose.production.yml, backend/.env, nginx.conf
+# - TLS & Zertifikate (wenn vorhanden):
+#     backend/nginx/ssl/          → Backup: nginx-ssl/
+#     backend/parse-server/certs/ → Backup: parse-server-certs/
+#     backend/notification-service/certs/ → Backup: notification-service-certs/
+# - Optional: fin1-server/.env (Root, falls Compose/Tooling es nutzt)
+#
+# Manuell: ~/fin1-server/scripts/backup.sh
+# Aufbewahrung: RETENTION_DAYS + MIN_BACKUPS_KEEP (siehe unten)
 
 set -euo pipefail
 
@@ -17,10 +23,25 @@ LOG_FILE="${BACKUP_ROOT}/backup.log"
 
 log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "${LOG_FILE}"; }
 
+# Kopiert Verzeichnisinhalt nach BACKUP_DIR/<dest_name>/ wenn Quelle existiert und nicht leer.
+backup_tree_if_nonempty() {
+  local src="$1"
+  local dest_name="$2"
+  if [[ -d "$src" ]] && [[ -n "$(ls -A "$src" 2>/dev/null)" ]]; then
+    mkdir -p "${BACKUP_DIR}/${dest_name}"
+    cp -a "${src}/." "${BACKUP_DIR}/${dest_name}/"
+    local n
+    n=$(find "${BACKUP_DIR}/${dest_name}" -type f 2>/dev/null | wc -l | tr -d ' ')
+    log "Backed up ${dest_name}/ (${n} file(s)) from ${src}"
+  else
+    log "SKIP ${dest_name}: missing or empty (${src})"
+  fi
+}
+
 log "=== Starting FIN1 backup ${DATE} ==="
 mkdir -p "${BACKUP_DIR}"
 
-# MongoDB backup
+# --- Datenbanken ---
 log "Backing up MongoDB..."
 if docker exec fin1-mongodb mongodump \
     --archive=/tmp/fin1-mongo-backup.gz \
@@ -36,7 +57,6 @@ else
     log "ERROR: MongoDB backup failed!"
 fi
 
-# PostgreSQL backup (pg_dump, NOT pg_dumpall -- safe for restore)
 log "Backing up PostgreSQL..."
 if docker exec fin1-postgres pg_dump -U fin1_user -d fin1_analytics --no-owner --no-privileges \
     | gzip > "${BACKUP_DIR}/postgresql.sql.gz" 2>>"${LOG_FILE}"; then
@@ -46,7 +66,6 @@ else
     log "ERROR: PostgreSQL backup failed!"
 fi
 
-# Redis backup (trigger save and copy RDB)
 log "Backing up Redis..."
 REDIS_PASS=$(grep REDIS_PASSWORD "${FIN1_SERVER}/.env" | cut -d= -f2)
 if docker exec fin1-redis redis-cli -a "${REDIS_PASS}" BGSAVE 2>>"${LOG_FILE}"; then
@@ -58,16 +77,46 @@ else
     log "ERROR: Redis backup failed!"
 fi
 
-# Config backup
-log "Backing up configuration..."
+# --- Konfiguration (flache Dateien) ---
+log "Backing up configuration files..."
 cp "${FIN1_SERVER}/docker-compose.production.yml" "${BACKUP_DIR}/docker-compose.production.yml"
 cp "${FIN1_SERVER}/backend/.env" "${BACKUP_DIR}/backend.env"
 cp "${FIN1_SERVER}/backend/nginx/nginx.conf" "${BACKUP_DIR}/nginx.conf"
+
+if [[ -f "${FIN1_SERVER}/.env" ]]; then
+  cp "${FIN1_SERVER}/.env" "${BACKUP_DIR}/fin1-server-root.env"
+  log "Backed up fin1-server root .env as fin1-server-root.env"
+else
+  log "SKIP fin1-server-root.env: ${FIN1_SERVER}/.env not found"
+fi
+
+if [[ -f "${FIN1_SERVER}/docker-compose.production.snap.yml" ]]; then
+  cp "${FIN1_SERVER}/docker-compose.production.snap.yml" "${BACKUP_DIR}/docker-compose.production.snap.yml"
+  log "Backed up docker-compose.production.snap.yml"
+fi
+
+# --- TLS & sonstige Zertifikate (Verzeichnisse) ---
+log "Backing up TLS and certificate directories..."
+backup_tree_if_nonempty "${FIN1_SERVER}/backend/nginx/ssl" "nginx-ssl"
+backup_tree_if_nonempty "${FIN1_SERVER}/backend/parse-server/certs" "parse-server-certs"
+backup_tree_if_nonempty "${FIN1_SERVER}/backend/notification-service/certs" "notification-service-certs"
+
+if [[ ! -d "${FIN1_SERVER}/backend/nginx/ssl" ]] || [[ -z "$(ls -A "${FIN1_SERVER}/backend/nginx/ssl" 2>/dev/null)" ]]; then
+  log "WARN: nginx/ssl missing or empty — restore/deploy may need manual TLS files"
+fi
+
 log "Configuration backup complete"
+
+# --- Kurz-Manifest (lesbar ohne Logs) ---
+{
+  echo "FIN1 backup ${DATE}"
+  echo "FIN1_SERVER=${FIN1_SERVER}"
+  ls -la "${BACKUP_DIR}" 2>/dev/null || true
+} > "${BACKUP_DIR}/BACKUP_MANIFEST.txt" 2>/dev/null || true
 
 # Cleanup: remove backups older than RETENTION_DAYS, but always keep at least MIN_BACKUPS_KEEP
 log "Cleaning backups older than ${RETENTION_DAYS} days (keeping at least ${MIN_BACKUPS_KEEP})..."
-TOTAL=$(find "${BACKUP_ROOT}" -maxdepth 1 -mindepth 1 -type d | wc -l)
+TOTAL=$(find "${BACKUP_ROOT}" -maxdepth 1 -mindepth 1 -type d | wc -l | tr -d ' ')
 TO_DELETE=$((TOTAL - MIN_BACKUPS_KEEP))
 DELETED=0
 if [[ $TO_DELETE -gt 0 ]]; then
@@ -79,11 +128,11 @@ if [[ $TO_DELETE -gt 0 ]]; then
     log "Removed old backup: $(basename "$dir")"
   done < <(find "${BACKUP_ROOT}" -maxdepth 1 -mindepth 1 -type d -mtime +${RETENTION_DAYS} -exec stat -c '%Y %n' {} \; 2>/dev/null | sort -n | cut -d' ' -f2-)
 fi
-log "Removed ${DELETED} old backup(s), $(find "${BACKUP_ROOT}" -maxdepth 1 -mindepth 1 -type d | wc -l) retained"
+log "Removed ${DELETED} old backup(s), $(find "${BACKUP_ROOT}" -maxdepth 1 -mindepth 1 -type d | wc -l | tr -d ' ') retained"
 
 # Summary
 TOTAL_SIZE=$(du -sh "${BACKUP_DIR}" | cut -f1)
-TOTAL_BACKUPS=$(find "${BACKUP_ROOT}" -maxdepth 1 -mindepth 1 -type d | wc -l)
+TOTAL_BACKUPS=$(find "${BACKUP_ROOT}" -maxdepth 1 -mindepth 1 -type d | wc -l | tr -d ' ')
 log "=== Backup complete: ${TOTAL_SIZE} total, ${TOTAL_BACKUPS} backup(s) retained ==="
 log "Location: ${BACKUP_DIR}"
 echo ""

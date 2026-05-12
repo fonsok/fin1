@@ -4,8 +4,8 @@
 #
 # Usage:
 #   ./seed-faq-data.sh                    # Interaktiv: Host/User eingeben
-#   ./seed-faq-data.sh 192.168.178.20 io  # Nur seeden (FAQs hinzufügen, wenn leer)
-#   ./seed-faq-data.sh 192.168.178.20 io --force  # Alte FAQs löschen und neu seeden (Investor/Trader-rollen)
+#   ./seed-faq-data.sh 192.168.178.24 io  # Nur seeden (FAQs hinzufügen, wenn leer)
+#   ./seed-faq-data.sh 192.168.178.24 io --force  # Alte FAQs löschen und neu seeden (Investor/Trader-rollen)
 #
 # Voraussetzung: Parse Server läuft auf dem Zielrechner (z. B. docker compose up).
 # Master-Key wird aus ~/fin1-server/backend/.env gelesen (PARSE_SERVER_MASTER_KEY).
@@ -27,7 +27,7 @@ APP_ID="fin1-app-id"
 if [ -z "$1" ] || [ "$1" = "--force" ]; then
     echo -e "${YELLOW}FIN1 FAQ-Daten seeden${NC}"
     echo ""
-    echo "Beispiel: $0 192.168.178.20 io [--force]"
+    echo "Beispiel: $0 192.168.178.24 io [--force]"
     echo "  --force = bestehende FAQ-Daten löschen und neu seeden (role-aware)"
     echo ""
     read -p "Server (IP/Hostname): " UBUNTU_HOST

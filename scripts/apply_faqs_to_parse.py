@@ -107,6 +107,7 @@ def upsert_faq(client: ParseClient, faq: dict, category_id_by_slug: dict[str, st
         "answer": faq["answer"],
         # Store as string (matches current cloud function filter logic)
         "categoryId": category_id,
+        "categoryIds": [category_id],
         "sortOrder": int(faq.get("sortOrder") or 0),
         "isPublished": bool(faq.get("isPublished", True)),
         "isArchived": bool(faq.get("isArchived", False)),
@@ -114,6 +115,16 @@ def upsert_faq(client: ParseClient, faq: dict, category_id_by_slug: dict[str, st
         "isUserVisible": bool(faq.get("isUserVisible", True)),
         "source": faq.get("source") or "seed",
     }
+    if isinstance(faq.get("questionEn"), str) and faq["questionEn"].strip():
+        payload["questionEn"] = faq["questionEn"].strip()
+    if isinstance(faq.get("answerEn"), str) and faq["answerEn"].strip():
+        payload["answerEn"] = faq["answerEn"].strip()
+    tr = faq.get("targetRoles")
+    if isinstance(tr, list) and tr:
+        payload["targetRoles"] = tr
+    ctx = faq.get("contexts")
+    if isinstance(ctx, list) and ctx:
+        payload["contexts"] = ctx
 
     if results:
         obj_id = results[0]["objectId"]

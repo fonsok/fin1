@@ -4,7 +4,12 @@
 
 - **Zeitplan:** Täglich um 3:00 Uhr (Cron)
 - **Speicherort auf dem Server:** `/home/io/fin1-backups/<BACKUP_ID>/`
-- **Inhalt:** MongoDB, PostgreSQL, Redis, Config (docker-compose, .env, nginx.conf)
+- **Inhalt:** MongoDB, PostgreSQL, Redis, Config (`docker-compose.production.yml`, optional `docker-compose.production.snap.yml`, `backend/.env`, optional `fin1-server/.env` als `fin1-server-root.env`, `nginx.conf`), sowie bei vorhandenen Dateien:
+  - **`nginx-ssl/`** ← `backend/nginx/ssl/`
+  - **`parse-server-certs/`** ← `backend/parse-server/certs/`
+  - **`notification-service-certs/`** ← `backend/notification-service/certs/`
+  - je Backup ein kleines **`BACKUP_MANIFEST.txt`**
+- **Hinweis:** Ältere Backups **ohne** diese Ordner enthalten die Zertifikate nicht — Wiederherstellung nur aus neueren Backups oder manuell.
 - **Aufbewahrung:** Backups älter als **14 Tage** werden gelöscht; es bleiben aber **immer mindestens 100** Backups erhalten (siehe `scripts/backup.sh`: `RETENTION_DAYS=14`, `MIN_BACKUPS_KEEP=100`).
 
 ## Backup manuell auslösen
@@ -72,7 +77,7 @@ Restore with: ./scripts/restore-from-backup.sh <BACKUP_ID>
 ./scripts/restore-from-backup.sh 20260223_124944 --config-only
 ```
 
-Stellt nur `backend/.env`, `backend/nginx/nginx.conf` und `docker-compose.production.yml` aus dem Backup wieder her. Keine Datenbanken.
+Stellt nur `backend/.env`, `backend/nginx/nginx.conf`, `docker-compose.production.yml` und — falls im Backup vorhanden — **`nginx-ssl/` → `backend/nginx/ssl/`** wieder her. Keine Datenbanken.
 
 ### 5. Nicht-interaktiv (z.B. für Skripte)
 
@@ -104,6 +109,12 @@ docker compose -f docker-compose.production.yml up -d
 Damit Backups im Ernstfall funktionieren, sollte regelmäßig ein Restore getestet werden. Konkrete Schritte und Priorisierung: **`Documentation/NAECHSTE_SCHRITTE_SERVER_OPS.md`** (Priorität 1).
 
 Kurz: Backup-ID wählen (`--list`), Restore ausführen, Health-Checks prüfen, Ergebnis (Datum, BACKUP_ID, OK/Fehler) dokumentieren.
+
+Letzter durchgeführter Restore-Test:
+
+- Datum: 2026-03-13
+- BACKUP_ID: 20260311_153215
+- Ergebnis: OK (Health-Checks `/health` und `/parse/health` grün)
 
 ## Logs
 

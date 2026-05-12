@@ -5,15 +5,15 @@
 
 set -e
 cd "$(dirname "$0")/.."
-COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.production.yml}"
+COMPOSE_FILE="${COMPOSE_FILE:-docker compose.production.yml}"
 
 echo "Starting base services: redis, mongodb, postgres, minio, uptime-kuma..."
-docker-compose -f "$COMPOSE_FILE" up -d redis mongodb postgres minio uptime-kuma
+docker compose -f "$COMPOSE_FILE" up -d redis mongodb postgres minio uptime-kuma
 
 echo "Waiting for health checks (30s)..."
 sleep 30
 
 echo "Status:"
-docker-compose -f "$COMPOSE_FILE" ps redis mongodb postgres minio uptime-kuma
+docker compose -f "$COMPOSE_FILE" ps redis mongodb postgres minio uptime-kuma
 
-echo "Done. Start app stack with: docker-compose -f $COMPOSE_FILE up -d"
+echo "Done. Start app stack with: docker compose -f $COMPOSE_FILE up -d"
