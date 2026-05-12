@@ -39,7 +39,7 @@ struct TraderDetailsView: View {
                     dismiss()
                 }, label: {
                     Image(systemName: "chevron.left")
-                        .font(.system(size: ResponsiveDesign.iconSize(), weight: .medium))
+                        .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize(), weight: .medium))
                         .foregroundColor(AppTheme.accentLightBlue)
                 })
             }

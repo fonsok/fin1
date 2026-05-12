@@ -2,7 +2,7 @@ import Foundation
 
 /// In-memory mock for development – lets you walk through all 8 KYB steps
 /// without a running Parse Server. Simulates latency and tracks state.
-final class MockCompanyKybAPIService: CompanyKybAPIServiceProtocol {
+final class MockCompanyKybAPIService: CompanyKybAPIServiceProtocol, @unchecked Sendable {
 
     private let latency: UInt64 = 400_000_000 // 0.4 s
 

@@ -21,7 +21,7 @@ struct OrderPlacedOverlay: View {
             VStack(spacing: ResponsiveDesign.spacing(20)) {
                 // Success icon
                 Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: ResponsiveDesign.iconSize() * 3))
+                    .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 3))
                     .foregroundColor(AppTheme.accentGreen)
 
                 // Title - specific to order type

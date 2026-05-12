@@ -51,9 +51,9 @@ final class NotificationsViewModel: ObservableObject {
     func availableFilters() -> [NotificationFilter] {
         switch userService.currentUser?.role {
         case .investor:
-            return [.all, .system, .documents]
+            return [.all, .investments, .system, .documents]
         case .trader:
-            return [.all, .system, .documents]
+            return [.all, .trades, .system, .documents]
         default:
             return NotificationFilter.allCases
         }
@@ -92,6 +92,13 @@ final class NotificationsViewModel: ObservableObject {
                 self?.recompute()
             }
             .store(in: &cancellables)
+
+        NotificationCenter.default.publisher(for: .invoiceDidChange)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.recompute()
+            }
+            .store(in: &cancellables)
     }
 
     // MARK: - Recompute
@@ -110,13 +117,45 @@ final class NotificationsViewModel: ObservableObject {
 
     private func combinedItemsForCurrentUser() -> [NotificationItem] {
         let currentUserId = userService.currentUser?.id ?? ""
-        let userNotifications = notificationService.notifications.filter { $0.userId == currentUserId }
+        let stableUserId = resolvedStableUserId()
+        let allowedUserIds = Set([currentUserId, stableUserId].filter { !$0.isEmpty })
+
+        let userNotifications = notificationService.notifications.filter { allowedUserIds.contains($0.userId) }
         let notificationItems = userNotifications.map { NotificationItem.notification($0) }
 
-        let userDocuments = documentService.getDocuments(for: currentUserId)
+        let userDocuments = allowedUserIds
+            .flatMap { documentService.getDocuments(for: $0) }
+            .filter { isDisplayableNotificationDocument($0) }
+            .uniqueById()
         let documentItems = userDocuments.map { NotificationItem.document($0) }
 
         return notificationItems + documentItems
+    }
+
+    private func resolvedStableUserId() -> String {
+        guard let email = userService.currentUser?.email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased(),
+              !email.isEmpty else {
+            return ""
+        }
+        return "user:\(email)"
+    }
+
+    private func isDisplayableNotificationDocument(_ document: Document) -> Bool {
+        if document.isExcludedFromInvestorDocumentInbox {
+            return false
+        }
+        // Hide backend wallet receipts (IAR/IRR/IFR) from the Documents tab.
+        // These are booking receipts, not user-facing collection-bill/invoice artifacts.
+        if document.type == .financial {
+            let accNo = (document.accountingDocumentNumber ?? "").uppercased()
+            if accNo.hasPrefix("IAR-") || accNo.hasPrefix("IRR-") || accNo.hasPrefix("IFR-") {
+                return false
+            }
+            if document.name.lowercased().hasPrefix("investorcollectionbill_") {
+                return false
+            }
+        }
+        return true
     }
 
     private func applyRecentReadWindow(to items: [NotificationItem]) -> [NotificationItem] {
@@ -178,6 +217,13 @@ final class NotificationsViewModel: ObservableObject {
         case .document(let document):
             return document.readAt
         }
+    }
+}
+
+private extension Array where Element == Document {
+    func uniqueById() -> [Document] {
+        var seen = Set<String>()
+        return filter { seen.insert($0.id).inserted }
     }
 }
 

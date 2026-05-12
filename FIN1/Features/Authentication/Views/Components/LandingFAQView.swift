@@ -116,8 +116,8 @@ struct LandingFAQView: View {
         let url = (appServices.configurationService.parseServerURL ?? "").lowercased()
         if url.contains("localhost:8443") || url.contains("127.0.0.1:8443") {
             return isGerman
-                ? "Debug: Simulator nutzt https://localhost:8443 → SSH‑Tunnel: ssh -L 8443:127.0.0.1:443 io@192.168.178.20"
-                : "Debug: Simulator uses https://localhost:8443 → SSH tunnel: ssh -L 8443:127.0.0.1:443 io@192.168.178.20"
+                ? "Debug: Simulator nutzt https://localhost:8443 → SSH‑Tunnel: ssh -L 8443:127.0.0.1:443 io@192.168.178.24"
+                : "Debug: Simulator uses https://localhost:8443 → SSH tunnel: ssh -L 8443:127.0.0.1:443 io@192.168.178.24"
         }
         if url.contains("localhost:1338") || url.contains("127.0.0.1:1338") {
             return isGerman

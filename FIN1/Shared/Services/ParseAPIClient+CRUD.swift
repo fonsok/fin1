@@ -47,13 +47,23 @@ extension ParseAPIClient {
         request.httpBody = try encoder.encode(object)
 
         let (data, response) = try await session.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw NetworkError.invalidResponse
+        }
+        if (200...299).contains(httpResponse.statusCode) {
+            return try JSONDecoder().decode(ParseResponse.self, from: data)
+        }
+        if httpResponse.statusCode == 400 {
+            if let message = ParseAPIClient.parseErrorMessageFromResponseBody(data) {
+                throw NetworkError.badRequest(message)
+            }
+            throw NetworkError.badRequest(String(localized: "Die Anfrage wurde vom Server abgelehnt."))
+        }
         try validateResponse(response)
-
-        let decoder = JSONDecoder()
-        return try decoder.decode(ParseResponse.self, from: data)
+        throw NetworkError.invalidResponse
     }
 
-    func updateObject<T: Codable>(
+    func updateObject<T: Codable & Sendable>(
         className: String,
         objectId: String,
         object: T
@@ -105,7 +115,7 @@ extension ParseAPIClient {
         }
     }
 
-    func handleConflict<T: Codable>(
+    func handleConflict<T: Codable & Sendable>(
         className: String,
         objectId: String,
         localObject: T,
@@ -168,10 +178,20 @@ extension ParseAPIClient {
         request.httpBody = try encoder.encode(object)
 
         let (data, response) = try await session.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw NetworkError.invalidResponse
+        }
+        if (200...299).contains(httpResponse.statusCode) {
+            return try JSONDecoder().decode(ParseResponse.self, from: data)
+        }
+        if httpResponse.statusCode == 400 {
+            if let message = ParseAPIClient.parseErrorMessageFromResponseBody(data) {
+                throw NetworkError.badRequest(message)
+            }
+            throw NetworkError.badRequest(String(localized: "Die Anfrage wurde vom Server abgelehnt."))
+        }
         try validateResponse(response)
-
-        let decoder = JSONDecoder()
-        return try decoder.decode(ParseResponse.self, from: data)
+        throw NetworkError.invalidResponse
     }
 
     func deleteObject(

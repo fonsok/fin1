@@ -75,7 +75,7 @@ struct CreatePriceAlertView: View {
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Create") {
-                        Task {
+                        Task { @MainActor in
                             await createAlert()
                         }
                     }
@@ -118,6 +118,7 @@ struct CreatePriceAlertView: View {
 }
 
 // MARK: - Create Price Alert ViewModel
+@MainActor
 final class CreatePriceAlertViewModel: ObservableObject {
     private let priceAlertService: (any PriceAlertServiceProtocol)?
     

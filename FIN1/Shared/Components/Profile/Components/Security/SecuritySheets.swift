@@ -116,7 +116,7 @@ struct TwoFactorSetupSheet: View {
 
     private var headerIcon: some View {
         Image(systemName: "shield.checkered")
-            .font(.system(size: ResponsiveDesign.iconSize() * 3))
+            .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 3))
             .foregroundColor(AppTheme.accentLightBlue)
     }
 

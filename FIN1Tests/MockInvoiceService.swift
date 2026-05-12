@@ -5,7 +5,7 @@ import Combine
 
 // MARK: - Mock Invoice Service (Simplified)
 /// Simplified mock using closure-based behavior instead of multiple configuration properties
-class MockInvoiceService: InvoiceServiceProtocol {
+final class MockInvoiceService: InvoiceServiceProtocol, @unchecked Sendable {
     @Published var invoices: [Invoice] = []
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
@@ -197,6 +197,19 @@ class MockInvoiceService: InvoiceServiceProtocol {
 
     func getInvoicesForTrade(_ tradeId: String) -> [Invoice] {
         return invoices.filter { $0.tradeId == tradeId }
+    }
+
+    func invoice(matching document: Document) -> Invoice? {
+        if let embedded = document.invoiceData { return embedded }
+        if let hit = invoices.first(where: { $0.id == document.id }) { return hit }
+        if let num = document.accountingDocumentNumber,
+           let hit = invoices.first(where: { $0.invoiceNumber == num }) {
+            return hit
+        }
+        if let tradeId = document.tradeId {
+            return invoices.first(where: { $0.tradeId == tradeId })
+        }
+        return nil
     }
 
     func getServiceChargeInvoiceForBatch(_ batchId: String, userId: String) -> Invoice? {

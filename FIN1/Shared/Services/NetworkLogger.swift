@@ -4,7 +4,7 @@ import OSLog
 // MARK: - Network Logger
 
 /// Logs network requests and responses for debugging and monitoring
-final class NetworkLogger {
+final class NetworkLogger: @unchecked Sendable {
     static let shared = NetworkLogger()
 
     private let logger = Logger(subsystem: "com.fin1.app", category: "Network")

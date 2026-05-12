@@ -1,6 +1,7 @@
 import Foundation
 
 // MARK: - Buy Order Investment Calculator Protocol
+@MainActor
 protocol BuyOrderInvestmentCalculatorProtocol {
     func calculateInvestmentOrder(
         quantity: Int,
@@ -24,6 +25,7 @@ struct InvestmentCalculationResult {
 
 // MARK: - Buy Order Investment Calculator
 /// Handles investment calculation coordination for buy orders
+@MainActor
 final class BuyOrderInvestmentCalculator: BuyOrderInvestmentCalculatorProtocol {
 
     func calculateInvestmentOrder(
@@ -75,7 +77,7 @@ final class BuyOrderInvestmentCalculator: BuyOrderInvestmentCalculatorProtocol {
         let traderCashBalance = cashBalanceService.currentBalance
 
         print("💰 BuyOrderInvestmentCalculator.calculateInvestmentOrder:")
-        print("   📊 Input quantity (desired - will be IGNORED): \(quantity)")
+        print("   📊 Input quantity (desired trader quantity): \(quantity)")
         print("   💵 traderCashBalance: €\(String(format: "%.2f", traderCashBalance))")
         print("   💵 investmentBalance (sum of reserved investments): €\(String(format: "%.2f", investmentBalance))")
         print("   📊 Reserved investments count: \(allReservedInvestments.count)")

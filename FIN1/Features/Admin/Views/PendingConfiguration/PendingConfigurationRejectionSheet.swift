@@ -8,7 +8,7 @@ struct PendingConfigurationRejectionSheet: View {
         NavigationStack {
             VStack(spacing: ResponsiveDesign.spacing(24)) {
                 Image(systemName: "xmark.seal")
-                    .font(.system(size: ResponsiveDesign.iconSize() * 2))
+                    .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2))
                     .foregroundColor(.red)
 
                 Text("Reject Configuration Change")

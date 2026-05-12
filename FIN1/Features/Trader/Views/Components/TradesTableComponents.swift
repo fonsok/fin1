@@ -92,6 +92,7 @@ struct ColumnWidths {
 }
 
 /// Helper to calculate dynamic column widths based on content
+@MainActor
 struct ColumnWidthCalculator {
     static func calculate(for trades: [TradeTableRowData]) -> ColumnWidths {
         // Use responsive font sizes
@@ -275,7 +276,7 @@ struct TradesTableRow: View {
                                 showProfitInfo = true
                             }, label: {
                                 Image(systemName: "info.circle")
-                                    .font(.system(size: ResponsiveDesign.iconSize() * 0.7))
+                                    .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 0.7))
                                     .foregroundColor(AppTheme.accentLightBlue.opacity(0.7))
                             })
                         }
@@ -298,7 +299,7 @@ struct TradesTableRow: View {
                             showCommissionInfo = true
                         }, label: {
                             Image(systemName: "info.circle")
-                                .font(.system(size: ResponsiveDesign.iconSize() * 0.7))
+                                .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 0.7))
                                 .foregroundColor(AppTheme.accentLightBlue.opacity(0.7))
                         })
                     }

@@ -11,7 +11,7 @@ struct WelcomePage: View {
             // Success icon
             VStack(spacing: ResponsiveDesign.spacing(24)) {
                 Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 80))
+                    .font(ResponsiveDesign.scaledSystemFont(size: 80))
                     .foregroundColor(AppTheme.accentGreen)
 
                 VStack(spacing: ResponsiveDesign.spacing(16)) {

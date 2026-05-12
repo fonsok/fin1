@@ -238,7 +238,7 @@ struct RespondTicketSheet: View {
                         .tint(AppTheme.screenBackground)
                 } else {
                     Image(systemName: isInternal ? "note.text" : "paperplane.fill")
-                        .font(.system(size: ResponsiveDesign.iconSize() * 0.8))
+                        .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 0.8))
                 }
 
                 Text(isInternal ? "Notiz hinzufügen" : "Antwort senden")

@@ -1,19 +1,96 @@
 import Foundation
 
+// MARK: - Transaction limit mutable state (Swift 6–safe isolation)
+
+private actor TransactionLimitMutableState {
+    private var limits: [String: TransactionLimit] = [:]
+    private var transactionHistory: [String: [Date: Double]] = [:]
+
+    private let cacheTTL: TimeInterval = 300
+
+    func reset() {
+        limits.removeAll()
+        transactionHistory.removeAll()
+    }
+
+    func validCachedLimit(for userId: String) -> TransactionLimit? {
+        guard let cached = limits[userId],
+              Date().timeIntervalSince(cached.lastUpdated) < cacheTTL else { return nil }
+        return cached
+    }
+
+    func needsHistoryLoad(userId: String, useParseServer: Bool) -> Bool {
+        useParseServer && transactionHistory[userId] == nil
+    }
+
+    func setLimit(_ limit: TransactionLimit, for userId: String) {
+        limits[userId] = limit
+    }
+
+    func setLimitFromParse(_ limit: TransactionLimit, userId: String) {
+        limits[userId] = limit
+    }
+
+    func replaceTransactionHistory(_ history: [Date: Double], for userId: String) {
+        transactionHistory[userId] = history
+    }
+
+    func recordLocalSpend(userId: String, dateKey: Date, amount: Double) {
+        if transactionHistory[userId] == nil {
+            transactionHistory[userId] = [:]
+        }
+        let prior = transactionHistory[userId]?[dateKey] ?? 0.0
+        transactionHistory[userId]?[dateKey] = prior + amount
+        limits.removeValue(forKey: userId)
+    }
+
+    func allLimits() -> [String: TransactionLimit] {
+        limits
+    }
+
+    func calculateSpentAmounts(userId: String) -> (daily: Double, weekly: Double, monthly: Double) {
+        guard let history = transactionHistory[userId] else {
+            return (0.0, 0.0, 0.0)
+        }
+
+        let now = Date()
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: now)
+        let weekAgo = calendar.date(byAdding: .day, value: -7, to: now) ?? now
+        let monthAgo = calendar.date(byAdding: .day, value: -30, to: now) ?? now
+
+        var dailySpent: Double = 0.0
+        var weeklySpent: Double = 0.0
+        var monthlySpent: Double = 0.0
+
+        for (date, amount) in history {
+            if date == today {
+                dailySpent += amount
+            }
+            if date >= calendar.startOfDay(for: weekAgo) {
+                weeklySpent += amount
+            }
+            if date >= calendar.startOfDay(for: monthAgo) {
+                monthlySpent += amount
+            }
+        }
+
+        return (dailySpent, weeklySpent, monthlySpent)
+    }
+}
+
 // MARK: - Transaction Limit Service Implementation
 /// Hybrid implementation: Uses Parse Server when available, falls back to in-memory storage
 /// Tracks transaction limits based on risk class and regulatory requirements
-final class TransactionLimitService: TransactionLimitServiceProtocol {
+final class TransactionLimitService: TransactionLimitServiceProtocol, @unchecked Sendable {
 
     // MARK: - Dependencies
     private let userService: any UserServiceProtocol
     private let auditLoggingService: (any AuditLoggingServiceProtocol)?
     private let parseAPIClient: (any ParseAPIClientProtocol)?
 
-    // MARK: - State (protected by stateLock)
-    private let stateLock = NSLock()
-    private var limits: [String: TransactionLimit] = [:]
-    private var transactionHistory: [String: [Date: Double]] = [:] // userId -> [date: amount]
+    private let mutableState = TransactionLimitMutableState()
+
     private var useParseServer: Bool {
         parseAPIClient != nil
     }
@@ -45,10 +122,8 @@ final class TransactionLimitService: TransactionLimitServiceProtocol {
     }
 
     func reset() {
-        stateLock.lock()
-        limits.removeAll()
-        transactionHistory.removeAll()
-        stateLock.unlock()
+        let state = mutableState
+        Task { await state.reset() }
     }
 
     // MARK: - TransactionLimitServiceProtocol
@@ -106,28 +181,18 @@ final class TransactionLimitService: TransactionLimitServiceProtocol {
     }
 
     func getTransactionLimits(userId: String) async throws -> TransactionLimit {
-        // Return cached limits if available and recent (thread-safe read)
-        stateLock.lock()
-        if let cached = limits[userId],
-           Date().timeIntervalSince(cached.lastUpdated) < 300 { // 5 minutes cache
-            stateLock.unlock()
+        if let cached = await mutableState.validCachedLimit(for: userId) {
             return cached
         }
-        let needsHistory = useParseServer && transactionHistory[userId] == nil
-        stateLock.unlock()
 
+        let needsHistory = await mutableState.needsHistoryLoad(userId: userId, useParseServer: useParseServer)
         if needsHistory {
             await loadTransactionHistoryFromParseServer(userId: userId)
         }
 
-        // After await, re-check cache — another concurrent call may have populated it
-        stateLock.lock()
-        if let cached = limits[userId],
-           Date().timeIntervalSince(cached.lastUpdated) < 300 {
-            stateLock.unlock()
+        if let cached = await mutableState.validCachedLimit(for: userId) {
             return cached
         }
-        stateLock.unlock()
 
         guard userService.currentUser != nil else {
             throw AppError.service(.dataNotFound)
@@ -139,7 +204,7 @@ final class TransactionLimitService: TransactionLimitServiceProtocol {
         let monthlyLimit = CalculationConstants.TransactionLimits.baseMonthlyLimit
         let riskClassBasedLimit = dailyLimit
 
-        let (dailySpent, weeklySpent, monthlySpent) = calculateSpentAmounts(userId: userId)
+        let spent = await mutableState.calculateSpentAmounts(userId: userId)
 
         let transactionLimit = TransactionLimit(
             userId: userId,
@@ -147,20 +212,16 @@ final class TransactionLimitService: TransactionLimitServiceProtocol {
             weeklyLimit: weeklyLimit,
             monthlyLimit: monthlyLimit,
             riskClassBasedLimit: riskClassBasedLimit,
-            dailySpent: dailySpent,
-            weeklySpent: weeklySpent,
-            monthlySpent: monthlySpent
+            dailySpent: spent.daily,
+            weeklySpent: spent.weekly,
+            monthlySpent: spent.monthly
         )
 
-        // Cache the limits (thread-safe write)
-        stateLock.lock()
-        limits[userId] = transactionLimit
-        stateLock.unlock()
+        await mutableState.setLimit(transactionLimit, for: userId)
 
-        if useParseServer {
-            Task { [weak self] in
-                await self?.saveLimitsToParseServer()
-            }
+        if useParseServer, let client = parseAPIClient {
+            let limitsToSave = await mutableState.allLimits()
+            await Self.persistLimitsSnapshot(limitsToSave, parseClient: client)
         }
 
         return transactionLimit
@@ -188,16 +249,8 @@ final class TransactionLimitService: TransactionLimitServiceProtocol {
             }
         }
 
-        stateLock.lock()
-        if transactionHistory[userId] == nil {
-            transactionHistory[userId] = [:]
-        }
-        let currentAmount = transactionHistory[userId]?[dateKey] ?? 0.0
-        transactionHistory[userId]?[dateKey] = currentAmount + amount
-        limits.removeValue(forKey: userId)
-        stateLock.unlock()
+        await mutableState.recordLocalSpend(userId: userId, dateKey: dateKey, amount: amount)
 
-        // ✅ Log limit usage for compliance
         if let auditService = auditLoggingService {
             let complianceEvent = ComplianceEvent(
                 eventType: .riskCheck,
@@ -208,9 +261,7 @@ final class TransactionLimitService: TransactionLimitServiceProtocol {
                 requiresReview: false,
                 notes: "User ID: \(userId), Date: \(dateKey.formatted(date: .abbreviated, time: .omitted))"
             )
-            Task {
-                await auditService.logComplianceEvent(complianceEvent)
-            }
+            await auditService.logComplianceEvent(complianceEvent)
         }
     }
 
@@ -232,25 +283,18 @@ final class TransactionLimitService: TransactionLimitServiceProtocol {
             )
 
             if let parseLimit = parseLimits.first {
-                stateLock.lock()
-                limits[userId] = parseLimit.toTransactionLimit()
-                stateLock.unlock()
+                await mutableState.setLimitFromParse(parseLimit.toTransactionLimit(), userId: userId)
             }
         } catch {
             print("⚠️ Failed to load limits from Parse Server: \(error.localizedDescription)")
         }
     }
 
-    private func saveLimitsToParseServer() async {
-        guard let parseClient = parseAPIClient else {
-            return
-        }
-
-        stateLock.lock()
-        let limitsCopy = limits
-        stateLock.unlock()
-
-        for (userId, limit) in limitsCopy {
+    private static func persistLimitsSnapshot(
+        _ limitsSnapshot: [String: TransactionLimit],
+        parseClient: any ParseAPIClientProtocol
+    ) async {
+        for (userId, limit) in limitsSnapshot {
             do {
                 let parseLimit = ParseTransactionLimit(
                     objectId: nil, // Will be set by Parse Server if new
@@ -275,14 +319,12 @@ final class TransactionLimitService: TransactionLimitServiceProtocol {
                 )
 
                 if let existingLimit = existing.first, let objectId = existingLimit.objectId {
-                    // Update existing
                     _ = try await parseClient.updateObject(
                         className: "TransactionLimit",
                         objectId: objectId,
                         object: parseLimit
                     )
                 } else {
-                    // Create new
                     _ = try await parseClient.createObject(
                         className: "TransactionLimit",
                         object: parseLimit
@@ -292,6 +334,12 @@ final class TransactionLimitService: TransactionLimitServiceProtocol {
                 print("⚠️ Failed to save limits to Parse Server: \(error.localizedDescription)")
             }
         }
+    }
+
+    private func saveLimitsToParseServer() async {
+        guard let parseClient = parseAPIClient else { return }
+        let limitsCopy = await mutableState.allLimits()
+        await Self.persistLimitsSnapshot(limitsCopy, parseClient: parseClient)
     }
 
     private func loadTransactionHistoryFromParseServer(userId: String) async {
@@ -322,45 +370,9 @@ final class TransactionLimitService: TransactionLimitServiceProtocol {
                 let currentAmount = history[dateKey] ?? 0.0
                 history[dateKey] = currentAmount + entry.amount
             }
-            stateLock.lock()
-            transactionHistory[userId] = history
-            stateLock.unlock()
+            await mutableState.replaceTransactionHistory(history, for: userId)
         } catch {
             print("⚠️ Failed to load transaction history from Parse Server: \(error.localizedDescription)")
         }
-    }
-
-    private func calculateSpentAmounts(userId: String) -> (daily: Double, weekly: Double, monthly: Double) {
-        stateLock.lock()
-        guard let history = transactionHistory[userId] else {
-            stateLock.unlock()
-            return (0.0, 0.0, 0.0)
-        }
-        let historyCopy = history
-        stateLock.unlock()
-
-        let now = Date()
-        let calendar = Calendar.current
-        let today = calendar.startOfDay(for: now)
-        let weekAgo = calendar.date(byAdding: .day, value: -7, to: now) ?? now
-        let monthAgo = calendar.date(byAdding: .day, value: -30, to: now) ?? now
-
-        var dailySpent: Double = 0.0
-        var weeklySpent: Double = 0.0
-        var monthlySpent: Double = 0.0
-
-        for (date, amount) in historyCopy {
-            if date == today {
-                dailySpent += amount
-            }
-            if date >= calendar.startOfDay(for: weekAgo) {
-                weeklySpent += amount
-            }
-            if date >= calendar.startOfDay(for: monthAgo) {
-                monthlySpent += amount
-            }
-        }
-
-        return (dailySpent, weeklySpent, monthlySpent)
     }
 }

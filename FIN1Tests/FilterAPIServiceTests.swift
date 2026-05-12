@@ -93,7 +93,7 @@ final class FilterAPIServiceTests: XCTestCase {
     func testFetchSecuritiesFilters_EmptyResult() async throws {
         // Given
         let userId = "test-user-no-filters"
-        mockAPIClient.mockFetchResults = [MockSecuritiesFilterResponse]()
+        mockAPIClient.mockFetchResults = [ParseFilterResponse]()
 
         // When
         let filters = try await sut.fetchSecuritiesFilters(for: userId)
@@ -169,16 +169,16 @@ final class FilterAPIServiceTests: XCTestCase {
         )
     }
 
-    private func createMockSecuritiesFilterResponse(objectId: String, name: String = "Test Filter") -> MockSecuritiesFilterResponse {
-        return MockSecuritiesFilterResponse(
+    private func createMockSecuritiesFilterResponse(objectId: String, name: String = "Test Filter") -> ParseFilterResponse {
+        ParseFilterResponse(
             objectId: objectId,
             userId: "test-user-123",
             name: name,
-            filterContext: "securities_search",
+            filterContext: FilterContext.securitiesSearch.rawValue,
             filterCriteria: [
-                "category": "DAX",
-                "underlyingAsset": "BMW",
-                "direction": "call"
+                "category": AnyCodable("DAX"),
+                "underlyingAsset": AnyCodable("BMW"),
+                "direction": AnyCodable("Call")
             ],
             isDefault: false,
             createdAt: "2026-02-05T10:00:00.000Z",
@@ -186,42 +186,18 @@ final class FilterAPIServiceTests: XCTestCase {
         )
     }
 
-    private func createMockTraderFilterResponse(objectId: String, name: String = "Test Filter") -> MockTraderFilterResponse {
-        return MockTraderFilterResponse(
+    private func createMockTraderFilterResponse(objectId: String, name: String = "Test Filter") -> ParseFilterResponse {
+        ParseFilterResponse(
             objectId: objectId,
             userId: "test-user-123",
             name: name,
-            filterContext: "trader_discovery",
+            filterContext: FilterContext.traderDiscovery.rawValue,
             filterCriteria: [
-                "successRate": "above80"
+                IndividualFilterCriteria.FilterType.recentSuccessfulTrades.rawValue: AnyCodable(FilterSuccessRateOption.tenOutOfTen.rawValue)
             ],
             isDefault: false,
             createdAt: "2026-02-05T10:00:00.000Z",
             updatedAt: "2026-02-05T10:00:00.000Z"
         )
     }
-}
-
-// MARK: - Mock Filter Responses
-
-private struct MockSecuritiesFilterResponse: Codable {
-    let objectId: String
-    let userId: String
-    let name: String
-    let filterContext: String
-    let filterCriteria: [String: String]
-    let isDefault: Bool
-    let createdAt: String
-    let updatedAt: String
-}
-
-private struct MockTraderFilterResponse: Codable {
-    let objectId: String
-    let userId: String
-    let name: String
-    let filterContext: String
-    let filterCriteria: [String: String]
-    let isDefault: Bool
-    let createdAt: String
-    let updatedAt: String
 }

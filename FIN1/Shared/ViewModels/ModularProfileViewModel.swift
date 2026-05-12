@@ -18,7 +18,7 @@ final class ModularProfileViewModel: ObservableObject {
 
     // MARK: - Combine
 
-    private var cancellables = Set<AnyCancellable>()
+    private nonisolated(unsafe) var cancellables = Set<AnyCancellable>()
 
     // MARK: - Computed Properties
 

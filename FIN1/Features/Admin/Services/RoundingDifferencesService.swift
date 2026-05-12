@@ -2,6 +2,7 @@ import Foundation
 import Combine
 
 // MARK: - Rounding Differences Service
+@MainActor
 final class RoundingDifferencesService: RoundingDifferencesServiceProtocol, ObservableObject {
     @Published private var differences: [RoundingDifference] = []
 
@@ -12,11 +13,6 @@ final class RoundingDifferencesService: RoundingDifferencesServiceProtocol, Obse
     init(telemetryService: any TelemetryServiceProtocol) {
         self.telemetryService = telemetryService
     }
-
-    // MARK: - ServiceLifecycle
-    func start() { /* load persisted state if needed */ }
-    func stop() { /* noop */ }
-    func reset() { differences.removeAll() }
 
     // MARK: - Publisher
     var unreconciledDifferencesPublisher: AnyPublisher<[RoundingDifference], Never> {
@@ -46,7 +42,7 @@ final class RoundingDifferencesService: RoundingDifferencesServiceProtocol, Obse
             isReconciled: false
         )
 
-        await MainActor.run { differences.append(model) }
+        differences.append(model)
 
         telemetryService.trackEvent(name: "rounding_difference_tracked", properties: [
             "transaction_type": transactionType.rawValue,
@@ -60,11 +56,9 @@ final class RoundingDifferencesService: RoundingDifferencesServiceProtocol, Obse
     }
 
     func reconcileDifferences(_ recs: [RoundingDifference]) async throws {
-        await MainActor.run {
-            for rec in recs {
-                if let idx = differences.firstIndex(where: { $0.id == rec.id }) {
-                    differences[idx].isReconciled = true
-                }
+        for rec in recs {
+            if let idx = differences.firstIndex(where: { $0.id == rec.id }) {
+                differences[idx].isReconciled = true
             }
         }
 

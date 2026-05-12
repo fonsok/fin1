@@ -216,7 +216,7 @@ struct TraderCreditNoteDetailView: View {
     private var emptyStateView: some View {
         VStack(spacing: ResponsiveDesign.spacing(16)) {
             Image(systemName: "person.2.slash")
-                .font(.system(size: ResponsiveDesign.iconSize() * 2))
+                .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2))
                 .foregroundColor(DocumentDesignSystem.textColorTertiary)
 
             Text("Keine Investoren")
@@ -237,7 +237,7 @@ struct TraderCreditNoteDetailView: View {
     private func errorView(message: String) -> some View {
         VStack(spacing: ResponsiveDesign.spacing(12)) {
             Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: ResponsiveDesign.iconSize() * 1.6))
+                .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 1.6))
                 .foregroundColor(DocumentDesignSystem.textColorTertiary)
 
             Text("Error")

@@ -3,6 +3,7 @@ import Combine
 
 // MARK: - Saved Securities Filters Repository
 /// Repository for managing saved securities search filter combinations with persistence
+@MainActor
 final class SavedSecuritiesFiltersRepository: ObservableObject {
     @Published var savedFilters: [SecuritiesFilterCombination] = []
     private let userDefaults: UserDefaults
@@ -58,13 +59,11 @@ final class SavedSecuritiesFiltersRepository: ObservableObject {
 
         do {
             let backendFilters = try await apiService.fetchSecuritiesFilters(for: userId)
-            await MainActor.run {
-                // Merge backend filters with local (avoid duplicates by name)
-                let existingNames = Set(savedFilters.map { $0.name })
-                let newFilters = backendFilters.filter { !existingNames.contains($0.name) }
-                savedFilters.append(contentsOf: newFilters)
-                saveFilters()
-            }
+            // Merge backend filters with local (avoid duplicates by name)
+            let existingNames = Set(savedFilters.map { $0.name })
+            let newFilters = backendFilters.filter { !existingNames.contains($0.name) }
+            savedFilters.append(contentsOf: newFilters)
+            saveFilters()
         } catch {
             print("⚠️ Failed to load filters from backend: \(error.localizedDescription)")
         }
@@ -87,7 +86,7 @@ final class SavedSecuritiesFiltersRepository: ObservableObject {
         // Sync to backend (write-through pattern)
         if let apiService = filterAPIService,
            let userId = userService?.currentUser?.id {
-            Task.detached { [apiService, filter, userId] in
+            Task {
                 do {
                     _ = try await apiService.saveSecuritiesFilter(filter, userId: userId)
                     print("✅ Filter saved to backend: \(filter.name)")
@@ -106,7 +105,7 @@ final class SavedSecuritiesFiltersRepository: ObservableObject {
         // Sync deletion to backend (write-through pattern)
         if let apiService = filterAPIService,
            let userId = userService?.currentUser?.id {
-            Task.detached { [apiService, filter, userId] in
+            Task {
                 do {
                     // Note: We need objectId to delete, but filter uses UUID
                     // For now, we'll try to delete by name (inefficient but works)
@@ -128,7 +127,7 @@ final class SavedSecuritiesFiltersRepository: ObservableObject {
             // Sync update to backend (write-through pattern)
             if let apiService = filterAPIService,
                let userId = userService?.currentUser?.id {
-                Task.detached { [apiService, filter, userId] in
+                Task {
                     do {
                         _ = try await apiService.updateSecuritiesFilter(filter, userId: userId)
                         print("✅ Filter updated on backend: \(filter.name)")
@@ -152,7 +151,7 @@ final class SavedSecuritiesFiltersRepository: ObservableObject {
         print("📤 Syncing securities filters to backend...")
 
         // Sync all current filters
-        let filtersToSync = await MainActor.run { savedFilters }
+        let filtersToSync = savedFilters
 
         for filter in filtersToSync {
             do {

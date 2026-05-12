@@ -18,14 +18,13 @@ protocol TradeStatementPDFServiceProtocol {
 // MARK: - PDF Service Implementation
 
 /// Service responsible for generating PDF documents for trade statements
-@MainActor
 final class TradeStatementPDFService: TradeStatementPDFServiceProtocol {
 
     // MARK: - Configuration
 
     /// Toggle to use improved PDF generation (default: true)
     /// Set to false to use legacy PDF generation
-    static var useImprovedGeneration: Bool = true
+    nonisolated(unsafe) static var useImprovedGeneration: Bool = true
 
     // MARK: - Public Methods
 

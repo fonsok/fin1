@@ -16,6 +16,7 @@ struct InvestmentProfitCalculator {
     ///   - investmentCapital: The investor's total investment amount (source of truth)
     ///   - calculationService: Service for proper fee calculations
     /// - Returns: Tuple of (grossProfit, investedAmount) or nil if calculation fails
+    @MainActor
     static func calculateInvestorTotalsWithBackend(
         for participations: [PoolTradeParticipation],
         invoiceService: any InvoiceServiceProtocol,
@@ -67,8 +68,7 @@ struct InvestmentProfitCalculator {
                     input: input,
                     settlementAPIService: settlementAPIService,
                     tradeId: trade.id,
-                    investmentId: investmentId,
-                    onUsedLocalFallback: nil
+                    investmentId: investmentId
                 )
                 totalGross += output.grossProfit
                 let totalBuyCost = output.buyAmount + output.buyFees
@@ -97,6 +97,7 @@ struct InvestmentProfitCalculator {
     }
 
     /// Sync version – uses local calculation only. Prefer `calculateInvestorTotalsWithBackend` when backend data is available.
+    @MainActor
     static func calculateInvestorTotals(
         for participations: [PoolTradeParticipation],
         invoiceService: any InvoiceServiceProtocol,
@@ -234,14 +235,16 @@ struct InvestmentProfitCalculator {
         for investmentId: String,
         participations: [PoolTradeParticipation],
         tradeLifecycleService: (any TradeLifecycleServiceProtocol)?,
-        poolTradeParticipationService: (any PoolTradeParticipationServiceProtocol)?
+        poolTradeParticipationService: (any PoolTradeParticipationServiceProtocol)?,
+        commissionRate: Double
     ) -> Double {
         guard let tradeLifecycleService = tradeLifecycleService,
               !participations.isEmpty else {
             // Fallback to reverse calculation if trade service not available
             return calculateGrossProfitFromAccumulatedProfit(
                 investmentId: investmentId,
-                poolTradeParticipationService: poolTradeParticipationService
+                poolTradeParticipationService: poolTradeParticipationService,
+                commissionRate: commissionRate
             )
         }
 
@@ -268,7 +271,7 @@ struct InvestmentProfitCalculator {
     private static func calculateGrossProfitFromAccumulatedProfit(
         investmentId: String,
         poolTradeParticipationService: (any PoolTradeParticipationServiceProtocol)?,
-        commissionRate: Double = CalculationConstants.FeeRates.traderCommissionRate
+        commissionRate: Double
     ) -> Double {
         guard let poolTradeParticipationService = poolTradeParticipationService else {
             return 0.0

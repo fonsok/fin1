@@ -16,7 +16,7 @@ struct IdentificationConfirmStep: View {
             // Success Header
             VStack(spacing: ResponsiveDesign.spacing(12)) {
                 Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 60))
+                    .font(ResponsiveDesign.scaledSystemFont(size: 60))
                     .foregroundColor(AppTheme.accentGreen)
 
                 Text("Dokumente erfolgreich hochgeladen")

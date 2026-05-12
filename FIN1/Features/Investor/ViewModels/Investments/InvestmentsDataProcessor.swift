@@ -18,14 +18,15 @@ final class InvestmentsDataProcessor {
 
     // MARK: - Investment-Level Data for Table Display
 
-    /// Returns investment rows for ongoing investments
+    /// Returns investment rows for open (reserved + active) investments.
     /// Since each investment is now a first-class entity, we map investments directly to rows
     /// Sorted by: creation date (newest first), then trader name (A-Z), then investment number (ascending)
-    func processOngoingInvestmentRows(from investments: [Investment]) -> [InvestmentRow] {
+    func processOpenInvestmentRows(from investments: [Investment]) -> [InvestmentRow] {
         var rows: [InvestmentRow] = []
+        let normalizedInvestments = deduplicatedOpenInvestments(investments)
 
         // Show all active investments except cancelled ones
-        for investment in investments where investment.reservationStatus != .cancelled {
+        for investment in normalizedInvestments where investment.reservationStatus != .cancelled {
             let investmentStatus = mapInvestmentReservationStatus(investment.reservationStatus)
             let sequenceNumber = investment.sequenceNumber ?? 1
 
@@ -81,6 +82,53 @@ final class InvestmentsDataProcessor {
         }
     }
 
+    /// Deduplicates open investments that represent the same logical split (same canonical reference).
+    /// If duplicates exist, keep the most advanced lifecycle status and then newest update timestamp.
+    private func deduplicatedOpenInvestments(_ investments: [Investment]) -> [Investment] {
+        var bestByReference: [String: Investment] = [:]
+
+        for investment in investments {
+            let key = investment.canonicalDisplayReference
+            guard let currentBest = bestByReference[key] else {
+                bestByReference[key] = investment
+                continue
+            }
+
+            if shouldReplace(currentBest: currentBest, with: investment) {
+                bestByReference[key] = investment
+            }
+        }
+
+        return Array(bestByReference.values)
+    }
+
+    private func shouldReplace(currentBest: Investment, with candidate: Investment) -> Bool {
+        let currentRank = lifecycleRank(for: currentBest.reservationStatus)
+        let candidateRank = lifecycleRank(for: candidate.reservationStatus)
+        if candidateRank != currentRank {
+            return candidateRank > currentRank
+        }
+
+        if candidate.updatedAt != currentBest.updatedAt {
+            return candidate.updatedAt > currentBest.updatedAt
+        }
+
+        return candidate.createdAt > currentBest.createdAt
+    }
+
+    private func lifecycleRank(for status: InvestmentReservationStatus) -> Int {
+        switch status {
+        case .cancelled:
+            return 0
+        case .reserved:
+            return 1
+        case .active, .executing, .closed:
+            return 2
+        case .completed:
+            return 3
+        }
+    }
+
     /// Extracts numeric investment number from string (e.g., "INV-123" -> 123)
     func extractInvestmentNumber(from investmentNumber: String) -> Int {
         // Try to extract number from string like "INV-123" or just "123"
@@ -88,21 +136,21 @@ final class InvestmentsDataProcessor {
         return Int(numbers) ?? 0
     }
 
-    /// Total amount for ongoing investments
-    func calculateTotalOngoingAmount(from rows: [InvestmentRow]) -> Double {
+    /// Total amount for open investments.
+    func calculateTotalOpenAmount(from rows: [InvestmentRow]) -> Double {
         rows.reduce(0) { $0 + $1.amount }
     }
 
-    /// Total profit for ongoing investments (if available)
-    func calculateTotalOngoingProfit(from rows: [InvestmentRow]) -> Double? {
+    /// Total profit for open investments (if available).
+    func calculateTotalOpenProfit(from rows: [InvestmentRow]) -> Double? {
         let profits = rows.compactMap { $0.profit }
         guard !profits.isEmpty else { return nil }
         return profits.reduce(0, +)
     }
 
-    /// Total return percentage for ongoing investments (if available)
-    func calculateTotalOngoingReturn(from rows: [InvestmentRow], totalAmount: Double) -> Double? {
-        guard let totalProfit = calculateTotalOngoingProfit(from: rows), totalAmount > 0 else { return nil }
+    /// Total return percentage for open investments (if available).
+    func calculateTotalOpenReturn(from rows: [InvestmentRow], totalAmount: Double) -> Double? {
+        guard let totalProfit = calculateTotalOpenProfit(from: rows), totalAmount > 0 else { return nil }
         return (totalProfit / totalAmount) * 100
     }
 
@@ -110,7 +158,7 @@ final class InvestmentsDataProcessor {
 
     /// Returns investments grouped by trader name, with investments sorted by sequence number (ascending)
     /// This ensures Investment 1 appears first within each trader's group
-    func groupOngoingInvestments(_ rows: [InvestmentRow]) -> [String: [InvestmentRow]] {
+    func groupOpenInvestments(_ rows: [InvestmentRow]) -> [String: [InvestmentRow]] {
         let grouped = Dictionary(grouping: rows) { $0.traderName }
 
         // Sort investments within each trader group by sequence number (ascending)

@@ -3,7 +3,7 @@ import SwiftUI
 /// Navigation link to pending approvals with optional count badge.
 struct PendingApprovalsNavigationLink: View {
     @Environment(\.appServices) private var appServices
-    @State private var pendingCount = 0
+    @StateObject private var viewModel = PendingApprovalsViewModel()
 
     var body: some View {
         NavigationLink {
@@ -12,8 +12,8 @@ struct PendingApprovalsNavigationLink: View {
             HStack {
                 Label("Pending Approvals", systemImage: "checkmark.seal")
                 Spacer()
-                if pendingCount > 0 {
-                    Text("\(pendingCount)")
+                if viewModel.pendingCount > 0 {
+                    Text("\(viewModel.pendingCount)")
                         .font(ResponsiveDesign.captionFont())
                         .fontWeight(.bold)
                         .foregroundColor(.white)
@@ -25,17 +25,8 @@ struct PendingApprovalsNavigationLink: View {
             }
         }
         .task {
-            await loadPendingCount()
-        }
-    }
-
-    private func loadPendingCount() async {
-        guard let service = appServices.configurationService as? ConfigurationService else { return }
-        do {
-            let changes = try await service.getPendingConfigurationChanges()
-            pendingCount = changes.count
-        } catch {
-            pendingCount = 0
+            viewModel.configure(with: appServices.configurationService)
+            await viewModel.loadPendingCount()
         }
     }
 }

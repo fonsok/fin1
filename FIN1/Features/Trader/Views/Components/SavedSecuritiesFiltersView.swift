@@ -26,7 +26,7 @@ struct SavedSecuritiesFiltersView: View {
                         if savedFiltersRepository.savedFilters.isEmpty {
                             VStack(spacing: ResponsiveDesign.spacing(16)) {
                                 Image(systemName: "tray")
-                                    .font(.system(size: ResponsiveDesign.iconSize() * 2.0))
+                                    .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2.0))
                                     .foregroundColor(AppTheme.fontColor.opacity(0.3))
 
                                 Text("No saved filter combinations yet")

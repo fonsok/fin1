@@ -22,7 +22,7 @@ struct ChartYAxisView: View {
                 .position(x: ResponsiveDesign.spacing(8), y: ResponsiveDesign.spacing(28))
             ForEach(labels, id: \.self) { value in
                 Text(formatLabel(value))
-                    .font(.system(size: ResponsiveDesign.spacing(9)))
+                    .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.spacing(9)))
                     .foregroundColor(AppTheme.fontColor.opacity(0.6))
                     .position(x: ResponsiveDesign.spacing(30), y: yPositionForValue(value))
             }
@@ -101,7 +101,7 @@ struct ChartXAxisView: View {
                             .frame(width: 1, height: ResponsiveDesign.spacing(8))
                     }
                     Text(group.month)
-                        .font(.system(size: ResponsiveDesign.spacing(9)))
+                        .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.spacing(9)))
                         .foregroundColor(AppTheme.fontColor.opacity(0.9))
                         .lineLimit(1)
                         .frame(width: monthWidth, alignment: .leading)
@@ -203,7 +203,7 @@ struct SingleBarView: View {
             ? valueY - ResponsiveDesign.spacing(12)
             : valueY + barHeight + ResponsiveDesign.spacing(12)
         return Text(item.tradeReturn.roi.formattedAsROIPercentage())
-            .font(.system(size: ResponsiveDesign.spacing(7)))
+            .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.spacing(7)))
             .foregroundColor(isPositive ? AppTheme.accentGreen : AppTheme.accentRed)
             .rotationEffect(.degrees(-90))
             .fixedSize()
@@ -216,9 +216,9 @@ struct SingleBarView: View {
     private var activeTradeLabel: some View {
         VStack(spacing: ResponsiveDesign.spacing(1)) {
             Text("activ")
-                .font(.system(size: ResponsiveDesign.spacing(6)))
+                .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.spacing(6)))
             Text("Trade")
-                .font(.system(size: ResponsiveDesign.spacing(6)))
+                .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.spacing(6)))
         }
         .foregroundColor(AppTheme.fontColor.opacity(0.6))
         .position(x: totalSpace / 2, y: zeroY - ResponsiveDesign.spacing(15))
@@ -251,7 +251,7 @@ struct ChartEmptyView: View {
     var body: some View {
         VStack(spacing: ResponsiveDesign.spacing(12)) {
             Image(systemName: "chart.bar")
-                .font(.system(size: ResponsiveDesign.iconSize() * 2))
+                .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2))
                 .foregroundColor(AppTheme.fontColor.opacity(0.4))
             Text("No trade data available")
                 .font(ResponsiveDesign.bodyFont())

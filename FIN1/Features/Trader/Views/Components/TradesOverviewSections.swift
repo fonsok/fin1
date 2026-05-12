@@ -10,7 +10,7 @@ struct OngoingTradesSection: View {
         if ongoingTrades.isEmpty {
             VStack(spacing: ResponsiveDesign.spacing(16)) {
                 Image(systemName: "clock")
-                    .font(.system(size: ResponsiveDesign.iconSize() * 2.4))
+                    .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2.4))
                     .foregroundColor(AppTheme.fontColor.opacity(0.5))
 
                 Text("Keine laufenden Trades")
@@ -67,7 +67,7 @@ struct CompletedTradesSection: View {
             if completedTrades.isEmpty {
                 VStack(spacing: ResponsiveDesign.spacing(16)) {
                     Image(systemName: "chart.line.uptrend.xyaxis")
-                        .font(.system(size: ResponsiveDesign.iconSize() * 2.4))
+                        .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2.4))
                         .foregroundColor(AppTheme.fontColor.opacity(0.5))
 
                     Text("Keine abgeschlossenen Trades")

@@ -57,7 +57,7 @@ struct DashboardQuickActionsSection: View {
 
     // MARK: - Trader Quick Actions
 
-    /// Trader-specific Quick Actions: "Handeln", "Wallet", and "Price Alerts" buttons
+    /// Trader-specific Quick Actions: "Handeln" button
     private var traderQuickActions: some View {
         VStack(spacing: ResponsiveDesign.spacing(12)) {
             Button(action: {
@@ -82,25 +82,6 @@ struct DashboardQuickActionsSection: View {
             .accessibilityLabel("Handeln")
             .accessibilityHint("Tap to open securities search")
 
-            if appServices.configurationService.walletFeatureEnabled {
-                NavigationLink(value: DashboardRoute.wallet) {
-                    HStack(spacing: ResponsiveDesign.spacing(12)) {
-                        Image(systemName: "wallet.pass.fill")
-                            .font(ResponsiveDesign.headlineFont())
-                            .foregroundColor(AppTheme.fontColor)
-
-                        Text("Wallet")
-                            .font(ResponsiveDesign.headlineFont())
-                            .fontWeight(.semibold)
-                            .foregroundColor(AppTheme.fontColor)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .frame(height: ResponsiveDesign.spacing(56))
-                    .background(AppTheme.buttonColor)
-                    .cornerRadius(ResponsiveDesign.spacing(12))
-                }
-            }
-
             // Price Alerts button - users can access via tab bar
             // Quick action removed to keep UI clean - Price Alerts is accessible via "Alerts" tab
         }
@@ -108,32 +89,12 @@ struct DashboardQuickActionsSection: View {
 
     // MARK: - Investor Quick Actions
 
-    /// Investor-specific Quick Actions: Wallet button (only when wallet feature is enabled)
+    /// Investor-specific Quick Actions.
     ///
-    /// IMPORTANT: The "New Investment" button for investors is displayed in
-    /// `DashboardContainer` using `NewInvestmentButton`, not here.
-    /// This separation allows the button to appear above Quick Stats.
+    /// The investor dashboard intentionally has no separate "Konto" action button.
+    /// Cash information is already visible in the "Cash Balance" area.
     private var investorQuickActions: some View {
-        Group {
-            if appServices.configurationService.walletFeatureEnabled {
-                NavigationLink(value: DashboardRoute.wallet) {
-                    HStack(spacing: ResponsiveDesign.spacing(12)) {
-                        Image(systemName: "wallet.pass.fill")
-                            .font(ResponsiveDesign.headlineFont())
-                            .foregroundColor(AppTheme.fontColor)
-
-                        Text("Wallet")
-                            .font(ResponsiveDesign.headlineFont())
-                            .fontWeight(.semibold)
-                            .foregroundColor(AppTheme.fontColor)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .frame(height: ResponsiveDesign.spacing(56))
-                    .background(AppTheme.buttonColor)
-                    .cornerRadius(ResponsiveDesign.spacing(12))
-                }
-            }
-        }
+        EmptyView()
     }
 
     // MARK: - Other Roles Quick Actions

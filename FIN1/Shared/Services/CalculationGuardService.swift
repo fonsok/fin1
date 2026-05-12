@@ -4,7 +4,7 @@ import Foundation
 
 /// Service that ensures only the correct calculation methods are used
 /// and prevents old/incorrect calculations from being executed
-final class CalculationGuardService {
+final class CalculationGuardService: @unchecked Sendable {
 
     // MARK: - Singleton
 

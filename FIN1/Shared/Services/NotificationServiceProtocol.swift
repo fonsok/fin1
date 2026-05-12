@@ -45,7 +45,7 @@ protocol NotificationServiceProtocol: ObservableObject {
 
 // MARK: - Notification Service Implementation
 /// Handles notification operations, storage, and user notifications
-final class NotificationService: NotificationServiceProtocol, ServiceLifecycle {
+final class NotificationService: NotificationServiceProtocol, ServiceLifecycle, @unchecked Sendable {
     static let shared = NotificationService()
 
     @Published var notifications: [AppNotification] = []
@@ -129,24 +129,19 @@ final class NotificationService: NotificationServiceProtocol, ServiceLifecycle {
             return
         }
 
-        Task { [weak self] in
+        Task { @MainActor [weak self] in
+            guard let self else { return }
             do {
                 let fetched = try await api.fetchNotifications(for: uid, includeArchived: false)
-                await MainActor.run {
-                    guard let self else { return }
-                    self.applyMergedServerNotifications(fetched: fetched, userId: uid)
-                    self.isLoading = false
-                    self.updateUnreadCount()
-                    self.updateCombinedUnreadCount()
-                }
+                self.applyMergedServerNotifications(fetched: fetched, userId: uid)
+                self.isLoading = false
+                self.updateUnreadCount()
+                self.updateCombinedUnreadCount()
             } catch {
-                await MainActor.run {
-                    guard let self else { return }
-                    self.errorMessage = error.localizedDescription
-                    self.isLoading = false
-                    self.updateUnreadCount()
-                    self.updateCombinedUnreadCount()
-                }
+                self.errorMessage = error.localizedDescription
+                self.isLoading = false
+                self.updateUnreadCount()
+                self.updateCombinedUnreadCount()
             }
         }
     }
@@ -162,17 +157,19 @@ final class NotificationService: NotificationServiceProtocol, ServiceLifecycle {
 
     func markAsRead(_ notification: AppNotification) {
         if let api = notificationAPIService {
-            Task { [weak self] in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
                 do {
                     try await api.markNotificationRead(notificationId: notification.id)
                 } catch {
-                    await MainActor.run { self?.errorMessage = error.localizedDescription }
+                    self.errorMessage = error.localizedDescription
                 }
             }
         }
         if let index = notifications.firstIndex(where: { $0.id == notification.id }) {
             var updatedNotification = notifications[index]
             updatedNotification.isRead = true
+            updatedNotification.readAt = Date()
             notifications[index] = updatedNotification
             updateUnreadCount()
             updateCombinedUnreadCount()
@@ -181,16 +178,18 @@ final class NotificationService: NotificationServiceProtocol, ServiceLifecycle {
 
     func markAllAsRead() {
         if let api = notificationAPIService {
-            Task { [weak self] in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
                 do {
                     try await api.markAllNotificationsRead()
                 } catch {
-                    await MainActor.run { self?.errorMessage = error.localizedDescription }
+                    self.errorMessage = error.localizedDescription
                 }
             }
         }
         for i in 0..<notifications.count {
             notifications[i].isRead = true
+            notifications[i].readAt = Date()
         }
         updateUnreadCount()
         updateCombinedUnreadCount()
@@ -294,7 +293,9 @@ final class NotificationService: NotificationServiceProtocol, ServiceLifecycle {
         // This will be recalculated per-user in getCombinedUnreadCount()
         // but we publish it so views can observe changes
         let unreadNotifications = notifications.filter { !$0.isRead }.count
-        let unreadDocuments = documentService.documents.filter { $0.readAt == nil }.count
+        let unreadDocuments = documentService.documents.filter {
+            $0.readAt == nil && !$0.isExcludedFromInvestorDocumentInbox
+        }.count
         let newCount = unreadNotifications + unreadDocuments
         if combinedUnreadCount != newCount {
             combinedUnreadCount = newCount
@@ -319,7 +320,9 @@ final class NotificationService: NotificationServiceProtocol, ServiceLifecycle {
         let unreadDocuments: Int
         if let userId = userId {
             let userDocuments = documentService.getDocuments(for: userId)
-            unreadDocuments = userDocuments.filter { $0.readAt == nil }.count
+            unreadDocuments = userDocuments.filter {
+                $0.readAt == nil && !$0.isExcludedFromInvestorDocumentInbox
+            }.count
 
             // Debug logging to help diagnose issues
             let allUnread = documentService.documents.filter { $0.readAt == nil }.count
@@ -338,7 +341,9 @@ final class NotificationService: NotificationServiceProtocol, ServiceLifecycle {
                 }
             }
         } else {
-            unreadDocuments = documentService.documents.filter { $0.readAt == nil }.count
+            unreadDocuments = documentService.documents.filter {
+                $0.readAt == nil && !$0.isExcludedFromInvestorDocumentInbox
+            }.count
         }
 
         return unreadNotifications + unreadDocuments
@@ -347,7 +352,9 @@ final class NotificationService: NotificationServiceProtocol, ServiceLifecycle {
     func getCombinedItems() -> [NotificationItem] {
         // Combine notifications and documents
         let notificationItems = notifications.map { NotificationItem.notification($0) }
-        let documentItems = documentService.documents.map { NotificationItem.document($0) }
+        let documentItems = documentService.documents
+            .filter { !$0.isExcludedFromInvestorDocumentInbox }
+            .map { NotificationItem.document($0) }
         return notificationItems + documentItems
     }
 

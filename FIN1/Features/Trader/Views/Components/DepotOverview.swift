@@ -10,7 +10,7 @@ struct DepotOverview: View {
                     .foregroundColor(AppTheme.fontColor.opacity(0.8))
 
                 Text("$67,450")
-                    .font(.system(size: ResponsiveDesign.iconSize() * 1.8, weight: .bold, design: .rounded))
+                    .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 1.8, weight: .bold, design: .rounded))
                     .foregroundColor(AppTheme.fontColor)
 
                 HStack(spacing: ResponsiveDesign.spacing(8)) {

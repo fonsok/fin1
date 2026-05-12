@@ -29,7 +29,7 @@ final class PushTokenAPIServiceTests: XCTestCase {
         let userId = "test-user-123"
         let deviceId = "iPhone-14-test"
         mockAPIClient.mockObjectId = "server-push-token-id"
-        mockAPIClient.mockFetchResults = [MockPushTokenResponse]() // No existing tokens
+        mockAPIClient.mockFetchResults = [ParsePushTokenResponse]() // No existing tokens
 
         // When
         let savedToken = try await sut.registerPushToken(token, tokenType: tokenType, userId: userId, deviceId: deviceId)
@@ -100,7 +100,7 @@ final class PushTokenAPIServiceTests: XCTestCase {
         let token = "apns-token-new"
         let tokenType = PushTokenType.apns
         let userId = "test-user-123"
-        mockAPIClient.mockFetchResults = [MockPushTokenResponse]() // No existing tokens
+        mockAPIClient.mockFetchResults = [ParsePushTokenResponse]() // No existing tokens
         mockAPIClient.mockObjectId = "new-token-id"
 
         // When
@@ -134,7 +134,7 @@ final class PushTokenAPIServiceTests: XCTestCase {
         let token = "apns-token-not-found"
         let tokenType = PushTokenType.apns
         let userId = "test-user-123"
-        mockAPIClient.mockFetchResults = [MockPushTokenResponse]() // No tokens
+        mockAPIClient.mockFetchResults = [ParsePushTokenResponse]() // No tokens
 
         // When/Then - Should not throw
         try await sut.deactivatePushToken(token, tokenType: tokenType, userId: userId)
@@ -164,7 +164,7 @@ final class PushTokenAPIServiceTests: XCTestCase {
     func testFetchPushTokens_EmptyResult() async throws {
         // Given
         let userId = "test-user-no-tokens"
-        mockAPIClient.mockFetchResults = [MockPushTokenResponse]()
+        mockAPIClient.mockFetchResults = [ParsePushTokenResponse]()
 
         // When
         let tokens = try await sut.fetchPushTokens(for: userId)
@@ -181,8 +181,8 @@ final class PushTokenAPIServiceTests: XCTestCase {
         token: String,
         tokenType: String = "apns",
         isActive: Bool = true
-    ) -> MockPushTokenResponse {
-        return MockPushTokenResponse(
+    ) -> ParsePushTokenResponse {
+        ParsePushTokenResponse(
             objectId: objectId,
             userId: "test-user-123",
             token: token,
@@ -195,19 +195,4 @@ final class PushTokenAPIServiceTests: XCTestCase {
             updatedAt: "2026-02-05T10:00:00.000Z"
         )
     }
-}
-
-// MARK: - Mock Push Token Response
-
-private struct MockPushTokenResponse: Codable {
-    let objectId: String
-    let userId: String
-    let token: String
-    let tokenType: String
-    let deviceId: String?
-    let isActive: Bool
-    let lastValidatedAt: String?
-    let validationFailures: Int
-    let createdAt: String
-    let updatedAt: String?
 }

@@ -215,7 +215,7 @@ struct SellOrderView: View {
         OrderActionButton(
             title: "(Gebührenpflichtig) Verkaufen",
             backgroundColor: AppTheme.buttonColor,
-            isEnabled: viewModel.canPlaceOrder && viewModel.orderMode == .market,
+            isEnabled: viewModel.canPlaceOrder,
             action: {
                 print("🔘 DEBUG: Sell button tapped in form section")
                 Task {
@@ -223,6 +223,7 @@ struct SellOrderView: View {
                 }
             }
         )
+        .accessibilityIdentifier("PlaceSellOrderButton")
         .accessibilityLabel("Sell order button")
         .accessibilityHint("Place a sell order for the selected number of shares")
     }

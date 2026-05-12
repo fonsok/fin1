@@ -3,7 +3,7 @@ import Combine
 
 // MARK: - Investor Watchlist Service Protocol
 /// Defines the contract for investor trader watchlist operations and management
-protocol InvestorWatchlistServiceProtocol: ObservableObject {
+protocol InvestorWatchlistServiceProtocol: ObservableObject, Sendable {
     var watchlist: [WatchlistTraderData] { get }
     var isLoading: Bool { get }
     var errorMessage: String? { get }

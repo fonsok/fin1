@@ -12,7 +12,9 @@ struct AdminDashboardView: View {
                     adminHeaderSection
                     webPortalBannerSection
                     systemInfoSection
+                    MirrorBasisDriftHealthSection(apiClient: services.parseAPIClient)
                     appSettingsSection
+                    appLedgerSection
                     userImpersonationSection
                     roleTestingSection
                     Spacer(minLength: ResponsiveDesign.spacing(20))
@@ -50,7 +52,7 @@ struct AdminDashboardView: View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
             HStack(spacing: ResponsiveDesign.spacing(12)) {
                 Image(systemName: "globe")
-                    .font(.system(size: ResponsiveDesign.iconSize() * 1.4))
+                    .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 1.4))
                     .foregroundColor(AppTheme.accentLightBlue)
 
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
@@ -119,7 +121,7 @@ struct AdminDashboardView: View {
                 AdminInfoRow(title: "App Version", value: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0")
                 AdminInfoRow(title: "Build Number", value: Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1")
                 AdminInfoRow(title: "User Role", value: services.userService.userRole?.displayName ?? "Unknown")
-                AdminInfoRow(title: "Commission Rate", value: "\(Int(services.configurationService.traderCommissionRate * 100))%")
+                AdminInfoRow(title: "Commission Rate", value: "\((services.configurationService.traderCommissionRate * 100).formatted(.number.precision(.fractionLength(0...2))))%")
                 AdminInfoRow(title: "Initial Balance", value: services.configurationService.initialAccountBalance.formatted(.currency(code: "EUR")))
             }
         }
@@ -144,6 +146,49 @@ struct AdminDashboardView: View {
                     color: AppTheme.accentLightBlue
                 )
             })
+        }
+        .padding()
+        .background(AppTheme.sectionBackground)
+        .cornerRadius(ResponsiveDesign.spacing(12))
+    }
+
+    // MARK: - App Ledger & Beleg-Suche (buchhaltungsnahe Sicht)
+    private var appLedgerSection: some View {
+        VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
+            Text("Buchhaltung")
+                .font(ResponsiveDesign.headlineFont())
+                .fontWeight(.semibold)
+                .foregroundColor(AppTheme.fontColor)
+
+            Text("Eigenkonten-Buchungen und Belege (Rechnungen, Gutschriften, Eigenbelege …) — Belege sind an der jeweiligen Buchung verlinkt.")
+                .font(ResponsiveDesign.captionFont())
+                .foregroundColor(AppTheme.fontColor.opacity(0.7))
+
+            NavigationLink {
+                AppLedgerView(viewModel: AppLedgerViewModel(ledgerService: services.appLedgerService))
+            } label: {
+                AdminActionCard(
+                    icon: "books.vertical.fill",
+                    title: "App Ledger öffnen",
+                    subtitle: "Buchungen filtern · Belege an der Buchung",
+                    color: AppTheme.accentOrange
+                )
+            }
+            .buttonStyle(.plain)
+
+            if let parseAPIClient = services.parseAPIClient {
+                NavigationLink {
+                    DocumentSearchView(searchService: DocumentSearchAPIService(parseAPIClient: parseAPIClient))
+                } label: {
+                    AdminActionCard(
+                        icon: "doc.text.magnifyingglass",
+                        title: "Beleg-Suche",
+                        subtitle: "Belegnummer, Typ, Zeitraum, Investment/Trade",
+                        color: AppTheme.accentLightBlue
+                    )
+                }
+                .buttonStyle(.plain)
+            }
         }
         .padding()
         .background(AppTheme.sectionBackground)
@@ -265,7 +310,7 @@ struct AdminActionCard: View {
             Spacer()
 
             Image(systemName: "chevron.right")
-                .font(.caption)
+                .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.5))
         }
         .padding()

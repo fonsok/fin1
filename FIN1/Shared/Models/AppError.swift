@@ -54,6 +54,8 @@ enum AppError: LocalizedError, Equatable, Sendable {
 enum NetworkError: LocalizedError, Equatable, Sendable {
     case noConnection
     case timeout
+    /// Parse REST 400 — `error` field from server (e.g. Cloud Code / beforeSave message).
+    case badRequest(String)
     case serverError(Int)
     case invalidResponse
     case decodingError
@@ -64,12 +66,32 @@ enum NetworkError: LocalizedError, Equatable, Sendable {
             return "No internet connection"
         case .timeout:
             return "Request timed out"
+        case .badRequest(let message):
+            return message
         case .serverError(let code):
             return "Server error: \(code)"
         case .invalidResponse:
             return "Invalid response from server"
         case .decodingError:
             return "Failed to decode response"
+        }
+    }
+
+    /// Short German copy for investor-facing alerts (Investment sheet, etc.).
+    var userFacingInvestmentMessage: String {
+        switch self {
+        case .badRequest(let message):
+            return message
+        case .noConnection:
+            return String(localized: "Keine Internetverbindung. Bitte prüfen Sie die Verbindung und versuchen Sie es erneut.")
+        case .timeout:
+            return String(localized: "Zeitüberschreitung. Bitte versuchen Sie es erneut.")
+        case .serverError(let code):
+            return String(localized: "Serverfehler (\(code)). Bitte versuchen Sie es später erneut oder kontaktieren Sie den Support.")
+        case .invalidResponse:
+            return String(localized: "Ungültige Serverantwort. Bitte versuchen Sie es erneut.")
+        case .decodingError:
+            return String(localized: "Daten konnten nicht gelesen werden. Bitte aktualisieren Sie die Ansicht.")
         }
     }
 }
@@ -186,5 +208,25 @@ extension AppError {
     /// Create an unknown error
     static func unknownError(_ message: String) -> AppError {
         return .unknown(message)
+    }
+
+    /// Message for investor investment alerts without English „Validation Error:“ prefixes.
+    var userFacingInvestmentMessage: String {
+        switch self {
+        case .validation(let message):
+            return message
+        case .network(let error):
+            return error.userFacingInvestmentMessage
+        case .authentication(let error):
+            return error.localizedDescription
+        case .service(let error):
+            return error.localizedDescription
+        case .orderNotFound(let id):
+            return String(localized: "Order nicht gefunden: \(id).")
+        case .tradeNotFound(let id):
+            return String(localized: "Trade nicht gefunden: \(id).")
+        case .unknown(let message):
+            return message
+        }
     }
 }

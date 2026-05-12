@@ -111,7 +111,8 @@ final class InvoiceViewModel: ObservableObject {
                             orderId: invoice.orderId,
                             taxNote: invoice.taxNote,
                             legalNote: invoice.legalNote,
-                            dueDate: invoice.dueDate
+                            dueDate: invoice.dueDate,
+                            traderCommissionRateSnapshot: invoice.traderCommissionRateSnapshot
                         )
                         self.invoices[index] = updatedInvoice
                         self.selectedInvoice = updatedInvoice

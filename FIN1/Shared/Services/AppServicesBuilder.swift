@@ -7,6 +7,7 @@ import Foundation
 enum AppServicesBuilder {
 
     /// Builds all live services with proper dependency injection.
+    @MainActor
     static func buildLiveServices() -> AppServices {
         var ctx = AppServicesBuildContext()
         Core.build(&ctx)

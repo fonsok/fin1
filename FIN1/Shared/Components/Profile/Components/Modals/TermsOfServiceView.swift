@@ -163,7 +163,7 @@ struct TermsOfServiceView: View {
 
             Button(action: { viewModel.toggleLanguage() }) {
                 Text(viewModel.currentLanguage.oppositeFlag)
-                    .font(.system(size: ResponsiveDesign.iconSize() * 1.2))
+                    .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 1.2))
             }
             .buttonStyle(PlainButtonStyle())
 
@@ -190,7 +190,7 @@ struct TermsOfServiceView: View {
     private var noResultsView: some View {
         VStack(spacing: ResponsiveDesign.spacing(16)) {
             Image(systemName: "magnifyingglass")
-                .font(.system(size: ResponsiveDesign.iconSize() * 2.4))
+                .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2.4))
                 .foregroundColor(AppTheme.fontColor.opacity(0.5))
 
             Text(isEnglish ? "No Results Found" : "Keine Ergebnisse gefunden")

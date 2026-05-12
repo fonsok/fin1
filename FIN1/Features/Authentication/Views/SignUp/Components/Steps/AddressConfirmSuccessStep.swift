@@ -5,7 +5,7 @@ struct AddressConfirmSuccessStep: View {
         VStack(spacing: ResponsiveDesign.spacing(32)) {
             // Success Icon
             Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 80))
+                .font(ResponsiveDesign.scaledSystemFont(size: 80))
                 .foregroundColor(AppTheme.accentGreen)
             
             // Success Message

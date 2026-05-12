@@ -16,7 +16,7 @@ struct EmailVerificationStep: View {
         VStack(spacing: ResponsiveDesign.spacing(24)) {
             // Icon
             Image(systemName: "envelope.badge.shield.half.filled")
-                .font(.system(size: ResponsiveDesign.iconSize() * 3))
+                .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 3))
                 .foregroundColor(AppTheme.accentLightBlue)
 
             // Title & instructions

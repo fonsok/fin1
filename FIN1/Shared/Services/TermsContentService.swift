@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - Terms Content Service
 
-protocol TermsContentServiceProtocol {
+protocol TermsContentServiceProtocol: Sendable {
     func fetchCurrentTerms(
         language: TermsOfServiceDataProvider.Language,
         documentType: LegalDocumentType
@@ -31,7 +31,7 @@ protocol TermsContentServiceProtocol {
     ) async
 }
 
-final class TermsContentService: TermsContentServiceProtocol {
+final class TermsContentService: TermsContentServiceProtocol, @unchecked Sendable {
     private let parseAPIClient: (any ParseAPIClientProtocol)?
     private let userDefaults: UserDefaults
 

@@ -3,7 +3,7 @@ import Foundation
 // MARK: - Trade Matching Service Implementation
 /// Handles complex business logic for matching sell orders with existing trades
 /// Extracted from TraderService to improve maintainability and testability
-final class TradeMatchingService: TradeMatchingServiceProtocol {
+final class TradeMatchingService: TradeMatchingServiceProtocol, @unchecked Sendable {
     private let holdingsConversionService: HoldingsConversionServiceProtocol
 
     init(holdingsConversionService: HoldingsConversionServiceProtocol = HoldingsConversionService.shared) {
@@ -134,21 +134,24 @@ final class TradeMatchingService: TradeMatchingServiceProtocol {
         trades: [Trade],
         tradeLifecycleService: any TradeLifecycleServiceProtocol
     ) async -> Trade? {
-        // FIX: Find trade with matching WKN that still has remaining quantity to sell
-        // The previous implementation used firstIndex which would find the FIRST trade
-        // with matching WKN (possibly already completed), causing the sell order to be
-        // added to the wrong trade on the 3rd sell order
-        guard let tradeIndex = trades.firstIndex(where: { trade in
+        // Strict separation guard:
+        // If originalHoldingId is missing, only allow fallback matching when it is unambiguous.
+        let candidates = trades.filter { trade in
             guard trade.wkn == sellOrder.wkn else { return false }
-            // Only match trades that still have quantity available for selling
-            // This ensures we match the active trade, not a completed one
             return trade.remainingQuantity > 0
-        }) else {
+        }
+
+        guard !candidates.isEmpty else {
             logNoMatchFound(sellOrder: sellOrder)
             return nil
         }
 
-        let trade = trades[tradeIndex]
+        guard candidates.count == 1 else {
+            print("❌ DEBUG: Ambiguous WKN fallback match (\(candidates.count) candidates) for sell order \(sellOrder.id) - refusing cross-trade assignment")
+            return nil
+        }
+
+        let trade = candidates[0]
         return await updateTradeWithSellOrder(
             trade: trade,
             sellOrder: sellOrder,

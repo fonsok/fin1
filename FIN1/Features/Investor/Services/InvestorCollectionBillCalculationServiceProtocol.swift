@@ -15,6 +15,7 @@ import Foundation
 /// 5. `Trade.totalQuantity` - Reference for sell percentage calculation
 ///
 /// **Documentation**: See `Documentation/DATA_SOURCE_HIERARCHY.md` for complete data source hierarchy and calculation rules.
+@MainActor
 protocol InvestorCollectionBillCalculationServiceProtocol {
     /// Calculates collection bill values for a single trade participation
     /// - Parameter input: Input data containing investment capital, trade data, invoices, and ownership
@@ -28,12 +29,11 @@ protocol InvestorCollectionBillCalculationServiceProtocol {
     func validateInput(_ input: InvestorCollectionBillInput) -> ValidationResult
 
     /// Attempts to build a collection bill output from backend data, falling back to local calculation.
-    /// - Parameter onUsedLocalFallback: Optional closure called when backend fetch failed and local calculation was used.
+    /// When fallback occurs, ``InvestorCollectionBillOutput/usedLocalFallbackDueToBackendError`` is true on the result.
     func calculateCollectionBillWithBackend(
         input: InvestorCollectionBillInput,
         settlementAPIService: (any SettlementAPIServiceProtocol)?,
         tradeId: String?,
-        investmentId: String?,
-        onUsedLocalFallback: (() -> Void)?  // Callers may pass nil if they do not need fallback notification
+        investmentId: String?
     ) async throws -> InvestorCollectionBillOutput
 }

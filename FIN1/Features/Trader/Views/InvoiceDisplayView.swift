@@ -25,7 +25,7 @@ struct InvoiceDisplayView: View {
                 // Header Section with Invoice Number, Trade Nr., etc.
                 InvoiceHeaderSection(invoice: viewModel.invoice)
 
-                // Transaction Type Header (only show if there's a valid transaction type, not for platform service charge)
+                // Transaction Type Header (only show if there's a valid transaction type, not for app service charge)
                 if let headerData = viewModel.headerData,
                    viewModel.invoice.transactionType != nil,
                    headerData.transactionType != "Unknown" {

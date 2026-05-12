@@ -23,7 +23,7 @@ struct TraderHeaderView: View {
                 .frame(width: ResponsiveDesign.iconSize() * 2, height: ResponsiveDesign.iconSize() * 2)
                 .overlay(
                     Image(systemName: "person.fill")
-                        .font(.system(size: ResponsiveDesign.iconSize() * 1.2))
+                        .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 1.2))
                         .foregroundColor(AppTheme.accentLightBlue)
                 )
 

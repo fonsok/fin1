@@ -4,7 +4,7 @@ import Foundation
 
 /// Implementation of 4-Augen-Prinzip approval workflows
 /// Compliant with AML, PSD2, and GDPR requirements
-final class FourEyesApprovalService: FourEyesApprovalServiceProtocol {
+final class FourEyesApprovalService: FourEyesApprovalServiceProtocol, @unchecked Sendable {
     // MARK: - Dependencies
 
     private let auditService: AuditLoggingServiceProtocol

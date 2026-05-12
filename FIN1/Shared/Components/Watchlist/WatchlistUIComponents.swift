@@ -7,7 +7,7 @@ struct WatchlistEmptyStateView: View {
     var body: some View {
         VStack(spacing: ResponsiveDesign.spacing(16)) {
             Image(systemName: "eye.slash")
-                .font(.system(size: 48))
+                .font(ResponsiveDesign.scaledSystemFont(size: 48))
                 .foregroundColor(AppTheme.fontColor.opacity(0.4))
             
             Text("No items in watchlist")

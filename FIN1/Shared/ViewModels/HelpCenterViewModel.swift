@@ -5,7 +5,7 @@ import Combine
 /// Manages FAQ data, search, and category filtering
 @MainActor
 final class HelpCenterViewModel: ObservableObject {
-    private let faqContentService: (any FAQContentServiceProtocol)?
+    private let faqContentBridge: UncheckedFAQContentServiceBridge?
     private let userRole: String?
 
     // MARK: - Published Properties
@@ -19,10 +19,10 @@ final class HelpCenterViewModel: ObservableObject {
     @Published private(set) var categories: [FAQCategoryContent] = []
 
     init(faqContentService: (any FAQContentServiceProtocol)? = nil, userRole: String? = nil) {
-        self.faqContentService = faqContentService
+        self.faqContentBridge = faqContentService.map { UncheckedFAQContentServiceBridge(service: $0) }
         self.userRole = userRole
 
-        Task { [weak self] in
+        Task { @MainActor [weak self] in
             await self?.loadServerFAQsIfAvailable()
         }
     }
@@ -88,15 +88,15 @@ final class HelpCenterViewModel: ObservableObject {
     }
 
     private func loadServerFAQsIfAvailable(forceRefresh: Bool = false) async {
-        guard let faqContentService else { return }
+        guard let faqContentBridge else { return }
         isLoading = true
         loadFailed = false
         do {
             if forceRefresh {
-                await faqContentService.clearCache(location: "help_center", userRole: userRole)
+                await faqContentBridge.clearCache(location: "help_center", userRole: userRole)
             }
-            let categories = try await faqContentService.fetchFAQCategories(location: "help_center", userRole: userRole)
-            let faqs = try await faqContentService.fetchFAQsForHelpCenter(userRole: userRole)
+            let categories = try await faqContentBridge.fetchFAQCategories(location: "help_center", userRole: userRole)
+            let faqs = try await faqContentBridge.fetchFAQsForHelpCenter(userRole: userRole)
             // Always apply a successful response (even if empty) so retry/refresh replaces stale data.
             self.categories = categories
             self.faqs = faqs

@@ -4,6 +4,7 @@ import Combine
 // MARK: - Order Lifecycle Coordinator Implementation
 /// Handles order lifecycle management and business logic
 /// Focused on order creation, status progression, and completion
+@MainActor
 final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
 
     // MARK: - Dependencies
@@ -77,7 +78,8 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
             limitPrice: parameters.limitPrice,
             strike: parameters.strike,
             subscriptionRatio: parameters.subscriptionRatio,
-            denomination: parameters.denomination
+            denomination: parameters.denomination,
+            isMirrorPoolOrder: parameters.isMirrorPoolOrder
         )
 
         // Start status progression simulation
@@ -243,18 +245,21 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
             orderInstruction: order.orderInstruction,
             limitPrice: order.limitPrice,
             subscriptionRatio: order.subscriptionRatio,
-            denomination: order.denomination
+            denomination: order.denomination,
+            isMirrorPoolOrder: order.isMirrorPoolOrder
         )
 
         // Create Trade from the completed buy order
         let trade = try? await tradeLifecycleService.createNewTrade(buyOrder: buyOrder)
 
         if let trade = trade {
-            // Update cash balance (money goes out for buy order)
-            await cashBalanceService.processBuyOrderExecution(amount: order.totalAmount)
+            // Trader cash debit belongs only to trader-originated buy orders.
+            if order.isMirrorPoolOrder != true {
+                await cashBalanceService.processBuyOrderExecution(amount: order.totalAmount)
+            }
 
-            // Activate investments for this buy order
-            if let investmentActivationService = investmentActivationService {
+            // Investment activation/deploy belongs only to mirror-pool buy orders.
+            if order.isMirrorPoolOrder == true, let investmentActivationService = investmentActivationService {
                 _ = await investmentActivationService.activateInvestmentsForBuyOrder(order: order, trade: trade)
             }
 
@@ -360,7 +365,8 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
                     // Find participations for this trade and complete only those investments' pools
                     let participations = poolTradeParticipationService.getParticipations(forTradeId: trade.id)
                     if participations.isEmpty {
-                        print("ℹ️ No pool participations recorded for trade \(trade.id); skipping completion")
+                        print("ℹ️ No pool participations recorded for trade \(trade.id); fallback to trader-based completion")
+                        await investmentService.markInvestmentAsCompleted(for: trade.traderId)
                     } else {
                         for participation in participations {
                             await investmentService.markActiveInvestmentAsCompleted(for: participation.investmentId)
@@ -385,12 +391,7 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
     /// Checks if the backend has already settled this trade (AccountStatement entries + documents created)
     private func checkBackendSettlement(for trade: Trade) async -> Bool {
         guard let settlementAPI = settlementAPIService else { return false }
-        do {
-            return try await settlementAPI.isTradeSettledByBackend(tradeId: trade.id)
-        } catch {
-            print("⚠️ Backend settlement check failed: \(error.localizedDescription)")
-            return false
-        }
+        return await settlementAPI.isTradeSettledByBackend(tradeId: trade.id)
     }
 
     // MARK: - Credit Note Generation (local fallback)

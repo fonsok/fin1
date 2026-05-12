@@ -51,7 +51,7 @@ struct InvoiceDemoView: View {
     private var headerSection: some View {
         VStack(spacing: ResponsiveDesign.spacing(12)) {
             Image(systemName: "doc.text.badge.plus")
-                .font(.system(size: 50))
+                .font(ResponsiveDesign.scaledSystemFont(size: 50))
                 .foregroundColor(.accentColor)
 
             Text("Wertpapierabrechnung")

@@ -4,6 +4,7 @@ import Combine
 // MARK: - Trading Coordinator Implementation
 /// Lightweight orchestrator that coordinates between focused trading services
 /// Delegates to specialized coordinators and state managers
+@MainActor
 final class TradingCoordinator: TradingCoordinatorProtocol {
 
     // MARK: - Publishers (Delegated to State Store)
@@ -71,7 +72,8 @@ final class TradingCoordinator: TradingCoordinatorProtocol {
         limitPrice: Double? = nil,
         strike: Double? = nil,
         subscriptionRatio: Double? = nil,
-        denomination: Int? = nil
+        denomination: Int? = nil,
+        isMirrorPoolOrder: Bool? = nil
     ) async throws -> OrderBuy {
         let parameters = BuyOrderParameters(
             symbol: symbol,
@@ -83,7 +85,8 @@ final class TradingCoordinator: TradingCoordinatorProtocol {
             limitPrice: limitPrice,
             strike: strike,
             subscriptionRatio: subscriptionRatio,
-            denomination: denomination
+            denomination: denomination,
+            isMirrorPoolOrder: isMirrorPoolOrder
         )
         return try await orderLifecycleCoordinator.placeBuyOrder(parameters: parameters)
     }

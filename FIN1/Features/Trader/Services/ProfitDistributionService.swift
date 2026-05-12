@@ -4,14 +4,14 @@ import Foundation
 /// Handles profit distribution for completed trades
 /// Calculates commission using centralized services (single source of truth)
 /// and distributes net profit to investments
-final class ProfitDistributionService: ProfitDistributionServiceProtocol {
+final class ProfitDistributionService: ProfitDistributionServiceProtocol, @unchecked Sendable {
 
     // MARK: - Dependencies
     private let commissionCalculationService: any CommissionCalculationServiceProtocol
     private let investorGrossProfitService: (any InvestorGrossProfitServiceProtocol)?
-    private let commissionAccumulationService: (any CommissionAccumulationServiceProtocol)?
+    private let commissionAccumulationBridge: UncheckedCommissionAccumulationBridge?
     private let poolTradeParticipationService: (any PoolTradeParticipationServiceProtocol)?
-    private let traderCashBalanceService: (any TraderCashBalanceServiceProtocol)?
+    nonisolated(unsafe) private let traderCashBalanceService: (any TraderCashBalanceServiceProtocol)?
     private let investmentService: (any InvestmentServiceProtocol)?
     private let userService: any UserServiceProtocol
     private let traderDataService: (any TraderDataServiceProtocol)?
@@ -33,7 +33,7 @@ final class ProfitDistributionService: ProfitDistributionServiceProtocol {
     ) {
         self.commissionCalculationService = commissionCalculationService
         self.investorGrossProfitService = investorGrossProfitService
-        self.commissionAccumulationService = commissionAccumulationService
+        self.commissionAccumulationBridge = commissionAccumulationService.map { UncheckedCommissionAccumulationBridge($0) }
         self.poolTradeParticipationService = poolTradeParticipationService
         self.traderCashBalanceService = traderCashBalanceService
         self.investmentService = investmentService
@@ -162,7 +162,7 @@ final class ProfitDistributionService: ProfitDistributionServiceProtocol {
         totalCommission: Double,
         grossProfit: Double
     ) async {
-        guard let commissionAccumulationService = commissionAccumulationService,
+        guard let commissionAccumulationBridge = commissionAccumulationBridge,
               let poolTradeParticipationService = poolTradeParticipationService,
               let investmentService = investmentService else {
             print("⚠️ ProfitDistributionService: Required services are nil - commission not accumulated!")
@@ -220,7 +220,7 @@ final class ProfitDistributionService: ProfitDistributionServiceProtocol {
             }
 
             // Record commission accumulation for this investor
-            await commissionAccumulationService.recordCommission(
+            await commissionAccumulationBridge.recordCommission(
                 investorId: investment.investorId,
                 traderId: traderId,
                 tradeId: trade.id,
@@ -281,5 +281,33 @@ final class ProfitDistributionService: ProfitDistributionServiceProtocol {
         let userId = currentUser.id
         print("   🔄 Falling back to user ID: '\(userId)'")
         return userId
+    }
+}
+
+// MARK: - Commission accumulation bridge (Swift 6)
+/// `CommissionAccumulationServiceProtocol` is `@MainActor`; this service is `@unchecked Sendable` for coordinator wiring.
+private final class UncheckedCommissionAccumulationBridge: @unchecked Sendable {
+    private let service: any CommissionAccumulationServiceProtocol
+
+    init(_ service: any CommissionAccumulationServiceProtocol) {
+        self.service = service
+    }
+
+    func recordCommission(
+        investorId: String,
+        traderId: String,
+        tradeId: String,
+        tradeNumber: Int,
+        commissionAmount: Double,
+        grossProfit: Double
+    ) async {
+        await service.recordCommission(
+            investorId: investorId,
+            traderId: traderId,
+            tradeId: tradeId,
+            tradeNumber: tradeNumber,
+            commissionAmount: commissionAmount,
+            grossProfit: grossProfit
+        )
     }
 }

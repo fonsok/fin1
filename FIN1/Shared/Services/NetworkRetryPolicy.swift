@@ -59,6 +59,9 @@ struct NetworkRetryPolicy {
             // Don't retry on 4xx client errors (except 429)
             return code >= 500 || code == 429
 
+        case .badRequest:
+            return false
+
         case .invalidResponse, .decodingError:
             // Don't retry invalid responses or decoding errors
             // These are likely permanent issues

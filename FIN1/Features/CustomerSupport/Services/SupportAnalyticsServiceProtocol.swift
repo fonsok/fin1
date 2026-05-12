@@ -3,6 +3,7 @@ import Foundation
 // MARK: - Support Analytics Service Protocol
 
 /// Service for aggregating and analyzing support metrics
+@MainActor
 protocol SupportAnalyticsServiceProtocol {
 
     // MARK: - Overall Metrics

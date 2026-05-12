@@ -30,14 +30,14 @@ final class PDFGenerator {
 
     /// PDF generation mode (default: backend for production quality)
     /// Set to .local for offline capability or .professionalLocal for new local layouts
-    static var generationMode: PDFGenerationMode = .backend
+    nonisolated(unsafe) static var generationMode: PDFGenerationMode = .backend
 
     /// Toggle to use improved local PDF generation (default: true)
     /// Only applies when generationMode is .local
-    static var useImprovedGeneration: Bool = true
+    nonisolated(unsafe) static var useImprovedGeneration: Bool = true
 
     /// Backend service instance (lazy initialized)
-    private static var _backendService: PDFBackendService?
+    private nonisolated(unsafe) static var _backendService: PDFBackendService?
     private static var backendService: PDFBackendService {
         if _backendService == nil {
             _backendService = PDFBackendService()
@@ -100,7 +100,7 @@ final class PDFGenerator {
         switch generationMode {
         case .backend:
             do {
-                return try await backendService.generateTradeStatementPDF(for: displayData, trade: trade)
+                return try await backendService.generateTradeStatementPDF(for: displayData, tradeNumber: trade.tradeNumber)
             } catch {
                 logger.error("Backend trade statement PDF failed, falling back to local: \(error.localizedDescription)")
                 return PDFTradeStatementGenerator.generatePDF(for: displayData, trade: trade)

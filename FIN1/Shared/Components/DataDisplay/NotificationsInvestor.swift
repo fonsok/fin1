@@ -60,7 +60,8 @@ private struct NotificationsInvestorContentView: View {
                                     notificationService: notificationService,
                                     userId: appServices.userService.currentUser?.id ?? "",
                                     customerSupportService: appServices.customerSupportService,
-                                    satisfactionSurveyService: appServices.satisfactionSurveyService
+                                    satisfactionSurveyService: appServices.satisfactionSurveyService,
+                                    documentService: appServices.documentService
                                 )
                             }
                         }

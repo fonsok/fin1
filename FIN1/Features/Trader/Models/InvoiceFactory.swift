@@ -194,17 +194,25 @@ extension Invoice {
         batchId: String? = nil,
         investmentIds: [String] = [],
         investmentAmounts: [Double] = [],
-        serviceChargeRate: Double = CalculationConstants.ServiceCharges.appServiceChargeRate
+        serviceChargeRate: Double = CalculationConstants.ServiceCharges.appServiceChargeRate,
+        includeVAT: Bool = true
     ) -> Invoice {
         let invoiceNumber = InvoiceNumberGenerator.generate(using: transactionIdService)
 
-        // Calculate net and VAT from gross amount
-        // Gross = Net + VAT, where VAT = Net * 19%
-        // Therefore: Gross = Net * (1 + 19%) = Net * 1.19
-        // Net = Gross / 1.19
-        let vatRate = CalculationConstants.TaxRates.vatRate
-        let netServiceCharge = grossServiceChargeAmount / (1.0 + vatRate)
-        let vatAmount = grossServiceChargeAmount - netServiceCharge
+        let netServiceCharge: Double
+        let vatAmount: Double
+        if includeVAT {
+            // Calculate net and VAT from gross amount
+            // Gross = Net + VAT, where VAT = Net * 19%
+            // Therefore: Gross = Net * (1 + 19%) = Net * 1.19
+            // Net = Gross / 1.19
+            let vatRate = CalculationConstants.TaxRates.vatRate
+            netServiceCharge = grossServiceChargeAmount / (1.0 + vatRate)
+            vatAmount = grossServiceChargeAmount - netServiceCharge
+        } else {
+            netServiceCharge = grossServiceChargeAmount
+            vatAmount = 0
+        }
 
         // Create invoice items
         var items: [InvoiceItem] = []
@@ -227,13 +235,15 @@ extension Invoice {
             itemType: .serviceCharge
         ))
 
-        // VAT item (19%)
-        items.append(InvoiceItem(
-            description: "Umsatzsteuer (19%)",
-            quantity: 1,
-            unitPrice: vatAmount,
-            itemType: .vat
-        ))
+        // VAT item (19%) for private persons.
+        if includeVAT {
+            items.append(InvoiceItem(
+                description: "Umsatzsteuer (19%)",
+                quantity: 1,
+                unitPrice: vatAmount,
+                itemType: .vat
+            ))
+        }
 
         return Invoice(
             invoiceNumber: invoiceNumber,

@@ -3,7 +3,7 @@ import Combine
 @testable import FIN1
 
 // MARK: - Mock User Service
-class MockUserService: UserServiceProtocol {
+final class MockUserService: UserServiceProtocol, @unchecked Sendable {
     @Published var currentUser: User?
     @Published var isAuthenticated: Bool = false
     @Published var isLoading: Bool = false
@@ -49,7 +49,7 @@ class MockUserService: UserServiceProtocol {
             // Create test user based on email
             let user = User(
                 id: UUID().uuidString,
-                customerId: "CUST001",
+                customerNumber: "CUST001",
                 accountType: .individual,
                 email: email,
                 username: email.components(separatedBy: "@").first ?? "testuser",
@@ -68,6 +68,7 @@ class MockUserService: UserServiceProtocol {
                 placeOfBirth: "Test City",
                 countryOfBirth: "Test Country",
                 role: email.contains("trader") ? .trader : .investor,
+                csrRole: nil,
                 employmentStatus: .employed,
                 income: 50000,
                 incomeRange: .middle,
@@ -159,7 +160,7 @@ class MockUserService: UserServiceProtocol {
         guard let user = currentUser else { return }
         let updatedUser = User(
             id: user.id,
-            customerId: user.customerId,
+            customerNumber: user.customerNumber,
             accountType: user.accountType,
             email: user.email,
             username: user.username,
@@ -178,6 +179,7 @@ class MockUserService: UserServiceProtocol {
             placeOfBirth: user.placeOfBirth,
             countryOfBirth: user.countryOfBirth,
             role: newRole,
+            csrRole: user.csrRole,
             employmentStatus: user.employmentStatus,
             income: user.income,
             incomeRange: user.incomeRange,
@@ -218,7 +220,7 @@ class MockUserService: UserServiceProtocol {
         currentUser = updatedUser
     }
 
-    func impersonateUser(userId: String, customerId: String, email: String, fullName: String, role: UserRole) async {
+    func impersonateUser(userId: String, customerNumber: String, email: String, fullName: String, role: UserRole) async {
         // Store original admin user if not already stored
         if _originalAdminUser == nil, let currentUser = currentUser, currentUser.role == .admin {
             _originalAdminUser = currentUser
@@ -232,7 +234,7 @@ class MockUserService: UserServiceProtocol {
         // Create impersonated user
         let impersonatedUser = User(
             id: userId,
-            customerId: customerId,
+            customerNumber: customerNumber,
             accountType: .individual,
             email: email,
             username: email.components(separatedBy: "@").first ?? "",
@@ -251,6 +253,7 @@ class MockUserService: UserServiceProtocol {
             placeOfBirth: "",
             countryOfBirth: "",
             role: role,
+            csrRole: nil,
             employmentStatus: .employed,
             income: 0,
             incomeRange: .low,

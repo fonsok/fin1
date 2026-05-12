@@ -30,7 +30,7 @@ struct ErrorContext {
 }
 
 // MARK: - Telemetry Service Implementation (No-op / Console Logger)
-final class TelemetryService: TelemetryServiceProtocol, ServiceLifecycle {
+final class TelemetryService: TelemetryServiceProtocol, ServiceLifecycle, @unchecked Sendable {
     static let shared = TelemetryService()
     private let queue = DispatchQueue(label: "telemetry.queue")
 
@@ -102,6 +102,7 @@ final class TelemetryService: TelemetryServiceProtocol, ServiceLifecycle {
             switch networkError {
             case .noConnection: return "no_connection"
             case .timeout: return "timeout"
+            case .badRequest: return "bad_request"
             case .serverError: return "server_error"
             case .invalidResponse: return "invalid_response"
             case .decodingError: return "decoding_error"

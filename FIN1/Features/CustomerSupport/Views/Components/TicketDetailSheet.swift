@@ -142,7 +142,7 @@ struct TicketDetailSheet: View {
 
 // MARK: - Preview
 
-#Preview {
+#Preview { @MainActor in
     let mockTicket = SupportTicket(
         id: "1",
         ticketNumber: "TKT-12345",

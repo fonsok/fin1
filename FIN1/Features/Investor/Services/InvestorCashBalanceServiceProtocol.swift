@@ -15,7 +15,7 @@ struct CommissionDeductionDetails {
         traderName: String? = nil,
         tradeNumbers: [String] = [],
         grossProfit: Double = 0,
-        commissionRate: Double = CalculationConstants.FeeRates.traderCommissionRate
+        commissionRate: Double
     ) {
         self.investmentSequenceNumber = investmentSequenceNumber
         self.traderName = traderName
@@ -28,7 +28,8 @@ struct CommissionDeductionDetails {
 // MARK: - Investor Cash Balance Service Protocol
 
 /// Protocol for managing investor cash balances
-protocol InvestorCashBalanceServiceProtocol: ServiceLifecycle {
+@MainActor
+protocol InvestorCashBalanceServiceProtocol {
     /// Gets the current cash balance for an investor
     /// - Parameter investorId: The investor's user ID
     /// - Returns: Current cash balance in EUR

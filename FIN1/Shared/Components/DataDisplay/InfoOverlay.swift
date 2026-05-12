@@ -17,7 +17,7 @@ struct InfoOverlay: View {
                 VStack(spacing: ResponsiveDesign.spacing(16)) {
                     // Info icon
                     Image(systemName: "info.circle.fill")
-                        .font(.system(size: ResponsiveDesign.iconSize() * 2.5))
+                        .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2.5))
                         .foregroundColor(AppTheme.accentLightBlue)
 
                     // Message

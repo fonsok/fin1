@@ -23,6 +23,7 @@ final class CompletedInvestmentsViewModel: ObservableObject {
     private var configurationService: any ConfigurationServiceProtocol
     private var commissionCalculationService: any CommissionCalculationServiceProtocol
     private var settlementAPIService: (any SettlementAPIServiceProtocol)?
+    private var tradeAPIService: (any TradeAPIServiceProtocol)?
     private var cancellables = Set<AnyCancellable>()
     private var roleChangeCancellables = Set<AnyCancellable>() // Separate set for role change observers
     private var boundInvestorId: String?
@@ -35,9 +36,15 @@ final class CompletedInvestmentsViewModel: ObservableObject {
     /// Trade-Nummer pro Investment-ID (MVVM: keine Service-Aufrufe in der View).
     @Published var tradeNumbers: [String: String] = [:]
     /// Statement-Summaries pro Investment-ID (MVVM: keine Berechnung in der View).
+    /// Same aggregator populates the Investor Collection Bill – table, info sheet and
+    /// PDF therefore stay internally consistent.
     @Published var investmentSummaries: [String: InvestorInvestmentStatementSummary] = [:]
-    /// Server-calculated Return-% pro Investment-ID (Single Source of Truth).
-    @Published var tradeLedReturnPercentages: [String: Double] = [:]
+
+    /// Server-canonical summary pro Investment-ID (ROI2 aus
+    /// `investorCollectionBill.metadata.returnPercentage`). Task 5a: View prefers
+    /// this value; `investmentSummaries` is the fallback when the backend data
+    /// is not (yet) available. See Documentation/RETURN_CALCULATION_SCHEMAS.md.
+    @Published var canonicalSummaries: [String: ServerInvestmentCanonicalSummary] = [:]
 
     init(userService: any UserServiceProtocol,
          investmentService: any InvestmentServiceProtocol,
@@ -59,6 +66,7 @@ final class CompletedInvestmentsViewModel: ObservableObject {
         self.configurationService = configurationService
         self.commissionCalculationService = commissionCalculationService
         self.settlementAPIService = settlementAPIService
+        self.tradeAPIService = nil
         self.boundInvestorId = userService.currentUser?.id
         self.currentRole = userService.currentUser?.role
         setupBindings()
@@ -157,6 +165,7 @@ final class CompletedInvestmentsViewModel: ObservableObject {
         self.configurationService = services.configurationService
         self.commissionCalculationService = services.commissionCalculationService
         self.settlementAPIService = services.settlementAPIService
+        self.tradeAPIService = services.parseAPIClient.map { TradeAPIService(apiClient: $0) }
         self.boundInvestorId = services.userService.currentUser?.id
         refreshInvestmentDocRefs()
         refreshDisplayData()
@@ -207,51 +216,81 @@ final class CompletedInvestmentsViewModel: ObservableObject {
 
     /// Trader-Usernames, Trade-Nummern und Statement-Summaries aus Services (MVVM: keine Logik in der View).
     private func refreshDisplayData() {
-        var usernames: [String: String] = [:]
-        var tradeNums: [String: String] = [:]
-        var summaries: [String: InvestorInvestmentStatementSummary] = [:]
-        let commissionRate = configurationService.effectiveCommissionRate
-        let calculationService = InvestorCollectionBillCalculationService()
-
-        for inv in investments {
-            usernames[inv.id] = traderDataService.getTrader(by: inv.traderId)?.username ?? "---"
-            let participations = poolTradeParticipationService.getParticipations(forInvestmentId: inv.id)
-
-            if let first = participations.first,
-               let trade = tradeLifecycleService.completedTrades.first(where: { $0.id == first.tradeId }) {
-                tradeNums[inv.id] = String(format: "%03d", trade.tradeNumber)
-            } else {
-                tradeNums[inv.id] = "---"
-            }
-            if let summary = InvestorInvestmentStatementAggregator.summarizeInvestment(
-                investmentId: inv.id,
-                poolTradeParticipationService: poolTradeParticipationService,
-                tradeLifecycleService: tradeLifecycleService,
-                invoiceService: invoiceService,
-                investmentService: investmentService,
-                calculationService: calculationService,
-                commissionCalculationService: commissionCalculationService,
-                commissionRate: commissionRate
-            ) {
-                summaries[inv.id] = summary
-            }
-        }
-        traderUsernames = usernames
-        tradeNumbers = tradeNums
-        investmentSummaries = summaries
-        tradeLedReturnPercentages = [:]
-
-        Task {
-            var serverReturns: [String: Double] = [:]
-            for investment in investments {
-                if let value = await ServerCalculatedReturnResolver.resolveReturnPercentage(
-                    investmentId: investment.id,
-                    settlementAPIService: settlementAPIService
-                ) {
-                    serverReturns[investment.id] = value
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            var tradeIds: Set<String> = []
+            for inv in investments {
+                for p in poolTradeParticipationService.getParticipations(forInvestmentId: inv.id) {
+                    tradeIds.insert(p.tradeId)
                 }
             }
-            tradeLedReturnPercentages = serverReturns
+            let tradesById = await InvestorInvestmentStatementAggregator.resolveTradesForPoolParticipations(
+                investedTradeIds: tradeIds,
+                localTrades: tradeLifecycleService.completedTrades,
+                tradeAPIService: tradeAPIService
+            )
+            var usernames: [String: String] = [:]
+            var tradeNums: [String: String] = [:]
+            var summaries: [String: InvestorInvestmentStatementSummary] = [:]
+            let commissionRate = configurationService.effectiveCommissionRate
+            let calculationService = InvestorCollectionBillCalculationService()
+
+            for inv in investments {
+                usernames[inv.id] = traderDataService.getTrader(by: inv.traderId)?.username ?? "---"
+                let participations = poolTradeParticipationService.getParticipations(forInvestmentId: inv.id)
+
+                if let first = participations.first,
+                   let trade = tradesById[first.tradeId] {
+                    tradeNums[inv.id] = String(format: "%03d", trade.tradeNumber)
+                } else {
+                    tradeNums[inv.id] = "---"
+                }
+                if let summary = InvestorInvestmentStatementAggregator.summarizeInvestment(
+                    investmentId: inv.id,
+                    poolTradeParticipationService: poolTradeParticipationService,
+                    tradeLifecycleService: tradeLifecycleService,
+                    invoiceService: invoiceService,
+                    investmentService: investmentService,
+                    calculationService: calculationService,
+                    commissionCalculationService: commissionCalculationService,
+                    additionalTradesById: tradesById,
+                    commissionRate: commissionRate
+                ) {
+                    summaries[inv.id] = summary
+                }
+            }
+            traderUsernames = usernames
+            tradeNumbers = tradeNums
+            investmentSummaries = summaries
+
+            refreshCanonicalSummaries(for: investments)
+        }
+    }
+
+    /// Lädt die server-kanonischen Summaries (ROI2) async und schreibt sie in
+    /// `canonicalSummaries`. Fallbacks (fehlende Bills / Netzwerkfehler) bleiben
+    /// einfach unbelegt → die View nutzt dann `investmentSummaries` als Fallback.
+    private func refreshCanonicalSummaries(for investments: [Investment]) {
+        let service = settlementAPIService
+        guard service != nil else { return }
+        let relevantIds = investments
+            .filter { $0.status == .completed || $0.reservationStatus == .completed }
+            .map { $0.id }
+        guard !relevantIds.isEmpty else { return }
+
+        Task { [weak self] in
+            var result: [String: ServerInvestmentCanonicalSummary] = [:]
+            for id in relevantIds {
+                if let summary = await ServerCalculatedReturnResolver.resolveCanonicalSummary(
+                    investmentId: id,
+                    settlementAPIService: service
+                ) {
+                    result[id] = summary
+                }
+            }
+            await MainActor.run { [weak self] in
+                self?.canonicalSummaries = result
+            }
         }
     }
 

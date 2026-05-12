@@ -3,6 +3,7 @@ import Combine
 
 // MARK: - Parse Live Query Client Protocol
 /// Protocol for subscribing to real-time updates from Parse Server
+@MainActor
 protocol ParseLiveQueryClientProtocol {
     /// Subscribes to changes in a Parse class
     func subscribe<T: Decodable>(
@@ -34,6 +35,7 @@ struct LiveQuerySubscription: Identifiable {
 // MARK: - Parse Live Query Client Implementation
 /// WebSocket-based client for Parse Server Live Query
 /// Provides real-time updates for subscribed Parse classes
+@MainActor
 final class ParseLiveQueryClient: ParseLiveQueryClientProtocol {
     
     // MARK: - Properties
@@ -200,19 +202,20 @@ final class ParseLiveQueryClient: ParseLiveQueryClientProtocol {
     
     private func receiveMessages() {
         webSocketTask?.receive { [weak self] result in
-            guard let self = self else { return }
-            
-            switch result {
-            case .success(let message):
-                self.handleMessage(message)
-                // Continue receiving
-                self.receiveMessages()
-            case .failure(let error):
-                print("⚠️ Live Query WebSocket error: \(error.localizedDescription)")
-                // Attempt to reconnect after delay
-                Task {
-                    try? await Task.sleep(nanoseconds: 5_000_000_000) // 5 seconds
-                    try? await self.connect()
+            guard let self else { return }
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                switch result {
+                case .success(let message):
+                    self.handleMessage(message)
+                    self.receiveMessages()
+                case .failure(let error):
+                    print("⚠️ Live Query WebSocket error: \(error.localizedDescription)")
+                    Task { @MainActor [weak self] in
+                        guard let self else { return }
+                        try? await Task.sleep(nanoseconds: 5_000_000_000) // 5 seconds
+                        try? await self.connect()
+                    }
                 }
             }
         }

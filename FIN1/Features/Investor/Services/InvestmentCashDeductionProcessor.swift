@@ -4,29 +4,37 @@ import Foundation
 
 /// Handles cash deductions for investment creation
 /// Extracted from InvestmentCreationService to reduce file size
+@MainActor
 final class InvestmentCashDeductionProcessor {
 
     private let investorCashBalanceService: (any InvestorCashBalanceServiceProtocol)?
     private let bankContraAccountService: (any BankContraAccountPostingServiceProtocol)?
     private let invoiceService: (any InvoiceServiceProtocol)?
-    private let documentService: (any DocumentServiceProtocol)?
+    private let documentUploadBridge: UncheckedDocumentServiceBridge?
     private let transactionIdService: any TransactionIdServiceProtocol
     private let configurationService: any ConfigurationServiceProtocol
+    /// ADR-007 Phase-2 dependency. When
+    /// `configurationService.serviceChargeInvoiceFromBackend` is `true`, the
+    /// processor routes Invoice creation through `bookAppServiceCharge`
+    /// instead of writing the `Invoice` locally via `invoiceService`.
+    private let investmentAPIService: (any InvestmentAPIServiceProtocol)?
 
     init(
         investorCashBalanceService: (any InvestorCashBalanceServiceProtocol)?,
         bankContraAccountService: (any BankContraAccountPostingServiceProtocol)?,
         invoiceService: (any InvoiceServiceProtocol)?,
-        documentService: (any DocumentServiceProtocol)?,
+        documentUploadBridge: UncheckedDocumentServiceBridge?,
         transactionIdService: any TransactionIdServiceProtocol,
-        configurationService: any ConfigurationServiceProtocol
+        configurationService: any ConfigurationServiceProtocol,
+        investmentAPIService: (any InvestmentAPIServiceProtocol)? = nil
     ) {
         self.investorCashBalanceService = investorCashBalanceService
         self.bankContraAccountService = bankContraAccountService
         self.invoiceService = invoiceService
-        self.documentService = documentService
+        self.documentUploadBridge = documentUploadBridge
         self.transactionIdService = transactionIdService
         self.configurationService = configurationService
+        self.investmentAPIService = investmentAPIService
     }
 
     // MARK: - Public Methods
@@ -57,9 +65,14 @@ final class InvestmentCashDeductionProcessor {
         }
 
         // Calculate VAT breakdown
+        let isCompany = investor.accountType == .company
         let vatRate = CalculationConstants.TaxRates.vatRate
-        let netServiceCharge = batch.appServiceCharge / (1.0 + vatRate)
-        let vatAmount = batch.appServiceCharge - netServiceCharge
+        let netServiceCharge = isCompany
+            ? batch.appServiceCharge
+            : (batch.appServiceCharge / (1.0 + vatRate))
+        let vatAmount = isCompany
+            ? 0
+            : (batch.appServiceCharge - netServiceCharge)
 
         // Build service charge metadata
         let serviceChargeMetadata = buildServiceChargeMetadata(
@@ -122,7 +135,7 @@ final class InvestmentCashDeductionProcessor {
         }
 
         // Platform ledger (AppLedgerEntry + BankContraPosting) for service charge is
-        // recorded server-side in triggers/invoice.js when the Invoice is saved.
+        // recorded server-side in triggers/invoice/ when the Invoice is saved.
 
         return metadata
     }
@@ -146,6 +159,11 @@ final class InvestmentCashDeductionProcessor {
         let investmentIds = investments.map { $0.id }
         let investmentAmounts = investments.map { $0.amount }
 
+        // A local `Invoice` value is always built: it backs the display
+        // `Document` (PDF) shown in "Documents & Invoices" regardless of
+        // where the ledger-side Parse `Invoice` is written. Only the
+        // write-path differs between the legacy client path and the
+        // ADR-007 Phase-2 server path.
         let invoice = Invoice.forServiceCharge(
             grossServiceChargeAmount: serviceChargeAmount,
             customerInfo: customerInfo,
@@ -153,16 +171,81 @@ final class InvestmentCashDeductionProcessor {
             batchId: batchId,
             investmentIds: investmentIds,
             investmentAmounts: investmentAmounts,
-            serviceChargeRate: configurationService.effectiveAppServiceChargeRate
+            serviceChargeRate: configurationService.effectiveAppServiceChargeRate(
+                for: investor.accountType.rawValue
+            ),
+            includeVAT: investor.accountType != .company
         )
 
-        await invoiceService.addInvoice(invoice)
+        var shouldCreateInvoiceDocument = true
+        if configurationService.serviceChargeInvoiceFromBackend,
+           let apiService = investmentAPIService,
+           let representativeInvestmentId = investments.first?.id,
+           canAttemptServerServiceChargeBooking(with: representativeInvestmentId) {
+            // ADR-007 Phase 2: route Invoice creation through the backend
+            // Cloud function. The server-side function is idempotent
+            // (`batchId + invoiceType`) and the `afterSave Invoice` trigger
+            // books BankContra + AppLedger entries — exactly one Invoice
+            // per batch, no double-posting risk. The display `Document`
+            // below is still created locally so the PDF stays available.
+            do {
+                let invoiceId = try await apiService.bookAppServiceCharge(
+                    // Use batchId as canonical business key; backend resolves both
+                    // Parse objectId and batchId for backward compatibility.
+                    investmentId: batchId.isEmpty ? representativeInvestmentId : batchId
+                )
+                print("📄 InvestmentCashDeductionProcessor: Service Charge Invoice booked server-side")
+                print("   🆔 Server invoice id: \(invoiceId)")
+                print("   💰 Gross: €\(serviceChargeAmount.formatted(.currency(code: "EUR")))")
+            } catch {
+                if isDuplicateServiceChargeInvoiceError(error) {
+                    print("ℹ️ InvestmentCashDeductionProcessor: Service charge invoice already exists server-side — skipping client fallback")
+                } else {
+                if configurationService.serviceChargeLegacyClientFallbackEnabled {
+                    // Fail-safe: on transient technical error, use legacy fallback path.
+                    print("⚠️ InvestmentCashDeductionProcessor: bookAppServiceCharge failed, falling back to client path — \(error.localizedDescription)")
+                    await invoiceService.addInvoice(invoice)
+                } else {
+                    // Stability guard: fallback is disabled by admin configuration.
+                    print("❌ InvestmentCashDeductionProcessor: bookAppServiceCharge failed and legacy fallback is disabled — \(error.localizedDescription)")
+                    shouldCreateInvoiceDocument = false
+                }
+                }
+            }
+        } else {
+            // Legacy client path: persist the Invoice directly via Parse.
+            await invoiceService.addInvoice(invoice)
+            print("📄 InvestmentCashDeductionProcessor: Service Charge Invoice Created (client path)")
+            print("   📋 Invoice Number: \(invoice.invoiceNumber)")
+            print("   💰 Gross: €\(serviceChargeAmount.formatted(.currency(code: "EUR")))")
+            if configurationService.serviceChargeInvoiceFromBackend {
+                print("ℹ️ InvestmentCashDeductionProcessor: Skipping server-side bookAppServiceCharge for local-only investment id; using client path")
+            }
+        }
 
-        print("📄 InvestmentCashDeductionProcessor: Service Charge Invoice Created")
-        print("   📋 Invoice Number: \(invoice.invoiceNumber)")
-        print("   💰 Gross: €\(serviceChargeAmount.formatted(.currency(code: "EUR")))")
+        if shouldCreateInvoiceDocument {
+            await createServiceChargeInvoiceDocument(invoice: invoice, investor: investor, batchId: batchId)
+        }
+    }
 
-        await createServiceChargeInvoiceDocument(invoice: invoice, investor: investor, batchId: batchId)
+    /// A duplicate invoice on `(invoiceType, batchId)` means the server path
+    /// already persisted the canonical row. Running the client fallback would
+    /// just trigger an avoidable second write attempt.
+    private func isDuplicateServiceChargeInvoiceError(_ error: Error) -> Bool {
+        func matches(_ message: String) -> Bool {
+            let normalized = message.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
+            return normalized.contains("existiert bereits")
+                || normalized.contains("already exists")
+                || normalized.contains("duplicate")
+        }
+
+        if let networkError = error as? NetworkError {
+            if case .badRequest(let message) = networkError {
+                return matches(message)
+            }
+            return false
+        }
+        return matches(error.localizedDescription)
     }
 
     private func createServiceChargeInvoiceDocument(
@@ -170,8 +253,8 @@ final class InvestmentCashDeductionProcessor {
         investor: User,
         batchId: String
     ) async {
-        guard let documentService = documentService else {
-            print("⚠️ InvestmentCashDeductionProcessor: documentService is nil")
+        guard let documentUploadBridge = documentUploadBridge else {
+            print("⚠️ InvestmentCashDeductionProcessor: documentUploadBridge is nil")
             return
         }
 
@@ -191,10 +274,20 @@ final class InvestmentCashDeductionProcessor {
         )
 
         do {
-            try await documentService.uploadDocument(document)
+            try await documentUploadBridge.uploadDocument(document)
             print("📄 InvestmentCashDeductionProcessor: Invoice document added to notifications")
         } catch {
             print("❌ InvestmentCashDeductionProcessor: Failed to add invoice document: \(error)")
         }
+    }
+
+    /// Parse objectIds are short alphanumeric strings; local UUIDs indicate
+    /// a legacy/local-only investment row and would cause predictable 404 on
+    /// `bookAppServiceCharge`. Skip that call to keep logs/monitoring clean.
+    private func canAttemptServerServiceChargeBooking(with investmentId: String) -> Bool {
+        let trimmed = investmentId.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty { return false }
+        let isUuidLike = trimmed.count == 36 && trimmed.contains("-")
+        return !isUuidLike
     }
 }

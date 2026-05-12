@@ -89,7 +89,13 @@ final class InvoiceDisplayViewModel: ObservableObject {
     private func formatItemDescription(_ item: InvoiceItem) -> String {
         switch item.itemType {
         case .securities:
-            return formatSecuritiesDescription(item)
+            // Service-charge invoices have no securities row; skip the WKN/strike
+            // parser so we don't render "Unknown - Unknown - Unknown - Unknown" for
+            // generic invoices that never had a securities item.
+            if invoice.items.contains(where: { $0.itemType == .securities }) {
+                return formatSecuritiesDescription(item)
+            }
+            return item.description
         case .orderFee, .exchangeFee, .foreignCosts, .serviceCharge, .commission, .vat, .tax, .other:
             return item.description
         }
@@ -146,8 +152,14 @@ final class InvoiceDisplayViewModel: ObservableObject {
     }
 
     private func createTotalsDisplayData() -> InvoiceTotalsDisplayData {
-        let subtotal = invoice.items.reduce(0) { $0 + $1.totalAmount }
-        let tax = invoice.items.filter { $0.itemType == .tax }.reduce(0) { $0 + $1.totalAmount }
+        // Subtotal = sum of NET line items (services, fees, securities, ...) excluding
+        // separate tax/VAT line items so "Zwischensumme + Steuer = Gesamt" stimmt
+        // (sonst würde `.vat`/`.tax` doppelt zählen — siehe service_charge Belege).
+        let netItems = invoice.items.filter { $0.itemType != .vat && $0.itemType != .tax }
+        let taxItems = invoice.items.filter { $0.itemType == .vat || $0.itemType == .tax }
+
+        let subtotal = netItems.reduce(0) { $0 + $1.totalAmount }
+        let tax = taxItems.reduce(0) { $0 + $1.totalAmount }
         let total = subtotal + tax
 
         return InvoiceTotalsDisplayData(

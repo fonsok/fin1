@@ -6,6 +6,7 @@ import Foundation
 /// SINGLE SOURCE OF TRUTH: First tries to read from existing Credit Note invoice (if trade completed)
 /// Includes retry mechanism for race condition when credit note is added asynchronously
 /// Falls back to calculation if no credit note exists yet (for active trades)
+@MainActor
 final class TradesOverviewCommissionCalculator {
     private let invoiceService: (any InvoiceServiceProtocol)?
     private let tradeService: (any TradeLifecycleServiceProtocol)?
@@ -33,6 +34,7 @@ final class TradesOverviewCommissionCalculator {
     ///   - hasProfit: Whether the trade has positive profit (used for guard check)
     /// - Returns: Commission amount (0 if no investors, no profit, or service unavailable)
     func calculateCommission(tradeId: String, hasProfit: Bool) async -> Double {
+        NSLog("🧮 TradesOverviewCalc[trade=\(tradeId)] calculateCommission hasProfit=\(hasProfit)")
         guard hasProfit else {
             return 0.0 // No commission on losses or zero profit
         }
@@ -40,8 +42,35 @@ final class TradesOverviewCommissionCalculator {
         // SINGLE SOURCE OF TRUTH: Try to read commission from existing Credit Note invoice first
         // This matches what Account Statement shows (reads from invoice)
         if let commissionFromInvoice = getCommissionFromCreditNoteInvoice(tradeId: tradeId) {
-            print("✅ TradesOverviewCommissionCalculator: Using commission from Credit Note invoice: €\(String(format: "%.2f", commissionFromInvoice))")
+            NSLog("🧮 TradesOverviewCalc[trade=\(tradeId)] from invoice = €\(commissionFromInvoice)")
             return commissionFromInvoice
+        }
+
+        // BACKEND-AUTHORITATIVE: ask the Settlement API for the trader's
+        // `commission_credit` posting on this trade. The local
+        // PoolTradeParticipation cache is unreliable on the trader side
+        // (participations are owned by investors and may not be replicated
+        // into the trader's local view), so we must NOT gate this call on a
+        // local participation check. The CommissionCalculationService falls
+        // back to `commission_debit` and the local `investorGrossProfitService`
+        // when needed.
+        if let commissionCalculationService = commissionCalculationService,
+           let configurationService = configurationService {
+            let commissionRate = configurationService.effectiveCommissionRate
+            do {
+                let totalCommission = try await commissionCalculationService.calculateTotalCommissionForTrade(
+                    tradeId: tradeId,
+                    commissionRate: commissionRate
+                )
+                NSLog("🧮 TradesOverviewCalc[trade=\(tradeId)] backend returned €\(totalCommission)")
+                if totalCommission > 0 {
+                    return totalCommission
+                }
+            } catch {
+                NSLog("🧮 TradesOverviewCalc[trade=\(tradeId)] backend lookup failed: \(error)")
+            }
+        } else {
+            NSLog("🧮 TradesOverviewCalc[trade=\(tradeId)] services missing (commCalcSvc=\(commissionCalculationService != nil), configSvc=\(configurationService != nil))")
         }
 
         // RACE CONDITION FIX: Credit note might be added asynchronously after trade completion
@@ -49,51 +78,29 @@ final class TradesOverviewCommissionCalculator {
         // This handles cases where trades complete out of order
         if let trade = tradeService?.completedTrades.first(where: { $0.id == tradeId }),
            trade.isCompleted {
-            // Wait a bit for credit note to be added (it's added asynchronously)
             try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
-
-            // Retry reading from invoice
             if let commissionFromInvoice = getCommissionFromCreditNoteInvoice(tradeId: tradeId) {
                 print("✅ TradesOverviewCommissionCalculator: Using commission from Credit Note invoice (after retry): €\(String(format: "%.2f", commissionFromInvoice))")
                 return commissionFromInvoice
             }
+            // Retry backend call too — settlement happens asynchronously after the
+            // sell-save returns from `upsertTrade`.
+            if let commissionCalculationService = commissionCalculationService,
+               let configurationService = configurationService {
+                let commissionRate = configurationService.effectiveCommissionRate
+                if let total = try? await commissionCalculationService.calculateTotalCommissionForTrade(
+                    tradeId: tradeId,
+                    commissionRate: commissionRate
+                ), total > 0 {
+                    print("✅ TradesOverviewCommissionCalculator: Backend commission (after retry) for trade \(tradeId): €\(String(format: "%.2f", total))")
+                    return total
+                }
+            }
         }
 
-        // Fallback: Calculate commission if no credit note exists yet (e.g., active trade)
-        // Check if there are investors participating in this trade
-        guard let poolTradeParticipationService = poolTradeParticipationService else {
-            return 0.0
-        }
-
-        let participations = poolTradeParticipationService.getParticipations(forTradeId: tradeId)
-
-        guard !participations.isEmpty else {
-            // No investors = no commission (trader keeps full profit)
-            return 0.0
-        }
-
-        // Use centralized commission calculation service if available
-        guard let commissionCalculationService = commissionCalculationService else {
-            print("⚠️ TradesOverviewCommissionCalculator: CommissionCalculationService unavailable - returning 0")
-            return 0.0
-        }
-
-        guard let configurationService else {
-            return 0.0
-        }
-        let commissionRate = configurationService.effectiveCommissionRate
-
-        do {
-            let totalCommission = try await commissionCalculationService.calculateTotalCommissionForTrade(
-                tradeId: tradeId,
-                commissionRate: commissionRate
-            )
-            print("✅ TradesOverviewCommissionCalculator: Calculated commission: €\(String(format: "%.2f", totalCommission))")
-            return totalCommission
-        } catch {
-            print("⚠️ TradesOverviewCommissionCalculator: Failed to calculate total commission for trade \(tradeId): \(error)")
-            return 0.0
-        }
+        // No commission available (e.g. trader keeps full profit because no
+        // investor pool participated, or settlement has not run yet).
+        return 0.0
     }
 
     /// Gets commission amount from existing Credit Note invoice (SINGLE SOURCE OF TRUTH)

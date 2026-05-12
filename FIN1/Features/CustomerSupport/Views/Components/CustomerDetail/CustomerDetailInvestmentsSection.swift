@@ -45,7 +45,7 @@ struct CustomerDetailInvestmentsSection: View {
                 }
             }
 
-            let ongoingInvestments = viewModel.filteredInvestmentsByTimePeriod.filter { investment in
+            let openInvestments = viewModel.filteredInvestmentsByTimePeriod.filter { investment in
                 investment.status.lowercased() == "active" || investment.status.lowercased() == "submitted"
             }
             let completedInvestments = viewModel.filteredInvestmentsByTimePeriod.filter { investment in
@@ -58,7 +58,7 @@ struct CustomerDetailInvestmentsSection: View {
                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
                     .padding()
             } else {
-                if !ongoingInvestments.isEmpty {
+                if !openInvestments.isEmpty {
                     Text("Laufende Investments")
                         .font(ResponsiveDesign.captionFont())
                         .fontWeight(.medium)
@@ -66,7 +66,7 @@ struct CustomerDetailInvestmentsSection: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.top, ResponsiveDesign.spacing(4))
 
-                    ForEach(ongoingInvestments) { investment in
+                    ForEach(openInvestments) { investment in
                         InvestmentSummaryCard(investment: investment) {
                             onSelectInvestment(investment)
                         }
@@ -74,7 +74,7 @@ struct CustomerDetailInvestmentsSection: View {
                 }
 
                 if !completedInvestments.isEmpty {
-                    if !ongoingInvestments.isEmpty {
+                    if !openInvestments.isEmpty {
                         Divider()
                             .padding(.vertical, ResponsiveDesign.spacing(8))
                     }
@@ -92,7 +92,7 @@ struct CustomerDetailInvestmentsSection: View {
                     }
                 }
 
-                if ongoingInvestments.isEmpty && completedInvestments.isEmpty && !viewModel.filteredInvestmentsByTimePeriod.isEmpty {
+                if openInvestments.isEmpty && completedInvestments.isEmpty && !viewModel.filteredInvestmentsByTimePeriod.isEmpty {
                     Text("Keine Investments im ausgewählten Zeitraum")
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(AppTheme.fontColor.opacity(0.7))

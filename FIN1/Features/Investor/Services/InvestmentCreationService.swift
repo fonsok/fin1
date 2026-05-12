@@ -2,44 +2,49 @@ import Foundation
 
 // MARK: - Investment Creation Service Implementation
 /// Handles investment creation operations
+@MainActor
 final class InvestmentCreationService: InvestmentCreationServiceProtocol {
 
     private let investorCashBalanceService: (any InvestorCashBalanceServiceProtocol)?
-    private let investmentManagementService: (any InvestmentManagementServiceProtocol)?
-    private let investmentDocumentService: (any InvestmentDocumentServiceProtocol)?
-    private let documentService: (any DocumentServiceProtocol)?
+    private let investmentPoolLifecycleService: (any InvestmentPoolLifecycleServiceProtocol)?
+    private let investmentDocumentBridge: UncheckedInvestmentDocumentServiceBridge?
+    private let documentUploadBridge: UncheckedDocumentServiceBridge?
     private let invoiceService: (any InvoiceServiceProtocol)?
     private let bankContraAccountService: (any BankContraAccountPostingServiceProtocol)?
     private let transactionIdService: any TransactionIdServiceProtocol
     private let configurationService: any ConfigurationServiceProtocol
+    private let investmentAPIService: (any InvestmentAPIServiceProtocol)?
     private let cashDeductionProcessor: InvestmentCashDeductionProcessor
 
     init(
         investorCashBalanceService: (any InvestorCashBalanceServiceProtocol)? = nil,
-        investmentManagementService: (any InvestmentManagementServiceProtocol)? = nil,
+        investmentPoolLifecycleService: (any InvestmentPoolLifecycleServiceProtocol)? = nil,
         investmentDocumentService: (any InvestmentDocumentServiceProtocol)? = nil,
         documentService: (any DocumentServiceProtocol)? = nil,
         invoiceService: (any InvoiceServiceProtocol)? = nil,
         bankContraAccountService: (any BankContraAccountPostingServiceProtocol)? = nil,
         transactionIdService: any TransactionIdServiceProtocol = TransactionIdService(),
-        configurationService: any ConfigurationServiceProtocol
+        configurationService: any ConfigurationServiceProtocol,
+        investmentAPIService: (any InvestmentAPIServiceProtocol)? = nil
     ) {
         self.investorCashBalanceService = investorCashBalanceService
-        self.investmentManagementService = investmentManagementService
-        self.investmentDocumentService = investmentDocumentService
-        self.documentService = documentService
+        self.investmentPoolLifecycleService = investmentPoolLifecycleService
+        self.investmentDocumentBridge = investmentDocumentService.map { UncheckedInvestmentDocumentServiceBridge($0) }
+        self.documentUploadBridge = documentService.map { UncheckedDocumentServiceBridge(documentService: $0) }
         self.invoiceService = invoiceService
         self.bankContraAccountService = bankContraAccountService
         self.transactionIdService = transactionIdService
         self.configurationService = configurationService
+        self.investmentAPIService = investmentAPIService
 
         self.cashDeductionProcessor = InvestmentCashDeductionProcessor(
             investorCashBalanceService: investorCashBalanceService,
             bankContraAccountService: bankContraAccountService,
             invoiceService: invoiceService,
-            documentService: documentService,
+            documentUploadBridge: documentService.map { UncheckedDocumentServiceBridge(documentService: $0) },
             transactionIdService: transactionIdService,
-            configurationService: configurationService
+            configurationService: configurationService,
+            investmentAPIService: investmentAPIService
         )
     }
 
@@ -52,8 +57,9 @@ final class InvestmentCreationService: InvestmentCreationServiceProtocol {
         numberOfInvestments: Int,
         specialization: String,
         potSelection: InvestmentSelectionStrategy,
-        repository: any InvestmentRepositoryProtocol
-    ) async throws {
+        repository: any InvestmentRepositoryProtocol,
+        deferCashDeductions: Bool
+    ) async throws -> (InvestmentBatch, [Investment], [String]) {
         // Step 1: Validate input
         try validateInvestmentInput(
             amountPerInvestment: amountPerInvestment,
@@ -84,19 +90,35 @@ final class InvestmentCreationService: InvestmentCreationServiceProtocol {
             repository: repository
         )
 
-        // Step 4: Process cash deductions (investment amounts + app service charge)
-        await cashDeductionProcessor.processCashDeductions(
-            investor: investor,
-            batch: batch,
-            investments: investments
-        )
+        // Step 4: Lokale Kontoauszugs-Buchungen — bei Backend-Sync erst nach erfolgreichem Parse-Save (siehe InvestmentService).
+        if !deferCashDeductions {
+            await cashDeductionProcessor.processCashDeductions(
+                investor: investor,
+                batch: batch,
+                investments: investments
+            )
+        }
 
         // Step 5: Create investment pools and generate document
-        await finalizeInvestmentCreation(
+        let createdPoolIds = await finalizeInvestmentCreation(
             batch: batch,
             investments: investments,
             trader: trader,
             repository: repository
+        )
+
+        return (batch, investments, createdPoolIds)
+    }
+
+    func applyCashDeductionsAfterBackendSync(
+        investor: User,
+        batch: InvestmentBatch,
+        investments: [Investment]
+    ) async {
+        await cashDeductionProcessor.processCashDeductions(
+            investor: investor,
+            batch: batch,
+            investments: investments
         )
     }
 
@@ -122,11 +144,15 @@ final class InvestmentCreationService: InvestmentCreationServiceProtocol {
         }
 
         // Validate the investment using existing validation
+        let minSlot = configurationService.minimumInvestmentAmount
+        let maxSlot = configurationService.maximumInvestmentAmount
         if let error = Investment.validateInvestment(
             investor: investor,
             trader: trader,
             amountPerInvestment: amountPerInvestment,
-            numberOfInvestments: numberOfInvestments
+            numberOfInvestments: numberOfInvestments,
+            minimumInvestmentPerSlot: minSlot,
+            maximumInvestmentPerSlot: maxSlot
         ) {
             // Convert InvestmentValidationError to AppError
             switch error {
@@ -137,7 +163,13 @@ final class InvestmentCreationService: InvestmentCreationServiceProtocol {
             case .invalidNumberOfInvestments:
                 throw AppError.validationError("Invalid number of investments")
             case .minimumAmountNotMet:
-                throw AppError.validationError("Minimum investment amount not met")
+                throw AppError.validationError(
+                    "Minimum investment amount not met (min. \(minSlot.formattedAsLocalizedCurrency()) per slot)"
+                )
+            case .maximumAmountExceeded:
+                throw AppError.validationError(
+                    "Maximum investment amount exceeded (max. \(maxSlot.formattedAsLocalizedCurrency()) per slot)"
+                )
             case .investmentNotAvailable:
                 throw AppError.serviceError(.dataNotFound)
             case .insufficientFunds:
@@ -149,7 +181,10 @@ final class InvestmentCreationService: InvestmentCreationServiceProtocol {
         // Note: App service charge applies ONLY to investors (not traders)
         if let investorCashBalanceService = investorCashBalanceService {
             let totalInvestmentAmount = amountPerInvestment * Double(numberOfInvestments)
-            let appServiceCharge = totalInvestmentAmount * configurationService.effectiveAppServiceChargeRate
+            let chargeRate = configurationService.effectiveAppServiceChargeRate(
+                for: investor.accountType.rawValue
+            )
+            let appServiceCharge = totalInvestmentAmount * chargeRate
             let totalRequired = totalInvestmentAmount + appServiceCharge
             if !investorCashBalanceService.hasSufficientFunds(investorId: investor.id, for: totalRequired) {
                 throw AppError.validationError("Insufficient funds (including app service charge)")
@@ -180,7 +215,10 @@ final class InvestmentCreationService: InvestmentCreationServiceProtocol {
 
         // Calculate batch totals
         let totalAmount = amountPerInvestment * Double(numberOfInvestments)
-        let appServiceCharge = totalAmount * configurationService.effectiveAppServiceChargeRate
+        let chargeRate = configurationService.effectiveAppServiceChargeRate(
+            for: investor.accountType.rawValue
+        )
+        let appServiceCharge = totalAmount * chargeRate
         // Use numberOfInvestments directly
 
         // Create the batch
@@ -232,7 +270,9 @@ final class InvestmentCreationService: InvestmentCreationServiceProtocol {
             batchId: batch.id,
             amountPerInvestment: amountPerInvestment,
             numberOfInvestments: numberOfInvestments,
-            specialization: specialization
+            specialization: specialization,
+            minimumInvestmentPerSlot: configurationService.minimumInvestmentAmount,
+            maximumInvestmentPerSlot: configurationService.maximumInvestmentAmount
         )
 
         // Add all investments to repository
@@ -257,22 +297,23 @@ final class InvestmentCreationService: InvestmentCreationServiceProtocol {
         investments: [Investment],
         trader: MockTrader,
         repository: any InvestmentRepositoryProtocol
-    ) async {
+    ) async -> [String] {
         // Create investment pools (one per investment)
-        createInvestmentPools(
+        let createdPoolIds = createInvestmentPools(
             investments: investments,
             trader: trader,
             repository: repository
         )
 
         // Generate investment document for the batch
-        if let investmentDocumentService = investmentDocumentService {
+        if let investmentDocumentBridge = investmentDocumentBridge {
             // Generate document for the batch (representing all investments)
-            await investmentDocumentService.generateInvestmentDocument(for: batch, investments: investments)
+            await investmentDocumentBridge.generateInvestmentDocument(for: batch, investments: investments)
         } else {
             // Fallback to direct call if service not available
             await generateInvestmentDocument(for: batch, investments: investments)
         }
+        return createdPoolIds
     }
 
     /// Creates investment pools (one per investment)
@@ -281,10 +322,10 @@ final class InvestmentCreationService: InvestmentCreationServiceProtocol {
         investments: [Investment],
         trader: MockTrader,
         repository: any InvestmentRepositoryProtocol
-    ) {
-        guard let investmentManagementService = investmentManagementService else {
-            print("⚠️ InvestmentCreationService: investmentManagementService is nil - cannot create pools")
-            return
+    ) -> [String] {
+        guard let investmentPoolLifecycleService = investmentPoolLifecycleService else {
+            print("⚠️ InvestmentCreationService: investmentPoolLifecycleService is nil - cannot create pools")
+            return []
         }
 
         // Get existing pools for this trader to calculate next investment number
@@ -298,13 +339,15 @@ final class InvestmentCreationService: InvestmentCreationServiceProtocol {
         print("   🔢 Max investment number: \(maxInvestmentNumber), starting from: \(nextInvestmentNumber)")
 
         // Create one pool per investment with sequential investment numbers per trader
+        var createdPoolIds: [String] = []
         for investment in investments {
-            let newPool = investmentManagementService.createNewInvestmentPool(
+            let newPool = investmentPoolLifecycleService.createNewInvestmentPool(
                 for: trader.id.uuidString,
                 sequenceNumber: nextInvestmentNumber,
                 amountPerInvestment: investment.amount
             )
             repository.investmentPools.append(newPool)
+            createdPoolIds.append(newPool.id)
             print("✅ InvestmentCreationService: Created pool for investment \(investment.id), investmentNumber=\(nextInvestmentNumber) (trader-specific)")
 
             // Note: The investment's poolNumber (1, 2, 3...) is for batch display only.
@@ -313,6 +356,7 @@ final class InvestmentCreationService: InvestmentCreationServiceProtocol {
 
             nextInvestmentNumber += 1
         }
+        return createdPoolIds
     }
 
     /// Generates investment document and notification (fallback implementation)
@@ -336,9 +380,9 @@ final class InvestmentCreationService: InvestmentCreationServiceProtocol {
         )
 
         // Add document to document service
-        if let documentService = documentService {
+        if let documentUploadBridge = documentUploadBridge {
             do {
-                try await documentService.uploadDocument(document)
+                try await documentUploadBridge.uploadDocument(document)
                 print("📄 InvestmentCreationService: Investment batch document added to notifications")
                 print("   📦 Batch ID: \(batch.id)")
                 print("   📊 Investments: \(investments.count)")
@@ -346,7 +390,7 @@ final class InvestmentCreationService: InvestmentCreationServiceProtocol {
                 print("❌ InvestmentCreationService: Failed to add Investment document: \(error)")
             }
         } else {
-            print("⚠️ InvestmentCreationService: documentService is nil - document not uploaded")
+            print("⚠️ InvestmentCreationService: documentUploadBridge is nil - document not uploaded")
         }
 
         // Send notification

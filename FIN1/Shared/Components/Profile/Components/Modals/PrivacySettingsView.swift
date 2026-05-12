@@ -79,7 +79,7 @@ struct PrivacySettingsView: View {
     private var headerSection: some View {
         VStack(spacing: ResponsiveDesign.spacing(8)) {
             Image(systemName: "hand.raised.fill")
-                .font(.system(size: ResponsiveDesign.iconSize() * 2))
+                .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2))
                 .foregroundColor(AppTheme.accentGreen)
             Text("Privacy Settings")
                 .font(ResponsiveDesign.headlineFont())

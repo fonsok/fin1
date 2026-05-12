@@ -2,6 +2,7 @@ import SwiftUI
 
 // MARK: - Reusable step UI helpers for Company KYB wizard
 
+@MainActor
 func stepHeader(title: String, subtitle: String) -> some View {
     VStack(spacing: ResponsiveDesign.spacing(4)) {
         Text(title)
@@ -17,6 +18,7 @@ func stepHeader(title: String, subtitle: String) -> some View {
     }
 }
 
+@MainActor
 func toggleRow(title: String, isOn: Binding<Bool>) -> some View {
     Toggle(isOn: isOn) {
         Text(title)

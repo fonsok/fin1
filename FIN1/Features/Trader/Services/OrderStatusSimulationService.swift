@@ -4,7 +4,7 @@ import Combine
 // MARK: - Order Status Simulation Service Implementation
 /// Handles order status progression simulation and timer management
 @MainActor
-final class OrderStatusSimulationService: OrderStatusSimulationServiceProtocol, ServiceLifecycle {
+final class OrderStatusSimulationService: OrderStatusSimulationServiceProtocol {
     static let shared = OrderStatusSimulationService()
 
     @Published var isLoading = false
@@ -15,21 +15,6 @@ final class OrderStatusSimulationService: OrderStatusSimulationServiceProtocol, 
 
     init(orderManagementService: any OrderManagementServiceProtocol = OrderManagementService.shared) {
         self.orderManagementService = orderManagementService
-    }
-
-    // MARK: - ServiceLifecycle
-    func start() {
-        // Simulation service doesn't need to load data on start
-        // It manages timers for orders
-    }
-
-    func stop() {
-        stopAllOrderStatusProgressions()
-    }
-
-    func reset() {
-        stopAllOrderStatusProgressions()
-        errorMessage = nil
     }
 
     // MARK: - Order Status Simulation
@@ -59,7 +44,7 @@ final class OrderStatusSimulationService: OrderStatusSimulationServiceProtocol, 
                     break
                 }
             }
-            await self.cleanupTask(for: orderId)
+            self.cleanupTask(for: orderId)
         }
     }
 
@@ -116,7 +101,13 @@ final class OrderStatusSimulationService: OrderStatusSimulationServiceProtocol, 
         }
 
         // Update order status through OrderManagementService
-        try? await orderManagementService.updateOrderStatus(orderId, status: nextStatus)
+        do {
+            try await orderManagementService.updateOrderStatus(orderId, status: nextStatus)
+        } catch {
+            #if DEBUG
+            print("🔍 DEBUG: advanceOrderStatus — updateOrderStatus failed: \(error.localizedDescription)")
+            #endif
+        }
 
         // Get the updated order and notify the calling service
         if let updatedOrder = orderManagementService.activeOrders.first(where: { $0.id == orderId }) {

@@ -32,11 +32,12 @@ final class CommissionBreakdownViewModel: ObservableObject {
     private let investmentService: any InvestmentServiceProtocol
     private let investorGrossProfitService: any InvestorGrossProfitServiceProtocol
     private let commissionCalculationService: any CommissionCalculationServiceProtocol
+    private let settlementAPIService: (any SettlementAPIServiceProtocol)?
 
     // MARK: - Computed Properties
 
     var commissionRate: Double {
-        configurationService.traderCommissionRate
+        configurationService.effectiveCommissionRate
     }
 
     var formattedCommissionRate: String {
@@ -57,7 +58,8 @@ final class CommissionBreakdownViewModel: ObservableObject {
         configurationService: any ConfigurationServiceProtocol,
         investmentService: any InvestmentServiceProtocol,
         investorGrossProfitService: any InvestorGrossProfitServiceProtocol,
-        commissionCalculationService: any CommissionCalculationServiceProtocol
+        commissionCalculationService: any CommissionCalculationServiceProtocol,
+        settlementAPIService: (any SettlementAPIServiceProtocol)?
     ) {
         self.tradeId = tradeId
         self.poolTradeParticipationService = poolTradeParticipationService
@@ -65,6 +67,7 @@ final class CommissionBreakdownViewModel: ObservableObject {
         self.investmentService = investmentService
         self.investorGrossProfitService = investorGrossProfitService
         self.commissionCalculationService = commissionCalculationService
+        self.settlementAPIService = settlementAPIService
     }
 
     /// Convenience initializer using AppServices
@@ -75,7 +78,8 @@ final class CommissionBreakdownViewModel: ObservableObject {
             configurationService: services.configurationService,
             investmentService: services.investmentService,
             investorGrossProfitService: services.investorGrossProfitService,
-            commissionCalculationService: services.commissionCalculationService
+            commissionCalculationService: services.commissionCalculationService,
+            settlementAPIService: services.settlementAPIService
         )
     }
 
@@ -88,7 +92,7 @@ final class CommissionBreakdownViewModel: ObservableObject {
         let participations = poolTradeParticipationService.getParticipations(forTradeId: tradeId)
 
         guard !participations.isEmpty else {
-            breakdownItems = []
+            await loadBackendFallbackBreakdown()
             isLoading = false
             return
         }
@@ -148,6 +152,55 @@ final class CommissionBreakdownViewModel: ObservableObject {
         breakdownItems = items
         totalCommission = total
         isLoading = false
+    }
+
+    private func loadBackendFallbackBreakdown() async {
+        guard let settlementAPIService else {
+            breakdownItems = []
+            totalCommission = 0
+            return
+        }
+
+        do {
+            let settlement = try await settlementAPIService.fetchTradeSettlement(tradeId: tradeId)
+            let grouped = Dictionary(grouping: settlement.commissions) { $0.investmentId ?? $0.objectId }
+            let allInvestments = investmentService.investments
+            var items: [CommissionBreakdownItem] = []
+            var total: Double = 0
+
+            for (key, rows) in grouped {
+                let commission = rows.compactMap { $0.commissionAmount }.reduce(0, +)
+                guard commission > 0 else { continue }
+                let grossProfit = commissionRate > 0 ? (commission / commissionRate) : 0
+                let knownInvestment = allInvestments.first(where: { $0.id == key })
+                let investorName = knownInvestment?.investorName
+                    ?? displayNameFromInvestorId(rows.first?.investorId)
+                    ?? "Investor"
+
+                items.append(CommissionBreakdownItem(
+                    id: key,
+                    investorName: investorName,
+                    grossProfit: grossProfit,
+                    commission: commission
+                ))
+                total += commission
+            }
+
+            breakdownItems = items.sorted { $0.investorName < $1.investorName }
+            totalCommission = total
+        } catch {
+            breakdownItems = []
+            totalCommission = 0
+            errorMessage = "Investor-Aufschlüsselung konnte nicht geladen werden."
+            showError = true
+        }
+    }
+
+    private func displayNameFromInvestorId(_ investorId: String?) -> String? {
+        guard let investorId, investorId.hasPrefix("user:") else { return nil }
+        let raw = String(investorId.dropFirst("user:".count))
+        let base = raw.split(separator: "@").first.map(String.init) ?? raw
+        return base.replacingOccurrences(of: ".", with: " ")
     }
 }
 

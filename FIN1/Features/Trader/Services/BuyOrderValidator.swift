@@ -1,6 +1,7 @@
 import Foundation
 
 // MARK: - Buy Order Validator Protocol
+@MainActor
 protocol BuyOrderValidatorProtocol {
     func validateLimitPrice(_ limit: String) -> Bool
     func validateOrderPlacement(
@@ -18,6 +19,7 @@ protocol BuyOrderValidatorProtocol {
 
 // MARK: - Buy Order Validator
 /// Handles validation logic for buy orders
+@MainActor
 final class BuyOrderValidator: BuyOrderValidatorProtocol {
 
     func validateLimitPrice(_ limit: String) -> Bool {

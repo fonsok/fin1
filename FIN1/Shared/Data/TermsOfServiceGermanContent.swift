@@ -152,7 +152,8 @@ enum TermsOfServiceGermanContent {
     )
 
     static func investmentSection(commissionRate: Double) -> Section {
-        let commissionPercentage = Int(commissionRate * 100)
+        let commissionPercentage = (commissionRate * 100)
+            .formatted(.number.precision(.fractionLength(0...2)))
         return Section(
             id: "investment",
             title: "7. Investitionsbedingungen (Investor-spezifisch)",

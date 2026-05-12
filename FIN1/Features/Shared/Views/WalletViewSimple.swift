@@ -55,7 +55,7 @@ struct WalletViewSimple: View {
                             } label: {
                                 VStack(spacing: ResponsiveDesign.spacing(2)) {
                                     Image(systemName: "arrow.down.circle.fill")
-                                        .font(.system(size: ResponsiveDesign.iconSize()))
+                                        .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize()))
                                         .foregroundColor(.white)
                                     Text("Einzahlen")
                                         .font(ResponsiveDesign.captionFont())
@@ -73,7 +73,7 @@ struct WalletViewSimple: View {
                             } label: {
                                 VStack(spacing: ResponsiveDesign.spacing(2)) {
                                     Image(systemName: "arrow.up.circle.fill")
-                                        .font(.system(size: ResponsiveDesign.iconSize()))
+                                        .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize()))
                                         .foregroundColor(.white)
                                     Text("Auszahlen")
                                         .font(ResponsiveDesign.captionFont())
@@ -108,7 +108,7 @@ struct WalletViewSimple: View {
                         // Empty state
                         VStack(spacing: ResponsiveDesign.spacing(4)) {
                             Image(systemName: "tray")
-                                .font(.system(size: ResponsiveDesign.iconSize() * 2))
+                                .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2))
                                 .foregroundColor(AppTheme.secondaryText)
                             Text("Noch keine Transaktionen")
                                 .font(ResponsiveDesign.bodyFont())
@@ -122,7 +122,7 @@ struct WalletViewSimple: View {
                 .padding(.top, ResponsiveDesign.spacing(8))
             }
         }
-        .navigationTitle("Wallet")
+        .navigationTitle("Konto")
         .navigationBarTitleDisplayMode(.large)
         .onAppear {
             print("💰 WalletViewSimple: onAppear called")

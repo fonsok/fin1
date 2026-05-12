@@ -5,7 +5,7 @@ import Foundation
 /// Handles order completion logic for UnifiedOrderService
 /// Separated to reduce main service file size and improve maintainability
 @MainActor
-final class UnifiedOrderCompletionHandler {
+final class UnifiedOrderCompletionHandler: @unchecked Sendable {
     private let tradingNotificationService: any TradingNotificationServiceProtocol
     private let cashBalanceService: any CashBalanceServiceProtocol
     private let invoiceService: any InvoiceServiceProtocol

@@ -10,6 +10,7 @@ protocol FilterSyncServiceProtocol {
 // MARK: - Filter Sync Service
 
 /// Service that coordinates synchronization of all filter repositories
+@MainActor
 final class FilterSyncService: FilterSyncServiceProtocol {
     private let filterAPIService: FilterAPIServiceProtocol
     private let userService: any UserServiceProtocol
@@ -41,14 +42,11 @@ final class FilterSyncService: FilterSyncServiceProtocol {
     func syncToBackend() async {
         print("📤 Syncing all filters to backend...")
 
-        // Sync both repositories in parallel
-        await withTaskGroup(of: Void.self) { group in
-            if let securitiesRepo = securitiesFiltersRepository {
-                group.addTask { await securitiesRepo.syncToBackend() }
-            }
-            if let traderManager = traderFiltersManager {
-                group.addTask { await traderManager.syncToBackend() }
-            }
+        if let securitiesRepo = securitiesFiltersRepository {
+            await securitiesRepo.syncToBackend()
+        }
+        if let traderManager = traderFiltersManager {
+            await traderManager.syncToBackend()
         }
 
         print("✅ All filters sync completed")

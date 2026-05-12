@@ -16,9 +16,9 @@ final class TraderDepotViewModel: ObservableObject {
     private let testModeService: any TestModeServiceProtocol
     private let userService: (any UserServiceProtocol)?
     private let holdingsConversionService: HoldingsConversionServiceProtocol
-    private let parseLiveQueryClient: (any ParseLiveQueryClientProtocol)?
-    private var cancellables = Set<AnyCancellable>()
-    private var liveQuerySubscriptions: [LiveQuerySubscription] = []
+    private nonisolated(unsafe) let parseLiveQueryClient: (any ParseLiveQueryClientProtocol)?
+    private nonisolated(unsafe) var cancellables = Set<AnyCancellable>()
+    private nonisolated(unsafe) var liveQuerySubscriptions: [LiveQuerySubscription] = []
 
     // MARK: - Current Trader ID
     /// Returns the current trader's ID from the user service
@@ -53,13 +53,14 @@ final class TraderDepotViewModel: ObservableObject {
     }
 
     deinit {
-        // Unsubscribe from Live Query
-        for subscription in liveQuerySubscriptions {
-            parseLiveQueryClient?.unsubscribe(subscription)
-        }
+        let subs = liveQuerySubscriptions
+        let client = parseLiveQueryClient
         liveQuerySubscriptions.removeAll()
-        
-        // Clean up Combine subscriptions to prevent retain cycles
+        Task { @MainActor in
+            for subscription in subs {
+                client?.unsubscribe(subscription)
+            }
+        }
         cancellables.removeAll()
         print("🧹 TraderDepotViewModel deallocated")
     }

@@ -18,6 +18,7 @@ final class TradeDetailsViewModel: ObservableObject {
     @Published var showCollectionBill = false
     @Published var showBuyInvoice = false
     @Published var showSellInvoice = false
+    @Published var showCreditNote = false
     @Published var selectedSellInvoice: Invoice?
 
     // Calculation breakdown
@@ -89,6 +90,7 @@ final class TradeDetailsViewModel: ObservableObject {
     // Invoices related
     @Published var buyInvoice: Invoice?
     @Published var sellInvoices: [Invoice] = [] // Multiple sell invoices for partial sells
+    @Published var creditNoteInvoice: Invoice?
 
     var feesAmount: Double {
         let allInvoices = [buyInvoice].compactMap { $0 } + sellInvoices
@@ -276,8 +278,9 @@ final class TradeDetailsViewModel: ObservableObject {
         // Separate buy and sell invoices
         buyInvoice = allInvoices.first { $0.transactionType == .buy }
         sellInvoices = allInvoices.filter { $0.transactionType == .sell }
+        creditNoteInvoice = allInvoices.first { $0.type == .creditNote }
 
-        print("📄 Loaded \(allInvoices.count) invoices: \(buyInvoice != nil ? "1 buy" : "0 buy"), \(sellInvoices.count) sell")
+        print("📄 Loaded \(allInvoices.count) invoices: \(buyInvoice != nil ? "1 buy" : "0 buy"), \(sellInvoices.count) sell, \(creditNoteInvoice != nil ? "1 credit" : "0 credit")")
 
         // Calculate detailed breakdown
         calculateDetailedBreakdown()

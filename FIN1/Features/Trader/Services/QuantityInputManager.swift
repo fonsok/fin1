@@ -14,6 +14,7 @@ protocol QuantityInputManagerProtocol {
 
 // MARK: - Quantity Input Manager
 /// Manages quantity input processing, validation, and formatting
+@MainActor
 final class QuantityInputManager: ObservableObject {
     @Published var quantity: Double = 1000
     @Published var quantityText: String = "1.000"
@@ -90,19 +91,15 @@ final class QuantityInputManager: ObservableObject {
     // MARK: - Private Methods
 
     private func handleMaxValueExceeded() {
-        DispatchQueue.main.async {
-            self.showMaxValueWarning = true
-            // Auto-correct to maximum value after a short delay
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                self.quantityText = self.maxQuantity.formattedAsLocalizedInteger()
-                self.showMaxValueWarning = false
-            }
+        showMaxValueWarning = true
+        Task {
+            try? await Task.sleep(nanoseconds: 1_500_000_000)
+            quantityText = maxQuantity.formattedAsLocalizedInteger()
+            showMaxValueWarning = false
         }
     }
 
     private func hideMaxValueWarning() {
-        DispatchQueue.main.async {
-            self.showMaxValueWarning = false
-        }
+        showMaxValueWarning = false
     }
 }

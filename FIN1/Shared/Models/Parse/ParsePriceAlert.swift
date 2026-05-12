@@ -19,7 +19,7 @@ enum PriceAlertStatus: String, Codable {
 
 // MARK: - Parse Price Alert Model
 /// Represents a Price Alert as stored in Parse Server
-struct ParsePriceAlert: Codable {
+struct ParsePriceAlert: Codable, @unchecked Sendable {
     let objectId: String? // Parse Server generated ID
     let userId: String // User who created the alert
     let symbol: String // Stock symbol, index name, or underlying asset identifier

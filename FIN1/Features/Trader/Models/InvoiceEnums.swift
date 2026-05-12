@@ -17,8 +17,8 @@ enum InvoiceType: String, CaseIterable, Codable, Hashable {
             self = v
             return
         }
-        // Backward compatibility: legacy naming
-        if raw == "platform_service_charge" {
+        // Backward compatibility: backend uses `service_charge`; legacy alias `platform_service_charge`
+        if raw == "service_charge" || raw == "platform_service_charge" {
             self = .appServiceCharge
             return
         }

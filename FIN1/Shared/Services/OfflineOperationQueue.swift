@@ -186,15 +186,13 @@ final class OfflineOperationQueue: ObservableObject {
         applicationId: String,
         sessionToken: String?
     ) async throws {
-        try await Task.detached(priority: .utility) {
-            let client = ParseAPIClient(
-                baseURL: baseURL,
-                applicationId: applicationId,
-                sessionTokenProvider: sessionToken != nil ? { sessionToken } : nil,
-                offlineQueue: nil
-            )
-            try await Self.executeOperation(operation, apiClient: client)
-        }.value
+        let client = ParseAPIClient(
+            baseURL: baseURL,
+            applicationId: applicationId,
+            sessionTokenProvider: sessionToken != nil ? { sessionToken } : nil,
+            offlineQueue: nil
+        )
+        try await Self.executeOperation(operation, apiClient: client)
     }
 
     private static func executeOperation(_ operation: QueuedOperation, apiClient: any ParseAPIClientProtocol) async throws {
@@ -279,7 +277,7 @@ enum OfflineOperationError: Error {
 }
 
 // Helper type for encoding/decoding Any values
-struct AnyCodable: Codable {
+struct AnyCodable: Codable, @unchecked Sendable {
     let value: Any
 
     init(_ value: Any) {

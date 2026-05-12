@@ -29,7 +29,7 @@ protocol TestModeServiceProtocol: ObservableObject {
 
 // MARK: - Test Mode Service Implementation
 /// Handles test mode operations, settings, and test user management
-final class TestModeService: TestModeServiceProtocol, ServiceLifecycle {
+final class TestModeService: TestModeServiceProtocol, ServiceLifecycle, @unchecked Sendable {
     static let shared = TestModeService()
 
     @Published var isTestModeEnabled: Bool = false

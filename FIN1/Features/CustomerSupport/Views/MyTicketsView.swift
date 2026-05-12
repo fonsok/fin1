@@ -190,7 +190,7 @@ struct MyTicketsView: View {
     private var emptyView: some View {
         VStack(spacing: ResponsiveDesign.spacing(16)) {
             Image(systemName: selectedFilter == .all ? "ticket" : "tray")
-                .font(.system(size: ResponsiveDesign.iconSize() * 2))
+                .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2))
                 .foregroundColor(AppTheme.fontColor.opacity(0.3))
 
             Text(emptyMessage)

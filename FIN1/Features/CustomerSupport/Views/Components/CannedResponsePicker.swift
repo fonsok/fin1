@@ -152,7 +152,7 @@ struct CannedResponsePicker: View {
                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
             } else {
                 Image(systemName: "doc.text.magnifyingglass")
-                    .font(.system(size: ResponsiveDesign.iconSize() * 2))
+                    .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2))
                     .foregroundColor(AppTheme.fontColor.opacity(0.3))
 
                 Text("Keine Backend-Templates gefunden")
@@ -242,7 +242,7 @@ struct CannedResponsePicker: View {
     private var emptyState: some View {
         VStack(spacing: ResponsiveDesign.spacing(12)) {
             Image(systemName: "doc.text.magnifyingglass")
-                .font(.system(size: ResponsiveDesign.iconSize() * 2))
+                .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2))
                 .foregroundColor(AppTheme.fontColor.opacity(0.3))
 
             Text("Keine Textbausteine gefunden")

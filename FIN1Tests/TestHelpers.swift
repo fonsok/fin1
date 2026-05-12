@@ -144,18 +144,19 @@ class TestHelpers {
     }
 }
 
-// MARK: - XCTestCase Compatibility Helpers
-extension XCTestCase {
-    /// Backport helper for async tests on toolchains that don't expose XCTest's native `fulfillment` API.
-    func fulfillment(
-        of expectations: [XCTestExpectation],
-        timeout: TimeInterval,
-        enforceOrder: Bool = false
-    ) async {
-        if responds(to: #selector(XCTestCase.wait(for:timeout:enforceOrder:))) {
-            wait(for: expectations, timeout: timeout, enforceOrder: enforceOrder)
-        } else {
-            wait(for: expectations, timeout: timeout)
+// MARK: - Async expectation wait (Swift 6)
+/// `XCTestCase.wait(for:)` is unavailable from async tests. `XCTWaiter` on a background queue avoids blocking the cooperative pool.
+/// Implemented as a free function so `@MainActor` test types are not sent across isolation as `self`.
+func waitForExpectationsAsync(
+    _ expectations: [XCTestExpectation],
+    timeout: TimeInterval,
+    enforceOrder: Bool = false
+) async {
+    let exps = expectations
+    await withCheckedContinuation { continuation in
+        DispatchQueue.global(qos: .userInitiated).async {
+            _ = XCTWaiter.wait(for: exps, timeout: timeout, enforceOrder: enforceOrder)
+            continuation.resume()
         }
     }
 }

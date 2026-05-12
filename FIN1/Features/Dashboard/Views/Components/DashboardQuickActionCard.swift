@@ -13,7 +13,7 @@ struct DashboardQuickActionCard: View {
         Button(action: action, label: {
             VStack(spacing: ResponsiveDesign.spacing(12)) {
                 Image(systemName: icon)
-                    .font(.system(size: ResponsiveDesign.iconSize()))
+                    .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize()))
                     .foregroundColor(color)
 
                 Text(title)

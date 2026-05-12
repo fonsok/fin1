@@ -50,7 +50,7 @@ struct TransactionDetailView: View {
         VStack(spacing: ResponsiveDesign.spacing(4)) {
             // Icon
             Image(systemName: transaction.type.icon)
-                .font(.system(size: ResponsiveDesign.iconSize() * 2.5))
+                .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2.5))
                 .foregroundColor(colorForType(transaction.type))
                 .frame(width: ResponsiveDesign.spacing(16), height: ResponsiveDesign.spacing(16))
                 .background(colorForType(transaction.type).opacity(0.1))

@@ -2,6 +2,7 @@ import Foundation
 
 /// Production-safe placeholder auth provider.
 /// Fails closed in non-DEBUG builds until a real backend auth provider is wired.
+@MainActor
 final class FailClosedAuthProvider: AuthProviderProtocol {
     func authenticate(with method: AuthMethod) async throws -> AuthResult {
         throw AuthProviderError.configurationError(message: "No production AuthProvider configured")

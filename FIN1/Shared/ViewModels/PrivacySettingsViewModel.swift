@@ -3,6 +3,7 @@ import Combine
 
 // MARK: - Privacy Settings ViewModel
 /// ViewModel for managing user privacy settings and data control preferences
+@MainActor
 final class PrivacySettingsViewModel: ObservableObject {
 
     // MARK: - Published Properties

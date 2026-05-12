@@ -4,7 +4,7 @@ import Combine
 // MARK: - Investor Watchlist Service Implementation
 /// Handles investor trader watchlist operations and management
 /// Based on the working trader securities watchlist pattern
-final class InvestorWatchlistService: InvestorWatchlistServiceProtocol, ServiceLifecycle {
+final class InvestorWatchlistService: InvestorWatchlistServiceProtocol, ServiceLifecycle, @unchecked Sendable {
     static let shared = InvestorWatchlistService()
 
     @Published var watchlist: [WatchlistTraderData] = []

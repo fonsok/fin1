@@ -72,7 +72,7 @@ struct ContactSupportView: View {
     private var headerSection: some View {
         VStack(spacing: ResponsiveDesign.spacing(8)) {
             Image(systemName: "message.fill")
-                .font(.system(size: ResponsiveDesign.iconSize() * 2))
+                .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2))
                 .foregroundColor(AppTheme.accentGreen)
             Text("Contact Support")
                 .font(ResponsiveDesign.headlineFont())

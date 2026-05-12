@@ -210,7 +210,7 @@ final class DashboardStatsViewModel: ObservableObject {
             return
         }
 
-        Task {
+        Task { @MainActor in
             let snapshot = await InvestorAccountStatementBuilder.buildSnapshotWithWallet(
                 for: currentUser,
                 investorCashBalanceService: investorCashBalanceService,
@@ -218,10 +218,7 @@ final class DashboardStatsViewModel: ObservableObject {
                 settlementAPIService: settlementAPIService,
                 configurationService: configurationService
             )
-
-            await MainActor.run {
-                investorBalance = snapshot.closingBalance.formatted(.currency(code: "EUR"))
-            }
+            investorBalance = snapshot.closingBalance.formatted(.currency(code: "EUR"))
         }
     }
 

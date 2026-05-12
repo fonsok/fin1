@@ -112,7 +112,7 @@ protocol ServiceFactoryProtocol {
 
 // MARK: - Service Registry
 /// Registry for managing service instances and their dependencies
-final class ServiceRegistry {
+final class ServiceRegistry: @unchecked Sendable {
     static let shared = ServiceRegistry()
 
     private var services: [String: Any] = [:]

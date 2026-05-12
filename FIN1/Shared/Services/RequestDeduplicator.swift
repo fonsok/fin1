@@ -2,10 +2,20 @@ import Foundation
 
 // MARK: - Request Deduplicator
 
+/// Boxes an arbitrary successful result so pending tasks stay `Sendable` under Swift 6.
+private struct AnySendableResult: @unchecked Sendable {
+    let value: Any
+}
+
+/// Wraps a deduplicated result so it can cross `RequestDeduplicator`'s actor boundary when `T` is not `Sendable`.
+struct RequestDeduplicationResult<T>: @unchecked Sendable {
+    let value: T
+}
+
 /// Prevents duplicate concurrent requests by caching pending operations
 /// When multiple components request the same data simultaneously, only one request is executed
 actor RequestDeduplicator {
-    private var pendingRequests: [String: Task<Any, Error>] = [:]
+    private var pendingRequests: [String: Task<AnySendableResult, Error>] = [:]
 
     /// Executes an operation, deduplicating concurrent requests with the same key
     /// - Parameters:
@@ -13,20 +23,22 @@ actor RequestDeduplicator {
     ///   - operation: The async operation to execute
     /// - Returns: The result of the operation
     /// - Throws: The error from the operation
-    func execute<T: Sendable>(
+    /// `T` is stored as `Any` inside `AnySendableResult`; callers that capture non-Sendable state must use a `@Sendable` closure via an `@unchecked Sendable` box (see `ParseAPIClient+Fetch`).
+    func execute<T>(
         key: String,
         operation: @Sendable @escaping () async throws -> T
-    ) async throws -> T {
+    ) async throws -> RequestDeduplicationResult<T> {
         // Check if request is already pending
         if let existingTask = pendingRequests[key] {
             // Wait for existing task to complete
             do {
-                let result = try await existingTask.value
+                let boxed = try await existingTask.value
+                let result = boxed.value
                 // Cast result to expected type
                 guard let typedResult = result as? T else {
                     throw RequestDeduplicationError.typeMismatch
                 }
-                return typedResult
+                return RequestDeduplicationResult(value: typedResult)
             } catch {
                 // If existing task failed, remove it and retry
                 pendingRequests.removeValue(forKey: key)
@@ -35,23 +47,25 @@ actor RequestDeduplicator {
         }
 
         // Create new task
-        let task = Task<Any, Error> {
+        let task = Task<AnySendableResult, Error> {
             defer {
                 Task {
                     await self.removeRequest(key: key)
                 }
             }
-            return try await operation() as Any
+            let value = try await operation()
+            return AnySendableResult(value: value)
         }
 
         pendingRequests[key] = task
 
         do {
-            let result = try await task.value
+            let boxed = try await task.value
+            let result = boxed.value
             guard let typedResult = result as? T else {
                 throw RequestDeduplicationError.typeMismatch
             }
-            return typedResult
+            return RequestDeduplicationResult(value: typedResult)
         } catch {
             pendingRequests.removeValue(forKey: key)
             throw error

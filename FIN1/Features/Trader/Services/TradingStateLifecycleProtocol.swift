@@ -4,7 +4,7 @@ import Combine
 // MARK: - Trading State Lifecycle Protocol
 /// Defines the contract for trading state lifecycle management
 /// Handles state aggregation, publishing, and lifecycle management
-protocol TradingStateLifecycleProtocol {
+protocol TradingStateLifecycleProtocol: Sendable {
     // MARK: - State Publishers
     var activeOrdersPublisher: AnyPublisher<[Order], Never> { get }
     var completedTradesPublisher: AnyPublisher<[Trade], Never> { get }

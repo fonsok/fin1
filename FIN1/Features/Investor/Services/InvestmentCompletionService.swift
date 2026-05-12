@@ -3,6 +3,7 @@ import Foundation
 // MARK: - Investment Completion Service Implementation
 /// Handles investment completion checking, profit calculation, and cash distribution
 /// Delegates to focused helper services for specific functionality
+@MainActor
 final class InvestmentCompletionService: InvestmentCompletionServiceProtocol {
 
     // MARK: - Dependencies
@@ -41,11 +42,6 @@ final class InvestmentCompletionService: InvestmentCompletionServiceProtocol {
         self.configurationService = configurationService
         self.settlementAPIService = settlementAPIService
     }
-
-    // MARK: - ServiceLifecycle
-    func start() { /* preload if needed */ }
-    func stop() { /* noop */ }
-    func reset() { /* noop */ }
 
     // MARK: - Investment Completion Checking
 
@@ -202,29 +198,18 @@ final class InvestmentCompletionService: InvestmentCompletionServiceProtocol {
                for: participations,
                tradeLifecycleService: tradeLifecycleService
            ) {
-            // Store as percentage value (e.g., 100.01) - display expects percentage format
+            // Trade ROI is already in percent format (e.g., 42.04)
             calculatedReturn = tradeROI
         } else {
-            // Fallback: calculate from profit/invested (less accurate)
-            let totals = (
-                grossProfit: InvestmentProfitCalculator.calculateGrossProfitFromTrades(
-                    for: investment.id,
-                    participations: participations,
-                    tradeLifecycleService: tradeLifecycleService,
-                    poolTradeParticipationService: poolTradeParticipationService
-                ),
-                investedAmount: participations.reduce(0.0) { $0 + $1.allocatedAmount }
-            )
-            calculatedReturn = ProfitCalculationService.calculateReturnPercentage(
-                grossProfit: totals.grossProfit,
-                investedAmount: totals.investedAmount
-            ) ?? 0.0
+            // Keep persisted value if trade ROI is temporarily unavailable.
+            // This avoids introducing a second competing formula.
+            calculatedReturn = investment.performance
         }
 
         print("💰 InvestmentCompletionService: Profit calculation")
         print("   📊 Accumulated profit (net): €\(String(format: "%.2f", accumulatedProfit))")
         print("   📊 Investment capital: €\(String(format: "%.2f", investment.amount))")
-        print("   📈 Return (from trade ROI): \(String(format: "%.2f", calculatedReturn * 100))%")
+        print("   📈 Return (trade-led): \(String(format: "%.2f", calculatedReturn))%")
 
         return (accumulatedProfit, calculatedReturn)
     }
@@ -246,23 +231,12 @@ final class InvestmentCompletionService: InvestmentCompletionServiceProtocol {
                for: participations,
                tradeLifecycleService: tradeLifecycleService
            ) {
-            // Store as percentage value (e.g., 100.01) - display expects percentage format
+            // Trade ROI is already in percent format (e.g., 42.04)
             returnPercentage = tradeROI
         } else {
-            // Fallback: calculate from profit/invested (less accurate)
-            let totals = (
-                grossProfit: InvestmentProfitCalculator.calculateGrossProfitFromTrades(
-                    for: investment.id,
-                    participations: participations,
-                    tradeLifecycleService: tradeLifecycleService,
-                    poolTradeParticipationService: poolTradeParticipationService
-                ),
-                investedAmount: participations.reduce(0.0) { $0 + $1.allocatedAmount }
-            )
-            returnPercentage = ProfitCalculationService.calculateReturnPercentage(
-                grossProfit: totals.grossProfit,
-                investedAmount: totals.investedAmount
-            ) ?? 0.0
+            // Keep persisted value if trade ROI is temporarily unavailable.
+            // This avoids introducing a second competing formula.
+            returnPercentage = investment.performance
         }
 
         // Only update if values have changed
@@ -273,6 +247,7 @@ final class InvestmentCompletionService: InvestmentCompletionServiceProtocol {
 
         let updatedInvestment = Investment(
             id: investment.id,
+            investmentNumber: investment.investmentNumber,
             batchId: investment.batchId,
             investorId: investment.investorId,
             investorName: investment.investorName,
@@ -289,7 +264,12 @@ final class InvestmentCompletionService: InvestmentCompletionServiceProtocol {
             updatedAt: Date(),
             completedAt: investment.completedAt,
             specialization: investment.specialization,
-            reservationStatus: investment.reservationStatus
+            reservationStatus: investment.reservationStatus,
+            partialSellCount: investment.partialSellCount,
+            realizedSellQuantity: investment.realizedSellQuantity,
+            realizedSellAmount: investment.realizedSellAmount,
+            lastPartialSellAt: investment.lastPartialSellAt,
+            tradeSellVolumeProgress: investment.tradeSellVolumeProgress
         )
 
         print("💰 InvestmentCompletionService: Updated investment \(investment.id) with profit")
@@ -310,7 +290,7 @@ final class InvestmentCompletionService: InvestmentCompletionServiceProtocol {
         print("   📊 Investment status: \(original.status.rawValue) -> \(updated.status.rawValue)")
         print("   📊 Investment completedAt: \(updated.completedAt?.description ?? "nil")")
         print("   💰 Calculated profit: €\(String(format: "%.2f", accumulatedProfit))")
-        print("   📈 Calculated return: \(String(format: "%.2f", calculatedReturn * 100))%")
+        print("   📈 Calculated return: \(String(format: "%.2f", calculatedReturn))%")
         print("   💵 New currentValue: €\(String(format: "%.2f", updated.currentValue))")
     }
 

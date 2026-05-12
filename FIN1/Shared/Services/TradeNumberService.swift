@@ -44,7 +44,7 @@ protocol TradeNumberServiceProtocol: ServiceLifecycle {
 
 /// Service for managing sequential trade numbering system
 /// Provides user-friendly trade numbers (001, 002, 003...) per trader while maintaining UUIDs for internal linking
-final class TradeNumberService: TradeNumberServiceProtocol {
+final class TradeNumberService: TradeNumberServiceProtocol, @unchecked Sendable {
 
     // MARK: - Properties
 

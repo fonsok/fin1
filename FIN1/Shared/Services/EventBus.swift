@@ -91,7 +91,7 @@ struct HoldingUpdatedEvent: AppEvent {
 
 // MARK: - Event Bus
 /// Centralized event bus for decoupled communication between services
-final class EventBus: ObservableObject {
+final class EventBus: ObservableObject, @unchecked Sendable {
     static let shared = EventBus()
 
     private let eventSubject = PassthroughSubject<AppEvent, Never>()

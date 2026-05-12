@@ -24,7 +24,7 @@ struct SearchSection: View {
                 }) {
                     Image(systemName: "magnifyingglass")
                         .foregroundColor(AppTheme.accentLightBlue)
-                        .font(.system(size: ResponsiveDesign.iconSize() * 0.8))
+                        .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 0.8))
                 }
                 .buttonStyle(PlainButtonStyle())
 
@@ -70,7 +70,7 @@ struct SearchSection: View {
                     Button(action: onClearSearch, label: {
                         Image(systemName: "xmark.circle.fill")
                             .foregroundColor(AppTheme.inputFieldPlaceholder)
-                            .font(.system(size: ResponsiveDesign.iconSize() * 0.8))
+                            .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 0.8))
                     })
                 }
             }

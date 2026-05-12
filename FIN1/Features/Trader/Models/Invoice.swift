@@ -25,6 +25,9 @@ struct Invoice: Identifiable, Codable, Hashable, Sendable {
     let taxNote: String?
     let legalNote: String?
 
+    /// Trader commission rate (e.g. `0.10`) at issuance; set on credit notes for display reconciliation with the stored artifact.
+    let traderCommissionRateSnapshot: Double?
+
     init(
         id: String = UUID().uuidString,
         invoiceNumber: String,
@@ -38,7 +41,8 @@ struct Invoice: Identifiable, Codable, Hashable, Sendable {
         transactionType: TransactionType? = nil,
         taxNote: String? = nil,
         legalNote: String? = nil,
-        dueDate: Date? = nil
+        dueDate: Date? = nil,
+        traderCommissionRateSnapshot: Double? = nil
     ) {
         self.id = id
         self.invoiceNumber = invoiceNumber
@@ -53,6 +57,7 @@ struct Invoice: Identifiable, Codable, Hashable, Sendable {
         self.taxNote = taxNote
         self.legalNote = legalNote
         self.dueDate = dueDate
+        self.traderCommissionRateSnapshot = traderCommissionRateSnapshot
 
         // Calculate totals
         self.subtotal = items.reduce(0) { $0 + $1.totalAmount }

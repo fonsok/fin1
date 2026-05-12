@@ -2,6 +2,7 @@ import SwiftUI
 
 /// Quick actions (Deposit / Withdrawal) for the wallet screen.
 struct WalletQuickActionsSection: View {
+    var actionsEnabled: Bool
     var onDeposit: () -> Void
     var onWithdrawal: () -> Void
 
@@ -15,7 +16,7 @@ struct WalletQuickActionsSection: View {
                 Button(action: onDeposit) {
                     VStack(spacing: ResponsiveDesign.spacing(2)) {
                         Image(systemName: "arrow.down.circle.fill")
-                            .font(.system(size: ResponsiveDesign.iconSize()))
+                            .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize()))
                             .foregroundColor(.white)
                         Text("Einzahlen")
                             .font(ResponsiveDesign.captionFont())
@@ -23,14 +24,15 @@ struct WalletQuickActionsSection: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding(ResponsiveDesign.spacing(4))
-                    .background(AppTheme.accentGreen)
+                    .background(actionsEnabled ? AppTheme.accentGreen : AppTheme.secondaryText)
                     .cornerRadius(ResponsiveDesign.spacing(3))
                 }
+                .disabled(!actionsEnabled)
 
                 Button(action: onWithdrawal) {
                     VStack(spacing: ResponsiveDesign.spacing(2)) {
                         Image(systemName: "arrow.up.circle.fill")
-                            .font(.system(size: ResponsiveDesign.iconSize()))
+                            .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize()))
                             .foregroundColor(.white)
                         Text("Auszahlen")
                             .font(ResponsiveDesign.captionFont())
@@ -38,9 +40,10 @@ struct WalletQuickActionsSection: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding(ResponsiveDesign.spacing(4))
-                    .background(AppTheme.accentRed)
+                    .background(actionsEnabled ? AppTheme.accentRed : AppTheme.secondaryText)
                     .cornerRadius(ResponsiveDesign.spacing(3))
                 }
+                .disabled(!actionsEnabled)
             }
         }
     }

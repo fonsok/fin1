@@ -73,7 +73,7 @@ struct LazyDataView<T: Identifiable, Content: View>: View {
     private func errorView(_ error: Error) -> some View {
         VStack(spacing: ResponsiveDesign.spacing(16)) {
             Image(systemName: "exclamationmark.triangle")
-                .font(.system(size: ResponsiveDesign.iconSize() * 2))
+                .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2))
                 .foregroundColor(AppTheme.accentRed)
             Text("Failed to load data")
                 .font(ResponsiveDesign.headlineFont())

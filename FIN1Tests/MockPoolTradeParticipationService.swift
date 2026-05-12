@@ -2,7 +2,7 @@ import Foundation
 import Combine
 @testable import FIN1
 
-final class MockPoolTradeParticipationService: PoolTradeParticipationServiceProtocol {
+final class MockPoolTradeParticipationService: PoolTradeParticipationServiceProtocol, @unchecked Sendable {
     @Published var participations: [PoolTradeParticipation] = []
 
     init() {}

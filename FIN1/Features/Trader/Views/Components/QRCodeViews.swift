@@ -34,7 +34,7 @@ struct QRCodeView: View {
                     .overlay(
                         VStack(spacing: ResponsiveDesign.spacing(4)) {
                             Image(systemName: "qrcode")
-                                .font(.system(size: size * 0.3))
+                                .font(ResponsiveDesign.scaledSystemFont(size: size * 0.3))
                                 .foregroundColor(.gray)
                             Text("QR Code")
                                 .font(ResponsiveDesign.captionFont())
@@ -72,15 +72,7 @@ struct InvoiceQRCodeView: View {
     }
 
     private func generateQRCode() {
-        Task {
-            let image = await Task.detached(priority: .userInitiated) {
-                QRCodeGenerator.generateInvoiceQRCode(for: invoice)
-            }.value
-
-            await MainActor.run {
-                self.qrCodeImage = image
-            }
-        }
+        qrCodeImage = QRCodeGenerator.generateInvoiceQRCode(for: invoice)
     }
 }
 
@@ -111,15 +103,7 @@ struct CollectionBillQRCodeView: View {
     }
 
     private func generateQRCode() {
-        Task {
-            let image = await Task.detached(priority: .userInitiated) {
-                QRCodeGenerator.generateCollectionBillQRCode(for: trade, displayProperties: displayProperties)
-            }.value
-
-            await MainActor.run {
-                self.qrCodeImage = image
-            }
-        }
+        qrCodeImage = QRCodeGenerator.generateCollectionBillQRCode(for: trade, displayProperties: displayProperties)
     }
 }
 
@@ -149,15 +133,7 @@ struct CreditNoteQRCodeView: View {
     }
 
     private func generateQRCode() {
-        Task {
-            let image = await Task.detached(priority: .userInitiated) {
-                QRCodeGenerator.generateCreditNoteQRCode(for: document)
-            }.value
-
-            await MainActor.run {
-                self.qrCodeImage = image
-            }
-        }
+        qrCodeImage = QRCodeGenerator.generateCreditNoteQRCode(for: document)
     }
 }
 
@@ -188,14 +164,9 @@ struct InvestorCollectionBillQRCodeView: View {
     }
 
     private func generateQRCode() {
-        Task {
-            let image = await Task.detached(priority: .userInitiated) {
-                QRCodeGenerator.generateInvestorCollectionBillQRCode(for: investment, documentNumber: documentNumber)
-            }.value
-
-            await MainActor.run {
-                self.qrCodeImage = image
-            }
-        }
+        qrCodeImage = QRCodeGenerator.generateInvestorCollectionBillQRCode(
+            for: investment,
+            documentNumber: documentNumber
+        )
     }
 }

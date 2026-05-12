@@ -9,19 +9,8 @@
 import SwiftUI
 
 struct AdminFinancialSettingsView: View {
-    @Environment(\.appServices) private var services
     @Environment(\.dismiss) private var dismiss
-
-    // State for editing
-    @State private var tradingFeePercentage: Double = 0.0025
-    @State private var managementFeePercentage: Double = 0.02
-    @State private var performanceFeePercentage: Double = 0.20
-    @State private var minimumInvestmentAmount: Double = 50.0
-    @State private var maximumInvestmentAmount: Double = 1000000.0
-
-    @State private var hasUnsavedChanges = false
-    @State private var isSaving = false
-    @State private var showSaveSuccess = false
+    @StateObject private var viewModel = AdminFinancialSettingsViewModel()
 
     var body: some View {
         NavigationStack {
@@ -55,9 +44,9 @@ struct AdminFinancialSettingsView: View {
                 }
             }
             .onAppear {
-                loadCurrentSettings()
+                viewModel.loadCurrentSettings()
             }
-            .alert("Settings Saved", isPresented: $showSaveSuccess) {
+            .alert("Settings Saved", isPresented: $viewModel.showSaveSuccess) {
                 Button("OK") { dismiss() }
             } message: {
                 Text("Your financial settings have been saved successfully.")
@@ -80,29 +69,29 @@ struct AdminFinancialSettingsView: View {
             VStack(spacing: ResponsiveDesign.spacing(12)) {
                 FinancialInputRow(
                     title: "Trading Fee",
-                    value: $tradingFeePercentage,
+                    value: $viewModel.tradingFeePercentage,
                     unit: "%",
                     multiplier: 100,
                     precision: 2,
-                    onValueChange: { markAsChanged() }
+                    onValueChange: { viewModel.markAsChanged() }
                 )
 
                 FinancialInputRow(
                     title: "Management Fee",
-                    value: $managementFeePercentage,
+                    value: $viewModel.managementFeePercentage,
                     unit: "%",
                     multiplier: 100,
                     precision: 2,
-                    onValueChange: { markAsChanged() }
+                    onValueChange: { viewModel.markAsChanged() }
                 )
 
                 FinancialInputRow(
                     title: "Performance Fee",
-                    value: $performanceFeePercentage,
+                    value: $viewModel.performanceFeePercentage,
                     unit: "%",
                     multiplier: 100,
                     precision: 1,
-                    onValueChange: { markAsChanged() }
+                    onValueChange: { viewModel.markAsChanged() }
                 )
             }
         }
@@ -126,20 +115,20 @@ struct AdminFinancialSettingsView: View {
             VStack(spacing: ResponsiveDesign.spacing(12)) {
                 FinancialInputRow(
                     title: "Minimum Investment",
-                    value: $minimumInvestmentAmount,
+                    value: $viewModel.minimumInvestmentAmount,
                     unit: "€",
                     multiplier: 1,
                     precision: 0,
-                    onValueChange: { markAsChanged() }
+                    onValueChange: { viewModel.markAsChanged() }
                 )
 
                 FinancialInputRow(
                     title: "Maximum Investment",
-                    value: $maximumInvestmentAmount,
+                    value: $viewModel.maximumInvestmentAmount,
                     unit: "€",
                     multiplier: 1,
                     precision: 0,
-                    onValueChange: { markAsChanged() }
+                    onValueChange: { viewModel.markAsChanged() }
                 )
             }
         }
@@ -179,14 +168,18 @@ struct AdminFinancialSettingsView: View {
 
     // MARK: - Save Changes Section
     private var saveChangesSection: some View {
-        Button(action: saveChanges, label: {
+        Button {
+            Task {
+                await viewModel.saveChanges()
+            }
+        } label: {
             HStack {
-                if isSaving {
+                if viewModel.isSaving {
                     ProgressView()
                         .progressViewStyle(CircularProgressViewStyle(tint: .white))
                         .scaleEffect(0.8)
                 }
-                Text(isSaving ? "Saving..." : "Save Changes")
+                Text(viewModel.isSaving ? "Saving..." : "Save Changes")
                     .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.semibold)
             }
@@ -194,49 +187,16 @@ struct AdminFinancialSettingsView: View {
             .frame(maxWidth: .infinity)
             .padding()
             .background(
-                hasUnsavedChanges
+                viewModel.hasUnsavedChanges
                 ? AppTheme.accentLightBlue
                 : AppTheme.fontColor.opacity(0.3)
             )
             .cornerRadius(ResponsiveDesign.spacing(10))
-        })
-        .disabled(!hasUnsavedChanges || isSaving)
+        }
+        .disabled(!viewModel.hasUnsavedChanges || viewModel.isSaving)
         .padding()
         .background(AppTheme.sectionBackground)
         .cornerRadius(ResponsiveDesign.spacing(12))
-    }
-
-    // MARK: - Helper Methods
-
-    private func loadCurrentSettings() {
-        // Load from UserDefaults or services
-        tradingFeePercentage = UserDefaults.standard.object(forKey: "tradingFeePercentage") as? Double ?? 0.0025
-        managementFeePercentage = UserDefaults.standard.object(forKey: "managementFeePercentage") as? Double ?? 0.02
-        performanceFeePercentage = UserDefaults.standard.object(forKey: "performanceFeePercentage") as? Double ?? 0.20
-        minimumInvestmentAmount = UserDefaults.standard.object(forKey: "minimumInvestmentAmount") as? Double ?? 50.0
-        maximumInvestmentAmount = UserDefaults.standard.object(forKey: "maximumInvestmentAmount") as? Double ?? 1000000.0
-    }
-
-    private func markAsChanged() {
-        hasUnsavedChanges = true
-    }
-
-    private func saveChanges() {
-        isSaving = true
-
-        // Simulate API call
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            // Save to UserDefaults
-            UserDefaults.standard.set(tradingFeePercentage, forKey: "tradingFeePercentage")
-            UserDefaults.standard.set(managementFeePercentage, forKey: "managementFeePercentage")
-            UserDefaults.standard.set(performanceFeePercentage, forKey: "performanceFeePercentage")
-            UserDefaults.standard.set(minimumInvestmentAmount, forKey: "minimumInvestmentAmount")
-            UserDefaults.standard.set(maximumInvestmentAmount, forKey: "maximumInvestmentAmount")
-
-            self.isSaving = false
-            self.hasUnsavedChanges = false
-            self.showSaveSuccess = true
-        }
     }
 }
 

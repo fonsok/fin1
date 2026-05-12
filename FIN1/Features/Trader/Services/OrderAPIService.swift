@@ -135,8 +135,8 @@ private struct ParseOrderInput: Codable {
 
 // MARK: - Parse Order Response
 
-/// Response struct for Parse Server order operations
-private struct ParseOrderResponse: Codable {
+/// Response struct for Parse Server order operations (internal for unit tests with `MockParseAPIClient`.)
+struct ParseOrderResponse: Codable, Sendable {
     let objectId: String
     let traderId: String
     let symbol: String

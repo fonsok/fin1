@@ -10,7 +10,8 @@ extension Notification.Name {
 /// Pure facade service that delegates to TradingCoordinator
 /// Follows Single Responsibility Principle - only handles interface delegation
 /// Uses dependency injection instead of singletons for better testability
-final class TraderService: TraderServiceProtocol, ServiceLifecycle {
+@MainActor
+final class TraderService: TraderServiceProtocol {
 
     // MARK: - Published Properties (Facade)
     @Published var activeOrders: [Order] = []
@@ -37,19 +38,6 @@ final class TraderService: TraderServiceProtocol, ServiceLifecycle {
     init(tradingCoordinator: any TradingCoordinatorProtocol) {
         self.tradingCoordinator = tradingCoordinator
         setupCoordinatorObservers()
-    }
-
-    // MARK: - ServiceLifecycle
-    func start() {
-        tradingCoordinator.start()
-    }
-
-    func stop() {
-        tradingCoordinator.stop()
-    }
-
-    func reset() {
-        tradingCoordinator.reset()
     }
 
     // MARK: - Trading Data Management
@@ -105,7 +93,8 @@ final class TraderService: TraderServiceProtocol, ServiceLifecycle {
             limitPrice: orderRequest.limitPrice,
             strike: orderRequest.strike,
             subscriptionRatio: orderRequest.subscriptionRatio,
-            denomination: orderRequest.denomination
+            denomination: orderRequest.denomination,
+            isMirrorPoolOrder: orderRequest.isMirrorPoolOrder
         )
     }
 
@@ -181,5 +170,27 @@ final class TraderService: TraderServiceProtocol, ServiceLifecycle {
             .receive(on: DispatchQueue.main)
             .assign(to: \.errorMessage, on: self)
             .store(in: &cancellables)
+    }
+}
+
+// MARK: - ServiceLifecycle
+/// `ServiceLifecycle` is not MainActor-isolated; these hop to the main actor without making the conformance cross isolation.
+extension TraderService: ServiceLifecycle {
+    nonisolated func start() {
+        Task { @MainActor [weak self] in
+            self?.tradingCoordinator.start()
+        }
+    }
+
+    nonisolated func stop() {
+        Task { @MainActor [weak self] in
+            self?.tradingCoordinator.stop()
+        }
+    }
+
+    nonisolated func reset() {
+        Task { @MainActor [weak self] in
+            self?.tradingCoordinator.reset()
+        }
     }
 }

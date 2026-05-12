@@ -26,7 +26,7 @@ struct SavedFiltersView: View {
                         if savedFiltersManager.savedFilters.isEmpty {
                             VStack(spacing: ResponsiveDesign.spacing(16)) {
                                 Image(systemName: "tray")
-                                    .font(.system(size: ResponsiveDesign.iconSize() * 2.0))
+                                    .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2.0))
                                     .foregroundColor(AppTheme.fontColor.opacity(0.3))
 
                                 Text("No saved filter combinations yet")
@@ -133,7 +133,7 @@ struct SavedFilterRow: View {
 
                     Button(action: { showDeleteConfirmation = true }, label: {
                         Image(systemName: "trash")
-                            .font(.system(size: ResponsiveDesign.iconSize()))
+                            .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize()))
                             .foregroundColor(AppTheme.accentRed)
                             .frame(width: ResponsiveDesign.iconSize() * 1.5, height: ResponsiveDesign.iconSize() * 1.5)
                             .background(AppTheme.accentRed.opacity(0.1))

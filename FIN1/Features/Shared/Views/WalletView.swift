@@ -20,7 +20,7 @@ struct WalletView: View {
                 contentView
             }
         }
-        .navigationTitle("Wallet")
+        .navigationTitle("Konto")
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
@@ -70,7 +70,7 @@ struct WalletView: View {
             ProgressView()
                 .progressViewStyle(CircularProgressViewStyle(tint: AppTheme.accentLightBlue))
                 .scaleEffect(1.2)
-            Text("Lade Wallet-Daten...")
+            Text("Lade Kontodaten...")
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.secondaryText)
         }
@@ -82,7 +82,7 @@ struct WalletView: View {
     private func errorView(error: String) -> some View {
         VStack(spacing: ResponsiveDesign.spacing(4)) {
             Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: ResponsiveDesign.iconSize() * 2))
+                .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2))
                 .foregroundColor(AppTheme.accentOrange)
             Text("Fehler beim Laden")
                 .font(ResponsiveDesign.headlineFont())
@@ -117,10 +117,25 @@ struct WalletView: View {
                     .transition(.opacity.combined(with: .scale(scale: 0.95)))
 
                 WalletQuickActionsSection(
-                    onDeposit: { viewModel.showDepositSheet = true },
-                    onWithdrawal: { viewModel.showWithdrawalSheet = true }
+                    actionsEnabled: viewModel.accountActionsEnabled,
+                    onDeposit: {
+                        guard viewModel.accountActionsEnabled else { return }
+                        viewModel.showDepositSheet = true
+                    },
+                    onWithdrawal: {
+                        guard viewModel.accountActionsEnabled else { return }
+                        viewModel.showWithdrawalSheet = true
+                    }
                 )
                 .transition(.opacity.combined(with: .move(edge: .top)))
+
+                if !viewModel.accountActionsEnabled {
+                    Text("Ein-/Auszahlungsaktionen sind derzeit deaktiviert. Kontostand und Historie bleiben jederzeit sichtbar.")
+                        .font(ResponsiveDesign.captionFont())
+                        .foregroundColor(AppTheme.secondaryText)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, ResponsiveDesign.horizontalPadding())
+                }
 
                 WalletRecentTransactionsSection(
                     transactions: viewModel.transactions,

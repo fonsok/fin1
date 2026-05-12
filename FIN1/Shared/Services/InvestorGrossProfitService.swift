@@ -4,7 +4,7 @@ import Foundation
 
 /// Single source of truth for investor gross profit calculations
 /// Uses the same calculation method as Collection Bill to ensure consistency
-protocol InvestorGrossProfitServiceProtocol: ServiceLifecycle {
+protocol InvestorGrossProfitServiceProtocol: ServiceLifecycle, Sendable {
     /// Gets the gross profit for a specific investor's investment in a specific trade
     /// - Parameters:
     ///   - investmentId: The investment ID
@@ -27,14 +27,16 @@ protocol InvestorGrossProfitServiceProtocol: ServiceLifecycle {
 
 /// Single source of truth service for investor gross profit
 /// Delegates to InvestorCollectionBillCalculationService to ensure consistency with Collection Bill
-final class InvestorGrossProfitService: InvestorGrossProfitServiceProtocol, ObservableObject {
+final class InvestorGrossProfitService: InvestorGrossProfitServiceProtocol, ObservableObject, @unchecked Sendable {
 
     // MARK: - Dependencies
     private let poolTradeParticipationService: any PoolTradeParticipationServiceProtocol
     private let tradeLifecycleService: any TradeLifecycleServiceProtocol
     private let invoiceService: any InvoiceServiceProtocol
     private let investmentService: any InvestmentServiceProtocol
-    private let calculationService: any InvestorCollectionBillCalculationServiceProtocol
+    /// Protocol is not `Sendable`; service is main-thread–bound in the app.
+    nonisolated(unsafe) private let calculationService: any InvestorCollectionBillCalculationServiceProtocol
+    private let configurationService: any ConfigurationServiceProtocol
 
     // MARK: - Initialization
     init(
@@ -42,13 +44,15 @@ final class InvestorGrossProfitService: InvestorGrossProfitServiceProtocol, Obse
         tradeLifecycleService: any TradeLifecycleServiceProtocol,
         invoiceService: any InvoiceServiceProtocol,
         investmentService: any InvestmentServiceProtocol,
-        calculationService: any InvestorCollectionBillCalculationServiceProtocol
+        calculationService: any InvestorCollectionBillCalculationServiceProtocol,
+        configurationService: any ConfigurationServiceProtocol
     ) {
         self.poolTradeParticipationService = poolTradeParticipationService
         self.tradeLifecycleService = tradeLifecycleService
         self.invoiceService = invoiceService
         self.investmentService = investmentService
         self.calculationService = calculationService
+        self.configurationService = configurationService
     }
 
     // MARK: - ServiceLifecycle
@@ -72,15 +76,19 @@ final class InvestorGrossProfitService: InvestorGrossProfitServiceProtocol, Obse
     ) async throws -> Double {
         // Use InvestorInvestmentStatementAggregator to get the exact gross profit from Collection Bill
         // This ensures we use the same calculation and values as the Collection Bill
-        guard let summary = InvestorInvestmentStatementAggregator.summarizeInvestment(
-            investmentId: investmentId,
-            poolTradeParticipationService: poolTradeParticipationService,
-            tradeLifecycleService: tradeLifecycleService,
-            invoiceService: invoiceService,
-            investmentService: investmentService,
-            calculationService: calculationService,
-            commissionCalculationService: nil  // Use default
-        ) else {
+        let summary = await MainActor.run {
+            InvestorInvestmentStatementAggregator.summarizeInvestment(
+                investmentId: investmentId,
+                poolTradeParticipationService: poolTradeParticipationService,
+                tradeLifecycleService: tradeLifecycleService,
+                invoiceService: invoiceService,
+                investmentService: investmentService,
+                calculationService: calculationService,
+                commissionCalculationService: nil,
+                commissionRate: configurationService.effectiveCommissionRate
+            )
+        }
+        guard let summary else {
             throw AppError.serviceError(.dataNotFound)
         }
 

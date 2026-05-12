@@ -3,7 +3,7 @@ import Foundation
 // MARK: - Profit Distribution Service Protocol
 /// Defines the contract for profit distribution operations
 /// Handles commission calculation, trader payment, and profit distribution to investments
-protocol ProfitDistributionServiceProtocol {
+protocol ProfitDistributionServiceProtocol: Sendable {
     /// Distributes profit for a completed trade
     /// - Parameters:
     ///   - trade: The completed trade

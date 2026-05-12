@@ -16,7 +16,7 @@ struct LandingDebugSectionView: View {
                 } else {
                     HStack {
                         Image(systemName: viewModel.showDebugButtons ? "chevron.up" : "chevron.down")
-                            .font(.system(size: ResponsiveDesign.iconSize() * 0.75))
+                            .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 0.75))
                         Text("Debug")
                             .font(ResponsiveDesign.captionFont())
                         Spacer()

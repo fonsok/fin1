@@ -12,7 +12,7 @@ struct ContactMethodButton: View {
         Button(action: action) {
             VStack(spacing: ResponsiveDesign.spacing(8)) {
                 Image(systemName: icon)
-                    .font(.system(size: ResponsiveDesign.iconSize() * 1.5))
+                    .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 1.5))
                     .foregroundColor(color)
 
                 Text(title)

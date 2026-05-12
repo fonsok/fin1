@@ -6,7 +6,7 @@ struct InvestorCollectionBillPDFGenerator {
     // MARK: - Configuration
 
     /// Toggle to use improved PDF generation (default: true)
-    static var useImprovedGeneration: Bool = true
+    nonisolated(unsafe) static var useImprovedGeneration: Bool = true
 
     static func generatePreviewImage(for document: Document) -> UIImage {
         if useImprovedGeneration {

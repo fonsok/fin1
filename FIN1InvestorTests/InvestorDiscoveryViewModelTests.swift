@@ -15,19 +15,16 @@ final class InvestorDiscoveryViewModelTests: XCTestCase {
         func clearAppliedFilterID() { appliedId = nil; clearCalls += 1 }
     }
 
-    final class MockTraderService: TraderDataServiceProtocol {
-        // ObservableObject
-        let objectWillChange = ObservableObjectPublisher()
-
-        // MARK: - Public vars
-        var traders: [MockTrader]
-        var filteredTraders: [MockTrader] = []
-        var searchText: String = ""
-        var selectedRiskClass: RiskClass?
-        var selectedSpecialization: String?
-        var selectedSortOption: TraderSortOption = .name
-        var isLoading: Bool = false
-        var errorMessage: String?
+    /// Aligned with `TraderDataService`: `@Published` for `ObservableObject`, `@unchecked Sendable` for the protocol.
+    final class MockTraderService: TraderDataServiceProtocol, @unchecked Sendable {
+        @Published var traders: [MockTrader]
+        @Published var filteredTraders: [MockTrader] = []
+        @Published var searchText: String = ""
+        @Published var selectedRiskClass: RiskClass?
+        @Published var selectedSpecialization: String?
+        @Published var selectedSortOption: TraderSortOption = .name
+        @Published var isLoading: Bool = false
+        @Published var errorMessage: String?
 
         init(traders: [MockTrader]) { self.traders = traders }
 

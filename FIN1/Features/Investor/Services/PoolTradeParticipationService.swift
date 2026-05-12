@@ -3,7 +3,7 @@ import Combine
 
 /// Implementation of PoolTradeParticipationService
 /// Now syncs participations to Parse Server for admin visibility
-final class PoolTradeParticipationService: PoolTradeParticipationServiceProtocol, ServiceLifecycle {
+final class PoolTradeParticipationService: PoolTradeParticipationServiceProtocol, ServiceLifecycle, @unchecked Sendable {
     @Published var participations: [PoolTradeParticipation] = []
 
     private var investmentAPIService: InvestmentAPIServiceProtocol?

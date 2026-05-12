@@ -1,5 +1,12 @@
 import Foundation
 
+// MARK: - Circuit Breaker Result
+
+/// Wraps a result so `CircuitBreaker.execute` can cross the actor boundary when `T` is not `Sendable`.
+struct CircuitBreakerResult<T>: @unchecked Sendable {
+    let value: T
+}
+
 // MARK: - Circuit Breaker
 
 /// Circuit Breaker pattern implementation to prevent cascading failures
@@ -47,14 +54,14 @@ actor CircuitBreaker {
     /// - Parameter operation: The operation to execute
     /// - Returns: The result of the operation
     /// - Throws: ServiceError.serviceUnavailable if circuit is open
-    func execute<T>(_ operation: () async throws -> T) async throws -> T {
+    func execute<T>(_ operation: () async throws -> T) async throws -> CircuitBreakerResult<T> {
         // Check circuit state before executing
         try checkCircuitState()
 
         do {
             let result = try await operation()
             recordSuccess()
-            return result
+            return CircuitBreakerResult(value: result)
         } catch {
             // Only count infrastructure failures (network, server 500+) toward circuit breaker
             // Client errors (400, 404, decoding) mean the server IS available - don't trip the circuit
@@ -76,8 +83,8 @@ actor CircuitBreaker {
                 return true
             case .serverError(let code) where code >= 500:
                 return true
-            case .serverError, .invalidResponse, .decodingError:
-                // 400-level errors mean the server IS available
+            case .badRequest, .serverError, .invalidResponse, .decodingError:
+                // Client / validation errors — server is reachable
                 return false
             }
         }

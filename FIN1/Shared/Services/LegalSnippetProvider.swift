@@ -48,7 +48,7 @@ protocol LegalSnippetProviderProtocol {
     ) async -> LegalSnippetResult
 }
 
-struct LegalSnippetProvider: LegalSnippetProviderProtocol {
+struct LegalSnippetProvider: LegalSnippetProviderProtocol, Sendable {
     private let termsContentService: any TermsContentServiceProtocol
 
     init(termsContentService: any TermsContentServiceProtocol) {

@@ -3,7 +3,7 @@ import Combine
 
 // MARK: - Securities Watchlist Service Protocol
 /// Defines the contract for securities watchlist operations and management
-protocol SecuritiesWatchlistServiceProtocol: ObservableObject {
+protocol SecuritiesWatchlistServiceProtocol: ObservableObject, Sendable {
     var watchlist: [SearchResult] { get }
     var isLoading: Bool { get }
     var errorMessage: String? { get }

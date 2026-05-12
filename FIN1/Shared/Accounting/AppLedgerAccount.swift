@@ -32,7 +32,7 @@ enum AppLedgerAccount: String, Codable, CaseIterable, Sendable {
 
     // MARK: - Revenue Accounts (Erlöskonten)
 
-    /// Net platform service charge revenue (Erlös Appgebühr netto)
+    /// Net app service charge revenue (Erlös Appgebühr netto)
     case serviceChargeRevenue = "PLT-REV-PSC"
 
     /// Order fee revenue from trading (Erlös Ordergebühren)
@@ -57,6 +57,31 @@ enum AppLedgerAccount: String, Codable, CaseIterable, Sendable {
     /// DEBIT when platform pays vendors with VAT, CREDIT when offset in USt-Voranmeldung
     case vatInputClaim = "PLT-TAX-VST"
 
+    /// Withholding tax (Abgeltungsteuer / Quellensteuer), owed to Finanzamt
+    /// CREDIT on settlement deduction, DEBIT on remittance.
+    /// ADR-010 / PR4
+    case withholdingTaxLiability = "PLT-TAX-WHT"
+
+    /// Solidarity surcharge (Solidaritätszuschlag), owed to Finanzamt
+    /// ADR-010 / PR4
+    case solidarityTaxLiability = "PLT-TAX-SOL"
+
+    /// Church tax (Kirchensteuer), owed to Finanzamt
+    /// ADR-010 / PR4
+    case churchTaxLiability = "PLT-TAX-CHU"
+
+    // MARK: - Trader-Verbindlichkeit aus Provision (ADR-010 / PR4)
+
+    /// Provisionsverbindlichkeit gegenüber Trader: Investor → debit, Trader → credit.
+    /// Saldiert pro Trade in Phase 1 auf 0 (100 % Trader-Cut, kein App-Anteil).
+    case commissionLiability = "PLT-LIAB-COM"
+
+    // MARK: - Bankkonten (Aktiva)
+
+    /// Treuhand-Bankkonto Kundengelder (ADR-011 / PR5).
+    /// Aktivkonto: debit bei Einzahlung / Verkaufserlös, credit bei Kauf / Auszahlung.
+    case clientTrustBank = "BANK-TRT-CLT"
+
     // MARK: - Expense Accounts (Aufwandskonten)
 
     /// General platform operating expenses (Betriebsaufwand)
@@ -78,32 +103,41 @@ enum AppLedgerAccount: String, Codable, CaseIterable, Sendable {
 
     var displayName: String {
         switch self {
-        case .clientFundsAvailable:  return "Kundenguthaben – verfügbar"
-        case .clientFundsReserved:   return "Kundenguthaben – reserviert"
-        case .clientFundsInTrading:  return "Kundenguthaben – im Handel"
-        case .serviceChargeRevenue:  return "Erlös Appgebühr (netto)"
-        case .orderFeeRevenue:       return "Erlös Ordergebühren"
-        case .exchangeFeeRevenue:    return "Erlös Börsenplatzgebühren"
-        case .foreignCostsRevenue:   return "Fremdkostenpauschale"
-        case .commissionRevenue:     return "Provisionserlös"
-        case .vatLiability:          return "USt-Verbindlichkeit (Output)"
-        case .vatInputClaim:         return "Vorsteuer (Input)"
-        case .operatingExpenses:     return "Betriebsaufwand"
-        case .refundExpenses:        return "Erstattungsaufwand"
-        case .clearingSuspense:      return "Verrechnungskonto"
-        case .clearingRefund:        return "Erstattungs-Verrechnungskonto"
-        case .clearingVATSettlement: return "USt-Abführung Verrechnungskonto"
+        case .clientFundsAvailable:    return "Kundenguthaben – verfügbar"
+        case .clientFundsReserved:     return "Kundenguthaben – reserviert"
+        case .clientFundsInTrading:    return "Kundenguthaben – im Handel"
+        case .serviceChargeRevenue:    return "Erlös Appgebühr (netto)"
+        case .orderFeeRevenue:         return "Erlös Ordergebühren"
+        case .exchangeFeeRevenue:      return "Erlös Börsenplatzgebühren"
+        case .foreignCostsRevenue:     return "Fremdkostenpauschale"
+        case .commissionRevenue:       return "Provisionserlös"
+        case .vatLiability:            return "USt-Verbindlichkeit (Output)"
+        case .vatInputClaim:           return "Vorsteuer (Input)"
+        case .withholdingTaxLiability: return "Quellensteuer-Verbindlichkeit"
+        case .solidarityTaxLiability:  return "Solidaritätszuschlag-Verbindlichkeit"
+        case .churchTaxLiability:      return "Kirchensteuer-Verbindlichkeit"
+        case .commissionLiability:     return "Provisionsverbindlichkeit Trader"
+        case .clientTrustBank:         return "Treuhand-Bank Kundengelder"
+        case .operatingExpenses:       return "Betriebsaufwand"
+        case .refundExpenses:          return "Erstattungsaufwand"
+        case .clearingSuspense:        return "Verrechnungskonto"
+        case .clearingRefund:          return "Erstattungs-Verrechnungskonto"
+        case .clearingVATSettlement:   return "USt-Abführung Verrechnungskonto"
         }
     }
 
     var accountGroup: AccountGroup {
         switch self {
-        case .clientFundsAvailable, .clientFundsReserved, .clientFundsInTrading:
+        case .clientFundsAvailable, .clientFundsReserved, .clientFundsInTrading,
+             .commissionLiability:
             return .liability
+        case .clientTrustBank:
+            return .asset
         case .serviceChargeRevenue, .orderFeeRevenue, .exchangeFeeRevenue,
              .foreignCostsRevenue, .commissionRevenue:
             return .revenue
-        case .vatLiability, .vatInputClaim:
+        case .vatLiability, .vatInputClaim,
+             .withholdingTaxLiability, .solidarityTaxLiability, .churchTaxLiability:
             return .tax
         case .operatingExpenses, .refundExpenses:
             return .expense
@@ -113,6 +147,7 @@ enum AppLedgerAccount: String, Codable, CaseIterable, Sendable {
     }
 
     enum AccountGroup: String, Codable, CaseIterable, Sendable {
+        case asset
         case liability
         case revenue
         case tax
@@ -121,11 +156,12 @@ enum AppLedgerAccount: String, Codable, CaseIterable, Sendable {
 
         var displayName: String {
             switch self {
-            case .liability: return "Kundenguthaben (Teilverbindlichkeiten)"
-            case .revenue:  return "Erlöskonten"
-            case .tax:      return "Steuerkonten"
-            case .expense:  return "Aufwandskonten"
-            case .clearing: return "Verrechnungskonten"
+            case .asset:     return "Aktiva (Bank/Wertpapiere)"
+            case .liability: return "Verbindlichkeiten"
+            case .revenue:   return "Erlöskonten"
+            case .tax:       return "Steuerkonten"
+            case .expense:   return "Aufwandskonten"
+            case .clearing:  return "Verrechnungskonten"
             }
         }
     }
@@ -199,6 +235,16 @@ enum AppLedgerTransactionType: String, Codable, Sendable {
     case vatRemittance       // USt-Abführung ans Finanzamt
     case vatInputClaim       // Vorsteuer-Anspruch aus Eingangsrechnung
     case operatingExpense    // Betriebsausgabe
+
+    // Steuern auf Trade-Settlement (ADR-010 / PR4)
+    case withholdingTax      // Abgeltungsteuer / Quellensteuer
+    case solidaritySurcharge // Solidaritätszuschlag
+    case churchTax           // Kirchensteuer
+
+    // Trade-Cash / Wallet-Bewegungen (ADR-011 / PR5)
+    case tradeCash           // Wertpapierkauf/-verkauf via Treuhand-Bank
+    case walletDeposit       // Einzahlung
+    case walletWithdrawal    // Auszahlung
 
     // Corrections
     case adjustment          // Manuelle Korrektur

@@ -3,8 +3,7 @@ import Combine
 
 // MARK: - Trading Notification Service Implementation
 /// Handles trading notifications, confirmations, and invoice generation
-final class TradingNotificationService: TradingNotificationServiceProtocol, ServiceLifecycle {
-    static let shared = TradingNotificationService()
+final class TradingNotificationService: TradingNotificationServiceProtocol, ServiceLifecycle, @unchecked Sendable {
 
     @Published var isLoading = false
     @Published var errorMessage: String?
@@ -13,16 +12,20 @@ final class TradingNotificationService: TradingNotificationServiceProtocol, Serv
     private let invoiceService: any InvoiceServiceProtocol
     private let transactionIdService: any TransactionIdServiceProtocol
     private let userService: any UserServiceProtocol
+    private let configurationService: any ConfigurationServiceProtocol
 
-    init(documentService: any DocumentServiceProtocol = DocumentService.shared,
-         invoiceService: any InvoiceServiceProtocol = InvoiceService(),
-         transactionIdService: any TransactionIdServiceProtocol = TransactionIdService(),
-         userService: any UserServiceProtocol = UserService()) {
+    init(
+        documentService: any DocumentServiceProtocol,
+        invoiceService: any InvoiceServiceProtocol,
+        transactionIdService: any TransactionIdServiceProtocol,
+        userService: any UserServiceProtocol,
+        configurationService: any ConfigurationServiceProtocol
+    ) {
         self.documentService = documentService
         self.invoiceService = invoiceService
         self.transactionIdService = transactionIdService
         self.userService = userService
-        // No initial data loading needed for notification service
+        self.configurationService = configurationService
     }
 
     // MARK: - ServiceLifecycle
@@ -302,7 +305,8 @@ final class TradingNotificationService: TradingNotificationServiceProtocol, Serv
             customerInfo: customerInfo,
             transactionIdService: transactionIdService,
             tradeNumbers: [trade.tradeNumber],
-            commissions: []  // Individual commission details are loaded dynamically in the view
+            commissions: [], // Individual commission details are loaded dynamically in the view
+            traderCommissionRateSnapshot: configurationService.effectiveCommissionRate
         )
 
         // Create document name with German format
@@ -320,7 +324,8 @@ final class TradingNotificationService: TradingNotificationServiceProtocol, Serv
             uploadedAt: Date(),
             invoiceData: creditNoteInvoice,
             tradeId: trade.id,
-            documentNumber: creditNoteInvoice.invoiceNumber
+            documentNumber: creditNoteInvoice.invoiceNumber,
+            traderCommissionRateSnapshot: creditNoteInvoice.traderCommissionRateSnapshot
         )
 
         // Add document to document service

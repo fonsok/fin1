@@ -8,7 +8,7 @@ struct PendingConfigurationApprovalSheet: View {
         NavigationStack {
             VStack(spacing: ResponsiveDesign.spacing(24)) {
                 Image(systemName: "checkmark.seal")
-                    .font(.system(size: ResponsiveDesign.iconSize() * 2))
+                    .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2))
                     .foregroundColor(.green)
 
                 Text("Approve Configuration Change")

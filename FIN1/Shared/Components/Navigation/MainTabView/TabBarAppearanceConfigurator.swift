@@ -6,6 +6,17 @@ import UIKit
 enum TabBarAppearanceConfigurator {
     /// Configures the default tab bar appearance
     static func configureAppearance() {
+        if Thread.isMainThread {
+            MainActor.assumeIsolated { applyTabBarChrome() }
+        } else {
+            DispatchQueue.main.sync {
+                MainActor.assumeIsolated { applyTabBarChrome() }
+            }
+        }
+    }
+
+    @MainActor
+    private static func applyTabBarChrome() {
         let appearance = UITabBarAppearance()
         appearance.configureWithOpaqueBackground()
         appearance.backgroundColor = UIColor(AppTheme.sectionBackground)

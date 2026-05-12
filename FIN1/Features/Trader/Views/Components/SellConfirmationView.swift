@@ -32,7 +32,7 @@ struct SellConfirmationView: View {
                     VStack(spacing: ResponsiveDesign.spacing(8)) {
                         // Success Icon
                         Image(systemName: "checkmark")
-                            .font(.system(size: ResponsiveDesign.iconSize()))
+                            .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize()))
                             .foregroundColor(AppTheme.accentGreen)
 
                         // Title

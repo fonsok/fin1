@@ -15,7 +15,7 @@ struct WalletDepositSheet: View {
                     VStack(spacing: ResponsiveDesign.spacing(6)) {
                         VStack(spacing: ResponsiveDesign.spacing(3)) {
                             Image(systemName: "arrow.down.circle.fill")
-                                .font(.system(size: ResponsiveDesign.iconSize() * 2))
+                                .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2))
                                 .foregroundColor(AppTheme.accentGreen)
 
                             Text("Einzahlung")

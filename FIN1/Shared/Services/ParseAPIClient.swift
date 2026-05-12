@@ -3,7 +3,13 @@ import Foundation
 // MARK: - Parse API Client Implementation
 
 /// HTTP client for Parse Server REST API
-final class ParseAPIClient: ParseAPIClientProtocol {
+final class ParseAPIClient: ParseAPIClientProtocol, @unchecked Sendable {
+
+    /// Bridges non-`Sendable` operation closures into the `CircuitBreaker` actor.
+    private final class UncheckedAsyncOperationBox<T>: @unchecked Sendable {
+        let run: () async throws -> T
+        init(_ run: @escaping () async throws -> T) { self.run = run }
+    }
 
     // MARK: - Properties (internal for extensions)
 
@@ -98,11 +104,12 @@ final class ParseAPIClient: ParseAPIClientProtocol {
 
     /// Executes a network operation with circuit breaker protection and automatic retry logic
     func executeWithRetry<T>(_ operation: @escaping () async throws -> T) async throws -> T {
-        // First, execute through circuit breaker
-        return try await circuitBreaker.execute {
-            // Then apply retry logic
+        let box = UncheckedAsyncOperationBox {
             try await self.executeRetryLogic(operation: operation)
         }
+        return try await circuitBreaker.execute {
+            try await box.run()
+        }.value
     }
 
     /// Executes retry logic with exponential backoff
@@ -203,6 +210,21 @@ final class ParseAPIClient: ParseAPIClientProtocol {
     enum ParseDateCodingKeys: String, CodingKey {
         case type = "__type"
         case iso
+    }
+
+    /// Parse REST error JSON: `{ "code": 142, "error": "…" }`.
+    static func parseErrorMessageFromResponseBody(_ data: Data) -> String? {
+        struct ParseRESTError: Decodable {
+            let code: Int?
+            let error: String?
+        }
+        guard !data.isEmpty,
+              let body = try? JSONDecoder().decode(ParseRESTError.self, from: data),
+              let message = body.error?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !message.isEmpty else {
+            return nil
+        }
+        return message
     }
 
     func validateResponse(_ response: URLResponse) throws {

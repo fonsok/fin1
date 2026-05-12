@@ -53,6 +53,9 @@ struct InvestorCollectionBillOutput {
     let grossProfit: Double
     let roiGrossProfit: Double
     let roiInvestedAmount: Double
+
+    /// True when a backend fetch was attempted, failed, and local calculation was used instead.
+    let usedLocalFallbackDueToBackendError: Bool
 }
 
 /// Validation result for input data

@@ -7,12 +7,18 @@ import UIKit
 /// - Investor documents (`CollectionBill_Investment{InvestmentId}_...`) show the Investment Detail sheet.
 struct CollectionBillDocumentView: View {
     @StateObject private var viewModel: CollectionBillDocumentViewModel
+    @Environment(\.appServices) private var services
 
     init(document: Document, services: AppServices) {
         self._viewModel = StateObject(wrappedValue: CollectionBillDocumentViewModel(
             document: document,
             services: services
         ))
+    }
+
+    /// Merged document from `DocumentService` when the notification payload omits fields (investmentId, etc.).
+    private var displayDocument: Document {
+        viewModel.canonicalDocument ?? viewModel.document
     }
 
     var body: some View {
@@ -22,23 +28,31 @@ struct CollectionBillDocumentView: View {
                     .task {
                         await viewModel.loadTargetFromDocument()
                     }
-            } else if viewModel.document.type == .investorCollectionBill,
-                      viewModel.investment != nil,
-                      let statementViewModel = viewModel.createInvestorStatementViewModel() {
-                // Show detailed Investment Collection Bill view
-                InvestorInvestmentStatementView(viewModel: statementViewModel)
-            } else if viewModel.document.type == .investorCollectionBill,
+            } else if displayDocument.type == .investorCollectionBill,
+                      let investment = viewModel.investment {
+                // Show detailed Investment Collection Bill view.
+                // Wrapper owns the inner VM via @StateObject so SwiftUI body
+                // re-evaluations don't replace the observed instance mid-refresh
+                // (otherwise the items table renders empty even though
+                // `refreshFromBackend` already populated `statementItems` on the
+                // previous instance).
+                InvestorInvestmentStatementViewWrapper(
+                    investment: investment,
+                    documentNumber: (viewModel.canonicalDocument ?? viewModel.document).accountingDocumentNumber,
+                    services: services
+                )
+            } else if displayDocument.type == .investorCollectionBill,
                       let previewImage = viewModel.investorPreviewImage {
                 // Fallback to PDF preview if investment not found
                 InvestorCollectionBillDocumentView(
-                    document: viewModel.document,
+                    document: displayDocument,
                     previewImage: previewImage,
                     pdfData: viewModel.investorPDFData
                 )
             } else if viewModel.fallbackToDocumentViewer {
-                DocumentViewer(document: viewModel.document)
+                DocumentViewer(document: displayDocument)
             } else if let trade = viewModel.trade {
-                CollectionBillViewWrapper(trade: trade, document: viewModel.document)
+                CollectionBillViewWrapper(trade: trade, document: displayDocument, fullTrade: viewModel.resolvedFullTrade)
             } else if let investment = viewModel.investment {
                 InvestmentDetailView(investment: investment)
             } else {
@@ -66,7 +80,7 @@ struct CollectionBillDocumentView: View {
                     .multilineTextAlignment(.center)
             }
 
-            Text("Document: \(viewModel.document.name)")
+            Text("Document: \(displayDocument.name)")
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)

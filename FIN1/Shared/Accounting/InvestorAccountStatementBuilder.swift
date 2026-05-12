@@ -15,6 +15,7 @@ enum InvestorAccountStatementBuilder {
     /// (`initialAccountBalance`), and closing balance is derived from ledger + wallet entries
     /// (same basis as trader statements). Otherwise the legacy path infers opening from
     /// `investorCashBalanceService` cache, which can drift from server configuration.
+    @MainActor
     static func buildSnapshotWithWallet(
         for user: User?,
         investorCashBalanceService: any InvestorCashBalanceServiceProtocol,
@@ -41,7 +42,7 @@ enum InvestorAccountStatementBuilder {
             investmentEntries = await loadBackendEntries(
                 for: user,
                 settlementAPIService: settlementService,
-                localFallback: { investorCashBalanceService.getTransactions(for: user.id) }
+                investorCashBalanceService: investorCashBalanceService
             )
         } else {
             investmentEntries = investorCashBalanceService.getTransactions(for: user.id)
@@ -72,23 +73,24 @@ enum InvestorAccountStatementBuilder {
     // MARK: - Backend Integration
 
     /// Fetches investor account statement entries from the backend and converts them
-    /// to `AccountStatementEntry` objects. Falls back to `localFallback()` on error.
+    /// to `AccountStatementEntry` objects. Falls back to the local ledger on error.
+    @MainActor
     private static func loadBackendEntries(
         for user: User,
         settlementAPIService: any SettlementAPIServiceProtocol,
-        localFallback: () -> [AccountStatementEntry]
+        investorCashBalanceService: any InvestorCashBalanceServiceProtocol
     ) async -> [AccountStatementEntry] {
         do {
             let response = try await settlementAPIService.fetchAccountStatement(
                 limit: 200, skip: 0, entryType: nil
             )
             guard !response.entries.isEmpty else {
-                return localFallback()
+                return investorCashBalanceService.getTransactions(for: user.id)
             }
             return response.entries.compactMap { convertBackendEntry($0) }
         } catch {
             print("⚠️ InvestorAccountStatementBuilder: Backend entries unavailable (\(error.localizedDescription)) — using local ledger")
-            return localFallback()
+            return investorCashBalanceService.getTransactions(for: user.id)
         }
     }
 
@@ -149,7 +151,19 @@ enum InvestorAccountStatementBuilder {
         var metadata: [String: String] = ["source": "backend"]
         if let tradeId = entry.tradeId { metadata["tradeId"] = tradeId }
         if let investmentId = entry.investmentId { metadata["investmentId"] = investmentId }
+        if let investmentNumber = entry.investmentNumber, !investmentNumber.isEmpty {
+            metadata["investmentNumber"] = investmentNumber
+            metadata["businessReference"] = investmentNumber
+        } else if let businessReference = entry.businessReference, !businessReference.isEmpty {
+            metadata["businessReference"] = businessReference
+        }
         if let tradeNumber = entry.tradeNumber { metadata["tradeNumber"] = String(format: "%03d", tradeNumber) }
+        if let referenceDocumentId = entry.referenceDocumentId, !referenceDocumentId.isEmpty {
+            metadata["referenceDocumentId"] = referenceDocumentId
+        }
+        if let referenceDocumentNumber = entry.referenceDocumentNumber, !referenceDocumentNumber.isEmpty {
+            metadata["referenceDocumentNumber"] = referenceDocumentNumber
+        }
 
         return AccountStatementEntry(
             title: title,
@@ -159,6 +173,8 @@ enum InvestorAccountStatementBuilder {
             direction: direction,
             category: category,
             reference: entry.objectId,
+            referenceDocumentId: entry.referenceDocumentId,
+            referenceDocumentNumber: entry.referenceDocumentNumber,
             metadata: metadata,
             balanceAfter: entry.balanceAfter
         )
@@ -229,6 +245,8 @@ enum InvestorAccountStatementBuilder {
                 direction: entry.direction,
                 category: entry.category,
                 reference: entry.reference,
+                referenceDocumentId: entry.referenceDocumentId,
+                referenceDocumentNumber: entry.referenceDocumentNumber,
                 metadata: entry.metadata,
                 balanceAfter: runningBalance,
                 valueDate: entry.valueDate

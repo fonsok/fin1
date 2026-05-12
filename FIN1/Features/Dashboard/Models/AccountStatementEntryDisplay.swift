@@ -3,6 +3,46 @@ import Foundation
 // MARK: - Account Statement Entry Display Helpers
 /// Extension providing human-readable descriptions for account statement entries
 extension AccountStatementEntry {
+    var resolvedReferenceDocumentNumber: String? {
+        if let referenceDocumentNumber, !referenceDocumentNumber.isEmpty {
+            return referenceDocumentNumber
+        }
+        if let fromMetadata = metadata["referenceDocumentNumber"], !fromMetadata.isEmpty {
+            return fromMetadata
+        }
+        if let fromMetadata = metadata["accountingDocumentNumber"], !fromMetadata.isEmpty {
+            return fromMetadata
+        }
+        return nil
+    }
+
+    private func appendDocumentNumber(to base: String?) -> String? {
+        guard let docNo = resolvedReferenceDocumentNumber, !docNo.isEmpty else {
+            return base
+        }
+        let suffix = "Belegnr.: \(docNo)"
+        guard let base, !base.isEmpty else {
+            return suffix
+        }
+        if base.contains("Belegnr.:") {
+            return base
+        }
+        return "\(base) · \(suffix)"
+    }
+    /// Prefer backend business number (INV-YYYY-xxxxx) when present; otherwise
+    /// normalize UUID/objectId style references to a stable short INV label.
+    private var preferredInvestmentReference: String? {
+        let rawReference = metadata["businessReference"] ?? metadata["investmentNumber"] ?? metadata["investmentId"] ?? reference
+        guard let rawReference, !rawReference.isEmpty else { return nil }
+        if rawReference.uppercased().hasPrefix("INV-") {
+            return rawReference
+        }
+        let compact = rawReference
+            .replacingOccurrences(of: "-", with: "")
+            .uppercased()
+        guard !compact.isEmpty else { return rawReference }
+        return "INV-\(String(compact.prefix(8)))"
+    }
 
     // MARK: - Description Title
 
@@ -37,34 +77,36 @@ extension AccountStatementEntry {
 
     /// Optional secondary line that explains the cash movement in plain language.
     var descriptionSubtitle: String? {
+        let base: String?
         switch category {
         case .investment:
-            return investmentDescriptionSubtitle
+            base = investmentDescriptionSubtitle
         case .walletDeposit:
-            return "Geldeingang von Ihrem Referenzkonto auf Ihr \(AppBrand.appName)-Wallet."
+            base = "Geldeingang von Ihrem Referenzkonto auf Ihr \(AppBrand.appName)-Wallet."
         case .walletWithdrawal:
-            return "Geldausgang von Ihrem \(AppBrand.appName)-Wallet auf Ihr Referenzkonto."
+            base = "Geldausgang von Ihrem \(AppBrand.appName)-Wallet auf Ihr Referenzkonto."
         case .serviceCharge:
-            return serviceChargeDescriptionSubtitle
+            base = serviceChargeDescriptionSubtitle
         case .profitDistribution:
-            return profitDistributionDescriptionSubtitle
+            base = profitDistributionDescriptionSubtitle
         case .remainingBalance:
-            return remainingBalanceDescriptionSubtitle
+            base = remainingBalanceDescriptionSubtitle
         case .tradeSettlement:
-            return tradeSettlementDescriptionSubtitle
+            base = tradeSettlementDescriptionSubtitle
         case .commission:
-            return commissionDescriptionSubtitle
+            base = commissionDescriptionSubtitle
         case .adjustment:
-            return "Manual accounting adjustment applied to your cash balance."
+            base = "Manual accounting adjustment applied to your cash balance."
         case .other:
-            return subtitle
+            base = subtitle
         }
+        return appendDocumentNumber(to: base)
     }
 
     // MARK: - Private Title Helpers
 
     private var investmentDescriptionTitle: String {
-        let investmentId = metadata["investmentId"] ?? reference
+        let investmentId = preferredInvestmentReference
         if direction == .debit {
             if let investmentId {
                 return "Reserved for Investment \(investmentId)"
@@ -79,7 +121,7 @@ extension AccountStatementEntry {
     }
 
     private var serviceChargeDescriptionTitle: String {
-        let investmentId = metadata["investmentId"] ?? reference
+        let investmentId = preferredInvestmentReference
         if let investmentId {
             return "App service charge for Investment \(investmentId)"
         }
@@ -87,7 +129,7 @@ extension AccountStatementEntry {
     }
 
     private var profitDistributionDescriptionTitle: String {
-        let investmentId = metadata["investmentId"] ?? reference
+        let investmentId = preferredInvestmentReference
         if let investmentId, !investmentId.isEmpty {
             return "Profit distribution from Investment \(investmentId)"
         }
@@ -95,7 +137,7 @@ extension AccountStatementEntry {
     }
 
     private var remainingBalanceDescriptionTitle: String {
-        let investmentId = metadata["investmentId"] ?? reference
+        let investmentId = preferredInvestmentReference
         if let investmentId, !investmentId.isEmpty {
             return "Remaining balance distribution from Investment \(investmentId)"
         }
@@ -164,7 +206,7 @@ extension AccountStatementEntry {
     // MARK: - Private Subtitle Helpers
 
     private var investmentDescriptionSubtitle: String? {
-        let investmentId = metadata["investmentId"] ?? reference
+        let investmentId = preferredInvestmentReference
         if direction == .debit {
             if let investmentId {
                 return "Cash moved out of available balance and locked for Investment \(investmentId)."
@@ -179,7 +221,7 @@ extension AccountStatementEntry {
     }
 
     private var serviceChargeDescriptionSubtitle: String? {
-        let investmentId = metadata["investmentId"] ?? reference
+        let investmentId = preferredInvestmentReference
         let isRefundableFlag = metadata["isRefundable"] ?? "false"
         let refundableText = isRefundableFlag == "true" ? "refundable fee" : "non‑refundable fee"
         if let investmentId {
@@ -189,7 +231,7 @@ extension AccountStatementEntry {
     }
 
     private var profitDistributionDescriptionSubtitle: String? {
-        let investmentId = metadata["investmentId"] ?? reference
+        let investmentId = preferredInvestmentReference
         if let investmentId, !investmentId.isEmpty {
             return "Cash inflow from realized profits on Investment \(investmentId)."
         }
@@ -197,7 +239,7 @@ extension AccountStatementEntry {
     }
 
     private var remainingBalanceDescriptionSubtitle: String? {
-        let investmentId = metadata["investmentId"] ?? reference
+        let investmentId = preferredInvestmentReference
         if let investmentId, !investmentId.isEmpty {
             return "Cash returned from Investment \(investmentId) after cancellation or deletion."
         }

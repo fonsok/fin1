@@ -1,7 +1,7 @@
 import Foundation
 
 extension NumberFormatter {
-    static var localizedNumberFormatter: NumberFormatter = {
+    nonisolated(unsafe) static var localizedNumberFormatter: NumberFormatter = {
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal
         formatter.locale = Locale(identifier: "de_DE")
@@ -10,7 +10,7 @@ extension NumberFormatter {
         return formatter
     }()
 
-    static var localizedIntegerFormatter: NumberFormatter = {
+    nonisolated(unsafe) static var localizedIntegerFormatter: NumberFormatter = {
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal
         formatter.locale = Locale(identifier: "de_DE")
@@ -19,7 +19,7 @@ extension NumberFormatter {
         return formatter
     }()
 
-    static var localizedDecimalFormatter: NumberFormatter = {
+    nonisolated(unsafe) static var localizedDecimalFormatter: NumberFormatter = {
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal
         formatter.locale = Locale(identifier: "de_DE")
@@ -30,7 +30,7 @@ extension NumberFormatter {
         return formatter
     }()
 
-    static var localizedCurrencyFormatter: NumberFormatter = {
+    nonisolated(unsafe) static var localizedCurrencyFormatter: NumberFormatter = {
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal
         formatter.locale = Locale(identifier: "de_DE")
@@ -41,7 +41,7 @@ extension NumberFormatter {
         return formatter
     }()
 
-    static var roiPercentageFormatter: NumberFormatter = {
+    nonisolated(unsafe) static var roiPercentageFormatter: NumberFormatter = {
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal
         formatter.locale = Locale(identifier: "de_DE")

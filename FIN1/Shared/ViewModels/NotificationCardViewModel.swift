@@ -8,10 +8,12 @@ final class NotificationCardViewModel: ObservableObject {
     private let notificationService: any NotificationServiceProtocol
     private let customerSupportService: any CustomerSupportServiceProtocol
     private let satisfactionSurveyService: any SatisfactionSurveyServiceProtocol
+    private let documentService: any DocumentServiceProtocol
 
     // UI state
     @Published var showTicketDetail = false
     @Published var showSurvey = false
+    @Published var sheetDocument: Document?
     @Published var ticket: SupportTicket?
     @Published var surveyRequest: SurveyRequest?
     @Published var isLoadingTicket = false
@@ -22,12 +24,14 @@ final class NotificationCardViewModel: ObservableObject {
         notification: AppNotification,
         notificationService: any NotificationServiceProtocol,
         customerSupportService: any CustomerSupportServiceProtocol,
-        satisfactionSurveyService: any SatisfactionSurveyServiceProtocol
+        satisfactionSurveyService: any SatisfactionSurveyServiceProtocol,
+        documentService: any DocumentServiceProtocol
     ) {
         self.notification = notification
         self.notificationService = notificationService
         self.customerSupportService = customerSupportService
         self.satisfactionSurveyService = satisfactionSurveyService
+        self.documentService = documentService
     }
 
     func handlePrimaryTap() async {
@@ -38,6 +42,8 @@ final class NotificationCardViewModel: ObservableObject {
             await loadAndShowSurvey(surveyRequestId: surveyRequestId)
         case .ticket(let ticketId):
             await loadAndShowTicket(ticketId: ticketId)
+        case .document(let documentId):
+            await loadAndShowDocument(documentId: documentId)
         case .none:
             break
         }
@@ -122,6 +128,30 @@ final class NotificationCardViewModel: ObservableObject {
                 }
             } else {
                 errorMessage = "Das Ticket konnte nicht geladen werden. Bitte versuchen Sie es später erneut."
+            }
+            showErrorAlert = true
+        }
+
+        isLoadingTicket = false
+    }
+
+    private func loadAndShowDocument(documentId: String) async {
+        isLoadingTicket = true
+        showErrorAlert = false
+        sheetDocument = nil
+
+        do {
+            let document = try await documentService.resolveDocumentForDeepLink(objectId: documentId)
+            documentService.markDocumentAsRead(document)
+            sheetDocument = document
+        } catch let error as DocumentDeepLinkResolveError {
+            errorMessage = error.localizedDescription
+            showErrorAlert = true
+        } catch {
+            if let nsError = error as NSError?, nsError.domain == NSURLErrorDomain {
+                errorMessage = "Verbindungsfehler. Bitte überprüfen Sie Ihre Internetverbindung und versuchen Sie es erneut."
+            } else {
+                errorMessage = "Das Dokument konnte nicht geladen werden: \(error.localizedDescription)"
             }
             showErrorAlert = true
         }

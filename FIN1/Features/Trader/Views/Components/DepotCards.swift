@@ -71,7 +71,7 @@ struct DepotHistoryCard: View {
     var body: some View {
         HStack(spacing: ResponsiveDesign.spacing(12)) {
             Image(systemName: history.icon)
-                .font(.system(size: ResponsiveDesign.iconSize()))
+                .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize()))
                 .foregroundColor(AppTheme.accentLightBlue)
                 .frame(width: ResponsiveDesign.spacing(24))
 

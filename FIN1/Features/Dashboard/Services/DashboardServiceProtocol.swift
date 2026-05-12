@@ -3,7 +3,7 @@ import Combine
 
 // MARK: - Dashboard Service Protocol
 /// Defines the contract for dashboard data operations and management
-protocol DashboardServiceProtocol: ObservableObject {
+protocol DashboardServiceProtocol: ObservableObject, Sendable {
     var quickStats: DashboardStats { get }
     var isLoading: Bool { get }
     var errorMessage: String? { get }

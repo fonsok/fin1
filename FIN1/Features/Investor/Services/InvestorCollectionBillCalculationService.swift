@@ -4,6 +4,7 @@ import Foundation
 
 /// Service for calculating investor collection bill values (buy/sell amounts, quantities, fees, profit)
 /// Implements the protocol defined in InvestorCollectionBillCalculationServiceProtocol.swift
+@MainActor
 final class InvestorCollectionBillCalculationService: InvestorCollectionBillCalculationServiceProtocol {
 
     // MARK: - Public Methods
@@ -39,7 +40,8 @@ final class InvestorCollectionBillCalculationService: InvestorCollectionBillCalc
             sellFeeDetails: sellResult.feeDetails,
             grossProfit: grossProfit,
             roiGrossProfit: roiGrossProfit,
-            roiInvestedAmount: buyResult.roiInvestedAmount
+            roiInvestedAmount: buyResult.roiInvestedAmount,
+            usedLocalFallbackDueToBackendError: false
         )
     }
 
@@ -320,26 +322,58 @@ final class InvestorCollectionBillCalculationService: InvestorCollectionBillCalc
         input: InvestorCollectionBillInput,
         settlementAPIService: (any SettlementAPIServiceProtocol)?,
         tradeId: String?,
-        investmentId: String?,
-        onUsedLocalFallback: (() -> Void)? = nil
+        investmentId: String?
     ) async throws -> InvestorCollectionBillOutput {
+        var usedLocalFallbackDueToBackendError = false
         if let api = settlementAPIService, let tradeId, let investmentId {
             do {
                 let response = try await api.fetchInvestorCollectionBills(
                     limit: 1, skip: 0, investmentId: investmentId, tradeId: tradeId
                 )
-                if let bill = response.collectionBills.first, let meta = bill.metadata {
-                    if let output = mapBackendToOutput(metadata: meta, input: input) {
-                        print("✅ InvestorCollectionBillCalculationService: Using backend data for trade \(tradeId)")
-                        return output
+                print("🔍 InvestorCollectionBillCalculationService: backend returned \(response.collectionBills.count) bill(s) for trade=\(tradeId) investment=\(investmentId)")
+                if let bill = response.collectionBills.first {
+                    let hasMeta = bill.metadata != nil
+                    let hasBuyLeg = bill.metadata?.buyLeg != nil
+                    print("   • bill.id=\(bill.objectId) hasMetadata=\(hasMeta) hasBuyLeg=\(hasBuyLeg)")
+                    if let meta = bill.metadata {
+                        if let output = mapBackendToOutput(metadata: meta, input: input) {
+                            print("✅ InvestorCollectionBillCalculationService: Using backend data for trade \(tradeId)")
+                            return output
+                        } else {
+                            print("⚠️ InvestorCollectionBillCalculationService: metadata present but mapping failed (buyLeg missing) — falling back to local")
+                        }
                     }
+                } else {
+                    print("⚠️ InvestorCollectionBillCalculationService: backend returned no bills — falling back to local for trade=\(tradeId)")
                 }
             } catch {
                 print("⚠️ InvestorCollectionBillCalculationService: Backend fetch failed, falling back to local: \(error.localizedDescription)")
-                onUsedLocalFallback?()
+                usedLocalFallbackDueToBackendError = true
             }
+        } else {
+            print("⚠️ InvestorCollectionBillCalculationService: backend disabled (api=\(settlementAPIService != nil) tradeId=\(tradeId ?? "nil") investmentId=\(investmentId ?? "nil"))")
         }
-        return try calculateCollectionBill(input: input)
+        var output = try calculateCollectionBill(input: input)
+        if usedLocalFallbackDueToBackendError {
+            output = InvestorCollectionBillOutput(
+                buyAmount: output.buyAmount,
+                buyQuantity: output.buyQuantity,
+                buyPrice: output.buyPrice,
+                buyFees: output.buyFees,
+                buyFeeDetails: output.buyFeeDetails,
+                residualAmount: output.residualAmount,
+                sellAmount: output.sellAmount,
+                sellQuantity: output.sellQuantity,
+                sellAveragePrice: output.sellAveragePrice,
+                sellFees: output.sellFees,
+                sellFeeDetails: output.sellFeeDetails,
+                grossProfit: output.grossProfit,
+                roiGrossProfit: output.roiGrossProfit,
+                roiInvestedAmount: output.roiInvestedAmount,
+                usedLocalFallbackDueToBackendError: true
+            )
+        }
+        return output
     }
 
     /// Maps backend collection bill metadata to local output model.
@@ -378,7 +412,8 @@ final class InvestorCollectionBillCalculationService: InvestorCollectionBillCalc
             sellFeeDetails: sellFeeDetails,
             grossProfit: grossProfit,
             roiGrossProfit: roiGrossProfit,
-            roiInvestedAmount: roiInvestedAmount
+            roiInvestedAmount: roiInvestedAmount,
+            usedLocalFallbackDueToBackendError: false
         )
     }
 

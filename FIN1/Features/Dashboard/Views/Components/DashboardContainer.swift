@@ -57,7 +57,7 @@ private struct DashboardContainerContent: View {
                             .padding(.bottom, ResponsiveDesign.spacing(8))
 
                         // Quick Stats
-                        DashboardStatsSection(navigationPath: $navigationPath)
+                        DashboardStatsSection(navigationPath: $navigationPath, appServices: services)
                             .environmentObject(tabRouter)
                             .padding(.bottom, ResponsiveDesign.spacing(12))
 
@@ -83,11 +83,7 @@ private struct DashboardContainerContent: View {
                 case .accountStatement:
                     AccountStatementView(services: services)
                 case .wallet:
-                    if services.configurationService.walletFeatureEnabled {
-                        WalletViewWrapper(services: services)
-                    } else {
-                        EmptyView()
-                    }
+                    WalletViewWrapper(services: services)
                 }
             }
         }

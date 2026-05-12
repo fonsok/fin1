@@ -5,6 +5,7 @@ import Security
 // MARK: - Token Storage Protocol
 /// Protocol for secure token storage
 /// Implementations should use Keychain or other secure storage mechanisms
+@MainActor
 protocol TokenStorageProtocol {
     /// Store authentication tokens securely
     /// - Parameters:
@@ -71,6 +72,7 @@ enum TokenStorageError: Error, LocalizedError {
 
 // MARK: - Keychain Token Storage
 /// Secure token storage using iOS Keychain
+@MainActor
 final class KeychainTokenStorage: TokenStorageProtocol {
 
     // MARK: - Logger
@@ -255,6 +257,7 @@ final class KeychainTokenStorage: TokenStorageProtocol {
 // MARK: - In-Memory Token Storage (for Testing)
 #if DEBUG
 /// In-memory token storage for testing purposes
+@MainActor
 final class InMemoryTokenStorage: TokenStorageProtocol {
     private var accessToken: String?
     private var refreshToken: String?

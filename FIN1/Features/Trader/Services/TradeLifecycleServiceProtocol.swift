@@ -3,7 +3,7 @@ import Combine
 
 // MARK: - Trade Lifecycle Service Protocol
 /// Defines the contract for trade creation, completion, and management
-protocol TradeLifecycleServiceProtocol: ObservableObject {
+protocol TradeLifecycleServiceProtocol: ObservableObject, Sendable {
     var completedTrades: [Trade] { get }
     var isLoading: Bool { get }
     var errorMessage: String? { get }

@@ -16,7 +16,7 @@ import Foundation
 //   - investmentId, poolTradeParticipationService, tradeLifecycleService, invoiceService
 //   - investmentService (used by CompletedInvestmentsTable, CommissionCalculationExplanationSheet)
 //   - calculationService (used by CompletedInvestmentsTable, CommissionCalculationExplanationSheet)
-//   - commissionRate (used by CompletedInvestmentsTable, CommissionCalculationExplanationSheet)
+//   - commissionRate — required; pass configurationService.effectiveCommissionRate (no CalculationConstants default)
 //
 // DEPENDENT FILES (will fail to build if this API changes):
 //   - CommissionCalculationExplanationSheet.swift
@@ -41,6 +41,7 @@ struct InvestorInvestmentStatementSummary {
 
 enum InvestorInvestmentStatementAggregator {
 
+    @MainActor
     static func summarizeInvestment(
         investmentId: String,
         poolTradeParticipationService: any PoolTradeParticipationServiceProtocol,
@@ -50,7 +51,8 @@ enum InvestorInvestmentStatementAggregator {
         calculationService: (any InvestorCollectionBillCalculationServiceProtocol)? = nil,
         commissionCalculationService: (any CommissionCalculationServiceProtocol)? = nil,
         investment: Investment? = nil,
-        commissionRate: Double = CalculationConstants.FeeRates.traderCommissionRate
+        additionalTradesById: [String: Trade] = [:],
+        commissionRate: Double
     ) -> InvestorInvestmentStatementSummary? {
 
         let participations = poolTradeParticipationService.getParticipations(forInvestmentId: investmentId)
@@ -70,6 +72,11 @@ enum InvestorInvestmentStatementAggregator {
         }
         let totalInvestmentCapital = investmentToUse?.amount ?? participations.reduce(0.0) { $0 + $1.allocatedAmount }
 
+        // Trades may be missing from `tradeLifecycleService.completedTrades` for
+        // investor sessions (the trader-centric cache is not populated for the
+        // investor role). `additionalTradesById` carries server-fetched trades
+        // resolved via `resolveTradesForPoolParticipations` so the investor's
+        // Collection Bill / "Awaiting invoices" placeholder resolves.
         let trades = tradeLifecycleService.completedTrades
         let calcService = calculationService ?? InvestorCollectionBillCalculationService()
         let commissionService = commissionCalculationService ?? CommissionCalculationService()
@@ -85,7 +92,9 @@ enum InvestorInvestmentStatementAggregator {
         var statementCommissionTotal = 0.0 // Sum of item-level commissions
 
         for participation in participations {
-            guard let trade = trades.first(where: { $0.id == participation.tradeId }) else {
+            let resolvedTrade = trades.first(where: { $0.id == participation.tradeId })
+                ?? additionalTradesById[participation.tradeId]
+            guard let trade = resolvedTrade else {
                 print("❌ InvestorInvestmentStatementAggregator: Missing trade \(participation.tradeId) for investment \(investmentId)")
                 return nil
             }
@@ -191,5 +200,51 @@ enum InvestorInvestmentStatementAggregator {
             roiInvestedAmount: roiInvestedAmountTotal,
             statementCommission: statementCommissionTotal  // Use sum of item-level commissions
         )
+    }
+}
+
+// MARK: - Trade Resolution (Investor view)
+//
+// Investors do not own a populated `tradeLifecycleService.completedTrades`
+// cache (that publisher is fed by trader-side `getOpenTrades` /
+// `getTradeHistory` flows). The investor only carries `PoolTradeParticipation`
+// records, which reference `tradeId`. To hydrate the related Trades for
+// "Trade Nr." display and statement aggregation we ask the server lazily.
+//
+// The resolver:
+//   1. Returns any locally-cached trades immediately (no roundtrip needed).
+//   2. Fetches the missing ones via `TradeAPIService.fetchTrade(tradeId:)`.
+//   3. Fails soft per-trade — a missing or unauthorised trade simply stays
+//      out of the result map, the aggregator falls back to "Awaiting invoices"
+//      for that single line item without breaking the rest.
+extension InvestorInvestmentStatementAggregator {
+    @MainActor
+    static func resolveTradesForPoolParticipations(
+        investedTradeIds: Set<String>,
+        localTrades: [Trade],
+        tradeAPIService: (any TradeAPIServiceProtocol)?
+    ) async -> [String: Trade] {
+        var result: [String: Trade] = [:]
+        var missingIds: [String] = []
+        for tradeId in investedTradeIds {
+            if let trade = localTrades.first(where: { $0.id == tradeId }) {
+                result[tradeId] = trade
+            } else {
+                missingIds.append(tradeId)
+            }
+        }
+        guard !missingIds.isEmpty, let api = tradeAPIService else {
+            return result
+        }
+        for id in missingIds {
+            do {
+                if let trade = try await api.fetchTrade(tradeId: id) {
+                    result[id] = trade
+                }
+            } catch {
+                print("⚠️ InvestorInvestmentStatementAggregator: fetchTrade \(id) failed: \(error.localizedDescription)")
+            }
+        }
+        return result
     }
 }

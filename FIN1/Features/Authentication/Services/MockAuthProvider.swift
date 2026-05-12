@@ -4,6 +4,7 @@ import OSLog
 // MARK: - Mock Auth Provider
 /// Mock authentication provider for development and testing
 /// This provider simulates authentication without requiring a real backend
+@MainActor
 final class MockAuthProvider: AuthProviderProtocol {
 
     // MARK: - Logger

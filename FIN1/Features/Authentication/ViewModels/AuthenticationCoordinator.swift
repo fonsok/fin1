@@ -3,14 +3,15 @@ import LocalAuthentication
 
 // MARK: - Authentication Coordinator
 /// Handles the core authentication logic and biometric authentication
+@MainActor
 struct AuthenticationCoordinator {
 
     // MARK: - Biometric Authentication
 
     static func performBiometricLogin(
         userService: any UserServiceProtocol,
-        onSuccess: @escaping () -> Void,
-        onError: @escaping (AppError) -> Void
+        onSuccess: @escaping @MainActor () -> Void,
+        onError: @escaping @MainActor (AppError) -> Void
     ) {
         let context = LAContext()
         var error: NSError?
@@ -23,21 +24,19 @@ struct AuthenticationCoordinator {
         context.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics,
                              localizedReason: "Sign in to \(AppBrand.appName)") { success, _ in
             if success {
-                Task {
+                Task { @MainActor in
                     do {
                         // Must satisfy Parse Server password policy (uppercase/lowercase/digit/special)
                         try await userService.signIn(email: "biometric@example.com", password: TestConstants.password)
-                        await MainActor.run {
-                            onSuccess()
-                        }
+                        onSuccess()
                     } catch {
-                        await MainActor.run {
-                            onError(AppError.authenticationError(.invalidCredentials))
-                        }
+                        onError(AppError.authenticationError(.invalidCredentials))
                     }
                 }
             } else {
-                onError(AppError.authenticationError(.invalidCredentials))
+                Task { @MainActor in
+                    onError(AppError.authenticationError(.invalidCredentials))
+                }
             }
         }
     }
@@ -48,21 +47,17 @@ struct AuthenticationCoordinator {
         email: String,
         password: String,
         userService: any UserServiceProtocol,
-        onSuccess: @escaping () -> Void,
-        onError: @escaping (AppError) -> Void
+        onSuccess: @escaping @MainActor () -> Void,
+        onError: @escaping @MainActor (AppError) -> Void
     ) {
         // Mock authentication logic
         if email.lowercased() == "test@example.com" && password == "password" {
-            Task {
+            Task { @MainActor in
                 do {
                     try await userService.signIn(email: email, password: password)
-                    await MainActor.run {
-                        onSuccess()
-                    }
+                    onSuccess()
                 } catch {
-                    await MainActor.run {
-                        onError(AppError.authenticationError(.invalidCredentials))
-                    }
+                    onError(AppError.authenticationError(.invalidCredentials))
                 }
             }
         } else {
@@ -75,21 +70,17 @@ struct AuthenticationCoordinator {
     static func performSignUp(
         userData: SignUpData,
         userService: any UserServiceProtocol,
-        onSuccess: @escaping () -> Void,
-        onError: @escaping (AppError) -> Void
+        onSuccess: @escaping @MainActor () -> Void,
+        onError: @escaping @MainActor (AppError) -> Void
     ) {
         do {
             let newUser = try userData.createUser()
-            Task {
+            Task { @MainActor in
                 do {
                     try await userService.signUp(userData: newUser)
-                    await MainActor.run {
-                        onSuccess()
-                    }
+                    onSuccess()
                 } catch {
-                    await MainActor.run {
-                        onError(AppError.authenticationError(.emailAlreadyExists))
-                    }
+                    onError(AppError.authenticationError(.emailAlreadyExists))
                 }
             }
         } catch {

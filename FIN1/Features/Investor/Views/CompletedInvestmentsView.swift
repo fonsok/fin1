@@ -136,7 +136,7 @@ struct CompletedInvestmentsView: View {
                     traderUsernames: viewModel.traderUsernames,
                     tradeNumbers: viewModel.tradeNumbers,
                     investmentSummaries: viewModel.investmentSummaries,
-                    tradeLedReturnPercentages: viewModel.tradeLedReturnPercentages,
+                    canonicalSummaries: viewModel.canonicalSummaries,
                     onShowDetails: { investment in
                         selectedCompletedInvestment = investment
                     }

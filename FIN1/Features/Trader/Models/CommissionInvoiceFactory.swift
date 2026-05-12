@@ -73,7 +73,8 @@ extension Invoice {
         customerInfo: CustomerInfo,
         transactionIdService: any TransactionIdServiceProtocol,
         tradeNumbers: [Int],
-        commissions: [CommissionAccumulation]
+        commissions: [CommissionAccumulation],
+        traderCommissionRateSnapshot: Double
     ) -> Invoice {
         let invoiceNumber = InvoiceNumberGenerator.generate(using: transactionIdService)
 
@@ -119,7 +120,8 @@ extension Invoice {
             tradeNumber: primaryTradeNumber,
             taxNote: InvoiceNotes.serviceChargeTaxNote,
             legalNote: InvoiceNotes.legalNote,
-            dueDate: Calendar.current.date(byAdding: .day, value: 14, to: Date())
+            dueDate: Calendar.current.date(byAdding: .day, value: 14, to: Date()),
+            traderCommissionRateSnapshot: traderCommissionRateSnapshot
         )
     }
 

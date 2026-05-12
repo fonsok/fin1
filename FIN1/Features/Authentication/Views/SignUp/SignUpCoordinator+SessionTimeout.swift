@@ -26,11 +26,14 @@ extension SignUpCoordinator {
                 guard let self, !self.showTimeoutWarning else { return }
                 self.showTimeoutWarning = true
                 self.timeoutCountdown = Int(Self.warningLeadTime)
-                self.countdownTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] timer in
+                self.countdownTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
                     Task { @MainActor in
-                        guard let self else { timer.invalidate(); return }
+                        guard let self else { return }
                         self.timeoutCountdown -= 1
-                        if self.timeoutCountdown <= 0 { timer.invalidate() }
+                        if self.timeoutCountdown <= 0 {
+                            self.countdownTimer?.invalidate()
+                            self.countdownTimer = nil
+                        }
                     }
                 }
             }

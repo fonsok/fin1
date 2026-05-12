@@ -3,6 +3,7 @@ import Foundation
 // MARK: - SLA Monitoring Service Protocol
 /// Protocol for monitoring SLA violations and triggering automatic escalations
 
+@MainActor
 protocol SLAMonitoringServiceProtocol {
     /// Check all active tickets for SLA violations and escalate if needed
     func checkAndEscalateViolations() async throws

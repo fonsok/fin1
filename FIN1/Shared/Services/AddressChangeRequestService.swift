@@ -5,7 +5,8 @@ import Combine
 
 /// Service handling KYC-compliant address change requests.
 /// Implements ongoing due diligence requirements for AML compliance.
-final class AddressChangeRequestService: AddressChangeRequestServiceProtocol, ServiceLifecycle {
+@MainActor
+final class AddressChangeRequestService: AddressChangeRequestServiceProtocol {
 
     // MARK: - Published Properties
 
@@ -21,16 +22,6 @@ final class AddressChangeRequestService: AddressChangeRequestServiceProtocol, Se
     // MARK: - Initialization
 
     init() {}
-
-    // MARK: - ServiceLifecycle
-
-    func start() {
-        // Attach listeners, restore state if needed
-    }
-
-    func stop() {
-        // Detach listeners
-    }
 
     func reset() {
         allRequests = []

@@ -4,7 +4,8 @@ import Combine
 // MARK: - Trading Coordinator Protocol
 /// Defines the contract for coordinating trading operations across multiple services
 /// Handles complex business logic and cross-service interactions
-protocol TradingCoordinatorProtocol {
+@MainActor
+protocol TradingCoordinatorProtocol: Sendable {
     // MARK: - State Publishers
     var activeOrdersPublisher: AnyPublisher<[Order], Never> { get }
     var completedTradesPublisher: AnyPublisher<[Trade], Never> { get }
@@ -17,7 +18,7 @@ protocol TradingCoordinatorProtocol {
     func refreshTradingData() async throws
 
     // MARK: - Order Management
-    func placeBuyOrder(symbol: String, quantity: Int, price: Double, optionDirection: String?, description: String?, orderInstruction: String?, limitPrice: Double?, strike: Double?, subscriptionRatio: Double?, denomination: Int?) async throws -> OrderBuy
+    func placeBuyOrder(symbol: String, quantity: Int, price: Double, optionDirection: String?, description: String?, orderInstruction: String?, limitPrice: Double?, strike: Double?, subscriptionRatio: Double?, denomination: Int?, isMirrorPoolOrder: Bool?) async throws -> OrderBuy
     func placeSellOrder(symbol: String, quantity: Int, price: Double) async throws -> OrderSell
     func submitOrder(_ order: OrderSell) async throws
     func cancelOrder(_ orderId: String) async throws

@@ -3,6 +3,7 @@ import Combine
 
 // MARK: - Order Status Simulation Service Protocol
 /// Defines the contract for order status progression simulation
+@MainActor
 protocol OrderStatusSimulationServiceProtocol: ObservableObject {
     var isLoading: Bool { get }
     var errorMessage: String? { get }

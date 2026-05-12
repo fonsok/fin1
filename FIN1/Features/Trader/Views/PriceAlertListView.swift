@@ -250,7 +250,7 @@ struct PriceAlertEmptyState: View {
     var body: some View {
         VStack(spacing: ResponsiveDesign.spacing(16)) {
             Image(systemName: "bell.slash")
-                .font(.system(size: ResponsiveDesign.iconSize() * 2))
+                .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2))
                 .foregroundColor(AppTheme.tertiaryText)
             
             Text("No Price Alerts")

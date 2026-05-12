@@ -7,7 +7,7 @@ struct WalletTransactionRow: View {
     var body: some View {
         HStack(spacing: ResponsiveDesign.spacing(4)) {
             Image(systemName: transaction.type.icon)
-                .font(.system(size: ResponsiveDesign.iconSize()))
+                .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize()))
                 .foregroundColor(colorForType(transaction.type))
                 .frame(width: ResponsiveDesign.spacing(8), height: ResponsiveDesign.spacing(8))
                 .background(colorForType(transaction.type).opacity(0.1))

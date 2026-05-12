@@ -4,7 +4,7 @@ import Combine
 
 // MARK: - Invoice Service Implementation
 /// Handles invoice CRUD, queries, validation, and backend sync. PDF generation/export is delegated to InvoicePDFService.
-final class InvoiceService: InvoiceServiceProtocol, ServiceLifecycle {
+final class InvoiceService: InvoiceServiceProtocol, ServiceLifecycle, @unchecked Sendable {
     @Published var invoices: [Invoice] = []
     @Published var isLoading = false
     @Published var errorMessage: String?
@@ -64,6 +64,7 @@ final class InvoiceService: InvoiceServiceProtocol, ServiceLifecycle {
                     let localOnly = self.invoices.filter { !backendIds.contains($0.invoiceNumber) && $0.id.count == 36 }
                     self.invoices = backendInvoices + localOnly
                     self.isLoading = false
+                    NotificationCenter.default.post(name: .invoiceDidChange, object: nil)
                 }
                 print("✅ InvoiceService: Loaded \(backendInvoices.count) invoices from backend")
                 return
@@ -75,6 +76,7 @@ final class InvoiceService: InvoiceServiceProtocol, ServiceLifecycle {
         await MainActor.run {
             self.isLoading = false
             self.loadMockInvoices()
+            NotificationCenter.default.post(name: .invoiceDidChange, object: nil)
         }
     }
 
@@ -215,7 +217,8 @@ final class InvoiceService: InvoiceServiceProtocol, ServiceLifecycle {
                     orderId: invoice.orderId,
                     taxNote: invoice.taxNote,
                     legalNote: invoice.legalNote,
-                    dueDate: invoice.dueDate
+                    dueDate: invoice.dueDate,
+                    traderCommissionRateSnapshot: invoice.traderCommissionRateSnapshot
                 )
                 self.invoices[index] = updatedInvoice
             }
@@ -285,6 +288,45 @@ final class InvoiceService: InvoiceServiceProtocol, ServiceLifecycle {
 
     func getInvoicesForTrade(_ tradeId: String) -> [Invoice] {
         return invoices.filter { $0.tradeId == tradeId }
+    }
+
+    func invoice(matching document: Document) -> Invoice? {
+        guard document.type == .invoice else { return nil }
+        if let embedded = document.invoiceData { return embedded }
+
+        if let match = getInvoice(by: document.id) { return match }
+
+        let numberHints: [String] = [
+            document.accountingDocumentNumber,
+            Self.extractInvoiceNumberFromFilename(document.name)
+        ].compactMap { $0 }
+
+        for hint in numberHints where !hint.isEmpty {
+            if let inv = invoices.first(where: { $0.invoiceNumber == hint }) { return inv }
+        }
+
+        if let tradeId = document.tradeId {
+            let forTrade = getInvoicesForTrade(tradeId)
+            for hint in numberHints where !hint.isEmpty {
+                if let inv = forTrade.first(where: { $0.invoiceNumber == hint }) { return inv }
+            }
+            if let inv = forTrade.first(where: { $0.type == .securitiesSettlement }) {
+                return inv
+            }
+            return forTrade.max(by: { $0.createdAt < $1.createdAt })
+        }
+
+        return nil
+    }
+
+    private static func extractInvoiceNumberFromFilename(_ name: String) -> String? {
+        let pattern = #"[A-Za-z0-9]+-INV-\d{8}-\d+"#
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: []),
+              let match = regex.firstMatch(in: name, range: NSRange(name.startIndex..., in: name)),
+              let range = Range(match.range, in: name) else {
+            return nil
+        }
+        return String(name[range])
     }
 
     func getServiceChargeInvoiceForBatch(_ batchId: String, userId: String) -> Invoice? {

@@ -2,6 +2,7 @@ import Foundation
 import SwiftUI
 
 // MARK: - Saved Filters Manager
+@MainActor
 final class SavedFiltersManager: ObservableObject {
     @Published var savedFilters: [FilterCombination] = []
     private let userDefaults = UserDefaults.standard
@@ -37,7 +38,7 @@ final class SavedFiltersManager: ObservableObject {
     func loadSavedFilters() {
         // Try to load from backend first
         Task {
-            await loadFromBackend()
+            await self.loadFromBackend()
         }
 
         // Fallback to local storage
@@ -55,13 +56,11 @@ final class SavedFiltersManager: ObservableObject {
 
         do {
             let backendFilters = try await apiService.fetchTraderFilters(for: userId)
-            await MainActor.run {
-                // Merge backend filters with local (avoid duplicates by name)
-                let existingNames = Set(savedFilters.map { $0.name })
-                let newFilters = backendFilters.filter { !existingNames.contains($0.name) }
-                savedFilters.append(contentsOf: newFilters)
-                saveFilters()
-            }
+            // Merge backend filters with local (avoid duplicates by name)
+            let existingNames = Set(savedFilters.map { $0.name })
+            let newFilters = backendFilters.filter { !existingNames.contains($0.name) }
+            savedFilters.append(contentsOf: newFilters)
+            saveFilters()
         } catch {
             print("⚠️ Failed to load trader filters from backend: \(error.localizedDescription)")
         }
@@ -84,7 +83,7 @@ final class SavedFiltersManager: ObservableObject {
         // Sync to backend (write-through pattern)
         if let apiService = filterAPIService,
            let userId = userService?.currentUser?.id {
-            Task.detached { [apiService, filter, userId] in
+            Task {
                 do {
                     _ = try await apiService.saveTraderFilter(filter, userId: userId)
                     print("✅ Trader filter saved to backend: \(filter.name)")
@@ -103,7 +102,7 @@ final class SavedFiltersManager: ObservableObject {
         // Sync deletion to backend (write-through pattern)
         if let apiService = filterAPIService,
            let userId = userService?.currentUser?.id {
-            Task.detached { [apiService, filter, userId] in
+            Task {
                 do {
                     try await apiService.deleteFilter(filter.id.uuidString, context: .traderDiscovery, userId: userId)
                     print("✅ Trader filter deleted from backend: \(filter.name)")
@@ -122,7 +121,7 @@ final class SavedFiltersManager: ObservableObject {
             // Sync update to backend (write-through pattern)
             if let apiService = filterAPIService,
                let userId = userService?.currentUser?.id {
-                Task.detached { [apiService, filter, userId] in
+                Task {
                     do {
                         _ = try await apiService.updateTraderFilter(filter, userId: userId)
                         print("✅ Trader filter updated on backend: \(filter.name)")
@@ -146,7 +145,7 @@ final class SavedFiltersManager: ObservableObject {
         print("📤 Syncing trader filters to backend...")
 
         // Sync all current filters
-        let filtersToSync = await MainActor.run { savedFilters }
+        let filtersToSync = savedFilters
 
         for filter in filtersToSync {
             do {

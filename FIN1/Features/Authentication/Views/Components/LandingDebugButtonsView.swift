@@ -93,7 +93,7 @@ private struct CompanyKybDebugSection: View {
                 if style == .typewriter {
                     HStack(spacing: ResponsiveDesign.spacing(6)) {
                         Image(systemName: "building.2")
-                            .font(.system(size: 12))
+                            .font(ResponsiveDesign.scaledSystemFont(size: 12))
                         Text("Company KYB Wizard (8 Steps)")
                             .font(ResponsiveDesign.monospacedFont(size: 12, weight: .regular))
                     }
@@ -259,7 +259,7 @@ private struct CSRRoleDebugButton: View {
             if style == .typewriter {
                 HStack(spacing: ResponsiveDesign.spacing(6)) {
                     Image(systemName: icon)
-                        .font(.system(size: 12))
+                        .font(ResponsiveDesign.scaledSystemFont(size: 12))
                     Text(role.displayName)
                         .font(ResponsiveDesign.monospacedFont(size: 12, weight: .regular))
                 }
@@ -268,7 +268,7 @@ private struct CSRRoleDebugButton: View {
             } else {
                 HStack(spacing: ResponsiveDesign.spacing(4)) {
                     Image(systemName: icon)
-                        .font(.system(size: 10))
+                        .font(ResponsiveDesign.scaledSystemFont(size: 10))
                     Text(role.rawValue)
                         .font(ResponsiveDesign.captionFont())
                         .fontWeight(.medium)

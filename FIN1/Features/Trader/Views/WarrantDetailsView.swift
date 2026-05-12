@@ -95,7 +95,7 @@ struct WarrantDetailsView: View {
                                 HStack(spacing: ResponsiveDesign.spacing(16)) {
                                     Image(systemName: item.isSelected ? "checkmark.square.fill" : "square")
                                         .foregroundColor(item.isSelected ? AppTheme.accentGreen : .gray)
-                                        .font(.system(size: ResponsiveDesign.iconSize()))
+                                        .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize()))
                                     Text(item.name)
                                         .foregroundColor(AppTheme.fontColor)
                                 }

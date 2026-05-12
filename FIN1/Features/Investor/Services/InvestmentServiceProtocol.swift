@@ -4,7 +4,7 @@ import Combine
 
 // MARK: - Investment Service Protocol
 /// Defines the contract for investment operations and investment overview
-protocol InvestmentServiceProtocol: ObservableObject {
+protocol InvestmentServiceProtocol: ObservableObject, Sendable {
     var investments: [Investment] { get }
     var investmentPools: [InvestmentPool] { get }
     var isLoading: Bool { get }

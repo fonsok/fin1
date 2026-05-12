@@ -39,7 +39,7 @@ struct LandingPlatformAdvantagesView: View {
             VStack(spacing: ResponsiveDesign.spacing(8)) {
                 if style == .typewriter {
                     Text(Self.sectionTitle)
-                        .font(.system(size: 18, weight: .bold, design: .monospaced))
+                        .font(ResponsiveDesign.scaledSystemFont(size: 18, weight: .bold, design: .monospaced))
                         .foregroundColor(Color("InputText"))
                 } else {
                     HStack(spacing: ResponsiveDesign.spacing(8)) {
@@ -152,12 +152,12 @@ struct LandingPlatformAdvantagesView: View {
                         HStack(alignment: .top, spacing: ResponsiveDesign.spacing(10)) {
                             if style == .typewriter {
                                 Text("-")
-                                    .font(.system(size: 16, weight: .regular, design: .monospaced))
+                                    .font(ResponsiveDesign.scaledSystemFont(size: 16, weight: .regular, design: .monospaced))
                                     .foregroundColor(Color("InputText"))
                                     .padding(.top, ResponsiveDesign.spacing(4))
                             } else {
                                 Image(systemName: "circle.fill")
-                                    .font(.system(size: ResponsiveDesign.spacing(12)))
+                                    .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.spacing(12)))
                                     .foregroundColor(AppTheme.fontColor.opacity(0.9))
                                     .padding(.top, ResponsiveDesign.spacing(4))
                             }

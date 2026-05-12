@@ -137,6 +137,12 @@ struct InvestmentRow: Identifiable {
         status == .reserved
     }
 
+    /// Unique, human-readable label for open-investment tables.
+    /// Example: "Inv ANL-2026-00003-02"
+    var uniqueDisplayLabel: String {
+        "Inv \(investment.canonicalDisplayReference)"
+    }
+
     private func mapStatus(_ status: InvestmentReservationStatus) -> InvestmentReservationStatusDisplay {
         switch status {
         case .reserved, .cancelled:

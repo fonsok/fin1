@@ -2,7 +2,8 @@ import Foundation
 
 // MARK: - Investment Completion Service Protocol
 /// Defines the contract for investment completion checking and profit calculation
-protocol InvestmentCompletionServiceProtocol: ServiceLifecycle {
+@MainActor
+protocol InvestmentCompletionServiceProtocol {
     /// Checks and updates investment completion status for all investments or specific ones
     /// - Parameters:
     ///   - investments: Current investments array

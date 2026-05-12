@@ -14,6 +14,7 @@ final class CompletedInvestmentDetailViewModel: ObservableObject {
     private var commissionCalculationService: (any CommissionCalculationServiceProtocol)?
     private var configurationService: (any ConfigurationServiceProtocol)?
     private var settlementAPIService: (any SettlementAPIServiceProtocol)?
+    private var tradeAPIService: (any TradeAPIServiceProtocol)?
 
     // MARK: - Published
     @Published var tradeLineItems: [TradeLineItem] = []
@@ -36,7 +37,7 @@ final class CompletedInvestmentDetailViewModel: ObservableObject {
         commissionCalculationService = services.commissionCalculationService
         configurationService = services.configurationService
         settlementAPIService = services.settlementAPIService
-        rebuildTradeLineItems()
+        tradeAPIService = services.parseAPIClient.map { TradeAPIService(apiClient: $0) }
         refreshStatementSummary()
         refreshTradeLedReturnPercentage()
     }
@@ -47,32 +48,46 @@ final class CompletedInvestmentDetailViewModel: ObservableObject {
               let invoiceService,
               let investmentService,
               let calculationService,
-              let commissionCalculationService else {
+              let commissionCalculationService,
+              let configurationService else {
             statementSummary = nil
-            return
-        }
-
-        guard let configurationService else {
-            statementSummary = nil
+            tradeLineItems = []
             return
         }
 
         let commissionRate = configurationService.effectiveCommissionRate
-        statementSummary = InvestorInvestmentStatementAggregator.summarizeInvestment(
-            investmentId: investment.id,
-            poolTradeParticipationService: poolTradeParticipationService,
-            tradeLifecycleService: tradeLifecycleService,
-            invoiceService: invoiceService,
-            investmentService: investmentService,
-            calculationService: calculationService,
-            commissionCalculationService: commissionCalculationService,
-            commissionRate: commissionRate
-        )
+        let investmentId = investment.id
+        let tradeAPI = tradeAPIService
+        let localTrades = tradeLifecycleService.completedTrades
+
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            let tradeIds = Set(
+                poolTradeParticipationService.getParticipations(forInvestmentId: investmentId).map(\.tradeId)
+            )
+            let tradesById = await InvestorInvestmentStatementAggregator.resolveTradesForPoolParticipations(
+                investedTradeIds: tradeIds,
+                localTrades: localTrades,
+                tradeAPIService: tradeAPI
+            )
+            self.rebuildTradeLineItems(additionalTradesById: tradesById)
+            self.statementSummary = InvestorInvestmentStatementAggregator.summarizeInvestment(
+                investmentId: investmentId,
+                poolTradeParticipationService: poolTradeParticipationService,
+                tradeLifecycleService: tradeLifecycleService,
+                invoiceService: invoiceService,
+                investmentService: investmentService,
+                calculationService: calculationService,
+                commissionCalculationService: commissionCalculationService,
+                additionalTradesById: tradesById,
+                commissionRate: commissionRate
+            )
+        }
     }
 
     // MARK: - Investment Metadata
     var investmentNumber: String {
-        investment.id.extractInvestmentNumber()
+        investment.canonicalDisplayReference
     }
 
     var traderName: String {
@@ -336,7 +351,7 @@ final class CompletedInvestmentDetailViewModel: ObservableObject {
         NumberFormatter.localizedDecimalFormatter.string(for: totalInvestorQuantity) ?? "0,00"
     }
 
-    private func rebuildTradeLineItems() {
+    private func rebuildTradeLineItems(additionalTradesById: [String: Trade] = [:]) {
         guard
             let poolTradeParticipationService,
             let tradeLifecycleService
@@ -355,7 +370,9 @@ final class CompletedInvestmentDetailViewModel: ObservableObject {
         var items: [TradeLineItem] = []
 
         for participation in participations {
-            guard let trade = trades.first(where: { $0.id == participation.tradeId }) else { continue }
+            let trade = trades.first(where: { $0.id == participation.tradeId })
+                ?? additionalTradesById[participation.tradeId]
+            guard let trade else { continue }
 
             let unitPrice = trade.entryPrice
             guard unitPrice > 0 else { continue }
@@ -379,8 +396,8 @@ final class CompletedInvestmentDetailViewModel: ObservableObject {
     }
 
     private func refreshTradeLedReturnPercentage() {
-        guard let poolTradeParticipationService,
-              let tradeLifecycleService else {
+        guard poolTradeParticipationService != nil,
+              tradeLifecycleService != nil else {
             tradeLedReturnPercentageValue = nil
             return
         }

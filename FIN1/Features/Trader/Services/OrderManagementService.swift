@@ -3,7 +3,7 @@ import Combine
 
 // MARK: - Order Management Service Implementation
 /// Handles order placement, status updates, and management
-final class OrderManagementService: OrderManagementServiceProtocol, ServiceLifecycle {
+final class OrderManagementService: OrderManagementServiceProtocol, ServiceLifecycle, @unchecked Sendable {
     static let shared = OrderManagementService()
 
     @Published var activeOrders: [Order] = []
@@ -113,7 +113,7 @@ final class OrderManagementService: OrderManagementServiceProtocol, ServiceLifec
 
     // MARK: - Order Management
 
-    func placeBuyOrder(symbol: String, quantity: Int, price: Double, optionDirection: String?, description: String?, orderInstruction: String?, limitPrice: Double?, strike: Double?, subscriptionRatio: Double?, denomination: Int?) async throws -> OrderBuy {
+    func placeBuyOrder(symbol: String, quantity: Int, price: Double, optionDirection: String?, description: String?, orderInstruction: String?, limitPrice: Double?, strike: Double?, subscriptionRatio: Double?, denomination: Int?, isMirrorPoolOrder: Bool?) async throws -> OrderBuy {
         let params = BuyOrderParameters(
             symbol: symbol,
             quantity: quantity,
@@ -124,7 +124,8 @@ final class OrderManagementService: OrderManagementServiceProtocol, ServiceLifec
             limitPrice: limitPrice,
             strike: strike,
             subscriptionRatio: subscriptionRatio,
-            denomination: denomination
+            denomination: denomination,
+            isMirrorPoolOrder: isMirrorPoolOrder
         )
 
         return try await placeBuyOrder(params: params)
@@ -145,7 +146,7 @@ final class OrderManagementService: OrderManagementServiceProtocol, ServiceLifec
 
         // Sync to backend (write-through pattern)
         if let apiService = orderAPIService {
-            Task.detached { [apiService, newOrder] in
+            Task { [apiService, newOrder] in
                 do {
                     let savedOrder = try await apiService.saveBuyOrder(newOrder)
                     print("✅ Order synced to backend: \(savedOrder.id)")
@@ -234,7 +235,8 @@ final class OrderManagementService: OrderManagementServiceProtocol, ServiceLifec
             orderInstruction: params.orderInstruction,
             limitPrice: params.limitPrice,
             subscriptionRatio: params.subscriptionRatio,
-            denomination: params.denomination
+            denomination: params.denomination,
+            isMirrorPoolOrder: params.isMirrorPoolOrder
         )
     }
 
@@ -307,7 +309,7 @@ extension OrderManagementService {
 
         // Sync to backend (write-through pattern)
         if let apiService = orderAPIService {
-            Task.detached { [apiService, newOrder] in
+            Task { [apiService, newOrder] in
                 do {
                     let savedOrder = try await apiService.saveSellOrder(newOrder)
                     print("✅ Sell order synced to backend: \(savedOrder.id)")
@@ -344,6 +346,7 @@ extension OrderManagementService {
                     strike: order.strike,
                     orderInstruction: order.orderInstruction,
                     limitPrice: order.limitPrice,
+                isMirrorPoolOrder: order.isMirrorPoolOrder,
                     status: status
                 )
                 activeOrders[index] = updatedOrder

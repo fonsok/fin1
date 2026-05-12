@@ -8,7 +8,7 @@ struct TraderWatchlistEmptyState: View {
     var body: some View {
         VStack(spacing: ResponsiveDesign.spacing(20)) {
             Image(systemName: "star")
-                .font(.system(size: ResponsiveDesign.iconSize() * 3.2))
+                .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 3.2))
                 .foregroundColor(AppTheme.accentLightBlue.opacity(0.6))
 
             VStack(spacing: ResponsiveDesign.spacing(8)) {

@@ -19,7 +19,8 @@ struct UnifiedItemCard: View {
                 notificationService: notificationService,
                 userId: appServices.userService.currentUser?.id ?? "",
                 customerSupportService: appServices.customerSupportService,
-                satisfactionSurveyService: appServices.satisfactionSurveyService
+                satisfactionSurveyService: appServices.satisfactionSurveyService,
+                documentService: appServices.documentService
             )
         case .document(let document):
             DocumentCardView(document: document)
@@ -35,6 +36,7 @@ struct NotificationCardView: View {
     let customerSupportService: any CustomerSupportServiceProtocol
     let satisfactionSurveyService: any SatisfactionSurveyServiceProtocol
 
+    @Environment(\.appServices) private var appServices
     @StateObject private var viewModel: NotificationCardViewModel
 
     init(
@@ -42,7 +44,8 @@ struct NotificationCardView: View {
         notificationService: any NotificationServiceProtocol,
         userId: String,
         customerSupportService: any CustomerSupportServiceProtocol,
-        satisfactionSurveyService: any SatisfactionSurveyServiceProtocol
+        satisfactionSurveyService: any SatisfactionSurveyServiceProtocol,
+        documentService: any DocumentServiceProtocol
     ) {
         self.notification = notification
         self.notificationService = notificationService
@@ -54,7 +57,8 @@ struct NotificationCardView: View {
                 notification: notification,
                 notificationService: notificationService,
                 customerSupportService: customerSupportService,
-                satisfactionSurveyService: satisfactionSurveyService
+                satisfactionSurveyService: satisfactionSurveyService,
+                documentService: documentService
             )
         )
     }
@@ -162,6 +166,9 @@ struct NotificationCardView: View {
                     onDismiss: { viewModel.dismissSurvey() }
                 )
             }
+        }
+        .sheet(item: $viewModel.sheetDocument) { document in
+            DocumentNavigationHelper.sheetView(for: document, appServices: appServices)
         }
         .alert("Fehler", isPresented: $viewModel.showErrorAlert) {
             Button("OK", role: .cancel) {}

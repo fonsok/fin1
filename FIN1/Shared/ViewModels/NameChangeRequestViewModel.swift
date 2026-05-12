@@ -6,11 +6,12 @@ import SwiftUI
 
 /// ViewModel for the Name Change Request view following MVVM architecture.
 /// Manages the re-KYC name verification flow for GwG compliance.
+@MainActor
 final class NameChangeRequestViewModel: ObservableObject {
 
     // MARK: - Dependencies
 
-    private var nameChangeService: (any NameChangeRequestServiceProtocol)?
+    private var nameChangeBridge: UncheckedNameChangeRequestServiceBridge?
     private var userService: (any UserServiceProtocol)?
 
     // MARK: - Published Properties - State
@@ -80,8 +81,8 @@ final class NameChangeRequestViewModel: ObservableObject {
 
     var pendingRequest: NameChangeRequest? {
         guard let userId = userService?.currentUser?.id,
-              let service = nameChangeService else { return nil }
-        return service.getPendingRequest(for: userId)
+              let bridge = nameChangeBridge else { return nil }
+        return bridge.getPendingRequest(for: userId)
     }
 
     var hasPendingRequest: Bool { pendingRequest != nil }
@@ -91,14 +92,14 @@ final class NameChangeRequestViewModel: ObservableObject {
     init() {}
 
     init(nameChangeService: any NameChangeRequestServiceProtocol, userService: any UserServiceProtocol) {
-        self.nameChangeService = nameChangeService
+        self.nameChangeBridge = UncheckedNameChangeRequestServiceBridge(nameChangeService)
         self.userService = userService
         prefillCurrentName()
     }
 
     func configure(with services: AppServices) {
-        guard nameChangeService == nil else { return }
-        self.nameChangeService = services.nameChangeService
+        guard nameChangeBridge == nil else { return }
+        self.nameChangeBridge = UncheckedNameChangeRequestServiceBridge(services.nameChangeService)
         self.userService = services.userService
         prefillCurrentName()
     }
@@ -116,7 +117,7 @@ final class NameChangeRequestViewModel: ObservableObject {
 
     @MainActor
     func submitRequest() async {
-        guard let service = nameChangeService,
+        guard let bridge = nameChangeBridge,
               let user = userService?.currentUser else {
             errorMessage = "User not found. Please log in again."
             return
@@ -148,7 +149,7 @@ final class NameChangeRequestViewModel: ObservableObject {
             let primaryDocURL = "document://name-verification/primary/\(UUID().uuidString).pdf"
             let identityDocURL = "document://name-verification/identity/\(UUID().uuidString).pdf"
 
-            _ = try await service.submitNameChangeRequest(
+            _ = try await bridge.submitNameChangeRequest(
                 userId: user.id,
                 currentName: currentName,
                 newName: newName,
@@ -171,7 +172,7 @@ final class NameChangeRequestViewModel: ObservableObject {
 
     @MainActor
     func cancelPendingRequest() async {
-        guard let service = nameChangeService, let request = pendingRequest else {
+        guard let bridge = nameChangeBridge, let request = pendingRequest else {
             errorMessage = "No pending request to cancel."
             return
         }
@@ -180,7 +181,7 @@ final class NameChangeRequestViewModel: ObservableObject {
         errorMessage = nil
 
         do {
-            try await service.cancelRequest(request.id)
+            try await bridge.cancelRequest(request.id)
             isLoading = false
         } catch {
             isLoading = false

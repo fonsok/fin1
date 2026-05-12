@@ -4,7 +4,6 @@ import Combine
 struct DashboardWelcomeHeader: View {
     @Environment(\.appServices) private var appServices
     @State private var logoutTimeRemaining: TimeInterval = 30 * 60 // 30 minutes in seconds
-    @State private var timer: Timer?
     @State private var showLogoutWarning: Bool = false
     @Environment(\.themeManager) private var themeManager
     @State private var currentUser: User? // Local state to track user changes
@@ -104,12 +103,17 @@ struct DashboardWelcomeHeader: View {
         .background(AppTheme.sectionBackground.opacity(0.5))
         .cornerRadius(ResponsiveDesign.spacing(12))
         .onAppear {
-            // Initialize current user state
             currentUser = appServices.userService.currentUser
-            startLogoutTimer()
         }
-        .onDisappear {
-            stopLogoutTimer()
+        .onReceive(Timer.publish(every: 1.0, on: .main, in: .common).autoconnect()) { _ in
+            guard logoutTimeRemaining > 0 else { return }
+            logoutTimeRemaining -= 1
+            if logoutTimeRemaining == 120 && !showLogoutWarning {
+                showLogoutWarning = true
+            }
+            if logoutTimeRemaining == 0 {
+                performAutoLogout()
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: .userDataDidUpdate)) { _ in
             // Update local state when user data (including role) changes
@@ -153,27 +157,6 @@ struct DashboardWelcomeHeader: View {
 
     // MARK: - Timer Functions
 
-    private func startLogoutTimer() {
-        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
-            if logoutTimeRemaining > 0 {
-                logoutTimeRemaining -= 1
-
-                // Show warning at 2 minutes (120 seconds)
-                if logoutTimeRemaining == 120 && !showLogoutWarning {
-                    showLogoutWarning = true
-                }
-            } else {
-                // Auto logout when timer reaches 0
-                performAutoLogout()
-            }
-        }
-    }
-
-    private func stopLogoutTimer() {
-        timer?.invalidate()
-        timer = nil
-    }
-
     private func addFifteenMinutes() {
         logoutTimeRemaining += 15 * 60 // Add 15 minutes
         // Hide warning if time is extended beyond 2 minutes
@@ -183,8 +166,7 @@ struct DashboardWelcomeHeader: View {
     }
 
     private func performAutoLogout() {
-        stopLogoutTimer()
-        // Perform logout
+        // Perform logout (countdown driven by main-runloop timer via .onReceive)
         Task {
             await appServices.userService.signOut()
         }

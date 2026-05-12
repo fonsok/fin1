@@ -8,6 +8,7 @@ struct TraderIDItem: Identifiable, Hashable {
 
 // MARK: - Trader Navigation Helper
 /// Centralized navigation logic for trader detail presentation to eliminate DRY violations
+@MainActor
 struct TraderNavigationHelper {
 
     // MARK: - Sheet Presentation

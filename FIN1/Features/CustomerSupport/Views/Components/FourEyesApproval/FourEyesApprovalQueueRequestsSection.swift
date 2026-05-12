@@ -39,7 +39,7 @@ struct FourEyesApprovalQueueRequestsSection: View {
     private var emptyStateView: some View {
         VStack(spacing: ResponsiveDesign.spacing(12)) {
             Image(systemName: "checkmark.seal.fill")
-                .font(.system(size: ResponsiveDesign.iconSize() * 2))
+                .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2))
                 .foregroundColor(AppTheme.accentGreen.opacity(0.5))
 
             Text("Keine ausstehenden Genehmigungen")

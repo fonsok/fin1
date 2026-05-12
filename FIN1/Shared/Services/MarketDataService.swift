@@ -3,6 +3,7 @@ import Combine
 
 // MARK: - Market Data Service Protocol
 /// Protocol for managing real-time market data (stock prices, indices, etc.)
+@MainActor
 protocol MarketDataServiceProtocol: ObservableObject {
     /// Gets current market data for a symbol
     func getMarketData(for symbol: String) -> MarketData?
@@ -19,6 +20,7 @@ protocol MarketDataServiceProtocol: ObservableObject {
 
 // MARK: - Market Data Service Implementation
 /// Service for managing real-time market data with Live Query support
+@MainActor
 final class MarketDataService: MarketDataServiceProtocol {
 
     // MARK: - Published Properties

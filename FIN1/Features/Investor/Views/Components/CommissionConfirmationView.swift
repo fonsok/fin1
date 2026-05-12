@@ -22,7 +22,7 @@ struct CommissionConfirmationView: View {
                                 if isConfirmed {
                                     Image(systemName: "checkmark")
                                         .foregroundColor(AppTheme.fontColor)
-                                        .font(.system(size: 16, weight: .bold))
+                                        .font(ResponsiveDesign.scaledSystemFont(size: 16, weight: .bold))
                                 }
                             }
                         )
@@ -47,13 +47,13 @@ struct CommissionConfirmationView: View {
     VStack(spacing: ResponsiveDesign.spacing(16)) {
         CommissionConfirmationView(
             traderUsername: "john_doe",
-            commissionPercentage: CalculationConstants.FeeRates.traderCommissionPercentage,
+            commissionPercentage: "10%",
             isConfirmed: .constant(false)
         )
 
         CommissionConfirmationView(
             traderUsername: "john_doe",
-            commissionPercentage: CalculationConstants.FeeRates.traderCommissionPercentage,
+            commissionPercentage: "10%",
             isConfirmed: .constant(true)
         )
     }

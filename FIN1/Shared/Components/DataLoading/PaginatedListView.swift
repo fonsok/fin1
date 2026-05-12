@@ -85,7 +85,7 @@ struct PaginatedListView<T: Identifiable, Content: View>: View {
     private var errorView: some View {
         VStack(spacing: ResponsiveDesign.spacing(16)) {
             Image(systemName: "exclamationmark.triangle")
-                .font(.system(size: ResponsiveDesign.iconSize() * 1.6))
+                .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 1.6))
                 .foregroundColor(AppTheme.accentRed)
             Text("Failed to load data")
                 .font(ResponsiveDesign.headlineFont())

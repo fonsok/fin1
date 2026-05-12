@@ -38,6 +38,7 @@ struct Order: Identifiable, Codable, Sendable {
     let limitPrice: Double? // Limit price for limit orders
     let subscriptionRatio: Double? // Units-per-share style ratio for warrants
     let denomination: Int? // Optional denomination constraint from issuer
+    let isMirrorPoolOrder: Bool? // true = investor mirror-pool buy order
 
     // Reference to original holding for sell orders
     let originalHoldingId: String? // ID of the holding being sold
@@ -69,6 +70,7 @@ struct Order: Identifiable, Codable, Sendable {
         limitPrice: Double? = nil,
         subscriptionRatio: Double? = nil,
         denomination: Int? = nil,
+        isMirrorPoolOrder: Bool? = nil,
         originalHoldingId: String? = nil,
         status: String = "submitted"
     ) {
@@ -93,6 +95,7 @@ struct Order: Identifiable, Codable, Sendable {
         self.limitPrice = limitPrice
         self.subscriptionRatio = subscriptionRatio
         self.denomination = denomination
+        self.isMirrorPoolOrder = isMirrorPoolOrder
         self.originalHoldingId = originalHoldingId
         self.status = status
     }

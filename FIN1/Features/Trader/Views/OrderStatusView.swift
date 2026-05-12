@@ -42,7 +42,7 @@ struct OrderStatusView: View {
     private func failureView(error: AppError) -> some View {
         VStack(spacing: ResponsiveDesign.spacing(20)) {
             Image(systemName: "xmark.circle.fill")
-                .font(.system(size: 60))
+                .font(ResponsiveDesign.scaledSystemFont(size: 60))
                 .foregroundColor(.red)
             Text("Kauf fehlgeschlagen")
                 .font(ResponsiveDesign.titleFont())
@@ -72,7 +72,7 @@ struct OrderStatusView: View {
     private func orderPlacedView(executedPrice: Double, finalCost: Double) -> some View {
         VStack(spacing: ResponsiveDesign.spacing(20)) {
             Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 60))
+                .font(ResponsiveDesign.scaledSystemFont(size: 60))
                 .foregroundColor(.green)
             Text("ORDER ÜBERMITTELT")
                 .font(ResponsiveDesign.titleFont())
@@ -123,7 +123,7 @@ struct OrderStatusView: View {
     private func successView(executedPrice: Double, finalCost: Double) -> some View {
         VStack(spacing: ResponsiveDesign.spacing(20)) {
             Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 60))
+                .font(ResponsiveDesign.scaledSystemFont(size: 60))
                 .foregroundColor(.green)
             Text("KAUFBESTÄTIGUNG")
                 .font(ResponsiveDesign.titleFont())

@@ -18,7 +18,7 @@ final class UserImpersonationViewModel: ObservableObject {
     @Published var showError = false
 
     // MARK: - Private Properties
-    private var cancellables = Set<AnyCancellable>()
+    private nonisolated(unsafe) var cancellables = Set<AnyCancellable>()
     private var debounceTask: Task<Void, Never>?
 
     // MARK: - Initialization

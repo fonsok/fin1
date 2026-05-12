@@ -21,7 +21,7 @@ struct PostidentConfirmationStep: View {
             // Postident Information
             VStack(spacing: ResponsiveDesign.spacing(16)) {
                 Image(systemName: "building.columns.fill")
-                    .font(.system(size: 48))
+                    .font(ResponsiveDesign.scaledSystemFont(size: 48))
                     .foregroundColor(AppTheme.accentLightBlue)
                     .padding(.bottom, 8)
 
@@ -70,7 +70,7 @@ struct PostidentConfirmationStep: View {
                 }) {
                     HStack {
                         Image(systemName: "video.fill")
-                            .font(.system(size: 24))
+                            .font(ResponsiveDesign.scaledSystemFont(size: 24))
                             .foregroundColor(AppTheme.accentLightBlue)
 
                         VStack(alignment: .leading, spacing: 4) {
@@ -104,7 +104,7 @@ struct PostidentConfirmationStep: View {
                 }) {
                     HStack {
                         Image(systemName: "building.columns")
-                            .font(.system(size: 24))
+                            .font(ResponsiveDesign.scaledSystemFont(size: 24))
                             .foregroundColor(AppTheme.accentLightBlue)
 
                         VStack(alignment: .leading, spacing: 4) {
@@ -138,7 +138,7 @@ struct PostidentConfirmationStep: View {
                 }) {
                     HStack {
                         Image(systemName: "printer.fill")
-                            .font(.system(size: 24))
+                            .font(ResponsiveDesign.scaledSystemFont(size: 24))
                             .foregroundColor(AppTheme.accentLightBlue)
 
                         VStack(alignment: .leading, spacing: 4) {
@@ -209,7 +209,7 @@ struct PostidentWebViewPlaceholder: View {
         NavigationStack {
             VStack(spacing: ResponsiveDesign.spacing(20)) {
                 Image(systemName: "video.fill")
-                    .font(.system(size: 64))
+                    .font(ResponsiveDesign.scaledSystemFont(size: 64))
                     .foregroundColor(AppTheme.accentLightBlue)
                     .padding()
 

@@ -5,6 +5,7 @@ import Combine
 /// Defines the contract for customer support operations
 /// Implements least privilege principle with granular permissions
 
+@MainActor
 protocol CustomerSupportServiceProtocol: AnyObject {
     /// The current agent's permissions
     var currentPermissions: Set<CustomerSupportPermission> { get }

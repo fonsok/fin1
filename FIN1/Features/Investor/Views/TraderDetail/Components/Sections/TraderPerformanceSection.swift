@@ -52,13 +52,13 @@ struct TraderPerformanceSection: View {
         HStack(spacing: ResponsiveDesign.spacing(12)) {
             Button(action: { viewModel.updateViewMode(.chart) }, label: {
                 Image(systemName: "chart.bar")
-                    .font(.system(size: ResponsiveDesign.iconSize()))
+                    .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize()))
                     .foregroundColor(viewModel.viewMode == .chart ? AppTheme.accentLightBlue : AppTheme.fontColor.opacity(0.6))
             })
 
             Button(action: { viewModel.updateViewMode(.table) }, label: {
                 Image(systemName: "square.grid.2x2")
-                    .font(.system(size: ResponsiveDesign.iconSize()))
+                    .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize()))
                     .foregroundColor(viewModel.viewMode == .table ? AppTheme.accentLightBlue : AppTheme.fontColor.opacity(0.6))
             })
         }
@@ -86,7 +86,7 @@ struct TraderPerformanceSection: View {
                     Spacer()
 
                     Image(systemName: "chevron.up.chevron.down")
-                        .font(.system(size: ResponsiveDesign.iconSize() * 0.8))
+                        .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 0.8))
                         .foregroundColor(AppTheme.inputText.opacity(0.8))
                 }
                 .padding(ResponsiveDesign.spacing(12))

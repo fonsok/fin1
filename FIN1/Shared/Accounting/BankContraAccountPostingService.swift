@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - Bank Contra Account Posting Service
 
-final class BankContraAccountPostingService: BankContraAccountPostingServiceProtocol {
+final class BankContraAccountPostingService: BankContraAccountPostingServiceProtocol, @unchecked Sendable {
 
     private let queue = DispatchQueue(label: "com.fin.app.bankContraAccount", attributes: .concurrent)
     private var postings: [BankContraAccountPosting] = []

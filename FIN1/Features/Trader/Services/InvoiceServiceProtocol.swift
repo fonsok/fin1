@@ -4,7 +4,7 @@ import Combine
 
 // MARK: - Invoice Service Protocol
 /// Defines the contract for invoice operations and PDF generation
-protocol InvoiceServiceProtocol: ObservableObject, ServiceLifecycle {
+protocol InvoiceServiceProtocol: ObservableObject, ServiceLifecycle, Sendable {
     var invoices: [Invoice] { get }
     var isLoading: Bool { get }
     var errorMessage: String? { get }
@@ -29,6 +29,8 @@ protocol InvoiceServiceProtocol: ObservableObject, ServiceLifecycle {
     func getInvoicesByType(_ type: InvoiceType, for userId: String) -> [Invoice]
     func getInvoice(by id: String) -> Invoice?
     func getInvoicesForTrade(_ tradeId: String) -> [Invoice]
+    /// Resolves structured invoice data for a Parse `Document` when `invoiceData` is nil (hydrate from synced invoices).
+    func invoice(matching document: Document) -> Invoice?
     /// Returns the app service charge invoice for an investment batch (invoice.tradeId == batchId).
     func getServiceChargeInvoiceForBatch(_ batchId: String, userId: String) -> Invoice?
 

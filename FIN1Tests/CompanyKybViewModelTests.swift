@@ -7,7 +7,7 @@ final class CompanyKybViewModelTests: XCTestCase {
     // MARK: - Test-Only Mock
 
     /// Zero-latency, fully controllable mock for unit tests.
-    private final class StubKybService: CompanyKybAPIServiceProtocol {
+    private final class StubKybService: CompanyKybAPIServiceProtocol, @unchecked Sendable {
         var progressToReturn: CompanyKybProgress?
         var stepResponseToReturn: CompanyKybStepResponse?
         var errorToThrow: Error?

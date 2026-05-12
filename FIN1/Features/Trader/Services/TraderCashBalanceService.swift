@@ -4,6 +4,7 @@ import Combine
 // MARK: - Trader Cash Balance Service Protocol
 
 /// Protocol for managing trader cash balances and commission payments
+@MainActor
 protocol TraderCashBalanceServiceProtocol: ServiceLifecycle {
     /// Gets the current cash balance for a trader
     /// - Parameter traderId: The trader's user ID
@@ -31,6 +32,7 @@ protocol TraderCashBalanceServiceProtocol: ServiceLifecycle {
 // MARK: - Trader Cash Balance Service Implementation
 
 /// Service for managing trader cash balances with commission tracking
+@MainActor
 final class TraderCashBalanceService: TraderCashBalanceServiceProtocol, ObservableObject {
 
     // MARK: - Properties
@@ -153,6 +155,28 @@ final class TraderCashBalanceService: TraderCashBalanceServiceProtocol, Observab
                 }
             }
             .store(in: &cancellables)
+
+        NotificationCenter.default.publisher(for: .traderCashBalanceLiveQueryUpdate)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] notification in
+                guard let self,
+                      let userInfo = notification.userInfo,
+                      let traderId = userInfo["userId"] as? String,
+                      let balanceAfter = userInfo["newBalance"] as? Double else {
+                    return
+                }
+                self.balances[traderId] = balanceAfter
+                print("💰 TraderCashBalanceService: Balance updated via Live Query for trader \(traderId): €\(balanceAfter.formatted(.currency(code: "EUR")))")
+                NotificationCenter.default.post(
+                    name: .walletTransactionCompleted,
+                    object: nil,
+                    userInfo: [
+                        "userId": traderId,
+                        "newBalance": balanceAfter
+                    ]
+                )
+            }
+            .store(in: &cancellables)
     }
 
     private func subscribeToLiveUpdates() async {
@@ -186,25 +210,16 @@ final class TraderCashBalanceService: TraderCashBalanceServiceProtocol, Observab
         let subscription = liveQueryClient.subscribe(
             className: "WalletTransaction",
             query: ["userId": traderId],
-            onUpdate: { [weak self] (parseTransaction: ParseWalletTransaction) in
-                Task { @MainActor in
-                    // Update balance from transaction's balanceAfter if available
-                    if let balanceAfter = parseTransaction.balanceAfter {
-                        self?.balances[traderId] = balanceAfter
-                        print("💰 TraderCashBalanceService: Balance updated via Live Query for trader \(traderId): €\(balanceAfter.formatted(.currency(code: "EUR")))")
-
-                        // Post notification to update UI
-                        // Note: Using walletTransactionCompleted as trader balance changes are typically from wallet transactions
-                        NotificationCenter.default.post(
-                            name: .walletTransactionCompleted,
-                            object: nil,
-                            userInfo: [
-                                "userId": traderId,
-                                "newBalance": balanceAfter
-                            ]
-                        )
-                    }
-                }
+            onUpdate: { (parseTransaction: ParseWalletTransaction) in
+                guard let balanceAfter = parseTransaction.balanceAfter else { return }
+                NotificationCenter.default.post(
+                    name: .traderCashBalanceLiveQueryUpdate,
+                    object: nil,
+                    userInfo: [
+                        "userId": traderId,
+                        "newBalance": balanceAfter
+                    ]
+                )
             },
             onDelete: { (_ objectId: String) in
                 // Balance might change if transaction is deleted, but we'll reload from server
@@ -277,4 +292,5 @@ final class TraderCashBalanceService: TraderCashBalanceServiceProtocol, Observab
 
 extension Notification.Name {
     static let traderBalanceDidChange = Notification.Name("traderBalanceDidChange")
+    static let traderCashBalanceLiveQueryUpdate = Notification.Name("traderCashBalanceLiveQueryUpdate")
 }

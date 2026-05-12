@@ -11,7 +11,7 @@ struct ProfileHeaderView: View {
                 .frame(width: 100, height: 100)
                 .overlay(
                     Image(systemName: "person.fill")
-                        .font(.system(size: 40))
+                        .font(ResponsiveDesign.scaledSystemFont(size: 40))
                         .foregroundColor(AppTheme.accentLightBlue)
                 )
             

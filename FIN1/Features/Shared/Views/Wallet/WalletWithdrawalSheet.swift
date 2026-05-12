@@ -15,7 +15,7 @@ struct WalletWithdrawalSheet: View {
                     VStack(spacing: ResponsiveDesign.spacing(6)) {
                         VStack(spacing: ResponsiveDesign.spacing(3)) {
                             Image(systemName: "arrow.up.circle.fill")
-                                .font(.system(size: ResponsiveDesign.iconSize() * 2))
+                                .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2))
                                 .foregroundColor(AppTheme.accentRed)
 
                             Text("Auszahlung")

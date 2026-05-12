@@ -4,6 +4,7 @@ import Combine
 // MARK: - Filter Service Protocol
 // CRITICAL: This protocol defines the contract for ALL securities search filters
 // Any changes to this protocol must be thoroughly tested to ensure filter logic remains intact
+@MainActor
 protocol SearchFilterServiceProtocol: ObservableObject {
     // Core filters that determine search results
     var category: String { get set }           // Warrant, Stock, etc.
@@ -29,6 +30,7 @@ protocol SearchFilterServiceProtocol: ObservableObject {
 // MARK: - Filter Service Implementation
 // CRITICAL: This class manages ALL securities search filter state
 // Any changes to filter logic here must be thoroughly tested to prevent regressions
+@MainActor
 final class SearchFilterService: SearchFilterServiceProtocol {
     // CRITICAL: Core filter properties - these determine search results
     @Published var category: String = "Warrant"  // Default to Warrant
@@ -50,7 +52,7 @@ final class SearchFilterService: SearchFilterServiceProtocol {
     @Published var omega: String?                         // No default (optional)
     // Removed ViewModel from service - ViewModels should be managed by Views, not Services
 
-    private var cancellables = Set<AnyCancellable>()
+    private nonisolated(unsafe) var cancellables = Set<AnyCancellable>()
 
     init() {
         setupBindings()

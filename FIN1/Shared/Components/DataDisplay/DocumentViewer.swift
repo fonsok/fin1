@@ -6,6 +6,15 @@ struct DocumentViewer: View {
     let document: Document
     @Environment(\.appServices) private var services
 
+    private var navigationTitleKey: String {
+        document.type == .investmentReservationEigenbeleg ? "Eigenbeleg" : "Document"
+    }
+
+    private var isInternalEigenbelegPlaceholder: Bool {
+        document.type == .investmentReservationEigenbeleg
+            && document.fileURL.hasPrefix("eigenbeleg-reservierung://")
+    }
+
     var body: some View {
         ScrollView {
             VStack(spacing: ResponsiveDesign.spacing(20)) {
@@ -28,9 +37,26 @@ struct DocumentViewer: View {
                 .background(AppTheme.sectionBackground)
                 .cornerRadius(ResponsiveDesign.spacing(12))
 
+                if let summary = document.accountingSummaryText?.trimmingCharacters(in: .whitespacesAndNewlines),
+                   !summary.isEmpty {
+                    VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(10)) {
+                        Text("Belegangaben (Buchhaltung)")
+                            .font(ResponsiveDesign.headlineFont())
+                            .foregroundColor(.primary)
+                        Text(summary)
+                            .font(ResponsiveDesign.bodyFont())
+                            .foregroundColor(.primary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .textSelection(.enabled)
+                    }
+                    .padding(ResponsiveDesign.spacing(16))
+                    .background(AppTheme.sectionBackground)
+                    .cornerRadius(ResponsiveDesign.spacing(12))
+                }
+
                 // Document Details
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
-                    DocumentDetailRow(title: "Status", value: document.status.displayName, color: document.status.color)
+                    DocumentDetailRow(title: "Status", value: document.status.displayName, valueColor: document.status.statusRowForeground)
                     DocumentDetailRow(title: "File Size", value: document.fileSize)
                     DocumentDetailRow(title: "Uploaded", value: document.uploadedAt.formatted(date: .abbreviated, time: .shortened))
 
@@ -48,20 +74,30 @@ struct DocumentViewer: View {
 
                 // Action Buttons
                 VStack(spacing: ResponsiveDesign.spacing(12)) {
-                    Button(action: {
-                        // TODO: Implement document download
-                        print("Download document: \(document.name)")
-                    }) {
-                        HStack {
-                            Image(systemName: "arrow.down.circle")
-                            Text("Download Document")
+                    if isInternalEigenbelegPlaceholder {
+                        Text("Kein PDF-Download: interner Eigenbeleg mit Buchungstext (siehe oben).")
+                            .font(ResponsiveDesign.captionFont())
+                            .foregroundColor(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(ResponsiveDesign.spacing(12))
+                            .background(AppTheme.sectionBackground.opacity(0.6))
+                            .cornerRadius(ResponsiveDesign.spacing(8))
+                    } else {
+                        Button(action: {
+                            // TODO: Implement document download
+                            print("Download document: \(document.name)")
+                        }) {
+                            HStack {
+                                Image(systemName: "arrow.down.circle")
+                                Text("Download Document")
+                            }
+                            .font(ResponsiveDesign.bodyFont())
+                            .foregroundColor(AppTheme.fontColor)
+                            .frame(maxWidth: .infinity)
+                            .padding(ResponsiveDesign.spacing(16))
+                            .background(AppTheme.accentLightBlue)
+                            .cornerRadius(ResponsiveDesign.spacing(8))
                         }
-                        .font(ResponsiveDesign.bodyFont())
-                        .foregroundColor(AppTheme.fontColor)
-                        .frame(maxWidth: .infinity)
-                        .padding(ResponsiveDesign.spacing(16))
-                        .background(AppTheme.accentLightBlue)
-                        .cornerRadius(ResponsiveDesign.spacing(8))
                     }
 
                     if document.readAt == nil {
@@ -86,7 +122,7 @@ struct DocumentViewer: View {
             }
             .padding(ResponsiveDesign.spacing(16))
         }
-        .navigationTitle("Document")
+        .navigationTitle(navigationTitleKey)
         .navigationBarTitleDisplayMode(.inline)
         .background(AppTheme.systemSecondaryBackground)
     }
@@ -96,12 +132,12 @@ struct DocumentViewer: View {
 struct DocumentDetailRow: View {
     let title: String
     let value: String
-    let color: String?
+    var valueColor: Color
 
-    init(title: String, value: String, color: String? = nil) {
+    init(title: String, value: String, valueColor: Color = .primary) {
         self.title = title
         self.value = value
-        self.color = color
+        self.valueColor = valueColor
     }
 
     var body: some View {
@@ -114,7 +150,7 @@ struct DocumentDetailRow: View {
 
             Text(value)
                 .font(ResponsiveDesign.bodyFont())
-                .foregroundColor(color.map { Color($0) } ?? .primary)
+                .foregroundColor(valueColor)
         }
     }
 }

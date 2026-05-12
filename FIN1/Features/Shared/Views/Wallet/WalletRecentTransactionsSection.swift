@@ -35,7 +35,7 @@ struct WalletRecentTransactionsSection: View {
     private var emptyTransactionsView: some View {
         VStack(spacing: ResponsiveDesign.spacing(4)) {
             Image(systemName: "tray")
-                .font(.system(size: ResponsiveDesign.iconSize() * 2))
+                .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2))
                 .foregroundColor(AppTheme.secondaryText.opacity(0.6))
             Text("Noch keine Transaktionen")
                 .font(ResponsiveDesign.bodyFont())

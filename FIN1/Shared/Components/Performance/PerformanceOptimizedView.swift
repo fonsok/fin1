@@ -245,7 +245,7 @@ struct PerformanceUtilities {
 }
 
 // MARK: - Memory Management Utilities
-class MemoryManager {
+class MemoryManager: @unchecked Sendable {
     static let shared = MemoryManager()
 
     private init() {}

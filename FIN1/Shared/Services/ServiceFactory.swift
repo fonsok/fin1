@@ -3,6 +3,7 @@ import Foundation
 // MARK: - Service Factory
 /// Centralized service creation with proper dependency injection
 /// Eliminates singleton dependencies and provides clean service instantiation
+@MainActor
 final class ServiceFactory {
 
     // MARK: - Core Services
@@ -57,9 +58,7 @@ final class ServiceFactory {
     }
 
     func createOrderStatusSimulationService(orderManagementService: OrderManagementService) -> OrderStatusSimulationService {
-        MainActor.assumeIsolated {
-            OrderStatusSimulationService(orderManagementService: orderManagementService)
-        }
+        OrderStatusSimulationService(orderManagementService: orderManagementService)
     }
 
     func createTradingNotificationService(documentService: any DocumentServiceProtocol) -> TradingNotificationService {
@@ -67,7 +66,8 @@ final class ServiceFactory {
             documentService: documentService,
             invoiceService: invoiceService,
             transactionIdService: transactionIdService,
-            userService: userService
+            userService: userService,
+            configurationService: configurationService
         )
     }
 
@@ -149,7 +149,7 @@ final class ServiceFactory {
         auditLoggingService: (any AuditLoggingServiceProtocol)? = nil,
         settlementAPIService: (any SettlementAPIServiceProtocol)? = nil
     ) -> OrderLifecycleCoordinator {
-        return OrderLifecycleCoordinator(
+        OrderLifecycleCoordinator(
             orderManagementService: orderManagementService,
             orderStatusSimulationService: orderStatusSimulationService,
             tradingNotificationService: tradingNotificationService,
@@ -185,7 +185,7 @@ final class ServiceFactory {
     }
 
     func createTradeLifecycleCoordinator(tradeLifecycleService: TradeLifecycleService) -> TradeLifecycleCoordinator {
-        return TradeLifecycleCoordinator(tradeLifecycleService: tradeLifecycleService)
+        TradeLifecycleCoordinator(tradeLifecycleService: tradeLifecycleService)
     }
 
     func createTradingCoordinator(
@@ -195,7 +195,7 @@ final class ServiceFactory {
         securitiesWatchlistService: SecuritiesWatchlistService,
         tradingStatisticsService: TradingStatisticsService
     ) -> TradingCoordinator {
-        return TradingCoordinator(
+        TradingCoordinator(
             tradingStateStore: tradingStateStore,
             orderLifecycleCoordinator: orderLifecycleCoordinator,
             tradeLifecycleCoordinator: tradeLifecycleCoordinator,
@@ -205,7 +205,7 @@ final class ServiceFactory {
     }
 
     func createTraderService(tradingCoordinator: TradingCoordinator) -> TraderService {
-        return TraderService(tradingCoordinator: tradingCoordinator)
+        TraderService(tradingCoordinator: tradingCoordinator)
     }
 
     // MARK: - Commission Services
@@ -221,7 +221,8 @@ final class ServiceFactory {
             documentService: nil,
             invoiceService: invoiceService,
             transactionIdService: transactionIdService,
-            userService: userService
+            userService: userService,
+            configurationService: configurationService
         )
     }
 
@@ -239,7 +240,8 @@ final class ServiceFactory {
             tradeLifecycleService: tradeLifecycleService,
             invoiceService: invoiceService,
             investmentService: investmentService,
-            calculationService: calculationService
+            calculationService: calculationService,
+            configurationService: configurationService
         )
     }
 

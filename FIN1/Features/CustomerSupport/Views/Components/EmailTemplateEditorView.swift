@@ -207,7 +207,7 @@ private struct EmailTemplateDetailView: View {
                         }
 
                         TextEditor(text: $bodyContent)
-                            .font(.system(.body, design: .monospaced))
+                            .font(ResponsiveDesign.monospacedFont(size: 17, weight: .regular))
                             .frame(minHeight: 300)
                             .padding()
                             .background(AppTheme.sectionBackground)

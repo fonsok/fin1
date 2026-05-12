@@ -13,6 +13,7 @@ struct BuyOrderRequest {
     let strike: Double?
     let subscriptionRatio: Double?
     let denomination: Int?
+    let isMirrorPoolOrder: Bool?
 
     init(
         symbol: String,
@@ -24,7 +25,8 @@ struct BuyOrderRequest {
         limitPrice: Double?,
         strike: Double?,
         subscriptionRatio: Double? = nil,
-        denomination: Int? = nil
+        denomination: Int? = nil,
+        isMirrorPoolOrder: Bool? = nil
     ) {
         self.symbol = symbol
         self.quantity = quantity
@@ -36,13 +38,15 @@ struct BuyOrderRequest {
         self.strike = strike
         self.subscriptionRatio = subscriptionRatio
         self.denomination = denomination
+        self.isMirrorPoolOrder = isMirrorPoolOrder
     }
 }
 
 // MARK: - Trader Service Protocol
 /// Defines the contract for trader trading operations and management
 /// This is now a facade that coordinates between focused services
-protocol TraderServiceProtocol: ObservableObject {
+@MainActor
+protocol TraderServiceProtocol: ObservableObject, Sendable {
     var activeOrders: [Order] { get }
     var completedTrades: [Trade] { get }
     var orders: [Order] { get }

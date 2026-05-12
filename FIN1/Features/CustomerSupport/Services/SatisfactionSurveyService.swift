@@ -4,7 +4,7 @@ import os
 // MARK: - Satisfaction Survey Service
 
 /// Implementation of satisfaction survey management
-final class SatisfactionSurveyService: SatisfactionSurveyServiceProtocol {
+final class SatisfactionSurveyService: SatisfactionSurveyServiceProtocol, @unchecked Sendable {
 
     // MARK: - Properties
 

@@ -238,7 +238,7 @@ struct CreateTicketSheet: View {
                         .tint(AppTheme.screenBackground)
                 } else {
                     Image(systemName: "ticket.fill")
-                        .font(.system(size: ResponsiveDesign.iconSize() * 0.8))
+                        .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 0.8))
                 }
 
                 Text("Ticket erstellen")

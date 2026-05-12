@@ -33,7 +33,6 @@ extension BuyOrderViewModel {
             investmentOrderCalculation = result.calculation
             isInvestmentLimited = result.isInvestmentLimited
             showInvestmentCalculation = result.showInvestmentCalculation
-            quantity = Double(result.calculation.totalQuantity)
         }
     }
 

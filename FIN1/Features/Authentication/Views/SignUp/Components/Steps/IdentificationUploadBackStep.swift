@@ -114,7 +114,7 @@ struct IdentificationUploadBackStep: View {
                         }) {
                             VStack(spacing: ResponsiveDesign.spacing(12)) {
                                 Image(systemName: "camera.fill")
-                                    .font(.system(size: ResponsiveDesign.iconSize() * 2))
+                                    .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2))
                                     .foregroundColor(AppTheme.accentLightBlue)
 
                                 Text("Foto aufnehmen")
@@ -148,7 +148,7 @@ struct IdentificationUploadBackStep: View {
                         }) {
                             VStack(spacing: ResponsiveDesign.spacing(12)) {
                                 Image(systemName: "doc.text.fill")
-                                    .font(.system(size: ResponsiveDesign.iconSize() * 2))
+                                    .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2))
                                     .foregroundColor(AppTheme.accentLightBlue)
 
                                 Text("Datei auswählen")

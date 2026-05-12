@@ -1,6 +1,25 @@
 import Foundation
 import Combine
 
+/// Dependency ordering / wait-timeout failures during coordinated startup.
+enum ServiceLifecycleCoordinatorError: LocalizedError, Equatable {
+    case dependencyTimeout(waitingService: String, dependency: String, timeoutSeconds: Double)
+    case blockedByFailedDependency(waitingService: String, dependency: String)
+    /// Remaining tiers not started because a critical service failed.
+    case skippedAfterCriticalFailure(waitingService: String)
+
+    var errorDescription: String? {
+        switch self {
+        case .dependencyTimeout(let waiting, let dep, let secs):
+            return "Service startup: timeout after \(secs)s waiting for dependency '\(dep)' (service: '\(waiting)')."
+        case .blockedByFailedDependency(let waiting, let dep):
+            return "Service startup: '\(waiting)' skipped because dependency '\(dep)' did not start successfully."
+        case .skippedAfterCriticalFailure(let waiting):
+            return "Service startup: '\(waiting)' skipped — startup stopped after critical-tier failure."
+        }
+    }
+}
+
 // MARK: - Service Priority Levels
 enum ServicePriority: Int, CaseIterable {
     case critical = 0    // UserService, TelemetryService
@@ -18,6 +37,8 @@ final class ServiceLifecycleCoordinator: ObservableObject {
     @Published var isInitialized = false
     @Published var criticalServicesReady = false
     @Published var allServicesReady = false
+    /// `true` if any registered service failed dependency wait or upstream dependency failed (non-fatal tiers may continue).
+    @Published private(set) var startupHadFailures = false
 
     private var services: AppServices
     private var serviceStates: [String: ServiceState] = [:]
@@ -36,14 +57,16 @@ final class ServiceLifecycleCoordinator: ObservableObject {
         case starting
         case running
         case stopped
-        case failed(Error)
+        case skippedDueToUpstreamFailure
+        case failed(ServiceLifecycleCoordinatorError)
 
         static func == (lhs: ServiceState, rhs: ServiceState) -> Bool {
             switch (lhs, rhs) {
-            case (.notStarted, .notStarted), (.starting, .starting), (.running, .running), (.stopped, .stopped):
+            case (.notStarted, .notStarted), (.starting, .starting), (.running, .running), (.stopped, .stopped),
+                 (.skippedDueToUpstreamFailure, .skippedDueToUpstreamFailure):
                 return true
-            case (.failed, .failed):
-                return true
+            case let (.failed(a), .failed(b)):
+                return a == b
             default:
                 return false
             }
@@ -122,6 +145,7 @@ final class ServiceLifecycleCoordinator: ObservableObject {
 
         print("🚀 Starting services with optimized lifecycle...")
 
+        startupHadFailures = false
         // Sort services by priority
         startupQueue.sort { $0.priority.rawValue < $1.priority.rawValue }
 
@@ -129,51 +153,125 @@ final class ServiceLifecycleCoordinator: ObservableObject {
         await startServicesByPriority()
 
         isInitialized = true
-        print("✅ All services started successfully")
+        print(startupHadFailures ? "⚠️ Service startup finished with failures (see logs)." : "✅ All services started successfully")
     }
 
     private func startServicesByPriority() async {
         let priorityGroups = Dictionary(grouping: startupQueue) { $0.priority }
+        var abortAfterCritical = false
 
-        for priority in ServicePriority.allCases {
-            guard let services = priorityGroups[priority] else { continue }
+        priorityLoop: for priority in ServicePriority.allCases {
+            guard let batch = priorityGroups[priority] else { continue }
 
             print("🔄 Starting \(priority) priority services...")
 
-            // Start services in parallel within the same priority group
-            await withTaskGroup(of: Void.self) { group in
-                for serviceItem in services {
-                    group.addTask {
-                        await self.startService(serviceItem)
+            for serviceItem in batch.sorted(by: { $0.name < $1.name }) {
+                if abortAfterCritical {
+                    if serviceStates[serviceItem.name] == .notStarted {
+                        serviceStates[serviceItem.name] = .skippedDueToUpstreamFailure
+                        startupHadFailures = true
+                        let err = ServiceLifecycleCoordinatorError.skippedAfterCriticalFailure(waitingService: serviceItem.name)
+                        print("⏭️ \(serviceItem.name) skipped — \(err.localizedDescription)")
                     }
+                    continue
+                }
+
+                await startService(serviceItem)
+                if priority == .critical, serviceStates[serviceItem.name] != .running {
+                    abortAfterCritical = true
+                    startupHadFailures = true
+                    print("🛑 Aborting startup: critical service '\(serviceItem.name)' is not running.")
                 }
             }
 
-            // Update critical services ready flag
             if priority == .critical {
-                criticalServicesReady = true
+                let criticalNames = Set(batch.map(\.name))
+                let criticalTierAllRunning = criticalNames.allSatisfy { serviceStates[$0] == .running }
+                criticalServicesReady = criticalTierAllRunning && !abortAfterCritical
+                if abortAfterCritical {
+                    markRemainingServicesSkippedAfterCritical()
+                    break priorityLoop
+                }
             }
 
-            // Only add delay for background services, not critical/high priority
             if priority == .background {
-                try? await Task.sleep(nanoseconds: 50_000_000) // 0.05 seconds
+                try? await Task.sleep(nanoseconds: 50_000_000)
             }
         }
 
-        allServicesReady = true
+        let allRegisteredRunning = startupQueue.allSatisfy {
+            switch serviceStates[$0.name] {
+            case .running: return true
+            default: return false
+            }
+        }
+        allServicesReady = allRegisteredRunning && !startupHadFailures
+    }
+
+    private func markRemainingServicesSkippedAfterCritical() {
+        for item in startupQueue where item.priority != .critical {
+            if serviceStates[item.name] == .notStarted {
+                serviceStates[item.name] = .skippedDueToUpstreamFailure
+            }
+        }
+    }
+
+    private func dependencyWaitTimeoutNanoseconds(for item: ServiceStartupItem) -> UInt64 {
+        item.priority == .critical ? 15_000_000_000 : 30_000_000_000
+    }
+
+    private func waitForDependencies(_ item: ServiceStartupItem) async -> Result<Void, ServiceLifecycleCoordinatorError> {
+        let timeoutSeconds = Double(dependencyWaitTimeoutNanoseconds(for: item)) / 1_000_000_000.0
+        let deadline = CFAbsoluteTimeGetCurrent() + timeoutSeconds
+
+        while CFAbsoluteTimeGetCurrent() < deadline {
+            var satisfied = true
+            for dependency in item.dependencies {
+                switch serviceStates[dependency] {
+                case .running:
+                    continue
+                case .failed, .stopped, .skippedDueToUpstreamFailure:
+                    let err = ServiceLifecycleCoordinatorError.blockedByFailedDependency(
+                        waitingService: item.name,
+                        dependency: dependency
+                    )
+                    return .failure(err)
+                case .notStarted, .starting, nil:
+                    satisfied = false
+                }
+            }
+            if satisfied { return .success(()) }
+
+            try? await Task.sleep(nanoseconds: 10_000_000)
+        }
+
+        let firstMissing = item.dependencies.first { serviceStates[$0] != .running } ?? item.dependencies.first
+        let dependencyName = firstMissing ?? "unknown"
+        return .failure(
+            ServiceLifecycleCoordinatorError.dependencyTimeout(
+                waitingService: item.name,
+                dependency: dependencyName,
+                timeoutSeconds: timeoutSeconds
+            )
+        )
     }
 
     private func startService(_ item: ServiceStartupItem) async {
-        // Check if dependencies are ready with reduced polling
-        for dependency in item.dependencies {
-            while serviceStates[dependency] != .running {
-                try? await Task.sleep(nanoseconds: 10_000_000) // 0.01 seconds (reduced from 0.05)
-            }
+        guard serviceStates[item.name] == .notStarted else { return }
+
+        switch await waitForDependencies(item) {
+        case .failure(let err):
+            serviceStates[item.name] = .failed(err)
+            startupHadFailures = true
+            print("⚠️ \(item.name): \(err.localizedDescription)")
+            return
+
+        case .success:
+            break
         }
 
         serviceStates[item.name] = .starting
 
-        // Start the service (no throwing operations)
         item.service.start()
         serviceStates[item.name] = .running
         print("✅ \(item.name) started successfully")
@@ -197,9 +295,13 @@ final class ServiceLifecycleCoordinator: ObservableObject {
             }
         }
 
+        startupHadFailures = false
         isInitialized = false
         criticalServicesReady = false
         allServicesReady = false
+        for item in startupQueue {
+            serviceStates[item.name] = .notStarted
+        }
     }
 
     // MARK: - Lazy Service Loading
@@ -233,6 +335,8 @@ final class ServiceLifecycleCoordinator: ObservableObject {
                 status[name] = "Running"
             case .stopped:
                 status[name] = "Stopped"
+            case .skippedDueToUpstreamFailure:
+                status[name] = "Skipped"
             case .failed(let error):
                 status[name] = "Failed: \(error.localizedDescription)"
             }

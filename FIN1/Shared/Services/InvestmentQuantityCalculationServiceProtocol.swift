@@ -4,7 +4,7 @@ import Foundation
 
 /// Service for calculating the maximum quantity of securities that can be purchased
 /// with a given investment balance, accounting for trading fees
-protocol InvestmentQuantityCalculationServiceProtocol {
+protocol InvestmentQuantityCalculationServiceProtocol: Sendable {
     /// Calculates the maximum quantity of securities that can be purchased with investment balance
     /// - Parameters:
     ///   - investmentBalance: Available investment balance in EUR

@@ -3,24 +3,34 @@ import SwiftUI
 struct AccountStatementEntriesTable<TopContent: View>: View {
     private let entries: [AccountStatementEntry]
     private let dividerColor: Color
+    private let showDocumentReferenceLinks: Bool
     private let topContent: TopContent?
+    private let onEntryTap: ((AccountStatementEntry) -> Void)?
 
     init(
         entries: [AccountStatementEntry],
         dividerColor: Color = Color.white.opacity(0.08),
+        showDocumentReferenceLinks: Bool = true,
+        onEntryTap: ((AccountStatementEntry) -> Void)? = nil,
         @ViewBuilder topContent: () -> TopContent
     ) {
         self.entries = entries
         self.dividerColor = dividerColor
+        self.showDocumentReferenceLinks = showDocumentReferenceLinks
+        self.onEntryTap = onEntryTap
         self.topContent = topContent()
     }
 
     init(
         entries: [AccountStatementEntry],
-        dividerColor: Color = Color.white.opacity(0.08)
+        dividerColor: Color = Color.white.opacity(0.08),
+        showDocumentReferenceLinks: Bool = true,
+        onEntryTap: ((AccountStatementEntry) -> Void)? = nil
     ) where TopContent == EmptyView {
         self.entries = entries
         self.dividerColor = dividerColor
+        self.showDocumentReferenceLinks = showDocumentReferenceLinks
+        self.onEntryTap = onEntryTap
         self.topContent = nil
     }
 
@@ -96,6 +106,17 @@ struct AccountStatementEntriesTable<TopContent: View>: View {
                         .foregroundColor(AppTheme.fontColor.opacity(0.7))
                         .multilineTextAlignment(.leading)
                 }
+
+                if showDocumentReferenceLinks,
+                   entry.hasDocumentReference,
+                   let docNo = entry.resolvedReferenceDocumentNumber,
+                   !docNo.isEmpty {
+                    Text("Belegnr.: \(docNo)")
+                        .font(ResponsiveDesign.captionFont())
+                        .foregroundColor(AppTheme.accentLightBlue)
+                        .underline()
+                        .multilineTextAlignment(.leading)
+                }
             }
             .frame(width: AccountStatementTableLayout.descriptionColumnWidth, alignment: .leading)
 
@@ -129,9 +150,20 @@ struct AccountStatementEntriesTable<TopContent: View>: View {
                 .frame(width: AccountStatementTableLayout.amountColumnWidth, alignment: .trailing)
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor)
+
+            if showDocumentReferenceLinks, entry.hasDocumentReference {
+                Image(systemName: "chevron.right")
+                    .font(ResponsiveDesign.captionFont())
+                    .foregroundColor(AppTheme.fontColor.opacity(0.6))
+            }
         }
         .padding(.horizontal, AccountStatementTableLayout.tableHorizontalPadding)
         .padding(.vertical, ResponsiveDesign.spacing(6))
+        .contentShape(Rectangle())
+        .onTapGesture {
+            guard showDocumentReferenceLinks, entry.hasDocumentReference else { return }
+            onEntryTap?(entry)
+        }
     }
 
     private func postingDateColumn(for entry: AccountStatementEntry) -> some View {
@@ -197,6 +229,7 @@ struct AccountStatementEntriesTable<TopContent: View>: View {
     }
 }
 
+@MainActor
 enum AccountStatementTableLayout {
     static var postingDateColumnWidth: CGFloat { ResponsiveDesign.spacing(90) }
     static var valueDateColumnWidth: CGFloat { ResponsiveDesign.spacing(90) }
@@ -246,7 +279,7 @@ struct ProfitDistributionInfoIcon: View {
             showCalculation.toggle()
         }) {
             Image(systemName: "info.circle")
-                .font(.system(size: ResponsiveDesign.spacing(12)))
+                .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.spacing(12)))
                 .foregroundColor(.blue.opacity(0.7))
         }
         .buttonStyle(PlainButtonStyle())

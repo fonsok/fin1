@@ -230,6 +230,26 @@ struct TradeDetailsView: View {
                                 .cornerRadius(ResponsiveDesign.spacing(8))
                             }
                             .buttonStyle(PlainButtonStyle())
+
+                            // Credit Note Button
+                            if viewModel.creditNoteInvoice != nil {
+                                Button(action: {
+                                    viewModel.showCreditNote = true
+                                }) {
+                                    HStack {
+                                        Image(systemName: "doc.text")
+                                            .foregroundColor(Color(red: 0.96, green: 0.96, blue: 0.96))
+                                        Text("Gutschrift")
+                                            .tradeDetailsButtonTextStyle()
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, ResponsiveDesign.spacing(12))
+                                    .padding(.horizontal, ResponsiveDesign.spacing(16))
+                                    .background(AppTheme.sectionBackground.opacity(0.8))
+                                    .cornerRadius(ResponsiveDesign.spacing(8))
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                            }
                         }
                     )
                 }
@@ -253,6 +273,11 @@ struct TradeDetailsView: View {
         .sheet(isPresented: $viewModel.showSellInvoice) {
             if let sellInvoice = viewModel.selectedSellInvoice {
                 TradeNavigationHelper.invoiceSheet(for: sellInvoice, appServices: services)
+            }
+        }
+        .sheet(isPresented: $viewModel.showCreditNote) {
+            if let creditNote = viewModel.creditNoteInvoice {
+                TradeNavigationHelper.invoiceSheet(for: creditNote, appServices: services)
             }
         }
     }

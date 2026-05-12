@@ -113,7 +113,7 @@ struct BulkOperationsView: View {
     private var emptyState: some View {
         VStack(spacing: ResponsiveDesign.spacing(12)) {
             Image(systemName: "tray")
-                .font(.system(size: ResponsiveDesign.iconSize() * 2))
+                .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2))
                 .foregroundColor(AppTheme.fontColor.opacity(0.3))
 
             Text("Keine bearbeitbaren Tickets")

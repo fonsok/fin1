@@ -57,7 +57,7 @@ struct PendingConfigurationChangesView: View {
     private var emptyStateView: some View {
         VStack(spacing: ResponsiveDesign.spacing(20)) {
             Image(systemName: "checkmark.seal.fill")
-                .font(.system(size: ResponsiveDesign.iconSize() * 3))
+                .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 3))
                 .foregroundColor(.green)
 
             Text("No Pending Changes")

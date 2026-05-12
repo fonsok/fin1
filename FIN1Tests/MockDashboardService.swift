@@ -3,7 +3,7 @@ import Combine
 @testable import FIN1
 
 // MARK: - Mock Dashboard Service
-class MockDashboardService: DashboardServiceProtocol {
+final class MockDashboardService: DashboardServiceProtocol, @unchecked Sendable {
     @Published var quickStats: DashboardStats = DashboardStats()
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?

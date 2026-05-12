@@ -3,6 +3,7 @@ import Combine
 @testable import FIN1
 
 // MARK: - SecuritiesWatchlistService Live Updates Tests
+@MainActor
 final class SecuritiesWatchlistServiceLiveUpdatesTests: XCTestCase {
     var watchlistService: SecuritiesWatchlistService!
     var mockLiveQueryClient: MockParseLiveQueryClient!
@@ -68,10 +69,11 @@ final class SecuritiesWatchlistServiceLiveUpdatesTests: XCTestCase {
 
         // Wait for async operations
         let expectation = XCTestExpectation(description: "Subscribed to market data")
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+        // `loadWatchlist()` sleeps 0.3s before `subscribeToMarketDataUpdates()` when no API is configured.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
             expectation.fulfill()
         }
-        await fulfillment(of: [expectation], timeout: 0.5)
+        await waitForExpectationsAsync([expectation], timeout: 1.0)
 
         // Then: Should subscribe to market data for watchlist symbols
         XCTAssertTrue(subscribedSymbols.contains("DAX"))
@@ -113,7 +115,7 @@ final class SecuritiesWatchlistServiceLiveUpdatesTests: XCTestCase {
         )
 
         // Then: Should post watchlist market data updated notification
-        await fulfillment(of: [expectation], timeout: 1.0)
+        await waitForExpectationsAsync([expectation], timeout: 1.0)
         XCTAssertEqual(receivedSymbol, "DAX")
     }
 
@@ -140,14 +142,14 @@ final class SecuritiesWatchlistServiceLiveUpdatesTests: XCTestCase {
             isin: "DE000WKN001",
             underlyingAsset: "DAX"
         )
-        try? try await watchlistService.addToWatchlist(searchResult)
+        try? await watchlistService.addToWatchlist(searchResult)
 
         // Wait for subscription
         let expectation = XCTestExpectation(description: "Subscribed")
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
             expectation.fulfill()
         }
-        await fulfillment(of: [expectation], timeout: 0.5)
+        await waitForExpectationsAsync([expectation], timeout: 1.0)
 
         // Then: Should subscribe to market data for the new symbol
         // Note: This depends on refreshWatchlist being called, which may happen asynchronously
@@ -216,7 +218,7 @@ final class SecuritiesWatchlistServiceLiveUpdatesTests: XCTestCase {
         )
 
         // Then: Should receive notification
-        await fulfillment(of: [expectation], timeout: 1.0)
+        await waitForExpectationsAsync([expectation], timeout: 1.0)
         XCTAssertTrue(notificationReceived)
     }
 }
@@ -246,6 +248,7 @@ final class MockParseLiveQueryClient: ParseLiveQueryClientProtocol {
 }
 
 // MARK: - Mock MarketDataService for Testing
+@MainActor
 final class MockMarketDataService: MarketDataServiceProtocol {
     var getMarketDataHandler: ((String) -> MarketData?)?
     var getMarketPriceHandler: ((String) -> Double?)?

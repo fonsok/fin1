@@ -4,7 +4,8 @@ import Foundation
 
 /// Handles persistence operations for TradeLifecycleService
 /// Separated to reduce main service file size and improve maintainability
-final class TradeLifecyclePersistenceService {
+/// All disk I/O runs on `queue`; results are delivered on the main queue so UI-layer completion handlers stay actor-safe.
+final class TradeLifecyclePersistenceService: @unchecked Sendable {
     private let fileManager: FileManager
     private let storageDirectory: URL
     private let encoder: JSONEncoder
@@ -27,10 +28,10 @@ final class TradeLifecyclePersistenceService {
     }
 
     /// Loads persisted trades from disk, organized by trader ID
-    func loadPersistedTrades(completion: @escaping ([Trade]) -> Void) {
+    func loadPersistedTrades(completion: @escaping @Sendable ([Trade]) -> Void) {
         queue.async { [weak self] in
             guard let self = self else {
-                completion([])
+                DispatchQueue.main.async { completion([]) }
                 return
             }
 
@@ -39,7 +40,7 @@ final class TradeLifecyclePersistenceService {
             // Load all trade files from storage directory
             guard self.fileManager.fileExists(atPath: self.storageDirectory.path) else {
                 print("📁 TradeLifecyclePersistenceManager: Storage directory doesn't exist yet - no persisted trades")
-                completion([])
+                DispatchQueue.main.async { completion([]) }
                 return
             }
 
@@ -57,10 +58,11 @@ final class TradeLifecyclePersistenceService {
                 }
 
                 print("✅ TradeLifecyclePersistenceManager: Loaded \(allTrades.count) total persisted trades")
-                completion(allTrades)
+                let trades = allTrades
+                DispatchQueue.main.async { completion(trades) }
             } catch {
                 print("⚠️ TradeLifecyclePersistenceManager: Failed to load persisted trades - \(error)")
-                completion([])
+                DispatchQueue.main.async { completion([]) }
             }
         }
     }

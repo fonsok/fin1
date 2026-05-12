@@ -33,8 +33,7 @@ class MockDocumentService: DocumentServiceProtocol {
         if let handler = uploadDocumentHandler {
             try await handler(document)
         } else {
-            // Default: append to documents
-            await MainActor.run { self.documents.append(document) }
+            documents.append(document)
         }
     }
 
@@ -42,8 +41,7 @@ class MockDocumentService: DocumentServiceProtocol {
         if let handler = deleteDocumentHandler {
             try await handler(document)
         } else {
-            // Default: remove from documents
-            await MainActor.run { self.documents.removeAll { $0.id == document.id } }
+            documents.removeAll { $0.id == document.id }
         }
     }
 
@@ -67,6 +65,14 @@ class MockDocumentService: DocumentServiceProtocol {
 
     func getDocument(by id: String) -> Document? {
         documents.first { $0.id == id }
+    }
+
+    @MainActor
+    func resolveDocumentForDeepLink(objectId: String) async throws -> Document {
+        if let cached = getDocument(by: objectId) {
+            return cached
+        }
+        throw DocumentDeepLinkResolveError.backendUnavailable
     }
 
     func getDocumentsForTrade(_ tradeId: String) -> [Document] {

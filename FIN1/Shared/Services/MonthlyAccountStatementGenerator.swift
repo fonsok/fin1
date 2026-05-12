@@ -2,6 +2,7 @@ import Foundation
 
 // MARK: - Monthly Account Statement Generator
 /// Generates calendar-month account statement documents for investors and traders.
+@MainActor
 struct MonthlyAccountStatementGenerator {
     /// Generates statements for all completed months (excluding the current, possibly incomplete month).
     static func ensureMonthlyStatements(for user: User, services: AppServices) async {

@@ -66,6 +66,7 @@ struct AppTheme {
     // Note: accentOrange is already defined above as accentColor
 
     // MARK: - Typography
+    /// Legacy semantic fonts. Prefer `ResponsiveDesign.*Font()` in new SwiftUI code (`AppTheme` is not `@MainActor` and cannot forward `ResponsiveDesign` here).
     struct Typography {
         static let largeTitle = Font.largeTitle
         static let title = Font.title
@@ -74,6 +75,7 @@ struct AppTheme {
         static let body = Font.body
         static let caption = Font.caption
         static let smallCaption = Font.caption2
+        static let footnote = Font.footnote
     }
 
     // MARK: - Spacing
@@ -107,7 +109,7 @@ struct CardStyle: ViewModifier {
 struct SectionTitleStyle: ViewModifier {
     func body(content: Content) -> some View {
         content
-            .font(AppTheme.Typography.headline)
+            .font(ResponsiveDesign.headlineFont())
             .fontWeight(.semibold)
             .foregroundColor(AppTheme.primaryText)
     }

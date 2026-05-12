@@ -4,6 +4,7 @@ import OSLog
 
 // MARK: - Auth Service Protocol
 /// High-level authentication service that integrates auth providers with the app
+@MainActor
 protocol AuthServiceProtocol: AnyObject {
     /// Current authentication state
     var isAuthenticated: Bool { get }
@@ -35,7 +36,8 @@ protocol AuthServiceProtocol: AnyObject {
 
 // MARK: - Auth Service Implementation
 /// Default implementation of AuthServiceProtocol
-final class AuthService: AuthServiceProtocol, ObservableObject, ServiceLifecycle {
+@MainActor
+final class AuthService: AuthServiceProtocol, ObservableObject {
 
     // MARK: - Logger
 
@@ -54,7 +56,6 @@ final class AuthService: AuthServiceProtocol, ObservableObject, ServiceLifecycle
     // MARK: - Private State
 
     private var currentAuthResult: AuthResult?
-    private var isStarted: Bool = false
 
     // MARK: - Initialization
 
@@ -64,31 +65,6 @@ final class AuthService: AuthServiceProtocol, ObservableObject, ServiceLifecycle
     ) {
         self.authProvider = authProvider
         self.tokenStorage = tokenStorage
-        // Note: Don't use Task in init() - use ServiceLifecycle.start() instead
-    }
-
-    // MARK: - ServiceLifecycle Implementation
-
-    func start() {
-        guard !isStarted else { return }
-        isStarted = true
-        logger.info("🔐 AuthService started")
-
-        // Check for existing session asynchronously
-        Task { [weak self] in
-            await self?.checkExistingSession()
-        }
-    }
-
-    func stop() {
-        logger.info("🔐 AuthService stopped")
-    }
-
-    func reset() {
-        Task { @MainActor [weak self] in
-            self?.clearAuthState()
-        }
-        logger.info("🔐 AuthService reset")
     }
 
     // MARK: - AuthServiceProtocol Implementation
@@ -98,7 +74,7 @@ final class AuthService: AuthServiceProtocol, ObservableObject, ServiceLifecycle
             let result = try await authProvider.authenticate(
                 with: .emailPassword(email: email, password: password)
             )
-            await updateAuthState(with: result)
+            updateAuthState(with: result)
             return result
         } catch {
             throw mapToAppError(error)
@@ -118,7 +94,7 @@ final class AuthService: AuthServiceProtocol, ObservableObject, ServiceLifecycle
                     fullName: fullName
                 )
             )
-            await updateAuthState(with: result)
+            updateAuthState(with: result)
             return result
         } catch {
             throw mapToAppError(error)
@@ -134,7 +110,7 @@ final class AuthService: AuthServiceProtocol, ObservableObject, ServiceLifecycle
             let result = try await authProvider.authenticate(
                 with: .biometric(userId: userId)
             )
-            await updateAuthState(with: result)
+            updateAuthState(with: result)
             return result
         } catch {
             throw mapToAppError(error)
@@ -150,7 +126,7 @@ final class AuthService: AuthServiceProtocol, ObservableObject, ServiceLifecycle
             let result = try await authProvider.authenticate(
                 with: .sso(provider: provider, code: code, state: state)
             )
-            await updateAuthState(with: result)
+            updateAuthState(with: result)
             return result
         } catch {
             throw mapToAppError(error)
@@ -160,9 +136,7 @@ final class AuthService: AuthServiceProtocol, ObservableObject, ServiceLifecycle
     func signOut() async throws {
         do {
             try await authProvider.revokeTokens()
-            await MainActor.run { [weak self] in
-                self?.clearAuthState()
-            }
+            clearAuthState()
             logger.info("👋 User signed out")
         } catch {
             throw mapToAppError(error)
@@ -247,15 +221,12 @@ final class AuthService: AuthServiceProtocol, ObservableObject, ServiceLifecycle
             // Restore session from stored tokens
             if (try? await tokenStorage.getAccessToken()) != nil {
                 logger.info("🔐 Restored existing session")
-                await MainActor.run { [weak self] in
-                    self?.isAuthenticated = true
-                    // Note: userId would need to be decoded from token in production
-                }
+                isAuthenticated = true
+                // Note: userId would need to be decoded from token in production
             }
         }
     }
 
-    @MainActor
     private func updateAuthState(with result: AuthResult) {
         self.currentAuthResult = result
         self.currentUserId = result.userId
@@ -265,7 +236,6 @@ final class AuthService: AuthServiceProtocol, ObservableObject, ServiceLifecycle
         NotificationCenter.default.post(name: .userDidSignIn, object: nil)
     }
 
-    @MainActor
     private func clearAuthState() {
         self.currentAuthResult = nil
         self.currentUserId = nil

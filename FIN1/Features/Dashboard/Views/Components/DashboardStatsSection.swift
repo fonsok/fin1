@@ -13,10 +13,9 @@ struct DashboardStatsSection: View {
 
     // MARK: - Initialization
 
-    init(navigationPath: Binding<NavigationPath>) {
+    init(navigationPath: Binding<NavigationPath>, appServices: AppServices) {
         self._navigationPath = navigationPath
-        // ViewModel will be reconfigured in onAppear with actual appServices
-        self._viewModel = StateObject(wrappedValue: DashboardStatsViewModel(appServices: .live))
+        self._viewModel = StateObject(wrappedValue: DashboardStatsViewModel(appServices: appServices))
     }
 
     var body: some View {
@@ -68,6 +67,9 @@ struct DashboardStatsSection: View {
             // Cash Balance row
             cashBalanceRow
 
+            // Account action shortcuts directly below balance
+            accountActionsRow
+
             // Active Investments row
             activeInvestmentsRow
         }
@@ -82,7 +84,7 @@ struct DashboardStatsSection: View {
                     .foregroundColor(AppTheme.tertiaryText)
 
                 Image(systemName: "info.circle.fill")
-                    .font(.system(size: ResponsiveDesign.spacing(14)))
+                    .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.spacing(14)))
                     .foregroundColor(AppTheme.accentLightBlue)
             }
             .contentShape(Rectangle())
@@ -128,6 +130,9 @@ struct DashboardStatsSection: View {
             // Row 1: Account Balance
             traderAccountBalanceRow
 
+            // Row 1b: Account action shortcuts directly below balance
+            accountActionsRow
+
             // Row 2: Depot Value
             traderDepotValueRow
 
@@ -145,7 +150,7 @@ struct DashboardStatsSection: View {
                     .foregroundColor(AppTheme.tertiaryText)
 
                 Image(systemName: "info.circle.fill")
-                    .font(.system(size: ResponsiveDesign.spacing(14)))
+                    .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.spacing(14)))
                     .foregroundColor(AppTheme.accentLightBlue)
             }
             .contentShape(Rectangle())
@@ -188,6 +193,42 @@ struct DashboardStatsSection: View {
         }
     }
 
+    private var accountActionsRow: some View {
+        HStack(spacing: ResponsiveDesign.spacing(8)) {
+            Button {
+                openAccountActions()
+            } label: {
+                HStack(spacing: ResponsiveDesign.spacing(6)) {
+                    Image(systemName: "arrow.down.circle.fill")
+                    Text("Einzahlen")
+                        .fontWeight(.semibold)
+                }
+                .font(ResponsiveDesign.captionFont())
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, ResponsiveDesign.spacing(8))
+                .background(AppTheme.buttonColor.opacity(0.85))
+                .foregroundColor(AppTheme.fontColor)
+                .cornerRadius(ResponsiveDesign.spacing(10))
+            }
+
+            Button {
+                openAccountActions()
+            } label: {
+                HStack(spacing: ResponsiveDesign.spacing(6)) {
+                    Image(systemName: "arrow.up.circle.fill")
+                    Text("Auszahlen")
+                        .fontWeight(.semibold)
+                }
+                .font(ResponsiveDesign.captionFont())
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, ResponsiveDesign.spacing(8))
+                .background(AppTheme.buttonColor.opacity(0.85))
+                .foregroundColor(AppTheme.fontColor)
+                .cornerRadius(ResponsiveDesign.spacing(10))
+            }
+        }
+    }
+
     @ViewBuilder
     private var poolStatusText: some View {
         let isActive = viewModel.traderPoolsStatus == "active"
@@ -210,9 +251,13 @@ struct DashboardStatsSection: View {
     private func openAccountStatement() {
         navigationPath.append(DashboardRoute.accountStatement)
     }
+
+    private func openAccountActions() {
+        navigationPath.append(DashboardRoute.wallet)
+    }
 }
 
 #Preview {
-    DashboardStatsSection(navigationPath: .constant(NavigationPath()))
+    DashboardStatsSection(navigationPath: .constant(NavigationPath()), appServices: AppServices.live)
         .environmentObject(TabRouter())
 }

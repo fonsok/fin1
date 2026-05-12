@@ -5,6 +5,7 @@ import Combine
 
 /// Protocol defining the contract for address change request operations.
 /// Implements KYC-compliant address change verification workflow.
+@MainActor
 protocol AddressChangeRequestServiceProtocol: ObservableObject {
 
     // MARK: - Published Properties

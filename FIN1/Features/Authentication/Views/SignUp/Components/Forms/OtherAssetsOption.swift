@@ -16,7 +16,7 @@ struct OtherAssetsOption: View {
                             if isSelected {
                                 Image(systemName: "checkmark")
                                     .foregroundColor(AppTheme.fontColor)
-                                    .font(.system(size: 18, weight: .bold))
+                                    .font(ResponsiveDesign.scaledSystemFont(size: 18, weight: .bold))
                             }
                         }
                     )

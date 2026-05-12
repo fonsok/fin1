@@ -2,7 +2,7 @@ import SwiftUI
 import UIKit
 
 // MARK: - Image Cache Manager
-final class ImageCacheManager {
+final class ImageCacheManager: @unchecked Sendable {
     static let shared = ImageCacheManager()
     private let cache = NSCache<NSString, UIImage>()
     private let maxCacheSize = 50 * 1024 * 1024 // 50MB
@@ -77,7 +77,7 @@ struct OptimizedImageView: View {
                                     .progressViewStyle(CircularProgressViewStyle(tint: AppTheme.accentLightBlue))
                             } else {
                                 Image(systemName: placeholder)
-                                    .font(.system(size: ResponsiveDesign.iconSize() * 1.6))
+                                    .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 1.6))
                                     .foregroundColor(AppTheme.fontColor.opacity(0.6))
                             }
                             Text(isLoading ? "Loading..." : "No Image")
@@ -249,7 +249,7 @@ struct AsyncImageLoader: View {
             .overlay(
                 VStack(spacing: ResponsiveDesign.spacing(8)) {
                     Image(systemName: "exclamationmark.triangle")
-                        .font(.system(size: ResponsiveDesign.iconSize() * 1.6))
+                        .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 1.6))
                         .foregroundColor(AppTheme.accentRed)
                     Text("Failed to load")
                         .font(ResponsiveDesign.captionFont())
@@ -265,7 +265,7 @@ struct AsyncImageLoader: View {
             .overlay(
                 VStack(spacing: ResponsiveDesign.spacing(8)) {
                     Image(systemName: placeholder)
-                        .font(.system(size: ResponsiveDesign.iconSize() * 1.6))
+                        .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 1.6))
                         .foregroundColor(AppTheme.fontColor.opacity(0.6))
                     Text("No Image")
                         .font(ResponsiveDesign.captionFont())

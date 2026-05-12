@@ -13,13 +13,13 @@ final class CombinedOrderCalculator {
 
     /// Calculates the combined order details for trader + investment purchase
     ///
-    /// **CAPITAL MAXIMIZATION STRATEGY:**
-    /// - Maximizes capital utilization by using ALL available trader cash balance and pool capital
-    /// - The trader's input quantity (traderQuantity parameter) is COMPLETELY IGNORED
-    /// - System calculates: max trader quantity from trader cash + max investment quantity from pool capital
-    /// - Total order quantity = max trader quantity + max investment quantity
+    /// **ORDER STRATEGY:**
+    /// - Trader quantity is user-driven (`traderQuantity`) and remains the source of truth
+    /// - Trader portion is capped by affordability and denomination constraints
+    /// - Pool mirror portion is calculated as the maximum buyable quantity from pool capital
+    /// - Total order quantity = effective trader quantity + pool mirror quantity
     ///
-    /// The total executed quantity = max trader quantity + max investment quantity
+    /// The total executed quantity = effective trader quantity + max investment quantity
     func calculateCombinedOrderDetails(
         traderQuantity: Int,
         traderCashBalance: Double,
@@ -60,31 +60,31 @@ final class CombinedOrderCalculator {
         // Calculate price per unit (pricePerSecurity is per share)
         let pricePerUnit = pricePerSecurity / Double(subscriptionRatio)
 
-        // MAXIMIZE CAPITAL UTILIZATION:
-        // 1. Calculate maximum trader quantity from trader's cash balance (ignore traderQuantity input)
-        //    This ensures we use all available trader capital, similar to a mirror trade
+        // 1. Respect trader input quantity and cap it by what trader can afford.
+        //    Trader quantity must never be silently maximized beyond the user's input.
         print("💰 CombinedOrderCalculator.calculateCombinedOrderDetails:")
-        print("   📊 traderQuantity (INPUT - IGNORED): \(traderQuantity)")
+        print("   📊 traderQuantity (INPUT): \(traderQuantity)")
         print("   💵 traderCashBalance: €\(String(format: "%.2f", traderCashBalance))")
         print("   💵 investmentBalance (pool capital): €\(String(format: "%.2f", investmentBalance))")
         print("   💵 pricePerSecurity: €\(String(format: "%.2f", pricePerSecurity))")
         print("   📐 denomination: \(denomination?.description ?? "nil")")
         print("   📐 subscriptionRatio: \(subscriptionRatio)")
 
-        let actualTraderQuantity = maxQuantityCalculator(
+        let requestedTraderQuantity = max(traderQuantity, 0)
+        let maxAffordableTraderQuantity = maxQuantityCalculator(
             traderCashBalance,
             pricePerSecurity,
             denomination,
             subscriptionRatio,
             nil // Don't apply minimum to trader portion individually
         )
-        print("   ✅ actualTraderQuantity (MAXIMIZED from cash): \(actualTraderQuantity)")
+        let actualTraderQuantity = min(requestedTraderQuantity, maxAffordableTraderQuantity)
+        print("   ✅ actualTraderQuantity (REQUESTED, CAPPED): \(actualTraderQuantity)")
 
-        // Trader is limited only if they have no cash balance or cannot purchase any quantity
-        let isTraderLimited = actualTraderQuantity == 0 && traderCashBalance > 0
+        // Trader is limited if requested quantity exceeds affordable quantity.
+        let isTraderLimited = requestedTraderQuantity > actualTraderQuantity
 
-        // 2. Calculate maximum investment quantity from pool capital
-        //    This ensures we use all available pool capital, maximizing capital utilization
+        // 2. Calculate maximum mirror quantity from pool capital (same constraints).
         let investmentQuantity = maxQuantityCalculator(
             investmentBalance,
             pricePerSecurity,
@@ -92,7 +92,7 @@ final class CombinedOrderCalculator {
             subscriptionRatio,
             nil // Don't apply minimum to investment portion individually
         )
-        print("   ✅ investmentQuantity (MAXIMIZED from pool): \(investmentQuantity)")
+        print("   ✅ investmentQuantity (MAX from pool): \(investmentQuantity)")
 
         // 3. Calculate total order (trader + investment) in units
         let totalQuantity = actualTraderQuantity + investmentQuantity

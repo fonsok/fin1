@@ -3,6 +3,7 @@ import Foundation
 // MARK: - Cash Balance Service Protocol
 
 /// Protocol for managing user cash balance
+@MainActor
 protocol CashBalanceServiceProtocol: ServiceLifecycle {
     /// Current cash balance
     var currentBalance: Double { get }

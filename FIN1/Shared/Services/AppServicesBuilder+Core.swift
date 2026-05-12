@@ -2,6 +2,7 @@ import Foundation
 
 extension AppServicesBuilder {
 
+    @MainActor
     enum Core {
         static func build(_ ctx: inout AppServicesBuildContext) {
             let mockDataGenerator = MockDataGenerator()

@@ -3,9 +3,9 @@ import SwiftUI
 import Combine
 
 // MARK: - Investment Service Implementation
-/// Handles investment operations, investment management, and investment overview
+/// Handles investment operations, pool lifecycle coordination, and investment overview
 /// Delegates to focused helper services for specific functionality
-final class InvestmentService: InvestmentServiceProtocol, ServiceLifecycle {
+final class InvestmentService: InvestmentServiceProtocol, ServiceLifecycle, @unchecked Sendable {
 
     // MARK: - Published Properties (delegated to repository)
     var investments: [Investment] {
@@ -29,40 +29,39 @@ final class InvestmentService: InvestmentServiceProtocol, ServiceLifecycle {
     }
 
     // MARK: - Dependencies
-    private let repository: any InvestmentRepositoryProtocol
-    private let queryService: any InvestmentQueryServiceProtocol
-    private let creationService: any InvestmentCreationServiceProtocol
-    private let investorCashBalanceService: (any InvestorCashBalanceServiceProtocol)?
-    private let poolTradeParticipationService: (any PoolTradeParticipationServiceProtocol)?
-    private let telemetryService: (any TelemetryServiceProtocol)?
-    private let documentService: (any DocumentServiceProtocol)?
-    private let investmentManagementService: (any InvestmentManagementServiceProtocol)?
-    private let investmentCompletionService: (any InvestmentCompletionServiceProtocol)?
-    private let investmentDocumentService: (any InvestmentDocumentServiceProtocol)?
-    private let configurationService: any ConfigurationServiceProtocol
-    private var investorGrossProfitService: (any InvestorGrossProfitServiceProtocol)?
-    private var commissionCalculationService: (any CommissionCalculationServiceProtocol)?
+    let repository: any InvestmentRepositoryProtocol
+    let queryService: any InvestmentQueryServiceProtocol
+    let creationService: any InvestmentCreationServiceProtocol
+    let investorCashBalanceService: (any InvestorCashBalanceServiceProtocol)?
+    let poolTradeParticipationService: (any PoolTradeParticipationServiceProtocol)?
+    let telemetryService: (any TelemetryServiceProtocol)?
+    let documentService: (any DocumentServiceProtocol)?
+    let investmentPoolLifecycleService: (any InvestmentPoolLifecycleServiceProtocol)?
+    let investmentStatusService: any InvestmentStatusServiceProtocol
+    let investmentCompletionService: (any InvestmentCompletionServiceProtocol)?
+    let investmentDocumentService: (any InvestmentDocumentServiceProtocol)?
+    let configurationService: any ConfigurationServiceProtocol
+    var investorGrossProfitService: (any InvestorGrossProfitServiceProtocol)?
+    var commissionCalculationService: (any CommissionCalculationServiceProtocol)?
 
     // Backend sync (optional - for persistence across devices)
-    private var investmentAPIService: (any InvestmentAPIServiceProtocol)?
-    private var pendingSyncIds: Set<String> = [] // Track investments not yet synced
+    var investmentAPIService: (any InvestmentAPIServiceProtocol)?
+    var pendingSyncIds: Set<String> = [] // Track investments not yet synced
 
     // MARK: - Initialization
 
     init(
         repository: (any InvestmentRepositoryProtocol)? = nil,
         queryService: (any InvestmentQueryServiceProtocol)? = nil,
-        creationService: (any InvestmentCreationServiceProtocol)? = nil,
+        creationService: any InvestmentCreationServiceProtocol,
         investorCashBalanceService: (any InvestorCashBalanceServiceProtocol)? = nil,
-        bankContraAccountService: (any BankContraAccountPostingServiceProtocol)? = nil,
         poolTradeParticipationService: (any PoolTradeParticipationServiceProtocol)? = nil,
         telemetryService: (any TelemetryServiceProtocol)? = nil,
         documentService: (any DocumentServiceProtocol)? = nil,
-        investmentManagementService: (any InvestmentManagementServiceProtocol)? = nil,
+        investmentPoolLifecycleService: (any InvestmentPoolLifecycleServiceProtocol)? = nil,
+        investmentStatusService: any InvestmentStatusServiceProtocol,
         investmentCompletionService: (any InvestmentCompletionServiceProtocol)? = nil,
         investmentDocumentService: (any InvestmentDocumentServiceProtocol)? = nil,
-        invoiceService: (any InvoiceServiceProtocol)? = nil,
-        transactionIdService: (any TransactionIdServiceProtocol)? = nil,
         configurationService: any ConfigurationServiceProtocol,
         investorGrossProfitService: (any InvestorGrossProfitServiceProtocol)? = nil,
         commissionCalculationService: (any CommissionCalculationServiceProtocol)? = nil,
@@ -70,21 +69,13 @@ final class InvestmentService: InvestmentServiceProtocol, ServiceLifecycle {
     ) {
         self.repository = repository ?? InvestmentRepository()
         self.queryService = queryService ?? InvestmentQueryService()
-        self.creationService = creationService ?? InvestmentCreationService(
-            investorCashBalanceService: investorCashBalanceService,
-            investmentManagementService: investmentManagementService,
-            investmentDocumentService: investmentDocumentService,
-            documentService: documentService,
-            invoiceService: invoiceService,
-            bankContraAccountService: bankContraAccountService,
-            transactionIdService: transactionIdService ?? TransactionIdService(),
-            configurationService: configurationService
-        )
+        self.creationService = creationService
         self.investorCashBalanceService = investorCashBalanceService
         self.poolTradeParticipationService = poolTradeParticipationService
         self.telemetryService = telemetryService
         self.documentService = documentService
-        self.investmentManagementService = investmentManagementService
+        self.investmentPoolLifecycleService = investmentPoolLifecycleService
+        self.investmentStatusService = investmentStatusService
         self.investmentCompletionService = investmentCompletionService
         self.investmentDocumentService = investmentDocumentService
         self.configurationService = configurationService
@@ -122,8 +113,8 @@ final class InvestmentService: InvestmentServiceProtocol, ServiceLifecycle {
     func reset() {
         repository.investments.removeAll()
         repository.investmentPools.removeAll()
-        if let investmentManagementService = investmentManagementService as? InvestmentManagementService {
-            repository.investmentPools = investmentManagementService.investmentPools
+        if let investmentPoolLifecycleService = investmentPoolLifecycleService as? InvestmentPoolLifecycleService {
+            repository.investmentPools = investmentPoolLifecycleService.investmentPools
         }
     }
 
@@ -131,52 +122,13 @@ final class InvestmentService: InvestmentServiceProtocol, ServiceLifecycle {
 
     func selectNextInvestmentForTrader(_ traderId: String) async -> Investment? {
         await MainActor.run {
-            investmentManagementService?.selectNextInvestmentForTrader(traderId, in: repository.investments)
+            investmentPoolLifecycleService?.selectNextInvestmentForTrader(traderId, in: repository.investments)
         }
     }
 
     func selectNextInvestmentForInvestor(_ investorId: String, traderId: String) async -> Investment? {
         await MainActor.run {
-            investmentManagementService?.selectNextInvestmentForInvestor(investorId, traderId: traderId, in: repository.investments)
-        }
-    }
-
-    // MARK: - Investment Creation
-
-    func createInvestment(
-        investor: User,
-        trader: MockTrader,
-        amountPerInvestment: Double,
-        numberOfInvestments: Int,
-        specialization: String,
-        potSelection: InvestmentSelectionStrategy
-    ) async throws {
-        // Capture current investment IDs before creation
-        let existingIds = await MainActor.run { Set(repository.investments.map(\.id)) }
-
-        // Create investments locally
-        try await creationService.createInvestment(
-            investor: investor,
-            trader: trader,
-            amountPerInvestment: amountPerInvestment,
-            numberOfInvestments: numberOfInvestments,
-            specialization: specialization,
-            potSelection: potSelection,
-            repository: repository
-        )
-
-        // Mark new investments for backend sync
-        let newIds = await MainActor.run {
-            repository.investments.map(\.id).filter { !existingIds.contains($0) }
-        }
-        for id in newIds {
-            markForSync(id)
-        }
-
-        // Write-through: Sync immediately so Parse objectIds are available
-        // for PoolTradeParticipation references
-        if !newIds.isEmpty, investmentAPIService != nil {
-            await syncToBackend()
+            investmentPoolLifecycleService?.selectNextInvestmentForInvestor(investorId, traderId: traderId, in: repository.investments)
         }
     }
 
@@ -194,7 +146,7 @@ final class InvestmentService: InvestmentServiceProtocol, ServiceLifecycle {
         queryService.getInvestmentPools(
             forTrader: traderId,
             in: repository.investmentPools,
-            investmentManagementService: investmentManagementService
+            investmentPoolLifecycleService: investmentPoolLifecycleService
         )
     }
 
@@ -202,261 +154,8 @@ final class InvestmentService: InvestmentServiceProtocol, ServiceLifecycle {
         queryService.getGroupedInvestmentsBySequence(
             forTrader: traderId,
             in: repository.investments,
-            investmentManagementService: investmentManagementService
+            investmentPoolLifecycleService: investmentPoolLifecycleService
         )
     }
 
-    // MARK: - Investment Status Management
-
-    func markInvestmentAsActive(for traderId: String) async {
-        await MainActor.run {
-            _ = InvestmentStatusManager.markInvestmentAsActive(
-                for: traderId,
-                repository: repository,
-                investmentManagementService: investmentManagementService,
-                telemetryService: telemetryService
-            )
-        }
-    }
-
-    func markInvestmentAsCompleted(for traderId: String) async {
-        let cashDistributionValues: (Investment, InvestmentReservation)? = await MainActor.run {
-            InvestmentStatusManager.markInvestmentAsCompleted(
-                for: traderId,
-                repository: repository,
-                investmentManagementService: investmentManagementService,
-                telemetryService: telemetryService
-            )
-        }
-
-        // Trigger completion check
-        Task { await checkAndUpdateInvestmentCompletion() }
-
-        // Distribute cash if applicable
-        if let (investment, reservation) = cashDistributionValues {
-            await distributeCashForCompletion(investment: investment, reservation: reservation)
-        }
-    }
-
-    func markNextInvestmentAsActive(for investmentId: String) async {
-        await MainActor.run {
-            _ = InvestmentStatusManager.markNextInvestmentAsActive(
-                for: investmentId,
-                repository: repository,
-                investmentManagementService: investmentManagementService
-            )
-        }
-    }
-
-    func markActiveInvestmentAsCompleted(for investmentId: String) async {
-        let cashDistributionValues: (Investment, InvestmentReservation)? = await MainActor.run {
-            InvestmentStatusManager.markActiveInvestmentAsCompleted(
-                for: investmentId,
-                repository: repository,
-                investmentManagementService: investmentManagementService
-            )
-        }
-
-        if let (investment, reservation) = cashDistributionValues {
-            await distributeCashForCompletion(investment: investment, reservation: reservation)
-            await generateCompletionDocument(for: investment)
-        }
-
-        await checkAndUpdateInvestmentCompletion(for: [investmentId])
-    }
-
-    func deleteInvestment(investmentId: String, reservationId: String) async {
-        let snapshot = await MainActor.run {
-            repository.investments.first { $0.id == investmentId }
-        }
-        let isLocalOnlyId = UUID(uuidString: investmentId) != nil
-
-        if !isLocalOnlyId, let api = investmentAPIService {
-            do {
-                try await api.cancelReservedInvestment(investmentId: investmentId)
-                let deleted = await MainActor.run {
-                    InvestmentStatusManager.deleteInvestment(investmentId: investmentId, repository: repository)
-                }
-                if deleted {
-                    await checkAndUpdateInvestmentCompletion()
-                    NotificationCenter.default.post(name: .investorBalanceDidChange, object: nil)
-                }
-                return
-            } catch {
-                print("⚠️ InvestmentService: cancelReservedInvestment failed — local fallback: \(error.localizedDescription)")
-            }
-        }
-
-        if let cash = investorCashBalanceService,
-           let inv = snapshot,
-           inv.reservationStatus == .reserved {
-            await cash.processRemainingBalanceDistribution(
-                investorId: inv.investorId,
-                amount: inv.amount,
-                investmentId: investmentId
-            )
-        }
-
-        let deleted = await MainActor.run {
-            InvestmentStatusManager.deleteInvestment(investmentId: investmentId, repository: repository)
-        }
-
-        if deleted {
-            await checkAndUpdateInvestmentCompletion()
-            NotificationCenter.default.post(name: .investorBalanceDidChange, object: nil)
-        }
-    }
-
-    // MARK: - Completion Checking
-
-    func checkAndUpdateInvestmentCompletion(for investmentIds: [String]) async {
-        await MainActor.run {
-            InvestmentCompletionChecker.checkAndUpdate(
-                for: investmentIds,
-                repository: repository,
-                investmentCompletionService: investmentCompletionService
-            )
-        }
-    }
-
-    func checkAndUpdateInvestmentCompletion() async {
-        await MainActor.run {
-            InvestmentCompletionChecker.checkAndUpdateAll(
-                repository: repository,
-                investmentCompletionService: investmentCompletionService
-            )
-        }
-    }
-
-    func updateInvestmentProfitsFromTrades() async {
-        await MainActor.run {
-            InvestmentCompletionChecker.updateProfitsFromTrades(
-                repository: repository,
-                investmentCompletionService: investmentCompletionService
-            )
-        }
-    }
-
-    // MARK: - Private Helpers
-
-    private func distributeCashForCompletion(investment: Investment, reservation: InvestmentReservation) async {
-        if let investmentCompletionService = investmentCompletionService {
-            await investmentCompletionService.distributeInvestmentCompletionCash(
-                investment: investment,
-                investmentReservation: reservation
-            )
-        } else {
-            print("⚠️ InvestmentService: investmentCompletionService unavailable - cash distribution skipped for investment \(investment.id)")
-        }
-    }
-
-    private func generateCompletionDocument(for investment: Investment) async {
-        if let investmentDocumentService = investmentDocumentService {
-            print("📄 InvestmentService: Generating investor Collection Bill for investment \(investment.id)")
-            await investmentDocumentService.generateInvestmentDocument(for: investment)
-        } else {
-            print("⚠️ InvestmentService: investmentDocumentService is nil - investor Collection Bill not generated")
-        }
-    }
-
-    // MARK: - Backend Sync (Efficient, Lazy)
-
-    /// Syncs pending investments to backend in batch (called on app background)
-    func syncToBackend() async {
-        guard let apiService = investmentAPIService, !pendingSyncIds.isEmpty else { return }
-
-        let idsToSync = pendingSyncIds
-        print("📡 InvestmentService: Syncing \(idsToSync.count) investments to backend...")
-
-        let investmentsToSync = await MainActor.run {
-            repository.investments.filter { idsToSync.contains($0.id) }
-        }
-
-        for investment in investmentsToSync {
-            do {
-                let savedInvestment = try await apiService.saveInvestment(investment)
-                let localId = investment.id
-                await MainActor.run {
-                    pendingSyncIds.remove(localId)
-                    // Replace local investment with the one carrying the Parse objectId
-                    if savedInvestment.id != localId,
-                       let index = repository.investments.firstIndex(where: { $0.id == localId }) {
-                        repository.investments[index] = savedInvestment
-                        print("📡 InvestmentService: Updated ID \(localId) → \(savedInvestment.id)")
-                    }
-                }
-            } catch {
-                print("⚠️ InvestmentService: Failed to sync investment \(investment.id): \(error)")
-            }
-        }
-
-        print("✅ InvestmentService: Sync complete, \(pendingSyncIds.count) pending")
-    }
-
-    /// Fetches investments from backend and merges status/financial updates into local store
-    func fetchFromBackend(for investorId: String) async {
-        guard let apiService = investmentAPIService else { return }
-
-        do {
-            let remoteInvestments = try await apiService.fetchInvestments(for: investorId)
-            await MainActor.run {
-                let remoteIds = Set(remoteInvestments.map(\.id))
-                // Drop local rows removed on the server (e.g. after DEV reset); keep pending unsynced creates.
-                repository.investments.removeAll { inv in
-                    guard inv.investorId == investorId else { return false }
-                    if pendingSyncIds.contains(inv.id) { return false }
-                    return !remoteIds.contains(inv.id)
-                }
-
-                let localById = Dictionary(uniqueKeysWithValues: repository.investments.map { ($0.id, $0) })
-                var addedCount = 0
-                var updatedCount = 0
-
-                for remote in remoteInvestments {
-                    if let local = localById[remote.id] {
-                        // Update existing: apply backend status and financial data
-                        let needsUpdate = local.status != remote.status
-                            || local.reservationStatus != remote.reservationStatus
-                            || abs(local.currentValue - remote.currentValue) > 0.01
-                            || abs((local.performance) - (remote.performance)) > 0.01
-                        if needsUpdate {
-                            let merged = Investment(
-                                id: local.id,
-                                batchId: local.batchId ?? remote.batchId,
-                                investorId: local.investorId,
-                                investorName: local.investorName,
-                                traderId: local.traderId,
-                                traderName: local.traderName.isEmpty ? remote.traderName : local.traderName,
-                                amount: local.amount,
-                                currentValue: remote.currentValue,
-                                date: local.date,
-                                status: remote.status,
-                                performance: remote.performance,
-                                numberOfTrades: max(local.numberOfTrades, remote.numberOfTrades),
-                                sequenceNumber: local.sequenceNumber,
-                                createdAt: local.createdAt,
-                                updatedAt: Date(),
-                                completedAt: remote.completedAt ?? local.completedAt,
-                                specialization: local.specialization,
-                                reservationStatus: remote.reservationStatus
-                            )
-                            repository.updateInvestment(merged)
-                            updatedCount += 1
-                        }
-                    } else {
-                        repository.addInvestment(remote)
-                        addedCount += 1
-                    }
-                }
-                print("📡 InvestmentService: Backend sync — \(addedCount) added, \(updatedCount) updated (of \(remoteInvestments.count) remote)")
-            }
-        } catch {
-            print("⚠️ InvestmentService: Backend fetch failed: \(error)")
-        }
-    }
-
-    /// Marks an investment for sync (called after local creation)
-    func markForSync(_ investmentId: String) {
-        pendingSyncIds.insert(investmentId)
-    }
 }

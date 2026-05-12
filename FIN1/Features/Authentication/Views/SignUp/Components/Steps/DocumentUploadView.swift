@@ -210,7 +210,7 @@ struct UploadOptionButton: View {
         Button(action: action, label: {
             VStack(spacing: ResponsiveDesign.spacing(12)) {
                 Image(systemName: icon)
-                    .font(.system(size: ResponsiveDesign.iconSize() * 1.6))
+                    .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 1.6))
                     .foregroundColor(AppTheme.accentLightBlue)
 
                 Text(title)

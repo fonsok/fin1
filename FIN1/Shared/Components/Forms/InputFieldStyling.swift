@@ -23,6 +23,7 @@ enum InputType {
 
 // MARK: - Layout Components
 /// Layout components for different input field arrangements
+@MainActor
 struct InputFieldLayoutComponents {
 
     /// Standard layout with label above input
@@ -106,6 +107,7 @@ struct InputContainerStyle {
 
 // MARK: - Input Field Background
 /// Standard input field background styling
+@MainActor
 struct InputFieldBackground: ViewModifier {
     let cornerRadius: CGFloat?
 
@@ -143,11 +145,14 @@ struct InputFieldIcon: View {
 
 // MARK: - Text Styling
 /// Text styling for input fields
+@MainActor
 struct InputFieldTextStyle {
     static var primary: Font {
-        ResponsiveDesign.isCompactDevice() ? .title3 : .title2
+        ResponsiveDesign.inputFieldPrimaryFont()
     }
-    static let secondary = Font.caption
+    static var secondary: Font {
+        ResponsiveDesign.captionFont()
+    }
     static let primaryColor = AppTheme.inputFieldText
     static let placeholderColor = AppTheme.inputFieldPlaceholder
 }

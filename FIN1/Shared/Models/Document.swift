@@ -13,6 +13,8 @@ enum DocumentType: String, CaseIterable, Codable, Hashable, Sendable {
     case traderCollectionBill
     case investorCollectionBill
     case traderCreditNote
+    /// GoB: interner Buchungsbeleg für die erste Escrow-Reservierung (CLT-LIAB-AVA → RSV), ohne externen Bankbeleg.
+    case investmentReservationEigenbeleg
     case monthlyAccountStatement
     case other
 
@@ -27,6 +29,7 @@ enum DocumentType: String, CaseIterable, Codable, Hashable, Sendable {
         case .traderCollectionBill: return "Trader Collection Bill"
         case .investorCollectionBill: return "Investor Collection Bill"
         case .traderCreditNote: return "Gutschrift"
+        case .investmentReservationEigenbeleg: return "Eigenbeleg (Reservierung)"
         case .monthlyAccountStatement: return "Monthly Account Statement"
         case .other: return "Other"
         }
@@ -43,6 +46,7 @@ enum DocumentType: String, CaseIterable, Codable, Hashable, Sendable {
         case .traderCollectionBill: return "doc.text.magnifyingglass"
         case .investorCollectionBill: return "doc.text.magnifyingglass"
         case .traderCreditNote: return "doc.text.fill"
+        case .investmentReservationEigenbeleg: return "doc.badge.plus"
         case .monthlyAccountStatement: return "tablecells"
         case .other: return "doc"
         }
@@ -59,6 +63,7 @@ enum DocumentType: String, CaseIterable, Codable, Hashable, Sendable {
         case .traderCollectionBill: return AppTheme.accentLightBlue
         case .investorCollectionBill: return AppTheme.accentGreen
         case .traderCreditNote: return AppTheme.accentGreen
+        case .investmentReservationEigenbeleg: return AppTheme.accentOrange
         case .monthlyAccountStatement: return AppTheme.accentLightBlue
         case .other: return AppTheme.fontColor
         }
@@ -86,6 +91,16 @@ enum DocumentStatus: String, CaseIterable, Codable, Hashable {
         case .verified: return "green"
         case .rejected: return "red"
         case .expired: return "gray"
+        }
+    }
+
+    /// SwiftUI foreground for status values (avoids `Color(_:)` asset-name ambiguity).
+    var statusRowForeground: Color {
+        switch self {
+        case .pending: return .orange
+        case .verified: return .green
+        case .rejected: return .red
+        case .expired: return .gray
         }
     }
 }
@@ -119,6 +134,12 @@ struct Document: Identifiable, Codable, Hashable {
     /// Gemäß Grundsätzen ordnungsgemäßer Buchführung (GoB) müssen alle Belege eindeutig identifizierbar sein
     let documentNumber: String?
 
+    /// Trader commission rate at issuance (e.g. settlement); stored on Parse because `invoiceData` is not persisted.
+    let traderCommissionRateSnapshot: Double?
+
+    /// Mehrzeiliger Buchhaltungs-/Eigenbeleg-Text vom Backend (z. B. Reservierung GoB), für Anzeige ohne PDF.
+    let accountingSummaryText: String?
+
     init(
         id: String = UUID().uuidString,
         userId: String,
@@ -136,7 +157,9 @@ struct Document: Identifiable, Codable, Hashable {
         statementYear: Int? = nil,
         statementMonth: Int? = nil,
         statementRole: UserRole? = nil,
-        documentNumber: String? = nil
+        documentNumber: String? = nil,
+        traderCommissionRateSnapshot: Double? = nil,
+        accountingSummaryText: String? = nil
     ) {
         self.id = id
         self.userId = userId
@@ -157,6 +180,8 @@ struct Document: Identifiable, Codable, Hashable {
         // Automatisch documentNumber aus invoiceData setzen, falls vorhanden
         // Sonst verwende den übergebenen documentNumber
         self.documentNumber = invoiceData?.invoiceNumber ?? documentNumber
+        self.traderCommissionRateSnapshot = traderCommissionRateSnapshot
+        self.accountingSummaryText = accountingSummaryText
     }
 
     // MARK: - Computed Properties
@@ -216,5 +241,10 @@ struct Document: Identifiable, Codable, Hashable {
     /// Prüft, ob das Dokument eine Belegnummer hat (erforderlich für Buchhaltungsbelege)
     var hasAccountingDocumentNumber: Bool {
         return accountingDocumentNumber != nil
+    }
+
+    /// Interner GoB-Eigenbeleg (Reservierung); nicht im Investor-Postfach „Dokumente“, sondern am App-Ledger zur Buchung.
+    var isExcludedFromInvestorDocumentInbox: Bool {
+        type == .investmentReservationEigenbeleg
     }
 }

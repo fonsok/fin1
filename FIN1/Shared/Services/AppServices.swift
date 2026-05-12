@@ -3,7 +3,10 @@ import Foundation
 // MARK: - Services Container (Composition Root)
 /// Central dependency injection container that holds all service instances
 /// This is the single source of truth for service dependencies in the app
-struct AppServices {
+///
+/// `Sendable`: The composition root is created once at launch; services are not assumed thread-safe
+/// as a group, but the container reference is passed read-only through SwiftUI environment.
+struct AppServices: @unchecked Sendable {
 
     // MARK: - Core Services
     let userService: any UserServiceProtocol
@@ -113,11 +116,13 @@ struct AppServices {
 
     // MARK: - Live Instance
     static let live: AppServices = {
-        let services = AppServicesBuilder.buildLiveServices()
-        if let notificationService = services.notificationService as? NotificationService {
-            print("🔔 AppServices.live: Created with NotificationService instance \(ObjectIdentifier(notificationService))")
+        MainActor.assumeIsolated {
+            let services = AppServicesBuilder.buildLiveServices()
+            if let notificationService = services.notificationService as? NotificationService {
+                print("🔔 AppServices.live: Created with NotificationService instance \(ObjectIdentifier(notificationService))")
+            }
+            return services
         }
-        return services
     }()
 }
 

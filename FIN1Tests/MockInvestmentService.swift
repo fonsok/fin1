@@ -4,7 +4,7 @@ import Combine
 
 // MARK: - Mock Investment Service (Simplified)
 /// Simplified mock using closure-based behavior instead of multiple configuration properties
-class MockInvestmentService: InvestmentServiceProtocol {
+final class MockInvestmentService: InvestmentServiceProtocol, @unchecked Sendable {
     @Published var investments: [Investment] = []
     @Published var investmentPools: [InvestmentPool] = []
     @Published var isLoading: Bool = false

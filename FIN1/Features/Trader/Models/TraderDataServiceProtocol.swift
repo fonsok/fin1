@@ -4,7 +4,7 @@ import Combine
 
 // MARK: - Trader Data Service Protocol
 /// Defines the contract for trader data operations and management
-protocol TraderDataServiceProtocol: ObservableObject {
+protocol TraderDataServiceProtocol: ObservableObject, Sendable {
     var traders: [MockTrader] { get }
     var filteredTraders: [MockTrader] { get }
     var searchText: String { get set }
@@ -37,7 +37,7 @@ protocol TraderDataServiceProtocol: ObservableObject {
 
 // MARK: - Trader Data Service Implementation
 /// Handles trader data operations, search, filtering, and sorting
-final class TraderDataService: TraderDataServiceProtocol, ServiceLifecycle {
+final class TraderDataService: TraderDataServiceProtocol, ServiceLifecycle, @unchecked Sendable {
     static let shared = TraderDataService()
 
     @Published var traders: [MockTrader] = []

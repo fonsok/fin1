@@ -5,7 +5,7 @@ import Foundation
 /// Protocol for centralized holdings creation from trades
 /// **SINGLE SOURCE OF TRUTH** for converting Trade → DepotHolding
 /// This eliminates DRY violations where the same logic was duplicated in 4+ places
-protocol HoldingsConversionServiceProtocol {
+protocol HoldingsConversionServiceProtocol: Sendable {
     /// Creates a DepotHolding from a trade, properly accounting for partial sales
     /// - Parameters:
     ///   - trade: The trade to convert
@@ -33,7 +33,7 @@ protocol HoldingsConversionServiceProtocol {
 /// - DashboardStatsSection.createHoldingFromTrade
 ///
 /// All these should now use this centralized service.
-final class HoldingsConversionService: HoldingsConversionServiceProtocol {
+final class HoldingsConversionService: HoldingsConversionServiceProtocol, @unchecked Sendable {
 
     // MARK: - Singleton
 

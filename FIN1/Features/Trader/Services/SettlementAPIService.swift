@@ -49,9 +49,12 @@ struct BackendAccountEntry: Decodable, Identifiable {
     let tradeId: String?
     let tradeNumber: Int?
     let investmentId: String?
+    let investmentNumber: String?
+    let businessReference: String?
     let description: String?
     let source: String?
     let referenceDocumentId: String?
+    let referenceDocumentNumber: String?
     let createdAt: String?
 
     var id: String { objectId }
@@ -64,6 +67,61 @@ struct BackendAccountEntry: Decodable, Identifiable {
         if let d = fmt.date(from: iso) { return d }
         fmt.formatOptions = [.withInternetDateTime]
         return fmt.date(from: iso)
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case objectId, userId, entryType, amount, balanceBefore, balanceAfter
+        case tradeId, tradeNumber, investmentId, investmentNumber
+        case businessReference, description, source, referenceDocumentId, referenceDocumentNumber, createdAt
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.objectId = try c.decode(String.self, forKey: .objectId)
+        self.userId = try c.decodeIfPresent(String.self, forKey: .userId) ?? ""
+        self.entryType = try c.decodeIfPresent(String.self, forKey: .entryType) ?? ""
+        self.amount = c.decodeLossyDouble(forKey: .amount) ?? 0
+        self.balanceBefore = c.decodeLossyDouble(forKey: .balanceBefore) ?? 0
+        self.balanceAfter = c.decodeLossyDouble(forKey: .balanceAfter) ?? 0
+        self.tradeId = try c.decodeIfPresent(String.self, forKey: .tradeId)
+        self.tradeNumber = c.decodeLossyInt(forKey: .tradeNumber)
+        self.investmentId = try c.decodeIfPresent(String.self, forKey: .investmentId)
+        self.investmentNumber = try c.decodeIfPresent(String.self, forKey: .investmentNumber)
+        self.businessReference = try c.decodeIfPresent(String.self, forKey: .businessReference)
+        self.description = try c.decodeIfPresent(String.self, forKey: .description)
+        self.source = try c.decodeIfPresent(String.self, forKey: .source)
+        self.referenceDocumentId = try c.decodeIfPresent(String.self, forKey: .referenceDocumentId)
+        self.referenceDocumentNumber = try c.decodeIfPresent(String.self, forKey: .referenceDocumentNumber)
+        self.createdAt = try c.decodeIfPresent(String.self, forKey: .createdAt)
+    }
+}
+
+private extension KeyedDecodingContainer where K == BackendAccountEntry.CodingKeys {
+    func decodeLossyInt(forKey key: K) -> Int? {
+        if let value = try? decode(Int.self, forKey: key) {
+            return value
+        }
+        if let str = try? decode(String.self, forKey: key) {
+            return Int(str)
+        }
+        if let dbl = try? decode(Double.self, forKey: key) {
+            return Int(dbl)
+        }
+        return nil
+    }
+
+    func decodeLossyDouble(forKey key: K) -> Double? {
+        if let value = try? decode(Double.self, forKey: key) {
+            return value
+        }
+        if let intValue = try? decode(Int.self, forKey: key) {
+            return Double(intValue)
+        }
+        if let str = try? decode(String.self, forKey: key),
+           let parsed = Double(str) {
+            return parsed
+        }
+        return nil
     }
 }
 
@@ -99,6 +157,7 @@ struct BackendSettlementCommission: Decodable, Identifiable {
     let tradeId: String?
     let commissionRate: Double?
     let commissionAmount: Double?
+    let investorGrossProfit: Double?
     let status: String?
 
     var id: String { objectId }
@@ -108,6 +167,15 @@ struct BackendAccountStatementResponse: Decodable {
     let entries: [BackendAccountEntry]
     let total: Int
     let hasMore: Bool
+
+    enum CodingKeys: String, CodingKey { case entries, total, hasMore }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.entries = try c.decodeIfPresent([BackendAccountEntry].self, forKey: .entries) ?? []
+        self.total = try c.decodeIfPresent(Int.self, forKey: .total) ?? self.entries.count
+        self.hasMore = try c.decodeIfPresent(Bool.self, forKey: .hasMore) ?? false
+    }
 }
 
 // MARK: - Backend Invoice Models
@@ -117,6 +185,13 @@ struct BackendInvoiceLineItem: Decodable {
     let quantity: Double?
     let unitPrice: Double?
     let itemType: String?
+}
+
+struct BackendInvoiceMetadata: Decodable {
+    let investmentNumber: String?
+    let serviceChargeRate: Double?
+    let investorAccountType: String?
+    let totalInvestmentAmount: Double?
 }
 
 struct BackendFeeBreakdown: Decodable {
@@ -139,8 +214,12 @@ struct BackendInvoice: Decodable, Identifiable {
     let customerCity: String?
     let customerPostalCode: String?
     let customerId: String?
+    /// `subtotal` is the canonical net amount on Parse `Invoice` (see backend `bookAppServiceCharge`).
+    /// `netAmount` is the legacy alias retained for older records that pre-date the rename.
+    let subtotal: Double?
     let netAmount: Double?
     let taxAmount: Double?
+    let taxRate: Double?
     let status: String?
     let symbol: String?
     let side: String?
@@ -152,6 +231,9 @@ struct BackendInvoice: Decodable, Identifiable {
     let source: String?
     let createdAt: String?
     let traderCommissionRateSnapshot: Double?
+    /// Service-charge invoices store the calculation breakdown as text lines here (see `bookAppServiceCharge`).
+    let investmentIds: [String]?
+    let metadata: BackendInvoiceMetadata?
 
     var id: String { objectId }
 

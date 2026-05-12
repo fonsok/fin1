@@ -5,7 +5,7 @@ import Foundation
 /// Provides read access to the app ledger (Eigenkonten).
 /// All ledger writes are performed server-side (Parse Cloud Triggers / 4-Eyes approval).
 /// iOS acts as a thin API client for display and reporting only.
-protocol AppLedgerServiceProtocol: ServiceLifecycle {
+protocol AppLedgerServiceProtocol: ServiceLifecycle, Sendable {
 
     /// Fetches the latest ledger data from the backend.
     func refreshFromBackend() async throws
@@ -92,7 +92,7 @@ private struct AppLedgerResponse: Decodable {
 
 // MARK: - App Ledger Service Implementation (Backend API Client)
 
-final class AppLedgerService: AppLedgerServiceProtocol {
+final class AppLedgerService: AppLedgerServiceProtocol, @unchecked Sendable {
 
     private let parseAPIClient: any ParseAPIClientProtocol
     private let queue = DispatchQueue(label: "com.fin.app.appLedger", attributes: .concurrent)

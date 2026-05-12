@@ -5,10 +5,10 @@ import Foundation
 protocol InvestmentQueryServiceProtocol {
     func getInvestments(for investorId: String, in investments: [Investment]) -> [Investment]
     func getInvestments(forTrader traderId: String, in investments: [Investment]) -> [Investment]
-    func getInvestmentPools(forTrader traderId: String, in investmentPools: [InvestmentPool], investmentManagementService: (any InvestmentManagementServiceProtocol)?) -> [InvestmentPool]
+    func getInvestmentPools(forTrader traderId: String, in investmentPools: [InvestmentPool], investmentPoolLifecycleService: (any InvestmentPoolLifecycleServiceProtocol)?) -> [InvestmentPool]
     func getGroupedInvestmentsBySequence(
         forTrader traderId: String,
         in investments: [Investment],
-        investmentManagementService: (any InvestmentManagementServiceProtocol)?
+        investmentPoolLifecycleService: (any InvestmentPoolLifecycleServiceProtocol)?
     ) -> [Int: [Investment]]
 }

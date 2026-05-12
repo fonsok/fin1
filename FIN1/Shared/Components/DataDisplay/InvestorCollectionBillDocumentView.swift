@@ -37,7 +37,7 @@ struct InvestorCollectionBillDocumentView: View {
         VStack(spacing: ResponsiveDesign.spacing(12)) {
             DocumentDetailRow(title: "Document", value: document.type.displayName)
             DocumentDetailRow(title: "File Name", value: document.name)
-            DocumentDetailRow(title: "Status", value: document.status.displayName, color: document.status.color)
+            DocumentDetailRow(title: "Status", value: document.status.displayName, valueColor: document.status.statusRowForeground)
             DocumentDetailRow(title: "File Size", value: document.fileSize)
             DocumentDetailRow(title: "Uploaded", value: document.uploadedAt.formatted(date: .abbreviated, time: .shortened))
         }

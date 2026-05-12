@@ -41,7 +41,7 @@ struct ArchivedItemsView: View {
     private var emptyState: some View {
         VStack(spacing: ResponsiveDesign.spacing(16)) {
             Image(systemName: "archivebox")
-                .font(.system(size: 48))
+                .font(ResponsiveDesign.scaledSystemFont(size: 48))
                 .foregroundColor(AppTheme.fontColor.opacity(0.3))
 
             Text("No Archived Items")

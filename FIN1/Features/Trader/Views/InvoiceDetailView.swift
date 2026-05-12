@@ -44,7 +44,7 @@ struct InvoiceDetailView: View {
                     dismiss()
                 }) {
                     Image(systemName: "chevron.left")
-                        .font(.system(size: ResponsiveDesign.iconSize(), weight: .medium))
+                        .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize(), weight: .medium))
                         .foregroundColor(AppTheme.accentLightBlue)
                 }
             }
@@ -104,7 +104,7 @@ struct InvoiceDetailView: View {
                     }
                 } label: {
                     Image(systemName: "ellipsis.circle")
-                        .font(.system(size: ResponsiveDesign.iconSize(), weight: .medium))
+                        .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize(), weight: .medium))
                         .foregroundColor(AppTheme.accentLightBlue)
                 }
             }

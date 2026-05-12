@@ -17,7 +17,7 @@ struct SearchResultView: View {
                 // No results message
                 VStack(spacing: ResponsiveDesign.spacing(12)) {
                     Image(systemName: "magnifyingglass")
-                        .font(.system(size: ResponsiveDesign.iconSize() * 2.4))
+                        .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2.4))
                         .foregroundColor(AppTheme.tertiaryText)
 
                     Text("Keine Treffer zur Filterkombination:")

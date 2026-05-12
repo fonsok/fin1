@@ -3,6 +3,7 @@ import Foundation
 enum NotificationCardAction: Equatable {
     case survey(requestId: String)
     case ticket(ticketId: String)
+    case document(documentId: String)
     case none
 }
 
@@ -25,6 +26,18 @@ enum NotificationMetadataActionResolver {
            let ticketId = notification.metadata?["referenceId"],
            !ticketId.isEmpty {
             return .ticket(ticketId: ticketId)
+        }
+
+        // 4) Document deep-link (explicit id or Parse reference pattern)
+        if let documentId = notification.metadata?["documentId"], !documentId.isEmpty {
+            return .document(documentId: documentId)
+        }
+
+        let refType = notification.metadata?["referenceType"]?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        if refType == "document",
+           let documentId = notification.metadata?["referenceId"],
+           !documentId.isEmpty {
+            return .document(documentId: documentId)
         }
 
         return .none

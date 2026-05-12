@@ -117,12 +117,66 @@ final class InvestmentSheetViewModel: ObservableObject {
     }
 
     var canProceed: Bool {
-        !investmentAmount.isEmpty &&
-        Double(investmentAmount.replacingOccurrences(of: ".", with: "")) ?? 0 > 0 &&
+        let total = Double(investmentAmount.replacingOccurrences(of: ".", with: "")) ?? 0
+        let perSlot = amountPerInvestment
+        let minSlot = configurationService.minimumInvestmentAmount
+        let maxSlot = configurationService.maximumInvestmentAmount
+        let withinSlotLimits = total > 0 && perSlot >= minSlot && perSlot <= maxSlot
+        return !investmentAmount.isEmpty &&
+        total > 0 &&
+        withinSlotLimits &&
         numberOfInvestments >= 1 &&
         numberOfInvestments <= 10 &&
         hasSufficientCashBalance &&
         isCommissionConfirmed
+    }
+
+    /// Positive total entered, slot count valid, but amount per slot violates admin min/max (so „Invest“ stays disabled).
+    var showInvestmentSlotLimitHint: Bool {
+        let total = totalInvestmentAmount
+        guard total > 0,
+              numberOfInvestments >= 1,
+              numberOfInvestments <= 10 else { return false }
+        let per = amountPerInvestment
+        let minSlot = configurationService.minimumInvestmentAmount
+        let maxSlot = configurationService.maximumInvestmentAmount
+        return per < minSlot || per > maxSlot
+    }
+
+    var investmentSlotLimitHintMessage: String {
+        let per = amountPerInvestment
+        let minSlot = configurationService.minimumInvestmentAmount
+        let maxSlot = configurationService.maximumInvestmentAmount
+        let perFormatted = per.formattedAsLocalizedCurrency()
+        if per < minSlot {
+            return
+                "Der Betrag je Anlageposition beträgt \(perFormatted), erlaubt sind mindestens \(minSlot.formattedAsLocalizedCurrency()). " +
+                "Erhöhen Sie den Gesamtbetrag oder reduzieren Sie die Anzahl der Anlagen."
+        }
+        if per > maxSlot {
+            return
+                "Der Betrag je Anlageposition beträgt \(perFormatted), erlaubt sind höchstens \(maxSlot.formattedAsLocalizedCurrency()). " +
+                "Erhöhen Sie die Anzahl der Anlagen oder senken Sie den Gesamtbetrag."
+        }
+        return ""
+    }
+
+    // MARK: - Server-aligned limits (best practices: refresh getConfig before investing)
+
+    /// Pulls latest `getConfig` limits/fees, then caps the total amount field to the configured maximum.
+    func prepareForInvestingFlow() async {
+        await configurationService.refreshConfigurationFromServerIfAvailable()
+        applyConfiguredMaximumToAmountField()
+    }
+
+    /// Caps `investmentAmount` (whole euros) to `maximumInvestmentAmount` after a config refresh.
+    func applyConfiguredMaximumToAmountField() {
+        let maxEuros = max(0, Int(floor(configurationService.maximumInvestmentAmount)))
+        guard maxEuros > 0 else { return }
+        let raw = Int(investmentAmount.replacingOccurrences(of: ".", with: "")) ?? 0
+        if raw > maxEuros {
+            investmentAmount = String(maxEuros)
+        }
     }
 
     // MARK: - Validation
@@ -144,11 +198,16 @@ final class InvestmentSheetViewModel: ObservableObject {
     // MARK: - Investment Creation
 
     func createInvestment() async {
-        guard canProceed else { return }
         guard validateUserCanInvest() else { return }
         guard let currentUser = currentUser else { return }
 
         isLoading = true
+        await prepareForInvestingFlow()
+
+        guard canProceed else {
+            isLoading = false
+            return
+        }
 
         let amountPerInvestment = self.amountPerInvestment
 
@@ -179,7 +238,7 @@ final class InvestmentSheetViewModel: ObservableObject {
             } catch let error as AppError {
                 await MainActor.run {
                     self.isLoading = false
-                    self.showInvestmentError(error.localizedDescription)
+                    self.showInvestmentError(error.userFacingInvestmentMessage)
 
                     // Track error with investment context
                     let context = ErrorContext(
@@ -202,7 +261,7 @@ final class InvestmentSheetViewModel: ObservableObject {
                 await MainActor.run {
                     self.isLoading = false
                     let appError = error.toAppError()
-                    self.showInvestmentError(appError.errorDescription ?? "An error occurred")
+                    self.showInvestmentError(appError.userFacingInvestmentMessage)
 
                     // Track unknown error
                     let context = ErrorContext(

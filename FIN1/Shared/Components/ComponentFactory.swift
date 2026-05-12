@@ -3,6 +3,7 @@ import SwiftUI
 // MARK: - Component Factory
 /// Centralized component creation with consistent styling and behavior
 /// Improves reusability and maintains design consistency
+@MainActor
 final class ComponentFactory {
 
     // MARK: - Input Field Components

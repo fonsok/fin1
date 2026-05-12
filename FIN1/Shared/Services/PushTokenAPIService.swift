@@ -66,8 +66,8 @@ private struct ParsePushTokenInput: Codable {
 
 // MARK: - Parse Push Token Response
 
-/// Response struct for Parse Server push token operations
-private struct ParsePushTokenResponse: Codable {
+/// Response struct for Parse Server push token operations (internal for unit tests.)
+struct ParsePushTokenResponse: Codable, Sendable {
     let objectId: String
     let userId: String
     let token: String

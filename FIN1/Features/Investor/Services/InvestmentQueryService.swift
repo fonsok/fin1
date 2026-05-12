@@ -18,10 +18,10 @@ final class InvestmentQueryService: InvestmentQueryServiceProtocol {
     func getInvestmentPools(
         forTrader traderId: String,
         in investmentPools: [InvestmentPool],
-        investmentManagementService: (any InvestmentManagementServiceProtocol)?
+        investmentPoolLifecycleService: (any InvestmentPoolLifecycleServiceProtocol)?
     ) -> [InvestmentPool] {
-        if let investmentManagementService = investmentManagementService {
-            return investmentManagementService.getInvestmentPools(forTrader: traderId)
+        if let investmentPoolLifecycleService = investmentPoolLifecycleService {
+            return investmentPoolLifecycleService.getInvestmentPools(forTrader: traderId)
         }
         return investmentPools.filter { $0.traderId == traderId }
     }
@@ -30,10 +30,10 @@ final class InvestmentQueryService: InvestmentQueryServiceProtocol {
     func getGroupedInvestmentsBySequence(
         forTrader traderId: String,
         in investments: [Investment],
-        investmentManagementService: (any InvestmentManagementServiceProtocol)?
+        investmentPoolLifecycleService: (any InvestmentPoolLifecycleServiceProtocol)?
     ) -> [Int: [Investment]] {
-        if let investmentManagementService = investmentManagementService {
-            return investmentManagementService.getGroupedInvestmentsBySequence(forTrader: traderId, in: investments)
+        if let investmentPoolLifecycleService = investmentPoolLifecycleService {
+            return investmentPoolLifecycleService.getGroupedInvestmentsBySequence(forTrader: traderId, in: investments)
         }
         // Fallback implementation - group by sequence number
         let traderInvestments = investments.filter { $0.traderId == traderId }

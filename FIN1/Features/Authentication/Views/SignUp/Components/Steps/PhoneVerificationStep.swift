@@ -15,7 +15,7 @@ struct PhoneVerificationStep: View {
     var body: some View {
         VStack(spacing: ResponsiveDesign.spacing(24)) {
             Image(systemName: "phone.badge.checkmark")
-                .font(.system(size: ResponsiveDesign.iconSize() * 3))
+                .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 3))
                 .foregroundColor(AppTheme.accentLightBlue)
 
             VStack(spacing: ResponsiveDesign.spacing(8)) {

@@ -52,13 +52,13 @@ extension SignUpCoordinator {
         canResendCode = false
         resendCountdown = 60
         stopResendTimer()
-        resendTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] timer in
+        resendTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
             Task { @MainActor in
-                guard let self else { timer.invalidate(); return }
+                guard let self else { return }
                 self.resendCountdown -= 1
                 if self.resendCountdown <= 0 {
                     self.canResendCode = true
-                    timer.invalidate()
+                    self.stopResendTimer()
                 }
             }
         }
@@ -121,13 +121,13 @@ extension SignUpCoordinator {
         canResendPhoneCode = false
         phoneResendCountdown = 60
         stopPhoneResendTimer()
-        phoneResendTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] timer in
+        phoneResendTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
             Task { @MainActor in
-                guard let self else { timer.invalidate(); return }
+                guard let self else { return }
                 self.phoneResendCountdown -= 1
                 if self.phoneResendCountdown <= 0 {
                     self.canResendPhoneCode = true
-                    timer.invalidate()
+                    self.stopPhoneResendTimer()
                 }
             }
         }

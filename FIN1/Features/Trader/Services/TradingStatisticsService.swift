@@ -3,7 +3,7 @@ import Combine
 
 // MARK: - Trading Statistics Service Implementation
 /// Handles trading statistics calculations and management
-final class TradingStatisticsService: TradingStatisticsServiceProtocol, ServiceLifecycle {
+final class TradingStatisticsService: TradingStatisticsServiceProtocol, ServiceLifecycle, @unchecked Sendable {
 
     @Published var isLoading = false
     @Published var errorMessage: String?

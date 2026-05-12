@@ -4,6 +4,7 @@ import LocalAuthentication
 
 // MARK: - Security Settings ViewModel
 /// ViewModel for managing user security settings including authentication and 2FA
+@MainActor
 final class SecuritySettingsViewModel: ObservableObject {
 
     // MARK: - Published Properties

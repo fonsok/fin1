@@ -34,7 +34,10 @@ final class InvestmentDocumentService: InvestmentDocumentServiceProtocol {
 
         // Create document for the Batch with industry-standard naming
         let documentName = DocumentNamingUtility.investorCollectionBillBatchName(for: batch)
-        
+        let primaryInvestmentId = investments
+            .min(by: { ($0.sequenceNumber ?? Int.max) < ($1.sequenceNumber ?? Int.max) })?
+            .id ?? investments.first?.id
+
         let document = Document(
             userId: batch.investorId,
             name: documentName,
@@ -43,6 +46,7 @@ final class InvestmentDocumentService: InvestmentDocumentServiceProtocol {
             fileURL: "investment://\(documentNumber).pdf",
             size: 1024 * 60, // Mock 60KB PDF size
             uploadedAt: Date(),
+            investmentId: primaryInvestmentId,
             documentNumber: documentNumber
         )
 

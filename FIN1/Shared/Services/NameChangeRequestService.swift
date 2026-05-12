@@ -6,7 +6,7 @@ import Combine
 /// Service handling GwG-compliant name change requests.
 /// Implements complete re-verification for name changes due to marriage, divorce, etc.
 /// These are considered significant life events affecting identity and risk profile.
-final class NameChangeRequestService: NameChangeRequestServiceProtocol, ServiceLifecycle {
+final class NameChangeRequestService: NameChangeRequestServiceProtocol, ServiceLifecycle, @unchecked Sendable {
 
     // MARK: - Published Properties
 

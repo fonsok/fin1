@@ -5,6 +5,7 @@ import Foundation
 /// Uses Parse REST login (`/login`) via `ParseAPIClientProtocol.login(...)`.
 /// Stores the Parse session token in `TokenStorageProtocol` so other app services can
 /// access an authenticated session without relying on DEBUG-only mocks.
+@MainActor
 final class ParseAuthProvider: AuthProviderProtocol {
     private let apiClient: ParseAPIClientProtocol
     private let tokenStorage: TokenStorageProtocol

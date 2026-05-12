@@ -70,7 +70,7 @@ struct ActiveFilterChip: View {
 
             Button(action: onRemove, label: {
                 Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: ResponsiveDesign.iconSize() * 0.7))
+                    .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 0.7))
                     .foregroundColor(AppTheme.accentRed.opacity(0.8))
             })
             .buttonStyle(PlainButtonStyle())

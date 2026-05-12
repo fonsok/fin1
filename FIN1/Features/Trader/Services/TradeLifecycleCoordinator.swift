@@ -3,6 +3,7 @@ import Foundation
 // MARK: - Trade Lifecycle Coordinator Implementation
 /// Handles trade lifecycle management and business logic
 /// Focused on trade creation, completion, and lifecycle operations
+@MainActor
 final class TradeLifecycleCoordinator: TradeLifecycleCoordinatorProtocol {
 
     // MARK: - Dependencies

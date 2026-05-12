@@ -3,9 +3,9 @@ import Foundation
 // MARK: - Parse API Client Protocol
 
 /// Protocol for making HTTP requests to Parse Server
-protocol ParseAPIClientProtocol {
+protocol ParseAPIClientProtocol: Sendable {
     /// Fetches objects from a Parse class
-    func fetchObjects<T: Decodable>(
+    func fetchObjects<T: Decodable & Sendable>(
         className: String,
         query: [String: Any]?,
         include: [String]?,
@@ -14,7 +14,7 @@ protocol ParseAPIClientProtocol {
     ) async throws -> [T]
 
     /// Fetches a single object by ID
-    func fetchObject<T: Decodable>(
+    func fetchObject<T: Decodable & Sendable>(
         className: String,
         objectId: String,
         include: [String]?
@@ -27,7 +27,7 @@ protocol ParseAPIClientProtocol {
     ) async throws -> ParseResponse
 
     /// Updates an existing object in Parse
-    func updateObject<T: Codable>(
+    func updateObject<T: Codable & Sendable>(
         className: String,
         objectId: String,
         object: T

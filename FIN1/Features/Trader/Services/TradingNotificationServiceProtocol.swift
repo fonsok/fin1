@@ -3,7 +3,7 @@ import Combine
 
 // MARK: - Trading Notification Service Protocol
 /// Defines the contract for trading notifications and confirmations
-protocol TradingNotificationServiceProtocol: ObservableObject {
+protocol TradingNotificationServiceProtocol: ObservableObject, Sendable {
     var isLoading: Bool { get }
     var errorMessage: String? { get }
 

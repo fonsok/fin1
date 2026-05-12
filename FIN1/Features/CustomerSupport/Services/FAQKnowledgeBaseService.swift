@@ -6,7 +6,7 @@ import os.log
 /// Manages FAQ articles derived from resolved support tickets
 /// Provides search, suggestions, and usage tracking
 
-final class FAQKnowledgeBaseService: FAQKnowledgeBaseServiceProtocol, ServiceLifecycle {
+final class FAQKnowledgeBaseService: FAQKnowledgeBaseServiceProtocol, ServiceLifecycle, @unchecked Sendable {
 
     // MARK: - Properties
 

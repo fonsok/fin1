@@ -28,6 +28,7 @@ struct OrderBuy: Identifiable, Codable, Sendable {
     let limitPrice: Double? // Limit price for limit orders
     let subscriptionRatio: Double? // Units-per-share ratio snapshot
     let denomination: Int? // Issuer-provided denomination constraint
+    let isMirrorPoolOrder: Bool? // true = investor mirror-pool buy order
 
     init(
         id: String,
@@ -50,7 +51,8 @@ struct OrderBuy: Identifiable, Codable, Sendable {
         orderInstruction: String?,
         limitPrice: Double?,
         subscriptionRatio: Double? = nil,
-        denomination: Int? = nil
+        denomination: Int? = nil,
+        isMirrorPoolOrder: Bool? = nil
     ) {
         self.id = id
         self.traderId = traderId
@@ -73,6 +75,7 @@ struct OrderBuy: Identifiable, Codable, Sendable {
         self.limitPrice = limitPrice
         self.subscriptionRatio = subscriptionRatio
         self.denomination = denomination
+        self.isMirrorPoolOrder = isMirrorPoolOrder
     }
 
     // MARK: - Computed Properties
@@ -116,7 +119,8 @@ extension OrderBuy {
             orderInstruction: order.orderInstruction,
             limitPrice: order.limitPrice,
             subscriptionRatio: order.subscriptionRatio,
-            denomination: order.denomination
+            denomination: order.denomination,
+            isMirrorPoolOrder: order.isMirrorPoolOrder
         )
     }
 }

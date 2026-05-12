@@ -38,7 +38,7 @@ struct StaticHeaderCell: View {
                     }
 
                     Text(titleLines[index])
-                        .font(.caption)
+                        .font(ResponsiveDesign.captionFont())
                         .fontWeight(headerFontWeight)
                         .foregroundColor(headerColor)
 
@@ -51,7 +51,7 @@ struct StaticHeaderCell: View {
                                 .font(ResponsiveDesign.captionFont())
                                 .foregroundColor(AppTheme.accentLightBlue.opacity(0.8))
                         }
-                        .padding(.leading, 2)
+                        .padding(.leading, ResponsiveDesign.spacing(2))
                     }
 
                     // Trailing spacer for center alignment

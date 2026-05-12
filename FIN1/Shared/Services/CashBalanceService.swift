@@ -4,6 +4,7 @@ import Combine
 // MARK: - Cash Balance Service
 
 /// Service for managing user cash balance with real-time updates
+@MainActor
 final class CashBalanceService: CashBalanceServiceProtocol, ObservableObject {
 
     // MARK: - Properties

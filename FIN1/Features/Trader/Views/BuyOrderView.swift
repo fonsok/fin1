@@ -290,7 +290,7 @@ struct BuyOrderView: View {
                 HStack {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .foregroundColor(.red)
-                        .font(.system(size: ResponsiveDesign.iconSize()))
+                        .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize()))
                     Text("!")
                         .font(ResponsiveDesign.headlineFont())
                         .foregroundColor(.red)
@@ -320,7 +320,7 @@ struct BuyOrderView: View {
                 HStack {
                     Image(systemName: "chart.bar.xaxis")
                         .foregroundColor(.orange)
-                        .font(.system(size: ResponsiveDesign.iconSize()))
+                        .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize()))
                     Text(transactionLimitWarningTitle)
                         .font(ResponsiveDesign.headlineFont())
                         .foregroundColor(.orange)
@@ -356,7 +356,7 @@ struct BuyOrderView: View {
                 HStack {
                     Image(systemName: "info.circle")
                         .foregroundColor(.blue)
-                        .font(.system(size: ResponsiveDesign.iconSize() * 0.8))
+                        .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 0.8))
                     Text("Verbleibendes Tageslimit: \(remainingLimit.formattedAsLocalizedCurrency())")
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(AppTheme.secondaryText)
@@ -370,7 +370,7 @@ struct BuyOrderView: View {
         OrderActionButton(
             title: "(Gebührenpflichtig) Kaufen",
             backgroundColor: AppTheme.buttonColor,
-            isEnabled: viewModel.canPlaceOrder && viewModel.orderMode == .market && !viewModel.showLimitWarning,
+            isEnabled: viewModel.canPlaceOrder && !viewModel.showLimitWarning,
             action: {
                 print("🔘 DEBUG: Buy button tapped in form section")
                 Task {

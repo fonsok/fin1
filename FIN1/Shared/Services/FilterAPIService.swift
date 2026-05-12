@@ -3,7 +3,7 @@ import Foundation
 // MARK: - Filter API Service Protocol
 
 /// Protocol for syncing saved filters to Parse Server backend
-protocol FilterAPIServiceProtocol {
+protocol FilterAPIServiceProtocol: Sendable {
     /// Saves a securities filter to the Parse Server
     func saveSecuritiesFilter(_ filter: SecuritiesFilterCombination, userId: String) async throws -> SecuritiesFilterCombination
 
@@ -97,8 +97,8 @@ private struct ParseFilterInput: Encodable {
 
 // MARK: - Parse Filter Response
 
-/// Response struct for Parse Server filter operations
-private struct ParseFilterResponse: Codable {
+/// Response struct for Parse Server filter operations (internal for unit tests.)
+struct ParseFilterResponse: Codable, Sendable {
     let objectId: String
     let userId: String
     let name: String
@@ -184,7 +184,7 @@ enum FilterAPIServiceError: LocalizedError {
 
 // MARK: - Filter API Service Implementation
 
-final class FilterAPIService: FilterAPIServiceProtocol {
+final class FilterAPIService: FilterAPIServiceProtocol, @unchecked Sendable {
     private let apiClient: ParseAPIClientProtocol
     private let className = "SavedFilter"
 

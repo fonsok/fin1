@@ -33,7 +33,7 @@ struct CompanyKybStatusView: View {
 
     private var statusIcon: some View {
         Image(systemName: status.iconName)
-            .font(.system(size: ResponsiveDesign.spacing(64)))
+            .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.spacing(64)))
             .foregroundColor(status.iconColor)
             .accessibilityHidden(true)
     }

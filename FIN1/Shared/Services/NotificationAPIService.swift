@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - Notification API Service Protocol
 
-protocol NotificationAPIServiceProtocol {
+protocol NotificationAPIServiceProtocol: Sendable {
     func fetchNotifications(for userId: String, includeArchived: Bool) async throws -> [AppNotification]
     func markNotificationRead(notificationId: String) async throws
     func markAllNotificationsRead() async throws
@@ -10,7 +10,7 @@ protocol NotificationAPIServiceProtocol {
 
 // MARK: - Parse Notification Response
 
-private struct ParseNotificationResponse: Decodable {
+private struct ParseNotificationResponse: Decodable, Sendable {
     let objectId: String
     let userId: String
     let title: String
@@ -39,7 +39,7 @@ private struct MarkAllNotificationsReadResponse: Decodable {
 
 // MARK: - Notification API Service
 
-final class NotificationAPIService: NotificationAPIServiceProtocol {
+final class NotificationAPIService: NotificationAPIServiceProtocol, @unchecked Sendable {
     private let apiClient: ParseAPIClientProtocol
     private let className = "Notification"
     private let pageSize = 100

@@ -4,6 +4,7 @@ import os
 // MARK: - Support Analytics Service
 
 /// Implementation of support metrics and analytics
+@MainActor
 final class SupportAnalyticsService: SupportAnalyticsServiceProtocol {
 
     // MARK: - Properties

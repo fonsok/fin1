@@ -2,6 +2,7 @@ import SwiftUI
 
 struct AppLedgerView: View {
     @StateObject private var viewModel: AppLedgerViewModel
+    @Environment(\.appServices) private var services
 
     init(viewModel: AppLedgerViewModel) {
         _viewModel = StateObject(wrappedValue: viewModel)
@@ -21,6 +22,15 @@ struct AppLedgerView: View {
         .navigationTitle("App Ledger")
         .toolbar {
             ToolbarItemGroup(placement: .navigationBarTrailing) {
+                if let parseAPIClient = services.parseAPIClient {
+                    NavigationLink {
+                        DocumentSearchView(searchService: DocumentSearchAPIService(parseAPIClient: parseAPIClient))
+                    } label: {
+                        Image(systemName: "doc.text.magnifyingglass")
+                    }
+                    .help("Beleg-Suche")
+                }
+
                 Button {
                     viewModel.copyCSVToPasteboard()
                 } label: {
@@ -84,10 +94,10 @@ struct AppLedgerView: View {
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(.secondary)
             Text(value.formatted(.currency(code: "EUR")))
-                .font(.system(size: 20, weight: .bold, design: .rounded))
+                .font(ResponsiveDesign.scaledSystemFont(size: 20, weight: .bold, design: .rounded))
                 .foregroundColor(color)
             Text(subtitle)
-                .font(.system(size: 10))
+                .font(ResponsiveDesign.scaledSystemFont(size: 10))
                 .foregroundColor(.secondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -147,7 +157,7 @@ struct AppLedgerView: View {
                         .font(ResponsiveDesign.bodyFont())
                         .fontWeight(.medium)
                     Text(summary.account.rawValue)
-                        .font(.system(size: 10, design: .monospaced))
+                        .font(ResponsiveDesign.scaledSystemFont(size: 10, design: .monospaced))
                         .foregroundColor(.secondary)
                 }
 
@@ -271,12 +281,47 @@ struct AppLedgerView: View {
                     .font(ResponsiveDesign.captionFont())
             }
             .foregroundColor(.secondary)
+
+            if let docLink = Self.documentLink(from: entry.rawEntry) {
+                NavigationLink {
+                    AppLedgerDocumentDetailView(documentObjectId: docLink.objectId)
+                } label: {
+                    Label(docLink.label, systemImage: "doc.text.magnifyingglass")
+                        .font(ResponsiveDesign.captionFont())
+                        .foregroundColor(AppTheme.accentLightBlue)
+                }
+            } else if let docNumber = Self.documentNumberOnly(from: entry.rawEntry) {
+                Label("Beleg \(docNumber)", systemImage: "doc.text")
+                    .font(ResponsiveDesign.captionFont())
+                    .foregroundColor(.secondary)
+            }
         }
         .padding()
         .background(
             RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(12))
                 .fill(AppTheme.sectionBackground)
         )
+    }
+
+    private struct LedgerDocumentLink {
+        let objectId: String
+        let label: String
+    }
+
+    /// Generic resolver for "Beleg ansehen" link on any ledger entry whose metadata carries
+    /// `referenceDocumentId` (set by backend triggers for invoices, eigenbelege, settlement docs, …).
+    private static func documentLink(from entry: AppLedgerEntry) -> LedgerDocumentLink? {
+        let raw = entry.metadata["referenceDocumentId"]?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard !raw.isEmpty else { return nil }
+        let number = entry.metadata["referenceDocumentNumber"]?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let label = number.isEmpty ? "Beleg ansehen" : "Beleg \(number) ansehen"
+        return LedgerDocumentLink(objectId: raw, label: label)
+    }
+
+    /// Falls nur die Belegnummer im Metadata ist (z. B. legacy rows), zeigen wir sie wenigstens textuell.
+    private static func documentNumberOnly(from entry: AppLedgerEntry) -> String? {
+        let number = entry.metadata["referenceDocumentNumber"]?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return number.isEmpty ? nil : number
     }
 }
 

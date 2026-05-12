@@ -34,10 +34,12 @@ struct SettingsToggleRow: View {
 /// Reusable text field style for settings screens
 struct SettingsTextFieldStyle: TextFieldStyle {
     func _body(configuration: TextField<Self._Label>) -> some View {
+        let padding = MainActor.assumeIsolated { ResponsiveDesign.spacing(12) }
+        let cornerRadius = MainActor.assumeIsolated { ResponsiveDesign.spacing(8) }
         configuration
-            .padding(ResponsiveDesign.spacing(12))
+            .padding(padding)
             .background(AppTheme.systemTertiaryBackground)
-            .cornerRadius(ResponsiveDesign.spacing(8))
+            .cornerRadius(cornerRadius)
             .foregroundColor(AppTheme.fontColor)
     }
 }
@@ -46,10 +48,12 @@ struct SettingsTextFieldStyle: TextFieldStyle {
 /// Reusable secure field style for settings screens
 struct SettingsSecureFieldStyle: TextFieldStyle {
     func _body(configuration: TextField<Self._Label>) -> some View {
+        let padding = MainActor.assumeIsolated { ResponsiveDesign.spacing(16) }
+        let cornerRadius = MainActor.assumeIsolated { ResponsiveDesign.spacing(12) }
         configuration
-            .padding(ResponsiveDesign.spacing(16))
+            .padding(padding)
             .background(AppTheme.systemTertiaryBackground)
-            .cornerRadius(ResponsiveDesign.spacing(12))
+            .cornerRadius(cornerRadius)
             .foregroundColor(AppTheme.fontColor)
     }
 }

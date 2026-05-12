@@ -143,6 +143,7 @@ enum InvestmentValidationError: Error, LocalizedError, Sendable {
     case invalidAmount
     case invalidNumberOfInvestments
     case minimumAmountNotMet
+    case maximumAmountExceeded
     case investmentNotAvailable
     case insufficientFunds
 
@@ -156,6 +157,8 @@ enum InvestmentValidationError: Error, LocalizedError, Sendable {
             return "Invalid number of investments"
         case .minimumAmountNotMet:
             return "Minimum investment amount not met"
+        case .maximumAmountExceeded:
+            return "Maximum investment amount per slot exceeded"
         case .investmentNotAvailable:
             return "Investment is not available"
         case .insufficientFunds:

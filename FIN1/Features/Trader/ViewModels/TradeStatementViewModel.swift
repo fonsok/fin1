@@ -7,12 +7,13 @@ import Foundation
 
 @MainActor
 final class TradeStatementViewModel: ObservableObject {
-    let trade: TradeOverviewItem
+    /// Snapshot for statement/PDF; includes a non-Sendable `onDetailsTapped` closure — not passed across actors.
+    nonisolated(unsafe) let trade: TradeOverviewItem
     private var invoiceService: (any InvoiceServiceProtocol)?
     private var tradeService: (any TradeLifecycleServiceProtocol)?
 
     // Services
-    private let pdfService: TradeStatementPDFServiceProtocol
+    nonisolated(unsafe) private let pdfService: TradeStatementPDFServiceProtocol
     private let displayDataBuilder: TradeStatementDisplayDataBuilderProtocol
     private let displayService: TradeStatementDisplayServiceProtocol
 
@@ -70,10 +71,14 @@ final class TradeStatementViewModel: ObservableObject {
 
     // MARK: - Service Attachment
 
-    func attach(invoiceService: any InvoiceServiceProtocol, tradeService: any TradeLifecycleServiceProtocol) {
+    func attach(
+        invoiceService: any InvoiceServiceProtocol,
+        tradeService: any TradeLifecycleServiceProtocol,
+        prefetchedFullTrade: Trade? = nil
+    ) {
         self.invoiceService = invoiceService
         self.tradeService = tradeService
-        loadFullTrade()
+        loadFullTrade(prefetched: prefetchedFullTrade)
         loadInvoices()
         updateDisplayData()
     }
@@ -87,7 +92,7 @@ final class TradeStatementViewModel: ObservableObject {
 
     // MARK: - Private Methods
 
-    private func loadFullTrade() {
+    private func loadFullTrade(prefetched: Trade? = nil) {
         guard let service = tradeService, let tradeId = trade.tradeId else {
             print("❌ TradeStatementViewModel: No trade service or trade ID")
             print("   - tradeService: \(tradeService != nil ? "✅" : "❌")")
@@ -95,13 +100,18 @@ final class TradeStatementViewModel: ObservableObject {
             return
         }
 
-        let completedTrades = service.completedTrades
-        fullTrade = completedTrades.first { $0.id == tradeId }
+        if let prefetched, prefetched.id == tradeId {
+            fullTrade = prefetched
+        } else {
+            let completedTrades = service.completedTrades
+            fullTrade = completedTrades.first { $0.id == tradeId }
+        }
 
         if let fullTrade = fullTrade {
             print("✅ TradeStatementViewModel: Loaded full trade with \(fullTrade.sellOrders.count) sell orders")
         } else {
             print("❌ TradeStatementViewModel: Could not find full trade for ID: \(tradeId)")
+            let completedTrades = service.completedTrades
             let availableIds = completedTrades.map { $0.id }
             print("   Available trade IDs: \(availableIds)")
         }
@@ -144,20 +154,16 @@ final class TradeStatementViewModel: ObservableObject {
             return
         }
 
-        Task {
-            await MainActor.run {
-                self.isGeneratingPDF = true
-                self.pdfGenerationProgress = 0.0
-            }
+        Task { @MainActor in
+            self.isGeneratingPDF = true
+            self.pdfGenerationProgress = 0.0
 
             do {
                 print("🔧 TradeStatementViewModel: Starting PDF generation for Trade #\(trade.tradeNumber)")
 
                 // Simulate progress updates
                 for progress in stride(from: 0.0, through: 1.0, by: 0.1) {
-                    await MainActor.run {
-                        self.pdfGenerationProgress = progress
-                    }
+                    self.pdfGenerationProgress = progress
                     try await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
                 }
 
@@ -168,22 +174,18 @@ final class TradeStatementViewModel: ObservableObject {
                 let fileName = "Collection_Bill_Trade_\(String(format: "%03d", trade.tradeNumber))_\(Date().timeIntervalSince1970)"
                 let fileURL = try await pdfService.savePDFToDocuments(pdfData, fileName: fileName)
 
-                await MainActor.run {
-                    self.isGeneratingPDF = false
-                    self.pdfGenerationProgress = 1.0
-                }
+                self.isGeneratingPDF = false
+                self.pdfGenerationProgress = 1.0
 
                 print("📁 Collection Bill PDF saved to Documents folder: \(fileURL.path)")
 
             } catch {
                 print("❌ TradeStatementViewModel: PDF generation failed: \(error.localizedDescription)")
-                await MainActor.run {
-                    self.isGeneratingPDF = false
-                    self.pdfGenerationProgress = 0.0
-                    let appError = error.toAppError()
-                    self.errorMessage = "PDF-Generierung fehlgeschlagen: \(appError.errorDescription ?? "An error occurred")"
-                    self.showError = true
-                }
+                self.isGeneratingPDF = false
+                self.pdfGenerationProgress = 0.0
+                let appError = error.toAppError()
+                self.errorMessage = "PDF-Generierung fehlgeschlagen: \(appError.errorDescription ?? "An error occurred")"
+                self.showError = true
             }
         }
     }
@@ -196,22 +198,18 @@ final class TradeStatementViewModel: ObservableObject {
             return
         }
 
-        Task {
+        Task { @MainActor in
             do {
                 print("🔧 TradeStatementViewModel: Generating PDF preview for Trade #\(trade.tradeNumber)")
                 let image = try await pdfService.generatePreview(for: displayData, trade: trade)
 
-                await MainActor.run {
-                    self.pdfPreviewImage = image
-                }
+                self.pdfPreviewImage = image
                 print("🔧 TradeStatementViewModel: PDF preview generated successfully")
             } catch {
                 print("❌ TradeStatementViewModel: PDF preview generation failed: \(error.localizedDescription)")
-                await MainActor.run {
-                    let appError = error.toAppError()
-                    self.errorMessage = "PDF-Vorschau fehlgeschlagen: \(appError.errorDescription ?? "An error occurred")"
-                    self.showError = true
-                }
+                let appError = error.toAppError()
+                self.errorMessage = "PDF-Vorschau fehlgeschlagen: \(appError.errorDescription ?? "An error occurred")"
+                self.showError = true
             }
         }
     }

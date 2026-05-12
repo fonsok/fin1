@@ -4,7 +4,7 @@ import SwiftUI
 
 /// PreferenceKey to collect intrinsic widths per column across the view tree
 struct ColumnWidthPreferenceKey: PreferenceKey {
-    static var defaultValue: [String: CGFloat] = [:]
+    nonisolated(unsafe) static var defaultValue: [String: CGFloat] = [:]
 
     static func reduce(value: inout [String: CGFloat], nextValue: () -> [String: CGFloat]) {
         let next = nextValue()

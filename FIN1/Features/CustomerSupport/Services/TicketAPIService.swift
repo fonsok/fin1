@@ -3,7 +3,7 @@ import Foundation
 // MARK: - Ticket API Service Protocol
 
 /// Protocol for syncing support tickets to Parse Server backend via Cloud Functions
-protocol TicketAPIServiceProtocol {
+protocol TicketAPIServiceProtocol: Sendable {
     /// Fetches tickets from the backend
     func fetchTickets(
         userId: String?,
@@ -140,7 +140,7 @@ private struct ParseTicketMessage: Codable {
 
 // MARK: - Ticket API Service Implementation
 
-final class TicketAPIService: TicketAPIServiceProtocol {
+final class TicketAPIService: TicketAPIServiceProtocol, @unchecked Sendable {
 
     private let apiClient: ParseAPIClientProtocol
 

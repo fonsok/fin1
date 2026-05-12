@@ -15,7 +15,7 @@ protocol InvestorNotificationServiceProtocol: ObservableObject {
 
 // MARK: - Investor Notification Service Implementation
 /// Handles investor notifications, confirmations, and document generation
-final class InvestorNotificationService: InvestorNotificationServiceProtocol, ServiceLifecycle {
+final class InvestorNotificationService: InvestorNotificationServiceProtocol, ServiceLifecycle, @unchecked Sendable {
     static let shared = InvestorNotificationService()
 
     @Published var isLoading = false
@@ -104,5 +104,7 @@ extension Notification.Name {
     static let investmentCompleted = Notification.Name("investmentCompleted")
     static let investmentStatusUpdated = Notification.Name("investmentStatusUpdated")
     static let investorBalanceDidChange = Notification.Name("investorBalanceDidChange")
+    /// Posted from Live Query `onUpdate` (any thread); `InvestorCashBalanceService` applies on the main queue.
+    static let investorCashBalanceLiveQueryUpdate = Notification.Name("investorCashBalanceLiveQueryUpdate")
     static let walletTransactionCompleted = Notification.Name("walletTransactionCompleted")
 }

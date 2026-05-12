@@ -65,7 +65,7 @@ struct CommissionBreakdownSheet: View {
     private func errorStateView(message: String) -> some View {
         VStack(spacing: ResponsiveDesign.spacing(16)) {
             Image(systemName: "exclamationmark.triangle")
-                .font(.system(size: ResponsiveDesign.iconSize() * 2))
+                .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2))
                 .foregroundColor(.orange)
             Text("Fehler beim Laden")
                 .font(ResponsiveDesign.headlineFont())

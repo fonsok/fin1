@@ -71,15 +71,11 @@ final class NewBuyOrderViewModel: ObservableObject {
 
             _ = try await orderService.placeBuyOrder(orderRequest)
 
-            await MainActor.run {
-                orderStatus = .orderPlaced(executedPrice: executedPrice, finalCost: finalCost)
-                shouldShowDepotView = true
-            }
+            orderStatus = .orderPlaced(executedPrice: executedPrice, finalCost: finalCost)
+            shouldShowDepotView = true
 
         } catch {
-            await MainActor.run {
-                orderStatus = .failed(error as? AppError ?? AppError.unknown("Unknown error occurred"))
-            }
+            orderStatus = .failed(error as? AppError ?? AppError.unknown("Unknown error occurred"))
         }
     }
 

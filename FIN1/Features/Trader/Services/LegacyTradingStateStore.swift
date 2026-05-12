@@ -3,7 +3,7 @@ import Combine
 
 // MARK: - Legacy Trading State Store
 /// Legacy implementation for backward compatibility with existing services
-final class LegacyTradingStateStore: TradingStateLifecycleProtocol {
+final class LegacyTradingStateStore: TradingStateLifecycleProtocol, @unchecked Sendable {
     // MARK: - State Publishers
     var activeOrdersPublisher: AnyPublisher<[Order], Never> {
         orderManagementService.activeOrdersPublisher

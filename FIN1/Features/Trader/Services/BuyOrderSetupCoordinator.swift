@@ -2,6 +2,7 @@ import Foundation
 import Combine
 
 // MARK: - Buy Order Setup Coordinator Protocol
+@MainActor
 protocol BuyOrderSetupCoordinatorProtocol {
     func setupBindings(
         quantityText: Published<String>.Publisher,
@@ -18,6 +19,7 @@ protocol BuyOrderSetupCoordinatorProtocol {
 
 // MARK: - Buy Order Setup Coordinator
 /// Handles Combine binding setup and coordination for buy orders
+@MainActor
 final class BuyOrderSetupCoordinator: BuyOrderSetupCoordinatorProtocol {
 
     func setupBindings(

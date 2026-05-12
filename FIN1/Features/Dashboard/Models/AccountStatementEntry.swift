@@ -38,6 +38,8 @@ struct AccountStatementEntry: Identifiable, Hashable {
     let direction: Direction
     let category: Category
     let reference: String?
+    let referenceDocumentId: String?
+    let referenceDocumentNumber: String?
     let metadata: [String: String]
     let balanceAfter: Double?
     let valueDate: Date?
@@ -53,6 +55,8 @@ struct AccountStatementEntry: Identifiable, Hashable {
         direction: Direction,
         category: Category,
         reference: String? = nil,
+        referenceDocumentId: String? = nil,
+        referenceDocumentNumber: String? = nil,
         metadata: [String: String] = [:],
         balanceAfter: Double? = nil,
         valueDate: Date? = nil
@@ -65,6 +69,8 @@ struct AccountStatementEntry: Identifiable, Hashable {
         self.direction = direction
         self.category = category
         self.reference = reference
+        self.referenceDocumentId = referenceDocumentId
+        self.referenceDocumentNumber = referenceDocumentNumber
         self.metadata = metadata
         self.balanceAfter = balanceAfter
         self.valueDate = valueDate
@@ -79,6 +85,14 @@ struct AccountStatementEntry: Identifiable, Hashable {
     var postingDate: Date { occurredAt }
 
     var valueDateOrPosting: Date { valueDate ?? occurredAt }
+
+    var hasDocumentReference: Bool {
+        let hasDirectId = !(referenceDocumentId ?? "").isEmpty
+        let hasDirectNumber = !(referenceDocumentNumber ?? "").isEmpty
+        let hasMetadataId = !(metadata["referenceDocumentId"] ?? "").isEmpty
+        let hasMetadataNumber = !(metadata["referenceDocumentNumber"] ?? "").isEmpty
+        return hasDirectId || hasDirectNumber || hasMetadataId || hasMetadataNumber
+    }
 }
 
 // MARK: - AccountStatementEntry Extensions
@@ -125,6 +139,8 @@ extension AccountStatementEntry {
             direction: direction,
             category: category,
             reference: transaction.reference,
+            referenceDocumentId: nil,
+            referenceDocumentNumber: nil,
             metadata: transaction.metadata,
             balanceAfter: transaction.balanceAfter,
             valueDate: transaction.timestamp

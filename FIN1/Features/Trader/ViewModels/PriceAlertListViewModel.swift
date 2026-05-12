@@ -3,6 +3,7 @@ import Combine
 
 // MARK: - Price Alert List ViewModel
 /// ViewModel for managing price alerts list
+@MainActor
 final class PriceAlertListViewModel: ObservableObject {
     
     // MARK: - Published Properties
@@ -36,7 +37,7 @@ final class PriceAlertListViewModel: ObservableObject {
         
         do {
             try await priceAlertService?.loadAlerts()
-            await updateAlerts()
+            updateAlerts()
         } catch {
             await MainActor.run {
                 errorMessage = error.localizedDescription

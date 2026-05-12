@@ -2,6 +2,7 @@ import Foundation
 
 struct Investment: Identifiable, Codable, Sendable {
     let id: String
+    let investmentNumber: String?
     let batchId: String? // Optional: groups investments created together
     let investorId: String
     let investorName: String // Investor's username for display in trader views
@@ -20,6 +21,12 @@ struct Investment: Identifiable, Codable, Sendable {
     let specialization: String
     // Investment reservation status tracking
     var reservationStatus: InvestmentReservationStatus // Status of this individual investment
+    let partialSellCount: Int
+    let realizedSellQuantity: Double
+    let realizedSellAmount: Double
+    let lastPartialSellAt: Date?
+    /// Kumulativ verkaufte Stückzahl / Kaufstück am Trade (0…1), vom Server; identisch für alle Pool-Investoren eines Trades.
+    let tradeSellVolumeProgress: Double?
 
     // Computed properties
     var investedAmount: Double {
@@ -50,6 +57,99 @@ struct Investment: Identifiable, Codable, Sendable {
         reservationStatus == .reserved
     }
 
+    /// Mindestens ein Teil-Verkauf am laufenden Trade (serverseitig in `trade.js` gesetzt).
+    /// `tradeSellVolumeProgress` ziehen wir mit ein, falls ältere/konkurrierende Payloads Zähler/Erlös noch 0 liefern.
+    var hasPartialSellRealization: Bool {
+        let progress = tradeSellVolumeProgress ?? 0
+        return partialSellCount > 0
+            || realizedSellQuantity > 0
+            || realizedSellAmount > 0
+            || progress > 0.000_000_1
+    }
+
+    /// Anteil des auf den Investor umgelegten **Brutto-Verkaufserlöses** am **gebundenen Einlagekapital**
+    /// (`realizedSellAmount / amount`). Bei Gewinn im Teilverkauf oft **höher** als der reine Stück-Anteil am Trade,
+    /// weil der Erlös über Kostenbasis und Gewinnanteil läuft — vergleiche `tradeSellVolumeProgressPercent`.
+    var realizedSellSharePercentage: Double {
+        guard amount > 0 else { return 0 }
+        return (realizedSellAmount / amount) * 100
+    }
+
+    /// Kumulativ: verkaufte Stück / Kaufstück am Trade in Prozent (z. B. 20 bei 200/1000), wenn vom Server gesetzt.
+    var tradeSellVolumeProgressPercent: Double? {
+        guard let tradeSellVolumeProgress else { return nil }
+        return tradeSellVolumeProgress * 100
+    }
+
+    init(
+        id: String,
+        investmentNumber: String? = nil,
+        batchId: String?,
+        investorId: String,
+        investorName: String,
+        traderId: String,
+        traderName: String,
+        amount: Double,
+        currentValue: Double,
+        date: Date,
+        status: InvestmentStatus,
+        performance: Double,
+        numberOfTrades: Int,
+        sequenceNumber: Int?,
+        createdAt: Date,
+        updatedAt: Date,
+        completedAt: Date?,
+        specialization: String,
+        reservationStatus: InvestmentReservationStatus,
+        partialSellCount: Int = 0,
+        realizedSellQuantity: Double = 0,
+        realizedSellAmount: Double = 0,
+        lastPartialSellAt: Date? = nil,
+        tradeSellVolumeProgress: Double? = nil
+    ) {
+        self.id = id
+        self.investmentNumber = investmentNumber
+        self.batchId = batchId
+        self.investorId = investorId
+        self.investorName = investorName
+        self.traderId = traderId
+        self.traderName = traderName
+        self.amount = amount
+        self.currentValue = currentValue
+        self.date = date
+        self.status = status
+        self.performance = performance
+        self.numberOfTrades = numberOfTrades
+        self.sequenceNumber = sequenceNumber
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+        self.completedAt = completedAt
+        self.specialization = specialization
+        self.reservationStatus = reservationStatus
+        self.partialSellCount = partialSellCount
+        self.realizedSellQuantity = realizedSellQuantity
+        self.realizedSellAmount = realizedSellAmount
+        self.lastPartialSellAt = lastPartialSellAt
+        self.tradeSellVolumeProgress = tradeSellVolumeProgress
+    }
+
+    /// Canonical human-readable reference for a split investment.
+    /// Format keeps labels readable while collision-safe across batches.
+    /// Preferred: "INV-<BATCH12>-<SPLIT>-<UNIQ4>", fallback: "INV-<SHORT-ID>-<SPLIT>".
+    var canonicalDisplayReference: String {
+        if let investmentNumber, !investmentNumber.isEmpty {
+            return investmentNumber
+        }
+        let split = String(format: "%02d", sequenceNumber ?? 1)
+        if let batchId, !batchId.isEmpty {
+            let normalizedBatch = batchId.uppercased()
+            let batchPrefix = String(normalizedBatch.prefix(12))
+            let uniqueSuffix = String(normalizedBatch.suffix(4))
+            return "INV-\(batchPrefix)-\(split)-\(uniqueSuffix)"
+        }
+        return "INV-\(id.extractInvestmentNumber().uppercased())-\(split)"
+    }
+
     /// Creates a new Investment with updated status and completedAt date
     /// Optionally updates currentValue and performance if provided
     func markAsCompleted(
@@ -78,6 +178,7 @@ struct Investment: Identifiable, Codable, Sendable {
 
         return Investment(
             id: id,
+            investmentNumber: investmentNumber,
             batchId: batchId,
             investorId: investorId,
             investorName: investorName,
@@ -94,7 +195,12 @@ struct Investment: Identifiable, Codable, Sendable {
             updatedAt: Date(),
             completedAt: Date(),
             specialization: specialization,
-            reservationStatus: .completed
+            reservationStatus: .completed,
+            partialSellCount: partialSellCount,
+            realizedSellQuantity: realizedSellQuantity,
+            realizedSellAmount: realizedSellAmount,
+            lastPartialSellAt: lastPartialSellAt,
+            tradeSellVolumeProgress: tradeSellVolumeProgress
         )
     }
 
@@ -102,6 +208,7 @@ struct Investment: Identifiable, Codable, Sendable {
     func markAsCancelled() -> Investment {
         return Investment(
             id: id,
+            investmentNumber: investmentNumber,
             batchId: batchId,
             investorId: investorId,
             investorName: investorName,
@@ -118,7 +225,12 @@ struct Investment: Identifiable, Codable, Sendable {
             updatedAt: Date(),
             completedAt: Date(),
             specialization: specialization,
-            reservationStatus: .cancelled
+            reservationStatus: .cancelled,
+            partialSellCount: partialSellCount,
+            realizedSellQuantity: realizedSellQuantity,
+            realizedSellAmount: realizedSellAmount,
+            lastPartialSellAt: lastPartialSellAt,
+            tradeSellVolumeProgress: tradeSellVolumeProgress
         )
     }
 
@@ -126,6 +238,7 @@ struct Investment: Identifiable, Codable, Sendable {
     func markInvestmentAsActive() -> Investment {
         return Investment(
             id: id,
+            investmentNumber: investmentNumber,
             batchId: batchId,
             investorId: investorId,
             investorName: investorName,
@@ -134,7 +247,7 @@ struct Investment: Identifiable, Codable, Sendable {
             amount: amount,
             currentValue: currentValue,
             date: date,
-            status: status,
+            status: .active,
             performance: performance,
             numberOfTrades: numberOfTrades,
             sequenceNumber: sequenceNumber,
@@ -142,7 +255,12 @@ struct Investment: Identifiable, Codable, Sendable {
             updatedAt: Date(),
             completedAt: completedAt,
             specialization: specialization,
-            reservationStatus: .active
+            reservationStatus: .active,
+            partialSellCount: partialSellCount,
+            realizedSellQuantity: realizedSellQuantity,
+            realizedSellAmount: realizedSellAmount,
+            lastPartialSellAt: lastPartialSellAt,
+            tradeSellVolumeProgress: tradeSellVolumeProgress
         )
     }
 
@@ -150,6 +268,7 @@ struct Investment: Identifiable, Codable, Sendable {
     func markInvestmentAsCompleted() -> Investment {
         return Investment(
             id: id,
+            investmentNumber: investmentNumber,
             batchId: batchId,
             investorId: investorId,
             investorName: investorName,
@@ -158,15 +277,20 @@ struct Investment: Identifiable, Codable, Sendable {
             amount: amount,
             currentValue: currentValue,
             date: date,
-            status: status,
+            status: .completed,
             performance: performance,
             numberOfTrades: numberOfTrades,
             sequenceNumber: sequenceNumber,
             createdAt: createdAt,
             updatedAt: Date(),
-            completedAt: completedAt,
+            completedAt: completedAt ?? Date(),
             specialization: specialization,
-            reservationStatus: .completed
+            reservationStatus: .completed,
+            partialSellCount: partialSellCount,
+            realizedSellQuantity: realizedSellQuantity,
+            realizedSellAmount: realizedSellAmount,
+            lastPartialSellAt: lastPartialSellAt,
+            tradeSellVolumeProgress: tradeSellVolumeProgress
         )
     }
 
@@ -176,7 +300,9 @@ struct Investment: Identifiable, Codable, Sendable {
         investor: User,
         trader: MockTrader,
         amountPerInvestment: Double,
-        numberOfInvestments: Int
+        numberOfInvestments: Int,
+        minimumInvestmentPerSlot: Double,
+        maximumInvestmentPerSlot: Double
     ) -> InvestmentValidationError? {
         // 1. Prevent traders from investing in other traders
         if investor.role == .trader {
@@ -193,10 +319,14 @@ struct Investment: Identifiable, Codable, Sendable {
             return .invalidNumberOfInvestments
         }
 
-        // 4. Validate total amount
-        let totalAmount = amountPerInvestment * Double(numberOfInvestments)
-        if totalAmount < 100 {
+        // 4. Per-slot limits from admin configuration (getConfig limits)
+        let minSlot = min(minimumInvestmentPerSlot, maximumInvestmentPerSlot)
+        let maxSlot = max(minimumInvestmentPerSlot, maximumInvestmentPerSlot)
+        if amountPerInvestment < minSlot {
             return .minimumAmountNotMet
+        }
+        if amountPerInvestment > maxSlot {
+            return .maximumAmountExceeded
         }
 
         return nil
@@ -209,20 +339,25 @@ struct Investment: Identifiable, Codable, Sendable {
         amount: Double,
         batchId: String?,
         sequenceNumber: Int?,
-        specialization: String
+        specialization: String,
+        minimumInvestmentPerSlot: Double,
+        maximumInvestmentPerSlot: Double
     ) throws -> Investment {
         // Validate the investment
         if let error = validateInvestment(
             investor: investor,
             trader: trader,
             amountPerInvestment: amount,
-            numberOfInvestments: 1 // Each investment is a single investment
+            numberOfInvestments: 1, // Each investment is a single investment
+            minimumInvestmentPerSlot: minimumInvestmentPerSlot,
+            maximumInvestmentPerSlot: maximumInvestmentPerSlot
         ) {
             throw error
         }
 
         return Investment(
             id: UUID().uuidString,
+            investmentNumber: nil,
             batchId: batchId,
             investorId: investor.id,
             investorName: investor.username,
@@ -250,14 +385,18 @@ struct Investment: Identifiable, Codable, Sendable {
         batchId: String,
         amountPerInvestment: Double,
         numberOfInvestments: Int,
-        specialization: String
+        specialization: String,
+        minimumInvestmentPerSlot: Double,
+        maximumInvestmentPerSlot: Double
     ) throws -> [Investment] {
         // Validate the batch
         if let error = validateInvestment(
             investor: investor,
             trader: trader,
             amountPerInvestment: amountPerInvestment,
-            numberOfInvestments: numberOfInvestments
+            numberOfInvestments: numberOfInvestments,
+            minimumInvestmentPerSlot: minimumInvestmentPerSlot,
+            maximumInvestmentPerSlot: maximumInvestmentPerSlot
         ) {
             throw error
         }
@@ -271,7 +410,9 @@ struct Investment: Identifiable, Codable, Sendable {
                 amount: amountPerInvestment,
                 batchId: batchId,
                 sequenceNumber: sequenceNumber,
-                specialization: specialization
+                specialization: specialization,
+                minimumInvestmentPerSlot: minimumInvestmentPerSlot,
+                maximumInvestmentPerSlot: maximumInvestmentPerSlot
             )
             investments.append(investment)
         }

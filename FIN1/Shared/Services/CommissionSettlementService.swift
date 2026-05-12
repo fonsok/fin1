@@ -2,7 +2,8 @@ import Foundation
 
 // MARK: - Commission Settlement Service Protocol
 
-protocol CommissionSettlementServiceProtocol: ServiceLifecycle {
+@MainActor
+protocol CommissionSettlementServiceProtocol {
     /// Processes batch settlement of accumulated commissions for a trader
     /// Creates credit note for trader and commission invoices for investors
     func settleCommissions(for traderId: String) async throws -> CommissionSettlement
@@ -13,16 +14,18 @@ protocol CommissionSettlementServiceProtocol: ServiceLifecycle {
 
 // MARK: - Commission Settlement Service Implementation
 
+@MainActor
 final class CommissionSettlementService: CommissionSettlementServiceProtocol {
 
     // MARK: - Dependencies
 
     private let commissionAccumulationService: any CommissionAccumulationServiceProtocol
     private let traderCashBalanceService: (any TraderCashBalanceServiceProtocol)?
-    private let documentService: (any DocumentServiceProtocol)?
+    private let documentUploadBridge: UncheckedDocumentServiceBridge?
     private let invoiceService: (any InvoiceServiceProtocol)?
     private let transactionIdService: any TransactionIdServiceProtocol
     private let userService: any UserServiceProtocol
+    private let configurationService: any ConfigurationServiceProtocol
 
     // MARK: - Initialization
 
@@ -32,28 +35,16 @@ final class CommissionSettlementService: CommissionSettlementServiceProtocol {
         documentService: (any DocumentServiceProtocol)? = nil,
         invoiceService: (any InvoiceServiceProtocol)? = nil,
         transactionIdService: any TransactionIdServiceProtocol,
-        userService: any UserServiceProtocol
+        userService: any UserServiceProtocol,
+        configurationService: any ConfigurationServiceProtocol
     ) {
         self.commissionAccumulationService = commissionAccumulationService
         self.traderCashBalanceService = traderCashBalanceService
-        self.documentService = documentService
+        self.documentUploadBridge = documentService.map { UncheckedDocumentServiceBridge(documentService: $0) }
         self.invoiceService = invoiceService
         self.transactionIdService = transactionIdService
         self.userService = userService
-    }
-
-    // MARK: - ServiceLifecycle
-
-    func start() async {
-        print("💰 CommissionSettlementService started")
-    }
-
-    func stop() async {
-        print("💰 CommissionSettlementService stopped")
-    }
-
-    func reset() async {
-        print("💰 CommissionSettlementService reset")
+        self.configurationService = configurationService
     }
 
     // MARK: - Public Methods
@@ -182,11 +173,12 @@ final class CommissionSettlementService: CommissionSettlementServiceProtocol {
             customerInfo: customerInfo,
             transactionIdService: transactionIdService,
             tradeNumbers: tradeNumbers,
-            commissions: unsettledCommissions
+            commissions: unsettledCommissions,
+            traderCommissionRateSnapshot: configurationService.effectiveCommissionRate
         )
 
         // Save credit note as document
-        if let documentService = documentService {
+        if let documentUploadBridge = documentUploadBridge {
             let document = Document(
                 userId: traderId,
                 name: "Gutschrift \(creditNote.invoiceNumber)",
@@ -196,11 +188,12 @@ final class CommissionSettlementService: CommissionSettlementServiceProtocol {
                 size: 0,
                 uploadedAt: Date(),
                 invoiceData: creditNote,
-                documentNumber: creditNote.invoiceNumber
+                documentNumber: creditNote.invoiceNumber,
+                traderCommissionRateSnapshot: creditNote.traderCommissionRateSnapshot
             )
 
             do {
-                try await documentService.uploadDocument(document)
+                try await documentUploadBridge.uploadDocument(document)
             } catch {
                 print("⚠️ CommissionSettlementService: Failed to save credit note document: \(error)")
             }
@@ -248,7 +241,7 @@ final class CommissionSettlementService: CommissionSettlementServiceProtocol {
         )
 
         // Save commission invoice as document
-        if let documentService = documentService {
+        if let documentUploadBridge = documentUploadBridge {
             let document = Document(
                 userId: investorId,
                 name: "Rechnung - Provision \(invoice.invoiceNumber)",
@@ -262,7 +255,7 @@ final class CommissionSettlementService: CommissionSettlementServiceProtocol {
             )
 
             do {
-                try await documentService.uploadDocument(document)
+                try await documentUploadBridge.uploadDocument(document)
             } catch {
                 print("⚠️ CommissionSettlementService: Failed to save commission invoice document: \(error)")
             }

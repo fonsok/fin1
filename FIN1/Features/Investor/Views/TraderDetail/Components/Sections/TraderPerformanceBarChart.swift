@@ -109,7 +109,7 @@ struct TraderPerformanceBarChart: View {
             }
         }) {
             Image(systemName: rotationAngle == 0 ? "arrow.counterclockwise" : "arrow.clockwise")
-                .font(.system(size: ResponsiveDesign.iconSize()))
+                .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize()))
                 .foregroundColor(AppTheme.accentLightBlue)
                 .padding(ResponsiveDesign.spacing(8))
         }

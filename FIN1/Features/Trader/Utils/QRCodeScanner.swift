@@ -1,17 +1,18 @@
 import Foundation
 import UIKit
 import SwiftUI
-import AVFoundation
+@preconcurrency import AVFoundation
 
 // MARK: - QR Code Scanner
 /// Handles scanning QR codes to extract invoice information
-final class QRCodeScanner: NSObject, ObservableObject {
+final class QRCodeScanner: NSObject, ObservableObject, @unchecked Sendable {
     @Published var scannedData: String = ""
     @Published var isScanning: Bool = false
     @Published var errorMessage: String?
 
     private var captureSession: AVCaptureSession?
     var previewLayer: AVCaptureVideoPreviewLayer?
+    private let sessionQueue = DispatchQueue(label: "com.fin1.qrcode.session")
 
     override init() {
         super.init()
@@ -59,34 +60,29 @@ final class QRCodeScanner: NSObject, ObservableObject {
     }
 
     func startScanning() {
-        guard let captureSession = captureSession else { return }
-
-        DispatchQueue.global(qos: .userInitiated).async {
-            if !captureSession.isRunning {
-                captureSession.startRunning()
-            }
+        sessionQueue.async { [weak self] in
+            guard let session = self?.captureSession, !session.isRunning else { return }
+            session.startRunning()
         }
 
-        DispatchQueue.main.async {
-            self.isScanning = true
-            self.errorMessage = nil
+        DispatchQueue.main.async { [weak self] in
+            self?.isScanning = true
+            self?.errorMessage = nil
         }
     }
 
     func stopScanning() {
-        guard let captureSession = captureSession else { return }
-
-        DispatchQueue.global(qos: .userInitiated).async {
-            if captureSession.isRunning {
-                captureSession.stopRunning()
-            }
+        sessionQueue.async { [weak self] in
+            guard let session = self?.captureSession, session.isRunning else { return }
+            session.stopRunning()
         }
 
-        DispatchQueue.main.async {
-            self.isScanning = false
+        DispatchQueue.main.async { [weak self] in
+            self?.isScanning = false
         }
     }
 
+    @MainActor
     func setupPreviewLayer(in view: UIView) {
         guard let captureSession = captureSession else { return }
 
@@ -99,6 +95,7 @@ final class QRCodeScanner: NSObject, ObservableObject {
         }
     }
 
+    @MainActor
     func removePreviewLayer() {
         previewLayer?.removeFromSuperlayer()
         previewLayer = nil

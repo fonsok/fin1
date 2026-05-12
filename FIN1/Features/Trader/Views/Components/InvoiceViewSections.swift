@@ -1,13 +1,14 @@
 import SwiftUI
 
 // MARK: - Invoice View Sections
+@MainActor
 struct InvoiceViewSections {
 
     // MARK: - Header Section
     static func headerSection() -> some View {
         VStack(spacing: ResponsiveDesign.spacing(8)) {
             Image(systemName: "doc.text.badge.plus")
-                .font(.system(size: 40))
+                .font(ResponsiveDesign.scaledSystemFont(size: 40))
                 .foregroundColor(.accentColor)
 
             Text("Neue Rechnung erstellen")
@@ -161,7 +162,7 @@ struct InvoiceViewSections {
     static func actionButtonsSection(
         isLoading: Bool,
         canCreateInvoice: Bool,
-        onCreateInvoice: @escaping () -> Void
+        onCreateInvoice: @escaping @MainActor () -> Void
     ) -> some View {
         VStack(spacing: ResponsiveDesign.spacing(12)) {
             if isLoading {

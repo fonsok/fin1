@@ -7,15 +7,26 @@ struct CommissionCalculationExplanationSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.appServices) private var services
     @State private var statementSummary: InvestorInvestmentStatementSummary?
-    @State private var serverReturnPercentage: Double?
+    @State private var canonicalSummary: ServerInvestmentCanonicalSummary?
 
-    // MARK: - Calculated Values
-    private var buyAmount: Double {
-        statementSummary?.statementInvestedAmount ?? 0.0
+    // MARK: - SSOT
+    // Values come from the same aggregator that populates the collection-bill line
+    // items (statementSummary). ROI1 is computed locally from those line items.
+    // ROI2 prefers the server-canonical `metadata.returnPercentage`
+    // (`canonicalSummary`) and falls back to the same local derivation when the
+    // backend value is unavailable.
+    // See Documentation/RETURN_CALCULATION_SCHEMAS.md.
+
+    private var grossProfit: Double {
+        statementSummary?.statementGrossProfit ?? 0.0
     }
 
-    private var buyFees: Double {
-        statementSummary?.statementBuyFees ?? 0.0
+    private var commission: Double {
+        statementSummary?.statementCommission ?? 0.0
+    }
+
+    private var investorNetProfit: Double {
+        grossProfit - commission
     }
 
     private var totalBuyCost: Double {
@@ -26,36 +37,47 @@ struct CommissionCalculationExplanationSheet: View {
         statementSummary?.statementNetSellAmount ?? 0.0
     }
 
-    // For backward compatibility, use totalBuyCost as investedAmount
-    private var investedAmount: Double {
-        totalBuyCost
+    // ROI1 = Gross Profit / Total Buy Cost × 100 (pre-commission)
+    private var grossProfitPercentageText: String? {
+        guard totalBuyCost > 0 else { return nil }
+        let percent = (grossProfit / totalBuyCost) * 100.0
+        return String(format: "%+.2f%%", percent)
     }
 
-    private var currentValue: Double {
-        investment.currentValue
-    }
-
-    private var netProfit: Double {
-        currentValue - investedAmount
-    }
-
-    // Use pre-calculated values from summary (single source of truth - no inline calculations)
-    private var grossProfit: Double {
-        statementSummary?.statementGrossProfit ?? 0.0
-    }
-
-    // Use pre-calculated commission from summary (single source of truth)
-    private var commission: Double {
-        statementSummary?.statementCommission ?? 0.0
-    }
-
-    private var returnPercentage: Double {
-        serverReturnPercentage ?? 0.0
+    // ROI2 = (Gross Profit − Commission) / Total Buy Cost × 100 (post-commission)
+    // Preference order: (1) server-canonical `metadata.returnPercentage`,
+    // (2) local derivation from the statement summary.
+    private var returnPercentage: Double? {
+        if let canonical = canonicalSummary, canonical.hasReturnPercentage {
+            return canonical.returnPercentage
+        }
+        guard let summary = statementSummary, summary.statementTotalBuyCost > 0 else { return nil }
+        return (summary.statementGrossProfit - summary.statementCommission)
+            / summary.statementTotalBuyCost * 100.0
     }
 
     private var returnPercentageText: String? {
-        guard let serverReturnPercentage else { return nil }
-        return String(format: "%.2f%%", serverReturnPercentage)
+        guard let value = returnPercentage else { return nil }
+        return String(format: "%+.2f%%", value)
+    }
+
+    /// Drift warning: local-derived vs. server-canonical ROI2. Shown as a small
+    /// info hint when both values exist and disagree by more than 0.05 %. The
+    /// server value is authoritative; the warning surfaces legacy bills whose
+    /// backfill hasn't run yet.
+    private var returnPercentageDriftHint: String? {
+        guard let canonical = canonicalSummary, canonical.hasReturnPercentage,
+              let summary = statementSummary, summary.statementTotalBuyCost > 0 else { return nil }
+        let local = (summary.statementGrossProfit - summary.statementCommission)
+            / summary.statementTotalBuyCost * 100.0
+        let delta = abs(local - canonical.returnPercentage)
+        guard delta > 0.05 else { return nil }
+        return String(format: "local derivation would be %+.2f%% (Δ %.2fpp)", local, delta)
+    }
+
+    private var tableCanShow: Bool {
+        guard let s = statementSummary else { return false }
+        return (s.statementNetSellAmount - s.statementTotalBuyCost) > 0
     }
 
     var body: some View {
@@ -73,10 +95,8 @@ struct CommissionCalculationExplanationSheet: View {
                             .foregroundColor(AppTheme.fontColor)
 
                         // Calculation Table
-                        if statementSummary != nil {
-                            if netProfit > 0 {
-                                calculationTable
-                            }
+                        if tableCanShow {
+                            calculationTable
                         } else {
                             pendingSummaryView
                         }
@@ -90,19 +110,23 @@ struct CommissionCalculationExplanationSheet: View {
                             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
                                 calculationStep(
                                     number: "1",
-                                    text: "Gross profit is calculated from completed trades"
+                                    text: "Gross Profit is calculated from completed trades (Net Sell Amount − Total Buy Cost)"
                                 )
                                 calculationStep(
                                     number: "2",
-                                    text: "Trader receives \(services.configurationService.traderCommissionPercentage) commission on the gross profit (only when profit > 0)"
+                                    text: "ROI1 (Gross Profit %) = Gross Profit / Total Buy Cost × 100 (classical, pre-commission)"
                                 )
                                 calculationStep(
                                     number: "3",
-                                    text: "Net profit (after commission) is distributed to investors"
+                                    text: "Trader receives \(services.configurationService.traderCommissionPercentage) commission on the gross profit (only when profit > 0)"
                                 )
                                 calculationStep(
                                     number: "4",
-                                    text: "Return percentage is calculated as: (Gross Profit - Commission) / Invested Amount × 100"
+                                    text: "Net Profit = Gross Profit − Commission — distributed to investors"
+                                )
+                                calculationStep(
+                                    number: "5",
+                                    text: "Return (%) = ROI2 = Net Profit / Total Buy Cost × 100 (server-canonical, shown on your collection bill)"
                                 )
                             }
                         }
@@ -165,44 +189,36 @@ struct CommissionCalculationExplanationSheet: View {
 
                 Divider()
 
-                // Investment Breakdown
-                if statementSummary != nil {
-                    // Show Total Buy Cost and Net Sell Amount (matching collection bill format)
-                    calculationTableRow(
-                        label: "Total Investment Amount (Total Buy Cost)",
-                        value: totalBuyCost.formattedAsLocalizedCurrency(),
-                        isBold: true
-                    )
-
-                    Divider()
-
-                    calculationTableRow(
-                        label: "Net Sell Amount",
-                        value: netSellAmount.formattedAsLocalizedCurrency(),
-                        valueColor: netSellAmount >= 0 ? AppTheme.accentGreen : AppTheme.accentRed
-                    )
-                } else {
-                    // Fallback: show total investment amount
-                    calculationTableRow(
-                        label: "Invested Amount",
-                        value: investedAmount.formattedAsLocalizedCurrency()
-                    )
-                }
+                // Total Buy Cost (Investor share, excl. residual credit)
+                calculationTableRow(
+                    label: "Total Investment Amount (Total Buy Cost)",
+                    value: totalBuyCost.formattedAsLocalizedCurrency(),
+                    isBold: true
+                )
 
                 Divider()
 
-                // Gross Profit
+                // Net Sell Amount (Investor share)
                 calculationTableRow(
-                    label: "Gross Profit (from trades), before commission & taxes",
+                    label: "Net Sell Amount",
+                    value: netSellAmount.formattedAsLocalizedCurrency(),
+                    valueColor: netSellAmount >= 0 ? AppTheme.accentGreen : AppTheme.accentRed
+                )
+
+                Divider()
+
+                // Gross Profit (€) + Gross Profit (%) = ROI1 (classical ROI, pre-commission)
+                calculationTableRow(
+                    label: "Gross Profit (€) — before commission & taxes",
                     value: grossProfit.formattedAsLocalizedCurrency(),
-                    secondaryValue: returnPercentageText,
+                    secondaryValue: grossProfitPercentageText.map { "ROI1: \($0)" },
                     valueColor: AppTheme.accentGreen,
                     secondaryValueColor: AppTheme.accentGreen
                 )
 
                 Divider()
 
-                // Commission
+                // Commission (€)
                 calculationTableRow(
                     label: "Trader Commission (\(services.configurationService.traderCommissionPercentage))",
                     value: "-\(commission.formattedAsLocalizedCurrency())",
@@ -211,11 +227,28 @@ struct CommissionCalculationExplanationSheet: View {
 
                 Divider()
 
-                // Return Percentage
+                // Net Profit (€) — server canonical when available
                 calculationTableRow(
-                    label: "Return Percentage",
+                    label: "Net Profit (€) — after commission",
+                    value: investorNetProfit.formattedAsLocalizedCurrency(),
+                    valueColor: investorNetProfit >= 0 ? AppTheme.accentGreen : AppTheme.accentRed,
+                    isBold: true
+                )
+
+                Divider()
+
+                // Return (%) = ROI2 — server-canonical (metadata.returnPercentage)
+                // with local derivation as fallback. Drift hint appears when
+                // both sources disagree by > 0.05pp (legacy bill, awaiting
+                // backfill).
+                calculationTableRow(
+                    label: "Return (%) — ROI2 (after commission)",
                     value: returnPercentageText ?? "pending",
-                    valueColor: serverReturnPercentage == nil ? AppTheme.fontColor.opacity(0.7) : (returnPercentage >= 0 ? AppTheme.accentGreen : AppTheme.accentRed),
+                    secondaryValue: returnPercentageDriftHint,
+                    valueColor: returnPercentageText == nil
+                        ? AppTheme.fontColor.opacity(0.7)
+                        : ((returnPercentage ?? 0) >= 0 ? AppTheme.accentGreen : AppTheme.accentRed),
+                    secondaryValueColor: AppTheme.fontColor.opacity(0.5),
                     isBold: true
                 )
             }
@@ -297,11 +330,16 @@ struct CommissionCalculationExplanationSheet: View {
             commissionRate: commissionRate
         )
 
+        let settlementService = services.settlementAPIService
+        let investmentId = investment.id
         Task {
-            serverReturnPercentage = await ServerCalculatedReturnResolver.resolveReturnPercentage(
-                investmentId: investment.id,
-                settlementAPIService: services.settlementAPIService
+            let resolved = await ServerCalculatedReturnResolver.resolveCanonicalSummary(
+                investmentId: investmentId,
+                settlementAPIService: settlementService
             )
+            await MainActor.run {
+                self.canonicalSummary = resolved
+            }
         }
     }
 }

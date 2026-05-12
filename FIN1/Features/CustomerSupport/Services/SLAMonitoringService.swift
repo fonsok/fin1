@@ -5,6 +5,7 @@ import Combine
 // MARK: - SLA Monitoring Service
 /// Monitors tickets for SLA violations and automatically escalates when deadlines are breached
 
+@MainActor
 final class SLAMonitoringService: SLAMonitoringServiceProtocol {
 
     // MARK: - Dependencies
@@ -17,10 +18,11 @@ final class SLAMonitoringService: SLAMonitoringServiceProtocol {
 
     // MARK: - Properties
 
-    private var monitoringTask: Task<Void, Never>?
+    /// Touched from `deinit` (nonisolated); start/stop run on the main actor in practice.
+    private nonisolated(unsafe) var monitoringTask: Task<Void, Never>?
     private var escalatedTicketIds: Set<String> = []
     private let slaConfig = SLAConfiguration.default
-    private var configurationObserver: AnyCancellable?
+    private nonisolated(unsafe) var configurationObserver: AnyCancellable?
 
     // MARK: - Initialization
 
@@ -50,7 +52,7 @@ final class SLAMonitoringService: SLAMonitoringServiceProtocol {
         configurationObserver = configService.$slaMonitoringInterval
             .dropFirst() // Skip initial value
             .sink { [weak self] (newInterval: TimeInterval) in
-                Task { [weak self] in
+                Task { @MainActor [weak self] in
                     guard let self = self else { return }
                     self.logger.info("🔄 SLA monitoring interval changed to \(newInterval)s, restarting...")
                     self.stopMonitoring()
@@ -69,7 +71,7 @@ final class SLAMonitoringService: SLAMonitoringServiceProtocol {
 
         logger.info("🔍 Starting SLA monitoring with interval: \(monitoringInterval)s")
 
-        monitoringTask = Task { [weak self] in
+        monitoringTask = Task { @MainActor [weak self] in
             while !Task.isCancelled {
                 do {
                     try await self?.checkAndEscalateViolations()
@@ -210,7 +212,9 @@ final class SLAMonitoringService: SLAMonitoringServiceProtocol {
     // MARK: - Cleanup
 
     deinit {
-        stopMonitoring()
+        // Cannot call main-actor-isolated `stopMonitoring()` from `deinit`; cancel task directly.
+        monitoringTask?.cancel()
+        monitoringTask = nil
         configurationObserver?.cancel()
     }
 }

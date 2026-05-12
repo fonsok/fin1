@@ -47,8 +47,8 @@ private struct ParseInvestorWatchlistInput: Encodable {
 
 // MARK: - Parse Investor Watchlist Response
 
-/// Response struct for Parse Server investor watchlist operations
-private struct ParseInvestorWatchlistResponse: Codable {
+/// Response struct for Parse Server investor watchlist operations (internal for unit tests.)
+struct ParseInvestorWatchlistResponse: Codable, Sendable {
     let objectId: String
     let investorId: String
     let traderId: String

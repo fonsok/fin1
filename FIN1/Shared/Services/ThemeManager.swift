@@ -8,7 +8,7 @@
 import SwiftUI
 
 // MARK: - Theme Manager
-final class ThemeManager: ObservableObject {
+final class ThemeManager: ObservableObject, @unchecked Sendable {
     static let shared = ThemeManager()
 
     // MARK: - Target Group Configuration

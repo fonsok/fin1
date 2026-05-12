@@ -3,6 +3,7 @@ import Combine
 
 // MARK: - Limit Order Monitor Protocol
 /// Protocol defining the contract for limit order monitoring functionality
+@MainActor
 protocol LimitOrderMonitor: ObservableObject {
     var isMonitoringLimitOrder: Bool { get set }
     var shouldShowDepotView: Bool { get set }
@@ -23,6 +24,7 @@ protocol LimitOrderMonitor: ObservableObject {
 
 // MARK: - Limit Order Monitor Implementation
 /// Shared implementation of limit order monitoring logic
+@MainActor
 class LimitOrderMonitorImpl {
     @Published var isMonitoringLimitOrder: Bool = false
 
@@ -47,9 +49,11 @@ class LimitOrderMonitorImpl {
         limitOrderRefreshCount = 0 // Reset refresh counter
         print("🔍 DEBUG: Starting automatic limit order monitoring")
 
-        // Start monitoring every 2 seconds
+        // Start monitoring every 2 seconds (timer fires off main runloop; hop to MainActor for @MainActor state)
         limitOrderTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
-            self?.checkLimitOrderCondition()
+            Task { @MainActor [weak self] in
+                self?.checkLimitOrderCondition()
+            }
         }
 
         // Check immediately
@@ -86,13 +90,12 @@ class LimitOrderMonitorImpl {
                     print("🔍 DEBUG: Limit condition met naturally! Starting 2-second countdown to execute order")
                 }
 
-                // Wait 2 seconds then execute
+                // Wait 2 seconds then execute (avoid capturing `monitor` in a @Sendable timer closure)
                 limitOrderExecutionTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { [weak self] _ in
-                    Task { @MainActor in
+                    Task { @MainActor [weak self] in
+                        guard let self, let monitor = self.monitor else { return }
                         await monitor.placeOrder()
-                        // Stop monitoring after order is placed
-                        self?.stopLimitOrderMonitoring()
-                        // Note: shouldShowDepotView is set in the ViewModel's placeOrder() method
+                        self.stopLimitOrderMonitoring()
                     }
                 }
             } else {

@@ -160,7 +160,7 @@ struct PrivacyPolicyView: View {
             // Jurisdiction toggle for testing
             Button(action: { viewModel.toggleJurisdiction() }) {
                 Text(viewModel.isAmericanVersion ? "🇩🇪" : "🇺🇸")
-                    .font(.system(size: ResponsiveDesign.iconSize() * 1.2))
+                    .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 1.2))
             }
             .buttonStyle(PlainButtonStyle())
             .help(viewModel.isAmericanVersion ? "Switch to German version" : "Switch to American version")
@@ -188,7 +188,7 @@ struct PrivacyPolicyView: View {
     private var noResultsView: some View {
         VStack(spacing: ResponsiveDesign.spacing(16)) {
             Image(systemName: "magnifyingglass")
-                .font(.system(size: ResponsiveDesign.iconSize() * 2.4))
+                .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2.4))
                 .foregroundColor(AppTheme.fontColor.opacity(0.5))
 
             Text(viewModel.isAmericanVersion ? "No Results Found" : "Keine Ergebnisse gefunden")

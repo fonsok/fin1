@@ -33,6 +33,13 @@ struct InvestmentFormView: View {
                     .font(ResponsiveDesign.headlineFont())
                     .foregroundColor(AppTheme.fontColor)
 
+                Text(
+                    "Höchstens \(viewModel.configurationService.maximumInvestmentAmount.formattedAsLocalizedCurrency()) gesamt (ganzzahlig). "
+                        + "Aufteilung auf mehrere Anlagepositionen; je Position mindestens \(viewModel.configurationService.minimumInvestmentAmount.formattedAsLocalizedCurrency())."
+                )
+                .font(ResponsiveDesign.captionFont())
+                .foregroundColor(AppTheme.secondaryText)
+
                 HStack {
                     TextField("nur ganzzahliger Betrag", text: $viewModel.displayAmount)
                         .keyboardType(.numberPad)
@@ -113,6 +120,9 @@ struct InvestmentFormView: View {
                     .foregroundColor(AppTheme.accentGreen)
                     .fontWeight(.medium)
             }
+        }
+        .onChange(of: investmentAmount) { _, _ in
+            viewModel.updateDisplayFromAmount()
         }
         .padding()
         .background(AppTheme.sectionBackground)

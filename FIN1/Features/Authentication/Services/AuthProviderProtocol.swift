@@ -3,6 +3,7 @@ import Foundation
 // MARK: - Auth Provider Protocol
 /// Abstraction layer for authentication providers (Apple Sign In, Auth0, Okta, etc.)
 /// This protocol allows swapping authentication backends without changing app logic.
+@MainActor
 protocol AuthProviderProtocol {
     /// Authenticate user with the specified method
     /// - Parameter method: The authentication method to use

@@ -175,18 +175,18 @@ struct CSRTradeDetailSheet: View {
                 // Profit/Loss
                 CSRDetailRow(
                     icon: profitLoss >= 0 ? "arrow.up.right.circle.fill" : "arrow.down.right.circle.fill",
-                    label: "Gewinn/Verlust",
+                    label: "Return (€)",
                     value: profitLoss.formattedAsLocalizedCurrency(),
                     valueColor: profitLoss >= 0 ? AppTheme.accentGreen : AppTheme.accentRed
                 )
 
-                // Return percentage
+                // Trader ROI1 (trade-level, pre-commission). See Documentation/RETURN_CALCULATION_SCHEMAS.md
                 let returnPercentage = (profitLoss / totalInvestment) * 100
                 Divider()
 
                 CSRDetailRow(
                     icon: "percent",
-                    label: "Rendite",
+                    label: "Return (%)",
                     value: String(format: "%+.2f%%", returnPercentage),
                     valueColor: returnPercentage >= 0 ? AppTheme.accentGreen : AppTheme.accentRed
                 )

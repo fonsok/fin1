@@ -4,7 +4,7 @@ import Foundation
 
 /// Service that calculates the maximum purchasable quantity of securities
 /// given an investment balance and price per security, accounting for trading fees
-final class InvestmentQuantityCalculationService: InvestmentQuantityCalculationServiceProtocol, ServiceLifecycle {
+final class InvestmentQuantityCalculationService: InvestmentQuantityCalculationServiceProtocol, ServiceLifecycle, @unchecked Sendable {
     private lazy var combinedOrderCalculator: CombinedOrderCalculator = {
         CombinedOrderCalculator { [weak self] investmentBalance, pricePerSecurity, denomination, subscriptionRatio, minimumOrderAmount in
             guard let self = self else { return 0 }

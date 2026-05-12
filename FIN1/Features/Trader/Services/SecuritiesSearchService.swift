@@ -2,6 +2,7 @@ import Foundation
 import Combine
 
 // MARK: - Search Service Protocol
+@MainActor
 protocol SecuritiesSearchServiceProtocol: ObservableObject {
     var searchResults: [SearchResult] { get }
     var isLoading: Bool { get }
@@ -31,6 +32,7 @@ struct SearchFilters: Equatable {
 }
 
 // MARK: - Search Service Implementation
+@MainActor
 final class SecuritiesSearchService: SecuritiesSearchServiceProtocol {
     @Published var searchResults: [SearchResult] = []
     @Published var isLoading: Bool = false
@@ -40,7 +42,7 @@ final class SecuritiesSearchService: SecuritiesSearchServiceProtocol {
     var isLoadingPublisher: AnyPublisher<Bool, Never> { $isLoading.eraseToAnyPublisher() }
     var errorMessagePublisher: AnyPublisher<String?, Never> { $errorMessage.eraseToAnyPublisher() }
 
-    private let mockDataGenerator: any MockDataGeneratorProtocol
+    nonisolated(unsafe) private let mockDataGenerator: any MockDataGeneratorProtocol
 
     init(mockDataGenerator: any MockDataGeneratorProtocol) {
         self.mockDataGenerator = mockDataGenerator

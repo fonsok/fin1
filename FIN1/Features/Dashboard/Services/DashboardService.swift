@@ -3,7 +3,7 @@ import Combine
 
 // MARK: - Dashboard Service Implementation
 /// Handles dashboard data operations and statistics
-final class DashboardService: DashboardServiceProtocol, ServiceLifecycle {
+final class DashboardService: DashboardServiceProtocol, ServiceLifecycle, @unchecked Sendable {
     static let shared = DashboardService()
 
     @Published var quickStats: DashboardStats = DashboardStats()

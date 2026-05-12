@@ -32,7 +32,7 @@ struct LoginView: View {
                         // Header
                         VStack(spacing: ResponsiveDesign.spacing(16)) {
                             Image(systemName: "chart.line.uptrend.xyaxis")
-                                .font(.system(size: 60))
+                                .font(ResponsiveDesign.scaledSystemFont(size: 60))
                                 .foregroundColor(AppTheme.accentLightBlue)
 
                             Text("Welcome Back")

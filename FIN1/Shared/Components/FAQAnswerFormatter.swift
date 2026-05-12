@@ -25,7 +25,7 @@ struct FAQAnswerFormatter: View {
                                 .padding(.top, ResponsiveDesign.spacing(5))
                         } else {
                             Image(systemName: "circle.fill")
-                                .font(.system(size: ResponsiveDesign.spacing(10)))
+                                .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.spacing(10)))
                                 .foregroundColor(AppTheme.fontColor.opacity(0.75))
                                 .padding(.top, ResponsiveDesign.spacing(5))
                         }

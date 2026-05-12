@@ -109,7 +109,7 @@ final class InvestmentAPIServiceTests: XCTestCase {
     func testFetchInvestments_EmptyResult() async throws {
         // Given
         let investorId = "investor-no-investments"
-        mockAPIClient.mockFetchResults = [MockInvestmentResponse]()
+        mockAPIClient.mockFetchResults = [ParseInvestment]()
 
         // When
         let investments = try await sut.fetchInvestments(for: investorId)
@@ -130,8 +130,8 @@ final class InvestmentAPIServiceTests: XCTestCase {
         let savedParticipation = try await sut.createPoolParticipation(participation)
 
         // Then
-        XCTAssertTrue(mockAPIClient.createObjectCalled)
-        XCTAssertEqual(mockAPIClient.lastClassName, "PoolTradeParticipation")
+        XCTAssertTrue(mockAPIClient.callFunctionCalled)
+        XCTAssertEqual(mockAPIClient.lastFunctionName, "recordPoolTradeParticipation")
         XCTAssertEqual(savedParticipation.id, "server-participation-id-789")
         XCTAssertEqual(savedParticipation.tradeId, participation.tradeId)
         XCTAssertEqual(savedParticipation.investmentId, participation.investmentId)
@@ -145,9 +145,8 @@ final class InvestmentAPIServiceTests: XCTestCase {
         let updatedParticipation = try await sut.updatePoolParticipation(participation)
 
         // Then
-        XCTAssertTrue(mockAPIClient.updateObjectCalled)
-        XCTAssertEqual(mockAPIClient.lastClassName, "PoolTradeParticipation")
-        XCTAssertEqual(mockAPIClient.lastObjectId, "existing-participation-id")
+        XCTAssertTrue(mockAPIClient.callFunctionCalled)
+        XCTAssertEqual(mockAPIClient.lastFunctionName, "updatePoolTradeParticipation")
         XCTAssertEqual(updatedParticipation.id, participation.id)
     }
 
@@ -190,8 +189,8 @@ final class InvestmentAPIServiceTests: XCTestCase {
         )
     }
 
-    private func createMockInvestmentResponse(objectId: String) -> MockInvestmentResponse {
-        return MockInvestmentResponse(
+    private func createMockInvestmentResponse(objectId: String) -> ParseInvestment {
+        ParseInvestment(
             objectId: objectId,
             investorId: "investor-123",
             investorName: "Max Mustermann",
@@ -204,59 +203,20 @@ final class InvestmentAPIServiceTests: XCTestCase {
             numberOfTrades: 3,
             batchId: "batch-123",
             sequenceNumber: 1,
-            createdAt: "2026-02-04T10:00:00.000Z",
-            updatedAt: "2026-02-04T10:00:00.000Z",
+            createdAt: FlexibleParseDate(dateString: "2026-02-04T10:00:00.000Z"),
+            updatedAt: FlexibleParseDate(dateString: "2026-02-04T10:00:00.000Z"),
             completedAt: nil,
+            activatedAt: nil,
             specialization: "DAX Options",
-            reservationStatus: "active"
-        )
-    }
-}
-
-// MARK: - Mock Investment Response
-
-private struct MockInvestmentResponse: Codable {
-    let objectId: String
-    let investorId: String
-    let investorName: String
-    let traderId: String
-    let traderName: String
-    let amount: Double
-    let currentValue: Double
-    let status: String
-    let performance: Double
-    let numberOfTrades: Int
-    let batchId: String?
-    let sequenceNumber: Int?
-    let createdAt: String
-    let updatedAt: String
-    let completedAt: String?
-    let specialization: String?
-    let reservationStatus: String?
-
-    func toInvestment() -> Investment {
-        let dateFormatter = ISO8601DateFormatter()
-        dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-
-        return Investment(
-            id: objectId,
-            batchId: batchId,
-            investorId: investorId,
-            investorName: investorName,
-            traderId: traderId,
-            traderName: traderName,
-            amount: amount,
-            currentValue: currentValue,
-            date: dateFormatter.date(from: createdAt) ?? Date(),
-            status: InvestmentStatus(rawValue: status) ?? .active,
-            performance: performance,
-            numberOfTrades: numberOfTrades,
-            sequenceNumber: sequenceNumber,
-            createdAt: dateFormatter.date(from: createdAt) ?? Date(),
-            updatedAt: dateFormatter.date(from: updatedAt) ?? Date(),
-            completedAt: completedAt.flatMap { dateFormatter.date(from: $0) },
-            specialization: specialization ?? "General",
-            reservationStatus: InvestmentReservationStatus(rawValue: reservationStatus ?? "active") ?? .active
+            reservationStatus: "active",
+            profit: nil,
+            profitPercentage: nil,
+            investmentNumber: nil,
+            partialSellCount: nil,
+            realizedSellQuantity: nil,
+            realizedSellAmount: nil,
+            lastPartialSellAt: nil,
+            tradeSellVolumeProgress: nil
         )
     }
 }

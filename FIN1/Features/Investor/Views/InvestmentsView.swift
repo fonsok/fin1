@@ -8,7 +8,11 @@ struct InvestmentsView: View {
     @State private var showStatusInfo = false
     @State private var columnWidths: [String: CGFloat] = [:]
     @State private var selectedCompletedInvestment: Investment?
-    @Environment(\.themeManager) private var themeManager
+    @State private var selectedPartialSellInvestment: Investment?
+    /// Server mirror P/L (aggregierte Collection Bills, inkl. Teil-Sell-Deltas).
+    @State private var partialSellSheetMirrorSummary: ServerInvestmentCanonicalSummary?
+    @State private var partialSellSheetCollectionBills: [BackendCollectionBill] = []
+    @State private var partialSellSheetServerLoading = false
 
     init(userService: (any UserServiceProtocol)? = nil,
          investmentService: (any InvestmentServiceProtocol)? = nil,
@@ -50,16 +54,28 @@ struct InvestmentsView: View {
             ScrollView {
                 VStack(spacing: ResponsiveDesign.spacing(0)) {
                     // Header
-                    headerSection
+                    InvestmentsHeaderSectionView(currentUser: viewModel.currentUser)
 
                     // Separator
-                    separator
+                    InvestmentsSectionSeparatorView()
 
-                    // Ongoing Investments Section
-                    ongoingInvestmentsSection
+                    // Reserved Investments Section
+                    reservedInvestmentsSection
 
                     // Separator between sections
-                    separator
+                    InvestmentsSectionSeparatorView()
+
+                    // Active Investments Section
+                    activeInvestmentsSection
+
+                    // Separator between sections
+                    InvestmentsSectionSeparatorView()
+
+                    // Active partial sell realizations
+                    partialSellRealizationsSection
+
+                    // Separator between sections
+                    InvestmentsSectionSeparatorView()
 
                     // Completed Investments Section
                     completedInvestmentsSection
@@ -87,6 +103,16 @@ struct InvestmentsView: View {
         }
         .sheet(item: $selectedCompletedInvestment) { investment in
             CompletedInvestmentDetailSheet(investment: investment)
+        }
+        .sheet(item: $selectedPartialSellInvestment) { investment in
+            partialSellDetailSheet(for: investment)
+                .task(id: investment.id) {
+                    await refreshPartialSellSheetServerData(for: investment)
+                }
+                .onDisappear {
+                    partialSellSheetMirrorSummary = nil
+                    partialSellSheetCollectionBills = []
+                }
         }
         .confirmationDialog(
             "Delete Investment",
@@ -121,7 +147,7 @@ struct InvestmentsView: View {
         .alert("Status Information", isPresented: $showStatusInfo) {
             Button("OK", role: .cancel) { }
         } message: {
-            Text("Status meanings:\n• Status 1: Reserved (deletable) - shown with trash icon\n• Status 2: Active - trader started trade (cannot be deleted)\n• Status 3: Completed - trader completed trade (cannot be deleted)")
+            Text("Status meanings:\n• Reserved Investments: deletable rows are shown with a trash icon\n• Active Investments: rows are non-deletable and show status text (active/completed)")
         }
         .task {
             viewModel.reconfigure(with: appServices)
@@ -129,225 +155,125 @@ struct InvestmentsView: View {
         }
     }
 
-    // MARK: - Header Section
+    // MARK: - Reserved Investments Section
 
-    private var headerSection: some View {
-        VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
-            Text("Investments")
-                .font(ResponsiveDesign.titleFont())
-                .foregroundColor(AppTheme.fontColor)
-
-            if let user = viewModel.currentUser {
-                Text("Kunden-Nr.: \(user.customerNumber)")
-                    .font(ResponsiveDesign.bodyFont())
-                    .foregroundColor(AppTheme.secondaryText)
-
-                Text("Kontoinhaber: \(user.fullName)")
-                    .font(ResponsiveDesign.bodyFont())
-                    .foregroundColor(AppTheme.secondaryText)
-            } else {
-                Text("Kunden-Nr.: ...")
-                    .font(ResponsiveDesign.bodyFont())
-                    .foregroundColor(AppTheme.secondaryText)
-
-                Text("Kontoinhaber: ...")
-                    .font(ResponsiveDesign.bodyFont())
-                    .foregroundColor(AppTheme.secondaryText)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, ResponsiveDesign.horizontalPadding())
-        .padding(.top, ResponsiveDesign.spacing(8))
-        .padding(.bottom, ResponsiveDesign.spacing(4))
-    }
-
-    // MARK: - Separator
-
-    private var separator: some View {
-        Rectangle()
-            .fill(AppTheme.systemSeparator)
-            .frame(height: 1)
-            .padding(.horizontal, ResponsiveDesign.horizontalPadding())
-            .padding(.vertical, ResponsiveDesign.spacing(4))
-    }
-
-    // MARK: - Ongoing Investments Section
-
-    private var ongoingInvestmentsSection: some View {
-        VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
-            // Section Title
-            Text("Ongoing Investments")
-                .font(ResponsiveDesign.headlineFont())
-                .foregroundColor(AppTheme.fontColor)
-                .padding(.horizontal, ResponsiveDesign.horizontalPadding())
-
-            // Investment Group Headers (if needed)
-            if !viewModel.ongoingInvestmentRows.isEmpty {
-                // Use ViewModel's pre-processed grouped data (MVVM: business logic in ViewModel)
-                ForEach(viewModel.sortedTraderNames, id: \.self) { traderName in
-                    let sortedTraderInvestments = viewModel.groupedOngoingInvestments[traderName] ?? []
-                    if let firstInvestment = sortedTraderInvestments.first {
-                        // Get trader's username from TraderDataService (never show real name for security)
-                        let traderUsername = appServices.traderDataService.getTrader(by: firstInvestment.investment.traderId)?.username ?? "---"
-                        VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(2)) {
-                            Text("\"\(traderUsername)\"")
-                                .font(ResponsiveDesign.bodyFont())
-                                .foregroundColor(AppTheme.fontColor)
-                                .padding(.horizontal, ResponsiveDesign.horizontalPadding())
-
-                            Text("\(sortedTraderInvestments.count) investment\(sortedTraderInvestments.count == 1 ? "" : "s")")
-                                .font(ResponsiveDesign.captionFont())
-                                .foregroundColor(AppTheme.secondaryText)
-                                .padding(.horizontal, ResponsiveDesign.horizontalPadding())
-                        }
-                        .padding(.top, ResponsiveDesign.spacing(4))
-
-                        // Table in its own section with SectionBackground
-                        VStack(spacing: ResponsiveDesign.spacing(0)) {
-                            // Calculate totals for THIS trader's investments only
-                            let traderTotalAmount = sortedTraderInvestments.reduce(0) { $0 + $1.amount }
-                            let traderProfits = sortedTraderInvestments.compactMap { $0.profit }
-                            let traderTotalProfit = traderProfits.isEmpty ? nil : traderProfits.reduce(0, +)
-                            let traderTotalReturn = traderTotalProfit.map { profit in
-                                traderTotalAmount > 0 ? (profit / traderTotalAmount) * 100 : nil
-                            } ?? nil
-
-                            OngoingInvestmentsTable(
-                                pools: sortedTraderInvestments,
-                                columnWidths: $columnWidths,
-                                totalAmount: traderTotalAmount,
-                                totalProfit: traderTotalProfit,
-                                totalReturn: traderTotalReturn,
-                                onDeleteInvestment: { investment in
-                                    print("🗑️ onDeleteInvestment called for investment \(investment.investmentId)")
-                                    // Set the investment first, then show the confirmation
-                                    // Using Task ensures state updates happen on the main actor
-                                    Task { @MainActor in
-                                        print("🗑️ Setting investmentToDelete and showDeleteConfirmation")
-                                        investmentToDelete = investment
-                                        showDeleteConfirmation = true
-                                        print("🗑️ State updated - investmentToDelete: \(investmentToDelete != nil), showDeleteConfirmation: \(showDeleteConfirmation)")
-                                    }
-                                },
-                                onShowStatusInfo: {
-                                    showStatusInfo = true
-                                }
-                            )
-                        }
-                        .background(AppTheme.sectionBackground)
-                        .padding(.horizontal, ResponsiveDesign.horizontalPadding())
-                        .padding(.vertical, ResponsiveDesign.spacing(4))
-                    }
+    private var reservedInvestmentsSection: some View {
+        InvestmentsReservedSectionView(
+            reservedInvestmentRows: viewModel.reservedInvestmentRows,
+            sortedTraderNames: viewModel.sortedReservedTraderNames,
+            groupedInvestments: viewModel.groupedReservedInvestments,
+            totalReservedAmount: viewModel.totalReservedAmount,
+            traderDataService: appServices.traderDataService,
+            columnWidths: $columnWidths,
+            onDeleteInvestment: { investment in
+                Task { @MainActor in
+                    investmentToDelete = investment
+                    showDeleteConfirmation = true
                 }
-            } else {
-                Text("No ongoing investments")
-                    .font(ResponsiveDesign.bodyFont())
-                    .foregroundColor(AppTheme.tertiaryText)
-                    .padding(.horizontal, ResponsiveDesign.horizontalPadding())
-                    .padding(.vertical, ResponsiveDesign.spacing(8))
+            },
+            onShowStatusInfo: {
+                showStatusInfo = true
             }
-        }
-        .padding(.top, ResponsiveDesign.spacing(4))
+        )
+    }
+
+    // MARK: - Active Investments Section
+
+    private var activeInvestmentsSection: some View {
+        InvestmentsActiveSectionView(
+            activeInvestmentRows: viewModel.activeInvestmentRows,
+            sortedTraderNames: viewModel.sortedActiveTraderNames,
+            groupedInvestments: viewModel.groupedActiveInvestments,
+            traderDataService: appServices.traderDataService,
+            columnWidths: $columnWidths,
+            onDeleteInvestment: { investment in
+                Task { @MainActor in
+                    investmentToDelete = investment
+                    showDeleteConfirmation = true
+                }
+            },
+            onShowStatusInfo: {
+                showStatusInfo = true
+            }
+        )
     }
 
     // MARK: - Completed Investments Section
 
     private var completedInvestmentsSection: some View {
-        VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
-            // Section Title
-            Text("Completed Investments")
-                .font(ResponsiveDesign.headlineFont())
-                .foregroundColor(AppTheme.fontColor)
-                .padding(.horizontal, ResponsiveDesign.horizontalPadding())
-
-            // Time Period Header
-            InvestmentsTimePeriodHeaderView(
-                selectedTimePeriod: $viewModel.selectedTimePeriod,
-                onTimePeriodChanged: { period in
-                    viewModel.filterCompletedInvestments(by: period)
-                }
-            )
-
-            // Table
-            let allCompletedCount = viewModel.completedInvestments.count
-
-            if !viewModel.completedInvestmentsByTimePeriod.isEmpty {
-                CompletedInvestmentsTable(
-                    investments: viewModel.completedInvestmentsByTimePeriod,
-                    investmentDocRefs: viewModel.completedInvestmentDocRefs,
-                    traderUsernames: viewModel.completedTraderUsernames,
-                    tradeNumbers: viewModel.completedTradeNumbers,
-                    investmentSummaries: viewModel.completedInvestmentSummaries,
-                    tradeLedReturnPercentages: viewModel.completedTradeLedReturnPercentages,
-                    onShowDetails: { investment in
-                        selectedCompletedInvestment = investment
-                    }
-                )
-            } else {
-                VStack(spacing: ResponsiveDesign.spacing(8)) {
-                    if allCompletedCount == 0 {
-                        VStack(spacing: ResponsiveDesign.spacing(4)) {
-                            Image(systemName: "tray")
-                                .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2))
-                                .foregroundColor(AppTheme.quaternaryText)
-
-                            Text("No completed investments")
-                                .font(ResponsiveDesign.headlineFont())
-                                .foregroundColor(AppTheme.secondaryText)
-
-                            Text("Investments appear here when completed or cancelled.")
-                                .font(ResponsiveDesign.bodyFont())
-                                .foregroundColor(AppTheme.tertiaryText)
-                                .multilineTextAlignment(.center)
-                        }
-                    } else {
-                        VStack(spacing: ResponsiveDesign.spacing(4)) {
-                            Text("No completed investments for selected time period")
-                                .font(ResponsiveDesign.headlineFont())
-                                .foregroundColor(AppTheme.secondaryText)
-
-                            Text("Total completed: \(allCompletedCount)")
-                                .font(ResponsiveDesign.bodyFont())
-                                .foregroundColor(AppTheme.tertiaryText)
-
-                            Text("Try selecting a different time period")
-                                .font(ResponsiveDesign.captionFont())
-                                .foregroundColor(AppTheme.quaternaryText)
-                        }
-                    }
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.horizontal, ResponsiveDesign.horizontalPadding())
-                .padding(.vertical, ResponsiveDesign.spacing(16))
+        InvestmentsCompletedSectionView(
+            selectedTimePeriod: $viewModel.selectedTimePeriod,
+            allCompletedCount: viewModel.completedInvestments.count,
+            completedInvestmentsByTimePeriod: viewModel.completedInvestmentsByTimePeriod,
+            completedInvestmentDocRefs: viewModel.completedInvestmentDocRefs,
+            completedTraderUsernames: viewModel.completedTraderUsernames,
+            completedTradeNumbers: viewModel.completedTradeNumbers,
+            completedInvestmentSummaries: viewModel.completedInvestmentSummaries,
+            completedCanonicalSummaries: viewModel.completedCanonicalSummaries,
+            onTimePeriodChanged: { period in
+                viewModel.filterCompletedInvestments(by: period)
+            },
+            onShowDetails: { investment in
+                selectedCompletedInvestment = investment
             }
-        }
-        .padding(.top, ResponsiveDesign.spacing(4))
-    }
-}
-
-// MARK: - Investments View Wrapper
-
-struct InvestmentsViewWrapper: View {
-    @Environment(\.appServices) private var services
-
-    var body: some View {
-        InvestmentsView(
-            userService: services.userService,
-            investmentService: services.investmentService,
-            investorCashBalanceService: services.investorCashBalanceService,
-            poolTradeParticipationService: services.poolTradeParticipationService,
-            documentService: services.documentService,
-            invoiceService: services.invoiceService,
-            traderDataService: services.traderDataService,
-            tradeLifecycleService: services.tradeLifecycleService,
-            configurationService: services.configurationService,
-            commissionCalculationService: services.commissionCalculationService,
-            settlementAPIService: services.settlementAPIService
         )
     }
-}
 
-#Preview {
-    InvestmentsViewWrapper()
-        .environment(\.appServices, AppServices.live)
+    // MARK: - Partial Sell Realizations (Active)
+
+    private var partialSellRealizationsSection: some View {
+        InvestmentsPartialSellSectionView(
+            partialSellRows: viewModel.partialSellActiveInvestmentRows,
+            sortedTraderNames: viewModel.sortedPartialSellTraderNames,
+            groupedInvestments: viewModel.groupedPartialSellActiveInvestments,
+            traderDataService: appServices.traderDataService,
+            onSelectInvestment: { investment in
+                selectedPartialSellInvestment = investment
+            }
+        )
+    }
+
+    private func refreshPartialSellSheetServerData(for investment: Investment) async {
+        guard let api = appServices.settlementAPIService else {
+            await MainActor.run {
+                partialSellSheetServerLoading = false
+                partialSellSheetMirrorSummary = nil
+                partialSellSheetCollectionBills = []
+            }
+            return
+        }
+        await MainActor.run { partialSellSheetServerLoading = true }
+        do {
+            let response = try await api.fetchInvestorCollectionBills(
+                limit: 100,
+                skip: 0,
+                investmentId: investment.id,
+                tradeId: nil
+            )
+            let summary = ServerCalculatedReturnResolver.canonicalSummary(fromCollectionBills: response.collectionBills)
+            await MainActor.run {
+                partialSellSheetMirrorSummary = summary
+                partialSellSheetCollectionBills = response.collectionBills
+                partialSellSheetServerLoading = false
+            }
+        } catch {
+            await MainActor.run {
+                partialSellSheetMirrorSummary = nil
+                partialSellSheetCollectionBills = []
+                partialSellSheetServerLoading = false
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func partialSellDetailSheet(for investment: Investment) -> some View {
+        InvestmentsPartialSellDetailSheetView(
+            investment: investment,
+            appServices: appServices,
+            partialSellSheetMirrorSummary: partialSellSheetMirrorSummary,
+            partialSellSheetCollectionBills: partialSellSheetCollectionBills,
+            partialSellSheetServerLoading: partialSellSheetServerLoading,
+            onDone: { selectedPartialSellInvestment = nil }
+        )
+    }
 }

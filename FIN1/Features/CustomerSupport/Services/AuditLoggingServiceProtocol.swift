@@ -5,7 +5,7 @@ import Combine
 /// Defines the contract for auditable action logging
 /// Compliant with AML, GDPR, and regulatory requirements
 
-protocol AuditLoggingServiceProtocol: AnyObject {
+protocol AuditLoggingServiceProtocol: AnyObject, Sendable {
     /// Log a customer support action for audit trail
     func logAction(_ action: AuditAction) async
 

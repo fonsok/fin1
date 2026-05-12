@@ -86,7 +86,7 @@ struct TermsAcceptanceModalView: View {
     private var headerSection: some View {
         VStack(spacing: ResponsiveDesign.spacing(12)) {
             Image(systemName: "doc.text.fill")
-                .font(.system(size: ResponsiveDesign.iconSize() * 2))
+                .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2))
                 .foregroundColor(AppTheme.accentLightBlue)
 
             Text("Updated Legal Documents")

@@ -159,7 +159,7 @@ struct CardContainer<Content: View>: View {
                             onPapersheetTapped?()
                         }, label: {
                             Image(systemName: "doc.text.fill")
-                                .font(.system(size: ResponsiveDesign.iconSize()))
+                                .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize()))
                                 .foregroundColor(AppTheme.fontColor.opacity(0.6))
                         })
                         .buttonStyle(PlainButtonStyle())
@@ -170,7 +170,7 @@ struct CardContainer<Content: View>: View {
                             onWatchlistTapped?()
                         }, label: {
                             Image(systemName: isInWatchlist ? "star.fill" : "star")
-                                .font(.system(size: ResponsiveDesign.iconSize()))
+                                .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize()))
                                 .foregroundColor(isInWatchlist ? AppTheme.accentLightBlue : AppTheme.fontColor.opacity(0.6))
                         })
                         .buttonStyle(PlainButtonStyle())
@@ -187,7 +187,7 @@ struct CardContainer<Content: View>: View {
                             onInvoiceTapped?()
                         }, label: {
                             Image(systemName: "doc.text")
-                                .font(.system(size: ResponsiveDesign.iconSize()))
+                                .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize()))
                                 .foregroundColor(AppTheme.accentLightBlue)
                         })
                         .buttonStyle(PlainButtonStyle())

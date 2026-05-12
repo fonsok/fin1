@@ -150,7 +150,7 @@ struct TransactionHistoryView: View {
     private var emptyStateView: some View {
         VStack(spacing: ResponsiveDesign.spacing(4)) {
             Image(systemName: "tray")
-                .font(.system(size: ResponsiveDesign.iconSize() * 2))
+                .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2))
                 .foregroundColor(AppTheme.secondaryText)
             Text("Keine Transaktionen gefunden")
                 .font(ResponsiveDesign.headlineFont())

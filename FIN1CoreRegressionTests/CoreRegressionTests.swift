@@ -202,6 +202,19 @@ private final class MockInvoiceService: InvoiceServiceProtocol {
     func getInvoicesByType(_ type: InvoiceType, for userId: String) -> [Invoice] { invoices }
     func getInvoice(by id: String) -> Invoice? { invoices.first { $0.id == id } }
     func getInvoicesForTrade(_ tradeId: String) -> [Invoice] { invoices.filter { $0.tradeId == tradeId } }
+    func getServiceChargeInvoiceForBatch(_ batchId: String, userId: String) -> Invoice? { nil }
+    func invoice(matching document: Document) -> Invoice? {
+        if let embedded = document.invoiceData { return embedded }
+        if let hit = invoices.first(where: { $0.id == document.id }) { return hit }
+        if let num = document.accountingDocumentNumber,
+           let hit = invoices.first(where: { $0.invoiceNumber == num }) {
+            return hit
+        }
+        if let tradeId = document.tradeId {
+            return invoices.first(where: { $0.tradeId == tradeId })
+        }
+        return nil
+    }
     func validateInvoice(_ invoice: Invoice) -> Bool { true }
     func validateCustomerInfo(_ customerInfo: CustomerInfo) -> Bool { true }
     func start() {}

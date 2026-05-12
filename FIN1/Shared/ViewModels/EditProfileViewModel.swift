@@ -4,6 +4,7 @@ import Combine
 /// ViewModel for Edit Profile view following MVVM architecture
 /// Manages user profile editing state, validation, and updates.
 /// Address and name changes require KYC re-verification per GwG/AML compliance.
+@MainActor
 final class EditProfileViewModel: ObservableObject {
 
     // MARK: - Dependencies

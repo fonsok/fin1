@@ -26,20 +26,55 @@ struct FIN1App: App {
 
     var body: some Scene {
         WindowGroup {
-            AuthenticationView()
+            rootView
                 .environment(\.appServices, services)
                 .background(AppTheme.screenBackground)
                 .preferredColorScheme(.dark) // Force dark mode to match our color scheme
                 .onChange(of: scenePhase) { _, newPhase in
-                    Task {
+                    Task { @MainActor in
                         await handleScenePhaseChange(newPhase)
+                    }
+                }
+                .onReceive(NotificationCenter.default.publisher(for: .userDidSignIn)) { _ in
+                    Task { @MainActor in
+                        await refreshUserScopedData()
+                    }
+                }
+                .onReceive(NotificationCenter.default.publisher(for: .userDataDidUpdate)) { _ in
+                    Task { @MainActor in
+                        await refreshUserScopedData()
+                    }
+                }
+                .onReceive(NotificationCenter.default.publisher(for: .fin1NetworkReachableAgain)) { _ in
+                    Task { @MainActor in
+                        if services.userService.currentUser != nil {
+                            await OfflineOperationQueue.shared.processQueue()
+                        }
                     }
                 }
         }
     }
 
+    @ViewBuilder
+    private var rootView: some View {
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("--ui-test-entry-limit-buy-order") {
+            UITestLimitButtonsEntryView(services: services, mode: .buy)
+                .environmentObject(TabRouter())
+        } else if ProcessInfo.processInfo.arguments.contains("--ui-test-entry-limit-sell-order") {
+            UITestLimitButtonsEntryView(services: services, mode: .sell)
+                .environmentObject(TabRouter())
+        } else {
+            AuthenticationView()
+        }
+        #else
+        AuthenticationView()
+        #endif
+    }
+
     // MARK: - Scene Phase Handling
 
+    @MainActor
     private func handleScenePhaseChange(_ newPhase: ScenePhase) async {
         switch newPhase {
         case .active:
@@ -53,6 +88,7 @@ struct FIN1App: App {
         }
     }
 
+    @MainActor
     private func handleAppBecameActive() async {
         // Track launch performance
         let launchTime = Date().timeIntervalSince(launchStartTime)
@@ -76,9 +112,6 @@ struct FIN1App: App {
             }
         }
 
-        // Observe network changes and process queue when connection is restored
-        observeNetworkChanges()
-
         // Connect Parse Live Query for real-time updates
         if let liveQueryClient = services.parseLiveQueryClient {
             Task {
@@ -94,29 +127,10 @@ struct FIN1App: App {
             print("⚠️ Parse Live Query Client not available")
         }
 
-        // Preload user data only after critical services are ready
-        guard lifecycleCoordinator.criticalServicesReady else { return }
-        guard let currentUser = services.userService.currentUser else { return }
+        await refreshUserScopedData()
 
-        // Load user-specific data in parallel
-        await withTaskGroup(of: Void.self) { group in
-            group.addTask {
-                await services.notificationService.loadNotifications(for: currentUser)
-            }
-            group.addTask {
-                await services.documentService.loadDocuments(for: currentUser)
-            }
-            group.addTask {
-                let completedTrades = await services.tradeLifecycleService.completedTrades
-                await services.invoiceService.generateInvoicesForCompletedTrades(completedTrades)
-            }
-            group.addTask {
-                await MonthlyAccountStatementGenerator.ensureMonthlyStatements(
-                    for: currentUser,
-                    services: services
-                )
-            }
-        }
+        // Monthly statements: non-blocking so activation can finish (telemetry, SLA, etc.) promptly.
+        MonthlyStatementPrefetch.schedule(services: services)
 
         // Track app activation with launch time
         services.telemetryService.trackEvent(name: "app_active", properties: ["launch_time_seconds": launchTime])
@@ -127,6 +141,28 @@ struct FIN1App: App {
         }
     }
 
+    @MainActor
+    private func preloadInvoicesForCompletedTrades(using services: AppServices) async {
+        let completedTrades = services.tradeLifecycleService.completedTrades
+        await services.invoiceService.generateInvoicesForCompletedTrades(completedTrades)
+    }
+
+    @MainActor
+    private func refreshUserScopedData() async {
+        guard lifecycleCoordinator.criticalServicesReady else { return }
+        guard let currentUser = services.userService.currentUser else { return }
+
+        async let loadNotifications: Void = services.notificationService.loadNotifications(for: currentUser)
+        async let loadDocuments: Void = services.documentService.loadDocuments(for: currentUser)
+        async let loadInvoices: Void = { _ = try? await services.invoiceService.loadInvoices(for: currentUser.id) }()
+        async let generateInvoices: Void = preloadInvoicesForCompletedTrades(using: services)
+        await loadNotifications
+        await loadDocuments
+        await loadInvoices
+        await generateInvoices
+    }
+
+    @MainActor
     private func handleAppEnteredBackground() async {
         // Sync pending data to backend before going to background
         await syncPendingDataToBackend()
@@ -145,59 +181,52 @@ struct FIN1App: App {
     }
 
     /// Syncs any pending local data to the backend before app goes to background
+    @MainActor
     private func syncPendingDataToBackend() async {
         print("📤 Syncing pending data to backend...")
 
-        // Sync investments, orders, transactions, documents, user profile, watchlist, filters, and push tokens in parallel for efficiency
         guard let currentUser = services.userService.currentUser else {
             print("⚠️ No current user, skipping background sync")
             return
         }
 
-        await withTaskGroup(of: Void.self) { group in
-            group.addTask { await self.services.investmentService.syncToBackend() }
-            group.addTask { await self.services.orderManagementService.syncToBackend() }
-            group.addTask { await self.services.paymentService.syncToBackend() }
-            group.addTask { await self.services.documentService.syncToBackend() }
-            group.addTask { await self.services.userService.syncToBackend() }
-            group.addTask { await self.services.securitiesWatchlistService.syncToBackend() }
-            group.addTask { await self.services.notificationService.syncPushTokensToBackend(for: currentUser.id) }
-            group.addTask { await self.services.watchlistService.syncToBackend() }
-            group.addTask { await self.services.invoiceService.syncToBackend() }
-            group.addTask { await self.services.customerSupportService.syncToBackend() }
-
-            // Optional services
-            if let filterSyncService = self.services.filterSyncService {
-                group.addTask { await filterSyncService.syncToBackend() }
-            }
-            if let priceAlertService = self.services.priceAlertService {
-                group.addTask { await priceAlertService.syncToBackend() }
-            }
+        // Sequential: avoids Swift 6 task-group + nested @MainActor isolation checker issues.
+        await services.investmentService.syncToBackend()
+        await services.orderManagementService.syncToBackend()
+        await services.paymentService.syncToBackend()
+        await services.documentService.syncToBackend()
+        await services.userService.syncToBackend()
+        await services.securitiesWatchlistService.syncToBackend()
+        await services.notificationService.syncPushTokensToBackend(for: currentUser.id)
+        await services.watchlistService.syncToBackend()
+        await services.invoiceService.syncToBackend()
+        await services.customerSupportService.syncToBackend()
+        if let filterSyncService = services.filterSyncService {
+            await filterSyncService.syncToBackend()
+        }
+        if let priceAlertService = services.priceAlertService {
+            await priceAlertService.syncToBackend()
         }
 
         print("✅ Background sync completed")
     }
 
-    // MARK: - Network Monitoring
+}
 
-    private func observeNetworkChanges() {
-        // Observe network connectivity changes
-        // Process queue when connection is restored
-        Task { @MainActor in
-            var previousState = NetworkMonitor.shared.isConnected
-            while true {
-                try? await Task.sleep(nanoseconds: 1_000_000_000) // Check every second
-                let currentState = NetworkMonitor.shared.isConnected
+// MARK: - Monthly statement prefetch (non-blocking)
 
-                // Process queue when connection is restored (was offline, now online)
-                if !previousState && currentState {
-                    if self.services.userService.currentUser != nil {
-                        await OfflineOperationQueue.shared.processQueue()
-                    }
-                }
+@MainActor
+private enum MonthlyStatementPrefetch {
+    static var inFlight: Task<Void, Never>?
 
-                previousState = currentState
-            }
+    /// Runs statement generation on the main actor without awaiting it from `handleAppBecameActive`.
+    /// Skips if a run is already in progress; re-reads the current user when the task starts.
+    static func schedule(services: AppServices) {
+        guard inFlight == nil else { return }
+        inFlight = Task { @MainActor in
+            defer { MonthlyStatementPrefetch.inFlight = nil }
+            guard let user = services.userService.currentUser else { return }
+            await MonthlyAccountStatementGenerator.ensureMonthlyStatements(for: user, services: services)
         }
     }
 }

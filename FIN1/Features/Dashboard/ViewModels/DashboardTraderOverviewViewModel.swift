@@ -3,6 +3,7 @@ import Foundation
 
 // MARK: - Dashboard Trader Overview ViewModel
 /// Provides cached rows for the trader performance table and watchlist interactions
+@MainActor
 final class DashboardTraderOverviewViewModel: ObservableObject {
     // MARK: - Dependencies
     private let traderDataService: any TraderDataServiceProtocol

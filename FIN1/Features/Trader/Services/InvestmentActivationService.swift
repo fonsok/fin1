@@ -3,7 +3,7 @@ import Foundation
 // MARK: - Investment Activation Service Implementation
 /// Handles investment activation when buy orders complete
 /// Activates investments and records pool participations
-final class InvestmentActivationService: InvestmentActivationServiceProtocol {
+final class InvestmentActivationService: InvestmentActivationServiceProtocol, @unchecked Sendable {
 
     // MARK: - Dependencies
     private let investmentService: (any InvestmentServiceProtocol)?
@@ -32,11 +32,14 @@ final class InvestmentActivationService: InvestmentActivationServiceProtocol {
             return []
         }
 
-        // Find trader ID by matching username to MockTrader
-        let traderId = TraderMatchingHelper.findTraderIdForMatching(
+        // Find trader ID by matching username to MockTrader.
+        // Keep order.traderId as fallback candidate because environments may use
+        // mixed traderId formats (Parse userId / user:email / mock UUID / username).
+        let matchedTraderId = TraderMatchingHelper.findTraderIdForMatching(
             currentUser: userService.currentUser,
             traderDataService: traderDataService
-        ) ?? order.traderId
+        )
+        let traderId = matchedTraderId ?? order.traderId
 
         print("🔍 InvestmentActivationService.activateInvestmentsForBuyOrder:")
         print("   📋 Order traderId: '\(order.traderId)'")
@@ -50,7 +53,7 @@ final class InvestmentActivationService: InvestmentActivationServiceProtocol {
         // Find eligible investments
         let eligibleInvestments = findEligibleInvestments(
             investmentService: investmentService,
-            traderId: traderId
+            traderIdCandidates: buildTraderIdCandidates(primaryTraderId: traderId, orderTraderId: order.traderId)
         )
 
         guard !eligibleInvestments.isEmpty else {
@@ -103,11 +106,17 @@ final class InvestmentActivationService: InvestmentActivationServiceProtocol {
 
     private func findEligibleInvestments(
         investmentService: any InvestmentServiceProtocol,
-        traderId: String
+        traderIdCandidates: [String]
     ) -> [Investment] {
-        // Filter for reserved investments matching this trader
+        let normalizedCandidates = Set(
+            traderIdCandidates
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() }
+                .filter { !$0.isEmpty }
+        )
+
+        // Filter for reserved investments matching this trader by any known id format.
         var eligibleInvestments = investmentService.investments.filter {
-            $0.traderId == traderId &&
+            normalizedCandidates.contains($0.traderId.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()) &&
             $0.status == .active &&
             $0.reservationStatus == .reserved
         }
@@ -124,11 +133,38 @@ final class InvestmentActivationService: InvestmentActivationServiceProtocol {
                 print("   🔄 Fallback match by name '\(displayName)': \(alt.count) eligible investments")
                 eligibleInvestments = alt
             } else {
-                print("   ℹ️ No eligible investments found by id or name for trader \(traderId)")
+                print("   ℹ️ No eligible investments found by id or name for trader candidates \(traderIdCandidates)")
             }
         }
 
         return eligibleInvestments
+    }
+
+    private func buildTraderIdCandidates(primaryTraderId: String, orderTraderId: String) -> [String] {
+        var candidates = [primaryTraderId, orderTraderId]
+
+        if let email = userService.currentUser?.email.lowercased() {
+            candidates.append(email)
+            candidates.append("user:\(email)")
+            if let username = email.components(separatedBy: "@").first, !username.isEmpty {
+                candidates.append(username)
+            }
+        }
+
+        let displayName = "\(userService.currentUser?.firstName ?? "") \(userService.currentUser?.lastName ?? "")"
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        if !displayName.isEmpty {
+            candidates.append(displayName)
+        }
+
+        // Preserve order but remove duplicates/empties.
+        var seen = Set<String>()
+        return candidates.filter {
+            let key = $0.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            if key.isEmpty || seen.contains(key) { return false }
+            seen.insert(key)
+            return true
+        }
     }
 
     private func selectAndActivateInvestments(

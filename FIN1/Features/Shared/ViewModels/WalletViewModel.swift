@@ -97,6 +97,13 @@ final class WalletViewModel: ObservableObject {
 
     // MARK: - Intent Methods
 
+
+    /// Kontoansicht ist immer sichtbar; dieser Flag steuert nur, ob
+    /// Ein-/Auszahlungsaktionen freigeschaltet sind.
+    var accountActionsEnabled: Bool {
+        configurationService.walletFeatureEnabled
+    }
+
     func loadWalletData() async {
         await MainActor.run {
             isLoading = true
@@ -210,6 +217,11 @@ final class WalletViewModel: ObservableObject {
     }
 
     func deposit() async {
+        guard accountActionsEnabled else {
+            errorMessage = "Ein-/Auszahlungen sind derzeit deaktiviert. Kontostand und Historie bleiben verfügbar."
+            return
+        }
+
         guard let amount = parseAmount(depositAmount) else {
             errorMessage = "Bitte geben Sie einen gültigen Betrag ein."
             return
@@ -263,6 +275,11 @@ final class WalletViewModel: ObservableObject {
     }
 
     func withdraw() async {
+        guard accountActionsEnabled else {
+            errorMessage = "Ein-/Auszahlungen sind derzeit deaktiviert. Kontostand und Historie bleiben verfügbar."
+            return
+        }
+
         guard let amount = parseAmount(withdrawalAmount) else {
             errorMessage = "Bitte geben Sie einen gültigen Betrag ein."
             return

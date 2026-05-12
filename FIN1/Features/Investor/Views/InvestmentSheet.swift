@@ -79,6 +79,10 @@ private struct InvestmentSheetContent: View {
                             insufficientCashBalanceWarningView
                         }
 
+                        if viewModel.showInvestmentSlotLimitHint {
+                            investmentSlotLimitHintView
+                        }
+
                         // Investment Selection Section
                         InvestmentSelectionView(
                             selectedInvestmentSelection: viewModel.selectedInvestmentSelection,
@@ -125,7 +129,7 @@ private struct InvestmentSheetContent: View {
                 }
             }
         }
-        .alert("Investment Error", isPresented: $viewModel.showInvestmentError) {
+        .alert("Investment nicht möglich", isPresented: $viewModel.showInvestmentError) {
             Button("OK") { }
         } message: {
             Text(viewModel.investmentErrorMessage)
@@ -146,8 +150,11 @@ private struct InvestmentSheetContent: View {
             updateInvestmentSummary()
         }
         .onAppear {
-            _ = viewModel.validateUserCanInvest()
-            updateInvestmentSummary()
+            Task { @MainActor in
+                await viewModel.prepareForInvestingFlow()
+                _ = viewModel.validateUserCanInvest()
+                updateInvestmentSummary()
+            }
         }
     }
 
@@ -169,7 +176,7 @@ private struct InvestmentSheetContent: View {
             HStack {
                 Image(systemName: "exclamationmark.triangle.fill")
                     .foregroundColor(AppTheme.accentRed)
-                    .font(.system(size: ResponsiveDesign.iconSize()))
+                    .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize()))
                 Text("!")
                     .font(ResponsiveDesign.headlineFont())
                     .foregroundColor(AppTheme.accentRed)
@@ -187,6 +194,33 @@ private struct InvestmentSheetContent: View {
                 .stroke(AppTheme.accentRed.opacity(0.3), lineWidth: 1)
         )
         .cornerRadius(ResponsiveDesign.spacing(10))
+    }
+
+    @ViewBuilder
+    private var investmentSlotLimitHintView: some View {
+        VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
+            HStack {
+                Image(systemName: "info.circle.fill")
+                    .foregroundColor(AppTheme.accentOrange)
+                    .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize()))
+                Text("Hinweis")
+                    .font(ResponsiveDesign.headlineFont())
+                    .foregroundColor(AppTheme.primaryText)
+            }
+
+            Text(viewModel.investmentSlotLimitHintMessage)
+                .font(ResponsiveDesign.bodyFont())
+                .foregroundColor(AppTheme.primaryText)
+                .multilineTextAlignment(.leading)
+        }
+        .padding()
+        .background(AppTheme.accentOrange.opacity(0.12))
+        .overlay(
+            RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(10))
+                .stroke(AppTheme.accentOrange.opacity(0.35), lineWidth: 1)
+        )
+        .cornerRadius(ResponsiveDesign.spacing(10))
+        .accessibilityIdentifier("InvestmentSlotLimitHint")
     }
 }
 

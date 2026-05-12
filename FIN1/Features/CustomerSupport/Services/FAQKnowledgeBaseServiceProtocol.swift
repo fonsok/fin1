@@ -5,7 +5,7 @@ import Combine
 /// Defines the contract for FAQ knowledge base operations
 /// Manages FAQ articles derived from resolved support tickets
 
-protocol FAQKnowledgeBaseServiceProtocol: AnyObject {
+protocol FAQKnowledgeBaseServiceProtocol: AnyObject, Sendable {
 
     // MARK: - Publishers
 

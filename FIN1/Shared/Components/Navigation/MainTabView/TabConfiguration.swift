@@ -29,6 +29,7 @@ struct TabConfiguration {
 
 // MARK: - Role-based Tab Coordinator
 /// Coordinates tab configuration and navigation based on user role
+@MainActor
 final class RoleBasedTabCoordinator: ObservableObject {
     @Published var selectedTab: Int = 0
     @Published private(set) var profileBadge: Int = 0

@@ -13,12 +13,14 @@ struct BuyOrderParameters {
     let strike: Double?
     let subscriptionRatio: Double?
     let denomination: Int?
+    let isMirrorPoolOrder: Bool?
 }
 
 // MARK: - Order Lifecycle Coordinator Protocol
 /// Defines the contract for order lifecycle management
 /// Handles order creation, status progression, and completion logic
-protocol OrderLifecycleCoordinatorProtocol {
+@MainActor
+protocol OrderLifecycleCoordinatorProtocol: Sendable {
     // MARK: - Order Management
     func placeBuyOrder(parameters: BuyOrderParameters) async throws -> OrderBuy
     func placeSellOrder(symbol: String, quantity: Int, price: Double) async throws -> OrderSell

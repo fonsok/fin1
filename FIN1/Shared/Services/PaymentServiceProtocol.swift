@@ -3,7 +3,7 @@ import Foundation
 // MARK: - Payment Service Protocol
 /// Protocol for handling wallet payments (deposits and withdrawals)
 /// Supports both mock and real implementations
-protocol PaymentServiceProtocol: ServiceLifecycle {
+protocol PaymentServiceProtocol: ServiceLifecycle, Sendable {
 
     /// Initiates a deposit transaction
     /// - Parameter amount: Amount to deposit (must be positive)

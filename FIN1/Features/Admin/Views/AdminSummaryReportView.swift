@@ -109,7 +109,7 @@ struct AdminSummaryReportView: View {
                 )
 
                 SummaryCard(
-                    title: "Total Gross Profit",
+                    title: "Total Gross Profit (€)",
                     value: viewModel.summary.totalGrossProfit.formattedAsLocalizedCurrency(),
                     icon: "arrow.up.circle.fill",
                     color: viewModel.summary.totalGrossProfit >= 0 ? AppTheme.accentGreen : AppTheme.accentRed
@@ -256,12 +256,12 @@ struct InvestmentSummaryRow: View {
                 SummaryInfoRow(label: "Amount", value: investment.amount.formattedAsLocalizedCurrency())
                 SummaryInfoRow(label: "Current Value", value: investment.currentValue.formattedAsLocalizedCurrency())
                 SummaryInfoRow(
-                    label: "Gross Profit",
+                    label: "Gross Profit (€)",
                     value: investment.grossProfit.formattedAsLocalizedCurrency(),
                     valueColor: investment.grossProfit >= 0 ? AppTheme.accentGreen : AppTheme.accentRed
                 )
                 SummaryInfoRow(
-                    label: "Return",
+                    label: "Return (%)",
                     value: investment.returnPercentage.map { String(format: "%.2f%%", $0) } ?? "pending"
                 )
                 SummaryInfoRow(label: "Commission", value: investment.commission.formattedAsLocalizedCurrency())

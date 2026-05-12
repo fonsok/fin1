@@ -90,7 +90,7 @@ final class InvestorWatchlistAPIServiceTests: XCTestCase {
         // Given
         let traderId = "trader-not-in-watchlist"
         let investorId = "investor-123"
-        mockAPIClient.mockFetchResults = [MockWatchlistResponse]()
+        mockAPIClient.mockFetchResults = [ParseInvestorWatchlistResponse]()
 
         // When/Then - Should not throw
         try await sut.removeWatchlistItem(traderId, investorId: investorId)
@@ -138,7 +138,7 @@ final class InvestorWatchlistAPIServiceTests: XCTestCase {
     func testFetchWatchlist_EmptyResult() async throws {
         // Given
         let investorId = "investor-with-empty-watchlist"
-        mockAPIClient.mockFetchResults = [MockWatchlistResponse]()
+        mockAPIClient.mockFetchResults = [ParseInvestorWatchlistResponse]()
 
         // When
         let watchlist = try await sut.fetchWatchlist(for: investorId)
@@ -195,8 +195,8 @@ final class InvestorWatchlistAPIServiceTests: XCTestCase {
         traderId: String,
         traderName: String = "Test Trader",
         riskClass: Int = 2
-    ) -> MockWatchlistResponse {
-        return MockWatchlistResponse(
+    ) -> ParseInvestorWatchlistResponse {
+        ParseInvestorWatchlistResponse(
             objectId: objectId,
             investorId: "investor-123",
             traderId: traderId,
@@ -211,21 +211,4 @@ final class InvestorWatchlistAPIServiceTests: XCTestCase {
             addedAt: "2026-02-05T10:00:00.000Z"
         )
     }
-}
-
-// MARK: - Mock Watchlist Response
-
-private struct MockWatchlistResponse: Codable {
-    let objectId: String
-    let investorId: String
-    let traderId: String
-    let traderName: String
-    let traderSpecialization: String?
-    let traderRiskClass: Int?
-    let notes: String?
-    let targetInvestmentAmount: Double?
-    let notifyOnNewTrade: Bool
-    let notifyOnPerformanceChange: Bool
-    let sortOrder: Int
-    let addedAt: String
 }

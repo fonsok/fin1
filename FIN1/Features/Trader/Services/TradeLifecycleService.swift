@@ -3,7 +3,7 @@ import Combine
 
 // MARK: - Trade Lifecycle Service Implementation
 /// Handles trade creation, completion, and management
-final class TradeLifecycleService: TradeLifecycleServiceProtocol, ServiceLifecycle {
+final class TradeLifecycleService: TradeLifecycleServiceProtocol, ServiceLifecycle, @unchecked Sendable {
     static let shared = TradeLifecycleService()
 
     @Published var completedTrades: [Trade] = []

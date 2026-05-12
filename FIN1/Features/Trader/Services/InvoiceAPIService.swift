@@ -20,6 +20,53 @@ protocol InvoiceAPIServiceProtocol {
 // MARK: - BackendInvoice → Invoice Converter
 
 extension BackendInvoice {
+    /// Builds Net + VAT InvoiceItems from the canonical `subtotal`/`taxAmount`/`taxRate` fields
+    /// the backend populates on `service_charge` Invoice rows. Falls back to embedding the
+    /// breakdown text from `investmentIds` (see `bookAppServiceCharge`) so the line description
+    /// reflects the per-investment basis instead of an empty "Rechnung" placeholder.
+    fileprivate func buildServiceChargeItems() -> [InvoiceItem] {
+        let net = subtotal ?? netAmount ?? max(0, (totalAmount ?? 0) - (taxAmount ?? 0))
+        let vat = taxAmount ?? 0
+        let rate = taxRate ?? (net > 0 && vat > 0 ? (vat / net) * 100 : 0)
+
+        let breakdownLines = (investmentIds ?? []).filter { !$0.isEmpty }
+        let header: String
+        if let invNumber = metadata?.investmentNumber, !invNumber.isEmpty {
+            header = "App-Servicegebühr \(invNumber)"
+        } else {
+            header = "App-Servicegebühr"
+        }
+        let description: String = breakdownLines.isEmpty
+            ? header
+            : ([header] + breakdownLines).joined(separator: "\n")
+
+        var items: [InvoiceItem] = [
+            InvoiceItem(
+                description: description,
+                quantity: 1,
+                unitPrice: net,
+                itemType: .serviceCharge
+            )
+        ]
+        if vat > 0 {
+            let vatLabel: String
+            if rate > 0 {
+                vatLabel = String(format: "Umsatzsteuer (%.0f%%)", rate)
+            } else {
+                vatLabel = "Umsatzsteuer"
+            }
+            items.append(
+                InvoiceItem(
+                    description: vatLabel,
+                    quantity: 1,
+                    unitPrice: vat,
+                    itemType: .vat
+                )
+            )
+        }
+        return items
+    }
+
     func toLocalInvoice() -> Invoice? {
         let invoiceNum = invoiceNumber ?? "INV-\(objectId.prefix(8))"
 
@@ -30,7 +77,7 @@ extension BackendInvoice {
             appType = .securitiesSettlement; txType = .buy
         case "sell_invoice":
             appType = .securitiesSettlement; txType = .sell
-        case "service_charge", "platform_service_charge", "app_service_charge":
+        case "service_charge", "app_service_charge", "platform_service_charge": // legacy: platform_service_charge
             appType = .appServiceCharge; txType = nil
         case "credit_note":
             appType = .creditNote; txType = nil
@@ -70,6 +117,11 @@ extension BackendInvoice {
                     itemType: liType
                 )
             }
+        } else if appType == .appServiceCharge {
+            // Backend stores subtotal (net), taxAmount, taxRate, totalAmount on the Invoice
+            // row directly (see bookAppServiceCharge). Build a minimal Net + USt line set so
+            // the display view can render description and 19%-aufteilung correctly.
+            items = buildServiceChargeItems()
         } else {
             let desc = txType == .buy ? "Kauf" : txType == .sell ? "Verkauf" : "Rechnung"
             items = [InvoiceItem(description: desc, quantity: 1, unitPrice: totalAmount ?? 0, itemType: .securities)]
@@ -96,7 +148,8 @@ extension BackendInvoice {
             items: items,
             tradeId: tradeId,
             orderId: orderId,
-            transactionType: txType
+            transactionType: txType,
+            traderCommissionRateSnapshot: traderCommissionRateSnapshot
         )
     }
 }
@@ -118,6 +171,7 @@ private struct ParseInvoice: Codable {
     let status: String
     let createdAt: String
     let updatedAt: String
+    let traderCommissionRateSnapshot: Double?
 
     // Customer info (stored as nested object or flattened)
     let customerName: String?
@@ -142,7 +196,7 @@ private struct ParseInvoice: Codable {
             appInvoiceType = .securitiesSettlement // Will be mapped via transactionType
         case "sell_invoice", "sell":
             appInvoiceType = .securitiesSettlement // Will be mapped via transactionType
-        case "service_charge", "app_service_charge", "platform_service_charge":
+        case "service_charge", "app_service_charge", "platform_service_charge": // legacy: platform_service_charge
             appInvoiceType = .appServiceCharge
         case "credit_note":
             appInvoiceType = .creditNote
@@ -213,7 +267,8 @@ private struct ParseInvoice: Codable {
             tradeId: tradeId,
             orderId: orderId,
             transactionType: transactionType,
-            dueDate: nil
+            dueDate: nil,
+            traderCommissionRateSnapshot: traderCommissionRateSnapshot
         )
     }
 }
@@ -234,6 +289,7 @@ private struct ParseInvoiceInput: Codable {
     let customerAddress: String
     let customerEmail: String?
     let customerId: String
+    let traderCommissionRateSnapshot: Double?
 
     static func from(invoice: Invoice) -> ParseInvoiceInput {
         let dateFormatter = ISO8601DateFormatter()
@@ -282,7 +338,8 @@ private struct ParseInvoiceInput: Codable {
             customerName: invoice.customerInfo.name,
             customerAddress: invoice.customerInfo.fullAddress,
             customerEmail: nil,
-            customerId: invoice.customerInfo.customerNumber
+            customerId: invoice.customerInfo.customerNumber,
+            traderCommissionRateSnapshot: invoice.traderCommissionRateSnapshot
         )
     }
 }
@@ -328,7 +385,8 @@ final class InvoiceAPIService: InvoiceAPIServiceProtocol {
             transactionType: invoice.transactionType,
             taxNote: invoice.taxNote,
             legalNote: invoice.legalNote,
-            dueDate: invoice.dueDate
+            dueDate: invoice.dueDate,
+            traderCommissionRateSnapshot: invoice.traderCommissionRateSnapshot
         )
     }
 
@@ -366,7 +424,8 @@ final class InvoiceAPIService: InvoiceAPIServiceProtocol {
             transactionType: invoice.transactionType,
             taxNote: invoice.taxNote,
             legalNote: invoice.legalNote,
-            dueDate: invoice.dueDate
+            dueDate: invoice.dueDate,
+            traderCommissionRateSnapshot: invoice.traderCommissionRateSnapshot
         )
     }
 

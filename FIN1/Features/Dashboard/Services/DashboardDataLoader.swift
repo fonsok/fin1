@@ -2,13 +2,13 @@ import Foundation
 import Combine
 
 // MARK: - Dashboard Data Loader Protocol
-protocol DashboardDataLoaderProtocol {
+protocol DashboardDataLoaderProtocol: Sendable {
     func loadDashboardData() async throws
     func refreshUserData() async throws
 }
 
 // MARK: - Dashboard Data Loader Implementation
-class DashboardDataLoader: DashboardDataLoaderProtocol {
+final class DashboardDataLoader: DashboardDataLoaderProtocol, @unchecked Sendable {
     private let userService: any UserServiceProtocol
     private let dashboardService: any DashboardServiceProtocol
     private let telemetryService: any TelemetryServiceProtocol

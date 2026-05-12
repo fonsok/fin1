@@ -48,7 +48,7 @@ Features/
 Administrative functionality for app management:
 - **RoundingDifferencesService** - Tracks and resolves rounding differences
 - **AdminSummaryReportViewModel** - Generates admin reports
-- **ConfigurationManagementViewModel** - App configuration management
+- **ConfigurationSettingsViewModel** - App configuration management
 - **BankContraLedgerViewModel** - Bank reconciliation
 
 ### Authentication (81 files)
@@ -95,6 +95,19 @@ Every feature follows strict MVVM:
 ```
 View (UI only) → ViewModel (Business Logic) → Service (Data/Network)
 ```
+
+### File Split Pattern (≤300) ✅
+- Keep Swift files ideally at or below 300 lines.
+- Prefer cohesive split by responsibility (Core + Extensions), not by arbitrary chunks.
+- Recommended naming:
+  - `FeatureType.swift` (core state/init/public surface)
+  - `FeatureType+Loading.swift`
+  - `FeatureType+Backend.swift`
+  - `FeatureType+Computed.swift`
+- Recent examples in this codebase:
+  - `InvestmentsViewModel` split into loading/computed extensions
+  - `InvestmentService` split into creation/status, completion, backend sync
+  - `UserService` split into authentication, profile, admin, sync
 
 ### Dependency Injection ✅
 All services injected via protocols:

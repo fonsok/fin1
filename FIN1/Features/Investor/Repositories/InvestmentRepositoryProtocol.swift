@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import os
 
 // MARK: - Investment Repository Protocol
 /// Owns mutable state for investor investments, batches, and pools.
@@ -20,6 +21,11 @@ protocol InvestmentRepositoryProtocol: ObservableObject {
 
 // MARK: - Investment Repository Implementation
 final class InvestmentRepository: InvestmentRepositoryProtocol {
+    private static let log = Logger(
+        subsystem: Bundle.main.bundleIdentifier ?? "FIN1",
+        category: "InvestmentRepository"
+    )
+
     @Published var investments: [Investment] = []
     @Published var investmentBatches: [InvestmentBatch] = []
     @Published var investmentPools: [InvestmentPool] = []
@@ -27,12 +33,7 @@ final class InvestmentRepository: InvestmentRepositoryProtocol {
     var investmentsPublisher: AnyPublisher<[Investment], Never> {
         $investments
             .handleEvents(receiveOutput: { investments in
-                print("📡 InvestmentRepository.investmentsPublisher: Emitting \(investments.count) investments")
-                if !investments.isEmpty {
-                    for (index, inv) in investments.enumerated() {
-                        print("   [\(index)] Investment \(inv.id): traderId='\(inv.traderId)', batchId=\(inv.batchId ?? "nil"), reservationStatus=\(inv.reservationStatus.rawValue)")
-                    }
-                }
+                Self.log.debug("investmentsPublisher emit count=\(investments.count)")
             })
             .eraseToAnyPublisher()
     }

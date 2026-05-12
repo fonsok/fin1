@@ -104,14 +104,14 @@ struct CSRInvestmentDetailSheet: View {
                 let returnColor = returnPercentage >= 0 ? AppTheme.accentGreen : AppTheme.accentRed
                 CSRDetailRow(
                     icon: returnPercentage >= 0 ? "arrow.up.right" : "arrow.down.right",
-                    label: "Rendite",
+                    label: "Return (%)",
                     value: String(format: "%+.2f%%", returnPercentage),
                     valueColor: returnColor
                 )
             } else {
                 CSRDetailRow(
                     icon: "clock",
-                    label: "Rendite",
+                    label: "Return (%)",
                     value: "pending",
                     valueColor: AppTheme.fontColor.opacity(0.7)
                 )
@@ -123,7 +123,7 @@ struct CSRInvestmentDetailSheet: View {
             let profitLoss = investment.currentValue - investment.amount
             CSRDetailRow(
                 icon: "plusminus.circle.fill",
-                label: "Gewinn/Verlust",
+                label: "Return (€)",
                 value: profitLoss.formattedAsLocalizedCurrency(),
                 valueColor: profitLoss >= 0 ? AppTheme.accentGreen : AppTheme.accentRed
             )

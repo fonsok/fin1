@@ -2,6 +2,7 @@ import Foundation
 
 extension AppServicesBuilder {
 
+    @MainActor
     enum Trader {
         static func build(_ ctx: inout AppServicesBuildContext) {
             guard let serviceFactory = ctx.serviceFactory,

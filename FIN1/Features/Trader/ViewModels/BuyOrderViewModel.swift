@@ -1,6 +1,7 @@
 import Foundation
 import Combine
 
+@MainActor
 final class BuyOrderViewModel: ObservableObject, LimitOrderMonitor {
     // MARK: - Published Properties
     @Published var searchResult: SearchResult
@@ -123,6 +124,7 @@ final class BuyOrderViewModel: ObservableObject, LimitOrderMonitor {
         self.investmentCalculator = investmentCalculator
         self.validator = validator
         self.transactionLimitService = transactionLimitService
+        let parseAPIClient = (configurationService as? ConfigurationService)?.getParseAPIClient()
         // Create placement service with audit logging and transaction limits if not provided
         if let providedService = placementService {
             self.placementService = providedService
@@ -130,7 +132,8 @@ final class BuyOrderViewModel: ObservableObject, LimitOrderMonitor {
             self.placementService = BuyOrderPlacementService(
                 auditLoggingService: auditService,
                 userService: userService,
-                transactionLimitService: transactionLimitService
+                transactionLimitService: transactionLimitService,
+                parseAPIClient: parseAPIClient
             )
         } else {
             // Fallback: Create without audit logging (for backward compatibility)
@@ -138,7 +141,8 @@ final class BuyOrderViewModel: ObservableObject, LimitOrderMonitor {
             self.placementService = BuyOrderPlacementService(
                 auditLoggingService: AuditLoggingService(),
                 userService: userService,
-                transactionLimitService: transactionLimitService
+                transactionLimitService: transactionLimitService,
+                parseAPIClient: parseAPIClient
             )
         }
         // Create provider with default implementation if not provided
@@ -162,6 +166,14 @@ final class BuyOrderViewModel: ObservableObject, LimitOrderMonitor {
         setupBindings()
         reloadPrice()
 
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("--ui-test-prefill-limit-order") {
+            quantityText = "100"
+            orderMode = .limit
+            limit = "1,00"
+        }
+        #endif
+
         // Setup investment observation
         setupInvestmentObservation()
 
@@ -169,12 +181,6 @@ final class BuyOrderViewModel: ObservableObject, LimitOrderMonitor {
         Task {
             await calculateInvestmentOrder()
         }
-    }
-
-    deinit {
-        cancellables.removeAll()
-        quantityInputManager.cleanup()
-        priceValidityTimerManager.cleanup()
     }
 
     func reloadPrice() {
@@ -195,8 +201,11 @@ final class BuyOrderViewModel: ObservableObject, LimitOrderMonitor {
         priceValidityTimerManager.startTimer()
     }
 
-    @MainActor
     func placeOrder() async {
+        if case .transmitting = orderStatus {
+            print("🔍 DEBUG: placeOrder ignored - already transmitting")
+            return
+        }
         orderStatus = .transmitting
 
         // Calculate investment order if not already calculated
@@ -204,18 +213,17 @@ final class BuyOrderViewModel: ObservableObject, LimitOrderMonitor {
             await calculateInvestmentOrder()
         }
 
-        let result = try? await placementService.placeOrder(
-            searchResult: searchResult,
-            quantity: Int(quantity),
-            orderMode: orderMode,
-            limit: limit,
-            priceValidityProgress: priceValidityProgress,
-            investmentOrderCalculation: investmentOrderCalculation,
-            traderService: traderService,
-            investmentCalculator: investmentCalculator
-        )
+        do {
+            let result = try await placementService.placeOrder(
+                searchResult: searchResult,
+                quantity: Int(quantity),
+                orderMode: orderMode,
+                limit: limit,
+                priceValidityProgress: priceValidityProgress,
+                investmentOrderCalculation: investmentOrderCalculation,
+                traderService: traderService
+            )
 
-        if let result = result {
             if result.success {
                 // Order was successfully created and will appear in ongoing transactions
                 // The status progression will happen automatically via the timer
@@ -225,7 +233,16 @@ final class BuyOrderViewModel: ObservableObject, LimitOrderMonitor {
                 shouldShowDepotView = true
             } else if let error = result.error {
                 orderStatus = .failed(error)
+            } else {
+                orderStatus = .failed(.unknown("Unbekannter Fehler bei der Orderplatzierung."))
             }
+        } catch is CancellationError {
+            // If task gets cancelled (e.g. view lifecycle), avoid leaving UI in transmitting state.
+            orderStatus = .idle
+        } catch let appError as AppError {
+            orderStatus = .failed(appError)
+        } catch {
+            orderStatus = .failed(error.toAppError())
         }
     }
 

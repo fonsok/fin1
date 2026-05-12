@@ -2,6 +2,7 @@ import Foundation
 
 extension AppServicesBuilder {
 
+    @MainActor
     enum Investment {
         static func build(_ ctx: inout AppServicesBuildContext) {
             guard let serviceFactory = ctx.serviceFactory,
@@ -26,7 +27,8 @@ extension AppServicesBuilder {
             ctx.poolTradeParticipationService = poolTradeParticipationService
 
             ctx.telemetryService = TelemetryService()
-            ctx.investmentManagementService = InvestmentManagementService()
+            ctx.investmentPoolLifecycleService = InvestmentPoolLifecycleService()
+            ctx.investmentStatusService = InvestmentStatusService()
             ctx.traderDataService = TraderDataService()
             ctx.commissionAccumulationService = CommissionAccumulationService()
             ctx.traderCashBalanceService = TraderCashBalanceService(
@@ -51,16 +53,27 @@ extension AppServicesBuilder {
                 configurationService: configurationService,
                 settlementAPIService: ctx.settlementAPIService
             )
+            let investmentCreationService = InvestmentCreationService(
+                investorCashBalanceService: investorCashBalanceService,
+                investmentPoolLifecycleService: ctx.investmentPoolLifecycleService!,
+                investmentDocumentService: ctx.investmentDocumentService!,
+                documentService: documentService,
+                invoiceService: serviceFactory.coreInvoiceService,
+                bankContraAccountService: nil,
+                transactionIdService: serviceFactory.coreTransactionIdService,
+                configurationService: configurationService,
+                investmentAPIService: investmentAPIService
+            )
             ctx.investmentService = InvestmentService(
+                creationService: investmentCreationService,
                 investorCashBalanceService: investorCashBalanceService,
                 poolTradeParticipationService: poolTradeParticipationService,
                 telemetryService: ctx.telemetryService!,
                 documentService: documentService,
-                investmentManagementService: ctx.investmentManagementService!,
+                investmentPoolLifecycleService: ctx.investmentPoolLifecycleService!,
+                investmentStatusService: ctx.investmentStatusService!,
                 investmentCompletionService: ctx.investmentCompletionService!,
                 investmentDocumentService: ctx.investmentDocumentService!,
-                invoiceService: serviceFactory.coreInvoiceService,
-                transactionIdService: serviceFactory.coreTransactionIdService,
                 configurationService: configurationService,
                 investmentAPIService: investmentAPIService
             )
@@ -106,42 +119,44 @@ extension AppServicesBuilder {
                 traderDataService: ctx.traderDataService!
             )
 
-            ctx.orderLifecycleCoordinator = serviceFactory.createOrderLifecycleCoordinator(
-                orderManagementService: orderManagementService,
-                orderStatusSimulationService: orderStatusSimulationService,
-                tradingNotificationService: tradingNotificationService,
-                tradeLifecycleService: tradeLifecycleService,
-                tradeMatchingService: tradeMatchingService,
-                investmentActivationService: ctx.investmentActivationService!,
-                profitDistributionService: ctx.profitDistributionService!,
-                poolTradeParticipationService: poolTradeParticipationService,
-                userService: userService,
-                investmentService: ctx.investmentService!,
-                documentService: documentService,
-                investorGrossProfitService: ctx.investorGrossProfitService!,
-                commissionCalculationService: ctx.commissionCalculationService!,
-                auditLoggingService: auditLoggingService,
-                settlementAPIService: ctx.settlementAPIService
-            )
+            MainActor.assumeIsolated {
+                ctx.orderLifecycleCoordinator = serviceFactory.createOrderLifecycleCoordinator(
+                    orderManagementService: orderManagementService,
+                    orderStatusSimulationService: orderStatusSimulationService,
+                    tradingNotificationService: tradingNotificationService,
+                    tradeLifecycleService: tradeLifecycleService,
+                    tradeMatchingService: tradeMatchingService,
+                    investmentActivationService: ctx.investmentActivationService!,
+                    profitDistributionService: ctx.profitDistributionService!,
+                    poolTradeParticipationService: poolTradeParticipationService,
+                    userService: userService,
+                    investmentService: ctx.investmentService!,
+                    documentService: documentService,
+                    investorGrossProfitService: ctx.investorGrossProfitService!,
+                    commissionCalculationService: ctx.commissionCalculationService!,
+                    auditLoggingService: auditLoggingService,
+                    settlementAPIService: ctx.settlementAPIService
+                )
 
-            ctx.tradingStateStore = serviceFactory.createTradingStateStore(
-                orderManagementService: orderManagementService,
-                tradeLifecycleService: tradeLifecycleService,
-                securitiesWatchlistService: securitiesWatchlistService,
-                orderStatusSimulationService: orderStatusSimulationService
-            )
+                ctx.tradingStateStore = serviceFactory.createTradingStateStore(
+                    orderManagementService: orderManagementService,
+                    tradeLifecycleService: tradeLifecycleService,
+                    securitiesWatchlistService: securitiesWatchlistService,
+                    orderStatusSimulationService: orderStatusSimulationService
+                )
 
-            ctx.tradeLifecycleCoordinator = serviceFactory.createTradeLifecycleCoordinator(
-                tradeLifecycleService: tradeLifecycleService
-            )
+                ctx.tradeLifecycleCoordinator = serviceFactory.createTradeLifecycleCoordinator(
+                    tradeLifecycleService: tradeLifecycleService
+                )
 
-            ctx.tradingCoordinator = serviceFactory.createTradingCoordinator(
-                tradingStateStore: ctx.tradingStateStore!,
-                orderLifecycleCoordinator: ctx.orderLifecycleCoordinator!,
-                tradeLifecycleCoordinator: ctx.tradeLifecycleCoordinator!,
-                securitiesWatchlistService: securitiesWatchlistService,
-                tradingStatisticsService: tradingStatisticsService
-            )
+                ctx.tradingCoordinator = serviceFactory.createTradingCoordinator(
+                    tradingStateStore: ctx.tradingStateStore!,
+                    orderLifecycleCoordinator: ctx.orderLifecycleCoordinator!,
+                    tradeLifecycleCoordinator: ctx.tradeLifecycleCoordinator!,
+                    securitiesWatchlistService: securitiesWatchlistService,
+                    tradingStatisticsService: tradingStatisticsService
+                )
+            }
         }
     }
 }

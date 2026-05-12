@@ -466,6 +466,81 @@ final class InvestmentTradingUITests: XCTestCase {
         XCTAssertTrue(true, "Multiple buy orders placed - check simulator")
     }
 
+    /// Regression test: In limit mode, buy action must remain tappable when input is valid.
+    @MainActor
+    func testLimitBuyOrder_ButtonEnabledWhenLimitIsSet() throws {
+        app.terminate()
+        app.launchArguments = ["--uitesting", "--reset-state", "--ui-test-entry-limit-buy-order", "--ui-test-prefill-limit-order"]
+        app.launch()
+
+        let loading = app.otherElements["UITestLimitEntryLoading"].firstMatch
+        _ = waitForElement(loading, timeout: 5)
+        let buyRoot = app.otherElements["UITestDirectBuyOrderRoot"].firstMatch
+        XCTAssertTrue(waitForElement(buyRoot, timeout: 45), "Buy test root should be visible")
+
+        let quantityField = app.textFields["QuantityInputField"].firstMatch
+        XCTAssertTrue(waitForElement(quantityField, timeout: 10), "Precondition failed: buy form not opened")
+        quantityField.tap()
+        quantityField.typeText("100")
+        sleep(1)
+
+        let placeOrderButton = app.buttons["PlaceOrderButton"].firstMatch
+        XCTAssertTrue(waitForElement(placeOrderButton, timeout: 10), "Precondition failed: buy action button missing")
+        let enabledBeforeSwitch = placeOrderButton.isEnabled
+
+        let limitSegment = app.buttons["Limit"].firstMatch
+        XCTAssertTrue(waitForElement(limitSegment, timeout: 5), "Precondition failed: limit segment missing")
+        limitSegment.tap()
+
+        let limitField = app.textFields["LimitPriceField"].firstMatch
+        XCTAssertTrue(waitForElement(limitField, timeout: 10), "Precondition failed: limit field missing")
+        let enabledAfterSwitch = placeOrderButton.isEnabled
+        XCTAssertEqual(
+            enabledAfterSwitch,
+            enabledBeforeSwitch,
+            "Buy order button enabled state must not change solely because of market/limit toggle"
+        )
+    }
+
+    /// Regression test: In limit mode, sell action must remain tappable when input is valid.
+    @MainActor
+    func testLimitSellOrder_ButtonEnabledWhenLimitIsSet() throws {
+        app.terminate()
+        app.launchArguments = ["--uitesting", "--reset-state", "--ui-test-entry-limit-sell-order", "--ui-test-prefill-limit-order"]
+        app.launch()
+
+        let loading = app.otherElements["UITestLimitEntryLoading"].firstMatch
+        _ = waitForElement(loading, timeout: 5)
+        let sellRoot = app.otherElements["UITestDirectSellOrderRoot"].firstMatch
+        XCTAssertTrue(waitForElement(sellRoot, timeout: 45), "Sell test root should be visible")
+
+        let sellQuantityField = app.textFields["QuantityInputField"].firstMatch
+        XCTAssertTrue(waitForElement(sellQuantityField, timeout: 10), "Precondition failed: sell form not opened")
+        sellQuantityField.tap()
+        sellQuantityField.typeText("100")
+        sleep(1)
+
+        let placeSellButton = app.buttons["PlaceSellOrderButton"].firstMatch.exists
+            ? app.buttons["PlaceSellOrderButton"].firstMatch
+            : app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'Verkaufen'")).firstMatch
+        XCTAssertTrue(waitForElement(placeSellButton, timeout: 10), "Precondition failed: sell action button missing")
+        let enabledBeforeSwitch = placeSellButton.isEnabled
+
+        let limitSegment = app.buttons["Limit"].firstMatch
+        XCTAssertTrue(waitForElement(limitSegment, timeout: 5), "Precondition failed: sell limit segment missing")
+        limitSegment.tap()
+        sleep(1)
+
+        let limitField = app.textFields["LimitPriceField"].firstMatch
+        XCTAssertTrue(waitForElement(limitField, timeout: 10), "Precondition failed: sell limit field missing")
+        let enabledAfterSwitch = placeSellButton.isEnabled
+        XCTAssertEqual(
+            enabledAfterSwitch,
+            enabledBeforeSwitch,
+            "Sell order button enabled state must not change solely because of market/limit toggle"
+        )
+    }
+
     // MARK: - Complete Trade Cycle UI Tests
 
     /// Test: Complete trade cycle (buy then sell)
@@ -646,6 +721,101 @@ final class InvestmentTradingUITests: XCTestCase {
         if waitForElement(investorDebugButton, timeout: 10) {
             investorDebugButton.tap()
             _ = waitForElement(tabBar, timeout: 20)
+        }
+    }
+
+    @MainActor
+    private func ensureAuthenticatedTraderSession() {
+        let tabBar = app.tabBars.firstMatch
+        if waitForElement(tabBar, timeout: 5), app.buttons["HandelnButton"].firstMatch.exists || app.buttons["Handeln"].firstMatch.exists {
+            return
+        }
+
+        // Deterministic relaunch to landing + trader debug login.
+        app.terminate()
+        app.launchArguments = ["--uitesting", "--reset-state"]
+        app.launch()
+        sleep(2)
+
+        let traderDebugButtonById = app.buttons["LoginTrader1Button"]
+        if waitForElement(traderDebugButtonById, timeout: 10) {
+            traderDebugButtonById.tap()
+            _ = waitForElement(tabBar, timeout: 20)
+            return
+        }
+
+        // Fallback by explicit label used in debug landing.
+        let traderDebugButtonByLabel = app.buttons["Test: Sign In as Trader 1"]
+        if waitForElement(traderDebugButtonByLabel, timeout: 5) {
+            traderDebugButtonByLabel.tap()
+            _ = waitForElement(tabBar, timeout: 20)
+        }
+    }
+
+    @MainActor
+    private func relaunchAsTraderForLimitTests() {
+        app.terminate()
+        app.launchArguments = ["--uitesting", "--reset-state", "--ui-test-entry-trading-search"]
+        app.launch()
+        _ = ensureTradingSearchVisible()
+        sleep(1)
+    }
+
+    @MainActor
+    private func ensureTradingSearchVisible() -> Bool {
+        acceptTermsIfPresented()
+
+        // Slow backend environments can delay trader auto-login significantly.
+        // Prefer explicit entry-state markers before generic UI probing.
+        let loadingMarker = app.otherElements["UITestTradingEntryLoading"].firstMatch
+        let readyMarker = app.otherElements["UITestTradingEntryReady"].firstMatch
+        let errorMarker = app.otherElements["UITestTradingEntryError"].firstMatch
+        _ = waitForElement(loadingMarker, timeout: 5)
+        if waitForElement(readyMarker, timeout: 120) {
+            return waitForElement(tradingSearchField(), timeout: 20)
+        }
+        if errorMarker.exists {
+            return false
+        }
+
+        if waitForElement(tradingSearchField(), timeout: 5) { return true }
+
+        let handelnButton = app.buttons["HandelnButton"].firstMatch.exists ? app.buttons["HandelnButton"].firstMatch : app.buttons["Handeln"].firstMatch
+        guard waitForElement(handelnButton, timeout: 10) else {
+            return waitForElement(tradingSearchField(), timeout: 20)
+        }
+
+        // Retry once because first tap can be swallowed by transient overlays/animations.
+        for _ in 0..<2 {
+            handelnButton.tap()
+            if waitForElement(tradingSearchField(), timeout: 6) {
+                return true
+            }
+            sleep(1)
+        }
+        return false
+    }
+
+    @MainActor
+    private func tradingSearchField() -> XCUIElement {
+        let byId = app.textFields["SecuritiesSearchField"].firstMatch
+        if byId.exists { return byId }
+        return app.searchFields.firstMatch
+    }
+
+    @MainActor
+    private func acceptTermsIfPresented() {
+        // Terms modal can block all interactions in fresh sessions.
+        // Try tapping "Accept" up to two times (Terms + Privacy) if shown.
+        for _ in 0..<2 {
+            let acceptButton = app.buttons["Accept"].firstMatch
+            guard waitForElement(acceptButton, timeout: 2) else { break }
+            if acceptButton.isHittable {
+                acceptButton.tap()
+                sleep(1)
+            } else {
+                break
+            }
         }
     }
 

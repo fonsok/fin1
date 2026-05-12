@@ -57,7 +57,7 @@ struct InvestmentSummaryView: View {
                             showAppServiceChargeInfo = true
                         }) {
                             Image(systemName: "info.circle.fill")
-                                .font(.system(size: ResponsiveDesign.iconSize() * 0.7))
+                                .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 0.7))
                                 .foregroundColor(AppTheme.accentLightBlue.opacity(0.7))
                         }
                     }

@@ -21,7 +21,7 @@ struct DirectLoginView: View {
                         // Header
                         VStack(spacing: ResponsiveDesign.spacing(16)) {
                             Image(systemName: "chart.line.uptrend.xyaxis")
-                                .font(.system(size: ResponsiveDesign.iconSize() * 3))
+                                .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 3))
                                 .foregroundColor(AppTheme.accentLightBlue)
 
                             Text("Simple Login")

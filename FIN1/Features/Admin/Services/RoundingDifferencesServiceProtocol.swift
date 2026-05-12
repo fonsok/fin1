@@ -2,7 +2,8 @@ import Foundation
 import Combine
 
 // MARK: - Rounding Differences Service Protocol
-protocol RoundingDifferencesServiceProtocol: AnyObject, ServiceLifecycle {
+@MainActor
+protocol RoundingDifferencesServiceProtocol: AnyObject {
     var unreconciledDifferencesPublisher: AnyPublisher<[RoundingDifference], Never> { get }
 
     func trackRoundingDifference(

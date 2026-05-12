@@ -47,7 +47,7 @@ struct SavedFiltersSection: View {
                     Button(action: onCreateNew, label: {
                         VStack(spacing: ResponsiveDesign.spacing(4)) {
                             Image(systemName: "plus")
-                                .font(.system(size: ResponsiveDesign.iconSize() * 0.8))
+                                .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 0.8))
                             Text("Save")
                                 .font(ResponsiveDesign.bodyFont())
                         }
@@ -98,7 +98,7 @@ struct SavedFilterChip: View {
 
                     if isCurrentlyApplied {
                         Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: ResponsiveDesign.iconSize() * 0.7))
+                            .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 0.7))
                             .foregroundColor(AppTheme.accentGreen)
                     }
                 }
@@ -117,7 +117,7 @@ struct SavedFilterChip: View {
             // Delete button (X) positioned at center-right
             Button(action: { showDeleteConfirmation = true }, label: {
                 Image(systemName: "xmark")
-                    .font(.system(size: ResponsiveDesign.iconSize() * 0.7))
+                    .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 0.7))
                     .foregroundColor(AppTheme.accentRed.opacity(0.8))
             })
             .buttonStyle(PlainButtonStyle())

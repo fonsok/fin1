@@ -346,7 +346,7 @@ private struct AgentRankingRow: View {
                         .frame(width: 28, height: 28)
 
                     Text("\(rank)")
-                        .font(.system(size: 12, weight: .bold))
+                        .font(ResponsiveDesign.scaledSystemFont(size: 12, weight: .bold))
                         .foregroundColor(.white)
                 }
 

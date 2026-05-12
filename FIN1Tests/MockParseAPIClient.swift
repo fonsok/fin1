@@ -4,7 +4,7 @@ import Foundation
 // MARK: - Mock Parse API Client
 
 /// Mock implementation of ParseAPIClientProtocol for unit testing
-final class MockParseAPIClient: ParseAPIClientProtocol {
+final class MockParseAPIClient: ParseAPIClientProtocol, @unchecked Sendable {
 
     // MARK: - Tracking Properties
 
@@ -18,6 +18,8 @@ final class MockParseAPIClient: ParseAPIClientProtocol {
     var lastClassName: String?
     var lastObjectId: String?
     var lastQuery: [String: Any]?
+    var lastFunctionName: String?
+    var lastFunctionParameters: [String: Any]?
 
     // MARK: - Mock Data
 
@@ -132,9 +134,34 @@ final class MockParseAPIClient: ParseAPIClientProtocol {
         parameters: [String: Any]?
     ) async throws -> T {
         callFunctionCalled = true
+        lastFunctionName = name
+        lastFunctionParameters = parameters
 
         if shouldThrowError {
             throw errorToThrow
+        }
+
+        // Tests that do not explicitly set mockFunctionResult can still succeed for
+        // the pool-participation cloud-function contract by synthesizing a response.
+        if mockFunctionResult == nil,
+           (name == "recordPoolTradeParticipation" || name == "updatePoolTradeParticipation"),
+           let params = parameters,
+           let synthesized: T = decodeFromJSONDictionary([
+                "objectId": (name == "updatePoolTradeParticipation"
+                             ? (params["participationId"] as? String ?? mockObjectId)
+                             : mockObjectId),
+                "tradeId": params["tradeId"] as? String ?? "",
+                "investmentId": params["investmentId"] as? String ?? "",
+                "poolReservationId": (params["poolReservationId"] as? String) as Any,
+                "poolNumber": (params["poolNumber"] as? Int) as Any,
+                "allocatedAmount": (params["allocatedAmount"] as? Double) as Any,
+                "totalTradeValue": (params["totalTradeValue"] as? Double) as Any,
+                "ownershipPercentage": (params["ownershipPercentage"] as? Double) as Any,
+                "profitShare": (params["profitShare"] as? Double) as Any,
+                "createdAt": ["iso": mockCreatedAt],
+                "updatedAt": ["iso": mockUpdatedAt]
+           ]) {
+            return synthesized
         }
 
         guard let result = mockFunctionResult as? T else {
@@ -178,6 +205,18 @@ final class MockParseAPIClient: ParseAPIClientProtocol {
         lastClassName = nil
         lastObjectId = nil
         lastQuery = nil
+        lastFunctionName = nil
+        lastFunctionParameters = nil
         shouldThrowError = false
+    }
+
+    private func decodeFromJSONDictionary<T: Decodable>(_ dictionary: [String: Any]) -> T? {
+        guard JSONSerialization.isValidJSONObject(dictionary),
+              let data = try? JSONSerialization.data(withJSONObject: dictionary) else {
+            return nil
+        }
+
+        let decoder = JSONDecoder()
+        return try? decoder.decode(T.self, from: data)
     }
 }

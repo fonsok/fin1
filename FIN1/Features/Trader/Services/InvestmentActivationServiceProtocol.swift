@@ -3,7 +3,7 @@ import Foundation
 // MARK: - Investment Activation Service Protocol
 /// Defines the contract for investment activation operations
 /// Handles activation of investments when buy orders complete
-protocol InvestmentActivationServiceProtocol {
+protocol InvestmentActivationServiceProtocol: Sendable {
     /// Activates investments for a completed buy order
     /// - Parameters:
     ///   - order: The completed buy order

@@ -2,6 +2,7 @@ import SwiftUI
 import Combine
 
 // MARK: - Search Coordinator Protocol
+@MainActor
 protocol SecuritiesSearchCoordinatorProtocol: ObservableObject {
     var activeSheet: SecuritiesSearchView.ActiveSheet? { get set }
     var searchResults: [SearchResult] { get }
@@ -28,6 +29,7 @@ protocol SecuritiesSearchCoordinatorProtocol: ObservableObject {
 }
 
 // MARK: - Search Coordinator Implementation
+@MainActor
 final class SecuritiesSearchCoordinator: SecuritiesSearchCoordinatorProtocol {
     @Published var activeSheet: SecuritiesSearchView.ActiveSheet?
     @Published var searchResults: [SearchResult] = []
@@ -36,7 +38,7 @@ final class SecuritiesSearchCoordinator: SecuritiesSearchCoordinatorProtocol {
 
     private let searchService: any SecuritiesSearchServiceProtocol
     private let filterManager: any SearchFilterServiceProtocol
-    private var cancellables = Set<AnyCancellable>()
+    private nonisolated(unsafe) var cancellables = Set<AnyCancellable>()
 
     init(searchService: any SecuritiesSearchServiceProtocol, filterManager: any SearchFilterServiceProtocol) {
         self.searchService = searchService

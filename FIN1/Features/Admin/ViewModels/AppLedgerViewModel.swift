@@ -34,19 +34,25 @@ struct AppLedgerEntryDisplay: Identifiable, Hashable {
 
     private static func transactionTypeLabel(_ type: AppLedgerTransactionType) -> String {
         switch type {
-        case .appServiceCharge:      return "Appgebühr"
-        case .orderFee:             return "Ordergebühr"
-        case .exchangeFee:          return "Börsenplatzgebühr"
-        case .foreignCosts:         return "Fremdkosten"
-        case .commission:           return "Provision"
-        case .refund:               return "Erstattung"
-        case .creditNote:           return "Gutschrift"
-        case .vatRemittance:        return "USt-Abführung"
-        case .vatInputClaim:        return "Vorsteuer"
-        case .operatingExpense:     return "Betriebsausgabe"
-        case .adjustment:           return "Korrektur"
-        case .reversal:             return "Storno"
-        case .investmentEscrow:     return "Investment-Escrow"
+        case .appServiceCharge:    return "Appgebühr"
+        case .orderFee:            return "Ordergebühr"
+        case .exchangeFee:         return "Börsenplatzgebühr"
+        case .foreignCosts:        return "Fremdkosten"
+        case .commission:          return "Provision"
+        case .refund:              return "Erstattung"
+        case .creditNote:          return "Gutschrift"
+        case .vatRemittance:       return "USt-Abführung"
+        case .vatInputClaim:       return "Vorsteuer"
+        case .operatingExpense:    return "Betriebsausgabe"
+        case .withholdingTax:      return "Quellensteuer"
+        case .solidaritySurcharge: return "Solidaritätszuschlag"
+        case .churchTax:           return "Kirchensteuer"
+        case .tradeCash:           return "Trade-Cash"
+        case .walletDeposit:       return "Einzahlung"
+        case .walletWithdrawal:    return "Auszahlung"
+        case .adjustment:          return "Korrektur"
+        case .reversal:            return "Storno"
+        case .investmentEscrow:    return "Investment-Escrow"
         }
     }
 }

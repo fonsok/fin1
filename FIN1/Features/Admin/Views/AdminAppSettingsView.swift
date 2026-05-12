@@ -128,7 +128,7 @@ struct AdminAppSettingsView: View {
 
             VStack(spacing: ResponsiveDesign.spacing(6)) {
                 AdminInfoRow(title: "Active Theme", value: themeManager.currentTargetGroup.displayName)
-                AdminInfoRow(title: "Commission Rate", value: "\(Int(services.configurationService.traderCommissionRate * 100))%")
+                AdminInfoRow(title: "Commission Rate", value: "\((services.configurationService.traderCommissionRate * 100).formatted(.number.precision(.fractionLength(0...2))))%")
                 AdminInfoRow(title: "Min Cash Reserve", value: services.configurationService.minimumCashReserve.formattedAsLocalizedCurrency())
                 AdminInfoRow(title: "Initial Balance", value: services.configurationService.initialAccountBalance.formattedAsLocalizedCurrency())
             }

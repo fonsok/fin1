@@ -3,7 +3,7 @@ import Combine
 
 // MARK: - Securities Watchlist Service Implementation
 /// Handles securities watchlist operations and management
-final class SecuritiesWatchlistService: SecuritiesWatchlistServiceProtocol, ServiceLifecycle {
+final class SecuritiesWatchlistService: SecuritiesWatchlistServiceProtocol, ServiceLifecycle, @unchecked Sendable {
     static let shared = SecuritiesWatchlistService()
 
     @Published var watchlist: [SearchResult] = []
@@ -124,7 +124,7 @@ final class SecuritiesWatchlistService: SecuritiesWatchlistServiceProtocol, Serv
         // Sync to backend (write-through pattern)
         if let apiService = watchlistAPIService,
            let userId = currentUserId {
-            Task.detached { [apiService, searchResult, userId] in
+            Task { [apiService, searchResult, userId] in
                 do {
                     _ = try await apiService.saveWatchlistItem(searchResult, userId: userId)
                     print("✅ Watchlist item synced to backend: \(searchResult.wkn)")
@@ -144,7 +144,7 @@ final class SecuritiesWatchlistService: SecuritiesWatchlistServiceProtocol, Serv
         // Sync deletion to backend (write-through pattern)
         if let apiService = watchlistAPIService,
            let userId = currentUserId {
-            Task.detached { [apiService, wkn, userId] in
+            Task { [apiService, wkn, userId] in
                 do {
                     try await apiService.removeWatchlistItem(wkn, userId: userId)
                     print("✅ Watchlist item deletion synced to backend: \(wkn)")
@@ -164,7 +164,7 @@ final class SecuritiesWatchlistService: SecuritiesWatchlistServiceProtocol, Serv
         // Sync deletion to backend (remove all items)
         if let apiService = watchlistAPIService,
            let userId = currentUserId {
-            Task.detached { [apiService, userId] in
+            Task { [apiService, userId] in
                 do {
                     // Fetch all items and delete them
                     let items = try await apiService.fetchWatchlist(for: userId)

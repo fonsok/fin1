@@ -16,7 +16,7 @@ struct TraderInvestButton: View {
                 HStack(spacing: ResponsiveDesign.spacing(8)) {
                     Image(systemName: "plus.circle.fill")
                         .font(ResponsiveDesign.headlineFont())
-                    Text("Invest with \(trader.username)")
+                    Text("Investiere mit \(trader.username)")
                         .font(ResponsiveDesign.headlineFont())
                         .fontWeight(.semibold)
                 }
@@ -35,17 +35,6 @@ struct TraderInvestButton: View {
             }
             .buttonStyle(PlainButtonStyle())
             .accessibilityIdentifier("InvestWithTraderButton")
-
-            // Investment Info
-            HStack(spacing: ResponsiveDesign.spacing(8)) {
-                Image(systemName: "info.circle")
-                    .foregroundColor(AppTheme.accentLightBlue)
-                    .font(ResponsiveDesign.captionFont())
-
-                Text("Minimum investment: \(100.0.formattedAsLocalizedCurrency()) • Maximum: \(10000.0.formattedAsLocalizedCurrency())")
-                    .font(ResponsiveDesign.captionFont())
-                    .foregroundColor(AppTheme.fontColor.opacity(0.7))
-            }
         }
     }
 }

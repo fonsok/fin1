@@ -17,6 +17,7 @@ struct OrderStatusConfig {
 /// Single service that handles all order operations
 /// Replaces the complex chain: TraderService → TradingCoordinator → OrderLifecycleCoordinator → OrderManagementService
 
+@MainActor
 protocol NewOrderServiceProtocol: ObservableObject {
     var activeOrders: [NewOrder] { get }
     var isLoading: Bool { get }
@@ -28,7 +29,8 @@ protocol NewOrderServiceProtocol: ObservableObject {
     func updateOrderStatus(_ orderId: String, status: NewOrderStatus) async throws
 }
 
-final class NewOrderService: NewOrderServiceProtocol, ServiceLifecycle {
+@MainActor
+final class NewOrderService: NewOrderServiceProtocol {
     @Published var activeOrders: [NewOrder] = []
     @Published var isLoading = false
     @Published var errorMessage: String?
@@ -44,22 +46,6 @@ final class NewOrderService: NewOrderServiceProtocol, ServiceLifecycle {
 
     init(userService: (any UserServiceProtocol)? = nil) {
         self.userService = userService
-    }
-
-    // MARK: - ServiceLifecycle
-    func start() {
-        loadMockData()
-    }
-
-    func stop() {
-        orderStatusTimers.values.forEach { $0.invalidate() }
-        orderStatusTimers.removeAll()
-    }
-
-    func reset() {
-        activeOrders.removeAll()
-        errorMessage = nil
-        stop()
     }
 
     // MARK: - Order Operations
@@ -83,10 +69,8 @@ final class NewOrderService: NewOrderServiceProtocol, ServiceLifecycle {
             limitPrice: request.limitPrice
         )
 
-        await MainActor.run {
-            activeOrders.append(order)
-            print("🔍 DEBUG: Added buy order \(order.id) to activeOrders. Total: \(activeOrders.count)")
-        }
+        activeOrders.append(order)
+        print("🔍 DEBUG: Added buy order \(order.id) to activeOrders. Total: \(activeOrders.count)")
 
         // Start status progression
         startOrderStatusProgression(order.id)
@@ -115,10 +99,8 @@ final class NewOrderService: NewOrderServiceProtocol, ServiceLifecycle {
             originalHoldingId: request.originalHoldingId
         )
 
-        await MainActor.run {
-            activeOrders.append(order)
-            print("🔍 DEBUG: Added sell order \(order.id) to activeOrders. Total: \(activeOrders.count)")
-        }
+        activeOrders.append(order)
+        print("🔍 DEBUG: Added sell order \(order.id) to activeOrders. Total: \(activeOrders.count)")
 
         // Start status progression
         startOrderStatusProgression(order.id)
@@ -127,35 +109,31 @@ final class NewOrderService: NewOrderServiceProtocol, ServiceLifecycle {
     }
 
     func cancelOrder(_ orderId: String) async throws {
-        await MainActor.run {
-            if let index = activeOrders.firstIndex(where: { $0.id == orderId }) {
-                let order = activeOrders[index]
-                let cancelledOrder = order.withStatus(.cancelled)
-                activeOrders[index] = cancelledOrder
+        if let index = activeOrders.firstIndex(where: { $0.id == orderId }) {
+            let order = activeOrders[index]
+            let cancelledOrder = order.withStatus(.cancelled)
+            activeOrders[index] = cancelledOrder
 
-                // Stop status progression
-                orderStatusTimers[orderId]?.invalidate()
-                orderStatusTimers.removeValue(forKey: orderId)
+            // Stop status progression
+            orderStatusTimers[orderId]?.invalidate()
+            orderStatusTimers.removeValue(forKey: orderId)
 
-                print("🔍 DEBUG: Cancelled order \(orderId)")
-            }
+            print("🔍 DEBUG: Cancelled order \(orderId)")
         }
     }
 
     func updateOrderStatus(_ orderId: String, status: NewOrderStatus) async throws {
-        await MainActor.run {
-            if let index = activeOrders.firstIndex(where: { $0.id == orderId }) {
-                let order = activeOrders[index]
-                let updatedOrder = order.withStatus(status)
-                activeOrders[index] = updatedOrder
+        if let index = activeOrders.firstIndex(where: { $0.id == orderId }) {
+            let order = activeOrders[index]
+            let updatedOrder = order.withStatus(status)
+            activeOrders[index] = updatedOrder
 
-                print("🔍 DEBUG: Updated order \(orderId) status to \(status.rawValue)")
+            print("🔍 DEBUG: Updated order \(orderId) status to \(status.rawValue)")
 
-                // Stop progression if completed
-                if status == .completed {
-                    orderStatusTimers[orderId]?.invalidate()
-                    orderStatusTimers.removeValue(forKey: orderId)
-                }
+            // Stop progression if completed
+            if status == .completed {
+                orderStatusTimers[orderId]?.invalidate()
+                orderStatusTimers.removeValue(forKey: orderId)
             }
         }
     }
@@ -167,7 +145,7 @@ final class NewOrderService: NewOrderServiceProtocol, ServiceLifecycle {
 
         // Start progression timer using centralized configuration
         orderStatusTimers[orderId] = Timer.scheduledTimer(withTimeInterval: OrderStatusConfig.progressionInterval, repeats: true) { [weak self] _ in
-            Task {
+            Task { @MainActor in
                 await self?.advanceOrderStatus(orderId)
             }
         }
@@ -202,7 +180,4 @@ final class NewOrderService: NewOrderServiceProtocol, ServiceLifecycle {
         try? await updateOrderStatus(orderId, status: nextStatus)
     }
 
-    private func loadMockData() {
-        // Load any existing mock data if needed
-    }
 }

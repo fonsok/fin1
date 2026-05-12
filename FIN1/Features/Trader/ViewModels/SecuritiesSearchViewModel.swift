@@ -91,7 +91,7 @@ final class SecuritiesSearchViewModel: ObservableObject {
 
     // Removed warrantDetailsViewModel - ViewModels should be managed by Views, not Services
 
-    private var cancellables = Set<AnyCancellable>()
+    private nonisolated(unsafe) var cancellables = Set<AnyCancellable>()
 
     init(coordinator: any SecuritiesSearchCoordinatorProtocol) {
         self.coordinator = coordinator

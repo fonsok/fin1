@@ -4,7 +4,13 @@ import Foundation
 
 extension ParseAPIClient {
 
-    func fetchObjects<T: Decodable>(
+    /// Bridges non-`Sendable` captures into `RequestDeduplicator.execute`'s `@Sendable` closure.
+    private final class UncheckedFetchBox<T>: @unchecked Sendable {
+        let run: () async throws -> T
+        init(_ run: @escaping () async throws -> T) { self.run = run }
+    }
+
+    func fetchObjects<T: Decodable & Sendable>(
         className: String,
         query: [String: Any]? = nil,
         include: [String]? = nil,
@@ -20,7 +26,7 @@ extension ParseAPIClient {
             limit: limit
         )
 
-        return try await requestDeduplicator.execute(key: deduplicationKey) {
+        let box = UncheckedFetchBox<[T]> {
             try await self.executeWithRetry {
                 try await self.performFetchObjects(
                     className: className,
@@ -31,9 +37,12 @@ extension ParseAPIClient {
                 )
             }
         }
+        return try await requestDeduplicator.execute(key: deduplicationKey) {
+            try await box.run()
+        }.value
     }
 
-    func performFetchObjects<T: Decodable>(
+    func performFetchObjects<T: Decodable & Sendable>(
         className: String,
         query: [String: Any]?,
         include: [String]?,
@@ -110,7 +119,7 @@ extension ParseAPIClient {
         }
     }
 
-    func fetchObject<T: Decodable>(
+    func fetchObject<T: Decodable & Sendable>(
         className: String,
         objectId: String,
         include: [String]? = nil
@@ -122,7 +131,7 @@ extension ParseAPIClient {
             objectId: objectId
         )
 
-        return try await requestDeduplicator.execute(key: deduplicationKey) {
+        let box = UncheckedFetchBox<T> {
             try await self.executeWithRetry {
                 try await self.performFetchObject(
                     className: className,
@@ -131,9 +140,12 @@ extension ParseAPIClient {
                 )
             }
         }
+        return try await requestDeduplicator.execute(key: deduplicationKey) {
+            try await box.run()
+        }.value
     }
 
-    func performFetchObject<T: Decodable>(
+    func performFetchObject<T: Decodable & Sendable>(
         className: String,
         objectId: String,
         include: [String]?

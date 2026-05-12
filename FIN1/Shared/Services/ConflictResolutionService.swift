@@ -71,8 +71,8 @@ final class ConflictResolutionService: ConflictResolutionServiceProtocol {
 
         case .manualResolution:
             throw ConflictResolutionError.manualResolutionRequired(
-                local: local,
-                remote: remote
+                localDescription: String(describing: local),
+                remoteDescription: String(describing: remote)
             )
         }
     }
@@ -198,8 +198,8 @@ final class ConflictResolutionService: ConflictResolutionServiceProtocol {
 
 // MARK: - Conflict Resolution Error
 
-enum ConflictResolutionError: LocalizedError {
-    case manualResolutionRequired(local: Any, remote: Any)
+enum ConflictResolutionError: LocalizedError, Sendable {
+    case manualResolutionRequired(localDescription: String, remoteDescription: String)
     case encodingFailed
     case decodingFailed
 

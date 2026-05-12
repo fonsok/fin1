@@ -76,11 +76,11 @@ struct LandingOriginalStyleBody: View {
 
                     VStack(spacing: ResponsiveDesign.spacing(20)) {
                         Image(systemName: "chart.line.uptrend.xyaxis")
-                            .font(.system(size: ResponsiveDesign.iconSize() * 4))
+                            .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 4))
                             .foregroundColor(AppTheme.accentLightBlue)
 
                         Text(AppBrand.appName)
-                            .font(.system(size: ResponsiveDesign.iconSize() * 2.4, weight: .bold, design: .rounded))
+                            .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2.4, weight: .bold, design: .rounded))
                             .foregroundColor(AppTheme.fontColor)
 
                         Text(LandingConstants.appSubtitleText)

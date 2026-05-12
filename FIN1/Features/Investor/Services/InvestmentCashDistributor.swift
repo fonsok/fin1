@@ -8,8 +8,6 @@ enum InvestmentCashDistributor {
 
     // MARK: - Duplicate Prevention
 
-    /// Tracks which investments have already had cash distributed to prevent double-booking
-    private static var distributedInvestments: Set<String> = []
     /// Resets the distribution tracking (for testing or if needed)
     static func resetDistributionTracking() async {
         await distributionState.reset()
@@ -27,6 +25,7 @@ enum InvestmentCashDistributor {
     ///   - tradeLifecycleService: Service to get trade data
     ///   - invoiceService: Service to get invoices
     ///   - configurationService: Service to get commission rate
+    @MainActor
     static func distributeCash(
         investment: Investment,
         investmentReservation: InvestmentReservation,
@@ -167,6 +166,7 @@ enum InvestmentCashDistributor {
 
     // MARK: - Private Helpers
 
+    @MainActor
     private static func calculateDistributionAmounts(
         investment: Investment,
         investmentReservation: InvestmentReservation,
@@ -199,8 +199,9 @@ enum InvestmentCashDistributor {
             poolTradeParticipationService: potTradeService,
             tradeLifecycleService: tradeService,
             invoiceService: invoiceSvc,
-            commissionCalculationService: nil,  // Use default
-            investment: investment
+            commissionCalculationService: nil,
+            investment: investment,
+            commissionRate: commissionRate
         ) else {
             print("⚠️ InvestmentCashDistributor: Could not get statement summary for investment \(investment.id)")
             return DistributionAmounts(

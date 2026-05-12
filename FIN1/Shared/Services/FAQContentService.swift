@@ -172,7 +172,7 @@ final class FAQContentService: FAQContentServiceProtocol {
 
         let appServiceChargeRate = configurationService?.appServiceChargeRate
             ?? CalculationConstants.ServiceCharges.appServiceChargeRate
-        let traderCommissionRate = configurationService?.traderCommissionRate
+        let traderCommissionRate = configurationService?.effectiveCommissionRate
             ?? CalculationConstants.FeeRates.traderCommissionRate
 
         let replacements: [String: String] = [
@@ -228,12 +228,26 @@ final class FAQContentService: FAQContentServiceProtocol {
 
     private func categoriesCacheKey(location: String, userRole: String?) -> String {
         let suffix = userRole ?? "all"
-        return "FIN1.faq.categories.v2.\(location).\(suffix)"
+        return "FIN1.faq.categories.v3.\(location).\(suffix).\(financialCacheSignature)"
     }
 
     private func faqsCacheKey(location: String, userRole: String?) -> String {
         let suffix = userRole ?? "all"
-        return "FIN1.faq.faqs.v2.\(location).\(suffix)"
+        return "FIN1.faq.faqs.v3.\(location).\(suffix).\(financialCacheSignature)"
+    }
+
+    /// Tie FAQ cache keys to financial fee configuration so percentage text updates
+    /// are reflected immediately after admin approvals instead of serving stale hydrated FAQ strings.
+    private var financialCacheSignature: String {
+        let appRate = configurationService?.appServiceChargeRate
+            ?? CalculationConstants.ServiceCharges.appServiceChargeRate
+        let traderRate = configurationService?.effectiveCommissionRate ?? 0.0
+        return "app\(normalizedRateFragment(appRate))-trader\(normalizedRateFragment(traderRate))"
+    }
+
+    private func normalizedRateFragment(_ value: Double) -> String {
+        let basisPoints = Int((value * 10_000).rounded())
+        return String(basisPoints)
     }
 
     private func isFresh(_ date: Date) -> Bool {

@@ -111,7 +111,7 @@ struct VVaaaStyleDataCell: View {
                 row.onTap?()
             }) {
                 Text(row.cells[column.id] ?? "")
-                    .font(.subheadline)
+                    .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.medium)
                     .foregroundColor(TableColors.traderNameColor)
                     .frame(maxWidth: .infinity, alignment: column.alignment)
@@ -123,7 +123,7 @@ struct VVaaaStyleDataCell: View {
         } else if column.id == "return" || column.id == "returnLastTrade" {
             // Return values - green for positive, red for negative
             Text(row.cells[column.id] ?? "")
-                .font(.subheadline)
+                .font(ResponsiveDesign.bodyFont())
                 .fontWeight(.medium)
                 .foregroundColor((row.isPositive ?? true) ? TableColors.positiveValue : TableColors.negativeValue)
                 .frame(maxWidth: .infinity, alignment: column.alignment)
@@ -131,7 +131,7 @@ struct VVaaaStyleDataCell: View {
         } else {
             // Normal values - white text
             Text(row.cells[column.id] ?? "")
-                .font(.subheadline)
+                .font(ResponsiveDesign.bodyFont())
                 .fontWeight(.medium)
                 .foregroundColor(TableColors.normalText)
                 .frame(maxWidth: .infinity, alignment: column.alignment)

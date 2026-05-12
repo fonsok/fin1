@@ -49,7 +49,7 @@ struct StarRatingView: View {
                     }
                 } label: {
                     Image(systemName: star <= rating ? "star.fill" : "star")
-                        .font(.system(size: ResponsiveDesign.iconSize() * 2))
+                        .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2))
                         .foregroundColor(star <= rating ? starColor(for: rating) : AppTheme.fontColor.opacity(0.3))
                         .scaleEffect(star <= rating ? 1.1 : 1.0)
                 }
@@ -107,7 +107,7 @@ struct SurveyThankYouView: View {
             Spacer()
 
             Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: ResponsiveDesign.iconSize() * 4))
+                .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 4))
                 .foregroundColor(AppTheme.accentGreen)
 
             Text("Vielen Dank!")
@@ -150,7 +150,7 @@ struct SurveyHeader: View {
     var body: some View {
         VStack(spacing: ResponsiveDesign.spacing(12)) {
             Image(systemName: "star.bubble.fill")
-                .font(.system(size: ResponsiveDesign.iconSize() * 2.5))
+                .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2.5))
                 .foregroundColor(AppTheme.accentOrange)
 
             Text("Wie war Ihr Support-Erlebnis?")

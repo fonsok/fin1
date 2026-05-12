@@ -97,7 +97,7 @@ struct CompanyKybStepResponse: Codable, Sendable {
 
 // MARK: - Protocol
 
-protocol CompanyKybAPIServiceProtocol {
+protocol CompanyKybAPIServiceProtocol: Sendable {
     func getCompanyKybProgress() async throws -> CompanyKybProgress
     /// `data` is required by the backend for every completed KYB step.
     func completeStep(step: String, data: SavedCompanyKybData) async throws -> CompanyKybStepResponse
@@ -107,7 +107,7 @@ protocol CompanyKybAPIServiceProtocol {
 
 // MARK: - Implementation
 
-final class CompanyKybAPIService: CompanyKybAPIServiceProtocol {
+final class CompanyKybAPIService: CompanyKybAPIServiceProtocol, @unchecked Sendable {
 
     private let apiClient: ParseAPIClientProtocol
 

@@ -24,7 +24,7 @@ struct OrderSuccessMessageOverlay: View {
 
                 // Modern Title with Subtle Animation
                 Text(orderType == .buy ? "Wertpapier gekauft" : "Wertpapier verkauft")
-                    .font(.system(size: ResponsiveDesign.spacing(24), weight: .regular))
+                    .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.spacing(24), weight: .regular))
                     .foregroundColor(Color(hex: "#f5f5f5"))
                     .opacity(animateContent ? 1.0 : 0.0)
                     .offset(y: animateContent ? 0 : 20)
@@ -157,7 +157,7 @@ struct OrderSuccessMessageOverlay: View {
                 // Modern Dismiss Button
                 Button(action: onDismiss, label: {
                     Text("weiter")
-                        .font(.system(size: ResponsiveDesign.spacing(24), weight: .regular))
+                        .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.spacing(24), weight: .regular))
                         .foregroundColor(Color(hex: "#f5f5f5"))
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, ResponsiveDesign.spacing(16))
@@ -215,7 +215,7 @@ private struct ModernDetailRow: View {
     var body: some View {
         HStack(spacing: ResponsiveDesign.spacing(12)) {
             Image(systemName: icon)
-                .font(.system(size: ResponsiveDesign.iconSize() * 0.8))
+                .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 0.8))
                 .foregroundColor(AppTheme.accentLightBlue)
                 .frame(width: ResponsiveDesign.spacing(20))
 
@@ -253,7 +253,7 @@ private struct ModernMetricCard: View {
     var body: some View {
         VStack(spacing: ResponsiveDesign.spacing(8)) {
             Image(systemName: icon)
-                .font(.system(size: ResponsiveDesign.iconSize() * 1.2))
+                .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 1.2))
                 .foregroundColor(AppTheme.accentLightBlue)
 
             Text(label)
@@ -302,7 +302,7 @@ private struct ModernStatusRow: View {
     var body: some View {
         HStack(spacing: ResponsiveDesign.spacing(12)) {
             Image(systemName: icon)
-                .font(.system(size: ResponsiveDesign.iconSize() * 0.8))
+                .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 0.8))
                 .foregroundColor(color)
                 .frame(width: ResponsiveDesign.spacing(20))
 

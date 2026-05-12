@@ -4,7 +4,7 @@ import Combine
 
 // MARK: - Sell Order ViewModel
 /// Manages the state and logic for placing a sell order
-// Note: Not @MainActor due to LimitOrderMonitor protocol constraints
+@MainActor
 final class SellOrderViewModel: ObservableObject, LimitOrderMonitor {
 
     // MARK: - Published Properties
@@ -31,8 +31,8 @@ final class SellOrderViewModel: ObservableObject, LimitOrderMonitor {
     let holding: DepotHolding
     private let traderService: any TraderServiceProtocol
     private let userService: (any UserServiceProtocol)?
-    private var cancellables = Set<AnyCancellable>()
-    private var timerCancellable: AnyCancellable?
+    private nonisolated(unsafe) var cancellables = Set<AnyCancellable>()
+    private nonisolated(unsafe) var timerCancellable: AnyCancellable?
 
     // MARK: - Current Trader ID
     /// Returns the current trader's ID from the user service
@@ -108,6 +108,14 @@ final class SellOrderViewModel: ObservableObject, LimitOrderMonitor {
 
         setupBindings()
         reloadPrice()
+
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("--ui-test-prefill-limit-order") {
+            quantityText = "100"
+            orderMode = .limit
+            limit = "0,50"
+        }
+        #endif
     }
 
     deinit {

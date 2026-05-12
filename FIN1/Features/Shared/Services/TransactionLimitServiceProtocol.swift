@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - Transaction Limit Service Protocol
 /// Protocol for managing transaction limits based on risk class and regulatory requirements
-protocol TransactionLimitServiceProtocol: ServiceLifecycle {
+protocol TransactionLimitServiceProtocol: ServiceLifecycle, Sendable {
     /// Checks if a transaction amount is within daily limit
     /// - Parameters:
     ///   - userId: User ID

@@ -1,7 +1,7 @@
 import Foundation
 
 // MARK: - Optimized Data Loader
-final class OptimizedDataLoader {
+final class OptimizedDataLoader: @unchecked Sendable {
     static let shared = OptimizedDataLoader()
 
     private var cache: [String: Any] = [:]

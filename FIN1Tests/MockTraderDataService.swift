@@ -3,7 +3,7 @@ import Combine
 @testable import FIN1
 
 // MARK: - Mock Trader Data Service
-class MockTraderDataService: TraderDataServiceProtocol {
+final class MockTraderDataService: TraderDataServiceProtocol, @unchecked Sendable {
     @Published var traders: [MockTrader] = []
     @Published var filteredTraders: [MockTrader] = []
     @Published var searchText: String = ""

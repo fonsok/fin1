@@ -3,7 +3,7 @@ import Foundation
 // MARK: - Template API Service Protocol
 
 /// Protocol for template service operations
-protocol TemplateAPIServiceProtocol {
+protocol TemplateAPIServiceProtocol: Sendable {
     /// Fetches response templates for a specific CSR role
     func fetchResponseTemplates(
         for role: CSRRole,
@@ -127,7 +127,7 @@ struct BackendEmailTemplate: Codable {
 
 /// Service for fetching and caching CSR templates from the backend
 /// Provides offline support through local caching
-final class TemplateAPIService: TemplateAPIServiceProtocol {
+final class TemplateAPIService: TemplateAPIServiceProtocol, @unchecked Sendable {
 
     // MARK: - Properties
 
@@ -248,11 +248,13 @@ final class TemplateAPIService: TemplateAPIServiceProtocol {
         }
 
         // Fire and forget - don't block on analytics
-        Task {
+        let client: any ParseAPIClientProtocol = apiClient
+        let paramsCopy = params
+        Task.detached(priority: .utility) {
             do {
-                let _: EmptyResponse = try await apiClient.callFunction(
+                let _: EmptyResponse = try await client.callFunction(
                     "recordTemplateUsage",
-                    parameters: params
+                    parameters: paramsCopy
                 )
             } catch {
                 // Log but don't throw - analytics should not fail operations
@@ -277,7 +279,7 @@ private struct EmptyResponse: Codable {
 // MARK: - Template Cache
 
 /// Thread-safe cache for CSR templates with TTL support
-final class TemplateCache {
+final class TemplateCache: @unchecked Sendable {
     static let shared = TemplateCache()
 
     private var templateCache: [String: CachedItem<[ResponseTemplate]>] = [:]

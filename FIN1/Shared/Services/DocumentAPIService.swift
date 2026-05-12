@@ -13,6 +13,9 @@ protocol DocumentAPIServiceProtocol {
     /// Fetches all documents for a user
     func fetchDocuments(for userId: String) async throws -> [Document]
 
+    /// Fetches a single Document row by Parse `objectId` (notification deep-links).
+    func fetchDocument(by objectId: String) async throws -> Document
+
     /// Deletes a document from the Parse Server
     func deleteDocument(_ documentId: String) async throws
 }
@@ -38,6 +41,8 @@ private struct ParseDocumentInput: Codable {
     let statementMonth: Int?
     let statementRole: String?
     let documentNumber: String?
+    let accountingDocumentNumber: String?
+    let traderCommissionRateSnapshot: Double?
 
     static func from(document: Document) -> ParseDocumentInput {
         let dateFormatter = ISO8601DateFormatter()
@@ -60,15 +65,22 @@ private struct ParseDocumentInput: Codable {
             statementYear: document.statementYear,
             statementMonth: document.statementMonth,
             statementRole: document.statementRole?.rawValue,
-            documentNumber: document.documentNumber
+            documentNumber: document.documentNumber,
+            accountingDocumentNumber: document.accountingDocumentNumber,
+            traderCommissionRateSnapshot: document.traderCommissionRateSnapshot
         )
     }
 }
 
 // MARK: - Parse Document Response
 
+/// Minimal decode shape for Parse `Pointer` columns (e.g. `tradeId`, `investmentId`).
+private struct ParseDocumentPointerBody: Decodable {
+    let objectId: String?
+}
+
 /// Response struct for Parse Server document operations
-private struct ParseDocumentResponse: Codable {
+private struct ParseDocumentResponse: Decodable {
     let objectId: String
     let userId: String
     let name: String
@@ -88,6 +100,60 @@ private struct ParseDocumentResponse: Codable {
     let statementMonth: Int?
     let statementRole: String?
     let documentNumber: String?
+    let accountingDocumentNumber: String?
+    let traderCommissionRateSnapshot: Double?
+    let accountingSummaryText: String?
+
+    enum CodingKeys: String, CodingKey {
+        case objectId
+        case userId
+        case name
+        case type
+        case status
+        case fileURL
+        case size
+        case uploadedAt
+        case updatedAt
+        case verifiedAt
+        case expiresAt
+        case readAt
+        case downloadedAt
+        case tradeId
+        case investmentId
+        case statementYear
+        case statementMonth
+        case statementRole
+        case documentNumber
+        case accountingDocumentNumber
+        case traderCommissionRateSnapshot
+        case accountingSummaryText
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        objectId = try c.decode(String.self, forKey: .objectId)
+        name = try c.decodeIfPresent(String.self, forKey: .name) ?? "Document"
+        type = try c.decodeIfPresent(String.self, forKey: .type) ?? DocumentType.other.rawValue
+        status = try c.decodeIfPresent(String.self, forKey: .status) ?? DocumentStatus.verified.rawValue
+        fileURL = try c.decodeIfPresent(String.self, forKey: .fileURL) ?? ""
+        size = c.decodeLossyInt64(forKey: .size) ?? 0
+        uploadedAt = try c.decodeIfPresent(String.self, forKey: .uploadedAt) ?? Date().ISO8601Format()
+        updatedAt = try c.decodeIfPresent(String.self, forKey: .updatedAt) ?? uploadedAt
+        verifiedAt = try c.decodeIfPresent(String.self, forKey: .verifiedAt)
+        expiresAt = try c.decodeIfPresent(String.self, forKey: .expiresAt)
+        readAt = try c.decodeIfPresent(String.self, forKey: .readAt)
+        downloadedAt = try c.decodeIfPresent(String.self, forKey: .downloadedAt)
+        userId = c.decodeParseStringOrPointerObjectId(forKey: .userId) ?? ""
+        tradeId = c.decodeParseStringOrPointerObjectId(forKey: .tradeId)
+        investmentId = c.decodeParseStringOrPointerObjectId(forKey: .investmentId)
+        statementYear = c.decodeLossyInt(forKey: .statementYear)
+        statementMonth = c.decodeLossyInt(forKey: .statementMonth)
+        statementRole = try c.decodeIfPresent(String.self, forKey: .statementRole)
+        documentNumber = try c.decodeIfPresent(String.self, forKey: .documentNumber)
+        accountingDocumentNumber = try c.decodeIfPresent(String.self, forKey: .accountingDocumentNumber)
+        traderCommissionRateSnapshot = c.decodeLossyDouble(forKey: .traderCommissionRateSnapshot)
+        accountingSummaryText = try c.decodeIfPresent(String.self, forKey: .accountingSummaryText)
+    }
 
     func toDocument() -> Document {
         let dateFormatter = ISO8601DateFormatter()
@@ -120,12 +186,62 @@ private struct ParseDocumentResponse: Codable {
             statementYear: statementYear,
             statementMonth: statementMonth,
             statementRole: role,
-            documentNumber: documentNumber
+            documentNumber: documentNumber ?? accountingDocumentNumber,
+            traderCommissionRateSnapshot: traderCommissionRateSnapshot,
+            accountingSummaryText: accountingSummaryText
         )
         // Set var properties after initialization
         document.readAt = readDate
         document.downloadedAt = downloadedDate
         return document
+    }
+}
+
+private extension KeyedDecodingContainer where K == ParseDocumentResponse.CodingKeys {
+    /// Parse may return a plain string id or a `Pointer` `{ "__type": "Pointer", "objectId": "..." }`.
+    func decodeParseStringOrPointerObjectId(forKey key: K) -> String? {
+        if let s = try? decodeIfPresent(String.self, forKey: key) {
+            let trimmed = s.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmed.isEmpty { return trimmed }
+        }
+        if let ptr = try? decodeIfPresent(ParseDocumentPointerBody.self, forKey: key),
+           let oid = ptr.objectId?.trimmingCharacters(in: .whitespacesAndNewlines), !oid.isEmpty {
+            return oid
+        }
+        return nil
+    }
+
+    func decodeLossyInt(forKey key: K) -> Int? {
+        if let v = try? decodeIfPresent(Int.self, forKey: key) {
+            return v
+        }
+        if let s = try? decodeIfPresent(String.self, forKey: key), let v = Int(s) {
+            return v
+        }
+        return nil
+    }
+
+    func decodeLossyInt64(forKey key: K) -> Int64? {
+        if let v = try? decodeIfPresent(Int64.self, forKey: key) {
+            return v
+        }
+        if let i = try? decodeIfPresent(Int.self, forKey: key) {
+            return Int64(i)
+        }
+        if let s = try? decodeIfPresent(String.self, forKey: key), let v = Int64(s) {
+            return v
+        }
+        return nil
+    }
+
+    func decodeLossyDouble(forKey key: K) -> Double? {
+        if let v = try? decodeIfPresent(Double.self, forKey: key) {
+            return v
+        }
+        if let s = try? decodeIfPresent(String.self, forKey: key), let v = Double(s) {
+            return v
+        }
+        return nil
     }
 }
 
@@ -171,7 +287,8 @@ final class DocumentAPIService: DocumentAPIServiceProtocol {
             statementYear: document.statementYear,
             statementMonth: document.statementMonth,
             statementRole: document.statementRole,
-            documentNumber: document.documentNumber
+            documentNumber: document.documentNumber,
+            traderCommissionRateSnapshot: document.traderCommissionRateSnapshot
         )
         // Set var properties after initialization
         savedDocument.readAt = document.readAt
@@ -212,6 +329,16 @@ final class DocumentAPIService: DocumentAPIServiceProtocol {
 
         print("✅ DocumentAPIService: Fetched \(responses.count) documents")
         return responses.map { $0.toDocument() }
+    }
+
+    func fetchDocument(by objectId: String) async throws -> Document {
+        print("📡 DocumentAPIService: Fetching single document \(objectId)")
+        let response: ParseDocumentResponse = try await apiClient.fetchObject(
+            className: className,
+            objectId: objectId,
+            include: nil
+        )
+        return response.toDocument()
     }
 
     // MARK: - Delete Document

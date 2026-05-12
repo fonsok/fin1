@@ -4,7 +4,7 @@ import Foundation
 
 /// Service for managing 4-Augen-Prinzip approval workflows
 /// Ensures compliance with AML, PSD2, and GDPR requirements
-protocol FourEyesApprovalServiceProtocol: AnyObject {
+protocol FourEyesApprovalServiceProtocol: AnyObject, Sendable {
     // MARK: - Request Creation
 
     /// Create a new approval request

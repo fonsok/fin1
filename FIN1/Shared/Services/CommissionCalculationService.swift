@@ -4,7 +4,7 @@ import Foundation
 
 /// Centralized service for all commission calculations
 /// Provides a single source of truth for commission calculation logic
-protocol CommissionCalculationServiceProtocol: ServiceLifecycle {
+protocol CommissionCalculationServiceProtocol: ServiceLifecycle, Sendable {
     // MARK: - Basic Commission Calculations
 
     /// Calculates commission from gross profit and rate
@@ -56,7 +56,7 @@ protocol CommissionCalculationServiceProtocol: ServiceLifecycle {
 
 // MARK: - Commission Calculation Service Implementation
 
-final class CommissionCalculationService: CommissionCalculationServiceProtocol {
+final class CommissionCalculationService: CommissionCalculationServiceProtocol, @unchecked Sendable {
 
     // MARK: - Dependencies
     private let investorGrossProfitService: (any InvestorGrossProfitServiceProtocol)?
@@ -143,18 +143,51 @@ final class CommissionCalculationService: CommissionCalculationServiceProtocol {
         tradeId: String,
         commissionRate: Double
     ) async throws -> Double {
-        // Backend-authoritative: sum all commission_debit entries for this trade
+        // Backend-authoritative.
+        //
+        // `getAccountStatement` is per-user (filters on the logged-in user's
+        // stableId), so:
+        //   * The TRADER sees their own `commission_credit` (= total
+        //     commission they earned on the trade — the canonical answer
+        //     for the "Abgeschlossene Trades" → Commission column).
+        //   * INVESTORS see their own `commission_debit` (the part they
+        //     paid). Summing across investors only works for an admin /
+        //     master-key view, which this client-call does not have.
+        // Try the trader path first (commission_credit on the current user
+        // for this trade); fall back to commission_debit for investor
+        // contexts; finally fall back to local estimation.
         if let api = settlementAPIService {
             do {
-                let response = try await api.fetchAccountStatement(limit: 200, skip: 0, entryType: "commission_debit")
-                let tradeEntries = response.entries.filter { $0.tradeId == tradeId }
-                if !tradeEntries.isEmpty {
-                    let total = tradeEntries.reduce(0.0) { $0 + abs($1.amount) }
+                let creditResponse = try await api.fetchAccountStatement(limit: 200, skip: 0, entryType: "commission_credit")
+                let allTradeIds = creditResponse.entries.compactMap { $0.tradeId }
+                NSLog("🧮 CommissionCalc[trade=\(tradeId)] credit fetched count=\(creditResponse.entries.count) tradeIds=\(allTradeIds)")
+                let creditEntries = creditResponse.entries.filter { $0.tradeId == tradeId }
+                NSLog("🧮 CommissionCalc[trade=\(tradeId)] credit matched=\(creditEntries.count)")
+                if !creditEntries.isEmpty {
+                    let total = creditEntries.reduce(0.0) { $0 + abs($1.amount) }
+                    NSLog("🧮 CommissionCalc[trade=\(tradeId)] credit total=\(total)")
                     return total
                 }
             } catch {
-                print("⚠️ CommissionCalculationService: Backend fetch failed, falling back to local: \(error.localizedDescription)")
+                NSLog("⚠️ CommissionCalc[trade=\(tradeId)] commission_credit failed: \(error.localizedDescription)")
             }
+
+            do {
+                let debitResponse = try await api.fetchAccountStatement(limit: 200, skip: 0, entryType: "commission_debit")
+                let allTradeIds = debitResponse.entries.compactMap { $0.tradeId }
+                NSLog("🧮 CommissionCalc[trade=\(tradeId)] debit fetched count=\(debitResponse.entries.count) tradeIds=\(allTradeIds)")
+                let debitEntries = debitResponse.entries.filter { $0.tradeId == tradeId }
+                NSLog("🧮 CommissionCalc[trade=\(tradeId)] debit matched=\(debitEntries.count)")
+                if !debitEntries.isEmpty {
+                    let total = debitEntries.reduce(0.0) { $0 + abs($1.amount) }
+                    NSLog("🧮 CommissionCalc[trade=\(tradeId)] debit total=\(total)")
+                    return total
+                }
+            } catch {
+                NSLog("⚠️ CommissionCalc[trade=\(tradeId)] commission_debit failed: \(error.localizedDescription)")
+            }
+        } else {
+            NSLog("⚠️ CommissionCalc[trade=\(tradeId)] settlementAPIService is nil")
         }
 
         // Fallback: local estimation

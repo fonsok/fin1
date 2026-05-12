@@ -3,7 +3,7 @@ import Foundation
 // MARK: - Trade Matching Service Protocol
 /// Defines the contract for trade matching operations
 /// Handles complex business logic for matching sell orders with existing trades
-protocol TradeMatchingServiceProtocol {
+protocol TradeMatchingServiceProtocol: Sendable {
     /// Finds and updates a trade with a completed sell order
     /// - Parameters:
     ///   - sellOrder: The completed sell order to match

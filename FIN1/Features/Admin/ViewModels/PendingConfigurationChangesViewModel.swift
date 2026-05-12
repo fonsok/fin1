@@ -43,7 +43,7 @@ final class PendingConfigurationChangesViewModel: ObservableObject {
 
     // MARK: - Data Loading
     func loadPendingChanges() async {
-        guard let service = configurationService as? ConfigurationService else {
+        guard let service = configurationService else {
             errorMessage = "Configuration service not available"
             return
         }
@@ -77,7 +77,7 @@ final class PendingConfigurationChangesViewModel: ObservableObject {
 
     func approveSelectedChange() async {
         guard let changeId = selectedChangeId,
-              let service = configurationService as? ConfigurationService else {
+              let service = configurationService else {
             return
         }
 
@@ -108,7 +108,7 @@ final class PendingConfigurationChangesViewModel: ObservableObject {
 
     func rejectSelectedChange() async {
         guard let changeId = selectedChangeId,
-              let service = configurationService as? ConfigurationService,
+              let service = configurationService,
               !rejectionReason.isEmpty else {
             errorMessage = "Please provide a reason for rejection"
             return

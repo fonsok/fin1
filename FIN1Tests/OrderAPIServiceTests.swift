@@ -111,7 +111,7 @@ final class OrderAPIServiceTests: XCTestCase {
     func testFetchOrders_EmptyResult() async throws {
         // Given
         let traderId = "trader-no-orders"
-        mockAPIClient.mockFetchResults = [MockOrderResponse]()
+        mockAPIClient.mockFetchResults = [ParseOrderResponse]()
 
         // When
         let orders = try await sut.fetchOrders(for: traderId)
@@ -255,8 +255,8 @@ final class OrderAPIServiceTests: XCTestCase {
         )
     }
 
-    private func createMockOrderResponse(objectId: String, type: String, status: String = "submitted") -> MockOrderResponse {
-        return MockOrderResponse(
+    private func createMockOrderResponse(objectId: String, type: String, status: String = "submitted") -> ParseOrderResponse {
+        ParseOrderResponse(
             objectId: objectId,
             traderId: "trader-123",
             symbol: "AAPL",
@@ -280,67 +280,6 @@ final class OrderAPIServiceTests: XCTestCase {
             subscriptionRatio: nil,
             denomination: nil,
             originalHoldingId: nil
-        )
-    }
-}
-
-// MARK: - Mock Order Response
-
-/// Mock response matching ParseOrderResponse structure for testing
-private struct MockOrderResponse: Codable {
-    let objectId: String
-    let traderId: String
-    let symbol: String
-    let description: String
-    let type: String
-    let quantity: Double
-    let price: Double
-    let totalAmount: Double
-    let status: String
-    let createdAt: String
-    let updatedAt: String
-    let executedAt: String?
-    let confirmedAt: String?
-    let optionDirection: String?
-    let underlyingAsset: String?
-    let wkn: String?
-    let category: String?
-    let strike: Double?
-    let orderInstruction: String?
-    let limitPrice: Double?
-    let subscriptionRatio: Double?
-    let denomination: Int?
-    let originalHoldingId: String?
-
-    func toOrder() -> Order {
-        let orderType: OrderType = type == "buy" ? .buy : .sell
-        let dateFormatter = ISO8601DateFormatter()
-        dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-
-        return Order(
-            id: objectId,
-            traderId: traderId,
-            symbol: symbol,
-            description: description,
-            type: orderType,
-            quantity: quantity,
-            price: price,
-            totalAmount: totalAmount,
-            createdAt: dateFormatter.date(from: createdAt) ?? Date(),
-            executedAt: executedAt.flatMap { dateFormatter.date(from: $0) },
-            confirmedAt: confirmedAt.flatMap { dateFormatter.date(from: $0) },
-            updatedAt: dateFormatter.date(from: updatedAt) ?? Date(),
-            optionDirection: optionDirection,
-            underlyingAsset: underlyingAsset,
-            wkn: wkn,
-            category: category,
-            strike: strike,
-            orderInstruction: orderInstruction,
-            limitPrice: limitPrice,
-            subscriptionRatio: subscriptionRatio,
-            denomination: denomination,
-            originalHoldingId: originalHoldingId,
-            status: status
         )
     }
 }

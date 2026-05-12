@@ -78,7 +78,18 @@ struct DocumentArchiveView: View {
 
     // MARK: - Filtered Archived Documents
     private var filteredArchivedDocuments: [Document] {
-        let allDocuments = appServices.documentService.getDocuments(for: appServices.userService.currentUser?.id ?? "")
+        let currentUser = appServices.userService.currentUser
+        let directUserId = currentUser?.id ?? ""
+        let stableUserId: String = {
+            guard let email = currentUser?.email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased(),
+                  !email.isEmpty else { return "" }
+            return "user:\(email)"
+        }()
+        let allDocuments = [directUserId, stableUserId]
+            .filter { !$0.isEmpty }
+            .flatMap { appServices.documentService.getDocuments(for: $0) }
+            .reduce(into: [String: Document]()) { dict, doc in dict[doc.id] = doc }
+            .map(\.value)
 
         // Get documents that are older than 24 hours after being read
         let archivedDocuments = allDocuments.filter { document in
@@ -86,19 +97,21 @@ struct DocumentArchiveView: View {
             return Date().timeIntervalSince(readAt) > 86400 // 24 hours
         }
 
+        let withoutInternalLedgerBelege = archivedDocuments.filter { !$0.isExcludedFromInvestorDocumentInbox }
+
         // Apply type filter if selected
         if let selectedFilter = selectedFilter {
-            return archivedDocuments.filter { $0.type == selectedFilter }
+            return withoutInternalLedgerBelege.filter { $0.type == selectedFilter }
         }
 
-        return archivedDocuments
+        return withoutInternalLedgerBelege
     }
 
     // MARK: - Empty State
     private var emptyStateView: some View {
         VStack(spacing: ResponsiveDesign.spacing(16)) {
             Image(systemName: "archivebox")
-                .font(.system(size: 48))
+                .font(ResponsiveDesign.scaledSystemFont(size: 48))
                 .foregroundColor(AppTheme.fontColor.opacity(0.3))
 
             Text("No Archived Documents")

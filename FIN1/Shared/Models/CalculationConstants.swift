@@ -129,6 +129,12 @@ struct CalculationConstants {
     struct Investment {
         /// Default investment amount shown in Investment Amount section (EUR)
         static let defaultAmount: Double = 3000.0
+
+        /// Last-resort minimum per investment slot (EUR) when `getConfig` has no `limits.minInvestment`
+        static let fallbackMinimumInvestmentAmount: Double = 20.0
+
+        /// Last-resort maximum per investment slot (EUR) when `getConfig` has no `limits.maxInvestment`
+        static let fallbackMaximumInvestmentAmount: Double = 100_000.0
     }
 
     // MARK: - Calculation Limits

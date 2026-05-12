@@ -1,6 +1,7 @@
 import SwiftUI
 
 // MARK: - Responsive Design System
+@MainActor
 struct ResponsiveDesign {
 
     // MARK: - Device Size Detection (More Flexible)
@@ -196,6 +197,27 @@ struct ResponsiveDesign {
             return .subheadline
         }
         return .caption
+    }
+
+    /// Footnote-tier text (secondary legal/helper copy), scaled by device class like other text styles.
+    static func footnoteFont() -> Font {
+        if isCompactDevice() {
+            return .caption2
+        } else if isLargeDevice() {
+            return .subheadline
+        }
+        return .footnote
+    }
+
+    /// Dynamic-Type–aware system font (prefer over raw `.font(ResponsiveDesign.scaledSystemFont(size: …))`).
+    static func scaledSystemFont(size: CGFloat, weight: Font.Weight = .regular, design: Font.Design = .default) -> Font {
+        let scaled = UIFontMetrics.default.scaledValue(for: size)
+        return .system(size: scaled, weight: weight, design: design)
+    }
+
+    /// Primary label styling for large input fields (matches prior title3 / title2 split).
+    static func inputFieldPrimaryFont() -> Font {
+        isCompactDevice() ? .title3 : .title2
     }
 
     /// Large title font for prominent headers

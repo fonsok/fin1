@@ -3,7 +3,7 @@ import Combine
 
 // MARK: - Trading Statistics Service Protocol
 /// Defines the contract for trading statistics calculations and management
-protocol TradingStatisticsServiceProtocol: ObservableObject {
+protocol TradingStatisticsServiceProtocol: ObservableObject, Sendable {
     var isLoading: Bool { get }
     var errorMessage: String? { get }
 

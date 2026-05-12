@@ -6,6 +6,7 @@ import SwiftUI
 
 /// ViewModel for the Address Change Request view following MVVM architecture.
 /// Manages the re-KYC address verification flow for compliance.
+@MainActor
 final class AddressChangeRequestViewModel: ObservableObject {
 
     // MARK: - Dependencies

@@ -3,7 +3,7 @@ import Foundation
 // MARK: - Satisfaction Survey Service Protocol
 
 /// Service for managing customer satisfaction surveys after ticket closure
-protocol SatisfactionSurveyServiceProtocol {
+protocol SatisfactionSurveyServiceProtocol: Sendable {
 
     // MARK: - Survey Request Management
 

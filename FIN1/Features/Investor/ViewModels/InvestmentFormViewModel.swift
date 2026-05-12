@@ -25,6 +25,15 @@ final class InvestmentFormViewModel: ObservableObject {
 
     // MARK: - Input Formatting Methods
 
+    /// Whole-euro cap for the **total** in „Investment Amount“ (matches admin `maximumInvestmentAmount`).
+    private var maxTotalInvestmentWholeEuros: Int {
+        let cap = configurationService.maximumInvestmentAmount
+        guard cap.isFinite, cap > 0 else {
+            return Int(CalculationConstants.Investment.fallbackMaximumInvestmentAmount)
+        }
+        return max(0, Int(floor(cap)))
+    }
+
     /// Formats and validates input, updating both display and backing amount
     func formatAndValidateInput(_ newValue: String) {
         // Remove any non-numeric characters except dots (for German formatting)
@@ -47,12 +56,16 @@ final class InvestmentFormViewModel: ObservableObject {
             return
         }
 
+        let maxEuros = maxTotalInvestmentWholeEuros
+        let capped = min(integerValue, maxEuros)
+        let cappedString = String(capped)
+
         // Format with localized thousand separators
-        let formattedString = integerValue.formattedAsLocalizedInteger()
+        let formattedString = capped.formattedAsLocalizedInteger()
 
         // Update both display and backing amount
         displayAmount = formattedString
-        updateInvestmentAmount(numericString)
+        updateInvestmentAmount(cappedString)
     }
 
     /// Updates the display amount from the backing investment amount
@@ -62,7 +75,12 @@ final class InvestmentFormViewModel: ObservableObject {
             displayAmount = ""
             return
         }
-        displayAmount = integerValue.formattedAsLocalizedInteger()
+        let maxEuros = maxTotalInvestmentWholeEuros
+        let capped = min(integerValue, maxEuros)
+        if capped != integerValue {
+            updateInvestmentAmount(String(capped))
+        }
+        displayAmount = capped.formattedAsLocalizedInteger()
     }
 
     // MARK: - App Service Charge Calculation

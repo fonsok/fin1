@@ -126,6 +126,7 @@ struct VerifyPhoneCodeResponse: Codable, Sendable {
 
 // MARK: - Onboarding API Service Protocol
 
+@MainActor
 protocol OnboardingAPIServiceProtocol {
     /// Fetches the current onboarding progress from the backend
     func getOnboardingProgress() async throws -> OnboardingProgress
@@ -154,6 +155,7 @@ protocol OnboardingAPIServiceProtocol {
 
 // MARK: - Onboarding API Service Implementation
 
+@MainActor
 final class OnboardingAPIService: OnboardingAPIServiceProtocol {
 
     private let apiClient: ParseAPIClientProtocol

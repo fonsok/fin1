@@ -6,7 +6,7 @@ import os.log
 /// Handles all audit logging for customer support actions
 /// Compliant with AML, GDPR, and regulatory requirements
 
-final class AuditLoggingService: AuditLoggingServiceProtocol, ServiceLifecycle {
+final class AuditLoggingService: AuditLoggingServiceProtocol, ServiceLifecycle, @unchecked Sendable {
 
     // MARK: - Properties
 
@@ -123,22 +123,23 @@ final class AuditLoggingService: AuditLoggingServiceProtocol, ServiceLifecycle {
 
         // Save to Parse Server if available (async, don't wait)
         if useParseServer, let parseClient = parseAPIClient {
-            Task {
+            let client: any ParseAPIClientProtocol = parseClient
+            let parseEvent = ParseComplianceEvent(
+                userId: event.customerId,
+                eventType: event.eventType.rawValue,
+                description: event.description,
+                metadata: event.notes != nil ? ["notes": event.notes!] : [:],
+                timestamp: event.timestamp,
+                regulatoryFlags: [] // Can be extended later
+            )
+            Task.detached(priority: .utility) {
                 do {
-                    let parseEvent = ParseComplianceEvent(
-                        userId: event.customerId,
-                        eventType: event.eventType.rawValue,
-                        description: event.description,
-                        metadata: event.notes != nil ? ["notes": event.notes!] : [:],
-                        timestamp: event.timestamp,
-                        regulatoryFlags: [] // Can be extended later
-                    )
-                    _ = try await parseClient.createObject(
+                    _ = try await client.createObject(
                         className: "ComplianceEvent",
                         object: parseEvent
                     )
                 } catch {
-                    logger.error("⚠️ Failed to save compliance event to Parse Server: \(error.localizedDescription)")
+                    print("⚠️ Failed to save compliance event to Parse Server: \(error.localizedDescription)")
                 }
             }
         }

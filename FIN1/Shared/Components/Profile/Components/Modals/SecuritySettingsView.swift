@@ -84,7 +84,7 @@ struct SecuritySettingsView: View {
     private var headerSection: some View {
         VStack(spacing: ResponsiveDesign.spacing(8)) {
             Image(systemName: "lock.shield.fill")
-                .font(.system(size: ResponsiveDesign.iconSize() * 2))
+                .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2))
                 .foregroundColor(AppTheme.accentRed)
 
             Text("Security Settings")
