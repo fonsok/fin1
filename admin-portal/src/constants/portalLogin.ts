@@ -15,4 +15,4 @@ export const PORTAL_DEV_PORTAL_ACCOUNTS = [
 ] as const;
 
 export const PORTAL_DEV_PASSWORD_SOURCE =
-  'Passwörter (Dev): nicht in der UI — siehe Documentation/DEV_LOGIN_ACCOUNTS.md und scripts/create-business-admin.sh (BA_PASSWORD).';
+  'Passwörter (Dev): nicht in der UI — siehe Documentation/DEV_LOGIN_ACCOUNTS.md; Finance-Admin: BA_PASSWORD oder scripts/.env.server (Vorlage .env.server.example).';

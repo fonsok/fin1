@@ -144,7 +144,7 @@ Investoren sind **nicht** in den `ADMIN_ROLES` enthalten und werden beim Login a
 
 ### Business Admin (`finance@fin1.de`)
 
-- Anlage auf dem Server: `BA_PASSWORD='<…>' bash scripts/create-business-admin.sh` — **`BA_PASSWORD` ist erforderlich** (kein stiller Default im Skript).
+- Anlage auf dem Server: `BA_PASSWORD='<…>' bash scripts/create-business-admin.sh` — **`BA_PASSWORD` ist erforderlich** (kein stiller Default im Skript). Alternativ `BA_PASSWORD` in **`scripts/.env.server`** (gitignored), siehe **`scripts/.env.server.example`**.
 - **Wichtig:** Existiert der User bereits, bleibt das Passwort unverändert, sofern ihr **nicht** `forcePasswordReset: true` setzt. Nach DB-Restore oder manueller Änderung: Zurücksetzen per Cloud Function (siehe unten).
 - ⚠️ 2FA: erhöhte Rollen können 2FA nutzen; im Portal sind **6-stellige TOTP-Codes** und **8-stellige Backup-Codes** (alphanumerisch) möglich.
 

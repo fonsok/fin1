@@ -7,8 +7,9 @@
 #   - admin@fin1.de      -> beantragt Konfigurationsänderungen
 #   - finance@fin1.de    -> genehmigt oder lehnt ab (und umgekehrt)
 #
-# Auf dem Server ausführen (Passwort immer explizit setzen):
+# Auf dem Server ausführen:
 #   BA_PASSWORD='…' bash scripts/create-business-admin.sh
+#   — oder BA_PASSWORD in scripts/.env.server (gitignored), siehe scripts/.env.server.example
 #
 # Nur Passwort/Login reparieren (Lockout + neues Passwort):
 #   bash scripts/reset-portal-login.sh finance@fin1.de 'NeuesPasswort!9'
@@ -24,10 +25,21 @@
 
 set -e
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ENV_SERVER="${SCRIPT_DIR}/.env.server"
+# Optional: same gitignored operator env as admin-portal/deploy.sh (BA_PASSWORD not committed).
+if [[ -z "${BA_PASSWORD:-}" && -f "${ENV_SERVER}" ]]; then
+  set -a
+  # shellcheck source=/dev/null
+  source "${ENV_SERVER}"
+  set +a
+fi
+
 BA_EMAIL="${BA_EMAIL:-finance@fin1.de}"
 if [[ -z "${BA_PASSWORD:-}" ]]; then
-  echo "BA_PASSWORD muss gesetzt sein (kein Default mehr). Beispiel:" >&2
+  echo "BA_PASSWORD muss gesetzt sein (kein Default mehr). Beispiele:" >&2
   echo "  BA_PASSWORD='<IhrPasswort>' bash scripts/create-business-admin.sh" >&2
+  echo "  — oder BA_PASSWORD in ${ENV_SERVER} (siehe scripts/.env.server.example)" >&2
   exit 1
 fi
 BA_FIRST="${BA_FIRST:-Finance}"

@@ -135,7 +135,7 @@ Nach **3 fehlgeschlagenen** Login-Versuchen sperrt Parse Server das Konto für *
 
 ### Problem: Business Admin (`finance@fin1.de`) – Passwort unbekannt
 
-Das Skript `scripts/create-business-admin.sh` setzt das Passwort nur, wenn `createAdminUser`/`forcePasswordReset` greift; **`BA_PASSWORD` ist Pflicht** beim Aufruf. Auf bestehenden Servern weicht das Live-Passwort oft ab. **Zurücksetzen:** `createAdminUser` mit `role: "business_admin"` und `forcePasswordReset: true` (vollständiges `curl`-Beispiel in `WEB_PANEL_LOGIN_CREDENTIALS.md`).
+Das Skript `scripts/create-business-admin.sh` setzt das Passwort nur, wenn `createAdminUser`/`forcePasswordReset` greift; **`BA_PASSWORD` ist Pflicht** (Umgebungsvariable oder in **`scripts/.env.server`**, siehe **`scripts/.env.server.example`**). Auf bestehenden Servern weicht das Live-Passwort oft ab. **Zurücksetzen:** `createAdminUser` mit `role: "business_admin"` und `forcePasswordReset: true` (vollständiges `curl`-Beispiel in `WEB_PANEL_LOGIN_CREDENTIALS.md`).
 
 ### Problem: "Login fehlgeschlagen" / "Invalid credentials"
 

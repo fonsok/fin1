@@ -63,7 +63,7 @@ Auf dem Parse-Host (Docker), mit **eigenem** Passwort:
 BA_EMAIL=finance@fin1.de BA_PASSWORD='<Ihr gewähltes Passwort>' bash scripts/create-business-admin.sh
 ```
 
-Ohne `BA_PASSWORD` bricht das Skript mit Hinweis ab — es gibt **keinen** eingebauten Default mehr.
+Ohne `BA_PASSWORD` in der Shell bricht das Skript mit Hinweis ab — es gibt **keinen** eingebauten Default mehr. Optional: `BA_PASSWORD` in **`scripts/.env.server`** (gitignored) eintragen; Vorlage: **`scripts/.env.server.example`**.
 
 Wenn der User **schon existiert**, setzt das Skript das Passwort nur, wenn `forcePasswordReset`/Rollenlogik in `createAdminUser` greift — sonst `createAdminUser` mit `forcePasswordReset: true` und gewünschtem Passwort (Master-Key), siehe `WEB_PANEL_LOGIN_CREDENTIALS.md`.
 
