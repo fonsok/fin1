@@ -37,9 +37,15 @@ fi
 
 BA_EMAIL="${BA_EMAIL:-finance@fin1.de}"
 if [[ -z "${BA_PASSWORD:-}" ]]; then
+  EXAMPLE="${SCRIPT_DIR}/.env.server.example"
   echo "BA_PASSWORD muss gesetzt sein (kein Default mehr). Beispiele:" >&2
   echo "  BA_PASSWORD='<IhrPasswort>' bash scripts/create-business-admin.sh" >&2
-  echo "  — oder BA_PASSWORD in ${ENV_SERVER} (siehe scripts/.env.server.example)" >&2
+  if [[ -f "${EXAMPLE}" ]]; then
+    echo "  — oder: cp ${EXAMPLE} ${ENV_SERVER} && nano ${ENV_SERVER}   # BA_PASSWORD=… eintragen" >&2
+  else
+    echo "  — oder: ${ENV_SERVER} anlegen mit mindestens: BA_PASSWORD=…" >&2
+    echo "  (scripts/.env.server.example fehlt — Repo auf dem Host aktualisieren: git pull / rsync vom Dev-Rechner.)" >&2
+  fi
   exit 1
 fi
 BA_FIRST="${BA_FIRST:-Finance}"
