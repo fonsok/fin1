@@ -10,9 +10,10 @@
 #   bash scripts/reset-portal-login.sh finance@fin1.de 'NeuesStarkesPasswort!9'
 #
 # Oder per Umgebungsvariablen:
-#   EMAIL=admin@fin1.de PASSWORD='Admin2025!' ROLE=admin bash scripts/reset-portal-login.sh
+#   EMAIL=admin@fin1.de PASSWORD='<NeuesPasswort>' ROLE=admin bash scripts/reset-portal-login.sh
 #
 # ROLE standardmäßig: business_admin (für finance@…); für admin@ explizit ROLE=admin setzen.
+# Bootstrap statt Einzel-Reset: scripts/create-business-admin.sh | create-tech-admin.sh | create-compliance-admin.sh (jeweils BA_PASSWORD=…).
 # =============================================================================
 
 set -e
