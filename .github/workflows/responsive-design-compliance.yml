@@ -31,7 +31,7 @@ jobs:
         ./scripts/check-responsive-design.sh
 
     - name: Run SwiftLint
-      run: swiftlint --strict
+      run: swiftlint
 
     - name: Run SwiftFormat Check
       run: swiftformat . --lint

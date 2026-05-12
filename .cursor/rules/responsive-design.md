@@ -27,6 +27,14 @@ This rule file enforces the ResponsiveDesign system compliance requirements refe
 .font(ResponsiveDesign.headlineFont())
 .font(ResponsiveDesign.bodyFont())
 .font(ResponsiveDesign.captionFont())
+.font(ResponsiveDesign.footnoteFont())
+```
+
+For **custom point sizes** (icons, template editors), use Dynamic Type scaling — **not** raw `.font(.system(size: …))`:
+
+```swift
+.font(ResponsiveDesign.scaledSystemFont(size: 16, weight: .medium))
+.font(ResponsiveDesign.monospacedFont(size: 17, weight: .regular))
 ```
 
 ### Spacing Values
@@ -67,10 +75,10 @@ RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(2))
 
 ### Icon Sizes
 
-Use `ResponsiveDesign.iconSize()` with multipliers:
+Use `ResponsiveDesign.iconSize()` with multipliers and `scaledSystemFont` so sizes respect Dynamic Type:
 ```swift
 Image(systemName: "star")
-    .font(.system(size: ResponsiveDesign.iconSize(1.0)))
+    .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize()))
 ```
 
 ### Padding
@@ -91,6 +99,12 @@ Image(systemName: "star")
 - `FIN1/Features/Trader/Views/SecuritiesSearchView.swift`
 - `FIN1/Features/Trader/Views/TraderDepotView.swift`
 - `FIN1Tests/UISpacingRegressionTests.swift`
+
+### Swift 6: `ResponsiveDesign` is `@MainActor`
+
+- **Use** `ResponsiveDesign.*` from **`View` bodies**, **`@MainActor`** view helpers, or types marked **`@MainActor`** (e.g. layout enums that only run from SwiftUI).
+- **`ComponentFactory`** is **`@MainActor`** — same rule.
+- **Documented exception — `TextFieldStyle`:** `TextFieldStyle._body` is not MainActor-isolated. **`SettingsToggleRow.swift`** (`SettingsTextFieldStyle`, `SettingsSecureFieldStyle`) uses **fixed** `.padding` / `.cornerRadius` with a **comment** explaining the Swift 6 constraint (values match the usual 1.0 `ResponsiveDesign.spacing` scale). Do **not** copy that pattern into arbitrary views; only where protocol isolation forbids `ResponsiveDesign` calls.
 
 ## Automated Enforcement
 
@@ -129,7 +143,7 @@ When making UI changes:
 2. Test with accessibility font sizes enabled
 3. Test in both portrait and landscape
 4. Verify no fixed values are used
-5. Run `swiftlint --strict` to catch violations
+5. Run `swiftlint` (or `swiftlint --strict` to treat warnings as failures) to catch violations
 
 ## Examples
 

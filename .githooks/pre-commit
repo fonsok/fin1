@@ -64,6 +64,11 @@ if echo "$STAGED_FILES" | grep -qE '^backend/parse-server/cloud/'; then
   if ! ./scripts/check-parse-cloud-config-helper-shadow.sh; then
     exit 1
   fi
+
+  echo "🔍 Parse Cloud: naming convention check..."
+  if ! ./scripts/check-parse-cloud-naming-conventions.sh; then
+    exit 1
+  fi
 fi
 
 # Check for duplicate files

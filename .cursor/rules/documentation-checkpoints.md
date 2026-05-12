@@ -12,6 +12,7 @@ alwaysApply: true
 
 ## Wann der Agent einen Doku-Checkpoint anfordern muss (Trigger)
 - Änderungen an **Build/Config/Infra**: `Info.plist`, `Config/*.xcconfig`, `*.xcscheme`, `docker-compose*.yml`, `backend/env*.example`, `backend/nginx/*.conf`, `backend/parse-server/index.js`
+- **Admin-Portal Production-Deploy** oder **übergreifende Listen-Sortierung** (Frontend `cloudFunction` / `listSortOrder`, Backend `applyQuerySort.js`, Cloud Functions): kurz in `Documentation/FIN1_APP_DOCS/10_ADMIN_PORTAL_REQUIREMENTS.md` und ggf. `.cursor/rules/admin-portal.md` abgleichen
 - Änderungen an **Policy/Guardrails**: `.cursor/rules/**`, `.githooks/**`, `scripts/**`
 - Änderungen an **Compliance/Security/Legal** (egal wie klein)
 - **Refactor/Rename/Delete** von Dateien oder Ordnern

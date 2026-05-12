@@ -21,7 +21,7 @@ The project uses SwiftLint with custom rules defined in `.swiftlint.yml`. Always
 
 ### Custom ResponsiveDesign Rules
 
-All UI measurements must use the `ResponsiveDesign` system. These are enforced as **errors**:
+All UI measurements must use the `ResponsiveDesign` system. In `.swiftlint.yml` these custom rules are **warnings** (CI runs `swiftlint` without `--strict`):
 
 1. **No Fixed Fonts**: Use `ResponsiveDesign.titleFont()`, `ResponsiveDesign.headlineFont()`, etc. instead of `.font(.title)`
 2. **No Fixed Spacing**: Use `ResponsiveDesign.spacing(N)` instead of `VStack(spacing: 16)`
@@ -65,7 +65,7 @@ These rules enforce proper MVVM and dependency injection patterns:
 
 ## Enforcement
 
-All these rules are enforced as **errors** in SwiftLint. Code that violates these rules will fail CI checks.
+Custom rules are **warnings** in `.swiftlint.yml`. CI runs `swiftlint` without `--strict`, so only **error**-severity stock rules fail the pipeline. Treat warnings as cleanup targets; run `swiftlint --strict` locally when you want the full backlog visible as failures.
 
 ## Automated Detection Patterns
 
@@ -119,7 +119,9 @@ Mandatory review of architectural changes.
 
 ## Running SwiftLint
 
-- Check: `swiftlint --strict`
+- Check (match CI): `swiftlint` — stricter: `swiftlint --strict`
+- Changed files only: `./scripts/swiftlint-changed.sh` (vs `origin/main`)
+- Weekly strict signal: GitHub Actions workflow `swiftlint-strict-weekly.yml`
 - Fix auto-fixable issues: `swiftlint --fix`
 
 

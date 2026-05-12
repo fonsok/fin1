@@ -1,0 +1,22 @@
+# Optional zero-warning gate: same rules as local `swiftlint --strict`.
+# Main CI uses non-strict `swiftlint` (see ci.yml). This workflow signals
+# backlog drift; disable the schedule if the noise outweighs the value.
+name: SwiftLint strict (weekly)
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+jobs:
+  swiftlint-strict:
+    runs-on: macos-14
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install SwiftLint
+        run: brew install swiftlint
+
+      - name: SwiftLint --strict
+        run: swiftlint --strict

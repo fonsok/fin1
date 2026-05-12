@@ -15,6 +15,7 @@ This directory contains persistent rules that are automatically applied to all C
 
 ### Backend (Parse Cloud)
 - **`parse-cloud.md`** - Parse Cloud Code unter `backend/parse-server/cloud/**`: `configHelper/index.js`, Shadowing vermeiden, Guard-Skript, Deploy/Doku-Verweise (auto-applied per `filePatterns`)
+- **`parse-cloud-naming.md`** - Parse Cloud Naming-Convention-Matrix: Datei-/Funktionsnamen, Verbpraefixe, Verbot von Temp-/Legacy-Namen (auto-applied per `filePatterns`)
 
 ### Admin Portal
 - **`admin-portal.md`** - React/TypeScript Admin Web Portal: API layer, TanStack Query, Sortierung (`listSortOrder` / `applyQuerySort`), Parse-Datumswerte, Production-Deploy-Pfad, Freigaben-Filter (auto-applied for `admin-portal/**`)

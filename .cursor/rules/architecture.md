@@ -20,6 +20,11 @@ This is the main architecture and coding standards document for FIN1. All other 
 - Implement Repository pattern for data access abstraction.
 - Use Factory pattern for complex object creation in services.
 
+### Bootstrap placeholder (`AppServices.live`) in views
+
+- **DISCOURAGED**: `StateObject(wrappedValue: SomeViewModel(appServices: .live))` as the only wiring when the parent already has `@Environment(\.appServices)`. Prefer passing the environment’s `AppServices` into the view `init` and into the ViewModel initializer.
+- **If used** as a short-lived placeholder (e.g. before `environmentObject`/`appServices` is applied): add a **file comment** explaining why; call **`reconfigure(with:)` / `attach()` from `.task` or `.onAppear` on first appearance** so user-visible state does not depend on `.live` in real sessions.
+
 ### DI Pattern: reconfigure(with: AppServices)
 
 - ViewModels SHOULD expose a single-container reconfiguration API: `reconfigure(with services: AppServices)`.
@@ -44,16 +49,16 @@ This is the main architecture and coding standards document for FIN1. All other 
 
 **REQUIRED**: All backend integrations must follow a mock-first, protocol-based approach to enable easy swapping of implementations.
 
-#### Backend-Authoritative Financial Calculations (Migration in Progress)
+#### Backend-Authoritative Financial Calculations (Phases 1–3 complete)
 
-**CRITICAL**: All financial calculations that create or modify accounting records (account statements, commission bookings, profit distribution, document generation) MUST be performed by the backend (Parse Cloud Functions). The frontend displays results but does NOT perform authoritative calculations.
+**CRITICAL**: All financial calculations that create or modify accounting records (account statements, commission bookings, profit distribution, document generation) MUST be performed by the backend (Parse Cloud Functions). The frontend displays results but does NOT perform authoritative calculations when the backend has settled the trade.
 
-See `Documentation/BACKEND_CALCULATION_MIGRATION.md` for the phased migration plan.
+See `Documentation/BACKEND_CALCULATION_MIGRATION.md` for the migration history, remaining hardening items, and rollback/feature-flag notes.
 
-**Current state (Phase 1):**
+**Current state (aligned with Phase 3 in that document):**
 - Backend `trade.js` afterSave creates `AccountStatement` entries, `Credit Note`, and `Collection Bill` documents via `accountingHelper.settleCompletedTrade()`
-- Frontend checks for backend-created entries (`source: 'backend'`) before performing local calculations
-- Cloud Functions `getTradeSettlement` and `getAccountStatement` provide authoritative data
+- Frontend services prefer backend data (`SettlementAPIService`: `getTradeSettlement`, `getAccountStatement`, invoices/collection bills where wired); local paths remain **labelled fallbacks** for offline/errors—not authoritative bookings
+- Profit/commission/cash distribution and credit-note flows call settlement APIs first where implemented; see `ProfitDistributionService`, `CommissionCalculationService`, `InvestmentCashDistributor`, `OrderLifecycleCoordinator`, and `*AccountStatementBuilder` with optional `settlementAPIService`
 
 **Rules for new financial features:**
 - **REQUIRED**: Financial business logic MUST be implemented as Cloud Functions first
@@ -161,7 +166,7 @@ private func syncPendingDataToBackend() async {
 - `NotificationService` → `PushTokenAPIService` → `PushToken` class
 - `PriceAlertService` → Parse `PriceAlert` class (direct)
 - `InvestorWatchlistService` → `InvestorWatchlistAPIService` → `InvestorWatchlist` class
-- `PaymentService` → `WalletTransaction` class
+- `PaymentService` → Konto-Transaktionen (Wallet-Feature deaktiviert; Nutzer: normales Konto)
 
 **Reference**: See `Documentation/BACKEND_INTEGRATION_ROADMAP.md` for complete list and sync strategies.
 
@@ -339,7 +344,7 @@ guard let cashBalanceService = cashBalanceService else { return }
 
 ### Admin-Configurable Rates via ConfigurationService
 
-Some financial rates (trader commission, platform service charge) are admin-configurable at runtime. See `dry-constants.md` for the full rule.
+Some financial rates (trader commission, app service charge) are admin-configurable at runtime. See `dry-constants.md` for the full rule.
 
 **Summary**: All financial services and ViewModels MUST hold `ConfigurationServiceProtocol` as a **non-optional** dependency. This eliminates all `?? CalculationConstants` fallback paths at the type level. `CalculationConstants` values are last-resort fallbacks wired once inside the `ConfigurationServiceProtocol` extension — never referenced directly in business logic. See `dry-constants.md` for the complete rule including the `reconfigure` pattern exception.
 
@@ -392,21 +397,23 @@ Per [Swift API Design Guidelines](https://swift.org/documentation/api-design-gui
 
 ### File Size Limits (Tiered by Type)
 
-**General Rule**: All classes must be ≤ 400 lines.
+**General Rule (Swift)**: Keep Swift source files at **≤ 300 lines** by default.
 
 Smaller files enforce better separation of concerns, easier code reviews, and reduced merge conflicts.
+
+**Allowed exceptions**: static content/data-heavy files (e.g., legal text constants) may exceed this target when splitting would reduce clarity. Such exceptions must be explicitly justified in PR notes.
 
 | File Type | Max Lines | Rationale |
 |-----------|-----------|-----------|
 | **Models** (`struct`) | 200 | Data structures should be simple and focused |
 | **Views** (SwiftUI) | 300 | UI should be componentized into smaller views |
-| **ViewModels** | 400 | Business logic needs room, but should delegate to services |
-| **Services** | 400 | Core logic, but should use composition pattern |
+| **ViewModels** | 300 | Business logic should stay focused and delegated to services |
+| **Services** | 300 | Core logic should use composition and focused extensions |
 | **Coordinators** | 300 | Orchestration should be thin, delegating to services |
 | **Utilities/Helpers** | 200 | Single-purpose helpers should be small |
 | **Protocols** | 100 | Interface definitions should be concise |
-| **Extensions** | 150 | Focused functionality extensions |
-| **All Classes** | **400** | **General maximum for all class types** |
+| **Extensions** | 200 | Focused functionality extensions |
+| **All Swift files** | **300** | **Default maximum for maintainability** |
 
 **Refactoring Strategy for Large Files:**
 1. **Extract subcomponents** - Break Views into smaller reusable components
@@ -606,6 +613,25 @@ Task {
     counter += 1  // Data race!
 }
 ```
+
+### Non-Sendable `any …Protocol` across `await` (strict concurrency)
+
+Some service protocols are **not** `Sendable` and cannot always be marked `@MainActor` (e.g. `ServiceLifecycle`, shared defaults, or wide protocol surface). Swift 6 then rejects **`await` on a method** where the receiver is `any FooProtocol` (“sending non-Sendable type…”).
+
+**Pattern (FIN1):** introduce a small **`final` class** that is **`@unchecked Sendable`**, holds the concrete/existential service **privately**, and exposes **only** the async methods you need. Document in a file comment that the implementation is **main-actor / app use only** in production.
+
+**Examples in-repo** (copy shape when adding similar calls):
+
+| Bridge | File |
+|--------|------|
+| Document / investment document uploads | `FIN1/Features/Investor/Services/UncheckedDocumentServiceBridges.swift` |
+| FAQ + name-change requests | `FIN1/Shared/Services/UncheckedFAQAndNameChangeServiceBridges.swift` |
+
+**Do not** use this to paper over real cross-actor sharing; prefer `Sendable`, `@MainActor` on the protocol/impl, or `actor` when the type is truly shared across isolation domains.
+
+### Parse fetch types (`Sendable`)
+
+`ParseAPIClient` / `ParseAPIClientProtocol` **`fetchObjects`** / **`fetchObject`** require **`T: Decodable & Sendable`** (strict concurrency in the deduplication path). **DTOs** used as `T` should be **`Sendable`**; use **`@unchecked Sendable`** only where unavoidable (e.g. **`AnyCodable`** wrapping `Any`, **`ParsePriceAlert`** with `[String: Any]?` metadata). **`updateObject` / `handleConflict`** use **`Codable & Sendable`** where they chain to fetch.
 
 ## @Observable (iOS 17+ / Modern SwiftUI)
 
@@ -827,7 +853,7 @@ catch {
 - No tests outside `FIN1Tests/`.
 - No generic error handling; use `AppError` enum.
 - No functions over 50 lines.
-- **No files exceeding tiered limits**: Models ≤200, Views ≤300, ViewModels/Services ≤400 lines. **All classes must be ≤ 400 lines.**
+- **No files exceeding size policy**: Swift files target ≤300 lines. Exceptions only for justified static content/data-heavy files.
 - No more than 3 levels of nesting.
 - **No ViewModel creation in view body or navigation closures** (use wrapper views with `@StateObject`).
 - **No object creation in view body** that breaks SwiftUI observation.
@@ -850,6 +876,7 @@ catch {
 ## Swift 6 Concurrency Guardrails
 
 - **RECOMMENDED**: New ViewModels should be marked `@MainActor` for thread safety.
+- **RECOMMENDED**: If strict concurrency blocks `await` on `any ServiceProtocol`, use a small **`@unchecked Sendable` bridge** (see “Non-Sendable `any …Protocol` across `await`” above)—not as a substitute for proper `Sendable` where feasible.
 - **REQUIRED**: Data models crossing actor boundaries must conform to `Sendable`.
 - **FORBIDDEN**: Manual `DispatchQueue.main.async` in `@MainActor` contexts (redundant).
 - **FORBIDDEN**: Mutable shared state without synchronization (use Actor or locks).
@@ -1043,7 +1070,7 @@ struct SomeView: View {
 ## Local Commands
 
 - Lint format: `swiftformat . --lint`
-- SwiftLint: `swiftlint --strict`
+- SwiftLint (CI): `swiftlint` (use `swiftlint --strict` locally for zero-warning cleanup)
 - Format code: `swiftformat .`
 - Build (sim): `xcodebuild -project FIN1.xcodeproj -scheme FIN1 -sdk iphonesimulator -configuration Debug -destination 'platform=iOS Simulator,name=iPhone 15 Pro' build`
 - Test (sim): `xcodebuild -project FIN1.xcodeproj -scheme FIN1 -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 15 Pro' test`

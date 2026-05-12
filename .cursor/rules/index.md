@@ -20,7 +20,8 @@ This directory contains persistent rules automatically applied to Cursor AI conv
 - **`responsive-design.md`** - Responsive design system compliance
 
 ### Backend (Parse Cloud Code)
-- **`parse-cloud.md`** - Node/Parse Cloud unter `backend/parse-server/cloud/**`: **`configHelper/index.js`**-Imports, kein Shadowing durch `configHelper.js`, Guard-Skript, Verweis Runbook § 8.2.1 (auto-applied per `filePatterns`)
+- **`parse-cloud.md`** - Node/Parse Cloud unter `backend/parse-server/cloud/**`: **`configHelper/index.js`**-Imports, kein Shadowing durch `configHelper.js`, Guard-Skript, Verweis Runbook § 8.2.1; **Modularisierung & Refactor-Policy** (Risiko, Tests, Domänenschnitte) (auto-applied per `filePatterns`)
+- **`parse-cloud-naming.md`** - Naming-Convention-Matrix fuer Parse Cloud (`backend/parse-server/cloud/**`): Dateinamen, Cloud Function Verb-Prefixe, Verbot von Temp-/Legacy-Namen (auto-applied per `filePatterns`)
 
 ### Admin Portal (React/TypeScript)
 - **`admin-portal.md`** - React/TypeScript standards for the Admin Web Portal (`admin-portal/`), inkl. **Benutzer-Detail** (`/users/:userId`, `getUserDetails`), **Listen-Sortierung** (`listSortOrder` + `applyQuerySort`), **Parse-Datumswerte** in `format.ts`, **Deploy-Pfad** (gebündelte Assets vs. `dist/` auf dem Server), **Freigaben**-Filter
@@ -53,7 +54,10 @@ These rule files reference configuration files in the repository:
 
 ### Swift 6 Concurrency (Modern)
 - **`@MainActor`**: Recommended for all new ViewModels (thread-safe UI updates)
+- **`ResponsiveDesign` / `ComponentFactory`**: `@MainActor` (UIKit-derived metrics); see `responsive-design.md` for `TextFieldStyle` exception
 - **`Sendable`**: Required for types crossing actor boundaries
+- **Parse `fetchObjects` / `fetchObject`**: `T` must be **`Decodable & Sendable`** (see `architecture.md`)
+- **`@unchecked Sendable` bridges**: For `await` on non-`Sendable` `any …Protocol` where `@MainActor`/protocol changes are not viable—see `architecture.md` (examples: `UncheckedDocumentServiceBridges.swift`, `UncheckedFAQAndNameChangeServiceBridges.swift`)
 - **`actor`**: Preferred for shared mutable state (caches, repositories)
 - **`@Observable`**: Available for iOS 17+ targets (more efficient than `ObservableObject`)
 - See `architecture.md` for migration strategy and examples
@@ -67,7 +71,7 @@ These rule files reference configuration files in the repository:
 
 ### Code Quality
 - Functions ≤ 50 lines
-- Classes ≤ 400 lines
+- Swift source files target ≤ 300 lines (with justified static-content exceptions)
 - Max 3 levels of nesting
 - All tests in `FIN1Tests/`
 

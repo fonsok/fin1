@@ -5,6 +5,7 @@ on:
     branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
+  workflow_dispatch:
 
 jobs:
   # HTTP smoke on 127.0.0.1 only (no LAN secrets). Validates /health + getConfig shape.
@@ -19,11 +20,39 @@ jobs:
           chmod +x scripts/check-parse-cloud-config-helper-shadow.sh
           ./scripts/check-parse-cloud-config-helper-shadow.sh
 
+      - name: Parse Cloud — naming conventions
+        run: |
+          chmod +x scripts/check-parse-cloud-naming-conventions.sh
+          ./scripts/check-parse-cloud-naming-conventions.sh
+
       - name: Local Parse-shaped API smoke
         run: |
           set -euo pipefail
           chmod +x scripts/ci-smoke-local-mock.sh
           ./scripts/ci-smoke-local-mock.sh
+
+  # Parse Cloud Code — full Jest suite (financial / ledger regressions). Runs on every PR/push to main|master.
+  parse-server-unit-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend/parse-server
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: backend/parse-server/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Unit & integration tests (Jest)
+        run: npm test -- --ci
 
   admin-portal:
     runs-on: ubuntu-latest
