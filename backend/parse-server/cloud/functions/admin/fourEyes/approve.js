@@ -57,6 +57,41 @@ async function applyConfigurationChange({ req, requestId, request }) {
   return true;
 }
 
+async function applyUserWalletActionModeChange({ req, requestId, request }) {
+  const metadata = req.get('metadata') || {};
+  const { targetUserId, newMode, oldMode } = metadata;
+  const allowedModes = new Set(['disabled', 'deposit_only', 'withdrawal_only', 'deposit_and_withdrawal']);
+  if (!targetUserId || !allowedModes.has(newMode)) {
+    throw new Parse.Error(Parse.Error.INVALID_VALUE, 'Invalid user wallet action mode change request');
+  }
+
+  const targetUser = await new Parse.Query(Parse.User).get(targetUserId, { useMasterKey: true });
+  targetUser.set('walletActionModeOverride', newMode);
+  targetUser.set('walletActionModeOverrideUpdatedAt', new Date());
+  targetUser.set('walletActionModeOverrideUpdatedBy', request.user.id);
+  await targetUser.save(null, { useMasterKey: true });
+
+  await saveConfigurationAuditLog({
+    action: 'user_wallet_action_mode_change_approved',
+    userId: request.user.id,
+    userRole: request.user.get('role'),
+    parameterName: 'walletActionModeOverride',
+    oldValue: oldMode || null,
+    newValue: newMode,
+    metadata: {
+      fourEyesRequestId: requestId,
+      targetUserId,
+      targetUserEmail: metadata.targetUserEmail || null,
+      requesterId: req.get('requesterId'),
+      reason: metadata.reason,
+      isCritical: true,
+      ip: request.ip,
+    },
+  });
+
+  return true;
+}
+
 function registerApproveApprovalFunctions() {
   Parse.Cloud.define('approveRequest', async (request) => {
     requirePermission(request, 'approveRequest');
@@ -92,6 +127,9 @@ function registerApproveApprovalFunctions() {
 
     if (requestType === 'configuration_change') {
       applied = await applyConfigurationChange({ req, requestId, request });
+    }
+    if (requestType === 'user_wallet_action_mode_change') {
+      applied = await applyUserWalletActionModeChange({ req, requestId, request });
     }
 
     if (requestType === 'correction') {
@@ -142,6 +180,8 @@ function registerApproveApprovalFunctions() {
       message: applied
         ? requestType === 'configuration_change'
           ? `Konfiguration '${metadata.parameterName}' wurde auf ${metadata.newValue} gesetzt.`
+          : requestType === 'user_wallet_action_mode_change'
+            ? `Nutzerbezogener Konto-Aktionsmodus wurde auf ${metadata.newMode} gesetzt.`
           : `Korrektur (${metadata.correctionType || requestType}) wurde ausgeführt.`
         : 'Anfrage genehmigt (manuelle Ausführung erforderlich).',
     };

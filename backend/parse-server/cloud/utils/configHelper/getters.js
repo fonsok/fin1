@@ -12,6 +12,14 @@ async function getAppServiceChargeRate() {
   return config.financial.appServiceChargeRate;
 }
 
+async function getAppServiceChargeRateForAccountType(accountType = 'individual') {
+  const config = await loadConfig();
+  if (String(accountType).toLowerCase() === 'company') {
+    return config.financial.appServiceChargeRateCompanies;
+  }
+  return config.financial.appServiceChargeRate;
+}
+
 async function getMinimumCashReserve() {
   const config = await loadConfig();
   return config.financial.minimumCashReserve;
@@ -39,6 +47,7 @@ async function getFinancialConfig() {
 module.exports = {
   getTraderCommissionRate,
   getAppServiceChargeRate,
+  getAppServiceChargeRateForAccountType,
   getMinimumCashReserve,
   getInitialAccountBalance,
   getOrderFeeConfig,

@@ -1,6 +1,10 @@
 'use strict';
 
 const { requireAdminRole } = require('../../../utils/permissions');
+const {
+  ensureInvestmentBusinessCaseIdSchema,
+  ensureDocumentBusinessCaseIdSchema,
+} = require('./ensureParseSchemaFields');
 
 function registerSchemaInitFunctions() {
   Parse.Cloud.define('initializeNewSchemas', async (request) => {
@@ -8,6 +12,20 @@ function registerSchemaInitFunctions() {
     console.log('🔧 Initializing new schemas...');
 
     const results = [];
+
+    try {
+      const bc = await ensureInvestmentBusinessCaseIdSchema();
+      results.push({ step: 'Investment.businessCaseId', ...bc });
+    } catch (error) {
+      results.push({ step: 'Investment.businessCaseId', status: 'error', message: error.message });
+    }
+
+    try {
+      const docBc = await ensureDocumentBusinessCaseIdSchema();
+      results.push({ step: 'Document.businessCaseId', ...docBc });
+    } catch (error) {
+      results.push({ step: 'Document.businessCaseId', status: 'error', message: error.message });
+    }
 
     try {
       const Watchlist = Parse.Object.extend('Watchlist');

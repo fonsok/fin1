@@ -37,6 +37,25 @@ describe('trading collection bill return% contract', () => {
       toJSON() { return { ...this }; },
       get(field) { return this[field]; },
     },
+    {
+      // Activation / wallet receipt — same `type` as real bills but marked
+      // via `metadata.receiptType`. Must be filtered out by the listing
+      // endpoint so that the client never receives docs without
+      // `returnPercentage` (which would trigger the "pending" bug).
+      id: 'doc-activation-receipt',
+      userId: 'investor:1',
+      type: 'investorCollectionBill',
+      investmentId: 'inv-1',
+      tradeId: undefined,
+      metadata: {
+        receiptType: 'investment',
+        amount: 1000,
+        description: 'Investment activation receipt',
+      },
+      createdAt: new Date('2026-04-20T07:00:00Z'),
+      toJSON() { return { ...this }; },
+      get(field) { return this[field]; },
+    },
   ];
 
   function getPath(obj, dotted) {
@@ -196,6 +215,31 @@ describe('trading collection bill return% contract', () => {
     expect(result.collectionBills.map((d) => d.metadata.returnPercentage).sort((a, b) => a - b)).toEqual([9.87, 12.34]);
   });
 
+  test('getInvestorCollectionBills excludes activation receipts (metadata.receiptType)', async () => {
+    const handler = cloudFunctions.getInvestorCollectionBills;
+    const request = {
+      user: {
+        get(key) {
+          if (key === 'stableId') return 'investor:1';
+          return null;
+        },
+      },
+      params: { investmentId: 'inv-1' },
+    };
+
+    const result = await handler(request);
+
+    // Must NOT contain the activation receipt even though it shares the
+    // investorCollectionBill `type`. Otherwise the iOS resolver would see a
+    // document without `returnPercentage` and display "pending" to the user.
+    const ids = result.collectionBills.map((d) => d.id);
+    expect(ids).not.toContain('doc-activation-receipt');
+    result.collectionBills.forEach((bill) => {
+      expect(bill.metadata && bill.metadata.receiptType).toBeUndefined();
+      expect(bill.metadata.returnPercentage).toEqual(expect.any(Number));
+    });
+  });
+
   test('auditCollectionBillReturnPercentage supports master-key automation path', async () => {
     const handler = cloudFunctions.auditCollectionBillReturnPercentage;
 
@@ -204,6 +248,8 @@ describe('trading collection bill return% contract', () => {
       params: { limit: 10 },
     });
 
+    // Only real settlement bills (receiptType absent); the activation receipt
+    // is excluded by the same `metadata.receiptType` filter the audit uses.
     expect(result.totalActiveCollectionBills).toBe(3);
     expect(result.missingReturnPercentageCount).toBe(0);
     expect(result.healthy).toBe(true);

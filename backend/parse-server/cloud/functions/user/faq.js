@@ -55,6 +55,17 @@ function sortBySortOrder(rows) {
   return rows.slice().sort((a, b) => (a.get('sortOrder') || 0) - (b.get('sortOrder') || 0));
 }
 
+/** Retired FAQCategory slugs: hidden from Help Center, CSR category lists, and filtered client-side in admin. */
+const RETIRED_FAQ_CATEGORY_SLUGS = new Set(['investor_portfolio', 'trader_pools']);
+
+function filterRetiredFaqCategories(rows, location) {
+  if (location !== 'help_center' && location !== 'csr') return rows;
+  return rows.filter((c) => {
+    const slug = c.get('slug');
+    return typeof slug !== 'string' || !RETIRED_FAQ_CATEGORY_SLUGS.has(slug);
+  });
+}
+
 Parse.Cloud.define('getFAQs', async (request) => {
   const { categorySlug, isPublic, userRole, location, context } = request.params;
 
@@ -249,6 +260,8 @@ Parse.Cloud.define('getFAQCategories', async (request) => {
   if (userRole) {
     categories = categories.filter(c => matchesRole(c.get('targetRoles'), userRole));
   }
+
+  categories = filterRetiredFaqCategories(categories, location);
 
   return { categories: categories.map(c => c.toJSON()) };
 });

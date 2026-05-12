@@ -8,29 +8,18 @@
 const { round2 } = require('../utils/accountingHelper/shared');
 const investmentEscrow = require('../utils/accountingHelper/investmentEscrow');
 const { validateInvestmentAmountAgainstLimits } = require('../utils/investmentLimitsValidation');
+const { getAppServiceChargeRateForAccountType } = require('../utils/configHelper');
+const { investorOwnsInvestment } = require('./investmentAccess');
+const { handleBookAppServiceCharge } = require('./investmentBookAppServiceCharge');
+const {
+  handleTraderActivateReservedInvestment,
+  handleGetPoolInvestmentsForTrader,
+  handleRecordPoolTradeParticipation,
+  handleUpdatePoolTradeParticipation,
+} = require('./investmentPoolTraderHandlers');
+const { handleDiscoverTraders } = require('./investmentDiscoverTraders');
+const { rollbackOrphanInvestmentAfterFailedReserve } = require('../utils/investmentReservationRollback');
 
-/**
- * Match Investment.investorId to session user (objectId or stableId / email pattern).
- */
-function investorOwnsInvestment(investment, user) {
-  const invId = investment.get('investorId');
-  if (!invId || !user) return false;
-  const email = (user.get('email') || user.get('username') || '').toLowerCase();
-  const stable = user.get('stableId') || (email ? `user:${email}` : '');
-  return invId === user.id || (!!stable && invId === stable) || (!!email && invId === email);
-}
-
-/** Investment.traderId may be Parse _User id or stable id string used by the app. */
-function traderOwnsInvestment(investment, user) {
-  const tid = investment.get('traderId');
-  if (!tid || !user) return false;
-  if (tid === user.id) return true;
-  const email = (user.get('email') || user.get('username') || '').toLowerCase();
-  const stable = user.get('stableId') || (email ? `user:${email}` : '');
-  return (!!stable && tid === stable) || (!!email && tid === email);
-}
-
-// Get investor portfolio
 Parse.Cloud.define('getInvestorPortfolio', async (request) => {
   const user = request.user;
   if (!user) throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Anmeldung erforderlich.');
@@ -59,12 +48,11 @@ Parse.Cloud.define('getInvestorPortfolio', async (request) => {
       totalCurrentValue,
       totalProfit,
       totalReturn: totalInvested > 0 ? (totalProfit / totalInvested) * 100 : 0,
-      activeCount: investments.length
-    }
+      activeCount: investments.length,
+    },
   };
 });
 
-// Create investment
 Parse.Cloud.define('createInvestment', async (request) => {
   const user = request.user;
   if (!user) throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Anmeldung erforderlich.');
@@ -78,7 +66,6 @@ Parse.Cloud.define('createInvestment', async (request) => {
     throw new Parse.Error(Parse.Error.INVALID_VALUE, limitCheck.error);
   }
 
-  // Verify trader exists and is active
   const traderQuery = new Parse.Query(Parse.User);
   traderQuery.equalTo('objectId', traderId);
   traderQuery.equalTo('role', 'trader');
@@ -87,13 +74,28 @@ Parse.Cloud.define('createInvestment', async (request) => {
 
   if (!trader) throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Trader nicht gefunden oder nicht aktiv.');
 
-  // Check balance
-  const balanceResult = await Parse.Cloud.run('getWalletBalance', {}, { sessionToken: user.getSessionToken() });
-  if (balanceResult.balance < amount) {
-    throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Unzureichendes Guthaben.');
+  const investorAccountType = user.get('accountType') || 'individual';
+  const configuredChargeRate = await getAppServiceChargeRateForAccountType(investorAccountType);
+  const grossCharge = round2(amount * configuredChargeRate);
+  const serviceChargeTotal = round2(grossCharge);
+  const required = round2(amount + serviceChargeTotal);
+
+  try {
+    const balanceResult = await Parse.Cloud.run('getWalletBalance', {}, { sessionToken: user.getSessionToken() });
+    if (balanceResult && typeof balanceResult.balance === 'number' && balanceResult.balance < required) {
+      throw new Parse.Error(
+        Parse.Error.OPERATION_FORBIDDEN,
+        `Unzureichendes Guthaben (benötigt ${required.toFixed(2)} € für Investment + App Service Charge, verfügbar ${Number(balanceResult.balance).toFixed(2)} €).`,
+      );
+    }
+  } catch (err) {
+    if (err instanceof Parse.Error && err.code === Parse.Error.OPERATION_FORBIDDEN
+        && typeof err.message === 'string' && err.message.startsWith('Unzureichendes Guthaben')) {
+      throw err;
+    }
+    console.warn(`createInvestment: wallet balance check skipped (${err && err.message || err}); relying on client-side validation.`);
   }
 
-  // Create investment
   const Investment = Parse.Object.extend('Investment');
   const investment = new Investment();
   investment.set('investorId', user.id);
@@ -102,14 +104,35 @@ Parse.Cloud.define('createInvestment', async (request) => {
 
   await investment.save(null, { useMasterKey: true });
 
+  // Idempotent: afterSave hat bookReserve bereits ausgeführt; bei Race/Retry sicherstellen.
+  let reserveCheck;
+  try {
+    reserveCheck = await investmentEscrow.bookReserve({
+      investorId: user.id,
+      amount: round2(amount),
+      investmentId: investment.id,
+      investmentNumber: investment.get('investmentNumber') || '',
+      parseInvestment: investment,
+    });
+  } catch (err) {
+    await rollbackOrphanInvestmentAfterFailedReserve(investment.id, err.message);
+    throw err;
+  }
+  if (reserveCheck && reserveCheck.ok === false) {
+    await rollbackOrphanInvestmentAfterFailedReserve(investment.id, reserveCheck.reason || 'unknown');
+    throw new Parse.Error(
+      Parse.Error.OPERATION_FORBIDDEN,
+      `Kundenguthaben-Reservierung fehlgeschlagen: ${reserveCheck.reason || 'unknown'}`,
+    );
+  }
+
   return {
     investmentId: investment.id,
     investmentNumber: investment.get('investmentNumber'),
-    status: investment.get('status')
+    status: investment.get('status'),
   };
 });
 
-// Confirm investment (activate)
 Parse.Cloud.define('confirmInvestment', async (request) => {
   const user = request.user;
   if (!user) throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Anmeldung erforderlich.');
@@ -125,7 +148,27 @@ Parse.Cloud.define('confirmInvestment', async (request) => {
     throw new Parse.Error(Parse.Error.INVALID_VALUE, 'Dieses Investment kann nicht bestätigt werden.');
   }
 
+  const confirmAmount = investment.get('amount') || 0;
+  const serviceChargeTotalStored = investment.get('serviceChargeTotal') || 0;
+  const confirmRequired = round2(confirmAmount + serviceChargeTotalStored);
+  try {
+    const confirmBalance = await Parse.Cloud.run('getWalletBalance', {}, { sessionToken: user.getSessionToken() });
+    if (confirmBalance && typeof confirmBalance.balance === 'number' && confirmBalance.balance < confirmRequired) {
+      throw new Parse.Error(
+        Parse.Error.OPERATION_FORBIDDEN,
+        `Unzureichendes Guthaben bei Aktivierung (benötigt ${confirmRequired.toFixed(2)} €, verfügbar ${Number(confirmBalance.balance).toFixed(2)} €).`,
+      );
+    }
+  } catch (err) {
+    if (err instanceof Parse.Error && err.code === Parse.Error.OPERATION_FORBIDDEN
+        && typeof err.message === 'string' && err.message.startsWith('Unzureichendes Guthaben')) {
+      throw err;
+    }
+    console.warn(`confirmInvestment: wallet balance re-check skipped ${investment.id} (${err && err.message || err}).`);
+  }
+
   investment.set('status', 'active');
+  investment.set('reservationStatus', 'active');
   await investment.save(null, { useMasterKey: true });
 
   try {
@@ -134,6 +177,7 @@ Parse.Cloud.define('confirmInvestment', async (request) => {
       amount: round2(investment.get('amount') || 0),
       investmentId: investment.id,
       investmentNumber: investment.get('investmentNumber') || '',
+      businessCaseId: String(investment.get('businessCaseId') || '').trim(),
     });
   } catch (err) {
     console.error(`❌ bookDeployToTrading (confirmInvestment) idempotent repair ${investment.id}:`, err.message);
@@ -142,7 +186,6 @@ Parse.Cloud.define('confirmInvestment', async (request) => {
   return { success: true, status: 'active' };
 });
 
-// Cancel reserved split investment (server SoT: escrow + wallet via trigger)
 Parse.Cloud.define('cancelReservedInvestment', async (request) => {
   const user = request.user;
   if (!user) throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Anmeldung erforderlich.');
@@ -172,126 +215,14 @@ Parse.Cloud.define('cancelReservedInvestment', async (request) => {
   return { success: true, investmentId: investment.id, status: 'cancelled' };
 });
 
-/**
- * Trader pool: when a buy uses reserved client capital, move Parse status reserved → active.
- * Runs afterSave Investment → escrow RSV→TRD + wallet/statement (same as confirmInvestment for investors).
- */
-Parse.Cloud.define('traderActivateReservedInvestment', async (request) => {
-  const user = request.user;
-  if (!user) throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Anmeldung erforderlich.');
+Parse.Cloud.define('bookAppServiceCharge', handleBookAppServiceCharge);
 
-  const role = user.get('role');
-  if (role !== 'trader') {
-    throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Trader-Rolle erforderlich.');
-  }
+Parse.Cloud.define('traderActivateReservedInvestment', handleTraderActivateReservedInvestment);
 
-  const { investmentId } = request.params || {};
-  if (!investmentId) throw new Parse.Error(Parse.Error.INVALID_VALUE, 'Parameter „investmentId“ erforderlich.');
+Parse.Cloud.define('getPoolInvestmentsForTrader', handleGetPoolInvestmentsForTrader);
 
-  const Investment = Parse.Object.extend('Investment');
-  let investment;
-  try {
-    investment = await new Parse.Query(Investment).get(investmentId, { useMasterKey: true });
-  } catch {
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Investment nicht gefunden.');
-  }
+Parse.Cloud.define('recordPoolTradeParticipation', handleRecordPoolTradeParticipation);
 
-  if (!traderOwnsInvestment(investment, user)) {
-    throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Vorgang nicht erlaubt.');
-  }
+Parse.Cloud.define('updatePoolTradeParticipation', handleUpdatePoolTradeParticipation);
 
-  if (investment.get('status') !== 'reserved') {
-    throw new Parse.Error(Parse.Error.INVALID_VALUE, 'Nur reservierte Investments können aktiviert werden.');
-  }
-
-  investment.set('status', 'active');
-  await investment.save(null, { useMasterKey: true });
-
-  try {
-    await investmentEscrow.bookDeployToTrading({
-      investorId: investment.get('investorId'),
-      amount: round2(investment.get('amount') || 0),
-      investmentId: investment.id,
-      investmentNumber: investment.get('investmentNumber') || '',
-    });
-  } catch (err) {
-    console.error(`❌ bookDeployToTrading (traderActivate) idempotent repair ${investment.id}:`, err.message);
-  }
-
-  return { success: true, investmentId: investment.id, status: 'active' };
-});
-
-/**
- * Trader session: list Investments where traderId matches (same id as on Investment rows, often MockTrader UUID).
- * Used to hydrate the trader app before pool activation on buy. Caller must be role trader.
- */
-Parse.Cloud.define('getPoolInvestmentsForTrader', async (request) => {
-  const user = request.user;
-  if (!user) throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Anmeldung erforderlich.');
-  if (user.get('role') !== 'trader') {
-    throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Trader-Rolle erforderlich.');
-  }
-
-  const { traderId } = request.params || {};
-  if (!traderId || typeof traderId !== 'string') {
-    throw new Parse.Error(Parse.Error.INVALID_VALUE, 'Parameter „traderId“ erforderlich.');
-  }
-
-  const q = new Parse.Query('Investment');
-  q.equalTo('traderId', traderId);
-  q.descending('createdAt');
-  q.limit(500);
-  const rows = await q.find({ useMasterKey: true });
-
-  return {
-    results: rows.map((r) => r.toJSON()),
-  };
-});
-
-// Get trader list for discovery
-Parse.Cloud.define('discoverTraders', async (request) => {
-  const { minRiskClass, maxRiskClass, limit = 20, skip = 0 } = request.params;
-
-  const query = new Parse.Query(Parse.User);
-  query.equalTo('role', 'trader');
-  query.equalTo('status', 'active');
-  query.equalTo('kycStatus', 'verified');
-  query.limit(limit);
-  query.skip(skip);
-
-  const traders = await query.find({ useMasterKey: true });
-
-  const result = [];
-  for (const trader of traders) {
-    // Get profile
-    const profileQuery = new Parse.Query('UserProfile');
-    profileQuery.equalTo('userId', trader.id);
-    const profile = await profileQuery.first({ useMasterKey: true });
-
-    // Get risk assessment
-    const riskQuery = new Parse.Query('UserRiskAssessment');
-    riskQuery.equalTo('userId', trader.id);
-    riskQuery.descending('validFrom');
-    const risk = await riskQuery.first({ useMasterKey: true });
-
-    // Get investment stats
-    const invQuery = new Parse.Query('Investment');
-    invQuery.equalTo('traderId', trader.id);
-    invQuery.equalTo('status', 'active');
-    const activeInvestments = await invQuery.find({ useMasterKey: true });
-
-    let totalAUM = 0;
-    activeInvestments.forEach(inv => totalAUM += inv.get('amount') || 0);
-
-    result.push({
-      traderId: trader.id,
-      displayName: profile ? `${profile.get('firstName')} ${profile.get('lastName').charAt(0)}.` : 'Trader',
-      riskClass: risk ? risk.get('riskClass') : null,
-      investorCount: activeInvestments.length,
-      totalAUM,
-      acceptingInvestments: totalAUM < 1000000 // Max pool size
-    });
-  }
-
-  return { traders: result, total: result.length };
-});
+Parse.Cloud.define('discoverTraders', handleDiscoverTraders);

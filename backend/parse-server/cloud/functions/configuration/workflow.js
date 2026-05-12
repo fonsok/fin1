@@ -30,17 +30,21 @@ function registerConfigurationWorkflowFunctions() {
       throw new Parse.Error(Parse.Error.INVALID_VALUE, 'parameterName, newValue, and reason are required');
     }
 
-    const validation = validateConfigValue(parameterName, newValue);
+    const normalizedNewValue = parameterName === 'legalAppName' && typeof newValue === 'string'
+      ? newValue.trim()
+      : newValue;
+
+    const validation = validateConfigValue(parameterName, normalizedNewValue);
     if (!validation.valid) {
       throw new Parse.Error(Parse.Error.INVALID_VALUE, validation.error);
     }
 
     const currentConfig = await loadConfig(true);
-    const limitOrder = validateTransactionLimitOrdering(parameterName, newValue, currentConfig.limits);
+    const limitOrder = validateTransactionLimitOrdering(parameterName, normalizedNewValue, currentConfig.limits);
     if (!limitOrder.valid) {
       throw new Parse.Error(Parse.Error.INVALID_VALUE, limitOrder.error);
     }
-    const investmentOrder = validateInvestmentAmountOrdering(parameterName, newValue, currentConfig.limits);
+    const investmentOrder = validateInvestmentAmountOrdering(parameterName, normalizedNewValue, currentConfig.limits);
     if (!investmentOrder.valid) {
       throw new Parse.Error(Parse.Error.INVALID_VALUE, investmentOrder.error);
     }
@@ -59,15 +63,15 @@ function registerConfigurationWorkflowFunctions() {
       fourEyesReq.set('metadata', {
         parameterName,
         oldValue,
-        newValue,
+        newValue: normalizedNewValue,
         reason,
         isCritical: true,
       });
 
       await fourEyesReq.save(null, { useMasterKey: true });
 
-      await logConfigurationChangeRequest(request, parameterName, oldValue, newValue, reason, fourEyesReq.id);
-      await notifyApproversOfPendingRequest(fourEyesReq, parameterName, newValue, reason);
+      await logConfigurationChangeRequest(request, parameterName, oldValue, normalizedNewValue, reason, fourEyesReq.id);
+      await notifyApproversOfPendingRequest(fourEyesReq, parameterName, normalizedNewValue, reason);
 
       return {
         success: true,
@@ -77,12 +81,17 @@ function registerConfigurationWorkflowFunctions() {
       };
     }
 
-    const valueToApply = parameterName === 'walletFeatureEnabled'
-      ? Boolean(Number(newValue))
-      : newValue;
+    const booleanParameters = new Set([
+      'walletFeatureEnabled',
+      'serviceChargeInvoiceFromBackend',
+      'serviceChargeLegacyClientFallbackEnabled',
+    ]);
+    const valueToApply = booleanParameters.has(parameterName)
+      ? Boolean(Number(normalizedNewValue))
+      : normalizedNewValue;
 
     await applyConfigurationChange(parameterName, valueToApply, request.user.id);
-    await logConfigurationChange(request, parameterName, oldValue, newValue, reason, null);
+    await logConfigurationChange(request, parameterName, oldValue, normalizedNewValue, reason, null);
 
     return {
       success: true,

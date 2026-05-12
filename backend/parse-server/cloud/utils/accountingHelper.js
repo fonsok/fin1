@@ -18,7 +18,13 @@ const {
   createWalletReceiptDocument,
   createTradeExecutionDocument,
 } = require('./accountingHelper/documents');
-const { settleAndDistribute, settleCompletedTrade } = require('./accountingHelper/settlement');
+const {
+  settleAndDistribute,
+  settleCompletedTrade,
+  bookTraderBuyEntryIfMissing,
+  bookTraderSellDeltaIfAny,
+  bookInvestorPartialRealizationDeltaIfAny,
+} = require('./accountingHelper/settlement');
 
 module.exports = {
   bookAccountStatementEntry,
@@ -28,4 +34,7 @@ module.exports = {
   createTradeExecutionDocument,
   settleAndDistribute,
   settleCompletedTrade,
+  bookTraderBuyEntryIfMissing,
+  bookTraderSellDeltaIfAny,
+  bookInvestorPartialRealizationDeltaIfAny,
 };

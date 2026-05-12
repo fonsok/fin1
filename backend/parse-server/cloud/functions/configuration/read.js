@@ -14,7 +14,10 @@ function registerConfigurationReadFunctions() {
 
     const flatConfig = {
       ...config.financial,
+      ...config.tax,
       ...config.limits,
+      legalAppName: config.legal?.appName,
+      legalPlatformName: config.legal?.platformName,
       // Align with admin portal PARAMETER_DEFINITIONS (snake_case)
       daily_transaction_limit: config.limits.dailyTransactionLimit,
       weekly_transaction_limit: config.limits.weeklyTransactionLimit,
@@ -24,7 +27,9 @@ function registerConfigurationReadFunctions() {
     return {
       config: flatConfig,
       financial: config.financial,
+      tax: config.tax,
       limits: config.limits,
+      legal: config.legal,
       display: buildDisplay(config),
       metadata: {
         lastUpdated: config._updatedAt,

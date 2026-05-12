@@ -57,6 +57,24 @@ function registerRejectApprovalFunctions() {
         },
       });
     }
+    if (requestType === 'user_wallet_action_mode_change') {
+      await saveConfigurationAuditLog({
+        action: 'user_wallet_action_mode_change_rejected',
+        userId: request.user.id,
+        userRole: request.user.get('role'),
+        parameterName: 'walletActionModeOverride',
+        metadata: {
+          fourEyesRequestId: requestId,
+          requesterId: req.get('requesterId'),
+          targetUserId: metadata.targetUserId,
+          targetUserEmail: metadata.targetUserEmail || null,
+          originalReason: metadata.reason,
+          rejectionReason: reason,
+          isCritical: true,
+          ip: request.ip,
+        },
+      });
+    }
 
     await sendRejectionNotification(req, requestType, metadata, reason);
     return { success: true };

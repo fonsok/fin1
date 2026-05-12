@@ -53,13 +53,21 @@ Parse.Cloud.define('getSystemHealth', async (request) => {
     schemaQuery.limit(1);
     await schemaQuery.find({ useMasterKey: true });
 
-    const allSchemas = await new Parse.Query('_SCHEMA').find({ useMasterKey: true });
+    // Connectivity is proven by the limit(1) query above. A full _SCHEMA scan can
+    // fail or time out on large deployments and must not mark MongoDB as disconnected.
+    let collectionCount;
+    try {
+      const allSchemas = await new Parse.Query('_SCHEMA').find({ useMasterKey: true });
+      collectionCount = allSchemas.length;
+    } catch (countErr) {
+      console.warn('getSystemHealth: optional _SCHEMA count skipped:', countErr.message);
+    }
 
     databases.push({
       name: 'MongoDB',
       connected: true,
       version: process.env.MONGO_VERSION || '7.x',
-      collections: allSchemas.length,
+      ...(collectionCount !== undefined ? { collections: collectionCount } : {}),
       responseTime: Date.now() - dbStart,
     });
   } catch (err) {

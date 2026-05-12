@@ -9,8 +9,10 @@
 'use strict';
 
 const { generateSequentialNumber } = require('../utils/helpers');
-const { bookAccountStatementEntry } = require('../utils/accountingHelper/statements');
+const { newBusinessCaseId } = require('../utils/accountingHelper/businessCaseId');
+const { bookSettlementEntry } = require('../utils/accountingHelper/statements');
 const { createWalletReceiptDocument } = require('../utils/accountingHelper/documents');
+const { resolveDocumentReference } = require('../utils/accountingHelper/documentReferenceResolver');
 
 Parse.Cloud.beforeSave('WalletTransaction', async (request) => {
   const tx = request.object;
@@ -20,6 +22,9 @@ Parse.Cloud.beforeSave('WalletTransaction', async (request) => {
     if (!tx.get('transactionNumber')) {
       const txNumber = await generateSequentialNumber('TXN', 'WalletTransaction', 'transactionNumber');
       tx.set('transactionNumber', txNumber);
+    }
+    if (!tx.get('businessCaseId')) {
+      tx.set('businessCaseId', newBusinessCaseId());
     }
 
     tx.set('status', tx.get('status') || 'pending');
@@ -79,9 +84,11 @@ Parse.Cloud.afterSave('WalletTransaction', async (request) => {
         await event.save(null, { useMasterKey: true });
       }
 
-      // GoB: Beleg + AccountStatement for deposit/withdrawal
+      // GoB: Beleg + AccountStatement for deposit/withdrawal (ADR-011: zusätzlich
+      // GL-Pair Treuhand-Bank ↔ Kundenverbindlichkeit via bookSettlementEntry).
       if (['deposit', 'withdrawal'].includes(type)) {
         try {
+          const bc = String(tx.get('businessCaseId') || '').trim();
           const receipt = await createWalletReceiptDocument({
             userId,
             receiptType: type,
@@ -89,16 +96,21 @@ Parse.Cloud.afterSave('WalletTransaction', async (request) => {
             description: tx.get('description') || `${type === 'deposit' ? 'Einzahlung' : 'Auszahlung'} ${Math.abs(amount).toFixed(2)} €`,
             referenceType: 'WalletTransaction',
             referenceId: tx.id,
-            metadata: { transactionNumber: tx.get('transactionNumber') },
+            metadata: { transactionNumber: tx.get('transactionNumber'), businessCaseId: bc },
+            businessCaseId: bc,
           });
+          const receiptRef = resolveDocumentReference(receipt, { context: `wallet_${type}` });
 
           const isCredit = type === 'deposit';
-          await bookAccountStatementEntry({
+          await bookSettlementEntry({
             userId,
+            userRole: 'user',
             entryType: type,
             amount: isCredit ? Math.abs(amount) : -Math.abs(amount),
             description: `${isCredit ? 'Einzahlung' : 'Auszahlung'} (${tx.get('transactionNumber')})`,
-            referenceDocumentId: receipt.id,
+            ...receiptRef,
+            ledgerReference: { referenceId: tx.id, referenceType: 'WalletTransaction' },
+            businessCaseId: bc,
           });
         } catch (err) {
           console.error(`❌ GoB receipt/booking failed for WalletTransaction ${tx.id}:`, err.message);

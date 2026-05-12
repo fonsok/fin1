@@ -50,7 +50,11 @@ async function countAll(className) {
   return q.count({ useMasterKey: true });
 }
 
-/** Passed to destroy so triggers can allow guarded dev-maintenance deletes (see triggers/legal.js). */
+/**
+ * Parse.Object.destroy(All) options used by DEV reset. Together with
+ * {@link isDevTradingDataResetDestroyActive}, triggers/legalDeleteProtection.js allows guarded deletes
+ * (e.g. ComplianceEvent) during devResetTradingTestData; legal trigger entry is triggers/legal.js.
+ */
 const DEV_TRADING_DATA_RESET_DESTROY_OPTIONS = Object.freeze({
   useMasterKey: true,
   context: { allowDevTradingDataReset: true },

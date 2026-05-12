@@ -8,13 +8,15 @@
 const { calculateOrderFees } = require('../utils/helpers');
 const { requireAdminRole } = require('../utils/permissions');
 
-/**
- * Resolve the stable user ID used throughout the data model.
- * Parse User objectId differs from the stableId stored on trade/investment records.
- */
-function getUserStableId(user) {
-  return user.get('stableId') || `user:${(user.get('email') || user.get('username') || '').toLowerCase()}`;
-}
+const { getUserStableId } = require('./tradingIdentity');
+const { handleExecutePairedBuy } = require('./tradingPairedBuyExecution');
+const { handleUpsertTrade } = require('./tradingUpsertTrade');
+const {
+  handleGetTradeSettlement,
+  handleGetAccountStatement,
+  handleGetTradeInvoices,
+  handleGetUserInvoices,
+} = require('./tradingSettlementReads');
 
 // Get trader's open trades
 Parse.Cloud.define('getOpenTrades', async (request) => {
@@ -51,7 +53,7 @@ Parse.Cloud.define('getTradeHistory', async (request) => {
   return {
     trades: trades.map(t => t.toJSON()),
     total,
-    hasMore: skip + trades.length < total
+    hasMore: skip + trades.length < total,
   };
 });
 
@@ -74,7 +76,7 @@ Parse.Cloud.define('calculateOrderPreview', async (request) => {
     orderType,
     grossAmount,
     fees,
-    netAmount
+    netAmount,
   };
 });
 
@@ -85,7 +87,6 @@ Parse.Cloud.define('placeOrder', async (request) => {
 
   const { symbol, quantity, price, side, orderType, limitPrice, stopPrice, tradeId } = request.params;
 
-  // Validate
   if (!symbol) throw new Parse.Error(Parse.Error.INVALID_VALUE, 'Symbol required');
   if (!quantity || quantity <= 0) throw new Parse.Error(Parse.Error.INVALID_VALUE, 'Invalid quantity');
   if (!['buy', 'sell'].includes(side)) throw new Parse.Error(Parse.Error.INVALID_VALUE, 'Invalid side');
@@ -93,7 +94,6 @@ Parse.Cloud.define('placeOrder', async (request) => {
     throw new Parse.Error(Parse.Error.INVALID_VALUE, 'Invalid order type');
   }
 
-  // For sell orders, verify user owns the position
   if (side === 'sell' && tradeId) {
     const tradeQuery = new Parse.Query('Trade');
     tradeQuery.equalTo('traderId', getUserStableId(user));
@@ -105,11 +105,9 @@ Parse.Cloud.define('placeOrder', async (request) => {
     }
   }
 
-  // Calculate fees
   const grossAmount = quantity * (price || limitPrice || 0);
   const fees = calculateOrderFees(grossAmount);
 
-  // Create order
   const Order = Parse.Object.extend('Order');
   const order = new Order();
   order.set('traderId', getUserStableId(user));
@@ -130,163 +128,63 @@ Parse.Cloud.define('placeOrder', async (request) => {
   return {
     orderId: order.id,
     orderNumber: order.get('orderNumber'),
-    status: order.get('status')
+    status: order.get('status'),
   };
+});
+
+Parse.Cloud.define('executePairedBuy', handleExecutePairedBuy);
+
+Parse.Cloud.define('upsertTrade', handleUpsertTrade);
+
+Parse.Cloud.define('getTradeById', async (request) => {
+  const user = request.user;
+  if (!user) throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Login required');
+
+  const { tradeId } = request.params || {};
+  if (!tradeId) throw new Parse.Error(Parse.Error.INVALID_VALUE, 'tradeId required');
+
+  const trade = await new Parse.Query('Trade').get(tradeId, { useMasterKey: true });
+  const stableId = getUserStableId(user);
+
+  if (request.master) {
+    return trade.toJSON();
+  }
+
+  if (trade.get('traderId') === stableId) {
+    return trade.toJSON();
+  }
+
+  const allParticipations = await new Parse.Query('PoolTradeParticipation')
+    .equalTo('tradeId', tradeId)
+    .limit(1000)
+    .find({ useMasterKey: true });
+  const investmentRefs = allParticipations
+    .map((p) => p.get('investmentId'))
+    .filter((id) => typeof id === 'string' && id.length > 0);
+  if (investmentRefs.length > 0) {
+    const investorMatch = await new Parse.Query('Investment')
+      .containedIn('objectId', investmentRefs)
+      .equalTo('investorId', stableId)
+      .first({ useMasterKey: true });
+    if (investorMatch) {
+      return trade.toJSON();
+    }
+  }
+
+  throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Access denied');
 });
 
 // ============================================================================
 // SETTLEMENT & ACCOUNT STATEMENT
 // ============================================================================
 
-// Get the backend-authoritative settlement data for a completed trade
-Parse.Cloud.define('getTradeSettlement', async (request) => {
-  const user = request.user;
-  if (!user) throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Login required');
+Parse.Cloud.define('getTradeSettlement', handleGetTradeSettlement);
 
-  const { tradeId } = request.params;
-  if (!tradeId) throw new Parse.Error(Parse.Error.INVALID_VALUE, 'tradeId required');
+Parse.Cloud.define('getAccountStatement', handleGetAccountStatement);
 
-  // Verify trade belongs to user (as trader or as investor)
-  const trade = await new Parse.Query('Trade').get(tradeId, { useMasterKey: true });
-  if (!trade) throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Trade not found');
+Parse.Cloud.define('getTradeInvoices', handleGetTradeInvoices);
 
-  const stableId = getUserStableId(user);
-  const isTradersOwnTrade = trade.get('traderId') === stableId;
-
-  // Check if user is an investor in this trade
-  let isInvestorInTrade = false;
-  if (!isTradersOwnTrade) {
-    const investorInvestments = await new Parse.Query('Investment')
-      .equalTo('investorId', stableId)
-      .find({ useMasterKey: true });
-    const investmentIds = investorInvestments.map(i => i.id);
-
-    if (investmentIds.length > 0) {
-      const participationCount = await new Parse.Query('PoolTradeParticipation')
-        .equalTo('tradeId', tradeId)
-        .containedIn('investmentId', investmentIds)
-        .count({ useMasterKey: true });
-      isInvestorInTrade = participationCount > 0;
-    }
-  }
-
-  if (!isTradersOwnTrade && !isInvestorInTrade && !request.master) {
-    throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Access denied');
-  }
-
-  // Load AccountStatement entries for this trade
-  const accountEntries = await new Parse.Query('AccountStatement')
-    .equalTo('tradeId', tradeId)
-    .equalTo('source', 'backend')
-    .find({ useMasterKey: true });
-
-  // Load documents for this trade
-  const documents = await new Parse.Query('Document')
-    .equalTo('tradeId', tradeId)
-    .equalTo('source', 'backend')
-    .find({ useMasterKey: true });
-
-  // Load commission records
-  const commissions = await new Parse.Query('Commission')
-    .equalTo('tradeId', tradeId)
-    .find({ useMasterKey: true });
-
-  // Filter entries for the requesting user
-  const userEntries = accountEntries
-    .filter(e => e.get('userId') === stableId)
-    .map(e => e.toJSON());
-
-  const userDocuments = documents
-    .filter(d => d.get('userId') === stableId)
-    .map(d => d.toJSON());
-
-  return {
-    tradeId,
-    tradeNumber: trade.get('tradeNumber'),
-    grossProfit: trade.get('grossProfit') || 0,
-    totalFees: trade.get('totalFees') || 0,
-    netProfit: trade.get('netProfit') || 0,
-    status: trade.get('status'),
-    isSettledByBackend: accountEntries.length > 0,
-    accountStatementEntries: userEntries,
-    documents: userDocuments,
-    commissions: commissions
-      .filter(c => c.get('traderId') === stableId || c.get('investorId') === stableId)
-      .map(c => c.toJSON()),
-  };
-});
-
-// Get account statement entries for the current user
-Parse.Cloud.define('getAccountStatement', async (request) => {
-  const user = request.user;
-  if (!user) throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Login required');
-
-  const { limit = 50, skip = 0, entryType } = request.params || {};
-
-  const query = new Parse.Query('AccountStatement');
-  query.equalTo('userId', getUserStableId(user));
-  if (entryType) query.equalTo('entryType', entryType);
-  query.descending('createdAt');
-  query.limit(limit);
-  query.skip(skip);
-
-  const entries = await query.find({ useMasterKey: true });
-  const total = await query.count({ useMasterKey: true });
-
-  return {
-    entries: entries.map(e => e.toJSON()),
-    total,
-    hasMore: skip + entries.length < total,
-  };
-});
-
-// Get invoices for a trade (buy/sell settlement invoices with fee breakdown)
-Parse.Cloud.define('getTradeInvoices', async (request) => {
-  const user = request.user;
-  if (!user) throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Login required');
-
-  const { tradeId } = request.params || {};
-  if (!tradeId) throw new Parse.Error(Parse.Error.INVALID_VALUE, 'tradeId is required');
-
-  const stableId = getUserStableId(user);
-
-  const query = new Parse.Query('Invoice');
-  query.equalTo('tradeId', tradeId);
-  query.equalTo('userId', stableId);
-  query.descending('invoiceDate');
-
-  const invoices = await query.find({ useMasterKey: true });
-
-  return {
-    invoices: invoices.map(inv => inv.toJSON()),
-    count: invoices.length,
-  };
-});
-
-// Get all invoices for the current user (paginated)
-Parse.Cloud.define('getUserInvoices', async (request) => {
-  const user = request.user;
-  if (!user) throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Login required');
-
-  const { limit = 50, skip = 0, invoiceType } = request.params || {};
-  const stableId = getUserStableId(user);
-
-  const query = new Parse.Query('Invoice');
-  query.equalTo('userId', stableId);
-  if (invoiceType) query.equalTo('invoiceType', invoiceType);
-  query.descending('invoiceDate');
-  query.limit(limit);
-  query.skip(skip);
-
-  const invoices = await query.find({ useMasterKey: true });
-  const total = await query.count({ useMasterKey: true });
-
-  return {
-    invoices: invoices.map(inv => inv.toJSON()),
-    total,
-    hasMore: skip + invoices.length < total,
-  };
-});
+Parse.Cloud.define('getUserInvoices', handleGetUserInvoices);
 
 // Get holdings
 Parse.Cloud.define('getHoldings', async (request) => {
@@ -313,6 +211,7 @@ Parse.Cloud.define('getInvestorCollectionBills', async (request) => {
   const query = new Parse.Query('Document');
   query.equalTo('userId', stableId);
   query.containedIn('type', ['investor_collection_bill', 'investorCollectionBill']);
+  query.doesNotExist('metadata.receiptType');
   if (investmentId) query.equalTo('investmentId', investmentId);
   if (tradeId) query.equalTo('tradeId', tradeId);
   query.descending('createdAt');
@@ -329,10 +228,7 @@ Parse.Cloud.define('getInvestorCollectionBills', async (request) => {
   };
 });
 
-// Admin-only monitoring endpoint:
-// returns active collection bills missing canonical metadata.returnPercentage.
 Parse.Cloud.define('auditCollectionBillReturnPercentage', async (request) => {
-  // Allow automation with master key; otherwise require authenticated admin role.
   if (!request.master) {
     requireAdminRole(request);
   }
@@ -342,7 +238,7 @@ Parse.Cloud.define('auditCollectionBillReturnPercentage', async (request) => {
 
   const baseQuery = new Parse.Query('Document');
   baseQuery.containedIn('type', ['investor_collection_bill', 'investorCollectionBill']);
-  baseQuery.doesNotExist('metadata.receiptType'); // exclude wallet receipts
+  baseQuery.doesNotExist('metadata.receiptType');
 
   const missingQuery = new Parse.Query('Document');
   missingQuery.containedIn('type', ['investor_collection_bill', 'investorCollectionBill']);

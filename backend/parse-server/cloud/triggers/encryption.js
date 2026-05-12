@@ -78,9 +78,9 @@ Parse.Cloud.afterFind('OnboardingAudit', (request) => {
 // ============================================================================
 // _User — phone_number
 //
-// IMPORTANT: _User already has a beforeSave in triggers/user.js.
+// IMPORTANT: _User already has a beforeSave in triggers/user/ (userTriggerBeforeSave).
 // Parse Server allows only one beforeSave per class, so User PII
-// encryption is handled inside triggers/user.js instead.
+// encryption is handled there instead.
 // The afterFind is safe to register here (Parse allows multiple afterFind).
 // ============================================================================
 

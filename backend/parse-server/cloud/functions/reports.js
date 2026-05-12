@@ -233,14 +233,13 @@ Parse.Cloud.define('createServiceChargeInvoice', async (request) => {
   invoice.set('status', 'issued');
   invoice.set('currency', 'EUR');
 
-  // Link to investment batch if provided
+  // Link to investment batch if provided.
+  // Important: some iOS flows pass a business UUID batchId that is not a Parse objectId.
+  // Do not resolve via `get()` here; store as reference string so invoice save
+  // remains robust and still triggers server-side ledger booking.
   if (batchId) {
-    const InvestmentBatch = Parse.Object.extend('InvestmentBatch');
-    const batchQuery = new Parse.Query(InvestmentBatch);
-    const batch = await batchQuery.get(batchId, { useMasterKey: true });
-    if (batch) {
-      invoice.set('investmentId', batchId);
-    }
+    invoice.set('investmentId', String(batchId));
+    invoice.set('batchId', String(batchId));
   }
 
   // Store investment IDs as metadata

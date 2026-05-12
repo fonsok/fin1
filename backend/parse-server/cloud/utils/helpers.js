@@ -6,8 +6,60 @@
 'use strict';
 
 // ============================================================================
-// SEQUENTIAL NUMBER GENERATION
+// SEQUENTIAL NUMBER GENERATION (P2: atomar via SequenceCounter + $inc)
 // ============================================================================
+
+const SEQUENCE_COUNTER_CLASS = 'SequenceCounter';
+
+/**
+ * Letzter numerischer Suffix aus bestehenden Belegen (Legacy-Seed beim ersten Counter-Zeilen-Anlegen).
+ * @returns {Promise<number>}
+ */
+async function readMaxLegacySequence(prefix, className, fieldName) {
+  const year = new Date().getFullYear();
+  const pattern = `${prefix}-${year}-`;
+  const ParseClass = Parse.Object.extend(className);
+  const query = new Parse.Query(ParseClass);
+  query.startsWith(fieldName, pattern);
+  query.descending(fieldName);
+  query.limit(1);
+  const results = await query.find({ useMasterKey: true });
+  if (results.length === 0) return 0;
+  const lastNumber = results[0].get(fieldName);
+  if (!lastNumber || typeof lastNumber !== 'string') return 0;
+  const parts = lastNumber.split('-');
+  const lastSequence = parts.length >= 3 ? parseInt(parts[2], 10) : NaN;
+  return Number.isNaN(lastSequence) ? 0 : lastSequence;
+}
+
+/**
+ * @param {string} key — eindeutig pro Sequenz (z. B. Order::orderNumber::ORD::2026)
+ * @param {() => Promise<number>} readSeed — einmalig beim Anlegen der Counter-Zeile
+ * @returns {Promise<number>} nächster Wert (nach Increment)
+ */
+async function allocateSequentialCounter(key, readSeed) {
+  const Seq = Parse.Object.extend(SEQUENCE_COUNTER_CLASS);
+  const q = new Parse.Query(Seq);
+  q.equalTo('key', key);
+  let row = await q.first({ useMasterKey: true });
+  if (!row) {
+    const seed = await readSeed();
+    row = new Seq();
+    row.set('key', key);
+    row.set('value', seed);
+    try {
+      await row.save(null, { useMasterKey: true });
+    } catch {
+      row = await q.first({ useMasterKey: true });
+    }
+  }
+  if (!row) {
+    throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'SequenceCounter konnte nicht angelegt werden.');
+  }
+  row.increment('value', 1);
+  await row.save(null, { useMasterKey: true });
+  return row.get('value');
+}
 
 /**
  * Generate a sequential number with prefix and year
@@ -20,24 +72,47 @@
  */
 async function generateSequentialNumber(prefix, className, fieldName) {
   const year = new Date().getFullYear();
-  const pattern = `${prefix}-${year}-`;
+  const key = `${className}::${fieldName}::${prefix}::${year}`;
+  const v = await allocateSequentialCounter(key, () => readMaxLegacySequence(prefix, className, fieldName));
+  return `${prefix}-${year}-${v.toString().padStart(7, '0')}`;
+}
 
-  const ParseClass = Parse.Object.extend(className);
+/**
+ * Investment display number per investor (same format as global INV-YYYY-NNNNNNN,
+ * but sequence restarts per `investorId` each calendar year).
+ * GoB/UI: friendly reference stays investor-scoped; objectId remains globally unique.
+ *
+ * @param {string} investorId - Investment.investorId (Parse _User.objectId or legacy `user:email`)
+ * @returns {Promise<string>}
+ */
+async function readMaxLegacyInvestorInvestmentSequence(investorId) {
+  const id = String(investorId || '').trim();
+  const year = new Date().getFullYear();
+  const pattern = `INV-${year}-`;
+  const ParseClass = Parse.Object.extend('Investment');
   const query = new Parse.Query(ParseClass);
-  query.startsWith(fieldName, pattern);
-  query.descending(fieldName);
+  query.equalTo('investorId', id);
+  query.startsWith('investmentNumber', pattern);
+  query.descending('investmentNumber');
   query.limit(1);
-
   const results = await query.find({ useMasterKey: true });
+  if (results.length === 0) return 0;
+  const lastNumber = results[0].get('investmentNumber');
+  if (!lastNumber || typeof lastNumber !== 'string') return 0;
+  const parts = lastNumber.split('-');
+  const lastSequence = parts.length >= 3 ? parseInt(parts[2], 10) : NaN;
+  return Number.isNaN(lastSequence) ? 0 : lastSequence;
+}
 
-  let sequence = 1;
-  if (results.length > 0) {
-    const lastNumber = results[0].get(fieldName);
-    const lastSequence = parseInt(lastNumber.split('-')[2], 10);
-    sequence = lastSequence + 1;
+async function generateInvestorInvestmentNumber(investorId) {
+  const id = String(investorId || '').trim();
+  if (!id) {
+    return generateSequentialNumber('INV', 'Investment', 'investmentNumber');
   }
-
-  return `${prefix}-${year}-${sequence.toString().padStart(7, '0')}`;
+  const year = new Date().getFullYear();
+  const key = `Investment::investmentNumber::INV::${year}::${id}`;
+  const v = await allocateSequentialCounter(key, () => readMaxLegacyInvestorInvestmentSequence(id));
+  return `INV-${year}-${v.toString().padStart(7, '0')}`;
 }
 
 /**
@@ -64,7 +139,7 @@ async function maxUserCustomerSequence(pattern) {
 
 /**
  * Generate business customer number for _User (canonical field: customerNumber).
- * Format: ANL-YYYY-NNNNN or TRD-YYYY-NNNNN (INV- reserved for investments).
+ * Format: ANL-YYYY-NNNNN or TRD-YYYY-NNNNN (INV-: per-investor sequence via {@link generateInvestorInvestmentNumber}).
  *
  * @param {string} role - User role ('investor' or 'trader')
  * @returns {Promise<string>}
@@ -248,6 +323,7 @@ function calculateRiskClass(experienceScore, knowledgeScore, frequencyScore, des
 
 module.exports = {
   generateSequentialNumber,
+  generateInvestorInvestmentNumber,
   generateCustomerNumber,
   generateCustomerId,
   formatCurrency,

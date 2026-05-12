@@ -260,3 +260,117 @@ Parse.Cloud.define('createFAQCategory', async (request) => {
 
   return category.toJSON();
 });
+
+/**
+ * One-time / idempotent: reassign FAQs from retired Help Center categories to canonical slugs,
+ * then deactivate the old FAQCategory rows (so admin and APIs no longer surface them).
+ *
+ * Mapping: investor_portfolio → investments, trader_pools → trading
+ */
+Parse.Cloud.define('migrateRetiredFAQCategoryAssignments', async (request) => {
+  requireAdminRole(request);
+  requirePermission(request, 'manageTemplates');
+
+  const dryRun = request.params?.dryRun === true;
+  const slugMap = [
+    { from: 'investor_portfolio', to: 'investments' },
+    { from: 'trader_pools', to: 'trading' },
+  ];
+
+  async function categoryIdForSlug(slug) {
+    const q = new Parse.Query('FAQCategory');
+    q.equalTo('slug', slug);
+    const row = await q.first({ useMasterKey: true });
+    return row ? row.id : null;
+  }
+
+  const pairs = [];
+  for (const { from, to } of slugMap) {
+    const fromId = await categoryIdForSlug(from);
+    const toId = await categoryIdForSlug(to);
+    if (fromId && toId && fromId !== toId) {
+      pairs.push({ from, to, fromId, toId });
+    }
+  }
+
+  let faqsRemapped = 0;
+  let faqsCandidateCount = 0;
+  let categoriesRetired = 0;
+  let categoriesRetireCandidates = 0;
+
+  function applyCategoryRemap(faq, fromId, toId) {
+    let touched = false;
+    if (faq.get('categoryId') === fromId) {
+      faq.set('categoryId', toId);
+      touched = true;
+    }
+    const ids = faq.get('categoryIds');
+    if (Array.isArray(ids) && ids.length > 0 && ids.includes(fromId)) {
+      faq.set('categoryIds', [...new Set(ids.map((id) => (id === fromId ? toId : id)))]);
+      touched = true;
+    }
+    return touched;
+  }
+
+  if (!dryRun) {
+    for (const { fromId, toId } of pairs) {
+      const qByPrimary = new Parse.Query('FAQ');
+      qByPrimary.equalTo('categoryId', fromId);
+      const qByArray = new Parse.Query('FAQ');
+      qByArray.equalTo('categoryIds', fromId);
+      const combined = Parse.Query.or(qByPrimary, qByArray);
+      combined.limit(1000);
+      const rows = await combined.find({ useMasterKey: true });
+      const seen = new Map();
+      for (const faq of rows) {
+        if (faq.id) seen.set(faq.id, faq);
+      }
+      for (const faq of seen.values()) {
+        if (applyCategoryRemap(faq, fromId, toId)) {
+          await faq.save(null, { useMasterKey: true });
+          faqsRemapped += 1;
+        }
+      }
+    }
+
+    for (const { from } of slugMap) {
+      const cq = new Parse.Query('FAQCategory');
+      cq.equalTo('slug', from);
+      const cat = await cq.first({ useMasterKey: true });
+      if (cat) {
+        cat.set('isActive', false);
+        cat.set('showInHelpCenter', false);
+        cat.set('showOnLanding', false);
+        cat.set('showInCSR', false);
+        await cat.save(null, { useMasterKey: true });
+        categoriesRetired += 1;
+      }
+    }
+  } else {
+    for (const { fromId } of pairs) {
+      const qByPrimary = new Parse.Query('FAQ');
+      qByPrimary.equalTo('categoryId', fromId);
+      const qByArray = new Parse.Query('FAQ');
+      qByArray.equalTo('categoryIds', fromId);
+      const combined = Parse.Query.or(qByPrimary, qByArray);
+      faqsCandidateCount += await combined.count({ useMasterKey: true });
+    }
+    for (const { from } of slugMap) {
+      const cq = new Parse.Query('FAQCategory');
+      cq.equalTo('slug', from);
+      if (await cq.first({ useMasterKey: true })) {
+        categoriesRetireCandidates += 1;
+      }
+    }
+  }
+
+  return {
+    success: true,
+    dryRun,
+    pairsPlanned: pairs,
+    faqsRemapped,
+    faqsCandidateCount,
+    categoriesRetired,
+    categoriesRetireCandidates,
+  };
+});

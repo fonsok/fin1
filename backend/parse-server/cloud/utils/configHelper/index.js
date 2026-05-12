@@ -17,6 +17,7 @@ const { loadConfig } = require('./loadConfig');
 const {
   getTraderCommissionRate,
   getAppServiceChargeRate,
+  getAppServiceChargeRateForAccountType,
   getMinimumCashReserve,
   getInitialAccountBalance,
   getOrderFeeConfig,
@@ -29,6 +30,7 @@ module.exports = {
   invalidateCache,
   getTraderCommissionRate,
   getAppServiceChargeRate,
+  getAppServiceChargeRateForAccountType,
   getPlatformServiceChargeRate: getAppServiceChargeRate,
   getMinimumCashReserve,
   getInitialAccountBalance,

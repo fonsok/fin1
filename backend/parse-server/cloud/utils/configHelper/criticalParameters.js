@@ -6,6 +6,14 @@
 const CRITICAL_PARAMETERS = [
   'traderCommissionRate',
   'appServiceChargeRate',
+  'appServiceChargeRateCompanies',
+  'serviceChargeLegacyClientFallbackEnabled',
+  'serviceChargeLegacyDisableAllowedFrom',
+  'withholdingTaxRate',
+  'solidaritySurchargeRate',
+  'vatRate',
+  'taxCollectionMode',
+  'legalAppName',
   'initialAccountBalance',
   'orderFeeRate',
   'orderFeeMin',
@@ -13,6 +21,13 @@ const CRITICAL_PARAMETERS = [
   'daily_transaction_limit',
   'weekly_transaction_limit',
   'monthly_transaction_limit',
+  'showDocumentReferenceLinksInAccountStatement',
+  'walletActionMode',
+  'walletActionModeGlobal',
+  'walletActionModeInvestor',
+  'walletActionModeTrader',
+  'walletActionModeIndividual',
+  'walletActionModeCompany',
 ];
 
 function isCriticalParameter(paramName) {

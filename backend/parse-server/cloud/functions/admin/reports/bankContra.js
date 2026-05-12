@@ -1,6 +1,7 @@
 'use strict';
 
 const { requirePermission } = require('../../../utils/permissions');
+const { getMappedAccounts, BANK_CONTRA_ACCOUNTS } = require('./shared');
 
 function registerBankContraReportFunctions() {
   Parse.Cloud.define('getBankContraLedger', async (request) => {
@@ -118,14 +119,14 @@ function registerBankContraReportFunctions() {
       totals[key].net = Math.round(totals[key].net * 100) / 100;
     }
 
+    const bankCodes = new Set(BANK_CONTRA_ACCOUNTS.map((a) => a.code));
+    const accounts = getMappedAccounts().filter((a) => bankCodes.has(a.code));
+
     return {
       postings: filtered,
       totals,
       totalCount: filtered.length,
-      accounts: [
-        { code: 'BANK-PS-NET', name: 'Bank Clearing – Service Charge NET' },
-        { code: 'BANK-PS-VAT', name: 'Bank Clearing – Service Charge VAT' },
-      ],
+      accounts,
     };
   });
 }

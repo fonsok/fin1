@@ -8,6 +8,66 @@ const {
   validateDocumentType,
   serializeTermsContent,
 } = require('./shared');
+const { loadConfig } = require('../../utils/configHelper/index.js');
+
+function formatPercentDE(value) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return '0 %';
+  return `${new Intl.NumberFormat('de-DE', { maximumFractionDigits: 2 }).format(num * 100)} %`;
+}
+
+function formatCurrencyEUR(value) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return '0,00 €';
+  return new Intl.NumberFormat('de-DE', {
+    style: 'currency',
+    currency: 'EUR',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(num);
+}
+
+function formatTaxRateWithSoliDE(withholdingTaxRate, solidaritySurchargeRate) {
+  const withholdingPercent = Number(withholdingTaxRate) * 100;
+  if (!Number.isFinite(withholdingPercent)) return '25 %';
+
+  const soliFactor = Number(solidaritySurchargeRate);
+  if (!Number.isFinite(soliFactor) || soliFactor <= 0) {
+    return `${new Intl.NumberFormat('de-DE', { maximumFractionDigits: 2 }).format(withholdingPercent)} %`;
+  }
+
+  const soliAbsolutePercent = withholdingPercent * soliFactor;
+  const totalPercent = withholdingPercent + soliAbsolutePercent;
+  return `${new Intl.NumberFormat('de-DE', { maximumFractionDigits: 2 }).format(totalPercent)} %`;
+}
+
+function formatTaxCollectionModeLabel(mode) {
+  if (mode === 'customer_self_reports') {
+    return 'Selbstabführung durch den Kunden';
+  }
+  return 'Automatischer Abzug und Abführung durch die Plattform';
+}
+
+function replacePlaceholders(text, replacements) {
+  if (typeof text !== 'string' || !text) return text;
+  return text.replace(/\{\{([A-Z0-9_]+)\}\}|\{\(([A-Z0-9_]+)\)\}/g, (match, tokenA, tokenB) => {
+    const token = tokenA || tokenB;
+    if (Object.prototype.hasOwnProperty.call(replacements, token)) {
+      return String(replacements[token]);
+    }
+    return match;
+  });
+}
+
+function hydrateTermsPlaceholders(payload, replacements) {
+  const next = { ...payload };
+  next.sections = (payload.sections || []).map((section) => ({
+    ...section,
+    title: replacePlaceholders(section.title, replacements),
+    content: replacePlaceholders(section.content, replacements),
+  }));
+  return next;
+}
 
 function registerLegalPublicAuditFunctions() {
   Parse.Cloud.define('getCurrentTerms', async (request) => {
@@ -26,7 +86,53 @@ function registerLegalPublicAuditFunctions() {
       throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'No active legal document found');
     }
 
-    return serializeTermsContent(doc);
+    const serialized = serializeTermsContent(doc);
+    const liveConfig = await loadConfig();
+    const fin = liveConfig?.financial || {};
+    const limits = liveConfig?.limits || {};
+    const display = liveConfig?.display || {};
+    const legal = liveConfig?.legal || {};
+    const tax = liveConfig?.tax || {};
+    const serviceChargeRate =
+      fin.appServiceChargeRate
+      ?? fin.platformServiceChargeRate
+      ?? 0.02;
+    const traderCommissionRate = Number.isFinite(fin.traderCommissionRate)
+      ? fin.traderCommissionRate
+      : 0.1;
+    const withholdingTaxRate = Number.isFinite(tax.withholdingTaxRate)
+      ? tax.withholdingTaxRate
+      : 0.25;
+    const solidaritySurchargeRate = Number.isFinite(tax.solidaritySurchargeRate)
+      ? tax.solidaritySurchargeRate
+      : 0.055;
+    const vatRate = Number.isFinite(tax.vatRate)
+      ? tax.vatRate
+      : 0.19;
+    const taxCollectionMode = typeof tax.taxCollectionMode === 'string'
+      ? tax.taxCollectionMode
+      : 'platform_withholds';
+    const replacements = {
+      APP_NAME: legal.appName || 'FIN1',
+      LEGAL_PLATFORM_NAME: legal.platformName || 'App',
+      MAX_RISK_PERCENT: new Intl.NumberFormat('de-DE', { maximumFractionDigits: 2 }).format(
+        Number.isFinite(display.maximumRiskExposurePercent) ? display.maximumRiskExposurePercent : 2.0
+      ),
+      DAILY_LIMIT: formatCurrencyEUR(limits.dailyTransactionLimit),
+      TAX_RATE: formatTaxRateWithSoliDE(withholdingTaxRate, solidaritySurchargeRate),
+      VAT_RATE: formatPercentDE(vatRate),
+      TAX_COLLECTION_MODE: taxCollectionMode,
+      TAX_COLLECTION_MODE_LABEL: formatTaxCollectionModeLabel(taxCollectionMode),
+      APP_SERVICE_CHARGE_RATE: formatPercentDE(serviceChargeRate),
+      PLATFORM_SERVICE_CHARGE_RATE: formatPercentDE(serviceChargeRate),
+      PLATFORM_FEE_RATE: formatPercentDE(serviceChargeRate),
+      TRADER_COMMISSION_RATE: formatPercentDE(traderCommissionRate),
+      LEGAL_COMPANY_LEGAL_NAME: legal.companyLegalName || legal.platformName || 'App',
+      LEGAL_COMPANY_ADDRESS_LINE: legal.companyAddressLine || '',
+      LEGAL_COMPANY_VAT_ID: legal.companyVatId || '',
+    };
+
+    return hydrateTermsPlaceholders(serialized, replacements);
   });
 
   Parse.Cloud.define('getCurrentLegalDocument', async (request) => {

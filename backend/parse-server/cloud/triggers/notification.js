@@ -2,6 +2,18 @@
 // Parse Cloud Code
 // triggers/notification.js - Notification Triggers
 // ============================================================================
+//
+// Optional iOS in-app routing (tap card → open Document):
+// The app merges Parse top-level fields referenceType / referenceId into metadata,
+// then NotificationMetadataActionResolver handles deep links.
+//
+// To open a specific Document row (invoice, collection bill, monthly statement, etc.):
+//   • Set column referenceType = "document" and referenceId = Document.objectId,
+//     OR set metadata.documentId = Document.objectId (string).
+//   • Survey (metadata.surveyRequestId) and ticket (metadata.ticketId /
+//     referenceType ticket) take precedence on iOS when present.
+//
+// Spec: Documentation/ADR-004-Notifications-Parse-Source-Of-Truth.md (§6)
 
 'use strict';
 

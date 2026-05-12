@@ -1,5 +1,11 @@
 'use strict';
 
+const {
+  applyLedgerSnapshotToEntry,
+  mergeMetadataWithSnapshot,
+} = require('../../../utils/accountingHelper/accountMappingResolver');
+const { resolveDocumentRefForFeeRefund } = require('../../../utils/accountingHelper/documents');
+
 function round2(value) {
   return Math.round(value * 100) / 100;
 }
@@ -54,6 +60,7 @@ async function createAppLedgerEntry({
   const AppLedgerEntry = Parse.Object.extend('AppLedgerEntry');
   const entry = new AppLedgerEntry();
   entry.set('account', account);
+  const snapshot = applyLedgerSnapshotToEntry(entry, account);
   entry.set('side', side);
   entry.set('amount', round2(amount));
   entry.set('userId', userId);
@@ -62,7 +69,7 @@ async function createAppLedgerEntry({
   entry.set('referenceId', referenceId);
   entry.set('referenceType', referenceType);
   entry.set('description', description);
-  entry.set('metadata', metadata || {});
+  entry.set('metadata', mergeMetadataWithSnapshot(metadata || {}, snapshot));
   await entry.save(null, { useMasterKey: true });
 }
 
@@ -87,6 +94,21 @@ async function applyCorrectionRequest({ metadata, requestId, approverId }) {
     const netAmount = amount / (1 + vatRate);
     const vatAmount = amount - netAmount;
 
+    let feeRefundDocRefs = {};
+    try {
+      feeRefundDocRefs = await resolveDocumentRefForFeeRefund(targetId, amount, {
+        invoiceId: metadata.invoiceId,
+        batchId: metadata.batchId,
+      });
+    } catch (err) {
+      console.warn('resolveDocumentRefForFeeRefund failed:', err.message);
+    }
+    const feeRefundBelegMeta = {
+      fourEyesRequestId: requestId,
+      businessReference: `4-Augen Gebührenerstattung · Antrag ${requestId}`,
+      ...feeRefundDocRefs,
+    };
+
     await createAppLedgerEntry({
       account: 'PLT-REV-PSC',
       side: 'debit',
@@ -97,7 +119,10 @@ async function applyCorrectionRequest({ metadata, requestId, approverId }) {
       referenceId: requestId,
       referenceType: 'refund',
       description: `Storno Appgebühr – ${reason}`,
-      metadata: { step: 'revenue_reversal', fourEyesRequestId: requestId },
+      metadata: {
+        step: 'revenue_reversal',
+        ...feeRefundBelegMeta,
+      },
     });
 
     await createAppLedgerEntry({
@@ -110,7 +135,10 @@ async function applyCorrectionRequest({ metadata, requestId, approverId }) {
       referenceId: requestId,
       referenceType: 'refund',
       description: `Storno USt – ${reason}`,
-      metadata: { step: 'vat_reversal', fourEyesRequestId: requestId },
+      metadata: {
+        step: 'vat_reversal',
+        ...feeRefundBelegMeta,
+      },
     });
 
     applied = true;
@@ -133,12 +161,16 @@ async function applyCorrectionRequest({ metadata, requestId, approverId }) {
       side: 'debit',
       amount,
       userId: 'SYSTEM',
-      userRole: 'platform',
+      userRole: 'app',
       transactionType: 'vatRemittance',
       referenceId: requestId,
       referenceType: 'vat_remittance',
       description: `USt-Abführung Finanzamt – ${reason}`,
-      metadata: { step: 'vat_liability_reduction', fourEyesRequestId: requestId },
+      metadata: {
+        step: 'vat_liability_reduction',
+        fourEyesRequestId: requestId,
+        businessReference: `4-Augen USt-Abführung · Antrag ${requestId}`,
+      },
     });
 
     await createAppLedgerEntry({
@@ -146,12 +178,16 @@ async function applyCorrectionRequest({ metadata, requestId, approverId }) {
       side: 'credit',
       amount,
       userId: 'SYSTEM',
-      userRole: 'platform',
+      userRole: 'app',
       transactionType: 'vatRemittance',
       referenceId: requestId,
       referenceType: 'vat_remittance',
       description: `USt-Zahlung Verrechnungskonto – ${reason}`,
-      metadata: { step: 'settlement', fourEyesRequestId: requestId },
+      metadata: {
+        step: 'settlement',
+        fourEyesRequestId: requestId,
+        businessReference: `4-Augen USt-Abführung · Antrag ${requestId}`,
+      },
     });
 
     applied = true;

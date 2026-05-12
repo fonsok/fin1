@@ -1,0 +1,15 @@
+'use strict';
+
+const LEDGER_ENTRY_SORT_FIELDS = [
+  'createdAt',
+  'amount',
+];
+
+const LEGACY_TRANSACTION_TYPE_APP_SERVICE_CHARGE_OLD = 'platformServiceCharge';
+const TRANSACTION_TYPE_APP_SERVICE_CHARGE = 'appServiceCharge';
+
+module.exports = {
+  LEDGER_ENTRY_SORT_FIELDS,
+  LEGACY_TRANSACTION_TYPE_APP_SERVICE_CHARGE_OLD,
+  TRANSACTION_TYPE_APP_SERVICE_CHARGE,
+};
