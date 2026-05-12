@@ -107,6 +107,11 @@ Parse.Cloud.define('getConfig', async (request) => {
   if (typeof display.showCommissionBreakdownInCreditNote !== 'boolean') {
     display.showCommissionBreakdownInCreditNote = true;
   }
+  if (liveConfig.display && typeof liveConfig.display.showDocumentReferenceLinksInAccountStatement === 'boolean') {
+    display.showDocumentReferenceLinksInAccountStatement = liveConfig.display.showDocumentReferenceLinksInAccountStatement;
+  } else if (typeof display.showDocumentReferenceLinksInAccountStatement !== 'boolean') {
+    display.showDocumentReferenceLinksInAccountStatement = true;
+  }
   if (typeof display.maximumRiskExposurePercent !== 'number' || display.maximumRiskExposurePercent < 0 || display.maximumRiskExposurePercent > 100) {
     display.maximumRiskExposurePercent = 2.0;
   }
@@ -115,6 +120,46 @@ Parse.Cloud.define('getConfig', async (request) => {
     display.walletFeatureEnabled = liveConfig.display.walletFeatureEnabled;
   } else if (typeof display.walletFeatureEnabled !== 'boolean') {
     display.walletFeatureEnabled = false;
+  }
+  const walletGlobal = liveConfig.display?.walletActionModeGlobal || liveConfig.display?.walletActionMode;
+  display.walletActionModeGlobal =
+    typeof walletGlobal === 'string'
+      ? walletGlobal
+      : (display.walletFeatureEnabled ? 'deposit_and_withdrawal' : 'disabled');
+  display.walletActionModeInvestor =
+    typeof liveConfig.display?.walletActionModeInvestor === 'string'
+      ? liveConfig.display.walletActionModeInvestor
+      : 'deposit_and_withdrawal';
+  display.walletActionModeTrader =
+    typeof liveConfig.display?.walletActionModeTrader === 'string'
+      ? liveConfig.display.walletActionModeTrader
+      : 'deposit_and_withdrawal';
+  display.walletActionModeIndividual =
+    typeof liveConfig.display?.walletActionModeIndividual === 'string'
+      ? liveConfig.display.walletActionModeIndividual
+      : 'deposit_and_withdrawal';
+  display.walletActionModeCompany =
+    typeof liveConfig.display?.walletActionModeCompany === 'string'
+      ? liveConfig.display.walletActionModeCompany
+      : 'deposit_and_withdrawal';
+  // Legacy alias.
+  display.walletActionMode = display.walletActionModeGlobal;
+  // ADR-007 Phase 2 rollout flag: server is the source of truth. Default false so
+  // legacy clients keep writing the Invoice locally until the admin flips the flag.
+  if (liveConfig.display && typeof liveConfig.display.serviceChargeInvoiceFromBackend === 'boolean') {
+    display.serviceChargeInvoiceFromBackend = liveConfig.display.serviceChargeInvoiceFromBackend;
+  } else if (typeof display.serviceChargeInvoiceFromBackend !== 'boolean') {
+    display.serviceChargeInvoiceFromBackend = false;
+  }
+  if (liveConfig.display && typeof liveConfig.display.serviceChargeLegacyClientFallbackEnabled === 'boolean') {
+    display.serviceChargeLegacyClientFallbackEnabled = liveConfig.display.serviceChargeLegacyClientFallbackEnabled;
+  } else if (typeof display.serviceChargeLegacyClientFallbackEnabled !== 'boolean') {
+    display.serviceChargeLegacyClientFallbackEnabled = true;
+  }
+  if (liveConfig.display && typeof liveConfig.display.serviceChargeLegacyDisableAllowedFrom === 'string') {
+    display.serviceChargeLegacyDisableAllowedFrom = liveConfig.display.serviceChargeLegacyDisableAllowedFrom;
+  } else if (typeof display.serviceChargeLegacyDisableAllowedFrom !== 'string') {
+    display.serviceChargeLegacyDisableAllowedFrom = '2026-05-15';
   }
 
   const defaultLimits = {
@@ -148,10 +193,17 @@ Parse.Cloud.define('updateConfig', async (request) => {
   }
 
   const { display } = request.params || {};
-  if (!display || (typeof display.showCommissionBreakdownInCreditNote !== 'boolean' && typeof display.maximumRiskExposurePercent !== 'number')) {
+  if (
+    !display ||
+    (
+      typeof display.showCommissionBreakdownInCreditNote !== 'boolean' &&
+      typeof display.showDocumentReferenceLinksInAccountStatement !== 'boolean' &&
+      typeof display.maximumRiskExposurePercent !== 'number'
+    )
+  ) {
     throw new Parse.Error(
       Parse.Error.INVALID_VALUE,
-      'Params must include display.showCommissionBreakdownInCreditNote (boolean) and/or display.maximumRiskExposurePercent (number 0–100)'
+      'Params must include display.showCommissionBreakdownInCreditNote (boolean) and/or display.showDocumentReferenceLinksInAccountStatement (boolean) and/or display.maximumRiskExposurePercent (number 0–100)'
     );
   }
   if (typeof display.maximumRiskExposurePercent === 'number' && (display.maximumRiskExposurePercent < 0 || display.maximumRiskExposurePercent > 100)) {
@@ -174,6 +226,9 @@ Parse.Cloud.define('updateConfig', async (request) => {
   if (typeof display.showCommissionBreakdownInCreditNote === 'boolean') {
     mergedDisplay.showCommissionBreakdownInCreditNote = display.showCommissionBreakdownInCreditNote;
   }
+  if (typeof display.showDocumentReferenceLinksInAccountStatement === 'boolean') {
+    mergedDisplay.showDocumentReferenceLinksInAccountStatement = display.showDocumentReferenceLinksInAccountStatement;
+  }
   if (typeof display.maximumRiskExposurePercent === 'number') {
     mergedDisplay.maximumRiskExposurePercent = display.maximumRiskExposurePercent;
   }
@@ -182,7 +237,11 @@ Parse.Cloud.define('updateConfig', async (request) => {
 
   const configData = config.toJSON();
   return {
-    display: configData.display || { showCommissionBreakdownInCreditNote: true, maximumRiskExposurePercent: 2.0 }
+    display: configData.display || {
+      showCommissionBreakdownInCreditNote: true,
+      showDocumentReferenceLinksInAccountStatement: true,
+      maximumRiskExposurePercent: 2.0
+    }
   };
 });
 
@@ -193,6 +252,7 @@ Parse.Cloud.define('updateConfig', async (request) => {
 // ============================================================================
 
 const { DEFAULT_CONFIG, loadConfig } = require('./utils/configHelper/index.js');
+const { processDueSettlementRetries } = require('./utils/accountingHelper/retryQueue');
 
 async function reconcileConfigDefaults() {
   try {
@@ -200,7 +260,12 @@ async function reconcileConfigDefaults() {
     const codeDefaults = DEFAULT_CONFIG.financial;
     const drifts = [];
 
+    // `initialAccountBalance`: code default is cold-start 0 €; DB almost always carries the
+    // admin/seed value (e.g. DEV 10_000 €). Runtime always uses DB via loadConfig — not a defect.
+    const skipFinancialReconcileKeys = new Set(['initialAccountBalance']);
+
     for (const [key, codeValue] of Object.entries(codeDefaults)) {
+      if (skipFinancialReconcileKeys.has(key)) continue;
       const dbValue = dbConfig.financial?.[key];
       if (dbValue !== undefined && dbValue !== null && dbValue !== codeValue) {
         drifts.push({ parameter: key, codeDefault: codeValue, dbValue });
@@ -247,6 +312,25 @@ setTimeout(() => {
     console.error('Startup config reconciliation failed:', err.message)
   );
 }, 5000);
+
+// ============================================================================
+// SETTLEMENT RETRY WORKER (fail-closed recovery loop)
+// ============================================================================
+let settlementRetryWorkerRunning = false;
+setInterval(async () => {
+  if (settlementRetryWorkerRunning) return;
+  settlementRetryWorkerRunning = true;
+  try {
+    const result = await processDueSettlementRetries({ limit: 20 });
+    if (Number(result?.processed || 0) > 0) {
+      console.log(`🔁 SettlementRetryWorker processed ${result.processed} job(s)`);
+    }
+  } catch (err) {
+    console.error('❌ SettlementRetryWorker failed:', err && err.message ? err.message : err);
+  } finally {
+    settlementRetryWorkerRunning = false;
+  }
+}, 60 * 1000);
 
 // ============================================================================
 // LOGGING

@@ -21,8 +21,9 @@ const DEFAULT_CONFIG = {
     foreignCosts: 2.50,
     traderCommissionRate: 0.10,
     appServiceChargeRate: 0.02,
+    appServiceChargeRateCompanies: 0.02,
     minimumCashReserve: 20.0,
-    /** Only the admin portal may raise this; cold start / no DB row = 0 €. */
+    /** Cold-start default 0 €; persisted Configuration is admin/seed-owned — see startup reconcile skip in main.js. */
     initialAccountBalance: 0.0,
   },
   limits: {
@@ -36,12 +37,34 @@ const DEFAULT_CONFIG = {
   },
   display: {
     showCommissionBreakdownInCreditNote: true,
+    showDocumentReferenceLinksInAccountStatement: true,
     maximumRiskExposurePercent: 2.0,
+    walletActionModeGlobal: 'disabled',
+    walletActionModeInvestor: 'deposit_and_withdrawal',
+    walletActionModeTrader: 'deposit_and_withdrawal',
+    walletActionModeIndividual: 'deposit_and_withdrawal',
+    walletActionModeCompany: 'deposit_and_withdrawal',
+    // Legacy single-scope key kept for backward compatibility.
+    walletActionMode: 'disabled',
     walletFeatureEnabled: false,
+    // ADR-007 Phase 2 rollout flag: default false — flip via admin portal when ready.
+    serviceChargeInvoiceFromBackend: false,
+    // Stability rollout: keep legacy client fallback enabled by default.
+    serviceChargeLegacyClientFallbackEnabled: true,
+    // Earliest date when disabling the legacy fallback is allowed.
+    serviceChargeLegacyDisableAllowedFrom: '2026-05-15',
   },
   legal: {
     appName: 'FIN1',
     platformName: 'App',
+  },
+  tax: {
+    withholdingTaxRate: 0.25,
+    solidaritySurchargeRate: 0.055,
+    vatRate: 0.19,
+    // Single governance switch for withholding tax bundle
+    // (withholding tax + solidarity surcharge + church tax handling flow).
+    taxCollectionMode: 'customer_self_reports',
   },
 };
 
