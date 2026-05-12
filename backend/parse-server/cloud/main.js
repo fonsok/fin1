@@ -252,6 +252,7 @@ Parse.Cloud.define('updateConfig', async (request) => {
 // ============================================================================
 
 const { DEFAULT_CONFIG, loadConfig } = require('./utils/configHelper/index.js');
+const { FINANCIAL_RECONCILIATION_SKIP_KEYS } = require('./utils/configHelper/reconciliationSkips.js');
 const { processDueSettlementRetries } = require('./utils/accountingHelper/retryQueue');
 
 async function reconcileConfigDefaults() {
@@ -260,12 +261,8 @@ async function reconcileConfigDefaults() {
     const codeDefaults = DEFAULT_CONFIG.financial;
     const drifts = [];
 
-    // `initialAccountBalance`: code default is cold-start 0 €; DB almost always carries the
-    // admin/seed value (e.g. DEV 10_000 €). Runtime always uses DB via loadConfig — not a defect.
-    const skipFinancialReconcileKeys = new Set(['initialAccountBalance']);
-
     for (const [key, codeValue] of Object.entries(codeDefaults)) {
-      if (skipFinancialReconcileKeys.has(key)) continue;
+      if (FINANCIAL_RECONCILIATION_SKIP_KEYS.has(key)) continue;
       const dbValue = dbConfig.financial?.[key];
       if (dbValue !== undefined && dbValue !== null && dbValue !== codeValue) {
         drifts.push({ parameter: key, codeDefault: codeValue, dbValue });
