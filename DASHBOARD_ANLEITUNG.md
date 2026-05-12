@@ -18,6 +18,10 @@ Dann im Browser: **`https://localhost/dashboard/`**
 
 **Hinweis:** Das Passwort steht in `backend/.env` unter `DASHBOARD_PASSWORD`
 
+### 403 Forbidden trotz SSH-Tunnel?
+
+Nginx erlaubt `/dashboard/` nur von bestimmten Quell-IPs. Nach `ssh -L …:127.0.0.1:443` sieht der **Nginx-Container** die Verbindung oft als **Docker-Bridge** (`172.17.0.1` / `172.18.0.1`), nicht als `127.0.0.1`. Im Repo sind diese Adressen in `backend/nginx/nginx.conf` neben `127.0.0.1` freigegeben — nach Änderung **Nginx-Container neu laden** (`docker compose … up -d --force-recreate nginx` o. Ä.). Wenn es weiter 403 gibt: `docker logs fin1-nginx` bzw. Access-Log prüfen, welche `$remote_addr` ankommt, und ggf. diese eine IP ergänzen.
+
 ---
 
 ## 📋 ComplianceEvent-Klasse erstellen
