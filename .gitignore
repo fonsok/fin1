@@ -5,6 +5,9 @@
 ## User settings
 xcuserdata/
 
+# Vim — recovery/swap fragments (must not live under FIN1/; synchronized groups compile every *.swift)
+.!*!*.swift
+
 ## compatibility with Xcode 8 and earlier (ignoring not required starting Xcode 9)
 *.xcscmblueprint
 *.xccheckout
