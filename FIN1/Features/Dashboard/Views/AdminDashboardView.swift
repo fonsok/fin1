@@ -15,7 +15,7 @@ struct AdminDashboardView: View {
                     MirrorBasisDriftHealthSection(apiClient: self.services.parseAPIClient)
                     self.appSettingsSection
                     self.appLedgerSection
-                    self.userImpersonationSection
+                    self.adminPortalCustomerContextSection
                     self.roleTestingSection
                     Spacer(minLength: ResponsiveDesign.spacing(20))
                 }
@@ -73,6 +73,7 @@ struct AdminDashboardView: View {
                 self.webPortalFeatureRow(icon: "chart.bar.doc.horizontal", title: "Summary Report", subtitle: "Investments & Trades")
                 self.webPortalFeatureRow(icon: "building.columns", title: "Bank Contra Ledger", subtitle: "Verrechnungskonten")
                 self.webPortalFeatureRow(icon: "eurosign.circle", title: "Finanzen", subtitle: "Rundungsdifferenzen & Korrekturen")
+                self.webPortalFeatureRow(icon: "person.2", title: "Benutzer", subtitle: "Kundensicht, Stammdaten, Vorgänge (serverseitig)")
                 self.webPortalFeatureRow(icon: "checkmark.shield", title: "Freigaben", subtitle: "4-Augen-Workflow")
                 self.webPortalFeatureRow(icon: "server.rack", title: "System-Status", subtitle: "Health Checks")
             }
@@ -203,62 +204,32 @@ struct AdminDashboardView: View {
         .cornerRadius(ResponsiveDesign.spacing(12))
     }
 
-    // MARK: - User Impersonation Section
-    private var userImpersonationSection: some View {
+    // MARK: - Customer context (Admin Web Portal)
+    private var adminPortalCustomerContextSection: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
-            HStack {
-                Text("User Impersonation")
+            HStack(spacing: ResponsiveDesign.spacing(10)) {
+                Image(systemName: "eye")
+                    .font(ResponsiveDesign.headlineFont())
+                    .foregroundColor(AppTheme.accentLightBlue)
+                Text("Kundensicht & Support")
                     .font(ResponsiveDesign.headlineFont())
                     .fontWeight(.semibold)
                     .foregroundColor(AppTheme.fontColor)
-
-                Spacer()
-
-                if self.services.userService.isImpersonating {
-                    Button(action: {
-                        Task {
-                            await self.services.userService.stopImpersonating()
-                        }
-                    }) {
-                        HStack(spacing: ResponsiveDesign.spacing(4)) {
-                            Image(systemName: "arrow.uturn.backward")
-                            Text("Return to Admin")
-                        }
-                        .font(ResponsiveDesign.captionFont())
-                        .foregroundColor(AppTheme.accentRed)
-                        .padding(.horizontal, ResponsiveDesign.spacing(8))
-                        .padding(.vertical, ResponsiveDesign.spacing(4))
-                        .background(AppTheme.accentRed.opacity(0.1))
-                        .cornerRadius(ResponsiveDesign.spacing(6))
-                    }
-                }
             }
 
-            if self.services.userService.isImpersonating {
-                HStack(spacing: ResponsiveDesign.spacing(8)) {
-                    Image(systemName: "person.badge.key.fill")
-                        .foregroundColor(AppTheme.accentOrange)
-                    VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(2)) {
-                        Text("Impersonating: \(self.services.userService.currentUser?.displayName ?? "Unknown")")
-                            .font(ResponsiveDesign.bodyFont())
-                            .fontWeight(.medium)
-                            .foregroundColor(AppTheme.fontColor)
-                        Text("Role: \(self.services.userService.userRole?.displayName ?? "Unknown")")
-                            .font(ResponsiveDesign.captionFont())
-                            .foregroundColor(AppTheme.secondaryText)
-                    }
-                    Spacer()
-                }
-                .padding()
-                .background(AppTheme.accentOrange.opacity(0.1))
-                .cornerRadius(ResponsiveDesign.spacing(8))
-            } else {
-                Text("Search for a user to impersonate and test their experience.")
-                    .font(ResponsiveDesign.captionFont())
-                    .foregroundColor(AppTheme.fontColor.opacity(0.7))
+            Text(
+                "Eine Anmeldung „als Kunde“ in dieser App gibt es nicht: Sitzung und Berechtigungen bleiben immer an der echten Admin-Session. Kundenkontext, Tickets und operative Aktionen laufen über das Admin Web Portal (serverseitige Kontrolle und Nachvollziehbarkeit)."
+            )
+            .font(ResponsiveDesign.captionFont())
+            .foregroundColor(AppTheme.fontColor.opacity(0.75))
+            .fixedSize(horizontal: false, vertical: true)
 
-                UserImpersonationSearchView()
-            }
+            Text(
+                "Im Portal: Bereich „Benutzer“ (Suche, Detail, nach Rolle), „Tickets“ / CSR, „Finanzen“, „Freigaben“ — je nach Berechtigung."
+            )
+            .font(ResponsiveDesign.captionFont())
+            .foregroundColor(AppTheme.fontColor.opacity(0.65))
+            .fixedSize(horizontal: false, vertical: true)
         }
         .padding()
         .background(AppTheme.sectionBackground)

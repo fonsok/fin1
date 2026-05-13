@@ -20,8 +20,7 @@ extension AppServicesBuilder {
                   let auditLoggingService = ctx.auditLoggingService,
                   let orderStatusSimulationService = ctx.orderStatusSimulationService,
                   let investmentService = ctx.investmentService,
-                  let investorCashBalanceService = ctx.investorCashBalanceService,
-                  let telemetryService = ctx.telemetryService else { return }
+                  let investorCashBalanceService = ctx.investorCashBalanceService else { return }
 
             let notificationService = NotificationService(
                 documentService: documentService,
@@ -44,9 +43,6 @@ extension AppServicesBuilder {
 
             ctx.dashboardService = DashboardService()
             ctx.testModeService = TestModeService()
-            ctx.roundingDifferencesService = MainActor.assumeIsolated {
-                RoundingDifferencesService(telemetryService: telemetryService)
-            }
             ctx.holdingsConversionService = HoldingsConversionService.shared
             ctx.termsAcceptanceService = TermsAcceptanceService()
             ctx.termsContentService = TermsContentService(parseAPIClient: parseAPIClient)

@@ -21,7 +21,6 @@ struct MainTabView: View {
     }
 
     @State private var showAPIFailureInfo = false
-    @State private var isImpersonating = false
 
     var body: some View {
         ZStack {
@@ -40,30 +39,6 @@ struct MainTabView: View {
             .id(self.tabCoordinator.currentRole) // Force TabView recreation on role change
             .accentColor(AppTheme.accentLightBlue)
 
-            VStack {
-                // Impersonation Banner (if impersonating)
-                if self.isImpersonating {
-                    ImpersonationBanner(services: self.services)
-                        .transition(.move(edge: .top).combined(with: .opacity))
-                }
-
-                Spacer()
-            }
-            .zIndex(100) // Ensure banner is above content
-            .onAppear {
-                self.isImpersonating = self.services.userService.isImpersonating
-            }
-            .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("UserImpersonationStarted"))) { _ in
-                self.isImpersonating = true
-            }
-            .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("UserImpersonationStopped"))) { _ in
-                self.isImpersonating = false
-            }
-            .onReceive(NotificationCenter.default.publisher(for: .userDataDidUpdate)) { _ in
-                self.isImpersonating = self.services.userService.isImpersonating
-            }
-
-            // API Failure Info Overlay
             InfoOverlay(
                 message: "Trades konnten nicht vom Server geladen werden. Trade-Nummerierung beginnt bei 1.",
                 isVisible: self.showAPIFailureInfo

@@ -50,7 +50,6 @@ struct AppServices: @unchecked Sendable {
     // MARK: - Unified Services (new architecture)
     let unifiedOrderService: any UnifiedOrderServiceProtocol
     let tradingStateStore: any TradingStateStoreProtocol
-    let roundingDifferencesService: any RoundingDifferencesServiceProtocol
 
     // MARK: - Centralized Calculation Services (new architecture)
     let investorGrossProfitService: any InvestorGrossProfitServiceProtocol

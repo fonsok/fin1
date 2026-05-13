@@ -27,12 +27,6 @@ protocol UserServiceProtocol: ObservableObject, Sendable {
     // MARK: - Role Management (Admin)
     func switchUserRole(to newRole: UserRole) async
 
-    // MARK: - User Impersonation (Admin)
-    var isImpersonating: Bool { get }
-    var originalAdminUser: User? { get }
-    func impersonateUser(userId: String, customerNumber: String, email: String, fullName: String, role: UserRole) async
-    func stopImpersonating() async
-
     // MARK: - User Queries
     var userDisplayName: String { get }
     var userRole: UserRole? { get }
@@ -55,15 +49,6 @@ final class UserService: UserServiceProtocol, ServiceLifecycle, @unchecked Senda
     @Published var _sessionToken: String?
     var sessionToken: String? {
         self._sessionToken
-    }
-
-    // MARK: - Impersonation State
-    @Published var _originalAdminUser: User?
-    var originalAdminUser: User? {
-        self._originalAdminUser
-    }
-    var isImpersonating: Bool {
-        self._originalAdminUser != nil
     }
 
     var cancellables = Set<AnyCancellable>()

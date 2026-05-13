@@ -21,14 +21,14 @@
 			remoteGlobalIDString = 114BEE662E51EBCC00C3E8F1;
 			remoteInfo = FIN1;
 		};
-		11INVPROXY00000000000001 /* PBXContainerItemProxy */ = {
+		11COREPROXY00000000000001 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 114BEE5F2E51EBCC00C3E8F1 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 114BEE662E51EBCC00C3E8F1;
 			remoteInfo = FIN1;
 		};
-		11COREPROXY00000000000001 /* PBXContainerItemProxy */ = {
+		11INVPROXY00000000000001 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 114BEE5F2E51EBCC00C3E8F1 /* Project object */;
 			proxyType = 1;
@@ -46,7 +46,7 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		11FIN1SYNCEXC000000000001 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+		11FIN1SYNCEXC000000000001 /* Exceptions for "FIN1" folder in "FIN1" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Documentation,
@@ -59,10 +59,8 @@
 		114BEE692E51EBCC00C3E8F1 /* FIN1 */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				11FIN1SYNCEXC000000000001 /* PBXFileSystemSynchronizedBuildFileExceptionSet */,
+				11FIN1SYNCEXC000000000001 /* Exceptions for "FIN1" folder in "FIN1" target */,
 			);
-			explicitFileTypes = {
-			};
 			explicitFolders = (
 				Documentation,
 			);
@@ -118,14 +116,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		11INVPHASEFRMW0000000000001 /* Frameworks */ = {
+		11COREPHASEFRMW0000000000001 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		11COREPHASEFRMW0000000000001 /* Frameworks */ = {
+		11INVPHASEFRMW0000000000001 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -231,27 +229,6 @@
 			productReference = 114BEE7E2E51EBCE00C3E8F1 /* FIN1UITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
-		11INVTGT000000000000001 /* FIN1InvestorTests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 11INVCONF000000000000001 /* Build configuration list for PBXNativeTarget "FIN1InvestorTests" */;
-			buildPhases = (
-				11INVPHASESRC0000000000001 /* Sources */,
-				11INVPHASEFRMW0000000000001 /* Frameworks */,
-				11INVPHASERES0000000000001 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				11INVDEP000000000000001 /* PBXTargetDependency */,
-			);
-			fileSystemSynchronizedGroups = (
-				11INVGRP000000000000001 /* FIN1InvestorTests */,
-			);
-			name = FIN1InvestorTests;
-			productName = FIN1InvestorTests;
-			productReference = 11INVPROD000000000000001 /* FIN1InvestorTests.xctest */;
-			productType = "com.apple.product-type.bundle.unit-test";
-		};
 		11CORETGT0000000000001 /* FIN1CoreRegressionTests */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 11CORECONF000000000000001 /* Build configuration list for PBXNativeTarget "FIN1CoreRegressionTests" */;
@@ -271,6 +248,27 @@
 			name = FIN1CoreRegressionTests;
 			productName = FIN1CoreRegressionTests;
 			productReference = 11COREPROD0000000000001 /* FIN1CoreRegressionTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		11INVTGT000000000000001 /* FIN1InvestorTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 11INVCONF000000000000001 /* Build configuration list for PBXNativeTarget "FIN1InvestorTests" */;
+			buildPhases = (
+				11INVPHASESRC0000000000001 /* Sources */,
+				11INVPHASEFRMW0000000000001 /* Frameworks */,
+				11INVPHASERES0000000000001 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				11INVDEP000000000000001 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				11INVGRP000000000000001 /* FIN1InvestorTests */,
+			);
+			name = FIN1InvestorTests;
+			productName = FIN1InvestorTests;
+			productReference = 11INVPROD000000000000001 /* FIN1InvestorTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
 /* End PBXNativeTarget section */
@@ -341,14 +339,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		11INVPHASERES0000000000001 /* Resources */ = {
+		11COREPHASERES0000000000001 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		11COREPHASERES0000000000001 /* Resources */ = {
+		11INVPHASERES0000000000001 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -379,14 +377,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		11INVPHASESRC0000000000001 /* Sources */ = {
+		11COREPHASESRC0000000000001 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		11COREPHASESRC0000000000001 /* Sources */ = {
+		11INVPHASESRC0000000000001 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -406,15 +404,15 @@
 			target = 114BEE662E51EBCC00C3E8F1 /* FIN1 */;
 			targetProxy = 114BEE7F2E51EBCE00C3E8F1 /* PBXContainerItemProxy */;
 		};
-		11INVDEP000000000000001 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 114BEE662E51EBCC00C3E8F1 /* FIN1 */;
-			targetProxy = 11INVPROXY00000000000001 /* PBXContainerItemProxy */;
-		};
 		11COREDEP000000000000001 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 114BEE662E51EBCC00C3E8F1 /* FIN1 */;
 			targetProxy = 11COREPROXY00000000000001 /* PBXContainerItemProxy */;
+		};
+		11INVDEP000000000000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 114BEE662E51EBCC00C3E8F1 /* FIN1 */;
+			targetProxy = 11INVPROXY00000000000001 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -674,44 +672,6 @@
 			};
 			name = Release;
 		};
-		11INVCONFDBG0000000000001 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = RQ63APAG77;
-				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = ra.FIN1InvestorTests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 6.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/FIN1.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/FIN1";
-			};
-			name = Debug;
-		};
-		11INVCONFREL0000000000001 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = RQ63APAG77;
-				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = ra.FIN1InvestorTests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 6.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/FIN1.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/FIN1";
-			};
-			name = Release;
-		};
 		11CORECONFDBG0000000000001 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -742,6 +702,44 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = ra.FIN1CoreRegressionTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/FIN1.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/FIN1";
+			};
+			name = Release;
+		};
+		11INVCONFDBG0000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = RQ63APAG77;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ra.FIN1InvestorTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/FIN1.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/FIN1";
+			};
+			name = Debug;
+		};
+		11INVCONFREL0000000000001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = RQ63APAG77;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ra.FIN1InvestorTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 6.0;
@@ -789,20 +787,20 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		11INVCONF000000000000001 /* Build configuration list for PBXNativeTarget "FIN1InvestorTests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				11INVCONFDBG0000000000001 /* Debug */,
-				11INVCONFREL0000000000001 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		11CORECONF000000000000001 /* Build configuration list for PBXNativeTarget "FIN1CoreRegressionTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				11CORECONFDBG0000000000001 /* Debug */,
 				11CORECONFREL0000000000001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		11INVCONF000000000000001 /* Build configuration list for PBXNativeTarget "FIN1InvestorTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				11INVCONFDBG0000000000001 /* Debug */,
+				11INVCONFREL0000000000001 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

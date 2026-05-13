@@ -21,11 +21,6 @@ final class MockUserService: UserServiceProtocol, @unchecked Sendable {
     var isInvestor: Bool { self.currentUser?.role == .investor }
     var isTrader: Bool { self.currentUser?.role == .trader }
 
-    // MARK: - Impersonation State
-    private var _originalAdminUser: User?
-    var originalAdminUser: User? { self._originalAdminUser }
-    var isImpersonating: Bool { self._originalAdminUser != nil }
-
     // MARK: - Behavior Closures (Simplified Approach)
     /// Closure to handle signIn - defaults to creating test user
     var signInHandler: ((String, String) async throws -> Void)?
@@ -133,7 +128,6 @@ final class MockUserService: UserServiceProtocol, @unchecked Sendable {
     func signOut() async {
         self.currentUser = nil
         self.isAuthenticated = false
-        self._originalAdminUser = nil
     }
 
     func updateProfile(_ user: User) async throws {
@@ -220,99 +214,12 @@ final class MockUserService: UserServiceProtocol, @unchecked Sendable {
         self.currentUser = updatedUser
     }
 
-    func impersonateUser(userId: String, customerNumber: String, email: String, fullName: String, role: UserRole) async {
-        // Store original admin user if not already stored
-        if self._originalAdminUser == nil, let currentUser = currentUser, currentUser.role == .admin {
-            self._originalAdminUser = currentUser
-        }
-
-        // Parse full name into first and last name
-        let nameComponents = fullName.components(separatedBy: " ")
-        let firstName = nameComponents.first ?? ""
-        let lastName = nameComponents.dropFirst().joined(separator: " ")
-
-        // Create impersonated user
-        let impersonatedUser = User(
-            id: userId,
-            customerNumber: customerNumber,
-            accountType: .individual,
-            email: email,
-            username: email.components(separatedBy: "@").first ?? "",
-            phoneNumber: "",
-            password: "",
-            salutation: .mr,
-            academicTitle: "",
-            firstName: firstName,
-            lastName: lastName.isEmpty ? firstName : lastName,
-            streetAndNumber: "",
-            postalCode: "",
-            city: "",
-            state: "",
-            country: "",
-            dateOfBirth: Date(),
-            placeOfBirth: "",
-            countryOfBirth: "",
-            role: role,
-            csrRole: nil,
-            employmentStatus: .employed,
-            income: 0,
-            incomeRange: .low,
-            riskTolerance: 3,
-            address: "",
-            nationality: "",
-            additionalNationalities: "",
-            taxNumber: "",
-            additionalTaxResidences: "",
-            isNotUSCitizen: true,
-            identificationType: .passport,
-            passportFrontImageURL: nil,
-            passportBackImageURL: nil,
-            idCardFrontImageURL: nil,
-            idCardBackImageURL: nil,
-            identificationConfirmed: true,
-            addressConfirmed: true,
-            addressVerificationDocumentURL: nil,
-            leveragedProductsExperience: role == .trader,
-            financialProductsExperience: role == .investor,
-            investmentExperience: role == .investor ? 2 : 0,
-            tradingFrequency: role == .trader ? 1 : 0,
-            investmentKnowledge: role == .investor ? 2 : 0,
-            desiredReturn: role == .trader ? .atLeastHundredPercent : .atLeastTenPercent,
-            insiderTradingOptions: [
-                "Brokerage or Stock Exchange Employee": false,
-                "Director or 10% Shareholder": false,
-                "High-Ranking Official": false,
-                "None of the above": true
-            ],
-            moneyLaunderingDeclaration: true,
-            assetType: .privateAssets,
-            profileImageURL: nil,
-            isEmailVerified: true,
-            isKYCCompleted: true,
-            acceptedTerms: true,
-            acceptedPrivacyPolicy: true,
-            acceptedMarketingConsent: true,
-            lastLoginDate: Date(),
-            createdAt: Date(),
-            updatedAt: Date()
-        )
-
-        currentUser = impersonatedUser
-    }
-
-    func stopImpersonating() async {
-        guard let originalUser = _originalAdminUser else { return }
-        self.currentUser = originalUser
-        self._originalAdminUser = nil
-    }
-
     func start() {}
     func stop() {}
     func reset() {
         self.currentUser = nil
         self.isAuthenticated = false
         self.isLoading = false
-        self._originalAdminUser = nil
         // Reset all handlers
         self.signInHandler = nil
         self.signUpHandler = nil

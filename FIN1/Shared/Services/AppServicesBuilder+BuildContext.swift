@@ -59,7 +59,6 @@ struct AppServicesBuildContext {
     var watchlistService: InvestorWatchlistService?
     var dashboardService: DashboardService?
     var testModeService: TestModeService?
-    var roundingDifferencesService: RoundingDifferencesService?
     var holdingsConversionService: HoldingsConversionService?
     var termsAcceptanceService: TermsAcceptanceService?
     var termsContentService: TermsContentService?
@@ -119,7 +118,6 @@ struct AppServicesBuildContext {
             investorCashBalanceService: self.investorCashBalanceService!,
             unifiedOrderService: self.unifiedOrderService!,
             tradingStateStore: self.mainTradingStateStore!,
-            roundingDifferencesService: self.roundingDifferencesService!,
             investorGrossProfitService: self.investorGrossProfitService!,
             commissionCalculationService: self.commissionCalculationService!,
             commissionAccumulationService: self.commissionAccumulationService!,
