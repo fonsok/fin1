@@ -18,6 +18,7 @@ require('./admin/helpers');
 // Dashboard & User Management
 require('./admin/dashboard');
 require('./admin/users');
+require('./admin/adminCustomerViewAudit');
 require('./admin/compliance');
 require('./admin/fourEyes');
 require('./admin/financial');
