@@ -16,7 +16,7 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Setup Xcode
       uses: maxim-lobanov/setup-xcode@v1
@@ -42,13 +42,15 @@ jobs:
       run: |
         swiftformat FIN1 FIN1Tests FIN1UITests FIN1InvestorTests FIN1CoreRegressionTests --lint
 
+    # Compile-only: use generic simulator destination so CI does not depend on a
+    # specific runtime (OS=18.6) being installed exactly as named on the runner.
     - name: Build Project
       run: |
         xcodebuild -project FIN1.xcodeproj \
                    -scheme FIN1 \
                    -sdk iphonesimulator \
                    -configuration Debug \
-                   -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.6' \
+                   -destination 'generic/platform=iOS Simulator' \
                    build
 
     # Match main CI: full `xcodebuild test` runs all scheme testables (incl. UITests) and is slow/flaky.
