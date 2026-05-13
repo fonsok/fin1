@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: No tracked admin SPA build trees
         run: |
@@ -48,7 +48,7 @@ jobs:
         working-directory: backend/parse-server
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -70,7 +70,7 @@ jobs:
         working-directory: admin-portal
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -100,7 +100,7 @@ jobs:
       IOS_BUILD_DESTINATION: platform=iOS Simulator,name=iPhone 16,OS=18.6
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       # Pin Xcode (not only default /Applications/Xcode.app): Xcode 16.4 vs 26 differs in Swift/SDK
       # checks; 26.0.1 matches typical dev installs on macos-15 images and avoids spurious CI-only fails.
@@ -113,7 +113,7 @@ jobs:
         run: xcodebuild -version && xcode-select -p
 
       - name: Cache SwiftLint
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/Library/Caches/Homebrew
           key: ${{ runner.os }}-brew-${{ hashFiles('.swiftlint.yml') }}
