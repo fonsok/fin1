@@ -3,6 +3,9 @@
   "files.trimTrailingWhitespace": true,
   "editor.renderWhitespace": "boundary",
   "editor.rulers": [120],
+  "terminal.integrated.env.osx": {
+    "DEVELOPER_DIR": "/Applications/Xcode.app/Contents/Developer"
+  },
   "[swift]": {
     "editor.tabSize": 4,
     "editor.insertSpaces": true,

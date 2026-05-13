@@ -17,7 +17,7 @@ DEFAULT_TIMEOUT=7200  # 2 hours max
 MODE="build"
 SCHEME="FIN1"
 PROJECT="FIN1.xcodeproj"
-DESTINATION="platform=iOS Simulator,name=iPhone 15 Pro"
+DESTINATION="${IOS_SIM_DEST:-platform=iOS Simulator,name=iPhone 16,OS=18.6}"
 SDK="iphonesimulator"
 CONFIGURATION="Debug"
 
@@ -33,7 +33,7 @@ ${GREEN}Options:${NC}
     -m, --mode MODE          Mode: build, test, clean, archive (default: build)
     -s, --scheme SCHEME      Scheme name (default: FIN1)
     -p, --project PROJECT    Project file (default: FIN1.xcodeproj)
-    -d, --destination DEST   Destination (default: iPhone 15 Pro Simulator)
+    -d, --destination DEST   Destination (default: iPhone 16 OS=18.6; override IOS_SIM_DEST)
     -k, --sdk SDK            SDK (default: iphonesimulator)
     -c, --config CONFIG      Configuration (default: Debug)
     -t, --timeout SECONDS    Max timeout in seconds (default: 7200 = 2h)

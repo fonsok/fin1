@@ -5,13 +5,17 @@
 
 set -e
 
+export DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer}"
+
 echo "📊 Generating Code Coverage Report..."
 
-# Run tests with code coverage
+DEST="${IOS_TEST_DESTINATION:-platform=iOS Simulator,name=iPhone 16,OS=18.6}"
+
+# Run tests with code coverage (same destination contract as scripts/run-ios-tests.sh)
 xcodebuild test \
   -project FIN1.xcodeproj \
   -scheme FIN1 \
-  -destination 'platform=iOS Simulator,id=AFA8ED45-7716-4D4C-A338-5D4ED1302E4F' \
+  -destination "$DEST" \
   -enableCodeCoverage YES \
   -resultBundlePath ./coverage-results.xcresult
 
