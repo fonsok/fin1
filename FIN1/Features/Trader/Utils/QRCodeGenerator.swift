@@ -9,8 +9,9 @@ final class QRCodeGenerator {
 
     // MARK: - Shared Resources
 
-    /// Shared CIContext for efficient QR code generation (one context; `createCGImage` inputs are immutable per call).
-    private static let sharedContext: CIContext = {
+    /// Shared CIContext for efficient QR code generation.
+    /// `CIContext` is not `Sendable` under Xcode 16.x strict concurrency; usage is read-only rasterization per `CIImage` input.
+    nonisolated(unsafe) private static let sharedContext: CIContext = {
         guard let sRGBColorSpace = CGColorSpace(name: CGColorSpace.sRGB) else {
             fatalError("Failed to create sRGB color space")
         }

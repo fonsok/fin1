@@ -23,7 +23,6 @@ jobs:
     runs-on: macos-15
     timeout-minutes: 90
     env:
-      DEVELOPER_DIR: /Applications/Xcode.app/Contents/Developer
       IOS_TEST_DESTINATION: platform=iOS Simulator,name=iPhone 16,OS=18.6
     steps:
       - name: Checkout
@@ -33,6 +32,9 @@ jobs:
         uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: '26.0.1'
+
+      - name: Xcode toolchain (for logs)
+        run: xcodebuild -version && xcode-select -p
 
       - name: Extended unit targets (no UI by default)
         env:
