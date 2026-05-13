@@ -54,6 +54,8 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      # Tags must be registry-qualified on push: an unqualified name like `fin1-parse-server:ci`
+      # resolves to Docker Hub `library/fin1-parse-server` and triggers hub auth (401 vs GHCR login).
       - name: Build parse-server image (push to GHCR on main/master, non-PR)
         uses: docker/build-push-action@v6
         with:
@@ -61,9 +63,9 @@ jobs:
           file: backend/node-service.Dockerfile
           push: ${{ github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') }}
           tags: |
-            fin1-parse-server:ci
             ${{ steps.ghcr_repo.outputs.repo }}:${{ github.sha }}
             ${{ steps.ghcr_repo.outputs.repo }}:${{ github.ref_name }}
+            ${{ steps.ghcr_repo.outputs.repo }}:ci
           build-args: |
             SERVICE_PORT=1337
             EXTRA_DIR=certs
