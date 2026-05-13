@@ -7,6 +7,10 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   # HTTP smoke on 127.0.0.1 only (no LAN secrets). Validates /health + getConfig shape.
   parse-smoke-local-mock:
