@@ -45,9 +45,27 @@
 		11INVPROD000000000000001 /* FIN1InvestorTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FIN1InvestorTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		11FIN1SYNCEXC000000000001 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Documentation,
+			);
+			target = 114BEE662E51EBCC00C3E8F1 /* FIN1 */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		114BEE692E51EBCC00C3E8F1 /* FIN1 */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				11FIN1SYNCEXC000000000001 /* PBXFileSystemSynchronizedBuildFileExceptionSet */,
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+				Documentation,
+			);
 			path = FIN1;
 			sourceTree = "<group>";
 		};
