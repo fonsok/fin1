@@ -87,7 +87,7 @@ These rule files reference configuration files in the repository:
 - All navigation via `NavigationStack`
 
 ### Local Development Requirements
-- SwiftFormat must pass: `swiftformat . --lint`
+- SwiftFormat must pass: `swiftformat FIN1 FIN1Tests FIN1UITests FIN1InvestorTests FIN1CoreRegressionTests --lint` (not `swiftformat .`)
 - SwiftLint (CI): `swiftlint` — optional local gate: `swiftlint --strict`
 - All tests must pass locally
 - Build must succeed locally

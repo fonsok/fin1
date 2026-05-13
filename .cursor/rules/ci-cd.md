@@ -28,9 +28,9 @@ GitHub Actions (`.github/workflows/ci.yml`) includes **`parse-server-unit-tests`
 
 All code changes must pass these local checks (matching what would run in CI if available):
 
-1. **SwiftFormat Check**: `swiftformat . --lint`
-   - Code must be properly formatted
-   - Run `swiftformat .` locally before committing
+1. **SwiftFormat Check** (same roots as `.github/workflows/ci.yml`; do **not** use `swiftformat .` — it lints `build/` and other noise):
+   - `swiftformat FIN1 FIN1Tests FIN1UITests FIN1InvestorTests FIN1CoreRegressionTests --lint`
+   - Apply: `swiftformat FIN1 FIN1Tests FIN1UITests FIN1InvestorTests FIN1CoreRegressionTests`
 
 2. **SwiftLint Check**: `swiftlint` (non-strict in CI)
    - Error-severity violations fail CI; warnings (including most custom rules) are reported but do not fail CI. Use `swiftlint --strict` locally for a zero-warning check. See `swiftlint.md`.
@@ -39,8 +39,8 @@ All code changes must pass these local checks (matching what would run in CI if 
    - Weekly strict run: `.github/workflows/swiftlint-strict-weekly.yml` (also trigger manually via **Actions**).
 
 3. **Build Test**: Builds for iOS Simulator
-   - CI runs tests via **`scripts/run-ios-tests.sh`**, which picks the **first available iPhone** simulator by UDID (avoids `name=iPhone …` resolving to **OS:latest** with no matching runtime).
-   - For a one-off build: `xcodebuild -project FIN1.xcodeproj -scheme FIN1 -sdk iphonesimulator -configuration Debug -destination 'platform=iOS Simulator,id=<UDID>' build` (get `<UDID>` from Xcode or `xcrun simctl list`).
+   - CI runs tests via **`scripts/run-ios-tests.sh`**; GitHub sets **`IOS_TEST_DESTINATION`** (see `.github/workflows/ci.yml`). Locally, override if needed: `IOS_TEST_DESTINATION='platform=iOS Simulator,name=iPhone 16,OS=18.6' ./scripts/run-ios-tests.sh`
+   - One-off build: `xcodebuild … -destination 'platform=iOS Simulator,name=iPhone 16,OS=<your-runtime>' build` or `make build` / VS Code tasks (see `Makefile`, `.vscode/tasks.json`).
    - **MANDATORY**: If build fails, repeat builds until all errors are fixed and "BUILD SUCCEEDED" is achieved
    - Never commit code that doesn't build successfully
 
@@ -61,7 +61,7 @@ All code changes must pass these local checks (matching what would run in CI if 
 ### Pre-Commit Requirements
 
 Before committing, ensure:
-1. ✅ `swiftformat . --lint` passes
+1. ✅ `swiftformat FIN1 FIN1Tests FIN1UITests FIN1InvestorTests FIN1CoreRegressionTests --lint` passes
 2. ✅ `swiftlint` passes (exit 0; use `swiftlint --strict` if you are clearing the warning backlog)
 3. ✅ Build succeeds - must see "BUILD SUCCEEDED" (retry until all errors fixed)
 4. ✅ Tests pass locally
@@ -79,9 +79,9 @@ Local validation (see also `responsive-design.md` rule file):
 
 Reference these commands from `.cursorrules`:
 
-- **Lint format**: `swiftformat . --lint`
+- **Lint format**: `swiftformat FIN1 FIN1Tests FIN1UITests FIN1InvestorTests FIN1CoreRegressionTests --lint`
 - **SwiftLint**: `swiftlint` (stricter: `swiftlint --strict`)
-- **Format code**: `swiftformat .`
+- **Format code**: `swiftformat FIN1 FIN1Tests FIN1UITests FIN1InvestorTests FIN1CoreRegressionTests`
 - **Build (sim)**: use a concrete simulator `id=` from `xcrun simctl list devices available`, or Xcode UI
 - **Test (sim)**: `./scripts/run-ios-tests.sh`
 

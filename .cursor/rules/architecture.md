@@ -1069,11 +1069,8 @@ struct SomeView: View {
 
 ## Local Commands
 
-- Lint format: `swiftformat . --lint`
+- Lint format: `swiftformat FIN1 FIN1Tests FIN1UITests FIN1InvestorTests FIN1CoreRegressionTests --lint`
 - SwiftLint (CI): `swiftlint` (use `swiftlint --strict` locally for zero-warning cleanup)
-- Format code: `swiftformat .`
-- Build (sim): `xcodebuild -project FIN1.xcodeproj -scheme FIN1 -sdk iphonesimulator -configuration Debug -destination 'platform=iOS Simulator,name=iPhone 15 Pro' build`
-- Test (sim): `xcodebuild -project FIN1.xcodeproj -scheme FIN1 -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 15 Pro' test`
-- Check for memory leaks: `xcodebuild -project FIN1.xcodeproj -scheme FIN1 -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 15 Pro' -enableAddressSanitizer YES build`
-- Run performance tests: `xcodebuild -project FIN1.xcodeproj -scheme FIN1 -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 15 Pro' -enableCodeCoverage YES test`
+- Format code: `swiftformat FIN1 FIN1Tests FIN1UITests FIN1InvestorTests FIN1CoreRegressionTests`
+- Build / test (sim): `./scripts/run-ios-tests.sh` or `make build` / `make test` (see `Makefile` for `IOS_SIM_DEST`; CI uses `IOS_TEST_DESTINATION` in `.github/workflows/ci.yml`)
 
