@@ -23,39 +23,23 @@
 
 ## 🎯 Nächste Prioritäten (Empfohlen)
 
-### 🔴 Priorität 1: Wallet-UI vervollständigen (2-3 Tage)
+### 🔴 Priorität 1: Stabilization v1 — Admin & Betrieb (zeitlich begrenzt)
 
-**Status**: Teilweise vorhanden, aber UI/UX unvollständig
+**Status:** Checkliste liegt vor; nach Admin-/Cloud-Änderungen operativ sinnvoll als Nächstes.
 
-**Was fehlt:**
-- ✅ `WalletView` existiert bereits
-- ✅ `WalletViewModel` existiert bereits
-- ⚠️ **Fehlt**: Vollständige Transaktionshistorie-UI
-- ⚠️ **Fehlt**: Einzahlungs-/Auszahlungs-Sheets (Mock-Flow)
-- ⚠️ **Fehlt**: UI-Polish und Error-Handling
+**Referenz:** `Documentation/STABILIZATION_V1_CHECKLIST.md`
 
-**Konkrete Tasks:**
-1. **TransactionHistoryView** erweitern
-   - Filter nach Typ (Einzahlung, Auszahlung, Trade, Profit)
-   - Sortierung (Datum, Betrag)
-   - Pagination für große Listen
+**Nächster konkreter Schritt (Expert-Default):** **§3 — Dark-Mode / Kontrast** im **Admin Web Portal** (manuell, z. B. 60–90 Min.): Benutzerliste/-detail, Tickets, Compliance, Audit Logs, CSR-Templates, AGB — laut Checkliste auf Lesbarkeit prüfen; auffällige Stellen als **kleine PRs** in `admin-portal/` nachziehen.
 
-2. **Deposit/Withdrawal Sheets** erstellen
-   - `DepositSheet.swift` - Mock-Einzahlungs-Flow
-   - `WithdrawalSheet.swift` - Mock-Auszahlungs-Flow
-   - Validierung (Min/Max-Beträge)
-   - Bestätigungs-Dialoge
+**Danach (optional, dieselbe Datei):** §5 bei jedem relevanten Deploy; §1 nur bei konkreter Lücke (Audit zu `devResetTradingTestData` — Payload liegt unter `AuditLog.metadata.payload`).
 
-3. **UI-Verbesserungen**
-   - Loading States verbessern
-   - Error States mit Retry
-   - Empty States (keine Transaktionen)
-   - Success-Feedback nach Transaktionen
+---
 
-**Impact:**
-- ✅ **Sofort nutzbar** - User können Wallet sehen und testen
-- ✅ **Niedriges Risiko** - Bestehende Services werden nur erweitert
-- ✅ **Mock-First** - Später einfach durch echte BaaS-Integration ersetzen
+### ⏸️ Zurückgestellt: Wallet-UI
+
+**Grund:** Wallet-Konzept soll später noch angepasst werden — bis zur fachlichen Klärung **keine** großen UI-Ausbauten (Transaktionshistorie, Deposit/Withdraw-Sheets, Pagination); `WalletView` / `WalletViewModel` nur minimal bei Bugs oder API-Anpassungen.
+
+**Wieder aufnehmen, wenn:** Produkt/Finance Zielbild und Datenmodell festliegen; dann diesen Abschnitt neu schreiben und ggf. Parse-Persistenz (Priorität 2, Punkt „Wallet-Transaktionen“) mitplanen.
 
 ---
 
@@ -79,7 +63,7 @@
    - Query-Interface für Audit-Trails
    - Export-Funktionalität
 
-3. **Wallet-Transaktionen persistieren**
+3. **Wallet-Transaktionen persistieren** *(von Wallet-Konzept abhängig — aktuell mit Wallet-UI zurückgestellt)*
    - Transactions in Parse Server speichern
    - Balance-Sync zwischen App und Server
    - Conflict-Resolution bei Offline-Änderungen

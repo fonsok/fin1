@@ -1,5 +1,7 @@
 # Stabilization v1 Checklist
 
+**Aktueller Roadmap-Fokus:** siehe `Documentation/NEXT_STEPS_ROADMAP.md` → Priorität 1 (§3 Dark-Mode Admin Portal als nächster Schritt).
+
 Kurzcheckliste nach den umfangreichen DEV-/UI-Änderungen.
 
 ## 1) DEV-Maintenance auditierbar machen
