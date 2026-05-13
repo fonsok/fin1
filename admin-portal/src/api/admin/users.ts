@@ -23,6 +23,15 @@ export async function getUserDetails(userId: string): Promise<UserDetailsRespons
   return result;
 }
 
+/** Audit: Admin öffnet Kundensicht (Lesemodus); gleiche Berechtigung wie getUserDetails. */
+export async function logAdminCustomerView(params: {
+  targetUserId: string;
+  viewContext?: string;
+  reason?: string;
+}): Promise<{ success: boolean }> {
+  return cloudFunction('logAdminCustomerView', params);
+}
+
 /** Update user status */
 export async function updateUserStatus(
   userId: string,

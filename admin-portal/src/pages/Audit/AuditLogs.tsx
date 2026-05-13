@@ -61,6 +61,7 @@ export function AuditLogsPage() {
       case 'security': return 'danger';
       case 'compliance': return 'warning';
       case 'admin': return 'info';
+      case 'admin_customer_view': return 'info';
       case 'user': return 'neutral';
       default: return 'neutral';
     }
@@ -74,6 +75,7 @@ export function AuditLogsPage() {
       'user': 'Benutzer',
       'system': 'System',
       'audit': 'Audit',
+      'admin_customer_view': 'Kundensicht (Portal)',
     };
     return labels[type?.toLowerCase()] || type || '-';
   };
@@ -94,6 +96,7 @@ export function AuditLogsPage() {
       'password_changed': 'Passwort geändert',
       'password_reset': 'Passwort zurückgesetzt',
       'terminate_user_sessions': 'Sessions beendet',
+      'view_customer_record': 'Kundensicht geöffnet',
       'approved': 'Genehmigt',
       'rejected': 'Abgelehnt',
     };
@@ -122,6 +125,7 @@ export function AuditLogsPage() {
             <option value="admin">Admin</option>
             <option value="user">Benutzer</option>
             <option value="system">System</option>
+            <option value="admin_customer_view">Kundensicht (Portal)</option>
           </select>
 
           <div className="flex-1">

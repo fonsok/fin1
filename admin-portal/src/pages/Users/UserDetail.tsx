@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { getUserDetails, updateUserStatus, forcePasswordReset, requestUserWalletActionModeChange } from '../../api/admin';
+import { getUserDetails, updateUserStatus, forcePasswordReset, requestUserWalletActionModeChange, logAdminCustomerView } from '../../api/admin';
 import type { InvestmentItem, ActivityItem } from '../../api/admin';
 import { usePermissions } from '../../hooks/usePermissions';
 import { useAuth } from '../../context/AuthContext';
@@ -28,6 +28,7 @@ export function UserDetailPage() {
   const [showActionModal, setShowActionModal] = useState<'suspend' | 'reactivate' | 'reset' | null>(null);
   const [walletMode, setWalletMode] = useState<'disabled' | 'deposit_only' | 'withdrawal_only' | 'deposit_and_withdrawal'>('deposit_and_withdrawal');
   const [walletReason, setWalletReason] = useState('');
+  const customerViewLoggedRef = useRef(false);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['user', userId],
@@ -74,6 +75,26 @@ export function UserDetailPage() {
     },
   });
 
+  useEffect(() => {
+    customerViewLoggedRef.current = false;
+  }, [userId]);
+
+  useEffect(() => {
+    if (!userId || !data?.user) {
+      return;
+    }
+    if (customerViewLoggedRef.current) {
+      return;
+    }
+    customerViewLoggedRef.current = true;
+    void logAdminCustomerView({
+      targetUserId: userId,
+      viewContext: 'user_detail_page',
+    }).catch((err) => {
+      console.warn('logAdminCustomerView:', err);
+    });
+  }, [userId, data?.user]);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -110,6 +131,24 @@ export function UserDetailPage() {
         </svg>
         Zurück zur Benutzerliste
       </button>
+
+      <div
+        className={clsx(
+          'rounded-lg border p-4',
+          isDark ? 'border-sky-800/80 bg-sky-950/50' : 'border-sky-200 bg-sky-50',
+        )}
+        role="status"
+      >
+        <p className={clsx('text-sm font-semibold', isDark ? 'text-sky-100' : 'text-sky-950')}>
+          Kundensicht (Lesemodus)
+        </p>
+        <p className={clsx('mt-2 text-xs leading-relaxed', isDark ? 'text-sky-200/90' : 'text-sky-900/85')}>
+          Sie sehen die Daten dieses Nutzers im Admin Web Portal. Es gibt keine Anmeldung „als Kunde“; Ihre Sitzung
+          bleibt die des eingeloggten Portal-Benutzers. Schreibende Aktionen laufen über die bestehenden Workflows
+          und Berechtigungen. Der Aufruf dieser Seite wird zusätzlich als Eintrag vom Typ „admin_customer_view“
+          protokolliert.
+        </p>
+      </div>
 
       {/* User Header */}
       <Card>
