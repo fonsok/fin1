@@ -98,11 +98,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # FIN1.xcodeproj uses objectVersion 77 (Xcode 16+). Pin Xcode so runners never pick 15.x.
+      # Pin Xcode (not only default /Applications/Xcode.app): Xcode 16.4 vs 26 differs in Swift/SDK
+      # checks; 26.0.1 matches typical dev installs on macos-15 images and avoids spurious CI-only fails.
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: '16.4'
+          xcode-version: '26.0.1'
 
       - name: Cache SwiftLint
         uses: actions/cache@v4

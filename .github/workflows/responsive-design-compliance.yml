@@ -21,8 +21,8 @@ jobs:
     - name: Setup Xcode
       uses: maxim-lobanov/setup-xcode@v1
       with:
-        # Match main CI: objectVersion 77 requires Xcode 16+; avoid older "stable" on some images.
-        xcode-version: '16.4'
+        # Match main CI Xcode pin (see ci.yml) for consistent Swift/SDK with local dev.
+        xcode-version: '26.0.1'
 
     - name: Install SwiftLint
       run: brew install swiftlint
