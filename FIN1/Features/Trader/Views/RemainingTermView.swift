@@ -18,13 +18,13 @@ struct RemainingTermView: View {
                 Divider()
 
                 VStack(spacing: ResponsiveDesign.spacing(16)) {
-                    ForEach(options, id: \.self) { option in
-                        Button(action: { selectedLaufzeit = option }, label: {
+                    ForEach(self.options, id: \.self) { option in
+                        Button(action: { self.selectedLaufzeit = option }, label: {
                             Text(option)
                                 .foregroundColor(AppTheme.fontColor)
                                 .padding()
                                 .frame(maxWidth: .infinity)
-                                .background(selectedLaufzeit == option ? AppTheme.accentGreen : AppTheme.sectionBackground)
+                                .background(self.selectedLaufzeit == option ? AppTheme.accentGreen : AppTheme.sectionBackground)
                                 .cornerRadius(ResponsiveDesign.spacing(8))
                         })
                     }
@@ -32,7 +32,7 @@ struct RemainingTermView: View {
 
                 Spacer()
 
-                Button(action: { dismiss() }, label: {
+                Button(action: { self.dismiss() }, label: {
                     Text("übernehmen")
                         .foregroundColor(AppTheme.fontColor)
                         .padding()

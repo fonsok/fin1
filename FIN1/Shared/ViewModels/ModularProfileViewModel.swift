@@ -1,5 +1,5 @@
-import SwiftUI
 import Combine
+import SwiftUI
 
 /// ViewModel for ModularProfileView
 /// Handles notification count observation and user state management
@@ -23,7 +23,7 @@ final class ModularProfileViewModel: ObservableObject {
     // MARK: - Computed Properties
 
     var currentUserId: String? {
-        userService.currentUser?.id
+        self.userService.currentUser?.id
     }
 
     // MARK: - Initialization
@@ -37,8 +37,8 @@ final class ModularProfileViewModel: ObservableObject {
         self.userService = userService
         self.documentService = documentService
 
-        setupObservations()
-        updateCounts()
+        self.setupObservations()
+        self.updateCounts()
     }
 
     deinit {
@@ -58,7 +58,7 @@ final class ModularProfileViewModel: ObservableObject {
                 .sink { [weak self] _ in
                     self?.updateCounts()
                 }
-                .store(in: &cancellables)
+                .store(in: &self.cancellables)
 
             // Observe combinedUnreadCount changes
             concreteNotificationService.$combinedUnreadCount
@@ -66,7 +66,7 @@ final class ModularProfileViewModel: ObservableObject {
                 .sink { [weak self] _ in
                     self?.updateCounts()
                 }
-                .store(in: &cancellables)
+                .store(in: &self.cancellables)
         }
 
         // Observe document service changes
@@ -76,7 +76,7 @@ final class ModularProfileViewModel: ObservableObject {
                 .sink { [weak self] _ in
                     self?.updateCounts()
                 }
-                .store(in: &cancellables)
+                .store(in: &self.cancellables)
         }
 
         // Observe user changes to update counts when user switches
@@ -85,21 +85,21 @@ final class ModularProfileViewModel: ObservableObject {
             .sink { [weak self] _ in
                 self?.updateCounts()
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
 
         NotificationCenter.default.publisher(for: .userDataDidUpdate)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 self?.updateCounts()
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
     }
 
     // MARK: - Update Methods
 
     func updateCounts() {
-        let userId = currentUserId
-        combinedUnreadCount = notificationService.getCombinedUnreadCount(for: userId)
-        totalNotificationsCount = notificationService.notifications.count
+        let userId = self.currentUserId
+        self.combinedUnreadCount = self.notificationService.getCombinedUnreadCount(for: userId)
+        self.totalNotificationsCount = self.notificationService.notifications.count
     }
 }

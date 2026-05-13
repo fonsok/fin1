@@ -181,7 +181,7 @@ final class InvestmentQuantityCalculationService: InvestmentQuantityCalculationS
         subscriptionRatio: Double = 1.0,
         minimumOrderAmount: Double? = nil
     ) -> CombinedOrderCalculationResult {
-        return combinedOrderCalculator.calculateCombinedOrderDetails(
+        return self.combinedOrderCalculator.calculateCombinedOrderDetails(
             traderQuantity: traderQuantity,
             traderCashBalance: traderCashBalance,
             investmentBalance: investmentBalance,

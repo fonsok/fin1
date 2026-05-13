@@ -39,7 +39,7 @@ extension SignUpCoordinator {
         }
 
         if currentStep == .identificationType {
-            currentStep = nextStepAfterIdentificationType(with: data)
+            currentStep = self.nextStepAfterIdentificationType(with: data)
         } else if currentStep == .identificationUploadBack || currentStep == .postidentConfirmation {
             if let nextStep = nextStepAfterDocumentUpload(currentStep: currentStep, with: data) {
                 currentStep = nextStep

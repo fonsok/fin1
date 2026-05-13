@@ -1,6 +1,6 @@
+@testable import FIN1
 import Foundation
 import XCTest
-@testable import FIN1
 
 // MARK: - Test Helpers
 /// Centralized helper methods for common test operations and reusable setup routines
@@ -22,11 +22,11 @@ class TestHelpers {
     }
 
     static func createInvestorUser(mockUserService: MockUserService) async -> User? {
-        return await createTestUser(email: "investor@example.com", role: .investor, mockUserService: mockUserService)
+        return await self.createTestUser(email: "investor@example.com", role: .investor, mockUserService: mockUserService)
     }
 
     static func createTraderUser(mockUserService: MockUserService) async -> User? {
-        return await createTestUser(email: "trader@example.com", role: .trader, mockUserService: mockUserService)
+        return await self.createTestUser(email: "trader@example.com", role: .trader, mockUserService: mockUserService)
     }
 
     // MARK: - Mock Data Creation
@@ -42,7 +42,7 @@ class TestHelpers {
             totalTrades: 100,
             winRate: 0.75,
             averageReturn: 12.0,
-            totalReturn: 1200.0,
+            totalReturn: 1_200.0,
             riskLevel: .medium,
             recentTrades: [],
             lastNTrades: 10,

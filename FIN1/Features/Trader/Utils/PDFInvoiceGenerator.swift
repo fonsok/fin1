@@ -1,6 +1,6 @@
 import Foundation
-import UIKit
 import PDFKit
+import UIKit
 
 // MARK: - Professional Invoice PDF Generator
 /// Generates DIN A4 compliant invoices following German business document standards (DIN 5008)
@@ -14,7 +14,7 @@ struct PDFInvoiceGenerator {
     /// - Parameter invoice: The invoice data to generate PDF from
     /// - Returns: PDF data
     static func generatePDF(from invoice: Invoice) -> Data {
-        let pdfMetaData = createMetadata(for: invoice)
+        let pdfMetaData = self.createMetadata(for: invoice)
 
         let format = UIGraphicsPDFRendererFormat()
         format.documentInfo = pdfMetaData
@@ -25,9 +25,9 @@ struct PDFInvoiceGenerator {
             context.beginPage()
 
             let cgContext = context.cgContext
-            configureRenderingQuality(cgContext)
+            self.configureRenderingQuality(cgContext)
 
-            drawInvoice(in: cgContext, invoice: invoice, pageRect: PDFDocumentLayout.pageRect)
+            self.drawInvoice(in: cgContext, invoice: invoice, pageRect: PDFDocumentLayout.pageRect)
         }
 
         return data
@@ -37,7 +37,7 @@ struct PDFInvoiceGenerator {
     /// - Parameter invoice: The invoice data
     /// - Returns: Preview image or nil if generation failed
     static func generatePreview(from invoice: Invoice) -> UIImage? {
-        let pdfData = generatePDF(from: invoice)
+        let pdfData = self.generatePDF(from: invoice)
 
         guard let document = PDFDocument(data: pdfData),
               let page = document.page(at: 0) else {
@@ -108,7 +108,7 @@ struct PDFInvoiceGenerator {
 
         // 3. Document title
         let documentTitle = documentTitle(for: invoice)
-        let subtitle = documentSubtitle(for: invoice)
+        let subtitle = self.documentSubtitle(for: invoice)
 
         currentY = PDFProfessionalComponents.drawDocumentTitle(
             in: context,
@@ -120,7 +120,7 @@ struct PDFInvoiceGenerator {
 
         // 4. Transaction details (if applicable)
         if invoice.tradeId != nil || invoice.orderId != nil {
-            currentY = drawTransactionDetails(
+            currentY = self.drawTransactionDetails(
                 in: context,
                 invoice: invoice,
                 pageRect: pageRect,
@@ -129,7 +129,7 @@ struct PDFInvoiceGenerator {
         }
 
         // 5. Items table
-        currentY = drawItemsTable(
+        currentY = self.drawItemsTable(
             in: context,
             invoice: invoice,
             pageRect: pageRect,
@@ -137,7 +137,7 @@ struct PDFInvoiceGenerator {
         )
 
         // 6. Totals section
-        currentY = drawTotals(
+        currentY = self.drawTotals(
             in: context,
             invoice: invoice,
             pageRect: pageRect,

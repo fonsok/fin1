@@ -21,7 +21,9 @@ struct CreateInvoiceView: View {
     @State private var showingCustomerForm = false
 
     init(invoiceService: any InvoiceServiceProtocol, notificationService: any NotificationServiceProtocol) {
-        self._viewModel = StateObject(wrappedValue: InvoiceViewModel(invoiceService: invoiceService, notificationService: notificationService))
+        self._viewModel = StateObject(
+            wrappedValue: InvoiceViewModel(invoiceService: invoiceService, notificationService: notificationService)
+        )
     }
 
     var body: some View {
@@ -32,15 +34,15 @@ struct CreateInvoiceView: View {
 
                 // Trade Selection
                 InvoiceViewSections.tradeSelectionSection(
-                    selectedOrder: selectedOrder,
-                    showingOrderSelection: $showingOrderSelection
+                    selectedOrder: self.selectedOrder,
+                    showingOrderSelection: self.$showingOrderSelection
                 )
 
                 // Customer Information
                 InvoiceViewSections.customerInfoSection(
-                    customerInfo: customerInfo,
-                    isCustomerInfoComplete: isCustomerInfoComplete,
-                    showingCustomerForm: $showingCustomerForm
+                    customerInfo: self.customerInfo,
+                    isCustomerInfoComplete: self.isCustomerInfoComplete,
+                    showingCustomerForm: self.$showingCustomerForm
                 )
 
                 // Preview Section
@@ -52,9 +54,9 @@ struct CreateInvoiceView: View {
 
                 // Action Buttons
                 InvoiceViewSections.actionButtonsSection(
-                    isLoading: viewModel.isLoading,
-                    canCreateInvoice: canCreateInvoice,
-                    onCreateInvoice: createInvoice
+                    isLoading: self.viewModel.isLoading,
+                    canCreateInvoice: self.canCreateInvoice,
+                    onCreateInvoice: self.createInvoice
                 )
             }
             .padding()
@@ -63,29 +65,29 @@ struct CreateInvoiceView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Abbrechen") {
-                        dismiss()
+                        self.dismiss()
                     }
                 }
 
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Erstellen") {
-                        createInvoice()
+                        self.createInvoice()
                     }
-                    .disabled(!canCreateInvoice)
+                    .disabled(!self.canCreateInvoice)
                 }
             }
-            .sheet(isPresented: $showingOrderSelection) {
-                OrderSelectionView(selectedOrder: $selectedOrder)
+            .sheet(isPresented: self.$showingOrderSelection) {
+                OrderSelectionView(selectedOrder: self.$selectedOrder)
             }
-            .sheet(isPresented: $showingCustomerForm) {
-                CustomerInfoFormView(customerInfo: $customerInfo)
+            .sheet(isPresented: self.$showingCustomerForm) {
+                CustomerInfoFormView(customerInfo: self.$customerInfo)
             }
-            .alert("Fehler", isPresented: $viewModel.showError) {
+            .alert("Fehler", isPresented: self.$viewModel.showError) {
                 Button("OK") {
-                    viewModel.clearError()
+                    self.viewModel.clearError()
                 }
             } message: {
-                Text(viewModel.errorMessage ?? "Ein unbekannter Fehler ist aufgetreten.")
+                Text(self.viewModel.errorMessage ?? "Ein unbekannter Fehler ist aufgetreten.")
             }
         }
     }
@@ -93,18 +95,18 @@ struct CreateInvoiceView: View {
     // MARK: - Computed Properties
 
     private var canCreateInvoice: Bool {
-        selectedOrder != nil && isCustomerInfoComplete && !viewModel.isLoading
+        self.selectedOrder != nil && self.isCustomerInfoComplete && !self.viewModel.isLoading
     }
 
     private var isCustomerInfoComplete: Bool {
-        !customerInfo.name.isEmpty &&
-        !customerInfo.address.isEmpty &&
-        !customerInfo.city.isEmpty &&
-        !customerInfo.postalCode.isEmpty &&
-        !customerInfo.taxNumber.isEmpty &&
-        !customerInfo.depotNumber.isEmpty &&
-        !customerInfo.bank.isEmpty &&
-        !customerInfo.customerNumber.isEmpty
+        !self.customerInfo.name.isEmpty &&
+            !self.customerInfo.address.isEmpty &&
+            !self.customerInfo.city.isEmpty &&
+            !self.customerInfo.postalCode.isEmpty &&
+            !self.customerInfo.taxNumber.isEmpty &&
+            !self.customerInfo.depotNumber.isEmpty &&
+            !self.customerInfo.bank.isEmpty &&
+            !self.customerInfo.customerNumber.isEmpty
     }
 
     // MARK: - Private Methods
@@ -113,13 +115,12 @@ struct CreateInvoiceView: View {
         guard let order = selectedOrder else { return }
 
         Task {
-            viewModel.createInvoice(from: order, customerInfo: customerInfo)
+            self.viewModel.createInvoice(from: order, customerInfo: self.customerInfo)
             await MainActor.run {
-                dismiss()
+                self.dismiss()
             }
         }
     }
-
 }
 
 // MARK: - Preview

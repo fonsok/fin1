@@ -12,31 +12,31 @@ struct CompanyKybDeclarationsStep: View {
 
             toggleRow(
                 title: "Die Gesellschaft oder ein wirtschaftlich Berechtigter ist eine politisch exponierte Person (PEP).",
-                isOn: $formData.isPoliticallyExposed
+                isOn: self.$formData.isPoliticallyExposed
             )
 
-            if formData.isPoliticallyExposed {
+            if self.formData.isPoliticallyExposed {
                 LabeledInputField(
                     label: "PEP-Details",
                     placeholder: "Bitte erläutern…",
                     icon: "person.badge.shield.checkmark",
-                    text: $formData.pepDetails
+                    text: self.$formData.pepDetails
                 )
             }
 
-            declarationToggle(
+            self.declarationToggle(
                 title: "Die Gesellschaft unterliegt keinen Sanktionen und ist auf keiner Sanktionsliste geführt.",
-                isOn: $formData.sanctionsSelfDeclarationAccepted
+                isOn: self.$formData.sanctionsSelfDeclarationAccepted
             )
 
-            declarationToggle(
+            self.declarationToggle(
                 title: "Alle Angaben in diesem Antrag sind wahrheitsgemäß und vollständig.",
-                isOn: $formData.accuracyDeclarationAccepted
+                isOn: self.$formData.accuracyDeclarationAccepted
             )
 
-            declarationToggle(
+            self.declarationToggle(
                 title: "Die Gesellschaft handelt im eigenen Namen und nicht als Treuhänder für Dritte.",
-                isOn: $formData.noTrustThirdPartyDeclarationAccepted
+                isOn: self.$formData.noTrustThirdPartyDeclarationAccepted
             )
         }
     }

@@ -33,26 +33,26 @@ struct FAQArticle: Identifiable, Codable, Hashable {
 
     // Computed properties
     var helpfulnessRatio: Double {
-        let total = helpfulCount + notHelpfulCount
+        let total = self.helpfulCount + self.notHelpfulCount
         guard total > 0 else { return 0.0 }
-        return Double(helpfulCount) / Double(total)
+        return Double(self.helpfulCount) / Double(total)
     }
 
     var helpfulnessPercentage: Int {
-        Int(helpfulnessRatio * 100)
+        Int(self.helpfulnessRatio * 100)
     }
 
     var isPopular: Bool {
-        viewCount >= 50 || usedInTicketCount >= 10
+        self.viewCount >= 50 || self.usedInTicketCount >= 10
     }
 
     var relevanceScore: Double {
         // Score based on usage, helpfulness, and recency
-        let usageScore = Double(viewCount + usedInTicketCount * 5)
-        let helpfulnessScore = helpfulnessRatio * 100
+        let usageScore = Double(viewCount + self.usedInTicketCount * 5)
+        let helpfulnessScore = self.helpfulnessRatio * 100
         let daysSinceUpdate = Calendar.current.dateComponents(
             [.day],
-            from: updatedAt,
+            from: self.updatedAt,
             to: Date()
         ).day ?? 0
         let recencyScore = max(0, 100 - Double(daysSinceUpdate))
@@ -253,9 +253,9 @@ struct FAQStatistics: Codable {
     let articlesNeedingReview: Int // Low helpfulness or outdated
 
     var overallHelpfulnessPercentage: Int {
-        let total = totalHelpfulVotes + totalNotHelpfulVotes
+        let total = self.totalHelpfulVotes + self.totalNotHelpfulVotes
         guard total > 0 else { return 0 }
-        return Int((Double(totalHelpfulVotes) / Double(total)) * 100)
+        return Int((Double(self.totalHelpfulVotes) / Double(total)) * 100)
     }
 }
 
@@ -301,8 +301,8 @@ extension FAQArticle {
     ) -> FAQArticle {
         let title = ticket.subject
         let summary = String(ticket.description.prefix(200))
-        let content = buildContentFromTicket(ticket, solutionResponse: solutionResponse)
-        let keywords = extractKeywords(from: ticket)
+        let content = self.buildContentFromTicket(ticket, solutionResponse: solutionResponse)
+        let keywords = self.extractKeywords(from: ticket)
 
         return FAQArticle(
             title: title,
@@ -325,11 +325,11 @@ extension FAQArticle {
     ) -> String {
         var content = """
         ## Problem
-
+        
         \(ticket.description)
-
+        
         ## Lösung
-
+        
         \(solutionResponse.message)
         """
 
@@ -352,7 +352,37 @@ extension FAQArticle {
     private static func extractKeywords(from ticket: SupportTicket) -> [String] {
         // Simple keyword extraction - in production, use NLP
         let text = "\(ticket.subject) \(ticket.description)".lowercased()
-        let commonWords = Set(["der", "die", "das", "und", "oder", "ein", "eine", "ist", "sind", "hat", "haben", "ich", "sie", "wir", "mein", "ihr", "nicht", "kann", "können", "bitte", "für", "mit", "auf", "bei", "nach", "von", "zu"])
+        let commonWords = Set(
+            [
+                "der",
+                "die",
+                "das",
+                "und",
+                "oder",
+                "ein",
+                "eine",
+                "ist",
+                "sind",
+                "hat",
+                "haben",
+                "ich",
+                "sie",
+                "wir",
+                "mein",
+                "ihr",
+                "nicht",
+                "kann",
+                "können",
+                "bitte",
+                "für",
+                "mit",
+                "auf",
+                "bei",
+                "nach",
+                "von",
+                "zu"
+            ]
+        )
 
         let words = text
             .components(separatedBy: CharacterSet.alphanumerics.inverted)

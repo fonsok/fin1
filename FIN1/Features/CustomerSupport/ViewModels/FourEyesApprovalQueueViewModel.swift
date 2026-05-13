@@ -29,9 +29,9 @@ final class FourEyesApprovalQueueViewModel: ObservableObject {
 
     var filteredRequests: [FourEyesApprovalRequest] {
         guard let filter = selectedFilter else {
-            return pendingRequests
+            return self.pendingRequests
         }
-        return pendingRequests.filter { $0.requestType.riskLevel == filter }
+        return self.pendingRequests.filter { $0.requestType.riskLevel == filter }
     }
 
     // MARK: - Initialization
@@ -53,71 +53,71 @@ final class FourEyesApprovalQueueViewModel: ObservableObject {
     // MARK: - Data Loading
 
     func loadRequests() async {
-        isLoading = true
+        self.isLoading = true
         defer { isLoading = false }
 
         do {
             // Load requests that this agent can approve
-            pendingRequests = try await approvalService.getPendingRequestsForApprover(
-                approverRole: currentAgentRole
+            self.pendingRequests = try await self.approvalService.getPendingRequestsForApprover(
+                approverRole: self.currentAgentRole
             )
 
             // Load statistics
-            statistics = try await approvalService.getQueueStatistics()
+            self.statistics = try await self.approvalService.getQueueStatistics()
         } catch {
-            handleError(error)
+            self.handleError(error)
         }
     }
 
     // MARK: - Approval Actions
 
     func approveRequest(_ request: FourEyesApprovalRequest, notes: String?) async {
-        isLoading = true
+        self.isLoading = true
         defer { isLoading = false }
 
         do {
-            _ = try await approvalService.approveRequest(
+            _ = try await self.approvalService.approveRequest(
                 requestId: request.id,
-                approverId: currentAgentId,
-                approverName: currentAgentName,
-                approverRole: currentAgentRole,
+                approverId: self.currentAgentId,
+                approverName: self.currentAgentName,
+                approverRole: self.currentAgentRole,
                 notes: notes
             )
 
             // Remove from local list
-            pendingRequests.removeAll { $0.id == request.id }
+            self.pendingRequests.removeAll { $0.id == request.id }
 
             // Refresh statistics
-            statistics = try await approvalService.getQueueStatistics()
+            self.statistics = try await self.approvalService.getQueueStatistics()
 
-            showSuccessMessage("Anfrage erfolgreich genehmigt")
+            self.showSuccessMessage("Anfrage erfolgreich genehmigt")
         } catch {
-            handleError(error)
+            self.handleError(error)
         }
     }
 
     func rejectRequest(_ request: FourEyesApprovalRequest, reason: String) async {
-        isLoading = true
+        self.isLoading = true
         defer { isLoading = false }
 
         do {
-            _ = try await approvalService.rejectRequest(
+            _ = try await self.approvalService.rejectRequest(
                 requestId: request.id,
-                approverId: currentAgentId,
-                approverName: currentAgentName,
-                approverRole: currentAgentRole,
+                approverId: self.currentAgentId,
+                approverName: self.currentAgentName,
+                approverRole: self.currentAgentRole,
                 reason: reason
             )
 
             // Remove from local list
-            pendingRequests.removeAll { $0.id == request.id }
+            self.pendingRequests.removeAll { $0.id == request.id }
 
             // Refresh statistics
-            statistics = try await approvalService.getQueueStatistics()
+            self.statistics = try await self.approvalService.getQueueStatistics()
 
-            showSuccessMessage("Anfrage abgelehnt")
+            self.showSuccessMessage("Anfrage abgelehnt")
         } catch {
-            handleError(error)
+            self.handleError(error)
         }
     }
 
@@ -125,16 +125,16 @@ final class FourEyesApprovalQueueViewModel: ObservableObject {
 
     func canApproveRequest(_ request: FourEyesApprovalRequest) -> Bool {
         // Check 4-Augen principle (different person)
-        guard approvalService.validateFourEyesPrinciple(
+        guard self.approvalService.validateFourEyesPrinciple(
             requesterId: request.requesterId,
-            approverId: currentAgentId
+            approverId: self.currentAgentId
         ) else {
             return false
         }
 
         // Check role permission
-        return approvalService.canApprove(
-            agentRole: currentAgentRole,
+        return self.approvalService.canApprove(
+            agentRole: self.currentAgentRole,
             requestType: request.requestType
         )
     }
@@ -142,23 +142,23 @@ final class FourEyesApprovalQueueViewModel: ObservableObject {
     // MARK: - Error Handling
 
     func clearError() {
-        showError = false
-        errorMessage = nil
+        self.showError = false
+        self.errorMessage = nil
     }
 
     func clearSuccess() {
-        showSuccess = false
-        successMessage = nil
+        self.showSuccess = false
+        self.successMessage = nil
     }
 
     private func handleError(_ error: Error) {
-        errorMessage = mapToAppError(error).errorDescription
-        showError = true
+        self.errorMessage = self.mapToAppError(error).errorDescription
+        self.showError = true
     }
 
     private func showSuccessMessage(_ message: String) {
-        successMessage = message
-        showSuccess = true
+        self.successMessage = message
+        self.showSuccess = true
     }
 
     private func mapToAppError(_ error: Error) -> AppError {

@@ -14,7 +14,7 @@ struct CompanyKybAddressStep: View {
                 label: "Straße und Hausnummer",
                 placeholder: "z. B. Hauptstraße 1",
                 icon: "mappin",
-                text: $formData.streetAndNumber
+                text: self.$formData.streetAndNumber
             )
 
             HStack(spacing: ResponsiveDesign.spacing(12)) {
@@ -22,7 +22,7 @@ struct CompanyKybAddressStep: View {
                     label: "PLZ",
                     placeholder: "60311",
                     icon: "number",
-                    text: $formData.postalCode,
+                    text: self.$formData.postalCode,
                     maxLength: 10
                 )
                 .frame(maxWidth: ResponsiveDesign.spacing(140))
@@ -31,7 +31,7 @@ struct CompanyKybAddressStep: View {
                     label: "Ort",
                     placeholder: "Frankfurt",
                     icon: "building",
-                    text: $formData.city
+                    text: self.$formData.city
                 )
             }
 
@@ -39,17 +39,17 @@ struct CompanyKybAddressStep: View {
                 label: "Land",
                 placeholder: "DE",
                 icon: "globe",
-                text: $formData.country,
+                text: self.$formData.country,
                 maxLength: 2
             )
 
             toggleRow(
                 title: "Abweichende Geschäftsanschrift",
-                isOn: $formData.showBusinessAddress
+                isOn: self.$formData.showBusinessAddress
             )
 
-            if formData.showBusinessAddress {
-                businessAddressSection
+            if self.formData.showBusinessAddress {
+                self.businessAddressSection
             }
         }
     }
@@ -60,7 +60,7 @@ struct CompanyKybAddressStep: View {
                 label: "Geschäftsstraße",
                 placeholder: "Nebenstraße 5",
                 icon: "mappin",
-                text: $formData.businessStreetAndNumber
+                text: self.$formData.businessStreetAndNumber
             )
 
             HStack(spacing: ResponsiveDesign.spacing(12)) {
@@ -68,7 +68,7 @@ struct CompanyKybAddressStep: View {
                     label: "PLZ",
                     placeholder: "10115",
                     icon: "number",
-                    text: $formData.businessPostalCode,
+                    text: self.$formData.businessPostalCode,
                     maxLength: 10
                 )
                 .frame(maxWidth: ResponsiveDesign.spacing(140))
@@ -77,7 +77,7 @@ struct CompanyKybAddressStep: View {
                     label: "Ort",
                     placeholder: "Berlin",
                     icon: "building",
-                    text: $formData.businessCity
+                    text: self.$formData.businessCity
                 )
             }
 
@@ -85,7 +85,7 @@ struct CompanyKybAddressStep: View {
                 label: "Land",
                 placeholder: "DE",
                 icon: "globe",
-                text: $formData.businessCountry,
+                text: self.$formData.businessCountry,
                 maxLength: 2
             )
         }

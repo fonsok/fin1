@@ -5,7 +5,7 @@ struct RemoveButton: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: action, label: {
+        Button(action: self.action, label: {
             Image(systemName: "trash")
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor)
@@ -23,12 +23,12 @@ struct WatchedSecuritiesCard: View {
         HStack(spacing: ResponsiveDesign.spacing(16)) {
             // Symbol and Name
             VStack(alignment: .leading, spacing: 4) {
-                Text(instrument.symbol)
+                Text(self.instrument.symbol)
                     .font(ResponsiveDesign.headlineFont())
                     .fontWeight(.bold)
                     .foregroundColor(AppTheme.fontColor)
 
-                Text(instrument.name)
+                Text(self.instrument.name)
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
             }
@@ -37,24 +37,24 @@ struct WatchedSecuritiesCard: View {
 
             // Price and Change
             VStack(alignment: .trailing, spacing: 4) {
-                Text("$\(instrument.currentPrice, specifier: "%.2f")")
+                Text("$\(self.instrument.currentPrice, specifier: "%.2f")")
                     .font(ResponsiveDesign.headlineFont())
                     .fontWeight(.semibold)
                     .foregroundColor(AppTheme.fontColor)
 
                 HStack(spacing: ResponsiveDesign.spacing(4)) {
-                    Image(systemName: instrument.changePercent >= 0 ? "arrow.up" : "arrow.down")
+                    Image(systemName: self.instrument.changePercent >= 0 ? "arrow.up" : "arrow.down")
                         .font(ResponsiveDesign.captionFont())
-                        .foregroundColor(instrument.changePercent >= 0 ? AppTheme.accentGreen : AppTheme.accentRed)
+                        .foregroundColor(self.instrument.changePercent >= 0 ? AppTheme.accentGreen : AppTheme.accentRed)
 
-                    Text("\(abs(instrument.changePercent), specifier: "%.1f")%")
+                    Text("\(abs(self.instrument.changePercent), specifier: "%.1f")%")
                         .font(ResponsiveDesign.bodyFont())
-                        .foregroundColor(instrument.changePercent >= 0 ? AppTheme.accentGreen : AppTheme.accentRed)
+                        .foregroundColor(self.instrument.changePercent >= 0 ? AppTheme.accentGreen : AppTheme.accentRed)
                 }
             }
 
             // Remove Button
-            RemoveButton(action: onRemove)
+            RemoveButton(action: self.onRemove)
         }
         .padding(ResponsiveDesign.spacing(16))
         .background(AppTheme.sectionBackground)
@@ -71,17 +71,17 @@ struct WatchedSearchResultCard: View {
         CardContainer(
             position: 1, // Position doesn't matter for watchlist
             onPapersheetTapped: {
-                openIssuerProductInfo()
+                self.openIssuerProductInfo()
             }
         ) {
             VStack(spacing: ResponsiveDesign.spacing(8)) {
                 // Main content grid using TileGrid (same as SearchResultCard)
-                TileGrid(tiles: watchlistTiles, columns: 2)
+                TileGrid(tiles: self.watchlistTiles, columns: 2)
 
                 // Remove button
                 HStack {
                     Spacer()
-                    RemoveButton(action: onRemove)
+                    RemoveButton(action: self.onRemove)
                 }
             }
         }
@@ -90,20 +90,23 @@ struct WatchedSearchResultCard: View {
     private var watchlistTiles: [TileData] {
         [
             // Row 1: Bewertungstag, WKN
-            TileData(title: "Valuation Date", value: searchResult.valuationDate),
-            TileData(title: "WKN", value: searchResult.wkn),
+            TileData(title: "Valuation Date", value: self.searchResult.valuationDate),
+            TileData(title: "WKN", value: self.searchResult.wkn),
 
             // Row 2: Kategorie, Basiswert (derived from underlyingAsset)
-            TileData(title: "Kategorie", value: getDerivateCategory(searchResult.category ?? (searchResult.direction ?? "Stock"))),
-            TileData(title: "Basiswert", value: searchResult.underlyingAsset ?? "N/A"),
+            TileData(
+                title: "Kategorie",
+                value: self.getDerivateCategory(self.searchResult.category ?? (self.searchResult.direction ?? "Stock"))
+            ),
+            TileData(title: "Basiswert", value: self.searchResult.underlyingAsset ?? "N/A"),
 
             // Row 3: Richtung (derived from typ), Emittent (derived from WKN)
-            TileData(title: "Richtung", value: searchResult.direction ?? "-"),
-            TileData(title: "Emittent", value: getEmittentFromWKN(searchResult.wkn)),
+            TileData(title: "Richtung", value: self.searchResult.direction ?? "-"),
+            TileData(title: "Emittent", value: self.getEmittentFromWKN(self.searchResult.wkn)),
 
             // Row 4: Strike Price, Brief-Kurs (Ask)
-            TileData(title: "Strike Price", value: DepotUtils.formatStrikePrice(searchResult.strike, searchResult.underlyingAsset)),
-            TileData(title: "Brief-Kurs (Ask)", value: "\(searchResult.askPrice) €")
+            TileData(title: "Strike Price", value: DepotUtils.formatStrikePrice(self.searchResult.strike, self.searchResult.underlyingAsset)),
+            TileData(title: "Brief-Kurs (Ask)", value: "\(self.searchResult.askPrice) €")
         ]
     }
 
@@ -148,7 +151,7 @@ struct WatchedSearchResultCard: View {
     }
     private func openIssuerProductInfo() {
         // Open browser with issuer's product info page
-        let wkn = searchResult.wkn
+        let wkn = self.searchResult.wkn
         let issuerCode = String(wkn.prefix(2))
         let productInfoURL = "https://www.\(issuerCode.lowercased()).com/products/\(wkn)"
 
@@ -169,12 +172,12 @@ struct WatchedTraderCard: View {
         HStack(spacing: ResponsiveDesign.spacing(16)) {
             // Trader Info
             VStack(alignment: .leading, spacing: 4) {
-                Text(trader.username)
+                Text(self.trader.username)
                     .font(ResponsiveDesign.headlineFont())
                     .fontWeight(.semibold)
                     .foregroundColor(AppTheme.fontColor)
 
-                Text(trader.specialization)
+                Text(self.trader.specialization)
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
             }
@@ -183,18 +186,18 @@ struct WatchedTraderCard: View {
 
             // Performance Metrics
             VStack(alignment: .trailing, spacing: 4) {
-                Text("\(trader.totalReturn, specifier: "%.1f")%")
+                Text("\(self.trader.totalReturn, specifier: "%.1f")%")
                     .font(ResponsiveDesign.headlineFont())
                     .fontWeight(.semibold)
-                    .foregroundColor(trader.totalReturn >= 0 ? AppTheme.accentGreen : AppTheme.accentRed)
+                    .foregroundColor(self.trader.totalReturn >= 0 ? AppTheme.accentGreen : AppTheme.accentRed)
 
-                Text("Win Rate: \(trader.winRate, specifier: "%.1f")%")
+                Text("Win Rate: \(self.trader.winRate, specifier: "%.1f")%")
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
             }
 
             // Remove Button
-            RemoveButton(action: onRemove)
+            RemoveButton(action: self.onRemove)
         }
         .padding(ResponsiveDesign.spacing(16))
         .background(AppTheme.sectionBackground)

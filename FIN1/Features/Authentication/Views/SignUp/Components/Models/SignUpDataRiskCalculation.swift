@@ -9,11 +9,11 @@ extension SignUpData {
             return service.calculateRiskClass(for: self)
         }
         // Fallback to old implementation for backward compatibility
-        return calculateRiskClassLegacy()
+        return self.calculateRiskClassLegacy()
     }
 
     var finalRiskClass: RiskClass {
-        return userSelectedRiskClass ?? calculatedRiskClass
+        return userSelectedRiskClass ?? self.calculatedRiskClass
     }
 
     // MARK: - Risk Class Calculation (Legacy - kept for backward compatibility)
@@ -22,19 +22,19 @@ extension SignUpData {
         var riskScore = 0
 
         // Step 12: Financial Information (Income & Assets)
-        riskScore += calculateFinancialRiskScore()
+        riskScore += self.calculateFinancialRiskScore()
 
         // Step 13: Investment Experience
-        riskScore += calculateExperienceRiskScore()
+        riskScore += self.calculateExperienceRiskScore()
 
         // Step 14: Desired return and other factors
-        riskScore += calculateReturnAndAssetRiskScore()
+        riskScore += self.calculateReturnAndAssetRiskScore()
 
         // Map score to risk class
-        let calculatedRiskClass = mapScoreToRiskClass(riskScore)
+        let calculatedRiskClass = self.mapScoreToRiskClass(riskScore)
 
         // Apply special rules and safety mechanisms
-        return applyRiskClassRules(calculatedRiskClass)
+        return self.applyRiskClassRules(calculatedRiskClass)
     }
 
     // MARK: - Financial Risk Score Calculation
@@ -90,13 +90,13 @@ extension SignUpData {
         }
 
         // Derivatives experience (different weights for investors vs traders)
-        score += calculateDerivativesExperienceScore()
+        score += self.calculateDerivativesExperienceScore()
 
         // Investment amounts (use maximum of all investment types)
-        score += calculateInvestmentAmountScore()
+        score += self.calculateInvestmentAmountScore()
 
         // Derivatives holding period
-        score += calculateHoldingPeriodScore()
+        score += self.calculateHoldingPeriodScore()
 
         return score
     }
@@ -116,9 +116,9 @@ extension SignUpData {
 
     // MARK: - Investment Amount Score
     private func calculateInvestmentAmountScore() -> Int {
-        let stocksAmountScore = getStocksAmountScore()
-        let etfsAmountScore = getETFsAmountScore()
-        let derivativesAmountScore = getDerivativesAmountScore()
+        let stocksAmountScore = self.getStocksAmountScore()
+        let etfsAmountScore = self.getETFsAmountScore()
+        let derivativesAmountScore = self.getDerivativesAmountScore()
 
         // Use the maximum score since derivatives are riskier
         return max(stocksAmountScore, etfsAmountScore, derivativesAmountScore)
@@ -201,13 +201,13 @@ extension SignUpData {
     private func applyRiskClassRules(_ calculatedRiskClass: RiskClass) -> RiskClass {
         // Special pathway for investors: Risk Class 5 if they meet specific criteria
         if userRole == .investor && calculatedRiskClass.rawValue < 5 {
-            if canInvestorGetRiskClass5() {
+            if self.canInvestorGetRiskClass5() {
                 return .riskClass5
             }
         }
 
         // Apply safety mechanism: cap at Risk Class 2 if conservative patterns detected
-        if hasConservativeInvestmentPattern() && calculatedRiskClass.rawValue > 2 {
+        if self.hasConservativeInvestmentPattern() && calculatedRiskClass.rawValue > 2 {
             return .riskClass2
         }
 
@@ -223,8 +223,8 @@ extension SignUpData {
         let hasStockExperience = stocksTransactionsCount != .none
         let hasETFExperience = etfsTransactionsCount != .none
         let hasInvestmentAmount = stocksInvestmentAmount != .hundredToTenThousand ||
-                                 etfsInvestmentAmount != .hundredToTenThousand ||
-                                 derivativesInvestmentAmount != .zeroToThousand
+            etfsInvestmentAmount != .hundredToTenThousand ||
+            derivativesInvestmentAmount != .zeroToThousand
 
         let hasInvestmentExperience = hasStockExperience || hasETFExperience || hasInvestmentAmount
 
@@ -242,11 +242,11 @@ extension SignUpData {
         } else {
             // For traders: Check all conservative patterns (they actively trade)
             let hasConservativeDerivatives = derivativesTransactionsCount == .none ||
-                                            derivativesTransactionsCount == .oneToTen ||
-                                            derivativesTransactionsCount == .tenToFifty
+                derivativesTransactionsCount == .oneToTen ||
+                derivativesTransactionsCount == .tenToFifty
 
             let hasConservativeAmounts = derivativesInvestmentAmount == .zeroToThousand ||
-                                        derivativesInvestmentAmount == .thousandToTenThousand
+                derivativesInvestmentAmount == .thousandToTenThousand
 
             let hasConservativeHolding = derivativesHoldingPeriod == .monthsToYears
             let hasConservativeReturn = desiredReturn == .atLeastTenPercent

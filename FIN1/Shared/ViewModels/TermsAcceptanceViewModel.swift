@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Terms Acceptance ViewModel
 
@@ -48,17 +48,17 @@ final class TermsAcceptanceViewModel: ObservableObject {
 
     func checkAcceptanceStatus() {
         guard let user = userService.currentUser else {
-            needsTermsAcceptance = false
-            needsPrivacyPolicyAcceptance = false
+            self.needsTermsAcceptance = false
+            self.needsPrivacyPolicyAcceptance = false
             return
         }
 
         // Prefer server-driven versions when available; fallback to bundled constants.
-        let currentTermsVersion = currentTermsVersionForDisplay
-        let currentPrivacyVersion = currentPrivacyVersionForDisplay
+        let currentTermsVersion = self.currentTermsVersionForDisplay
+        let currentPrivacyVersion = self.currentPrivacyVersionForDisplay
 
-        needsTermsAcceptance = (user.acceptedTermsVersion ?? "") != currentTermsVersion
-        needsPrivacyPolicyAcceptance = (user.acceptedPrivacyPolicyVersion ?? "") != currentPrivacyVersion
+        self.needsTermsAcceptance = (user.acceptedTermsVersion ?? "") != currentTermsVersion
+        self.needsPrivacyPolicyAcceptance = (user.acceptedPrivacyPolicyVersion ?? "") != currentPrivacyVersion
     }
 
     // MARK: - Acceptance Actions
@@ -68,28 +68,28 @@ final class TermsAcceptanceViewModel: ObservableObject {
             return
         }
 
-        isLoading = true
-        errorMessage = nil
+        self.isLoading = true
+        self.errorMessage = nil
 
         do {
-            let versionToAccept = currentTermsVersionForDisplay
-            let updatedUser = termsAcceptanceService.recordTermsAcceptance(
+            let versionToAccept = self.currentTermsVersionForDisplay
+            let updatedUser = self.termsAcceptanceService.recordTermsAcceptance(
                 user: user,
                 version: versionToAccept
             )
 
-            try await userService.updateProfile(updatedUser)
-            await recordConsentInBackendIfPossible(
+            try await self.userService.updateProfile(updatedUser)
+            await self.recordConsentInBackendIfPossible(
                 consentType: "terms_of_service",
                 version: versionToAccept,
-                documentHash: currentTermsHash
+                documentHash: self.currentTermsHash
             )
 
-            needsTermsAcceptance = false
-            isLoading = false
+            self.needsTermsAcceptance = false
+            self.isLoading = false
         } catch {
-            errorMessage = error.localizedDescription
-            isLoading = false
+            self.errorMessage = error.localizedDescription
+            self.isLoading = false
         }
     }
 
@@ -98,35 +98,35 @@ final class TermsAcceptanceViewModel: ObservableObject {
             return
         }
 
-        isLoading = true
-        errorMessage = nil
+        self.isLoading = true
+        self.errorMessage = nil
 
         do {
-            let versionToAccept = currentPrivacyVersionForDisplay
-            let updatedUser = termsAcceptanceService.recordPrivacyPolicyAcceptance(
+            let versionToAccept = self.currentPrivacyVersionForDisplay
+            let updatedUser = self.termsAcceptanceService.recordPrivacyPolicyAcceptance(
                 user: user,
                 version: versionToAccept
             )
 
-            try await userService.updateProfile(updatedUser)
-            await recordConsentInBackendIfPossible(
+            try await self.userService.updateProfile(updatedUser)
+            await self.recordConsentInBackendIfPossible(
                 consentType: "privacy_policy",
                 version: versionToAccept,
-                documentHash: currentPrivacyHash
+                documentHash: self.currentPrivacyHash
             )
 
-            needsPrivacyPolicyAcceptance = false
-            isLoading = false
+            self.needsPrivacyPolicyAcceptance = false
+            self.isLoading = false
         } catch {
-            errorMessage = error.localizedDescription
-            isLoading = false
+            self.errorMessage = error.localizedDescription
+            self.isLoading = false
         }
     }
 
     // MARK: - Computed Properties
 
     var canProceed: Bool {
-        !needsTermsAcceptance && !needsPrivacyPolicyAcceptance
+        !self.needsTermsAcceptance && !self.needsPrivacyPolicyAcceptance
     }
 
     // MARK: - Backend Consent Recording (Audit)
@@ -163,7 +163,7 @@ final class TermsAcceptanceViewModel: ObservableObject {
 
     private func refreshCurrentDocuments() async {
         guard let termsContentService else { return }
-        guard userService.currentUser != nil else { return }
+        guard self.userService.currentUser != nil else { return }
 
         let termsLanguage: TermsOfServiceDataProvider.Language = {
             Locale.current.language.languageCode?.identifier == "de" ? .german : .english
@@ -187,13 +187,13 @@ final class TermsAcceptanceViewModel: ObservableObject {
         }
 
         if let terms = await resolve(language: termsLanguage, doc: .terms) {
-            currentTermsVersionForDisplay = terms.version
-            currentTermsHash = terms.documentHash
+            self.currentTermsVersionForDisplay = terms.version
+            self.currentTermsHash = terms.documentHash
         }
 
         if let privacy = await resolve(language: privacyLanguage, doc: .privacy) {
-            currentPrivacyVersionForDisplay = privacy.version
-            currentPrivacyHash = privacy.documentHash
+            self.currentPrivacyVersionForDisplay = privacy.version
+            self.currentPrivacyHash = privacy.documentHash
         }
     }
 }

@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Trading Notification Service Implementation
 /// Handles trading notifications, confirmations, and invoice generation
@@ -38,7 +38,7 @@ final class TradingNotificationService: TradingNotificationServiceProtocol, Serv
     }
 
     func reset() {
-        errorMessage = nil
+        self.errorMessage = nil
     }
 
     // MARK: - Trading Notifications
@@ -67,7 +67,7 @@ final class TradingNotificationService: TradingNotificationServiceProtocol, Serv
 
     func generateInvoiceAndNotification(for order: Order, tradeId: String? = nil, tradeNumber: Int? = nil) async {
         // Generate invoice with actual order values
-        let invoiceId = transactionIdService.generateInvoiceNumber()
+        let invoiceId = self.transactionIdService.generateInvoiceNumber()
         print("📄 Invoice Generated: \(invoiceId) for \(order.symbol) (Trade ID: \(tradeId ?? "none"))")
 
         // CRITICAL: Use order.traderId as customer number for proper trader isolation
@@ -87,10 +87,22 @@ final class TradingNotificationService: TradingNotificationServiceProtocol, Serv
         let invoice: Invoice
         if order.type == .buy {
             let orderBuy = OrderBuy(from: order)
-            invoice = Invoice.from(order: orderBuy, customerInfo: customerInfo, transactionIdService: transactionIdService, tradeId: tradeId, tradeNumber: tradeNumber)
+            invoice = Invoice.from(
+                order: orderBuy,
+                customerInfo: customerInfo,
+                transactionIdService: self.transactionIdService,
+                tradeId: tradeId,
+                tradeNumber: tradeNumber
+            )
         } else {
             let orderSell = OrderSell(from: order)
-            invoice = Invoice.from(sellOrder: orderSell, customerInfo: customerInfo, transactionIdService: transactionIdService, tradeId: tradeId, tradeNumber: tradeNumber)
+            invoice = Invoice.from(
+                sellOrder: orderSell,
+                customerInfo: customerInfo,
+                transactionIdService: self.transactionIdService,
+                tradeId: tradeId,
+                tradeNumber: tradeNumber
+            )
         }
 
         // Create document for the invoice with industry-standard naming
@@ -98,14 +110,16 @@ final class TradingNotificationService: TradingNotificationServiceProtocol, Serv
         // CRITICAL: Use order.traderId to ensure documents are associated with the order's owner
         // This ensures proper trade isolation between traders
         let recipientId = order.traderId
-        print("📄 TradingNotificationService: Creating document with userId=\(recipientId), currentUser.id=\(userService.currentUser?.id ?? "nil"), order.traderId=\(order.traderId)")
+        print(
+            "📄 TradingNotificationService: Creating document with userId=\(recipientId), currentUser.id=\(self.userService.currentUser?.id ?? "nil"), order.traderId=\(order.traderId)"
+        )
         let document = Document(
             userId: recipientId,
             name: documentName,
             type: .invoice,
             status: .verified,
             fileURL: "invoice://\(invoiceId).pdf",
-            size: 1024 * 50, // Mock 50KB PDF size
+            size: 1_024 * 50, // Mock 50KB PDF size
             uploadedAt: Date(),
             invoiceData: invoice,
             tradeId: tradeId,
@@ -114,16 +128,16 @@ final class TradingNotificationService: TradingNotificationServiceProtocol, Serv
 
         // Add document to document service
         do {
-            try await documentService.uploadDocument(document)
+            try await self.documentService.uploadDocument(document)
             print("📄 Invoice document added to notifications")
-            print("   📊 DocumentService now has \(documentService.documents.count) documents")
+            print("   📊 DocumentService now has \(self.documentService.documents.count) documents")
             print("   🔔 NotificationService should observe this change and update count")
         } catch {
             print("❌ Failed to add invoice document: \(error)")
         }
 
         // Add invoice to invoice service so it shows up in the UI
-        await invoiceService.addInvoice(invoice)
+        await self.invoiceService.addInvoice(invoice)
         print("📄 Invoice added to invoice service: \(invoice.formattedInvoiceNumber)")
 
         // In a real app, this would save the invoice and send notification
@@ -153,7 +167,7 @@ final class TradingNotificationService: TradingNotificationServiceProtocol, Serv
 
     func generateCollectionBillDocument(for trade: Trade) async {
         // Create Collection Bill document for completed trades
-        let documentId = transactionIdService.generateInvoiceNumber()
+        let documentId = self.transactionIdService.generateInvoiceNumber()
         print("📄 Collection Bill Generated: \(documentId) for Trade #\(trade.tradeNumber)")
 
         // Create document for the Collection Bill with industry-standard naming
@@ -167,7 +181,7 @@ final class TradingNotificationService: TradingNotificationServiceProtocol, Serv
             type: .traderCollectionBill,
             status: .verified,
             fileURL: "collectionbill://\(documentId).pdf",
-            size: 1024 * 75, // Mock 75KB PDF size
+            size: 1_024 * 75, // Mock 75KB PDF size
             uploadedAt: Date(),
             tradeId: trade.id,
             documentNumber: documentId
@@ -175,7 +189,7 @@ final class TradingNotificationService: TradingNotificationServiceProtocol, Serv
 
         // Add document to document service
         do {
-            try await documentService.uploadDocument(document)
+            try await self.documentService.uploadDocument(document)
             print("📄 Collection Bill document added to notifications")
         } catch {
             print("❌ Failed to add Collection Bill document: \(error)")
@@ -194,7 +208,9 @@ final class TradingNotificationService: TradingNotificationServiceProtocol, Serv
         }
 
         let userTrades = trades.filter { $0.traderId == currentUserId }
-        print("📄 TradingNotificationService: Checking for missing collection bills for \(userTrades.count) trades (filtered from \(trades.count) total for current trader)")
+        print(
+            "📄 TradingNotificationService: Checking for missing collection bills for \(userTrades.count) trades (filtered from \(trades.count) total for current trader)"
+        )
 
         for trade in userTrades where trade.isCompleted {
             let existingCollectionBill = documentService.documents.first {
@@ -205,7 +221,9 @@ final class TradingNotificationService: TradingNotificationServiceProtocol, Serv
             if let existing = existingCollectionBill {
                 // Check if existing Collection Bill has correct userId (should match trade.traderId)
                 if existing.userId != trade.traderId {
-                    print("   Found collection bill for trade #\(trade.tradeNumber) with incorrect userId (\(existing.userId) vs \(trade.traderId)) - regenerating")
+                    print(
+                        "   Found collection bill for trade #\(trade.tradeNumber) with incorrect userId (\(existing.userId) vs \(trade.traderId)) - regenerating"
+                    )
                     shouldRegenerate = true
                     // Delete the old one with wrong userId
                     do {
@@ -238,7 +256,13 @@ final class TradingNotificationService: TradingNotificationServiceProtocol, Serv
         print("🔔 Trade Completion Notification: Trade \(tradeId) completed")
     }
 
-    func sendCommissionSettlementNotification(for trade: Trade, commissionAmount: Double, commissionRate: Double, grossProfit: Double, netProfit: Double) async {
+    func sendCommissionSettlementNotification(
+        for trade: Trade,
+        commissionAmount: Double,
+        commissionRate: Double,
+        grossProfit: Double,
+        netProfit: Double
+    ) async {
         let commissionRecord = CommissionRecord(
             tradeId: trade.id,
             traderId: trade.traderId,
@@ -283,7 +307,7 @@ final class TradingNotificationService: TradingNotificationServiceProtocol, Serv
             return
         }
 
-        let documentId = transactionIdService.generateInvoiceNumber()
+        let documentId = self.transactionIdService.generateInvoiceNumber()
         print("📄 Credit Note Generated: \(documentId) for Trade #\(trade.tradeNumber)")
 
         // CRITICAL: Use trade.traderId as customer number for proper trader isolation
@@ -303,10 +327,10 @@ final class TradingNotificationService: TradingNotificationServiceProtocol, Serv
         let creditNoteInvoice = Invoice.creditNote(
             totalCommissionAmount: commissionAmount,
             customerInfo: customerInfo,
-            transactionIdService: transactionIdService,
+            transactionIdService: self.transactionIdService,
             tradeNumbers: [trade.tradeNumber],
             commissions: [], // Individual commission details are loaded dynamically in the view
-            traderCommissionRateSnapshot: configurationService.effectiveCommissionRate
+            traderCommissionRateSnapshot: self.configurationService.effectiveCommissionRate
         )
 
         // Create document name with German format
@@ -320,7 +344,7 @@ final class TradingNotificationService: TradingNotificationServiceProtocol, Serv
             type: .traderCreditNote,
             status: .verified,
             fileURL: "creditnote://\(documentId).pdf",
-            size: 1024 * 45, // Mock 45KB PDF size
+            size: 1_024 * 45, // Mock 45KB PDF size
             uploadedAt: Date(),
             invoiceData: creditNoteInvoice,
             tradeId: trade.id,
@@ -330,7 +354,7 @@ final class TradingNotificationService: TradingNotificationServiceProtocol, Serv
 
         // Add document to document service
         do {
-            try await documentService.uploadDocument(document)
+            try await self.documentService.uploadDocument(document)
             print("📄 Credit Note document added to notifications")
             print("   💰 Commission Amount: €\(String(format: "%.2f", commissionAmount))")
             print("   📊 Gross Profit: €\(String(format: "%.2f", grossProfit))")
@@ -339,7 +363,7 @@ final class TradingNotificationService: TradingNotificationServiceProtocol, Serv
         }
 
         // Add invoice to invoice service so it shows up in statements
-        await invoiceService.addInvoice(creditNoteInvoice)
+        await self.invoiceService.addInvoice(creditNoteInvoice)
 
         // Send notification
         print("🔔 Notification: Credit Note \(documentId) is ready for download")

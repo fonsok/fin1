@@ -5,12 +5,12 @@ import SwiftUI
 extension SignUpCoordinator {
 
     func startInactivityTimer() {
-        resetInactivityTimer()
+        self.resetInactivityTimer()
     }
 
     /// Resets the inactivity countdown. Call on every user interaction / step change.
     func resetInactivityTimer() {
-        stopInactivityTimers()
+        self.stopInactivityTimers()
         showTimeoutWarning = false
 
         let warningDelay = Self.inactivityTimeout - Self.warningLeadTime
@@ -42,11 +42,11 @@ extension SignUpCoordinator {
 
     /// User tapped "Continue" on the timeout warning — reset the timer.
     func extendSession() {
-        resetInactivityTimer()
+        self.resetInactivityTimer()
     }
 
     func handleSessionTimeout() {
-        stopInactivityTimers()
+        self.stopInactivityTimers()
 
         telemetryService?.trackEvent(name: "onboarding_session_timeout", properties: [
             "last_step": currentStep.backendKey,
@@ -55,7 +55,7 @@ extension SignUpCoordinator {
             "session_seconds": sessionStartDate.map { Int(Date().timeIntervalSince($0)) } ?? 0
         ])
 
-        clearSensitiveData()
+        self.clearSensitiveData()
         requestDismissal()
     }
 

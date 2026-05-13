@@ -8,13 +8,13 @@ extension InvestmentsViewModel {
         isLoading = true
 
         Task { @MainActor in
-            loadInvestments()
+            self.loadInvestments()
 
             // Always reconcile with Parse so server-side deletes (e.g. DEV reset) clear local rows.
             if let investorId = boundInvestorId {
                 print("📡 InvestmentsViewModel: Fetching from backend for \(investorId)")
                 await investmentService.fetchFromBackend(for: investorId)
-                loadInvestments()
+                self.loadInvestments()
             }
 
             if selectedYear == nil && !availableYears.isEmpty {
@@ -31,8 +31,8 @@ extension InvestmentsViewModel {
                 investments = localInvestments
             }
         }
-        refreshCompletedDisplayData()
-        checkAndUpdateInvestmentCompletion()
+        self.refreshCompletedDisplayData()
+        self.checkAndUpdateInvestmentCompletion()
     }
 
     /// Checks if investments should be marked as completed.
@@ -91,7 +91,7 @@ extension InvestmentsViewModel {
             completedTradeNumbers = tradeNums
             completedInvestmentSummaries = summaries
 
-            refreshCompletedCanonicalSummaries(for: investments)
+            self.refreshCompletedCanonicalSummaries(for: investments)
         }
     }
 

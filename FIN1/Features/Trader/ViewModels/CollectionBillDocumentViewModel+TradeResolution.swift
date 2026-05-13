@@ -17,20 +17,20 @@ extension CollectionBillDocumentViewModel {
 
         if let tradeId = doc.tradeId,
            let foundById = completedTrades.first(where: { $0.id == tradeId }) {
-            await publishTrade(foundById)
+            await self.publishTrade(foundById)
             return true
         }
 
         if let tradeNumber = extractTradeNumberFromDocumentName(doc.name),
            let foundByNumber = completedTrades.first(where: { $0.tradeNumber == tradeNumber }) {
-            await publishTrade(foundByNumber)
+            await self.publishTrade(foundByNumber)
             return true
         }
 
         if let tradeNumber = extractTradeNumberFromDocumentName(doc.name),
            !doc.userId.isEmpty,
            let fetched = await fetchTradeFromBackend(tradeNumber: tradeNumber, traderId: doc.userId) {
-            await publishTrade(fetched)
+            await self.publishTrade(fetched)
             return true
         }
 

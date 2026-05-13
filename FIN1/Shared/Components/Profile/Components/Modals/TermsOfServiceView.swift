@@ -29,14 +29,14 @@ struct TermsOfServiceView: View {
 
                 ScrollView {
                     VStack(spacing: ResponsiveDesign.spacing(16)) {
-                        headerSection
-                        searchSection
-                        controlsSection
+                        self.headerSection
+                        self.searchSection
+                        self.controlsSection
 
-                        if viewModel.hasNoSearchResults {
-                            noResultsView
+                        if self.viewModel.hasNoSearchResults {
+                            self.noResultsView
                         } else {
-                            termsContent
+                            self.termsContent
                         }
                     }
                     .padding(.horizontal, ResponsiveDesign.spacing(16))
@@ -44,12 +44,12 @@ struct TermsOfServiceView: View {
                     .padding(.bottom, ResponsiveDesign.spacing(24))
                 }
             }
-            .navigationTitle(navigationTitle)
+            .navigationTitle(self.navigationTitle)
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(doneButtonTitle) {
-                        dismiss()
+                    Button(self.doneButtonTitle) {
+                        self.dismiss()
                     }
                     .foregroundColor(AppTheme.accentLightBlue)
                 }
@@ -60,23 +60,23 @@ struct TermsOfServiceView: View {
     // MARK: - Localized Strings
 
     private var isEnglish: Bool {
-        viewModel.currentLanguage == .english
+        self.viewModel.currentLanguage == .english
     }
 
     private var displayedVersion: String {
-        viewModel.displayedVersion
+        self.viewModel.displayedVersion
     }
 
     private var displayedLastUpdatedText: String {
-        viewModel.displayedLastUpdatedText
+        self.viewModel.displayedLastUpdatedText
     }
 
     private var navigationTitle: String {
-        isEnglish ? "Terms of Service" : "Nutzungsbedingungen"
+        self.isEnglish ? "Terms of Service" : "Nutzungsbedingungen"
     }
 
     private var doneButtonTitle: String {
-        isEnglish ? "Done" : "Fertig"
+        self.isEnglish ? "Done" : "Fertig"
     }
 
     // MARK: - Header Section
@@ -88,7 +88,7 @@ struct TermsOfServiceView: View {
                     .font(ResponsiveDesign.headlineFont())
                     .foregroundColor(AppTheme.accentOrange)
 
-                Text(navigationTitle)
+                Text(self.navigationTitle)
                     .font(ResponsiveDesign.headlineFont())
                     .fontWeight(.bold)
                     .foregroundColor(AppTheme.fontColor)
@@ -96,15 +96,15 @@ struct TermsOfServiceView: View {
                 Spacer()
             }
 
-            Text(isEnglish
-                 ? "Last Updated: \(displayedLastUpdatedText) | Version: \(displayedVersion)"
-                 : "Zuletzt aktualisiert: \(displayedLastUpdatedText) | Version: \(displayedVersion)")
+            Text(self.isEnglish
+                ? "Last Updated: \(self.displayedLastUpdatedText) | Version: \(self.displayedVersion)"
+                : "Zuletzt aktualisiert: \(self.displayedLastUpdatedText) | Version: \(self.displayedVersion)")
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
 
-            Text(isEnglish
-                 ? "Please read these terms carefully. By using the \(LegalIdentity.platformName) App, you agree to be bound by these Terms of Service."
-                 : "Bitte lesen Sie diese Bedingungen sorgfältig. Durch die Nutzung der \(LegalIdentity.platformName)-App erklären Sie sich damit einverstanden, an diese Nutzungsbedingungen gebunden zu sein.")
+            Text(self.isEnglish
+                ? "Please read these terms carefully. By using the \(LegalIdentity.platformName) App, you agree to be bound by these Terms of Service."
+                : "Bitte lesen Sie diese Bedingungen sorgfältig. Durch die Nutzung der \(LegalIdentity.platformName)-App erklären Sie sich damit einverstanden, an diese Nutzungsbedingungen gebunden zu sein.")
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.8))
                 .multilineTextAlignment(.leading)
@@ -121,12 +121,12 @@ struct TermsOfServiceView: View {
             Image(systemName: "magnifyingglass")
                 .foregroundColor(AppTheme.fontColor.opacity(0.6))
 
-            TextField(isEnglish ? "Search terms..." : "Begriffe suchen...", text: $viewModel.searchQuery)
+            TextField(self.isEnglish ? "Search terms..." : "Begriffe suchen...", text: self.$viewModel.searchQuery)
                 .textFieldStyle(PlainTextFieldStyle())
                 .foregroundColor(AppTheme.fontColor)
 
-            if !viewModel.searchQuery.isEmpty {
-                Button(action: { viewModel.searchQuery = "" }) {
+            if !self.viewModel.searchQuery.isEmpty {
+                Button(action: { self.viewModel.searchQuery = "" }) {
                     Image(systemName: "xmark.circle.fill")
                         .foregroundColor(AppTheme.fontColor.opacity(0.5))
                 }
@@ -141,28 +141,28 @@ struct TermsOfServiceView: View {
 
     private var controlsSection: some View {
         HStack(spacing: ResponsiveDesign.spacing(12)) {
-            Button(action: { viewModel.expandAll() }) {
+            Button(action: { self.viewModel.expandAll() }) {
                 HStack(spacing: ResponsiveDesign.spacing(4)) {
                     Image(systemName: "chevron.down.circle")
                         .font(ResponsiveDesign.captionFont())
-                    Text(isEnglish ? "Expand All" : "Alle öffnen")
+                    Text(self.isEnglish ? "Expand All" : "Alle öffnen")
                         .font(ResponsiveDesign.captionFont())
                 }
                 .foregroundColor(AppTheme.accentLightBlue)
             }
 
-            Button(action: { viewModel.collapseAll() }) {
+            Button(action: { self.viewModel.collapseAll() }) {
                 HStack(spacing: ResponsiveDesign.spacing(4)) {
                     Image(systemName: "chevron.up.circle")
                         .font(ResponsiveDesign.captionFont())
-                    Text(isEnglish ? "Collapse All" : "Alle schließen")
+                    Text(self.isEnglish ? "Collapse All" : "Alle schließen")
                         .font(ResponsiveDesign.captionFont())
                 }
                 .foregroundColor(AppTheme.accentLightBlue)
             }
 
-            Button(action: { viewModel.toggleLanguage() }) {
-                Text(viewModel.currentLanguage.oppositeFlag)
+            Button(action: { self.viewModel.toggleLanguage() }) {
+                Text(self.viewModel.currentLanguage.oppositeFlag)
                     .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 1.2))
             }
             .buttonStyle(PlainButtonStyle())
@@ -175,11 +175,11 @@ struct TermsOfServiceView: View {
 
     private var termsContent: some View {
         VStack(spacing: ResponsiveDesign.spacing(12)) {
-            ForEach(viewModel.filteredSections) { section in
+            ForEach(self.viewModel.filteredSections) { section in
                 TermsSectionRow(
                     section: section,
-                    isExpanded: viewModel.isExpanded(section),
-                    onToggle: { viewModel.toggleSection(section) }
+                    isExpanded: self.viewModel.isExpanded(section),
+                    onToggle: { self.viewModel.toggleSection(section) }
                 )
             }
         }
@@ -193,13 +193,13 @@ struct TermsOfServiceView: View {
                 .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2.4))
                 .foregroundColor(AppTheme.fontColor.opacity(0.5))
 
-            Text(isEnglish ? "No Results Found" : "Keine Ergebnisse gefunden")
+            Text(self.isEnglish ? "No Results Found" : "Keine Ergebnisse gefunden")
                 .font(ResponsiveDesign.headlineFont())
                 .foregroundColor(AppTheme.fontColor)
 
-            Text(isEnglish
-                 ? "Try searching with different keywords"
-                 : "Versuchen Sie es mit anderen Suchbegriffen")
+            Text(self.isEnglish
+                ? "Try searching with different keywords"
+                : "Versuchen Sie es mit anderen Suchbegriffen")
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
                 .multilineTextAlignment(.center)
@@ -217,14 +217,14 @@ private struct TermsSectionRow: View {
 
     var body: some View {
         ExpandableSectionRow(
-            title: section.title,
+            title: self.section.title,
             icon: nil, // Icons removed to match FAQ styling
             iconColor: AppTheme.accentLightBlue,
-            isExpanded: isExpanded,
-            onToggle: onToggle,
+            isExpanded: self.isExpanded,
+            onToggle: self.onToggle,
             titleFontWeight: ResponsiveDesign.faqQuestionFontWeight
         ) {
-            TermsContentView(text: section.content)
+            TermsContentView(text: self.section.content)
         }
     }
 }
@@ -235,7 +235,7 @@ private struct TermsContentView: View {
     let text: String
 
     var body: some View {
-        LegalDocumentFormatter(text: text)
+        LegalDocumentFormatter(text: self.text)
     }
 }
 

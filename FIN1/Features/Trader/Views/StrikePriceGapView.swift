@@ -22,8 +22,8 @@ struct StrikePriceGapView: View {
                 Divider()
 
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
-                    ForEach(options, id: \.0) { option in
-                        Button(action: { selectedGap = option.0 }, label: {
+                    ForEach(self.options, id: \.0) { option in
+                        Button(action: { self.selectedGap = option.0 }, label: {
                             VStack {
                                 Text(option.0)
                                 Text(option.1)
@@ -32,7 +32,7 @@ struct StrikePriceGapView: View {
                             .foregroundColor(AppTheme.fontColor)
                             .padding()
                             .frame(maxWidth: .infinity, minHeight: 60)
-                            .background(selectedGap == option.0 ? AppTheme.accentGreen : AppTheme.sectionBackground)
+                            .background(self.selectedGap == option.0 ? AppTheme.accentGreen : AppTheme.sectionBackground)
                             .cornerRadius(ResponsiveDesign.spacing(8))
                         })
                     }
@@ -52,7 +52,7 @@ struct StrikePriceGapView: View {
                         .foregroundColor(AppTheme.fontColor)
                 }
 
-                Button(action: { dismiss() }, label: {
+                Button(action: { self.dismiss() }, label: {
                     Text("übernehmen")
                         .foregroundColor(AppTheme.fontColor)
                         .padding()

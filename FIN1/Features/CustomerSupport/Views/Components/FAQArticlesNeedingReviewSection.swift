@@ -19,7 +19,7 @@ struct FAQArticlesNeedingReviewSection: View {
 
                 Spacer()
 
-                Text("\(viewModel.articlesNeedingReview.count)")
+                Text("\(self.viewModel.articlesNeedingReview.count)")
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(.white)
                     .padding(.horizontal, ResponsiveDesign.spacing(8))
@@ -28,9 +28,9 @@ struct FAQArticlesNeedingReviewSection: View {
                     .cornerRadius(ResponsiveDesign.spacing(8))
             }
 
-            ForEach(viewModel.articlesNeedingReview.prefix(3)) { article in
+            ForEach(self.viewModel.articlesNeedingReview.prefix(3)) { article in
                 FAQArticleRow(article: article, isCSRMode: true, showReviewBadge: true) {
-                    viewModel.selectArticle(article)
+                    self.viewModel.selectArticle(article)
                 }
             }
         }

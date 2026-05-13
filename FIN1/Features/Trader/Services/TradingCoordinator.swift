@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Trading Coordinator Implementation
 /// Lightweight orchestrator that coordinates between focused trading services
@@ -9,23 +9,23 @@ final class TradingCoordinator: TradingCoordinatorProtocol {
 
     // MARK: - Publishers (Delegated to State Store)
     var activeOrdersPublisher: AnyPublisher<[Order], Never> {
-        tradingStateStore.activeOrdersPublisher
+        self.tradingStateStore.activeOrdersPublisher
     }
 
     var completedTradesPublisher: AnyPublisher<[Trade], Never> {
-        tradingStateStore.completedTradesPublisher
+        self.tradingStateStore.completedTradesPublisher
     }
 
     var watchlistPublisher: AnyPublisher<[SearchResult], Never> {
-        tradingStateStore.watchlistPublisher
+        self.tradingStateStore.watchlistPublisher
     }
 
     var isLoadingPublisher: AnyPublisher<Bool, Never> {
-        tradingStateStore.isLoadingPublisher
+        self.tradingStateStore.isLoadingPublisher
     }
 
     var errorMessagePublisher: AnyPublisher<String?, Never> {
-        tradingStateStore.errorMessagePublisher
+        self.tradingStateStore.errorMessagePublisher
     }
 
     // MARK: - Focused Coordinators
@@ -53,11 +53,11 @@ final class TradingCoordinator: TradingCoordinatorProtocol {
     // MARK: - Trading Operations
 
     func loadAllTradingData() async throws {
-        try await tradingStateStore.loadAllTradingData()
+        try await self.tradingStateStore.loadAllTradingData()
     }
 
     func refreshTradingData() async throws {
-        try await tradingStateStore.refreshTradingData()
+        try await self.tradingStateStore.refreshTradingData()
     }
 
     // MARK: - Order Management
@@ -88,59 +88,59 @@ final class TradingCoordinator: TradingCoordinatorProtocol {
             denomination: denomination,
             isMirrorPoolOrder: isMirrorPoolOrder
         )
-        return try await orderLifecycleCoordinator.placeBuyOrder(parameters: parameters)
+        return try await self.orderLifecycleCoordinator.placeBuyOrder(parameters: parameters)
     }
 
     func placeSellOrder(symbol: String, quantity: Int, price: Double) async throws -> OrderSell {
-        return try await orderLifecycleCoordinator.placeSellOrder(symbol: symbol, quantity: quantity, price: price)
+        return try await self.orderLifecycleCoordinator.placeSellOrder(symbol: symbol, quantity: quantity, price: price)
     }
 
     func submitOrder(_ order: OrderSell) async throws {
-        try await orderLifecycleCoordinator.submitOrder(order)
+        try await self.orderLifecycleCoordinator.submitOrder(order)
     }
 
     func cancelOrder(_ orderId: String) async throws {
-        try await orderLifecycleCoordinator.cancelOrder(orderId)
+        try await self.orderLifecycleCoordinator.cancelOrder(orderId)
     }
 
     func updateOrderStatus(_ orderId: String, status: String) async throws {
-        try await orderLifecycleCoordinator.updateOrderStatus(orderId, status: status)
+        try await self.orderLifecycleCoordinator.updateOrderStatus(orderId, status: status)
     }
 
     // MARK: - Trade Management
 
     func createNewTrade(buyOrder: OrderBuy) async throws -> Trade {
-        return try await tradeLifecycleCoordinator.createNewTrade(buyOrder: buyOrder)
+        return try await self.tradeLifecycleCoordinator.createNewTrade(buyOrder: buyOrder)
     }
 
     func addSellOrderToTrade(_ tradeId: String, sellOrder: OrderSell) async throws {
-        try await tradeLifecycleCoordinator.addSellOrderToTrade(tradeId, sellOrder: sellOrder)
+        try await self.tradeLifecycleCoordinator.addSellOrderToTrade(tradeId, sellOrder: sellOrder)
     }
 
     func cancelTrade(_ tradeId: String) async throws {
-        try await tradeLifecycleCoordinator.cancelTrade(tradeId)
+        try await self.tradeLifecycleCoordinator.cancelTrade(tradeId)
     }
 
     func completeTrade(_ tradeId: String) async throws {
-        try await tradeLifecycleCoordinator.completeTrade(tradeId)
+        try await self.tradeLifecycleCoordinator.completeTrade(tradeId)
     }
 
     // MARK: - Watchlist Management
 
     func addToWatchlist(_ searchResult: SearchResult) async throws {
-        try await securitiesWatchlistService.addToWatchlist(searchResult)
+        try await self.securitiesWatchlistService.addToWatchlist(searchResult)
     }
 
     func removeFromWatchlist(_ wkn: String) async throws {
-        try await securitiesWatchlistService.removeFromWatchlist(wkn)
+        try await self.securitiesWatchlistService.removeFromWatchlist(wkn)
     }
 
     func clearWatchlist() async throws {
-        try await securitiesWatchlistService.clearWatchlist()
+        try await self.securitiesWatchlistService.clearWatchlist()
     }
 
     func isInWatchlist(_ wkn: String) -> Bool {
-        return securitiesWatchlistService.isInWatchlist(wkn)
+        return self.securitiesWatchlistService.isInWatchlist(wkn)
     }
 
     // MARK: - Statistics
@@ -149,26 +149,26 @@ final class TradingCoordinator: TradingCoordinatorProtocol {
         // Note: This would need access to current state from TradingStateStore
         // For now, we'll delegate to the statistics service with empty arrays
         // In a real implementation, we'd need to get current state from the state store
-        return tradingStatisticsService.calculateTotalVolume(activeOrders: [], completedTrades: [])
+        return self.tradingStatisticsService.calculateTotalVolume(activeOrders: [], completedTrades: [])
     }
 
     func calculateDailyPnL() -> Double {
         // Note: This would need access to current state from TradingStateStore
         // For now, we'll delegate to the statistics service with empty arrays
-        return tradingStatisticsService.calculateDailyPnL(completedTrades: [])
+        return self.tradingStatisticsService.calculateDailyPnL(completedTrades: [])
     }
 
     // MARK: - Lifecycle
 
     func start() {
-        tradingStateStore.start()
+        self.tradingStateStore.start()
     }
 
     func stop() {
-        tradingStateStore.stop()
+        self.tradingStateStore.stop()
     }
 
     func reset() {
-        tradingStateStore.reset()
+        self.tradingStateStore.reset()
     }
 }

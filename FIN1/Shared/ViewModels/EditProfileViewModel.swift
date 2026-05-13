@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 /// ViewModel for Edit Profile view following MVVM architecture
 /// Manages user profile editing state, validation, and updates.
@@ -39,25 +39,25 @@ final class EditProfileViewModel: ObservableObject {
 
     // MARK: - Computed Properties
 
-    private var currentUser: User? { userService?.currentUser }
-    var isIdentificationConfirmed: Bool { currentUser?.identificationConfirmed ?? false }
-    var isAddressConfirmed: Bool { currentUser?.addressConfirmed ?? false }
-    var isKYCCompleted: Bool { currentUser?.isKYCCompleted ?? false }
+    private var currentUser: User? { self.userService?.currentUser }
+    var isIdentificationConfirmed: Bool { self.currentUser?.identificationConfirmed ?? false }
+    var isAddressConfirmed: Bool { self.currentUser?.addressConfirmed ?? false }
+    var isKYCCompleted: Bool { self.currentUser?.isKYCCompleted ?? false }
 
-    var canEditName: Bool { !isIdentificationConfirmed }
-    var nameRequiresReKYC: Bool { isIdentificationConfirmed }
-    var canEditAddress: Bool { !isAddressConfirmed }
-    var addressRequiresReKYC: Bool { isAddressConfirmed }
-    var canEditEmployment: Bool { isKYCCompleted }
+    var canEditName: Bool { !self.isIdentificationConfirmed }
+    var nameRequiresReKYC: Bool { self.isIdentificationConfirmed }
+    var canEditAddress: Bool { !self.isAddressConfirmed }
+    var addressRequiresReKYC: Bool { self.isAddressConfirmed }
+    var canEditEmployment: Bool { self.isKYCCompleted }
 
     var nameLockMessage: String {
-        isIdentificationConfirmed
+        self.isIdentificationConfirmed
             ? "Name changes require re-verification per GwG. Tap 'Request Name Change' to submit."
             : "Complete identification verification in Get Started to edit personal information."
     }
 
     var addressLockMessage: String {
-        isAddressConfirmed
+        self.isAddressConfirmed
             ? "Address changes require re-verification. Tap 'Request Address Change' to submit."
             : "Complete address verification in Get Started to edit address information."
     }
@@ -69,24 +69,24 @@ final class EditProfileViewModel: ObservableObject {
         return service.getPendingRequest(for: userId)
     }
 
-    var hasPendingNameChangeRequest: Bool { pendingNameChangeRequest != nil }
+    var hasPendingNameChangeRequest: Bool { self.pendingNameChangeRequest != nil }
 
     var pendingAddressChangeRequest: AddressChangeRequest? {
         guard let userId = currentUser?.id, let service = addressChangeService else { return nil }
         return service.getPendingRequest(for: userId)
     }
 
-    var hasPendingAddressChangeRequest: Bool { pendingAddressChangeRequest != nil }
+    var hasPendingAddressChangeRequest: Bool { self.pendingAddressChangeRequest != nil }
 
     var isFormValid: Bool {
-        !firstName.isEmpty && !lastName.isEmpty && !email.isEmpty && email.contains("@") &&
-        !phoneNumber.isEmpty && !streetAndNumber.isEmpty && !postalCode.isEmpty &&
-        !city.isEmpty && !country.isEmpty
+        !self.firstName.isEmpty && !self.lastName.isEmpty && !self.email.isEmpty && self.email.contains("@") &&
+            !self.phoneNumber.isEmpty && !self.streetAndNumber.isEmpty && !self.postalCode.isEmpty &&
+            !self.city.isEmpty && !self.country.isEmpty
     }
 
     var emailValidationMessage: String? {
-        if email.isEmpty { return "Email is required" }
-        if !email.contains("@") { return "Please enter a valid email address" }
+        if self.email.isEmpty { return "Email is required" }
+        if !self.email.contains("@") { return "Please enter a valid email address" }
         return nil
     }
 
@@ -102,15 +102,15 @@ final class EditProfileViewModel: ObservableObject {
         self.userService = userService
         self.addressChangeService = addressChangeService
         self.nameChangeService = nameChangeService
-        loadUserData()
+        self.loadUserData()
     }
 
     func configure(with services: AppServices) {
-        guard userService == nil else { return }
+        guard self.userService == nil else { return }
         self.userService = services.userService
         self.addressChangeService = services.addressChangeService
         self.nameChangeService = services.nameChangeService
-        loadUserData()
+        self.loadUserData()
     }
 
     // MARK: - Data Loading
@@ -118,19 +118,19 @@ final class EditProfileViewModel: ObservableObject {
     private func loadUserData() {
         guard let user = userService?.currentUser else { return }
 
-        salutation = user.salutation
-        academicTitle = user.academicTitle
-        firstName = user.firstName
-        lastName = user.lastName
-        email = user.email
-        phoneNumber = user.phoneNumber
-        streetAndNumber = user.streetAndNumber
-        postalCode = user.postalCode
-        city = user.city
-        state = user.state
-        country = user.country
-        employmentStatus = user.employmentStatus
-        income = user.income > 0 ? String(format: "%.0f", user.income) : ""
+        self.salutation = user.salutation
+        self.academicTitle = user.academicTitle
+        self.firstName = user.firstName
+        self.lastName = user.lastName
+        self.email = user.email
+        self.phoneNumber = user.phoneNumber
+        self.streetAndNumber = user.streetAndNumber
+        self.postalCode = user.postalCode
+        self.city = user.city
+        self.state = user.state
+        self.country = user.country
+        self.employmentStatus = user.employmentStatus
+        self.income = user.income > 0 ? String(format: "%.0f", user.income) : ""
     }
 
     // MARK: - Save Profile
@@ -138,75 +138,75 @@ final class EditProfileViewModel: ObservableObject {
     @MainActor
     func saveProfile() async {
         guard let userSvc = userService, let currentUser = userSvc.currentUser else {
-            errorMessage = "No user data available"
+            self.errorMessage = "No user data available"
             return
         }
 
         // Validate no restricted changes
-        if !canEditName && hasNameChanged(from: currentUser) {
-            errorMessage = nameLockMessage
+        if !self.canEditName && self.hasNameChanged(from: currentUser) {
+            self.errorMessage = self.nameLockMessage
             return
         }
 
-        if !canEditAddress && hasAddressChanged(from: currentUser) {
-            errorMessage = addressLockMessage
+        if !self.canEditAddress && self.hasAddressChanged(from: currentUser) {
+            self.errorMessage = self.addressLockMessage
             return
         }
 
-        if !canEditEmployment && hasEmploymentChanged(from: currentUser) {
-            errorMessage = employmentLockMessage
+        if !self.canEditEmployment && self.hasEmploymentChanged(from: currentUser) {
+            self.errorMessage = self.employmentLockMessage
             return
         }
 
-        guard isFormValid else {
-            errorMessage = "Please fill in all required fields"
+        guard self.isFormValid else {
+            self.errorMessage = "Please fill in all required fields"
             return
         }
 
-        isLoading = true
-        errorMessage = nil
+        self.isLoading = true
+        self.errorMessage = nil
 
         do {
             var updatedUser = currentUser
-            updatedUser.salutation = salutation
-            updatedUser.academicTitle = academicTitle
-            updatedUser.firstName = firstName
-            updatedUser.lastName = lastName
-            updatedUser.email = email
-            updatedUser.phoneNumber = phoneNumber
-            updatedUser.streetAndNumber = streetAndNumber
-            updatedUser.postalCode = postalCode
-            updatedUser.city = city
-            updatedUser.state = state
-            updatedUser.country = country
-            updatedUser.employmentStatus = employmentStatus
-            updatedUser.income = Double(income) ?? 0.0
+            updatedUser.salutation = self.salutation
+            updatedUser.academicTitle = self.academicTitle
+            updatedUser.firstName = self.firstName
+            updatedUser.lastName = self.lastName
+            updatedUser.email = self.email
+            updatedUser.phoneNumber = self.phoneNumber
+            updatedUser.streetAndNumber = self.streetAndNumber
+            updatedUser.postalCode = self.postalCode
+            updatedUser.city = self.city
+            updatedUser.state = self.state
+            updatedUser.country = self.country
+            updatedUser.employmentStatus = self.employmentStatus
+            updatedUser.income = Double(self.income) ?? 0.0
             updatedUser.updatedAt = Date()
 
             try await userSvc.updateProfile(updatedUser)
 
-            isLoading = false
-            showSuccessAlert = true
+            self.isLoading = false
+            self.showSuccessAlert = true
         } catch {
-            isLoading = false
-            errorMessage = error.localizedDescription
+            self.isLoading = false
+            self.errorMessage = error.localizedDescription
         }
     }
 
     // MARK: - Private Helpers
 
     private func hasNameChanged(from user: User) -> Bool {
-        salutation != user.salutation || academicTitle != user.academicTitle ||
-        firstName != user.firstName || lastName != user.lastName
+        self.salutation != user.salutation || self.academicTitle != user.academicTitle ||
+            self.firstName != user.firstName || self.lastName != user.lastName
     }
 
     private func hasAddressChanged(from user: User) -> Bool {
-        streetAndNumber != user.streetAndNumber || postalCode != user.postalCode ||
-        city != user.city || state != user.state || country != user.country
+        self.streetAndNumber != user.streetAndNumber || self.postalCode != user.postalCode ||
+            self.city != user.city || self.state != user.state || self.country != user.country
     }
 
     private func hasEmploymentChanged(from user: User) -> Bool {
         let currentIncome = user.income > 0 ? String(format: "%.0f", user.income) : ""
-        return employmentStatus != user.employmentStatus || income != currentIncome
+        return self.employmentStatus != user.employmentStatus || self.income != currentIncome
     }
 }

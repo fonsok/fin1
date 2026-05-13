@@ -18,20 +18,20 @@ struct ModularRiskClassTest: View {
 
                 // Current Risk Class Display
                 RiskClassCurrentDisplayView(
-                    signUpData: viewModel.signUpData,
-                    calculateCurrentScore: viewModel.calculateCurrentScore
+                    signUpData: self.viewModel.signUpData,
+                    calculateCurrentScore: self.viewModel.calculateCurrentScore
                 )
 
                 // Test Scenarios
                 RiskClassTestScenariosView(
-                    onResetToDefaults: viewModel.resetToDefaults,
-                    onTestDerivativesExperience: viewModel.testDerivativesExperience,
-                    onTestHighRiskProfile: viewModel.testHighRiskProfile,
-                    onTestMaximumRisk: viewModel.testMaximumRisk
+                    onResetToDefaults: self.viewModel.resetToDefaults,
+                    onTestDerivativesExperience: self.viewModel.testDerivativesExperience,
+                    onTestHighRiskProfile: self.viewModel.testHighRiskProfile,
+                    onTestMaximumRisk: self.viewModel.testMaximumRisk
                 )
 
                 // Calculation Breakdown
-                Button(action: { showingCalculationBreakdown.toggle() }, label: {
+                Button(action: { self.showingCalculationBreakdown.toggle() }, label: {
                     HStack {
                         Text("Show Calculation Breakdown")
                             .font(ResponsiveDesign.bodyFont())
@@ -40,7 +40,7 @@ struct ModularRiskClassTest: View {
 
                         Spacer()
 
-                        Image(systemName: showingCalculationBreakdown ? "chevron.up" : "chevron.down")
+                        Image(systemName: self.showingCalculationBreakdown ? "chevron.up" : "chevron.down")
                             .foregroundColor(AppTheme.fontColor)
                     }
                     .padding()
@@ -48,8 +48,8 @@ struct ModularRiskClassTest: View {
                     .cornerRadius(ResponsiveDesign.spacing(8))
                 })
 
-                if showingCalculationBreakdown {
-                    RiskClassCalculationBreakdownView(signUpData: viewModel.signUpData)
+                if self.showingCalculationBreakdown {
+                    RiskClassCalculationBreakdownView(signUpData: self.viewModel.signUpData)
                 }
             }
             .padding()

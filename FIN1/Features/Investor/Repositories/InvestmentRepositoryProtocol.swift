@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 import os
 
 // MARK: - Investment Repository Protocol
@@ -31,7 +31,7 @@ final class InvestmentRepository: InvestmentRepositoryProtocol {
     @Published var investmentPools: [InvestmentPool] = []
 
     var investmentsPublisher: AnyPublisher<[Investment], Never> {
-        $investments
+        self.$investments
             .handleEvents(receiveOutput: { investments in
                 Self.log.debug("investmentsPublisher emit count=\(investments.count)")
             })
@@ -40,7 +40,7 @@ final class InvestmentRepository: InvestmentRepositoryProtocol {
 
     /// Per-investor filtered publisher to prevent cross-user coupling in subscribers
     func investmentsPublisher(for investorId: String) -> AnyPublisher<[Investment], Never> {
-        $investments
+        self.$investments
             .map { all in
                 all.filter { $0.investorId == investorId }
             }
@@ -54,14 +54,14 @@ final class InvestmentRepository: InvestmentRepositoryProtocol {
 
     /// Adds an investment if not already present (idempotent)
     func addInvestment(_ investment: Investment) {
-        guard !investments.contains(where: { $0.id == investment.id }) else { return }
-        investments.append(investment)
+        guard !self.investments.contains(where: { $0.id == investment.id }) else { return }
+        self.investments.append(investment)
     }
 
     /// Replaces an existing investment in-place (for backend status/financial sync)
     func updateInvestment(_ investment: Investment) {
         if let idx = investments.firstIndex(where: { $0.id == investment.id }) {
-            investments[idx] = investment
+            self.investments[idx] = investment
         }
     }
 }

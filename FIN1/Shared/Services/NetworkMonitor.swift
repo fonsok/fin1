@@ -1,6 +1,6 @@
+import Combine
 import Foundation
 import Network
-import Combine
 
 // MARK: - Notifications
 
@@ -33,11 +33,11 @@ final class NetworkMonitor: ObservableObject {
     private var lastPathSatisfied = false
 
     private init() {
-        startMonitoring()
+        self.startMonitoring()
     }
 
     func startMonitoring() {
-        monitor.pathUpdateHandler = { [weak self] path in
+        self.monitor.pathUpdateHandler = { [weak self] path in
             Task { @MainActor in
                 guard let self = self else { return }
                 let satisfied = path.status == .satisfied
@@ -67,10 +67,10 @@ final class NetworkMonitor: ObservableObject {
             }
         }
 
-        monitor.start(queue: queue)
+        self.monitor.start(queue: self.queue)
     }
 
     func stopMonitoring() {
-        monitor.cancel()
+        self.monitor.cancel()
     }
 }

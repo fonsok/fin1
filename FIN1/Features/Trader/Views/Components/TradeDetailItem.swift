@@ -11,13 +11,13 @@ struct TradeDetailItem: View {
     var body: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
             HStack(spacing: ResponsiveDesign.spacing(4)) {
-                Text(title)
+                Text(self.title)
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.6))
 
-                if showInfoIcon {
+                if self.showInfoIcon {
                     Button(action: {
-                        onInfoTapped?()
+                        self.onInfoTapped?()
                     }, label: {
                         Image(systemName: "info.circle")
                             .font(ResponsiveDesign.captionFont())
@@ -26,10 +26,10 @@ struct TradeDetailItem: View {
                 }
             }
 
-            Text(value)
+            Text(self.value)
                 .font(ResponsiveDesign.bodyFont())
                 .fontWeight(.medium)
-                .foregroundColor(isPositive ? AppTheme.accentGreen : AppTheme.fontColor)
+                .foregroundColor(self.isPositive ? AppTheme.accentGreen : AppTheme.fontColor)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }

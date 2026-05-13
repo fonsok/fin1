@@ -13,11 +13,11 @@ struct OrderDetailsSection<Content: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
-            Text(title)
+            Text(self.title)
                 .font(ResponsiveDesign.headlineFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.8))
 
-            content
+            self.content
         }
         .padding()
         .background(AppTheme.sectionBackground)
@@ -67,7 +67,7 @@ struct QuantityInputField: View {
                     .foregroundColor(AppTheme.fontColor.opacity(0.8))
                 Spacer()
                 ZStack(alignment: .trailing) {
-                    TextField("", text: $text)
+                    TextField("", text: self.$text)
                         .keyboardType(.numberPad)
                         .multilineTextAlignment(.trailing)
                         .foregroundColor(Color("InputText"))
@@ -78,15 +78,15 @@ struct QuantityInputField: View {
                         .cornerRadius(ResponsiveDesign.spacing(8))
                         .frame(width: ResponsiveDesign.spacing(145))
                         .onSubmit {
-                            onSubmit?()
+                            self.onSubmit?()
                         }
                         .accessibilityIdentifier("QuantityInputField")
-                        .accessibilityLabel(accessibilityLabel)
-                        .accessibilityHint(accessibilityHint)
+                        .accessibilityLabel(self.accessibilityLabel)
+                        .accessibilityHint(self.accessibilityHint)
 
                     // Custom placeholder
-                    if text.isEmpty {
-                        Text(placeholder)
+                    if self.text.isEmpty {
+                        Text(self.placeholder)
                             .foregroundColor(Color("InputFieldPlaceholder"))
                             .multilineTextAlignment(.trailing)
                             .padding(.horizontal, ResponsiveDesign.spacing(12))
@@ -147,7 +147,7 @@ struct OrderTypeSelection<T: RawRepresentable & CaseIterable>: View where T.RawV
             // Create a binding that converts between the types
             let binding = Binding<OrderTypeSegmentedControl.OrderType>(
                 get: {
-                    switch selectedOrderMode.rawValue {
+                    switch self.selectedOrderMode.rawValue {
                     case "market": return .market
                     case "limit": return .limit
                     default: return .market
@@ -157,13 +157,13 @@ struct OrderTypeSelection<T: RawRepresentable & CaseIterable>: View where T.RawV
                     switch newValue {
                     case .market:
                         if let newMode = T(rawValue: "market") {
-                            selectedOrderMode = newMode
-                            onOrderModeChanged(newMode)
+                            self.selectedOrderMode = newMode
+                            self.onOrderModeChanged(newMode)
                         }
                     case .limit:
                         if let newMode = T(rawValue: "limit") {
-                            selectedOrderMode = newMode
-                            onOrderModeChanged(newMode)
+                            self.selectedOrderMode = newMode
+                            self.onOrderModeChanged(newMode)
                         }
                     }
                 }
@@ -204,7 +204,7 @@ struct LimitPriceInput: View {
     }
 
     var body: some View {
-        if isVisible {
+        if self.isVisible {
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
                 Text("Limit")
                     .font(ResponsiveDesign.bodyFont())
@@ -213,7 +213,7 @@ struct LimitPriceInput: View {
                 HStack {
                     Spacer()
                     ZStack(alignment: .trailing) {
-                        TextField("", text: $internalText)
+                        TextField("", text: self.$internalText)
                             .keyboardType(.decimalPad)
                             .multilineTextAlignment(.trailing)
                             .foregroundColor(Color("InputText"))
@@ -223,30 +223,30 @@ struct LimitPriceInput: View {
                             .background(Color("InputFieldBackground"))
                             .cornerRadius(ResponsiveDesign.spacing(8))
                             .frame(width: ResponsiveDesign.spacing(145))
-                            .focused($isTextFieldFocused)
+                            .focused(self.$isTextFieldFocused)
                             .onSubmit {
-                                onSubmit?()
+                                self.onSubmit?()
                             }
-                            .onChange(of: internalText) { _, newValue in
+                            .onChange(of: self.internalText) { _, newValue in
                                 // Optimized validation with debouncing
-                                let filteredValue = validateAndFilterInput(newValue)
+                                let filteredValue = self.validateAndFilterInput(newValue)
                                 if filteredValue != newValue {
-                                    internalText = filteredValue
+                                    self.internalText = filteredValue
                                 }
 
                                 // Update the binding with a slight delay to prevent excessive updates
                                 DispatchQueue.main.async {
-                                    limitText = filteredValue
-                                    onChange?(filteredValue)
+                                    self.limitText = filteredValue
+                                    self.onChange?(filteredValue)
                                 }
                             }
                             .onAppear {
-                                internalText = limitText
+                                self.internalText = self.limitText
                             }
-                            .onChange(of: limitText) { _, newValue in
+                            .onChange(of: self.limitText) { _, newValue in
                                 // Only update internal text if it's different to prevent loops
-                                if newValue != internalText {
-                                    internalText = newValue
+                                if newValue != self.internalText {
+                                    self.internalText = newValue
                                 }
                             }
                             .accessibilityIdentifier("LimitPriceField")
@@ -254,8 +254,8 @@ struct LimitPriceInput: View {
                             .accessibilityHint("Enter the limit price for your order")
 
                         // Custom placeholder
-                        if internalText.isEmpty {
-                            Text(placeholder)
+                        if self.internalText.isEmpty {
+                            Text(self.placeholder)
                                 .foregroundColor(Color("InputFieldPlaceholder"))
                                 .multilineTextAlignment(.trailing)
                                 .padding(.horizontal, ResponsiveDesign.spacing(12))

@@ -9,12 +9,12 @@ struct CannedResponsePickerSearchBar: View {
             Image(systemName: "magnifyingglass")
                 .foregroundColor(AppTheme.fontColor.opacity(0.5))
 
-            TextField("Suchen oder /Kürzel eingeben...", text: $searchQuery)
+            TextField("Suchen oder /Kürzel eingeben...", text: self.$searchQuery)
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor)
 
-            if !searchQuery.isEmpty {
-                Button { searchQuery = "" } label: {
+            if !self.searchQuery.isEmpty {
+                Button { self.searchQuery = "" } label: {
                     Image(systemName: "xmark.circle.fill")
                         .foregroundColor(AppTheme.fontColor.opacity(0.5))
                 }

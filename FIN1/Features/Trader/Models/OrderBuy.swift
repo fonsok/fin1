@@ -81,15 +81,15 @@ struct OrderBuy: Identifiable, Codable, Sendable {
     // MARK: - Computed Properties
 
     var isActive: Bool {
-        status == .submitted || status == .executed
+        self.status == .submitted || self.status == .executed
     }
 
     var isCompleted: Bool {
-        status == .completed
+        self.status == .completed
     }
 
     var isInHoldings: Bool {
-        status == .completed
+        self.status == .completed
     }
 }
 

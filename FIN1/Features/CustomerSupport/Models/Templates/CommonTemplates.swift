@@ -15,9 +15,9 @@ enum CommonTemplates {
             category: .greeting,
             body: """
             Guten Tag {{KUNDENNAME}},
-
+            
             vielen Dank für Ihre Nachricht. Mein Name ist {{AGENTNAME}} und ich helfe Ihnen gerne weiter.
-
+            
             Wie kann ich Ihnen heute behilflich sein?
             """,
             availableForRoles: allRoles,
@@ -29,9 +29,9 @@ enum CommonTemplates {
             category: .greeting,
             body: """
             Guten Tag {{KUNDENNAME}},
-
+            
             vielen Dank für Ihre Anfrage. Ihr Anliegen wurde unter der Ticket-Nummer #{{TICKETNUMMER}} erfasst.
-
+            
             Ich werde mich umgehend darum kümmern.
             """,
             availableForRoles: allRoles,
@@ -47,9 +47,9 @@ enum CommonTemplates {
             category: .closing,
             body: """
             Gibt es noch etwas, wobei ich Ihnen helfen kann?
-
+            
             Falls nicht, wünsche ich Ihnen einen angenehmen Tag!
-
+            
             Mit freundlichen Grüßen
             {{AGENTNAME}}
             \(AppBrand.appName) Kundensupport
@@ -63,10 +63,10 @@ enum CommonTemplates {
             category: .closing,
             body: """
             Ich freue mich, dass wir Ihr Anliegen lösen konnten!
-
+            
             **Wir würden uns über Ihr Feedback freuen:**
             Bitte nehmen Sie sich einen Moment Zeit für unsere kurze Zufriedenheitsumfrage.
-
+            
             Vielen Dank und bis bald!
             {{AGENTNAME}}
             """,
@@ -79,15 +79,15 @@ enum CommonTemplates {
             category: .closing,
             body: """
             Guten Tag {{KUNDENNAME}},
-
+            
             Ihr Anliegen wird derzeit bearbeitet.
-
+            
             **Nächste Schritte:**
             • {{NAECHSTE_SCHRITTE}}
             • Voraussichtliche Bearbeitungszeit: {{BEARBEITUNGSZEIT}}
-
+            
             Ich melde mich bei Ihnen, sobald es Neuigkeiten gibt.
-
+            
             Mit freundlichen Grüßen
             {{AGENTNAME}}
             """,

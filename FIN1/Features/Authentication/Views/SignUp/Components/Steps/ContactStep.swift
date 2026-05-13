@@ -21,7 +21,7 @@ struct ContactStep: View {
                 label: "Email Address",
                 placeholder: "Enter your email address",
                 icon: "envelope.fill",
-                text: $email,
+                text: self.$email,
                 isEmail: true
             )
 
@@ -29,7 +29,7 @@ struct ContactStep: View {
                 label: "Phone Number",
                 placeholder: "Enter your phone number",
                 icon: "phone.fill",
-                text: $phoneNumber
+                text: self.$phoneNumber
             )
 
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
@@ -50,15 +50,15 @@ struct ContactStep: View {
                         .foregroundColor(AppTheme.inputFieldPlaceholder)
                         .frame(width: ResponsiveDesign.iconSize())
 
-                    TextField("Enter Username", text: $username)
+                    TextField("Enter Username", text: self.$username)
                         .font(ResponsiveDesign.headlineFont())
                         .foregroundColor(AppTheme.inputFieldText)
                         .textContentType(nil)
                         .keyboardType(.default)
                         .autocapitalization(.none)
-                        .onChange(of: username) { _, newValue in
+                        .onChange(of: self.username) { _, newValue in
                             if newValue.count > 10 {
-                                username = String(newValue.prefix(10))
+                                self.username = String(newValue.prefix(10))
                             }
                         }
                 }
@@ -71,14 +71,14 @@ struct ContactStep: View {
                 label: "Password",
                 placeholder: "Create a strong password",
                 icon: "lock.fill",
-                text: $password
+                text: self.$password
             )
 
             LabeledSecureField(
                 label: "Confirm Password",
                 placeholder: "Confirm your password",
                 icon: "lock.fill",
-                text: $confirmPassword
+                text: self.$confirmPassword
             )
 
             // Password Requirements
@@ -89,11 +89,20 @@ struct ContactStep: View {
                     .foregroundColor(AppTheme.fontColor.opacity(0.8))
 
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
-                    PasswordRequirement(text: "At least 8 characters", isMet: password.count >= 8)
-                    PasswordRequirement(text: "Contains uppercase letter", isMet: password.range(of: "[A-Z]", options: .regularExpression) != nil)
-                    PasswordRequirement(text: "Contains lowercase letter", isMet: password.range(of: "[a-z]", options: .regularExpression) != nil)
-                    PasswordRequirement(text: "Contains number", isMet: password.range(of: "[0-9]", options: .regularExpression) != nil)
-                    PasswordRequirement(text: "Contains special character", isMet: password.range(of: "[!@#$%^&*(),.?\":{}|<>]", options: .regularExpression) != nil)
+                    PasswordRequirement(text: "At least 8 characters", isMet: self.password.count >= 8)
+                    PasswordRequirement(
+                        text: "Contains uppercase letter",
+                        isMet: self.password.range(of: "[A-Z]", options: .regularExpression) != nil
+                    )
+                    PasswordRequirement(
+                        text: "Contains lowercase letter",
+                        isMet: self.password.range(of: "[a-z]", options: .regularExpression) != nil
+                    )
+                    PasswordRequirement(text: "Contains number", isMet: self.password.range(of: "[0-9]", options: .regularExpression) != nil)
+                    PasswordRequirement(
+                        text: "Contains special character",
+                        isMet: self.password.range(of: "[!@#$%^&*(),.?\":{}|<>]", options: .regularExpression) != nil
+                    )
                 }
             }
             .padding()

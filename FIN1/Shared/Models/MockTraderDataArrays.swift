@@ -5,10 +5,10 @@ import Foundation
 
 // MARK: - Mock Watched Instruments
 let mockWatchedInstruments = [
-    MockInstrument(symbol: "AAPL", name: "Apple Inc.", currentPrice: 175.43, changePercent: 2.1, volume: 45678900, isFavorite: true),
-    MockInstrument(symbol: "TSLA", name: "Tesla Inc.", currentPrice: 245.67, changePercent: -1.8, volume: 23456700, isFavorite: true),
-    MockInstrument(symbol: "MSFT", name: "Microsoft Corp.", currentPrice: 312.89, changePercent: 0.9, volume: 34567800, isFavorite: false),
-    MockInstrument(symbol: "GOOGL", name: "Alphabet Inc.", currentPrice: 134.56, changePercent: 1.2, volume: 12345600, isFavorite: true)
+    MockInstrument(symbol: "AAPL", name: "Apple Inc.", currentPrice: 175.43, changePercent: 2.1, volume: 45_678_900, isFavorite: true),
+    MockInstrument(symbol: "TSLA", name: "Tesla Inc.", currentPrice: 245.67, changePercent: -1.8, volume: 23_456_700, isFavorite: true),
+    MockInstrument(symbol: "MSFT", name: "Microsoft Corp.", currentPrice: 312.89, changePercent: 0.9, volume: 34_567_800, isFavorite: false),
+    MockInstrument(symbol: "GOOGL", name: "Alphabet Inc.", currentPrice: 134.56, changePercent: 1.2, volume: 12_345_600, isFavorite: true)
 ]
 
 // MARK: - Mock Traders Data Arrays

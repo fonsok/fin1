@@ -310,12 +310,12 @@ struct VATRemittancePostings: Sendable {
 
 /// Aggregated balance for a single app ledger account
 struct AppLedgerAccountSummary: Identifiable, Sendable {
-    var id: String { account.rawValue }
+    var id: String { self.account.rawValue }
     let account: AppLedgerAccount
     let totalCredits: Double
     let totalDebits: Double
 
-    var netBalance: Double { totalCredits - totalDebits }
+    var netBalance: Double { self.totalCredits - self.totalDebits }
 }
 
 // MARK: - VAT Summary
@@ -331,6 +331,6 @@ struct AppVATSummary: Sendable {
 
     /// Outstanding VAT liability = collected - remitted - inputClaimed
     var outstandingVATLiability: Double {
-        outputVATCollected - outputVATRemitted - inputVATClaimed
+        self.outputVATCollected - self.outputVATRemitted - self.inputVATClaimed
     }
 }

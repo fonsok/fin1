@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Customer Support Service Protocol
 /// Defines the contract for customer support operations

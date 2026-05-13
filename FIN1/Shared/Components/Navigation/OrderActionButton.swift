@@ -9,17 +9,17 @@ struct OrderActionButton: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: action, label: {
-            Text(title)
+        Button(action: self.action, label: {
+            Text(self.title)
                 .fontWeight(.semibold)
                 .foregroundColor(Color(hex: "#F5F5F5"))
                 .frame(maxWidth: .infinity)
                 .padding()
-                .background(backgroundColor)
+                .background(self.backgroundColor)
                 .cornerRadius(ResponsiveDesign.spacing(10))
         })
         .buttonStyle(PlainButtonStyle())
-        .disabled(!isEnabled)
+        .disabled(!self.isEnabled)
     }
 }
 

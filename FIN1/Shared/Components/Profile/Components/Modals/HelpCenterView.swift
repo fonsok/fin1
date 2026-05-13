@@ -30,26 +30,26 @@ struct HelpCenterView: View {
                 ScrollView {
                     VStack(spacing: ResponsiveDesign.spacing(16)) {
                         // Search Bar
-                        searchSection
+                        self.searchSection
 
                         // Category Filter
-                        if !viewModel.categories.isEmpty {
-                            categoryFilterSection
+                        if !self.viewModel.categories.isEmpty {
+                            self.categoryFilterSection
                         }
 
                         // Content
-                        if viewModel.isLoading {
+                        if self.viewModel.isLoading {
                             ProgressView()
                                 .tint(AppTheme.accentLightBlue)
                                 .padding(.top, ResponsiveDesign.spacing(24))
-                        } else if viewModel.hasNoFAQs {
-                            unavailableView
-                        } else if viewModel.hasNoSearchResults {
-                            noResultsView
-                        } else if !viewModel.searchQuery.isEmpty {
-                            searchResultsView
+                        } else if self.viewModel.hasNoFAQs {
+                            self.unavailableView
+                        } else if self.viewModel.hasNoSearchResults {
+                            self.noResultsView
+                        } else if !self.viewModel.searchQuery.isEmpty {
+                            self.searchResultsView
                         } else {
-                            categoryBasedView
+                            self.categoryBasedView
                         }
                     }
                     .padding(.horizontal, ResponsiveDesign.spacing(16))
@@ -57,15 +57,15 @@ struct HelpCenterView: View {
                     .padding(.bottom, ResponsiveDesign.spacing(24))
                 }
                 .refreshable {
-                    await viewModel.reload()
+                    await self.viewModel.reload()
                 }
             }
-            .navigationTitle(isGerman ? "Hilfe" : "Help Center")
+            .navigationTitle(self.isGerman ? "Hilfe" : "Help Center")
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(isGerman ? "Fertig" : "Done") {
-                        dismiss()
+                    Button(self.isGerman ? "Fertig" : "Done") {
+                        self.dismiss()
                     }
                     .foregroundColor(AppTheme.accentLightBlue)
                 }
@@ -80,19 +80,19 @@ struct HelpCenterView: View {
             Image(systemName: "magnifyingglass")
                 .foregroundColor(AppTheme.fontColor.opacity(0.6))
 
-            TextField(isGerman ? "FAQs durchsuchen..." : "Search FAQs...", text: $viewModel.searchQuery)
+            TextField(self.isGerman ? "FAQs durchsuchen..." : "Search FAQs...", text: self.$viewModel.searchQuery)
                 .textFieldStyle(PlainTextFieldStyle())
                 .foregroundColor(AppTheme.fontColor)
-                .onChange(of: viewModel.searchQuery) { _, newValue in
+                .onChange(of: self.viewModel.searchQuery) { _, newValue in
                     // Clear category selection when searching
                     if !newValue.isEmpty {
-                        viewModel.selectCategory(nil)
+                        self.viewModel.selectCategory(nil)
                     }
                 }
 
-            if !viewModel.searchQuery.isEmpty {
+            if !self.viewModel.searchQuery.isEmpty {
                 Button(action: {
-                    viewModel.searchQuery = ""
+                    self.viewModel.searchQuery = ""
                 }) {
                     Image(systemName: "xmark.circle.fill")
                         .foregroundColor(AppTheme.fontColor.opacity(0.5))
@@ -107,7 +107,7 @@ struct HelpCenterView: View {
     // MARK: - Category Filter
 
     private var categoryFilterSection: some View {
-        let columns = adaptiveGridColumns()
+        let columns = self.adaptiveGridColumns()
         let gridSpacing = ResponsiveDesign.spacing(12)
 
         return LazyVGrid(
@@ -117,22 +117,22 @@ struct HelpCenterView: View {
         ) {
             // All Categories Button
             CategoryChip(
-                title: isGerman ? "Alle" : "All",
+                title: self.isGerman ? "Alle" : "All",
                 icon: "list.bullet",
-                isSelected: viewModel.selectedCategory == nil,
+                isSelected: self.viewModel.selectedCategory == nil,
                 action: {
-                    viewModel.clearFilters()
+                    self.viewModel.clearFilters()
                 }
             )
 
             // Category Buttons
-            ForEach(viewModel.categories) { category in
+            ForEach(self.viewModel.categories) { category in
                 CategoryChip(
                     title: category.title,
                     icon: category.icon,
-                    isSelected: viewModel.selectedCategory?.id == category.id,
+                    isSelected: self.viewModel.selectedCategory?.id == category.id,
                     action: {
-                        viewModel.selectCategory(category)
+                        self.viewModel.selectCategory(category)
                     }
                 )
             }
@@ -152,13 +152,13 @@ struct HelpCenterView: View {
         VStack(spacing: ResponsiveDesign.spacing(24)) {
             if let selectedCategory = viewModel.selectedCategory {
                 // Show FAQs for selected category
-                categoryFAQsView(category: selectedCategory)
+                self.categoryFAQsView(category: selectedCategory)
             } else {
                 // Show all FAQs grouped by category
-                ForEach(viewModel.categories) { category in
-                    let faqs = viewModel.faqs(for: category)
+                ForEach(self.viewModel.categories) { category in
+                    let faqs = self.viewModel.faqs(for: category)
                     if !faqs.isEmpty {
-                        categoryFAQsView(category: category)
+                        self.categoryFAQsView(category: category)
                     }
                 }
             }
@@ -169,22 +169,22 @@ struct HelpCenterView: View {
 
     private var searchResultsView: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(16)) {
-            Text(isGerman ? "Suchergebnisse" : "Search Results")
+            Text(self.isGerman ? "Suchergebnisse" : "Search Results")
                 .font(ResponsiveDesign.headlineFont())
                 .foregroundColor(AppTheme.fontColor)
 
             Text(
-                isGerman
-                ? "\(viewModel.filteredFAQs.count) Ergebnis\(viewModel.filteredFAQs.count == 1 ? "" : "se")"
-                : "\(viewModel.filteredFAQs.count) result\(viewModel.filteredFAQs.count == 1 ? "" : "s") found"
+                self.isGerman
+                    ? "\(self.viewModel.filteredFAQs.count) Ergebnis\(self.viewModel.filteredFAQs.count == 1 ? "" : "se")"
+                    : "\(self.viewModel.filteredFAQs.count) result\(self.viewModel.filteredFAQs.count == 1 ? "" : "s") found"
             )
-                .font(ResponsiveDesign.captionFont())
-                .foregroundColor(AppTheme.fontColor.opacity(0.7))
+            .font(ResponsiveDesign.captionFont())
+            .foregroundColor(AppTheme.fontColor.opacity(0.7))
 
             VStack(spacing: ResponsiveDesign.spacing(12)) {
-                ForEach(viewModel.filteredFAQs) { faq in
-                    FAQRow(faq: faq, isExpanded: viewModel.isExpanded(faq)) {
-                        viewModel.toggleFAQ(faq)
+                ForEach(self.viewModel.filteredFAQs) { faq in
+                    FAQRow(faq: faq, isExpanded: self.viewModel.isExpanded(faq)) {
+                        self.viewModel.toggleFAQ(faq)
                     }
                 }
             }
@@ -205,11 +205,11 @@ struct HelpCenterView: View {
                     .foregroundColor(AppTheme.fontColor)
             }
 
-            let faqs = viewModel.faqs(for: category)
+            let faqs = self.viewModel.faqs(for: category)
             VStack(spacing: ResponsiveDesign.spacing(12)) {
                 ForEach(faqs) { faq in
-                    FAQRow(faq: faq, isExpanded: viewModel.isExpanded(faq)) {
-                        viewModel.toggleFAQ(faq)
+                    FAQRow(faq: faq, isExpanded: self.viewModel.isExpanded(faq)) {
+                        self.viewModel.toggleFAQ(faq)
                     }
                 }
             }
@@ -224,14 +224,16 @@ struct HelpCenterView: View {
                 .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2.4))
                 .foregroundColor(AppTheme.fontColor.opacity(0.5))
 
-            Text(isGerman ? "Keine Ergebnisse" : "No Results Found")
+            Text(self.isGerman ? "Keine Ergebnisse" : "No Results Found")
                 .font(ResponsiveDesign.headlineFont())
                 .foregroundColor(AppTheme.fontColor)
 
-            Text(isGerman ? "Bitte andere Suchbegriffe versuchen oder nach Kategorie stöbern." : "Try searching with different keywords or browse by category")
-                .font(ResponsiveDesign.bodyFont())
-                .foregroundColor(AppTheme.fontColor.opacity(0.7))
-                .multilineTextAlignment(.center)
+            Text(
+                self.isGerman ? "Bitte andere Suchbegriffe versuchen oder nach Kategorie stöbern." : "Try searching with different keywords or browse by category"
+            )
+            .font(ResponsiveDesign.bodyFont())
+            .foregroundColor(AppTheme.fontColor.opacity(0.7))
+            .multilineTextAlignment(.center)
         }
         .padding(ResponsiveDesign.spacing(32))
     }
@@ -242,21 +244,21 @@ struct HelpCenterView: View {
                 .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2.4))
                 .foregroundColor(AppTheme.fontColor.opacity(0.5))
 
-            Text(isGerman ? "Help Center nicht verfügbar" : "Help Center Unavailable")
+            Text(self.isGerman ? "Help Center nicht verfügbar" : "Help Center Unavailable")
                 .font(ResponsiveDesign.headlineFont())
                 .foregroundColor(AppTheme.fontColor)
 
-            Text(isGerman
-                 ? "Die FAQs konnten gerade nicht geladen werden. Bitte versuche es später erneut."
-                 : "FAQs could not be loaded right now. Please try again later.")
+            Text(self.isGerman
+                ? "Die FAQs konnten gerade nicht geladen werden. Bitte versuche es später erneut."
+                : "FAQs could not be loaded right now. Please try again later.")
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
                 .multilineTextAlignment(.center)
 
             Button(action: {
-                Task { await viewModel.reload() }
+                Task { await self.viewModel.reload() }
             }) {
-                Text(isGerman ? "Erneut versuchen" : "Try Again")
+                Text(self.isGerman ? "Erneut versuchen" : "Try Again")
                     .font(ResponsiveDesign.headlineFont())
                     .foregroundColor(AppTheme.screenBackground)
                     .padding(.horizontal, ResponsiveDesign.spacing(16))

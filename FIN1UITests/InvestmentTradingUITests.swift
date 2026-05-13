@@ -12,27 +12,27 @@ final class InvestmentTradingUITests: XCTestCase {
         continueAfterFailure = true
 
         // Launch the app - you'll see it open in the simulator
-        app = XCUIApplication()
+        self.app = XCUIApplication()
 
         // Set launch arguments for test mode (if needed)
         // app.launchArguments = ["--uitesting"]
 
-        app.launch()
+        self.app.launch()
 
         // Wait longer for app to be ready and show initial screen
         sleep(3)
 
         // In CI/simulator runs we may start on Landing. Ensure investor session exists
         // before tests that assume the main tab bar.
-        ensureAuthenticatedInvestorSession()
+        self.ensureAuthenticatedInvestorSession()
 
         // Print debug info
         print("📱 App launched - Current screen elements:")
-        print(app.debugDescription)
+        print(self.app.debugDescription)
     }
 
     override func tearDownWithError() throws {
-        app = nil
+        self.app = nil
     }
 
     // MARK: - Debug Test (Run This First!)
@@ -48,10 +48,10 @@ final class InvestmentTradingUITests: XCTestCase {
         sleep(3)
 
         // Print all available elements
-        printAvailableElements()
+        self.printAvailableElements()
 
         // Take a screenshot
-        let screenshot = app.screenshot()
+        let screenshot = self.app.screenshot()
         let attachment = XCTAttachment(screenshot: screenshot)
         attachment.name = "App Launch Screen"
         add(attachment)
@@ -61,7 +61,7 @@ final class InvestmentTradingUITests: XCTestCase {
         print("👀 Watch the simulator - you should see the app running\n")
 
         // Just verify app is running
-        XCTAssertTrue(app.exists, "App should be running")
+        XCTAssertTrue(self.app.exists, "App should be running")
     }
 
     // MARK: - Investment Creation UI Tests
@@ -78,8 +78,8 @@ final class InvestmentTradingUITests: XCTestCase {
 
         // Step 1: Wait for app to be ready and find tab bar
         print("📍 Step 1: Looking for tab bar...")
-        let tabBar = app.tabBars.firstMatch
-        XCTAssertTrue(waitForElement(tabBar, timeout: 10), "Tab bar should exist")
+        let tabBar = self.app.tabBars.firstMatch
+        XCTAssertTrue(self.waitForElement(tabBar, timeout: 10), "Tab bar should exist")
         sleep(2) // Pause so you can see the tab bar
 
         // Step 2: Navigate to Investments tab
@@ -88,16 +88,16 @@ final class InvestmentTradingUITests: XCTestCase {
         var investmentsTab: XCUIElement?
 
         // Method 1: By label
-        if app.tabBars.buttons["Investments"].exists {
-            investmentsTab = app.tabBars.buttons["Investments"]
+        if self.app.tabBars.buttons["Investments"].exists {
+            investmentsTab = self.app.tabBars.buttons["Investments"]
         }
         // Method 2: By accessibility identifier
-        else if app.tabBars.buttons.matching(identifier: "Investments").firstMatch.exists {
-            investmentsTab = app.tabBars.buttons.matching(identifier: "Investments").firstMatch
+        else if self.app.tabBars.buttons.matching(identifier: "Investments").firstMatch.exists {
+            investmentsTab = self.app.tabBars.buttons.matching(identifier: "Investments").firstMatch
         }
         // Method 3: Try finding by index (usually tab 2 for investors)
-        else if app.tabBars.buttons.count > 1 {
-            investmentsTab = app.tabBars.buttons.element(boundBy: 2)
+        else if self.app.tabBars.buttons.count > 1 {
+            investmentsTab = self.app.tabBars.buttons.element(boundBy: 2)
         }
 
         if let tab = investmentsTab, tab.exists {
@@ -106,7 +106,7 @@ final class InvestmentTradingUITests: XCTestCase {
             sleep(3) // Longer pause so you can see the navigation
         } else {
             print("⚠️ Investments tab not found. Available tabs:")
-            for (index, button) in app.tabBars.buttons.allElementsBoundByIndex.enumerated() {
+            for (index, button) in self.app.tabBars.buttons.allElementsBoundByIndex.enumerated() {
                 print("  Tab \(index): \(button.label)")
             }
         }
@@ -117,20 +117,20 @@ final class InvestmentTradingUITests: XCTestCase {
         var addButton: XCUIElement?
 
         // Method 1: By system image name
-        if app.buttons["plus.circle.fill"].exists {
-            addButton = app.buttons["plus.circle.fill"]
+        if self.app.buttons["plus.circle.fill"].exists {
+            addButton = self.app.buttons["plus.circle.fill"]
         }
         // Method 2: In navigation bar
-        else if app.navigationBars.buttons["plus.circle.fill"].exists {
-            addButton = app.navigationBars.buttons["plus.circle.fill"]
+        else if self.app.navigationBars.buttons["plus.circle.fill"].exists {
+            addButton = self.app.navigationBars.buttons["plus.circle.fill"]
         }
         // Method 3: Any button with "plus" or "add"
-        else if app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'plus' OR label CONTAINS[c] 'add'")).firstMatch.exists {
-            addButton = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'plus' OR label CONTAINS[c] 'add'")).firstMatch
+        else if self.app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'plus' OR label CONTAINS[c] 'add'")).firstMatch.exists {
+            addButton = self.app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'plus' OR label CONTAINS[c] 'add'")).firstMatch
         }
         // Method 4: Navigation bar trailing button
-        else if app.navigationBars.buttons.count > 0 {
-            addButton = app.navigationBars.buttons.element(boundBy: app.navigationBars.buttons.count - 1)
+        else if self.app.navigationBars.buttons.count > 0 {
+            addButton = self.app.navigationBars.buttons.element(boundBy: self.app.navigationBars.buttons.count - 1)
         }
 
         if let button = addButton, button.exists {
@@ -139,7 +139,7 @@ final class InvestmentTradingUITests: XCTestCase {
             sleep(3) // Longer pause to see the sheet appear
         } else {
             print("⚠️ Add button not found. Available buttons:")
-            for (index, button) in app.buttons.allElementsBoundByIndex.prefix(10).enumerated() {
+            for (index, button) in self.app.buttons.allElementsBoundByIndex.prefix(10).enumerated() {
                 print("  Button \(index): \(button.label)")
             }
         }
@@ -152,16 +152,16 @@ final class InvestmentTradingUITests: XCTestCase {
         var amountField: XCUIElement?
 
         // Method 1: By placeholder/label
-        if app.textFields["Investment Amount"].exists {
-            amountField = app.textFields["Investment Amount"]
+        if self.app.textFields["Investment Amount"].exists {
+            amountField = self.app.textFields["Investment Amount"]
         }
         // Method 2: Any text field
-        else if app.textFields.count > 0 {
-            amountField = app.textFields.firstMatch
+        else if self.app.textFields.count > 0 {
+            amountField = self.app.textFields.firstMatch
         }
         // Method 3: Secure text fields (if any)
-        else if app.secureTextFields.count > 0 {
-            amountField = app.secureTextFields.firstMatch
+        else if self.app.secureTextFields.count > 0 {
+            amountField = self.app.secureTextFields.firstMatch
         }
 
         if let field = amountField, field.exists {
@@ -172,14 +172,14 @@ final class InvestmentTradingUITests: XCTestCase {
             sleep(2) // Pause to see the value entered
         } else {
             print("⚠️ Amount field not found. Available text fields:")
-            for (index, field) in app.textFields.allElementsBoundByIndex.enumerated() {
+            for (index, field) in self.app.textFields.allElementsBoundByIndex.enumerated() {
                 print("  TextField \(index): \(field.label)")
             }
         }
 
         // Step 4: Select number of investments (if slider exists)
         // You'll see the slider move
-        let investmentSlider = app.sliders["Number of Investments"]
+        let investmentSlider = self.app.sliders["Number of Investments"]
         if investmentSlider.exists {
             investmentSlider.adjust(toNormalizedSliderPosition: 0.5) // Set to middle value
             sleep(1) // Pause to see the slider move
@@ -194,15 +194,15 @@ final class InvestmentTradingUITests: XCTestCase {
         let buttonLabels = ["Create Investment", "Submit", "Create", "Save", "Confirm"]
 
         for label in buttonLabels {
-            if app.buttons[label].exists {
-                createButton = app.buttons[label]
+            if self.app.buttons[label].exists {
+                createButton = self.app.buttons[label]
                 break
             }
         }
 
         // If not found, scan button labels (avoids NSPredicate / Swift 6 concurrency issues with `matching(_:)`).
         if createButton == nil {
-            for button in app.buttons.allElementsBoundByIndex.prefix(40) {
+            for button in self.app.buttons.allElementsBoundByIndex.prefix(40) {
                 let lower = button.label.lowercased()
                 if lower.contains("create") || lower.contains("submit") || lower.contains("save") {
                     createButton = button
@@ -217,7 +217,7 @@ final class InvestmentTradingUITests: XCTestCase {
             sleep(4) // Longer pause to see the investment being created and confirmation
         } else {
             print("⚠️ Create button not found. Available buttons:")
-            for (index, button) in app.buttons.allElementsBoundByIndex.prefix(15).enumerated() {
+            for (index, button) in self.app.buttons.allElementsBoundByIndex.prefix(15).enumerated() {
                 print("  Button \(index): '\(button.label)'")
             }
         }
@@ -233,21 +233,21 @@ final class InvestmentTradingUITests: XCTestCase {
 
         for (index, amount) in amounts.enumerated() {
             // Navigate to Investments tab
-            let investmentsTab = app.tabBars.buttons["Investments"]
+            let investmentsTab = self.app.tabBars.buttons["Investments"]
             if investmentsTab.exists {
                 investmentsTab.tap()
                 sleep(1)
             }
 
             // Tap add button
-            let addButton = app.navigationBars.buttons["plus.circle.fill"]
+            let addButton = self.app.navigationBars.buttons["plus.circle.fill"]
             if addButton.exists {
                 addButton.tap()
                 sleep(1)
             }
 
             // Enter amount
-            let amountField = app.textFields["Investment Amount"]
+            let amountField = self.app.textFields["Investment Amount"]
             if amountField.exists {
                 amountField.tap()
                 Thread.sleep(forTimeInterval: 0.5)
@@ -255,8 +255,8 @@ final class InvestmentTradingUITests: XCTestCase {
                 if let currentValue = amountField.value as? String, !currentValue.isEmpty {
                     amountField.doubleTap()
                     Thread.sleep(forTimeInterval: 0.5)
-                    if app.keys["delete"].exists {
-                        app.keys["delete"].tap()
+                    if self.app.keys["delete"].exists {
+                        self.app.keys["delete"].tap()
                     }
                 }
                 amountField.typeText(amount)
@@ -264,11 +264,11 @@ final class InvestmentTradingUITests: XCTestCase {
             }
 
             // Submit
-            let createButton = app.buttons["Create Investment"]
+            let createButton = self.app.buttons["Create Investment"]
             if createButton.exists {
                 createButton.tap()
-            } else if app.buttons["Submit"].exists {
-                app.buttons["Submit"].tap()
+            } else if self.app.buttons["Submit"].exists {
+                self.app.buttons["Submit"].tap()
             }
 
             // Wait and watch the confirmation
@@ -291,7 +291,7 @@ final class InvestmentTradingUITests: XCTestCase {
     /// 5. Submit buy order
     func testPlaceBuyOrder_StepByStep_ShowsInSimulator() throws {
         // Step 1: Navigate to Dashboard (if not already there)
-        let dashboardTab = app.tabBars.buttons["Dashboard"]
+        let dashboardTab = self.app.tabBars.buttons["Dashboard"]
         if dashboardTab.exists {
             dashboardTab.tap()
             sleep(1) // Watch navigation to dashboard
@@ -299,7 +299,7 @@ final class InvestmentTradingUITests: XCTestCase {
 
         // Step 2: Tap "Handeln" button
         // You'll see the securities search view appear
-        let handelnButton = app.buttons["Handeln"]
+        let handelnButton = self.app.buttons["Handeln"]
         if handelnButton.exists {
             handelnButton.tap()
             sleep(2) // Pause to see the search view appear
@@ -307,7 +307,7 @@ final class InvestmentTradingUITests: XCTestCase {
 
         // Step 3: Search for a security
         // You'll see the search field get focus
-        let searchField = app.searchFields.firstMatch
+        let searchField = self.app.searchFields.firstMatch
         if searchField.exists {
             searchField.tap()
             searchField.typeText("DAX")
@@ -316,7 +316,7 @@ final class InvestmentTradingUITests: XCTestCase {
 
         // Step 4: Select a security from results
         // You'll see a security being selected
-        let firstResult = app.cells.firstMatch
+        let firstResult = self.app.cells.firstMatch
         if firstResult.exists {
             firstResult.tap()
             sleep(2) // Watch the buy order form appear
@@ -324,10 +324,10 @@ final class InvestmentTradingUITests: XCTestCase {
 
         // Step 5: Fill in quantity
         // You'll see the quantity field get focus
-        let quantityField = app.textFields["Quantity"]
+        let quantityField = self.app.textFields["Quantity"]
         if !quantityField.exists {
             // Try alternative identifiers
-            let qtyField = app.textFields.matching(identifier: "quantity").firstMatch
+            let qtyField = self.app.textFields.matching(identifier: "quantity").firstMatch
             if qtyField.exists {
                 qtyField.tap()
                 qtyField.typeText("100")
@@ -340,7 +340,7 @@ final class InvestmentTradingUITests: XCTestCase {
         }
 
         // Step 6: Fill in price (if field exists)
-        let priceField = app.textFields["Price"]
+        let priceField = self.app.textFields["Price"]
         if priceField.exists {
             priceField.tap()
             priceField.typeText("10.50")
@@ -349,13 +349,13 @@ final class InvestmentTradingUITests: XCTestCase {
 
         // Step 7: Submit buy order
         // You'll see the order being placed
-        let placeOrderButton = app.buttons["Place Order"]
+        let placeOrderButton = self.app.buttons["Place Order"]
         if !placeOrderButton.exists {
             // Try alternative button labels
-            if app.buttons["Buy"].exists {
-                app.buttons["Buy"].tap()
-            } else if app.buttons["Submit"].exists {
-                app.buttons["Submit"].tap()
+            if self.app.buttons["Buy"].exists {
+                self.app.buttons["Buy"].tap()
+            } else if self.app.buttons["Submit"].exists {
+                self.app.buttons["Submit"].tap()
             }
         } else {
             placeOrderButton.tap()
@@ -379,21 +379,21 @@ final class InvestmentTradingUITests: XCTestCase {
 
         for (index, scenario) in testScenarios.enumerated() {
             // Navigate to Dashboard
-            let dashboardTab = app.tabBars.buttons["Dashboard"]
+            let dashboardTab = self.app.tabBars.buttons["Dashboard"]
             if dashboardTab.exists {
                 dashboardTab.tap()
                 sleep(1)
             }
 
             // Tap Handeln button
-            let handelnButton = app.buttons["Handeln"]
+            let handelnButton = self.app.buttons["Handeln"]
             if handelnButton.exists {
                 handelnButton.tap()
                 sleep(2)
             }
 
             // Search for security
-            let searchField = app.searchFields.firstMatch
+            let searchField = self.app.searchFields.firstMatch
             if searchField.exists {
                 searchField.tap()
                 Thread.sleep(forTimeInterval: 0.5)
@@ -401,8 +401,8 @@ final class InvestmentTradingUITests: XCTestCase {
                 if let currentValue = searchField.value as? String, !currentValue.isEmpty {
                     searchField.doubleTap()
                     Thread.sleep(forTimeInterval: 0.5)
-                    if app.keys["delete"].exists {
-                        app.keys["delete"].tap()
+                    if self.app.keys["delete"].exists {
+                        self.app.keys["delete"].tap()
                     }
                 }
                 searchField.typeText("DAX")
@@ -410,14 +410,14 @@ final class InvestmentTradingUITests: XCTestCase {
             }
 
             // Select first result
-            let firstResult = app.cells.firstMatch
+            let firstResult = self.app.cells.firstMatch
             if firstResult.exists {
                 firstResult.tap()
                 sleep(2)
             }
 
             // Enter quantity
-            let quantityField = app.textFields.matching(identifier: "quantity").firstMatch
+            let quantityField = self.app.textFields.matching(identifier: "quantity").firstMatch
             if quantityField.exists {
                 quantityField.tap()
                 Thread.sleep(forTimeInterval: 0.5)
@@ -425,8 +425,8 @@ final class InvestmentTradingUITests: XCTestCase {
                 if let currentValue = quantityField.value as? String, !currentValue.isEmpty {
                     quantityField.doubleTap()
                     Thread.sleep(forTimeInterval: 0.5)
-                    if app.keys["delete"].exists {
-                        app.keys["delete"].tap()
+                    if self.app.keys["delete"].exists {
+                        self.app.keys["delete"].tap()
                     }
                 }
                 quantityField.typeText(scenario.quantity)
@@ -434,7 +434,7 @@ final class InvestmentTradingUITests: XCTestCase {
             }
 
             // Enter price
-            let priceField = app.textFields.matching(identifier: "price").firstMatch
+            let priceField = self.app.textFields.matching(identifier: "price").firstMatch
             if priceField.exists {
                 priceField.tap()
                 Thread.sleep(forTimeInterval: 0.5)
@@ -442,8 +442,8 @@ final class InvestmentTradingUITests: XCTestCase {
                 if let currentValue = priceField.value as? String, !currentValue.isEmpty {
                     priceField.doubleTap()
                     Thread.sleep(forTimeInterval: 0.5)
-                    if app.keys["delete"].exists {
-                        app.keys["delete"].tap()
+                    if self.app.keys["delete"].exists {
+                        self.app.keys["delete"].tap()
                     }
                 }
                 priceField.typeText(scenario.price)
@@ -451,10 +451,10 @@ final class InvestmentTradingUITests: XCTestCase {
             }
 
             // Submit order
-            if app.buttons["Place Order"].exists {
-                app.buttons["Place Order"].tap()
-            } else if app.buttons["Buy"].exists {
-                app.buttons["Buy"].tap()
+            if self.app.buttons["Place Order"].exists {
+                self.app.buttons["Place Order"].tap()
+            } else if self.app.buttons["Buy"].exists {
+                self.app.buttons["Buy"].tap()
             }
 
             // Wait for confirmation
@@ -469,31 +469,31 @@ final class InvestmentTradingUITests: XCTestCase {
     /// Regression test: In limit mode, buy action must remain tappable when input is valid.
     @MainActor
     func testLimitBuyOrder_ButtonEnabledWhenLimitIsSet() throws {
-        app.terminate()
-        app.launchArguments = ["--uitesting", "--reset-state", "--ui-test-entry-limit-buy-order", "--ui-test-prefill-limit-order"]
-        app.launch()
+        self.app.terminate()
+        self.app.launchArguments = ["--uitesting", "--reset-state", "--ui-test-entry-limit-buy-order", "--ui-test-prefill-limit-order"]
+        self.app.launch()
 
-        let loading = app.otherElements["UITestLimitEntryLoading"].firstMatch
-        _ = waitForElement(loading, timeout: 5)
-        let buyRoot = app.otherElements["UITestDirectBuyOrderRoot"].firstMatch
-        XCTAssertTrue(waitForElement(buyRoot, timeout: 45), "Buy test root should be visible")
+        let loading = self.app.otherElements["UITestLimitEntryLoading"].firstMatch
+        _ = self.waitForElement(loading, timeout: 5)
+        let buyRoot = self.app.otherElements["UITestDirectBuyOrderRoot"].firstMatch
+        XCTAssertTrue(self.waitForElement(buyRoot, timeout: 45), "Buy test root should be visible")
 
-        let quantityField = app.textFields["QuantityInputField"].firstMatch
-        XCTAssertTrue(waitForElement(quantityField, timeout: 10), "Precondition failed: buy form not opened")
+        let quantityField = self.app.textFields["QuantityInputField"].firstMatch
+        XCTAssertTrue(self.waitForElement(quantityField, timeout: 10), "Precondition failed: buy form not opened")
         quantityField.tap()
         quantityField.typeText("100")
         sleep(1)
 
-        let placeOrderButton = app.buttons["PlaceOrderButton"].firstMatch
-        XCTAssertTrue(waitForElement(placeOrderButton, timeout: 10), "Precondition failed: buy action button missing")
+        let placeOrderButton = self.app.buttons["PlaceOrderButton"].firstMatch
+        XCTAssertTrue(self.waitForElement(placeOrderButton, timeout: 10), "Precondition failed: buy action button missing")
         let enabledBeforeSwitch = placeOrderButton.isEnabled
 
-        let limitSegment = app.buttons["Limit"].firstMatch
-        XCTAssertTrue(waitForElement(limitSegment, timeout: 5), "Precondition failed: limit segment missing")
+        let limitSegment = self.app.buttons["Limit"].firstMatch
+        XCTAssertTrue(self.waitForElement(limitSegment, timeout: 5), "Precondition failed: limit segment missing")
         limitSegment.tap()
 
-        let limitField = app.textFields["LimitPriceField"].firstMatch
-        XCTAssertTrue(waitForElement(limitField, timeout: 10), "Precondition failed: limit field missing")
+        let limitField = self.app.textFields["LimitPriceField"].firstMatch
+        XCTAssertTrue(self.waitForElement(limitField, timeout: 10), "Precondition failed: limit field missing")
         let enabledAfterSwitch = placeOrderButton.isEnabled
         XCTAssertEqual(
             enabledAfterSwitch,
@@ -505,34 +505,34 @@ final class InvestmentTradingUITests: XCTestCase {
     /// Regression test: In limit mode, sell action must remain tappable when input is valid.
     @MainActor
     func testLimitSellOrder_ButtonEnabledWhenLimitIsSet() throws {
-        app.terminate()
-        app.launchArguments = ["--uitesting", "--reset-state", "--ui-test-entry-limit-sell-order", "--ui-test-prefill-limit-order"]
-        app.launch()
+        self.app.terminate()
+        self.app.launchArguments = ["--uitesting", "--reset-state", "--ui-test-entry-limit-sell-order", "--ui-test-prefill-limit-order"]
+        self.app.launch()
 
-        let loading = app.otherElements["UITestLimitEntryLoading"].firstMatch
-        _ = waitForElement(loading, timeout: 5)
-        let sellRoot = app.otherElements["UITestDirectSellOrderRoot"].firstMatch
-        XCTAssertTrue(waitForElement(sellRoot, timeout: 45), "Sell test root should be visible")
+        let loading = self.app.otherElements["UITestLimitEntryLoading"].firstMatch
+        _ = self.waitForElement(loading, timeout: 5)
+        let sellRoot = self.app.otherElements["UITestDirectSellOrderRoot"].firstMatch
+        XCTAssertTrue(self.waitForElement(sellRoot, timeout: 45), "Sell test root should be visible")
 
-        let sellQuantityField = app.textFields["QuantityInputField"].firstMatch
-        XCTAssertTrue(waitForElement(sellQuantityField, timeout: 10), "Precondition failed: sell form not opened")
+        let sellQuantityField = self.app.textFields["QuantityInputField"].firstMatch
+        XCTAssertTrue(self.waitForElement(sellQuantityField, timeout: 10), "Precondition failed: sell form not opened")
         sellQuantityField.tap()
         sellQuantityField.typeText("100")
         sleep(1)
 
-        let placeSellButton = app.buttons["PlaceSellOrderButton"].firstMatch.exists
-            ? app.buttons["PlaceSellOrderButton"].firstMatch
-            : app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'Verkaufen'")).firstMatch
-        XCTAssertTrue(waitForElement(placeSellButton, timeout: 10), "Precondition failed: sell action button missing")
+        let placeSellButton = self.app.buttons["PlaceSellOrderButton"].firstMatch.exists
+            ? self.app.buttons["PlaceSellOrderButton"].firstMatch
+            : self.app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'Verkaufen'")).firstMatch
+        XCTAssertTrue(self.waitForElement(placeSellButton, timeout: 10), "Precondition failed: sell action button missing")
         let enabledBeforeSwitch = placeSellButton.isEnabled
 
-        let limitSegment = app.buttons["Limit"].firstMatch
-        XCTAssertTrue(waitForElement(limitSegment, timeout: 5), "Precondition failed: sell limit segment missing")
+        let limitSegment = self.app.buttons["Limit"].firstMatch
+        XCTAssertTrue(self.waitForElement(limitSegment, timeout: 5), "Precondition failed: sell limit segment missing")
         limitSegment.tap()
         sleep(1)
 
-        let limitField = app.textFields["LimitPriceField"].firstMatch
-        XCTAssertTrue(waitForElement(limitField, timeout: 10), "Precondition failed: sell limit field missing")
+        let limitField = self.app.textFields["LimitPriceField"].firstMatch
+        XCTAssertTrue(self.waitForElement(limitField, timeout: 10), "Precondition failed: sell limit field missing")
         let enabledAfterSwitch = placeSellButton.isEnabled
         XCTAssertEqual(
             enabledAfterSwitch,
@@ -549,40 +549,40 @@ final class InvestmentTradingUITests: XCTestCase {
         // Part 1: Place Buy Order
         print("📈 Step 1: Placing buy order...")
 
-        let dashboardTab = app.tabBars.buttons["Dashboard"]
+        let dashboardTab = self.app.tabBars.buttons["Dashboard"]
         if dashboardTab.exists {
             dashboardTab.tap()
             sleep(1)
         }
 
-        let handelnButton = app.buttons["Handeln"]
+        let handelnButton = self.app.buttons["Handeln"]
         if handelnButton.exists {
             handelnButton.tap()
             sleep(2)
         }
 
-        let searchField = app.searchFields.firstMatch
+        let searchField = self.app.searchFields.firstMatch
         if searchField.exists {
             searchField.tap()
             searchField.typeText("DAX")
             sleep(2)
         }
 
-        let firstResult = app.cells.firstMatch
+        let firstResult = self.app.cells.firstMatch
         if firstResult.exists {
             firstResult.tap()
             sleep(2)
         }
 
         // Enter buy order details
-        let quantityField = app.textFields.matching(identifier: "quantity").firstMatch
+        let quantityField = self.app.textFields.matching(identifier: "quantity").firstMatch
         if quantityField.exists {
             quantityField.tap()
             quantityField.typeText("100")
             sleep(1)
         }
 
-        let priceField = app.textFields.matching(identifier: "price").firstMatch
+        let priceField = self.app.textFields.matching(identifier: "price").firstMatch
         if priceField.exists {
             priceField.tap()
             priceField.typeText("10.00")
@@ -590,10 +590,10 @@ final class InvestmentTradingUITests: XCTestCase {
         }
 
         // Place buy order
-        if app.buttons["Place Order"].exists {
-            app.buttons["Place Order"].tap()
-        } else if app.buttons["Buy"].exists {
-            app.buttons["Buy"].tap()
+        if self.app.buttons["Place Order"].exists {
+            self.app.buttons["Place Order"].tap()
+        } else if self.app.buttons["Buy"].exists {
+            self.app.buttons["Buy"].tap()
         }
 
         sleep(3) // Watch buy order being processed
@@ -602,12 +602,12 @@ final class InvestmentTradingUITests: XCTestCase {
         // Part 2: Navigate to Depot/Trades to find the trade
         print("📊 Step 2: Finding trade in depot...")
 
-        let depotTab = app.tabBars.buttons["Depot"]
+        let depotTab = self.app.tabBars.buttons["Depot"]
         if depotTab.exists {
             depotTab.tap()
             sleep(2) // Watch depot view appear
         } else {
-            let tradesTab = app.tabBars.buttons["Trades"]
+            let tradesTab = self.app.tabBars.buttons["Trades"]
             if tradesTab.exists {
                 tradesTab.tap()
                 sleep(2)
@@ -618,20 +618,20 @@ final class InvestmentTradingUITests: XCTestCase {
         print("💰 Step 3: Placing sell order...")
 
         // Find the trade we just created
-        let tradeCell = app.cells.firstMatch
+        let tradeCell = self.app.cells.firstMatch
         if tradeCell.exists {
             tradeCell.tap()
             sleep(2) // Watch trade details appear
         }
 
         // Look for sell button
-        let sellButton = app.buttons["Sell"]
+        let sellButton = self.app.buttons["Sell"]
         if !sellButton.exists {
             // Try alternative labels
-            if app.buttons["Place Sell Order"].exists {
-                app.buttons["Place Sell Order"].tap()
-            } else if app.buttons["Sell Order"].exists {
-                app.buttons["Sell Order"].tap()
+            if self.app.buttons["Place Sell Order"].exists {
+                self.app.buttons["Place Sell Order"].tap()
+            } else if self.app.buttons["Sell Order"].exists {
+                self.app.buttons["Sell Order"].tap()
             }
         } else {
             sellButton.tap()
@@ -640,14 +640,14 @@ final class InvestmentTradingUITests: XCTestCase {
         sleep(2) // Watch sell order form appear
 
         // Enter sell details
-        let sellQuantityField = app.textFields.matching(identifier: "sellQuantity").firstMatch
+        let sellQuantityField = self.app.textFields.matching(identifier: "sellQuantity").firstMatch
         if sellQuantityField.exists {
             sellQuantityField.tap()
             sellQuantityField.typeText("100")
             sleep(1)
         }
 
-        let sellPriceField = app.textFields.matching(identifier: "sellPrice").firstMatch
+        let sellPriceField = self.app.textFields.matching(identifier: "sellPrice").firstMatch
         if sellPriceField.exists {
             sellPriceField.tap()
             sellPriceField.typeText("12.00")
@@ -655,10 +655,10 @@ final class InvestmentTradingUITests: XCTestCase {
         }
 
         // Submit sell order
-        if app.buttons["Place Sell Order"].exists {
-            app.buttons["Place Sell Order"].tap()
-        } else if app.buttons["Sell"].exists {
-            app.buttons["Sell"].tap()
+        if self.app.buttons["Place Sell Order"].exists {
+            self.app.buttons["Place Sell Order"].tap()
+        } else if self.app.buttons["Sell"].exists {
+            self.app.buttons["Sell"].tap()
         }
 
         sleep(3) // Watch sell order being processed
@@ -673,7 +673,7 @@ final class InvestmentTradingUITests: XCTestCase {
     /// Watch the simulator to see investment details and performance metrics
     func testViewInvestmentPerformance_ShowsInSimulator() throws {
         // Navigate to Investments tab
-        let investmentsTab = app.tabBars.buttons["Investments"]
+        let investmentsTab = self.app.tabBars.buttons["Investments"]
         if investmentsTab.exists {
             investmentsTab.tap()
             sleep(1)
@@ -681,15 +681,15 @@ final class InvestmentTradingUITests: XCTestCase {
 
         // Tap on an investment to view details
         // You'll see the investment detail sheet appear
-        let investmentCell = app.cells.firstMatch
+        let investmentCell = self.app.cells.firstMatch
         if investmentCell.exists {
             investmentCell.tap()
             sleep(2) // Watch the detail view appear
 
             // Scroll to see performance metrics
-            app.swipeUp()
+            self.app.swipeUp()
             sleep(1)
-            app.swipeUp()
+            self.app.swipeUp()
             sleep(1)
 
             // Look for performance indicators
@@ -712,83 +712,85 @@ final class InvestmentTradingUITests: XCTestCase {
 
     /// Helper: If app is on landing/login, sign in with debug investor button.
     private func ensureAuthenticatedInvestorSession() {
-        let tabBar = app.tabBars.firstMatch
-        if waitForElement(tabBar, timeout: 5) {
+        let tabBar = self.app.tabBars.firstMatch
+        if self.waitForElement(tabBar, timeout: 5) {
             return
         }
 
-        let investorDebugButton = app.buttons["LoginInvestor1Button"]
-        if waitForElement(investorDebugButton, timeout: 10) {
+        let investorDebugButton = self.app.buttons["LoginInvestor1Button"]
+        if self.waitForElement(investorDebugButton, timeout: 10) {
             investorDebugButton.tap()
-            _ = waitForElement(tabBar, timeout: 20)
+            _ = self.waitForElement(tabBar, timeout: 20)
         }
     }
 
     @MainActor
     private func ensureAuthenticatedTraderSession() {
-        let tabBar = app.tabBars.firstMatch
-        if waitForElement(tabBar, timeout: 5), app.buttons["HandelnButton"].firstMatch.exists || app.buttons["Handeln"].firstMatch.exists {
+        let tabBar = self.app.tabBars.firstMatch
+        if self.waitForElement(tabBar, timeout: 5), self.app.buttons["HandelnButton"].firstMatch.exists || self.app.buttons["Handeln"].firstMatch.exists {
             return
         }
 
         // Deterministic relaunch to landing + trader debug login.
-        app.terminate()
-        app.launchArguments = ["--uitesting", "--reset-state"]
-        app.launch()
+        self.app.terminate()
+        self.app.launchArguments = ["--uitesting", "--reset-state"]
+        self.app.launch()
         sleep(2)
 
-        let traderDebugButtonById = app.buttons["LoginTrader1Button"]
-        if waitForElement(traderDebugButtonById, timeout: 10) {
+        let traderDebugButtonById = self.app.buttons["LoginTrader1Button"]
+        if self.waitForElement(traderDebugButtonById, timeout: 10) {
             traderDebugButtonById.tap()
-            _ = waitForElement(tabBar, timeout: 20)
+            _ = self.waitForElement(tabBar, timeout: 20)
             return
         }
 
         // Fallback by explicit label used in debug landing.
-        let traderDebugButtonByLabel = app.buttons["Test: Sign In as Trader 1"]
-        if waitForElement(traderDebugButtonByLabel, timeout: 5) {
+        let traderDebugButtonByLabel = self.app.buttons["Test: Sign In as Trader 1"]
+        if self.waitForElement(traderDebugButtonByLabel, timeout: 5) {
             traderDebugButtonByLabel.tap()
-            _ = waitForElement(tabBar, timeout: 20)
+            _ = self.waitForElement(tabBar, timeout: 20)
         }
     }
 
     @MainActor
     private func relaunchAsTraderForLimitTests() {
-        app.terminate()
-        app.launchArguments = ["--uitesting", "--reset-state", "--ui-test-entry-trading-search"]
-        app.launch()
-        _ = ensureTradingSearchVisible()
+        self.app.terminate()
+        self.app.launchArguments = ["--uitesting", "--reset-state", "--ui-test-entry-trading-search"]
+        self.app.launch()
+        _ = self.ensureTradingSearchVisible()
         sleep(1)
     }
 
     @MainActor
     private func ensureTradingSearchVisible() -> Bool {
-        acceptTermsIfPresented()
+        self.acceptTermsIfPresented()
 
         // Slow backend environments can delay trader auto-login significantly.
         // Prefer explicit entry-state markers before generic UI probing.
-        let loadingMarker = app.otherElements["UITestTradingEntryLoading"].firstMatch
-        let readyMarker = app.otherElements["UITestTradingEntryReady"].firstMatch
-        let errorMarker = app.otherElements["UITestTradingEntryError"].firstMatch
-        _ = waitForElement(loadingMarker, timeout: 5)
-        if waitForElement(readyMarker, timeout: 120) {
-            return waitForElement(tradingSearchField(), timeout: 20)
+        let loadingMarker = self.app.otherElements["UITestTradingEntryLoading"].firstMatch
+        let readyMarker = self.app.otherElements["UITestTradingEntryReady"].firstMatch
+        let errorMarker = self.app.otherElements["UITestTradingEntryError"].firstMatch
+        _ = self.waitForElement(loadingMarker, timeout: 5)
+        if self.waitForElement(readyMarker, timeout: 120) {
+            return self.waitForElement(self.tradingSearchField(), timeout: 20)
         }
         if errorMarker.exists {
             return false
         }
 
-        if waitForElement(tradingSearchField(), timeout: 5) { return true }
+        if self.waitForElement(self.tradingSearchField(), timeout: 5) { return true }
 
-        let handelnButton = app.buttons["HandelnButton"].firstMatch.exists ? app.buttons["HandelnButton"].firstMatch : app.buttons["Handeln"].firstMatch
-        guard waitForElement(handelnButton, timeout: 10) else {
-            return waitForElement(tradingSearchField(), timeout: 20)
+        let handelnButton = self.app.buttons["HandelnButton"].firstMatch.exists ? self.app.buttons["HandelnButton"].firstMatch : self.app.buttons[
+            "Handeln"
+        ].firstMatch
+        guard self.waitForElement(handelnButton, timeout: 10) else {
+            return self.waitForElement(self.tradingSearchField(), timeout: 20)
         }
 
         // Retry once because first tap can be swallowed by transient overlays/animations.
         for _ in 0..<2 {
             handelnButton.tap()
-            if waitForElement(tradingSearchField(), timeout: 6) {
+            if self.waitForElement(self.tradingSearchField(), timeout: 6) {
                 return true
             }
             sleep(1)
@@ -798,9 +800,9 @@ final class InvestmentTradingUITests: XCTestCase {
 
     @MainActor
     private func tradingSearchField() -> XCUIElement {
-        let byId = app.textFields["SecuritiesSearchField"].firstMatch
+        let byId = self.app.textFields["SecuritiesSearchField"].firstMatch
         if byId.exists { return byId }
-        return app.searchFields.firstMatch
+        return self.app.searchFields.firstMatch
     }
 
     @MainActor
@@ -808,8 +810,8 @@ final class InvestmentTradingUITests: XCTestCase {
         // Terms modal can block all interactions in fresh sessions.
         // Try tapping "Accept" up to two times (Terms + Privacy) if shown.
         for _ in 0..<2 {
-            let acceptButton = app.buttons["Accept"].firstMatch
-            guard waitForElement(acceptButton, timeout: 2) else { break }
+            let acceptButton = self.app.buttons["Accept"].firstMatch
+            guard self.waitForElement(acceptButton, timeout: 2) else { break }
             if acceptButton.isHittable {
                 acceptButton.tap()
                 sleep(1)
@@ -822,17 +824,16 @@ final class InvestmentTradingUITests: XCTestCase {
     /// Helper: Print all available UI elements for debugging
     func printAvailableElements() {
         print("\n📋 Available UI Elements:")
-        print("  Buttons: \(app.buttons.count)")
-        print("  TextFields: \(app.textFields.count)")
-        print("  StaticTexts: \(app.staticTexts.count)")
-        print("  Cells: \(app.cells.count)")
-        print("  TabBar buttons: \(app.tabBars.buttons.count)")
+        print("  Buttons: \(self.app.buttons.count)")
+        print("  TextFields: \(self.app.textFields.count)")
+        print("  StaticTexts: \(self.app.staticTexts.count)")
+        print("  Cells: \(self.app.cells.count)")
+        print("  TabBar buttons: \(self.app.tabBars.buttons.count)")
         print("\n  TabBar button labels:")
-        for button in app.tabBars.buttons.allElementsBoundByIndex {
+        for button in self.app.tabBars.buttons.allElementsBoundByIndex {
             print("    - \(button.label)")
         }
     }
-
 }
 
 // MARK: - Test Suite Organization
@@ -841,22 +842,22 @@ extension InvestmentTradingUITests {
 
     /// Run all investment UI tests
     func testInvestmentUISuite() throws {
-        try testCreateInvestment_StepByStep_ShowsInSimulator()
-        try testCreateMultipleInvestments_WithDifferentAmounts_ShowsInSimulator()
-        try testViewInvestmentPerformance_ShowsInSimulator()
+        try self.testCreateInvestment_StepByStep_ShowsInSimulator()
+        try self.testCreateMultipleInvestments_WithDifferentAmounts_ShowsInSimulator()
+        try self.testViewInvestmentPerformance_ShowsInSimulator()
     }
 
     /// Run all trading UI tests
     func testTradingUISuite() throws {
-        try testPlaceBuyOrder_StepByStep_ShowsInSimulator()
-        try testPlaceMultipleBuyOrders_WithDifferentParameters_ShowsInSimulator()
-        try testCompleteTradeCycle_BuyThenSell_ShowsInSimulator()
+        try self.testPlaceBuyOrder_StepByStep_ShowsInSimulator()
+        try self.testPlaceMultipleBuyOrders_WithDifferentParameters_ShowsInSimulator()
+        try self.testCompleteTradeCycle_BuyThenSell_ShowsInSimulator()
     }
 
     /// Run complete UI test suite
     func testCompleteUISuite() throws {
-        try testInvestmentUISuite()
-        try testTradingUISuite()
+        try self.testInvestmentUISuite()
+        try self.testTradingUISuite()
     }
 }
 

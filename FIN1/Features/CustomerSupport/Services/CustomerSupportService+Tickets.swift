@@ -111,6 +111,5 @@ extension CustomerSupportService {
         // Fallback to mock data
         return mockTickets.first(where: { $0.id == ticketId })
     }
-
 }
 

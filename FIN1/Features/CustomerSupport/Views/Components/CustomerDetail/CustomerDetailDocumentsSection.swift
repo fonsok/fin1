@@ -17,8 +17,8 @@ struct CustomerDetailDocumentsSection: View {
 
                 Spacer()
 
-                if !documents.isEmpty {
-                    Text("\(documents.count)")
+                if !self.documents.isEmpty {
+                    Text("\(self.documents.count)")
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(AppTheme.fontColor.opacity(0.7))
                         .padding(.horizontal, ResponsiveDesign.spacing(8))
@@ -28,14 +28,14 @@ struct CustomerDetailDocumentsSection: View {
                 }
             }
 
-            if documents.isEmpty {
+            if self.documents.isEmpty {
                 Text("Keine Dokumente vorhanden")
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
                     .padding()
             } else {
                 VStack(spacing: ResponsiveDesign.spacing(8)) {
-                    ForEach(documents) { document in
+                    ForEach(self.documents) { document in
                         DocumentRow(document: document)
                     }
                 }

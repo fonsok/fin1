@@ -53,7 +53,7 @@ extension InvestmentService {
                 )
                 throw error
             } catch {
-                await rollbackLocalInvestmentDraft(
+                await self.rollbackLocalInvestmentDraft(
                     newInvestmentIds: newIds,
                     batchId: batch.id,
                     createdPoolIds: createdPoolIds

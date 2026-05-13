@@ -20,15 +20,15 @@ struct AccountSuspension: Identifiable, Codable {
 
     /// Whether this suspension requires 4-Augen approval
     var requiresApproval: Bool {
-        suspensionType == .extended || suspensionType == .permanent
+        self.suspensionType == .extended || self.suspensionType == .permanent
     }
 
     /// Current status of the suspension
     var status: SuspensionStatus {
-        if liftedAt != nil {
+        if self.liftedAt != nil {
             return .lifted
         }
-        if requiresApproval && approvedBy == nil {
+        if self.requiresApproval && self.approvedBy == nil {
             return .pendingApproval
         }
         if let expiresAt = expiresAt, Date() > expiresAt {
@@ -131,10 +131,10 @@ struct SARReport: Identifiable, Codable {
 
     /// Current status of the SAR
     var status: SARStatus {
-        if submittedToFIU {
+        if self.submittedToFIU {
             return .submitted
         }
-        if approvedBy != nil {
+        if self.approvedBy != nil {
             return .approved
         }
         return .draft
@@ -243,16 +243,16 @@ struct ChargebackRequest: Identifiable, Codable {
 
     /// Whether this chargeback requires 4-Augen approval
     var requiresApproval: Bool {
-        amount >= 50
+        self.amount >= 50
     }
 
     /// PSD2 deadline: 1 business day for provisional credit
     var psd2DeadlineForCredit: Date {
-        Calendar.current.date(byAdding: .day, value: 1, to: createdAt) ?? createdAt
+        Calendar.current.date(byAdding: .day, value: 1, to: self.createdAt) ?? self.createdAt
     }
 
     var isPSD2DeadlineBreached: Bool {
-        !provisionalCreditIssued && Date() > psd2DeadlineForCredit
+        !self.provisionalCreditIssued && Date() > self.psd2DeadlineForCredit
     }
 
     init(
@@ -339,7 +339,7 @@ struct FraudAlert: Identifiable, Codable {
     var resolutionNotes: String?
     let relatedTransactionIds: [String]
 
-    var isReviewed: Bool { reviewedBy != nil }
+    var isReviewed: Bool { self.reviewedBy != nil }
 
     init(
         id: String = UUID().uuidString,

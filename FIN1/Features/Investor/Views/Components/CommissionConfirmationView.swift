@@ -12,14 +12,14 @@ struct CommissionConfirmationView: View {
             HStack(alignment: .top, spacing: ResponsiveDesign.spacing(12)) {
                 // Checkbox
                 Button(action: {
-                    isConfirmed.toggle()
+                    self.isConfirmed.toggle()
                 }) {
                     Rectangle()
-                        .fill(isConfirmed ? AppTheme.accentGreen : AppTheme.inputFieldBackground)
+                        .fill(self.isConfirmed ? AppTheme.accentGreen : AppTheme.inputFieldBackground)
                         .frame(width: 24, height: 24)
                         .overlay(
                             Group {
-                                if isConfirmed {
+                                if self.isConfirmed {
                                     Image(systemName: "checkmark")
                                         .foregroundColor(AppTheme.fontColor)
                                         .font(ResponsiveDesign.scaledSystemFont(size: 16, weight: .bold))
@@ -30,7 +30,7 @@ struct CommissionConfirmationView: View {
                 .buttonStyle(PlainButtonStyle())
 
                 // Commission text
-                Text("Trader \(traderUsername) receives a \(commissionPercentage) commission on the profit.")
+                Text("Trader \(self.traderUsername) receives a \(self.commissionPercentage) commission on the profit.")
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.fontColor)
                     .fixedSize(horizontal: false, vertical: true)

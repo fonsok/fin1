@@ -1,5 +1,5 @@
-import SwiftUI
 import Combine
+import SwiftUI
 
 // MARK: - Search Coordinator Protocol
 @MainActor
@@ -44,7 +44,7 @@ final class SecuritiesSearchCoordinator: SecuritiesSearchCoordinatorProtocol {
         self.searchService = searchService
         self.filterManager = filterManager
 
-        setupBindings()
+        self.setupBindings()
     }
 
     deinit {
@@ -55,20 +55,20 @@ final class SecuritiesSearchCoordinator: SecuritiesSearchCoordinatorProtocol {
     // MARK: - Public Interface
 
     var searchResultsPublisher: AnyPublisher<[SearchResult], Never> {
-        $searchResults.eraseToAnyPublisher()
+        self.$searchResults.eraseToAnyPublisher()
     }
 
     func presentSheet(_ sheet: SecuritiesSearchView.ActiveSheet) {
-        activeSheet = sheet
+        self.activeSheet = sheet
     }
 
     func dismissSheet() {
-        activeSheet = nil
+        self.activeSheet = nil
     }
 
     func performSearch() {
         Task {
-            await executeSearch()
+            await self.executeSearch()
         }
     }
 
@@ -76,15 +76,15 @@ final class SecuritiesSearchCoordinator: SecuritiesSearchCoordinatorProtocol {
 
     private func setupBindings() {
         // Listen to filter changes and trigger search
-        filterManager.filtersPublisher
+        self.filterManager.filtersPublisher
             .debounce(for: .milliseconds(50), scheduler: RunLoop.main)
             .sink { [weak self] _ in
                 self?.performSearch()
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
 
         // Listen to search service results
-        searchService.searchResultsPublisher
+        self.searchService.searchResultsPublisher
             .receive(on: DispatchQueue.main)
             .sink { [weak self] results in
                 print("🔍 DEBUG: SecuritiesSearchCoordinator received \(results.count) results")
@@ -93,91 +93,91 @@ final class SecuritiesSearchCoordinator: SecuritiesSearchCoordinatorProtocol {
                 }
                 self?.searchResults = results
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
 
-        searchService.isLoadingPublisher
+        self.searchService.isLoadingPublisher
             .receive(on: DispatchQueue.main)
             .sink { [weak self] loading in
                 self?.isLoading = loading
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
 
-        searchService.errorMessagePublisher
+        self.searchService.errorMessagePublisher
             .receive(on: DispatchQueue.main)
             .sink { [weak self] error in
                 self?.errorMessage = error
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
     }
 
     private func executeSearch() async {
-        let filters = filterManager.getCurrentFilters()
+        let filters = self.filterManager.getCurrentFilters()
         print("🔍 DEBUG: SecuritiesSearchCoordinator.executeSearch() called")
         print("🔍 DEBUG: filters.underlyingAsset = '\(filters.underlyingAsset)'")
         print("🔍 DEBUG: filters.direction = \(filters.direction)")
         print("🔍 DEBUG: filters.direction.rawValue = \(filters.direction.rawValue)")
-        await searchService.performSearch(with: filters)
+        await self.searchService.performSearch(with: filters)
     }
 }
 
 // MARK: - Filter Access
 extension SecuritiesSearchCoordinator {
     var category: String {
-        get { filterManager.category }
+        get { self.filterManager.category }
         set {
-            filterManager.category = newValue
+            self.filterManager.category = newValue
             objectWillChange.send()
         }
     }
 
     var underlyingAsset: String {
-        get { filterManager.underlyingAsset }
+        get { self.filterManager.underlyingAsset }
         set {
-            filterManager.underlyingAsset = newValue
+            self.filterManager.underlyingAsset = newValue
             objectWillChange.send()
             // Trigger immediate search for underlying asset changes
             Task {
-                await executeSearch()
+                await self.executeSearch()
             }
         }
     }
 
     var direction: SecuritiesSearchView.Direction {
-        get { filterManager.direction }
+        get { self.filterManager.direction }
         set {
-            filterManager.direction = newValue
+            self.filterManager.direction = newValue
             objectWillChange.send()
         }
     }
 
     var strikePriceGap: String? {
-        get { filterManager.strikePriceGap }
+        get { self.filterManager.strikePriceGap }
         set {
-            filterManager.strikePriceGap = newValue
+            self.filterManager.strikePriceGap = newValue
             objectWillChange.send()
         }
     }
 
     var remainingTerm: String? {
-        get { filterManager.remainingTerm }
+        get { self.filterManager.remainingTerm }
         set {
-            filterManager.remainingTerm = newValue
+            self.filterManager.remainingTerm = newValue
             objectWillChange.send()
         }
     }
 
     var issuer: String? {
-        get { filterManager.issuer }
+        get { self.filterManager.issuer }
         set {
-            filterManager.issuer = newValue
+            self.filterManager.issuer = newValue
             objectWillChange.send()
         }
     }
 
     var omega: String? {
-        get { filterManager.omega }
+        get { self.filterManager.omega }
         set {
-            filterManager.omega = newValue
+            self.filterManager.omega = newValue
             objectWillChange.send()
         }
     }
@@ -185,14 +185,14 @@ extension SecuritiesSearchCoordinator {
     // Removed warrantDetailsViewModel - ViewModels should be managed by Views, not Services
 
     func getFilterDescription() -> String {
-        filterManager.getFilterDescription()
+        self.filterManager.getFilterDescription()
     }
 
     func getUnderlyingAssetSubtitle() -> String {
-        filterManager.getUnderlyingAssetSubtitle()
+        self.filterManager.getUnderlyingAssetSubtitle()
     }
 
     func getUnderlyingAssetMarketData() -> SecuritiesSearchViewModel.MarketData {
-        filterManager.getUnderlyingAssetMarketData()
+        self.filterManager.getUnderlyingAssetMarketData()
     }
 }

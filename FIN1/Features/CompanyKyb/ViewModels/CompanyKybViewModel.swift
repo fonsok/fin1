@@ -39,124 +39,124 @@ final class CompanyKybViewModel: ObservableObject {
     // MARK: - Computed Properties
 
     var progress: Double {
-        Double(currentStep.rawValue) / Double(CompanyKybStep.totalSteps)
+        Double(self.currentStep.rawValue) / Double(CompanyKybStep.totalSteps)
     }
 
-    var isFirstStep: Bool { currentStep == .legalEntity }
-    var isLastStep: Bool { currentStep == .submission }
+    var isFirstStep: Bool { self.currentStep == .legalEntity }
+    var isLastStep: Bool { self.currentStep == .submission }
 
-    var currentStepNumber: Int { currentStep.rawValue }
+    var currentStepNumber: Int { self.currentStep.rawValue }
 
     var canCompleteCurrentStep: Bool {
-        switch currentStep {
+        switch self.currentStep {
         case .legalEntity:
-            return !legalEntity.legalName.isEmpty && !legalEntity.legalForm.isEmpty
-                && !legalEntity.registerType.isEmpty && !legalEntity.registerNumber.isEmpty
-                && !legalEntity.registerCourt.isEmpty
+            return !self.legalEntity.legalName.isEmpty && !self.legalEntity.legalForm.isEmpty
+                && !self.legalEntity.registerType.isEmpty && !self.legalEntity.registerNumber.isEmpty
+                && !self.legalEntity.registerCourt.isEmpty
         case .registeredAddress:
-            return !registeredAddress.streetAndNumber.isEmpty
-                && !registeredAddress.postalCode.isEmpty && !registeredAddress.city.isEmpty
+            return !self.registeredAddress.streetAndNumber.isEmpty
+                && !self.registeredAddress.postalCode.isEmpty && !self.registeredAddress.city.isEmpty
         case .taxCompliance:
-            return !taxCompliance.vatId.isEmpty || !taxCompliance.nationalTaxNumber.isEmpty
-                || taxCompliance.noVatIdDeclared
+            return !self.taxCompliance.vatId.isEmpty || !self.taxCompliance.nationalTaxNumber.isEmpty
+                || self.taxCompliance.noVatIdDeclared
         case .beneficialOwners:
-            if beneficialOwners.noUboOver25Percent { return true }
-            return !beneficialOwners.ubos.isEmpty && beneficialOwners.ubos.allSatisfy { ubo in
+            if self.beneficialOwners.noUboOver25Percent { return true }
+            return !self.beneficialOwners.ubos.isEmpty && self.beneficialOwners.ubos.allSatisfy { ubo in
                 !ubo.fullName.isEmpty && !ubo.dateOfBirth.isEmpty && !ubo.nationality.isEmpty
             }
         case .authorizedRepresentatives:
-            return !authorizedRepresentatives.representatives.isEmpty
-                && authorizedRepresentatives.representatives.allSatisfy { rep in
+            return !self.authorizedRepresentatives.representatives.isEmpty
+                && self.authorizedRepresentatives.representatives.allSatisfy { rep in
                     !rep.fullName.isEmpty && !rep.roleTitle.isEmpty
                 }
         case .documents:
-            return documents.documentsAcknowledged
+            return self.documents.documentsAcknowledged
         case .declarations:
-            return declarations.sanctionsSelfDeclarationAccepted
-                && declarations.accuracyDeclarationAccepted
-                && declarations.noTrustThirdPartyDeclarationAccepted
+            return self.declarations.sanctionsSelfDeclarationAccepted
+                && self.declarations.accuracyDeclarationAccepted
+                && self.declarations.noTrustThirdPartyDeclarationAccepted
         case .submission:
-            return submission.confirmedSummary
+            return self.submission.confirmedSummary
         }
     }
 
     // MARK: - Navigation
 
     func nextStep() {
-        guard canCompleteCurrentStep else { return }
-        Task { await completeAndAdvance() }
+        guard self.canCompleteCurrentStep else { return }
+        Task { await self.completeAndAdvance() }
     }
 
     func previousStep() {
         guard let prev = currentStep.previous else { return }
-        withAnimation(.easeInOut(duration: 0.3)) { currentStep = prev }
-        Task { try? await companyKybAPIService.savePartialProgressPositionOnly(step: prev.backendKey) }
+        withAnimation(.easeInOut(duration: 0.3)) { self.currentStep = prev }
+        Task { try? await self.companyKybAPIService.savePartialProgressPositionOnly(step: prev.backendKey) }
     }
 
     // MARK: - Resume
 
     func resumeProgress() async {
-        isResuming = true
+        self.isResuming = true
         defer { isResuming = false }
         do {
             let progress = try await companyKybAPIService.getCompanyKybProgress()
-            kybCompleted = progress.companyKybCompleted
-            kybStatus = progress.companyKybStatus
-            completedSteps = Set(progress.completedSteps.compactMap(CompanyKybStep.fromBackendKey))
+            self.kybCompleted = progress.companyKybCompleted
+            self.kybStatus = progress.companyKybStatus
+            self.completedSteps = Set(progress.completedSteps.compactMap(CompanyKybStep.fromBackendKey))
 
-            if kybCompleted {
-                shouldDismiss = true
+            if self.kybCompleted {
+                self.shouldDismiss = true
                 return
             }
 
-            restoreFormData(from: progress.savedData)
+            self.restoreFormData(from: progress.savedData)
 
             if let stepKey = progress.currentStep,
                let step = CompanyKybStep.fromBackendKey(stepKey) {
-                currentStep = step.next ?? step
+                self.currentStep = step.next ?? step
             }
         } catch {
-            presentError(error)
+            self.presentError(error)
         }
     }
 
     // MARK: - Complete & Advance
 
     private func completeAndAdvance() async {
-        isLoading = true
+        self.isLoading = true
         defer { isLoading = false }
 
-        let stepData = savedDataForCurrentStep()
+        let stepData = self.savedDataForCurrentStep()
 
         do {
             let response = try await companyKybAPIService.completeStep(
-                step: currentStep.backendKey,
+                step: self.currentStep.backendKey,
                 data: stepData
             )
-            completedSteps.insert(currentStep)
-            kybCompleted = response.companyKybCompleted ?? false
-            kybStatus = response.companyKybStatus
+            self.completedSteps.insert(self.currentStep)
+            self.kybCompleted = response.companyKybCompleted ?? false
+            self.kybStatus = response.companyKybStatus
 
-            if kybCompleted {
-                shouldDismiss = true
+            if self.kybCompleted {
+                self.shouldDismiss = true
                 return
             }
 
             if let nextKey = response.nextStep,
                let next = CompanyKybStep.fromBackendKey(nextKey) {
-                withAnimation(.easeInOut(duration: 0.3)) { currentStep = next }
+                withAnimation(.easeInOut(duration: 0.3)) { self.currentStep = next }
             } else if let next = currentStep.next {
-                withAnimation(.easeInOut(duration: 0.3)) { currentStep = next }
+                withAnimation(.easeInOut(duration: 0.3)) { self.currentStep = next }
             }
         } catch {
-            presentError(error)
+            self.presentError(error)
         }
     }
 
     func savePartialProgress() async {
-        let stepData = savedDataForCurrentStep()
-        try? await companyKybAPIService.savePartialProgress(
-            step: currentStep.backendKey,
+        let stepData = self.savedDataForCurrentStep()
+        try? await self.companyKybAPIService.savePartialProgress(
+            step: self.currentStep.backendKey,
             data: stepData
         )
     }
@@ -164,43 +164,43 @@ final class CompanyKybViewModel: ObservableObject {
     // MARK: - Data Mapping
 
     private func savedDataForCurrentStep() -> SavedCompanyKybData {
-        switch currentStep {
-        case .legalEntity: return legalEntity.toSavedData()
-        case .registeredAddress: return registeredAddress.toSavedData()
-        case .taxCompliance: return taxCompliance.toSavedData()
-        case .beneficialOwners: return beneficialOwners.toSavedData()
-        case .authorizedRepresentatives: return authorizedRepresentatives.toSavedData()
-        case .documents: return documents.toSavedData()
-        case .declarations: return declarations.toSavedData()
-        case .submission: return submission.toSavedData()
+        switch self.currentStep {
+        case .legalEntity: return self.legalEntity.toSavedData()
+        case .registeredAddress: return self.registeredAddress.toSavedData()
+        case .taxCompliance: return self.taxCompliance.toSavedData()
+        case .beneficialOwners: return self.beneficialOwners.toSavedData()
+        case .authorizedRepresentatives: return self.authorizedRepresentatives.toSavedData()
+        case .documents: return self.documents.toSavedData()
+        case .declarations: return self.declarations.toSavedData()
+        case .submission: return self.submission.toSavedData()
         }
     }
 
     private func restoreFormData(from data: SavedCompanyKybData?) {
         guard let data else { return }
 
-        if let v = data.legalName { legalEntity.legalName = v }
-        if let v = data.legalForm { legalEntity.legalForm = v }
-        if let v = data.registerType { legalEntity.registerType = v }
-        if let v = data.registerNumber { legalEntity.registerNumber = v }
-        if let v = data.registerCourt { legalEntity.registerCourt = v }
-        if let v = data.incorporationCountry { legalEntity.incorporationCountry = v }
-        if let v = data.notRegisteredReason { legalEntity.notRegisteredReason = v }
+        if let v = data.legalName { self.legalEntity.legalName = v }
+        if let v = data.legalForm { self.legalEntity.legalForm = v }
+        if let v = data.registerType { self.legalEntity.registerType = v }
+        if let v = data.registerNumber { self.legalEntity.registerNumber = v }
+        if let v = data.registerCourt { self.legalEntity.registerCourt = v }
+        if let v = data.incorporationCountry { self.legalEntity.incorporationCountry = v }
+        if let v = data.notRegisteredReason { self.legalEntity.notRegisteredReason = v }
 
-        if let v = data.streetAndNumber { registeredAddress.streetAndNumber = v }
-        if let v = data.postalCode { registeredAddress.postalCode = v }
-        if let v = data.city { registeredAddress.city = v }
-        if let v = data.country { registeredAddress.country = v }
-        if let v = data.businessStreetAndNumber { registeredAddress.businessStreetAndNumber = v }
+        if let v = data.streetAndNumber { self.registeredAddress.streetAndNumber = v }
+        if let v = data.postalCode { self.registeredAddress.postalCode = v }
+        if let v = data.city { self.registeredAddress.city = v }
+        if let v = data.country { self.registeredAddress.country = v }
+        if let v = data.businessStreetAndNumber { self.registeredAddress.businessStreetAndNumber = v }
 
-        if let v = data.vatId { taxCompliance.vatId = v }
-        if let v = data.nationalTaxNumber { taxCompliance.nationalTaxNumber = v }
-        if let v = data.economicIdentificationNumber { taxCompliance.economicIdentificationNumber = v }
-        if let v = data.noVatIdDeclared { taxCompliance.noVatIdDeclared = v }
+        if let v = data.vatId { self.taxCompliance.vatId = v }
+        if let v = data.nationalTaxNumber { self.taxCompliance.nationalTaxNumber = v }
+        if let v = data.economicIdentificationNumber { self.taxCompliance.economicIdentificationNumber = v }
+        if let v = data.noVatIdDeclared { self.taxCompliance.noVatIdDeclared = v }
 
-        if let v = data.noUboOver25Percent { beneficialOwners.noUboOver25Percent = v }
+        if let v = data.noUboOver25Percent { self.beneficialOwners.noUboOver25Percent = v }
         if let ubos = data.ubos {
-            beneficialOwners.ubos = ubos.map { ubo in
+            self.beneficialOwners.ubos = ubos.map { ubo in
                 var entry = BeneficialOwnerEntry()
                 entry.fullName = ubo.fullName ?? ""
                 entry.dateOfBirth = ubo.dateOfBirth ?? ""
@@ -212,10 +212,10 @@ final class CompanyKybViewModel: ObservableObject {
         }
 
         if let v = data.appAccountHolderIsRepresentative {
-            authorizedRepresentatives.appAccountHolderIsRepresentative = v
+            self.authorizedRepresentatives.appAccountHolderIsRepresentative = v
         }
         if let reps = data.representatives {
-            authorizedRepresentatives.representatives = reps.map { rep in
+            self.authorizedRepresentatives.representatives = reps.map { rep in
                 var entry = RepresentativeEntry()
                 entry.fullName = rep.fullName ?? ""
                 entry.roleTitle = rep.roleTitle ?? ""
@@ -224,23 +224,23 @@ final class CompanyKybViewModel: ObservableObject {
             }
         }
 
-        if let v = data.documentsAcknowledged { documents.documentsAcknowledged = v }
-        if let v = data.tradeRegisterExtractReference { documents.tradeRegisterExtractReference = v }
+        if let v = data.documentsAcknowledged { self.documents.documentsAcknowledged = v }
+        if let v = data.tradeRegisterExtractReference { self.documents.tradeRegisterExtractReference = v }
 
-        if let v = data.isPoliticallyExposed { declarations.isPoliticallyExposed = v }
-        if let v = data.pepDetails { declarations.pepDetails = v }
-        if let v = data.sanctionsSelfDeclarationAccepted { declarations.sanctionsSelfDeclarationAccepted = v }
-        if let v = data.accuracyDeclarationAccepted { declarations.accuracyDeclarationAccepted = v }
+        if let v = data.isPoliticallyExposed { self.declarations.isPoliticallyExposed = v }
+        if let v = data.pepDetails { self.declarations.pepDetails = v }
+        if let v = data.sanctionsSelfDeclarationAccepted { self.declarations.sanctionsSelfDeclarationAccepted = v }
+        if let v = data.accuracyDeclarationAccepted { self.declarations.accuracyDeclarationAccepted = v }
         if let v = data.noTrustThirdPartyDeclarationAccepted {
-            declarations.noTrustThirdPartyDeclarationAccepted = v
+            self.declarations.noTrustThirdPartyDeclarationAccepted = v
         }
     }
 
     // MARK: - Error Handling
 
     private func presentError(_ error: Error) {
-        errorMessage = mapToAppErrorMessage(error)
-        showError = true
+        self.errorMessage = self.mapToAppErrorMessage(error)
+        self.showError = true
     }
 
     private func mapToAppErrorMessage(_ error: Error) -> String {

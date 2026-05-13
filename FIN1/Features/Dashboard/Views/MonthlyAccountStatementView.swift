@@ -27,17 +27,17 @@ struct MonthlyAccountStatementView: View {
             VStack(spacing: ResponsiveDesign.spacing(20)) {
                 // Header and summary with horizontal padding
                 VStack(spacing: ResponsiveDesign.spacing(20)) {
-                    header
-                    summarySection
+                    self.header
+                    self.summarySection
                 }
                 .padding(.horizontal, ResponsiveDesign.horizontalPadding())
 
                 // Entries table - full width for horizontal scrolling in landscape
-                if viewModel.hasTransactions {
-                    entriesTable
+                if self.viewModel.hasTransactions {
+                    self.entriesTable
                         .padding(.horizontal, ResponsiveDesign.spacing(4))
                 } else {
-                    emptyState
+                    self.emptyState
                         .padding(.horizontal, ResponsiveDesign.horizontalPadding())
                 }
 
@@ -49,24 +49,24 @@ struct MonthlyAccountStatementView: View {
         }
         .background(AppTheme.screenBackground.ignoresSafeArea())
         .navigationBarTitleDisplayMode(.inline)
-        .navigationTitle(viewModel.title)
+        .navigationTitle(self.viewModel.title)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button("Done") {
-                    dismiss()
+                    self.dismiss()
                 }
             }
         }
         .onAppear {
-            viewModel.load()
+            self.viewModel.load()
         }
-        .alert("Beleg nicht gefunden", isPresented: $showMissingDocumentAlert) {
+        .alert("Beleg nicht gefunden", isPresented: self.$showMissingDocumentAlert) {
             Button("OK", role: .cancel) { }
         } message: {
             Text("Für diese Buchung wurde kein passender Beleg geladen. Bitte Dokumente aktualisieren und erneut versuchen.")
         }
-        .sheet(item: $selectedDocument) { document in
-            DocumentNavigationHelper.sheetView(for: document, appServices: services)
+        .sheet(item: self.$selectedDocument) { document in
+            DocumentNavigationHelper.sheetView(for: document, appServices: self.services)
         }
     }
 
@@ -78,24 +78,24 @@ struct MonthlyAccountStatementView: View {
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
 
-            Text(viewModel.closingBalance.formattedAsLocalizedCurrency())
+            Text(self.viewModel.closingBalance.formattedAsLocalizedCurrency())
                 .font(ResponsiveDesign.bodyFont())
                 .fontWeight(.regular)
                 .foregroundColor(AppTheme.fontColor)
 
-            Text("Opening balance: \(viewModel.openingBalance.formattedAsLocalizedCurrency())")
+            Text("Opening balance: \(self.viewModel.openingBalance.formattedAsLocalizedCurrency())")
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
 
             HStack(spacing: ResponsiveDesign.spacing(8)) {
-                Text(viewModel.periodLabel)
+                Text(self.viewModel.periodLabel)
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.6))
 
-                Text(viewModel.netChangeFormatted)
+                Text(self.viewModel.netChangeFormatted)
                     .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.medium)
-                    .foregroundColor(viewModel.netChange >= 0 ? AppTheme.accentGreen : AppTheme.accentRed)
+                    .foregroundColor(self.viewModel.netChange >= 0 ? AppTheme.accentGreen : AppTheme.accentRed)
             }
         }
         .padding(ResponsiveDesign.spacing(20))
@@ -107,50 +107,50 @@ struct MonthlyAccountStatementView: View {
     private var summarySection: some View {
         VStack(spacing: ResponsiveDesign.spacing(12)) {
             HStack(spacing: ResponsiveDesign.spacing(12)) {
-                summaryCard(
+                self.summaryCard(
                     title: "Credits",
-                    value: viewModel.totalCredits.formattedAsLocalizedCurrency(),
+                    value: self.viewModel.totalCredits.formattedAsLocalizedCurrency(),
                     subtitle: "Inflows",
                     color: AppTheme.accentGreen
                 )
 
-                summaryCard(
+                self.summaryCard(
                     title: "Debits",
-                    value: viewModel.totalDebits.formattedAsLocalizedCurrency(),
+                    value: self.viewModel.totalDebits.formattedAsLocalizedCurrency(),
                     subtitle: "Outflows",
                     color: AppTheme.accentRed
                 )
             }
 
-            summaryCard(
+            self.summaryCard(
                 title: "Net Change",
-                value: viewModel.netChangeFormatted,
-                subtitle: viewModel.periodLabel,
-                color: viewModel.netChange >= 0 ? AppTheme.accentGreen : AppTheme.accentRed
+                value: self.viewModel.netChangeFormatted,
+                subtitle: self.viewModel.periodLabel,
+                color: self.viewModel.netChange >= 0 ? AppTheme.accentGreen : AppTheme.accentRed
             )
         }
     }
 
     private var entriesTable: some View {
         AccountStatementEntriesTable(
-            entries: viewModel.entries,
-            showDocumentReferenceLinks: services.configurationService.showDocumentReferenceLinksInAccountStatement,
-            onEntryTap: openReferencedDocument(for:)
+            entries: self.viewModel.entries,
+            showDocumentReferenceLinks: self.services.configurationService.showDocumentReferenceLinksInAccountStatement,
+            onEntryTap: self.openReferencedDocument(for:)
         ) {
-            statementMetaHeader
+            self.statementMetaHeader
         }
     }
 
     private func openReferencedDocument(for entry: AccountStatementEntry) {
         if let cached = entry.referencedDocument(documentService: services.documentService) {
-            selectedDocument = cached
+            self.selectedDocument = cached
             return
         }
         Task { @MainActor in
             if let resolved = await entry.resolveReferencedDocument(documentService: services.documentService) {
-                selectedDocument = resolved
+                self.selectedDocument = resolved
             } else {
-                showMissingDocumentAlert = true
+                self.showMissingDocumentAlert = true
             }
         }
     }
@@ -162,7 +162,7 @@ struct MonthlyAccountStatementView: View {
                 Text("Account statement from")
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
-                Text(viewModel.periodLabel)
+                Text(self.viewModel.periodLabel)
                     .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.medium)
                     .foregroundColor(AppTheme.fontColor)
@@ -176,7 +176,7 @@ struct MonthlyAccountStatementView: View {
                 Text("Account holder:")
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
-                Text(viewModel.accountHolderName)
+                Text(self.viewModel.accountHolderName)
                     .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.medium)
                     .foregroundColor(AppTheme.fontColor)
@@ -198,7 +198,7 @@ struct MonthlyAccountStatementView: View {
                     .frame(width: AccountStatementTableLayout.amountColumnWidth, alignment: .leading)
                 Text("IBAN")
                     .frame(width: AccountStatementTableLayout.descriptionColumnWidth, alignment: .leading)
-                Text("Opening balance as of \(viewModel.openingBalanceDateLabel)")
+                Text("Opening balance as of \(self.viewModel.openingBalanceDateLabel)")
                     .frame(width: AccountStatementTableLayout.amountColumnWidth, alignment: .trailing)
                     .multilineTextAlignment(.trailing)
                     .lineLimit(2)
@@ -214,17 +214,17 @@ struct MonthlyAccountStatementView: View {
 
             // Row 4: Meta table values (e.g. 9 | 1 | 1 | DE... | EUR +12,345.78)
             HStack(spacing: AccountStatementTableLayout.columnSpacing) {
-                Text("\(viewModel.statementNumber)")
+                Text("\(self.viewModel.statementNumber)")
                     .frame(width: AccountStatementTableLayout.combinedDateColumnWidth, alignment: .leading)
                 Text("1")
                     .frame(width: AccountStatementTableLayout.amountColumnWidth, alignment: .leading)
                 Text("1")
                     .frame(width: AccountStatementTableLayout.amountColumnWidth, alignment: .leading)
-                Text(viewModel.accountIbanDisplay)
+                Text(self.viewModel.accountIbanDisplay)
                     .frame(width: AccountStatementTableLayout.descriptionColumnWidth, alignment: .leading)
                 HStack {
-                  //  Text("EUR")
-                    Text(viewModel.openingBalance.formattedAsLocalizedCurrency())
+                    //  Text("EUR")
+                    Text(self.viewModel.openingBalance.formattedAsLocalizedCurrency())
                 }
                 .frame(width: AccountStatementTableLayout.amountColumnWidth, alignment: .trailing)
             }

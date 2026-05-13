@@ -18,11 +18,11 @@ struct CustomerDetailTicketsSection: View {
 
                 Spacer()
 
-                if viewModel.isLoadingCustomerTickets {
+                if self.viewModel.isLoadingCustomerTickets {
                     ProgressView()
                         .scaleEffect(0.8)
-                } else if !viewModel.customerTickets.isEmpty {
-                    Text("\(viewModel.customerTickets.count)")
+                } else if !self.viewModel.customerTickets.isEmpty {
+                    Text("\(self.viewModel.customerTickets.count)")
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(AppTheme.fontColor.opacity(0.7))
                         .padding(.horizontal, ResponsiveDesign.spacing(8))
@@ -32,7 +32,7 @@ struct CustomerDetailTicketsSection: View {
                 }
             }
 
-            if viewModel.isLoadingCustomerTickets {
+            if self.viewModel.isLoadingCustomerTickets {
                 HStack {
                     Spacer()
                     ProgressView("Lade Tickets...")
@@ -40,7 +40,7 @@ struct CustomerDetailTicketsSection: View {
                     Spacer()
                 }
                 .padding()
-            } else if viewModel.customerTickets.isEmpty {
+            } else if self.viewModel.customerTickets.isEmpty {
                 VStack(spacing: ResponsiveDesign.spacing(8)) {
                     Image(systemName: "tray")
                         .font(ResponsiveDesign.headlineFont())
@@ -54,22 +54,22 @@ struct CustomerDetailTicketsSection: View {
                 .padding()
             } else {
                 VStack(spacing: ResponsiveDesign.spacing(8)) {
-                    if !viewModel.activeCustomerTickets.isEmpty {
+                    if !self.viewModel.activeCustomerTickets.isEmpty {
                         Text("Aktive Tickets")
                             .font(ResponsiveDesign.captionFont())
                             .fontWeight(.medium)
                             .foregroundColor(AppTheme.fontColor.opacity(0.7))
                             .frame(maxWidth: .infinity, alignment: .leading)
 
-                        ForEach(viewModel.activeCustomerTickets) { ticket in
-                            CustomerTicketRow(ticket: ticket, viewModel: viewModel) {
-                                onSelectTicket(ticket)
+                        ForEach(self.viewModel.activeCustomerTickets) { ticket in
+                            CustomerTicketRow(ticket: ticket, viewModel: self.viewModel) {
+                                self.onSelectTicket(ticket)
                             }
                         }
                     }
 
-                    if !viewModel.closedCustomerTickets.isEmpty {
-                        if !viewModel.activeCustomerTickets.isEmpty {
+                    if !self.viewModel.closedCustomerTickets.isEmpty {
+                        if !self.viewModel.activeCustomerTickets.isEmpty {
                             Divider()
                                 .padding(.vertical, ResponsiveDesign.spacing(4))
                         }
@@ -80,14 +80,14 @@ struct CustomerDetailTicketsSection: View {
                             .foregroundColor(AppTheme.fontColor.opacity(0.7))
                             .frame(maxWidth: .infinity, alignment: .leading)
 
-                        ForEach(viewModel.closedCustomerTickets.prefix(3)) { ticket in
-                            CustomerTicketRow(ticket: ticket, viewModel: viewModel) {
-                                onSelectTicket(ticket)
+                        ForEach(self.viewModel.closedCustomerTickets.prefix(3)) { ticket in
+                            CustomerTicketRow(ticket: ticket, viewModel: self.viewModel) {
+                                self.onSelectTicket(ticket)
                             }
                         }
 
-                        if viewModel.closedCustomerTickets.count > 3 {
-                            Text("+ \(viewModel.closedCustomerTickets.count - 3) weitere abgeschlossene Tickets")
+                        if self.viewModel.closedCustomerTickets.count > 3 {
+                            Text("+ \(self.viewModel.closedCustomerTickets.count - 3) weitere abgeschlossene Tickets")
                                 .font(ResponsiveDesign.captionFont())
                                 .foregroundColor(AppTheme.accentLightBlue)
                                 .frame(maxWidth: .infinity)

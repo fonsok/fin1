@@ -34,16 +34,16 @@ struct DocumentNotesSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(16)) {
             // Account Information Section
-            accountInformationSection
+            self.accountInformationSection
 
             // Tax Note Section
-            taxNoteSection(taxNote: taxNote ?? Self.defaultTaxNote)
+            self.taxNoteSection(taxNote: self.taxNote ?? Self.defaultTaxNote)
 
             // Legal Note Section
             if let legalNote = legalNote {
-                legalNoteSection(legalNote: legalNote)
+                self.legalNoteSection(legalNote: legalNote)
             } else {
-                defaultLegalNoteSection
+                self.defaultLegalNoteSection
             }
         }
     }
@@ -52,7 +52,7 @@ struct DocumentNotesSection: View {
 
     private var accountInformationSection: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
-            Text("Die Verrechnung des Gesamtbetrags erfolgt über Ihr Konto Nr.: \(accountNumber)")
+            Text("Die Verrechnung des Gesamtbetrags erfolgt über Ihr Konto Nr.: \(self.accountNumber)")
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(DocumentDesignSystem.textColorSecondary)
                 .fixedSize(horizontal: false, vertical: true)

@@ -1,5 +1,5 @@
-import SwiftUI
 import Foundation
+import SwiftUI
 
 // MARK: - Mock Trade Performance
 struct MockTradePerformance: Identifiable {
@@ -15,13 +15,13 @@ struct MockTradePerformance: Identifiable {
     // ROI = (profitLoss / investmentCost) * 100
     // Note: profitLoss is monetary amount, roi is percentage return
     var roi: Double {
-        guard investmentCost > 0 else { return 0 }
-        return (profitLoss / investmentCost) * 100
+        guard self.investmentCost > 0 else { return 0 }
+        return (self.profitLoss / self.investmentCost) * 100
     }
 
     // Successful trade = ROI > 0
     var isSuccessfulByROI: Bool {
-        return roi > 0
+        return self.roi > 0
     }
 }
 
@@ -92,7 +92,7 @@ func generateMockTradePerformance(count: Int, successRate: Double, avgReturn: Do
 
     for _ in 0..<count {
         // Generate investment cost (random between 1000 and 10000 for realistic ROI)
-        let investmentCost = Double.random(in: 1000...10000)
+        let investmentCost = Double.random(in: 1_000...10_000)
 
         // Generate ROI in the range of -95% to +300%
         // Distribute based on successRate: higher successRate means more positive ROIs

@@ -22,11 +22,11 @@ struct TicketTagPicker: View {
     }
 
     private var filteredTags: [TicketTag] {
-        if searchQuery.isEmpty {
-            return availableTags
+        if self.searchQuery.isEmpty {
+            return self.availableTags
         }
-        return availableTags.filter {
-            $0.name.localizedCaseInsensitiveContains(searchQuery)
+        return self.availableTags.filter {
+            $0.name.localizedCaseInsensitiveContains(self.searchQuery)
         }
     }
 
@@ -34,22 +34,22 @@ struct TicketTagPicker: View {
         NavigationStack {
             VStack(spacing: ResponsiveDesign.spacing(0)) {
                 // Selected tags
-                if !selectedTags.isEmpty {
-                    selectedTagsSection
+                if !self.selectedTags.isEmpty {
+                    self.selectedTagsSection
                 }
 
                 // Search
-                searchBar
+                self.searchBar
 
                 // Available tags
-                tagList
+                self.tagList
             }
             .background(AppTheme.screenBackground.ignoresSafeArea())
             .navigationTitle("Tags auswählen")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Fertig") { dismiss() }
+                    Button("Fertig") { self.dismiss() }
                 }
             }
         }
@@ -60,15 +60,15 @@ struct TicketTagPicker: View {
     private var selectedTagsSection: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
             HStack {
-                Text("Ausgewählt (\(selectedTags.count)/\(maxTags))")
+                Text("Ausgewählt (\(self.selectedTags.count)/\(self.maxTags))")
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
 
                 Spacer()
 
-                if !selectedTags.isEmpty {
+                if !self.selectedTags.isEmpty {
                     Button("Alle entfernen") {
-                        selectedTags.removeAll()
+                        self.selectedTags.removeAll()
                     }
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.accentRed)
@@ -77,9 +77,9 @@ struct TicketTagPicker: View {
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: ResponsiveDesign.spacing(8)) {
-                    ForEach(selectedTags) { tag in
+                    ForEach(self.selectedTags) { tag in
                         SelectedTagChip(tag: tag) {
-                            selectedTags.removeAll { $0.id == tag.id }
+                            self.selectedTags.removeAll { $0.id == tag.id }
                         }
                     }
                 }
@@ -96,12 +96,12 @@ struct TicketTagPicker: View {
             Image(systemName: "magnifyingglass")
                 .foregroundColor(AppTheme.fontColor.opacity(0.5))
 
-            TextField("Tag suchen...", text: $searchQuery)
+            TextField("Tag suchen...", text: self.$searchQuery)
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor)
 
-            if !searchQuery.isEmpty {
-                Button { searchQuery = "" } label: {
+            if !self.searchQuery.isEmpty {
+                Button { self.searchQuery = "" } label: {
                     Image(systemName: "xmark.circle.fill")
                         .foregroundColor(AppTheme.fontColor.opacity(0.5))
                 }
@@ -116,17 +116,17 @@ struct TicketTagPicker: View {
     private var tagList: some View {
         ScrollView {
             LazyVStack(spacing: ResponsiveDesign.spacing(8)) {
-                ForEach(filteredTags) { tag in
+                ForEach(self.filteredTags) { tag in
                     TagSelectionRow(
                         tag: tag,
-                        isSelected: selectedTags.contains { $0.id == tag.id },
-                        isDisabled: selectedTags.count >= maxTags && !selectedTags.contains { $0.id == tag.id }
+                        isSelected: self.selectedTags.contains { $0.id == tag.id },
+                        isDisabled: self.selectedTags.count >= self.maxTags && !self.selectedTags.contains { $0.id == tag.id }
                     ) {
-                        toggleTag(tag)
+                        self.toggleTag(tag)
                     }
                 }
 
-                if filteredTags.isEmpty {
+                if self.filteredTags.isEmpty {
                     Text("Keine Tags gefunden")
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(AppTheme.fontColor.opacity(0.7))
@@ -141,9 +141,9 @@ struct TicketTagPicker: View {
 
     private func toggleTag(_ tag: TicketTag) {
         if let index = selectedTags.firstIndex(where: { $0.id == tag.id }) {
-            selectedTags.remove(at: index)
-        } else if selectedTags.count < maxTags {
-            selectedTags.append(tag)
+            self.selectedTags.remove(at: index)
+        } else if self.selectedTags.count < self.maxTags {
+            self.selectedTags.append(tag)
         }
     }
 }
@@ -161,11 +161,11 @@ private struct SelectedTagChip: View {
                     .font(ResponsiveDesign.captionFont())
             }
 
-            Text(tag.name)
+            Text(self.tag.name)
                 .font(ResponsiveDesign.captionFont())
                 .fontWeight(.medium)
 
-            Button(action: onRemove) {
+            Button(action: self.onRemove) {
                 Image(systemName: "xmark.circle.fill")
                     .font(ResponsiveDesign.captionFont())
             }
@@ -173,7 +173,7 @@ private struct SelectedTagChip: View {
         .foregroundColor(.white)
         .padding(.horizontal, ResponsiveDesign.spacing(10))
         .padding(.vertical, ResponsiveDesign.spacing(6))
-        .background(tag.color)
+        .background(self.tag.color)
         .cornerRadius(ResponsiveDesign.spacing(16))
     }
 }
@@ -187,39 +187,39 @@ private struct TagSelectionRow: View {
     let onTap: () -> Void
 
     var body: some View {
-        Button(action: onTap) {
+        Button(action: self.onTap) {
             HStack(spacing: ResponsiveDesign.spacing(12)) {
                 // Tag color indicator
                 Circle()
-                    .fill(tag.color)
+                    .fill(self.tag.color)
                     .frame(width: 12, height: 12)
 
                 // Icon
                 if let icon = tag.icon {
                     Image(systemName: icon)
-                        .foregroundColor(tag.color)
+                        .foregroundColor(self.tag.color)
                         .font(ResponsiveDesign.bodyFont())
                         .frame(width: 24)
                 }
 
                 // Name
-                Text(tag.name)
+                Text(self.tag.name)
                     .font(ResponsiveDesign.bodyFont())
-                    .foregroundColor(isDisabled ? AppTheme.fontColor.opacity(0.4) : AppTheme.fontColor)
+                    .foregroundColor(self.isDisabled ? AppTheme.fontColor.opacity(0.4) : AppTheme.fontColor)
 
                 Spacer()
 
                 // Selection indicator
-                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .foregroundColor(isSelected ? tag.color : AppTheme.fontColor.opacity(0.3))
+                Image(systemName: self.isSelected ? "checkmark.circle.fill" : "circle")
+                    .foregroundColor(self.isSelected ? self.tag.color : AppTheme.fontColor.opacity(0.3))
                     .font(ResponsiveDesign.headlineFont())
             }
             .padding()
-            .background(isSelected ? tag.color.opacity(0.1) : AppTheme.sectionBackground)
+            .background(self.isSelected ? self.tag.color.opacity(0.1) : AppTheme.sectionBackground)
             .cornerRadius(ResponsiveDesign.spacing(10))
         }
         .buttonStyle(PlainButtonStyle())
-        .disabled(isDisabled)
+        .disabled(self.isDisabled)
     }
 }
 
@@ -237,12 +237,12 @@ struct TicketTagsDisplay: View {
 
     var body: some View {
         HStack(spacing: ResponsiveDesign.spacing(4)) {
-            ForEach(tags.prefix(maxVisible)) { tag in
+            ForEach(self.tags.prefix(self.maxVisible)) { tag in
                 InlineTagBadge(tag: tag)
             }
 
-            if tags.count > maxVisible {
-                Text("+\(tags.count - maxVisible)")
+            if self.tags.count > self.maxVisible {
+                Text("+\(self.tags.count - self.maxVisible)")
                     .font(ResponsiveDesign.captionFont())
                     .fontWeight(.semibold)
                     .foregroundColor(AppTheme.fontColor.opacity(0.6))
@@ -267,14 +267,14 @@ struct InlineTagBadge: View {
                     .font(ResponsiveDesign.captionFont())
             }
 
-            Text(tag.name)
+            Text(self.tag.name)
                 .font(ResponsiveDesign.captionFont())
                 .fontWeight(.medium)
         }
-        .foregroundColor(tag.color)
+        .foregroundColor(self.tag.color)
         .padding(.horizontal, ResponsiveDesign.spacing(6))
         .padding(.vertical, ResponsiveDesign.spacing(2))
-        .background(tag.color.opacity(0.15))
+        .background(self.tag.color.opacity(0.15))
         .cornerRadius(ResponsiveDesign.spacing(6))
     }
 }

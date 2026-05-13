@@ -14,17 +14,17 @@ struct WalletRecentTransactionsSection: View {
 
                 Spacer()
 
-                Button(action: onShowAll) {
+                Button(action: self.onShowAll) {
                     Text("Alle anzeigen")
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(AppTheme.accentLightBlue)
                 }
             }
 
-            if transactions.isEmpty {
-                emptyTransactionsView
+            if self.transactions.isEmpty {
+                self.emptyTransactionsView
             } else {
-                ForEach(Array(transactions.prefix(5))) { transaction in
+                ForEach(Array(self.transactions.prefix(5))) { transaction in
                     WalletTransactionRow(transaction: transaction)
                         .transition(.opacity.combined(with: .move(edge: .trailing)))
                 }

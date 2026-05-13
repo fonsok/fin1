@@ -9,20 +9,20 @@ struct PendingChangeCard: View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(viewModel.formatParameterName(change.parameterName))
+                    Text(self.viewModel.formatParameterName(self.change.parameterName))
                         .font(ResponsiveDesign.headlineFont())
                         .foregroundColor(.primary)
 
-                    Text(viewModel.formatDate(change.createdAt))
+                    Text(self.viewModel.formatDate(self.change.createdAt))
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(.secondary)
                 }
 
                 Spacer()
 
-                Text(viewModel.timeRemaining(until: change.expiresAt))
+                Text(self.viewModel.timeRemaining(until: self.change.expiresAt))
                     .font(ResponsiveDesign.captionFont())
-                    .foregroundColor(change.expiresAt.timeIntervalSinceNow < 86400 ? .orange : .secondary)
+                    .foregroundColor(self.change.expiresAt.timeIntervalSinceNow < 86_400 ? .orange : .secondary)
             }
 
             HStack(spacing: ResponsiveDesign.spacing(12)) {
@@ -30,7 +30,7 @@ struct PendingChangeCard: View {
                     Text("Current")
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(.secondary)
-                    Text(viewModel.formatValue(change.oldValue, for: change.parameterName))
+                    Text(self.viewModel.formatValue(self.change.oldValue, for: self.change.parameterName))
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(.primary)
                 }
@@ -42,7 +42,7 @@ struct PendingChangeCard: View {
                     Text("Proposed")
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(.secondary)
-                    Text(viewModel.formatValue(change.newValue, for: change.parameterName))
+                    Text(self.viewModel.formatValue(self.change.newValue, for: self.change.parameterName))
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(.blue)
                         .fontWeight(.semibold)
@@ -55,7 +55,7 @@ struct PendingChangeCard: View {
                 Text("Reason:")
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(.secondary)
-                Text(change.reason)
+                Text(self.change.reason)
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(.primary)
                     .lineLimit(2)
@@ -64,10 +64,10 @@ struct PendingChangeCard: View {
             HStack {
                 Image(systemName: "person.circle")
                     .foregroundColor(.secondary)
-                Text(change.requesterEmail ?? change.requesterId)
+                Text(self.change.requesterEmail ?? self.change.requesterId)
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(.secondary)
-                Text("(\(change.requesterRole))")
+                Text("(\(self.change.requesterRole))")
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(.secondary)
             }
@@ -76,7 +76,7 @@ struct PendingChangeCard: View {
 
             HStack(spacing: ResponsiveDesign.spacing(12)) {
                 Button {
-                    viewModel.selectForRejection(change)
+                    self.viewModel.selectForRejection(self.change)
                 } label: {
                     Label("Reject", systemImage: "xmark.circle")
                         .frame(maxWidth: .infinity)
@@ -85,7 +85,7 @@ struct PendingChangeCard: View {
                 .tint(.red)
 
                 Button {
-                    viewModel.selectForApproval(change)
+                    self.viewModel.selectForApproval(self.change)
                 } label: {
                     Label("Approve", systemImage: "checkmark.circle")
                         .frame(maxWidth: .infinity)

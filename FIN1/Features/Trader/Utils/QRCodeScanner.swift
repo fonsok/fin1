@@ -1,7 +1,7 @@
-import Foundation
-import UIKit
-import SwiftUI
 @preconcurrency import AVFoundation
+import Foundation
+import SwiftUI
+import UIKit
 
 // MARK: - QR Code Scanner
 /// Handles scanning QR codes to extract invoice information
@@ -16,7 +16,7 @@ final class QRCodeScanner: NSObject, ObservableObject, @unchecked Sendable {
 
     override init() {
         super.init()
-        setupCaptureSession()
+        self.setupCaptureSession()
     }
 
     private func setupCaptureSession() {
@@ -25,7 +25,7 @@ final class QRCodeScanner: NSObject, ObservableObject, @unchecked Sendable {
         guard let captureSession = captureSession else { return }
 
         guard let videoCaptureDevice = AVCaptureDevice.default(for: .video) else {
-            errorMessage = "Camera not available"
+            self.errorMessage = "Camera not available"
             return
         }
 
@@ -35,14 +35,14 @@ final class QRCodeScanner: NSObject, ObservableObject, @unchecked Sendable {
             videoInput = try AVCaptureDeviceInput(device: videoCaptureDevice)
         } catch {
             let appError = error.toAppError()
-            errorMessage = "Failed to create video input: \(appError.errorDescription ?? "An error occurred")"
+            self.errorMessage = "Failed to create video input: \(appError.errorDescription ?? "An error occurred")"
             return
         }
 
         if captureSession.canAddInput(videoInput) {
             captureSession.addInput(videoInput)
         } else {
-            errorMessage = "Cannot add video input to capture session"
+            self.errorMessage = "Cannot add video input to capture session"
             return
         }
 
@@ -54,13 +54,13 @@ final class QRCodeScanner: NSObject, ObservableObject, @unchecked Sendable {
             metadataOutput.setMetadataObjectsDelegate(self, queue: DispatchQueue.main)
             metadataOutput.metadataObjectTypes = [.qr]
         } else {
-            errorMessage = "Cannot add metadata output to capture session"
+            self.errorMessage = "Cannot add metadata output to capture session"
             return
         }
     }
 
     func startScanning() {
-        sessionQueue.async { [weak self] in
+        self.sessionQueue.async { [weak self] in
             guard let session = self?.captureSession, !session.isRunning else { return }
             session.startRunning()
         }
@@ -72,7 +72,7 @@ final class QRCodeScanner: NSObject, ObservableObject, @unchecked Sendable {
     }
 
     func stopScanning() {
-        sessionQueue.async { [weak self] in
+        self.sessionQueue.async { [weak self] in
             guard let session = self?.captureSession, session.isRunning else { return }
             session.stopRunning()
         }
@@ -97,14 +97,18 @@ final class QRCodeScanner: NSObject, ObservableObject, @unchecked Sendable {
 
     @MainActor
     func removePreviewLayer() {
-        previewLayer?.removeFromSuperlayer()
-        previewLayer = nil
+        self.previewLayer?.removeFromSuperlayer()
+        self.previewLayer = nil
     }
 }
 
 // MARK: - AVCaptureMetadataOutputObjectsDelegate
 extension QRCodeScanner: AVCaptureMetadataOutputObjectsDelegate {
-    func metadataOutput(_ output: AVCaptureMetadataOutput, didOutput metadataObjects: [AVMetadataObject], from connection: AVCaptureConnection) {
+    func metadataOutput(
+        _ output: AVCaptureMetadataOutput,
+        didOutput metadataObjects: [AVMetadataObject],
+        from connection: AVCaptureConnection
+    ) {
         if let metadataObject = metadataObjects.first {
             guard let readableObject = metadataObject as? AVMetadataMachineReadableCodeObject else { return }
             guard let stringValue = readableObject.stringValue else { return }
@@ -130,7 +134,7 @@ extension QRCodeScanner {
         if let jsonData = qrData.data(using: .utf8) {
             do {
                 if let jsonObject = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any] {
-                    return parseJSONInvoiceData(jsonObject)
+                    return self.parseJSONInvoiceData(jsonObject)
                 }
             } catch {
                 print("❌ DEBUG: Failed to parse QR data as JSON: \(error.localizedDescription)")
@@ -138,7 +142,7 @@ extension QRCodeScanner {
         }
 
         // Fallback to simple pipe-separated format
-        return parseSimpleInvoiceData(qrData)
+        return self.parseSimpleInvoiceData(qrData)
     }
 
     private func parseJSONInvoiceData(_ jsonObject: [String: Any]) -> InvoiceQRInfo? {
@@ -199,11 +203,11 @@ struct InvoiceQRInfo {
         if let amount = Double(totalAmount) {
             return amount.formattedAsLocalizedCurrency()
         }
-        return totalAmount
+        return self.totalAmount
     }
 
     var isValid: Bool {
-        return !invoiceNumber.isEmpty && !invoiceId.isEmpty && !customerName.isEmpty
+        return !self.invoiceNumber.isEmpty && !self.invoiceId.isEmpty && !self.customerName.isEmpty
     }
 }
 
@@ -213,7 +217,7 @@ struct QRCodeScannerView: UIViewRepresentable {
 
     func makeUIView(context: Context) -> UIView {
         let view = UIView()
-        scanner.setupPreviewLayer(in: view)
+        self.scanner.setupPreviewLayer(in: view)
         return view
     }
 

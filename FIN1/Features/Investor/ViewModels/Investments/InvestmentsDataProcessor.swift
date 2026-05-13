@@ -23,7 +23,7 @@ final class InvestmentsDataProcessor {
     /// Sorted by: creation date (newest first), then trader name (A-Z), then investment number (ascending)
     func processOpenInvestmentRows(from investments: [Investment]) -> [InvestmentRow] {
         var rows: [InvestmentRow] = []
-        let normalizedInvestments = deduplicatedOpenInvestments(investments)
+        let normalizedInvestments = self.deduplicatedOpenInvestments(investments)
 
         // Show all active investments except cancelled ones
         for investment in normalizedInvestments where investment.reservationStatus != .cancelled {
@@ -76,8 +76,8 @@ final class InvestmentsDataProcessor {
             }
             // Third: investment number (ascending)
             // Extract numeric part from investment number for proper sorting
-            let firstNumber = extractInvestmentNumber(from: first.investmentNumber)
-            let secondNumber = extractInvestmentNumber(from: second.investmentNumber)
+            let firstNumber = self.extractInvestmentNumber(from: first.investmentNumber)
+            let secondNumber = self.extractInvestmentNumber(from: second.investmentNumber)
             return firstNumber < secondNumber
         }
     }
@@ -94,7 +94,7 @@ final class InvestmentsDataProcessor {
                 continue
             }
 
-            if shouldReplace(currentBest: currentBest, with: investment) {
+            if self.shouldReplace(currentBest: currentBest, with: investment) {
                 bestByReference[key] = investment
             }
         }
@@ -103,8 +103,8 @@ final class InvestmentsDataProcessor {
     }
 
     private func shouldReplace(currentBest: Investment, with candidate: Investment) -> Bool {
-        let currentRank = lifecycleRank(for: currentBest.reservationStatus)
-        let candidateRank = lifecycleRank(for: candidate.reservationStatus)
+        let currentRank = self.lifecycleRank(for: currentBest.reservationStatus)
+        let candidateRank = self.lifecycleRank(for: candidate.reservationStatus)
         if candidateRank != currentRank {
             return candidateRank > currentRank
         }
@@ -193,7 +193,7 @@ final class InvestmentsDataProcessor {
     private func calculateInvestmentProfit(for investment: Investment) -> Double? {
         // For completed investments, get actual profit from PoolTradeParticipationService
         if investment.reservationStatus == .completed {
-            let investmentProfit = poolTradeParticipationService.getAccumulatedProfit(forInvestmentReservationId: investment.id)
+            let investmentProfit = self.poolTradeParticipationService.getAccumulatedProfit(forInvestmentReservationId: investment.id)
             return investmentProfit
         }
         // For non-completed investments, profit is not yet available
@@ -206,7 +206,7 @@ final class InvestmentsDataProcessor {
         // NOTE: This is a simplified calculation for display purposes.
         // The authoritative calculation happens in InvestmentCompletionService.calculateInvestorTotals
         if let profit = profit {
-            let participations = poolTradeParticipationService.getParticipations(forInvestmentId: investment.id)
+            let participations = self.poolTradeParticipationService.getParticipations(forInvestmentId: investment.id)
             // For completed investments, all trades should be fully sold, so allocatedAmount (securities value)
             // should match the sold securities value used in trader ROI calculation
             // Trader ROI uses: (profit) / (buyOrder.price * totalSoldQuantity) * 100
@@ -218,7 +218,7 @@ final class InvestmentsDataProcessor {
 
             guard denominator > 0 else { return nil }
 
-            let commissionRate = configurationService.effectiveCommissionRate
+            let commissionRate = self.configurationService.effectiveCommissionRate
             // Net profit = Gross profit * (1 - commissionRate)
             // So: Gross profit = Net profit / (1 - commissionRate)
             let grossProfit = profit > 0 ?

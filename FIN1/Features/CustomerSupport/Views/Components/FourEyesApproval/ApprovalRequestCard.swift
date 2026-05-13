@@ -6,15 +6,15 @@ struct ApprovalRequestCard: View {
     let onTap: () -> Void
 
     var body: some View {
-        Button(action: onTap) {
+        Button(action: self.onTap) {
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
                 HStack {
-                    riskBadge
+                    self.riskBadge
                     Spacer()
-                    timeRemainingBadge
+                    self.timeRemainingBadge
                 }
 
-                Text(request.requestType.displayName)
+                Text(self.request.requestType.displayName)
                     .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.semibold)
                     .foregroundColor(AppTheme.fontColor)
@@ -29,13 +29,13 @@ struct ApprovalRequestCard: View {
                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
                 }
 
-                Text(request.description)
+                Text(self.request.description)
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
                     .lineLimit(2)
 
                 HStack {
-                    Text("Angefordert von: \(request.requesterName)")
+                    Text("Angefordert von: \(self.request.requesterName)")
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(AppTheme.fontColor.opacity(0.5))
 
@@ -54,10 +54,10 @@ struct ApprovalRequestCard: View {
     }
 
     private var riskBadge: some View {
-        let level = request.requestType.riskLevel
+        let level = self.request.requestType.riskLevel
         return HStack(spacing: ResponsiveDesign.spacing(4)) {
             Circle()
-                .fill(colorForRisk(level))
+                .fill(self.colorForRisk(level))
                 .frame(width: 8, height: 8)
             Text(level.displayName)
                 .font(ResponsiveDesign.captionFont())
@@ -65,14 +65,14 @@ struct ApprovalRequestCard: View {
         }
         .padding(.horizontal, ResponsiveDesign.spacing(8))
         .padding(.vertical, ResponsiveDesign.spacing(4))
-        .background(colorForRisk(level).opacity(0.15))
+        .background(self.colorForRisk(level).opacity(0.15))
         .cornerRadius(ResponsiveDesign.spacing(6))
     }
 
     private var timeRemainingBadge: some View {
         Group {
             if let remaining = request.timeRemaining {
-                let hours = Int(remaining / 3600)
+                let hours = Int(remaining / 3_600)
                 let isUrgent = hours < 4
 
                 HStack(spacing: ResponsiveDesign.spacing(4)) {

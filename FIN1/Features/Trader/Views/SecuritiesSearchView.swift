@@ -35,30 +35,30 @@ struct SecuritiesSearchView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(6)) {
                         // Search Bar
-                        SearchHeaderView(searchText: $viewModel.wknIsin)
+                        SearchHeaderView(searchText: self.$viewModel.wknIsin)
                             .accessibilityIdentifier("SecuritiesSearchHeader")
 
                         Divider().background(Color.gray)
 
                         // Derivatives Search Form (with Saved Filters Section integrated)
                         SearchFormSection(
-                            category: $viewModel.category,
-                            underlyingAsset: $viewModel.underlyingAsset,
-                            direction: $viewModel.direction,
-                            activeSheet: $viewModel.activeSheet,
-                            onBasiswertTap: { viewModel.activeSheet = .underlyingAsset },
-                            onCategoryTap: { viewModel.activeSheet = .category },
+                            category: self.$viewModel.category,
+                            underlyingAsset: self.$viewModel.underlyingAsset,
+                            direction: self.$viewModel.direction,
+                            activeSheet: self.$viewModel.activeSheet,
+                            onBasiswertTap: { self.viewModel.activeSheet = .underlyingAsset },
+                            onCategoryTap: { self.viewModel.activeSheet = .category },
                             savedFiltersContent: {
                                 AnyView(
                                     SavedSecuritiesFiltersSection(
-                                        savedFilters: savedFiltersRepository.savedFilters,
-                                        hasActiveFilters: viewModel.hasActiveFilters(),
-                                        onViewAll: { showSavedFilters = true },
-                                        onCreateNew: { showCreateCombination = true },
+                                        savedFilters: self.savedFiltersRepository.savedFilters,
+                                        hasActiveFilters: self.viewModel.hasActiveFilters(),
+                                        onViewAll: { self.showSavedFilters = true },
+                                        onCreateNew: { self.showCreateCombination = true },
                                         onApplyFilter: { savedFilter in
-                                            viewModel.applySavedFilter(savedFilter)
+                                            self.viewModel.applySavedFilter(savedFilter)
                                         },
-                                        currentlyAppliedFilterID: viewModel.getAppliedFilterID()
+                                        currentlyAppliedFilterID: self.viewModel.getAppliedFilterID()
                                     )
                                 )
                             }
@@ -71,12 +71,12 @@ struct SecuritiesSearchView: View {
 
                         // Dynamic Filter Section
                         FilterSection(
-                            strikePriceGap: $viewModel.strikePriceGap,
-                            remainingTerm: $viewModel.remainingTerm,
-                            issuer: $viewModel.issuer,
-                            omega: $viewModel.omega,
-                            activeSheet: $viewModel.activeSheet,
-                            warrantDetailsViewModel: warrantDetailsViewModel
+                            strikePriceGap: self.$viewModel.strikePriceGap,
+                            remainingTerm: self.$viewModel.remainingTerm,
+                            issuer: self.$viewModel.issuer,
+                            omega: self.$viewModel.omega,
+                            activeSheet: self.$viewModel.activeSheet,
+                            warrantDetailsViewModel: self.warrantDetailsViewModel
                         )
 
                         Rectangle()
@@ -86,17 +86,17 @@ struct SecuritiesSearchView: View {
 
                         // Selected Filters Display
                         ChipFlowLayout(
-                            strikePriceGap: $viewModel.strikePriceGap,
-                            remainingTerm: $viewModel.remainingTerm,
-                            issuer: $viewModel.issuer
+                            strikePriceGap: self.$viewModel.strikePriceGap,
+                            remainingTerm: self.$viewModel.remainingTerm,
+                            issuer: self.$viewModel.issuer
                         )
 
                         // Search Results
                         SearchResultView(
-                            results: viewModel.searchResults,
-                            filterType: viewModel.direction.rawValue,
-                            filterDescription: viewModel.getFilterDescription(),
-                            warrantDetailsViewModel: warrantDetailsViewModel
+                            results: self.viewModel.searchResults,
+                            filterType: self.viewModel.direction.rawValue,
+                            filterDescription: self.viewModel.getFilterDescription(),
+                            warrantDetailsViewModel: self.warrantDetailsViewModel
                         )
                         .padding(.top, ResponsiveDesign.spacing(16))
                     }
@@ -107,20 +107,20 @@ struct SecuritiesSearchView: View {
             .dismissKeyboardOnTap()
             .onAppear {
                 print("🔍 DEBUG: SecuritiesSearchView onAppear called")
-                viewModel.setSavedFiltersToCheck(savedFiltersRepository.savedFilters)
-                viewModel.performSearch()
+                self.viewModel.setSavedFiltersToCheck(self.savedFiltersRepository.savedFilters)
+                self.viewModel.performSearch()
 
                 // Register repository with FilterSyncService
                 if let filterSyncService = services.filterSyncService as? FilterSyncService {
-                    filterSyncService.registerSecuritiesFiltersRepository(savedFiltersRepository)
+                    filterSyncService.registerSecuritiesFiltersRepository(self.savedFiltersRepository)
                 }
             }
-            .onChange(of: savedFiltersRepository.savedFilters) { _, newFilters in
-                viewModel.setSavedFiltersToCheck(newFilters)
+            .onChange(of: self.savedFiltersRepository.savedFilters) { _, newFilters in
+                self.viewModel.setSavedFiltersToCheck(newFilters)
             }
             .onReceive(NotificationCenter.default.publisher(for: .orderPlacedSuccessfully)) { _ in
                 // Dismiss the entire securities search view when order is placed successfully
-                dismiss()
+                self.dismiss()
             }
             .navigationBarTitle("Wertpapiersuche", displayMode: .inline)
             .toolbar {
@@ -130,43 +130,43 @@ struct SecuritiesSearchView: View {
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") {
-                        dismiss()
+                        self.dismiss()
                     }
                 }
             }
-            .sheet(isPresented: $showSavedFilters) {
+            .sheet(isPresented: self.$showSavedFilters) {
                 SavedSecuritiesFiltersView(
-                    savedFiltersRepository: savedFiltersRepository,
+                    savedFiltersRepository: self.savedFiltersRepository,
                     onActivateFilter: { savedFilter in
-                        viewModel.applySavedFilter(savedFilter)
-                        showSavedFilters = false
+                        self.viewModel.applySavedFilter(savedFilter)
+                        self.showSavedFilters = false
                     },
-                    currentlyAppliedFilterID: viewModel.getAppliedFilterID()
+                    currentlyAppliedFilterID: self.viewModel.getAppliedFilterID()
                 )
             }
-            .sheet(isPresented: $showCreateCombination) {
+            .sheet(isPresented: self.$showCreateCombination) {
                 CreateSecuritiesFilterCombinationView(
-                    savedFiltersRepository: savedFiltersRepository,
+                    savedFiltersRepository: self.savedFiltersRepository,
                     currentFilters: Binding(
-                        get: { viewModel.getCurrentFilters() },
+                        get: { self.viewModel.getCurrentFilters() },
                         set: { _ in }
                     )
                 )
             }
-            .sheet(item: $viewModel.activeSheet) { sheet in
+            .sheet(item: self.$viewModel.activeSheet) { sheet in
                 switch sheet {
                 case .category:
-                    DerivateCategoryListView(selectedCategory: $viewModel.category)
+                    DerivateCategoryListView(selectedCategory: self.$viewModel.category)
                 case .underlyingAsset:
-                    UnderlyingAssetListView(selectedUnderlying: $viewModel.underlyingAsset)
+                    UnderlyingAssetListView(selectedUnderlying: self.$viewModel.underlyingAsset)
                 case .strikePriceGap:
-                    StrikePriceGapView(selectedGap: $viewModel.strikePriceGap)
+                    StrikePriceGapView(selectedGap: self.$viewModel.strikePriceGap)
                 case .remainingTerm:
-                    RemainingTermView(selectedLaufzeit: $viewModel.remainingTerm)
+                    RemainingTermView(selectedLaufzeit: self.$viewModel.remainingTerm)
                 case .issuer:
-                    EmittentListView(selectedEmittent: $viewModel.issuer)
+                    EmittentListView(selectedEmittent: self.$viewModel.issuer)
                 case .omega:
-                    OmegaFilterView(selectedOmega: $viewModel.omega)
+                    OmegaFilterView(selectedOmega: self.$viewModel.omega)
                 }
             }
         }

@@ -15,9 +15,9 @@ struct ScrollSectionModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .background(AppTheme.systemSecondaryBackground)  // Layer 2: ScrollSection
-            .cornerRadius(cornerRadius)
-            .padding(.horizontal, horizontalMargin) // MARGIN from Light Blue Area (Layer 1)
-            .padding(.vertical, verticalMargin)     // MARGIN from Light Blue Area (Layer 1)
+            .cornerRadius(self.cornerRadius)
+            .padding(.horizontal, self.horizontalMargin) // MARGIN from Light Blue Area (Layer 1)
+            .padding(.vertical, self.verticalMargin)     // MARGIN from Light Blue Area (Layer 1)
     }
 }
 

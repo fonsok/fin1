@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Customer Support Dashboard ViewModel
 /// ViewModel for the Customer Support Dashboard
@@ -85,19 +85,19 @@ final class CustomerSupportDashboardViewModel: ObservableObject {
     // MARK: - Computed Properties - Search
 
     var searchQuery: String {
-        get { searchCoordinator.searchQuery }
-        set { searchCoordinator.searchQuery = newValue }
+        get { self.searchCoordinator.searchQuery }
+        set { self.searchCoordinator.searchQuery = newValue }
     }
-    var searchResults: [CustomerSearchResult] { searchCoordinator.searchResults }
-    var isSearching: Bool { searchCoordinator.isSearching }
+    var searchResults: [CustomerSearchResult] { self.searchCoordinator.searchResults }
+    var isSearching: Bool { self.searchCoordinator.isSearching }
 
     var permissionsByCategory: [PermissionCategory: [CustomerSupportPermission]] {
-        CustomerSupportPermissionsHelper.permissionsByCategory(hasPermission: hasPermission)
+        CustomerSupportPermissionsHelper.permissionsByCategory(hasPermission: self.hasPermission)
     }
 
     /// The current agent's CSR role
     var currentCSRRole: CSRRole? {
-        supportService.currentCSRRole
+        self.supportService.currentCSRRole
     }
 
     // MARK: - Initialization
@@ -111,8 +111,8 @@ final class CustomerSupportDashboardViewModel: ObservableObject {
         self.auditService = auditService
         self.searchCoordinator = searchCoordinator
 
-        setupSearchDebounce()
-        setupSearchCoordinatorObservation()
+        self.setupSearchDebounce()
+        self.setupSearchCoordinatorObservation()
     }
 
     /// Convenience initializer for backward compatibility
@@ -137,15 +137,15 @@ final class CustomerSupportDashboardViewModel: ObservableObject {
     // MARK: - Setup
 
     private func setupSearchCoordinatorObservation() {
-        searchCoordinator.objectWillChange
+        self.searchCoordinator.objectWillChange
             .sink { [weak self] _ in
                 self?.objectWillChange.send()
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
     }
 
     private func setupSearchDebounce() {
-        searchCoordinator.setupSearchDebounce(cancellables: &cancellables) { [weak self] query in
+        self.searchCoordinator.setupSearchDebounce(cancellables: &self.cancellables) { [weak self] query in
             await self?.performSearch(query: query)
         }
     }
@@ -153,13 +153,13 @@ final class CustomerSupportDashboardViewModel: ObservableObject {
     // MARK: - Loading
 
     func load() async {
-        isLoading = true
+        self.isLoading = true
         defer { isLoading = false }
         do {
-            supportTickets = try await supportService.getSupportTickets(userId: nil)
-            availableAgents = try await supportService.getAvailableAgents()
+            self.supportTickets = try await self.supportService.getSupportTickets(userId: nil)
+            self.availableAgents = try await self.supportService.getAvailableAgents()
         } catch {
-            handleError(error)
+            self.handleError(error)
         }
     }
 
@@ -167,17 +167,17 @@ final class CustomerSupportDashboardViewModel: ObservableObject {
 
     private func performSearch(query: String) async {
         do {
-            _ = try await searchCoordinator.performSearch(query: query)
+            _ = try await self.searchCoordinator.performSearch(query: query)
         } catch {
-            handleError(error)
+            self.handleError(error)
         }
     }
 
     func getAllCustomers() async -> [CustomerSearchResult] {
         do {
-            return try await searchCoordinator.getAllCustomers()
+            return try await self.searchCoordinator.getAllCustomers()
         } catch {
-            handleError(error)
+            self.handleError(error)
             return []
         }
     }
@@ -185,34 +185,34 @@ final class CustomerSupportDashboardViewModel: ObservableObject {
     // MARK: - Permission Checking
 
     func hasPermission(_ permission: CustomerSupportPermission) -> Bool {
-        supportService.hasPermission(permission)
+        self.supportService.hasPermission(permission)
     }
 
     // MARK: - Error Handling (Direct - No Separate Handler)
 
     func handleError(_ error: Error) {
         let appError = error.toAppError()
-        errorMessage = appError.errorDescription ?? "An error occurred"
-        showError = true
+        self.errorMessage = appError.errorDescription ?? "An error occurred"
+        self.showError = true
     }
 
     func clearError() {
-        showError = false
-        errorMessage = nil
+        self.showError = false
+        self.errorMessage = nil
     }
 
     func showSuccessMessage(_ message: String) {
-        successMessage = message
-        showSuccess = true
+        self.successMessage = message
+        self.showSuccess = true
     }
 
     func clearSuccess() {
-        showSuccess = false
-        successMessage = nil
+        self.showSuccess = false
+        self.successMessage = nil
     }
 
     func showPermissionError(_ permission: CustomerSupportPermission) {
-        errorMessage = "Keine Berechtigung: \(permission.rawValue)"
-        showError = true
+        self.errorMessage = "Keine Berechtigung: \(permission.rawValue)"
+        self.showError = true
     }
 }

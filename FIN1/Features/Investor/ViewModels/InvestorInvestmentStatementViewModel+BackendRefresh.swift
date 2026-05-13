@@ -8,7 +8,9 @@ extension InvestorInvestmentStatementViewModel {
         backendRefreshMessage = nil
         defer { isRefreshingFromBackend = false }
 
-        print("🔍 InvestorCB-refresh: start investmentId=\(investment.id) batchId=\(investment.batchId ?? "nil") investorId=\(investment.investorId)")
+        print(
+            "🔍 InvestorCB-refresh: start investmentId=\(investment.id) batchId=\(investment.batchId ?? "nil") investorId=\(investment.investorId)"
+        )
 
         let resolvedContext: InvestorInvestmentStatementResolvedContext
         if let statementDataProvider {
@@ -136,14 +138,18 @@ extension InvestorInvestmentStatementViewModel {
                     residualAmount: output.residualAmount
                 )
                 items.append(item)
-                print("✅ InvestorCB-refresh: built item for trade \(trade.tradeNumber) buyAmt=\(output.buyAmount) sellAmt=\(output.sellAmount) gp=\(output.grossProfit)")
+                print(
+                    "✅ InvestorCB-refresh: built item for trade \(trade.tradeNumber) buyAmt=\(output.buyAmount) sellAmt=\(output.sellAmount) gp=\(output.grossProfit)"
+                )
             } catch {
                 failedCalculations += 1
                 print("⚠️ InvestorCB-refresh: calculation failed for trade \(trade.tradeNumber): \(error.localizedDescription)")
             }
         }
 
-        print("🔍 InvestorCB-refresh: done — items=\(items.count) skippedNoTrade=\(skippedNoTrade) failedCalcs=\(failedCalculations) priorStatementItems=\(statementItems.count)")
+        print(
+            "🔍 InvestorCB-refresh: done — items=\(items.count) skippedNoTrade=\(skippedNoTrade) failedCalcs=\(failedCalculations) priorStatementItems=\(statementItems.count)"
+        )
 
         if !items.isEmpty {
             statementItems = items.sorted { $0.tradeDate < $1.tradeDate }

@@ -1,5 +1,5 @@
-import SwiftUI
 import Combine
+import SwiftUI
 
 // MARK: - Trades Overview View Model
 
@@ -21,7 +21,7 @@ final class TradesOverviewViewModel: ObservableObject {
 
     /// Commission percentage string for display (e.g., "10%")
     var commissionPercentage: String {
-        configurationService?.traderCommissionPercentage ?? "0%"
+        self.configurationService?.traderCommissionPercentage ?? "0%"
     }
 
     // Delegated ViewModels and Calculators
@@ -40,11 +40,11 @@ final class TradesOverviewViewModel: ObservableObject {
 
     // Computed properties for filtered trades (delegate to filteringViewModel)
     var filteredOngoingTrades: [TradeOverviewItem] {
-        filteringViewModel.filteredOngoingTrades
+        self.filteringViewModel.filteredOngoingTrades
     }
 
     var filteredCompletedTrades: [TradeOverviewItem] {
-        filteringViewModel.filteredCompletedTrades
+        self.filteringViewModel.filteredCompletedTrades
     }
 
     var isCalculatingCommission: Bool {
@@ -67,7 +67,7 @@ final class TradesOverviewViewModel: ObservableObject {
 
     // MARK: - Current Trader ID
     var currentTraderId: String? {
-        userService?.currentUser?.id
+        self.userService?.currentUser?.id
     }
 
     deinit {

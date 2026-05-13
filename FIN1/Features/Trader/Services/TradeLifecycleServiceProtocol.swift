@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Trade Lifecycle Service Protocol
 /// Defines the contract for trade creation, completion, and management

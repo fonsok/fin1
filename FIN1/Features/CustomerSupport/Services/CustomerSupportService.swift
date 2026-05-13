@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 import os.log
 
 // MARK: - Customer Support Service Implementation
@@ -35,7 +35,7 @@ final class CustomerSupportService: CustomerSupportServiceProtocol {
         if let csrRole = userService.currentUser?.csrRole {
             return CustomerSupportPermissionSet.forRole(csrRole)
         }
-        return fallbackPermissions
+        return self.fallbackPermissions
     }
 
     /// Fallback permissions for non-CSR users or when role is not set
@@ -70,7 +70,7 @@ final class CustomerSupportService: CustomerSupportServiceProtocol {
         self.fallbackPermissions = permissionSet
         self.assignmentService = TicketAssignmentService(configuration: assignmentConfiguration)
         self.mockCustomers = CustomerSupportMockData.createMockCustomers()
-        self.mockTickets = CustomerSupportMockData.createMockTickets(customers: mockCustomers)
+        self.mockTickets = CustomerSupportMockData.createMockTickets(customers: self.mockCustomers)
         self.mockAgents = CustomerSupportMockData.createMockAgents()
     }
 
@@ -93,10 +93,10 @@ final class CustomerSupportService: CustomerSupportServiceProtocol {
         print("📤 CustomerSupportService: Syncing pending tickets to backend...")
 
         // Sync pending tickets (without Parse objectId or with local- prefix)
-        let pendingTickets = mockTickets.filter { ticket in
+        let pendingTickets = self.mockTickets.filter { ticket in
             ticket.id.starts(with: "local-") ||
-            !ticket.id.contains("-") || // UUID without Parse objectId format
-            ticket.id.count == 36 // Standard UUID format (not Parse objectId)
+                !ticket.id.contains("-") || // UUID without Parse objectId format
+                ticket.id.count == 36 // Standard UUID format (not Parse objectId)
         }
 
         print("📤 CustomerSupportService: Found \(pendingTickets.count) pending tickets to sync")
@@ -131,11 +131,11 @@ final class CustomerSupportService: CustomerSupportServiceProtocol {
     // MARK: - Permission Checking
 
     func hasPermission(_ permission: CustomerSupportPermission) -> Bool {
-        currentPermissions.contains(permission)
+        self.currentPermissions.contains(permission)
     }
 
     func checkPermission(_ permission: CustomerSupportPermission) -> PermissionCheckResult {
-        guard currentPermissions.contains(permission) else {
+        guard self.currentPermissions.contains(permission) else {
             return .denied(permission, reason: "Keine Berechtigung für diese Aktion")
         }
         return .allowed(permission)
@@ -144,15 +144,15 @@ final class CustomerSupportService: CustomerSupportServiceProtocol {
     // MARK: - Internal Helpers (Used by Extensions)
 
     var currentAgentId: String {
-        userService.currentUser?.id ?? "unknown"
+        self.userService.currentUser?.id ?? "unknown"
     }
 
     var currentAgentRole: UserRole {
-        userService.userRole ?? .other
+        self.userService.userRole ?? .other
     }
 
     var currentCSRRole: CSRRole? {
-        userService.currentUser?.csrRole
+        self.userService.currentUser?.csrRole
     }
 
     var currentAgentName: String {
@@ -165,7 +165,7 @@ final class CustomerSupportService: CustomerSupportServiceProtocol {
     }
 
     func validatePermission(_ permission: CustomerSupportPermission) async throws {
-        let result = checkPermission(permission)
+        let result = self.checkPermission(permission)
         guard result.isAllowed else {
             throw CustomerSupportError.permissionDenied(result.reason ?? "Keine Berechtigung")
         }
@@ -185,7 +185,7 @@ final class CustomerSupportService: CustomerSupportServiceProtocol {
             permission: permission,
             description: description
         )
-        await auditService.logAction(action)
+        await self.auditService.logAction(action)
     }
 
     func logDataAccess(

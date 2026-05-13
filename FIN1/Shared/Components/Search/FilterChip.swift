@@ -9,11 +9,11 @@ struct FilterChip: View {
 
     var body: some View {
         HStack(spacing: ResponsiveDesign.spacing(6)) {
-            Text(value)
+            Text(self.value)
                 .font(ResponsiveDesign.bodyFont())
                 .fontWeight(.regular)
                 .foregroundColor(AppTheme.fontColor.opacity(0.6))
-            Button(action: onClear, label: {
+            Button(action: self.onClear, label: {
                 Image(systemName: "xmark")
                     .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 0.7))
                     .foregroundColor(AppTheme.fontColor.opacity(0.6))
@@ -32,9 +32,9 @@ struct FilterChipButton: View {
     let onTap: () -> Void
 
     var body: some View {
-        Button(action: onTap, label: {
+        Button(action: self.onTap, label: {
             HStack {
-                Text(value ?? label)
+                Text(self.value ?? self.label)
                     .foregroundColor(AppTheme.inputFieldText)
                 Spacer()
                 Image(systemName: "chevron.up.chevron.down")
@@ -56,11 +56,11 @@ private struct HorizontalChipFlowLayout: Layout {
     var spacing: CGFloat
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        layoutFrames(proposal: proposal, subviews: subviews).bounds.size
+        self.layoutFrames(proposal: proposal, subviews: subviews).bounds.size
     }
 
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        let result = layoutFrames(proposal: proposal, subviews: subviews)
+        let result = self.layoutFrames(proposal: proposal, subviews: subviews)
         for (index, subview) in subviews.enumerated() {
             let frame = result.frames[index]
             subview.place(
@@ -81,12 +81,12 @@ private struct HorizontalChipFlowLayout: Layout {
             let ideal = subview.sizeThatFits(.unspecified)
             if x + ideal.width > maxWidth, x > 0 {
                 x = 0
-                y += rowHeight + spacing
+                y += rowHeight + self.spacing
                 rowHeight = 0
             }
             frames.append(CGRect(origin: CGPoint(x: x, y: y), size: ideal))
             rowHeight = max(rowHeight, ideal.height)
-            x += ideal.width + spacing
+            x += ideal.width + self.spacing
         }
 
         let totalHeight = y + rowHeight
@@ -104,17 +104,17 @@ struct ChipFlowLayout: View {
     private var chipSpacing: CGFloat { ResponsiveDesign.spacing(8) }
 
     var body: some View {
-        HorizontalChipFlowLayout(spacing: chipSpacing) {
+        HorizontalChipFlowLayout(spacing: self.chipSpacing) {
             if let val = strikePriceGap {
-                FilterChip(label: "Strike Price Gap", value: val, onClear: { strikePriceGap = nil })
+                FilterChip(label: "Strike Price Gap", value: val, onClear: { self.strikePriceGap = nil })
                     .padding(ResponsiveDesign.spacing(4))
             }
             if let val = remainingTerm {
-                FilterChip(label: "Restlaufzeit", value: val, onClear: { remainingTerm = nil })
+                FilterChip(label: "Restlaufzeit", value: val, onClear: { self.remainingTerm = nil })
                     .padding(ResponsiveDesign.spacing(4))
             }
             if let val = issuer {
-                FilterChip(label: "Emittent", value: val, onClear: { issuer = nil })
+                FilterChip(label: "Emittent", value: val, onClear: { self.issuer = nil })
                     .padding(ResponsiveDesign.spacing(4))
             }
         }

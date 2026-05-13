@@ -30,13 +30,13 @@ struct FourEyesApprovalRequest: Identifiable, Codable {
 
     /// Whether this request has expired
     var isExpired: Bool {
-        Date() > expiresAt && status == .pending
+        Date() > self.expiresAt && self.status == .pending
     }
 
     /// Remaining time until expiration
     var timeRemaining: TimeInterval? {
-        guard status == .pending else { return nil }
-        let remaining = expiresAt.timeIntervalSince(Date())
+        guard self.status == .pending else { return nil }
+        let remaining = self.expiresAt.timeIntervalSince(Date())
         return remaining > 0 ? remaining : nil
     }
 
@@ -296,6 +296,6 @@ struct ApprovalQueueStats {
 
     /// Requests that need urgent attention
     var urgentRequests: Int {
-        (pendingByRiskLevel[.critical] ?? 0) + (pendingByRiskLevel[.high] ?? 0)
+        (self.pendingByRiskLevel[.critical] ?? 0) + (self.pendingByRiskLevel[.high] ?? 0)
     }
 }

@@ -8,9 +8,9 @@ struct InvoiceActionButtonsSection: View {
 
     var body: some View {
         VStack(spacing: ResponsiveDesign.spacing(12)) {
-            if viewModel.isGeneratingPDF {
+            if self.viewModel.isGeneratingPDF {
                 VStack(spacing: ResponsiveDesign.spacing(8)) {
-                    ProgressView(value: viewModel.pdfGenerationProgress)
+                    ProgressView(value: self.viewModel.pdfGenerationProgress)
                         .progressViewStyle(LinearProgressViewStyle())
 
                     Text("PDF wird generiert...")
@@ -20,13 +20,13 @@ struct InvoiceActionButtonsSection: View {
             } else {
                 HStack(spacing: ResponsiveDesign.spacing(12)) {
                     Button("PDF Vorschau") {
-                        viewModel.generatePDFPreview(for: invoice)
+                        self.viewModel.generatePDFPreview(for: self.invoice)
                     }
                     .buttonStyle(.bordered)
                     .frame(maxWidth: .infinity)
 
                     Button("PDF Generieren") {
-                        viewModel.generatePDF(for: invoice)
+                        self.viewModel.generatePDF(for: self.invoice)
                     }
                     .buttonStyle(.borderedProminent)
                     .frame(maxWidth: .infinity)

@@ -11,17 +11,17 @@ struct TraderWatchedSecurityCard: View {
 
     var body: some View {
         CardContainer(
-            position: position,
+            position: self.position,
             positionPrefix: "",
             onPapersheetTapped: {
-                openIssuerProductInfo(for: security)
+                self.openIssuerProductInfo(for: self.security)
             },
             chevronButton: {
                 AnyView(
                     Button(action: {
-                        showAdditionalDetails.toggle()
+                        self.showAdditionalDetails.toggle()
                     }, label: {
-                        Image(systemName: showAdditionalDetails ? "chevron.up" : "chevron.down")
+                        Image(systemName: self.showAdditionalDetails ? "chevron.up" : "chevron.down")
                             .font(ResponsiveDesign.bodyFont())
                             .foregroundColor(AppTheme.secondaryText)
                     })
@@ -31,12 +31,12 @@ struct TraderWatchedSecurityCard: View {
         ) {
             VStack(spacing: ResponsiveDesign.spacing(8)) {
                 // Main content grid using TileGrid with expandable details
-                TileGrid(tiles: watchlistTiles, columns: 2)
+                TileGrid(tiles: self.watchlistTiles, columns: 2)
 
                 // Action buttons
                 HStack(spacing: ResponsiveDesign.spacing(12)) {
                     // Remove button
-                    Button(action: onRemove, label: {
+                    Button(action: self.onRemove, label: {
                         Image(systemName: "trash")
                             .font(ResponsiveDesign.bodyFont())
                             .foregroundColor(AppTheme.tertiaryText)
@@ -49,7 +49,7 @@ struct TraderWatchedSecurityCard: View {
                     Spacer()
 
                     // Buy button
-                    Button(action: onKaufenTapped, label: {
+                    Button(action: self.onKaufenTapped, label: {
                         Text("KAUFEN")
                             .font(ResponsiveDesign.bodyFont())
                             .fontWeight(.bold)
@@ -68,32 +68,32 @@ struct TraderWatchedSecurityCard: View {
         var tiles: [TileData] = [
             // Row 1: Bewertungstag, WKN
             TileData(title: "Bewertungstag", value: security.valuationDate),
-            TileData(title: "WKN", value: security.wkn),
+            TileData(title: "WKN", value: self.security.wkn),
 
             // Row 2: Kategorie, Basiswert
-            TileData(title: "Kategorie", value: getDerivateCategory(security.category ?? (security.direction ?? "Stock"))),
-            TileData(title: "Basiswert", value: security.underlyingAsset ?? "N/A"),
+            TileData(title: "Kategorie", value: self.getDerivateCategory(self.security.category ?? (self.security.direction ?? "Stock"))),
+            TileData(title: "Basiswert", value: self.security.underlyingAsset ?? "N/A"),
 
             // Row 3: Richtung, Emittent
-            TileData(title: "Richtung", value: security.direction ?? "-"),
-            TileData(title: "Emittent", value: getEmittentFromWKN(security.wkn)),
+            TileData(title: "Richtung", value: self.security.direction ?? "-"),
+            TileData(title: "Emittent", value: self.getEmittentFromWKN(self.security.wkn)),
 
             // Row 4: Strike Price, Brief-Kurs (Ask)
-            TileData(title: "Strike Price", value: DepotUtils.formatStrikePrice(security.strike, security.underlyingAsset)),
-            TileData(title: "Brief-Kurs (Ask)", value: formatBriefkurs(security.askPrice))
+            TileData(title: "Strike Price", value: DepotUtils.formatStrikePrice(self.security.strike, self.security.underlyingAsset)),
+            TileData(title: "Brief-Kurs (Ask)", value: self.formatBriefkurs(self.security.askPrice))
         ]
 
         // Add additional details if expanded
-        if showAdditionalDetails {
+        if self.showAdditionalDetails {
             tiles.append(contentsOf: [
                 // Row 5: Current Price, Implied Volatility
-                TileData(title: "Geld-Kurs (Bid)", value: formatGeldkurs(getMockGeldkurs(for: security))),
-                TileData(title: "Implizite Volatilität", value: getMockImpliziteVolatilitaet(for: security)),
+                TileData(title: "Geld-Kurs (Bid)", value: self.formatGeldkurs(self.getMockGeldkurs(for: self.security))),
+                TileData(title: "Implizite Volatilität", value: self.getMockImpliziteVolatilitaet(for: self.security)),
 
                 // Row 6: Omega, Exercise
-                TileData(title: "Omega", value: getMockOmega(for: security)),
-                TileData(title: "Subscription ratio", value: getMockSubscriptionRatio(for: security)),
-                TileData(title: "Ausübung", value: getMockAusuebung(for: security))
+                TileData(title: "Omega", value: self.getMockOmega(for: self.security)),
+                TileData(title: "Subscription ratio", value: self.getMockSubscriptionRatio(for: self.security)),
+                TileData(title: "Ausübung", value: self.getMockAusuebung(for: self.security))
             ])
         }
 

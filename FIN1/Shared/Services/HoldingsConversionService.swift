@@ -65,7 +65,7 @@ final class HoldingsConversionService: HoldingsConversionServiceProtocol, @unche
         }
 
         // Apply executed ongoing orders that haven't been added to the trade yet
-        let executedOngoingOrders = findExecutedOngoingOrders(for: holding, in: ongoingOrders)
+        let executedOngoingOrders = self.findExecutedOngoingOrders(for: holding, in: ongoingOrders)
         if !executedOngoingOrders.isEmpty {
             let executedQuantity = executedOngoingOrders.reduce(0) { $0 + Int($1.quantity) }
             holding = holding.withPartialSale(soldQuantity: executedQuantity)
@@ -78,7 +78,7 @@ final class HoldingsConversionService: HoldingsConversionServiceProtocol, @unche
         var positionCounter = 1
         let allHoldings = trades.map { trade -> DepotHolding in
             defer { positionCounter += 1 }
-            return createHolding(from: trade, position: positionCounter, ongoingOrders: ongoingOrders)
+            return self.createHolding(from: trade, position: positionCounter, ongoingOrders: ongoingOrders)
         }
 
         // Filter to only holdings with remaining quantity
@@ -96,8 +96,8 @@ final class HoldingsConversionService: HoldingsConversionServiceProtocol, @unche
             let holdingOrderId = holding.orderId
             let holdingWkn = holding.wkn
             let belongsToHolding = order.originalHoldingId == holdingOrderId ||
-                                   order.originalHoldingId == holdingWkn ||
-                                   order.symbol == holdingWkn
+                order.originalHoldingId == holdingWkn ||
+                order.symbol == holdingWkn
 
             // Check if order is in executed or confirmed status
             let isExecutedOrConfirmed = order.sellStatus == .executed || order.sellStatus == .confirmed

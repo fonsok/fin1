@@ -9,20 +9,20 @@ struct DashboardStats {
     var activeTraders: String = "-"
 
     var isPositiveChange: Bool {
-        dailyChange >= 0
+        self.dailyChange >= 0
     }
 
     var formattedInvestmentsValue: String {
-        totalInvestmentsValue.formattedAsLocalizedCurrency()
+        self.totalInvestmentsValue.formattedAsLocalizedCurrency()
     }
 
     var formattedDailyChange: String {
-        let prefix = isPositiveChange ? "+" : ""
-        return "\(prefix)\(dailyChange.formattedAsLocalizedCurrency())"
+        let prefix = self.isPositiveChange ? "+" : ""
+        return "\(prefix)\(self.dailyChange.formattedAsLocalizedCurrency())"
     }
 
     var formattedDailyChangePercentage: String {
-        let prefix = isPositiveChange ? "+" : ""
-        return "\(prefix)\(String(format: "%.1f", dailyChangePercentage))%"
+        let prefix = self.isPositiveChange ? "+" : ""
+        return "\(prefix)\(String(format: "%.1f", self.dailyChangePercentage))%"
     }
 }

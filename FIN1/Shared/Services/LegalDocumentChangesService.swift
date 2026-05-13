@@ -57,10 +57,10 @@ final class LegalDocumentChangesService {
         let changes: [DocumentChange]
         let hasSignificantChanges: Bool
 
-        var changeCount: Int { changes.count }
+        var changeCount: Int { self.changes.count }
 
         var localizedSummary: String {
-            let count = changes.count
+            let count = self.changes.count
             if count == 0 {
                 return NSLocalizedString("Keine wesentlichen Änderungen", comment: "No changes")
             } else if count == 1 {
@@ -71,7 +71,7 @@ final class LegalDocumentChangesService {
         }
 
         var localizedSummaryEN: String {
-            let count = changes.count
+            let count = self.changes.count
             if count == 0 {
                 return "No significant changes"
             } else if count == 1 {
@@ -106,7 +106,7 @@ final class LegalDocumentChangesService {
                 oldVersion: "–",
                 newVersion: newContent.version,
                 oldEffectiveDate: nil,
-                newEffectiveDate: parseEffectiveDate(newContent.effectiveDate),
+                newEffectiveDate: self.parseEffectiveDate(newContent.effectiveDate),
                 changes: [],
                 hasSignificantChanges: false
             )
@@ -125,7 +125,7 @@ final class LegalDocumentChangesService {
                 changes.append(DocumentChange(
                     changeType: .added,
                     sectionTitle: section.titleOrEmpty,
-                    description: summarizeContent(section.content, maxLength: 100)
+                    description: self.summarizeContent(section.content, maxLength: 100)
                 ))
             }
         }
@@ -136,7 +136,7 @@ final class LegalDocumentChangesService {
                 changes.append(DocumentChange(
                     changeType: .removed,
                     sectionTitle: section.titleOrEmpty,
-                    description: summarizeContent(section.content, maxLength: 100)
+                    description: self.summarizeContent(section.content, maxLength: 100)
                 ))
             }
         }
@@ -144,11 +144,11 @@ final class LegalDocumentChangesService {
         // Find modified sections
         for newSection in newSections {
             if let oldSection = oldSectionsById[newSection.id] {
-                if hasSignificantChanges(old: oldSection, new: newSection) {
+                if self.hasSignificantChanges(old: oldSection, new: newSection) {
                     changes.append(DocumentChange(
                         changeType: .modified,
                         sectionTitle: newSection.titleOrEmpty,
-                        description: describeModification(old: oldSection, new: newSection)
+                        description: self.describeModification(old: oldSection, new: newSection)
                     ))
                 }
             }
@@ -160,8 +160,8 @@ final class LegalDocumentChangesService {
             documentType: LegalDocumentType(rawValue: newContent.documentType) ?? .terms,
             oldVersion: oldContent.version,
             newVersion: newContent.version,
-            oldEffectiveDate: parseEffectiveDate(oldContent.effectiveDate),
-            newEffectiveDate: parseEffectiveDate(newContent.effectiveDate),
+            oldEffectiveDate: self.parseEffectiveDate(oldContent.effectiveDate),
+            newEffectiveDate: self.parseEffectiveDate(newContent.effectiveDate),
             changes: changes,
             hasSignificantChanges: hasSignificant
         )
@@ -194,8 +194,8 @@ final class LegalDocumentChangesService {
 
     private func hasSignificantChanges(old: TermsContentSection, new: TermsContentSection) -> Bool {
         // Compare content after normalizing whitespace
-        let oldNormalized = normalizeForComparison(old.content)
-        let newNormalized = normalizeForComparison(new.content)
+        let oldNormalized = self.normalizeForComparison(old.content)
+        let newNormalized = self.normalizeForComparison(new.content)
 
         // Title change counts as significant
         if old.titleOrEmpty != new.titleOrEmpty {
@@ -203,7 +203,7 @@ final class LegalDocumentChangesService {
         }
 
         // Calculate similarity - if less than 95% similar, consider it changed
-        let similarity = calculateSimilarity(oldNormalized, newNormalized)
+        let similarity = self.calculateSimilarity(oldNormalized, newNormalized)
         return similarity < 0.95
     }
 

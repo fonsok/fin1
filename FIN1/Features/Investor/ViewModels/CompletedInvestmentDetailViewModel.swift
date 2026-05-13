@@ -1,5 +1,5 @@
-import SwiftUI
 import Foundation
+import SwiftUI
 
 // MARK: - Completed Investment Detail ViewModel
 @MainActor
@@ -29,17 +29,17 @@ final class CompletedInvestmentDetailViewModel: ObservableObject {
     // MARK: - Configuration
 
     func reconfigure(with services: AppServices) {
-        poolTradeParticipationService = services.poolTradeParticipationService
-        tradeLifecycleService = services.tradeLifecycleService
-        invoiceService = services.invoiceService
-        investmentService = services.investmentService
-        calculationService = InvestorCollectionBillCalculationService()
-        commissionCalculationService = services.commissionCalculationService
-        configurationService = services.configurationService
-        settlementAPIService = services.settlementAPIService
-        tradeAPIService = services.parseAPIClient.map { TradeAPIService(apiClient: $0) }
-        refreshStatementSummary()
-        refreshTradeLedReturnPercentage()
+        self.poolTradeParticipationService = services.poolTradeParticipationService
+        self.tradeLifecycleService = services.tradeLifecycleService
+        self.invoiceService = services.invoiceService
+        self.investmentService = services.investmentService
+        self.calculationService = InvestorCollectionBillCalculationService()
+        self.commissionCalculationService = services.commissionCalculationService
+        self.configurationService = services.configurationService
+        self.settlementAPIService = services.settlementAPIService
+        self.tradeAPIService = services.parseAPIClient.map { TradeAPIService(apiClient: $0) }
+        self.refreshStatementSummary()
+        self.refreshTradeLedReturnPercentage()
     }
 
     private func refreshStatementSummary() {
@@ -50,14 +50,14 @@ final class CompletedInvestmentDetailViewModel: ObservableObject {
               let calculationService,
               let commissionCalculationService,
               let configurationService else {
-            statementSummary = nil
-            tradeLineItems = []
+            self.statementSummary = nil
+            self.tradeLineItems = []
             return
         }
 
         let commissionRate = configurationService.effectiveCommissionRate
-        let investmentId = investment.id
-        let tradeAPI = tradeAPIService
+        let investmentId = self.investment.id
+        let tradeAPI = self.tradeAPIService
         let localTrades = tradeLifecycleService.completedTrades
 
         Task { @MainActor [weak self] in
@@ -87,23 +87,23 @@ final class CompletedInvestmentDetailViewModel: ObservableObject {
 
     // MARK: - Investment Metadata
     var investmentNumber: String {
-        investment.canonicalDisplayReference
+        self.investment.canonicalDisplayReference
     }
 
     var traderName: String {
-        investment.traderName
+        self.investment.traderName
     }
 
     var traderSpecialization: String {
-        investment.specialization
+        self.investment.specialization
     }
 
     var statusText: String {
-        investment.status.displayName
+        self.investment.status.displayName
     }
 
     var statusColor: Color {
-        switch investment.status {
+        switch self.investment.status {
         case .completed:
             return AppTheme.accentLightBlue
         case .cancelled:
@@ -121,7 +121,7 @@ final class CompletedInvestmentDetailViewModel: ObservableObject {
     }
 
     var createdDateText: String {
-        investment.createdAt.formatted(date: .abbreviated, time: .shortened)
+        self.investment.createdAt.formatted(date: .abbreviated, time: .shortened)
     }
 
     var numberOfInvestmentsText: String {
@@ -134,7 +134,7 @@ final class CompletedInvestmentDetailViewModel: ObservableObject {
 
     var activeInvestmentCountText: String {
         // Check this investment's reservation status
-        if investment.reservationStatus == .active || investment.reservationStatus == .executing {
+        if self.investment.reservationStatus == .active || self.investment.reservationStatus == .executing {
             return "1"
         }
         return "0"
@@ -142,7 +142,7 @@ final class CompletedInvestmentDetailViewModel: ObservableObject {
 
     var completedInvestmentCountText: String {
         // Check this investment's reservation status
-        if investment.reservationStatus == .completed {
+        if self.investment.reservationStatus == .completed {
             return "1"
         }
         return "0"
@@ -158,25 +158,25 @@ final class CompletedInvestmentDetailViewModel: ObservableObject {
 
     // MARK: - Financial Metrics
     var investedAmount: Double {
-        investment.amount
+        self.investment.amount
     }
 
     var investedAmountText: String {
-        investedAmount.formattedAsLocalizedCurrency()
+        self.investedAmount.formattedAsLocalizedCurrency()
     }
 
     var currentValue: Double {
         // Use statement-based calculation if available (same as table), otherwise fallback to investment.currentValue
         if let statementSummary = statementSummary {
             // Current value = invested amount + gross profit from statement
-            return investedAmount + statementSummary.statementGrossProfit
+            return self.investedAmount + statementSummary.statementGrossProfit
         }
         // Fallback to stored value if statement not available yet
-        return investment.currentValue
+        return self.investment.currentValue
     }
 
     var currentValueText: String {
-        currentValue.formattedAsLocalizedCurrency()
+        self.currentValue.formattedAsLocalizedCurrency()
     }
 
     var profit: Double {
@@ -185,19 +185,19 @@ final class CompletedInvestmentDetailViewModel: ObservableObject {
             return statementSummary.statementGrossProfit
         }
         // Fallback to simple calculation if statement not available yet
-        return currentValue - investedAmount
+        return self.currentValue - self.investedAmount
     }
 
     var profitText: String {
-        profit.formattedAsLocalizedCurrency()
+        self.profit.formattedAsLocalizedCurrency()
     }
 
     var isProfitPositive: Bool {
-        profit >= 0
+        self.profit >= 0
     }
 
     var returnPercentage: Double {
-        tradeLedReturnPercentageValue ?? 0.0
+        self.tradeLedReturnPercentageValue ?? 0.0
     }
 
     var returnPercentageText: String {
@@ -208,74 +208,74 @@ final class CompletedInvestmentDetailViewModel: ObservableObject {
     var provisionAmount: Double {
         guard let configurationService else { return 0.0 }
         let rate = configurationService.effectiveAppServiceChargeRate
-        return investedAmount * rate
+        return self.investedAmount * rate
     }
 
     var provisionAmountText: String {
-        provisionAmount.formattedAsLocalizedCurrency()
+        self.provisionAmount.formattedAsLocalizedCurrency()
     }
 
     // MARK: - Commission Calculation
     var commissionAmount: Double {
-        guard profit > 0 else {
+        guard self.profit > 0 else {
             return 0.0
         }
         guard let configurationService else { return 0.0 }
         let commissionRate = configurationService.effectiveCommissionRate
-        return commissionCalculationService?.calculateCommission(
-            grossProfit: profit,
+        return self.commissionCalculationService?.calculateCommission(
+            grossProfit: self.profit,
             rate: commissionRate
         ) ?? 0.0
     }
 
     var commissionAmountText: String {
-        commissionAmount.formattedAsLocalizedCurrency()
+        self.commissionAmount.formattedAsLocalizedCurrency()
     }
 
     // MARK: - Tax Calculations
     private var capitalGainsTaxAmount: Double {
-        InvoiceTaxCalculator.calculateCapitalGainsTax(for: max(profit, 0))
+        InvoiceTaxCalculator.calculateCapitalGainsTax(for: max(self.profit, 0))
     }
 
     private var solidaritySurchargeAmount: Double {
-        InvoiceTaxCalculator.calculateSolidaritySurcharge(for: capitalGainsTaxAmount)
+        InvoiceTaxCalculator.calculateSolidaritySurcharge(for: self.capitalGainsTaxAmount)
     }
 
     private var churchTaxAmount: Double {
-        InvoiceTaxCalculator.calculateChurchTax(for: capitalGainsTaxAmount)
+        InvoiceTaxCalculator.calculateChurchTax(for: self.capitalGainsTaxAmount)
     }
 
     var totalTaxAmount: Double {
-        capitalGainsTaxAmount + solidaritySurchargeAmount + churchTaxAmount
+        self.capitalGainsTaxAmount + self.solidaritySurchargeAmount + self.churchTaxAmount
     }
 
     var capitalGainsTaxText: String {
-        capitalGainsTaxAmount.formattedAsLocalizedCurrency()
+        self.capitalGainsTaxAmount.formattedAsLocalizedCurrency()
     }
 
     var solidaritySurchargeText: String {
-        solidaritySurchargeAmount.formattedAsLocalizedCurrency()
+        self.solidaritySurchargeAmount.formattedAsLocalizedCurrency()
     }
 
     var churchTaxText: String {
-        churchTaxAmount.formattedAsLocalizedCurrency()
+        self.churchTaxAmount.formattedAsLocalizedCurrency()
     }
 
     var totalTaxText: String {
-        totalTaxAmount.formattedAsLocalizedCurrency()
+        self.totalTaxAmount.formattedAsLocalizedCurrency()
     }
 
     // MARK: - Net Outcome
     var netProfitAfterCharges: Double {
-        profit - totalTaxAmount - provisionAmount
+        self.profit - self.totalTaxAmount - self.provisionAmount
     }
 
     var netProfitAfterChargesText: String {
-        netProfitAfterCharges.formattedAsLocalizedCurrency()
+        self.netProfitAfterCharges.formattedAsLocalizedCurrency()
     }
 
     var hasPositiveNetProfit: Bool {
-        netProfitAfterCharges >= 0
+        self.netProfitAfterCharges >= 0
     }
 
     // MARK: - Investment Details
@@ -291,7 +291,7 @@ final class CompletedInvestmentDetailViewModel: ObservableObject {
     var investmentDetails: [InvestmentDetail] {
         // Create a single investment detail from the investment
         let statusColor: Color
-        switch investment.reservationStatus {
+        switch self.investment.reservationStatus {
         case .completed:
             statusColor = AppTheme.accentLightBlue
         case .active, .executing:
@@ -305,17 +305,17 @@ final class CompletedInvestmentDetailViewModel: ObservableObject {
         }
 
         return [InvestmentDetail(
-            id: investment.id,
-            sequenceNumber: investment.sequenceNumber ?? 1,
-            statusText: investment.reservationStatus.displayName,
+            id: self.investment.id,
+            sequenceNumber: self.investment.sequenceNumber ?? 1,
+            statusText: self.investment.reservationStatus.displayName,
             statusColor: statusColor,
-            amountText: investment.amount.formattedAsLocalizedCurrency(),
-            isLocked: investment.reservationStatus != .reserved
+            amountText: self.investment.amount.formattedAsLocalizedCurrency(),
+            isLocked: self.investment.reservationStatus != .reserved
         )]
     }
 
     var hasInvestmentDetails: Bool {
-        !investmentDetails.isEmpty
+        !self.investmentDetails.isEmpty
     }
 
     // MARK: - Investor Trade Lines
@@ -330,25 +330,25 @@ final class CompletedInvestmentDetailViewModel: ObservableObject {
         let totalAmount: Double
 
         var formattedQuantity: String {
-            NumberFormatter.localizedDecimalFormatter.string(for: quantity) ?? "0,00"
+            NumberFormatter.localizedDecimalFormatter.string(for: self.quantity) ?? "0,00"
         }
 
         var formattedUnitPrice: String {
-            unitPrice.formattedAsLocalizedCurrency()
+            self.unitPrice.formattedAsLocalizedCurrency()
         }
 
         var formattedTotalAmount: String {
-            totalAmount.formattedAsLocalizedCurrency()
+            self.totalAmount.formattedAsLocalizedCurrency()
         }
     }
 
     /// Total investor quantity across all trades for this investment
     var totalInvestorQuantity: Double {
-        tradeLineItems.reduce(0) { $0 + $1.quantity }
+        self.tradeLineItems.reduce(0) { $0 + $1.quantity }
     }
 
     var totalInvestorQuantityText: String {
-        NumberFormatter.localizedDecimalFormatter.string(for: totalInvestorQuantity) ?? "0,00"
+        NumberFormatter.localizedDecimalFormatter.string(for: self.totalInvestorQuantity) ?? "0,00"
     }
 
     private func rebuildTradeLineItems(additionalTradesById: [String: Trade] = [:]) {
@@ -356,13 +356,13 @@ final class CompletedInvestmentDetailViewModel: ObservableObject {
             let poolTradeParticipationService,
             let tradeLifecycleService
         else {
-            tradeLineItems = []
+            self.tradeLineItems = []
             return
         }
 
-        let participations = poolTradeParticipationService.getParticipations(forInvestmentId: investment.id)
+        let participations = poolTradeParticipationService.getParticipations(forInvestmentId: self.investment.id)
         guard !participations.isEmpty else {
-            tradeLineItems = []
+            self.tradeLineItems = []
             return
         }
 
@@ -392,20 +392,20 @@ final class CompletedInvestmentDetailViewModel: ObservableObject {
             items.append(item)
         }
 
-        tradeLineItems = items.sorted { $0.tradeDate < $1.tradeDate }
+        self.tradeLineItems = items.sorted { $0.tradeDate < $1.tradeDate }
     }
 
     private func refreshTradeLedReturnPercentage() {
-        guard poolTradeParticipationService != nil,
-              tradeLifecycleService != nil else {
-            tradeLedReturnPercentageValue = nil
+        guard self.poolTradeParticipationService != nil,
+              self.tradeLifecycleService != nil else {
+            self.tradeLedReturnPercentageValue = nil
             return
         }
 
         Task {
-            tradeLedReturnPercentageValue = await ServerCalculatedReturnResolver.resolveReturnPercentage(
-                investmentId: investment.id,
-                settlementAPIService: settlementAPIService
+            self.tradeLedReturnPercentageValue = await ServerCalculatedReturnResolver.resolveReturnPercentage(
+                investmentId: self.investment.id,
+                settlementAPIService: self.settlementAPIService
             )
         }
     }

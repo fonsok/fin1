@@ -8,22 +8,22 @@ struct FeatureRow: View {
 
     var body: some View {
         HStack(spacing: ResponsiveDesign.spacing(12)) {
-            if style == .typewriter {
+            if self.style == .typewriter {
                 Text("-")
                     .font(ResponsiveDesign.monospacedFont(size: 16, weight: .regular))
                     .foregroundColor(Color("InputText"))
             } else {
-                Image(systemName: icon)
+                Image(systemName: self.icon)
                     .font(ResponsiveDesign.headlineFont())
                     .foregroundColor(AppTheme.accentGreen)
                     .frame(width: 24)
             }
 
-            Text(text)
-                .font(style == .typewriter
-                      ? ResponsiveDesign.monospacedFont(size: 16, weight: .regular)
-                      : ResponsiveDesign.bodyFont())
-                .foregroundColor(style == .typewriter ? Color("InputText") : AppTheme.primaryText)
+            Text(self.text)
+                .font(self.style == .typewriter
+                    ? ResponsiveDesign.monospacedFont(size: 16, weight: .regular)
+                    : ResponsiveDesign.bodyFont())
+                .foregroundColor(self.style == .typewriter ? Color("InputText") : AppTheme.primaryText)
 
             Spacer()
         }

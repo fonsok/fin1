@@ -64,13 +64,13 @@ final class SignUpCoordinator: ObservableObject {
         self.telemetryService = telemetryService
         self.sessionStartDate = Date()
         telemetryService?.trackEvent(name: "onboarding_started", properties: [
-            "role": userRole.rawValue
+            "role": self.userRole.rawValue
         ])
     }
 
     /// Set the user role (should be called after user selects role in welcome step)
     func setUserRole(_ role: UserRole) {
-        userRole = role
+        self.userRole = role
     }
 
     /// Total steps (automatically calculated from enum)
@@ -80,93 +80,93 @@ final class SignUpCoordinator: ObservableObject {
 
     /// Total steps for current user role
     var totalStepsForRole: Int {
-        StepConfiguration.totalSteps(for: userRole)
+        StepConfiguration.totalSteps(for: self.userRole)
     }
 
     var progress: Double {
-        StepConfiguration.progressPercentage(for: currentStep, role: userRole)
+        StepConfiguration.progressPercentage(for: self.currentStep, role: self.userRole)
     }
 
     var canGoBack: Bool {
-        !StepConfiguration.isFirstStep(currentStep, role: userRole)
+        !StepConfiguration.isFirstStep(self.currentStep, role: self.userRole)
     }
 
     var canGoForward: Bool {
-        !StepConfiguration.isLastStep(currentStep, role: userRole)
+        !StepConfiguration.isLastStep(self.currentStep, role: self.userRole)
     }
 
     var isFirstStep: Bool {
-        StepConfiguration.isFirstStep(currentStep, role: userRole)
+        StepConfiguration.isFirstStep(self.currentStep, role: self.userRole)
     }
 
     var isLastStep: Bool {
-        StepConfiguration.isLastStep(currentStep, role: userRole)
+        StepConfiguration.isLastStep(self.currentStep, role: self.userRole)
     }
 
     func nextStep() {
-        let oldStep = currentStep
+        let oldStep = self.currentStep
         withAnimation(.easeInOut(duration: 0.3)) {
             if let data = signUpData {
                 customNextStep(with: data)
             } else {
                 if let nextStep = StepConfiguration.nextStep(after: currentStep, role: userRole) {
-                    currentStep = nextStep
+                    self.currentStep = nextStep
                 }
             }
         }
-        if currentStep != oldStep {
-            persistStepTransition(from: oldStep, to: currentStep)
+        if self.currentStep != oldStep {
+            persistStepTransition(from: oldStep, to: self.currentStep)
         }
     }
 
     func previousStep() {
-        let oldStep = currentStep
+        let oldStep = self.currentStep
         withAnimation(.easeInOut(duration: 0.3)) {
             if let previousStep = StepConfiguration.previousStep(before: currentStep, role: userRole) {
-                currentStep = previousStep
+                self.currentStep = previousStep
             }
         }
-        if currentStep != oldStep {
-            persistStepPosition(currentStep)
+        if self.currentStep != oldStep {
+            persistStepPosition(self.currentStep)
         }
     }
 
     func goToStep(_ step: SignUpStep) {
-        let oldStep = currentStep
+        let oldStep = self.currentStep
         withAnimation(.easeInOut(duration: 0.3)) {
-            currentStep = step
+            self.currentStep = step
         }
-        if currentStep != oldStep {
+        if self.currentStep != oldStep {
             persistStepTransition(from: oldStep, to: step)
         }
     }
 
     func goToStepNumber(_ stepNumber: Int) {
-        let oldStep = currentStep
+        let oldStep = self.currentStep
         withAnimation(.easeInOut(duration: 0.3)) {
             if let step = StepConfiguration.step(for: stepNumber, role: userRole) {
-                currentStep = step
+                self.currentStep = step
             }
         }
-        if currentStep != oldStep {
-            persistStepTransition(from: oldStep, to: currentStep)
+        if self.currentStep != oldStep {
+            persistStepTransition(from: oldStep, to: self.currentStep)
         }
     }
 
     func showError(_ message: String) {
-        alertMessage = message
-        showAlert = true
+        self.alertMessage = message
+        self.showAlert = true
     }
 
     func reset() {
-        currentStep = .welcome
-        isLoading = false
-        showAlert = false
-        alertMessage = ""
+        self.currentStep = .welcome
+        self.isLoading = false
+        self.showAlert = false
+        self.alertMessage = ""
     }
 
     func requestDismissal() {
-        shouldDismiss = true
+        self.shouldDismiss = true
     }
 
     // MARK: - Early Account Creation (after Contact step)
@@ -174,14 +174,14 @@ final class SignUpCoordinator: ObservableObject {
     /// Creates the account on the backend after Contact step,
     /// enabling session-based persistence for all subsequent steps.
     func createAccountIfNeeded(with data: SignUpData) async {
-        guard currentStep == .contact else { return }
+        guard self.currentStep == .contact else { return }
         guard let userService = userService else {
-            advanceFromContact()
+            self.advanceFromContact()
             return
         }
 
-        isLoading = true
-        accountCreationError = nil
+        self.isLoading = true
+        self.accountCreationError = nil
 
         do {
             try await userService.signUp(userData: User(
@@ -243,19 +243,19 @@ final class SignUpCoordinator: ObservableObject {
                 updatedAt: Date()
             ))
 
-            isLoading = false
-            advanceFromContact()
+            self.isLoading = false
+            self.advanceFromContact()
         } catch {
-            isLoading = false
-            accountCreationError = error.localizedDescription
-            showError("Account creation failed: \(error.localizedDescription)")
+            self.isLoading = false
+            self.accountCreationError = error.localizedDescription
+            self.showError("Account creation failed: \(error.localizedDescription)")
         }
     }
 
     private func advanceFromContact() {
-        let oldStep = currentStep
+        let oldStep = self.currentStep
         withAnimation(.easeInOut(duration: 0.3)) {
-            currentStep = .accountCreated
+            self.currentStep = .accountCreated
         }
         persistStepTransition(from: oldStep, to: .accountCreated)
     }

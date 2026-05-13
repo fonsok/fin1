@@ -1,11 +1,11 @@
+import Combine
 import Foundation
 import SwiftUI
-import Combine
 
 @MainActor
 final class NotificationsViewModel: ObservableObject {
     @Published var selectedFilter: NotificationFilter = .all {
-        didSet { recompute() }
+        didSet { self.recompute() }
     }
     @Published var showDocumentArchive = false
 
@@ -31,25 +31,25 @@ final class NotificationsViewModel: ObservableObject {
         self.documentService = documentService
         self.userService = userService
 
-        setupObservations()
-        applyRoleDefaultFilterIfNeeded()
-        recompute()
+        self.setupObservations()
+        self.applyRoleDefaultFilterIfNeeded()
+        self.recompute()
     }
 
     func applyRoleDefaultFilterIfNeeded() {
-        guard selectedFilter == .all else { return }
-        switch userService.currentUser?.role {
+        guard self.selectedFilter == .all else { return }
+        switch self.userService.currentUser?.role {
         case .investor:
-            selectedFilter = .investments
+            self.selectedFilter = .investments
         case .trader:
-            selectedFilter = .trades
+            self.selectedFilter = .trades
         default:
-            selectedFilter = .all
+            self.selectedFilter = .all
         }
     }
 
     func availableFilters() -> [NotificationFilter] {
-        switch userService.currentUser?.role {
+        switch self.userService.currentUser?.role {
         case .investor:
             return [.all, .investments, .system, .documents]
         case .trader:
@@ -60,23 +60,23 @@ final class NotificationsViewModel: ObservableObject {
     }
 
     func markAllAsRead() {
-        notificationService.markAllAsRead()
+        self.notificationService.markAllAsRead()
     }
 
     private func setupObservations() {
-        notificationService.notificationsPublisher
+        self.notificationService.notificationsPublisher
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 self?.recompute()
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
 
-        documentService.documentsPublisher
+        self.documentService.documentsPublisher
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 self?.recompute()
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
 
         NotificationCenter.default.publisher(for: .userDidSignIn)
             .receive(on: DispatchQueue.main)
@@ -84,48 +84,48 @@ final class NotificationsViewModel: ObservableObject {
                 self?.applyRoleDefaultFilterIfNeeded()
                 self?.recompute()
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
 
         NotificationCenter.default.publisher(for: .userDataDidUpdate)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 self?.recompute()
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
 
         NotificationCenter.default.publisher(for: .invoiceDidChange)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 self?.recompute()
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
     }
 
     // MARK: - Recompute
 
     private func recompute() {
-        let allItems = combinedItemsForCurrentUser()
-        let recentItems = applyRecentReadWindow(to: allItems)
-        filteredItems = applyFilter(selectedFilter, to: recentItems)
+        let allItems = self.combinedItemsForCurrentUser()
+        let recentItems = self.applyRecentReadWindow(to: allItems)
+        self.filteredItems = self.applyFilter(self.selectedFilter, to: recentItems)
 
-        let archivedBaseItems = applyArchivedReadWindow(to: allItems)
-        archivedItems = applyFilter(selectedFilter, to: archivedBaseItems)
+        let archivedBaseItems = self.applyArchivedReadWindow(to: allItems)
+        self.archivedItems = self.applyFilter(self.selectedFilter, to: archivedBaseItems)
 
-        hasHiddenOlderItems = !archivedItems.isEmpty
-        archivedCount = archivedItems.count
+        self.hasHiddenOlderItems = !self.archivedItems.isEmpty
+        self.archivedCount = self.archivedItems.count
     }
 
     private func combinedItemsForCurrentUser() -> [NotificationItem] {
-        let currentUserId = userService.currentUser?.id ?? ""
-        let stableUserId = resolvedStableUserId()
+        let currentUserId = self.userService.currentUser?.id ?? ""
+        let stableUserId = self.resolvedStableUserId()
         let allowedUserIds = Set([currentUserId, stableUserId].filter { !$0.isEmpty })
 
-        let userNotifications = notificationService.notifications.filter { allowedUserIds.contains($0.userId) }
+        let userNotifications = self.notificationService.notifications.filter { allowedUserIds.contains($0.userId) }
         let notificationItems = userNotifications.map { NotificationItem.notification($0) }
 
         let userDocuments = allowedUserIds
-            .flatMap { documentService.getDocuments(for: $0) }
-            .filter { isDisplayableNotificationDocument($0) }
+            .flatMap { self.documentService.getDocuments(for: $0) }
+            .filter { self.isDisplayableNotificationDocument($0) }
             .uniqueById()
         let documentItems = userDocuments.map { NotificationItem.document($0) }
 
@@ -159,18 +159,18 @@ final class NotificationsViewModel: ObservableObject {
     }
 
     private func applyRecentReadWindow(to items: [NotificationItem]) -> [NotificationItem] {
-        let cutoff = Date().addingTimeInterval(-recentReadWindow)
+        let cutoff = Date().addingTimeInterval(-self.recentReadWindow)
         return items.filter { item in
-            !item.isRead || (readAt(for: item) ?? Date.distantPast) > cutoff
+            !item.isRead || (self.readAt(for: item) ?? Date.distantPast) > cutoff
         }
     }
 
     private func applyArchivedReadWindow(to items: [NotificationItem]) -> [NotificationItem] {
-        let cutoff = Date().addingTimeInterval(-recentReadWindow)
+        let cutoff = Date().addingTimeInterval(-self.recentReadWindow)
         // Archived = read items older than the recent window.
         return items.filter { item in
             guard item.isRead else { return false }
-            return (readAt(for: item) ?? Date.distantPast) <= cutoff
+            return (self.readAt(for: item) ?? Date.distantPast) <= cutoff
         }
     }
 

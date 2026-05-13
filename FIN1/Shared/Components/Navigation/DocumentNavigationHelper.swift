@@ -14,7 +14,7 @@ struct DocumentNavigationHelper {
     @ViewBuilder
     static func sheetView(for document: Document, appServices: AppServices) -> some View {
         NavigationStack {
-            documentView(for: document, appServices: appServices)
+            self.documentView(for: document, appServices: appServices)
         }
     }
 
@@ -26,7 +26,7 @@ struct DocumentNavigationHelper {
     /// - Returns: A view for navigation destination
     @ViewBuilder
     static func navigationDestination(for document: Document, appServices: AppServices) -> some View {
-        documentView(for: document, appServices: appServices)
+        self.documentView(for: document, appServices: appServices)
     }
 
     // MARK: - Core Document View Logic
@@ -110,28 +110,28 @@ private struct HydratedInvoiceDocumentView: View {
 
     var body: some View {
         Group {
-            if !hydrationComplete {
+            if !self.hydrationComplete {
                 ProgressView(String(localized: "Loading invoice…", comment: "Shown while invoice details are fetched"))
             } else if let invoice = resolvedInvoice {
-                invoiceContent(invoice: invoice, documentRow: routingDocument)
+                self.invoiceContent(invoice: invoice, documentRow: self.routingDocument)
             } else {
-                DocumentViewer(document: routingDocument)
+                DocumentViewer(document: self.routingDocument)
             }
         }
-        .task(id: document.id) {
-            await hydrate()
+        .task(id: self.document.id) {
+            await self.hydrate()
         }
     }
 
     @ViewBuilder
     private func invoiceContent(invoice: Invoice, documentRow: Document) -> some View {
         if invoice.type == .creditNote {
-            creditNoteDestination(documentRow: documentRow, invoice: invoice)
+            self.creditNoteDestination(documentRow: documentRow, invoice: invoice)
         } else {
             InvoiceDetailView(
                 invoice: invoice,
-                invoiceService: appServices.invoiceService,
-                notificationService: appServices.notificationService
+                invoiceService: self.appServices.invoiceService,
+                notificationService: self.appServices.notificationService
             )
         }
     }
@@ -141,56 +141,58 @@ private struct HydratedInvoiceDocumentView: View {
         merged.invoiceData = invoice
         return TraderCreditNoteDetailView(
             document: merged,
-            showCommissionBreakdown: appServices.configurationService.showCommissionBreakdownInCreditNote
+            showCommissionBreakdown: self.appServices.configurationService.showCommissionBreakdownInCreditNote
         )
     }
 
     private func hydrate() async {
-        hydrationComplete = false
+        self.hydrationComplete = false
         let row = await MainActor.run {
-            appServices.documentService.getDocument(by: document.id) ?? document
+            self.appServices.documentService.getDocument(by: self.document.id) ?? self.document
         }
-        routingDocument = row
+        self.routingDocument = row
 
         if let embedded = row.invoiceData {
-            resolvedInvoice = embedded
-            logInvoiceHydrationPhase(
+            self.resolvedInvoice = embedded
+            self.logInvoiceHydrationPhase(
                 label: "embedded invoiceData (skip fetch)",
-                payloadId: document.id,
+                payloadId: self.document.id,
                 merged: row,
-                invoiceService: appServices.invoiceService
+                invoiceService: self.appServices.invoiceService
             )
-            hydrationComplete = true
+            self.hydrationComplete = true
             return
         }
 
-        logInvoiceHydrationPhase(
+        self.logInvoiceHydrationPhase(
             label: "before loadInvoices(\(row.userId))",
-            payloadId: document.id,
+            payloadId: self.document.id,
             merged: row,
-            invoiceService: appServices.invoiceService
+            invoiceService: self.appServices.invoiceService
         )
 
         do {
-            try await appServices.invoiceService.loadInvoices(for: row.userId)
+            try await self.appServices.invoiceService.loadInvoices(for: row.userId)
         } catch {
             print("⚠️ HydratedInvoiceDocumentView loadInvoices failed: \(error.localizedDescription)")
         }
 
-        logInvoiceHydrationPhase(
+        self.logInvoiceHydrationPhase(
             label: "after loadInvoices(\(row.userId))",
-            payloadId: document.id,
+            payloadId: self.document.id,
             merged: row,
-            invoiceService: appServices.invoiceService
+            invoiceService: self.appServices.invoiceService
         )
 
-        resolvedInvoice = appServices.invoiceService.invoice(matching: row)
-        if resolvedInvoice != nil {
-            print("✅ HydratedInvoiceDocumentView matched invoice id=\(resolvedInvoice!.id) number=\(resolvedInvoice!.invoiceNumber) type=\(resolvedInvoice!.type.rawValue)")
+        self.resolvedInvoice = self.appServices.invoiceService.invoice(matching: row)
+        if self.resolvedInvoice != nil {
+            print(
+                "✅ HydratedInvoiceDocumentView matched invoice id=\(self.resolvedInvoice!.id) number=\(self.resolvedInvoice!.invoiceNumber) type=\(self.resolvedInvoice!.type.rawValue)"
+            )
         } else {
-            print("❌ HydratedInvoiceDocumentView no invoice(matching:) — invoices.count=\(appServices.invoiceService.invoices.count)")
+            print("❌ HydratedInvoiceDocumentView no invoice(matching:) — invoices.count=\(self.appServices.invoiceService.invoices.count)")
         }
-        hydrationComplete = true
+        self.hydrationComplete = true
     }
 
     /// Debug: Notifications vs account-statement hydration (paste from Xcode console).
@@ -209,14 +211,14 @@ private struct HydratedInvoiceDocumentView: View {
         }.joined(separator: "\n")
 
         print("""
-            🔎 HydratedInvoiceDocumentView — \(label)
-              document.id (payload)=\(payloadId)
-              merged.id=\(merged.id) merged.name=\(merged.name)
-              merged.tradeId=\(tradeId)
-              merged.accountingDocumentNumber=\(accounting)
-              merged.userId=\(merged.userId)
-              getInvoicesForTrade(\(tradeId)): count=\(tradeHits.count)
-            \(hitLines.isEmpty ? "      (none)" : hitLines)
-            """)
+        🔎 HydratedInvoiceDocumentView — \(label)
+          document.id (payload)=\(payloadId)
+          merged.id=\(merged.id) merged.name=\(merged.name)
+          merged.tradeId=\(tradeId)
+          merged.accountingDocumentNumber=\(accounting)
+          merged.userId=\(merged.userId)
+          getInvoicesForTrade(\(tradeId)): count=\(tradeHits.count)
+        \(hitLines.isEmpty ? "      (none)" : hitLines)
+        """)
     }
 }

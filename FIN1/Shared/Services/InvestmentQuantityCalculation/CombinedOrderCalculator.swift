@@ -71,7 +71,7 @@ final class CombinedOrderCalculator {
         print("   📐 subscriptionRatio: \(subscriptionRatio)")
 
         let requestedTraderQuantity = max(traderQuantity, 0)
-        let maxAffordableTraderQuantity = maxQuantityCalculator(
+        let maxAffordableTraderQuantity = self.maxQuantityCalculator(
             traderCashBalance,
             pricePerSecurity,
             denomination,
@@ -85,7 +85,7 @@ final class CombinedOrderCalculator {
         let isTraderLimited = requestedTraderQuantity > actualTraderQuantity
 
         // 2. Calculate maximum mirror quantity from pool capital (same constraints).
-        let investmentQuantity = maxQuantityCalculator(
+        let investmentQuantity = self.maxQuantityCalculator(
             investmentBalance,
             pricePerSecurity,
             denomination,

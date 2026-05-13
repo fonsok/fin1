@@ -8,38 +8,38 @@ struct SignUpNavigationButtons: View {
 
     var body: some View {
         // Hide standard navigation buttons on steps that have their own custom action buttons
-        if coordinator.currentStep == .emailVerification ||
-           coordinator.currentStep == .phoneVerification ||
-           coordinator.currentStep == .riskClassificationNote ||
-           coordinator.currentStep == .riskClass7Confirmation ||
-           (coordinator.currentStep == .summary && signUpData.finalRiskClass == .riskClass7) {
+        if self.coordinator.currentStep == .emailVerification ||
+            self.coordinator.currentStep == .phoneVerification ||
+            self.coordinator.currentStep == .riskClassificationNote ||
+            self.coordinator.currentStep == .riskClass7Confirmation ||
+            (self.coordinator.currentStep == .summary && self.signUpData.finalRiskClass == .riskClass7) {
             EmptyView()
         } else {
             VStack(spacing: ResponsiveDesign.spacing(12)) {
                 // Privacy statement for step 2 (contact step)
-                if coordinator.currentStep == .contact {
-                    privacyStatementView
+                if self.coordinator.currentStep == .contact {
+                    self.privacyStatementView
                 }
 
                 // Button container
-                if coordinator.isFirstStep {
+                if self.coordinator.isFirstStep {
                     // Step 1: single centered button with vertical space above
                     HStack {
                         Spacer()
-                        continueButton
+                        self.continueButton
                         Spacer()
                     }
                     .padding(.top, ResponsiveDesign.spacing(16))
-                } else if coordinator.currentStep == .contact {
+                } else if self.coordinator.currentStep == .contact {
                     // Step 2: single button without back button
-                    continueButton
+                    self.continueButton
                         .padding(.top, ResponsiveDesign.spacing(16))
                 } else {
                     // Other steps: back button and continue button
                     HStack(spacing: ResponsiveDesign.spacing(16)) {
                         // Back Button
-                        if coordinator.canGoBack {
-                            Button(action: coordinator.previousStep, label: {
+                        if self.coordinator.canGoBack {
+                            Button(action: self.coordinator.previousStep, label: {
                                 HStack {
                                     Image(systemName: "chevron.left")
                                         .font(ResponsiveDesign.headlineFont())
@@ -63,7 +63,7 @@ struct SignUpNavigationButtons: View {
                         }
 
                         // Continue/Complete Button
-                        continueButton
+                        self.continueButton
                     }
                     .padding(.top, ResponsiveDesign.spacing(16))
                 }
@@ -77,66 +77,68 @@ struct SignUpNavigationButtons: View {
         (Text("By opening an account, you agree with FIN!'s ")
             .font(ResponsiveDesign.bodyFont())
             .foregroundColor(AppTheme.fontColor)
-         + Text("Terms of Service")
+            + Text("Terms of Service")
             .font(ResponsiveDesign.bodyFont())
             .foregroundColor(AppTheme.accentLightBlue)
             .underline()
-         + Text(".")
+            + Text(".")
             .font(ResponsiveDesign.bodyFont())
             .foregroundColor(AppTheme.fontColor))
-        .multilineTextAlignment(.center)
-        .frame(maxWidth: .infinity)
-        .padding(.horizontal, ResponsiveDesign.spacing(8))
-        .padding(.vertical, ResponsiveDesign.spacing(8))
-        .lineLimit(nil)
-        .fixedSize(horizontal: false, vertical: true)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            onShowTermsOfService?()
-        }
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, ResponsiveDesign.spacing(8))
+            .padding(.vertical, ResponsiveDesign.spacing(8))
+            .lineLimit(nil)
+            .fixedSize(horizontal: false, vertical: true)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                self.onShowTermsOfService?()
+            }
     }
 
     // MARK: - Continue Button
     @ViewBuilder
     private var continueButton: some View {
-        if coordinator.canGoForward {
+        if self.coordinator.canGoForward {
             Button(action: {
-                if coordinator.currentStep == .contact {
+                if self.coordinator.currentStep == .contact {
                     Task {
-                        await coordinator.createAccountIfNeeded(with: signUpData)
+                        await self.coordinator.createAccountIfNeeded(with: self.signUpData)
                     }
-                } else if coordinator.currentStep == .identificationType && signUpData.identificationType == .postident {
+                } else if self.coordinator.currentStep == .identificationType && self.signUpData.identificationType == .postident {
                     withAnimation(.easeInOut(duration: 0.3)) {
-                        coordinator.currentStep = .postidentConfirmation
+                        self.coordinator.currentStep = .postidentConfirmation
                     }
                 } else {
-                    coordinator.nextStep()
+                    self.coordinator.nextStep()
                 }
             }) {
                 HStack {
-                    if coordinator.isLoading {
+                    if self.coordinator.isLoading {
                         ProgressView()
                             .progressViewStyle(CircularProgressViewStyle(tint: .white))
                             .scaleEffect(0.8)
                     } else {
-                        Text(coordinator.currentStep == .contact ? "Open your account" : "Continue")
+                        Text(self.coordinator.currentStep == .contact ? "Open your account" : "Continue")
                             .font(ResponsiveDesign.headlineFont())
                     }
                 }
                 .foregroundColor(AppTheme.screenBackground)
-                .frame(maxWidth: coordinator.isFirstStep ? ResponsiveDesign.spacing(300) : .infinity)
+                .frame(maxWidth: self.coordinator.isFirstStep ? ResponsiveDesign.spacing(300) : .infinity)
                 .frame(height: ResponsiveDesign.spacing(50))
-                .background(coordinator.canProceedToNextStep(with: signUpData) ? AppTheme.accentLightBlue : AppTheme.inputFieldPlaceholder)
+                .background(
+                    self.coordinator.canProceedToNextStep(with: self.signUpData) ? AppTheme.accentLightBlue : AppTheme.inputFieldPlaceholder
+                )
                 .cornerRadius(ResponsiveDesign.spacing(12))
             }
-            .disabled(!coordinator.canProceedToNextStep(with: signUpData) || coordinator.isLoading)
+            .disabled(!self.coordinator.canProceedToNextStep(with: self.signUpData) || self.coordinator.isLoading)
         } else {
             Button(action: {
                 // Complete registration (Risk Class 7 users will have already gone through confirmation)
-                onComplete()
+                self.onComplete()
             }) {
                 HStack {
-                    if coordinator.isLoading {
+                    if self.coordinator.isLoading {
                         ProgressView()
                             .progressViewStyle(CircularProgressViewStyle(tint: .white))
                             .scaleEffect(0.8)
@@ -146,12 +148,14 @@ struct SignUpNavigationButtons: View {
                     }
                 }
                 .foregroundColor(AppTheme.screenBackground)
-                .frame(maxWidth: coordinator.isFirstStep ? ResponsiveDesign.spacing(300) : .infinity)
+                .frame(maxWidth: self.coordinator.isFirstStep ? ResponsiveDesign.spacing(300) : .infinity)
                 .frame(height: ResponsiveDesign.spacing(50))
-                .background(coordinator.canProceedToNextStep(with: signUpData) ? AppTheme.accentLightBlue : AppTheme.inputFieldPlaceholder)
+                .background(
+                    self.coordinator.canProceedToNextStep(with: self.signUpData) ? AppTheme.accentLightBlue : AppTheme.inputFieldPlaceholder
+                )
                 .cornerRadius(ResponsiveDesign.spacing(12))
             }
-            .disabled(!coordinator.canProceedToNextStep(with: signUpData) || coordinator.isLoading)
+            .disabled(!self.coordinator.canProceedToNextStep(with: self.signUpData) || self.coordinator.isLoading)
         }
     }
 }

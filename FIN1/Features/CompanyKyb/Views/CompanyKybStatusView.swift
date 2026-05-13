@@ -15,11 +15,11 @@ struct CompanyKybStatusView: View {
 
                 VStack(spacing: ResponsiveDesign.spacing(32)) {
                     Spacer()
-                    statusIcon
-                    statusTitle
-                    statusDescription
+                    self.statusIcon
+                    self.statusTitle
+                    self.statusDescription
                     Spacer()
-                    actionButton
+                    self.actionButton
                 }
                 .padding(.horizontal, ResponsiveDesign.lightBlueAreaHorizontalPadding())
                 .padding(.bottom, ResponsiveDesign.spacing(24))
@@ -32,21 +32,21 @@ struct CompanyKybStatusView: View {
     // MARK: - Subviews
 
     private var statusIcon: some View {
-        Image(systemName: status.iconName)
+        Image(systemName: self.status.iconName)
             .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.spacing(64)))
-            .foregroundColor(status.iconColor)
+            .foregroundColor(self.status.iconColor)
             .accessibilityHidden(true)
     }
 
     private var statusTitle: some View {
-        Text(status.title)
+        Text(self.status.title)
             .font(ResponsiveDesign.largeTitleFont())
             .foregroundColor(AppTheme.fontColor)
             .multilineTextAlignment(.center)
     }
 
     private var statusDescription: some View {
-        Text(status.description)
+        Text(self.status.description)
             .font(ResponsiveDesign.bodyFont())
             .foregroundColor(AppTheme.fontColor.opacity(0.7))
             .multilineTextAlignment(.center)
@@ -55,14 +55,14 @@ struct CompanyKybStatusView: View {
 
     private var actionButton: some View {
         Button(action: {
-            if status == .moreInfoRequested, let onResubmit {
+            if self.status == .moreInfoRequested, let onResubmit {
                 onResubmit()
             } else {
-                onDismiss?()
-                dismiss()
+                self.onDismiss?()
+                self.dismiss()
             }
         }) {
-            Text(status.buttonLabel)
+            Text(self.status.buttonLabel)
                 .font(ResponsiveDesign.headlineFont())
                 .foregroundColor(AppTheme.screenBackground)
                 .frame(maxWidth: .infinity)

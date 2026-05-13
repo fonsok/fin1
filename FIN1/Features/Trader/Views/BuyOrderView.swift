@@ -48,7 +48,7 @@ struct BuyOrderViewWrapper: View {
     }
 
     var body: some View {
-        BuyOrderView(viewModel: viewModel)
+        BuyOrderView(viewModel: self.viewModel)
     }
 }
 
@@ -73,38 +73,38 @@ struct BuyOrderView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: ResponsiveDesign.spacing(6)) {
-                    securitiesDetailsSection
+                    self.securitiesDetailsSection
 
-                    orderDetailsSection
+                    self.orderDetailsSection
 
-                    costEstimateSection
+                    self.costEstimateSection
 
-                    insufficientFundsWarningSection
+                    self.insufficientFundsWarningSection
 
-                    transactionLimitWarningSection
+                    self.transactionLimitWarningSection
 
-                    orderActionButton
+                    self.orderActionButton
 
-                VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
-                    Text("Rechtliche Hinweise")
-                        .font(ResponsiveDesign.headlineFont())
-                        .foregroundColor(AppTheme.secondaryText)
-                    Text(legalNoticeText.isEmpty ? defaultLegalNoticeText : legalNoticeText)
-                        .font(ResponsiveDesign.captionFont())
+                    VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
+                        Text("Rechtliche Hinweise")
+                            .font(ResponsiveDesign.headlineFont())
+                            .foregroundColor(AppTheme.secondaryText)
+                        Text(self.legalNoticeText.isEmpty ? self.defaultLegalNoticeText : self.legalNoticeText)
+                            .font(ResponsiveDesign.captionFont())
+                    }
+                    .padding()
+                    .background(AppTheme.sectionBackground)
+                    .cornerRadius(ResponsiveDesign.spacing(10))
                 }
                 .padding()
-                .background(AppTheme.sectionBackground)
-                .cornerRadius(ResponsiveDesign.spacing(10))
             }
-            .padding()
-        }
-        .background(AppTheme.screenBackground)
-        .navigationTitle("Kauf-Order")
+            .background(AppTheme.screenBackground)
+            .navigationTitle("Kauf-Order")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Abbrechen") {
-                        dismiss()
+                        self.dismiss()
                     }
                 }
             }
@@ -112,35 +112,35 @@ struct BuyOrderView: View {
         .onAppear {
             // Refresh investments when view appears
             print("🔍 BuyOrderView: onAppear - refreshing investments")
-            viewModel.refreshInvestments()
+            self.viewModel.refreshInvestments()
 
             // Also refresh after a short delay to ensure data is loaded
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                 print("🔍 BuyOrderView: Delayed refresh")
-                viewModel.refreshInvestments()
+                self.viewModel.refreshInvestments()
             }
         }
-        .onChange(of: viewModel.shouldShowDepotView) { _, newValue in
+        .onChange(of: self.viewModel.shouldShowDepotView) { _, newValue in
             if newValue {
                 // Navigate directly to Depot; overlay will be shown in Depot view
-                viewModel.shouldShowDepotView = false
-                tabRouter.selectedTab = 1
+                self.viewModel.shouldShowDepotView = false
+                self.tabRouter.selectedTab = 1
 
                 // Post notification to dismiss the entire navigation stack
                 NotificationCenter.default.post(name: .orderPlacedSuccessfully, object: nil)
 
-                dismiss()
+                self.dismiss()
             }
         }
-        .onChange(of: viewModel.orderMode) { _, newValue in
+        .onChange(of: self.viewModel.orderMode) { _, newValue in
             // Stop monitoring if switching away from limit order
             if newValue != .limit {
-                viewModel.stopLimitOrderMonitoring()
+                self.viewModel.stopLimitOrderMonitoring()
             }
         }
-        .onChange(of: viewModel.limit) { _, _ in
+        .onChange(of: self.viewModel.limit) { _, _ in
             // Handle limit price changes
-            viewModel.onLimitPriceChanged()
+            self.viewModel.onLimitPriceChanged()
         }
         .dismissKeyboardOnTap()
         .task {
@@ -150,12 +150,12 @@ struct BuyOrderView: View {
                 for: .orderLegalWarningBuy,
                 language: language,
                 documentType: .terms,
-                defaultText: defaultLegalNoticeText,
+                defaultText: self.defaultLegalNoticeText,
                 placeholders: [:]
             )
-            legalNoticeText = text
+            self.legalNoticeText = text
         }
-        .onChange(of: viewModel.showLimitWarning) { _, newValue in
+        .onChange(of: self.viewModel.showLimitWarning) { _, newValue in
             guard newValue else { return }
             Task {
                 let provider = LegalSnippetProvider(termsContentService: services.termsContentService)
@@ -202,8 +202,8 @@ struct BuyOrderView: View {
                     defaultContent: "Ihr (tägliches) Transaktionslimit wurde erreicht oder überschritten.",
                     placeholders: placeholders
                 )
-                transactionLimitWarningTitle = snippet.title
-                transactionLimitIntroText = snippet.content
+                self.transactionLimitWarningTitle = snippet.title
+                self.transactionLimitIntroText = snippet.content
             }
         }
     }
@@ -212,21 +212,21 @@ struct BuyOrderView: View {
 
     private var securitiesDetailsSection: some View {
         SecuritiesDetailsSection(
-            direction: viewModel.searchResult.category == "Optionsschein" ? viewModel.searchResult.direction : nil,
-            basiswert: viewModel.searchResult.category == "Optionsschein" ? viewModel.searchResult.underlyingAsset : nil,
-            strike: formatStrikePrice(viewModel.searchResult.strike, viewModel.searchResult.underlyingAsset),
-            valuationDate: viewModel.searchResult.valuationDate,
-            wkn: viewModel.searchResult.wkn,
-            currentPrice: viewModel.formattedAskPrice,
+            direction: self.viewModel.searchResult.category == "Optionsschein" ? self.viewModel.searchResult.direction : nil,
+            basiswert: self.viewModel.searchResult.category == "Optionsschein" ? self.viewModel.searchResult.underlyingAsset : nil,
+            strike: formatStrikePrice(self.viewModel.searchResult.strike, self.viewModel.searchResult.underlyingAsset),
+            valuationDate: self.viewModel.searchResult.valuationDate,
+            wkn: self.viewModel.searchResult.wkn,
+            currentPrice: self.viewModel.formattedAskPrice,
             priceLabel: "Brief-Kurs (Ask)",
-            priceValidityProgress: viewModel.priceValidityProgress,
+            priceValidityProgress: self.viewModel.priceValidityProgress,
             onReloadPrice: {
-                viewModel.reloadPrice()
+                self.viewModel.reloadPrice()
             },
-            isLimitOrder: viewModel.orderMode == .limit,
-            limitPrice: viewModel.limitPrice,
-            currentPriceValue: viewModel.currentPriceValue,
-            isMonitoringLimitOrder: viewModel.isMonitoringLimitOrder,
+            isLimitOrder: self.viewModel.orderMode == .limit,
+            limitPrice: self.viewModel.limitPrice,
+            currentPriceValue: self.viewModel.currentPriceValue,
+            isMonitoringLimitOrder: self.viewModel.isMonitoringLimitOrder,
             orderType: "buy"
         )
     }
@@ -234,34 +234,34 @@ struct BuyOrderView: View {
     private var orderDetailsSection: some View {
         OrderDetailsSection {
             QuantityInputField(
-                text: $viewModel.quantityText,
+                text: self.$viewModel.quantityText,
                 placeholder: "Stück",
                 accessibilityLabel: "Number of shares",
                 accessibilityHint: "Enter the number of shares you want to buy",
-                maxValueWarning: viewModel.showMaxValueWarning ?
+                maxValueWarning: self.viewModel.showMaxValueWarning ?
                     QuantityInputField.MaxValueWarning(
-                        enteredValue: Int(viewModel.quantity),
+                        enteredValue: Int(self.viewModel.quantity),
                         maxValue: 10_000_000
                     ) : nil,
-                errorMessage: viewModel.quantityConstraintMessage
+                errorMessage: self.viewModel.quantityConstraintMessage
             )
 
             OrderTypeSelection(
-                selectedOrderMode: $viewModel.orderMode,
+                selectedOrderMode: self.$viewModel.orderMode,
                 onOrderModeChanged: { newOrderMode in
-                    viewModel.orderMode = newOrderMode
+                    self.viewModel.orderMode = newOrderMode
                 }
             )
 
             LimitPriceInput(
-                limitText: $viewModel.limit,
-                isVisible: viewModel.orderMode == .limit,
+                limitText: self.$viewModel.limit,
+                isVisible: self.viewModel.orderMode == .limit,
                 onChange: { newValue in
                     print("🔍 DEBUG: Limit field changed to: '\(newValue)'")
                     // Validation is now handled internally by LimitPriceInput
                     // No need for additional filtering here
                 },
-                validationMessage: getValidationMessage(),
+                validationMessage: self.getValidationMessage(),
                 placeholder: "Beispiel: 1,23"
             )
         }
@@ -273,7 +273,7 @@ struct BuyOrderView: View {
                 .font(ResponsiveDesign.headlineFont())
                 .foregroundColor(AppTheme.secondaryText)
             Spacer()
-            Text(viewModel.estimatedCost.formattedAsLocalizedCurrency())
+            Text(self.viewModel.estimatedCost.formattedAsLocalizedCurrency())
                 .font(ResponsiveDesign.headlineFont())
                 .foregroundColor(AppTheme.accentOrange.opacity(0.8))
                 .fontWeight(.medium)
@@ -285,7 +285,7 @@ struct BuyOrderView: View {
 
     @ViewBuilder
     private var insufficientFundsWarningSection: some View {
-        if viewModel.showInsufficientFundsWarning {
+        if self.viewModel.showInsufficientFundsWarning {
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
                 HStack {
                     Image(systemName: "exclamationmark.triangle.fill")
@@ -296,7 +296,7 @@ struct BuyOrderView: View {
                         .foregroundColor(.red)
                 }
 
-                Text(viewModel.insufficientFundsMessage)
+                Text(self.viewModel.insufficientFundsMessage)
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.primaryText)
                     .multilineTextAlignment(.leading)
@@ -315,13 +315,13 @@ struct BuyOrderView: View {
 
     @ViewBuilder
     private var transactionLimitWarningSection: some View {
-        if viewModel.showLimitWarning {
+        if self.viewModel.showLimitWarning {
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
                 HStack {
                     Image(systemName: "chart.bar.xaxis")
                         .foregroundColor(.orange)
                         .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize()))
-                    Text(transactionLimitWarningTitle)
+                    Text(self.transactionLimitWarningTitle)
                         .font(ResponsiveDesign.headlineFont())
                         .foregroundColor(.orange)
                 }
@@ -349,7 +349,7 @@ struct BuyOrderView: View {
             .cornerRadius(ResponsiveDesign.spacing(10))
         } else if let remainingLimit = viewModel.remainingDailyLimit {
             // Show remaining limit info when approaching limit (< 50% remaining)
-            let dailyLimit = (viewModel.transactionLimitCheckResult?.remainingDaily ?? 0) + viewModel.estimatedCost
+            let dailyLimit = (viewModel.transactionLimitCheckResult?.remainingDaily ?? 0) + self.viewModel.estimatedCost
             let usagePercent = dailyLimit > 0 ? (1.0 - remainingLimit / dailyLimit) : 0
 
             if usagePercent > 0.5 {
@@ -370,11 +370,11 @@ struct BuyOrderView: View {
         OrderActionButton(
             title: "(Gebührenpflichtig) Kaufen",
             backgroundColor: AppTheme.buttonColor,
-            isEnabled: viewModel.canPlaceOrder && !viewModel.showLimitWarning,
+            isEnabled: self.viewModel.canPlaceOrder && !self.viewModel.showLimitWarning,
             action: {
                 print("🔘 DEBUG: Buy button tapped in form section")
                 Task {
-                    await viewModel.placeOrder()
+                    await self.viewModel.placeOrder()
                 }
             }
         )
@@ -388,8 +388,10 @@ struct BuyOrderView: View {
             Text("Rechtliche Hinweise")
                 .font(ResponsiveDesign.headlineFont())
                 .foregroundColor(AppTheme.secondaryText)
-            Text("Mit dem Klicken auf 'Kaufen' stimmen Sie den allgemeinen Geschäftsbedingungen zu und bestätigen, dass Sie die Risiken des Wertpapierhandels verstanden haben. Diese Transaktion ist gebührenpflichtig.")
-                .font(ResponsiveDesign.captionFont())
+            Text(
+                "Mit dem Klicken auf 'Kaufen' stimmen Sie den allgemeinen Geschäftsbedingungen zu und bestätigen, dass Sie die Risiken des Wertpapierhandels verstanden haben. Diese Transaktion ist gebührenpflichtig."
+            )
+            .font(ResponsiveDesign.captionFont())
         }
         .padding()
         .background(AppTheme.sectionBackground)
@@ -397,8 +399,8 @@ struct BuyOrderView: View {
     }
 
     private func getValidationMessage() -> String? {
-        if viewModel.orderMode == .limit {
-            if viewModel.limit.isEmpty {
+        if self.viewModel.orderMode == .limit {
+            if self.viewModel.limit.isEmpty {
                 return "⚠️ Bitte geben Sie einen Limitpreis ein"
             } else if let limitPrice = viewModel.limitPrice, limitPrice > 0 {
                 return "✓ Limitpreis gesetzt: \(String(format: "%.2f", limitPrice).replacingOccurrences(of: ".", with: ","))"
@@ -408,8 +410,7 @@ struct BuyOrderView: View {
         }
         return nil
     }
-
-    }
+}
 
 // MARK: - Helper Functions
 

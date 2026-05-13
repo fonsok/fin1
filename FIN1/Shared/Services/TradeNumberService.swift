@@ -58,7 +58,7 @@ final class TradeNumberService: TradeNumberServiceProtocol, @unchecked Sendable 
     // MARK: - ServiceLifecycle
 
     func start() async {
-        loadLegacyTradeNumber()
+        self.loadLegacyTradeNumber()
     }
 
     func stop() async {
@@ -67,9 +67,9 @@ final class TradeNumberService: TradeNumberServiceProtocol, @unchecked Sendable 
 
     func reset() async {
         // Note: reset() is async to match protocol, but operations are synchronous
-        queue.sync {
-            traderTradeNumbers.removeAll()
-            globalTradeNumber = 0
+        self.queue.sync {
+            self.traderTradeNumbers.removeAll()
+            self.globalTradeNumber = 0
             // Note: We don't clear UserDefaults here to preserve data between sessions
         }
     }
@@ -78,17 +78,17 @@ final class TradeNumberService: TradeNumberServiceProtocol, @unchecked Sendable 
 
     /// Generates the next trade number for a specific trader
     func generateNextTradeNumber(for traderId: String) -> Int {
-        return queue.sync {
+        return self.queue.sync {
             // Load current number for this trader if not in memory
-            if traderTradeNumbers[traderId] == nil {
-                let key = tradeNumberKey(for: traderId)
-                traderTradeNumbers[traderId] = userDefaults.integer(forKey: key)
+            if self.traderTradeNumbers[traderId] == nil {
+                let key = self.tradeNumberKey(for: traderId)
+                self.traderTradeNumbers[traderId] = self.userDefaults.integer(forKey: key)
             }
 
             // Increment and save
             let currentNumber = (traderTradeNumbers[traderId] ?? 0) + 1
-            traderTradeNumbers[traderId] = currentNumber
-            saveTradeNumber(currentNumber, for: traderId)
+            self.traderTradeNumbers[traderId] = currentNumber
+            self.saveTradeNumber(currentNumber, for: traderId)
 
             print("🔢 TradeNumberService: Generated trade #\(currentNumber) for trader \(traderId)")
             return currentNumber
@@ -97,27 +97,27 @@ final class TradeNumberService: TradeNumberServiceProtocol, @unchecked Sendable 
 
     /// Legacy global method - deprecated but kept for backward compatibility
     func generateNextTradeNumber() -> Int {
-        return queue.sync {
-            globalTradeNumber += 1
-            userDefaults.set(globalTradeNumber, forKey: legacyTradeNumberKey)
-            return globalTradeNumber
+        return self.queue.sync {
+            self.globalTradeNumber += 1
+            self.userDefaults.set(self.globalTradeNumber, forKey: self.legacyTradeNumberKey)
+            return self.globalTradeNumber
         }
     }
 
     /// Gets the current trade number for a specific trader
     func getCurrentTradeNumber(for traderId: String) -> Int {
-        return queue.sync {
+        return self.queue.sync {
             if let number = traderTradeNumbers[traderId] {
                 return number
             }
-            let key = tradeNumberKey(for: traderId)
-            return userDefaults.integer(forKey: key)
+            let key = self.tradeNumberKey(for: traderId)
+            return self.userDefaults.integer(forKey: key)
         }
     }
 
     func getCurrentTradeNumber() -> Int {
-        return queue.sync {
-            return globalTradeNumber
+        return self.queue.sync {
+            return self.globalTradeNumber
         }
     }
 
@@ -125,7 +125,7 @@ final class TradeNumberService: TradeNumberServiceProtocol, @unchecked Sendable 
     /// This ensures the service knows the highest trade number for each trader
     /// - Parameter trades: Array of trades to synchronize from
     func synchronizeTradeNumbers(from trades: [Trade]) {
-        queue.async(flags: .barrier) {
+        self.queue.async(flags: .barrier) {
             // Group trades by trader ID
             let tradesByTrader = Dictionary(grouping: trades) { $0.traderId }
 
@@ -160,17 +160,17 @@ final class TradeNumberService: TradeNumberServiceProtocol, @unchecked Sendable 
         let sanitizedId = traderId.replacingOccurrences(of: ":", with: "_")
             .replacingOccurrences(of: "@", with: "_")
             .replacingOccurrences(of: ".", with: "_")
-        return "\(tradeNumberKeyPrefix)user_\(sanitizedId)"
+        return "\(self.tradeNumberKeyPrefix)user_\(sanitizedId)"
     }
 
     private func saveTradeNumber(_ number: Int, for traderId: String) {
-        let key = tradeNumberKey(for: traderId)
-        userDefaults.set(number, forKey: key)
+        let key = self.tradeNumberKey(for: traderId)
+        self.userDefaults.set(number, forKey: key)
     }
 
     private func loadLegacyTradeNumber() {
-        queue.sync {
-            globalTradeNumber = userDefaults.integer(forKey: legacyTradeNumberKey)
+        self.queue.sync {
+            self.globalTradeNumber = self.userDefaults.integer(forKey: self.legacyTradeNumberKey)
         }
     }
 }
@@ -180,23 +180,23 @@ final class TradeNumberService: TradeNumberServiceProtocol, @unchecked Sendable 
 extension TradeNumberService {
     /// Convenience method to get formatted current trade number for a trader
     func formattedCurrentTradeNumber(for traderId: String) -> String {
-        return formatTradeNumber(getCurrentTradeNumber(for: traderId))
+        return self.formatTradeNumber(self.getCurrentTradeNumber(for: traderId))
     }
 
     /// Convenience method to get formatted next trade number for a trader
     func formattedNextTradeNumber(for traderId: String) -> String {
-        return formatTradeNumber(generateNextTradeNumber(for: traderId))
+        return self.formatTradeNumber(self.generateNextTradeNumber(for: traderId))
     }
 
     /// Legacy convenience method - uses global counter
     @available(*, deprecated, message: "Use formattedCurrentTradeNumber(for:) for per-trader numbering")
     var formattedCurrentTradeNumber: String {
-        return formatTradeNumber(getCurrentTradeNumber())
+        return self.formatTradeNumber(self.getCurrentTradeNumber())
     }
 
     /// Legacy convenience method - uses global counter
     @available(*, deprecated, message: "Use formattedNextTradeNumber(for:) for per-trader numbering")
     var formattedNextTradeNumber: String {
-        return formatTradeNumber(generateNextTradeNumber())
+        return self.formatTradeNumber(self.generateNextTradeNumber())
     }
 }

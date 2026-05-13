@@ -13,24 +13,24 @@ struct OrderConfirmationOverlayModifier: ViewModifier {
             .overlay(
                 // Order placed overlay
                 Group {
-                    if isShowing {
-                        OrderPlacedOverlay(orderType: orderType) {
+                    if self.isShowing {
+                        OrderPlacedOverlay(orderType: self.orderType) {
                             // Callback when overlay is dismissed
                             withAnimation(.easeOut(duration: 0.3)) {
-                                onDismiss()
+                                self.onDismiss()
                             }
                         }
                         .transition(.opacity.combined(with: .scale))
                         .onAppear {
-                            print("🎯 OrderConfirmationOverlay appeared for \(orderType)")
+                            print("🎯 OrderConfirmationOverlay appeared for \(self.orderType)")
                             // Auto-hide overlay after 2.5 seconds to allow user to read the message
                             DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
                                 print("🎯 OrderConfirmationOverlay: Dismissing overlay and navigating to depot")
                                 withAnimation(.easeOut(duration: 0.3)) {
-                                    onDismiss()
+                                    self.onDismiss()
                                 }
                                 // Navigate to depot after overlay is dismissed
-                                onNavigateToDepot()
+                                self.onNavigateToDepot()
                             }
                         }
                     }

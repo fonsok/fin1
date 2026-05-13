@@ -11,10 +11,10 @@ struct InvoiceItemsSection: View {
             if let transactionType = invoice.transactionType {
                 TransactionInfoRow(
                     transactionType: transactionType,
-                    wkn: extractWKNFromInvoice(),
-                    richtung: extractRichtungFromInvoice(),
-                    basiswert: extractBasiswertFromInvoice(),
-                    emittent: extractEmittentFromInvoice()
+                    wkn: self.extractWKNFromInvoice(),
+                    richtung: self.extractRichtungFromInvoice(),
+                    basiswert: self.extractBasiswertFromInvoice(),
+                    emittent: self.extractEmittentFromInvoice()
                 )
             }
 
@@ -24,10 +24,10 @@ struct InvoiceItemsSection: View {
 
             VStack(spacing: ResponsiveDesign.spacing(0)) {
                 // Table Header
-                InvoiceItemsTableHeader(invoice: invoice)
+                InvoiceItemsTableHeader(invoice: self.invoice)
 
                 // Table Rows
-                ForEach(invoice.items) { item in
+                ForEach(self.invoice.items) { item in
                     InvoiceItemRowView(item: item)
                 }
             }
@@ -43,7 +43,7 @@ struct InvoiceItemsSection: View {
 
     private func extractWKNFromInvoice() -> String {
         // Extract WKN from the first securities item description
-        for item in invoice.items {
+        for item in self.invoice.items {
             if item.itemType == .securities {
                 let description = item.description
                 // New format: Richtung|Basiswert|WKN/ISIN
@@ -71,7 +71,7 @@ struct InvoiceItemsSection: View {
 
     private func extractRichtungFromInvoice() -> String? {
         // Extract Richtung from the first securities item description
-        for item in invoice.items {
+        for item in self.invoice.items {
             if item.itemType == .securities {
                 let description = item.description
                 // New format: Richtung|Basiswert|WKN/ISIN
@@ -96,7 +96,7 @@ struct InvoiceItemsSection: View {
 
     private func extractBasiswertFromInvoice() -> String? {
         // Extract Basiswert from the first securities item description
-        for item in invoice.items {
+        for item in self.invoice.items {
             if item.itemType == .securities {
                 let description = item.description
                 // New format: Richtung|Basiswert|WKN/ISIN
@@ -120,9 +120,9 @@ struct InvoiceItemsSection: View {
 
     private func extractEmittentFromInvoice() -> String? {
         // Extract Emittent from WKN using the same logic as in confirmation views
-        let wkn = extractWKNFromInvoice()
+        let wkn = self.extractWKNFromInvoice()
         if wkn != "N/A" {
-            return getEmittentFromWKN(wkn)
+            return self.getEmittentFromWKN(wkn)
         }
         return nil
     }
@@ -163,7 +163,7 @@ struct InvoiceItemsTableHeader: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             // Only show Stück and Preis columns if there are securities items
-            if hasSecuritiesItems {
+            if self.hasSecuritiesItems {
                 Text("Stück")
                     .font(ResponsiveDesign.captionFont())
                     .fontWeight(.semibold)
@@ -189,7 +189,7 @@ struct InvoiceItemsTableHeader: View {
     }
 
     private var hasSecuritiesItems: Bool {
-        invoice.items.contains { $0.itemType == .securities }
+        self.invoice.items.contains { $0.itemType == .securities }
     }
 }
 

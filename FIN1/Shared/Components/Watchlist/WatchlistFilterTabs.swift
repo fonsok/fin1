@@ -8,15 +8,15 @@ struct WatchlistFilterTabs: View {
         HStack(spacing: ResponsiveDesign.spacing(12)) {
             ForEach(WatchlistFilter.allCases, id: \.self) { filter in
                 Button(action: {
-                    selectedFilter = filter
+                    self.selectedFilter = filter
                 }) {
                     Text(filter.displayName)
                         .font(ResponsiveDesign.bodyFont())
                         .fontWeight(.medium)
-                        .foregroundColor(selectedFilter == filter ? AppTheme.screenBackground : AppTheme.fontColor)
+                        .foregroundColor(self.selectedFilter == filter ? AppTheme.screenBackground : AppTheme.fontColor)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 8)
-                        .background(selectedFilter == filter ? AppTheme.accentLightBlue : Color.clear)
+                        .background(self.selectedFilter == filter ? AppTheme.accentLightBlue : Color.clear)
                         .overlay(
                             RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(20))
                                 .stroke(AppTheme.accentLightBlue, lineWidth: 1)

@@ -17,17 +17,17 @@ struct ProfileHeaderView: View {
             
             // User Info
             VStack(spacing: ResponsiveDesign.spacing(8)) {
-                Text(user?.fullName ?? "User Name")
+                Text(self.user?.fullName ?? "User Name")
                     .font(ResponsiveDesign.headlineFont())
                     .fontWeight(.bold)
                     .foregroundColor(AppTheme.fontColor)
                 
-                Text(user?.email ?? "user@example.com")
+                Text(self.user?.email ?? "user@example.com")
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.8))
                 
                 // Role Badge
-                Text(user?.role.displayName ?? "User")
+                Text(self.user?.role.displayName ?? "User")
                     .font(ResponsiveDesign.captionFont())
                     .fontWeight(.medium)
                     .foregroundColor(AppTheme.screenBackground)
@@ -41,13 +41,13 @@ struct ProfileHeaderView: View {
             HStack(spacing: ResponsiveDesign.spacing(16)) {
                 VerificationBadge(
                     title: "Email",
-                    isVerified: user?.isEmailVerified ?? false,
+                    isVerified: self.user?.isEmailVerified ?? false,
                     icon: "envelope.fill"
                 )
                 
                 VerificationBadge(
                     title: "KYC",
-                    isVerified: user?.isKYCCompleted ?? false,
+                    isVerified: self.user?.isKYCCompleted ?? false,
                     icon: "checkmark.shield.fill"
                 )
             }
@@ -65,20 +65,20 @@ struct VerificationBadge: View {
     
     var body: some View {
         VStack(spacing: ResponsiveDesign.spacing(8)) {
-            Image(systemName: icon)
+            Image(systemName: self.icon)
                 .font(ResponsiveDesign.headlineFont())
-                .foregroundColor(isVerified ? AppTheme.accentGreen : AppTheme.accentOrange)
+                .foregroundColor(self.isVerified ? AppTheme.accentGreen : AppTheme.accentOrange)
             
-            Text(title)
+            Text(self.title)
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor)
             
-            Text(isVerified ? "Verified" : "Pending")
+            Text(self.isVerified ? "Verified" : "Pending")
                 .font(ResponsiveDesign.captionFont())
-                .foregroundColor(isVerified ? AppTheme.accentGreen : AppTheme.accentOrange)
+                .foregroundColor(self.isVerified ? AppTheme.accentGreen : AppTheme.accentOrange)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
-                .background((isVerified ? AppTheme.accentGreen : AppTheme.accentOrange).opacity(0.2))
+                .background((self.isVerified ? AppTheme.accentGreen : AppTheme.accentOrange).opacity(0.2))
                 .cornerRadius(ResponsiveDesign.spacing(8))
         }
     }

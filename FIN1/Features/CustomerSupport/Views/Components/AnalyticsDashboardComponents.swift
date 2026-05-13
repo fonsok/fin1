@@ -14,17 +14,17 @@ struct MetricCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
             HStack {
-                Image(systemName: icon)
-                    .foregroundColor(color)
+                Image(systemName: self.icon)
+                    .foregroundColor(self.color)
                 Spacer()
             }
 
-            Text(value)
+            Text(self.value)
                 .font(ResponsiveDesign.titleFont())
                 .fontWeight(.bold)
                 .foregroundColor(AppTheme.fontColor)
 
-            Text(title)
+            Text(self.title)
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
         }
@@ -43,18 +43,18 @@ struct StatusBar: View {
     let color: Color
 
     private var percentage: Double {
-        guard total > 0 else { return 0 }
-        return Double(count) / Double(total)
+        guard self.total > 0 else { return 0 }
+        return Double(self.count) / Double(self.total)
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
             HStack {
-                Text(label)
+                Text(self.label)
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor)
                 Spacer()
-                Text("\(count)")
+                Text("\(self.count)")
                     .font(ResponsiveDesign.captionFont())
                     .fontWeight(.semibold)
                     .foregroundColor(AppTheme.fontColor)
@@ -68,8 +68,8 @@ struct StatusBar: View {
                         .cornerRadius(ResponsiveDesign.spacing(4))
 
                     Rectangle()
-                        .fill(color)
-                        .frame(width: geometry.size.width * percentage, height: 8)
+                        .fill(self.color)
+                        .frame(width: geometry.size.width * self.percentage, height: 8)
                         .cornerRadius(ResponsiveDesign.spacing(4))
                 }
             }
@@ -87,9 +87,9 @@ struct AgentPerformanceRow: View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
             HStack {
                 Image(systemName: "person.circle.fill")
-                    .foregroundColor(performanceLevelColor)
+                    .foregroundColor(self.performanceLevelColor)
 
-                Text(agent.agentName)
+                Text(self.agent.agentName)
                     .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.medium)
                     .foregroundColor(AppTheme.fontColor)
@@ -100,7 +100,7 @@ struct AgentPerformanceRow: View {
                     Image(systemName: "star.fill")
                         .foregroundColor(.yellow)
                         .font(ResponsiveDesign.captionFont())
-                    Text(String(format: "%.1f", agent.customerSatisfactionScore))
+                    Text(String(format: "%.1f", self.agent.customerSatisfactionScore))
                         .font(ResponsiveDesign.captionFont())
                         .fontWeight(.semibold)
                         .foregroundColor(AppTheme.fontColor)
@@ -108,12 +108,12 @@ struct AgentPerformanceRow: View {
             }
 
             HStack(spacing: ResponsiveDesign.spacing(16)) {
-                StatBadge(icon: "ticket.fill", value: "\(agent.ticketsAssigned)", label: "Zugewiesen")
-                StatBadge(icon: "checkmark.circle.fill", value: "\(agent.ticketsClosed)", label: "Geschlossen")
-                StatBadge(icon: "clock.fill", value: formatHours(agent.averageResolutionTime), label: "Ø Zeit")
+                StatBadge(icon: "ticket.fill", value: "\(self.agent.ticketsAssigned)", label: "Zugewiesen")
+                StatBadge(icon: "checkmark.circle.fill", value: "\(self.agent.ticketsClosed)", label: "Geschlossen")
+                StatBadge(icon: "clock.fill", value: self.formatHours(self.agent.averageResolutionTime), label: "Ø Zeit")
             }
 
-            CSStatusBadge(text: agent.performanceLevel.rawValue, color: performanceLevelColor)
+            CSStatusBadge(text: self.agent.performanceLevel.rawValue, color: self.performanceLevelColor)
         }
         .padding()
         .background(AppTheme.screenBackground)
@@ -121,7 +121,7 @@ struct AgentPerformanceRow: View {
     }
 
     private var performanceLevelColor: Color {
-        switch agent.performanceLevel {
+        switch self.agent.performanceLevel {
         case .excellent: return AppTheme.accentGreen
         case .good: return Color.cyan
         case .average: return AppTheme.accentOrange
@@ -146,15 +146,15 @@ struct StatBadge: View {
     var body: some View {
         VStack(spacing: ResponsiveDesign.spacing(2)) {
             HStack(spacing: ResponsiveDesign.spacing(4)) {
-                Image(systemName: icon)
+                Image(systemName: self.icon)
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.6))
-                Text(value)
+                Text(self.value)
                     .font(ResponsiveDesign.captionFont())
                     .fontWeight(.semibold)
                     .foregroundColor(AppTheme.fontColor)
             }
-            Text(label)
+            Text(self.label)
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.5))
         }

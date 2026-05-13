@@ -28,7 +28,7 @@ struct InvestmentSummaryView: View {
                         .font(ResponsiveDesign.bodyFont())
                         .fontWeight(.semibold)
                     Spacer()
-                    Text(viewModel.formattedTotalInvestment)
+                    Text(self.viewModel.formattedTotalInvestment)
                         .font(ResponsiveDesign.bodyFont())
                         .fontWeight(.bold)
                         .foregroundColor(AppTheme.accentGreen)
@@ -37,14 +37,14 @@ struct InvestmentSummaryView: View {
                 HStack {
                     Text("Number of Investments:")
                     Spacer()
-                    Text(viewModel.numberOfInvestmentsText)
+                    Text(self.viewModel.numberOfInvestmentsText)
                         .fontWeight(.medium)
                 }
 
                 HStack {
                     Text("Amount per Investment:")
                     Spacer()
-                    Text(viewModel.formattedAmountPerInvestment)
+                    Text(self.viewModel.formattedAmountPerInvestment)
                         .fontWeight(.medium)
                 }
 
@@ -52,9 +52,9 @@ struct InvestmentSummaryView: View {
 
                 HStack {
                     HStack(spacing: ResponsiveDesign.spacing(2)) {
-                        Text("App Service Charge (\(viewModel.configurationService.appServiceChargePercentage)):")
+                        Text("App Service Charge (\(self.viewModel.configurationService.appServiceChargePercentage)):")
                         Button(action: {
-                            showAppServiceChargeInfo = true
+                            self.showAppServiceChargeInfo = true
                         }) {
                             Image(systemName: "info.circle.fill")
                                 .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 0.7))
@@ -62,11 +62,11 @@ struct InvestmentSummaryView: View {
                         }
                     }
                     Spacer()
-                    Text(viewModel.formattedAppServiceCharge)
+                    Text(self.viewModel.formattedAppServiceCharge)
                         .fontWeight(.medium)
                 }
 
-                if currentBalance > 0 {
+                if self.currentBalance > 0 {
                     Divider()
 
                     HStack {
@@ -74,7 +74,7 @@ struct InvestmentSummaryView: View {
                             .font(ResponsiveDesign.bodyFont())
                             .fontWeight(.semibold)
                         Spacer()
-                        Text(currentBalance.formattedAsLocalizedCurrency())
+                        Text(self.currentBalance.formattedAsLocalizedCurrency())
                             .font(ResponsiveDesign.bodyFont())
                             .fontWeight(.medium)
                     }
@@ -84,10 +84,12 @@ struct InvestmentSummaryView: View {
                             .font(ResponsiveDesign.bodyFont())
                             .fontWeight(.semibold)
                         Spacer()
-                        Text(remainingBalance.formattedAsLocalizedCurrency())
+                        Text(self.remainingBalance.formattedAsLocalizedCurrency())
                             .font(ResponsiveDesign.bodyFont())
                             .fontWeight(.bold)
-                            .foregroundColor(remainingBalance >= CalculationConstants.Account.minimumCashReserve ? AppTheme.accentGreen : AppTheme.accentRed)
+                            .foregroundColor(
+                                self.remainingBalance >= CalculationConstants.Account.minimumCashReserve ? AppTheme.accentGreen : AppTheme.accentRed
+                            )
                     }
                 }
             }
@@ -97,7 +99,7 @@ struct InvestmentSummaryView: View {
         .padding()
         .background(AppTheme.sectionBackground)
         .cornerRadius(ResponsiveDesign.spacing(16))
-        .sheet(isPresented: $showAppServiceChargeInfo) {
+        .sheet(isPresented: self.$showAppServiceChargeInfo) {
             AppServiceChargeInfoSheet()
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
@@ -111,7 +113,7 @@ struct InvestmentSummaryView: View {
         viewModel: InvestmentSummaryViewModel(
             amountPerInvestment: 200.00,
             numberOfInvestments: 5,
-            totalInvestmentAmount: 1000.00,
+            totalInvestmentAmount: 1_000.00,
             configurationService: ConfigurationService(userService: UserService())
         )
     )
@@ -134,9 +136,11 @@ private struct AppServiceChargeInfoSheet: View {
                         .foregroundColor(AppTheme.fontColor)
 
                     (Text("By clicking the button\n") +
-                     Text("Create chargeable Investment")
+                        Text("Create chargeable Investment")
                         .italic() +
-                     Text(",\nyou immediately trigger payment of the service charge.\n\nEven if you delete relevant investments afterwards, the payment will remain valid."))
+                        Text(
+                            ",\nyou immediately trigger payment of the service charge.\n\nEven if you delete relevant investments afterwards, the payment will remain valid."
+                        ))
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(AppTheme.fontColor)
                 }
@@ -149,7 +153,7 @@ private struct AppServiceChargeInfoSheet: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") {
-                        dismiss()
+                        self.dismiss()
                     }
                     .foregroundColor(AppTheme.accentLightBlue)
                 }

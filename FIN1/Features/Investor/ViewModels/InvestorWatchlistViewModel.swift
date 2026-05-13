@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Investor Watchlist View Model
 /// ViewModel for InvestorWatchlistView following MVVM architecture
@@ -19,7 +19,7 @@ final class InvestorWatchlistViewModel: ObservableObject {
     init(watchlistService: any InvestorWatchlistServiceProtocol, traderDataService: any TraderDataServiceProtocol) {
         self.watchlistService = watchlistService
         self.traderDataService = traderDataService
-        setupBindings()
+        self.setupBindings()
     }
 
     // MARK: - Setup
@@ -31,21 +31,21 @@ final class InvestorWatchlistViewModel: ObservableObject {
             .sink { [weak self] _ in
                 self?.updateWatchedTraders()
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
 
         // Initial load
-        updateWatchedTraders()
+        self.updateWatchedTraders()
     }
 
     private func updateWatchedTraders() {
-        watchedTraders = mapWatchlistToTraders()
+        self.watchedTraders = self.mapWatchlistToTraders()
     }
 
     // MARK: - Business Logic Methods
 
     /// Maps watchlist items to MockTrader objects
     private func mapWatchlistToTraders() -> [MockTrader] {
-        watchlistService.watchlist.map { trader in
+        self.watchlistService.watchlist.map { trader in
             // Preserve the original ID from WatchlistTraderData
             let originalID = UUID(uuidString: trader.id) ?? UUID()
             return MockTrader(
@@ -75,10 +75,10 @@ final class InvestorWatchlistViewModel: ObservableObject {
     // MARK: - Error Handling
 
     func clearError() {
-        errorMessage = nil
+        self.errorMessage = nil
     }
 
     func showError(_ error: AppError) {
-        errorMessage = error.errorDescription ?? "An error occurred"
+        self.errorMessage = error.errorDescription ?? "An error occurred"
     }
 }

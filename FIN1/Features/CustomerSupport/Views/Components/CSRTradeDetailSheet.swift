@@ -12,11 +12,11 @@ struct CSRTradeDetailSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: ResponsiveDesign.spacing(16)) {
-                    headerSection
-                    tradeInfoSection
-                    financialSection
-                    statusSection
-                    timelineSection
+                    self.headerSection
+                    self.tradeInfoSection
+                    self.financialSection
+                    self.statusSection
+                    self.timelineSection
                 }
                 .padding(.horizontal, ResponsiveDesign.horizontalPadding())
                 .padding(.vertical, ResponsiveDesign.spacing(16))
@@ -27,7 +27,7 @@ struct CSRTradeDetailSheet: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Schließen") {
-                        dismiss()
+                        self.dismiss()
                     }
                     .foregroundColor(AppTheme.accentLightBlue)
                 }
@@ -40,7 +40,7 @@ struct CSRTradeDetailSheet: View {
     private var headerSection: some View {
         VStack(spacing: ResponsiveDesign.spacing(12)) {
             // Trade number badge
-            Text(trade.tradeNumber)
+            Text(self.trade.tradeNumber)
                 .font(ResponsiveDesign.captionFont())
                 .fontWeight(.semibold)
                 .foregroundColor(AppTheme.accentLightBlue)
@@ -50,13 +50,13 @@ struct CSRTradeDetailSheet: View {
                 .cornerRadius(ResponsiveDesign.spacing(6))
 
             // Trader name
-            Text("Trader: \(customerName)")
+            Text("Trader: \(self.customerName)")
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.8))
 
             // Symbol and direction
             HStack(spacing: ResponsiveDesign.spacing(8)) {
-                Text(trade.symbol)
+                Text(self.trade.symbol)
                     .font(ResponsiveDesign.titleFont())
                     .fontWeight(.bold)
                     .foregroundColor(AppTheme.fontColor)
@@ -64,10 +64,10 @@ struct CSRTradeDetailSheet: View {
                 Text("•")
                     .foregroundColor(AppTheme.fontColor.opacity(0.5))
 
-                Text(trade.direction)
+                Text(self.trade.direction)
                     .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.medium)
-                    .foregroundColor(trade.direction.lowercased() == "buy" ? AppTheme.accentGreen : AppTheme.accentRed)
+                    .foregroundColor(self.trade.direction.lowercased() == "buy" ? AppTheme.accentGreen : AppTheme.accentRed)
             }
         }
         .frame(maxWidth: .infinity)
@@ -89,7 +89,7 @@ struct CSRTradeDetailSheet: View {
             CSRDetailRow(
                 icon: "chart.bar.fill",
                 label: "Symbol",
-                value: trade.symbol,
+                value: self.trade.symbol,
                 valueColor: AppTheme.fontColor
             )
 
@@ -97,10 +97,10 @@ struct CSRTradeDetailSheet: View {
 
             // Direction
             CSRDetailRow(
-                icon: trade.direction.lowercased() == "buy" ? "arrow.up.circle.fill" : "arrow.down.circle.fill",
+                icon: self.trade.direction.lowercased() == "buy" ? "arrow.up.circle.fill" : "arrow.down.circle.fill",
                 label: "Richtung",
-                value: trade.direction == "Buy" ? "Kauf" : "Verkauf",
-                valueColor: trade.direction.lowercased() == "buy" ? AppTheme.accentGreen : AppTheme.accentRed
+                value: self.trade.direction == "Buy" ? "Kauf" : "Verkauf",
+                valueColor: self.trade.direction.lowercased() == "buy" ? AppTheme.accentGreen : AppTheme.accentRed
             )
 
             Divider()
@@ -109,7 +109,7 @@ struct CSRTradeDetailSheet: View {
             CSRDetailRow(
                 icon: "number.circle.fill",
                 label: "Stückzahl",
-                value: "\(trade.quantity)",
+                value: "\(self.trade.quantity)",
                 valueColor: AppTheme.fontColor
             )
         }
@@ -131,14 +131,14 @@ struct CSRTradeDetailSheet: View {
             CSRDetailRow(
                 icon: "eurosign.circle.fill",
                 label: "Einstiegspreis",
-                value: trade.entryPrice.formattedAsLocalizedCurrency(),
+                value: self.trade.entryPrice.formattedAsLocalizedCurrency(),
                 valueColor: AppTheme.fontColor
             )
 
             Divider()
 
             // Total investment
-            let totalInvestment = trade.entryPrice * Double(trade.quantity)
+            let totalInvestment = self.trade.entryPrice * Double(self.trade.quantity)
             CSRDetailRow(
                 icon: "banknote.fill",
                 label: "Gesamtinvestition",
@@ -158,7 +158,7 @@ struct CSRTradeDetailSheet: View {
                 )
 
                 // Current value
-                let currentValue = currentPrice * Double(trade.quantity)
+                let currentValue = currentPrice * Double(self.trade.quantity)
                 Divider()
 
                 CSRDetailRow(
@@ -214,8 +214,8 @@ struct CSRTradeDetailSheet: View {
                 Spacer()
 
                 CSStatusBadge(
-                    text: statusDisplayText,
-                    color: statusColor
+                    text: self.statusDisplayText,
+                    color: self.statusColor
                 )
             }
         }
@@ -237,17 +237,17 @@ struct CSRTradeDetailSheet: View {
             CSRDetailRow(
                 icon: "calendar.badge.plus",
                 label: "Erstellt am",
-                value: trade.createdAt.formatted(date: .long, time: .shortened),
+                value: self.trade.createdAt.formatted(date: .long, time: .shortened),
                 valueColor: AppTheme.fontColor
             )
 
             // Days since creation
-            let daysSinceCreation = Calendar.current.dateComponents([.day], from: trade.createdAt, to: Date()).day ?? 0
+            let daysSinceCreation = Calendar.current.dateComponents([.day], from: self.trade.createdAt, to: Date()).day ?? 0
             Divider()
 
             CSRDetailRow(
                 icon: "clock.fill",
-                label: isCompleted ? "Laufzeit" : "Laufzeit bisher",
+                label: self.isCompleted ? "Laufzeit" : "Laufzeit bisher",
                 value: "\(daysSinceCreation) Tage",
                 valueColor: AppTheme.fontColor
             )
@@ -260,22 +260,22 @@ struct CSRTradeDetailSheet: View {
     // MARK: - Helpers
 
     private var isCompleted: Bool {
-        trade.status.lowercased() == "completed" || trade.status.lowercased() == "closed"
+        self.trade.status.lowercased() == "completed" || self.trade.status.lowercased() == "closed"
     }
 
     private var statusDisplayText: String {
-        switch trade.status.lowercased() {
+        switch self.trade.status.lowercased() {
         case "open": return "Offen"
         case "active": return "Aktiv"
         case "completed": return "Abgeschlossen"
         case "closed": return "Geschlossen"
         case "cancelled": return "Storniert"
-        default: return trade.status.capitalized
+        default: return self.trade.status.capitalized
         }
     }
 
     private var statusColor: Color {
-        switch trade.status.lowercased() {
+        switch self.trade.status.lowercased() {
         case "open": return AppTheme.accentLightBlue
         case "active": return AppTheme.accentOrange
         case "completed", "closed": return AppTheme.accentGreen

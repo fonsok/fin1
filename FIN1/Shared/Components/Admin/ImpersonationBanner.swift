@@ -7,7 +7,7 @@ struct ImpersonationBanner: View {
     @State private var isVisible = true
 
     var body: some View {
-        if isVisible {
+        if self.isVisible {
             HStack(spacing: ResponsiveDesign.spacing(12)) {
                 Image(systemName: "person.badge.key.fill")
                     .font(ResponsiveDesign.headlineFont())
@@ -30,7 +30,7 @@ struct ImpersonationBanner: View {
 
                 Button(action: {
                     Task {
-                        await services.userService.stopImpersonating()
+                        await self.services.userService.stopImpersonating()
                     }
                 }) {
                     HStack(spacing: ResponsiveDesign.spacing(4)) {
@@ -55,7 +55,7 @@ struct ImpersonationBanner: View {
             .padding(.top, ResponsiveDesign.spacing(8))
             .shadow(color: AppTheme.accentRed.opacity(0.3), radius: 8, x: 0, y: 4)
             .transition(.move(edge: .top).combined(with: .opacity))
-            .animation(.easeInOut(duration: 0.3), value: isVisible)
+            .animation(.easeInOut(duration: 0.3), value: self.isVisible)
         }
     }
 }

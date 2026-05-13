@@ -35,12 +35,12 @@ final class ContactSupportViewModel: ObservableObject {
     // MARK: - Computed Properties
 
     var isFormValid: Bool {
-        !subject.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-        message.trimmingCharacters(in: .whitespacesAndNewlines).count >= 10
+        !self.subject.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+            self.message.trimmingCharacters(in: .whitespacesAndNewlines).count >= 10
     }
 
     var availableCategories: [SupportCategory] {
-        if userService.isTrader {
+        if self.userService.isTrader {
             return SupportCategory.allCases
         } else {
             return SupportCategory.allCases.filter { $0 != .tradingQuestion }
@@ -48,7 +48,7 @@ final class ContactSupportViewModel: ObservableObject {
     }
 
     var estimatedResponseTime: String {
-        switch selectedCategory {
+        switch self.selectedCategory {
         case .accountIssue, .security:
             return "Within 4 hours"
         case .technicalIssue:
@@ -70,12 +70,12 @@ final class ContactSupportViewModel: ObservableObject {
     // MARK: - URL Helpers
 
     func emailURL() -> URL? {
-        let subjectEncoded = subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
-        return URL(string: "mailto:\(supportEmail)?subject=\(subjectEncoded)")
+        let subjectEncoded = self.subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+        return URL(string: "mailto:\(self.supportEmail)?subject=\(subjectEncoded)")
     }
 
     func phoneURL() -> URL? {
-        let cleanPhone = supportPhone.replacingOccurrences(of: " ", with: "")
+        let cleanPhone = self.supportPhone.replacingOccurrences(of: " ", with: "")
             .replacingOccurrences(of: "(", with: "")
             .replacingOccurrences(of: ")", with: "")
             .replacingOccurrences(of: "-", with: "")
@@ -85,51 +85,51 @@ final class ContactSupportViewModel: ObservableObject {
     // MARK: - Actions
 
     func initiatePhoneCall() {
-        showCallConfirmation = true
+        self.showCallConfirmation = true
     }
 
     func startLiveChat() {
         // Live chat not implemented yet
-        showLiveChatUnavailable = true
+        self.showLiveChatUnavailable = true
     }
 
     func submitRequest() {
         Task {
-            await submitSupportRequest()
+            await self.submitSupportRequest()
         }
     }
 
     func submitSupportRequest() async {
-        guard isFormValid else { return }
+        guard self.isFormValid else { return }
         guard let userId = userService.currentUser?.id else {
-            errorMessage = "Benutzer nicht angemeldet"
-            showSubmitError = true
+            self.errorMessage = "Benutzer nicht angemeldet"
+            self.showSubmitError = true
             return
         }
 
-        isSubmitting = true
+        self.isSubmitting = true
         defer { isSubmitting = false }
 
         do {
             let ticket = try await customerSupportService.createUserTicket(
                 userId: userId,
-                subject: subject.trimmingCharacters(in: .whitespacesAndNewlines),
-                description: message.trimmingCharacters(in: .whitespacesAndNewlines),
-                category: selectedCategory.rawValue
+                subject: self.subject.trimmingCharacters(in: .whitespacesAndNewlines),
+                description: self.message.trimmingCharacters(in: .whitespacesAndNewlines),
+                category: self.selectedCategory.rawValue
             )
-            createdTicketNumber = ticket.ticketNumber
-            showSubmitSuccess = true
+            self.createdTicketNumber = ticket.ticketNumber
+            self.showSubmitSuccess = true
         } catch {
-            errorMessage = error.localizedDescription
-            showSubmitError = true
+            self.errorMessage = error.localizedDescription
+            self.showSubmitError = true
         }
     }
 
     func resetForm() {
-        subject = ""
-        message = ""
-        selectedCategory = .general
-        attachScreenshot = false
-        createdTicketNumber = nil
+        self.subject = ""
+        self.message = ""
+        self.selectedCategory = .general
+        self.attachScreenshot = false
+        self.createdTicketNumber = nil
     }
 }

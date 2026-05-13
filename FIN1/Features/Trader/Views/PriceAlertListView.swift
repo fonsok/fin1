@@ -6,7 +6,7 @@ struct PriceAlertListViewWrapper: View {
     @Environment(\.appServices) private var services
     
     var body: some View {
-        PriceAlertListView(priceAlertService: services.priceAlertService)
+        PriceAlertListView(priceAlertService: self.services.priceAlertService)
     }
 }
 
@@ -29,11 +29,11 @@ struct PriceAlertListView: View {
                 AppTheme.screenBackground
                     .ignoresSafeArea()
                 
-                if viewModel.isLoading && viewModel.alerts.isEmpty {
+                if self.viewModel.isLoading && self.viewModel.alerts.isEmpty {
                     ProgressView()
                         .progressViewStyle(CircularProgressViewStyle())
                 } else {
-                    priceAlertContent
+                    self.priceAlertContent
                 }
             }
             .navigationTitle("Price Alerts")
@@ -41,7 +41,7 @@ struct PriceAlertListView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: {
-                        showCreateAlert = true
+                        self.showCreateAlert = true
                     }, label: {
                         Image(systemName: "plus")
                             .foregroundColor(AppTheme.accentLightBlue)
@@ -50,21 +50,21 @@ struct PriceAlertListView: View {
             }
             .onAppear {
                 Task {
-                    await viewModel.loadAlerts()
+                    await self.viewModel.loadAlerts()
                 }
             }
-            .sheet(isPresented: $showCreateAlert) {
-                CreatePriceAlertView(priceAlertService: viewModel.priceAlertService)
+            .sheet(isPresented: self.$showCreateAlert) {
+                CreatePriceAlertView(priceAlertService: self.viewModel.priceAlertService)
             }
-            .sheet(item: $selectedAlert) { alert in
-                PriceAlertDetailView(alert: alert, priceAlertService: viewModel.priceAlertService)
+            .sheet(item: self.$selectedAlert) { alert in
+                PriceAlertDetailView(alert: alert, priceAlertService: self.viewModel.priceAlertService)
             }
-            .alert("Delete Alert", isPresented: $showDeleteConfirmation) {
+            .alert("Delete Alert", isPresented: self.$showDeleteConfirmation) {
                 Button("Cancel", role: .cancel) { }
                 Button("Delete", role: .destructive) {
                     if let alert = alertToDelete {
                         Task {
-                            await viewModel.deleteAlert(alert)
+                            await self.viewModel.deleteAlert(alert)
                         }
                     }
                 }
@@ -80,27 +80,27 @@ struct PriceAlertListView: View {
         ScrollView {
             VStack(spacing: ResponsiveDesign.spacing(16)) {
                 // Active Alerts Section
-                if !viewModel.activeAlerts.isEmpty {
+                if !self.viewModel.activeAlerts.isEmpty {
                     VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
                         Text("Active Alerts")
                             .font(ResponsiveDesign.headlineFont())
                             .foregroundColor(AppTheme.fontColor)
                             .padding(.horizontal, ResponsiveDesign.spacing(16))
                         
-                        ForEach(viewModel.activeAlerts) { alert in
+                        ForEach(self.viewModel.activeAlerts) { alert in
                             PriceAlertCard(
                                 alert: alert,
                                 onTap: {
-                                    selectedAlert = alert
+                                    self.selectedAlert = alert
                                 },
                                 onToggle: {
                                     Task {
-                                        await viewModel.toggleAlertEnabled(alert)
+                                        await self.viewModel.toggleAlertEnabled(alert)
                                     }
                                 },
                                 onDelete: {
-                                    alertToDelete = alert
-                                    showDeleteConfirmation = true
+                                    self.alertToDelete = alert
+                                    self.showDeleteConfirmation = true
                                 }
                             )
                             .padding(.horizontal, ResponsiveDesign.spacing(16))
@@ -109,27 +109,27 @@ struct PriceAlertListView: View {
                 }
                 
                 // Triggered Alerts Section
-                if !viewModel.triggeredAlerts.isEmpty {
+                if !self.viewModel.triggeredAlerts.isEmpty {
                     VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
                         Text("Triggered Alerts")
                             .font(ResponsiveDesign.headlineFont())
                             .foregroundColor(AppTheme.fontColor)
                             .padding(.horizontal, ResponsiveDesign.spacing(16))
                         
-                        ForEach(viewModel.triggeredAlerts) { alert in
+                        ForEach(self.viewModel.triggeredAlerts) { alert in
                             PriceAlertCard(
                                 alert: alert,
                                 onTap: {
-                                    selectedAlert = alert
+                                    self.selectedAlert = alert
                                 },
                                 onToggle: {
                                     Task {
-                                        await viewModel.toggleAlertEnabled(alert)
+                                        await self.viewModel.toggleAlertEnabled(alert)
                                     }
                                 },
                                 onDelete: {
-                                    alertToDelete = alert
-                                    showDeleteConfirmation = true
+                                    self.alertToDelete = alert
+                                    self.showDeleteConfirmation = true
                                 }
                             )
                             .padding(.horizontal, ResponsiveDesign.spacing(16))
@@ -138,9 +138,9 @@ struct PriceAlertListView: View {
                 }
                 
                 // Empty State
-                if viewModel.alerts.isEmpty && !viewModel.isLoading {
+                if self.viewModel.alerts.isEmpty && !self.viewModel.isLoading {
                     PriceAlertEmptyState {
-                        showCreateAlert = true
+                        self.showCreateAlert = true
                     }
                     .padding(.top, ResponsiveDesign.spacing(40))
                 }
@@ -158,15 +158,15 @@ struct PriceAlertCard: View {
     let onDelete: () -> Void
     
     var body: some View {
-        Button(action: onTap) {
+        Button(action: self.onTap) {
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
                 HStack {
                     VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
-                        Text(alert.symbol)
+                        Text(self.alert.symbol)
                             .font(ResponsiveDesign.headlineFont())
                             .foregroundColor(AppTheme.fontColor)
                         
-                        Text(alertTypeDescription)
+                        Text(self.alertTypeDescription)
                             .font(ResponsiveDesign.captionFont())
                             .foregroundColor(AppTheme.secondaryText)
                     }
@@ -174,7 +174,7 @@ struct PriceAlertCard: View {
                     Spacer()
                     
                     // Status Badge
-                    statusBadge
+                    self.statusBadge
                 }
                 
                 // Alert Details
@@ -195,8 +195,8 @@ struct PriceAlertCard: View {
                     
                     // Toggle Switch
                     Toggle("", isOn: Binding(
-                        get: { alert.isEnabled },
-                        set: { _ in onToggle() }
+                        get: { self.alert.isEnabled },
+                        set: { _ in self.onToggle() }
                     ))
                     .labelsHidden()
                 }
@@ -209,7 +209,7 @@ struct PriceAlertCard: View {
     }
     
     private var alertTypeDescription: String {
-        switch alert.alertType {
+        switch self.alert.alertType {
         case .above:
             return "Alert when price goes above threshold"
         case .below:
@@ -220,17 +220,17 @@ struct PriceAlertCard: View {
     }
     
     private var statusBadge: some View {
-        Text(alert.status.rawValue.capitalized)
+        Text(self.alert.status.rawValue.capitalized)
             .font(ResponsiveDesign.captionFont())
-            .foregroundColor(statusColor)
+            .foregroundColor(self.statusColor)
             .padding(.horizontal, ResponsiveDesign.spacing(8))
             .padding(.vertical, ResponsiveDesign.spacing(4))
-            .background(statusColor.opacity(0.2))
+            .background(self.statusColor.opacity(0.2))
             .cornerRadius(ResponsiveDesign.spacing(8))
     }
     
     private var statusColor: Color {
-        switch alert.status {
+        switch self.alert.status {
         case .active:
             return AppTheme.accentGreen
         case .triggered:
@@ -263,7 +263,7 @@ struct PriceAlertEmptyState: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, ResponsiveDesign.spacing(32))
             
-            Button(action: onCreateAlert) {
+            Button(action: self.onCreateAlert) {
                 Text("Create Alert")
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(.white)

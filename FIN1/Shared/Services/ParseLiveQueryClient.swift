@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Parse Live Query Client Protocol
 /// Protocol for subscribing to real-time updates from Parse Server
@@ -64,10 +64,10 @@ final class ParseLiveQueryClient: ParseLiveQueryClientProtocol {
     // MARK: - ParseLiveQueryClientProtocol
     
     func connect() async throws {
-        guard !isConnected else { return }
+        guard !self.isConnected else { return }
         
         // Convert http/https to ws/wss
-        let wsURL = liveQueryURL
+        let wsURL = self.liveQueryURL
             .replacingOccurrences(of: "http://", with: "ws://")
             .replacingOccurrences(of: "https://", with: "wss://")
         
@@ -76,30 +76,30 @@ final class ParseLiveQueryClient: ParseLiveQueryClientProtocol {
         }
         
         let session = URLSession(configuration: .default)
-        webSocketTask = session.webSocketTask(with: url)
+        self.webSocketTask = session.webSocketTask(with: url)
         
         // Add headers
         var request = URLRequest(url: url)
-        request.setValue(applicationId, forHTTPHeaderField: "X-Parse-Application-Id")
+        request.setValue(self.applicationId, forHTTPHeaderField: "X-Parse-Application-Id")
         if let sessionToken = sessionToken {
             request.setValue(sessionToken, forHTTPHeaderField: "X-Parse-Session-Token")
         }
         
-        webSocketTask?.resume()
-        isConnected = true
+        self.webSocketTask?.resume()
+        self.isConnected = true
         
         // Start receiving messages
-        receiveMessages()
+        self.receiveMessages()
         
         // Send connect message
-        try await sendConnectMessage()
+        try await self.sendConnectMessage()
     }
     
     func disconnect() {
-        webSocketTask?.cancel(with: .goingAway, reason: nil)
-        webSocketTask = nil
-        isConnected = false
-        subscriptions.removeAll()
+        self.webSocketTask?.cancel(with: .goingAway, reason: nil)
+        self.webSocketTask = nil
+        self.isConnected = false
+        self.subscriptions.removeAll()
     }
     
     func subscribe<T: Decodable>(
@@ -116,12 +116,12 @@ final class ParseLiveQueryClient: ParseLiveQueryClientProtocol {
             query: query
         )
         
-        subscriptions[subscriptionId] = subscription
+        self.subscriptions[subscriptionId] = subscription
         
         // Send subscribe message
         Task {
             do {
-                try await sendSubscribeMessage(subscription: subscription)
+                try await self.sendSubscribeMessage(subscription: subscription)
             } catch {
                 onError?(error)
             }
@@ -134,10 +134,10 @@ final class ParseLiveQueryClient: ParseLiveQueryClientProtocol {
     }
     
     func unsubscribe(_ subscription: LiveQuerySubscription) {
-        subscriptions.removeValue(forKey: subscription.id)
+        self.subscriptions.removeValue(forKey: subscription.id)
         
         Task {
-            try? await sendUnsubscribeMessage(subscriptionId: subscription.id)
+            try? await self.sendUnsubscribeMessage(subscriptionId: subscription.id)
         }
     }
     
@@ -152,9 +152,9 @@ final class ParseLiveQueryClient: ParseLiveQueryClientProtocol {
         if let sessionToken = sessionToken {
             var msg = message
             msg["sessionToken"] = sessionToken
-            try await sendMessage(msg)
+            try await self.sendMessage(msg)
         } else {
-            try await sendMessage(message)
+            try await self.sendMessage(message)
         }
     }
     
@@ -174,7 +174,7 @@ final class ParseLiveQueryClient: ParseLiveQueryClientProtocol {
             ]
         }
         
-        try await sendMessage(message)
+        try await self.sendMessage(message)
     }
     
     private func sendUnsubscribeMessage(subscriptionId: String) async throws {
@@ -201,7 +201,7 @@ final class ParseLiveQueryClient: ParseLiveQueryClientProtocol {
     }
     
     private func receiveMessages() {
-        webSocketTask?.receive { [weak self] result in
+        self.webSocketTask?.receive { [weak self] result in
             guard let self else { return }
             Task { @MainActor [weak self] in
                 guard let self else { return }
@@ -238,9 +238,9 @@ final class ParseLiveQueryClient: ParseLiveQueryClientProtocol {
                     print("✅ Subscribed to Live Query: \(requestId)")
                 }
             case "create", "update":
-                handleObjectUpdate(json)
+                self.handleObjectUpdate(json)
             case "delete":
-                handleObjectDelete(json)
+                self.handleObjectDelete(json)
             case "error":
                 if let errorMessage = json["error"] as? String {
                     print("⚠️ Live Query error: \(errorMessage)")

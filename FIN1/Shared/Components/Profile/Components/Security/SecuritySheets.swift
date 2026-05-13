@@ -13,10 +13,10 @@ struct PasswordChangeSheet: View {
                     .ignoresSafeArea()
 
                 VStack(spacing: ResponsiveDesign.spacing(24)) {
-                    passwordFields
-                    errorSection
-                    helpText
-                    changeButton
+                    self.passwordFields
+                    self.errorSection
+                    self.helpText
+                    self.changeButton
                     Spacer()
                 }
                 .padding(ResponsiveDesign.spacing(24))
@@ -25,7 +25,7 @@ struct PasswordChangeSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") { dismiss() }
+                    Button("Cancel") { self.dismiss() }
                         .foregroundColor(AppTheme.fontColor)
                 }
             }
@@ -34,13 +34,13 @@ struct PasswordChangeSheet: View {
 
     private var passwordFields: some View {
         VStack(spacing: ResponsiveDesign.spacing(16)) {
-            SecureField("Current Password", text: $viewModel.currentPassword)
+            SecureField("Current Password", text: self.$viewModel.currentPassword)
                 .textFieldStyle(SettingsSecureFieldStyle())
 
-            SecureField("New Password", text: $viewModel.newPassword)
+            SecureField("New Password", text: self.$viewModel.newPassword)
                 .textFieldStyle(SettingsSecureFieldStyle())
 
-            SecureField("Confirm New Password", text: $viewModel.confirmPassword)
+            SecureField("Confirm New Password", text: self.$viewModel.confirmPassword)
                 .textFieldStyle(SettingsSecureFieldStyle())
         }
     }
@@ -61,9 +61,9 @@ struct PasswordChangeSheet: View {
     }
 
     private var changeButton: some View {
-        Button(action: { viewModel.changePassword() }) {
+        Button(action: { self.viewModel.changePassword() }) {
             HStack {
-                if viewModel.isChangingPassword {
+                if self.viewModel.isChangingPassword {
                     ProgressView()
                         .progressViewStyle(CircularProgressViewStyle(tint: .white))
                 } else {
@@ -77,7 +77,7 @@ struct PasswordChangeSheet: View {
             .foregroundColor(.white)
             .cornerRadius(ResponsiveDesign.spacing(12))
         }
-        .disabled(viewModel.isChangingPassword)
+        .disabled(self.viewModel.isChangingPassword)
     }
 }
 
@@ -94,12 +94,12 @@ struct TwoFactorSetupSheet: View {
                     .ignoresSafeArea()
 
                 VStack(spacing: ResponsiveDesign.spacing(24)) {
-                    headerIcon
-                    titleSection
-                    descriptionText
-                    methodInfoCard
+                    self.headerIcon
+                    self.titleSection
+                    self.descriptionText
+                    self.methodInfoCard
                     Spacer()
-                    doneButton
+                    self.doneButton
                 }
                 .padding(ResponsiveDesign.spacing(24))
             }
@@ -107,7 +107,7 @@ struct TwoFactorSetupSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") { dismiss() }
+                    Button("Cancel") { self.dismiss() }
                         .foregroundColor(AppTheme.fontColor)
                 }
             }
@@ -128,20 +128,22 @@ struct TwoFactorSetupSheet: View {
     }
 
     private var descriptionText: some View {
-        Text("Two-factor authentication adds an extra layer of security to your account by requiring a verification code in addition to your password.")
-            .font(ResponsiveDesign.bodyFont())
-            .foregroundColor(AppTheme.fontColor.opacity(0.7))
-            .multilineTextAlignment(.center)
+        Text(
+            "Two-factor authentication adds an extra layer of security to your account by requiring a verification code in addition to your password."
+        )
+        .font(ResponsiveDesign.bodyFont())
+        .foregroundColor(AppTheme.fontColor.opacity(0.7))
+        .multilineTextAlignment(.center)
     }
 
     private var methodInfoCard: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(16)) {
-            Text("Selected Method: \(viewModel.twoFactorMethod.rawValue)")
+            Text("Selected Method: \(self.viewModel.twoFactorMethod.rawValue)")
                 .font(ResponsiveDesign.bodyFont())
                 .fontWeight(.medium)
                 .foregroundColor(AppTheme.fontColor)
 
-            Text(setupInstructions)
+            Text(self.setupInstructions)
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
         }
@@ -151,7 +153,7 @@ struct TwoFactorSetupSheet: View {
     }
 
     private var doneButton: some View {
-        Button(action: { dismiss() }) {
+        Button(action: { self.dismiss() }) {
             Text("Done")
                 .fontWeight(.semibold)
                 .frame(maxWidth: .infinity)
@@ -163,7 +165,7 @@ struct TwoFactorSetupSheet: View {
     }
 
     private var setupInstructions: String {
-        switch viewModel.twoFactorMethod {
+        switch self.viewModel.twoFactorMethod {
         case .sms:
             return "We will send a verification code to your registered phone number each time you sign in."
         case .email:
@@ -188,7 +190,7 @@ struct SecurityActivityLogSheet: View {
 
                 ScrollView {
                     VStack(spacing: ResponsiveDesign.spacing(12)) {
-                        ForEach(events) { event in
+                        ForEach(self.events) { event in
                             SecurityEventRow(event: event)
                         }
                     }
@@ -199,7 +201,7 @@ struct SecurityActivityLogSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") { dismiss() }
+                    Button("Done") { self.dismiss() }
                         .foregroundColor(AppTheme.accentLightBlue)
                 }
             }

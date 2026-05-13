@@ -13,20 +13,20 @@ struct ConfigurationSettingsView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: ResponsiveDesign.spacing(24)) {
-                if appServices.userService.userRole == .admin {
-                    configurationSection
+                if self.appServices.userService.userRole == .admin {
+                    self.configurationSection
                 } else {
-                    unauthorizedAccessView
+                    self.unauthorizedAccessView
                 }
             }
             .navigationTitle("Configuration")
             .navigationBarTitleDisplayMode(.large)
             .responsivePadding()
             .onAppear {
-                viewModel.configure(with: appServices.configurationService)
+                self.viewModel.configure(with: self.appServices.configurationService)
             }
         }
-        .environmentObject(viewModel)
+        .environmentObject(self.viewModel)
     }
 
     // MARK: - Configuration Section
@@ -41,14 +41,14 @@ struct ConfigurationSettingsView: View {
                     .font(ResponsiveDesign.headlineFont())
                     .foregroundColor(.primary)
 
-                MinimumCashReserveSection(viewModel: viewModel)
-                UserMinimumCashReserveSection(viewModel: viewModel)
-                InitialAccountBalanceSection(viewModel: viewModel)
-                TraderCommissionRateSection(viewModel: viewModel)
-                ShowCommissionBreakdownInCreditNoteSection(viewModel: viewModel)
-                ShowDocumentReferenceLinksInAccountStatementSection(viewModel: viewModel)
-                PoolBalanceDistributionSection(viewModel: viewModel)
-                ResetToDefaultsSection(viewModel: viewModel)
+                MinimumCashReserveSection(viewModel: self.viewModel)
+                UserMinimumCashReserveSection(viewModel: self.viewModel)
+                InitialAccountBalanceSection(viewModel: self.viewModel)
+                TraderCommissionRateSection(viewModel: self.viewModel)
+                ShowCommissionBreakdownInCreditNoteSection(viewModel: self.viewModel)
+                ShowDocumentReferenceLinksInAccountStatementSection(viewModel: self.viewModel)
+                PoolBalanceDistributionSection(viewModel: self.viewModel)
+                ResetToDefaultsSection(viewModel: self.viewModel)
             }
             .padding()
             .background(Color(.systemBackground))

@@ -18,26 +18,26 @@ struct FAQCategoriesSection: View {
                     FAQCategoryChip(
                         title: "Alle",
                         icon: "square.grid.2x2.fill",
-                        isSelected: viewModel.selectedCategory == nil
+                        isSelected: self.viewModel.selectedCategory == nil
                     ) {
-                        viewModel.selectCategory(nil)
+                        self.viewModel.selectCategory(nil)
                     }
 
-                    ForEach(viewModel.categories) { category in
+                    ForEach(self.viewModel.categories) { category in
                         FAQCategoryChip(
                             title: category.displayName,
                             icon: category.icon,
-                            isSelected: viewModel.selectedCategory == category
+                            isSelected: self.viewModel.selectedCategory == category
                         ) {
-                            viewModel.selectCategory(category)
+                            self.viewModel.selectCategory(category)
                         }
                     }
                 }
             }
 
             // Articles in selected category
-            if viewModel.selectedCategory != nil {
-                let categoryArticles = viewModel.filteredArticles
+            if self.viewModel.selectedCategory != nil {
+                let categoryArticles = self.viewModel.filteredArticles
                 if categoryArticles.isEmpty {
                     Text("Keine Artikel in dieser Kategorie")
                         .font(ResponsiveDesign.captionFont())
@@ -46,7 +46,7 @@ struct FAQCategoriesSection: View {
                 } else {
                     ForEach(categoryArticles.prefix(5)) { article in
                         FAQArticleRow(article: article, isCSRMode: true) {
-                            viewModel.selectArticle(article)
+                            self.viewModel.selectArticle(article)
                         }
                     }
 

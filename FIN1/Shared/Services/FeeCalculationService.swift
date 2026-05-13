@@ -11,8 +11,8 @@ final class FeeCalculationService {
     /// - Parameter orderAmount: The order amount in EUR
     /// - Returns: Total fees (order fee + exchange fee + foreign costs)
     static func calculateTotalFees(for orderAmount: Double) -> Double {
-        let orderFee = calculateOrderFee(for: orderAmount)
-        let exchangeFee = calculateExchangeFee(for: orderAmount)
+        let orderFee = self.calculateOrderFee(for: orderAmount)
+        let exchangeFee = self.calculateExchangeFee(for: orderAmount)
         let foreignCosts = CalculationConstants.FeeRates.foreignCosts
 
         return orderFee + exchangeFee + foreignCosts
@@ -53,15 +53,15 @@ final class FeeCalculationService {
         return [
             FeeDetail(
                 name: "Ordergebühr",
-                amount: calculateOrderFee(for: orderAmount)
+                amount: self.calculateOrderFee(for: orderAmount)
             ),
             FeeDetail(
                 name: "Handelsplatzgebühr",
-                amount: calculateExchangeFee(for: orderAmount)
+                amount: self.calculateExchangeFee(for: orderAmount)
             ),
             FeeDetail(
                 name: "Fremdkostenpauschale",
-                amount: calculateForeignCosts()
+                amount: self.calculateForeignCosts()
             )
         ]
     }

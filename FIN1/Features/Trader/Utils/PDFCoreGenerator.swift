@@ -1,6 +1,6 @@
 import Foundation
-import UIKit
 import PDFKit
+import UIKit
 
 // MARK: - PDF Core Generator
 struct PDFCoreGenerator {
@@ -23,7 +23,7 @@ struct PDFCoreGenerator {
             context.beginPage()
 
             let cgContext = context.cgContext
-            drawInvoice(in: cgContext, invoice: invoice, pageRect: pageRect)
+            self.drawInvoice(in: cgContext, invoice: invoice, pageRect: pageRect)
         }
 
         print("🔧 DEBUG: PDFCoreGenerator.generatePDF - PDF rendering completed, data size: \(data.count) bytes")
@@ -32,7 +32,7 @@ struct PDFCoreGenerator {
 
     /// Generates a preview image of the PDF
     static func generatePreview(from invoice: Invoice) -> UIImage? {
-        let pdfData = generatePDF(from: invoice)
+        let pdfData = self.generatePDF(from: invoice)
 
         guard let document = PDFDocument(data: pdfData),
               let page = document.page(at: 0) else {

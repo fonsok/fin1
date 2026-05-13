@@ -10,39 +10,45 @@ struct InvoiceDemoView: View {
 
     init() {
         // This will be injected via environment in real usage
-        self._viewModel = StateObject(wrappedValue: InvoiceViewModel(invoiceService: InvoiceService(), notificationService: NotificationService()))
+        self._viewModel = StateObject(
+            wrappedValue: InvoiceViewModel(invoiceService: InvoiceService(), notificationService: NotificationService())
+        )
     }
 
     var body: some View {
         NavigationStack {
             VStack(spacing: ResponsiveDesign.spacing(20)) {
                 // Header
-                headerSection
+                self.headerSection
 
                 // Sample Invoice Card
-                sampleInvoiceCard
+                self.sampleInvoiceCard
 
                 // Action Buttons
-                actionButtonsSection
+                self.actionButtonsSection
 
                 Spacer()
             }
             .padding()
             .navigationTitle("Rechnungs-Demo")
             .navigationBarTitleDisplayMode(.large)
-            .sheet(isPresented: $showingCreateInvoice) {
-                CreateInvoiceView(invoiceService: services.invoiceService, notificationService: services.notificationService)
+            .sheet(isPresented: self.$showingCreateInvoice) {
+                CreateInvoiceView(invoiceService: self.services.invoiceService, notificationService: self.services.notificationService)
             }
-            .sheet(item: $selectedInvoice) { invoice in
+            .sheet(item: self.$selectedInvoice) { invoice in
                 NavigationStack {
-                    InvoiceDetailView(invoice: invoice, invoiceService: services.invoiceService, notificationService: services.notificationService)
+                    InvoiceDetailView(
+                        invoice: invoice,
+                        invoiceService: self.services.invoiceService,
+                        notificationService: self.services.notificationService
+                    )
                 }
             }
         }
         .onAppear {
             // Load actual user invoices
-            let currentUserId = services.userService.currentUser?.id ?? "current_user_id"
-            viewModel.loadInvoices(for: currentUserId)
+            let currentUserId = self.services.userService.currentUser?.id ?? "current_user_id"
+            self.viewModel.loadInvoices(for: currentUserId)
         }
     }
 
@@ -137,10 +143,12 @@ struct InvoiceDemoView: View {
                     .font(ResponsiveDesign.captionFont())
                     .fontWeight(.semibold)
 
-                Text("Beim Kauf werden keine Steuern abgezogen. Die Besteuerung erfolgt erst beim Verkauf bzw. Gewinnrealisierung gemäß Abgeltungsteuer (dzt. 25% + Soli).")
-                    .font(ResponsiveDesign.captionFont())
-                    .foregroundColor(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                Text(
+                    "Beim Kauf werden keine Steuern abgezogen. Die Besteuerung erfolgt erst beim Verkauf bzw. Gewinnrealisierung gemäß Abgeltungsteuer (dzt. 25% + Soli)."
+                )
+                .font(ResponsiveDesign.captionFont())
+                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
             }
         }
         .padding()
@@ -151,7 +159,7 @@ struct InvoiceDemoView: View {
         )
         .onTapGesture {
             // Show sample invoice detail
-            selectedInvoice = Invoice.sampleInvoice()
+            self.selectedInvoice = Invoice.sampleInvoice()
         }
     }
 
@@ -160,19 +168,19 @@ struct InvoiceDemoView: View {
     private var actionButtonsSection: some View {
         VStack(spacing: ResponsiveDesign.spacing(12)) {
             Button("Musterrechnung anzeigen") {
-                selectedInvoice = Invoice.sampleInvoice()
+                self.selectedInvoice = Invoice.sampleInvoice()
             }
             .buttonStyle(.borderedProminent)
             .frame(maxWidth: .infinity)
 
             Button("Neue Rechnung erstellen") {
-                showingCreateInvoice = true
+                self.showingCreateInvoice = true
             }
             .buttonStyle(.bordered)
             .frame(maxWidth: .infinity)
 
             Button("PDF generieren") {
-                generateSamplePDF()
+                self.generateSamplePDF()
             }
             .buttonStyle(.bordered)
             .frame(maxWidth: .infinity)
@@ -183,7 +191,7 @@ struct InvoiceDemoView: View {
 
     private func generateSamplePDF() {
         let sampleInvoice = Invoice.sampleInvoice()
-        viewModel.generatePDF(for: sampleInvoice)
+        self.viewModel.generatePDF(for: sampleInvoice)
     }
 }
 

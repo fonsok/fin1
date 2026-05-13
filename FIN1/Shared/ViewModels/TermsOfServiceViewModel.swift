@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 /// ViewModel for Terms of Service view
 /// Manages section expansion, search filtering, and language selection
@@ -43,7 +43,7 @@ final class TermsOfServiceViewModel: ObservableObject {
                 .sink { [weak self] _ in
                     self?.objectWillChange.send()
                 }
-                .store(in: &cancellables)
+                .store(in: &self.cancellables)
         }
 
         Task { [weak self] in
@@ -54,11 +54,11 @@ final class TermsOfServiceViewModel: ObservableObject {
     // MARK: - Computed Properties
 
     private var commissionRate: Double {
-        configurationService.effectiveCommissionRate
+        self.configurationService.effectiveCommissionRate
     }
 
     private var bundledSections: [TermsSection] {
-        TermsOfServiceDataProvider.sections(for: currentLanguage, commissionRate: commissionRate)
+        TermsOfServiceDataProvider.sections(for: self.currentLanguage, commissionRate: self.commissionRate)
     }
 
     private var serverSections: [TermsSection] {
@@ -80,15 +80,15 @@ final class TermsOfServiceViewModel: ObservableObject {
     var isUsingServerContent: Bool {
         guard let serverTermsContent else { return false }
         guard !serverTermsContent.sections.isEmpty else { return false }
-        return serverTermsContent.sections.count >= bundledSections.count
+        return serverTermsContent.sections.count >= self.bundledSections.count
     }
 
     var displayedVersion: String {
-        isUsingServerContent ? (serverTermsContent?.version ?? TermsVersionConstants.currentTermsVersion) : TermsVersionConstants.currentTermsVersion
+        self.isUsingServerContent ? (self.serverTermsContent?.version ?? TermsVersionConstants.currentTermsVersion) : TermsVersionConstants.currentTermsVersion
     }
 
     var displayedEffectiveDateISO: String? {
-        isUsingServerContent ? serverTermsContent?.effectiveDate : nil
+        self.isUsingServerContent ? self.serverTermsContent?.effectiveDate : nil
     }
 
     var displayedLastUpdatedText: String {
@@ -97,52 +97,52 @@ final class TermsOfServiceViewModel: ObservableObject {
             return formatted
         }
         // Bundled fallback text
-        return currentLanguage == .english ? "December 2024" : "Dezember 2024"
+        return self.currentLanguage == .english ? "December 2024" : "Dezember 2024"
     }
 
     var sections: [TermsSection] {
-        isUsingServerContent ? serverSections : bundledSections
+        self.isUsingServerContent ? self.serverSections : self.bundledSections
     }
 
     var filteredSections: [TermsSection] {
-        guard !searchQuery.isEmpty else { return sections }
-        let query = searchQuery.lowercased()
-        return sections.filter { section in
+        guard !self.searchQuery.isEmpty else { return self.sections }
+        let query = self.searchQuery.lowercased()
+        return self.sections.filter { section in
             section.title.lowercased().contains(query) ||
-            section.content.lowercased().contains(query)
+                section.content.lowercased().contains(query)
         }
     }
 
     var hasNoSearchResults: Bool {
-        !searchQuery.isEmpty && filteredSections.isEmpty
+        !self.searchQuery.isEmpty && self.filteredSections.isEmpty
     }
 
     // MARK: - Section Management
 
     func toggleSection(_ section: TermsSection) {
-        if expandedSectionIds.contains(section.id) {
-            expandedSectionIds.remove(section.id)
+        if self.expandedSectionIds.contains(section.id) {
+            self.expandedSectionIds.remove(section.id)
         } else {
-            expandedSectionIds.insert(section.id)
+            self.expandedSectionIds.insert(section.id)
         }
     }
 
     func isExpanded(_ section: TermsSection) -> Bool {
-        expandedSectionIds.contains(section.id)
+        self.expandedSectionIds.contains(section.id)
     }
 
     func expandAll() {
-        expandedSectionIds = Set(sections.map(\.id))
+        self.expandedSectionIds = Set(self.sections.map(\.id))
     }
 
     func collapseAll() {
-        expandedSectionIds.removeAll()
+        self.expandedSectionIds.removeAll()
     }
 
     // MARK: - Language Management
 
     func toggleLanguage() {
-        currentLanguage = (currentLanguage == .english) ? .german : .english
+        self.currentLanguage = (self.currentLanguage == .english) ? .german : .english
         Task { [weak self] in
             await self?.loadServerDrivenTermsIfAvailable()
         }
@@ -159,12 +159,12 @@ final class TermsOfServiceViewModel: ObservableObject {
             return
         }
 
-        let bundledCount = bundledSections.count
+        let bundledCount = self.bundledSections.count
 
         // 1) Try server
         do {
             let content = try await termsContentService.fetchCurrentTerms(
-                language: currentLanguage,
+                language: self.currentLanguage,
                 documentType: .terms
             )
             let shouldUseServer = content.sections.count >= bundledCount && !content.sections.isEmpty
@@ -175,7 +175,7 @@ final class TermsOfServiceViewModel: ObservableObject {
             if shouldUseServer {
                 await termsContentService.logDelivery(
                     documentType: .terms,
-                    language: currentLanguage,
+                    language: self.currentLanguage,
                     servedVersion: content.version,
                     servedHash: content.documentHash,
                     source: "server"
@@ -184,7 +184,7 @@ final class TermsOfServiceViewModel: ObservableObject {
                 // We fetched server content but are displaying bundled fallback.
                 await termsContentService.logDelivery(
                     documentType: .terms,
-                    language: currentLanguage,
+                    language: self.currentLanguage,
                     servedVersion: TermsVersionConstants.currentTermsVersion,
                     servedHash: nil,
                     source: "bundled"
@@ -205,7 +205,7 @@ final class TermsOfServiceViewModel: ObservableObject {
             if shouldUseCache {
                 await termsContentService.logDelivery(
                     documentType: .terms,
-                    language: currentLanguage,
+                    language: self.currentLanguage,
                     servedVersion: cached.version,
                     servedHash: cached.documentHash,
                     source: "cache"
@@ -213,7 +213,7 @@ final class TermsOfServiceViewModel: ObservableObject {
             } else {
                 await termsContentService.logDelivery(
                     documentType: .terms,
-                    language: currentLanguage,
+                    language: self.currentLanguage,
                     servedVersion: TermsVersionConstants.currentTermsVersion,
                     servedHash: nil,
                     source: "bundled"
@@ -229,7 +229,7 @@ final class TermsOfServiceViewModel: ObservableObject {
         }
         await termsContentService.logDelivery(
             documentType: .terms,
-            language: currentLanguage,
+            language: self.currentLanguage,
             servedVersion: TermsVersionConstants.currentTermsVersion,
             servedHash: nil,
             source: "bundled"

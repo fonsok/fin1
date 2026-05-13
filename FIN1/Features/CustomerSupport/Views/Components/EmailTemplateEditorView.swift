@@ -14,8 +14,8 @@ struct EmailTemplateEditorView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: ResponsiveDesign.spacing(16)) {
-                    headerInfo
-                    templateList
+                    self.headerInfo
+                    self.templateList
                 }
                 .padding()
             }
@@ -24,13 +24,13 @@ struct EmailTemplateEditorView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Schließen") { dismiss() }
+                    Button("Schließen") { self.dismiss() }
                 }
             }
-            .sheet(item: $selectedTemplate) { template in
+            .sheet(item: self.$selectedTemplate) { template in
                 EmailTemplateDetailView(template: template) { updatedTemplate in
                     if let index = templates.firstIndex(where: { $0.id == updatedTemplate.id }) {
-                        templates[index] = updatedTemplate
+                        self.templates[index] = updatedTemplate
                     }
                 }
             }
@@ -79,9 +79,9 @@ struct EmailTemplateEditorView: View {
 
     private var templateList: some View {
         VStack(spacing: ResponsiveDesign.spacing(8)) {
-            ForEach(templates) { template in
+            ForEach(self.templates) { template in
                 EmailTemplateRow(template: template) {
-                    selectedTemplate = template
+                    self.selectedTemplate = template
                 }
             }
         }
@@ -95,22 +95,22 @@ private struct EmailTemplateRow: View {
     let onTap: () -> Void
 
     var body: some View {
-        Button(action: onTap) {
+        Button(action: self.onTap) {
             HStack(spacing: ResponsiveDesign.spacing(12)) {
                 // Icon
-                Image(systemName: template.type.icon)
+                Image(systemName: self.template.type.icon)
                     .font(ResponsiveDesign.headlineFont())
                     .foregroundColor(AppTheme.accentLightBlue)
                     .frame(width: 32)
 
                 // Content
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
-                    Text(template.type.rawValue)
+                    Text(self.template.type.rawValue)
                         .font(ResponsiveDesign.bodyFont())
                         .fontWeight(.medium)
                         .foregroundColor(AppTheme.fontColor)
 
-                    Text(template.subject)
+                    Text(self.template.subject)
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(AppTheme.fontColor.opacity(0.7))
                         .lineLimit(1)
@@ -120,7 +120,7 @@ private struct EmailTemplateRow: View {
 
                 // Status
                 Circle()
-                    .fill(template.isActive ? AppTheme.accentGreen : AppTheme.fontColor.opacity(0.3))
+                    .fill(self.template.isActive ? AppTheme.accentGreen : AppTheme.fontColor.opacity(0.3))
                     .frame(width: 8, height: 8)
 
                 Image(systemName: "chevron.right")
@@ -167,7 +167,7 @@ private struct EmailTemplateDetailView: View {
 
                         Spacer()
 
-                        Toggle("", isOn: $isActive)
+                        Toggle("", isOn: self.$isActive)
                             .labelsHidden()
                             .tint(AppTheme.accentGreen)
                     }
@@ -181,7 +181,7 @@ private struct EmailTemplateDetailView: View {
                             .font(ResponsiveDesign.captionFont())
                             .foregroundColor(AppTheme.fontColor.opacity(0.7))
 
-                        TextField("E-Mail-Betreff", text: $subject)
+                        TextField("E-Mail-Betreff", text: self.$subject)
                             .font(ResponsiveDesign.bodyFont())
                             .padding()
                             .background(AppTheme.sectionBackground)
@@ -198,7 +198,7 @@ private struct EmailTemplateDetailView: View {
                             Spacer()
 
                             Button {
-                                showPreview = true
+                                self.showPreview = true
                             } label: {
                                 Label("Vorschau", systemImage: "eye.fill")
                                     .font(ResponsiveDesign.captionFont())
@@ -206,7 +206,7 @@ private struct EmailTemplateDetailView: View {
                             }
                         }
 
-                        TextEditor(text: $bodyContent)
+                        TextEditor(text: self.$bodyContent)
                             .font(ResponsiveDesign.monospacedFont(size: 17, weight: .regular))
                             .frame(minHeight: 300)
                             .padding()
@@ -216,40 +216,40 @@ private struct EmailTemplateDetailView: View {
                     }
 
                     // Placeholders
-                    placeholdersSection
+                    self.placeholdersSection
                 }
                 .padding()
             }
             .background(AppTheme.screenBackground.ignoresSafeArea())
-            .navigationTitle(template.type.rawValue)
+            .navigationTitle(self.template.type.rawValue)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Abbrechen") { dismiss() }
+                    Button("Abbrechen") { self.dismiss() }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Speichern") {
                         let updated = EmailTemplate(
                             id: template.id,
-                            type: template.type,
-                            subject: subject,
-                            bodyTemplate: bodyContent,
-                            isActive: isActive,
+                            type: self.template.type,
+                            subject: self.subject,
+                            bodyTemplate: self.bodyContent,
+                            isActive: self.isActive,
                             lastModified: Date()
                         )
-                        onSave(updated)
-                        dismiss()
+                        self.onSave(updated)
+                        self.dismiss()
                     }
                 }
             }
-            .sheet(isPresented: $showPreview) {
+            .sheet(isPresented: self.$showPreview) {
                 EmailPreviewView(
                     template: EmailTemplate(
-                        id: template.id,
-                        type: template.type,
-                        subject: subject,
-                        bodyTemplate: bodyContent,
-                        isActive: isActive
+                        id: self.template.id,
+                        type: self.template.type,
+                        subject: self.subject,
+                        bodyTemplate: self.bodyContent,
+                        isActive: self.isActive
                     )
                 )
             }
@@ -263,9 +263,9 @@ private struct EmailTemplateDetailView: View {
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
 
             FlowLayoutSimple(spacing: 6) {
-                ForEach(template.availablePlaceholders, id: \.self) { placeholder in
+                ForEach(self.template.availablePlaceholders, id: \.self) { placeholder in
                     Button {
-                        bodyContent += "{{\(placeholder)}}"
+                        self.bodyContent += "{{\(placeholder)}}"
                     } label: {
                         Text("{{\(placeholder)}}")
                             .font(ResponsiveDesign.monospacedFont(size: 11, weight: .regular))
@@ -322,7 +322,7 @@ private struct EmailPreviewView: View {
                             .font(ResponsiveDesign.captionFont())
                             .foregroundColor(AppTheme.fontColor.opacity(0.7))
 
-                        Text(template.render(with: sampleValues).subject)
+                        Text(self.template.render(with: self.sampleValues).subject)
                             .font(ResponsiveDesign.bodyFont())
                             .fontWeight(.semibold)
                             .foregroundColor(AppTheme.fontColor)
@@ -338,7 +338,7 @@ private struct EmailPreviewView: View {
                             .font(ResponsiveDesign.captionFont())
                             .foregroundColor(AppTheme.fontColor.opacity(0.7))
 
-                        Text(template.render(with: sampleValues).body)
+                        Text(self.template.render(with: self.sampleValues).body)
                             .font(ResponsiveDesign.bodyFont())
                             .foregroundColor(AppTheme.fontColor)
                     }
@@ -354,7 +354,7 @@ private struct EmailPreviewView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Schließen") { dismiss() }
+                    Button("Schließen") { self.dismiss() }
                 }
             }
         }
@@ -367,12 +367,12 @@ private struct FlowLayoutSimple: Layout {
     var spacing: CGFloat = 8
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let result = FlowResultSimple(in: proposal.width ?? 0, subviews: subviews, spacing: spacing)
+        let result = FlowResultSimple(in: proposal.width ?? 0, subviews: subviews, spacing: self.spacing)
         return result.size
     }
 
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        let result = FlowResultSimple(in: bounds.width, subviews: subviews, spacing: spacing)
+        let result = FlowResultSimple(in: bounds.width, subviews: subviews, spacing: self.spacing)
         for (index, position) in result.positions.enumerated() {
             subviews[index].place(at: CGPoint(x: bounds.minX + position.x, y: bounds.minY + position.y), proposal: .unspecified)
         }
@@ -396,7 +396,7 @@ private struct FlowLayoutSimple: Layout {
                     rowHeight = 0
                 }
 
-                positions.append(CGPoint(x: x, y: y))
+                self.positions.append(CGPoint(x: x, y: y))
                 rowHeight = max(rowHeight, size.height)
                 x += size.width + spacing
             }

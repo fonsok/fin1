@@ -1,6 +1,6 @@
+import PhotosUI
 import SwiftUI
 import UniformTypeIdentifiers
-import PhotosUI
 
 struct DocumentUploadView: View {
     @Binding var selectedImage: UIImage?
@@ -13,42 +13,42 @@ struct DocumentUploadView: View {
     var body: some View {
         VStack(spacing: ResponsiveDesign.spacing(16)) {
             // Test Mode Toggle
-            if appServices.testModeService.isTestModeEnabled {
+            if self.appServices.testModeService.isTestModeEnabled {
                 TestModeIndicatorView(
                     onDisable: {
-                        appServices.testModeService.disableTestMode()
-                        selectedImage = nil
+                        self.appServices.testModeService.disableTestMode()
+                        self.selectedImage = nil
                     }
                 )
             }
 
-/*          Text("Adressnachweis hochladen")
-                .font(ResponsiveDesign.headlineFont())
-                .foregroundColor(AppTheme.fontColor)
-                .frame(maxWidth: .infinity, alignment: .leading)
-*/
+            /*          Text("Adressnachweis hochladen")
+             .font(ResponsiveDesign.headlineFont())
+             .foregroundColor(AppTheme.fontColor)
+             .frame(maxWidth: .infinity, alignment: .leading)
+             */
 
             if let image = selectedImage {
                 DocumentPreviewView(
                     image: image,
                     onTakeNewPhoto: {
-                        showingCameraPicker = true
+                        self.showingCameraPicker = true
                     },
                     onSelectOtherFile: {
-                        showingDocumentPicker = true
+                        self.showingDocumentPicker = true
                     }
                 )
             } else {
                 UploadOptionsView(
                     onTakePhoto: {
-                        showingCameraPicker = true
+                        self.showingCameraPicker = true
                     },
                     onSelectFile: {
-                        showingDocumentPicker = true
+                        self.showingDocumentPicker = true
                     },
                     onEnableTestMode: {
-                        appServices.testModeService.enableTestMode()
-                        selectedImage = (appServices.testModeService as? TestModeService)?.sampleAddressDocument
+                        self.appServices.testModeService.enableTestMode()
+                        self.selectedImage = (self.appServices.testModeService as? TestModeService)?.sampleAddressDocument
                     }
                 )
             }
@@ -56,23 +56,23 @@ struct DocumentUploadView: View {
         .padding()
         .background(AppTheme.sectionBackground)
         .cornerRadius(ResponsiveDesign.spacing(16))
-        .sheet(isPresented: $showingCameraPicker) {
-            CameraPicker(selectedImage: $selectedImage)
+        .sheet(isPresented: self.$showingCameraPicker) {
+            CameraPicker(selectedImage: self.$selectedImage)
         }
         .photosPicker(
-            isPresented: $showingPhotoPicker,
-            selection: $selectedPhotoItem,
+            isPresented: self.$showingPhotoPicker,
+            selection: self.$selectedPhotoItem,
             matching: .images
         )
-        .onChange(of: selectedPhotoItem) { _, newItem in
-            PhotoPickerHelper.handleSelection(newItem, binding: $selectedImage)
+        .onChange(of: self.selectedPhotoItem) { _, newItem in
+            PhotoPickerHelper.handleSelection(newItem, binding: self.$selectedImage)
         }
         .fileImporter(
-            isPresented: $showingDocumentPicker,
+            isPresented: self.$showingDocumentPicker,
             allowedContentTypes: [.image, .pdf],
             allowsMultipleSelection: false
         ) { result in
-            handleFileImport(result)
+            self.handleFileImport(result)
         }
     }
 
@@ -80,12 +80,12 @@ struct DocumentUploadView: View {
         switch result {
         case .success(let files):
             if let _ = files.first {
-                if appServices.testModeService.isTestModeEnabled {
-                    selectedImage = (appServices.testModeService as? TestModeService)?.sampleAddressDocument
+                if self.appServices.testModeService.isTestModeEnabled {
+                    self.selectedImage = (self.appServices.testModeService as? TestModeService)?.sampleAddressDocument
                 } else {
                     // In production, this would be replaced with actual file processing
                     // For now, using sample image in both modes
-                    selectedImage = (appServices.testModeService as? TestModeService)?.sampleAddressDocument
+                    self.selectedImage = (self.appServices.testModeService as? TestModeService)?.sampleAddressDocument
                 }
             }
         case .failure(let error):
@@ -105,7 +105,7 @@ struct TestModeIndicatorView: View {
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.accentOrange)
             Spacer()
-            Button("Disable", action: onDisable)
+            Button("Disable", action: self.onDisable)
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.accentRed)
         }
@@ -124,7 +124,7 @@ struct DocumentPreviewView: View {
         VStack(spacing: ResponsiveDesign.spacing(16)) {
             // Use optimized image loading with caching
             OptimizedImageView(
-                image: image,
+                image: self.image,
                 placeholder: "doc.text",
                 maxHeight: 200,
                 cornerRadius: 12,
@@ -132,10 +132,10 @@ struct DocumentPreviewView: View {
             )
 
             HStack(spacing: ResponsiveDesign.spacing(16)) {
-                Button("Neues Foto aufnehmen", action: onTakeNewPhoto)
+                Button("Neues Foto aufnehmen", action: self.onTakeNewPhoto)
                     .foregroundColor(AppTheme.accentLightBlue)
 
-                Button("Andere Datei auswählen", action: onSelectOtherFile)
+                Button("Andere Datei auswählen", action: self.onSelectOtherFile)
                     .foregroundColor(AppTheme.accentLightBlue)
             }
         }
@@ -156,8 +156,8 @@ struct UploadOptionsView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             // Test Mode Button
-            if !appServices.testModeService.isTestModeEnabled {
-                Button(action: onEnableTestMode, label: {
+            if !self.appServices.testModeService.isTestModeEnabled {
+                Button(action: self.onEnableTestMode, label: {
                     HStack {
                         Image(systemName: "testtube.2")
                             .font(ResponsiveDesign.bodyFont())
@@ -186,14 +186,14 @@ struct UploadOptionsView: View {
                         return "Kamera öffnen"
                         #endif
                     }(),
-                    action: onTakePhoto
+                    action: self.onTakePhoto
                 )
 
                 UploadOptionButton(
                     icon: "doc.text.fill",
                     title: "Datei auswählen",
                     subtitle: "PNG, PDF",
-                    action: onSelectFile
+                    action: self.onSelectFile
                 )
             }
         }
@@ -207,17 +207,17 @@ struct UploadOptionButton: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: action, label: {
+        Button(action: self.action, label: {
             VStack(spacing: ResponsiveDesign.spacing(12)) {
-                Image(systemName: icon)
+                Image(systemName: self.icon)
                     .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 1.6))
                     .foregroundColor(AppTheme.accentLightBlue)
 
-                Text(title)
+                Text(self.title)
                     .font(ResponsiveDesign.headlineFont())
                     .foregroundColor(AppTheme.accentLightBlue)
 
-                Text(subtitle)
+                Text(self.subtitle)
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
             }

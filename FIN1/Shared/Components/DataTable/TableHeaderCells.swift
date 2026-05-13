@@ -7,12 +7,12 @@ struct TableHeaderCell: View {
     let headerFontWeight: Font.Weight
 
     var body: some View {
-        StaticHeaderCell(column: column, headerColor: headerColor, headerFontWeight: headerFontWeight)
-            .frame(width: columnWidth, alignment: column.alignment)
+        StaticHeaderCell(column: self.column, headerColor: self.headerColor, headerFontWeight: self.headerFontWeight)
+            .frame(width: self.columnWidth, alignment: self.column.alignment)
     }
 
     private var columnWidth: CGFloat? {
-        switch column.width {
+        switch self.column.width {
         case .flexible:
             return nil
         case .fixed(let width):
@@ -30,22 +30,22 @@ struct StaticHeaderCell: View {
 
     var body: some View {
         VStack(spacing: ResponsiveDesign.spacing(2)) {
-            ForEach(Array(titleLines.indices), id: \.self) { index in
+            ForEach(Array(self.titleLines.indices), id: \.self) { index in
                 HStack(spacing: ResponsiveDesign.spacing(2)) {
                     // Leading spacer for center alignment
-                    if column.alignment == .center {
+                    if self.column.alignment == .center {
                         Spacer()
                     }
 
-                    Text(titleLines[index])
+                    Text(self.titleLines[index])
                         .font(ResponsiveDesign.captionFont())
-                        .fontWeight(headerFontWeight)
-                        .foregroundColor(headerColor)
+                        .fontWeight(self.headerFontWeight)
+                        .foregroundColor(self.headerColor)
 
                     // Add info icon after the last word of the last line (footnote-style)
-                    if index == titleLines.count - 1 && column.infoText != nil {
+                    if index == self.titleLines.count - 1 && self.column.infoText != nil {
                         Button(action: {
-                            showInfo = true
+                            self.showInfo = true
                         }) {
                             Image(systemName: "info.circle.fill")
                                 .font(ResponsiveDesign.captionFont())
@@ -55,25 +55,25 @@ struct StaticHeaderCell: View {
                     }
 
                     // Trailing spacer for center alignment
-                    if column.alignment == .center {
+                    if self.column.alignment == .center {
                         Spacer()
                     }
                 }
-                .frame(maxWidth: .infinity, alignment: column.alignment == .leading ? .leading : .center)
+                .frame(maxWidth: .infinity, alignment: self.column.alignment == .leading ? .leading : .center)
             }
         }
-        .multilineTextAlignment(column.alignment == .leading ? .leading : .center)
+        .multilineTextAlignment(self.column.alignment == .leading ? .leading : .center)
         .minimumScaleFactor(0.7)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: column.alignment)
-        .sheet(isPresented: $showInfo) {
-            InfoSheet(title: column.title, infoText: column.infoText ?? "")
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: self.column.alignment)
+        .sheet(isPresented: self.$showInfo) {
+            InfoSheet(title: self.column.title, infoText: self.column.infoText ?? "")
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
         }
     }
 
     private var titleLines: [String] {
-        column.title.components(separatedBy: "\n")
+        self.column.title.components(separatedBy: "\n")
     }
 }
 
@@ -87,12 +87,12 @@ struct InfoSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(16)) {
-                    Text(title.replacingOccurrences(of: "\n", with: " "))
+                    Text(self.title.replacingOccurrences(of: "\n", with: " "))
                         .font(ResponsiveDesign.headlineFont())
                         .fontWeight(.bold)
                         .foregroundColor(AppTheme.fontColor)
 
-                    Text(infoText)
+                    Text(self.infoText)
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(AppTheme.fontColor)
                         .fixedSize(horizontal: false, vertical: true)
@@ -106,7 +106,7 @@ struct InfoSheet: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") {
-                        dismiss()
+                        self.dismiss()
                     }
                     .foregroundColor(AppTheme.accentLightBlue)
                 }

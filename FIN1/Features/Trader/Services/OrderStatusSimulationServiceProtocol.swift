@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Order Status Simulation Service Protocol
 /// Defines the contract for order status progression simulation

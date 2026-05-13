@@ -11,22 +11,22 @@ struct InvestmentPoolInfoRow: View {
         HStack(spacing: ResponsiveDesign.spacing(12)) {
             // Investment Icon
             Circle()
-                .fill(Color(pool.status.color).opacity(0.2))
+                .fill(Color(self.pool.status.color).opacity(0.2))
                 .frame(width: 40, height: 40)
                 .overlay(
                     Image(systemName: "building.2.fill")
                         .font(ResponsiveDesign.headlineFont())
-                        .foregroundColor(Color(pool.status.color))
+                        .foregroundColor(Color(self.pool.status.color))
                 )
 
             // Investment Info
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
-                Text("Investment #\(pool.poolNumber)")
+                Text("Investment #\(self.pool.poolNumber)")
                     .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.semibold)
                     .foregroundColor(AppTheme.fontColor)
 
-                Text(pool.currentBalance.formattedAsLocalizedCurrency())
+                Text(self.pool.currentBalance.formattedAsLocalizedCurrency())
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.secondaryText)
             }
@@ -35,12 +35,12 @@ struct InvestmentPoolInfoRow: View {
 
             // Status
             VStack(alignment: .trailing, spacing: ResponsiveDesign.spacing(4)) {
-                Text(pool.status.displayName)
+                Text(self.pool.status.displayName)
                     .font(ResponsiveDesign.captionFont())
                     .fontWeight(.medium)
-                    .foregroundColor(Color(pool.status.color))
+                    .foregroundColor(Color(self.pool.status.color))
 
-                Text("\(pool.numberOfInvestors) investors")
+                Text("\(self.pool.numberOfInvestors) investors")
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.secondaryText)
             }

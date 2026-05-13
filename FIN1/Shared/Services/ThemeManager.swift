@@ -94,14 +94,14 @@ final class ThemeManager: ObservableObject, @unchecked Sendable {
         let buttonColor: Color
 
         // MARK: - FIN1 Compatibility Properties
-        var screenBackground: Color { primaryBackground }
-        var sectionBackground: Color { cardBackground }
-        var fontColor: Color { primaryText }
-        var accentGreen: Color { successGreen }
-        var accentRed: Color { errorRed }
-        var accentOrange: Color { warningOrange }
-        var accentLightBlue: Color { infoBlue }
-        var inputText: Color { inputFieldText }
+        var screenBackground: Color { self.primaryBackground }
+        var sectionBackground: Color { self.cardBackground }
+        var fontColor: Color { self.primaryText }
+        var accentGreen: Color { self.successGreen }
+        var accentRed: Color { self.errorRed }
+        var accentOrange: Color { self.warningOrange }
+        var accentLightBlue: Color { self.infoBlue }
+        var inputText: Color { self.inputFieldText }
     }
 
     // MARK: - Theme Presets (Exact VVaaa Colors)
@@ -397,7 +397,7 @@ final class ThemeManager: ObservableObject, @unchecked Sendable {
 
     // MARK: - Current Theme Access
     var currentTheme: ThemeColors {
-        return themes[currentTargetGroup] ?? {
+        return self.themes[self.currentTargetGroup] ?? {
             guard let standardTheme = themes[.standard] else {
                 fatalError("Standard theme must always exist")
             }
@@ -406,17 +406,17 @@ final class ThemeManager: ObservableObject, @unchecked Sendable {
     }
 
     var colors: ThemeColors {
-        return currentTheme
+        return self.currentTheme
     }
 
     // MARK: - Methods
     func switchTargetGroup(_ group: TargetGroup) {
-        currentTargetGroup = group
+        self.currentTargetGroup = group
         UserDefaults.standard.set(group.rawValue, forKey: "selectedTargetGroup")
     }
 
     func getThemeForGroup(_ group: TargetGroup) -> ThemeColors {
-        return themes[group] ?? {
+        return self.themes[group] ?? {
             guard let standardTheme = themes[.standard] else {
                 fatalError("Standard theme must always exist")
             }
@@ -428,7 +428,7 @@ final class ThemeManager: ObservableObject, @unchecked Sendable {
     private init() {
         if let savedGroup = UserDefaults.standard.string(forKey: "selectedTargetGroup"),
            let group = TargetGroup(rawValue: savedGroup) {
-            currentTargetGroup = group
+            self.currentTargetGroup = group
         }
     }
 }

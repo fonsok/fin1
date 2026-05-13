@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Admin Summary Report ViewModel
 /// Aggregates completed investments and trades from account statements (source of truth)
@@ -42,39 +42,39 @@ final class AdminSummaryReportViewModel: ObservableObject {
     // MARK: - Public Methods
 
     func load() {
-        guard !isLoading else { return }
+        guard !self.isLoading else { return }
 
-        isLoading = true
-        errorMessage = nil
+        self.isLoading = true
+        self.errorMessage = nil
         Task {
             let report = await buildSummaryReport()
-            summary = report
-            isLoading = false
+            self.summary = report
+            self.isLoading = false
         }
     }
 
     func refresh() {
-        load()
+        self.load()
     }
 
     // MARK: - Private Methods
 
     private func buildSummaryReport() async -> AdminSummaryReport {
         // Get all investments
-        let allInvestments = investmentService.investments
+        let allInvestments = self.investmentService.investments
 
         // Filter completed investments
         let completedInvestments = allInvestments.filter { investment in
             investment.status == .completed || investment.status == .cancelled ||
-            (investment.status == .active && investment.reservationStatus == .completed)
+                (investment.status == .active && investment.reservationStatus == .completed)
         }
 
         // Apply filters
-        let filteredInvestments = applyInvestmentFilters(completedInvestments)
+        let filteredInvestments = self.applyInvestmentFilters(completedInvestments)
 
         // Get all completed trades
-        let allTrades = tradeLifecycleService.completedTrades
-        let filteredTrades = applyTradeFilters(allTrades)
+        let allTrades = self.tradeLifecycleService.completedTrades
+        let filteredTrades = self.applyTradeFilters(allTrades)
 
         // Build investment summaries
         var investmentDetails: [AdminInvestmentSummary] = []
@@ -83,16 +83,16 @@ final class AdminSummaryReportViewModel: ObservableObject {
         var totalGrossProfit: Double = 0
         var totalCommission: Double = 0
 
-        let commissionRate = configurationService.effectiveCommissionRate
+        let commissionRate = self.configurationService.effectiveCommissionRate
 
         for investment in filteredInvestments {
             // Get statement summary (source of truth)
             let statementSummary = InvestorInvestmentStatementAggregator.summarizeInvestment(
                 investmentId: investment.id,
-                poolTradeParticipationService: poolTradeParticipationService,
-                tradeLifecycleService: tradeLifecycleService,
-                invoiceService: invoiceService,
-                investmentService: investmentService,
+                poolTradeParticipationService: self.poolTradeParticipationService,
+                tradeLifecycleService: self.tradeLifecycleService,
+                invoiceService: self.invoiceService,
+                investmentService: self.investmentService,
                 calculationService: InvestorCollectionBillCalculationService(),
                 commissionCalculationService: nil,  // Use default
                 investment: investment,
@@ -108,7 +108,7 @@ final class AdminSummaryReportViewModel: ObservableObject {
             totalCommission += commission
 
             // Get trade numbers
-            let participations = poolTradeParticipationService.getParticipations(forInvestmentId: investment.id)
+            let participations = self.poolTradeParticipationService.getParticipations(forInvestmentId: investment.id)
             let tradeNumbers = participations.compactMap { participation -> Int? in
                 guard let trade = filteredTrades.first(where: { $0.id == participation.tradeId }) else {
                     return nil
@@ -128,7 +128,7 @@ final class AdminSummaryReportViewModel: ObservableObject {
                 grossProfit: grossProfit,
                 returnPercentage: await ServerCalculatedReturnResolver.resolveReturnPercentage(
                     investmentId: investment.id,
-                    settlementAPIService: settlementAPIService
+                    settlementAPIService: self.settlementAPIService
                 ),
                 commission: commission,
                 tradeNumbers: tradeNumbers,
@@ -143,7 +143,7 @@ final class AdminSummaryReportViewModel: ObservableObject {
         var totalTradeProfit: Double = 0
 
         for trade in filteredTrades {
-            let allInvoices = invoiceService.getInvoicesForTrade(trade.id)
+            let allInvoices = self.invoiceService.getInvoicesForTrade(trade.id)
             let buyInvoice = allInvoices.first { $0.transactionType == .buy }
             let sellInvoices = allInvoices.filter { $0.transactionType == .sell }
 
@@ -156,7 +156,7 @@ final class AdminSummaryReportViewModel: ObservableObject {
             totalTradeProfit += tradeProfit
 
             // Get investor participations
-            let participations = poolTradeParticipationService.getParticipations(forTradeId: trade.id)
+            let participations = self.poolTradeParticipationService.getParticipations(forTradeId: trade.id)
             let investorIds = Set(participations.map { $0.investmentId })
                 .compactMap { investmentId -> String? in
                     guard let investment = allInvestments.first(where: { $0.id == investmentId }) else {

@@ -44,9 +44,9 @@ final class ConflictResolutionService: ConflictResolutionServiceProtocol {
         localUpdatedAt: Date?,
         remoteUpdatedAt: Date?
     ) async throws -> T {
-        switch strategy {
+        switch self.strategy {
         case .lastWriteWins:
-            return try resolveLastWriteWins(
+            return try self.resolveLastWriteWins(
                 local: local,
                 remote: remote,
                 localUpdatedAt: localUpdatedAt,
@@ -54,7 +54,7 @@ final class ConflictResolutionService: ConflictResolutionServiceProtocol {
             )
 
         case .firstWriteWins:
-            return try resolveFirstWriteWins(
+            return try self.resolveFirstWriteWins(
                 local: local,
                 remote: remote,
                 localUpdatedAt: localUpdatedAt,
@@ -62,7 +62,7 @@ final class ConflictResolutionService: ConflictResolutionServiceProtocol {
             )
 
         case .fieldLevelMerging:
-            return try resolveFieldLevelMerging(
+            return try self.resolveFieldLevelMerging(
                 local: local,
                 remote: remote,
                 localUpdatedAt: localUpdatedAt,
@@ -137,7 +137,7 @@ final class ConflictResolutionService: ConflictResolutionServiceProtocol {
               let localDict = try? JSONSerialization.jsonObject(with: localData) as? [String: Any],
               let remoteDict = try? JSONSerialization.jsonObject(with: remoteData) as? [String: Any] else {
             // Fallback to last write wins if encoding fails
-            return try resolveLastWriteWins(
+            return try self.resolveLastWriteWins(
                 local: local,
                 remote: remote,
                 localUpdatedAt: localUpdatedAt,

@@ -1,6 +1,6 @@
+import Combine
 import Foundation
 import SwiftUI
-import Combine
 
 // MARK: - Pending Configuration Changes ViewModel
 /// ViewModel for managing 4-eyes approval workflow for critical configuration changes
@@ -26,11 +26,11 @@ final class PendingConfigurationChangesViewModel: ObservableObject {
 
     // MARK: - Computed Properties
     var hasPendingChanges: Bool {
-        !pendingChanges.isEmpty
+        !self.pendingChanges.isEmpty
     }
 
     var pendingCount: Int {
-        pendingChanges.count
+        self.pendingChanges.count
     }
 
     // MARK: - Initialization
@@ -44,35 +44,35 @@ final class PendingConfigurationChangesViewModel: ObservableObject {
     // MARK: - Data Loading
     func loadPendingChanges() async {
         guard let service = configurationService else {
-            errorMessage = "Configuration service not available"
+            self.errorMessage = "Configuration service not available"
             return
         }
 
-        isLoading = true
-        errorMessage = nil
+        self.isLoading = true
+        self.errorMessage = nil
 
         do {
-            pendingChanges = try await service.getPendingConfigurationChanges()
-            print("✅ Loaded \(pendingChanges.count) pending configuration changes")
+            self.pendingChanges = try await service.getPendingConfigurationChanges()
+            print("✅ Loaded \(self.pendingChanges.count) pending configuration changes")
         } catch {
-            errorMessage = "Failed to load pending changes: \(error.localizedDescription)"
+            self.errorMessage = "Failed to load pending changes: \(error.localizedDescription)"
             print("❌ Failed to load pending changes: \(error)")
         }
 
-        isLoading = false
+        self.isLoading = false
     }
 
     // MARK: - Approval Actions
     func selectForApproval(_ change: PendingConfigurationChange) {
-        selectedChangeId = change.id
-        approvalNotes = ""
-        showApprovalSheet = true
+        self.selectedChangeId = change.id
+        self.approvalNotes = ""
+        self.showApprovalSheet = true
     }
 
     func selectForRejection(_ change: PendingConfigurationChange) {
-        selectedChangeId = change.id
-        rejectionReason = ""
-        showRejectionSheet = true
+        self.selectedChangeId = change.id
+        self.rejectionReason = ""
+        self.showRejectionSheet = true
     }
 
     func approveSelectedChange() async {
@@ -81,70 +81,70 @@ final class PendingConfigurationChangesViewModel: ObservableObject {
             return
         }
 
-        isLoading = true
-        errorMessage = nil
-        successMessage = nil
+        self.isLoading = true
+        self.errorMessage = nil
+        self.successMessage = nil
 
         do {
             try await service.approveConfigurationChange(
                 requestId: changeId,
-                notes: approvalNotes.isEmpty ? nil : approvalNotes
+                notes: self.approvalNotes.isEmpty ? nil : self.approvalNotes
             )
 
-            successMessage = "Configuration change approved and applied"
-            showApprovalSheet = false
-            selectedChangeId = nil
-            approvalNotes = ""
+            self.successMessage = "Configuration change approved and applied"
+            self.showApprovalSheet = false
+            self.selectedChangeId = nil
+            self.approvalNotes = ""
 
             // Reload pending changes
-            await loadPendingChanges()
+            await self.loadPendingChanges()
 
         } catch {
-            errorMessage = "Failed to approve: \(error.localizedDescription)"
+            self.errorMessage = "Failed to approve: \(error.localizedDescription)"
         }
 
-        isLoading = false
+        self.isLoading = false
     }
 
     func rejectSelectedChange() async {
         guard let changeId = selectedChangeId,
               let service = configurationService,
               !rejectionReason.isEmpty else {
-            errorMessage = "Please provide a reason for rejection"
+            self.errorMessage = "Please provide a reason for rejection"
             return
         }
 
-        isLoading = true
-        errorMessage = nil
-        successMessage = nil
+        self.isLoading = true
+        self.errorMessage = nil
+        self.successMessage = nil
 
         do {
             try await service.rejectConfigurationChange(
                 requestId: changeId,
-                reason: rejectionReason
+                reason: self.rejectionReason
             )
 
-            successMessage = "Configuration change rejected"
-            showRejectionSheet = false
-            selectedChangeId = nil
-            rejectionReason = ""
+            self.successMessage = "Configuration change rejected"
+            self.showRejectionSheet = false
+            self.selectedChangeId = nil
+            self.rejectionReason = ""
 
             // Reload pending changes
-            await loadPendingChanges()
+            await self.loadPendingChanges()
 
         } catch {
-            errorMessage = "Failed to reject: \(error.localizedDescription)"
+            self.errorMessage = "Failed to reject: \(error.localizedDescription)"
         }
 
-        isLoading = false
+        self.isLoading = false
     }
 
     func dismissSheets() {
-        showApprovalSheet = false
-        showRejectionSheet = false
-        selectedChangeId = nil
-        approvalNotes = ""
-        rejectionReason = ""
+        self.showApprovalSheet = false
+        self.showRejectionSheet = false
+        self.selectedChangeId = nil
+        self.approvalNotes = ""
+        self.rejectionReason = ""
     }
 
     // MARK: - Formatting Helpers
@@ -194,15 +194,15 @@ final class PendingConfigurationChangesViewModel: ObservableObject {
             return "Expired"
         }
 
-        let days = Int(remaining / 86400)
-        let hours = Int((remaining.truncatingRemainder(dividingBy: 86400)) / 3600)
+        let days = Int(remaining / 86_400)
+        let hours = Int((remaining.truncatingRemainder(dividingBy: 86_400)) / 3_600)
 
         if days > 0 {
             return "\(days)d \(hours)h remaining"
         } else if hours > 0 {
             return "\(hours)h remaining"
         } else {
-            let minutes = Int((remaining.truncatingRemainder(dividingBy: 3600)) / 60)
+            let minutes = Int((remaining.truncatingRemainder(dividingBy: 3_600)) / 60)
             return "\(minutes)m remaining"
         }
     }

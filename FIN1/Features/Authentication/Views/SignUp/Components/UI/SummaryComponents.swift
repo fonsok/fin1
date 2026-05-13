@@ -12,13 +12,13 @@ struct SummarySection<Content: View>: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(title)
+            Text(self.title)
                 .font(ResponsiveDesign.headlineFont())
                 .fontWeight(.semibold)
                 .foregroundColor(AppTheme.fontColor)
             
             VStack(spacing: ResponsiveDesign.spacing(8)) {
-                content
+                self.content
             }
         }
         .padding()
@@ -34,17 +34,17 @@ struct SummaryRow: View {
     
     var body: some View {
         HStack {
-            Image(systemName: icon)
+            Image(systemName: self.icon)
                 .foregroundColor(AppTheme.accentLightBlue)
                 .frame(width: 20)
             
-            Text(label)
+            Text(self.label)
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
             
             Spacer()
             
-            Text(value)
+            Text(self.value)
                 .font(ResponsiveDesign.bodyFont())
                 .fontWeight(.medium)
                 .foregroundColor(AppTheme.fontColor)

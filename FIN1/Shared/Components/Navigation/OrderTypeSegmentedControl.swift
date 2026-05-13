@@ -21,17 +21,17 @@ struct OrderTypeSegmentedControl: View {
                 RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(8))
                     .fill(AppTheme.accentLightBlue)
                     .frame(width: segmentWidth, height: max(totalHeight - 4, 0))
-                    .offset(x: selection == .market ? 2 : segmentWidth + 2)
-                    .animation(.easeInOut(duration: 0.2), value: selection)
+                    .offset(x: self.selection == .market ? 2 : segmentWidth + 2)
+                    .animation(.easeInOut(duration: 0.2), value: self.selection)
 
                 HStack(spacing: ResponsiveDesign.spacing(0)) {
-                    segment(title: "Market", isActive: selection == .market) {
-                        withAnimation(.easeInOut(duration: 0.2)) { selection = .market }
+                    self.segment(title: "Market", isActive: self.selection == .market) {
+                        withAnimation(.easeInOut(duration: 0.2)) { self.selection = .market }
                     }
                     .frame(width: segmentWidth, height: totalHeight)
 
-                    segment(title: "Limit", isActive: selection == .limit) {
-                        withAnimation(.easeInOut(duration: 0.2)) { selection = .limit }
+                    self.segment(title: "Limit", isActive: self.selection == .limit) {
+                        withAnimation(.easeInOut(duration: 0.2)) { self.selection = .limit }
                     }
                     .frame(width: segmentWidth, height: totalHeight)
                 }
@@ -40,7 +40,7 @@ struct OrderTypeSegmentedControl: View {
         .frame(height: 36)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Order type")
-        .accessibilityValue(selection == .market ? "Market" : "Limit")
+        .accessibilityValue(self.selection == .market ? "Market" : "Limit")
     }
 
     private func segment(title: String, isActive: Bool, action: @escaping () -> Void) -> some View {

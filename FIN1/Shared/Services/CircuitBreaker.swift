@@ -56,20 +56,20 @@ actor CircuitBreaker {
     /// - Throws: ServiceError.serviceUnavailable if circuit is open
     func execute<T>(_ operation: () async throws -> T) async throws -> CircuitBreakerResult<T> {
         // Check circuit state before executing
-        try checkCircuitState()
+        try self.checkCircuitState()
 
         do {
             let result = try await operation()
-            recordSuccess()
+            self.recordSuccess()
             return CircuitBreakerResult(value: result)
         } catch {
             // Only count infrastructure failures (network, server 500+) toward circuit breaker
             // Client errors (400, 404, decoding) mean the server IS available - don't trip the circuit
             if Self.isInfrastructureError(error) {
-                recordFailure()
+                self.recordFailure()
             } else {
                 // Server responded (even with 400) - it's still available
-                recordSuccess()
+                self.recordSuccess()
             }
             throw error
         }
@@ -111,27 +111,27 @@ actor CircuitBreaker {
 
     /// Manually reset the circuit breaker (useful for testing or manual recovery)
     func reset() {
-        state = .closed
-        failureCount = 0
-        successCount = 0
-        lastFailureTime = nil
+        self.state = .closed
+        self.failureCount = 0
+        self.successCount = 0
+        self.lastFailureTime = nil
     }
 
     /// Get current circuit breaker state (for monitoring/debugging)
     var currentState: State {
-        state
+        self.state
     }
 
     /// Get current failure count (for monitoring/debugging)
     var currentFailureCount: Int {
-        failureCount
+        self.failureCount
     }
 
     // MARK: - Private Methods
 
     /// Checks if circuit should be opened/closed based on current state
     private func checkCircuitState() throws {
-        switch state {
+        switch self.state {
         case .closed:
             // Normal operation - allow request
             return
@@ -140,15 +140,15 @@ actor CircuitBreaker {
             // Circuit is open - check if timeout has passed
             guard let lastFailure = lastFailureTime else {
                 // No failure time recorded - allow request to test
-                state = .halfOpen
+                self.state = .halfOpen
                 return
             }
 
             let timeSinceFailure = Date().timeIntervalSince(lastFailure)
-            if timeSinceFailure > timeout {
+            if timeSinceFailure > self.timeout {
                 // Timeout passed - move to half-open to test recovery
-                state = .halfOpen
-                successCount = 0
+                self.state = .halfOpen
+                self.successCount = 0
                 return
             }
 
@@ -163,21 +163,21 @@ actor CircuitBreaker {
 
     /// Records a successful operation
     private func recordSuccess() {
-        switch state {
+        switch self.state {
         case .closed:
             // Reset failure count on success
-            failureCount = 0
+            self.failureCount = 0
 
         case .halfOpen:
             // Increment success count
-            successCount += 1
+            self.successCount += 1
 
             // If enough successes, close the circuit
-            if successCount >= halfOpenMaxAttempts {
-                state = .closed
-                failureCount = 0
-                successCount = 0
-                lastFailureTime = nil
+            if self.successCount >= self.halfOpenMaxAttempts {
+                self.state = .closed
+                self.failureCount = 0
+                self.successCount = 0
+                self.lastFailureTime = nil
             }
 
         case .open:
@@ -188,20 +188,20 @@ actor CircuitBreaker {
 
     /// Records a failed operation
     private func recordFailure() {
-        failureCount += 1
-        lastFailureTime = Date()
+        self.failureCount += 1
+        self.lastFailureTime = Date()
 
-        switch state {
+        switch self.state {
         case .closed:
             // Check if threshold reached
-            if failureCount >= failureThreshold {
-                state = .open
+            if self.failureCount >= self.failureThreshold {
+                self.state = .open
             }
 
         case .halfOpen:
             // Failure during half-open - immediately open circuit
-            state = .open
-            successCount = 0
+            self.state = .open
+            self.successCount = 0
 
         case .open:
             // Already open - just update failure time

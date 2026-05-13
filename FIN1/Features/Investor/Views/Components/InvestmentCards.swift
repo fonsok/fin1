@@ -6,7 +6,7 @@ struct ActiveInvestmentCard: View {
     @Environment(\.themeManager) private var themeManager
 
     var body: some View {
-        Button(action: { showDetails = true }, label: {
+        Button(action: { self.showDetails = true }, label: {
             VStack(spacing: ResponsiveDesign.spacing(16)) {
                 // Header
                 HStack {
@@ -20,12 +20,12 @@ struct ActiveInvestmentCard: View {
                         )
 
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(getTraderUsername(for: investment.traderId))
+                        Text(self.getTraderUsername(for: self.investment.traderId))
                             .font(ResponsiveDesign.headlineFont())
                             .fontWeight(.bold)
                             .foregroundColor(AppTheme.fontColor)
 
-                        Text(investment.specialization)
+                        Text(self.investment.specialization)
                             .font(ResponsiveDesign.bodyFont())
                             .foregroundColor(AppTheme.secondaryText)
                     }
@@ -33,13 +33,13 @@ struct ActiveInvestmentCard: View {
                     Spacer()
 
                     // Status Badge
-                    Text(investment.status.displayName)
+                    Text(self.investment.status.displayName)
                         .font(ResponsiveDesign.captionFont())
                         .fontWeight(.medium)
                         .foregroundColor(AppTheme.screenBackground)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
-                        .background(statusColor)
+                        .background(self.statusColor)
                         .cornerRadius(ResponsiveDesign.spacing(8))
                 }
 
@@ -47,18 +47,18 @@ struct ActiveInvestmentCard: View {
                 HStack(spacing: ResponsiveDesign.spacing(20)) {
                     InvestmentDetailItem(
                         title: "Amount",
-                        value: investment.amount.formattedAsLocalizedCurrency()
+                        value: self.investment.amount.formattedAsLocalizedCurrency()
                     )
 
                     InvestmentDetailItem(
                         title: "Investment",
-                        value: "\(investment.sequenceNumber ?? 1)"
+                        value: "\(self.investment.sequenceNumber ?? 1)"
                     )
 
                     InvestmentDetailItem(
                         title: "Status",
-                        value: investment.status.displayName,
-                        isPositive: investment.status == .active
+                        value: self.investment.status.displayName,
+                        isPositive: self.investment.status == .active
                     )
                 }
 
@@ -71,7 +71,7 @@ struct ActiveInvestmentCard: View {
 
                         Spacer()
 
-                        Text(investment.reservationStatus.displayName)
+                        Text(self.investment.reservationStatus.displayName)
                             .font(ResponsiveDesign.captionFont())
                             .foregroundColor(AppTheme.secondaryText)
                     }
@@ -95,13 +95,13 @@ struct ActiveInvestmentCard: View {
             .cornerRadius(ResponsiveDesign.spacing(16))
         })
         .buttonStyle(PlainButtonStyle())
-        .sheet(isPresented: $showDetails) {
-            InvestmentDetailView(investment: investment)
+        .sheet(isPresented: self.$showDetails) {
+            InvestmentDetailView(investment: self.investment)
         }
     }
 
     private var statusColor: Color {
-        switch investment.status {
+        switch self.investment.status {
         case .submitted:
             return AppTheme.accentOrange
         case .active:
@@ -138,7 +138,7 @@ struct CompletedInvestmentCard: View {
                     )
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(getTraderUsername(for: investment.traderId))
+                    Text(self.getTraderUsername(for: self.investment.traderId))
                         .font(ResponsiveDesign.headlineFont())
                         .fontWeight(.bold)
                         .foregroundColor(AppTheme.fontColor)
@@ -158,7 +158,7 @@ struct CompletedInvestmentCard: View {
 
                 // Status
                 VStack(alignment: .trailing, spacing: 4) {
-                    Text(investment.status.displayName)
+                    Text(self.investment.status.displayName)
                         .font(ResponsiveDesign.headlineFont())
                         .fontWeight(.bold)
                         .foregroundColor(AppTheme.accentGreen)
@@ -173,17 +173,17 @@ struct CompletedInvestmentCard: View {
             HStack(spacing: ResponsiveDesign.spacing(20)) {
                 InvestmentDetailItem(
                     title: "Amount",
-                    value: investment.amount.formattedAsLocalizedCurrency()
+                    value: self.investment.amount.formattedAsLocalizedCurrency()
                 )
 
                 InvestmentDetailItem(
                     title: "Investment",
-                    value: "\(investment.sequenceNumber ?? 1)"
+                    value: "\(self.investment.sequenceNumber ?? 1)"
                 )
 
                 InvestmentDetailItem(
                     title: "Specialization",
-                    value: investment.specialization,
+                    value: self.investment.specialization,
                     isPositive: true
                 )
             }
@@ -223,7 +223,7 @@ struct InvestmentHistoryCard: View {
                     .fontWeight(.medium)
                     .foregroundColor(AppTheme.fontColor)
 
-                Text(getTraderUsername(for: investment.traderId))
+                Text(self.getTraderUsername(for: self.investment.traderId))
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.secondaryText)
             }
@@ -232,12 +232,12 @@ struct InvestmentHistoryCard: View {
 
             // Amount and Date
             VStack(alignment: .trailing, spacing: 4) {
-                Text(investment.amount.formattedAsLocalizedCurrency())
+                Text(self.investment.amount.formattedAsLocalizedCurrency())
                     .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.medium)
                     .foregroundColor(AppTheme.fontColor)
 
-                Text(investment.createdAt.formatted(date: .abbreviated, time: .omitted))
+                Text(self.investment.createdAt.formatted(date: .abbreviated, time: .omitted))
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.tertiaryText)
             }
@@ -268,12 +268,12 @@ struct InvestmentDetailItem: View {
 
     var body: some View {
         VStack(spacing: ResponsiveDesign.spacing(4)) {
-            Text(value)
+            Text(self.value)
                 .font(ResponsiveDesign.bodyFont())
                 .fontWeight(.medium)
-                .foregroundColor(isPositive ? AppTheme.accentGreen : AppTheme.fontColor)
+                .foregroundColor(self.isPositive ? AppTheme.accentGreen : AppTheme.fontColor)
 
-            Text(title)
+            Text(self.title)
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.secondaryText)
                 .multilineTextAlignment(.center)

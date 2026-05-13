@@ -10,15 +10,15 @@ struct ApprovalStatCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
             HStack {
-                Image(systemName: icon)
-                    .foregroundColor(color)
+                Image(systemName: self.icon)
+                    .foregroundColor(self.color)
                 Spacer()
             }
-            Text(value)
+            Text(self.value)
                 .font(ResponsiveDesign.titleFont())
                 .fontWeight(.bold)
                 .foregroundColor(AppTheme.fontColor)
-            Text(title)
+            Text(self.title)
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
         }
@@ -36,14 +36,14 @@ struct ApprovalFilterChip: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
-            Text(title)
+        Button(action: self.action) {
+            Text(self.title)
                 .font(ResponsiveDesign.captionFont())
-                .fontWeight(isSelected ? .semibold : .regular)
+                .fontWeight(self.isSelected ? .semibold : .regular)
                 .padding(.horizontal, ResponsiveDesign.spacing(12))
                 .padding(.vertical, ResponsiveDesign.spacing(6))
-                .background(isSelected ? color : AppTheme.screenBackground)
-                .foregroundColor(isSelected ? .white : AppTheme.fontColor)
+                .background(self.isSelected ? self.color : AppTheme.screenBackground)
+                .foregroundColor(self.isSelected ? .white : AppTheme.fontColor)
                 .cornerRadius(ResponsiveDesign.spacing(16))
         }
     }
@@ -56,11 +56,11 @@ struct ApprovalDetailRow: View {
 
     var body: some View {
         HStack {
-            Text(label)
+            Text(self.label)
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.6))
             Spacer()
-            Text(value)
+            Text(self.value)
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor)
         }

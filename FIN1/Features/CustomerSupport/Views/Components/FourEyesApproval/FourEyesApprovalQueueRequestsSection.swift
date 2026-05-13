@@ -15,18 +15,18 @@ struct FourEyesApprovalQueueRequestsSection: View {
 
                 Spacer()
 
-                if viewModel.isLoading {
+                if self.viewModel.isLoading {
                     ProgressView()
                         .scaleEffect(0.8)
                 }
             }
 
-            if viewModel.filteredRequests.isEmpty {
-                emptyStateView
+            if self.viewModel.filteredRequests.isEmpty {
+                self.emptyStateView
             } else {
-                ForEach(viewModel.filteredRequests) { request in
+                ForEach(self.viewModel.filteredRequests) { request in
                     ApprovalRequestCard(request: request) {
-                        onSelectRequest(request)
+                        self.onSelectRequest(request)
                     }
                 }
             }

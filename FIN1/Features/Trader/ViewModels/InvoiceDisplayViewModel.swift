@@ -19,50 +19,50 @@ final class InvoiceDisplayViewModel: ObservableObject {
     // MARK: - Initialization
     init(invoice: Invoice) {
         self.invoice = invoice
-        setupDisplayData()
+        self.setupDisplayData()
     }
 
     // MARK: - Public Methods
 
     /// Refreshes the display data (useful for dynamic updates)
     func refreshDisplayData() {
-        setupDisplayData()
+        self.setupDisplayData()
     }
 
     // MARK: - Private Methods
 
     private func setupDisplayData() {
-        headerData = createHeaderDisplayData()
-        customerData = createCustomerDisplayData()
-        displayData = createInvoiceDisplayData()
+        self.headerData = self.createHeaderDisplayData()
+        self.customerData = self.createCustomerDisplayData()
+        self.displayData = self.createInvoiceDisplayData()
     }
 
     private func createHeaderDisplayData() -> InvoiceHeaderDisplayData {
         return InvoiceHeaderDisplayData(
-            transactionType: invoice.transactionType?.displayName ?? "Unknown",
-            invoiceNumber: invoice.formattedInvoiceNumber,
-            status: invoice.status.displayName,
-            createdDate: invoice.createdAt.formatted(date: .abbreviated, time: .omitted),
-            dueDate: invoice.dueDate?.formatted(date: .abbreviated, time: .omitted)
+            transactionType: self.invoice.transactionType?.displayName ?? "Unknown",
+            invoiceNumber: self.invoice.formattedInvoiceNumber,
+            status: self.invoice.status.displayName,
+            createdDate: self.invoice.createdAt.formatted(date: .abbreviated, time: .omitted),
+            dueDate: self.invoice.dueDate?.formatted(date: .abbreviated, time: .omitted)
         )
     }
 
     private func createCustomerDisplayData() -> CustomerInfoDisplayData {
         return CustomerInfoDisplayData(
-            name: invoice.customerInfo.name,
-            address: invoice.customerInfo.address,
-            city: "\(invoice.customerInfo.postalCode) \(invoice.customerInfo.city)",
-            taxNumber: invoice.customerInfo.taxNumber,
-            customerNumber: invoice.customerInfo.customerNumber
+            name: self.invoice.customerInfo.name,
+            address: self.invoice.customerInfo.address,
+            city: "\(self.invoice.customerInfo.postalCode) \(self.invoice.customerInfo.city)",
+            taxNumber: self.invoice.customerInfo.taxNumber,
+            customerNumber: self.invoice.customerInfo.customerNumber
         )
     }
 
     private func createInvoiceDisplayData() -> InvoiceDisplayData {
-        let items = invoice.items.map { createItemDisplayData($0) }
-        let totals = createTotalsDisplayData()
+        let items = self.invoice.items.map { self.createItemDisplayData($0) }
+        let totals = self.createTotalsDisplayData()
 
         return InvoiceDisplayData(
-            header: createTransactionHeader(),
+            header: self.createTransactionHeader(),
             items: items,
             totals: totals
         )
@@ -78,7 +78,7 @@ final class InvoiceDisplayViewModel: ObservableObject {
     private func createItemDisplayData(_ item: InvoiceItem) -> InvoiceItemDisplayData {
         return InvoiceItemDisplayData(
             id: item.id,
-            description: formatItemDescription(item),
+            description: self.formatItemDescription(item),
             quantity: item.quantity.formattedAsLocalizedNumber(),
             unitPrice: item.unitPrice.formattedAsLocalizedCurrency(),
             total: item.totalAmount.formattedAsLocalizedCurrency(),
@@ -92,8 +92,8 @@ final class InvoiceDisplayViewModel: ObservableObject {
             // Service-charge invoices have no securities row; skip the WKN/strike
             // parser so we don't render "Unknown - Unknown - Unknown - Unknown" for
             // generic invoices that never had a securities item.
-            if invoice.items.contains(where: { $0.itemType == .securities }) {
-                return formatSecuritiesDescription(item)
+            if self.invoice.items.contains(where: { $0.itemType == .securities }) {
+                return self.formatSecuritiesDescription(item)
             }
             return item.description
         case .orderFee, .exchangeFee, .foreignCosts, .serviceCharge, .commission, .vat, .tax, .other:
@@ -108,19 +108,19 @@ final class InvoiceDisplayViewModel: ObservableObject {
         }
 
         // Parse the existing description to extract components
-        let components = parseSecuritiesDescription(securitiesItem.description)
+        let components = self.parseSecuritiesDescription(securitiesItem.description)
 
         // Format according to the requested sequence: WKN/ISIN - direction - underlying - strike price - issuer
-        return formatSecuritiesComponents(components)
+        return self.formatSecuritiesComponents(components)
     }
 
     private func parseSecuritiesDescription(_ description: String) -> SecuritiesComponents {
-        let wkn = extractWKNFromInvoice()
+        let wkn = self.extractWKNFromInvoice()
         return SecuritiesComponents(
             wkn: wkn,
-            direction: extractDirectionFromInvoice(),
-            underlying: extractUnderlyingFromInvoice(),
-            strikePrice: extractStrikePriceFromInvoice(),
+            direction: self.extractDirectionFromInvoice(),
+            underlying: self.extractUnderlyingFromInvoice(),
+            strikePrice: self.extractStrikePriceFromInvoice(),
             issuer: String.emittentName(forWKN: wkn)
         )
     }
@@ -155,8 +155,8 @@ final class InvoiceDisplayViewModel: ObservableObject {
         // Subtotal = sum of NET line items (services, fees, securities, ...) excluding
         // separate tax/VAT line items so "Zwischensumme + Steuer = Gesamt" stimmt
         // (sonst würde `.vat`/`.tax` doppelt zählen — siehe service_charge Belege).
-        let netItems = invoice.items.filter { $0.itemType != .vat && $0.itemType != .tax }
-        let taxItems = invoice.items.filter { $0.itemType == .vat || $0.itemType == .tax }
+        let netItems = self.invoice.items.filter { $0.itemType != .vat && $0.itemType != .tax }
+        let taxItems = self.invoice.items.filter { $0.itemType == .vat || $0.itemType == .tax }
 
         let subtotal = netItems.reduce(0) { $0 + $1.totalAmount }
         let tax = taxItems.reduce(0) { $0 + $1.totalAmount }

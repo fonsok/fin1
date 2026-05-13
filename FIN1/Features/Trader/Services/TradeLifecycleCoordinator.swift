@@ -17,18 +17,18 @@ final class TradeLifecycleCoordinator: TradeLifecycleCoordinatorProtocol {
     // MARK: - Trade Management
 
     func createNewTrade(buyOrder: OrderBuy) async throws -> Trade {
-        return try await tradeLifecycleService.createNewTrade(buyOrder: buyOrder)
+        return try await self.tradeLifecycleService.createNewTrade(buyOrder: buyOrder)
     }
 
     func addSellOrderToTrade(_ tradeId: String, sellOrder: OrderSell) async throws {
-        try await tradeLifecycleService.addSellOrderToTrade(tradeId, sellOrder: sellOrder)
+        try await self.tradeLifecycleService.addSellOrderToTrade(tradeId, sellOrder: sellOrder)
     }
 
     func cancelTrade(_ tradeId: String) async throws {
-        try await tradeLifecycleService.cancelTrade(tradeId)
+        try await self.tradeLifecycleService.cancelTrade(tradeId)
     }
 
     func completeTrade(_ tradeId: String) async throws {
-        try await tradeLifecycleService.completeTrade(tradeId)
+        try await self.tradeLifecycleService.completeTrade(tradeId)
     }
 }

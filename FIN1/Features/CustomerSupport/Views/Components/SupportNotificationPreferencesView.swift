@@ -19,12 +19,12 @@ struct SupportNotificationPreferencesView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: ResponsiveDesign.spacing(20)) {
-                    ticketUpdatesSection
-                    if isCSR {
-                        agentNotificationsSection
+                    self.ticketUpdatesSection
+                    if self.isCSR {
+                        self.agentNotificationsSection
                     }
-                    deliveryMethodsSection
-                    quietHoursSection
+                    self.deliveryMethodsSection
+                    self.quietHoursSection
                 }
                 .padding()
             }
@@ -33,13 +33,13 @@ struct SupportNotificationPreferencesView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Abbrechen") { dismiss() }
+                    Button("Abbrechen") { self.dismiss() }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Speichern") {
-                        Task { await savePreferences() }
+                        Task { await self.savePreferences() }
                     }
-                    .disabled(!hasChanges || isSaving)
+                    .disabled(!self.hasChanges || self.isSaving)
                 }
             }
         }
@@ -55,31 +55,31 @@ struct SupportNotificationPreferencesView: View {
             NotificationPreferenceToggle(
                 title: "Neue Antworten",
                 subtitle: "Wenn ein Agent auf Ihr Ticket antwortet",
-                isOn: $preferences.newTicketResponse
+                isOn: self.$preferences.newTicketResponse
             )
 
             NotificationPreferenceToggle(
                 title: "Status-Änderungen",
                 subtitle: "Wenn sich der Ticket-Status ändert",
-                isOn: $preferences.ticketStatusChange
+                isOn: self.$preferences.ticketStatusChange
             )
 
             NotificationPreferenceToggle(
                 title: "Ticket gelöst",
                 subtitle: "Wenn Ihr Ticket als gelöst markiert wird",
-                isOn: $preferences.ticketResolved
+                isOn: self.$preferences.ticketResolved
             )
 
             NotificationPreferenceToggle(
                 title: "Ticket geschlossen",
                 subtitle: "Wenn Ihr Ticket geschlossen wird",
-                isOn: $preferences.ticketClosed
+                isOn: self.$preferences.ticketClosed
             )
         }
-        .onChange(of: preferences.newTicketResponse) { _, _ in hasChanges = true }
-        .onChange(of: preferences.ticketStatusChange) { _, _ in hasChanges = true }
-        .onChange(of: preferences.ticketResolved) { _, _ in hasChanges = true }
-        .onChange(of: preferences.ticketClosed) { _, _ in hasChanges = true }
+        .onChange(of: self.preferences.newTicketResponse) { _, _ in self.hasChanges = true }
+        .onChange(of: self.preferences.ticketStatusChange) { _, _ in self.hasChanges = true }
+        .onChange(of: self.preferences.ticketResolved) { _, _ in self.hasChanges = true }
+        .onChange(of: self.preferences.ticketClosed) { _, _ in self.hasChanges = true }
     }
 
     // MARK: - Agent Notifications Section
@@ -92,31 +92,31 @@ struct SupportNotificationPreferencesView: View {
             NotificationPreferenceToggle(
                 title: "Neues Ticket zugewiesen",
                 subtitle: "Wenn Ihnen ein Ticket zugewiesen wird",
-                isOn: $preferences.newTicketAssigned
+                isOn: self.$preferences.newTicketAssigned
             )
 
             NotificationPreferenceToggle(
                 title: "SLA-Warnung",
                 subtitle: "Wenn ein Ticket die SLA-Deadline nähert",
-                isOn: $preferences.slaWarning
+                isOn: self.$preferences.slaWarning
             )
 
             NotificationPreferenceToggle(
                 title: "Eskalations-Alerts",
                 subtitle: "Wenn ein Ticket eskaliert wird",
-                isOn: $preferences.escalationAlert
+                isOn: self.$preferences.escalationAlert
             )
 
             NotificationPreferenceToggle(
                 title: "Umfrage-Anfragen",
                 subtitle: "Wenn ein Kunde eine Bewertung abgibt",
-                isOn: $preferences.surveyRequest
+                isOn: self.$preferences.surveyRequest
             )
         }
-        .onChange(of: preferences.newTicketAssigned) { _, _ in hasChanges = true }
-        .onChange(of: preferences.slaWarning) { _, _ in hasChanges = true }
-        .onChange(of: preferences.escalationAlert) { _, _ in hasChanges = true }
-        .onChange(of: preferences.surveyRequest) { _, _ in hasChanges = true }
+        .onChange(of: self.preferences.newTicketAssigned) { _, _ in self.hasChanges = true }
+        .onChange(of: self.preferences.slaWarning) { _, _ in self.hasChanges = true }
+        .onChange(of: self.preferences.escalationAlert) { _, _ in self.hasChanges = true }
+        .onChange(of: self.preferences.surveyRequest) { _, _ in self.hasChanges = true }
     }
 
     // MARK: - Delivery Methods Section
@@ -129,24 +129,24 @@ struct SupportNotificationPreferencesView: View {
             NotificationPreferenceToggle(
                 title: "Push-Benachrichtigungen",
                 subtitle: "Direkt auf Ihrem Gerät",
-                isOn: $preferences.pushNotifications
+                isOn: self.$preferences.pushNotifications
             )
 
             NotificationPreferenceToggle(
                 title: "E-Mail",
                 subtitle: "An Ihre registrierte E-Mail-Adresse",
-                isOn: $preferences.emailNotifications
+                isOn: self.$preferences.emailNotifications
             )
 
             NotificationPreferenceToggle(
                 title: "In-App",
                 subtitle: "Im Benachrichtigungscenter der App",
-                isOn: $preferences.inAppNotifications
+                isOn: self.$preferences.inAppNotifications
             )
         }
-        .onChange(of: preferences.pushNotifications) { _, _ in hasChanges = true }
-        .onChange(of: preferences.emailNotifications) { _, _ in hasChanges = true }
-        .onChange(of: preferences.inAppNotifications) { _, _ in hasChanges = true }
+        .onChange(of: self.preferences.pushNotifications) { _, _ in self.hasChanges = true }
+        .onChange(of: self.preferences.emailNotifications) { _, _ in self.hasChanges = true }
+        .onChange(of: self.preferences.inAppNotifications) { _, _ in self.hasChanges = true }
     }
 
     // MARK: - Quiet Hours Section
@@ -159,10 +159,10 @@ struct SupportNotificationPreferencesView: View {
             NotificationPreferenceToggle(
                 title: "Ruhezeiten aktivieren",
                 subtitle: "Keine Benachrichtigungen während der Ruhezeit",
-                isOn: $preferences.quietHoursEnabled
+                isOn: self.$preferences.quietHoursEnabled
             )
 
-            if preferences.quietHoursEnabled {
+            if self.preferences.quietHoursEnabled {
                 VStack(spacing: ResponsiveDesign.spacing(12)) {
                     HStack {
                         Text("Start")
@@ -171,7 +171,7 @@ struct SupportNotificationPreferencesView: View {
 
                         Spacer()
 
-                        Picker("", selection: $preferences.quietHoursStart) {
+                        Picker("", selection: self.$preferences.quietHoursStart) {
                             ForEach(0..<24, id: \.self) { hour in
                                 Text(String(format: "%02d:00", hour)).tag(hour)
                             }
@@ -186,7 +186,7 @@ struct SupportNotificationPreferencesView: View {
 
                         Spacer()
 
-                        Picker("", selection: $preferences.quietHoursEnd) {
+                        Picker("", selection: self.$preferences.quietHoursEnd) {
                             ForEach(0..<24, id: \.self) { hour in
                                 Text(String(format: "%02d:00", hour)).tag(hour)
                             }
@@ -207,23 +207,23 @@ struct SupportNotificationPreferencesView: View {
                 }
             }
         }
-        .onChange(of: preferences.quietHoursEnabled) { _, _ in hasChanges = true }
-        .onChange(of: preferences.quietHoursStart) { _, _ in hasChanges = true }
-        .onChange(of: preferences.quietHoursEnd) { _, _ in hasChanges = true }
+        .onChange(of: self.preferences.quietHoursEnabled) { _, _ in self.hasChanges = true }
+        .onChange(of: self.preferences.quietHoursStart) { _, _ in self.hasChanges = true }
+        .onChange(of: self.preferences.quietHoursEnd) { _, _ in self.hasChanges = true }
     }
 
     // MARK: - Actions
 
     private func savePreferences() async {
-        isSaving = true
+        self.isSaving = true
         defer { isSaving = false }
 
         // In a real implementation, save to UserDefaults or backend
         try? await Task.sleep(nanoseconds: 500_000_000)  // Simulate save
 
         await MainActor.run {
-            hasChanges = false
-            dismiss()
+            self.hasChanges = false
+            self.dismiss()
         }
     }
 }
@@ -238,17 +238,17 @@ private struct NotificationPreferenceSection<Content: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
             HStack {
-                Image(systemName: icon)
+                Image(systemName: self.icon)
                     .foregroundColor(AppTheme.accentLightBlue)
 
-                Text(title)
+                Text(self.title)
                     .font(ResponsiveDesign.headlineFont())
                     .fontWeight(.semibold)
                     .foregroundColor(AppTheme.fontColor)
             }
 
             VStack(spacing: ResponsiveDesign.spacing(8)) {
-                content()
+                self.content()
             }
         }
         .padding()
@@ -267,18 +267,18 @@ private struct NotificationPreferenceToggle: View {
     var body: some View {
         HStack(alignment: .center, spacing: ResponsiveDesign.spacing(12)) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(title)
+                Text(self.title)
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.fontColor)
 
-                Text(subtitle)
+                Text(self.subtitle)
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.6))
             }
 
             Spacer()
 
-            Toggle("", isOn: $isOn)
+            Toggle("", isOn: self.$isOn)
                 .labelsHidden()
                 .tint(AppTheme.accentGreen)
         }

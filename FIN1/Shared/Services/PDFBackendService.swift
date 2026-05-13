@@ -69,18 +69,18 @@ actor PDFBackendService: PDFBackendServiceProtocol {
         configuration.timeoutIntervalForResource = 120
         self.session = URLSession(configuration: configuration)
 
-        logger.info("PDFBackendService initialized with base URL: \(self.baseURL.absoluteString)")
+        self.logger.info("PDFBackendService initialized with base URL: \(self.baseURL.absoluteString)")
     }
 
     // MARK: - Invoice PDF Generation
 
     func generateInvoicePDF(from invoice: Invoice) async throws -> Data {
-        logger.info("Generating invoice PDF via backend: \(invoice.invoiceNumber)")
+        self.logger.info("Generating invoice PDF via backend: \(invoice.invoiceNumber)")
 
         let requestBody = InvoicePDFRequest(from: invoice)
-        let endpoint = baseURL.appendingPathComponent("/api/pdf/invoice")
+        let endpoint = self.baseURL.appendingPathComponent("/api/pdf/invoice")
 
-        return try await sendPDFRequest(to: endpoint, body: requestBody)
+        return try await self.sendPDFRequest(to: endpoint, body: requestBody)
     }
 
     // MARK: - Trade Statement PDF Generation
@@ -89,23 +89,23 @@ actor PDFBackendService: PDFBackendServiceProtocol {
         for displayData: TradeStatementDisplayData,
         tradeNumber: Int
     ) async throws -> Data {
-        logger.info("Generating trade statement PDF via backend: Trade #\(tradeNumber)")
+        self.logger.info("Generating trade statement PDF via backend: Trade #\(tradeNumber)")
 
         let requestBody = TradeStatementPDFRequest(from: displayData, tradeNumber: tradeNumber)
-        let endpoint = baseURL.appendingPathComponent("/api/pdf/trade-statement")
+        let endpoint = self.baseURL.appendingPathComponent("/api/pdf/trade-statement")
 
-        return try await sendPDFRequest(to: endpoint, body: requestBody)
+        return try await self.sendPDFRequest(to: endpoint, body: requestBody)
     }
 
     // MARK: - Credit Note PDF Generation
 
     func generateCreditNotePDF(from invoice: Invoice) async throws -> Data {
-        logger.info("Generating credit note PDF via backend: \(invoice.invoiceNumber)")
+        self.logger.info("Generating credit note PDF via backend: \(invoice.invoiceNumber)")
 
         let requestBody = CreditNotePDFRequest(from: invoice)
-        let endpoint = baseURL.appendingPathComponent("/api/pdf/credit-note")
+        let endpoint = self.baseURL.appendingPathComponent("/api/pdf/credit-note")
 
-        return try await sendPDFRequest(to: endpoint, body: requestBody)
+        return try await self.sendPDFRequest(to: endpoint, body: requestBody)
     }
 
     // MARK: - Account Statement PDF Generation
@@ -118,7 +118,7 @@ actor PDFBackendService: PDFBackendServiceProtocol {
         openingBalance: Double,
         closingBalance: Double
     ) async throws -> Data {
-        logger.info("Generating account statement PDF via backend: \(statementNumber)")
+        self.logger.info("Generating account statement PDF via backend: \(statementNumber)")
 
         let requestBody = AccountStatementPDFRequest(
             statementNumber: statementNumber,
@@ -128,9 +128,9 @@ actor PDFBackendService: PDFBackendServiceProtocol {
             openingBalance: openingBalance,
             closingBalance: closingBalance
         )
-        let endpoint = baseURL.appendingPathComponent("/api/pdf/account-statement")
+        let endpoint = self.baseURL.appendingPathComponent("/api/pdf/account-statement")
 
-        return try await sendPDFRequest(to: endpoint, body: requestBody)
+        return try await self.sendPDFRequest(to: endpoint, body: requestBody)
     }
 
     // MARK: - Request Sending
@@ -153,7 +153,7 @@ actor PDFBackendService: PDFBackendServiceProtocol {
 
         guard httpResponse.statusCode == 200 else {
             let errorMessage = String(data: data, encoding: .utf8) ?? "Unknown error"
-            logger.error("PDF generation failed with status \(httpResponse.statusCode): \(errorMessage)")
+            self.logger.error("PDF generation failed with status \(httpResponse.statusCode): \(errorMessage)")
             throw PDFBackendError.serverError(statusCode: httpResponse.statusCode, message: errorMessage)
         }
 
@@ -161,7 +161,7 @@ actor PDFBackendService: PDFBackendServiceProtocol {
             throw PDFBackendError.invalidContentType(httpResponse.mimeType ?? "unknown")
         }
 
-        logger.info("PDF generated successfully, size: \(data.count) bytes")
+        self.logger.info("PDF generated successfully, size: \(data.count) bytes")
         return data
     }
 }

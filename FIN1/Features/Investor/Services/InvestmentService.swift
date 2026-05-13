@@ -1,6 +1,6 @@
+import Combine
 import Foundation
 import SwiftUI
-import Combine
 
 // MARK: - Investment Service Implementation
 /// Handles investment operations, pool lifecycle coordination, and investment overview
@@ -9,10 +9,10 @@ final class InvestmentService: InvestmentServiceProtocol, ServiceLifecycle, @unc
 
     // MARK: - Published Properties (delegated to repository)
     var investments: [Investment] {
-        repository.investments
+        self.repository.investments
     }
     var investmentPools: [InvestmentPool] {
-        repository.investmentPools
+        self.repository.investmentPools
     }
     @Published var isLoading = false
     @Published var errorMessage: String?
@@ -20,12 +20,12 @@ final class InvestmentService: InvestmentServiceProtocol, ServiceLifecycle, @unc
 
     // Publisher for investments (MVVM-friendly) - delegated to repository
     var investmentsPublisher: AnyPublisher<[Investment], Never> {
-        repository.investmentsPublisher
+        self.repository.investmentsPublisher
     }
 
     /// Per-investor filtered publisher to prevent cross-user coupling in subscribers
     func investmentsPublisher(for investorId: String) -> AnyPublisher<[Investment], Never> {
-        repository.investmentsPublisher(for: investorId)
+        self.repository.investmentsPublisher(for: investorId)
     }
 
     // MARK: - Dependencies
@@ -103,7 +103,7 @@ final class InvestmentService: InvestmentServiceProtocol, ServiceLifecycle, @unc
                 await fetchFromBackend(for: userId)
             }
             if let investmentDocumentService = investmentDocumentService {
-                await investmentDocumentService.regenerateInvestmentDocuments(for: repository.investments)
+                await investmentDocumentService.regenerateInvestmentDocuments(for: self.repository.investments)
             }
         }
     }
@@ -111,10 +111,10 @@ final class InvestmentService: InvestmentServiceProtocol, ServiceLifecycle, @unc
     func stop() { /* noop */ }
 
     func reset() {
-        repository.investments.removeAll()
-        repository.investmentPools.removeAll()
+        self.repository.investments.removeAll()
+        self.repository.investmentPools.removeAll()
         if let investmentPoolLifecycleService = investmentPoolLifecycleService as? InvestmentPoolLifecycleService {
-            repository.investmentPools = investmentPoolLifecycleService.investmentPools
+            self.repository.investmentPools = investmentPoolLifecycleService.investmentPools
         }
     }
 
@@ -122,40 +122,43 @@ final class InvestmentService: InvestmentServiceProtocol, ServiceLifecycle, @unc
 
     func selectNextInvestmentForTrader(_ traderId: String) async -> Investment? {
         await MainActor.run {
-            investmentPoolLifecycleService?.selectNextInvestmentForTrader(traderId, in: repository.investments)
+            self.investmentPoolLifecycleService?.selectNextInvestmentForTrader(traderId, in: self.repository.investments)
         }
     }
 
     func selectNextInvestmentForInvestor(_ investorId: String, traderId: String) async -> Investment? {
         await MainActor.run {
-            investmentPoolLifecycleService?.selectNextInvestmentForInvestor(investorId, traderId: traderId, in: repository.investments)
+            self.investmentPoolLifecycleService?.selectNextInvestmentForInvestor(
+                investorId,
+                traderId: traderId,
+                in: self.repository.investments
+            )
         }
     }
 
     // MARK: - Investment Queries
 
     func getInvestments(for investorId: String) -> [Investment] {
-        queryService.getInvestments(for: investorId, in: repository.investments)
+        self.queryService.getInvestments(for: investorId, in: self.repository.investments)
     }
 
     func getInvestments(forTrader traderId: String) -> [Investment] {
-        queryService.getInvestments(forTrader: traderId, in: repository.investments)
+        self.queryService.getInvestments(forTrader: traderId, in: self.repository.investments)
     }
 
     func getInvestmentPools(forTrader traderId: String) -> [InvestmentPool] {
-        queryService.getInvestmentPools(
+        self.queryService.getInvestmentPools(
             forTrader: traderId,
-            in: repository.investmentPools,
-            investmentPoolLifecycleService: investmentPoolLifecycleService
+            in: self.repository.investmentPools,
+            investmentPoolLifecycleService: self.investmentPoolLifecycleService
         )
     }
 
     func getGroupedInvestmentsBySequence(forTrader traderId: String) -> [Int: [Investment]] {
-        queryService.getGroupedInvestmentsBySequence(
+        self.queryService.getGroupedInvestmentsBySequence(
             forTrader: traderId,
-            in: repository.investments,
-            investmentPoolLifecycleService: investmentPoolLifecycleService
+            in: self.repository.investments,
+            investmentPoolLifecycleService: self.investmentPoolLifecycleService
         )
     }
-
 }

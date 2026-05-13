@@ -29,7 +29,7 @@ extension ConfigurationServiceProtocol {
 
     func effectiveAppServiceChargeRate(for accountTypeRaw: String?) -> Double {
         if accountTypeRaw?.lowercased() == "company" {
-            return appServiceChargeRateCompanies
+            return self.appServiceChargeRateCompanies
         }
         return appServiceChargeRate
     }

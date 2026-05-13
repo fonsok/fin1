@@ -30,18 +30,18 @@ struct TradeHistoryRow: View {
 
     var body: some View {
         HStack(spacing: ResponsiveDesign.spacing(12)) {
-            Image(systemName: trade.type == .buy ? "arrow.up.circle.fill" : "arrow.down.circle.fill")
+            Image(systemName: self.trade.type == .buy ? "arrow.up.circle.fill" : "arrow.down.circle.fill")
                 .font(ResponsiveDesign.headlineFont())
-                .foregroundColor(trade.type == .buy ? AppTheme.accentGreen : AppTheme.accentRed)
+                .foregroundColor(self.trade.type == .buy ? AppTheme.accentGreen : AppTheme.accentRed)
                 .frame(width: 24)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text("\(trade.symbol) - \(trade.type.displayName)")
+                Text("\(self.trade.symbol) - \(self.trade.type.displayName)")
                     .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.medium)
                     .foregroundColor(AppTheme.fontColor)
 
-                Text("\(trade.quantity) shares @ $\(String(format: "%.2f", trade.price))")
+                Text("\(self.trade.quantity) shares @ $\(String(format: "%.2f", self.trade.price))")
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
             }
@@ -49,12 +49,14 @@ struct TradeHistoryRow: View {
             Spacer()
 
             VStack(alignment: .trailing, spacing: 4) {
-                Text(trade.result > 0 ? "+$\(String(format: "%.2f", trade.result))" : "-$\(String(format: "%.2f", abs(trade.result)))")
-                    .font(ResponsiveDesign.bodyFont())
-                    .fontWeight(.medium)
-                    .foregroundColor(trade.result > 0 ? AppTheme.accentGreen : AppTheme.accentRed)
+                Text(
+                    self.trade.result > 0 ? "+$\(String(format: "%.2f", self.trade.result))" : "-$\(String(format: "%.2f", abs(self.trade.result)))"
+                )
+                .font(ResponsiveDesign.bodyFont())
+                .fontWeight(.medium)
+                .foregroundColor(self.trade.result > 0 ? AppTheme.accentGreen : AppTheme.accentRed)
 
-                Text(trade.date.formatted(date: .abbreviated, time: .omitted))
+                Text(self.trade.date.formatted(date: .abbreviated, time: .omitted))
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.6))
             }
@@ -78,9 +80,9 @@ struct MockTrade: Identifiable {
 }
 
 let mockRecentTrades = [
-    MockTrade(symbol: "AAPL", type: .buy, quantity: 10, price: 175.43, result: 45.20, date: Date().addingTimeInterval(-86400)),
-    MockTrade(symbol: "TSLA", type: .sell, quantity: 5, price: 242.54, result: -12.30, date: Date().addingTimeInterval(-172800)),
-    MockTrade(symbol: "GOOGL", type: .buy, quantity: 8, price: 138.21, result: 23.45, date: Date().addingTimeInterval(-259200))
+    MockTrade(symbol: "AAPL", type: .buy, quantity: 10, price: 175.43, result: 45.20, date: Date().addingTimeInterval(-86_400)),
+    MockTrade(symbol: "TSLA", type: .sell, quantity: 5, price: 242.54, result: -12.30, date: Date().addingTimeInterval(-172_800)),
+    MockTrade(symbol: "GOOGL", type: .buy, quantity: 8, price: 138.21, result: 23.45, date: Date().addingTimeInterval(-259_200))
 ]
 
 #Preview {

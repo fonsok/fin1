@@ -6,31 +6,31 @@ struct PositionCard: View {
     @State private var showDetails = false
 
     var body: some View {
-        Button(action: { showDetails = true }, label: {
-            CardContainer(position: positionNumber) {
+        Button(action: { self.showDetails = true }, label: {
+            CardContainer(position: self.positionNumber) {
                 // 6 Tiles in 3 Rows using TileGrid
-                TileGrid(tiles: positionTiles, columns: 2)
+                TileGrid(tiles: self.positionTiles, columns: 2)
             }
         })
         .buttonStyle(PlainButtonStyle())
-        .sheet(isPresented: $showDetails) {
-            PositionDetailView(position: position)
+        .sheet(isPresented: self.$showDetails) {
+            PositionDetailView(position: self.position)
         }
     }
 
     private var positionTiles: [TileData] {
         [
             // Row 1: Symbol, Company Name
-            TileData(title: "Symbol", value: position.symbol),
-            TileData(title: "Company", value: position.companyName),
+            TileData(title: "Symbol", value: self.position.symbol),
+            TileData(title: "Company", value: self.position.companyName),
 
             // Row 2: Shares, Avg Price
-            TileData(title: "Shares", value: "\(position.quantity)"),
-            TileData(title: "Avg Price", value: "$\(String(format: "%.2f", position.averagePrice))"),
+            TileData(title: "Shares", value: "\(self.position.quantity)"),
+            TileData(title: "Avg Price", value: "$\(String(format: "%.2f", self.position.averagePrice))"),
 
             // Row 3: Market Value, Current Price
-            TileData(title: "Market Value", value: "$\(String(format: "%.0f", position.marketValue))"),
-            TileData(title: "Current Price", value: "$\(String(format: "%.2f", position.currentPrice))")
+            TileData(title: "Market Value", value: "$\(String(format: "%.0f", self.position.marketValue))"),
+            TileData(title: "Current Price", value: "$\(String(format: "%.2f", self.position.currentPrice))")
         ]
     }
 }
@@ -43,17 +43,17 @@ struct PerformanceMetricCard: View {
 
     var body: some View {
         VStack(spacing: ResponsiveDesign.spacing(12)) {
-            Text(value)
+            Text(self.value)
                 .font(ResponsiveDesign.headlineFont())
                 .fontWeight(.bold)
                 .foregroundColor(AppTheme.accentLightBlue)
 
-            Text(title)
+            Text(self.title)
                 .font(ResponsiveDesign.bodyFont())
                 .fontWeight(.medium)
                 .foregroundColor(AppTheme.fontColor)
 
-            Text(description)
+            Text(self.description)
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.secondaryText)
                 .multilineTextAlignment(.center)
@@ -70,18 +70,18 @@ struct DepotHistoryCard: View {
 
     var body: some View {
         HStack(spacing: ResponsiveDesign.spacing(12)) {
-            Image(systemName: history.icon)
+            Image(systemName: self.history.icon)
                 .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize()))
                 .foregroundColor(AppTheme.accentLightBlue)
                 .frame(width: ResponsiveDesign.spacing(24))
 
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
-                Text(history.action)
+                Text(self.history.action)
                     .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.medium)
                     .foregroundColor(AppTheme.fontColor)
 
-                Text(history.details)
+                Text(self.history.details)
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.secondaryText)
             }
@@ -89,12 +89,14 @@ struct DepotHistoryCard: View {
             Spacer()
 
             VStack(alignment: .trailing, spacing: ResponsiveDesign.spacing(4)) {
-                Text(history.amount > 0 ? "+$\(String(format: "%.0f", history.amount))" : "-$\(String(format: "%.0f", abs(history.amount)))")
-                    .font(ResponsiveDesign.bodyFont())
-                    .fontWeight(.medium)
-                    .foregroundColor(history.amount > 0 ? AppTheme.accentGreen : AppTheme.accentRed)
+                Text(
+                    self.history.amount > 0 ? "+$\(String(format: "%.0f", self.history.amount))" : "-$\(String(format: "%.0f", abs(self.history.amount)))"
+                )
+                .font(ResponsiveDesign.bodyFont())
+                .fontWeight(.medium)
+                .foregroundColor(self.history.amount > 0 ? AppTheme.accentGreen : AppTheme.accentRed)
 
-                Text(history.date.formatted(date: .abbreviated, time: .omitted))
+                Text(self.history.date.formatted(date: .abbreviated, time: .omitted))
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.tertiaryText)
             }
@@ -112,12 +114,12 @@ struct PositionDetailItem: View {
 
     var body: some View {
         VStack(spacing: ResponsiveDesign.spacing(4)) {
-            Text(value)
+            Text(self.value)
                 .font(ResponsiveDesign.bodyFont())
                 .fontWeight(.medium)
                 .foregroundColor(AppTheme.fontColor)
 
-            Text(title)
+            Text(self.title)
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.secondaryText)
                 .multilineTextAlignment(.center)

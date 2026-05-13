@@ -10,26 +10,26 @@ struct CustomerDetailHeader: View {
                 .fill(AppTheme.accentLightBlue.opacity(0.2))
                 .frame(width: ResponsiveDesign.spacing(80), height: ResponsiveDesign.spacing(80))
                 .overlay(
-                    Text(customer.fullName.prefix(2).uppercased())
+                    Text(self.customer.fullName.prefix(2).uppercased())
                         .font(ResponsiveDesign.titleFont())
                         .fontWeight(.bold)
                         .foregroundColor(AppTheme.accentLightBlue)
                 )
 
-            Text(customer.fullName)
+            Text(self.customer.fullName)
                 .font(ResponsiveDesign.titleFont())
                 .fontWeight(.bold)
                 .foregroundColor(AppTheme.fontColor)
 
-            Text("Kundennummer: \(customer.customerNumber)")
+            Text("Kundennummer: \(self.customer.customerNumber)")
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
 
             HStack(spacing: ResponsiveDesign.spacing(8)) {
-                CSStatusBadge(text: customer.role.capitalized, color: AppTheme.accentLightBlue)
+                CSStatusBadge(text: self.customer.role.capitalized, color: AppTheme.accentLightBlue)
                 CSStatusBadge(
-                    text: customer.accountStatus.displayName,
-                    color: customer.accountStatus == .active ? AppTheme.accentGreen : AppTheme.accentOrange
+                    text: self.customer.accountStatus.displayName,
+                    color: self.customer.accountStatus == .active ? AppTheme.accentGreen : AppTheme.accentOrange
                 )
             }
         }

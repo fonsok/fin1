@@ -1,5 +1,5 @@
-import XCTest
 @testable import FIN1
+import XCTest
 
 /// Tests for CSRRole enum and role-based permissions
 final class CSRRoleTests: XCTestCase {

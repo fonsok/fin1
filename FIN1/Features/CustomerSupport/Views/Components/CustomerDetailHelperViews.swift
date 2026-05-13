@@ -11,10 +11,10 @@ struct KYCStatusRow: View {
 
     var body: some View {
         HStack {
-            Image(systemName: isComplete ? "checkmark.circle.fill" : "circle")
-                .foregroundColor(isComplete ? AppTheme.accentGreen : AppTheme.fontColor.opacity(0.3))
+            Image(systemName: self.isComplete ? "checkmark.circle.fill" : "circle")
+                .foregroundColor(self.isComplete ? AppTheme.accentGreen : AppTheme.fontColor.opacity(0.3))
 
-            Text(title)
+            Text(self.title)
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor)
 
@@ -32,17 +32,17 @@ struct CSContactInfoRow: View {
 
     var body: some View {
         HStack(spacing: ResponsiveDesign.spacing(12)) {
-            Image(systemName: icon)
+            Image(systemName: self.icon)
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.accentLightBlue)
                 .frame(width: ResponsiveDesign.spacing(20))
 
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(2)) {
-                Text(label)
+                Text(self.label)
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
 
-                Text(value)
+                Text(self.value)
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.fontColor)
             }
@@ -59,25 +59,25 @@ struct InvestmentSummaryCard: View {
     var onTap: (() -> Void)? = nil
 
     var body: some View {
-        Button(action: { onTap?() }) {
+        Button(action: { self.onTap?() }) {
             HStack {
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
                     HStack {
-                        Text(investment.investmentNumber)
+                        Text(self.investment.investmentNumber)
                             .font(ResponsiveDesign.captionFont())
                             .fontWeight(.medium)
                             .foregroundColor(AppTheme.accentLightBlue)
 
                         Spacer()
 
-                        Text(investment.amount.formattedAsLocalizedCurrency())
+                        Text(self.investment.amount.formattedAsLocalizedCurrency())
                             .font(ResponsiveDesign.bodyFont())
                             .fontWeight(.semibold)
                             .foregroundColor(AppTheme.fontColor)
                     }
 
                     HStack {
-                        Text("Trader: \(investment.traderName)")
+                        Text("Trader: \(self.investment.traderName)")
                             .font(ResponsiveDesign.captionFont())
                             .foregroundColor(AppTheme.fontColor.opacity(0.7))
 
@@ -97,7 +97,7 @@ struct InvestmentSummaryCard: View {
                     }
                 }
 
-                if onTap != nil {
+                if self.onTap != nil {
                     Image(systemName: "chevron.right")
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(AppTheme.fontColor.opacity(0.5))
@@ -118,11 +118,11 @@ struct TradeSummaryCard: View {
     var onTap: (() -> Void)? = nil
 
     var body: some View {
-        Button(action: { onTap?() }) {
+        Button(action: { self.onTap?() }) {
             HStack {
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
                     HStack {
-                        Text(trade.tradeNumber)
+                        Text(self.trade.tradeNumber)
                             .font(ResponsiveDesign.captionFont())
                             .fontWeight(.medium)
                             .foregroundColor(AppTheme.accentLightBlue)
@@ -130,19 +130,19 @@ struct TradeSummaryCard: View {
                         Spacer()
 
                         CSStatusBadge(
-                            text: trade.status.capitalized,
-                            color: statusColor
+                            text: self.trade.status.capitalized,
+                            color: self.statusColor
                         )
                     }
 
                     HStack {
                         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
-                            Text("\(trade.symbol) • \(trade.direction)")
+                            Text("\(self.trade.symbol) • \(self.trade.direction)")
                                 .font(ResponsiveDesign.bodyFont())
                                 .fontWeight(.medium)
                                 .foregroundColor(AppTheme.fontColor)
 
-                            Text("\(trade.quantity) @ \(trade.entryPrice.formattedAsLocalizedCurrency())")
+                            Text("\(self.trade.quantity) @ \(self.trade.entryPrice.formattedAsLocalizedCurrency())")
                                 .font(ResponsiveDesign.captionFont())
                                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
                         }
@@ -175,7 +175,7 @@ struct TradeSummaryCard: View {
                     }
                 }
 
-                if onTap != nil {
+                if self.onTap != nil {
                     Image(systemName: "chevron.right")
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(AppTheme.fontColor.opacity(0.5))
@@ -189,7 +189,7 @@ struct TradeSummaryCard: View {
     }
 
     private var statusColor: Color {
-        switch trade.status.lowercased() {
+        switch self.trade.status.lowercased() {
         case "open", "active":
             return AppTheme.accentOrange
         case "closed", "completed":
@@ -210,14 +210,14 @@ struct CSActionButton: View {
     var action: (() -> Void)?
 
     var body: some View {
-        Button(action: { action?() }) {
+        Button(action: { self.action?() }) {
             HStack(spacing: ResponsiveDesign.spacing(12)) {
-                Image(systemName: icon)
-                    .foregroundColor(color)
+                Image(systemName: self.icon)
+                    .foregroundColor(self.color)
                     .frame(width: ResponsiveDesign.spacing(24))
 
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(2)) {
-                    Text(title)
+                    Text(self.title)
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(AppTheme.fontColor)
 
@@ -250,19 +250,19 @@ struct DocumentRow: View {
     var body: some View {
         HStack(spacing: ResponsiveDesign.spacing(12)) {
             // Document icon
-            Image(systemName: documentIcon(for: document.type))
+            Image(systemName: self.documentIcon(for: self.document.type))
                 .font(ResponsiveDesign.headlineFont())
-                .foregroundColor(document.isVerified ? AppTheme.accentGreen : AppTheme.accentOrange)
+                .foregroundColor(self.document.isVerified ? AppTheme.accentGreen : AppTheme.accentOrange)
                 .frame(width: ResponsiveDesign.spacing(32))
 
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
-                Text(document.name)
+                Text(self.document.name)
                     .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.medium)
                     .foregroundColor(AppTheme.fontColor)
 
                 HStack(spacing: ResponsiveDesign.spacing(8)) {
-                    Text(document.category)
+                    Text(self.document.category)
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(AppTheme.fontColor.opacity(0.7))
 
@@ -270,7 +270,7 @@ struct DocumentRow: View {
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(AppTheme.fontColor.opacity(0.5))
 
-                    Text(document.uploadedAt.formatted(date: .abbreviated, time: .omitted))
+                    Text(self.document.uploadedAt.formatted(date: .abbreviated, time: .omitted))
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(AppTheme.fontColor.opacity(0.7))
                 }
@@ -280,8 +280,8 @@ struct DocumentRow: View {
 
             // Verification status badge
             CSStatusBadge(
-                text: document.isVerified ? "Verifiziert" : "Ausstehend",
-                color: document.isVerified ? AppTheme.accentGreen : AppTheme.accentOrange
+                text: self.document.isVerified ? "Verifiziert" : "Ausstehend",
+                color: self.document.isVerified ? AppTheme.accentGreen : AppTheme.accentOrange
             )
         }
         .padding()
@@ -311,47 +311,47 @@ struct CustomerTicketRow: View {
     let onTap: () -> Void
 
     var body: some View {
-        Button(action: onTap) {
+        Button(action: self.onTap) {
             HStack(spacing: ResponsiveDesign.spacing(12)) {
                 // Status indicator
                 Circle()
-                    .fill(ticketStatusColor)
+                    .fill(self.ticketStatusColor)
                     .frame(width: ResponsiveDesign.spacing(10), height: ResponsiveDesign.spacing(10))
 
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
                     HStack {
-                        Text(ticket.ticketNumber)
+                        Text(self.ticket.ticketNumber)
                             .font(ResponsiveDesign.captionFont())
                             .fontWeight(.medium)
                             .foregroundColor(AppTheme.accentLightBlue)
 
                         Spacer()
 
-                        Text(ticket.createdAt.formatted(date: .abbreviated, time: .omitted))
+                        Text(self.ticket.createdAt.formatted(date: .abbreviated, time: .omitted))
                             .font(ResponsiveDesign.captionFont())
                             .foregroundColor(AppTheme.fontColor.opacity(0.5))
                     }
 
-                    Text(ticket.subject)
+                    Text(self.ticket.subject)
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(AppTheme.fontColor)
                         .lineLimit(1)
 
                     HStack(spacing: ResponsiveDesign.spacing(8)) {
                         CSStatusBadge(
-                            text: ticketStatusText,
-                            color: ticketStatusColor
+                            text: self.ticketStatusText,
+                            color: self.ticketStatusColor
                         )
 
-                        if ticket.priority == .high || ticket.priority == .urgent {
+                        if self.ticket.priority == .high || self.ticket.priority == .urgent {
                             CSStatusBadge(
-                                text: ticket.priority == .urgent ? "Dringend" : "Hoch",
+                                text: self.ticket.priority == .urgent ? "Dringend" : "Hoch",
                                 color: AppTheme.accentRed
                             )
                         }
 
                         if let agentId = ticket.assignedTo {
-                            Text("• \(viewModel.getAgentName(for: agentId))")
+                            Text("• \(self.viewModel.getAgentName(for: agentId))")
                                 .font(ResponsiveDesign.captionFont())
                                 .foregroundColor(AppTheme.fontColor.opacity(0.6))
                                 .lineLimit(1)
@@ -371,7 +371,7 @@ struct CustomerTicketRow: View {
     }
 
     private var ticketStatusColor: Color {
-        switch ticket.status {
+        switch self.ticket.status {
         case .open:
             return AppTheme.accentLightBlue
         case .inProgress:
@@ -390,7 +390,7 @@ struct CustomerTicketRow: View {
     }
 
     private var ticketStatusText: String {
-        switch ticket.status {
+        switch self.ticket.status {
         case .open: return "Offen"
         case .inProgress: return "In Bearbeitung"
         case .waitingForCustomer: return "Warte auf Kunde"

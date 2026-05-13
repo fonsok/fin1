@@ -289,16 +289,16 @@ struct RiskFactorRow: View {
 
     var body: some View {
         HStack {
-            Text(factor)
+            Text(self.factor)
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor)
 
             Spacer()
 
-            Text("\(points) pts")
+            Text("\(self.points) pts")
                 .font(ResponsiveDesign.captionFont())
                 .fontWeight(.semibold)
-                .foregroundColor(isHighlighted ? AppTheme.accentOrange : AppTheme.fontColor)
+                .foregroundColor(self.isHighlighted ? AppTheme.accentOrange : AppTheme.fontColor)
         }
     }
 }
@@ -311,19 +311,19 @@ struct RiskClassRow: View {
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
-                Text(riskClass)
+                Text(self.riskClass)
                     .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.medium)
                     .foregroundColor(AppTheme.fontColor)
 
-                Text(description)
+                Text(self.description)
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
             }
 
             Spacer()
 
-            Text(range)
+            Text(self.range)
                 .font(ResponsiveDesign.captionFont())
                 .fontWeight(.semibold)
                 .foregroundColor(AppTheme.accentLightBlue)
@@ -339,13 +339,13 @@ struct ExampleCalculation: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(title)
+            Text(self.title)
                 .font(ResponsiveDesign.bodyFont())
                 .fontWeight(.medium)
                 .foregroundColor(AppTheme.fontColor)
 
             VStack(alignment: .leading, spacing: 4) {
-                ForEach(factors, id: \.self) { factor in
+                ForEach(self.factors, id: \.self) { factor in
                     Text("• \(factor)")
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(AppTheme.fontColor.opacity(0.8))
@@ -358,14 +358,14 @@ struct ExampleCalculation: View {
                     .fontWeight(.medium)
                     .foregroundColor(AppTheme.fontColor)
 
-                Text("\(total) points")
+                Text("\(self.total) points")
                     .font(ResponsiveDesign.captionFont())
                     .fontWeight(.semibold)
                     .foregroundColor(AppTheme.accentLightBlue)
 
                 Spacer()
 
-                Text(riskClass)
+                Text(self.riskClass)
                     .font(ResponsiveDesign.captionFont())
                     .fontWeight(.semibold)
                     .foregroundColor(AppTheme.accentOrange)

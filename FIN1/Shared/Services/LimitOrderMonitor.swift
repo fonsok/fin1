@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Limit Order Monitor Protocol
 /// Protocol defining the contract for limit order monitoring functionality
@@ -44,29 +44,29 @@ class LimitOrderMonitorImpl {
         guard let monitor = monitor else { return }
         guard monitor.limitPrice != nil else { return }
 
-        isMonitoringLimitOrder = true
+        self.isMonitoringLimitOrder = true
         monitor.isMonitoringLimitOrder = true
-        limitOrderRefreshCount = 0 // Reset refresh counter
+        self.limitOrderRefreshCount = 0 // Reset refresh counter
         print("🔍 DEBUG: Starting automatic limit order monitoring")
 
         // Start monitoring every 2 seconds (timer fires off main runloop; hop to MainActor for @MainActor state)
-        limitOrderTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
+        self.limitOrderTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
             Task { @MainActor [weak self] in
                 self?.checkLimitOrderCondition()
             }
         }
 
         // Check immediately
-        checkLimitOrderCondition()
+        self.checkLimitOrderCondition()
     }
 
     func stopLimitOrderMonitoring() {
-        isMonitoringLimitOrder = false
-        monitor?.isMonitoringLimitOrder = false
-        limitOrderTimer?.invalidate()
-        limitOrderTimer = nil
-        limitOrderExecutionTimer?.invalidate()
-        limitOrderExecutionTimer = nil
+        self.isMonitoringLimitOrder = false
+        self.monitor?.isMonitoringLimitOrder = false
+        self.limitOrderTimer?.invalidate()
+        self.limitOrderTimer = nil
+        self.limitOrderExecutionTimer?.invalidate()
+        self.limitOrderExecutionTimer = nil
         print("🔍 DEBUG: Stopped automatic limit order monitoring")
     }
 
@@ -76,22 +76,24 @@ class LimitOrderMonitorImpl {
         guard let monitor = monitor else { return }
         guard let limitPrice = monitor.limitPrice else { return }
 
-        print("🔍 DEBUG: Checking limit order condition - currentPrice: \(monitor.currentPriceValue), limitPrice: \(limitPrice), refreshCount: \(limitOrderRefreshCount)")
+        print(
+            "🔍 DEBUG: Checking limit order condition - currentPrice: \(monitor.currentPriceValue), limitPrice: \(limitPrice), refreshCount: \(self.limitOrderRefreshCount)"
+        )
 
         // Check if limit condition is met (to be implemented by specific order types)
-        let conditionMet = shouldExecuteLimitOrder(currentPrice: monitor.currentPriceValue, limitPrice: limitPrice)
+        let conditionMet = self.shouldExecuteLimitOrder(currentPrice: monitor.currentPriceValue, limitPrice: limitPrice)
 
-        if conditionMet || limitOrderRefreshCount >= 5 {
+        if conditionMet || self.limitOrderRefreshCount >= 5 {
             // Only start execution timer if one isn't already running
-            if limitOrderExecutionTimer == nil {
-                if limitOrderRefreshCount >= 5 {
+            if self.limitOrderExecutionTimer == nil {
+                if self.limitOrderRefreshCount >= 5 {
                     print("🔍 DEBUG: Maximum 5 refreshes reached! Forcing limit condition to be met")
                 } else {
                     print("🔍 DEBUG: Limit condition met naturally! Starting 2-second countdown to execute order")
                 }
 
                 // Wait 2 seconds then execute (avoid capturing `monitor` in a @Sendable timer closure)
-                limitOrderExecutionTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { [weak self] _ in
+                self.limitOrderExecutionTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { [weak self] _ in
                     Task { @MainActor [weak self] in
                         guard let self, let monitor = self.monitor else { return }
                         await monitor.placeOrder()
@@ -103,20 +105,20 @@ class LimitOrderMonitorImpl {
             }
         } else {
             // Increment refresh counter and refresh price
-            limitOrderRefreshCount += 1
-            print("🔍 DEBUG: Refreshing price (attempt \(limitOrderRefreshCount)/5)")
+            self.limitOrderRefreshCount += 1
+            print("🔍 DEBUG: Refreshing price (attempt \(self.limitOrderRefreshCount)/5)")
 
             // Randomly decide if this refresh should meet the limit condition
             // Higher probability on later refreshes, but can happen on any refresh
-            let shouldMeetLimit = shouldRandomlyMeetLimitCondition(refreshCount: limitOrderRefreshCount)
+            let shouldMeetLimit = self.shouldRandomlyMeetLimitCondition(refreshCount: self.limitOrderRefreshCount)
 
             if shouldMeetLimit {
-                print("🔍 DEBUG: Randomly meeting limit condition on refresh \(limitOrderRefreshCount)")
-                adjustPriceToMeetLimit(limitPrice: limitPrice)
-            } else if limitOrderRefreshCount == 5 {
+                print("🔍 DEBUG: Randomly meeting limit condition on refresh \(self.limitOrderRefreshCount)")
+                self.adjustPriceToMeetLimit(limitPrice: limitPrice)
+            } else if self.limitOrderRefreshCount == 5 {
                 // Fallback: ensure it happens on the 5th refresh if it hasn't happened yet
                 print("🔍 DEBUG: 5th refresh - forcing limit condition to be met")
-                adjustPriceToMeetLimit(limitPrice: limitPrice)
+                self.adjustPriceToMeetLimit(limitPrice: limitPrice)
             } else {
                 // Trigger normal price reload
                 monitor.reloadPrice()

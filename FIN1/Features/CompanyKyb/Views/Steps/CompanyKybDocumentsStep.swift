@@ -27,15 +27,15 @@ struct CompanyKybDocumentsStep: View {
                 label: "Handelsregisterauszug-Referenz (optional)",
                 placeholder: "z. B. REF-HR-2026-001",
                 icon: "doc.text",
-                text: $formData.tradeRegisterExtractReference
+                text: self.$formData.tradeRegisterExtractReference
             )
 
             toggleRow(
                 title: "Ich bestätige, dass alle erforderlichen Dokumente vorliegen oder nachgereicht werden.",
-                isOn: $formData.documentsAcknowledged
+                isOn: self.$formData.documentsAcknowledged
             )
 
-            if !formData.documentsAcknowledged {
+            if !self.formData.documentsAcknowledged {
                 HStack(spacing: ResponsiveDesign.spacing(8)) {
                     Image(systemName: "info.circle")
                         .foregroundColor(AppTheme.accentLightBlue)

@@ -1,6 +1,6 @@
-import SwiftUI
-import Foundation
 import Combine
+import Foundation
+import SwiftUI
 
 @MainActor
 final class InvestmentsViewModel: ObservableObject {
@@ -40,17 +40,19 @@ final class InvestmentsViewModel: ObservableObject {
     /// backend data is not available yet.
     @Published var completedCanonicalSummaries: [String: ServerInvestmentCanonicalSummary] = [:]
 
-    init(userService: any UserServiceProtocol,
-         investmentService: any InvestmentServiceProtocol,
-         investorCashBalanceService: (any InvestorCashBalanceServiceProtocol)? = nil,
-         poolTradeParticipationService: any PoolTradeParticipationServiceProtocol,
-         documentService: any DocumentServiceProtocol,
-         invoiceService: any InvoiceServiceProtocol,
-         traderDataService: any TraderDataServiceProtocol,
-         tradeLifecycleService: any TradeLifecycleServiceProtocol,
-         configurationService: any ConfigurationServiceProtocol,
-         commissionCalculationService: any CommissionCalculationServiceProtocol,
-         settlementAPIService: (any SettlementAPIServiceProtocol)? = nil) {
+    init(
+        userService: any UserServiceProtocol,
+        investmentService: any InvestmentServiceProtocol,
+        investorCashBalanceService: (any InvestorCashBalanceServiceProtocol)? = nil,
+        poolTradeParticipationService: any PoolTradeParticipationServiceProtocol,
+        documentService: any DocumentServiceProtocol,
+        invoiceService: any InvoiceServiceProtocol,
+        traderDataService: any TraderDataServiceProtocol,
+        tradeLifecycleService: any TradeLifecycleServiceProtocol,
+        configurationService: any ConfigurationServiceProtocol,
+        commissionCalculationService: any CommissionCalculationServiceProtocol,
+        settlementAPIService: (any SettlementAPIServiceProtocol)? = nil
+    ) {
         self.userService = userService
         self.investmentService = investmentService
         self.investorCashBalanceService = investorCashBalanceService
@@ -65,16 +67,19 @@ final class InvestmentsViewModel: ObservableObject {
         self.tradeAPIService = nil
         self.boundInvestorId = userService.currentUser?.id
         self.currentRole = userService.currentUser?.role
-        self.dataProcessor = InvestmentsDataProcessor(poolTradeParticipationService: poolTradeParticipationService, configurationService: configurationService)
-        setupRoleChangeObservers()
-        setupBindings()
+        self.dataProcessor = InvestmentsDataProcessor(
+            poolTradeParticipationService: poolTradeParticipationService,
+            configurationService: configurationService
+        )
+        self.setupRoleChangeObservers()
+        self.setupBindings()
     }
 
     // MARK: - Setup Observers
 
     private func setupRoleChangeObservers() {
         // Clear existing role change observers (if any)
-        roleChangeCancellables.removeAll()
+        self.roleChangeCancellables.removeAll()
 
         // Observe role changes to reload data for new user
         NotificationCenter.default.publisher(for: .userDataDidUpdate)
@@ -86,14 +91,16 @@ final class InvestmentsViewModel: ObservableObject {
 
                 // Reload if user ID changed OR role changed (for role testing)
                 if newInvestorId != self.boundInvestorId || newRole != self.currentRole {
-                    print("🔄 InvestmentsViewModel: User data changed (ID: \(newInvestorId ?? "nil") -> \(self.boundInvestorId ?? "nil"), Role: \(newRole?.displayName ?? "nil") -> \(self.currentRole?.displayName ?? "nil")) - reloading")
+                    print(
+                        "🔄 InvestmentsViewModel: User data changed (ID: \(newInvestorId ?? "nil") -> \(self.boundInvestorId ?? "nil"), Role: \(newRole?.displayName ?? "nil") -> \(self.currentRole?.displayName ?? "nil")) - reloading"
+                    )
                     self.boundInvestorId = newInvestorId
                     self.currentRole = newRole
                     // Re-setup investment publisher subscription with new investor ID
                     self.setupInvestmentPublisher()
                 }
             }
-            .store(in: &roleChangeCancellables)
+            .store(in: &self.roleChangeCancellables)
 
         NotificationCenter.default.publisher(for: NSNotification.Name("UserRoleChanged"))
             .receive(on: DispatchQueue.main)
@@ -109,27 +116,27 @@ final class InvestmentsViewModel: ObservableObject {
                 // Re-setup investment publisher subscription with new investor ID
                 self.setupInvestmentPublisher()
             }
-            .store(in: &roleChangeCancellables)
+            .store(in: &self.roleChangeCancellables)
     }
 
     // MARK: - Setup Bindings
 
     private func setupBindings() {
-        setupRoleChangeObservers()
-        setupInvestmentPublisher()
+        self.setupRoleChangeObservers()
+        self.setupInvestmentPublisher()
     }
 
     private func setupInvestmentPublisher() {
         // Cancel existing investment publisher subscription
-        cancellables.removeAll()
+        self.cancellables.removeAll()
 
         // Observe investment changes from service
-        let investorId = boundInvestorId
+        let investorId = self.boundInvestorId
         let publisher: AnyPublisher<[Investment], Never>
         if let investorId = investorId {
-            publisher = investmentService.investmentsPublisher(for: investorId)
+            publisher = self.investmentService.investmentsPublisher(for: investorId)
         } else {
-            publisher = investmentService.investmentsPublisher
+            publisher = self.investmentService.investmentsPublisher
         }
         publisher
             .receive(on: DispatchQueue.main)
@@ -143,7 +150,7 @@ final class InvestmentsViewModel: ObservableObject {
                 self.checkAndUpdateInvestmentCompletion()
                 print("✅ InvestmentsViewModel: Investments updated for current user - count: \(self.investments.count)")
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
 
         // Initial load
         loadInvestments()
@@ -152,8 +159,8 @@ final class InvestmentsViewModel: ObservableObject {
     /// Reconfigures ViewModel with services from environment (single container to avoid omissions)
     func reconfigure(with services: AppServices) {
         // Cancel existing subscriptions
-        cancellables.removeAll()
-        roleChangeCancellables.removeAll()
+        self.cancellables.removeAll()
+        self.roleChangeCancellables.removeAll()
 
         self.userService = services.userService
         self.investmentService = services.investmentService
@@ -170,11 +177,14 @@ final class InvestmentsViewModel: ObservableObject {
         // Refresh bound investor id when VM is explicitly reconfigured
         self.boundInvestorId = services.userService.currentUser?.id
 
-        self.dataProcessor = InvestmentsDataProcessor(poolTradeParticipationService: services.poolTradeParticipationService, configurationService: services.configurationService)
+        self.dataProcessor = InvestmentsDataProcessor(
+            poolTradeParticipationService: services.poolTradeParticipationService,
+            configurationService: services.configurationService
+        )
         refreshCompletedDisplayData()
 
         // Re-setup bindings with new service
-        setupBindings()
+        self.setupBindings()
     }
 
     deinit {
@@ -182,17 +192,17 @@ final class InvestmentsViewModel: ObservableObject {
     }
 
     var currentUser: User? {
-        userService.currentUser
+        self.userService.currentUser
     }
 
     // MARK: - Investment Management
 
     func showNewInvestmentSheet() {
-        showNewInvestment = true
+        self.showNewInvestment = true
     }
 
     func hideNewInvestmentSheet() {
-        showNewInvestment = false
+        self.showNewInvestment = false
     }
 
     // MARK: - Investment Deletion
@@ -200,7 +210,7 @@ final class InvestmentsViewModel: ObservableObject {
     /// Deletes a reserved split (storno). Refund + escrow: `InvestmentService` (server via API when synced, else local wallet).
     /// App service charge is never refunded.
     func deleteInvestment(_ investmentRow: InvestmentRow) async throws {
-        await investmentService.deleteInvestment(
+        await self.investmentService.deleteInvestment(
             investmentId: investmentRow.investmentId,
             reservationId: investmentRow.reservation.id
         )
@@ -209,18 +219,18 @@ final class InvestmentsViewModel: ObservableObject {
     // MARK: - Error Handling
 
     func clearError() {
-        errorMessage = nil
-        showError = false
+        self.errorMessage = nil
+        self.showError = false
     }
 
     func showError(_ error: AppError) {
-        errorMessage = error.errorDescription ?? "An error occurred"
-        showError = true
+        self.errorMessage = error.errorDescription ?? "An error occurred"
+        self.showError = true
     }
 
     func handleError(_ error: Error) {
         let appError = error.toAppError()
-        errorMessage = appError.errorDescription ?? "An error occurred"
-        showError = true
+        self.errorMessage = appError.errorDescription ?? "An error occurred"
+        self.showError = true
     }
 }

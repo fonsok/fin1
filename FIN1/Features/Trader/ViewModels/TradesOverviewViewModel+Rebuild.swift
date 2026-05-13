@@ -3,16 +3,16 @@ import Foundation
 @MainActor
 extension TradesOverviewViewModel {
     func rebuildTrades() async {
-        let (activeSnapshot, completedSnapshot) = getTradeSnapshots()
-        self.hasActiveTrade = detectActiveTrade(activeSnapshot, completedSnapshot)
+        let (activeSnapshot, completedSnapshot) = self.getTradeSnapshots()
+        self.hasActiveTrade = self.detectActiveTrade(activeSnapshot, completedSnapshot)
 
         let (ongoingItems, completedItems) = await processTrades(completedSnapshot)
-        updateTradeLists(ongoingItems, completedItems)
+        self.updateTradeLists(ongoingItems, completedItems)
 
         filteringViewModel.updateTrades(ongoing: ongoingTrades, completed: completedTrades)
         await filteringViewModel.filterTrades(by: .last30Days)
 
-        let tableRows = createTableRows(from: filteringViewModel.filteredCompletedTrades)
+        let tableRows = self.createTableRows(from: filteringViewModel.filteredCompletedTrades)
         self.columnWidths = ColumnWidthCalculator.calculate(for: tableRows)
     }
 
@@ -56,7 +56,7 @@ extension TradesOverviewViewModel {
         let roi = trade.displayROI
         let endDate = trade.completedAt ?? Date()
         let startDate = trade.createdAt
-        let totalFees = calculateInvoiceBasedFees(for: trade)
+        let totalFees = self.calculateInvoiceBasedFees(for: trade)
         let commission = await commissionCalculator.calculateCommission(tradeId: trade.id, hasProfit: pnl > 0)
 
         return TradeOverviewItem(
@@ -128,7 +128,7 @@ extension TradesOverviewViewModel {
         try? await Task.sleep(nanoseconds: UInt64(0.5 * 1_000_000_000))
         filteringViewModel.updateTrades(ongoing: ongoingTrades, completed: completedTrades)
         await filteringViewModel.filterTrades(by: period)
-        let tableRows = createTableRows(from: filteringViewModel.filteredCompletedTrades)
+        let tableRows = self.createTableRows(from: filteringViewModel.filteredCompletedTrades)
         self.columnWidths = ColumnWidthCalculator.calculate(for: tableRows)
         isLoading = false
     }

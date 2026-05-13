@@ -72,7 +72,6 @@ struct IdentificationConfirmStep: View {
                     }
                 }
                 .frame(maxWidth: .infinity)
-
             }
             .padding()
             .background(AppTheme.sectionBackground)
@@ -109,10 +108,10 @@ struct IdentificationConfirmStep: View {
             .cornerRadius(ResponsiveDesign.spacing(16))
 
             // Confirmation Button
-            Button(action: { identificationConfirmed.toggle() }, label: {
+            Button(action: { self.identificationConfirmed.toggle() }, label: {
                 HStack {
                     InteractiveElement(
-                        isSelected: identificationConfirmed,
+                        isSelected: self.identificationConfirmed,
                         type: .confirmationCircle
                     )
 
@@ -122,18 +121,18 @@ struct IdentificationConfirmStep: View {
 
                     Spacer()
 
-                    if identificationConfirmed {
+                    if self.identificationConfirmed {
                         Image(systemName: "arrow.right")
                             .foregroundColor(AppTheme.accentGreen)
                             .font(ResponsiveDesign.headlineFont())
                     }
                 }
                 .padding()
-                .background(identificationConfirmed ? AppTheme.accentGreen.opacity(0.1) : AppTheme.sectionBackground)
+                .background(self.identificationConfirmed ? AppTheme.accentGreen.opacity(0.1) : AppTheme.sectionBackground)
                 .cornerRadius(ResponsiveDesign.spacing(12))
                 .overlay(
                     RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(12))
-                        .stroke(identificationConfirmed ? AppTheme.accentGreen : Color.clear, lineWidth: 2)
+                        .stroke(self.identificationConfirmed ? AppTheme.accentGreen : Color.clear, lineWidth: 2)
                 )
             })
             .buttonStyle(PlainButtonStyle())
@@ -148,11 +147,11 @@ struct QualityCheckItem: View {
 
     var body: some View {
         HStack(spacing: ResponsiveDesign.spacing(12)) {
-            Image(systemName: isChecked ? "checkmark.circle.fill" : "circle")
-                .foregroundColor(isChecked ? AppTheme.accentGreen : AppTheme.fontColor.opacity(0.3))
+            Image(systemName: self.isChecked ? "checkmark.circle.fill" : "circle")
+                .foregroundColor(self.isChecked ? AppTheme.accentGreen : AppTheme.fontColor.opacity(0.3))
                 .font(ResponsiveDesign.headlineFont())
 
-            Text(text)
+            Text(self.text)
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor)
 

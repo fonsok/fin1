@@ -63,67 +63,67 @@ final class MockAuthProvider: AuthProviderProtocol {
 
     func authenticate(with method: AuthMethod) async throws -> AuthResult {
         // Simulate network delay
-        try await Task.sleep(nanoseconds: simulatedDelay)
+        try await Task.sleep(nanoseconds: self.simulatedDelay)
 
         switch method {
         case .emailPassword(let email, let password):
-            return try await authenticateWithEmailPassword(email: email, password: password)
+            return try await self.authenticateWithEmailPassword(email: email, password: password)
 
         case .appleSignIn(let identityToken, _, let fullName):
-            return try await authenticateWithApple(identityToken: identityToken, fullName: fullName)
+            return try await self.authenticateWithApple(identityToken: identityToken, fullName: fullName)
 
         case .biometric(let userId):
-            return try await authenticateWithBiometric(userId: userId)
+            return try await self.authenticateWithBiometric(userId: userId)
 
         case .sso(let provider, let code, _):
-            return try await authenticateWithSSO(provider: provider, code: code)
+            return try await self.authenticateWithSSO(provider: provider, code: code)
 
         case .magicLink(let token):
-            return try await authenticateWithMagicLink(token: token)
+            return try await self.authenticateWithMagicLink(token: token)
 
         case .refreshToken(let token):
-            return try await authenticateWithRefreshToken(token: token)
+            return try await self.authenticateWithRefreshToken(token: token)
         }
     }
 
     func refreshToken() async throws -> String {
-        try await Task.sleep(nanoseconds: simulatedDelay / 2)
+        try await Task.sleep(nanoseconds: self.simulatedDelay / 2)
 
-        guard (try await tokenStorage.getRefreshToken()) != nil else {
+        guard (try await self.tokenStorage.getRefreshToken()) != nil else {
             throw AuthProviderError.refreshFailed
         }
 
         // Generate new tokens
-        let newAccessToken = generateMockToken(prefix: "mock_access")
-        let newRefreshToken = generateMockToken(prefix: "mock_refresh")
-        let expiresAt = Date().addingTimeInterval(3600) // 1 hour
+        let newAccessToken = self.generateMockToken(prefix: "mock_access")
+        let newRefreshToken = self.generateMockToken(prefix: "mock_refresh")
+        let expiresAt = Date().addingTimeInterval(3_600) // 1 hour
 
-        try await tokenStorage.store(
+        try await self.tokenStorage.store(
             accessToken: newAccessToken,
             refreshToken: newRefreshToken,
             idToken: nil,
             expiresAt: expiresAt
         )
 
-        logger.info("🔄 Token refreshed successfully")
+        self.logger.info("🔄 Token refreshed successfully")
         return newAccessToken
     }
 
     func revokeTokens() async throws {
-        try await Task.sleep(nanoseconds: simulatedDelay / 4)
-        try await tokenStorage.clear()
-        logger.info("🔐 Tokens revoked")
+        try await Task.sleep(nanoseconds: self.simulatedDelay / 4)
+        try await self.tokenStorage.clear()
+        self.logger.info("🔐 Tokens revoked")
     }
 
     var isSessionValid: Bool {
         get async {
-            await tokenStorage.hasValidTokens
+            await self.tokenStorage.hasValidTokens
         }
     }
 
     var currentAccessToken: String? {
         get async {
-            try? await tokenStorage.getAccessToken()
+            try? await self.tokenStorage.getAccessToken()
         }
     }
 
@@ -137,7 +137,7 @@ final class MockAuthProvider: AuthProviderProtocol {
             guard testUser.password == password else {
                 throw AuthProviderError.invalidCredentials
             }
-            return try await createAuthResult(
+            return try await self.createAuthResult(
                 userId: testUser.userId,
                 email: normalizedEmail,
                 fullName: nil,
@@ -147,7 +147,7 @@ final class MockAuthProvider: AuthProviderProtocol {
 
         // Allow any email with pattern matching for flexible testing
         if normalizedEmail.contains("test") || normalizedEmail.contains("@test.com") {
-            return try await createAuthResult(
+            return try await self.createAuthResult(
                 userId: "user-\(UUID().uuidString.prefix(8))",
                 email: normalizedEmail,
                 fullName: nil,
@@ -170,7 +170,7 @@ final class MockAuthProvider: AuthProviderProtocol {
             name = formatter.string(from: fullName)
         }
 
-        return try await createAuthResult(
+        return try await self.createAuthResult(
             userId: userId,
             email: nil,
             fullName: name,
@@ -189,7 +189,7 @@ final class MockAuthProvider: AuthProviderProtocol {
             throw AuthProviderError.biometricFailed
         }
 
-        return try await createAuthResult(
+        return try await self.createAuthResult(
             userId: userId,
             email: nil,
             fullName: nil,
@@ -203,7 +203,7 @@ final class MockAuthProvider: AuthProviderProtocol {
 
         let userId = "\(provider.rawValue)-\(UUID().uuidString.prefix(8))"
 
-        return try await createAuthResult(
+        return try await self.createAuthResult(
             userId: userId,
             email: "sso-user@\(provider.rawValue).com",
             fullName: "SSO User",
@@ -217,7 +217,7 @@ final class MockAuthProvider: AuthProviderProtocol {
 
         let userId = "magic-\(UUID().uuidString.prefix(8))"
 
-        return try await createAuthResult(
+        return try await self.createAuthResult(
             userId: userId,
             email: "user@magiclink.test",
             fullName: nil,
@@ -233,7 +233,7 @@ final class MockAuthProvider: AuthProviderProtocol {
 
         let userId = "refreshed-\(UUID().uuidString.prefix(8))"
 
-        return try await createAuthResult(
+        return try await self.createAuthResult(
             userId: userId,
             email: nil,
             fullName: nil,
@@ -249,20 +249,20 @@ final class MockAuthProvider: AuthProviderProtocol {
         fullName: String?,
         method: AuthMethod
     ) async throws -> AuthResult {
-        let accessToken = generateMockToken(prefix: "mock_access")
-        let refreshToken = generateMockToken(prefix: "mock_refresh")
-        let idToken = generateMockToken(prefix: "mock_id")
-        let expiresAt = Date().addingTimeInterval(3600) // 1 hour
+        let accessToken = self.generateMockToken(prefix: "mock_access")
+        let refreshToken = self.generateMockToken(prefix: "mock_refresh")
+        let idToken = self.generateMockToken(prefix: "mock_id")
+        let expiresAt = Date().addingTimeInterval(3_600) // 1 hour
 
         // Store tokens
-        try await tokenStorage.store(
+        try await self.tokenStorage.store(
             accessToken: accessToken,
             refreshToken: refreshToken,
             idToken: idToken,
             expiresAt: expiresAt
         )
 
-        logger.info("✅ Mock authentication successful for user: \(userId)")
+        self.logger.info("✅ Mock authentication successful for user: \(userId)")
 
         return AuthResult(
             accessToken: accessToken,

@@ -11,10 +11,10 @@ struct AppLedgerView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: ResponsiveDesign.spacing(16)) {
-                revenueSummarySection
-                accountSummarySection
-                filterSection
-                ledgerSection
+                self.revenueSummarySection
+                self.accountSummarySection
+                self.filterSection
+                self.ledgerSection
             }
             .padding()
         }
@@ -32,14 +32,14 @@ struct AppLedgerView: View {
                 }
 
                 Button {
-                    viewModel.copyCSVToPasteboard()
+                    self.viewModel.copyCSVToPasteboard()
                 } label: {
                     Image(systemName: "doc.on.doc")
                 }
                 .help("CSV kopieren")
 
                 Button {
-                    viewModel.refresh()
+                    self.viewModel.refresh()
                 } label: {
                     Image(systemName: "arrow.clockwise")
                 }
@@ -53,14 +53,14 @@ struct AppLedgerView: View {
     private var revenueSummarySection: some View {
         VStack(spacing: ResponsiveDesign.spacing(12)) {
             HStack(spacing: ResponsiveDesign.spacing(12)) {
-                summaryCard(
+                self.summaryCard(
                     title: "Gesamterlös",
-                    value: viewModel.totalRevenue,
+                    value: self.viewModel.totalRevenue,
                     color: AppTheme.accentGreen,
-                    subtitle: "\(viewModel.entries.count) Buchungen"
+                    subtitle: "\(self.viewModel.entries.count) Buchungen"
                 )
                 if let vat = viewModel.vatSummary {
-                    summaryCard(
+                    self.summaryCard(
                         title: "USt-Verbindlichkeit",
                         value: vat.outstandingVATLiability,
                         color: .blue,
@@ -71,13 +71,13 @@ struct AppLedgerView: View {
 
             if let vat = viewModel.vatSummary {
                 HStack(spacing: ResponsiveDesign.spacing(12)) {
-                    summaryCard(
+                    self.summaryCard(
                         title: "USt abgeführt",
                         value: vat.outputVATRemitted,
                         color: .purple,
                         subtitle: "An Finanzamt"
                     )
-                    summaryCard(
+                    self.summaryCard(
                         title: "Vorsteuer",
                         value: vat.inputVATClaimed,
                         color: .orange,
@@ -116,13 +116,13 @@ struct AppLedgerView: View {
                 .font(ResponsiveDesign.headlineFont())
                 .fontWeight(.semibold)
 
-            if viewModel.accountSummaries.isEmpty {
+            if self.viewModel.accountSummaries.isEmpty {
                 Text("Noch keine Buchungen vorhanden.")
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(.secondary)
             } else {
                 ForEach(AppLedgerAccount.AccountGroup.allCases, id: \.self) { group in
-                    let groupSummaries = viewModel.accountSummaries.filter { $0.account.accountGroup == group }
+                    let groupSummaries = self.viewModel.accountSummaries.filter { $0.account.accountGroup == group }
                     if !groupSummaries.isEmpty {
                         Text(group.displayName)
                             .font(ResponsiveDesign.captionFont())
@@ -130,7 +130,7 @@ struct AppLedgerView: View {
                             .padding(.top, 4)
 
                         ForEach(groupSummaries) { summary in
-                            accountRow(summary)
+                            self.accountRow(summary)
                         }
                     }
                 }
@@ -145,10 +145,10 @@ struct AppLedgerView: View {
 
     private func accountRow(_ summary: AppLedgerAccountSummary) -> some View {
         Button {
-            if viewModel.selectedAccount == summary.account {
-                viewModel.selectedAccount = nil
+            if self.viewModel.selectedAccount == summary.account {
+                self.viewModel.selectedAccount = nil
             } else {
-                viewModel.selectedAccount = summary.account
+                self.viewModel.selectedAccount = summary.account
             }
         } label: {
             HStack {
@@ -177,7 +177,7 @@ struct AppLedgerView: View {
         }
         .buttonStyle(.plain)
         .background(
-            viewModel.selectedAccount == summary.account
+            self.viewModel.selectedAccount == summary.account
                 ? Color.accentColor.opacity(0.08)
                 : Color.clear
         )
@@ -193,8 +193,8 @@ struct AppLedgerView: View {
                 .fontWeight(.semibold)
 
             Picker("Konto", selection: Binding(
-                get: { viewModel.selectedAccount },
-                set: { viewModel.selectedAccount = $0 }
+                get: { self.viewModel.selectedAccount },
+                set: { self.viewModel.selectedAccount = $0 }
             )) {
                 Text("Alle Konten").tag(nil as AppLedgerAccount?)
                 ForEach(AppLedgerAccount.allCases, id: \.self) { account in
@@ -203,11 +203,11 @@ struct AppLedgerView: View {
             }
             .pickerStyle(.menu)
 
-            TextField("User-ID filtern…", text: $viewModel.userFilter)
+            TextField("User-ID filtern…", text: self.$viewModel.userFilter)
                 .textFieldStyle(.roundedBorder)
 
             Button("Filter zurücksetzen") {
-                viewModel.clearFilters()
+                self.viewModel.clearFilters()
             }
             .buttonStyle(.bordered)
         }
@@ -222,19 +222,19 @@ struct AppLedgerView: View {
 
     private var ledgerSection: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
-            Text("Buchungen (\(viewModel.entries.count))")
+            Text("Buchungen (\(self.viewModel.entries.count))")
                 .font(ResponsiveDesign.headlineFont())
                 .fontWeight(.semibold)
 
-            if viewModel.entries.isEmpty {
+            if self.viewModel.entries.isEmpty {
                 Text("Keine Buchungen für die gewählten Filter.")
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(.secondary)
                     .padding()
             } else {
                 LazyVStack(spacing: ResponsiveDesign.spacing(12)) {
-                    ForEach(viewModel.entries) { entry in
-                        entryCard(entry)
+                    ForEach(self.viewModel.entries) { entry in
+                        self.entryCard(entry)
                     }
                 }
             }

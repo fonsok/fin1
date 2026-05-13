@@ -1,5 +1,5 @@
-import Foundation
 @preconcurrency import Dispatch
+import Foundation
 
 extension ConfigurationService {
     func updateShowCommissionBreakdownInCreditNote(_ value: Bool) async throws {

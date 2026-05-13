@@ -12,15 +12,15 @@ struct UnifiedItemCard: View {
     @Environment(\.appServices) private var appServices
 
     var body: some View {
-        switch item {
+        switch self.item {
         case .notification(let notification):
             NotificationCardView(
                 notification: notification,
-                notificationService: notificationService,
-                userId: appServices.userService.currentUser?.id ?? "",
-                customerSupportService: appServices.customerSupportService,
-                satisfactionSurveyService: appServices.satisfactionSurveyService,
-                documentService: appServices.documentService
+                notificationService: self.notificationService,
+                userId: self.appServices.userService.currentUser?.id ?? "",
+                customerSupportService: self.appServices.customerSupportService,
+                satisfactionSurveyService: self.appServices.satisfactionSurveyService,
+                documentService: self.appServices.documentService
             )
         case .document(let document):
             DocumentCardView(document: document)
@@ -65,22 +65,22 @@ struct NotificationCardView: View {
 
     var body: some View {
         Button(action: {
-            Task { await viewModel.handlePrimaryTap() }
+            Task { await self.viewModel.handlePrimaryTap() }
         }) {
             ZStack {
                 HStack(spacing: ResponsiveDesign.spacing(16)) {
                     // Icon
-                    Image(systemName: notification.type.icon)
+                    Image(systemName: self.notification.type.icon)
                         .font(ResponsiveDesign.headlineFont())
-                        .foregroundColor(notificationColor)
+                        .foregroundColor(self.notificationColor)
                         .frame(width: 40, height: 40)
-                        .background(notificationColor.opacity(0.1))
+                        .background(self.notificationColor.opacity(0.1))
                         .clipShape(Circle())
 
                     // Content
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
-                            Text(notification.title)
+                            Text(self.notification.title)
                                 .font(ResponsiveDesign.headlineFont())
                                 .fontWeight(.semibold)
                                 .foregroundColor(AppTheme.fontColor)
@@ -88,28 +88,28 @@ struct NotificationCardView: View {
                             Spacer()
 
                             // Unread indicator
-                            if notification.isRead {
+                            if self.notification.isRead {
                                 Circle()
                                     .fill(AppTheme.accentLightBlue)
                                     .frame(width: 8, height: 8)
                             }
                         }
 
-                        Text(notification.message)
+                        Text(self.notification.message)
                             .font(ResponsiveDesign.bodyFont())
                             .foregroundColor(AppTheme.fontColor.opacity(0.8))
                             .lineLimit(2)
                             .multilineTextAlignment(.leading)
 
                         HStack {
-                            Text(notification.createdAt, style: .date)
+                            Text(self.notification.createdAt, style: .date)
                                 .font(ResponsiveDesign.captionFont())
                                 .foregroundColor(AppTheme.fontColor.opacity(0.6))
                                 .textCase(.uppercase)
 
                             Spacer()
 
-                            if notification.priority == .high || notification.priority == .urgent {
+                            if self.notification.priority == .high || self.notification.priority == .urgent {
                                 Text("Tap to view")
                                     .font(ResponsiveDesign.captionFont())
                                     .fontWeight(.medium)
@@ -125,10 +125,10 @@ struct NotificationCardView: View {
                 .padding(ResponsiveDesign.spacing(16))
                 .background(AppTheme.sectionBackground)
                 .cornerRadius(ResponsiveDesign.spacing(12))
-                .opacity(notification.isRead ? 0.7 : 1.0)
+                .opacity(self.notification.isRead ? 0.7 : 1.0)
 
                 // Loading overlay
-                if viewModel.isLoadingTicket {
+                if self.viewModel.isLoadingTicket {
                     ProgressView()
                         .progressViewStyle(CircularProgressViewStyle(tint: AppTheme.accentLightBlue))
                         .scaleEffect(1.2)
@@ -139,22 +139,22 @@ struct NotificationCardView: View {
             }
         }
         .buttonStyle(PlainButtonStyle())
-        .disabled(viewModel.isLoadingTicket)
-        .sheet(isPresented: $viewModel.showTicketDetail) {
+        .disabled(self.viewModel.isLoadingTicket)
+        .sheet(isPresented: self.$viewModel.showTicketDetail) {
             if let ticket = viewModel.ticket {
                 UserTicketDetailView(
                     ticket: ticket,
-                    userId: userId,
-                    supportService: customerSupportService
+                    userId: self.userId,
+                    supportService: self.customerSupportService
                 )
             }
         }
-        .sheet(isPresented: $viewModel.showSurvey) {
+        .sheet(isPresented: self.$viewModel.showSurvey) {
             if let request = viewModel.surveyRequest {
                 SatisfactionSurveyView(
                     surveyRequest: request,
                     onSubmit: { rating, issueResolved, agentHelpful, responseTimeSatisfactory, comment in
-                        await viewModel.submitSurvey(
+                        await self.viewModel.submitSurvey(
                             requestId: request.id,
                             rating: rating,
                             issueResolved: issueResolved,
@@ -163,22 +163,22 @@ struct NotificationCardView: View {
                             comment: comment
                         )
                     },
-                    onDismiss: { viewModel.dismissSurvey() }
+                    onDismiss: { self.viewModel.dismissSurvey() }
                 )
             }
         }
-        .sheet(item: $viewModel.sheetDocument) { document in
-            DocumentNavigationHelper.sheetView(for: document, appServices: appServices)
+        .sheet(item: self.$viewModel.sheetDocument) { document in
+            DocumentNavigationHelper.sheetView(for: document, appServices: self.appServices)
         }
-        .alert("Fehler", isPresented: $viewModel.showErrorAlert) {
+        .alert("Fehler", isPresented: self.$viewModel.showErrorAlert) {
             Button("OK", role: .cancel) {}
         } message: {
-            Text(viewModel.errorMessage)
+            Text(self.viewModel.errorMessage)
         }
     }
 
     private var notificationColor: Color {
-        switch notification.type {
+        switch self.notification.type {
         case .investment:
             return AppTheme.accentGreen
         case .trader:

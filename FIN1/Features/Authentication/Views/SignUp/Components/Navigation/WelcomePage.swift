@@ -30,11 +30,13 @@ struct WelcomePage: View {
 
                 VStack(spacing: ResponsiveDesign.spacing(16)) {
 
-                    Text("Überweisen Sie von Ihrem Privatkonto auf Ihr \(AppBrand.appName)-Cashkonto die Ihre gewünschte Investitionssumme und Sie können sofort loslegen. Ihr dabei eingesetztes Privatkonto führen wir als Ihr persönliches Referenzkonto bei uns.")
-                        .font(ResponsiveDesign.bodyFont())
-                        .foregroundColor(AppTheme.fontColor.opacity(0.8))
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
+                    Text(
+                        "Überweisen Sie von Ihrem Privatkonto auf Ihr \(AppBrand.appName)-Cashkonto die Ihre gewünschte Investitionssumme und Sie können sofort loslegen. Ihr dabei eingesetztes Privatkonto führen wir als Ihr persönliches Referenzkonto bei uns."
+                    )
+                    .font(ResponsiveDesign.bodyFont())
+                    .foregroundColor(AppTheme.fontColor.opacity(0.8))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
                 }
             }
 
@@ -44,7 +46,7 @@ struct WelcomePage: View {
             VStack(spacing: ResponsiveDesign.spacing(16)) {
                 Button("Zur Startseite") {
                     // Request complete dismissal to return to LandingView
-                    coordinator.requestDismissal()
+                    self.coordinator.requestDismissal()
                 }
                 .font(ResponsiveDesign.headlineFont())
                 .foregroundColor(AppTheme.fontColor)

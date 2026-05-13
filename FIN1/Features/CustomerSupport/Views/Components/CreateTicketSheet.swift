@@ -18,12 +18,12 @@ struct CreateTicketSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: ResponsiveDesign.spacing(20)) {
-                    headerSection
-                    customerSelectionSection
-                    subjectSection
-                    descriptionSection
-                    prioritySection
-                    submitButton
+                    self.headerSection
+                    self.customerSelectionSection
+                    self.subjectSection
+                    self.descriptionSection
+                    self.prioritySection
+                    self.submitButton
                 }
                 .padding()
             }
@@ -33,19 +33,19 @@ struct CreateTicketSheet: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Abbrechen") {
-                        viewModel.closeCreateTicketSheet()
-                        dismiss()
+                        self.viewModel.closeCreateTicketSheet()
+                        self.dismiss()
                     }
                 }
             }
             .task {
-                await loadCustomers()
+                await self.loadCustomers()
             }
-            .onChange(of: viewModel.preselectedUserId) { _, newValue in
+            .onChange(of: self.viewModel.preselectedUserId) { _, newValue in
                 if let preselectedId = newValue,
                    !availableCustomers.isEmpty,
                    availableCustomers.contains(where: { $0.id == preselectedId }) {
-                    selectedUserId = preselectedId
+                    self.selectedUserId = preselectedId
                 }
             }
         }
@@ -76,7 +76,7 @@ struct CreateTicketSheet: View {
                 .fontWeight(.medium)
                 .foregroundColor(AppTheme.fontColor)
 
-            if availableCustomers.isEmpty {
+            if self.availableCustomers.isEmpty {
                 Text("Keine Kunden verfügbar")
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.5))
@@ -86,9 +86,9 @@ struct CreateTicketSheet: View {
                     .cornerRadius(ResponsiveDesign.spacing(10))
             } else {
                 Menu {
-                    ForEach(availableCustomers) { customer in
+                    ForEach(self.availableCustomers) { customer in
                         Button(action: {
-                            selectedUserId = customer.id
+                            self.selectedUserId = customer.id
                         }) {
                             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(2)) {
                                 Text(customer.fullName)
@@ -97,7 +97,7 @@ struct CreateTicketSheet: View {
                                     .font(ResponsiveDesign.captionFont())
                                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
                             }
-                            if selectedUserId == customer.id {
+                            if self.selectedUserId == customer.id {
                                 Spacer()
                                 Image(systemName: "checkmark")
                             }
@@ -139,7 +139,7 @@ struct CreateTicketSheet: View {
                 .fontWeight(.medium)
                 .foregroundColor(AppTheme.fontColor)
 
-            TextField("Kurze Beschreibung des Problems", text: $subject)
+            TextField("Kurze Beschreibung des Problems", text: self.$subject)
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.inputFieldText)
                 .padding()
@@ -160,25 +160,25 @@ struct CreateTicketSheet: View {
 
                 Spacer()
 
-                Text("\(description.count)/1000")
+                Text("\(self.description.count)/1000")
                     .font(ResponsiveDesign.captionFont())
-                    .foregroundColor(description.count > 900 ? AppTheme.accentOrange : AppTheme.fontColor.opacity(0.5))
+                    .foregroundColor(self.description.count > 900 ? AppTheme.accentOrange : AppTheme.fontColor.opacity(0.5))
             }
 
-            TextEditor(text: $description)
+            TextEditor(text: self.$description)
                 .frame(minHeight: 120)
                 .padding(ResponsiveDesign.spacing(12))
                 .background(AppTheme.inputFieldBackground)
                 .cornerRadius(ResponsiveDesign.spacing(10))
                 .foregroundColor(AppTheme.inputFieldText)
                 .scrollContentBackground(.hidden)
-                .onChange(of: description) { _, newValue in
-                    if newValue.count > 1000 {
-                        description = String(newValue.prefix(1000))
+                .onChange(of: self.description) { _, newValue in
+                    if newValue.count > 1_000 {
+                        self.description = String(newValue.prefix(1_000))
                     }
                 }
 
-            if description.count < 10 && !description.isEmpty {
+            if self.description.count < 10 && !self.description.isEmpty {
                 Text("Bitte geben Sie mehr Details an (mindestens 10 Zeichen)")
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.accentOrange)
@@ -198,11 +198,11 @@ struct CreateTicketSheet: View {
             Menu {
                 ForEach([SupportTicket.TicketPriority.low, .medium, .high, .urgent], id: \.self) { prio in
                     Button(action: {
-                        priority = prio
+                        self.priority = prio
                     }) {
                         HStack {
                             Text(prio.displayName)
-                            if priority == prio {
+                            if self.priority == prio {
                                 Image(systemName: "checkmark")
                             }
                         }
@@ -210,7 +210,7 @@ struct CreateTicketSheet: View {
                 }
             } label: {
                 HStack {
-                    Text(priority.displayName)
+                    Text(self.priority.displayName)
                         .foregroundColor(AppTheme.inputFieldText)
                     Spacer()
                     Image(systemName: "chevron.up.chevron.down")
@@ -228,11 +228,11 @@ struct CreateTicketSheet: View {
     private var submitButton: some View {
         Button(action: {
             Task {
-                await submitTicket()
+                await self.submitTicket()
             }
         }) {
             HStack {
-                if viewModel.isLoading {
+                if self.viewModel.isLoading {
                     ProgressView()
                         .scaleEffect(0.8)
                         .tint(AppTheme.screenBackground)
@@ -248,19 +248,19 @@ struct CreateTicketSheet: View {
             .foregroundColor(AppTheme.screenBackground)
             .frame(maxWidth: .infinity)
             .frame(height: 50)
-            .background(isFormValid ? AppTheme.accentLightBlue : AppTheme.accentLightBlue.opacity(0.5))
+            .background(self.isFormValid ? AppTheme.accentLightBlue : AppTheme.accentLightBlue.opacity(0.5))
             .cornerRadius(ResponsiveDesign.spacing(12))
         }
-        .disabled(!isFormValid || viewModel.isLoading)
+        .disabled(!self.isFormValid || self.viewModel.isLoading)
     }
 
     // MARK: - Computed Properties
 
     private var isFormValid: Bool {
-        !selectedUserId.isEmpty &&
-        !subject.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-        !description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-        description.count >= 10
+        !self.selectedUserId.isEmpty &&
+            !self.subject.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+            !self.description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+            self.description.count >= 10
     }
 
     // MARK: - Private Methods
@@ -268,28 +268,28 @@ struct CreateTicketSheet: View {
     private func loadCustomers() async {
         let allCustomers = await viewModel.getAllCustomers()
         await MainActor.run {
-            availableCustomers = allCustomers
+            self.availableCustomers = allCustomers
             // Set preselected customer after loading if available
             if let preselectedId = viewModel.preselectedUserId,
                !allCustomers.isEmpty,
                allCustomers.contains(where: { $0.id == preselectedId }) {
-                selectedUserId = preselectedId
+                self.selectedUserId = preselectedId
             }
         }
     }
 
     private func submitTicket() async {
-        guard isFormValid else { return }
+        guard self.isFormValid else { return }
 
-        await viewModel.createSupportTicket(
-            userId: selectedUserId,
-            subject: subject.trimmingCharacters(in: .whitespacesAndNewlines),
-            description: description.trimmingCharacters(in: .whitespacesAndNewlines),
-            priority: priority
+        await self.viewModel.createSupportTicket(
+            userId: self.selectedUserId,
+            subject: self.subject.trimmingCharacters(in: .whitespacesAndNewlines),
+            description: self.description.trimmingCharacters(in: .whitespacesAndNewlines),
+            priority: self.priority
         )
 
-        if !viewModel.showError {
-            dismiss()
+        if !self.viewModel.showError {
+            self.dismiss()
         }
     }
 }

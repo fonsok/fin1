@@ -209,28 +209,28 @@ final class OnboardingAPIService: OnboardingAPIServiceProtocol {
     }
 
     func sendVerificationCode() async throws -> SendCodeResponse {
-        try await apiClient.callFunction(
+        try await self.apiClient.callFunction(
             "sendVerificationCode",
             parameters: nil
         )
     }
 
     func verifyEmailCode(_ code: String) async throws -> VerifyCodeResponse {
-        try await apiClient.callFunction(
+        try await self.apiClient.callFunction(
             "verifyEmailCode",
             parameters: ["code": code]
         )
     }
 
     func sendPhoneVerificationCode(phoneNumber: String) async throws -> SendPhoneCodeResponse {
-        try await apiClient.callFunction(
+        try await self.apiClient.callFunction(
             "sendPhoneVerificationCode",
             parameters: ["phoneNumber": phoneNumber]
         )
     }
 
     func verifyPhoneCode(_ code: String) async throws -> VerifyPhoneCodeResponse {
-        try await apiClient.callFunction(
+        try await self.apiClient.callFunction(
             "verifyPhoneCode",
             parameters: ["code": code]
         )

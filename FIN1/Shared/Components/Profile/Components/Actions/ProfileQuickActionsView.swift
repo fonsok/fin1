@@ -20,28 +20,28 @@ struct ProfileQuickActionsView: View {
                     title: "Edit Profile",
                     icon: "person.circle.fill",
                     color: AppTheme.accentLightBlue,
-                    action: onEditProfile
+                    action: self.onEditProfile
                 )
 
                 ProfileQuickActionCard(
                     title: "Settings",
                     icon: "gearshape.fill",
                     color: AppTheme.accentOrange,
-                    action: onSettings
+                    action: self.onSettings
                 )
 
                 ProfileQuickActionCard(
                     title: "Security",
                     icon: "lock.shield.fill",
                     color: AppTheme.accentGreen,
-                    action: onSecurity
+                    action: self.onSecurity
                 )
 
                 ProfileQuickActionCard(
                     title: "Help & Support",
                     icon: "questionmark.circle.fill",
                     color: AppTheme.accentRed,
-                    action: onHelpSupport
+                    action: self.onHelpSupport
                 )
             }
         }
@@ -55,13 +55,13 @@ struct ProfileQuickActionCard: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: action, label: {
+        Button(action: self.action, label: {
             VStack(spacing: ResponsiveDesign.spacing(12)) {
-                Image(systemName: icon)
+                Image(systemName: self.icon)
                     .font(ResponsiveDesign.titleFont())
-                    .foregroundColor(color)
+                    .foregroundColor(self.color)
 
-                Text(title)
+                Text(self.title)
                     .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.medium)
                     .foregroundColor(AppTheme.fontColor)

@@ -33,10 +33,10 @@ struct FilterCombination: Identifiable, Codable, Equatable {
     // Custom encoding function
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(name, forKey: .name)
-        try container.encode(filters, forKey: .filters)
-        try container.encode(isDefault, forKey: .isDefault)
-        try container.encode(createdAt, forKey: .createdAt)
+        try container.encode(self.name, forKey: .name)
+        try container.encode(self.filters, forKey: .filters)
+        try container.encode(self.isDefault, forKey: .isDefault)
+        try container.encode(self.createdAt, forKey: .createdAt)
     }
 }
 

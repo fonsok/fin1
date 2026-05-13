@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Buy Order Request
 struct BuyOrderRequest {

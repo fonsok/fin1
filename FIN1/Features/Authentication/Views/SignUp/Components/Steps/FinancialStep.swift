@@ -40,12 +40,12 @@ struct FinancialStep: View {
 
             CustomPicker(
                 title: "Employment Status",
-                selection: $employmentStatus
+                selection: self.$employmentStatus
             )
 
             CustomPicker(
                 title: "Income Range (€)",
-                selection: $incomeRange
+                selection: self.$incomeRange
             )
 
             VStack(alignment: .leading, spacing: 8) {
@@ -69,7 +69,7 @@ struct FinancialStep: View {
                     }
                 } label: {
                     HStack {
-                        Text(cashAndLiquidAssets.displayName)
+                        Text(self.cashAndLiquidAssets.displayName)
                             .foregroundColor(AppTheme.inputFieldText)
                         Spacer()
                         Image(systemName: "chevron.up.chevron.down")
@@ -100,66 +100,66 @@ struct FinancialStep: View {
                     IncomeSourceOption(
                         title: "Settlement",
                         isSelected: Binding(
-                            get: { incomeSources["Settlement"] ?? false },
-                            set: { incomeSources["Settlement"] = $0 }
+                            get: { self.incomeSources["Settlement"] ?? false },
+                            set: { self.incomeSources["Settlement"] = $0 }
                         ),
                         otherText: .constant("")
                     )
                     IncomeSourceOption(
                         title: "Inheritance",
                         isSelected: Binding(
-                            get: { incomeSources["Inheritance"] ?? false },
-                            set: { incomeSources["Inheritance"] = $0 }
+                            get: { self.incomeSources["Inheritance"] ?? false },
+                            set: { self.incomeSources["Inheritance"] = $0 }
                         ),
                         otherText: .constant("")
                     )
                     IncomeSourceOption(
                         title: "Savings",
                         isSelected: Binding(
-                            get: { incomeSources["Savings"] ?? false },
-                            set: { incomeSources["Savings"] = $0 }
+                            get: { self.incomeSources["Savings"] ?? false },
+                            set: { self.incomeSources["Savings"] = $0 }
                         ),
                         otherText: .constant("")
                     )
                     IncomeSourceOption(
                         title: "Financial contributions to family",
                         isSelected: Binding(
-                            get: { incomeSources["Financial contributions to family"] ?? false },
-                            set: { incomeSources["Financial contributions to family"] = $0 }
+                            get: { self.incomeSources["Financial contributions to family"] ?? false },
+                            set: { self.incomeSources["Financial contributions to family"] = $0 }
                         ),
                         otherText: .constant("")
                     )
                     IncomeSourceOption(
                         title: "Salary",
                         isSelected: Binding(
-                            get: { incomeSources["Salary"] ?? false },
-                            set: { incomeSources["Salary"] = $0 }
+                            get: { self.incomeSources["Salary"] ?? false },
+                            set: { self.incomeSources["Salary"] = $0 }
                         ),
                         otherText: .constant("")
                     )
                     IncomeSourceOption(
                         title: "Pension",
                         isSelected: Binding(
-                            get: { incomeSources["Pension"] ?? false },
-                            set: { incomeSources["Pension"] = $0 }
+                            get: { self.incomeSources["Pension"] ?? false },
+                            set: { self.incomeSources["Pension"] = $0 }
                         ),
                         otherText: .constant("")
                     )
                     IncomeSourceOption(
                         title: "Assets",
                         isSelected: Binding(
-                            get: { incomeSources["Assets"] ?? false },
-                            set: { incomeSources["Assets"] = $0 }
+                            get: { self.incomeSources["Assets"] ?? false },
+                            set: { self.incomeSources["Assets"] = $0 }
                         ),
                         otherText: .constant("")
                     )
                     IncomeSourceOption(
                         title: "Other (please specify)",
                         isSelected: Binding(
-                            get: { incomeSources["Other (please specify)"] ?? false },
-                            set: { incomeSources["Other (please specify)"] = $0 }
+                            get: { self.incomeSources["Other (please specify)"] ?? false },
+                            set: { self.incomeSources["Other (please specify)"] = $0 }
                         ),
-                        otherText: $otherIncomeSource
+                        otherText: self.$otherIncomeSource
                     )
                 }
             }
@@ -170,7 +170,7 @@ struct FinancialStep: View {
                 .foregroundColor(AppTheme.fontColor.opacity(0.8))
                 .multilineTextAlignment(.leading)
                 .padding(.top, ResponsiveDesign.spacing(8))
-                    }
+        }
     }
 }
 

@@ -1,5 +1,5 @@
-import SwiftUI
 import Foundation
+import SwiftUI
 
 // MARK: - Investor Summary Models
 
@@ -12,12 +12,12 @@ struct InvestorSummary {
     var averagePerformance: Double = 0
 
     var isPositivePnL: Bool {
-        totalUnrealizedPnL >= 0
+        self.totalUnrealizedPnL >= 0
     }
 
     var totalReturnPercentage: Double {
-        guard totalInvested > 0 else { return 0.0 }
-        return (totalUnrealizedPnL / totalInvested) * 100
+        guard self.totalInvested > 0 else { return 0.0 }
+        return (self.totalUnrealizedPnL / self.totalInvested) * 100
     }
 }
 
@@ -29,21 +29,21 @@ struct PerformanceData: Identifiable {
     let changePercentage: Double
 
     var isPositive: Bool {
-        change >= 0
+        self.change >= 0
     }
 
     var formattedValue: String {
-        value.formattedAsLocalizedCurrency()
+        self.value.formattedAsLocalizedCurrency()
     }
 
     var formattedChange: String {
-        let prefix = isPositive ? "+" : ""
-        return "\(prefix)\(change.formattedAsLocalizedCurrency())"
+        let prefix = self.isPositive ? "+" : ""
+        return "\(prefix)\(self.change.formattedAsLocalizedCurrency())"
     }
 
     var formattedChangePercentage: String {
-        let prefix = isPositive ? "+" : ""
-        return "\(prefix)\(String(format: "%.1f", changePercentage))%"
+        let prefix = self.isPositive ? "+" : ""
+        return "\(prefix)\(String(format: "%.1f", self.changePercentage))%"
     }
 }
 
@@ -112,7 +112,7 @@ struct InvestmentRow: Identifiable {
 
     var statusDisplayText: String {
         // Each investment shows its own status, not a count
-        switch status {
+        switch self.status {
         case .completed:
             // Status 3: Completed
             return "compl."
@@ -134,13 +134,13 @@ struct InvestmentRow: Identifiable {
     var isDeletable: Bool {
         // Only status 1 (reserved) can be deleted
         // Status 2 (active) and Status 3 (completed) cannot be deleted
-        status == .reserved
+        self.status == .reserved
     }
 
     /// Unique, human-readable label for open-investment tables.
     /// Example: "Inv ANL-2026-00003-02"
     var uniqueDisplayLabel: String {
-        "Inv \(investment.canonicalDisplayReference)"
+        "Inv \(self.investment.canonicalDisplayReference)"
     }
 
     private func mapStatus(_ status: InvestmentReservationStatus) -> InvestmentReservationStatusDisplay {

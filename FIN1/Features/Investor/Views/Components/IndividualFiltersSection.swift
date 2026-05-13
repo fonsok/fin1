@@ -21,16 +21,16 @@ struct IndividualFiltersSection: View {
             LabeledDropdownRow(
                 label: IndividualFilterCriteria.FilterType.timeRange.displayName,
                 alignment: .center,
-                selected: $selectedTimeRange,
+                selected: self.$selectedTimeRange,
                 options: FilterSuccessRateOption.allCases.filter { $0.timePeriod != nil || $0 == .none },
                 optionTitle: { $0.displayName }
             )
             .padding(.leading, ResponsiveDesign.horizontalPadding())
-            .onChange(of: selectedTimeRange) { _, newValue in
+            .onChange(of: self.selectedTimeRange) { _, newValue in
                 if newValue == .none {
-                    onRemoveFilter(.timeRange)
+                    self.onRemoveFilter(.timeRange)
                 } else {
-                    onAddFilter(IndividualFilterCriteria(type: .timeRange, successRateOption: newValue))
+                    self.onAddFilter(IndividualFilterCriteria(type: .timeRange, successRateOption: newValue))
                 }
             }
 
@@ -40,15 +40,15 @@ struct IndividualFiltersSection: View {
                 LabeledDropdownRow(
                     label: IndividualFilterCriteria.FilterType.returnRate.displayName,
                     alignment: .leading,
-                    selected: $selectedReturnOption,
+                    selected: self.$selectedReturnOption,
                     options: ReturnPercentageOption.allCases,
                     optionTitle: { $0.displayName }
                 )
-                .onChange(of: selectedReturnOption) { _, newValue in
+                .onChange(of: self.selectedReturnOption) { _, newValue in
                     if newValue == .none {
-                        onRemoveFilter(.returnRate)
+                        self.onRemoveFilter(.returnRate)
                     } else {
-                        onAddFilter(IndividualFilterCriteria(type: .returnRate, returnPercentageOption: newValue))
+                        self.onAddFilter(IndividualFilterCriteria(type: .returnRate, returnPercentageOption: newValue))
                     }
                 }
 
@@ -56,15 +56,15 @@ struct IndividualFiltersSection: View {
                 LabeledDropdownRow(
                     label: IndividualFilterCriteria.FilterType.numberOfTrades.displayName,
                     alignment: .leading,
-                    selected: $selectedNumberOfTradesOption,
+                    selected: self.$selectedNumberOfTradesOption,
                     options: NumberOfTradesOption.allCases,
                     optionTitle: { $0.displayName }
                 )
-                .onChange(of: selectedNumberOfTradesOption) { _, newValue in
+                .onChange(of: self.selectedNumberOfTradesOption) { _, newValue in
                     if newValue == .none {
-                        onRemoveFilter(.numberOfTrades)
+                        self.onRemoveFilter(.numberOfTrades)
                     } else {
-                        onAddFilter(IndividualFilterCriteria(type: .numberOfTrades, numberOfTradesOption: newValue))
+                        self.onAddFilter(IndividualFilterCriteria(type: .numberOfTrades, numberOfTradesOption: newValue))
                     }
                 }
 
@@ -72,15 +72,15 @@ struct IndividualFiltersSection: View {
                 LabeledDropdownRow(
                     label: IndividualFilterCriteria.FilterType.recentSuccessfulTrades.displayName,
                     alignment: .leading,
-                    selected: $selectedSuccessRateOption,
+                    selected: self.$selectedSuccessRateOption,
                     options: FilterSuccessRateOption.allCases.filter { $0.timePeriod == nil },
                     optionTitle: { $0.displayName }
                 )
-                .onChange(of: selectedSuccessRateOption) { _, newValue in
+                .onChange(of: self.selectedSuccessRateOption) { _, newValue in
                     if newValue == .none {
-                        onRemoveFilter(.recentSuccessfulTrades)
+                        self.onRemoveFilter(.recentSuccessfulTrades)
                     } else {
-                        onAddFilter(IndividualFilterCriteria(type: .recentSuccessfulTrades, successRateOption: newValue))
+                        self.onAddFilter(IndividualFilterCriteria(type: .recentSuccessfulTrades, successRateOption: newValue))
                     }
                 }
             }
@@ -89,7 +89,7 @@ struct IndividualFiltersSection: View {
             // Show more filters link (leading)
             HStack {
                 Button(action: {
-                    onShowMoreFilters()
+                    self.onShowMoreFilters()
                 }) {
                     HStack(spacing: ResponsiveDesign.spacing(4)) {
                         Image(systemName: "pencil")
@@ -108,7 +108,7 @@ struct IndividualFiltersSection: View {
         .padding(.vertical, ResponsiveDesign.spacing(12))
         .background(AppTheme.sectionBackground)
         .cornerRadius(ResponsiveDesign.spacing(8))
-        .onChange(of: activeFilters) { _, _ in
+        .onChange(of: self.activeFilters) { _, _ in
             syncSelectedFromActiveFilters()
         }
         .task {
@@ -132,18 +132,18 @@ private struct LabeledDropdownRow<Option: Hashable>: View {
     var body: some View {
         VStack(spacing: ResponsiveDesign.spacing(4)) {
             HStack {
-                Text(label)
+                Text(self.label)
                     .font(ResponsiveDesign.headlineFont())
                     .fontWeight(.regular)
                     .foregroundColor(AppTheme.fontColor)
-                if alignment == .center { Spacer() }
+                if self.alignment == .center { Spacer() }
             }
-            .frame(maxWidth: .infinity, alignment: alignment == .center ? .center : .leading)
+            .frame(maxWidth: .infinity, alignment: self.alignment == .center ? .center : .leading)
 
             HStack {
-                Button(action: { showDropdown.toggle() }, label: {
+                Button(action: { self.showDropdown.toggle() }, label: {
                     HStack(spacing: ResponsiveDesign.spacing(4)) {
-                        Text(optionTitle(selected))
+                        Text(self.optionTitle(self.selected))
                             .font(ResponsiveDesign.headlineFont())
                             .fontWeight(.light)
                             .foregroundColor(AppTheme.fontColor)
@@ -164,37 +164,37 @@ private struct LabeledDropdownRow<Option: Hashable>: View {
                     .cornerRadius(ResponsiveDesign.spacing(6))
                 })
                 .buttonStyle(PlainButtonStyle())
-                .popover(isPresented: $showDropdown) {
+                .popover(isPresented: self.$showDropdown) {
                     NavigationStack {
-                        List(options, id: \.self) { option in
+                        List(self.options, id: \.self) { option in
                             Button(action: {
-                                selected = option
-                                showDropdown = false
+                                self.selected = option
+                                self.showDropdown = false
                             }) {
                                 HStack {
-                                    Text(optionTitle(option))
+                                    Text(self.optionTitle(option))
                                         .foregroundColor(AppTheme.fontColor)
                                     Spacer()
-                                    if option == selected {
+                                    if option == self.selected {
                                         Image(systemName: "checkmark")
                                             .foregroundColor(AppTheme.accentLightBlue)
                                     }
                                 }
                             }
                         }
-                        .navigationTitle(label)
+                        .navigationTitle(self.label)
                         .navigationBarTitleDisplayMode(.inline)
                         .toolbar {
                             ToolbarItem(placement: .navigationBarTrailing) {
-                                Button("Done") { showDropdown = false }
+                                Button("Done") { self.showDropdown = false }
                                     .foregroundColor(AppTheme.accentLightBlue)
                             }
                         }
                     }
                 }
-                if alignment == .center { Spacer() }
+                if self.alignment == .center { Spacer() }
             }
-            .frame(maxWidth: .infinity, alignment: alignment == .center ? .center : .leading)
+            .frame(maxWidth: .infinity, alignment: self.alignment == .center ? .center : .leading)
         }
     }
 }
@@ -203,27 +203,27 @@ private struct LabeledDropdownRow<Option: Hashable>: View {
 private extension IndividualFiltersSection {
     func syncSelectedFromActiveFilters() {
         if let time = activeFilters.first(where: { $0.type == .timeRange })?.successRateOption {
-            selectedTimeRange = time
+            self.selectedTimeRange = time
         } else {
-            selectedTimeRange = .none
+            self.selectedTimeRange = .none
         }
 
         if let ret = activeFilters.first(where: { $0.type == .returnRate })?.returnPercentageOption {
-            selectedReturnOption = ret
+            self.selectedReturnOption = ret
         } else {
-            selectedReturnOption = .none
+            self.selectedReturnOption = .none
         }
 
         if let trades = activeFilters.first(where: { $0.type == .numberOfTrades })?.numberOfTradesOption {
-            selectedNumberOfTradesOption = trades
+            self.selectedNumberOfTradesOption = trades
         } else {
-            selectedNumberOfTradesOption = .none
+            self.selectedNumberOfTradesOption = .none
         }
 
         if let recent = activeFilters.first(where: { $0.type == .recentSuccessfulTrades })?.successRateOption {
-            selectedSuccessRateOption = recent
+            self.selectedSuccessRateOption = recent
         } else {
-            selectedSuccessRateOption = .none
+            self.selectedSuccessRateOption = .none
         }
     }
 }

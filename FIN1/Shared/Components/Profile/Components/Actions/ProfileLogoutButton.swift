@@ -4,7 +4,7 @@ struct ProfileLogoutButton: View {
     let onLogout: () -> Void
 
     var body: some View {
-        Button(action: onLogout, label: {
+        Button(action: self.onLogout, label: {
             HStack(spacing: ResponsiveDesign.spacing(12)) {
                 Image(systemName: "rectangle.portrait.and.arrow.right")
                     .font(ResponsiveDesign.headlineFont())

@@ -37,7 +37,7 @@ struct DirectLoginView: View {
 
                         // Login Form
                         VStack(spacing: ResponsiveDesign.spacing(20)) {
-                            TextField("Email", text: $email)
+                            TextField("Email", text: self.$email)
                                 .font(ResponsiveDesign.headlineFont())
                                 .padding()
                                 .background(AppTheme.inputFieldBackground)
@@ -46,7 +46,7 @@ struct DirectLoginView: View {
                                 .keyboardType(.emailAddress)
                                 .foregroundColor(AppTheme.inputFieldText)
 
-                            SecureField("Password", text: $password)
+                            SecureField("Password", text: self.$password)
                                 .font(ResponsiveDesign.headlineFont())
                                 .padding()
                                 .background(AppTheme.inputFieldBackground)
@@ -56,9 +56,9 @@ struct DirectLoginView: View {
                         .padding(.horizontal)
 
                         // Login Button
-                        Button(action: performLogin, label: {
+                        Button(action: self.performLogin, label: {
                             HStack {
-                                if isLoading {
+                                if self.isLoading {
                                     ProgressView()
                                         .progressViewStyle(CircularProgressViewStyle(tint: .white))
                                         .scaleEffect(0.8)
@@ -73,7 +73,7 @@ struct DirectLoginView: View {
                             .background(AppTheme.accentLightBlue)
                             .cornerRadius(ResponsiveDesign.spacing(12))
                         })
-                        .disabled(isLoading)
+                        .disabled(self.isLoading)
                         .padding(.horizontal)
 
                         Spacer()
@@ -84,35 +84,35 @@ struct DirectLoginView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel") {
-                        dismiss()
+                        self.dismiss()
                     }
                     .foregroundColor(AppTheme.accentLightBlue)
                 }
             }
         }
         .dismissKeyboardOnTap()
-        .alert(isPresented: $showAlert) {
+        .alert(isPresented: self.$showAlert) {
             Alert(
                 title: Text("Login Error"),
-                message: Text(alertMessage),
+                message: Text(self.alertMessage),
                 dismissButton: .default(Text("OK"))
             )
         }
     }
 
     private func performLogin() {
-        guard !email.isEmpty && !password.isEmpty else {
-            alertMessage = "Please fill in all fields"
-            showAlert = true
+        guard !self.email.isEmpty && !self.password.isEmpty else {
+            self.alertMessage = "Please fill in all fields"
+            self.showAlert = true
             return
         }
 
-        isLoading = true
+        self.isLoading = true
 
         // Perform login asynchronously
         Task {
             do {
-                try await appServices.userService.signIn(email: email, password: password)
+                try await self.appServices.userService.signIn(email: self.email, password: self.password)
                 await MainActor.run {
                     self.isLoading = false
                     self.dismiss()

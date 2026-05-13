@@ -27,7 +27,7 @@ struct InvestorInvestmentStatementView: View {
 
             ScrollView([.vertical, .horizontal], showsIndicators: true) {
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(16)) {
-                    if viewModel.isRefreshingFromBackend {
+                    if self.viewModel.isRefreshingFromBackend {
                         HStack(spacing: ResponsiveDesign.spacing(8)) {
                             ProgressView()
                                 .scaleEffect(0.8)
@@ -46,14 +46,14 @@ struct InvestorInvestmentStatementView: View {
                     }
                     // Document Header (einheitliches Layout für alle Dokumente)
                     DocumentHeaderLayoutView(
-                        accountHolderName: getInvestorDisplayName(),
-                        accountHolderAddress: getInvestorAddress(),
-                        accountHolderCity: getInvestorCity(),
-                        documentDate: viewModel.investment.createdAt
+                        accountHolderName: self.getInvestorDisplayName(),
+                        accountHolderAddress: self.getInvestorAddress(),
+                        accountHolderCity: self.getInvestorCity(),
+                        documentDate: self.viewModel.investment.createdAt
                     ) {
                         if let documentNumber = viewModel.documentNumber {
                             InvestorCollectionBillQRCodeView(
-                                investment: viewModel.investment,
+                                investment: self.viewModel.investment,
                                 documentNumber: documentNumber
                             )
                         } else {
@@ -80,11 +80,11 @@ struct InvestorInvestmentStatementView: View {
                         }
                         .documentSection(level: 1)
                     }
-                    ForEach(viewModel.statementItems) { item in
-                        statementSection(for: item)
+                    ForEach(self.viewModel.statementItems) { item in
+                        self.statementSection(for: item)
                     }
                     // Notes Sections (Verrechnung, Steuerhinweise, Rechtliche Hinweise)
-                    notesSections
+                    self.notesSections
                 }
                 .frame(width: a4Width, alignment: .leading)
                 .padding(ResponsiveDesign.spacing(16))
@@ -100,7 +100,7 @@ struct InvestorInvestmentStatementView: View {
         }
         .navigationTitle("Collection Bill")
         .navigationBarTitleDisplayMode(.inline)
-        .task { await viewModel.refreshFromBackend() }
+        .task { await self.viewModel.refreshFromBackend() }
         .task {
             let provider = LegalSnippetProvider(termsContentService: services.termsContentService)
             let language: TermsOfServiceDataProvider.Language = .german
@@ -120,15 +120,15 @@ struct InvestorInvestmentStatementView: View {
                 placeholders: [:]
             )
             let (tax, legal) = await (taxTask, legalTask)
-            taxNoteSnippet = tax
-            legalNoteSnippet = legal
+            self.taxNoteSnippet = tax
+            self.legalNoteSnippet = legal
         }
         .toolbarColorScheme(.light, for: .navigationBar)
         .toolbarBackground(DocumentDesignSystem.documentBackground, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button(action: {
-                    dismiss()
+                    self.dismiss()
                 }) {
                     Image(systemName: "chevron.left")
                         .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize(), weight: .medium))
@@ -151,7 +151,7 @@ struct InvestorInvestmentStatementView: View {
         }
         // Fallback: use username from email or investor ID
         // In a production app, you'd fetch the user by investorId from UserService
-        return viewModel.investment.investorId.prefix(8).uppercased()
+        return self.viewModel.investment.investorId.prefix(8).uppercased()
     }
 
     private func getInvestorAddress() -> String? {
@@ -179,7 +179,7 @@ struct InvestorInvestmentStatementView: View {
     private func statementSection(for item: InvestorInvestmentStatementItem) -> some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
             HStack {
-                Text("\(viewModel.investment.traderName) – Trade #\(String(format: "%03d", item.tradeNumber))")
+                Text("\(self.viewModel.investment.traderName) – Trade #\(String(format: "%03d", item.tradeNumber))")
                     .font(ResponsiveDesign.headlineFont())
                     .foregroundColor(DocumentDesignSystem.textColor)
                 Spacer()
@@ -197,9 +197,11 @@ struct InvestorInvestmentStatementView: View {
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(DocumentDesignSystem.textColor)
                 Spacer()
-                Text("\(NumberFormatter.localizedDecimalFormatter.string(for: item.buyQuantity) ?? "0,00") Stk @ \(item.buyPrice.formattedAsLocalizedCurrency())")
-                    .font(ResponsiveDesign.bodyFont())
-                    .foregroundColor(DocumentDesignSystem.textColor)
+                Text(
+                    "\(NumberFormatter.localizedDecimalFormatter.string(for: item.buyQuantity) ?? "0,00") Stk @ \(item.buyPrice.formattedAsLocalizedCurrency())"
+                )
+                .font(ResponsiveDesign.bodyFont())
+                .foregroundColor(DocumentDesignSystem.textColor)
             }
 
             HStack {
@@ -212,7 +214,7 @@ struct InvestorInvestmentStatementView: View {
                     .foregroundColor(DocumentDesignSystem.textColor)
             }
 
-            feeDetailsSection(title: "Buy Fees", details: item.buyFeeDetails, totalAmount: item.buyFees)
+            self.feeDetailsSection(title: "Buy Fees", details: item.buyFeeDetails, totalAmount: item.buyFees)
 
             // Total Buy Cost row
             HStack {
@@ -234,9 +236,11 @@ struct InvestorInvestmentStatementView: View {
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(DocumentDesignSystem.textColor)
                 Spacer()
-                Text("\(NumberFormatter.localizedDecimalFormatter.string(for: item.sellQuantity) ?? "0,00") Stk @ \(item.sellAveragePrice.formattedAsLocalizedCurrency())")
-                    .font(ResponsiveDesign.bodyFont())
-                    .foregroundColor(DocumentDesignSystem.textColor)
+                Text(
+                    "\(NumberFormatter.localizedDecimalFormatter.string(for: item.sellQuantity) ?? "0,00") Stk @ \(item.sellAveragePrice.formattedAsLocalizedCurrency())"
+                )
+                .font(ResponsiveDesign.bodyFont())
+                .foregroundColor(DocumentDesignSystem.textColor)
             }
 
             HStack {
@@ -249,7 +253,7 @@ struct InvestorInvestmentStatementView: View {
                     .foregroundColor(DocumentDesignSystem.textColor)
             }
 
-            feeDetailsSection(title: "Sell Fees", details: item.sellFeeDetails, totalAmount: item.sellFees)
+            self.feeDetailsSection(title: "Sell Fees", details: item.sellFeeDetails, totalAmount: item.sellFees)
 
             // Net Sell Amount row
             HStack {
@@ -285,7 +289,7 @@ struct InvestorInvestmentStatementView: View {
 
             // Commission row (using pre-calculated value from model - single source of truth)
             HStack {
-                Text("Commission (\(services.configurationService.traderCommissionPercentage))")
+                Text("Commission (\(self.services.configurationService.traderCommissionPercentage))")
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(DocumentDesignSystem.textColor)
                 Spacer()
@@ -361,9 +365,9 @@ struct InvestorInvestmentStatementView: View {
 
     private var notesSections: some View {
         DocumentNotesSection(
-            accountNumber: getAccountNumber(),
-            taxNote: taxNoteSnippet,
-            legalNote: legalNoteSnippet
+            accountNumber: self.getAccountNumber(),
+            taxNote: self.taxNoteSnippet,
+            legalNote: self.legalNoteSnippet
         )
     }
 
@@ -375,6 +379,6 @@ struct InvestorInvestmentStatementView: View {
             return "DE\(String(format: "%020d", abs(currentUser.id.hashValue)))"
         }
         // Fallback: use investment ID to generate account number
-        return "DE\(String(format: "%020d", abs(viewModel.investment.id.hashValue)))"
+        return "DE\(String(format: "%020d", abs(self.viewModel.investment.id.hashValue)))"
     }
 }

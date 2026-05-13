@@ -17,9 +17,9 @@ struct ShareSheetView: View {
                     .padding()
 
                 ShareLink(
-                    item: pdfURL,
-                    subject: Text("Rechnung \(invoiceNumber)"),
-                    message: Text("Anbei finden Sie die Rechnung \(invoiceNumber).")
+                    item: self.pdfURL,
+                    subject: Text("Rechnung \(self.invoiceNumber)"),
+                    message: Text("Anbei finden Sie die Rechnung \(self.invoiceNumber).")
                 ) {
                     Label("PDF Teilen", systemImage: "square.and.arrow.up")
                         .font(ResponsiveDesign.bodyFont())
@@ -37,7 +37,7 @@ struct ShareSheetView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Fertig") {
-                        dismiss()
+                        self.dismiss()
                     }
                     .foregroundColor(AppTheme.accentLightBlue)
                 }

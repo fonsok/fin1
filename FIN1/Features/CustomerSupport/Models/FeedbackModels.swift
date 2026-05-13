@@ -27,12 +27,12 @@ struct SatisfactionSurvey: Identifiable, Codable {
     let submittedAt: Date
 
     // Computed properties
-    var isPositive: Bool { rating >= 4 }
-    var isNegative: Bool { rating <= 2 }
-    var isNeutral: Bool { rating == 3 }
+    var isPositive: Bool { self.rating >= 4 }
+    var isNegative: Bool { self.rating <= 2 }
+    var isNeutral: Bool { self.rating == 3 }
 
     var ratingDescription: String {
-        switch rating {
+        switch self.rating {
         case 1: return "Sehr unzufrieden"
         case 2: return "Unzufrieden"
         case 3: return "Neutral"
@@ -61,7 +61,7 @@ struct SurveyRequest: Identifiable, Codable {
 
     /// Survey link expires after 7 days
     var isExpired: Bool {
-        Date().timeIntervalSince(requestSentAt) > 7 * 24 * 60 * 60
+        Date().timeIntervalSince(self.requestSentAt) > 7 * 24 * 60 * 60
     }
 }
 
@@ -101,11 +101,11 @@ struct SupportMetrics: Codable {
 
     // Computed display values
     var csatScoreFormatted: String {
-        String(format: "%.1f", averageCSATScore)
+        String(format: "%.1f", self.averageCSATScore)
     }
 
     var responseRateFormatted: String {
-        String(format: "%.0f%%", surveyResponseRate * 100)
+        String(format: "%.0f%%", self.surveyResponseRate * 100)
     }
 }
 
@@ -135,14 +135,14 @@ struct AgentPerformanceMetrics: Identifiable, Codable {
 
     // Computed
     var positiveRatingPercentage: Double {
-        guard surveysReceived > 0 else { return 0 }
-        return Double(positiveRatings) / Double(surveysReceived) * 100
+        guard self.surveysReceived > 0 else { return 0 }
+        return Double(self.positiveRatings) / Double(self.surveysReceived) * 100
     }
 
     var performanceLevel: PerformanceLevel {
-        if averageCSATScore >= 4.5 { return .excellent }
-        if averageCSATScore >= 4.0 { return .good }
-        if averageCSATScore >= 3.0 { return .average }
+        if self.averageCSATScore >= 4.5 { return .excellent }
+        if self.averageCSATScore >= 4.0 { return .good }
+        if self.averageCSATScore >= 3.0 { return .average }
         return .needsImprovement
     }
 

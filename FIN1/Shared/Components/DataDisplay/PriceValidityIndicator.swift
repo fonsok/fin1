@@ -6,12 +6,12 @@ struct PriceValidityIndicator: View {
     let priceValidityProgress: Double
 
     var body: some View {
-        if priceValidityProgress > 0 {
+        if self.priceValidityProgress > 0 {
             Rectangle()
                 .frame(height: 8)
-                .foregroundColor(progressColor)
+                .foregroundColor(self.progressColor)
                 .cornerRadius(ResponsiveDesign.spacing(4))
-                .animation(.easeInOut(duration: 0.3), value: priceValidityProgress)
+                .animation(.easeInOut(duration: 0.3), value: self.priceValidityProgress)
         }
     }
 
@@ -26,7 +26,7 @@ struct PriceValidityIndicator: View {
         let red = AppTheme.accentRed
 
         // Simple linear interpolation between the two colors
-        return interpolateColor(from: green, to: red, progress: 1.0 - clampedProgress)
+        return self.interpolateColor(from: green, to: red, progress: 1.0 - clampedProgress)
     }
 
     // Helper function for smooth color interpolation

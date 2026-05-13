@@ -8,47 +8,47 @@ struct TicketResponseRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
             HStack {
-                Image(systemName: response.responseType.icon)
-                    .foregroundColor(responseTypeColor)
+                Image(systemName: self.response.responseType.icon)
+                    .foregroundColor(self.responseTypeColor)
                     .font(ResponsiveDesign.captionFont())
 
-                Text(response.agentName)
+                Text(self.response.agentName)
                     .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.medium)
                     .foregroundColor(AppTheme.fontColor)
 
                 Spacer()
 
-                Text(response.createdAt.formatted(date: .abbreviated, time: .shortened))
+                Text(self.response.createdAt.formatted(date: .abbreviated, time: .shortened))
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
             }
 
-            Text(response.message)
+            Text(self.response.message)
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor)
 
             // Show solution details if present
             if let solution = response.solutionDetails {
-                solutionDetailsView(solution)
+                self.solutionDetailsView(solution)
             }
 
             // Badges
             HStack(spacing: ResponsiveDesign.spacing(6)) {
-                if response.isInternal {
+                if self.response.isInternal {
                     CSStatusBadge(text: "Intern", color: AppTheme.accentOrange)
                 }
-                if response.responseType != .message {
-                    CSStatusBadge(text: response.responseType.displayName, color: responseTypeColor)
+                if self.response.responseType != .message {
+                    CSStatusBadge(text: self.response.responseType.displayName, color: self.responseTypeColor)
                 }
             }
         }
         .padding()
-        .background(response.isInternal ? AppTheme.accentOrange.opacity(0.05) : AppTheme.screenBackground)
+        .background(self.response.isInternal ? AppTheme.accentOrange.opacity(0.05) : AppTheme.screenBackground)
         .cornerRadius(ResponsiveDesign.spacing(8))
         .overlay(
             RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(8))
-                .stroke(response.isInternal ? AppTheme.accentOrange.opacity(0.3) : Color.clear, lineWidth: 1)
+                .stroke(self.response.isInternal ? AppTheme.accentOrange.opacity(0.3) : Color.clear, lineWidth: 1)
         )
     }
 
@@ -73,7 +73,7 @@ struct TicketResponseRow: View {
     }
 
     private var responseTypeColor: Color {
-        switch response.responseType {
+        switch self.response.responseType {
         case .message: return AppTheme.accentLightBlue
         case .internalNote: return AppTheme.accentOrange
         case .solution: return AppTheme.accentGreen
@@ -92,12 +92,12 @@ struct CSInfoRow: View {
 
     var body: some View {
         HStack {
-            Text(label)
+            Text(self.label)
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
                 .frame(width: 100, alignment: .leading)
 
-            Text(value)
+            Text(self.value)
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor)
 
@@ -116,26 +116,26 @@ struct TicketDetailHeader: View {
             HStack {
                 Image(systemName: "ticket.fill")
                     .font(ResponsiveDesign.titleFont())
-                    .foregroundColor(ticketStatusColor)
+                    .foregroundColor(self.ticketStatusColor)
 
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
-                    Text(ticket.ticketNumber)
+                    Text(self.ticket.ticketNumber)
                         .font(ResponsiveDesign.titleFont())
                         .fontWeight(.bold)
                         .foregroundColor(AppTheme.fontColor)
 
-                    Text(ticket.subject)
+                    Text(self.ticket.subject)
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(AppTheme.fontColor.opacity(0.7))
                 }
 
                 Spacer()
 
-                CSStatusBadge(text: ticket.status.displayName, color: ticketStatusColor)
+                CSStatusBadge(text: self.ticket.status.displayName, color: self.ticketStatusColor)
             }
 
             HStack(spacing: ResponsiveDesign.spacing(8)) {
-                CSStatusBadge(text: ticket.priority.displayName, color: priorityColor)
+                CSStatusBadge(text: self.ticket.priority.displayName, color: self.priorityColor)
                 if let assignedTo = ticket.assignedTo {
                     Text("Zugewiesen: \(assignedTo)")
                         .font(ResponsiveDesign.captionFont())
@@ -149,7 +149,7 @@ struct TicketDetailHeader: View {
     }
 
     private var ticketStatusColor: Color {
-        switch ticket.status {
+        switch self.ticket.status {
         case .open, .inProgress: return AppTheme.accentLightBlue
         case .waitingForCustomer: return AppTheme.accentOrange
         case .escalated: return AppTheme.accentRed
@@ -159,7 +159,7 @@ struct TicketDetailHeader: View {
     }
 
     private var priorityColor: Color {
-        switch ticket.priority {
+        switch self.ticket.priority {
         case .low: return AppTheme.accentGreen
         case .medium: return AppTheme.accentLightBlue
         case .high: return AppTheme.accentOrange
@@ -181,15 +181,15 @@ struct TicketInfoSection: View {
                 .foregroundColor(AppTheme.fontColor)
 
             VStack(spacing: ResponsiveDesign.spacing(8)) {
-                CSInfoRow(label: "Kunde", value: ticket.customerName)
-                CSInfoRow(label: "Nutzer-ID", value: ticket.userId)
+                CSInfoRow(label: "Kunde", value: self.ticket.customerName)
+                CSInfoRow(label: "Nutzer-ID", value: self.ticket.userId)
                 CSInfoRow(
                     label: "Erstellt am",
-                    value: ticket.createdAt.formatted(date: .abbreviated, time: .omitted)
+                    value: self.ticket.createdAt.formatted(date: .abbreviated, time: .omitted)
                 )
                 CSInfoRow(
                     label: "Aktualisiert am",
-                    value: ticket.updatedAt.formatted(date: .abbreviated, time: .omitted)
+                    value: self.ticket.updatedAt.formatted(date: .abbreviated, time: .omitted)
                 )
             }
         }
@@ -211,7 +211,7 @@ struct TicketDescriptionSection: View {
                 .fontWeight(.semibold)
                 .foregroundColor(AppTheme.fontColor)
 
-            Text(ticket.description)
+            Text(self.ticket.description)
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor)
                 .padding()
@@ -232,13 +232,13 @@ struct TicketResponsesSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
-            Text("Antworten (\(responses.count))")
+            Text("Antworten (\(self.responses.count))")
                 .font(ResponsiveDesign.headlineFont())
                 .fontWeight(.semibold)
                 .foregroundColor(AppTheme.fontColor)
 
             VStack(spacing: ResponsiveDesign.spacing(8)) {
-                ForEach(responses) { response in
+                ForEach(self.responses) { response in
                     TicketResponseRow(response: response)
                 }
             }

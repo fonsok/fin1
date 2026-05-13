@@ -31,13 +31,13 @@ struct LandingPlatformAdvantagesView: View {
         VStack(spacing: ResponsiveDesign.spacing(24)) {
             // Separator Line
             Rectangle()
-                .fill(style == .typewriter ? Color("InputText") : AppTheme.fontColor.opacity(0.5))
+                .fill(self.style == .typewriter ? Color("InputText") : AppTheme.fontColor.opacity(0.5))
                 .frame(height: 1)
                 .padding(.horizontal, ResponsiveDesign.horizontalPadding())
 
             // Section Header
             VStack(spacing: ResponsiveDesign.spacing(8)) {
-                if style == .typewriter {
+                if self.style == .typewriter {
                     Text(Self.sectionTitle)
                         .font(ResponsiveDesign.scaledSystemFont(size: 18, weight: .bold, design: .monospaced))
                         .foregroundColor(Color("InputText"))
@@ -55,10 +55,10 @@ struct LandingPlatformAdvantagesView: View {
                 }
 
                 Text(Self.sectionSubtitle)
-                    .font(style == .typewriter
-                          ? .system(size: 16, weight: .regular, design: .monospaced)
-                          : ResponsiveDesign.bodyFont())
-                    .foregroundColor(style == .typewriter ? Color("InputText") : AppTheme.secondaryText)
+                    .font(self.style == .typewriter
+                        ? .system(size: 16, weight: .regular, design: .monospaced)
+                        : ResponsiveDesign.bodyFont())
+                    .foregroundColor(self.style == .typewriter ? Color("InputText") : AppTheme.secondaryText)
                     .multilineTextAlignment(.center)
             }
             .padding(.horizontal, ResponsiveDesign.horizontalPadding())
@@ -66,7 +66,7 @@ struct LandingPlatformAdvantagesView: View {
             // Advantages Cards
             VStack(spacing: ResponsiveDesign.spacing(16)) {
                 // Differentiators
-                advantageCard(
+                self.advantageCard(
                     title: Self.differentiatorsTitle,
                     icon: nil,
                     color: AppTheme.accentOrange,
@@ -75,7 +75,7 @@ struct LandingPlatformAdvantagesView: View {
                 )
                 
                 // For Investors
-                advantageCard(
+                self.advantageCard(
                     title: Self.investorsTitle,
                     icon: nil,
                     color: AppTheme.accentGreen,
@@ -84,15 +84,13 @@ struct LandingPlatformAdvantagesView: View {
                 )
 
                 // For Traders
-                advantageCard(
+                self.advantageCard(
                     title: Self.tradersTitle,
                     icon: nil,
                     color: AppTheme.accentLightBlue,
                     advantages: AppAdvantagesProvider.traderAdvantages,
                     section: .traders
                 )
-
-
             }
             .padding(.horizontal, ResponsiveDesign.horizontalPadding())
         }
@@ -125,32 +123,32 @@ struct LandingPlatformAdvantagesView: View {
             title: title,
             icon: icon,
             iconColor: color,
-            isExpanded: expandedSection == section,
+            isExpanded: self.expandedSection == section,
             onToggle: {
                 withAnimation(.easeInOut(duration: 0.2)) {
-                    if expandedSection == section {
-                        expandedSection = nil
+                    if self.expandedSection == section {
+                        self.expandedSection = nil
                     } else {
-                        expandedSection = section
+                        self.expandedSection = section
                     }
                 }
             },
-            style: style
+            style: self.style
         ) {
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
                 // Introductory text
-                Text(introductoryText(for: section))
-                    .font(style == .typewriter
-                          ? .system(size: 16, weight: .regular, design: .monospaced)
-                          : ResponsiveDesign.bodyFont())
-                    .foregroundColor(style == .typewriter ? Color("InputText") : AppTheme.fontColor.opacity(0.9))
+                Text(self.introductoryText(for: section))
+                    .font(self.style == .typewriter
+                        ? .system(size: 16, weight: .regular, design: .monospaced)
+                        : ResponsiveDesign.bodyFont())
+                    .foregroundColor(self.style == .typewriter ? Color("InputText") : AppTheme.fontColor.opacity(0.9))
                     .padding(.bottom, ResponsiveDesign.spacing(4))
 
                 // Advantages list
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
                     ForEach(advantages, id: \.self) { advantage in
                         HStack(alignment: .top, spacing: ResponsiveDesign.spacing(10)) {
-                            if style == .typewriter {
+                            if self.style == .typewriter {
                                 Text("-")
                                     .font(ResponsiveDesign.scaledSystemFont(size: 16, weight: .regular, design: .monospaced))
                                     .foregroundColor(Color("InputText"))
@@ -163,10 +161,10 @@ struct LandingPlatformAdvantagesView: View {
                             }
 
                             Text(advantage)
-                                .font(style == .typewriter
-                                      ? .system(size: 16, weight: .regular, design: .monospaced)
-                                      : ResponsiveDesign.bodyFont())
-                                .foregroundColor(style == .typewriter ? Color("InputText") : AppTheme.fontColor.opacity(0.9))
+                                .font(self.style == .typewriter
+                                    ? .system(size: 16, weight: .regular, design: .monospaced)
+                                    : ResponsiveDesign.bodyFont())
+                                .foregroundColor(self.style == .typewriter ? Color("InputText") : AppTheme.fontColor.opacity(0.9))
                                 .fixedSize(horizontal: false, vertical: true)
                         }
                     }

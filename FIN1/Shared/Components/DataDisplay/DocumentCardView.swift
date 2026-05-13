@@ -9,15 +9,15 @@ struct DocumentCardView: View {
     @State private var showDocumentDetail = false
 
     var body: some View {
-        cardContent
-            .sheet(isPresented: $showDocumentDetail) {
-                documentDetailView
+        self.cardContent
+            .sheet(isPresented: self.$showDocumentDetail) {
+                self.documentDetailView
             }
     }
 
     @ViewBuilder
     private var documentDetailView: some View {
-        DocumentNavigationHelper.sheetView(for: document, appServices: appServices)
+        DocumentNavigationHelper.sheetView(for: self.document, appServices: self.appServices)
     }
 
     private var cardContent: some View {
@@ -25,14 +25,14 @@ struct DocumentCardView: View {
             HStack(spacing: ResponsiveDesign.spacing(16)) {
                 // Tappable Icon
                 Button(action: {
-                    showDocumentDetail = true
-                    appServices.documentService.markDocumentAsRead(document)
+                    self.showDocumentDetail = true
+                    self.appServices.documentService.markDocumentAsRead(self.document)
                 }) {
-                    Image(systemName: document.icon)
+                    Image(systemName: self.document.icon)
                         .font(ResponsiveDesign.headlineFont())
-                        .foregroundColor(document.type.color)
+                        .foregroundColor(self.document.type.color)
                         .frame(width: 40, height: 40)
-                        .background(document.type.color.opacity(0.1))
+                        .background(self.document.type.color.opacity(0.1))
                         .clipShape(Circle())
                 }
                 .buttonStyle(PlainButtonStyle())
@@ -40,7 +40,7 @@ struct DocumentCardView: View {
                 // Content
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
-                        Text(document.title)
+                        Text(self.document.title)
                             .font(ResponsiveDesign.bodyFont())
                             .fontWeight(.medium)
                             .foregroundColor(AppTheme.fontColor)
@@ -48,34 +48,34 @@ struct DocumentCardView: View {
                         Spacer()
 
                         // Unread indicator
-                        if document.readAt == nil {
+                        if self.document.readAt == nil {
                             Circle()
                                 .fill(AppTheme.accentLightBlue)
                                 .frame(width: 8, height: 8)
                         }
                     }
 
-                    Text(document.description)
+                    Text(self.document.description)
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(AppTheme.fontColor.opacity(0.7))
                         .lineLimit(2)
                         .multilineTextAlignment(.leading)
 
                     HStack {
-                        Text(document.timestamp, style: .date)
+                        Text(self.document.timestamp, style: .date)
                             .font(ResponsiveDesign.captionFont())
                             .foregroundColor(AppTheme.fontColor.opacity(0.5))
                             .textCase(.uppercase)
 
                         Spacer()
 
-                        Text("\(document.fileSize) • \(document.fileFormat)")
+                        Text("\(self.document.fileSize) • \(self.document.fileFormat)")
                             .font(ResponsiveDesign.captionFont())
                             .foregroundColor(AppTheme.fontColor.opacity(0.5))
                     }
 
                     // Expiry warning
-                    expiryWarningView
+                    self.expiryWarningView
                 }
 
                 Spacer()
@@ -84,7 +84,7 @@ struct DocumentCardView: View {
         .padding(ResponsiveDesign.spacing(16))
         .background(AppTheme.sectionBackground)
         .cornerRadius(ResponsiveDesign.spacing(12))
-        .opacity(document.readAt != nil ? 0.7 : 1.0)
+        .opacity(self.document.readAt != nil ? 0.7 : 1.0)
     }
 
     @ViewBuilder
@@ -92,13 +92,13 @@ struct DocumentCardView: View {
         if let expiryDate = document.expiresAt {
             let daysUntilExpiry = Calendar.current.dateComponents([.day], from: Date(), to: expiryDate).day ?? 0
             if daysUntilExpiry <= 7 && daysUntilExpiry > 0 {
-                expiryBadge(
+                self.expiryBadge(
                     icon: "exclamationmark.triangle.fill",
                     text: "Expires in \(daysUntilExpiry) day\(daysUntilExpiry == 1 ? "" : "s")",
                     color: AppTheme.accentOrange
                 )
             } else if daysUntilExpiry <= 0 {
-                expiryBadge(
+                self.expiryBadge(
                     icon: "xmark.circle.fill",
                     text: "Expired",
                     color: AppTheme.accentRed

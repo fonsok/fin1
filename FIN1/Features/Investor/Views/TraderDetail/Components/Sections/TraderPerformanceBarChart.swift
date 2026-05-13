@@ -9,14 +9,14 @@ struct TraderPerformanceBarChart: View {
 
     var body: some View {
         VStack(spacing: ResponsiveDesign.spacing(0)) {
-            if chartData.allTrades.isEmpty {
+            if self.chartData.allTrades.isEmpty {
                 ChartEmptyView()
             } else {
-                chartContent
-                    .rotationEffect(.degrees(rotationAngle), anchor: .center)
+                self.chartContent
+                    .rotationEffect(.degrees(self.rotationAngle), anchor: .center)
                     .frame(minHeight: ResponsiveDesign.spacing(200))
 
-                rotationButton
+                self.rotationButton
             }
         }
         .frame(maxWidth: .infinity)
@@ -33,7 +33,7 @@ struct TraderPerformanceBarChart: View {
             let chartHeight = geometry.size.height - xAxisHeight
 
             let barSpacing: CGFloat = ResponsiveDesign.spacing(8)
-            let barWidthWithSpacing = barWidth + barSpacing
+            let barWidthWithSpacing = self.barWidth + barSpacing
             let sidePadding: CGFloat = ResponsiveDesign.spacing(8)
             let endPadding: CGFloat = ResponsiveDesign.spacing(32)
             let minContentWidth = max(
@@ -43,10 +43,10 @@ struct TraderPerformanceBarChart: View {
 
             HStack(alignment: .top, spacing: ResponsiveDesign.spacing(0)) {
                 ChartYAxisView(
-                    labels: chartData.yAxisLabels,
-                    hasLogScale: chartData.hasLogScaleValues,
+                    labels: self.chartData.yAxisLabels,
+                    hasLogScale: self.chartData.hasLogScaleValues,
                     chartHeight: chartHeight,
-                    yAxisRange: chartData.yAxisRange
+                    yAxisRange: self.chartData.yAxisRange
                 )
                 .frame(width: yAxisWidth, height: chartHeight)
 
@@ -56,27 +56,27 @@ struct TraderPerformanceBarChart: View {
                             VStack(spacing: ResponsiveDesign.spacing(0)) {
                                 ZStack(alignment: .leading) {
                                     ChartGridLinesView(
-                                        labels: chartData.yAxisLabels,
+                                        labels: self.chartData.yAxisLabels,
                                         chartHeight: chartHeight,
                                         chartWidth: minContentWidth,
-                                        yAxisRange: chartData.yAxisRange
+                                        yAxisRange: self.chartData.yAxisRange
                                     )
                                     ChartBarsView(
-                                        trades: chartData.allTrades,
+                                        trades: self.chartData.allTrades,
                                         chartHeight: chartHeight,
                                         chartWidth: minContentWidth,
-                                        barWidth: barWidth,
-                                        yAxisRange: chartData.yAxisRange
+                                        barWidth: self.barWidth,
+                                        yAxisRange: self.chartData.yAxisRange
                                     )
                                 }
                                 .frame(width: minContentWidth, height: chartHeight)
                                 .clipped()
 
                                 ChartXAxisView(
-                                    monthGroups: chartData.monthGroups,
-                                    totalTrades: chartData.allTrades.count,
+                                    monthGroups: self.chartData.monthGroups,
+                                    totalTrades: self.chartData.allTrades.count,
                                     contentWidth: minContentWidth,
-                                    barWidth: barWidth,
+                                    barWidth: self.barWidth,
                                     barSpacing: barSpacing
                                 )
                                 .frame(width: minContentWidth, height: xAxisHeight)
@@ -88,7 +88,7 @@ struct TraderPerformanceBarChart: View {
                         }
                     }
                     .frame(width: availableWidth)
-                    .onChange(of: rotationAngle) { _, newAngle in
+                    .onChange(of: self.rotationAngle) { _, newAngle in
                         if newAngle == -90 {
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
                                 withAnimation(.easeOut(duration: 0.2)) {
@@ -105,10 +105,10 @@ struct TraderPerformanceBarChart: View {
     private var rotationButton: some View {
         Button(action: {
             withAnimation(.easeInOut(duration: 0.3)) {
-                rotationAngle = rotationAngle == 0 ? -90 : 0
+                self.rotationAngle = self.rotationAngle == 0 ? -90 : 0
             }
         }) {
-            Image(systemName: rotationAngle == 0 ? "arrow.counterclockwise" : "arrow.clockwise")
+            Image(systemName: self.rotationAngle == 0 ? "arrow.counterclockwise" : "arrow.clockwise")
                 .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize()))
                 .foregroundColor(AppTheme.accentLightBlue)
                 .padding(ResponsiveDesign.spacing(8))
@@ -123,10 +123,10 @@ struct TraderPerformanceBarChart: View {
         WeekTradeData(
             week: 48,
             month: "December",
-            year: 2025,
+            year: 2_025,
             date: Date(),
             tradeReturns: [
-                TradeReturnData(roi: 112.5, isActive: false, tradeNumber: 1234567890),
+                TradeReturnData(roi: 112.5, isActive: false, tradeNumber: 1_234_567_890),
                 TradeReturnData(roi: -25.3, isActive: false, tradeNumber: 2),
                 TradeReturnData(roi: 0, isActive: true, tradeNumber: 3)
             ]
@@ -134,7 +134,7 @@ struct TraderPerformanceBarChart: View {
         WeekTradeData(
             week: 47,
             month: "November",
-            year: 2025,
+            year: 2_025,
             date: Calendar.current.date(byAdding: .weekOfYear, value: -1, to: Date()) ?? Date(),
             tradeReturns: [TradeReturnData(roi: 45.2, isActive: false, tradeNumber: 4)]
         )

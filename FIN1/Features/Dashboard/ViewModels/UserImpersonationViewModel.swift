@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 import SwiftUI
 
 // MARK: - User Impersonation ViewModel
@@ -28,7 +28,7 @@ final class UserImpersonationViewModel: ObservableObject {
     ) {
         self.customerSupportService = customerSupportService
         self.userService = userService
-        setupSearchObserver()
+        self.setupSearchObserver()
     }
 
     deinit {
@@ -38,34 +38,34 @@ final class UserImpersonationViewModel: ObservableObject {
 
     // MARK: - Setup
     private func setupSearchObserver() {
-        $searchQuery
+        self.$searchQuery
             .debounce(for: .milliseconds(500), scheduler: DispatchQueue.main)
             .sink { [weak self] query in
                 self?.performSearch(query: query)
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
     }
 
     // MARK: - Public Methods
     func performSearch(query: String? = nil) {
-        let searchText = query ?? searchQuery
+        let searchText = query ?? self.searchQuery
         let trimmedQuery = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
 
         // Cancel previous search task
-        debounceTask?.cancel()
+        self.debounceTask?.cancel()
 
         guard !trimmedQuery.isEmpty else {
-            searchResults = []
-            isLoading = false
-            errorMessage = nil
+            self.searchResults = []
+            self.isLoading = false
+            self.errorMessage = nil
             return
         }
 
-        isLoading = true
-        errorMessage = nil
-        showError = false
+        self.isLoading = true
+        self.errorMessage = nil
+        self.showError = false
 
-        debounceTask = Task { [weak self] in
+        self.debounceTask = Task { [weak self] in
             guard let self = self else { return }
 
             do {
@@ -86,17 +86,17 @@ final class UserImpersonationViewModel: ObservableObject {
     }
 
     func clearSearch() {
-        debounceTask?.cancel()
-        searchQuery = ""
-        searchResults = []
-        errorMessage = nil
-        showError = false
+        self.debounceTask?.cancel()
+        self.searchQuery = ""
+        self.searchResults = []
+        self.errorMessage = nil
+        self.showError = false
     }
 
     func impersonateUser(_ result: CustomerSearchResult) async {
-        let userRole = mapRoleStringToEnum(result.role)
+        let userRole = self.mapRoleStringToEnum(result.role)
 
-        await userService.impersonateUser(
+        await self.userService.impersonateUser(
             userId: result.id,
             customerNumber: result.customerNumber,
             email: result.email,
@@ -109,14 +109,14 @@ final class UserImpersonationViewModel: ObservableObject {
     /// Reconfigures ViewModel with services from environment (single container to avoid omissions)
     func reconfigure(with services: AppServices) {
         // Cancel existing subscriptions
-        cancellables.removeAll()
-        debounceTask?.cancel()
+        self.cancellables.removeAll()
+        self.debounceTask?.cancel()
 
         self.customerSupportService = services.customerSupportService
         self.userService = services.userService
 
         // Re-setup search observer with new services
-        setupSearchObserver()
+        self.setupSearchObserver()
     }
 
     // MARK: - Private Methods

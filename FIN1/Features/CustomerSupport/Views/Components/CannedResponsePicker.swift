@@ -36,25 +36,25 @@ struct CannedResponsePicker: View {
         if let category = selectedCategory {
             responses = responses.filter { $0.category == category }
         }
-        if !searchQuery.isEmpty {
+        if !self.searchQuery.isEmpty {
             responses = responses.filter {
-                $0.title.localizedCaseInsensitiveContains(searchQuery) ||
-                $0.content.localizedCaseInsensitiveContains(searchQuery) ||
-                ($0.shortcut?.localizedCaseInsensitiveContains(searchQuery) ?? false)
+                $0.title.localizedCaseInsensitiveContains(self.searchQuery) ||
+                    $0.content.localizedCaseInsensitiveContains(self.searchQuery) ||
+                    ($0.shortcut?.localizedCaseInsensitiveContains(self.searchQuery) ?? false)
             }
         }
         return responses
     }
 
     private var filteredBackendTemplates: [ResponseTemplate] {
-        var templates = backendTemplates
+        var templates = self.backendTemplates
         if let category = selectedCategory, let templateCategory = mapToTemplateCategory(category) {
             templates = templates.filter { $0.category == templateCategory }
         }
-        if !searchQuery.isEmpty {
+        if !self.searchQuery.isEmpty {
             templates = templates.filter {
-                $0.title.localizedCaseInsensitiveContains(searchQuery) ||
-                $0.body.localizedCaseInsensitiveContains(searchQuery)
+                $0.title.localizedCaseInsensitiveContains(self.searchQuery) ||
+                    $0.body.localizedCaseInsensitiveContains(self.searchQuery)
             }
         }
         return templates
@@ -73,13 +73,13 @@ struct CannedResponsePicker: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: ResponsiveDesign.spacing(0)) {
-                CannedResponsePickerSearchBar(searchQuery: $searchQuery)
-                sourceToggle
-                categoryFilter
-                if useBackendTemplates {
-                    backendTemplateList
+                CannedResponsePickerSearchBar(searchQuery: self.$searchQuery)
+                self.sourceToggle
+                self.categoryFilter
+                if self.useBackendTemplates {
+                    self.backendTemplateList
                 } else {
-                    responseList
+                    self.responseList
                 }
             }
             .background(AppTheme.screenBackground.ignoresSafeArea())
@@ -87,27 +87,27 @@ struct CannedResponsePicker: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Schließen") { dismiss() }
+                    Button("Schließen") { self.dismiss() }
                 }
             }
             .task {
-                await loadBackendTemplates()
+                await self.loadBackendTemplates()
             }
         }
     }
 
     private var sourceToggle: some View {
         Group {
-            if templateService != nil && csrRole != nil {
+            if self.templateService != nil && self.csrRole != nil {
                 HStack {
-                    Picker("Quelle", selection: $useBackendTemplates) {
+                    Picker("Quelle", selection: self.$useBackendTemplates) {
                         Text("Lokal").tag(false)
                         Text("Backend").tag(true)
                     }
                     .pickerStyle(.segmented)
                     .frame(maxWidth: 200)
 
-                    if isLoadingTemplates {
+                    if self.isLoadingTemplates {
                         ProgressView()
                             .scaleEffect(0.8)
                     }
@@ -121,22 +121,22 @@ struct CannedResponsePicker: View {
     private var backendTemplateList: some View {
         ScrollView {
             LazyVStack(spacing: ResponsiveDesign.spacing(8)) {
-                ForEach(filteredBackendTemplates) { template in
+                ForEach(self.filteredBackendTemplates) { template in
                     BackendTemplateCard(
                         template: template,
-                        placeholderValues: placeholderValues
+                        placeholderValues: self.placeholderValues
                     ) {
-                        let filledContent = fillPlaceholders(in: template.body, with: placeholderValues)
-                        onSelect(filledContent)
+                        let filledContent = self.fillPlaceholders(in: template.body, with: self.placeholderValues)
+                        self.onSelect(filledContent)
                         Task {
-                            try? await templateService?.recordUsage(templateId: template.id, ticketId: nil)
+                            try? await self.templateService?.recordUsage(templateId: template.id, ticketId: nil)
                         }
-                        dismiss()
+                        self.dismiss()
                     }
                 }
 
-                if filteredBackendTemplates.isEmpty {
-                    backendEmptyState
+                if self.filteredBackendTemplates.isEmpty {
+                    self.backendEmptyState
                 }
             }
             .padding()
@@ -145,7 +145,7 @@ struct CannedResponsePicker: View {
 
     private var backendEmptyState: some View {
         VStack(spacing: ResponsiveDesign.spacing(12)) {
-            if isLoadingTemplates {
+            if self.isLoadingTemplates {
                 ProgressView()
                 Text("Lade Templates vom Server...")
                     .font(ResponsiveDesign.captionFont())
@@ -160,7 +160,7 @@ struct CannedResponsePicker: View {
                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
 
                 Button("Lokale Templates verwenden") {
-                    useBackendTemplates = false
+                    self.useBackendTemplates = false
                 }
                 .buttonStyle(.bordered)
             }
@@ -171,12 +171,12 @@ struct CannedResponsePicker: View {
 
     private func loadBackendTemplates() async {
         guard let service = templateService, let role = csrRole else { return }
-        isLoadingTemplates = true
+        self.isLoadingTemplates = true
         defer { isLoadingTemplates = false }
         if let service = service as? TemplateAPIService {
-            backendTemplates = await service.fetchTemplatesWithFallback(for: role, category: nil)
-            if !backendTemplates.isEmpty {
-                useBackendTemplates = true
+            self.backendTemplates = await service.fetchTemplatesWithFallback(for: role, category: nil)
+            if !self.backendTemplates.isEmpty {
+                self.useBackendTemplates = true
             }
         }
     }
@@ -196,18 +196,18 @@ struct CannedResponsePicker: View {
                 CannedResponseCategoryChip(
                     title: "Alle",
                     icon: "square.grid.2x2.fill",
-                    isSelected: selectedCategory == nil
+                    isSelected: self.selectedCategory == nil
                 ) {
-                    selectedCategory = nil
+                    self.selectedCategory = nil
                 }
 
                 ForEach(CannedResponseCategory.allCases, id: \.rawValue) { category in
                     CannedResponseCategoryChip(
                         title: category.rawValue,
                         icon: category.icon,
-                        isSelected: selectedCategory == category
+                        isSelected: self.selectedCategory == category
                     ) {
-                        selectedCategory = category
+                        self.selectedCategory = category
                     }
                 }
             }
@@ -220,19 +220,19 @@ struct CannedResponsePicker: View {
     private var responseList: some View {
         ScrollView {
             LazyVStack(spacing: ResponsiveDesign.spacing(8)) {
-                ForEach(filteredResponses) { response in
+                ForEach(self.filteredResponses) { response in
                     CannedResponseCard(
                         response: response,
-                        placeholderValues: placeholderValues
+                        placeholderValues: self.placeholderValues
                     ) {
-                        let filledContent = response.fillPlaceholders(placeholderValues)
-                        onSelect(filledContent)
-                        dismiss()
+                        let filledContent = response.fillPlaceholders(self.placeholderValues)
+                        self.onSelect(filledContent)
+                        self.dismiss()
                     }
                 }
 
-                if filteredResponses.isEmpty {
-                    emptyState
+                if self.filteredResponses.isEmpty {
+                    self.emptyState
                 }
             }
             .padding()

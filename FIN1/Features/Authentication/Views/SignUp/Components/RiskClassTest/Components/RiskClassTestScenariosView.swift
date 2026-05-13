@@ -16,25 +16,25 @@ struct RiskClassTestScenariosView: View {
                 TestScenarioButton(
                     title: "Reset to Defaults (Risk Class 2)",
                     description: "Income: Middle, No experience, 10% return",
-                    action: onResetToDefaults
+                    action: self.onResetToDefaults
                 )
 
                 TestScenarioButton(
                     title: "50+ Derivatives Experience (Risk Class 3+)",
                     description: "Add 50+ derivatives transactions",
-                    action: onTestDerivativesExperience
+                    action: self.onTestDerivativesExperience
                 )
 
                 TestScenarioButton(
                     title: "High Income + Experience (Risk Class 4+)",
                     description: "High income + derivatives experience",
-                    action: onTestHighRiskProfile
+                    action: self.onTestHighRiskProfile
                 )
 
                 TestScenarioButton(
                     title: "Maximum Risk Profile (Risk Class 6)",
                     description: "All high-risk factors",
-                    action: onTestMaximumRisk
+                    action: self.onTestMaximumRisk
                 )
             }
         }
@@ -50,14 +50,14 @@ struct TestScenarioButton: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: action, label: {
+        Button(action: self.action, label: {
             VStack(alignment: .leading, spacing: 4) {
-                Text(title)
+                Text(self.title)
                     .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.medium)
                     .foregroundColor(AppTheme.fontColor)
 
-                Text(description)
+                Text(self.description)
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
             }

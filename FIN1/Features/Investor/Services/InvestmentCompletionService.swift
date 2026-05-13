@@ -49,7 +49,7 @@ final class InvestmentCompletionService: InvestmentCompletionServiceProtocol {
         in investments: [Investment],
         specificInvestmentIds: [String]? = nil
     ) -> [Investment] {
-        let investmentsToCheck = filterInvestmentsToCheck(investments, specificInvestmentIds: specificInvestmentIds)
+        let investmentsToCheck = self.filterInvestmentsToCheck(investments, specificInvestmentIds: specificInvestmentIds)
         var updatedInvestments: [Investment] = []
 
         for investment in investmentsToCheck {
@@ -63,7 +63,7 @@ final class InvestmentCompletionService: InvestmentCompletionServiceProtocol {
             }
         }
 
-        logCompletionResults(updatedInvestments: updatedInvestments)
+        self.logCompletionResults(updatedInvestments: updatedInvestments)
         return updatedInvestments
     }
 
@@ -108,11 +108,11 @@ final class InvestmentCompletionService: InvestmentCompletionServiceProtocol {
             investment: investment,
             investmentReservation: investmentReservation,
             investorCashBalanceService: investorCashBalanceService,
-            poolTradeParticipationService: poolTradeParticipationService,
-            tradeLifecycleService: tradeLifecycleService,
-            invoiceService: invoiceService,
-            configurationService: configurationService,
-            settlementAPIService: settlementAPIService
+            poolTradeParticipationService: self.poolTradeParticipationService,
+            tradeLifecycleService: self.tradeLifecycleService,
+            invoiceService: self.invoiceService,
+            configurationService: self.configurationService,
+            settlementAPIService: self.settlementAPIService
         )
     }
 
@@ -141,27 +141,27 @@ final class InvestmentCompletionService: InvestmentCompletionServiceProtocol {
         }
 
         // Verify investment participated in trades
-        guard verifyTradeParticipation(for: investment) else {
+        guard self.verifyTradeParticipation(for: investment) else {
             print("   ⚠️ Investment \(investment.id): pool status is completed but has no trade participations - skipping")
             return nil
         }
 
         // Calculate profits
-        let (accumulatedProfit, calculatedReturn) = calculateProfits(for: investment)
+        let (accumulatedProfit, calculatedReturn) = self.calculateProfits(for: investment)
 
         let updatedInvestment = investment.markAsCompleted(
             calculatedProfit: accumulatedProfit,
             calculatedReturn: calculatedReturn
         )
 
-        logCompletionDetails(
+        self.logCompletionDetails(
             original: investment,
             updated: updatedInvestment,
             accumulatedProfit: accumulatedProfit,
             calculatedReturn: calculatedReturn
         )
 
-        telemetryService?.trackEvent(name: "investment_status_updated", properties: [
+        self.telemetryService?.trackEvent(name: "investment_status_updated", properties: [
             "investment_id": investment.id,
             "new_status": updatedInvestment.status.rawValue,
             "accumulated_profit": accumulatedProfit
@@ -241,7 +241,7 @@ final class InvestmentCompletionService: InvestmentCompletionServiceProtocol {
 
         // Only update if values have changed
         guard abs(investment.currentValue - newCurrentValue) > 0.01 ||
-              abs(investment.performance - returnPercentage) > 0.01 else {
+            abs(investment.performance - returnPercentage) > 0.01 else {
             return nil
         }
 

@@ -1,5 +1,5 @@
-import SwiftUI
 import Foundation
+import SwiftUI
 
 // MARK: - Performance Optimized View Wrapper
 struct PerformanceOptimizedView<Content: View>: View {
@@ -12,8 +12,8 @@ struct PerformanceOptimizedView<Content: View>: View {
     }
 
     var body: some View {
-        content()
-            .id(id) // Force view identity for better performance
+        self.content()
+            .id(self.id) // Force view identity for better performance
     }
 }
 
@@ -28,8 +28,8 @@ struct MemoizedView<Content: View>: View {
     }
 
     var body: some View {
-        content()
-            .id(id)
+        self.content()
+            .id(self.id)
     }
 }
 
@@ -44,8 +44,8 @@ struct LazyView<Content: View>: View {
 
     var body: some View {
         Group {
-            if isLoaded {
-                content()
+            if self.isLoaded {
+                self.content()
             } else {
                 // Placeholder view while loading
                 ProgressView()
@@ -53,7 +53,7 @@ struct LazyView<Content: View>: View {
                     .onAppear {
                         // Load content after a small delay to prevent blocking the main thread
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                            isLoaded = true
+                            self.isLoaded = true
                         }
                     }
             }
@@ -72,8 +72,8 @@ struct OptimizedListRow<Content: View>: View {
     }
 
     var body: some View {
-        content()
-            .id(id)
+        self.content()
+            .id(self.id)
             .drawingGroup() // Optimize complex views by rendering them off-screen
     }
 }
@@ -88,17 +88,17 @@ class PerformanceMonitor: ObservableObject {
     private var lastTimestamp: CFTimeInterval = 0
 
     func startMonitoring() {
-        guard !isMonitoring else { return }
+        guard !self.isMonitoring else { return }
 
-        isMonitoring = true
-        displayLink = CADisplayLink(target: self, selector: #selector(updateFrameRate))
-        displayLink?.add(to: .main, forMode: .common)
+        self.isMonitoring = true
+        self.displayLink = CADisplayLink(target: self, selector: #selector(self.updateFrameRate))
+        self.displayLink?.add(to: .main, forMode: .common)
     }
 
     func stopMonitoring() {
-        displayLink?.invalidate()
-        displayLink = nil
-        isMonitoring = false
+        self.displayLink?.invalidate()
+        self.displayLink = nil
+        self.isMonitoring = false
     }
 
     @objc private func updateFrameRate() {
@@ -106,15 +106,15 @@ class PerformanceMonitor: ObservableObject {
 
         let currentTimestamp = displayLink.timestamp
 
-        if lastTimestamp != 0 {
-            let deltaTime = currentTimestamp - lastTimestamp
-            frameRate = 1.0 / deltaTime
+        if self.lastTimestamp != 0 {
+            let deltaTime = currentTimestamp - self.lastTimestamp
+            self.frameRate = 1.0 / deltaTime
         }
 
-        lastTimestamp = currentTimestamp
+        self.lastTimestamp = currentTimestamp
 
         // Monitor memory usage
-        updateMemoryUsage()
+        self.updateMemoryUsage()
     }
 
     private func updateMemoryUsage() {
@@ -124,14 +124,14 @@ class PerformanceMonitor: ObservableObject {
         let kerr: kern_return_t = withUnsafeMutablePointer(to: &info) {
             $0.withMemoryRebound(to: integer_t.self, capacity: 1) {
                 task_info(mach_task_self_,
-                         task_flavor_t(MACH_TASK_BASIC_INFO),
-                         $0,
-                         &count)
+                          task_flavor_t(MACH_TASK_BASIC_INFO),
+                          $0,
+                          &count)
             }
         }
 
         if kerr == KERN_SUCCESS {
-            memoryUsage = Double(info.resident_size) / 1024 / 1024 // Convert to MB
+            self.memoryUsage = Double(info.resident_size) / 1_024 / 1_024 // Convert to MB
         }
     }
 }
@@ -150,25 +150,25 @@ struct PerformanceDebugView: View {
                 Text("FPS:")
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
-                Text("\(Int(monitor.frameRate))")
+                Text("\(Int(self.monitor.frameRate))")
                     .font(ResponsiveDesign.captionFont())
-                    .foregroundColor(monitor.frameRate < 30 ? AppTheme.accentRed : AppTheme.accentGreen)
+                    .foregroundColor(self.monitor.frameRate < 30 ? AppTheme.accentRed : AppTheme.accentGreen)
             }
 
             HStack {
                 Text("Memory:")
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
-                Text("\(String(format: "%.1f", monitor.memoryUsage)) MB")
+                Text("\(String(format: "%.1f", self.monitor.memoryUsage)) MB")
                     .font(ResponsiveDesign.captionFont())
-                    .foregroundColor(monitor.memoryUsage > 100 ? AppTheme.accentRed : AppTheme.accentGreen)
+                    .foregroundColor(self.monitor.memoryUsage > 100 ? AppTheme.accentRed : AppTheme.accentGreen)
             }
 
-            Button(monitor.isMonitoring ? "Stop" : "Start") {
-                if monitor.isMonitoring {
-                    monitor.stopMonitoring()
+            Button(self.monitor.isMonitoring ? "Stop" : "Start") {
+                if self.monitor.isMonitoring {
+                    self.monitor.stopMonitoring()
                 } else {
-                    monitor.startMonitoring()
+                    self.monitor.startMonitoring()
                 }
             }
             .font(ResponsiveDesign.captionFont())
@@ -178,10 +178,10 @@ struct PerformanceDebugView: View {
         .background(AppTheme.sectionBackground)
         .cornerRadius(ResponsiveDesign.spacing(8))
         .onAppear {
-            monitor.startMonitoring()
+            self.monitor.startMonitoring()
         }
         .onDisappear {
-            monitor.stopMonitoring()
+            self.monitor.stopMonitoring()
         }
     }
 }
@@ -267,14 +267,14 @@ class MemoryManager: @unchecked Sendable {
         let kerr: kern_return_t = withUnsafeMutablePointer(to: &info) {
             $0.withMemoryRebound(to: integer_t.self, capacity: 1) {
                 task_info(mach_task_self_,
-                         task_flavor_t(MACH_TASK_BASIC_INFO),
-                         $0,
-                         &count)
+                          task_flavor_t(MACH_TASK_BASIC_INFO),
+                          $0,
+                          &count)
             }
         }
 
         if kerr == KERN_SUCCESS {
-            return Double(info.resident_size) / 1024 / 1024 // Convert to MB
+            return Double(info.resident_size) / 1_024 / 1_024 // Convert to MB
         }
 
         return 0.0

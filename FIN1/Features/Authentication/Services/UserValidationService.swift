@@ -9,25 +9,37 @@ struct UserValidationService {
     static func validateSignIn(email: String, password: String) throws {
         guard !email.isEmpty else {
             let error = AppError.validationError("Email is required")
-            TelemetryService.shared.trackAppError(error, context: ErrorContext(screen: "Authentication", action: "signIn", additionalData: ["email_provided": false]))
+            TelemetryService.shared.trackAppError(
+                error,
+                context: ErrorContext(screen: "Authentication", action: "signIn", additionalData: ["email_provided": false])
+            )
             throw error
         }
 
         guard !password.isEmpty else {
             let error = AppError.validationError("Password is required")
-            TelemetryService.shared.trackAppError(error, context: ErrorContext(screen: "Authentication", action: "signIn", additionalData: ["password_provided": false]))
+            TelemetryService.shared.trackAppError(
+                error,
+                context: ErrorContext(screen: "Authentication", action: "signIn", additionalData: ["password_provided": false])
+            )
             throw error
         }
 
         guard email.contains("@") else {
             let error = AppError.validationError("Please enter a valid email address")
-            TelemetryService.shared.trackAppError(error, context: ErrorContext(screen: "Authentication", action: "signIn", additionalData: ["email_format": "invalid"]))
+            TelemetryService.shared.trackAppError(
+                error,
+                context: ErrorContext(screen: "Authentication", action: "signIn", additionalData: ["email_format": "invalid"])
+            )
             throw error
         }
 
         guard password.count >= 6 else {
             let error = AppError.validationError("Password must be at least 6 characters")
-            TelemetryService.shared.trackAppError(error, context: ErrorContext(screen: "Authentication", action: "signIn", additionalData: ["password_length": password.count]))
+            TelemetryService.shared.trackAppError(
+                error,
+                context: ErrorContext(screen: "Authentication", action: "signIn", additionalData: ["password_length": password.count])
+            )
             throw error
         }
     }
@@ -86,14 +98,28 @@ struct UserValidationService {
         // Simulate authentication failure for certain emails
         if email.lowercased().contains("invalid") || email.lowercased().contains("wrong") {
             let error = AppError.authenticationError(.invalidCredentials)
-            TelemetryService.shared.trackAppError(error, context: ErrorContext(screen: "Authentication", action: "signIn", additionalData: ["email": email, "test_scenario": "invalid_credentials"]))
+            TelemetryService.shared.trackAppError(
+                error,
+                context: ErrorContext(
+                    screen: "Authentication",
+                    action: "signIn",
+                    additionalData: ["email": email, "test_scenario": "invalid_credentials"]
+                )
+            )
             throw error
         }
 
         // Simulate account locked scenario
         if email.lowercased().contains("locked") {
             let error = AppError.authenticationError(.accountLocked)
-            TelemetryService.shared.trackAppError(error, context: ErrorContext(screen: "Authentication", action: "signIn", additionalData: ["email": email, "test_scenario": "account_locked"]))
+            TelemetryService.shared.trackAppError(
+                error,
+                context: ErrorContext(
+                    screen: "Authentication",
+                    action: "signIn",
+                    additionalData: ["email": email, "test_scenario": "account_locked"]
+                )
+            )
             throw error
         }
     }

@@ -128,7 +128,7 @@ struct CalculationConstants {
     /// Baseline values for investor workflows
     struct Investment {
         /// Default investment amount shown in Investment Amount section (EUR)
-        static let defaultAmount: Double = 3000.0
+        static let defaultAmount: Double = 3_000.0
 
         /// Last-resort minimum per investment slot (EUR) when `getConfig` has no `limits.minInvestment`
         static let fallbackMinimumInvestmentAmount: Double = 20.0
@@ -193,7 +193,7 @@ struct CalculationConstants {
     /// Some securities can only be traded in specific lot sizes
     struct SecurityDenominations {
         /// Valid denomination values (tens, twenties, fifties, hundreds, thousands)
-        static let validDenominations: [Int] = [10, 20, 50, 100, 1000]
+        static let validDenominations: [Int] = [10, 20, 50, 100, 1_000]
 
         /// Default denomination (no restriction) - set to nil or 1
         static let noDenomination: Int? = nil
@@ -269,7 +269,7 @@ struct CalculationConstants {
         /// - For stocks (ratio ≈ 1.0) we default to no denomination constraint
         static func defaultDenomination(forSubscriptionRatio subscriptionRatio: Double) -> Int? {
             guard subscriptionRatio > 0 else {
-                return noDenomination
+                return self.noDenomination
             }
 
             // Interpret ratios both < 1 and > 1 as "units per share" style
@@ -288,7 +288,7 @@ struct CalculationConstants {
             } else if unitsPerShare >= 10 {
                 return 10
             } else {
-                return noDenomination
+                return self.noDenomination
             }
         }
     }

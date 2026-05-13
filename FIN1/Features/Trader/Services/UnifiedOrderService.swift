@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Unified Order Service Protocol
 /// Single service for all order operations - replaces the complex service chain
@@ -42,11 +42,11 @@ final class UnifiedOrderService: @preconcurrency ServiceLifecycle, UnifiedOrderS
 
     // MARK: - Publishers
     var activeOrdersPublisher: AnyPublisher<[Order], Never> {
-        $activeOrders.eraseToAnyPublisher()
+        self.$activeOrders.eraseToAnyPublisher()
     }
 
     var completedTradesPublisher: AnyPublisher<[Trade], Never> {
-        $completedTrades.eraseToAnyPublisher()
+        self.$completedTrades.eraseToAnyPublisher()
     }
 
     // MARK: - Dependencies
@@ -63,7 +63,7 @@ final class UnifiedOrderService: @preconcurrency ServiceLifecycle, UnifiedOrderS
     // MARK: - Current Trader ID
     /// Returns the current trader's ID from the user service
     private var currentTraderId: String {
-        userService?.currentUser?.id ?? "unknown_trader"
+        self.userService?.currentUser?.id ?? "unknown_trader"
     }
 
     // MARK: - Private Properties
@@ -110,22 +110,22 @@ final class UnifiedOrderService: @preconcurrency ServiceLifecycle, UnifiedOrderS
 
     func stop() {
         // Stop all order status timers
-        orderStatusTimers.values.forEach { $0.invalidate() }
-        orderStatusTimers.removeAll()
+        self.orderStatusTimers.values.forEach { $0.invalidate() }
+        self.orderStatusTimers.removeAll()
     }
 
     func reset() {
-        activeOrders = []
-        completedTrades = []
-        isLoading = false
-        errorMessage = nil
-        stop()
+        self.activeOrders = []
+        self.completedTrades = []
+        self.isLoading = false
+        self.errorMessage = nil
+        self.stop()
     }
 
     // MARK: - Order Operations
     func placeBuyOrder(_ request: BuyOrderRequest) async throws -> OrderBuy {
-        isLoading = true
-        errorMessage = nil
+        self.isLoading = true
+        self.errorMessage = nil
         defer { isLoading = false }
 
         print("🔍 UnifiedOrderService.placeBuyOrder: Creating order")
@@ -143,7 +143,7 @@ final class UnifiedOrderService: @preconcurrency ServiceLifecycle, UnifiedOrderS
 
         let order = Order(
             id: transactionIdService.generateOrderId(),
-            traderId: currentTraderId, // Use actual logged-in trader ID
+            traderId: self.currentTraderId, // Use actual logged-in trader ID
             symbol: request.symbol,
             description: request.description ?? "Optionsschein",
             type: .buy,
@@ -168,20 +168,20 @@ final class UnifiedOrderService: @preconcurrency ServiceLifecycle, UnifiedOrderS
         let buyOrder = OrderBuy(from: order)
 
         // Add to active orders
-        activeOrders.append(order)
+        self.activeOrders.append(order)
 
         // Start status progression
-        startOrderStatusProgression(order.id, isBuyOrder: true)
+        self.startOrderStatusProgression(order.id, isBuyOrder: true)
 
         // Send notification
-        await tradingNotificationService.sendOrderStatusNotification(orderId: order.id, status: "submitted")
+        await self.tradingNotificationService.sendOrderStatusNotification(orderId: order.id, status: "submitted")
 
         return buyOrder
     }
 
     func placeSellOrder(_ request: SellOrderRequest) async throws -> OrderSell {
-        isLoading = true
-        errorMessage = nil
+        self.isLoading = true
+        self.errorMessage = nil
         defer { isLoading = false }
 
         print("🔍 UnifiedOrderService.placeBuyOrder: Creating order")
@@ -195,7 +195,7 @@ final class UnifiedOrderService: @preconcurrency ServiceLifecycle, UnifiedOrderS
 
         let order = Order(
             id: transactionIdService.generateOrderId(),
-            traderId: currentTraderId, // Use actual logged-in trader ID
+            traderId: self.currentTraderId, // Use actual logged-in trader ID
             symbol: request.symbol,
             description: request.description ?? "Optionsschein",
             type: .sell,
@@ -219,10 +219,10 @@ final class UnifiedOrderService: @preconcurrency ServiceLifecycle, UnifiedOrderS
         let sellOrder = OrderSell(from: order)
 
         // Add to active orders
-        activeOrders.append(order)
+        self.activeOrders.append(order)
 
         // Start status progression
-        startOrderStatusProgression(order.id, isBuyOrder: false)
+        self.startOrderStatusProgression(order.id, isBuyOrder: false)
 
         // ✅ MiFID II Compliance: Log sell order placement
         if let auditService = auditLoggingService,
@@ -242,21 +242,21 @@ final class UnifiedOrderService: @preconcurrency ServiceLifecycle, UnifiedOrderS
         }
 
         // Send notification
-        await tradingNotificationService.sendOrderStatusNotification(orderId: order.id, status: "submitted")
+        await self.tradingNotificationService.sendOrderStatusNotification(orderId: order.id, status: "submitted")
 
         return sellOrder
     }
 
     func cancelOrder(_ orderId: String) async throws {
         // Stop status progression
-        orderStatusTimers[orderId]?.invalidate()
-        orderStatusTimers.removeValue(forKey: orderId)
+        self.orderStatusTimers[orderId]?.invalidate()
+        self.orderStatusTimers.removeValue(forKey: orderId)
 
         // Remove from active orders
-        activeOrders.removeAll { $0.id == orderId }
+        self.activeOrders.removeAll { $0.id == orderId }
 
         // Send notification
-        await tradingNotificationService.sendOrderStatusNotification(orderId: orderId, status: "cancelled")
+        await self.tradingNotificationService.sendOrderStatusNotification(orderId: orderId, status: "cancelled")
     }
 
     func updateOrderStatus(_ orderId: String, status: String) async throws {
@@ -264,7 +264,7 @@ final class UnifiedOrderService: @preconcurrency ServiceLifecycle, UnifiedOrderS
             throw AppError.orderNotFound(orderId)
         }
 
-        let order = activeOrders[index]
+        let order = self.activeOrders[index]
         let updatedOrder = Order(
             id: order.id,
             traderId: order.traderId,
@@ -289,38 +289,38 @@ final class UnifiedOrderService: @preconcurrency ServiceLifecycle, UnifiedOrderS
             status: status
         )
 
-        activeOrders[index] = updatedOrder
+        self.activeOrders[index] = updatedOrder
 
         // Handle order completion
         if status == "completed" {
-            await completionHandler.handleOrderCompletion(order: updatedOrder, completedTrades: completedTrades)
+            await self.completionHandler.handleOrderCompletion(order: updatedOrder, completedTrades: self.completedTrades)
 
             // Remove from active orders after completion
-            activeOrders.removeAll { $0.id == order.id }
+            self.activeOrders.removeAll { $0.id == order.id }
         }
     }
 
     // MARK: - Trade Operations
     func createTrade(from buyOrder: OrderBuy) async throws -> Trade {
         let trade = try await completionHandler.createTrade(from: buyOrder)
-        completedTrades.append(trade)
+        self.completedTrades.append(trade)
         return trade
     }
 
     func addSellOrderToTrade(_ tradeId: String, sellOrder: OrderSell) async throws -> Trade {
-        let updatedTrade = try await completionHandler.addSellOrderToTrade(tradeId, sellOrder: sellOrder, in: completedTrades)
+        let updatedTrade = try await completionHandler.addSellOrderToTrade(tradeId, sellOrder: sellOrder, in: self.completedTrades)
 
         guard let tradeIndex = completedTrades.firstIndex(where: { $0.id == tradeId }) else {
             throw AppError.tradeNotFound(tradeId)
         }
-        completedTrades[tradeIndex] = updatedTrade
+        self.completedTrades[tradeIndex] = updatedTrade
 
         return updatedTrade
     }
 
     // MARK: - Private Methods
     private func startOrderStatusProgression(_ orderId: String, isBuyOrder: Bool) {
-        orderStatusSimulationService.startOrderStatusProgression(orderId) { [weak self] status, _ in
+        self.orderStatusSimulationService.startOrderStatusProgression(orderId) { [weak self] status, _ in
             Task { @MainActor in
                 try? await self?.updateOrderStatus(orderId, status: status)
             }

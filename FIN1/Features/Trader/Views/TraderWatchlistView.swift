@@ -6,7 +6,7 @@ struct TraderWatchlistViewWrapper: View {
     @Environment(\.appServices) private var services
 
     var body: some View {
-        TraderWatchlistView(securitiesWatchlistService: services.securitiesWatchlistService as? SecuritiesWatchlistService)
+        TraderWatchlistView(securitiesWatchlistService: self.services.securitiesWatchlistService as? SecuritiesWatchlistService)
     }
 }
 
@@ -39,13 +39,13 @@ struct TraderWatchlistView: View {
 
                 VStack(spacing: ResponsiveDesign.spacing(0)) {
                     // Trader Watchlist Content
-                    traderWatchlistContent
+                    self.traderWatchlistContent
                 }
 
                 // Success message overlay
                 TraderWatchlistSuccessMessageOverlay(
-                    message: successMessage,
-                    isVisible: showSuccessMessage
+                    message: self.successMessage,
+                    isVisible: self.showSuccessMessage
                 )
             }
             .navigationTitle("Watchlist")
@@ -53,7 +53,7 @@ struct TraderWatchlistView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button(action: {
-                        showSecuritiesSearch = true
+                        self.showSecuritiesSearch = true
                     }, label: {
                         HStack(spacing: ResponsiveDesign.spacing(4)) {
                             Image(systemName: "magnifyingglass")
@@ -64,45 +64,45 @@ struct TraderWatchlistView: View {
                 }
 
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    if !watchlistService.watchlist.isEmpty {
+                    if !self.watchlistService.watchlist.isEmpty {
                         Button("Clear All") {
-                            showClearAllConfirmation = true
+                            self.showClearAllConfirmation = true
                         }
                         .foregroundColor(AppTheme.accentRed)
                     }
                 }
             }
         }
-        .alert("Remove Security", isPresented: $showRemoveConfirmation) {
+        .alert("Remove Security", isPresented: self.$showRemoveConfirmation) {
             Button("Cancel", role: .cancel) { }
             Button("Remove", role: .destructive) {
-                removeSecurity()
+                self.removeSecurity()
             }
         } message: {
             Text("Are you sure you want to remove this security from your watchlist?")
         }
-        .alert("Clear All Securities", isPresented: $showClearAllConfirmation) {
+        .alert("Clear All Securities", isPresented: self.$showClearAllConfirmation) {
             Button("Cancel", role: .cancel) { }
             Button("Clear All", role: .destructive) {
-                clearAllSecurities()
+                self.clearAllSecurities()
             }
         } message: {
             Text("Are you sure you want to remove all securities from your watchlist?")
         }
-        .sheet(item: $selectedSecurityForOrder) { security in
+        .sheet(item: self.$selectedSecurityForOrder) { security in
             BuyOrderViewWrapper(
                 searchResult: security,
-                traderService: services.traderService,
-                cashBalanceService: services.cashBalanceService,
-                configurationService: services.configurationService,
-                investmentQuantityCalculationService: services.investmentQuantityCalculationService,
-                investmentService: services.investmentService,
-                userService: services.userService,
-                traderDataService: services.traderDataService
+                traderService: self.services.traderService,
+                cashBalanceService: self.services.cashBalanceService,
+                configurationService: self.services.configurationService,
+                investmentQuantityCalculationService: self.services.investmentQuantityCalculationService,
+                investmentService: self.services.investmentService,
+                userService: self.services.userService,
+                traderDataService: self.services.traderDataService
             )
         }
-        .sheet(isPresented: $showSecuritiesSearch) {
-            SecuritiesSearchView(services: services)
+        .sheet(isPresented: self.$showSecuritiesSearch) {
+            SecuritiesSearchView(services: self.services)
         }
     }
 
@@ -110,19 +110,19 @@ struct TraderWatchlistView: View {
     private var traderWatchlistContent: some View {
         ScrollView {
             LazyVStack(spacing: ResponsiveDesign.spacing(12)) {
-                if watchlistService.watchlist.isEmpty {
+                if self.watchlistService.watchlist.isEmpty {
                     TraderWatchlistEmptyState()
                 } else {
-                    ForEach(Array(watchlistService.watchlist.enumerated()), id: \.element.wkn) { index, security in
+                    ForEach(Array(self.watchlistService.watchlist.enumerated()), id: \.element.wkn) { index, security in
                         TraderWatchedSecurityCard(
                             security: security,
                             position: index + 1,
                             onRemove: {
-                                itemToRemove = security
-                                showRemoveConfirmation = true
+                                self.itemToRemove = security
+                                self.showRemoveConfirmation = true
                             },
                             onKaufenTapped: {
-                                selectedSecurityForOrder = security
+                                self.selectedSecurityForOrder = security
                             }
                         )
                     }
@@ -138,30 +138,30 @@ struct TraderWatchlistView: View {
         guard let security = itemToRemove else { return }
 
         Task {
-            try? await watchlistService.removeFromWatchlist(security.wkn)
+            try? await self.watchlistService.removeFromWatchlist(security.wkn)
             await MainActor.run {
-                showSuccessMessage("\(security.wkn) removed from watchlist")
-                itemToRemove = nil
+                self.showSuccessMessage("\(security.wkn) removed from watchlist")
+                self.itemToRemove = nil
             }
         }
     }
 
     private func clearAllSecurities() {
         Task {
-            try? await watchlistService.clearWatchlist()
+            try? await self.watchlistService.clearWatchlist()
             await MainActor.run {
-                showSuccessMessage("All securities removed from watchlist")
+                self.showSuccessMessage("All securities removed from watchlist")
             }
         }
     }
 
     private func showSuccessMessage(_ message: String) {
-        successMessage = message
-        showSuccessMessage = true
+        self.successMessage = message
+        self.showSuccessMessage = true
 
         // Auto-hide after 2 seconds
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-            showSuccessMessage = false
+            self.showSuccessMessage = false
         }
     }
 }

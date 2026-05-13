@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 @MainActor
 extension InvestorCashBalanceService {
@@ -40,7 +40,9 @@ extension InvestorCashBalanceService {
                 Task { @MainActor in
                     if self.balances.keys.contains(userId) {
                         self.balances[userId] = balanceAfter
-                        print("💰 InvestorCashBalanceService: Balance updated via Live Query for investor \(userId): €\(balanceAfter.formatted(.currency(code: "EUR")))")
+                        print(
+                            "💰 InvestorCashBalanceService: Balance updated via Live Query for investor \(userId): €\(balanceAfter.formatted(.currency(code: "EUR")))"
+                        )
                         NotificationCenter.default.post(
                             name: .investorBalanceDidChange,
                             object: nil,
@@ -61,7 +63,9 @@ extension InvestorCashBalanceService {
                     return
                 }
                 self.balances[investorId] = balanceAfter
-                print("💰 InvestorCashBalanceService: Balance updated via Live Query for investor \(investorId): €\(balanceAfter.formatted(.currency(code: "EUR")))")
+                print(
+                    "💰 InvestorCashBalanceService: Balance updated via Live Query for investor \(investorId): €\(balanceAfter.formatted(.currency(code: "EUR")))"
+                )
                 NotificationCenter.default.post(
                     name: .investorBalanceDidChange,
                     object: nil,
@@ -75,7 +79,7 @@ extension InvestorCashBalanceService {
         guard let liveQueryClient = parseLiveQueryClient else { return }
         if let currentUserId = userService?.currentUser?.id,
            userService?.currentUser?.role == .investor {
-            await subscribeToLiveUpdates(for: currentUserId, liveQueryClient: liveQueryClient)
+            await self.subscribeToLiveUpdates(for: currentUserId, liveQueryClient: liveQueryClient)
         }
     }
 
@@ -85,7 +89,7 @@ extension InvestorCashBalanceService {
         if let existingSubscription = liveQuerySubscriptions[investorId] {
             liveQueryClient.unsubscribe(existingSubscription)
         }
-        await subscribeToLiveUpdates(for: investorId, liveQueryClient: liveQueryClient)
+        await self.subscribeToLiveUpdates(for: investorId, liveQueryClient: liveQueryClient)
     }
 
     func subscribeToLiveUpdates(
@@ -109,7 +113,9 @@ extension InvestorCashBalanceService {
                 }
             },
             onError: { error in
-                print("⚠️ Live Query error for WalletTransaction in InvestorCashBalanceService (investor \(investorId)): \(error.localizedDescription)")
+                print(
+                    "⚠️ Live Query error for WalletTransaction in InvestorCashBalanceService (investor \(investorId)): \(error.localizedDescription)"
+                )
             }
         )
         liveQuerySubscriptions[investorId] = subscription

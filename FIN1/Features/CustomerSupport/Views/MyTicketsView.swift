@@ -17,11 +17,11 @@ struct MyTicketsView: View {
     @State private var errorMessage = ""
 
     private var userId: String {
-        appServices.userService.currentUser?.id ?? ""
+        self.appServices.userService.currentUser?.id ?? ""
     }
 
     private var endUserObjectId: String {
-        appServices.userService.currentUser?.id ?? ""
+        self.appServices.userService.currentUser?.id ?? ""
     }
 
     enum TicketFilter: String, CaseIterable {
@@ -41,10 +41,10 @@ struct MyTicketsView: View {
     }
 
     private var filteredTickets: [SupportTicket] {
-        var result = tickets
+        var result = self.tickets
 
         // Apply status filter
-        switch selectedFilter {
+        switch self.selectedFilter {
         case .all:
             break
         case .active:
@@ -56,10 +56,10 @@ struct MyTicketsView: View {
         }
 
         // Apply search
-        if !searchQuery.isEmpty {
+        if !self.searchQuery.isEmpty {
             result = result.filter {
-                $0.ticketNumber.localizedCaseInsensitiveContains(searchQuery) ||
-                $0.subject.localizedCaseInsensitiveContains(searchQuery)
+                $0.ticketNumber.localizedCaseInsensitiveContains(self.searchQuery) ||
+                    $0.subject.localizedCaseInsensitiveContains(self.searchQuery)
             }
         }
 
@@ -67,47 +67,47 @@ struct MyTicketsView: View {
     }
 
     private var waitingForMeCount: Int {
-        tickets.filter { $0.status == .waitingForCustomer }.count
+        self.tickets.filter { $0.status == .waitingForCustomer }.count
     }
 
     var body: some View {
         NavigationStack {
             VStack(spacing: ResponsiveDesign.spacing(0)) {
-                filterSection
-                ticketList
+                self.filterSection
+                self.ticketList
             }
             .background(AppTheme.screenBackground.ignoresSafeArea())
             .navigationTitle("Meine Tickets")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Schließen") { dismiss() }
+                    Button("Schließen") { self.dismiss() }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
-                        showCreateTicket = true
+                        self.showCreateTicket = true
                     } label: {
                         Image(systemName: "plus.circle.fill")
                             .foregroundColor(AppTheme.accentLightBlue)
                     }
                 }
             }
-            .task { await loadTickets() }
-            .refreshable { await loadTickets() }
-            .sheet(item: $selectedTicket) { ticket in
+            .task { await self.loadTickets() }
+            .refreshable { await self.loadTickets() }
+            .sheet(item: self.$selectedTicket) { ticket in
                 UserTicketDetailView(
                     ticket: ticket,
-                    userId: userId,
-                    supportService: appServices.customerSupportService
+                    userId: self.userId,
+                    supportService: self.appServices.customerSupportService
                 )
             }
-            .sheet(isPresented: $showCreateTicket) {
+            .sheet(isPresented: self.$showCreateTicket) {
                 ContactSupportView()
             }
-            .alert("Fehler", isPresented: $showError) {
+            .alert("Fehler", isPresented: self.$showError) {
                 Button("OK") {}
             } message: {
-                Text(errorMessage)
+                Text(self.errorMessage)
             }
         }
     }
@@ -121,12 +121,12 @@ struct MyTicketsView: View {
                 Image(systemName: "magnifyingglass")
                     .foregroundColor(AppTheme.fontColor.opacity(0.5))
 
-                TextField("Ticket-Nr. oder Betreff...", text: $searchQuery)
+                TextField("Ticket-Nr. oder Betreff...", text: self.$searchQuery)
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.fontColor)
 
-                if !searchQuery.isEmpty {
-                    Button { searchQuery = "" } label: {
+                if !self.searchQuery.isEmpty {
+                    Button { self.searchQuery = "" } label: {
                         Image(systemName: "xmark.circle.fill")
                             .foregroundColor(AppTheme.fontColor.opacity(0.5))
                     }
@@ -142,10 +142,10 @@ struct MyTicketsView: View {
                     ForEach(TicketFilter.allCases, id: \.rawValue) { filter in
                         MyTicketFilterPill(
                             filter: filter,
-                            isSelected: selectedFilter == filter,
-                            badge: filter == .waitingForMe && waitingForMeCount > 0 ? waitingForMeCount : nil
+                            isSelected: self.selectedFilter == filter,
+                            badge: filter == .waitingForMe && self.waitingForMeCount > 0 ? self.waitingForMeCount : nil
                         ) {
-                            selectedFilter = filter
+                            self.selectedFilter = filter
                         }
                     }
                 }
@@ -158,16 +158,16 @@ struct MyTicketsView: View {
 
     private var ticketList: some View {
         Group {
-            if isLoading && tickets.isEmpty {
-                loadingView
-            } else if filteredTickets.isEmpty {
-                emptyView
+            if self.isLoading && self.tickets.isEmpty {
+                self.loadingView
+            } else if self.filteredTickets.isEmpty {
+                self.emptyView
             } else {
                 ScrollView {
                     LazyVStack(spacing: ResponsiveDesign.spacing(8)) {
-                        ForEach(filteredTickets) { ticket in
+                        ForEach(self.filteredTickets) { ticket in
                             MyTicketRow(ticket: ticket) {
-                                selectedTicket = ticket
+                                self.selectedTicket = ticket
                             }
                         }
                     }
@@ -189,17 +189,17 @@ struct MyTicketsView: View {
 
     private var emptyView: some View {
         VStack(spacing: ResponsiveDesign.spacing(16)) {
-            Image(systemName: selectedFilter == .all ? "ticket" : "tray")
+            Image(systemName: self.selectedFilter == .all ? "ticket" : "tray")
                 .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2))
                 .foregroundColor(AppTheme.fontColor.opacity(0.3))
 
-            Text(emptyMessage)
+            Text(self.emptyMessage)
                 .font(ResponsiveDesign.headlineFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
 
-            if selectedFilter == .all && tickets.isEmpty {
+            if self.selectedFilter == .all && self.tickets.isEmpty {
                 Button {
-                    showCreateTicket = true
+                    self.showCreateTicket = true
                 } label: {
                     Label("Neues Ticket erstellen", systemImage: "plus.circle.fill")
                         .font(ResponsiveDesign.bodyFont())
@@ -215,7 +215,7 @@ struct MyTicketsView: View {
     }
 
     private var emptyMessage: String {
-        switch selectedFilter {
+        switch self.selectedFilter {
         case .all: return "Keine Tickets vorhanden"
         case .active: return "Keine aktiven Tickets"
         case .waitingForMe: return "Keine Tickets warten auf Sie"
@@ -226,15 +226,15 @@ struct MyTicketsView: View {
     // MARK: - Actions
 
     private func loadTickets() async {
-        isLoading = true
+        self.isLoading = true
         defer { isLoading = false }
 
         do {
-            tickets = try await appServices.customerSupportService.getSupportTickets(userId: endUserObjectId)
+            self.tickets = try await self.appServices.customerSupportService.getSupportTickets(userId: self.endUserObjectId)
         } catch {
             let appError = error.toAppError()
-            errorMessage = appError.errorDescription ?? "An error occurred"
-            showError = true
+            self.errorMessage = appError.errorDescription ?? "An error occurred"
+            self.showError = true
         }
     }
 }
@@ -248,14 +248,14 @@ private struct MyTicketFilterPill: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
+        Button(action: self.action) {
             HStack(spacing: ResponsiveDesign.spacing(6)) {
-                Image(systemName: filter.icon)
+                Image(systemName: self.filter.icon)
                     .font(ResponsiveDesign.captionFont())
 
-                Text(filter.rawValue)
+                Text(self.filter.rawValue)
                     .font(ResponsiveDesign.captionFont())
-                    .fontWeight(isSelected ? .semibold : .regular)
+                    .fontWeight(self.isSelected ? .semibold : .regular)
 
                 if let badge = badge {
                     Text("\(badge)")
@@ -268,10 +268,10 @@ private struct MyTicketFilterPill: View {
                         .cornerRadius(ResponsiveDesign.spacing(8))
                 }
             }
-            .foregroundColor(isSelected ? .white : AppTheme.fontColor)
+            .foregroundColor(self.isSelected ? .white : AppTheme.fontColor)
             .padding(.horizontal, ResponsiveDesign.spacing(14))
             .padding(.vertical, ResponsiveDesign.spacing(8))
-            .background(isSelected ? AppTheme.accentLightBlue : AppTheme.sectionBackground)
+            .background(self.isSelected ? AppTheme.accentLightBlue : AppTheme.sectionBackground)
             .cornerRadius(ResponsiveDesign.spacing(20))
         }
     }
@@ -284,22 +284,22 @@ private struct MyTicketRow: View {
     let onTap: () -> Void
 
     var body: some View {
-        Button(action: onTap) {
+        Button(action: self.onTap) {
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
                 // Header
                 HStack {
-                    Text(ticket.ticketNumber)
+                    Text(self.ticket.ticketNumber)
                         .font(ResponsiveDesign.captionFont())
                         .fontWeight(.semibold)
                         .foregroundColor(AppTheme.accentLightBlue)
 
                     Spacer()
 
-                    MyTicketStatusBadge(status: ticket.status)
+                    MyTicketStatusBadge(status: self.ticket.status)
                 }
 
                 // Subject
-                Text(ticket.subject)
+                Text(self.ticket.subject)
                     .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.medium)
                     .foregroundColor(AppTheme.fontColor)
@@ -309,7 +309,7 @@ private struct MyTicketRow: View {
                 HStack {
                     // Date
                     Label(
-                        ticket.updatedAt.formatted(date: .abbreviated, time: .shortened),
+                        self.ticket.updatedAt.formatted(date: .abbreviated, time: .shortened),
                         systemImage: "clock"
                     )
                     .font(ResponsiveDesign.captionFont())
@@ -318,14 +318,14 @@ private struct MyTicketRow: View {
                     Spacer()
 
                     // Response count
-                    if !ticket.responses.isEmpty {
-                        Label("\(ticket.responses.count)", systemImage: "bubble.left.and.bubble.right")
+                    if !self.ticket.responses.isEmpty {
+                        Label("\(self.ticket.responses.count)", systemImage: "bubble.left.and.bubble.right")
                             .font(ResponsiveDesign.captionFont())
                             .foregroundColor(AppTheme.fontColor.opacity(0.6))
                     }
 
                     // Unread indicator
-                    if hasUnreadResponse {
+                    if self.hasUnreadResponse {
                         Circle()
                             .fill(AppTheme.accentRed)
                             .frame(width: 8, height: 8)
@@ -333,7 +333,7 @@ private struct MyTicketRow: View {
                 }
 
                 // Action required banner
-                if ticket.status == .waitingForCustomer {
+                if self.ticket.status == .waitingForCustomer {
                     HStack {
                         Image(systemName: "exclamationmark.circle.fill")
                             .font(ResponsiveDesign.captionFont())
@@ -350,7 +350,7 @@ private struct MyTicketRow: View {
             .overlay(
                 RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(10))
                     .stroke(
-                        ticket.status == .waitingForCustomer ? AppTheme.accentOrange.opacity(0.5) : Color.clear,
+                        self.ticket.status == .waitingForCustomer ? AppTheme.accentOrange.opacity(0.5) : Color.clear,
                         lineWidth: 1
                     )
             )
@@ -376,18 +376,18 @@ private struct MyTicketStatusBadge: View {
     let status: SupportTicket.TicketStatus
 
     var body: some View {
-        Text(displayText)
+        Text(self.displayText)
             .font(ResponsiveDesign.captionFont())
             .fontWeight(.semibold)
             .foregroundColor(.white)
             .padding(.horizontal, ResponsiveDesign.spacing(8))
             .padding(.vertical, ResponsiveDesign.spacing(4))
-            .background(statusColor)
+            .background(self.statusColor)
             .cornerRadius(ResponsiveDesign.spacing(6))
     }
 
     private var displayText: String {
-        switch status {
+        switch self.status {
         case .open: return "Offen"
         case .inProgress: return "In Bearbeitung"
         case .waitingForCustomer: return "Warte auf Sie"
@@ -399,7 +399,7 @@ private struct MyTicketStatusBadge: View {
     }
 
     private var statusColor: Color {
-        switch status {
+        switch self.status {
         case .open: return AppTheme.accentLightBlue
         case .inProgress: return AppTheme.accentLightBlue
         case .waitingForCustomer: return AppTheme.accentOrange

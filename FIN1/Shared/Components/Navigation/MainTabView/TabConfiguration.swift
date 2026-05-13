@@ -1,5 +1,5 @@
-import SwiftUI
 import Combine
+import SwiftUI
 
 // MARK: - Tab Configuration
 struct TabConfiguration {
@@ -45,9 +45,9 @@ final class RoleBasedTabCoordinator: ObservableObject {
         self.currentRole = userService.userRole
         // For admins and customer service, start on their primary tab (id: 0)
         self.selectedTab = 0
-        setupBadgeObservation()
-        setupRoleObservation()
-        updateProfileBadge()
+        self.setupBadgeObservation()
+        self.setupRoleObservation()
+        self.updateProfileBadge()
     }
 
     // MARK: - Role Observation
@@ -59,7 +59,7 @@ final class RoleBasedTabCoordinator: ObservableObject {
             .sink { [weak self] _ in
                 self?.handleRoleChange()
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
 
         // Also listen for explicit role change notification
         NotificationCenter.default.publisher(for: NSNotification.Name("UserRoleChanged"))
@@ -67,16 +67,18 @@ final class RoleBasedTabCoordinator: ObservableObject {
             .sink { [weak self] _ in
                 self?.handleRoleChange()
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
     }
 
     private func handleRoleChange() {
-        let newRole = userService.userRole
-        if newRole != currentRole {
-            print("🔄 RoleBasedTabCoordinator: Role changed from \(currentRole?.displayName ?? "nil") to \(newRole?.displayName ?? "nil")")
-            currentRole = newRole
+        let newRole = self.userService.userRole
+        if newRole != self.currentRole {
+            print(
+                "🔄 RoleBasedTabCoordinator: Role changed from \(self.currentRole?.displayName ?? "nil") to \(newRole?.displayName ?? "nil")"
+            )
+            self.currentRole = newRole
             // Reset to primary tab for new role
-            selectedTab = 0
+            self.selectedTab = 0
             objectWillChange.send()
         }
     }
@@ -84,7 +86,7 @@ final class RoleBasedTabCoordinator: ObservableObject {
     // MARK: - Tab Configurations
 
     func getTabConfigurations() -> [TabConfiguration] {
-        let role = currentRole
+        let role = self.currentRole
 
         var tabs: [TabConfiguration] = []
 
@@ -173,18 +175,18 @@ final class RoleBasedTabCoordinator: ObservableObject {
 
         // Watchlist Tab - Role-specific content
         tabs.append(TabConfiguration(
-            id: getWatchlistTabId(for: role),
+            id: self.getWatchlistTabId(for: role),
             icon: "star.fill",
             title: "Watchlist",
-            content: { getWatchlistContent(for: role) }
+            content: { self.getWatchlistContent(for: role) }
         ))
 
         // Profile Tab - Always visible with badge
         tabs.append(TabConfiguration(
-            id: getProfileTabId(for: role),
+            id: self.getProfileTabId(for: role),
             icon: "person.fill",
             title: "Profile",
-            badge: profileBadge > 0 ? profileBadge : nil,
+            badge: self.profileBadge > 0 ? self.profileBadge : nil,
             content: { ModularProfileView() }
         ))
 
@@ -214,8 +216,8 @@ final class RoleBasedTabCoordinator: ObservableObject {
     }
 
     private func getUnreadNotificationCount() -> Int {
-        let currentUserId = userService.currentUser?.id
-        return notificationService.getCombinedUnreadCount(for: currentUserId)
+        let currentUserId = self.userService.currentUser?.id
+        return self.notificationService.getCombinedUnreadCount(for: currentUserId)
     }
 
     // MARK: - Badge Observation
@@ -228,25 +230,25 @@ final class RoleBasedTabCoordinator: ObservableObject {
                 .sink { [weak self] _ in
                     self?.updateProfileBadge()
                 }
-                .store(in: &cancellables)
+                .store(in: &self.cancellables)
         }
 
         // Observe user changes so badge recalculates on user switch/update
         NotificationCenter.default.publisher(for: .userDidSignIn)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in self?.updateProfileBadge() }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
 
         NotificationCenter.default.publisher(for: .userDataDidUpdate)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in self?.updateProfileBadge() }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
     }
 
     private func updateProfileBadge() {
-        let count = getUnreadNotificationCount()
-        if profileBadge != count {
-            profileBadge = count
+        let count = self.getUnreadNotificationCount()
+        if self.profileBadge != count {
+            self.profileBadge = count
         }
     }
 
@@ -266,7 +268,7 @@ final class RoleBasedTabCoordinator: ObservableObject {
     // MARK: - Navigation Helpers
 
     func navigateToTab(_ tabId: Int) {
-        selectedTab = tabId
+        self.selectedTab = tabId
     }
 
     func getPrimaryTabId(for role: UserRole?) -> Int {

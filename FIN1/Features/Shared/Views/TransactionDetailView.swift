@@ -15,17 +15,17 @@ struct TransactionDetailView: View {
                 ScrollView {
                     VStack(spacing: ResponsiveDesign.spacing(6)) {
                         // Header Card
-                        headerCard
+                        self.headerCard
                         
                         // Details Section
-                        detailsSection
+                        self.detailsSection
                         
                         // Status Section
-                        statusSection
+                        self.statusSection
                         
                         // Metadata Section (if available)
-                        if !transaction.metadata.isEmpty {
-                            metadataSection
+                        if !self.transaction.metadata.isEmpty {
+                            self.metadataSection
                         }
                     }
                     .padding(.horizontal, ResponsiveDesign.horizontalPadding())
@@ -37,7 +37,7 @@ struct TransactionDetailView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Fertig") {
-                        dismiss()
+                        self.dismiss()
                     }
                 }
             }
@@ -49,23 +49,23 @@ struct TransactionDetailView: View {
     private var headerCard: some View {
         VStack(spacing: ResponsiveDesign.spacing(4)) {
             // Icon
-            Image(systemName: transaction.type.icon)
+            Image(systemName: self.transaction.type.icon)
                 .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2.5))
-                .foregroundColor(colorForType(transaction.type))
+                .foregroundColor(self.colorForType(self.transaction.type))
                 .frame(width: ResponsiveDesign.spacing(16), height: ResponsiveDesign.spacing(16))
-                .background(colorForType(transaction.type).opacity(0.1))
+                .background(self.colorForType(self.transaction.type).opacity(0.1))
                 .clipShape(Circle())
             
             // Type
-            Text(transaction.type.displayName)
+            Text(self.transaction.type.displayName)
                 .font(ResponsiveDesign.headlineFont())
                 .foregroundColor(AppTheme.fontColor)
             
             // Amount
-            Text(transaction.formattedSignedAmount)
+            Text(self.transaction.formattedSignedAmount)
                 .font(ResponsiveDesign.largeTitleFont())
                 .fontWeight(.bold)
-                .foregroundColor(transaction.isPositive ? AppTheme.accentGreen : AppTheme.accentRed)
+                .foregroundColor(self.transaction.isPositive ? AppTheme.accentGreen : AppTheme.accentRed)
         }
         .frame(maxWidth: .infinity)
         .padding(ResponsiveDesign.spacing(6))
@@ -81,9 +81,9 @@ struct TransactionDetailView: View {
                 .font(ResponsiveDesign.headlineFont())
                 .foregroundColor(AppTheme.fontColor)
             
-            DetailRow(label: "Datum", value: transaction.timestamp.formatted(date: .long, time: .shortened))
-            DetailRow(label: "Status", value: transaction.status.displayName)
-            DetailRow(label: "Betrag", value: transaction.amount.formatted(.currency(code: transaction.currency)))
+            DetailRow(label: "Datum", value: self.transaction.timestamp.formatted(date: .long, time: .shortened))
+            DetailRow(label: "Status", value: self.transaction.status.displayName)
+            DetailRow(label: "Betrag", value: self.transaction.amount.formatted(.currency(code: self.transaction.currency)))
             
             if let description = transaction.description {
                 DetailRow(label: "Beschreibung", value: description)
@@ -94,7 +94,7 @@ struct TransactionDetailView: View {
             }
             
             if let balanceAfter = transaction.balanceAfter {
-                DetailRow(label: "Guthaben danach", value: balanceAfter.formatted(.currency(code: transaction.currency)))
+                DetailRow(label: "Guthaben danach", value: balanceAfter.formatted(.currency(code: self.transaction.currency)))
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -107,7 +107,7 @@ struct TransactionDetailView: View {
     
     private var statusSection: some View {
         HStack {
-            StatusBadge(status: transaction.status)
+            StatusBadge(status: self.transaction.status)
             Spacer()
         }
         .padding(ResponsiveDesign.spacing(4))
@@ -123,7 +123,7 @@ struct TransactionDetailView: View {
                 .font(ResponsiveDesign.headlineFont())
                 .foregroundColor(AppTheme.fontColor)
             
-            ForEach(Array(transaction.metadata.keys.sorted()), id: \.self) { key in
+            ForEach(Array(self.transaction.metadata.keys.sorted()), id: \.self) { key in
                 if let value = transaction.metadata[key] {
                     DetailRow(label: key.capitalized, value: value)
                 }
@@ -156,11 +156,11 @@ struct DetailRow: View {
     
     var body: some View {
         HStack {
-            Text(label)
+            Text(self.label)
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.secondaryText)
             Spacer()
-            Text(value)
+            Text(self.value)
                 .font(ResponsiveDesign.bodyFont())
                 .fontWeight(.medium)
                 .foregroundColor(AppTheme.fontColor)
@@ -177,21 +177,21 @@ struct StatusBadge: View {
     var body: some View {
         HStack(spacing: ResponsiveDesign.spacing(2)) {
             Circle()
-                .fill(statusColor)
+                .fill(self.statusColor)
                 .frame(width: 8, height: 8)
-            Text(status.displayName)
+            Text(self.status.displayName)
                 .font(ResponsiveDesign.captionFont())
                 .fontWeight(.medium)
-                .foregroundColor(statusColor)
+                .foregroundColor(self.statusColor)
         }
         .padding(.horizontal, ResponsiveDesign.spacing(3))
         .padding(.vertical, ResponsiveDesign.spacing(2))
-        .background(statusColor.opacity(0.1))
+        .background(self.statusColor.opacity(0.1))
         .cornerRadius(ResponsiveDesign.spacing(3))
     }
     
     private var statusColor: Color {
-        switch status {
+        switch self.status {
         case .completed: return AppTheme.accentGreen
         case .pending, .processing: return AppTheme.accentOrange
         case .failed: return AppTheme.accentRed

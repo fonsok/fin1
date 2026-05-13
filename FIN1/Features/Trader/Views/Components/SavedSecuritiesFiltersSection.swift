@@ -19,24 +19,24 @@ struct SavedSecuritiesFiltersSection: View {
                 Spacer()
 
                 Button("View All") {
-                    onViewAll()
+                    self.onViewAll()
                 }
                 .foregroundColor(AppTheme.accentLightBlue)
             }
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: ResponsiveDesign.spacing(12)) {
-                    ForEach(savedFilters.prefix(3)) { savedFilter in
+                    ForEach(self.savedFilters.prefix(3)) { savedFilter in
                         SavedSecuritiesFilterChip(
                             savedFilter: savedFilter,
-                            onApply: { onApplyFilter(savedFilter) },
-                            isCurrentlyApplied: currentlyAppliedFilterID == savedFilter.id.uuidString
+                            onApply: { self.onApplyFilter(savedFilter) },
+                            isCurrentlyApplied: self.currentlyAppliedFilterID == savedFilter.id.uuidString
                         )
                     }
 
                     // Only show "Save" button if there are active filters
-                    if hasActiveFilters {
-                        Button(action: onCreateNew, label: {
+                    if self.hasActiveFilters {
+                        Button(action: self.onCreateNew, label: {
                             HStack {
                                 Image(systemName: "plus")
                                 Text("Save")
@@ -67,32 +67,32 @@ struct SavedSecuritiesFilterChip: View {
     let isCurrentlyApplied: Bool
 
     var body: some View {
-        Button(action: onApply, label: {
+        Button(action: self.onApply, label: {
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
                 HStack {
-                    Text(savedFilter.name)
+                    Text(self.savedFilter.name)
                         .font(ResponsiveDesign.bodyFont())
                         .fontWeight(.medium)
                         .foregroundColor(AppTheme.inputFieldText)
 
-                    if isCurrentlyApplied {
+                    if self.isCurrentlyApplied {
                         Image(systemName: "checkmark")
                             .font(ResponsiveDesign.bodyFont())
                             .foregroundColor(AppTheme.accentLightBlue)
                     }
                 }
 
-                Text("\(getFilterCount(savedFilter.filters)) filters")
+                Text("\(self.getFilterCount(self.savedFilter.filters)) filters")
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.inputFieldText.opacity(0.7))
             }
             .frame(width: 120, alignment: .leading)
             .padding(.horizontal, ResponsiveDesign.spacing(12))
             .padding(.vertical, ResponsiveDesign.spacing(8))
-            .background(isCurrentlyApplied ? AppTheme.accentOrange.opacity(0.7) : AppTheme.inputFieldBackground)
+            .background(self.isCurrentlyApplied ? AppTheme.accentOrange.opacity(0.7) : AppTheme.inputFieldBackground)
             .overlay(
                 RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(8))
-                    .stroke(isCurrentlyApplied ? AppTheme.accentLightBlue : AppTheme.accentLightBlue, lineWidth: 1)
+                    .stroke(self.isCurrentlyApplied ? AppTheme.accentLightBlue : AppTheme.accentLightBlue, lineWidth: 1)
             )
             .cornerRadius(ResponsiveDesign.spacing(8))
         })

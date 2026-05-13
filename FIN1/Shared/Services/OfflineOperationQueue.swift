@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Offline Operation Queue
 
@@ -59,7 +59,7 @@ final class OfflineOperationQueue: ObservableObject {
     private var parseServerConfig: ParseServerConfig?
 
     private init() {
-        loadQueue()
+        self.loadQueue()
     }
 
     /// Configure the Parse API client for processing operations
@@ -71,34 +71,36 @@ final class OfflineOperationQueue: ObservableObject {
     // MARK: - Queue Management
 
     func enqueue(_ operation: QueuedOperation) {
-        pendingOperations.append(operation)
-        persistQueue()
+        self.pendingOperations.append(operation)
+        self.persistQueue()
 
         #if DEBUG
-        print("📦 OfflineOperationQueue: Enqueued operation \(operation.type.rawValue) for \(operation.className ?? operation.functionName ?? "unknown")")
+        print(
+            "📦 OfflineOperationQueue: Enqueued operation \(operation.type.rawValue) for \(operation.className ?? operation.functionName ?? "unknown")"
+        )
         #endif
     }
 
     func removeOperation(_ operationId: String) {
-        pendingOperations.removeAll { $0.id == operationId }
-        persistQueue()
+        self.pendingOperations.removeAll { $0.id == operationId }
+        self.persistQueue()
     }
 
     func moveToFailed(_ operation: QueuedOperation) {
-        pendingOperations.removeAll { $0.id == operation.id }
-        failedOperations.append(operation)
-        persistQueue()
+        self.pendingOperations.removeAll { $0.id == operation.id }
+        self.failedOperations.append(operation)
+        self.persistQueue()
     }
 
     func clearFailed() {
-        failedOperations.removeAll()
-        persistQueue()
+        self.failedOperations.removeAll()
+        self.persistQueue()
     }
 
     // MARK: - Queue Processing
 
     func processQueue() async {
-        guard !isProcessing else {
+        guard !self.isProcessing else {
             #if DEBUG
             print("⚠️ OfflineOperationQueue: Already processing queue")
             #endif
@@ -125,9 +127,9 @@ final class OfflineOperationQueue: ObservableObject {
             return
         }
 
-        isProcessing = true
+        self.isProcessing = true
 
-        let operations = pendingOperations
+        let operations = self.pendingOperations
         #if DEBUG
         print("🔄 OfflineOperationQueue: Processing \(operations.count) operations")
         #endif
@@ -150,7 +152,7 @@ final class OfflineOperationQueue: ObservableObject {
                     applicationId: config.applicationId,
                     sessionToken: sessionToken
                 )
-                removeOperation(operation.id)
+                self.removeOperation(operation.id)
                 #if DEBUG
                 print("✅ OfflineOperationQueue: Successfully processed operation \(operation.id)")
                 #endif
@@ -158,25 +160,27 @@ final class OfflineOperationQueue: ObservableObject {
                 var updatedOperation = operation
                 updatedOperation.retryCount += 1
 
-                if updatedOperation.retryCount >= maxRetries {
-                    moveToFailed(updatedOperation)
+                if updatedOperation.retryCount >= self.maxRetries {
+                    self.moveToFailed(updatedOperation)
                     #if DEBUG
-                    print("❌ OfflineOperationQueue: Operation \(operation.id) failed after \(maxRetries) retries, moved to failed")
+                    print("❌ OfflineOperationQueue: Operation \(operation.id) failed after \(self.maxRetries) retries, moved to failed")
                     #endif
                 } else {
                     // Update retry count
                     if let index = pendingOperations.firstIndex(where: { $0.id == operation.id }) {
-                        pendingOperations[index] = updatedOperation
-                        persistQueue()
+                        self.pendingOperations[index] = updatedOperation
+                        self.persistQueue()
                     }
                     #if DEBUG
-                    print("⚠️ OfflineOperationQueue: Operation \(operation.id) failed, retry count: \(updatedOperation.retryCount)/\(maxRetries)")
+                    print(
+                        "⚠️ OfflineOperationQueue: Operation \(operation.id) failed, retry count: \(updatedOperation.retryCount)/\(self.maxRetries)"
+                    )
                     #endif
                 }
             }
         }
 
-        isProcessing = false
+        self.isProcessing = false
     }
 
     // MARK: - Operation Execution
@@ -236,23 +240,23 @@ final class OfflineOperationQueue: ObservableObject {
     private func persistQueue() {
         let encoder = JSONEncoder()
         if let data = try? encoder.encode(pendingOperations) {
-            UserDefaults.standard.set(data, forKey: persistenceKey)
+            UserDefaults.standard.set(data, forKey: self.persistenceKey)
         }
 
         if let failedData = try? encoder.encode(failedOperations) {
-            UserDefaults.standard.set(failedData, forKey: "\(persistenceKey)_failed")
+            UserDefaults.standard.set(failedData, forKey: "\(self.persistenceKey)_failed")
         }
     }
 
     private func loadQueue() {
         if let data = UserDefaults.standard.data(forKey: persistenceKey),
            let operations = try? JSONDecoder().decode([QueuedOperation].self, from: data) {
-            pendingOperations = operations
+            self.pendingOperations = operations
         }
 
         if let failedData = UserDefaults.standard.data(forKey: "\(persistenceKey)_failed"),
            let failed = try? JSONDecoder().decode([QueuedOperation].self, from: failedData) {
-            failedOperations = failed
+            self.failedOperations = failed
         }
     }
 }
@@ -288,17 +292,17 @@ struct AnyCodable: Codable, @unchecked Sendable {
         let container = try decoder.singleValueContainer()
 
         if let bool = try? container.decode(Bool.self) {
-            value = bool
+            self.value = bool
         } else if let int = try? container.decode(Int.self) {
-            value = int
+            self.value = int
         } else if let double = try? container.decode(Double.self) {
-            value = double
+            self.value = double
         } else if let string = try? container.decode(String.self) {
-            value = string
+            self.value = string
         } else if let array = try? container.decode([AnyCodable].self) {
-            value = array.map { $0.value }
+            self.value = array.map { $0.value }
         } else if let dictionary = try? container.decode([String: AnyCodable].self) {
-            value = dictionary.mapValues { $0.value }
+            self.value = dictionary.mapValues { $0.value }
         } else {
             throw DecodingError.dataCorruptedError(
                 in: container,
@@ -310,7 +314,7 @@ struct AnyCodable: Codable, @unchecked Sendable {
     func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
 
-        switch value {
+        switch self.value {
         case let bool as Bool:
             try container.encode(bool)
         case let int as Int:
@@ -325,7 +329,7 @@ struct AnyCodable: Codable, @unchecked Sendable {
             try container.encode(dictionary.mapValues { AnyCodable($0) })
         default:
             throw EncodingError.invalidValue(
-                value,
+                self.value,
                 EncodingError.Context(
                     codingPath: container.codingPath,
                     debugDescription: "AnyCodable value cannot be encoded"
@@ -335,7 +339,7 @@ struct AnyCodable: Codable, @unchecked Sendable {
     }
 
     var stringValue: String? {
-        return value as? String
+        return self.value as? String
     }
 }
 

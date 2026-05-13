@@ -14,23 +14,25 @@ struct AddressConfirmStep: View {
                     .foregroundColor(AppTheme.fontColor)
                     .multilineTextAlignment(.center)
 
-                Text("Der Adressnachweis muss von einer vertrauenswürdigen Stelle stammen, darf nicht geschwärzt sein und muss zur beantragten Person passen.")
-                    .font(ResponsiveDesign.bodyFont())
-                    .foregroundColor(AppTheme.fontColor.opacity(0.8))
-                    .multilineTextAlignment(.leading)
+                Text(
+                    "Der Adressnachweis muss von einer vertrauenswürdigen Stelle stammen, darf nicht geschwärzt sein und muss zur beantragten Person passen."
+                )
+                .font(ResponsiveDesign.bodyFont())
+                .foregroundColor(AppTheme.fontColor.opacity(0.8))
+                .multilineTextAlignment(.leading)
             }
 
             // Address Display
-            AddressDisplayView(address: sampleAddressInfo)
+            AddressDisplayView(address: self.sampleAddressInfo)
 
             // Document Upload
-            DocumentUploadView(selectedImage: $addressVerificationDocument)
+            DocumentUploadView(selectedImage: self.$addressVerificationDocument)
 
             // Document Requirements
             DocumentRequirementsView()
 
             // Confirmation
-            AddressConfirmationView(isConfirmed: $addressConfirmed)
+            AddressConfirmationView(isConfirmed: self.$addressConfirmed)
         }
     }
 
@@ -49,10 +51,10 @@ struct AddressConfirmationView: View {
 
     var body: some View {
         VStack(spacing: ResponsiveDesign.spacing(16)) {
-            Button(action: { isConfirmed.toggle() }, label: {
+            Button(action: { self.isConfirmed.toggle() }, label: {
                 HStack {
                     InteractiveElement(
-                        isSelected: isConfirmed,
+                        isSelected: self.isConfirmed,
                         type: .confirmationCircle
                     )
 

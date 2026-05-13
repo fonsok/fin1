@@ -54,7 +54,7 @@ final class InvoicePDFHandler {
             print("📁 PDF saved to Documents folder: \(fileURL.path)")
 
             // Create notification for user
-            await createPDFSavedNotification(invoice: invoice, fileURL: fileURL)
+            await self.createPDFSavedNotification(invoice: invoice, fileURL: fileURL)
 
         } catch {
             print("❌ DEBUG: PDF generation failed in Handler: \(error.localizedDescription)")
@@ -99,14 +99,14 @@ final class InvoicePDFHandler {
 
     /// Generates a PDF preview for the selected invoice
     func generatePDFPreview(for invoice: Invoice) async throws -> UIImage {
-        try await invoiceService.generatePDFPreview(for: invoice)
+        try await self.invoiceService.generatePDFPreview(for: invoice)
     }
 
     private func createPDFSavedNotification(invoice: Invoice, fileURL: URL) async {
         let title = "PDF Invoice Generated"
         let message = "Invoice \(invoice.formattedInvoiceNumber) has been saved to your Downloads folder."
 
-        notificationService.createNotification(
+        self.notificationService.createNotification(
             title: title,
             message: message,
             type: .document,

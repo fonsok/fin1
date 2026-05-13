@@ -29,13 +29,13 @@ struct TicketArchiveView: View {
     }
 
     private var filteredTickets: [SupportTicket] {
-        var tickets = archivedTickets.filter { selectedFilter.statusFilter.contains($0.status) }
+        var tickets = self.archivedTickets.filter { self.selectedFilter.statusFilter.contains($0.status) }
 
-        if !searchQuery.isEmpty {
+        if !self.searchQuery.isEmpty {
             tickets = tickets.filter {
-                $0.ticketNumber.localizedCaseInsensitiveContains(searchQuery) ||
-                $0.subject.localizedCaseInsensitiveContains(searchQuery) ||
-                $0.customerName.localizedCaseInsensitiveContains(searchQuery)
+                $0.ticketNumber.localizedCaseInsensitiveContains(self.searchQuery) ||
+                    $0.subject.localizedCaseInsensitiveContains(self.searchQuery) ||
+                    $0.customerName.localizedCaseInsensitiveContains(self.searchQuery)
             }
         }
 
@@ -45,18 +45,18 @@ struct TicketArchiveView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: ResponsiveDesign.spacing(0)) {
-                filterSection
-                ticketList
+                self.filterSection
+                self.ticketList
             }
             .background(AppTheme.screenBackground.ignoresSafeArea())
             .navigationTitle("Archiv")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Schließen") { dismiss() }
+                    Button("Schließen") { self.dismiss() }
                 }
             }
-            .task { await loadArchivedTickets() }
+            .task { await self.loadArchivedTickets() }
         }
     }
 
@@ -69,12 +69,12 @@ struct TicketArchiveView: View {
                 Image(systemName: "magnifyingglass")
                     .foregroundColor(AppTheme.fontColor.opacity(0.5))
 
-                TextField("Ticket-Nr., Betreff oder Kunde...", text: $searchQuery)
+                TextField("Ticket-Nr., Betreff oder Kunde...", text: self.$searchQuery)
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.fontColor)
 
-                if !searchQuery.isEmpty {
-                    Button { searchQuery = "" } label: {
+                if !self.searchQuery.isEmpty {
+                    Button { self.searchQuery = "" } label: {
                         Image(systemName: "xmark.circle.fill")
                             .foregroundColor(AppTheme.fontColor.opacity(0.5))
                     }
@@ -90,10 +90,10 @@ struct TicketArchiveView: View {
                     ForEach(ArchiveFilter.allCases, id: \.rawValue) { filter in
                         FilterPill(
                             title: filter.rawValue,
-                            isSelected: selectedFilter == filter,
-                            count: archivedTickets.filter { filter.statusFilter.contains($0.status) }.count
+                            isSelected: self.selectedFilter == filter,
+                            count: self.archivedTickets.filter { filter.statusFilter.contains($0.status) }.count
                         ) {
-                            selectedFilter = filter
+                            self.selectedFilter = filter
                         }
                     }
                 }
@@ -106,16 +106,16 @@ struct TicketArchiveView: View {
 
     private var ticketList: some View {
         Group {
-            if isLoading {
-                loadingView
-            } else if filteredTickets.isEmpty {
-                emptyView
+            if self.isLoading {
+                self.loadingView
+            } else if self.filteredTickets.isEmpty {
+                self.emptyView
             } else {
                 ScrollView {
                     LazyVStack(spacing: ResponsiveDesign.spacing(8)) {
-                        ForEach(filteredTickets) { ticket in
+                        ForEach(self.filteredTickets) { ticket in
                             ArchivedTicketRow(ticket: ticket) {
-                                viewModel.selectTicket(ticket)
+                                self.viewModel.selectTicket(ticket)
                             }
                         }
                     }
@@ -157,17 +157,17 @@ struct TicketArchiveView: View {
     // MARK: - Actions
 
     private func loadArchivedTickets() async {
-        isLoading = true
+        self.isLoading = true
         defer { isLoading = false }
 
         do {
             let allTickets = try await viewModel.supportService.getSupportTickets(userId: nil)
-            archivedTickets = allTickets.filter { ticket in
+            self.archivedTickets = allTickets.filter { ticket in
                 ticket.status == .archived || ticket.status == .closed || ticket.status == .resolved
             }
             .sorted { $0.updatedAt > $1.updatedAt }
         } catch {
-            viewModel.handleError(error)
+            self.viewModel.handleError(error)
         }
     }
 }
@@ -181,24 +181,24 @@ private struct FilterPill: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
+        Button(action: self.action) {
             HStack(spacing: ResponsiveDesign.spacing(4)) {
-                Text(title)
+                Text(self.title)
                     .font(ResponsiveDesign.captionFont())
-                    .fontWeight(isSelected ? .bold : .regular)
+                    .fontWeight(self.isSelected ? .bold : .regular)
 
-                Text("\(count)")
+                Text("\(self.count)")
                     .font(ResponsiveDesign.captionFont())
                     .fontWeight(.semibold)
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2)
-                    .background(isSelected ? Color.white.opacity(0.2) : AppTheme.fontColor.opacity(0.1))
+                    .background(self.isSelected ? Color.white.opacity(0.2) : AppTheme.fontColor.opacity(0.1))
                     .cornerRadius(ResponsiveDesign.spacing(8))
             }
-            .foregroundColor(isSelected ? .white : AppTheme.fontColor)
+            .foregroundColor(self.isSelected ? .white : AppTheme.fontColor)
             .padding(.horizontal, ResponsiveDesign.spacing(12))
             .padding(.vertical, ResponsiveDesign.spacing(8))
-            .background(isSelected ? AppTheme.accentLightBlue : AppTheme.sectionBackground)
+            .background(self.isSelected ? AppTheme.accentLightBlue : AppTheme.sectionBackground)
             .cornerRadius(ResponsiveDesign.spacing(20))
         }
     }
@@ -211,27 +211,27 @@ private struct ArchivedTicketRow: View {
     let onTap: () -> Void
 
     var body: some View {
-        Button(action: onTap) {
+        Button(action: self.onTap) {
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
                 HStack {
-                    Text(ticket.ticketNumber)
+                    Text(self.ticket.ticketNumber)
                         .font(ResponsiveDesign.captionFont())
                         .fontWeight(.semibold)
                         .foregroundColor(AppTheme.accentLightBlue)
 
                     Spacer()
 
-                    CSStatusBadge(text: ticket.status.displayName, color: statusColor)
+                    CSStatusBadge(text: self.ticket.status.displayName, color: self.statusColor)
                 }
 
-                Text(ticket.subject)
+                Text(self.ticket.subject)
                     .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.medium)
                     .foregroundColor(AppTheme.fontColor)
                     .lineLimit(2)
 
                 HStack {
-                    Label(ticket.customerName, systemImage: "person.fill")
+                    Label(self.ticket.customerName, systemImage: "person.fill")
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(AppTheme.fontColor.opacity(0.7))
 
@@ -245,7 +245,7 @@ private struct ArchivedTicketRow: View {
                 }
 
                 // Reopen badge if within grace period
-                if ticket.canReopen, let daysLeft = ticket.daysUntilReopenExpires {
+                if self.ticket.canReopen, let daysLeft = ticket.daysUntilReopenExpires {
                     HStack {
                         Image(systemName: "arrow.counterclockwise")
                             .font(ResponsiveDesign.captionFont())
@@ -264,7 +264,7 @@ private struct ArchivedTicketRow: View {
     }
 
     private var statusColor: Color {
-        switch ticket.status {
+        switch self.ticket.status {
         case .archived: return AppTheme.fontColor.opacity(0.5)
         case .closed: return AppTheme.fontColor.opacity(0.6)
         case .resolved: return AppTheme.accentGreen

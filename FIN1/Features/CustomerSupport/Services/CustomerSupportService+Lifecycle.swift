@@ -110,7 +110,7 @@ extension CustomerSupportService {
         }
 
         // Grace period expired - create new linked ticket
-        let newTicketNumber = generateTicketNumber()
+        let newTicketNumber = self.generateTicketNumber()
         let newTicket = SupportTicket(
             id: UUID().uuidString,
             ticketNumber: newTicketNumber,
@@ -177,8 +177,8 @@ extension CustomerSupportService {
         let tickets = mockTickets
         return tickets.filter { ticket in
             ticket.userId == userId &&
-            ticket.id != excludeTicketId &&
-            ticket.status != .archived
+                ticket.id != excludeTicketId &&
+                ticket.status != .archived
         }
         .sorted { $0.createdAt > $1.createdAt }
         .prefix(10)
@@ -188,7 +188,7 @@ extension CustomerSupportService {
     // MARK: - Helper
 
     private func generateTicketNumber() -> String {
-        let number = Int.random(in: 10000...99999)
+        let number = Int.random(in: 10_000...99_999)
         return "TKT-\(number)"
     }
 }

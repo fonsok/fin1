@@ -47,20 +47,20 @@ struct RiskMetricRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text(title)
+                Text(self.title)
                     .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.medium)
                     .foregroundColor(AppTheme.fontColor)
 
                 Spacer()
 
-                Text(value)
+                Text(self.value)
                     .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.bold)
                     .foregroundColor(AppTheme.accentLightBlue)
             }
 
-            Text(description)
+            Text(self.description)
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
         }

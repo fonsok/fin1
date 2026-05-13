@@ -59,7 +59,7 @@ struct ParseMarketData: Codable {
         
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "HH:mm"
-        let timeStr = dateFormatter.string(from: timestamp)
+        let timeStr = dateFormatter.string(from: self.timestamp)
         
         // Format price with German locale
         let numberFormatter = NumberFormatter()
@@ -67,13 +67,13 @@ struct ParseMarketData: Codable {
         numberFormatter.minimumFractionDigits = 2
         numberFormatter.maximumFractionDigits = 2
         numberFormatter.locale = Locale(identifier: "de_DE")
-        let priceStr = numberFormatter.string(for: price) ?? "0,00"
+        let priceStr = numberFormatter.string(for: self.price) ?? "0,00"
         
         return MarketData(
             price: priceStr,
             change: changeStr,
             time: timeStr,
-            market: market
+            market: self.market
         )
     }
     

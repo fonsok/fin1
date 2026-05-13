@@ -45,16 +45,16 @@ struct PoolTradeParticipation: Identifiable, Codable, Sendable {
     /// Updates the profit share for this participation
     func withProfitShare(_ profitShare: Double) -> PoolTradeParticipation {
         return PoolTradeParticipation(
-            id: id,
-            tradeId: tradeId,
-            investmentId: investmentId,
-            poolReservationId: poolReservationId,
-            poolNumber: poolNumber,
-            allocatedAmount: allocatedAmount,
-            totalTradeValue: totalTradeValue,
-            ownershipPercentage: ownershipPercentage,
+            id: self.id,
+            tradeId: self.tradeId,
+            investmentId: self.investmentId,
+            poolReservationId: self.poolReservationId,
+            poolNumber: self.poolNumber,
+            allocatedAmount: self.allocatedAmount,
+            totalTradeValue: self.totalTradeValue,
+            ownershipPercentage: self.ownershipPercentage,
             profitShare: profitShare,
-            createdAt: createdAt,
+            createdAt: self.createdAt,
             updatedAt: Date()
         )
     }

@@ -62,7 +62,9 @@ final class InvestorInvestmentStatementDataProvider: InvestorInvestmentStatement
                 )
                 fetched.append(contentsOf: rows.compactMap { $0.toModel() })
             } catch {
-                print("⚠️ InvestorInvestmentStatementDataProvider: participation fetch failed for '\(candidate)': \(error.localizedDescription)")
+                print(
+                    "⚠️ InvestorInvestmentStatementDataProvider: participation fetch failed for '\(candidate)': \(error.localizedDescription)"
+                )
             }
         }
 
@@ -124,21 +126,21 @@ private struct BackendPoolParticipationRow: Decodable {
 
         let totalTradeValue = self.totalTradeValue ?? 0
         let allocatedAmount = self.allocatedAmount ?? 0
-        let rawOwnership = ownershipPercentage ?? (totalTradeValue > 0 ? allocatedAmount / totalTradeValue : 0)
+        let rawOwnership = self.ownershipPercentage ?? (totalTradeValue > 0 ? allocatedAmount / totalTradeValue : 0)
         let normalizedOwnership = rawOwnership > 1.0 ? rawOwnership / 100.0 : rawOwnership
 
         return PoolTradeParticipation(
-            id: objectId,
+            id: self.objectId,
             tradeId: tradeId,
             investmentId: investmentId,
-            poolReservationId: poolReservationId ?? "",
-            poolNumber: poolNumber ?? 0,
+            poolReservationId: self.poolReservationId ?? "",
+            poolNumber: self.poolNumber ?? 0,
             allocatedAmount: allocatedAmount,
             totalTradeValue: totalTradeValue,
             ownershipPercentage: normalizedOwnership,
-            profitShare: profitShare,
-            createdAt: createdAt?.toDate() ?? Date(),
-            updatedAt: updatedAt?.toDate() ?? Date()
+            profitShare: self.profitShare,
+            createdAt: self.createdAt?.toDate() ?? Date(),
+            updatedAt: self.updatedAt?.toDate() ?? Date()
         )
     }
 }

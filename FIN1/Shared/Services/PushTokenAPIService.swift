@@ -87,16 +87,16 @@ struct ParsePushTokenResponse: Codable, Sendable {
         }
 
         return PushToken(
-            id: objectId,
-            userId: userId,
-            token: token,
+            id: self.objectId,
+            userId: self.userId,
+            token: self.token,
             tokenType: tokenType,
-            deviceId: deviceId,
-            isActive: isActive,
-            lastValidatedAt: lastValidatedAt.flatMap { dateFormatter.date(from: $0) },
-            validationFailures: validationFailures,
-            createdAt: dateFormatter.date(from: createdAt) ?? Date(),
-            updatedAt: updatedAt.flatMap { dateFormatter.date(from: $0) }
+            deviceId: self.deviceId,
+            isActive: self.isActive,
+            lastValidatedAt: self.lastValidatedAt.flatMap { dateFormatter.date(from: $0) },
+            validationFailures: self.validationFailures,
+            createdAt: dateFormatter.date(from: self.createdAt) ?? Date(),
+            updatedAt: self.updatedAt.flatMap { dateFormatter.date(from: $0) }
         )
     }
 }
@@ -137,12 +137,12 @@ final class PushTokenAPIService: PushTokenAPIServiceProtocol {
         let existingTokens = try await fetchPushTokens(for: userId)
         if existingTokens.contains(where: { $0.token == token && $0.tokenType == tokenType }) {
             // Update existing token to active
-            return try await updatePushToken(token, tokenType: tokenType, userId: userId, deviceId: deviceId)
+            return try await self.updatePushToken(token, tokenType: tokenType, userId: userId, deviceId: deviceId)
         }
 
         // Create new token
         let response: ParseResponse = try await apiClient.createObject(
-            className: className,
+            className: self.className,
             object: input
         )
 
@@ -166,7 +166,7 @@ final class PushTokenAPIService: PushTokenAPIServiceProtocol {
         let existingTokens = try await fetchPushTokens(for: userId)
         guard let existing = existingTokens.first(where: { $0.token == token && $0.tokenType == tokenType }) else {
             // If not found, create new one
-            return try await registerPushToken(token, tokenType: tokenType, userId: userId, deviceId: deviceId)
+            return try await self.registerPushToken(token, tokenType: tokenType, userId: userId, deviceId: deviceId)
         }
 
         // Update existing token
@@ -179,7 +179,7 @@ final class PushTokenAPIService: PushTokenAPIServiceProtocol {
         )
 
         let _: ParseResponse = try await apiClient.updateObject(
-            className: className,
+            className: self.className,
             objectId: existing.id,
             object: input
         )
@@ -214,8 +214,8 @@ final class PushTokenAPIService: PushTokenAPIServiceProtocol {
             isActive: false
         )
 
-        _ = try await apiClient.updateObject(
-            className: className,
+        _ = try await self.apiClient.updateObject(
+            className: self.className,
             objectId: existing.id,
             object: input
         )
@@ -227,7 +227,7 @@ final class PushTokenAPIService: PushTokenAPIServiceProtocol {
         ]
 
         let responses: [ParsePushTokenResponse] = try await apiClient.fetchObjects(
-            className: className,
+            className: self.className,
             query: query,
             include: nil,
             orderBy: nil,

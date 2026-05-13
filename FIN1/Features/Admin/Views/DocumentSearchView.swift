@@ -15,9 +15,9 @@ struct DocumentSearchView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(16)) {
-                filtersSection
-                resultsHeader
-                resultsSection
+                self.filtersSection
+                self.resultsHeader
+                self.resultsSection
             }
             .padding()
         }
@@ -25,12 +25,12 @@ struct DocumentSearchView: View {
         .navigationTitle("Belege")
         .navigationBarTitleDisplayMode(.inline)
         .task {
-            if viewModel.items.isEmpty {
-                viewModel.scheduleDebouncedSearch(immediate: true)
+            if self.viewModel.items.isEmpty {
+                self.viewModel.scheduleDebouncedSearch(immediate: true)
             }
         }
         .refreshable {
-            await viewModel.refresh()
+            await self.viewModel.refresh()
         }
     }
 
@@ -42,60 +42,60 @@ struct DocumentSearchView: View {
                 .font(ResponsiveDesign.headlineFont())
                 .fontWeight(.semibold)
 
-            TextField("Belegnummer (z. B. CB-2026-0000001)", text: $viewModel.filters.documentNumber)
+            TextField("Belegnummer (z. B. CB-2026-0000001)", text: self.$viewModel.filters.documentNumber)
                 .textFieldStyle(.roundedBorder)
                 .textInputAutocapitalization(.characters)
                 .autocorrectionDisabled()
-                .onChange(of: viewModel.filters.documentNumber) { _, _ in
-                    viewModel.scheduleDebouncedSearch()
+                .onChange(of: self.viewModel.filters.documentNumber) { _, _ in
+                    self.viewModel.scheduleDebouncedSearch()
                 }
 
-            TextField("Volltext (Name, Belegnummer)", text: $viewModel.filters.freeText)
+            TextField("Volltext (Name, Belegnummer)", text: self.$viewModel.filters.freeText)
                 .textFieldStyle(.roundedBorder)
                 .autocorrectionDisabled()
-                .onChange(of: viewModel.filters.freeText) { _, _ in
-                    viewModel.scheduleDebouncedSearch()
+                .onChange(of: self.viewModel.filters.freeText) { _, _ in
+                    self.viewModel.scheduleDebouncedSearch()
                 }
 
             HStack {
-                TextField("Investment-ID", text: $viewModel.filters.investmentId)
+                TextField("Investment-ID", text: self.$viewModel.filters.investmentId)
                     .textFieldStyle(.roundedBorder)
                     .autocorrectionDisabled()
-                    .onChange(of: viewModel.filters.investmentId) { _, _ in
-                        viewModel.scheduleDebouncedSearch()
+                    .onChange(of: self.viewModel.filters.investmentId) { _, _ in
+                        self.viewModel.scheduleDebouncedSearch()
                     }
-                TextField("Trade-ID", text: $viewModel.filters.tradeId)
+                TextField("Trade-ID", text: self.$viewModel.filters.tradeId)
                     .textFieldStyle(.roundedBorder)
                     .autocorrectionDisabled()
-                    .onChange(of: viewModel.filters.tradeId) { _, _ in
-                        viewModel.scheduleDebouncedSearch()
+                    .onChange(of: self.viewModel.filters.tradeId) { _, _ in
+                        self.viewModel.scheduleDebouncedSearch()
                     }
             }
 
-            TextField("User-ID (Parse objectId)", text: $viewModel.filters.userId)
+            TextField("User-ID (Parse objectId)", text: self.$viewModel.filters.userId)
                 .textFieldStyle(.roundedBorder)
                 .autocorrectionDisabled()
-                .onChange(of: viewModel.filters.userId) { _, _ in
-                    viewModel.scheduleDebouncedSearch()
+                .onChange(of: self.viewModel.filters.userId) { _, _ in
+                    self.viewModel.scheduleDebouncedSearch()
                 }
 
             HStack(spacing: ResponsiveDesign.spacing(8)) {
                 DatePicker(
                     "Von",
                     selection: Binding(
-                        get: { viewModel.filters.dateFrom ?? Date.distantPast },
-                        set: { viewModel.filters.dateFrom = $0 }
+                        get: { self.viewModel.filters.dateFrom ?? Date.distantPast },
+                        set: { self.viewModel.filters.dateFrom = $0 }
                     ),
                     displayedComponents: .date
                 )
                 .datePickerStyle(.compact)
-                .opacity(viewModel.filters.dateFrom == nil ? 0.5 : 1)
+                .opacity(self.viewModel.filters.dateFrom == nil ? 0.5 : 1)
 
                 Toggle(isOn: Binding(
-                    get: { viewModel.filters.dateFrom != nil },
+                    get: { self.viewModel.filters.dateFrom != nil },
                     set: { newValue in
-                        viewModel.filters.dateFrom = newValue ? (viewModel.filters.dateFrom ?? Date()) : nil
-                        viewModel.scheduleDebouncedSearch(immediate: true)
+                        self.viewModel.filters.dateFrom = newValue ? (self.viewModel.filters.dateFrom ?? Date()) : nil
+                        self.viewModel.scheduleDebouncedSearch(immediate: true)
                     }
                 )) {
                     EmptyView()
@@ -107,19 +107,19 @@ struct DocumentSearchView: View {
                 DatePicker(
                     "Bis",
                     selection: Binding(
-                        get: { viewModel.filters.dateTo ?? Date() },
-                        set: { viewModel.filters.dateTo = $0 }
+                        get: { self.viewModel.filters.dateTo ?? Date() },
+                        set: { self.viewModel.filters.dateTo = $0 }
                     ),
                     displayedComponents: .date
                 )
                 .datePickerStyle(.compact)
-                .opacity(viewModel.filters.dateTo == nil ? 0.5 : 1)
+                .opacity(self.viewModel.filters.dateTo == nil ? 0.5 : 1)
 
                 Toggle(isOn: Binding(
-                    get: { viewModel.filters.dateTo != nil },
+                    get: { self.viewModel.filters.dateTo != nil },
                     set: { newValue in
-                        viewModel.filters.dateTo = newValue ? (viewModel.filters.dateTo ?? Date()) : nil
-                        viewModel.scheduleDebouncedSearch(immediate: true)
+                        self.viewModel.filters.dateTo = newValue ? (self.viewModel.filters.dateTo ?? Date()) : nil
+                        self.viewModel.scheduleDebouncedSearch(immediate: true)
                     }
                 )) {
                     EmptyView()
@@ -134,7 +134,7 @@ struct DocumentSearchView: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: ResponsiveDesign.spacing(8)) {
                         ForEach(DocumentSearchViewModel.selectableTypes, id: \.self) { type in
-                            typePill(type)
+                            self.typePill(type)
                         }
                     }
                 }
@@ -142,12 +142,12 @@ struct DocumentSearchView: View {
 
             HStack {
                 Button("Filter zurücksetzen") {
-                    viewModel.clearAllFilters()
+                    self.viewModel.clearAllFilters()
                 }
                 .buttonStyle(.bordered)
                 Spacer()
                 Button {
-                    viewModel.scheduleDebouncedSearch(immediate: true)
+                    self.viewModel.scheduleDebouncedSearch(immediate: true)
                 } label: {
                     Label("Suchen", systemImage: "magnifyingglass")
                 }
@@ -160,9 +160,9 @@ struct DocumentSearchView: View {
     }
 
     private func typePill(_ type: DocumentType) -> some View {
-        let isSelected = viewModel.filters.types.contains(type)
+        let isSelected = self.viewModel.filters.types.contains(type)
         return Button {
-            viewModel.toggleType(type)
+            self.viewModel.toggleType(type)
         } label: {
             Text(type.displayName)
                 .font(ResponsiveDesign.captionFont())
@@ -182,11 +182,11 @@ struct DocumentSearchView: View {
 
     private var resultsHeader: some View {
         HStack {
-            Text(headerTitle)
+            Text(self.headerTitle)
                 .font(ResponsiveDesign.headlineFont())
                 .fontWeight(.semibold)
             Spacer()
-            if viewModel.isLoading {
+            if self.viewModel.isLoading {
                 ProgressView()
             }
         }
@@ -194,9 +194,9 @@ struct DocumentSearchView: View {
 
     private var headerTitle: String {
         if let total = lastTotal {
-            return "Treffer (\(viewModel.items.count) / \(total))"
+            return "Treffer (\(self.viewModel.items.count) / \(total))"
         }
-        return "Treffer (\(viewModel.items.count))"
+        return "Treffer (\(self.viewModel.items.count))"
     }
 
     private var lastTotal: Int? { nil }
@@ -204,24 +204,24 @@ struct DocumentSearchView: View {
     @ViewBuilder
     private var resultsSection: some View {
         if let error = viewModel.errorMessage {
-            errorBanner(message: error)
+            self.errorBanner(message: error)
         }
-        if viewModel.items.isEmpty && !viewModel.isLoading {
-            emptyState
+        if self.viewModel.items.isEmpty && !self.viewModel.isLoading {
+            self.emptyState
         } else {
             LazyVStack(spacing: ResponsiveDesign.spacing(10)) {
-                ForEach(viewModel.items) { document in
+                ForEach(self.viewModel.items) { document in
                     NavigationLink {
-                        DocumentNavigationHelper.navigationDestination(for: document, appServices: services)
+                        DocumentNavigationHelper.navigationDestination(for: document, appServices: self.services)
                     } label: {
-                        documentRow(document)
+                        self.documentRow(document)
                     }
                     .buttonStyle(.plain)
                     .task {
-                        await viewModel.loadMoreIfNeeded(currentItem: document)
+                        await self.viewModel.loadMoreIfNeeded(currentItem: document)
                     }
                 }
-                if viewModel.isLoadingMore {
+                if self.viewModel.isLoadingMore {
                     ProgressView()
                         .padding(.vertical)
                         .frame(maxWidth: .infinity)

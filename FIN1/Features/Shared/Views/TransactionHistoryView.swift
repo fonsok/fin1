@@ -10,7 +10,7 @@ struct TransactionHistoryView: View {
     @State private var searchText: String = ""
     
     var filteredTransactions: [Transaction] {
-        var filtered = viewModel.transactions
+        var filtered = self.viewModel.transactions
         
         // Filter by type
         if let selectedType = selectedType {
@@ -18,11 +18,11 @@ struct TransactionHistoryView: View {
         }
         
         // Filter by search text
-        if !searchText.isEmpty {
+        if !self.searchText.isEmpty {
             filtered = filtered.filter { transaction in
-                transaction.type.displayName.localizedCaseInsensitiveContains(searchText) ||
-                transaction.description?.localizedCaseInsensitiveContains(searchText) ?? false ||
-                transaction.reference?.localizedCaseInsensitiveContains(searchText) ?? false
+                transaction.type.displayName.localizedCaseInsensitiveContains(self.searchText) ||
+                    transaction.description?.localizedCaseInsensitiveContains(self.searchText) ?? false ||
+                    transaction.reference?.localizedCaseInsensitiveContains(self.searchText) ?? false
             }
         }
         
@@ -37,13 +37,13 @@ struct TransactionHistoryView: View {
                 
                 VStack(spacing: ResponsiveDesign.spacing(4)) {
                     // Search and Filter
-                    searchAndFilterSection
+                    self.searchAndFilterSection
                     
                     // Transactions List
-                    if filteredTransactions.isEmpty {
-                        emptyStateView
+                    if self.filteredTransactions.isEmpty {
+                        self.emptyStateView
                     } else {
-                        transactionsList
+                        self.transactionsList
                     }
                 }
             }
@@ -52,7 +52,7 @@ struct TransactionHistoryView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Fertig") {
-                        dismiss()
+                        self.dismiss()
                     }
                 }
             }
@@ -67,7 +67,7 @@ struct TransactionHistoryView: View {
             HStack {
                 Image(systemName: "magnifyingglass")
                     .foregroundColor(AppTheme.secondaryText)
-                TextField("Suchen...", text: $searchText)
+                TextField("Suchen...", text: self.$searchText)
                     .textFieldStyle(.plain)
             }
             .padding(ResponsiveDesign.spacing(3))
@@ -81,16 +81,16 @@ struct TransactionHistoryView: View {
                     // All Types Button
                     TransactionFilterChip(
                         title: "Alle",
-                        isSelected: selectedType == nil,
-                        action: { selectedType = nil }
+                        isSelected: self.selectedType == nil,
+                        action: { self.selectedType = nil }
                     )
                     
                     // Type Buttons
                     ForEach(Transaction.TransactionType.allCases, id: \.self) { type in
                         TransactionFilterChip(
                             title: type.displayName,
-                            isSelected: selectedType == type,
-                            action: { selectedType = selectedType == type ? nil : type }
+                            isSelected: self.selectedType == type,
+                            action: { self.selectedType = self.selectedType == type ? nil : type }
                         )
                     }
                 }
@@ -107,12 +107,12 @@ struct TransactionHistoryView: View {
     private var transactionsList: some View {
         ScrollView {
             LazyVStack(spacing: ResponsiveDesign.spacing(3)) {
-                ForEach(groupedTransactions.keys.sorted(by: >), id: \.self) { date in
+                ForEach(self.groupedTransactions.keys.sorted(by: >), id: \.self) { date in
                     Section {
-                        ForEach(groupedTransactions[date] ?? []) { transaction in
+                        ForEach(self.groupedTransactions[date] ?? []) { transaction in
                             WalletTransactionRow(transaction: transaction)
                                 .onTapGesture {
-                                    selectedTransaction = transaction
+                                    self.selectedTransaction = transaction
                                 }
                         }
                     } header: {
@@ -131,16 +131,16 @@ struct TransactionHistoryView: View {
         }
         .refreshable {
             Task {
-                await viewModel.refresh()
+                await self.viewModel.refresh()
             }
         }
-        .sheet(item: $selectedTransaction) { transaction in
+        .sheet(item: self.$selectedTransaction) { transaction in
             TransactionDetailView(transaction: transaction)
         }
     }
     
     private var groupedTransactions: [Date: [Transaction]] {
-        Dictionary(grouping: filteredTransactions) { transaction in
+        Dictionary(grouping: self.filteredTransactions) { transaction in
             Calendar.current.startOfDay(for: transaction.timestamp)
         }
     }
@@ -171,13 +171,13 @@ struct TransactionFilterChip: View {
     let action: () -> Void
     
     var body: some View {
-        Button(action: action) {
-            Text(title)
+        Button(action: self.action) {
+            Text(self.title)
                 .font(ResponsiveDesign.captionFont())
-                .foregroundColor(isSelected ? .white : AppTheme.fontColor)
+                .foregroundColor(self.isSelected ? .white : AppTheme.fontColor)
                 .padding(.horizontal, ResponsiveDesign.spacing(4))
                 .padding(.vertical, ResponsiveDesign.spacing(2))
-                .background(isSelected ? AppTheme.accentLightBlue : AppTheme.cardBackground)
+                .background(self.isSelected ? AppTheme.accentLightBlue : AppTheme.cardBackground)
                 .cornerRadius(ResponsiveDesign.spacing(3))
         }
     }

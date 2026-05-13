@@ -6,7 +6,7 @@ struct TraderWatchlistSuccessMessageOverlay: View {
     let isVisible: Bool
 
     var body: some View {
-        if isVisible {
+        if self.isVisible {
             VStack {
                 Spacer()
 
@@ -14,7 +14,7 @@ struct TraderWatchlistSuccessMessageOverlay: View {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundColor(AppTheme.accentGreen)
 
-                    Text(message)
+                    Text(self.message)
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(AppTheme.fontColor)
                 }
@@ -27,7 +27,7 @@ struct TraderWatchlistSuccessMessageOverlay: View {
                 Spacer()
             }
             .transition(.move(edge: .bottom).combined(with: .opacity))
-            .animation(.easeInOut(duration: 0.3), value: isVisible)
+            .animation(.easeInOut(duration: 0.3), value: self.isVisible)
             .onAppear {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
                     // Auto-hide after 2 seconds

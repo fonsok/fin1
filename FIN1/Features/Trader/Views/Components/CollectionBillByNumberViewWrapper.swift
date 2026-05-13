@@ -22,16 +22,16 @@ struct CollectionBillByNumberViewWrapper: View {
             if let tradeStatementViewModel = viewModel.tradeStatementViewModel {
                 TradeStatementView(viewModel: tradeStatementViewModel, showCustomBackButton: true)
                     .onAppear {
-                        viewModel.refreshDisplayData()
+                        self.viewModel.refreshDisplayData()
                     }
-            } else if viewModel.errorMessage != nil {
-                errorView
+            } else if self.viewModel.errorMessage != nil {
+                self.errorView
             } else {
                 ProgressView("Loading Collection Bill...")
             }
         }
         .task {
-            await loadWithServices()
+            await self.loadWithServices()
         }
     }
 
@@ -58,7 +58,7 @@ struct CollectionBillByNumberViewWrapper: View {
         // Use services from environment for actual loading
         let properViewModel = CollectionBillByNumberViewModel(
             tradeNumber: viewModel.tradeNumber,
-            services: services
+            services: self.services
         )
         await properViewModel.loadTrade()
 
@@ -85,16 +85,16 @@ struct CollectionBillByNumberView: View {
             if let tradeStatementViewModel = viewModel.tradeStatementViewModel {
                 TradeStatementView(viewModel: tradeStatementViewModel, showCustomBackButton: true)
                     .onAppear {
-                        viewModel.refreshDisplayData()
+                        self.viewModel.refreshDisplayData()
                     }
             } else if let errorMessage = viewModel.errorMessage {
-                errorView(message: errorMessage)
+                self.errorView(message: errorMessage)
             } else {
                 ProgressView("Loading Collection Bill...")
             }
         }
         .task {
-            await viewModel.loadTrade()
+            await self.viewModel.loadTrade()
         }
     }
 

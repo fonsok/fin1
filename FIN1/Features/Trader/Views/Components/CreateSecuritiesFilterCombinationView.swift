@@ -20,24 +20,24 @@ struct CreateSecuritiesFilterCombinationView: View {
 
                 VStack(spacing: ResponsiveDesign.spacing(6)) {
                     // Combination Name Input
-                    FilterCombinationNameInput(viewModel: viewModel)
+                    FilterCombinationNameInput(viewModel: self.viewModel)
 
                     // Active Filters Preview
                     VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
-                        Text("Active Filters (\(getFilterCount(currentFilters)))")
+                        Text("Active Filters (\(self.getFilterCount(self.currentFilters)))")
                             .font(ResponsiveDesign.headlineFont())
                             .fontWeight(.bold)
                             .foregroundColor(AppTheme.fontColor)
 
-                        if getFilterCount(currentFilters) == 0 {
+                        if self.getFilterCount(self.currentFilters) == 0 {
                             Text("No filters selected. Add filters from the main screen first.")
                                 .foregroundColor(AppTheme.fontColor.opacity(0.6))
                                 .padding()
                         } else {
                             LazyVStack(spacing: ResponsiveDesign.spacing(8)) {
-                                FilterDetailRow(label: "Category", value: currentFilters.category)
-                                FilterDetailRow(label: "Underlying Asset", value: currentFilters.underlyingAsset)
-                                FilterDetailRow(label: "Direction", value: currentFilters.direction.rawValue)
+                                FilterDetailRow(label: "Category", value: self.currentFilters.category)
+                                FilterDetailRow(label: "Underlying Asset", value: self.currentFilters.underlyingAsset)
+                                FilterDetailRow(label: "Direction", value: self.currentFilters.direction.rawValue)
 
                                 if let strikePriceGap = currentFilters.strikePriceGap {
                                     FilterDetailRow(label: "Strike Price Gap", value: strikePriceGap)
@@ -62,20 +62,20 @@ struct CreateSecuritiesFilterCombinationView: View {
                     Spacer()
 
                     // Save Button
-                    Button(action: saveCombination, label: {
+                    Button(action: self.saveCombination, label: {
                         Text("Save Combination")
                             .font(ResponsiveDesign.headlineFont())
                             .fontWeight(.bold)
                             .foregroundColor(AppTheme.screenBackground)
                             .frame(maxWidth: .infinity)
                             .padding()
-                            .background(canSave ? AppTheme.accentGreen : AppTheme.inputFieldBackground)
+                            .background(self.canSave ? AppTheme.accentGreen : AppTheme.inputFieldBackground)
                             .cornerRadius(ResponsiveDesign.spacing(12))
                     })
-                    .disabled(!canSave)
+                    .disabled(!self.canSave)
 
                     // Save button hint
-                    if !canSave {
+                    if !self.canSave {
                         Text("Name must be 1-20 alphanumeric characters and have active filters")
                             .font(ResponsiveDesign.captionFont())
                             .foregroundColor(AppTheme.fontColor.opacity(0.6))
@@ -89,21 +89,21 @@ struct CreateSecuritiesFilterCombinationView: View {
             .navigationTitle("Create Filter Combination")
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") { dismiss() }
+                    Button("Cancel") { self.dismiss() }
                         .foregroundColor(AppTheme.accentRed)
                 }
 
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Save") { saveCombination() }
+                    Button("Save") { self.saveCombination() }
                         .foregroundColor(AppTheme.accentLightBlue)
-                        .disabled(!canSave)
+                        .disabled(!self.canSave)
                 }
             }
         }
     }
 
     private var canSave: Bool {
-        viewModel.canSave && getFilterCount(currentFilters) > 0
+        self.viewModel.canSave && self.getFilterCount(self.currentFilters) > 0
     }
 
     private func getFilterCount(_ filters: SearchFilters) -> Int {
@@ -116,10 +116,10 @@ struct CreateSecuritiesFilterCombinationView: View {
     }
 
     private func saveCombination() {
-        let trimmedName = viewModel.combinationName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedName = self.viewModel.combinationName.trimmingCharacters(in: .whitespacesAndNewlines)
         let newCombination = SecuritiesFilterCombination(name: trimmedName, filters: currentFilters)
-        savedFiltersRepository.addFilter(newCombination)
-        dismiss()
+        self.savedFiltersRepository.addFilter(newCombination)
+        self.dismiss()
     }
 }
 

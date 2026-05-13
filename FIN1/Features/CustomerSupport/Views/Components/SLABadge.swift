@@ -14,19 +14,19 @@ struct SLABadge: View {
 
     var body: some View {
         HStack(spacing: ResponsiveDesign.spacing(4)) {
-            Image(systemName: slaInfo.overallStatus.icon)
+            Image(systemName: self.slaInfo.overallStatus.icon)
                 .font(ResponsiveDesign.captionFont())
 
-            if showTime, let timeString = slaInfo.formattedTimeRemaining {
+            if self.showTime, let timeString = slaInfo.formattedTimeRemaining {
                 Text(timeString)
                     .font(ResponsiveDesign.captionFont())
                     .fontWeight(.semibold)
             }
         }
-        .foregroundColor(slaInfo.overallStatus.color)
+        .foregroundColor(self.slaInfo.overallStatus.color)
         .padding(.horizontal, ResponsiveDesign.spacing(6))
         .padding(.vertical, ResponsiveDesign.spacing(3))
-        .background(slaInfo.overallStatus.color.opacity(0.15))
+        .background(self.slaInfo.overallStatus.color.opacity(0.15))
         .cornerRadius(ResponsiveDesign.spacing(6))
     }
 }
@@ -44,7 +44,7 @@ struct SLADetailView: View {
     }
 
     private var slaInfo: SLAInfo {
-        ticket.getSLAInfo(config: config)
+        self.ticket.getSLAInfo(config: self.config)
     }
 
     var body: some View {
@@ -61,7 +61,7 @@ struct SLADetailView: View {
 
                 Spacer()
 
-                SLABadge(slaInfo: slaInfo)
+                SLABadge(slaInfo: self.slaInfo)
             }
 
             Divider()
@@ -69,17 +69,17 @@ struct SLADetailView: View {
             // First Response SLA
             SLAMetricRow(
                 title: "Erste Antwort",
-                status: slaInfo.firstResponseStatus,
-                deadline: slaInfo.firstResponseDeadline,
-                timeRemaining: slaInfo.firstResponseTimeRemaining
+                status: self.slaInfo.firstResponseStatus,
+                deadline: self.slaInfo.firstResponseDeadline,
+                timeRemaining: self.slaInfo.firstResponseTimeRemaining
             )
 
             // Resolution SLA
             SLAMetricRow(
                 title: "Lösung",
-                status: slaInfo.resolutionStatus,
-                deadline: slaInfo.resolutionDeadline,
-                timeRemaining: slaInfo.resolutionTimeRemaining
+                status: self.slaInfo.resolutionStatus,
+                deadline: self.slaInfo.resolutionDeadline,
+                timeRemaining: self.slaInfo.resolutionTimeRemaining
             )
 
             // Priority info
@@ -88,14 +88,14 @@ struct SLADetailView: View {
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
 
-                Text(ticket.priority.rawValue)
+                Text(self.ticket.priority.rawValue)
                     .font(ResponsiveDesign.captionFont())
                     .fontWeight(.semibold)
-                    .foregroundColor(priorityColor)
+                    .foregroundColor(self.priorityColor)
 
                 Spacer()
 
-                Text("Ziel: \(Int(config.resolutionTargets[ticket.priority] ?? 72))h")
+                Text("Ziel: \(Int(self.config.resolutionTargets[self.ticket.priority] ?? 72))h")
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.5))
             }
@@ -106,7 +106,7 @@ struct SLADetailView: View {
     }
 
     private var priorityColor: Color {
-        switch ticket.priority {
+        switch self.ticket.priority {
         case .urgent: return AppTheme.accentRed
         case .high: return AppTheme.accentOrange
         case .medium: return AppTheme.accentLightBlue
@@ -126,7 +126,7 @@ private struct SLAMetricRow: View {
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
-                Text(title)
+                Text(self.title)
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
 
@@ -140,19 +140,19 @@ private struct SLAMetricRow: View {
             Spacer()
 
             HStack(spacing: ResponsiveDesign.spacing(6)) {
-                Image(systemName: status.icon)
-                    .foregroundColor(status.color)
+                Image(systemName: self.status.icon)
+                    .foregroundColor(self.status.color)
                     .font(ResponsiveDesign.captionFont())
 
                 if let remaining = timeRemaining {
-                    Text(formatTimeRemaining(remaining))
+                    Text(self.formatTimeRemaining(remaining))
                         .font(ResponsiveDesign.captionFont())
                         .fontWeight(.medium)
-                        .foregroundColor(status.color)
+                        .foregroundColor(self.status.color)
                 } else {
-                    Text(status.rawValue)
+                    Text(self.status.rawValue)
                         .font(ResponsiveDesign.captionFont())
-                        .foregroundColor(status.color)
+                        .foregroundColor(self.status.color)
                 }
             }
         }
@@ -163,8 +163,8 @@ private struct SLAMetricRow: View {
             return "Überfällig"
         }
 
-        let hours = Int(time / 3600)
-        let minutes = Int((time.truncatingRemainder(dividingBy: 3600)) / 60)
+        let hours = Int(time / 3_600)
+        let minutes = Int((time.truncatingRemainder(dividingBy: 3_600)) / 60)
 
         if hours > 24 {
             let days = hours / 24
@@ -185,18 +185,18 @@ struct SLAWarningBanner: View {
     let slaInfo: SLAInfo
 
     var body: some View {
-        if slaInfo.overallStatus == .warning || slaInfo.overallStatus == .breached {
+        if self.slaInfo.overallStatus == .warning || self.slaInfo.overallStatus == .breached {
             HStack(spacing: ResponsiveDesign.spacing(8)) {
-                Image(systemName: slaInfo.overallStatus == .breached ? "exclamationmark.octagon.fill" : "exclamationmark.triangle.fill")
+                Image(systemName: self.slaInfo.overallStatus == .breached ? "exclamationmark.octagon.fill" : "exclamationmark.triangle.fill")
                     .font(ResponsiveDesign.bodyFont())
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(slaInfo.overallStatus == .breached ? "SLA überschritten!" : "SLA gefährdet")
+                    Text(self.slaInfo.overallStatus == .breached ? "SLA überschritten!" : "SLA gefährdet")
                         .font(ResponsiveDesign.captionFont())
                         .fontWeight(.bold)
 
                     if let time = slaInfo.formattedTimeRemaining {
-                        Text(slaInfo.overallStatus == .breached ? "Überfällig seit \(time)" : "Noch \(time)")
+                        Text(self.slaInfo.overallStatus == .breached ? "Überfällig seit \(time)" : "Noch \(time)")
                             .font(ResponsiveDesign.captionFont())
                     }
                 }
@@ -205,7 +205,7 @@ struct SLAWarningBanner: View {
             }
             .foregroundColor(.white)
             .padding()
-            .background(slaInfo.overallStatus.color)
+            .background(self.slaInfo.overallStatus.color)
             .cornerRadius(ResponsiveDesign.spacing(10))
         }
     }
@@ -226,7 +226,7 @@ struct SLAWarningBanner: View {
             status: .open,
             priority: .urgent,
             assignedTo: nil,
-            createdAt: Date().addingTimeInterval(-3000),  // 50 min ago
+            createdAt: Date().addingTimeInterval(-3_000),  // 50 min ago
             updatedAt: Date(),
             responses: []
         )

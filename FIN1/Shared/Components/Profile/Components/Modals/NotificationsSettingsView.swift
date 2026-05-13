@@ -37,7 +37,7 @@ struct NotificationsSettingsView: View {
                         .padding(.top, ResponsiveDesign.spacing(16))
 
                         // General Notification Settings
-                        notificationSection(
+                        self.notificationSection(
                             title: "General",
                             icon: "bell.fill",
                             color: AppTheme.accentOrange
@@ -46,20 +46,20 @@ struct NotificationsSettingsView: View {
                                 NotificationToggleRow(
                                     title: "Push Notifications",
                                     subtitle: "Receive notifications on your device",
-                                    isEnabled: $pushNotificationsEnabled
+                                    isEnabled: self.$pushNotificationsEnabled
                                 )
 
                                 NotificationToggleRow(
                                     title: "Email Notifications",
                                     subtitle: "Receive notifications via email",
-                                    isEnabled: $emailNotificationsEnabled
+                                    isEnabled: self.$emailNotificationsEnabled
                                 )
                             }
                         }
 
                         // Role-Specific Notifications
-                        if appServices.userService.currentUser?.role == .investor {
-                            notificationSection(
+                        if self.appServices.userService.currentUser?.role == .investor {
+                            self.notificationSection(
                                 title: "Investment Notifications",
                                 icon: "chart.pie.fill",
                                 color: AppTheme.accentGreen
@@ -68,24 +68,24 @@ struct NotificationsSettingsView: View {
                                     NotificationToggleRow(
                                         title: "Investment Updates",
                                         subtitle: "Investment changes and status",
-                                        isEnabled: $investmentNotificationsEnabled
+                                        isEnabled: self.$investmentNotificationsEnabled
                                     )
 
                                     NotificationToggleRow(
                                         title: "Profit Distributions",
                                         subtitle: "When profits are distributed",
-                                        isEnabled: $performanceUpdatesEnabled
+                                        isEnabled: self.$performanceUpdatesEnabled
                                     )
 
                                     NotificationToggleRow(
                                         title: "Risk Assessments",
                                         subtitle: "Investment risk updates",
-                                        isEnabled: $securityAlertsEnabled
+                                        isEnabled: self.$securityAlertsEnabled
                                     )
                                 }
                             }
                         } else {
-                            notificationSection(
+                            self.notificationSection(
                                 title: "Trading Notifications",
                                 icon: "chart.line.uptrend.xyaxis",
                                 color: AppTheme.accentLightBlue
@@ -94,26 +94,26 @@ struct NotificationsSettingsView: View {
                                     NotificationToggleRow(
                                         title: "Trade Executions",
                                         subtitle: "When trades are completed",
-                                        isEnabled: $tradeNotificationsEnabled
+                                        isEnabled: self.$tradeNotificationsEnabled
                                     )
 
                                     NotificationToggleRow(
                                         title: "Performance Updates",
                                         subtitle: "Trading performance metrics",
-                                        isEnabled: $performanceUpdatesEnabled
+                                        isEnabled: self.$performanceUpdatesEnabled
                                     )
 
                                     NotificationToggleRow(
                                         title: "Market Alerts",
                                         subtitle: "Important market movements",
-                                        isEnabled: $marketAlertsEnabled
+                                        isEnabled: self.$marketAlertsEnabled
                                     )
                                 }
                             }
                         }
 
                         // System Notifications
-                        notificationSection(
+                        self.notificationSection(
                             title: "System & Security",
                             icon: "gear",
                             color: AppTheme.accentRed
@@ -122,13 +122,13 @@ struct NotificationsSettingsView: View {
                                 NotificationToggleRow(
                                     title: "System Updates",
                                     subtitle: "App updates and maintenance",
-                                    isEnabled: $systemNotificationsEnabled
+                                    isEnabled: self.$systemNotificationsEnabled
                                 )
 
                                 NotificationToggleRow(
                                     title: "Security Alerts",
                                     subtitle: "Account security notifications",
-                                    isEnabled: $securityAlertsEnabled
+                                    isEnabled: self.$securityAlertsEnabled
                                 )
                             }
                         }
@@ -137,7 +137,7 @@ struct NotificationsSettingsView: View {
                         VStack(spacing: ResponsiveDesign.spacing(12)) {
                             Button(action: {
                                 // Reset to defaults
-                                resetToDefaults()
+                                self.resetToDefaults()
                             }) {
                                 HStack {
                                     Image(systemName: "arrow.clockwise")
@@ -155,7 +155,7 @@ struct NotificationsSettingsView: View {
 
                             Button(action: {
                                 // Test notifications
-                                testNotifications()
+                                self.testNotifications()
                             }) {
                                 HStack {
                                     Image(systemName: "bell.badge")
@@ -180,15 +180,15 @@ struct NotificationsSettingsView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel") {
-                        dismiss()
+                        self.dismiss()
                     }
                     .foregroundColor(AppTheme.fontColor)
                 }
 
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Save") {
-                        saveSettings()
-                        dismiss()
+                        self.saveSettings()
+                        self.dismiss()
                     }
                     .foregroundColor(AppTheme.accentLightBlue)
                     .fontWeight(.semibold)
@@ -225,14 +225,14 @@ struct NotificationsSettingsView: View {
     }
 
     private func resetToDefaults() {
-        pushNotificationsEnabled = true
-        emailNotificationsEnabled = true
-        investmentNotificationsEnabled = true
-        tradeNotificationsEnabled = true
-        systemNotificationsEnabled = true
-        marketAlertsEnabled = true
-        performanceUpdatesEnabled = true
-        securityAlertsEnabled = true
+        self.pushNotificationsEnabled = true
+        self.emailNotificationsEnabled = true
+        self.investmentNotificationsEnabled = true
+        self.tradeNotificationsEnabled = true
+        self.systemNotificationsEnabled = true
+        self.marketAlertsEnabled = true
+        self.performanceUpdatesEnabled = true
+        self.securityAlertsEnabled = true
     }
 
     func testNotifications() {
@@ -255,19 +255,19 @@ struct NotificationToggleRow: View {
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
-                Text(title)
+                Text(self.title)
                     .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.medium)
                     .foregroundColor(AppTheme.fontColor)
 
-                Text(subtitle)
+                Text(self.subtitle)
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
             }
 
             Spacer()
 
-            Toggle("", isOn: $isEnabled)
+            Toggle("", isOn: self.$isEnabled)
                 .toggleStyle(SwitchToggleStyle(tint: AppTheme.accentLightBlue))
         }
     }

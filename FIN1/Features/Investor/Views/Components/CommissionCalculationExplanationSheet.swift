@@ -18,29 +18,29 @@ struct CommissionCalculationExplanationSheet: View {
     // See Documentation/RETURN_CALCULATION_SCHEMAS.md.
 
     private var grossProfit: Double {
-        statementSummary?.statementGrossProfit ?? 0.0
+        self.statementSummary?.statementGrossProfit ?? 0.0
     }
 
     private var commission: Double {
-        statementSummary?.statementCommission ?? 0.0
+        self.statementSummary?.statementCommission ?? 0.0
     }
 
     private var investorNetProfit: Double {
-        grossProfit - commission
+        self.grossProfit - self.commission
     }
 
     private var totalBuyCost: Double {
-        statementSummary?.statementTotalBuyCost ?? investment.amount
+        self.statementSummary?.statementTotalBuyCost ?? self.investment.amount
     }
 
     private var netSellAmount: Double {
-        statementSummary?.statementNetSellAmount ?? 0.0
+        self.statementSummary?.statementNetSellAmount ?? 0.0
     }
 
     // ROI1 = Gross Profit / Total Buy Cost × 100 (pre-commission)
     private var grossProfitPercentageText: String? {
-        guard totalBuyCost > 0 else { return nil }
-        let percent = (grossProfit / totalBuyCost) * 100.0
+        guard self.totalBuyCost > 0 else { return nil }
+        let percent = (grossProfit / self.totalBuyCost) * 100.0
         return String(format: "%+.2f%%", percent)
     }
 
@@ -90,15 +90,17 @@ struct CommissionCalculationExplanationSheet: View {
                         .foregroundColor(AppTheme.fontColor)
 
                     VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
-                        Text("The profit and return percentage shown in your investment represent the net amount you received after the trader commission has been deducted.")
-                            .font(ResponsiveDesign.bodyFont())
-                            .foregroundColor(AppTheme.fontColor)
+                        Text(
+                            "The profit and return percentage shown in your investment represent the net amount you received after the trader commission has been deducted."
+                        )
+                        .font(ResponsiveDesign.bodyFont())
+                        .foregroundColor(AppTheme.fontColor)
 
                         // Calculation Table
-                        if tableCanShow {
-                            calculationTable
+                        if self.tableCanShow {
+                            self.calculationTable
                         } else {
-                            pendingSummaryView
+                            self.pendingSummaryView
                         }
 
                         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
@@ -108,23 +110,23 @@ struct CommissionCalculationExplanationSheet: View {
                                 .foregroundColor(AppTheme.fontColor)
 
                             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
-                                calculationStep(
+                                self.calculationStep(
                                     number: "1",
                                     text: "Gross Profit is calculated from completed trades (Net Sell Amount − Total Buy Cost)"
                                 )
-                                calculationStep(
+                                self.calculationStep(
                                     number: "2",
                                     text: "ROI1 (Gross Profit %) = Gross Profit / Total Buy Cost × 100 (classical, pre-commission)"
                                 )
-                                calculationStep(
+                                self.calculationStep(
                                     number: "3",
-                                    text: "Trader receives \(services.configurationService.traderCommissionPercentage) commission on the gross profit (only when profit > 0)"
+                                    text: "Trader receives \(self.services.configurationService.traderCommissionPercentage) commission on the gross profit (only when profit > 0)"
                                 )
-                                calculationStep(
+                                self.calculationStep(
                                     number: "4",
                                     text: "Net Profit = Gross Profit − Commission — distributed to investors"
                                 )
-                                calculationStep(
+                                self.calculationStep(
                                     number: "5",
                                     text: "Return (%) = ROI2 = Net Profit / Total Buy Cost × 100 (server-canonical, shown on your collection bill)"
                                 )
@@ -134,10 +136,12 @@ struct CommissionCalculationExplanationSheet: View {
                         .background(AppTheme.sectionBackground)
                         .cornerRadius(ResponsiveDesign.spacing(8))
 
-                        Text("Note: Commission is only charged on profitable trades. If a trade results in a loss or zero profit, no commission is deducted.")
-                            .font(ResponsiveDesign.captionFont())
-                            .foregroundColor(AppTheme.fontColor.opacity(0.7))
-                            .italic()
+                        Text(
+                            "Note: Commission is only charged on profitable trades. If a trade results in a loss or zero profit, no commission is deducted."
+                        )
+                        .font(ResponsiveDesign.captionFont())
+                        .foregroundColor(AppTheme.fontColor.opacity(0.7))
+                        .italic()
                     }
                 }
                 .padding(ResponsiveDesign.horizontalPadding())
@@ -145,15 +149,15 @@ struct CommissionCalculationExplanationSheet: View {
                 .padding(.bottom, ResponsiveDesign.spacing(16))
             }
             .background(AppTheme.screenBackground)
-            .onAppear(perform: refreshStatementSummary)
-            .onChange(of: investment.id) {
-                refreshStatementSummary()
+            .onAppear(perform: self.refreshStatementSummary)
+            .onChange(of: self.investment.id) {
+                self.refreshStatementSummary()
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") {
-                        dismiss()
+                        self.dismiss()
                     }
                     .foregroundColor(AppTheme.accentLightBlue)
                 }
@@ -190,28 +194,28 @@ struct CommissionCalculationExplanationSheet: View {
                 Divider()
 
                 // Total Buy Cost (Investor share, excl. residual credit)
-                calculationTableRow(
+                self.calculationTableRow(
                     label: "Total Investment Amount (Total Buy Cost)",
-                    value: totalBuyCost.formattedAsLocalizedCurrency(),
+                    value: self.totalBuyCost.formattedAsLocalizedCurrency(),
                     isBold: true
                 )
 
                 Divider()
 
                 // Net Sell Amount (Investor share)
-                calculationTableRow(
+                self.calculationTableRow(
                     label: "Net Sell Amount",
-                    value: netSellAmount.formattedAsLocalizedCurrency(),
-                    valueColor: netSellAmount >= 0 ? AppTheme.accentGreen : AppTheme.accentRed
+                    value: self.netSellAmount.formattedAsLocalizedCurrency(),
+                    valueColor: self.netSellAmount >= 0 ? AppTheme.accentGreen : AppTheme.accentRed
                 )
 
                 Divider()
 
                 // Gross Profit (€) + Gross Profit (%) = ROI1 (classical ROI, pre-commission)
-                calculationTableRow(
+                self.calculationTableRow(
                     label: "Gross Profit (€) — before commission & taxes",
-                    value: grossProfit.formattedAsLocalizedCurrency(),
-                    secondaryValue: grossProfitPercentageText.map { "ROI1: \($0)" },
+                    value: self.grossProfit.formattedAsLocalizedCurrency(),
+                    secondaryValue: self.grossProfitPercentageText.map { "ROI1: \($0)" },
                     valueColor: AppTheme.accentGreen,
                     secondaryValueColor: AppTheme.accentGreen
                 )
@@ -219,19 +223,19 @@ struct CommissionCalculationExplanationSheet: View {
                 Divider()
 
                 // Commission (€)
-                calculationTableRow(
-                    label: "Trader Commission (\(services.configurationService.traderCommissionPercentage))",
-                    value: "-\(commission.formattedAsLocalizedCurrency())",
+                self.calculationTableRow(
+                    label: "Trader Commission (\(self.services.configurationService.traderCommissionPercentage))",
+                    value: "-\(self.commission.formattedAsLocalizedCurrency())",
                     valueColor: AppTheme.fontColor.opacity(0.8)
                 )
 
                 Divider()
 
                 // Net Profit (€) — server canonical when available
-                calculationTableRow(
+                self.calculationTableRow(
                     label: "Net Profit (€) — after commission",
-                    value: investorNetProfit.formattedAsLocalizedCurrency(),
-                    valueColor: investorNetProfit >= 0 ? AppTheme.accentGreen : AppTheme.accentRed,
+                    value: self.investorNetProfit.formattedAsLocalizedCurrency(),
+                    valueColor: self.investorNetProfit >= 0 ? AppTheme.accentGreen : AppTheme.accentRed,
                     isBold: true
                 )
 
@@ -241,13 +245,13 @@ struct CommissionCalculationExplanationSheet: View {
                 // with local derivation as fallback. Drift hint appears when
                 // both sources disagree by > 0.05pp (legacy bill, awaiting
                 // backfill).
-                calculationTableRow(
+                self.calculationTableRow(
                     label: "Return (%) — ROI2 (after commission)",
-                    value: returnPercentageText ?? "pending",
-                    secondaryValue: returnPercentageDriftHint,
-                    valueColor: returnPercentageText == nil
+                    value: self.returnPercentageText ?? "pending",
+                    secondaryValue: self.returnPercentageDriftHint,
+                    valueColor: self.returnPercentageText == nil
                         ? AppTheme.fontColor.opacity(0.7)
-                        : ((returnPercentage ?? 0) >= 0 ? AppTheme.accentGreen : AppTheme.accentRed),
+                        : ((self.returnPercentage ?? 0) >= 0 ? AppTheme.accentGreen : AppTheme.accentRed),
                     secondaryValueColor: AppTheme.fontColor.opacity(0.5),
                     isBold: true
                 )
@@ -318,20 +322,20 @@ struct CommissionCalculationExplanationSheet: View {
     }
 
     private func refreshStatementSummary() {
-        let commissionRate = services.configurationService.effectiveCommissionRate
-        statementSummary = InvestorInvestmentStatementAggregator.summarizeInvestment(
-            investmentId: investment.id,
-            poolTradeParticipationService: services.poolTradeParticipationService,
-            tradeLifecycleService: services.tradeLifecycleService,
-            invoiceService: services.invoiceService,
-            investmentService: services.investmentService,
+        let commissionRate = self.services.configurationService.effectiveCommissionRate
+        self.statementSummary = InvestorInvestmentStatementAggregator.summarizeInvestment(
+            investmentId: self.investment.id,
+            poolTradeParticipationService: self.services.poolTradeParticipationService,
+            tradeLifecycleService: self.services.tradeLifecycleService,
+            invoiceService: self.services.invoiceService,
+            investmentService: self.services.investmentService,
             calculationService: InvestorCollectionBillCalculationService(),
-            commissionCalculationService: services.commissionCalculationService,
+            commissionCalculationService: self.services.commissionCalculationService,
             commissionRate: commissionRate
         )
 
-        let settlementService = services.settlementAPIService
-        let investmentId = investment.id
+        let settlementService = self.services.settlementAPIService
+        let investmentId = self.investment.id
         Task {
             let resolved = await ServerCalculatedReturnResolver.resolveCanonicalSummary(
                 investmentId: investmentId,

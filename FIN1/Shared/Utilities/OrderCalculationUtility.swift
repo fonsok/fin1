@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Order Calculation Utility
 /// Centralized utility for order calculations to eliminate DRY violations
@@ -23,7 +23,7 @@ struct OrderCalculationUtility {
         case .market:
             return marketPrice
         case .limit:
-            return parseGermanPrice(limitText) ?? marketPrice
+            return self.parseGermanPrice(limitText) ?? marketPrice
         }
     }
 
@@ -35,9 +35,9 @@ struct OrderCalculationUtility {
 
         // Validate German format: only numbers, dots (thousands), and exactly one comma (decimal)
         let isValidFormat = priceText.allSatisfy { $0.isNumber || $0 == "," || $0 == "." } &&
-                           priceText.filter { $0 == "," }.count <= 1 &&
-                           !priceText.hasPrefix(",") &&
-                           !priceText.hasSuffix(",")
+            priceText.filter { $0 == "," }.count <= 1 &&
+            !priceText.hasPrefix(",") &&
+            !priceText.hasSuffix(",")
 
         guard isValidFormat else { return nil }
 
@@ -84,7 +84,7 @@ struct OrderCalculationUtility {
         limitText: String,
         marketPrice: Double
     ) -> Double {
-        let effectivePrice = calculateEffectivePrice(
+        let effectivePrice = self.calculateEffectivePrice(
             orderMode: orderMode,
             limitText: limitText,
             marketPrice: marketPrice
@@ -105,7 +105,7 @@ struct OrderCalculationUtility {
         limitText: String,
         marketPrice: Double
     ) -> Double {
-        let effectivePrice = calculateEffectivePrice(
+        let effectivePrice = self.calculateEffectivePrice(
             orderMode: orderMode,
             limitText: limitText,
             marketPrice: marketPrice
@@ -122,9 +122,9 @@ struct OrderCalculationUtility {
         guard !priceText.isEmpty else { return false }
 
         return priceText.allSatisfy { $0.isNumber || $0 == "," || $0 == "." } &&
-               priceText.filter { $0 == "," }.count <= 1 &&
-               !priceText.hasPrefix(",") &&
-               !priceText.hasSuffix(",")
+            priceText.filter { $0 == "," }.count <= 1 &&
+            !priceText.hasPrefix(",") &&
+            !priceText.hasSuffix(",")
     }
 
     /// Validates German quantity format
@@ -134,8 +134,8 @@ struct OrderCalculationUtility {
         guard !quantityText.isEmpty else { return false }
 
         return quantityText.allSatisfy { $0.isNumber || $0 == "." } &&
-               !quantityText.hasPrefix(".") &&
-               !quantityText.hasSuffix(".")
+            !quantityText.hasPrefix(".") &&
+            !quantityText.hasSuffix(".")
     }
 }
 

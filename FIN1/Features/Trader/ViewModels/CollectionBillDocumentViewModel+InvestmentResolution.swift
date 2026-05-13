@@ -5,11 +5,11 @@ extension CollectionBillDocumentViewModel {
     func resolveInvestmentTarget() async -> Bool {
         let doc = routingDocument
         if let investmentId = doc.investmentId {
-            return await loadInvestment(withId: investmentId)
+            return await self.loadInvestment(withId: investmentId)
         }
 
         if let parsedId = extractInvestmentIdFromDocumentName(doc.name) {
-            return await loadInvestment(withId: parsedId)
+            return await self.loadInvestment(withId: parsedId)
         }
 
         if let batchPrefix = extractBatchIdPrefixFromInvestorCollectionBillName(doc.name),
@@ -74,7 +74,9 @@ extension CollectionBillDocumentViewModel {
         }
 
         if let found = byId.values.first(where: { batchMatches($0.batchId) }) {
-            print("✅ CollectionBillDocumentView: Matched investment by batch prefix \(prefix): id=\(found.id) batchId=\(found.batchId ?? "")")
+            print(
+                "✅ CollectionBillDocumentView: Matched investment by batch prefix \(prefix): id=\(found.id) batchId=\(found.batchId ?? "")"
+            )
             investment = found
             isLoading = false
             return true
@@ -99,7 +101,9 @@ extension CollectionBillDocumentViewModel {
                     return true
                 }
             } catch {
-                print("ℹ️ CollectionBillDocumentViewModel: batch-prefix Investment fetch failed for \(investorKey): \(error.localizedDescription)")
+                print(
+                    "ℹ️ CollectionBillDocumentViewModel: batch-prefix Investment fetch failed for \(investorKey): \(error.localizedDescription)"
+                )
             }
         }
 

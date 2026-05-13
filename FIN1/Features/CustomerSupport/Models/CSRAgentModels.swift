@@ -15,15 +15,15 @@ struct CSRAgent: Identifiable, Codable {
     static let maxTickets = 8
 
     var canAcceptTickets: Bool {
-        isAvailable && currentTicketCount < Self.maxTickets
+        self.isAvailable && self.currentTicketCount < Self.maxTickets
     }
 
     var workloadPercentage: Double {
-        Double(currentTicketCount) / Double(Self.maxTickets) * 100
+        Double(self.currentTicketCount) / Double(Self.maxTickets) * 100
     }
 
     var hasCapacity: Bool {
-        currentTicketCount < Self.maxTickets
+        self.currentTicketCount < Self.maxTickets
     }
 }
 

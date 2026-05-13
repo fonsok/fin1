@@ -10,16 +10,16 @@ struct TraderTabNavigationView: View {
         HStack(spacing: ResponsiveDesign.spacing(0)) {
             ForEach(0..<4) { index in
                 Button(action: {
-                    selectedTab = index
+                    self.selectedTab = index
                 }) {
                     VStack(spacing: ResponsiveDesign.spacing(4)) {
-                        Text(tabTitle(for: index))
+                        Text(self.tabTitle(for: index))
                             .font(ResponsiveDesign.bodyFont())
                             .fontWeight(.medium)
-                            .foregroundColor(selectedTab == index ? AppTheme.accentLightBlue : AppTheme.fontColor.opacity(0.6))
+                            .foregroundColor(self.selectedTab == index ? AppTheme.accentLightBlue : AppTheme.fontColor.opacity(0.6))
 
                         Rectangle()
-                            .fill(selectedTab == index ? AppTheme.accentLightBlue : Color.clear)
+                            .fill(self.selectedTab == index ? AppTheme.accentLightBlue : Color.clear)
                             .frame(height: 2)
                     }
                 }

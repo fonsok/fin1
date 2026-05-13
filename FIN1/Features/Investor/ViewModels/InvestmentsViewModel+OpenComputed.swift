@@ -12,7 +12,7 @@ extension InvestmentsViewModel {
     /// Returns investment rows for open (reserved + active) investments.
     /// Sorted by: creation date (newest first), then trader name (A-Z), then investment number (ascending).
     var openInvestmentRows: [InvestmentRow] {
-        let baseRows = dataProcessor.processOpenInvestmentRows(from: activeInvestments)
+        let baseRows = dataProcessor.processOpenInvestmentRows(from: self.activeInvestments)
         let userId = userService.currentUser?.id ?? ""
         return baseRows.map { row in
             let docs = documentService.getDocumentsForInvestment(row.investmentId)
@@ -40,84 +40,84 @@ extension InvestmentsViewModel {
     }
 
     var totalOpenAmount: Double {
-        dataProcessor.calculateTotalOpenAmount(from: openInvestmentRows)
+        dataProcessor.calculateTotalOpenAmount(from: self.openInvestmentRows)
     }
 
     var totalOpenProfit: Double? {
-        dataProcessor.calculateTotalOpenProfit(from: openInvestmentRows)
+        dataProcessor.calculateTotalOpenProfit(from: self.openInvestmentRows)
     }
 
     var totalOpenReturn: Double? {
-        dataProcessor.calculateTotalOpenReturn(from: openInvestmentRows, totalAmount: totalOpenAmount)
+        dataProcessor.calculateTotalOpenReturn(from: self.openInvestmentRows, totalAmount: self.totalOpenAmount)
     }
 
     var reservedInvestmentRows: [InvestmentRow] {
-        openInvestmentRows.filter(\.isDeletable)
+        self.openInvestmentRows.filter(\.isDeletable)
     }
 
     var activeInvestmentRows: [InvestmentRow] {
-        openInvestmentRows.filter { !$0.isDeletable }
+        self.openInvestmentRows.filter { !$0.isDeletable }
     }
 
     var partialSellActiveInvestmentRows: [InvestmentRow] {
-        activeInvestmentRows.filter { $0.investment.hasPartialSellRealization }
+        self.activeInvestmentRows.filter { $0.investment.hasPartialSellRealization }
     }
 
     var totalReservedAmount: Double {
-        dataProcessor.calculateTotalOpenAmount(from: reservedInvestmentRows)
+        dataProcessor.calculateTotalOpenAmount(from: self.reservedInvestmentRows)
     }
 
     var totalActiveAmount: Double {
-        dataProcessor.calculateTotalOpenAmount(from: activeInvestmentRows)
+        dataProcessor.calculateTotalOpenAmount(from: self.activeInvestmentRows)
     }
 
     var totalReservedProfit: Double? {
-        dataProcessor.calculateTotalOpenProfit(from: reservedInvestmentRows)
+        dataProcessor.calculateTotalOpenProfit(from: self.reservedInvestmentRows)
     }
 
     var totalActiveProfit: Double? {
-        dataProcessor.calculateTotalOpenProfit(from: activeInvestmentRows)
+        dataProcessor.calculateTotalOpenProfit(from: self.activeInvestmentRows)
     }
 
     var totalReservedReturn: Double? {
-        dataProcessor.calculateTotalOpenReturn(from: reservedInvestmentRows, totalAmount: totalReservedAmount)
+        dataProcessor.calculateTotalOpenReturn(from: self.reservedInvestmentRows, totalAmount: self.totalReservedAmount)
     }
 
     var totalActiveReturn: Double? {
-        dataProcessor.calculateTotalOpenReturn(from: activeInvestmentRows, totalAmount: totalActiveAmount)
+        dataProcessor.calculateTotalOpenReturn(from: self.activeInvestmentRows, totalAmount: self.totalActiveAmount)
     }
 
     // MARK: - Grouping for View Display
 
     var groupedOpenInvestments: [String: [InvestmentRow]] {
-        dataProcessor.groupOpenInvestments(openInvestmentRows)
+        dataProcessor.groupOpenInvestments(self.openInvestmentRows)
     }
 
     var groupedReservedInvestments: [String: [InvestmentRow]] {
-        dataProcessor.groupOpenInvestments(reservedInvestmentRows)
+        dataProcessor.groupOpenInvestments(self.reservedInvestmentRows)
     }
 
     var groupedActiveInvestments: [String: [InvestmentRow]] {
-        dataProcessor.groupOpenInvestments(activeInvestmentRows)
+        dataProcessor.groupOpenInvestments(self.activeInvestmentRows)
     }
 
     var groupedPartialSellActiveInvestments: [String: [InvestmentRow]] {
-        dataProcessor.groupOpenInvestments(partialSellActiveInvestmentRows)
+        dataProcessor.groupOpenInvestments(self.partialSellActiveInvestmentRows)
     }
 
     var sortedTraderNames: [String] {
-        dataProcessor.sortedTraderNames(from: groupedOpenInvestments)
+        dataProcessor.sortedTraderNames(from: self.groupedOpenInvestments)
     }
 
     var sortedReservedTraderNames: [String] {
-        dataProcessor.sortedTraderNames(from: groupedReservedInvestments)
+        dataProcessor.sortedTraderNames(from: self.groupedReservedInvestments)
     }
 
     var sortedActiveTraderNames: [String] {
-        dataProcessor.sortedTraderNames(from: groupedActiveInvestments)
+        dataProcessor.sortedTraderNames(from: self.groupedActiveInvestments)
     }
 
     var sortedPartialSellTraderNames: [String] {
-        dataProcessor.sortedTraderNames(from: groupedPartialSellActiveInvestments)
+        dataProcessor.sortedTraderNames(from: self.groupedPartialSellActiveInvestments)
     }
 }

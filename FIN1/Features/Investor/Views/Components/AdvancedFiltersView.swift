@@ -20,7 +20,7 @@ struct AdvancedFiltersView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") { dismiss() }
+                    Button("Done") { self.dismiss() }
                         .foregroundColor(AppTheme.accentLightBlue)
                 }
             }

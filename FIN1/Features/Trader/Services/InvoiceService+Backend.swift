@@ -19,9 +19,9 @@ extension InvoiceService {
         apiClient: any ParseAPIClientProtocol
     ) async {
         do {
-            let amounts = extractServiceChargeAmounts(from: invoice)
-            let customerInfo = buildCustomerInfoDictionary(from: invoice)
-            let investmentIds = extractInvestmentIds(from: invoice)
+            let amounts = self.extractServiceChargeAmounts(from: invoice)
+            let customerInfo = self.buildCustomerInfoDictionary(from: invoice)
+            let investmentIds = self.extractInvestmentIds(from: invoice)
 
             var parameters: [String: Any] = [
                 "invoiceNumber": invoice.invoiceNumber,

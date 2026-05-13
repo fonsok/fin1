@@ -93,23 +93,23 @@ struct NameChangeRequest: Identifiable, Codable, Hashable {
 
     var currentFullName: String {
         var parts: [String] = []
-        if !currentAcademicTitle.isEmpty { parts.append(currentAcademicTitle) }
-        parts.append(currentFirstName)
-        parts.append(currentLastName)
+        if !self.currentAcademicTitle.isEmpty { parts.append(self.currentAcademicTitle) }
+        parts.append(self.currentFirstName)
+        parts.append(self.currentLastName)
         return parts.joined(separator: " ")
     }
 
     var newFullName: String {
         var parts: [String] = []
-        if !newAcademicTitle.isEmpty { parts.append(newAcademicTitle) }
-        parts.append(newFirstName)
-        parts.append(newLastName)
+        if !self.newAcademicTitle.isEmpty { parts.append(self.newAcademicTitle) }
+        parts.append(self.newFirstName)
+        parts.append(self.newLastName)
         return parts.joined(separator: " ")
     }
 
-    var isPending: Bool { status == .pending || status == .underReview }
-    var canCancel: Bool { status == .pending }
-    var isSignificantLifeEvent: Bool { reason.isSignificantLifeEvent }
+    var isPending: Bool { self.status == .pending || self.status == .underReview }
+    var canCancel: Bool { self.status == .pending }
+    var isSignificantLifeEvent: Bool { self.reason.isSignificantLifeEvent }
 }
 
 // MARK: - Name Components DTO
@@ -123,13 +123,13 @@ struct NameComponents: Codable, Hashable {
 
     var fullName: String {
         var parts: [String] = []
-        if !academicTitle.isEmpty { parts.append(academicTitle) }
-        parts.append(firstName)
-        parts.append(lastName)
+        if !self.academicTitle.isEmpty { parts.append(self.academicTitle) }
+        parts.append(self.firstName)
+        parts.append(self.lastName)
         return parts.joined(separator: " ")
     }
 
-    var isComplete: Bool { !firstName.isEmpty && !lastName.isEmpty }
+    var isComplete: Bool { !self.firstName.isEmpty && !self.lastName.isEmpty }
 }
 
 

@@ -13,17 +13,17 @@ final class PendingApprovalsViewModel: ObservableObject {
 
     func loadPendingCount() async {
         guard let configurationService else {
-            pendingCount = 0
+            self.pendingCount = 0
             return
         }
-        isLoading = true
+        self.isLoading = true
         defer { isLoading = false }
 
         do {
             let changes = try await configurationService.getPendingConfigurationChanges()
-            pendingCount = changes.count
+            self.pendingCount = changes.count
         } catch {
-            pendingCount = 0
+            self.pendingCount = 0
         }
     }
 }

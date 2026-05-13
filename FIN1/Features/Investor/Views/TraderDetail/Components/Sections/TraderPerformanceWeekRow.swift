@@ -14,16 +14,16 @@ struct TraderPerformanceWeekRow: View {
     var body: some View {
         HStack(alignment: .center, spacing: ResponsiveDesign.spacing(0)) {
             // KW Number Column
-            if showMonthLabel {
+            if self.showMonthLabel {
                 // Legacy layout with month (not used in grouped view)
-                legacyMonthLayout
+                self.legacyMonthLayout
             } else {
                 // Column 2: KW number (month is shown separately in Column 1)
-                weekNumberColumn
+                self.weekNumberColumn
             }
 
             // Column 3: Return Values with Colored Boxes (scrollable)
-            returnValuesColumn
+            self.returnValuesColumn
         }
         .background(AppTheme.sectionBackground)
 
@@ -37,7 +37,7 @@ struct TraderPerformanceWeekRow: View {
     private var legacyMonthLayout: some View {
         HStack(spacing: ResponsiveDesign.spacing(8)) {
             VStack {
-                Text(weekData.month)
+                Text(self.weekData.month)
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
                     .rotationEffect(.degrees(-90))
@@ -46,7 +46,7 @@ struct TraderPerformanceWeekRow: View {
             }
             .frame(width: ResponsiveDesign.spacing(50))
 
-            Text("\(weekData.week)")
+            Text("\(self.weekData.week)")
                 .font(ResponsiveDesign.headlineFont())
                 .fontWeight(.medium)
                 .foregroundColor(AppTheme.fontColor)
@@ -59,7 +59,7 @@ struct TraderPerformanceWeekRow: View {
 
     // MARK: - Week Number Column
     private var weekNumberColumn: some View {
-        Text("\(weekData.week)")
+        Text("\(self.weekData.week)")
             .font(ResponsiveDesign.captionFont())
             .fontWeight(.regular)
             .foregroundColor(AppTheme.fontColor.opacity(0.6))
@@ -77,8 +77,8 @@ struct TraderPerformanceWeekRow: View {
     // MARK: - Return Values Column
     private var returnValuesColumn: some View {
         HStack(alignment: .center, spacing: ResponsiveDesign.spacing(8)) {
-            ForEach(weekData.tradeReturns) { tradeReturn in
-                returnBox(for: tradeReturn)
+            ForEach(self.weekData.tradeReturns) { tradeReturn in
+                self.returnBox(for: tradeReturn)
             }
 
             Spacer(minLength: ResponsiveDesign.spacing(200))
@@ -92,9 +92,9 @@ struct TraderPerformanceWeekRow: View {
     @ViewBuilder
     private func returnBox(for tradeReturn: TradeReturnData) -> some View {
         if tradeReturn.isActive {
-            activeTradeBox(tradeReturn: tradeReturn)
+            self.activeTradeBox(tradeReturn: tradeReturn)
         } else {
-            completedTradeBox(tradeReturn: tradeReturn)
+            self.completedTradeBox(tradeReturn: tradeReturn)
         }
     }
 

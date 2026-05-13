@@ -38,7 +38,7 @@ final class LegalDocumentPDFGenerator {
         let pdfMetaData = [
             kCGPDFContextCreator: "\(LegalIdentity.platformName) App",
             kCGPDFContextAuthor: LegalIdentity.companyLegalName,
-            kCGPDFContextTitle: documentTitle ?? titleForDocumentType(content.documentType),
+            kCGPDFContextTitle: documentTitle ?? self.titleForDocumentType(content.documentType),
             kCGPDFContextSubject: "Legal Document v\(content.version)"
         ]
 
@@ -57,7 +57,7 @@ final class LegalDocumentPDFGenerator {
             currentY = Layout.marginTop
 
             // Draw header on first page
-            currentY = drawHeader(
+            currentY = self.drawHeader(
                 in: context.cgContext,
                 documentType: content.documentType,
                 version: content.version,
@@ -69,17 +69,17 @@ final class LegalDocumentPDFGenerator {
             // Draw each section
             for section in content.sections {
                 // Check if we need a new page
-                let sectionHeight = estimateSectionHeight(section)
+                let sectionHeight = self.estimateSectionHeight(section)
                 if currentY + sectionHeight > Layout.pageHeight - Layout.marginBottom {
                     // Draw footer before new page
-                    drawFooter(in: context.cgContext, pageNumber: pageNumber)
+                    self.drawFooter(in: context.cgContext, pageNumber: pageNumber)
                     pageNumber += 1
 
                     context.beginPage()
                     currentY = Layout.marginTop
                 }
 
-                currentY = drawSection(
+                currentY = self.drawSection(
                     section,
                     in: context.cgContext,
                     startY: currentY,
@@ -90,7 +90,7 @@ final class LegalDocumentPDFGenerator {
             }
 
             // Draw footer on last page
-            drawFooter(in: context.cgContext, pageNumber: pageNumber)
+            self.drawFooter(in: context.cgContext, pageNumber: pageNumber)
         }
 
         return data
@@ -127,7 +127,7 @@ final class LegalDocumentPDFGenerator {
             .font: UIFont.systemFont(ofSize: 22, weight: .bold),
             .foregroundColor: UIColor.black
         ]
-        let title = titleForDocumentType(documentType)
+        let title = self.titleForDocumentType(documentType)
         let titleRect = CGRect(
             x: Layout.marginLeft,
             y: currentY,
@@ -145,7 +145,7 @@ final class LegalDocumentPDFGenerator {
 
         var metaText = "Version \(version)"
         if let effectiveDate {
-            let dateString = formatEffectiveDate(effectiveDate)
+            let dateString = self.formatEffectiveDate(effectiveDate)
             metaText += " | Gültig ab: \(dateString)"
         }
 
@@ -187,7 +187,7 @@ final class LegalDocumentPDFGenerator {
         ]
 
         let titleText = section.titleOrEmpty
-        let titleHeight = heightForText(titleText, attributes: titleAttributes, width: Layout.contentWidth)
+        let titleHeight = self.heightForText(titleText, attributes: titleAttributes, width: Layout.contentWidth)
         let titleRect = CGRect(
             x: Layout.marginLeft,
             y: currentY,
@@ -204,7 +204,7 @@ final class LegalDocumentPDFGenerator {
         ]
 
         // Process content line by line to handle bullets and pagination
-        let lines = processContentLines(section.content)
+        let lines = self.processContentLines(section.content)
 
         for line in lines {
             let lineText = line.text
@@ -215,11 +215,11 @@ final class LegalDocumentPDFGenerator {
                 .foregroundColor: UIColor.darkGray
             ] : contentAttributes
 
-            let lineHeight = heightForText(lineText, attributes: lineAttributes, width: Layout.contentWidth - (isBullet ? 15 : 0))
+            let lineHeight = self.heightForText(lineText, attributes: lineAttributes, width: Layout.contentWidth - (isBullet ? 15 : 0))
 
             // Check for page break
             if currentY + lineHeight > Layout.pageHeight - Layout.marginBottom {
-                drawFooter(in: context, pageNumber: pageNumber)
+                self.drawFooter(in: context, pageNumber: pageNumber)
                 pageNumber += 1
                 pdfContext.beginPage()
                 currentY = Layout.marginTop
@@ -335,8 +335,8 @@ final class LegalDocumentPDFGenerator {
             .font: UIFont.systemFont(ofSize: 10, weight: .regular)
         ]
 
-        let titleHeight = heightForText(section.titleOrEmpty, attributes: titleAttributes, width: Layout.contentWidth)
-        let contentHeight = heightForText(section.content, attributes: contentAttributes, width: Layout.contentWidth)
+        let titleHeight = self.heightForText(section.titleOrEmpty, attributes: titleAttributes, width: Layout.contentWidth)
+        let contentHeight = self.heightForText(section.content, attributes: contentAttributes, width: Layout.contentWidth)
 
         return titleHeight + contentHeight + Layout.paragraphSpacing * 2
     }
@@ -379,7 +379,7 @@ extension LegalDocumentPDFGenerator {
     ///   - filename: Optional custom filename (without extension)
     /// - Returns: URL to the temporary PDF file
     func createShareablePDF(from content: TermsContent, filename: String? = nil) -> URL? {
-        let pdfData = generatePDF(from: content)
+        let pdfData = self.generatePDF(from: content)
 
         let defaultFilename: String
         switch content.documentType {

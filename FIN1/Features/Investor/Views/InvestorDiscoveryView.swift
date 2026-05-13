@@ -1,5 +1,5 @@
-import SwiftUI
 import Foundation
+import SwiftUI
 
 struct InvestorDiscoveryView: View {
     @StateObject private var viewModel: InvestorDiscoveryViewModel
@@ -23,47 +23,47 @@ struct InvestorDiscoveryView: View {
                 AppTheme.screenBackground
                     .ignoresSafeArea()
 
-                investorDiscoveryContent
+                self.investorDiscoveryContent
             }
             .navigationBarTitleDisplayMode(.inline)
             .navigationTitle("Find Trader")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    if !activeFilters.isEmpty {
-                        Button("Apply (\(activeFilters.count))") {
-                            applyActiveFilters()
+                    if !self.activeFilters.isEmpty {
+                        Button("Apply (\(self.activeFilters.count))") {
+                            self.applyActiveFilters()
                         }
                         .foregroundColor(AppTheme.accentGreen)
                     }
                 }
             }
             .task {
-                viewModel.loadTraders()
-                viewModel.setSavedFiltersToCheck(savedFiltersManager.savedFilters)
+                self.viewModel.loadTraders()
+                self.viewModel.setSavedFiltersToCheck(self.savedFiltersManager.savedFilters)
             }
-            .onChange(of: savedFiltersManager.savedFilters) { _, newFilters in
-                viewModel.setSavedFiltersToCheck(newFilters)
+            .onChange(of: self.savedFiltersManager.savedFilters) { _, newFilters in
+                self.viewModel.setSavedFiltersToCheck(newFilters)
                 // Also check current activeFilters against the updated saved filters
-                viewModel.checkAndUpdateAppliedFilter(for: activeFilters)
+                self.viewModel.checkAndUpdateAppliedFilter(for: self.activeFilters)
             }
-            .onChange(of: activeFilters) { _, newFilters in
+            .onChange(of: self.activeFilters) { _, newFilters in
                 // Check if filters match any saved combination when they change
-                viewModel.checkAndUpdateAppliedFilter(for: newFilters)
+                self.viewModel.checkAndUpdateAppliedFilter(for: newFilters)
             }
-            .sheet(isPresented: $showSavedFilters) {
+            .sheet(isPresented: self.$showSavedFilters) {
                 SavedFiltersView(
-                    savedFiltersManager: savedFiltersManager,
+                    savedFiltersManager: self.savedFiltersManager,
                     onActivateFilter: { savedFilter in
-                        viewModel.applySavedFilter(savedFilter, to: &activeFilters)
-                        showSavedFilters = false
+                        self.viewModel.applySavedFilter(savedFilter, to: &self.activeFilters)
+                        self.showSavedFilters = false
                     },
-                    currentlyAppliedFilterID: viewModel.getAppliedFilterID()
+                    currentlyAppliedFilterID: self.viewModel.getAppliedFilterID()
                 )
             }
-            .sheet(isPresented: $showCreateCombination) {
+            .sheet(isPresented: self.$showCreateCombination) {
                 CreateFilterCombinationView(
-                    savedFiltersManager: savedFiltersManager,
-                    activeFilters: $activeFilters
+                    savedFiltersManager: self.savedFiltersManager,
+                    activeFilters: self.$activeFilters
                 )
             }
         }
@@ -76,13 +76,13 @@ struct InvestorDiscoveryView: View {
             VStack(spacing: ResponsiveDesign.spacing(24)) {
                 // Search Section
                 SearchSection(
-                    searchText: $searchText,
+                    searchText: self.$searchText,
                     onSearchChange: { newValue in
-                        viewModel.handleSearchChange(newValue)
+                        self.viewModel.handleSearchChange(newValue)
                     },
                     onClearSearch: {
-                        searchText = ""
-                        viewModel.clearSearch()
+                        self.searchText = ""
+                        self.viewModel.clearSearch()
                     }
                 )
 
@@ -92,17 +92,17 @@ struct InvestorDiscoveryView: View {
 
                 // Saved Filters Section
                 SavedFiltersSection(
-                    savedFilters: savedFiltersManager.savedFilters,
-                    activeFilters: activeFilters,
-                    onViewAll: { showSavedFilters = true },
-                    onCreateNew: { showCreateCombination = true },
+                    savedFilters: self.savedFiltersManager.savedFilters,
+                    activeFilters: self.activeFilters,
+                    onViewAll: { self.showSavedFilters = true },
+                    onCreateNew: { self.showCreateCombination = true },
                     onApplyFilter: { savedFilter in
-                        viewModel.applySavedFilter(savedFilter, to: &activeFilters)
+                        self.viewModel.applySavedFilter(savedFilter, to: &self.activeFilters)
                     },
                     onDeleteFilter: { savedFilter in
-                        savedFiltersManager.removeFilter(savedFilter)
+                        self.savedFiltersManager.removeFilter(savedFilter)
                     },
-                    currentlyAppliedFilterID: viewModel.getAppliedFilterID()
+                    currentlyAppliedFilterID: self.viewModel.getAppliedFilterID()
                 )
 
                 Divider()
@@ -110,16 +110,16 @@ struct InvestorDiscoveryView: View {
                     .padding(.vertical, ResponsiveDesign.spacing(8))
 
                 // Active Filters Section
-                if !activeFilters.isEmpty {
+                if !self.activeFilters.isEmpty {
                     ActiveFiltersSection(
-                        activeFilters: activeFilters,
-                        currentlyAppliedFilterID: viewModel.getAppliedFilterID(),
-                        currentFilterName: viewModel.getCurrentFilterName(from: savedFiltersManager.savedFilters),
+                        activeFilters: self.activeFilters,
+                        currentlyAppliedFilterID: self.viewModel.getAppliedFilterID(),
+                        currentFilterName: self.viewModel.getCurrentFilterName(from: self.savedFiltersManager.savedFilters),
                         onClearAll: {
-                            viewModel.clearAllFilters(&activeFilters)
+                            self.viewModel.clearAllFilters(&self.activeFilters)
                         },
                         onRemoveFilter: { filterType in
-                            viewModel.handleRemoveFilter(filterType, from: &activeFilters)
+                            self.viewModel.handleRemoveFilter(filterType, from: &self.activeFilters)
                         }
                     )
 
@@ -130,32 +130,32 @@ struct InvestorDiscoveryView: View {
 
                 // Individual Filters Section
                 IndividualFiltersSection(
-                    activeFilters: activeFilters,
+                    activeFilters: self.activeFilters,
                     onAddFilter: { filter in
-                        viewModel.handleAddFilter(filter, to: &activeFilters)
+                        self.viewModel.handleAddFilter(filter, to: &self.activeFilters)
                     },
                     onRemoveFilter: { filterType in
-                        viewModel.handleRemoveFilter(filterType, from: &activeFilters)
+                        self.viewModel.handleRemoveFilter(filterType, from: &self.activeFilters)
                     },
                     onShowMoreFilters: {
-                        showMoreFilters = true
+                        self.showMoreFilters = true
                     }
                 )
 
                 // Hitlist Table Section - Show results when filters are active OR when search query exists
-                if !activeFilters.isEmpty || !viewModel.searchQuery.isEmpty {
+                if !self.activeFilters.isEmpty || !self.viewModel.searchQuery.isEmpty {
                     Divider()
                         .background(AppTheme.fontColor.opacity(0.5))
                         .padding(.vertical, ResponsiveDesign.spacing(8))
                 }
 
                 // Hitlist Table Section - Show results when filters are active OR when search query exists
-                if !activeFilters.isEmpty || !viewModel.searchQuery.isEmpty {
+                if !self.activeFilters.isEmpty || !self.viewModel.searchQuery.isEmpty {
                     HitlistTableSection(
-                        traders: viewModel.filteredTraders(by: activeFilters, searchQuery: viewModel.searchQuery),
-                        activeFilters: activeFilters,
-                        appServices: appServices,
-                        viewModel: viewModel
+                        traders: self.viewModel.filteredTraders(by: self.activeFilters, searchQuery: self.viewModel.searchQuery),
+                        activeFilters: self.activeFilters,
+                        appServices: self.appServices,
+                        viewModel: self.viewModel
                     )
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
@@ -165,7 +165,7 @@ struct InvestorDiscoveryView: View {
             .padding(.bottom, ResponsiveDesign.spacing(16))
         }
         .scrollDismissesKeyboard(.interactively) // iOS 16+ native keyboard dismissal - no gesture conflicts
-        .sheet(isPresented: $showMoreFilters) {
+        .sheet(isPresented: self.$showMoreFilters) {
             AdvancedFiltersView()
         }
     }
@@ -203,14 +203,14 @@ struct HitlistTableSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(16)) {
             HStack {
-                Text("Results (\(traders.count))")
+                Text("Results (\(self.traders.count))")
                     .font(ResponsiveDesign.headlineFont())
                     .fontWeight(.regular)
                     .foregroundColor(AppTheme.fontColor)
                 Spacer()
             }
 
-            if traders.isEmpty {
+            if self.traders.isEmpty {
                 VStack(spacing: ResponsiveDesign.spacing(8)) {
                     Text("No traders match the current filter criteria")
                         .font(ResponsiveDesign.bodyFont())
@@ -226,24 +226,27 @@ struct HitlistTableSection: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     DataTable.traderPerformanceTable(
                         rows: TableDataFactory.createTraderPerformanceRows(
-                            from: viewModel.createTraderPerformanceData(from: traders),
+                            from: self.viewModel.createTraderPerformanceData(from: self.traders),
                             onTraderTap: { username in
                                 print("📌 [Hitlist] onTraderTap username=\(username)")
                                 // Find the trader ID from the username
                                 if let traderID = viewModel.getTraderID(for: username, traderDataService: appServices.traderDataService) {
-                                    selectedTraderID = TraderIDItem(id: traderID)
+                                    self.selectedTraderID = TraderIDItem(id: traderID)
                                 }
                             },
                             onWatchlistToggle: { username, isWatched in
                                 print("⭐️ [Hitlist] onWatchlistToggle username=\(username), isWatched(next)=\(isWatched)")
                                 // Find the trader ID from the username
                                 if let traderID = viewModel.getTraderID(for: username, traderDataService: appServices.traderDataService) {
-                                    busyUsernames.insert(username)
-                                    handleWatchlistToggle(traderID: traderID, isWatched: isWatched, username: username)
+                                    self.busyUsernames.insert(username)
+                                    self.handleWatchlistToggle(traderID: traderID, isWatched: isWatched, username: username)
                                 }
                             },
-                            watchlistStatus: viewModel.getWatchlistStatus(watchlistService: appServices.watchlistService, traderDataService: appServices.traderDataService),
-                            busyStatus: viewModel.getBusyStatus(from: busyUsernames)
+                            watchlistStatus: self.viewModel.getWatchlistStatus(
+                                watchlistService: self.appServices.watchlistService,
+                                traderDataService: self.appServices.traderDataService
+                            ),
+                            busyStatus: self.viewModel.getBusyStatus(from: self.busyUsernames)
                         ),
                         showTraderColumn: true,
                         isInteractive: false
@@ -252,20 +255,20 @@ struct HitlistTableSection: View {
                 }
             }
         }
-        .onChange(of: appServices.watchlistService.watchlist.count) { _, _ in
+        .onChange(of: self.appServices.watchlistService.watchlist.count) { _, _ in
             // Trigger view refresh when watchlist changes
-            print("🔄 [Hitlist] watchlist count changed -> \(appServices.watchlistService.watchlist.count)")
-            watchlistTick &+= 1
+            print("🔄 [Hitlist] watchlist count changed -> \(self.appServices.watchlistService.watchlist.count)")
+            self.watchlistTick &+= 1
         }
         .onReceive(NotificationCenter.default.publisher(for: .init("WatchlistUpdated"))) { _ in
             print("🔔 [Hitlist] WatchlistUpdated notification received")
-            watchlistTick &+= 1
+            self.watchlistTick &+= 1
         }
-        .sheet(item: $selectedTraderID) { traderIDItem in
-            TraderNavigationHelper.sheetView(for: traderIDItem.id, appServices: appServices)
+        .sheet(item: self.$selectedTraderID) { traderIDItem in
+            TraderNavigationHelper.sheetView(for: traderIDItem.id, appServices: self.appServices)
         }
-        .watchlistConfirmation(isShowing: showConfirmation, title: confirmationTitle, systemImage: confirmationIcon)
-        .watchlistError(isShowing: showError, title: errorTitle)
+        .watchlistConfirmation(isShowing: self.showConfirmation, title: self.confirmationTitle, systemImage: self.confirmationIcon)
+        .watchlistError(isShowing: self.showError, title: self.errorTitle)
     }
 
     private func handleWatchlistToggle(traderID: String, isWatched: Bool, username: String) {
@@ -292,28 +295,28 @@ struct HitlistTableSection: View {
                 Task {
                     print("➕ [Hitlist] adding to watchlist: id=\(item.id), name=\(item.name)")
                     do {
-                        try await appServices.watchlistService.addToWatchlist(item)
-                        let watchlistIds = viewModel.getWatchlistIds(watchlistService: appServices.watchlistService)
+                        try await self.appServices.watchlistService.addToWatchlist(item)
+                        let watchlistIds = self.viewModel.getWatchlistIds(watchlistService: self.appServices.watchlistService)
                         print("✅ [Hitlist] add completed. currentIds=\(watchlistIds)")
                         _ = await MainActor.run {
-                            confirmationTitle = "Added to Watchlist"
-                            confirmationIcon = "star.fill"
-                            withAnimation(.spring(response: 0.35, dampingFraction: 0.9)) { showConfirmation = true }
+                            self.confirmationTitle = "Added to Watchlist"
+                            self.confirmationIcon = "star.fill"
+                            withAnimation(.spring(response: 0.35, dampingFraction: 0.9)) { self.showConfirmation = true }
                             DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) {
-                                withAnimation(.easeOut(duration: 0.25)) { showConfirmation = false }
+                                withAnimation(.easeOut(duration: 0.25)) { self.showConfirmation = false }
                             }
                         }
                     } catch {
                         _ = await MainActor.run {
-                            errorTitle = "Failed to add to Watchlist"
-                            withAnimation(.spring(response: 0.35, dampingFraction: 0.9)) { showError = true }
+                            self.errorTitle = "Failed to add to Watchlist"
+                            withAnimation(.spring(response: 0.35, dampingFraction: 0.9)) { self.showError = true }
                             DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                                withAnimation(.easeOut(duration: 0.25)) { showError = false }
+                                withAnimation(.easeOut(duration: 0.25)) { self.showError = false }
                             }
                         }
                     }
                     _ = await MainActor.run {
-                        busyUsernames.remove(username)
+                        self.busyUsernames.remove(username)
                     }
                 }
 
@@ -326,28 +329,28 @@ struct HitlistTableSection: View {
             Task {
                 print("➖ [Hitlist] removing from watchlist: id=\(traderID)")
                 do {
-                    try await appServices.watchlistService.removeFromWatchlist(traderID)
-                    let watchlistIds = viewModel.getWatchlistIds(watchlistService: appServices.watchlistService)
+                    try await self.appServices.watchlistService.removeFromWatchlist(traderID)
+                    let watchlistIds = self.viewModel.getWatchlistIds(watchlistService: self.appServices.watchlistService)
                     print("✅ [Hitlist] remove completed. currentIds=\(watchlistIds)")
                     _ = await MainActor.run {
-                        confirmationTitle = "Removed from Watchlist"
-                        confirmationIcon = "star"
-                        withAnimation(.spring(response: 0.35, dampingFraction: 0.9)) { showConfirmation = true }
+                        self.confirmationTitle = "Removed from Watchlist"
+                        self.confirmationIcon = "star"
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.9)) { self.showConfirmation = true }
                         DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) {
-                            withAnimation(.easeOut(duration: 0.25)) { showConfirmation = false }
+                            withAnimation(.easeOut(duration: 0.25)) { self.showConfirmation = false }
                         }
                     }
                 } catch {
                     _ = await MainActor.run {
-                        errorTitle = "Failed to remove from Watchlist"
-                        withAnimation(.spring(response: 0.35, dampingFraction: 0.9)) { showError = true }
+                        self.errorTitle = "Failed to remove from Watchlist"
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.9)) { self.showError = true }
                         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                            withAnimation(.easeOut(duration: 0.25)) { showError = false }
+                            withAnimation(.easeOut(duration: 0.25)) { self.showError = false }
                         }
                     }
                 }
                 _ = await MainActor.run {
-                    busyUsernames.remove(username)
+                    self.busyUsernames.remove(username)
                 }
             }
 

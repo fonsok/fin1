@@ -38,7 +38,7 @@ struct CustomerInfo: Codable, Hashable {
     var userId: String = ""
 
     var fullAddress: String {
-        "\(address), \(postalCode) \(city)"
+        "\(self.address), \(self.postalCode) \(self.city)"
     }
 }
 

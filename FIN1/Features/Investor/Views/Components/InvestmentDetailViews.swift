@@ -21,7 +21,7 @@ struct NewInvestmentView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") {
-                        dismiss()
+                        self.dismiss()
                     }
                     .foregroundColor(AppTheme.accentLightBlue)
                 }
@@ -56,7 +56,7 @@ struct InvestmentDetailView: View {
                                 .fontWeight(.bold)
                                 .foregroundColor(AppTheme.fontColor)
 
-                            Text(viewModel.formattedAmount)
+                            Text(self.viewModel.formattedAmount)
                                 .font(ResponsiveDesign.titleFont())
                                 .fontWeight(.bold)
                                 .foregroundColor(AppTheme.accentGreen)
@@ -67,26 +67,26 @@ struct InvestmentDetailView: View {
 
                         // Investment Info
                         VStack(spacing: ResponsiveDesign.spacing(16)) {
-                            InvestmentInfoRow(title: "Trader ID", value: viewModel.traderIdText)
-                            InvestmentInfoRow(title: "Number of Investments", value: viewModel.numberOfInvestmentsText)
-                            InvestmentInfoRow(title: "Specialization", value: viewModel.specializationText)
-                            InvestmentInfoRow(title: "Status", value: viewModel.statusText)
-                            InvestmentInfoRow(title: "Created", value: viewModel.formattedCreatedDate)
-                            InvestmentInfoRow(title: "Last Updated", value: viewModel.formattedUpdatedDate)
+                            InvestmentInfoRow(title: "Trader ID", value: self.viewModel.traderIdText)
+                            InvestmentInfoRow(title: "Number of Investments", value: self.viewModel.numberOfInvestmentsText)
+                            InvestmentInfoRow(title: "Specialization", value: self.viewModel.specializationText)
+                            InvestmentInfoRow(title: "Status", value: self.viewModel.statusText)
+                            InvestmentInfoRow(title: "Created", value: self.viewModel.formattedCreatedDate)
+                            InvestmentInfoRow(title: "Last Updated", value: self.viewModel.formattedUpdatedDate)
                         }
                         .padding()
                         .background(AppTheme.sectionBackground)
                         .cornerRadius(ResponsiveDesign.spacing(16))
 
                         // Investment Reservations
-                        if viewModel.hasInvestmentReservations {
+                        if self.viewModel.hasInvestmentReservations {
                             VStack(spacing: ResponsiveDesign.spacing(12)) {
                                 Text("Investment Reservations")
                                     .font(ResponsiveDesign.headlineFont())
                                     .foregroundColor(AppTheme.fontColor)
 
-                                ForEach(viewModel.investmentReservations, id: \.id) { reservation in
-                                    InvestmentReservationRow(reservation: reservation, viewModel: viewModel)
+                                ForEach(self.viewModel.investmentReservations, id: \.id) { reservation in
+                                    InvestmentReservationRow(reservation: reservation, viewModel: self.viewModel)
                                 }
                             }
                             .padding()
@@ -101,7 +101,7 @@ struct InvestmentDetailView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") {
-                        dismiss()
+                        self.dismiss()
                     }
                     .foregroundColor(AppTheme.accentLightBlue)
                 }
@@ -116,13 +116,13 @@ struct InvestmentInfoRow: View {
 
     var body: some View {
         HStack {
-            Text(title)
+            Text(self.title)
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
 
             Spacer()
 
-            Text(value)
+            Text(self.value)
                 .font(ResponsiveDesign.bodyFont())
                 .fontWeight(.medium)
                 .foregroundColor(AppTheme.fontColor)
@@ -137,19 +137,19 @@ struct InvestmentReservationRow: View {
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
-                Text("Investment #\(reservation.sequenceNumber)")
+                Text("Investment #\(self.reservation.sequenceNumber)")
                     .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.medium)
                     .foregroundColor(AppTheme.fontColor)
 
-                Text(reservation.status.displayName)
+                Text(self.reservation.status.displayName)
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
             }
 
             Spacer()
 
-            Text(viewModel.formattedReservationAmount(reservation.allocatedAmount))
+            Text(self.viewModel.formattedReservationAmount(self.reservation.allocatedAmount))
                 .font(ResponsiveDesign.bodyFont())
                 .fontWeight(.medium)
                 .foregroundColor(AppTheme.accentGreen)

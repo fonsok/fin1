@@ -12,7 +12,7 @@ struct TransactionInfoRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
             HStack {
-                Text(transactionType.displayName)
+                Text(self.transactionType.displayName)
                     .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.semibold)
                     .foregroundColor(.primary)
@@ -37,7 +37,7 @@ struct TransactionInfoRow: View {
         var components: [String] = []
 
         // Add WKN/ISIN first
-        components.append(wkn)
+        components.append(self.wkn)
 
         // Add Richtung if available
         if let richtung = richtung, !richtung.isEmpty {

@@ -18,17 +18,17 @@ struct TextFieldInput: View {
                 InputFieldIcon(iconName: icon)
             }
 
-            TextField(placeholder ?? "", text: $text)
+            TextField(self.placeholder ?? "", text: self.$text)
                 .font(InputFieldTextStyle.primary)
                 .foregroundColor(InputFieldTextStyle.primaryColor)
-                .textContentType(placeholder?.contains("@") == true ? .emailAddress : nil)
-                .keyboardType(placeholder?.contains("@") == true ? .emailAddress : .default)
+                .textContentType(self.placeholder?.contains("@") == true ? .emailAddress : nil)
+                .keyboardType(self.placeholder?.contains("@") == true ? .emailAddress : .default)
                 .autocapitalization(.none)
-                .onChange(of: text) { _, newValue in
+                .onChange(of: self.text) { _, newValue in
                     if let maxLength = maxLength, newValue.count > maxLength {
-                        text = String(newValue.prefix(maxLength))
+                        self.text = String(newValue.prefix(maxLength))
                     }
-                    onTextChange?(newValue)
+                    self.onTextChange?(newValue)
                 }
         }
         .inputFieldBackground()
@@ -50,15 +50,15 @@ struct SecureFieldInput: View {
                 InputFieldIcon(iconName: icon)
             }
 
-            SecureField(placeholder ?? "", text: $text)
+            SecureField(self.placeholder ?? "", text: self.$text)
                 .font(InputFieldTextStyle.primary)
                 .foregroundColor(InputFieldTextStyle.primaryColor)
                 .textContentType(.password)
-                .onChange(of: text) { _, newValue in
+                .onChange(of: self.text) { _, newValue in
                     if let maxLength = maxLength, newValue.count > maxLength {
-                        text = String(newValue.prefix(maxLength))
+                        self.text = String(newValue.prefix(maxLength))
                     }
-                    onTextChange?(newValue)
+                    self.onTextChange?(newValue)
                 }
         }
         .inputFieldBackground()
@@ -78,7 +78,7 @@ struct PickerInput: View {
             if let options = options, let displayText = displayText {
                 ForEach(Array(options.enumerated()), id: \.offset) { _, option in
                     Button(action: {
-                        selection = option
+                        self.selection = option
                     }) {
                         Text(displayText(option))
                             .foregroundColor(InputFieldTextStyle.primaryColor)
@@ -91,7 +91,7 @@ struct PickerInput: View {
                     Text(displayText(selection))
                         .foregroundColor(InputFieldTextStyle.primaryColor)
                 } else {
-                    Text(placeholder ?? "")
+                    Text(self.placeholder ?? "")
                         .foregroundColor(InputFieldTextStyle.placeholderColor)
                 }
 
@@ -114,10 +114,10 @@ struct SearchFieldInput: View {
     let onTap: (() -> Void)?
 
     var body: some View {
-        Button(action: onTap ?? {}, label: {
+        Button(action: self.onTap ?? {}, label: {
             HStack(alignment: .center) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(text)
+                    Text(self.text)
                         .foregroundColor(InputFieldTextStyle.primaryColor)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .multilineTextAlignment(.leading)
@@ -139,7 +139,7 @@ struct SearchFieldInput: View {
             }
             .padding(ResponsiveDesign.spacing(16))
             .background(AppTheme.inputFieldBackground)
-            .cornerRadius(cornerRadius ?? 8)
+            .cornerRadius(self.cornerRadius ?? 8)
         })
         .buttonStyle(PlainButtonStyle())
     }
@@ -155,7 +155,7 @@ struct CustomInput: View {
     let onTap: (() -> Void)?
 
     var body: some View {
-        Button(action: onTap ?? {}, label: {
+        Button(action: self.onTap ?? {}, label: {
             HStack(alignment: .center, spacing: ResponsiveDesign.spacing(12)) {
                 if let icon = icon {
                     InputFieldIcon(iconName: icon)
@@ -163,7 +163,7 @@ struct CustomInput: View {
                 }
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(text)
+                    Text(self.text)
                         .foregroundColor(InputFieldTextStyle.primaryColor)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .multilineTextAlignment(.leading)
@@ -183,7 +183,7 @@ struct CustomInput: View {
                     .foregroundColor(InputFieldTextStyle.primaryColor)
                     .frame(maxHeight: .infinity, alignment: .center)
             }
-            .inputFieldBackground(cornerRadius: cornerRadius)
+            .inputFieldBackground(cornerRadius: self.cornerRadius)
         })
         .buttonStyle(PlainButtonStyle())
     }
@@ -201,6 +201,6 @@ struct InputContainer<Content: View>: View {
     }
 
     var body: some View {
-        InputContainerStyle.apply(to: content, isEnabled: isEnabled, cornerRadius: nil)
+        InputContainerStyle.apply(to: self.content, isEnabled: self.isEnabled, cornerRadius: nil)
     }
 }

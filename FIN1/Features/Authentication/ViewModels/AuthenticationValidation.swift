@@ -49,7 +49,7 @@ struct AuthenticationValidation {
             return (false, "Password is required")
         }
 
-        guard validateEmail(email) else {
+        guard self.validateEmail(email) else {
             return (false, "Please enter a valid email address")
         }
 
@@ -69,11 +69,11 @@ struct AuthenticationValidation {
             return (false, "Password is required")
         }
 
-        guard validateEmail(userData.email) else {
+        guard self.validateEmail(userData.email) else {
             return (false, "Please enter a valid email address")
         }
 
-        guard validatePassword(userData.password) else {
+        guard self.validatePassword(userData.password) else {
             return (false, "Password must be at least 8 characters with uppercase, lowercase, and numbers")
         }
 

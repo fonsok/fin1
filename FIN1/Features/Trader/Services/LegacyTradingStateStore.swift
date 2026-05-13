@@ -1,16 +1,16 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Legacy Trading State Store
 /// Legacy implementation for backward compatibility with existing services
 final class LegacyTradingStateStore: TradingStateLifecycleProtocol, @unchecked Sendable {
     // MARK: - State Publishers
     var activeOrdersPublisher: AnyPublisher<[Order], Never> {
-        orderManagementService.activeOrdersPublisher
+        self.orderManagementService.activeOrdersPublisher
     }
 
     var completedTradesPublisher: AnyPublisher<[Trade], Never> {
-        tradeLifecycleService.completedTradesPublisher
+        self.tradeLifecycleService.completedTradesPublisher
     }
 
     var watchlistPublisher: AnyPublisher<[SearchResult], Never> {
@@ -63,13 +63,13 @@ final class LegacyTradingStateStore: TradingStateLifecycleProtocol, @unchecked S
     // MARK: - Data Loading
     func loadAllTradingData() async throws {
         // Load data from all services
-        try await orderManagementService.loadActiveOrders()
-        try await tradeLifecycleService.loadCompletedTrades()
+        try await self.orderManagementService.loadActiveOrders()
+        try await self.tradeLifecycleService.loadCompletedTrades()
     }
 
     func refreshTradingData() async throws {
         // Refresh data from all services
-        try await orderManagementService.refreshActiveOrders()
-        try await tradeLifecycleService.refreshCompletedTrades()
+        try await self.orderManagementService.refreshActiveOrders()
+        try await self.tradeLifecycleService.refreshCompletedTrades()
     }
 }

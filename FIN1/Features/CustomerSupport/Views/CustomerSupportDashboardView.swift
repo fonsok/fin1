@@ -25,11 +25,11 @@ struct CustomerSupportDashboardView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: ResponsiveDesign.spacing(20)) {
-                    headerSection
-                    searchSection
-                    CustomerSupportDashboardQuickActionsSection(viewModel: viewModel)
-                    CustomerSupportDashboardRecentTicketsSection(viewModel: viewModel)
-                    permissionsSection
+                    self.headerSection
+                    self.searchSection
+                    CustomerSupportDashboardQuickActionsSection(viewModel: self.viewModel)
+                    CustomerSupportDashboardRecentTicketsSection(viewModel: self.viewModel)
+                    self.permissionsSection
                     Spacer(minLength: ResponsiveDesign.spacing(20))
                 }
                 .padding()
@@ -37,78 +37,78 @@ struct CustomerSupportDashboardView: View {
             .background(AppTheme.screenBackground.ignoresSafeArea())
             .navigationTitle("Kundenservice")
             .navigationBarTitleDisplayMode(.inline)
-            .task { await viewModel.load() }
-            .alert("Fehler", isPresented: $viewModel.showError) {
-                Button("OK") { viewModel.clearError() }
+            .task { await self.viewModel.load() }
+            .alert("Fehler", isPresented: self.$viewModel.showError) {
+                Button("OK") { self.viewModel.clearError() }
             } message: {
-                Text(viewModel.errorMessage ?? "Ein Fehler ist aufgetreten")
+                Text(self.viewModel.errorMessage ?? "Ein Fehler ist aufgetreten")
             }
-            .alert("Erfolg", isPresented: $viewModel.showSuccess) {
-                Button("OK") { viewModel.clearSuccess() }
+            .alert("Erfolg", isPresented: self.$viewModel.showSuccess) {
+                Button("OK") { self.viewModel.clearSuccess() }
             } message: {
-                Text(viewModel.successMessage ?? "")
+                Text(self.viewModel.successMessage ?? "")
             }
-            .sheet(item: $viewModel.selectedCustomer) { customer in
+            .sheet(item: self.$viewModel.selectedCustomer) { customer in
                 CustomerDetailSheet(
                     customer: customer,
-                    kycStatus: viewModel.customerKYCStatus,
-                    investments: viewModel.customerInvestments,
-                    documents: viewModel.customerDocuments,
-                    viewModel: viewModel
+                    kycStatus: self.viewModel.customerKYCStatus,
+                    investments: self.viewModel.customerInvestments,
+                    documents: self.viewModel.customerDocuments,
+                    viewModel: self.viewModel
                 )
             }
-            .sheet(isPresented: $viewModel.showCreateTicketSheet) {
-                CreateTicketSheet(viewModel: viewModel)
+            .sheet(isPresented: self.$viewModel.showCreateTicketSheet) {
+                CreateTicketSheet(viewModel: self.viewModel)
             }
-            .sheet(isPresented: $viewModel.showKYCStatusList) {
-                KYCStatusListView(viewModel: viewModel)
+            .sheet(isPresented: self.$viewModel.showKYCStatusList) {
+                KYCStatusListView(viewModel: self.viewModel)
             }
-            .sheet(item: $viewModel.selectedTicket) { ticket in
-                TicketDetailSheet(ticket: ticket, viewModel: viewModel)
+            .sheet(item: self.$viewModel.selectedTicket) { ticket in
+                TicketDetailSheet(ticket: ticket, viewModel: self.viewModel)
             }
-            .sheet(isPresented: $viewModel.showEscalateTicketSheet) {
+            .sheet(isPresented: self.$viewModel.showEscalateTicketSheet) {
                 if let ticket = viewModel.ticketToEscalate {
-                    EscalateTicketSheet(ticket: ticket, viewModel: viewModel)
+                    EscalateTicketSheet(ticket: ticket, viewModel: self.viewModel)
                 }
             }
-            .sheet(isPresented: $viewModel.showTicketQueueSheet) {
-                TicketQueueView(viewModel: viewModel)
+            .sheet(isPresented: self.$viewModel.showTicketQueueSheet) {
+                TicketQueueView(viewModel: self.viewModel)
             }
-            .sheet(isPresented: $viewModel.showAssignTicketSheet) {
+            .sheet(isPresented: self.$viewModel.showAssignTicketSheet) {
                 if let ticket = viewModel.ticketForAction {
-                    AssignTicketSheet(ticket: ticket, viewModel: viewModel)
+                    AssignTicketSheet(ticket: ticket, viewModel: self.viewModel)
                 }
             }
-            .sheet(isPresented: $viewModel.showAnalyticsDashboard) {
-                SupportAnalyticsDashboard(viewModel: viewModel)
+            .sheet(isPresented: self.$viewModel.showAnalyticsDashboard) {
+                SupportAnalyticsDashboard(viewModel: self.viewModel)
             }
-            .sheet(isPresented: $viewModel.showArchiveView) {
-                TicketArchiveView(viewModel: viewModel)
+            .sheet(isPresented: self.$viewModel.showArchiveView) {
+                TicketArchiveView(viewModel: self.viewModel)
             }
-            .sheet(isPresented: $viewModel.showTrendAlerts) {
-                TrendAlertsView(viewModel: viewModel)
+            .sheet(isPresented: self.$viewModel.showTrendAlerts) {
+                TrendAlertsView(viewModel: self.viewModel)
             }
-            .sheet(isPresented: $viewModel.showAgentPerformance) {
-                AgentPerformanceDashboard(viewModel: viewModel)
+            .sheet(isPresented: self.$viewModel.showAgentPerformance) {
+                AgentPerformanceDashboard(viewModel: self.viewModel)
             }
-            .sheet(isPresented: $viewModel.showBulkOperations) {
-                BulkOperationsView(viewModel: viewModel)
+            .sheet(isPresented: self.$viewModel.showBulkOperations) {
+                BulkOperationsView(viewModel: self.viewModel)
             }
-            .sheet(isPresented: $viewModel.showNotificationPreferences) {
+            .sheet(isPresented: self.$viewModel.showNotificationPreferences) {
                 SupportNotificationPreferencesView(isCSR: true)
             }
-            .sheet(isPresented: $viewModel.showEmailTemplates) {
+            .sheet(isPresented: self.$viewModel.showEmailTemplates) {
                 EmailTemplateEditorView()
             }
-            .sheet(isPresented: $viewModel.showFAQKnowledgeBase) {
+            .sheet(isPresented: self.$viewModel.showFAQKnowledgeBase) {
                 FAQKnowledgeBaseView(
-                    faqService: services.faqKnowledgeBaseService,
-                    auditService: services.auditLoggingService,
+                    faqService: self.services.faqKnowledgeBaseService,
+                    auditService: self.services.auditLoggingService,
                     isCSRMode: true,
-                    userId: services.userService.currentUser?.id
+                    userId: self.services.userService.currentUser?.id
                 )
             }
-            .sheet(isPresented: $viewModel.showSupportSettings) {
+            .sheet(isPresented: self.$viewModel.showSupportSettings) {
                 CustomerSupportSettingsView()
             }
         }
@@ -165,17 +165,17 @@ struct CustomerSupportDashboardView: View {
                 Image(systemName: "magnifyingglass")
                     .foregroundColor(AppTheme.fontColor.opacity(0.5))
 
-                TextField("Name, E-Mail oder Kundennummer...", text: $viewModel.searchQuery)
+                TextField("Name, E-Mail oder Kundennummer...", text: self.$viewModel.searchQuery)
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.fontColor)
 
-                if viewModel.isSearching {
+                if self.viewModel.isSearching {
                     ProgressView()
                         .scaleEffect(0.8)
                 }
 
-                if !viewModel.searchQuery.isEmpty {
-                    Button(action: { viewModel.searchQuery = "" }) {
+                if !self.viewModel.searchQuery.isEmpty {
+                    Button(action: { self.viewModel.searchQuery = "" }) {
                         Image(systemName: "xmark.circle.fill")
                             .foregroundColor(AppTheme.fontColor.opacity(0.5))
                     }
@@ -185,17 +185,17 @@ struct CustomerSupportDashboardView: View {
             .background(AppTheme.screenBackground)
             .cornerRadius(ResponsiveDesign.spacing(10))
 
-            if !viewModel.searchResults.isEmpty {
+            if !self.viewModel.searchResults.isEmpty {
                 VStack(spacing: ResponsiveDesign.spacing(8)) {
-                    ForEach(viewModel.searchResults) { result in
+                    ForEach(self.viewModel.searchResults) { result in
                         CustomerSearchResultRow(result: result) {
                             Task {
-                                await viewModel.selectCustomer(result)
+                                await self.viewModel.selectCustomer(result)
                             }
                         }
                     }
                 }
-            } else if !viewModel.searchQuery.isEmpty && !viewModel.isSearching {
+            } else if !self.viewModel.searchQuery.isEmpty && !self.viewModel.isSearching {
                 Text("Keine Kunden gefunden")
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.7))

@@ -14,16 +14,16 @@ struct IdentificationTypeStep: View {
                 .foregroundColor(AppTheme.fontColor)
                 .multilineTextAlignment(.center)
 
-         Text("Bitte wählen Sie Ihr Ausweisdokument aus")
+            Text("Bitte wählen Sie Ihr Ausweisdokument aus")
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.8))
                 .multilineTextAlignment(.leading)
 
             VStack(spacing: ResponsiveDesign.spacing(16)) {
-                Button(action: { identificationType = .passport }, label: {
+                Button(action: { self.identificationType = .passport }, label: {
                     HStack {
                         InteractiveElement(
-                            isSelected: identificationType == .passport,
+                            isSelected: self.identificationType == .passport,
                             type: .radioButton,
                             color: AppTheme.accentLightBlue
                         )
@@ -41,19 +41,19 @@ struct IdentificationTypeStep: View {
                         Spacer()
                     }
                     .padding()
-                    .background(identificationType == .passport ? AppTheme.accentLightBlue.opacity(0.1) : AppTheme.sectionBackground)
+                    .background(self.identificationType == .passport ? AppTheme.accentLightBlue.opacity(0.1) : AppTheme.sectionBackground)
                     .cornerRadius(ResponsiveDesign.spacing(12))
                     .overlay(
                         RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(12))
-                            .stroke(identificationType == .passport ? AppTheme.accentLightBlue : Color.clear, lineWidth: 2)
+                            .stroke(self.identificationType == .passport ? AppTheme.accentLightBlue : Color.clear, lineWidth: 2)
                     )
                 })
                 .buttonStyle(PlainButtonStyle())
 
-                Button(action: { identificationType = .idCard }, label: {
+                Button(action: { self.identificationType = .idCard }, label: {
                     HStack {
                         InteractiveElement(
-                            isSelected: identificationType == .idCard,
+                            isSelected: self.identificationType == .idCard,
                             type: .radioButton,
                             color: AppTheme.accentLightBlue
                         )
@@ -71,19 +71,19 @@ struct IdentificationTypeStep: View {
                         Spacer()
                     }
                     .padding()
-                    .background(identificationType == .idCard ? AppTheme.accentLightBlue.opacity(0.1) : AppTheme.sectionBackground)
+                    .background(self.identificationType == .idCard ? AppTheme.accentLightBlue.opacity(0.1) : AppTheme.sectionBackground)
                     .cornerRadius(ResponsiveDesign.spacing(12))
                     .overlay(
                         RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(12))
-                            .stroke(identificationType == .idCard ? AppTheme.accentLightBlue : Color.clear, lineWidth: 2)
+                            .stroke(self.identificationType == .idCard ? AppTheme.accentLightBlue : Color.clear, lineWidth: 2)
                     )
                 })
                 .buttonStyle(PlainButtonStyle())
 
-                Button(action: { identificationType = .postident }, label: {
+                Button(action: { self.identificationType = .postident }, label: {
                     HStack {
                         InteractiveElement(
-                            isSelected: identificationType == .postident,
+                            isSelected: self.identificationType == .postident,
                             type: .radioButton,
                             color: AppTheme.accentLightBlue
                         )
@@ -101,11 +101,11 @@ struct IdentificationTypeStep: View {
                         Spacer()
                     }
                     .padding()
-                    .background(identificationType == .postident ? AppTheme.accentLightBlue.opacity(0.1) : AppTheme.sectionBackground)
+                    .background(self.identificationType == .postident ? AppTheme.accentLightBlue.opacity(0.1) : AppTheme.sectionBackground)
                     .cornerRadius(ResponsiveDesign.spacing(12))
                     .overlay(
                         RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(12))
-                            .stroke(identificationType == .postident ? AppTheme.accentLightBlue : Color.clear, lineWidth: 2)
+                            .stroke(self.identificationType == .postident ? AppTheme.accentLightBlue : Color.clear, lineWidth: 2)
                     )
                 })
                 .buttonStyle(PlainButtonStyle())

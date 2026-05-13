@@ -1,5 +1,5 @@
-import SwiftUI
 import LocalAuthentication
+import SwiftUI
 
 // MARK: - Login View Wrapper
 /// Wrapper to properly inject services from environment into ViewModel
@@ -7,7 +7,7 @@ struct LoginViewWrapper: View {
     @Environment(\.appServices) private var services
 
     var body: some View {
-        LoginView(userService: services.userService)
+        LoginView(userService: self.services.userService)
     }
 }
 
@@ -52,7 +52,7 @@ struct LoginView: View {
                                 label: "Email",
                                 placeholder: "Enter your email",
                                 icon: "envelope.fill",
-                                text: $viewModel.email,
+                                text: self.$viewModel.email,
                                 isEmail: true
                             )
 
@@ -60,14 +60,14 @@ struct LoginView: View {
                                 label: "Password",
                                 placeholder: "Enter your password",
                                 icon: "lock.fill",
-                                text: $viewModel.password
+                                text: self.$viewModel.password
                             )
 
                             // Forgot Password
                             HStack {
                                 Spacer()
                                 Button("Forgot Password?") {
-                                    viewModel.showForgotPassword = true
+                                    self.viewModel.showForgotPassword = true
                                 }
                                 .font(ResponsiveDesign.bodyFont())
                                 .foregroundColor(AppTheme.accentLightBlue)
@@ -76,9 +76,9 @@ struct LoginView: View {
                         .authPadding()
 
                         // Login Button
-                        Button(action: viewModel.performLogin, label: {
+                        Button(action: self.viewModel.performLogin, label: {
                             HStack {
-                                if viewModel.isLoading {
+                                if self.viewModel.isLoading {
                                     ProgressView()
                                         .progressViewStyle(CircularProgressViewStyle(tint: .white))
                                         .scaleEffect(0.8)
@@ -93,11 +93,11 @@ struct LoginView: View {
                             .background(AppTheme.accentLightBlue)
                             .cornerRadius(ResponsiveDesign.spacing(12))
                         })
-                        .disabled(viewModel.isLoading)
+                        .disabled(self.viewModel.isLoading)
                         .authPadding()
 
                         // Biometric Login
-                        Button(action: viewModel.performBiometricLogin, label: {
+                        Button(action: self.viewModel.performBiometricLogin, label: {
                             HStack(spacing: ResponsiveDesign.spacing(12)) {
                                 Image(systemName: "faceid")
                                     .font(ResponsiveDesign.headlineFont())
@@ -123,33 +123,33 @@ struct LoginView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel") {
-                        dismiss()
+                        self.dismiss()
                     }
                     .foregroundColor(AppTheme.accentLightBlue)
                 }
             }
         }
         .dismissKeyboardOnTap()
-        .alert("Login Error", isPresented: $viewModel.showError) {
-            Button("OK") { viewModel.clearError() }
+        .alert("Login Error", isPresented: self.$viewModel.showError) {
+            Button("OK") { self.viewModel.clearError() }
         } message: {
-            Text(viewModel.errorMessage ?? "")
+            Text(self.viewModel.errorMessage ?? "")
         }
-        .sheet(isPresented: $viewModel.showForgotPassword) {
+        .sheet(isPresented: self.$viewModel.showForgotPassword) {
             ForgotPasswordView()
         }
         // Use onAppear to check authentication state immediately
         .onAppear {
             // Reset state when view appears
-            viewModel.loginSuccessful = false
+            self.viewModel.loginSuccessful = false
         }
         // Use onReceive for more reliable state observation
-        .onReceive(viewModel.$isAuthenticated) { isAuthenticated in
-            if isAuthenticated && viewModel.loginSuccessful {
+        .onReceive(self.viewModel.$isAuthenticated) { isAuthenticated in
+            if isAuthenticated && self.viewModel.loginSuccessful {
                 // Add a very small delay to allow state to update completely
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    viewModel.isLoading = false
-                    dismiss()
+                    self.viewModel.isLoading = false
+                    self.dismiss()
                 }
             }
         }
@@ -165,11 +165,11 @@ struct CustomTextField: View {
 
     var body: some View {
         HStack(spacing: ResponsiveDesign.spacing(12)) {
-            Image(systemName: icon)
+            Image(systemName: self.icon)
                 .foregroundColor(AppTheme.inputFieldPlaceholder)
                 .frame(width: 20)
 
-            TextField(placeholder, text: $text)
+            TextField(self.placeholder, text: self.$text)
                 .font(ResponsiveDesign.headlineFont()) // Increased font size by another ~50%
                 .foregroundColor(AppTheme.inputFieldText)
                 .textContentType(.emailAddress)
@@ -190,11 +190,11 @@ struct CustomSecureField: View {
 
     var body: some View {
         HStack(spacing: ResponsiveDesign.spacing(12)) {
-            Image(systemName: icon)
+            Image(systemName: self.icon)
                 .foregroundColor(AppTheme.inputFieldPlaceholder)
                 .frame(width: 20)
 
-            SecureField(placeholder, text: $text)
+            SecureField(self.placeholder, text: self.$text)
                 .font(ResponsiveDesign.headlineFont()) // Increased font size by another ~50%
                 .foregroundColor(AppTheme.inputFieldText)
                 .textContentType(.password)

@@ -15,29 +15,29 @@ struct OpenInvestmentsTable: View {
         ScrollView(.horizontal, showsIndicators: true) {
             VStack(spacing: ResponsiveDesign.spacing(0)) {
                 OpenInvestmentsTableHeaderRow(
-                    columnWidths: columnWidths,
+                    columnWidths: self.columnWidths,
                     forMeasurement: false,
-                    onShowStatusInfo: onShowStatusInfo
+                    onShowStatusInfo: self.onShowStatusInfo
                 )
-                    .frame(minHeight: 44)
-                    .padding(.horizontal, ResponsiveDesign.spacing(12))
-                    .padding(.vertical, ResponsiveDesign.spacing(6))
+                .frame(minHeight: 44)
+                .padding(.horizontal, ResponsiveDesign.spacing(12))
+                .padding(.vertical, ResponsiveDesign.spacing(6))
 
-                ForEach(Array(pools.enumerated()), id: \.element.id) { index, pool in
+                ForEach(Array(self.pools.enumerated()), id: \.element.id) { index, pool in
                     OpenInvestmentsTableDataRow(
                         pool: pool,
                         isEven: index % 2 == 0,
-                        columnWidths: columnWidths,
+                        columnWidths: self.columnWidths,
                         forMeasurement: false,
-                        onDeleteInvestment: onDeleteInvestment
+                        onDeleteInvestment: self.onDeleteInvestment
                     )
                 }
 
                 OpenInvestmentsTableTotalRow(
-                    columnWidths: columnWidths,
-                    totalAmount: totalAmount,
-                    totalProfit: totalProfit,
-                    totalReturn: totalReturn,
+                    columnWidths: self.columnWidths,
+                    totalAmount: self.totalAmount,
+                    totalProfit: self.totalProfit,
+                    totalReturn: self.totalReturn,
                     forMeasurement: false
                 )
             }
@@ -47,25 +47,25 @@ struct OpenInvestmentsTable: View {
                 OpenInvestmentsTableHeaderRow(
                     columnWidths: [:],
                     forMeasurement: true,
-                    onShowStatusInfo: onShowStatusInfo
+                    onShowStatusInfo: self.onShowStatusInfo
                 )
 
                 VStack(spacing: ResponsiveDesign.spacing(0)) {
-                    ForEach(pools) { pool in
+                    ForEach(self.pools) { pool in
                         OpenInvestmentsTableDataRow(
                             pool: pool,
                             isEven: false,
                             columnWidths: [:],
                             forMeasurement: true,
-                            onDeleteInvestment: onDeleteInvestment
+                            onDeleteInvestment: self.onDeleteInvestment
                         )
                     }
 
                     OpenInvestmentsTableTotalRow(
                         columnWidths: [:],
-                        totalAmount: totalAmount,
-                        totalProfit: totalProfit,
-                        totalReturn: totalReturn,
+                        totalAmount: self.totalAmount,
+                        totalProfit: self.totalProfit,
+                        totalReturn: self.totalReturn,
                         forMeasurement: true
                     )
                 }
@@ -77,7 +77,7 @@ struct OpenInvestmentsTable: View {
         }
         .onPreferenceChange(ColumnWidthPreferenceKey.self) { widths in
             // Add small padding to each column width for breathing room
-            columnWidths = widths.mapValues { width in
+            self.columnWidths = widths.mapValues { width in
                 max(width + ResponsiveDesign.spacing(4), 40) // Minimum 40pt width
             }
         }

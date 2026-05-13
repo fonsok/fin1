@@ -122,8 +122,8 @@ extension ParseAPIClient {
         resolver: ConflictResolutionServiceProtocol
     ) async throws -> ParseResponse {
         let remoteObject: T = try await fetchObject(className: className, objectId: objectId)
-        let localUpdatedAt = extractUpdatedAt(from: localObject)
-        let remoteUpdatedAt = extractUpdatedAt(from: remoteObject)
+        let localUpdatedAt = self.extractUpdatedAt(from: localObject)
+        let remoteUpdatedAt = self.extractUpdatedAt(from: remoteObject)
 
         let resolvedObject = try await resolver.resolveConflict(
             local: localObject,
@@ -153,7 +153,9 @@ extension ParseAPIClient {
            let updatedAtString = dict["updatedAt"] as? String {
             let formatter = ISO8601DateFormatter()
             formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-            return formatter.date(from: updatedAtString) ?? formatter.date(from: updatedAtString.replacingOccurrences(of: "\\.\\d+", with: "", options: .regularExpression))
+            return formatter.date(from: updatedAtString) ?? formatter.date(
+                from: updatedAtString.replacingOccurrences(of: "\\.\\d+", with: "", options: .regularExpression)
+            )
         }
 
         return nil

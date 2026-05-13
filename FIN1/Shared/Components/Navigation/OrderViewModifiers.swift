@@ -11,11 +11,11 @@ struct OrderNavigationModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .onChange(of: shouldShowDepotView) { _, newValue in
+            .onChange(of: self.shouldShowDepotView) { _, newValue in
                 if newValue {
                     // Navigate to depot tab when automatic order is placed
-                    tabRouter.selectedTab = 2 // Depot tab
-                    shouldShowDepotView = false // Reset the flag
+                    self.tabRouter.selectedTab = 2 // Depot tab
+                    self.shouldShowDepotView = false // Reset the flag
                 }
             }
     }
@@ -31,16 +31,16 @@ struct OrderTypeChangeModifier<T: RawRepresentable & CaseIterable & Equatable>: 
 
     func body(content: Content) -> some View {
         content
-            .onChange(of: orderType) { _, newValue in
+            .onChange(of: self.orderType) { _, newValue in
                 // Stop monitoring if switching away from limit order
                 if newValue.rawValue != "Limit" {
-                    onStopMonitoring()
+                    self.onStopMonitoring()
                 }
             }
-            .onChange(of: limit) { _, _ in
+            .onChange(of: self.limit) { _, _ in
                 // Stop monitoring if limit price is cleared
-                if orderType.rawValue == "Limit" && limitPrice == nil {
-                    onStopMonitoring()
+                if self.orderType.rawValue == "Limit" && self.limitPrice == nil {
+                    self.onStopMonitoring()
                 }
             }
     }
@@ -57,10 +57,10 @@ struct OrderActionModifier: ViewModifier {
         content
             .onTapGesture {
                 Task {
-                    await onPlaceOrder()
+                    await self.onPlaceOrder()
                     // Navigate to depot tab and dismiss the view
-                    tabRouter.selectedTab = 2 // Depot tab
-                    onDismiss()
+                    self.tabRouter.selectedTab = 2 // Depot tab
+                    self.onDismiss()
                 }
             }
     }

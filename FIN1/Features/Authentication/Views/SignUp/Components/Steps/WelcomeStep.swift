@@ -31,10 +31,10 @@ struct WelcomeStep: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                 VStack(spacing: ResponsiveDesign.spacing(12)) {
-                    Button(action: { accountType = .individual }, label: {
+                    Button(action: { self.accountType = .individual }, label: {
                         HStack {
                             InteractiveElement(
-                                isSelected: accountType == .individual,
+                                isSelected: self.accountType == .individual,
                                 type: .radioButton,
                                 color: AppTheme.accentLightBlue
                             )
@@ -48,10 +48,10 @@ struct WelcomeStep: View {
                     })
                     .buttonStyle(PlainButtonStyle())
 
-                    Button(action: { accountType = .company }, label: {
+                    Button(action: { self.accountType = .company }, label: {
                         HStack {
                             InteractiveElement(
-                                isSelected: accountType == .company,
+                                isSelected: self.accountType == .company,
                                 type: .radioButton,
                                 color: AppTheme.accentLightBlue
                             )
@@ -78,10 +78,10 @@ struct WelcomeStep: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                 VStack(spacing: ResponsiveDesign.spacing(12)) {
-                    Button(action: { userRole = .investor }, label: {
+                    Button(action: { self.userRole = .investor }, label: {
                         HStack {
                             InteractiveElement(
-                                isSelected: userRole == .investor,
+                                isSelected: self.userRole == .investor,
                                 type: .radioButton,
                                 color: AppTheme.accentLightBlue
                             )
@@ -96,14 +96,14 @@ struct WelcomeStep: View {
                     .buttonStyle(PlainButtonStyle())
 
                     Button(action: {
-                        guard accountType != .company else { return }
-                        userRole = .trader
+                        guard self.accountType != .company else { return }
+                        self.userRole = .trader
                     }, label: {
                         HStack {
                             InteractiveElement(
-                                isSelected: userRole == .trader,
+                                isSelected: self.userRole == .trader,
                                 type: .radioButton,
-                                color: accountType == .company
+                                color: self.accountType == .company
                                     ? AppTheme.fontColor.opacity(0.3)
                                     : AppTheme.accentLightBlue
                             )
@@ -111,12 +111,12 @@ struct WelcomeStep: View {
                             Text("Trader")
                                 .font(ResponsiveDesign.headlineFont())
                                 .foregroundColor(
-                                    accountType == .company
+                                    self.accountType == .company
                                         ? AppTheme.fontColor.opacity(0.4)
                                         : AppTheme.fontColor
                                 )
 
-                            if accountType == .company {
+                            if self.accountType == .company {
                                 Text("(nur für Einzelpersonen)")
                                     .font(ResponsiveDesign.captionFont())
                                     .foregroundColor(AppTheme.fontColor.opacity(0.5))
@@ -126,15 +126,15 @@ struct WelcomeStep: View {
                         }
                     })
                     .buttonStyle(PlainButtonStyle())
-                    .disabled(accountType == .company)
+                    .disabled(self.accountType == .company)
                 }
             }
             .padding(ResponsiveDesign.spacing(16))
             .background(AppTheme.sectionBackground)
             .cornerRadius(ResponsiveDesign.isCompactDevice() ? 12 : 16)
-            .onChange(of: accountType) { _, newType in
-                if newType == .company && userRole == .trader {
-                    userRole = .investor
+            .onChange(of: self.accountType) { _, newType in
+                if newType == .company && self.userRole == .trader {
+                    self.userRole = .investor
                 }
             }
 
@@ -146,7 +146,7 @@ struct WelcomeStep: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
-                    if accountType == .company {
+                    if self.accountType == .company {
                         InfoBullet(text: "Angaben zum Unternehmen (Firma, Rechtsform, Registerdaten).")
                         InfoBullet(text: "Eingetragener Sitz und ggf. Geschäftsanschrift.")
                         InfoBullet(text: "Steuerliche Identifikatoren (USt-IdNr. oder Steuernummer).")
@@ -174,7 +174,7 @@ struct WelcomeStep: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
-                    if accountType == .company {
+                    if self.accountType == .company {
                         InfoBullet(text: "Aktueller Handelsregisterauszug (nicht älter als 6 Monate)")
                         InfoBullet(text: "USt-IdNr. oder nationale Steuernummer des Unternehmens")
                         InfoBullet(text: "Gesellschaftsvertrag / Satzung (falls abweichend vom Register)")
@@ -183,7 +183,9 @@ struct WelcomeStep: View {
                     } else {
                         InfoBullet(text: "Ihre Steuernummer")
                         InfoBullet(text: "Kopie (.png-Datei) Ihres Personalausweis (Vorder- und Rückseite) oder Ihres Reisepasses")
-                        InfoBullet(text: "Kopie (.png-Datei) eines plausiblen Adressnachweises (z.B. Kontoauszug, Rechnung Energieversorger, Kreditkartenabrechnung)")
+                        InfoBullet(
+                            text: "Kopie (.png-Datei) eines plausiblen Adressnachweises (z.B. Kontoauszug, Rechnung Energieversorger, Kreditkartenabrechnung)"
+                        )
                     }
                 }
             }

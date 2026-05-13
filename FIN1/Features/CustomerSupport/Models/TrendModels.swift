@@ -122,11 +122,41 @@ struct IssueCategory: Identifiable, Codable {
     var lastOccurrence: Date
 
     static let predefinedCategories: [IssueCategory] = [
-        IssueCategory(id: "login", name: "Login-Probleme", keywords: ["login", "anmelden", "passwort", "einloggen", "zugang"], ticketCount: 0, lastOccurrence: Date()),
-        IssueCategory(id: "payment", name: "Zahlungsprobleme", keywords: ["zahlung", "überweisung", "geld", "konto", "transaktion", "abbuchung"], ticketCount: 0, lastOccurrence: Date()),
-        IssueCategory(id: "technical", name: "Technische Probleme", keywords: ["fehler", "absturz", "bug", "laden", "langsam", "app"], ticketCount: 0, lastOccurrence: Date()),
-        IssueCategory(id: "investment", name: "Investment-Fragen", keywords: ["investition", "anlage", "rendite", "investments", "aktie"], ticketCount: 0, lastOccurrence: Date()),
-        IssueCategory(id: "account", name: "Konto-Probleme", keywords: ["konto", "profil", "daten", "ändern", "löschen"], ticketCount: 0, lastOccurrence: Date())
+        IssueCategory(
+            id: "login",
+            name: "Login-Probleme",
+            keywords: ["login", "anmelden", "passwort", "einloggen", "zugang"],
+            ticketCount: 0,
+            lastOccurrence: Date()
+        ),
+        IssueCategory(
+            id: "payment",
+            name: "Zahlungsprobleme",
+            keywords: ["zahlung", "überweisung", "geld", "konto", "transaktion", "abbuchung"],
+            ticketCount: 0,
+            lastOccurrence: Date()
+        ),
+        IssueCategory(
+            id: "technical",
+            name: "Technische Probleme",
+            keywords: ["fehler", "absturz", "bug", "laden", "langsam", "app"],
+            ticketCount: 0,
+            lastOccurrence: Date()
+        ),
+        IssueCategory(
+            id: "investment",
+            name: "Investment-Fragen",
+            keywords: ["investition", "anlage", "rendite", "investments", "aktie"],
+            ticketCount: 0,
+            lastOccurrence: Date()
+        ),
+        IssueCategory(
+            id: "account",
+            name: "Konto-Probleme",
+            keywords: ["konto", "profil", "daten", "ändern", "löschen"],
+            ticketCount: 0,
+            lastOccurrence: Date()
+        )
     ]
 }
 

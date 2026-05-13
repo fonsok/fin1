@@ -10,9 +10,9 @@ struct CreditNoteCommissionTableView: View {
 
     var body: some View {
         VStack(spacing: ResponsiveDesign.spacing(0)) {
-            tableHeader
-            tableRows
-            totalRow
+            self.tableHeader
+            self.tableRows
+            self.totalRow
         }
         .cornerRadius(ResponsiveDesign.spacing(8))
         .overlay(
@@ -36,7 +36,7 @@ struct CreditNoteCommissionTableView: View {
                 .foregroundColor(AppTheme.inputFieldText)
                 .frame(width: 90, alignment: .trailing)
 
-            Text("× \(commissionRateFormatted)")
+            Text("× \(self.commissionRateFormatted)")
                 .font(ResponsiveDesign.captionFont())
                 .fontWeight(.regular)
                 .foregroundColor(AppTheme.inputFieldText)
@@ -55,7 +55,7 @@ struct CreditNoteCommissionTableView: View {
 
     // MARK: - Table Rows
     private var tableRows: some View {
-        ForEach(items) { item in
+        ForEach(self.items) { item in
             HStack(spacing: ResponsiveDesign.spacing(8)) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(item.investorName)
@@ -68,7 +68,7 @@ struct CreditNoteCommissionTableView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-                Text(formatCurrency(item.grossProfit))
+                Text(self.formatCurrency(item.grossProfit))
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.fontColor)
                     .frame(width: 90, alignment: .trailing)
@@ -78,7 +78,7 @@ struct CreditNoteCommissionTableView: View {
                     .foregroundColor(AppTheme.fontColor.opacity(0.6))
                     .frame(width: 55, alignment: .center)
 
-                Text(formatCurrency(item.commission))
+                Text(self.formatCurrency(item.commission))
                     .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.regular)
                     .foregroundColor(AppTheme.fontColor)
@@ -105,7 +105,7 @@ struct CreditNoteCommissionTableView: View {
             Spacer()
                 .frame(width: 55)
 
-            Text(formatCurrency(totalCommission))
+            Text(self.formatCurrency(self.totalCommission))
                 .font(ResponsiveDesign.bodyFont())
                 .fontWeight(.regular)
                 .foregroundColor(AppTheme.inputFieldText)

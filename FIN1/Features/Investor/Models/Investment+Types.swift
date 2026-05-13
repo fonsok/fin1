@@ -58,7 +58,7 @@ enum InvestmentTimePeriod: CaseIterable, Sendable {
         case .lastYear:
             return calendar.date(byAdding: .year, value: -1, to: Date()) ?? Date()
         case .allTime:
-            return calendar.date(from: DateComponents(year: 2000, month: 1, day: 1)) ?? Date()
+            return calendar.date(from: DateComponents(year: 2_000, month: 1, day: 1)) ?? Date()
         }
     }
 }
@@ -78,7 +78,7 @@ struct InvestmentPool: Identifiable, Codable, Sendable {
     let completedAt: Date?
 
     var averageInvestment: Double {
-        numberOfInvestors > 0 ? totalInvested / Double(numberOfInvestors) : 0
+        self.numberOfInvestors > 0 ? self.totalInvested / Double(self.numberOfInvestors) : 0
     }
 }
 

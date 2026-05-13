@@ -16,17 +16,17 @@ struct DirectionSegmentedControl: View {
                 RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(8))
                     .fill(AppTheme.accentGreen.opacity(0.7))
                     .frame(width: segmentWidth, height: max(totalHeight - 4, 0))
-                    .offset(x: selection == .call ? 2 : segmentWidth + 2)
-                    .animation(.easeInOut(duration: 0.2), value: selection)
+                    .offset(x: self.selection == .call ? 2 : segmentWidth + 2)
+                    .animation(.easeInOut(duration: 0.2), value: self.selection)
 
                 HStack(spacing: ResponsiveDesign.spacing(0)) {
-                    segment(title: "Call", isActive: selection == .call) {
-                        withAnimation(.easeInOut(duration: 0.2)) { selection = .call }
+                    self.segment(title: "Call", isActive: self.selection == .call) {
+                        withAnimation(.easeInOut(duration: 0.2)) { self.selection = .call }
                     }
                     .frame(width: segmentWidth, height: totalHeight)
 
-                    segment(title: "Put", isActive: selection == .put) {
-                        withAnimation(.easeInOut(duration: 0.2)) { selection = .put }
+                    self.segment(title: "Put", isActive: self.selection == .put) {
+                        withAnimation(.easeInOut(duration: 0.2)) { self.selection = .put }
                     }
                     .frame(width: segmentWidth, height: totalHeight)
                 }
@@ -35,7 +35,7 @@ struct DirectionSegmentedControl: View {
         .frame(height: 36)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Richtung")
-        .accessibilityValue(selection == .call ? "Call" : "Put")
+        .accessibilityValue(self.selection == .call ? "Call" : "Put")
     }
 
     private func segment(title: String, isActive: Bool, action: @escaping () -> Void) -> some View {
@@ -72,6 +72,6 @@ struct StatefulPreviewWrapper<Value, Content: View>: View {
     }
 
     var body: some View {
-        content($value)
+        self.content(self.$value)
     }
 }

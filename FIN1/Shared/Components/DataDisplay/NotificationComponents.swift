@@ -21,14 +21,14 @@ struct NotificationFilterPill: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: action, label: {
-            Text(title)
+        Button(action: self.action, label: {
+            Text(self.title)
                 .font(ResponsiveDesign.captionFont())
                 .fontWeight(.medium)
-                .foregroundColor(isSelected ? AppTheme.screenBackground : AppTheme.accentLightBlue)
+                .foregroundColor(self.isSelected ? AppTheme.screenBackground : AppTheme.accentLightBlue)
                 .padding(.horizontal, ResponsiveDesign.spacing(16))
                 .padding(.vertical, ResponsiveDesign.spacing(8))
-                .background(isSelected ? AppTheme.accentLightBlue : Color.clear)
+                .background(self.isSelected ? AppTheme.accentLightBlue : Color.clear)
                 .overlay(
                     RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(20))
                         .stroke(AppTheme.accentLightBlue, lineWidth: 1)
@@ -56,23 +56,23 @@ struct NotificationFilterView: View {
                         .foregroundColor(AppTheme.fontColor)
 
                     VStack(spacing: ResponsiveDesign.spacing(16)) {
-                        ForEach(availableFilters, id: \.self) { filter in
+                        ForEach(self.availableFilters, id: \.self) { filter in
                             Button(action: {
-                                selectedFilter = filter
-                                dismiss()
+                                self.selectedFilter = filter
+                                self.dismiss()
                             }) {
                                 HStack {
                                     Text(filter.displayName)
                                         .font(ResponsiveDesign.headlineFont())
-                                        .foregroundColor(selectedFilter == filter ? AppTheme.screenBackground : AppTheme.fontColor)
+                                        .foregroundColor(self.selectedFilter == filter ? AppTheme.screenBackground : AppTheme.fontColor)
                                     Spacer()
-                                    if selectedFilter == filter {
+                                    if self.selectedFilter == filter {
                                         Image(systemName: "checkmark.circle.fill")
                                             .foregroundColor(AppTheme.screenBackground)
                                     }
                                 }
                                 .responsivePadding()
-                                .background(selectedFilter == filter ? AppTheme.accentLightBlue : AppTheme.inputFieldBackground)
+                                .background(self.selectedFilter == filter ? AppTheme.accentLightBlue : AppTheme.inputFieldBackground)
                                 .cornerRadius(ResponsiveDesign.spacing(12))
                             }
                         }
@@ -86,7 +86,7 @@ struct NotificationFilterView: View {
             .toolbar(content: {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") {
-                        dismiss()
+                        self.dismiss()
                     }
                     .foregroundColor(AppTheme.accentLightBlue)
                 }
@@ -115,7 +115,7 @@ let mockInvestorNotifications = [
         message: "Your investment in Jan Becker has been completed successfully. Total return: +250 €",
         type: .investment,
         icon: "checkmark.circle.fill",
-        timestamp: Date().addingTimeInterval(-3600),
+        timestamp: Date().addingTimeInterval(-3_600),
         hasAction: true,
         isRead: false
     ),
@@ -124,7 +124,7 @@ let mockInvestorNotifications = [
         message: "Profit distribution of $180 has been credited to your account",
         type: .investment,
         icon: "dollarsign.circle.fill",
-        timestamp: Date().addingTimeInterval(-86400),
+        timestamp: Date().addingTimeInterval(-86_400),
         hasAction: true,
         isRead: false
     ),
@@ -133,7 +133,7 @@ let mockInvestorNotifications = [
         message: "Tobias Hoffmann is now accepting new investments. Specialization: Bonus-Zertifikate",
         type: .investment,
         icon: "person.badge.plus.fill",
-        timestamp: Date().addingTimeInterval(-259200),
+        timestamp: Date().addingTimeInterval(-259_200),
         hasAction: true,
         isRead: false
     ),
@@ -142,7 +142,7 @@ let mockInvestorNotifications = [
         message: "Scheduled maintenance will occur tonight from 2:00 AM to 4:00 AM EST",
         type: .system,
         icon: "wrench.and.screwdriver.fill",
-        timestamp: Date().addingTimeInterval(-172800),
+        timestamp: Date().addingTimeInterval(-172_800),
         hasAction: false,
         isRead: true
     )
@@ -156,7 +156,7 @@ let mockTraderNotifications = [
         type: .trader,
         priority: .medium,
         isRead: false,
-        createdAt: Date().addingTimeInterval(-7200)
+        createdAt: Date().addingTimeInterval(-7_200)
     ),
     AppNotification(
         userId: "trader1",
@@ -165,7 +165,7 @@ let mockTraderNotifications = [
         type: .trader,
         priority: .high,
         isRead: false,
-        createdAt: Date().addingTimeInterval(-345600)
+        createdAt: Date().addingTimeInterval(-345_600)
     ),
     AppNotification(
         userId: "trader1",
@@ -174,6 +174,6 @@ let mockTraderNotifications = [
         type: .system,
         priority: .low,
         isRead: true,
-        createdAt: Date().addingTimeInterval(-172800)
+        createdAt: Date().addingTimeInterval(-172_800)
     )
 ]

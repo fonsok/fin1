@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Clean Service Protocol
 /// Base protocol for all services with standardized lifecycle and event handling
@@ -23,29 +23,29 @@ class BaseService: CleanServiceProtocol, ObservableObject {
     private var cancellables = Set<AnyCancellable>()
 
     var errorPublisher: AnyPublisher<AppError?, Never> {
-        $lastError.eraseToAnyPublisher()
+        self.$lastError.eraseToAnyPublisher()
     }
 
     // MARK: - ServiceLifecycle
 
     func start() {
-        guard !isRunning else { return }
-        isRunning = true
-        setupEventHandlers()
-        onStart()
+        guard !self.isRunning else { return }
+        self.isRunning = true
+        self.setupEventHandlers()
+        self.onStart()
     }
 
     func stop() {
-        guard isRunning else { return }
-        isRunning = false
-        cancellables.removeAll()
-        onStop()
+        guard self.isRunning else { return }
+        self.isRunning = false
+        self.cancellables.removeAll()
+        self.onStop()
     }
 
     func reset() {
-        stop()
-        lastError = nil
-        onReset()
+        self.stop()
+        self.lastError = nil
+        self.onReset()
     }
 
     // MARK: - EventHandler
@@ -80,12 +80,12 @@ class BaseService: CleanServiceProtocol, ObservableObject {
 
     /// Publishes an error to the error publisher
     func publishError(_ error: AppError) {
-        lastError = error
+        self.lastError = error
     }
 
     /// Clears the last error
     func clearError() {
-        lastError = nil
+        self.lastError = nil
     }
 
     /// Subscribes to events of a specific type
@@ -95,7 +95,7 @@ class BaseService: CleanServiceProtocol, ObservableObject {
                 guard let self = self, self.isRunning else { return }
                 handler(event)
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
     }
 
     /// Publishes an event to the event bus
@@ -123,13 +123,13 @@ final class ServiceRegistry: @unchecked Sendable {
     /// Registers a service instance
     func register<T: CleanServiceProtocol>(_ service: T, for type: T.Type) {
         let key = String(describing: type)
-        services[key] = service
+        self.services[key] = service
     }
 
     /// Registers a service factory
     func registerFactory<T: CleanServiceProtocol>(_ factory: ServiceFactoryProtocol, for type: T.Type) {
         let key = String(describing: type)
-        factories[key] = factory
+        self.factories[key] = factory
     }
 
     /// Resolves a service instance
@@ -144,7 +144,7 @@ final class ServiceRegistry: @unchecked Sendable {
         // Try to create new instance using factory
         if let factory = factories[key] {
             let service = factory.createService(type)
-            services[key] = service
+            self.services[key] = service
             return service
         }
 
@@ -153,7 +153,7 @@ final class ServiceRegistry: @unchecked Sendable {
 
     /// Starts all registered services
     func startAllServices() {
-        for service in services.values {
+        for service in self.services.values {
             if let lifecycleService = service as? ServiceLifecycle {
                 lifecycleService.start()
             }
@@ -162,7 +162,7 @@ final class ServiceRegistry: @unchecked Sendable {
 
     /// Stops all registered services
     func stopAllServices() {
-        for service in services.values {
+        for service in self.services.values {
             if let lifecycleService = service as? ServiceLifecycle {
                 lifecycleService.stop()
             }
@@ -171,7 +171,7 @@ final class ServiceRegistry: @unchecked Sendable {
 
     /// Resets all registered services
     func resetAllServices() {
-        for service in services.values {
+        for service in self.services.values {
             if let lifecycleService = service as? ServiceLifecycle {
                 lifecycleService.reset()
             }

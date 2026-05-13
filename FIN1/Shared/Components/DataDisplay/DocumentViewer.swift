@@ -7,12 +7,12 @@ struct DocumentViewer: View {
     @Environment(\.appServices) private var services
 
     private var navigationTitleKey: String {
-        document.type == .investmentReservationEigenbeleg ? "Eigenbeleg" : "Document"
+        self.document.type == .investmentReservationEigenbeleg ? "Eigenbeleg" : "Document"
     }
 
     private var isInternalEigenbelegPlaceholder: Bool {
-        document.type == .investmentReservationEigenbeleg
-            && document.fileURL.hasPrefix("eigenbeleg-reservierung://")
+        self.document.type == .investmentReservationEigenbeleg
+            && self.document.fileURL.hasPrefix("eigenbeleg-reservierung://")
     }
 
     var body: some View {
@@ -20,15 +20,15 @@ struct DocumentViewer: View {
             VStack(spacing: ResponsiveDesign.spacing(20)) {
                 // Document Header
                 VStack(spacing: ResponsiveDesign.spacing(12)) {
-                    Image(systemName: document.type.icon)
+                    Image(systemName: self.document.type.icon)
                         .font(ResponsiveDesign.titleFont())
-                        .foregroundColor(document.type.color)
+                        .foregroundColor(self.document.type.color)
 
-                    Text(document.type.displayName)
+                    Text(self.document.type.displayName)
                         .font(ResponsiveDesign.headlineFont())
                         .foregroundColor(.primary)
 
-                    Text(document.name)
+                    Text(self.document.name)
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
@@ -56,9 +56,13 @@ struct DocumentViewer: View {
 
                 // Document Details
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
-                    DocumentDetailRow(title: "Status", value: document.status.displayName, valueColor: document.status.statusRowForeground)
-                    DocumentDetailRow(title: "File Size", value: document.fileSize)
-                    DocumentDetailRow(title: "Uploaded", value: document.uploadedAt.formatted(date: .abbreviated, time: .shortened))
+                    DocumentDetailRow(
+                        title: "Status",
+                        value: self.document.status.displayName,
+                        valueColor: self.document.status.statusRowForeground
+                    )
+                    DocumentDetailRow(title: "File Size", value: self.document.fileSize)
+                    DocumentDetailRow(title: "Uploaded", value: self.document.uploadedAt.formatted(date: .abbreviated, time: .shortened))
 
                     if let verifiedAt = document.verifiedAt {
                         DocumentDetailRow(title: "Verified", value: verifiedAt.formatted(date: .abbreviated, time: .shortened))
@@ -74,7 +78,7 @@ struct DocumentViewer: View {
 
                 // Action Buttons
                 VStack(spacing: ResponsiveDesign.spacing(12)) {
-                    if isInternalEigenbelegPlaceholder {
+                    if self.isInternalEigenbelegPlaceholder {
                         Text("Kein PDF-Download: interner Eigenbeleg mit Buchungstext (siehe oben).")
                             .font(ResponsiveDesign.captionFont())
                             .foregroundColor(.secondary)
@@ -85,7 +89,7 @@ struct DocumentViewer: View {
                     } else {
                         Button(action: {
                             // TODO: Implement document download
-                            print("Download document: \(document.name)")
+                            print("Download document: \(self.document.name)")
                         }) {
                             HStack {
                                 Image(systemName: "arrow.down.circle")
@@ -100,9 +104,9 @@ struct DocumentViewer: View {
                         }
                     }
 
-                    if document.readAt == nil {
+                    if self.document.readAt == nil {
                         Button(action: {
-                            services.documentService.markDocumentAsRead(document)
+                            self.services.documentService.markDocumentAsRead(self.document)
                         }) {
                             HStack {
                                 Image(systemName: "checkmark.circle")
@@ -122,7 +126,7 @@ struct DocumentViewer: View {
             }
             .padding(ResponsiveDesign.spacing(16))
         }
-        .navigationTitle(navigationTitleKey)
+        .navigationTitle(self.navigationTitleKey)
         .navigationBarTitleDisplayMode(.inline)
         .background(AppTheme.systemSecondaryBackground)
     }
@@ -142,15 +146,15 @@ struct DocumentDetailRow: View {
 
     var body: some View {
         HStack {
-            Text(title)
+            Text(self.title)
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(.secondary)
 
             Spacer()
 
-            Text(value)
+            Text(self.value)
                 .font(ResponsiveDesign.bodyFont())
-                .foregroundColor(valueColor)
+                .foregroundColor(self.valueColor)
         }
     }
 }

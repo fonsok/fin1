@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - User Service Protocol
 /// Defines the contract for user authentication and management operations
@@ -54,16 +54,16 @@ final class UserService: UserServiceProtocol, ServiceLifecycle, @unchecked Senda
     /// For now, we generate a simulated token for test users
     @Published var _sessionToken: String?
     var sessionToken: String? {
-        _sessionToken
+        self._sessionToken
     }
 
     // MARK: - Impersonation State
     @Published var _originalAdminUser: User?
     var originalAdminUser: User? {
-        _originalAdminUser
+        self._originalAdminUser
     }
     var isImpersonating: Bool {
-        _originalAdminUser != nil
+        self._originalAdminUser != nil
     }
 
     var cancellables = Set<AnyCancellable>()
@@ -71,7 +71,7 @@ final class UserService: UserServiceProtocol, ServiceLifecycle, @unchecked Senda
 
     init(parseAPIClient: ParseAPIClientProtocol? = nil) {
         self.parseAPIClient = parseAPIClient
-        checkExistingSession()
+        self.checkExistingSession()
     }
 
     /// Configure the API client for backend synchronization
@@ -91,6 +91,6 @@ final class UserService: UserServiceProtocol, ServiceLifecycle, @unchecked Senda
     func checkExistingSession() {
         // TODO: Check for stored authentication tokens
         // For now, always start unauthenticated
-        isAuthenticated = false
+        self.isAuthenticated = false
     }
 }

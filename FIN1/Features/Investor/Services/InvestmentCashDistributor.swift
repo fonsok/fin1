@@ -56,7 +56,7 @@ enum InvestmentCashDistributor {
             print("✅ InvestmentCashDistributor: Using backend-authoritative amounts")
             amounts = backendAmounts
         } else {
-            amounts = calculateDistributionAmounts(
+            amounts = self.calculateDistributionAmounts(
                 investment: investment,
                 investmentReservation: investmentReservation,
                 poolTradeParticipationService: poolTradeParticipationService,
@@ -98,7 +98,7 @@ enum InvestmentCashDistributor {
             )
         }
 
-        logDistribution(investment: investment, investmentReservation: investmentReservation, amounts: amounts)
+        self.logDistribution(investment: investment, investmentReservation: investmentReservation, amounts: amounts)
     }
 
     // MARK: - Private Types
@@ -261,11 +261,11 @@ enum InvestmentCashDistributor {
 private actor DistributionState {
     private var ids = Set<String>()
     func insertIfNew(_ id: String) -> Bool {
-        let existed = ids.contains(id)
-        if !existed { ids.insert(id) }
+        let existed = self.ids.contains(id)
+        if !existed { self.ids.insert(id) }
         return !existed
     }
-    func reset() { ids.removeAll() }
+    func reset() { self.ids.removeAll() }
 }
 
 private let distributionState = DistributionState()

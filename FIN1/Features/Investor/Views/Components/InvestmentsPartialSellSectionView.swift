@@ -24,11 +24,11 @@ struct InvestmentsPartialSellSectionView: View {
                 .foregroundColor(AppTheme.tertiaryText)
                 .padding(.horizontal, ResponsiveDesign.horizontalPadding())
 
-            if !partialSellRows.isEmpty {
-                ForEach(sortedTraderNames, id: \.self) { traderName in
-                    let rows = groupedInvestments[traderName] ?? []
+            if !self.partialSellRows.isEmpty {
+                ForEach(self.sortedTraderNames, id: \.self) { traderName in
+                    let rows = self.groupedInvestments[traderName] ?? []
                     if let firstInvestment = rows.first?.investment {
-                        let traderUsername = traderDataService.getTrader(by: firstInvestment.traderId)?.username ?? "---"
+                        let traderUsername = self.traderDataService.getTrader(by: firstInvestment.traderId)?.username ?? "---"
                         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(2)) {
                             Text("\"\(traderUsername)\"")
                                 .font(ResponsiveDesign.bodyFont())
@@ -45,17 +45,17 @@ struct InvestmentsPartialSellSectionView: View {
                         VStack(spacing: ResponsiveDesign.spacing(8)) {
                             ForEach(rows, id: \.id) { row in
                                 Button(action: {
-                                    onSelectInvestment(row.investment)
+                                    self.onSelectInvestment(row.investment)
                                 }, label: {
                                     HStack {
                                         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(2)) {
                                             Text("Inv \(row.investment.canonicalDisplayReference)")
                                                 .font(ResponsiveDesign.bodyFont())
                                                 .foregroundColor(AppTheme.fontColor)
-                                            Text(partialSellSummaryCaption(for: row.investment))
+                                            Text(self.partialSellSummaryCaption(for: row.investment))
                                                 .font(ResponsiveDesign.captionFont())
                                                 .foregroundColor(AppTheme.secondaryText)
-                                            Text("Letzter Teil-Sell am \(formattedPartialSellDate(row.investment.lastPartialSellAt))")
+                                            Text("Letzter Teil-Sell am \(self.formattedPartialSellDate(row.investment.lastPartialSellAt))")
                                                 .font(ResponsiveDesign.captionFont())
                                                 .foregroundColor(AppTheme.tertiaryText)
                                         }

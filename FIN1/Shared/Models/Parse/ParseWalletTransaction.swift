@@ -65,17 +65,17 @@ struct ParseWalletTransaction: Codable {
     
     func toTransaction() -> Transaction {
         Transaction(
-            id: objectId ?? UUID().uuidString,
-            userId: userId,
-            type: Transaction.TransactionType(rawValue: type) ?? .other,
-            amount: amount,
-            currency: currency,
-            status: Transaction.TransactionStatus(rawValue: status) ?? .completed,
-            timestamp: timestamp,
-            description: description,
-            reference: reference,
-            metadata: metadata,
-            balanceAfter: balanceAfter
+            id: self.objectId ?? UUID().uuidString,
+            userId: self.userId,
+            type: Transaction.TransactionType(rawValue: self.type) ?? .other,
+            amount: self.amount,
+            currency: self.currency,
+            status: Transaction.TransactionStatus(rawValue: self.status) ?? .completed,
+            timestamp: self.timestamp,
+            description: self.description,
+            reference: self.reference,
+            metadata: self.metadata,
+            balanceAfter: self.balanceAfter
         )
     }
     

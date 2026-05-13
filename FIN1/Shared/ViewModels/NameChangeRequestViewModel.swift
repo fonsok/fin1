@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 import SwiftUI
 
 // MARK: - Name Change Request ViewModel
@@ -41,38 +41,38 @@ final class NameChangeRequestViewModel: ObservableObject {
 
     // MARK: - Computed Properties - Current Name
 
-    var currentSalutation: String { userService?.currentUser?.salutation.rawValue ?? "" }
-    var currentAcademicTitle: String { userService?.currentUser?.academicTitle ?? "" }
-    var currentFirstName: String { userService?.currentUser?.firstName ?? "" }
-    var currentLastName: String { userService?.currentUser?.lastName ?? "" }
+    var currentSalutation: String { self.userService?.currentUser?.salutation.rawValue ?? "" }
+    var currentAcademicTitle: String { self.userService?.currentUser?.academicTitle ?? "" }
+    var currentFirstName: String { self.userService?.currentUser?.firstName ?? "" }
+    var currentLastName: String { self.userService?.currentUser?.lastName ?? "" }
 
     // MARK: - Computed Properties - Validation
 
     var isFormValid: Bool {
-        hasValidNewName && hasNameChanged && primaryDocument != nil &&
-        identityDocument != nil && userDeclaration && acknowledgesRiskProfile
+        self.hasValidNewName && self.hasNameChanged && self.primaryDocument != nil &&
+            self.identityDocument != nil && self.userDeclaration && self.acknowledgesRiskProfile
     }
 
     private var hasValidNewName: Bool {
-        !newFirstName.trimmingCharacters(in: .whitespaces).isEmpty &&
-        !newLastName.trimmingCharacters(in: .whitespaces).isEmpty
+        !self.newFirstName.trimmingCharacters(in: .whitespaces).isEmpty &&
+            !self.newLastName.trimmingCharacters(in: .whitespaces).isEmpty
     }
 
     private var hasNameChanged: Bool {
-        newSalutation != currentSalutation || newAcademicTitle != currentAcademicTitle ||
-        newFirstName != currentFirstName || newLastName != currentLastName
+        self.newSalutation != self.currentSalutation || self.newAcademicTitle != self.currentAcademicTitle ||
+            self.newFirstName != self.currentFirstName || self.newLastName != self.currentLastName
     }
 
-    var isSignificantLifeEvent: Bool { selectedReason.isSignificantLifeEvent }
+    var isSignificantLifeEvent: Bool { self.selectedReason.isSignificantLifeEvent }
 
     var requiredPrimaryDocumentTypes: [NameVerificationDocumentType] {
-        selectedReason.requiredDocumentTypes.filter { $0.isPrimaryDocument }
+        self.selectedReason.requiredDocumentTypes.filter { $0.isPrimaryDocument }
     }
 
     var identityDocumentTypes: [NameVerificationDocumentType] { [.newIdCard, .newPassport] }
 
     var successMessage: String {
-        isSignificantLifeEvent
+        self.isSignificantLifeEvent
             ? "Your request has been submitted. As a significant life event, it will receive priority review (1-3 business days)."
             : "Your request has been submitted for compliance review (1-3 business days)."
     }
@@ -85,7 +85,7 @@ final class NameChangeRequestViewModel: ObservableObject {
         return bridge.getPendingRequest(for: userId)
     }
 
-    var hasPendingRequest: Bool { pendingRequest != nil }
+    var hasPendingRequest: Bool { self.pendingRequest != nil }
 
     // MARK: - Initialization
 
@@ -94,23 +94,23 @@ final class NameChangeRequestViewModel: ObservableObject {
     init(nameChangeService: any NameChangeRequestServiceProtocol, userService: any UserServiceProtocol) {
         self.nameChangeBridge = UncheckedNameChangeRequestServiceBridge(nameChangeService)
         self.userService = userService
-        prefillCurrentName()
+        self.prefillCurrentName()
     }
 
     func configure(with services: AppServices) {
-        guard nameChangeBridge == nil else { return }
+        guard self.nameChangeBridge == nil else { return }
         self.nameChangeBridge = UncheckedNameChangeRequestServiceBridge(services.nameChangeService)
         self.userService = services.userService
-        prefillCurrentName()
+        self.prefillCurrentName()
     }
 
     // MARK: - Private Methods
 
     private func prefillCurrentName() {
-        newSalutation = currentSalutation
-        newAcademicTitle = currentAcademicTitle
-        newFirstName = currentFirstName
-        newLastName = currentLastName
+        self.newSalutation = self.currentSalutation
+        self.newAcademicTitle = self.currentAcademicTitle
+        self.newFirstName = self.currentFirstName
+        self.newLastName = self.currentLastName
     }
 
     // MARK: - Public Methods
@@ -119,17 +119,17 @@ final class NameChangeRequestViewModel: ObservableObject {
     func submitRequest() async {
         guard let bridge = nameChangeBridge,
               let user = userService?.currentUser else {
-            errorMessage = "User not found. Please log in again."
+            self.errorMessage = "User not found. Please log in again."
             return
         }
 
-        guard isFormValid else {
-            errorMessage = "Please complete all fields, upload documents, and accept declarations."
+        guard self.isFormValid else {
+            self.errorMessage = "Please complete all fields, upload documents, and accept declarations."
             return
         }
 
-        isLoading = true
-        errorMessage = nil
+        self.isLoading = true
+        self.errorMessage = nil
 
         let currentName = NameComponents(
             salutation: currentSalutation,
@@ -141,8 +141,8 @@ final class NameChangeRequestViewModel: ObservableObject {
         let newName = NameComponents(
             salutation: newSalutation,
             academicTitle: newAcademicTitle.trimmingCharacters(in: .whitespaces),
-            firstName: newFirstName.trimmingCharacters(in: .whitespaces),
-            lastName: newLastName.trimmingCharacters(in: .whitespaces)
+            firstName: self.newFirstName.trimmingCharacters(in: .whitespaces),
+            lastName: self.newLastName.trimmingCharacters(in: .whitespaces)
         )
 
         do {
@@ -153,39 +153,39 @@ final class NameChangeRequestViewModel: ObservableObject {
                 userId: user.id,
                 currentName: currentName,
                 newName: newName,
-                reason: selectedReason,
-                primaryDocumentType: selectedPrimaryDocType,
+                reason: self.selectedReason,
+                primaryDocumentType: self.selectedPrimaryDocType,
                 primaryDocumentURL: primaryDocURL,
-                identityDocumentType: selectedIdentityDocType,
+                identityDocumentType: self.selectedIdentityDocType,
                 identityDocumentURL: identityDocURL,
-                userDeclaration: userDeclaration,
-                acknowledgesRiskProfileUpdate: acknowledgesRiskProfile
+                userDeclaration: self.userDeclaration,
+                acknowledgesRiskProfileUpdate: self.acknowledgesRiskProfile
             )
 
-            isLoading = false
-            showSuccessAlert = true
+            self.isLoading = false
+            self.showSuccessAlert = true
         } catch {
-            isLoading = false
-            errorMessage = (error as? AppError)?.localizedDescription ?? error.localizedDescription
+            self.isLoading = false
+            self.errorMessage = (error as? AppError)?.localizedDescription ?? error.localizedDescription
         }
     }
 
     @MainActor
     func cancelPendingRequest() async {
         guard let bridge = nameChangeBridge, let request = pendingRequest else {
-            errorMessage = "No pending request to cancel."
+            self.errorMessage = "No pending request to cancel."
             return
         }
 
-        isLoading = true
-        errorMessage = nil
+        self.isLoading = true
+        self.errorMessage = nil
 
         do {
             try await bridge.cancelRequest(request.id)
-            isLoading = false
+            self.isLoading = false
         } catch {
-            isLoading = false
-            errorMessage = (error as? AppError)?.localizedDescription ?? error.localizedDescription
+            self.isLoading = false
+            self.errorMessage = (error as? AppError)?.localizedDescription ?? error.localizedDescription
         }
     }
 }

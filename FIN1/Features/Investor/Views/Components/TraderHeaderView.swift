@@ -1,5 +1,5 @@
-import SwiftUI
 import Foundation
+import SwiftUI
 
 // MARK: - Trader Header View
 /// Displays trader identification with person icon, username, and date
@@ -30,13 +30,13 @@ struct TraderHeaderView: View {
             // Username and Date
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
                 // Username with reduced font size
-                Text(trader.username)
+                Text(self.trader.username)
                     .font(ResponsiveDesign.headlineFont())
                     .fontWeight(.semibold)
                     .foregroundColor(AppTheme.fontColor)
 
                 // Date formatted as "today, DD.MM.YYYY"
-                Text(formattedDate)
+                Text(self.formattedDate)
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.secondaryText)
             }

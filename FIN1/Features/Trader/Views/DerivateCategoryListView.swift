@@ -26,14 +26,14 @@ struct DerivateCategoryListView: View {
                 AppTheme.screenBackground.ignoresSafeArea()
 
                 List {
-                    ForEach(derivateKategorien) { kategorie in
+                    ForEach(self.derivateKategorien) { kategorie in
                         Button(action: {
                             if kategorie.isSupported {
-                                selectedCategory = kategorie.name
-                                dismiss()
+                                self.selectedCategory = kategorie.name
+                                self.dismiss()
                             } else {
                                 // Show notification for unsupported categories
-                                showDevelopmentNotification = true
+                                self.showDevelopmentNotification = true
                                 // Keep current selection (don't change to unsupported category)
                             }
                         }) {
@@ -54,14 +54,16 @@ struct DerivateCategoryListView: View {
 
                                     if let description = kategorie.description {
                                         Text(description)
-                                            .foregroundColor(kategorie.isSupported ? AppTheme.fontColor.opacity(0.7) : AppTheme.fontColor.opacity(0.4))
+                                            .foregroundColor(
+                                                kategorie.isSupported ? AppTheme.fontColor.opacity(0.7) : AppTheme.fontColor.opacity(0.4)
+                                            )
                                             .font(ResponsiveDesign.captionFont())
                                     }
                                 }
 
                                 Spacer()
 
-                                if kategorie.name == selectedCategory {
+                                if kategorie.name == self.selectedCategory {
                                     Image(systemName: "checkmark")
                                         .foregroundColor(AppTheme.accentGreen)
                                         .font(ResponsiveDesign.headlineFont())
@@ -69,7 +71,9 @@ struct DerivateCategoryListView: View {
                             }
                             .padding(.vertical, ResponsiveDesign.spacing(8))
                         }
-                        .listRowBackground(kategorie.name == selectedCategory ? AppTheme.accentGreen.opacity(0.2) : AppTheme.sectionBackground)
+                        .listRowBackground(
+                            kategorie.name == self.selectedCategory ? AppTheme.accentGreen.opacity(0.2) : AppTheme.sectionBackground
+                        )
                     }
                 }
                 .listStyle(.plain)
@@ -78,7 +82,7 @@ struct DerivateCategoryListView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button(action: { dismiss() }, label: {
+                    Button(action: { self.dismiss() }, label: {
                         Image(systemName: "xmark")
                             .foregroundColor(AppTheme.fontColor)
                     })
@@ -86,16 +90,18 @@ struct DerivateCategoryListView: View {
 
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("übernehmen") {
-                        dismiss()
+                        self.dismiss()
                     }
                     .foregroundColor(AppTheme.accentGreen)
                     .fontWeight(.semibold)
                 }
             }
-            .alert("Entwicklung", isPresented: $showDevelopmentNotification) {
+            .alert("Entwicklung", isPresented: self.$showDevelopmentNotification) {
                 Button("OK") { }
             } message: {
-                Text("Derzeit wird nur die Derivate-Kategorie 'Optionsschein' unterstützt. Andere Kategorien werden evtl. in zukünftigen Versionen verfügbar sein.")
+                Text(
+                    "Derzeit wird nur die Derivate-Kategorie 'Optionsschein' unterstützt. Andere Kategorien werden evtl. in zukünftigen Versionen verfügbar sein."
+                )
             }
         }
     }

@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 extension BuyOrderViewModel {
 
@@ -50,7 +50,7 @@ extension BuyOrderViewModel {
     }
 
     func refreshInvestments() {
-        updateReservedInvestments()
+        self.updateReservedInvestments()
     }
 
     var totalInvestmentQuantity: Int {
@@ -69,7 +69,7 @@ extension BuyOrderViewModel {
             }
             .store(in: &cancellables)
 
-        updateReservedInvestments()
+        self.updateReservedInvestments()
         [0.1, 0.5, 1.0].forEach { delay in
             DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
                 self?.updateReservedInvestments()

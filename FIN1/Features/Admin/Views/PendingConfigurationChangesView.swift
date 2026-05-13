@@ -13,33 +13,33 @@ struct PendingConfigurationChangesView: View {
 
     var body: some View {
         NavigationStack {
-            content
+            self.content
                 .navigationTitle("Pending Approvals")
                 .navigationBarTitleDisplayMode(.large)
                 .task {
-                    viewModel.configure(with: appServices.configurationService)
-                    await viewModel.loadPendingChanges()
+                    self.viewModel.configure(with: self.appServices.configurationService)
+                    await self.viewModel.loadPendingChanges()
                 }
                 .refreshable {
-                    await viewModel.loadPendingChanges()
+                    await self.viewModel.loadPendingChanges()
                 }
-                .sheet(isPresented: $viewModel.showApprovalSheet) {
-                    PendingConfigurationApprovalSheet(viewModel: viewModel)
+                .sheet(isPresented: self.$viewModel.showApprovalSheet) {
+                    PendingConfigurationApprovalSheet(viewModel: self.viewModel)
                 }
-                .sheet(isPresented: $viewModel.showRejectionSheet) {
-                    PendingConfigurationRejectionSheet(viewModel: viewModel)
+                .sheet(isPresented: self.$viewModel.showRejectionSheet) {
+                    PendingConfigurationRejectionSheet(viewModel: self.viewModel)
                 }
         }
     }
 
     @ViewBuilder
     private var content: some View {
-        if viewModel.isLoading && viewModel.pendingChanges.isEmpty {
-            loadingView
-        } else if viewModel.pendingChanges.isEmpty {
-            emptyStateView
+        if self.viewModel.isLoading && self.viewModel.pendingChanges.isEmpty {
+            self.loadingView
+        } else if self.viewModel.pendingChanges.isEmpty {
+            self.emptyStateView
         } else {
-            pendingChangesList
+            self.pendingChangesList
         }
     }
 
@@ -79,7 +79,7 @@ struct PendingConfigurationChangesView: View {
 
             Button {
                 Task {
-                    await viewModel.loadPendingChanges()
+                    await self.viewModel.loadPendingChanges()
                 }
             } label: {
                 Label("Refresh", systemImage: "arrow.clockwise")
@@ -94,17 +94,17 @@ struct PendingConfigurationChangesView: View {
         ScrollView {
             LazyVStack(spacing: ResponsiveDesign.spacing(16)) {
                 if let success = viewModel.successMessage {
-                    successBanner(success)
+                    self.successBanner(success)
                 }
 
                 if let error = viewModel.errorMessage {
-                    errorBanner(error)
+                    self.errorBanner(error)
                 }
 
-                headerSection
+                self.headerSection
 
-                ForEach(viewModel.pendingChanges) { change in
-                    PendingChangeCard(change: change, viewModel: viewModel)
+                ForEach(self.viewModel.pendingChanges) { change in
+                    PendingChangeCard(change: change, viewModel: self.viewModel)
                 }
             }
             .padding()
@@ -120,7 +120,7 @@ struct PendingConfigurationChangesView: View {
                     .font(ResponsiveDesign.headlineFont())
                     .foregroundColor(.primary)
                 Spacer()
-                Text("\(viewModel.pendingCount)")
+                Text("\(self.viewModel.pendingCount)")
                     .font(ResponsiveDesign.headlineFont())
                     .foregroundColor(.white)
                     .padding(.horizontal, 12)
@@ -146,7 +146,7 @@ struct PendingConfigurationChangesView: View {
                 .font(ResponsiveDesign.bodyFont())
             Spacer()
             Button {
-                viewModel.successMessage = nil
+                self.viewModel.successMessage = nil
             } label: {
                 Image(systemName: "xmark")
                     .foregroundColor(.secondary)
@@ -165,7 +165,7 @@ struct PendingConfigurationChangesView: View {
                 .font(ResponsiveDesign.bodyFont())
             Spacer()
             Button {
-                viewModel.errorMessage = nil
+                self.viewModel.errorMessage = nil
             } label: {
                 Image(systemName: "xmark")
                     .foregroundColor(.secondary)

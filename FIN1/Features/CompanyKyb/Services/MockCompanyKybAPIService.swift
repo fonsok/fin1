@@ -19,57 +19,57 @@ final class MockCompanyKybAPIService: CompanyKybAPIServiceProtocol, @unchecked S
     ]
 
     func getCompanyKybProgress() async throws -> CompanyKybProgress {
-        try await Task.sleep(nanoseconds: latency)
+        try await Task.sleep(nanoseconds: self.latency)
 
         return CompanyKybProgress(
-            currentStep: currentStep,
-            completedSteps: completedSteps,
-            companyKybCompleted: kybCompleted,
-            companyKybStatus: kybStatus,
+            currentStep: self.currentStep,
+            completedSteps: self.completedSteps,
+            companyKybCompleted: self.kybCompleted,
+            companyKybStatus: self.kybStatus,
             savedData: nil
         )
     }
 
     func completeStep(step: String, data: SavedCompanyKybData) async throws -> CompanyKybStepResponse {
-        try await Task.sleep(nanoseconds: latency)
+        try await Task.sleep(nanoseconds: self.latency)
 
-        guard validSteps.contains(step) else {
+        guard self.validSteps.contains(step) else {
             throw NSError(domain: "MockKYB", code: 1, userInfo: [
                 NSLocalizedDescriptionKey: "Invalid step: \(step)",
             ])
         }
 
-        currentStep = step
-        if !completedSteps.contains(step) {
-            completedSteps.append(step)
+        self.currentStep = step
+        if !self.completedSteps.contains(step) {
+            self.completedSteps.append(step)
         }
 
         if step == "submission" {
-            kybCompleted = true
-            kybStatus = "pending_review"
+            self.kybCompleted = true
+            self.kybStatus = "pending_review"
         } else {
-            kybStatus = kybStatus ?? "draft"
+            self.kybStatus = self.kybStatus ?? "draft"
         }
 
         let nextIndex = (validSteps.firstIndex(of: step) ?? 0) + 1
-        let nextStep = nextIndex < validSteps.count ? validSteps[nextIndex] : nil
+        let nextStep = nextIndex < self.validSteps.count ? self.validSteps[nextIndex] : nil
 
         return CompanyKybStepResponse(
             success: true,
             nextStep: nextStep,
-            companyKybCompleted: kybCompleted,
-            companyKybStatus: kybStatus
+            companyKybCompleted: self.kybCompleted,
+            companyKybStatus: self.kybStatus
         )
     }
 
     func savePartialProgress(step: String, data: SavedCompanyKybData) async throws {
-        try await Task.sleep(nanoseconds: latency / 2)
-        currentStep = step
-        kybStatus = kybStatus ?? "draft"
+        try await Task.sleep(nanoseconds: self.latency / 2)
+        self.currentStep = step
+        self.kybStatus = self.kybStatus ?? "draft"
     }
 
     func savePartialProgressPositionOnly(step: String) async throws {
-        try await Task.sleep(nanoseconds: latency / 4)
-        currentStep = step
+        try await Task.sleep(nanoseconds: self.latency / 4)
+        self.currentStep = step
     }
 }

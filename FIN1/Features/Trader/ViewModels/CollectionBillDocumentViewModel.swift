@@ -80,5 +80,4 @@ final class CollectionBillDocumentViewModel: ObservableObject {
             parseAPIClient: services.parseAPIClient
         )
     }
-
 }

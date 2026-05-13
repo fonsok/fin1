@@ -99,10 +99,10 @@ struct SubmissionFormData: Sendable {
 extension LegalEntityFormData {
     func toSavedData() -> SavedCompanyKybData {
         SavedCompanyKybData(
-            legalName: legalName, legalForm: legalForm,
-            registerType: registerType, registerNumber: registerNumber,
-            registerCourt: registerCourt, incorporationCountry: incorporationCountry,
-            notRegisteredReason: notRegisteredReason.isEmpty ? nil : notRegisteredReason,
+            legalName: self.legalName, legalForm: self.legalForm,
+            registerType: self.registerType, registerNumber: self.registerNumber,
+            registerCourt: self.registerCourt, incorporationCountry: self.incorporationCountry,
+            notRegisteredReason: self.notRegisteredReason.isEmpty ? nil : self.notRegisteredReason,
             streetAndNumber: nil, postalCode: nil, city: nil, country: nil,
             businessStreetAndNumber: nil, businessPostalCode: nil,
             businessCity: nil, businessCountry: nil,
@@ -128,12 +128,12 @@ extension RegisteredAddressFormData {
             legalName: nil, legalForm: nil, registerType: nil,
             registerNumber: nil, registerCourt: nil, incorporationCountry: nil,
             notRegisteredReason: nil,
-            streetAndNumber: streetAndNumber, postalCode: postalCode,
-            city: city, country: country,
-            businessStreetAndNumber: businessStreetAndNumber.isEmpty ? nil : businessStreetAndNumber,
-            businessPostalCode: businessPostalCode.isEmpty ? nil : businessPostalCode,
-            businessCity: businessCity.isEmpty ? nil : businessCity,
-            businessCountry: businessCountry.isEmpty ? nil : businessCountry,
+            streetAndNumber: self.streetAndNumber, postalCode: self.postalCode,
+            city: self.city, country: self.country,
+            businessStreetAndNumber: self.businessStreetAndNumber.isEmpty ? nil : self.businessStreetAndNumber,
+            businessPostalCode: self.businessPostalCode.isEmpty ? nil : self.businessPostalCode,
+            businessCity: self.businessCity.isEmpty ? nil : self.businessCity,
+            businessCountry: self.businessCountry.isEmpty ? nil : self.businessCountry,
             vatId: nil, nationalTaxNumber: nil,
             economicIdentificationNumber: nil, noVatIdDeclared: nil,
             ubos: nil, noUboOver25Percent: nil,
@@ -159,10 +159,10 @@ extension TaxComplianceFormData {
             streetAndNumber: nil, postalCode: nil, city: nil, country: nil,
             businessStreetAndNumber: nil, businessPostalCode: nil,
             businessCity: nil, businessCountry: nil,
-            vatId: vatId.isEmpty ? nil : vatId,
-            nationalTaxNumber: nationalTaxNumber.isEmpty ? nil : nationalTaxNumber,
-            economicIdentificationNumber: economicIdentificationNumber.isEmpty ? nil : economicIdentificationNumber,
-            noVatIdDeclared: noVatIdDeclared ? true : nil,
+            vatId: self.vatId.isEmpty ? nil : self.vatId,
+            nationalTaxNumber: self.nationalTaxNumber.isEmpty ? nil : self.nationalTaxNumber,
+            economicIdentificationNumber: self.economicIdentificationNumber.isEmpty ? nil : self.economicIdentificationNumber,
+            noVatIdDeclared: self.noVatIdDeclared ? true : nil,
             ubos: nil, noUboOver25Percent: nil,
             representatives: nil, appAccountHolderIsRepresentative: nil,
             tradeRegisterExtractReference: nil, documentManifest: nil,
@@ -179,7 +179,7 @@ extension TaxComplianceFormData {
 
 extension BeneficialOwnersFormData {
     func toSavedData() -> SavedCompanyKybData {
-        let uboList: [SavedCompanyKybUbo]? = noUboOver25Percent ? nil : ubos.map {
+        let uboList: [SavedCompanyKybUbo]? = self.noUboOver25Percent ? nil : self.ubos.map {
             SavedCompanyKybUbo(
                 fullName: $0.fullName, dateOfBirth: $0.dateOfBirth,
                 nationality: $0.nationality,
@@ -196,7 +196,7 @@ extension BeneficialOwnersFormData {
             businessCity: nil, businessCountry: nil,
             vatId: nil, nationalTaxNumber: nil,
             economicIdentificationNumber: nil, noVatIdDeclared: nil,
-            ubos: uboList, noUboOver25Percent: noUboOver25Percent ? true : nil,
+            ubos: uboList, noUboOver25Percent: self.noUboOver25Percent ? true : nil,
             representatives: nil, appAccountHolderIsRepresentative: nil,
             tradeRegisterExtractReference: nil, documentManifest: nil,
             documentsAcknowledged: nil,
@@ -212,7 +212,7 @@ extension BeneficialOwnersFormData {
 
 extension AuthorizedRepresentativesFormData {
     func toSavedData() -> SavedCompanyKybData {
-        let repList = representatives.map {
+        let repList = self.representatives.map {
             SavedCompanyKybRepresentative(
                 fullName: $0.fullName, roleTitle: $0.roleTitle,
                 signingAuthority: $0.signingAuthority
@@ -229,7 +229,7 @@ extension AuthorizedRepresentativesFormData {
             economicIdentificationNumber: nil, noVatIdDeclared: nil,
             ubos: nil, noUboOver25Percent: nil,
             representatives: repList,
-            appAccountHolderIsRepresentative: appAccountHolderIsRepresentative ? true : nil,
+            appAccountHolderIsRepresentative: self.appAccountHolderIsRepresentative ? true : nil,
             tradeRegisterExtractReference: nil, documentManifest: nil,
             documentsAcknowledged: nil,
             isPoliticallyExposed: nil, pepDetails: nil,
@@ -244,7 +244,7 @@ extension AuthorizedRepresentativesFormData {
 
 extension DocumentsFormData {
     func toSavedData() -> SavedCompanyKybData {
-        let manifest: [SavedCompanyKybDocumentManifestEntry]? = documentManifest.isEmpty ? nil : documentManifest.map {
+        let manifest: [SavedCompanyKybDocumentManifestEntry]? = self.documentManifest.isEmpty ? nil : self.documentManifest.map {
             SavedCompanyKybDocumentManifestEntry(documentType: $0.documentType, referenceId: $0.referenceId)
         }
         return SavedCompanyKybData(
@@ -258,7 +258,7 @@ extension DocumentsFormData {
             economicIdentificationNumber: nil, noVatIdDeclared: nil,
             ubos: nil, noUboOver25Percent: nil,
             representatives: nil, appAccountHolderIsRepresentative: nil,
-            tradeRegisterExtractReference: tradeRegisterExtractReference.isEmpty ? nil : tradeRegisterExtractReference,
+            tradeRegisterExtractReference: self.tradeRegisterExtractReference.isEmpty ? nil : self.tradeRegisterExtractReference,
             documentManifest: manifest,
             documentsAcknowledged: true,
             isPoliticallyExposed: nil, pepDetails: nil,
@@ -286,11 +286,11 @@ extension DeclarationsFormData {
             representatives: nil, appAccountHolderIsRepresentative: nil,
             tradeRegisterExtractReference: nil, documentManifest: nil,
             documentsAcknowledged: nil,
-            isPoliticallyExposed: isPoliticallyExposed,
-            pepDetails: pepDetails.isEmpty ? nil : pepDetails,
-            sanctionsSelfDeclarationAccepted: sanctionsSelfDeclarationAccepted,
-            accuracyDeclarationAccepted: accuracyDeclarationAccepted,
-            noTrustThirdPartyDeclarationAccepted: noTrustThirdPartyDeclarationAccepted,
+            isPoliticallyExposed: self.isPoliticallyExposed,
+            pepDetails: self.pepDetails.isEmpty ? nil : self.pepDetails,
+            sanctionsSelfDeclarationAccepted: self.sanctionsSelfDeclarationAccepted,
+            accuracyDeclarationAccepted: self.accuracyDeclarationAccepted,
+            noTrustThirdPartyDeclarationAccepted: self.noTrustThirdPartyDeclarationAccepted,
             confirmedSummary: nil, companyFourEyesRequestId: nil,
             _positionOnly: nil
         )
@@ -317,7 +317,7 @@ extension SubmissionFormData {
             accuracyDeclarationAccepted: nil,
             noTrustThirdPartyDeclarationAccepted: nil,
             confirmedSummary: true,
-            companyFourEyesRequestId: companyFourEyesRequestId.isEmpty ? nil : companyFourEyesRequestId,
+            companyFourEyesRequestId: self.companyFourEyesRequestId.isEmpty ? nil : self.companyFourEyesRequestId,
             _positionOnly: nil
         )
     }

@@ -23,11 +23,11 @@ struct OrderSuccessMessageOverlay: View {
                 // Removed icon and glow effect for minimal design
 
                 // Modern Title with Subtle Animation
-                Text(orderType == .buy ? "Wertpapier gekauft" : "Wertpapier verkauft")
+                Text(self.orderType == .buy ? "Wertpapier gekauft" : "Wertpapier verkauft")
                     .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.spacing(24), weight: .regular))
                     .foregroundColor(Color(hex: "#f5f5f5"))
-                    .opacity(animateContent ? 1.0 : 0.0)
-                    .offset(y: animateContent ? 0 : 20)
+                    .opacity(self.animateContent ? 1.0 : 0.0)
+                    .offset(y: self.animateContent ? 0 : 20)
             }
             .padding(.top, ResponsiveDesign.spacing(8))
             .padding(.horizontal, ResponsiveDesign.spacing(24))
@@ -63,7 +63,9 @@ struct OrderSuccessMessageOverlay: View {
                         GridItem(.flexible())
                     ], spacing: ResponsiveDesign.spacing(16)) {
                         // Quantity
-                        let quantity = orderType == .buy ? trade.totalQuantity : (trade.sellOrders.last?.quantity ?? trade.sellOrder?.quantity ?? 0)
+                        let quantity = self.orderType == .buy ? self.trade.totalQuantity : (
+                            self.trade.sellOrders.last?.quantity ?? self.trade.sellOrder?.quantity ?? 0
+                        )
                         ModernMetricCard(
                             icon: "number.circle",
                             label: "Stück",
@@ -72,17 +74,21 @@ struct OrderSuccessMessageOverlay: View {
                         )
 
                         // Price
-                        let price = orderType == .buy ? trade.entryPrice : (trade.sellOrders.last?.price ?? trade.sellOrder?.price ?? 0)
+                        let price = self.orderType == .buy ? self.trade.entryPrice : (
+                            self.trade.sellOrders.last?.price ?? self.trade.sellOrder?.price ?? 0
+                        )
                         ModernMetricCard(
                             icon: "eurosign.circle",
-                            label: orderType == .buy ? "Brief-Kurs (Ask)" : "Geldkurs (Bid)",
+                            label: self.orderType == .buy ? "Brief-Kurs (Ask)" : "Geldkurs (Bid)",
                             value: price.formattedAsLocalizedCurrency(),
                             subtitle: "pro Stück"
                         )
                     }
 
                     // Total Amount - Prominent Display
-                    let totalAmount = orderType == .buy ? trade.buyOrder.totalAmount : (trade.sellOrders.last?.totalAmount ?? trade.sellOrder?.totalAmount ?? 0)
+                    let totalAmount = self.orderType == .buy ? self.trade.buyOrder.totalAmount : (
+                        self.trade.sellOrders.last?.totalAmount ?? self.trade.sellOrder?.totalAmount ?? 0
+                    )
                     VStack(spacing: ResponsiveDesign.spacing(8)) {
                         Text("Betrag gesamt")
                             .font(ResponsiveDesign.captionFont())
@@ -107,7 +113,7 @@ struct OrderSuccessMessageOverlay: View {
                     )
 
                     // Show P&L for sell orders with Modern Design
-                    if orderType == .sell, let pnl = trade.finalPnL {
+                    if self.orderType == .sell, let pnl = trade.finalPnL {
                         VStack(spacing: ResponsiveDesign.spacing(8)) {
                             Text("Trade Gewinn/Verlust vor Steuer")
                                 .font(ResponsiveDesign.captionFont())
@@ -138,14 +144,15 @@ struct OrderSuccessMessageOverlay: View {
                 VStack(spacing: ResponsiveDesign.spacing(12)) {
                     ModernStatusRow(
                         icon: "checkmark.circle.fill",
-                        text: orderType == .buy ? "Position im Bestand" : "Position verkauft",
+                        text: self.orderType == .buy ? "Position im Bestand" : "Position verkauft",
                         color: AppTheme.accentGreen
                     )
                     ModernStatusRow(
                         icon: "doc.text.fill",
                         text: "Rechnung bei Trades verfügbar",
                         italicText: "Trades",
-                        color: AppTheme.accentLightBlue)
+                        color: AppTheme.accentLightBlue
+                    )
                     ModernStatusRow(
                         icon: "bell.fill",
                         text: "Benachrichtigung erfolgt",
@@ -155,7 +162,7 @@ struct OrderSuccessMessageOverlay: View {
                 .padding(.horizontal, ResponsiveDesign.spacing(24))
 
                 // Modern Dismiss Button
-                Button(action: onDismiss, label: {
+                Button(action: self.onDismiss, label: {
                     Text("weiter")
                         .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.spacing(24), weight: .regular))
                         .foregroundColor(Color(hex: "#f5f5f5"))
@@ -172,7 +179,12 @@ struct OrderSuccessMessageOverlay: View {
                             )
                         )
                         .cornerRadius(ResponsiveDesign.spacing(16))
-                        .shadow(color: AppTheme.accentGreen.opacity(0.3), radius: ResponsiveDesign.spacing(8), x: 0, y: ResponsiveDesign.spacing(4))
+                        .shadow(
+                            color: AppTheme.accentGreen.opacity(0.3),
+                            radius: ResponsiveDesign.spacing(8),
+                            x: 0,
+                            y: ResponsiveDesign.spacing(4)
+                        )
                 })
                 .accessibilityIdentifier("OrderSuccessDismissButton")
                 .accessibilityLabel("Bestätigung schließen")
@@ -196,10 +208,10 @@ struct OrderSuccessMessageOverlay: View {
         .onAppear {
             // Start animations
             withAnimation(.easeOut(duration: 0.6).delay(0.1)) {
-                animateIcon = true
+                self.animateIcon = true
             }
             withAnimation(.easeOut(duration: 0.8).delay(0.3)) {
-                animateContent = true
+                self.animateContent = true
             }
         }
     }
@@ -214,21 +226,21 @@ private struct ModernDetailRow: View {
 
     var body: some View {
         HStack(spacing: ResponsiveDesign.spacing(12)) {
-            Image(systemName: icon)
+            Image(systemName: self.icon)
                 .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 0.8))
                 .foregroundColor(AppTheme.accentLightBlue)
                 .frame(width: ResponsiveDesign.spacing(20))
 
-            Text(label)
+            Text(self.label)
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.secondaryText)
 
             Spacer()
 
-            Text(value)
+            Text(self.value)
                 .font(ResponsiveDesign.bodyFont())
                 .fontWeight(.semibold)
-                .foregroundColor(isHighlighted ? AppTheme.accentGreen : AppTheme.fontColor)
+                .foregroundColor(self.isHighlighted ? AppTheme.accentGreen : AppTheme.fontColor)
         }
         .padding(.vertical, ResponsiveDesign.spacing(12))
         .padding(.horizontal, ResponsiveDesign.spacing(16))
@@ -237,7 +249,7 @@ private struct ModernDetailRow: View {
                 .fill(AppTheme.sectionBackground.opacity(0.5))
                 .overlay(
                     RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(12))
-                        .stroke(isHighlighted ? AppTheme.accentGreen.opacity(0.3) : Color.clear, lineWidth: 1)
+                        .stroke(self.isHighlighted ? AppTheme.accentGreen.opacity(0.3) : Color.clear, lineWidth: 1)
                 )
         )
     }
@@ -252,22 +264,22 @@ private struct ModernMetricCard: View {
 
     var body: some View {
         VStack(spacing: ResponsiveDesign.spacing(8)) {
-            Image(systemName: icon)
+            Image(systemName: self.icon)
                 .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 1.2))
                 .foregroundColor(AppTheme.accentLightBlue)
 
-            Text(label)
+            Text(self.label)
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.secondaryText)
                 .textCase(.uppercase)
                 .tracking(0.5)
 
-            Text(value)
+            Text(self.value)
                 .font(ResponsiveDesign.headlineFont())
                 .fontWeight(.bold)
                 .foregroundColor(AppTheme.fontColor)
 
-            Text(subtitle)
+            Text(self.subtitle)
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.tertiaryText)
         }
@@ -301,14 +313,14 @@ private struct ModernStatusRow: View {
 
     var body: some View {
         HStack(spacing: ResponsiveDesign.spacing(12)) {
-            Image(systemName: icon)
+            Image(systemName: self.icon)
                 .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 0.8))
-                .foregroundColor(color)
+                .foregroundColor(self.color)
                 .frame(width: ResponsiveDesign.spacing(20))
 
             if let italicText = italicText {
                 // Create formatted text with italic styling
-                let parts = text.components(separatedBy: italicText)
+                let parts = self.text.components(separatedBy: italicText)
                 if parts.count == 2 {
                     HStack(spacing: ResponsiveDesign.spacing(0)) {
                         Text(parts[0])
@@ -325,12 +337,12 @@ private struct ModernStatusRow: View {
                             .foregroundColor(AppTheme.secondaryText)
                     }
                 } else {
-                    Text(text)
+                    Text(self.text)
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(AppTheme.secondaryText)
                 }
             } else {
-                Text(text)
+                Text(self.text)
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.secondaryText)
             }
@@ -341,7 +353,7 @@ private struct ModernStatusRow: View {
         .padding(.horizontal, ResponsiveDesign.spacing(16))
         .background(
             RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(12))
-                .fill(color.opacity(0.1))
+                .fill(self.color.opacity(0.1))
         )
     }
 }
@@ -365,7 +377,7 @@ private struct ModernStatusRow: View {
                     description: "Apple Inc.",
                     quantity: 100,
                     price: 150.0,
-                    totalAmount: 15000.0,
+                    totalAmount: 15_000.0,
                     status: .completed,
                     createdAt: Date(),
                     executedAt: Date(),

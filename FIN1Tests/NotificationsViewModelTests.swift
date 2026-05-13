@@ -1,5 +1,5 @@
-import XCTest
 @testable import FIN1
+import XCTest
 
 @MainActor
 final class NotificationsViewModelTests: XCTestCase {
@@ -14,11 +14,27 @@ final class NotificationsViewModelTests: XCTestCase {
 
         notificationService.notifications = [
             AppNotification(userId: userId, title: "N1", message: "", type: .investment, priority: .medium, isRead: false, createdAt: Date()),
-            AppNotification(userId: "otherUser", title: "N2", message: "", type: .investment, priority: .medium, isRead: false, createdAt: Date())
+            AppNotification(
+                userId: "otherUser",
+                title: "N2",
+                message: "",
+                type: .investment,
+                priority: .medium,
+                isRead: false,
+                createdAt: Date()
+            )
         ]
 
         let d1 = Document(userId: userId, name: "D1", type: .other, status: .verified, fileURL: "file://d1", size: 1, uploadedAt: Date())
-        let d2 = Document(userId: "otherUser", name: "D2", type: .other, status: .verified, fileURL: "file://d2", size: 1, uploadedAt: Date())
+        let d2 = Document(
+            userId: "otherUser",
+            name: "D2",
+            type: .other,
+            status: .verified,
+            fileURL: "file://d2",
+            size: 1,
+            uploadedAt: Date()
+        )
         documentService.documents = [d1, d2]
 
         let vm = NotificationsViewModel(
@@ -45,9 +61,35 @@ final class NotificationsViewModelTests: XCTestCase {
         let recentReadAt = now.addingTimeInterval(-3_600) // 1h
 
         notificationService.notifications = [
-            AppNotification(userId: userId, title: "Unread", message: "", type: .investment, priority: .medium, isRead: false, createdAt: now),
-            AppNotification(userId: userId, title: "OldRead", message: "", type: .investment, priority: .medium, isRead: true, readAt: oldReadAt, createdAt: now),
-            AppNotification(userId: userId, title: "RecentRead", message: "", type: .investment, priority: .medium, isRead: true, readAt: recentReadAt, createdAt: now)
+            AppNotification(
+                userId: userId,
+                title: "Unread",
+                message: "",
+                type: .investment,
+                priority: .medium,
+                isRead: false,
+                createdAt: now
+            ),
+            AppNotification(
+                userId: userId,
+                title: "OldRead",
+                message: "",
+                type: .investment,
+                priority: .medium,
+                isRead: true,
+                readAt: oldReadAt,
+                createdAt: now
+            ),
+            AppNotification(
+                userId: userId,
+                title: "RecentRead",
+                message: "",
+                type: .investment,
+                priority: .medium,
+                isRead: true,
+                readAt: recentReadAt,
+                createdAt: now
+            )
         ]
 
         let vm = NotificationsViewModel(

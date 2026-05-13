@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Account Statement ViewModel
 /// ViewModel for displaying account statements for investors and traders
@@ -16,7 +16,7 @@ final class AccountStatementViewModel: ObservableObject {
     @Published private(set) var errorMessage: String?
     @Published var selectedRange: AccountStatementRange = .lastMonth {
         didSet {
-            applyFilters()
+            self.applyFilters()
         }
     }
 
@@ -42,7 +42,7 @@ final class AccountStatementViewModel: ObservableObject {
         self.paymentService = services.paymentService
         self.settlementAPIService = services.settlementAPIService
 
-        setupNotificationObservers()
+        self.setupNotificationObservers()
     }
 
     // MARK: - Setup
@@ -62,7 +62,7 @@ final class AccountStatementViewModel: ObservableObject {
                 // Refresh account statement when investor balance changes
                 self.refresh()
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
 
         // Trader balance changed
         NotificationCenter.default.publisher(for: .traderBalanceDidChange)
@@ -78,7 +78,7 @@ final class AccountStatementViewModel: ObservableObject {
                 // Refresh account statement when trader balance changes
                 self.refresh()
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
 
         // Wallet transaction completed
         NotificationCenter.default.publisher(for: .walletTransactionCompleted)
@@ -93,7 +93,7 @@ final class AccountStatementViewModel: ObservableObject {
                 // Refresh account statement when wallet transaction is completed
                 self.refresh()
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
 
         // Parse Live Query updates for Wallet Transactions
         NotificationCenter.default.publisher(for: .parseLiveQueryObjectUpdated)
@@ -112,7 +112,7 @@ final class AccountStatementViewModel: ObservableObject {
                 // Refresh account statement when wallet transaction is updated via Live Query
                 self.refresh()
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
 
         // Invoice added/changed (credit notes, trade invoices)
         NotificationCenter.default.publisher(for: .invoiceDidChange)
@@ -124,17 +124,17 @@ final class AccountStatementViewModel: ObservableObject {
                 }
                 self.refresh()
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
     }
 
     // MARK: - Intent
 
     func refresh() {
-        guard !isLoading else { return }
+        guard !self.isLoading else { return }
 
         Task {
             await MainActor.run {
-                isLoading = true
+                self.isLoading = true
             }
 
             defer {
@@ -145,35 +145,35 @@ final class AccountStatementViewModel: ObservableObject {
 
             guard let currentUser = userService.currentUser else {
                 await MainActor.run {
-                    entries = []
-                    filteredEntries = []
-                    currentBalance = 0
-                    openingBalance = 0
-                    errorMessage = "No active user session"
+                    self.entries = []
+                    self.filteredEntries = []
+                    self.currentBalance = 0
+                    self.openingBalance = 0
+                    self.errorMessage = "No active user session"
                 }
                 return
             }
 
             await MainActor.run {
-                userRole = currentUser.role
-                errorMessage = nil
+                self.userRole = currentUser.role
+                self.errorMessage = nil
             }
 
             switch currentUser.role {
             case .investor:
-                await buildInvestorStatement(for: currentUser)
+                await self.buildInvestorStatement(for: currentUser)
             case .trader:
-                await buildTraderStatement(for: currentUser)
+                await self.buildTraderStatement(for: currentUser)
             default:
                 await MainActor.run {
-                    entries = []
-                    currentBalance = 0
-                    openingBalance = 0
+                    self.entries = []
+                    self.currentBalance = 0
+                    self.openingBalance = 0
                 }
             }
 
             await MainActor.run {
-                applyFilters()
+                self.applyFilters()
             }
         }
     }
@@ -181,23 +181,23 @@ final class AccountStatementViewModel: ObservableObject {
     // MARK: - Computed Summaries
 
     var totalCredits: Double {
-        filteredEntries
+        self.filteredEntries
             .filter { $0.direction == .credit }
             .reduce(0) { $0 + $1.amount }
     }
 
     var totalDebits: Double {
-        filteredEntries
+        self.filteredEntries
             .filter { $0.direction == .debit }
             .reduce(0) { $0 + $1.amount }
     }
 
     var netChange: Double {
-        filteredEntries.reduce(0) { $0 + $1.signedAmount }
+        self.filteredEntries.reduce(0) { $0 + $1.signedAmount }
     }
 
     var hasTransactions: Bool {
-        !filteredEntries.isEmpty
+        !self.filteredEntries.isEmpty
     }
 
     // MARK: - Private Builders
@@ -205,47 +205,47 @@ final class AccountStatementViewModel: ObservableObject {
     private func buildInvestorStatement(for user: User) async {
         let snapshot = await InvestorAccountStatementBuilder.buildSnapshotWithWallet(
             for: user,
-            investorCashBalanceService: investorCashBalanceService,
-            paymentService: paymentService,
-            settlementAPIService: settlementAPIService,
-            configurationService: configurationService
+            investorCashBalanceService: self.investorCashBalanceService,
+            paymentService: self.paymentService,
+            settlementAPIService: self.settlementAPIService,
+            configurationService: self.configurationService
         )
 
         await MainActor.run {
-            openingBalance = snapshot.openingBalance
-            currentBalance = snapshot.closingBalance
-            entries = snapshot.entries
-            errorMessage = nil
+            self.openingBalance = snapshot.openingBalance
+            self.currentBalance = snapshot.closingBalance
+            self.entries = snapshot.entries
+            self.errorMessage = nil
         }
     }
 
     private func buildTraderStatement(for user: User) async {
         let snapshot = await TraderAccountStatementBuilder.buildSnapshotWithWallet(
             for: user,
-            invoiceService: invoiceService,
-            configurationService: configurationService,
-            paymentService: paymentService,
-            settlementAPIService: settlementAPIService
+            invoiceService: self.invoiceService,
+            configurationService: self.configurationService,
+            paymentService: self.paymentService,
+            settlementAPIService: self.settlementAPIService
         )
 
         let totalDelta = snapshot.entries.reduce(0) { $0 + $1.signedAmount }
         let calculatedOpening = snapshot.closingBalance - totalDelta
 
         await MainActor.run {
-            openingBalance = max(0, calculatedOpening)
-            currentBalance = snapshot.closingBalance
-            entries = snapshot.entries
-            errorMessage = nil
+            self.openingBalance = max(0, calculatedOpening)
+            self.currentBalance = snapshot.closingBalance
+            self.entries = snapshot.entries
+            self.errorMessage = nil
         }
     }
 
     private func applyFilters() {
-        guard !entries.isEmpty else {
-            filteredEntries = []
+        guard !self.entries.isEmpty else {
+            self.filteredEntries = []
             return
         }
 
-        let thresholdDate = selectedRange.startDate()
-        filteredEntries = entries.filter { $0.occurredAt >= thresholdDate }
+        let thresholdDate = self.selectedRange.startDate()
+        self.filteredEntries = self.entries.filter { $0.occurredAt >= thresholdDate }
     }
 }

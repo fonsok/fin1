@@ -42,8 +42,8 @@ struct TransactionDetailsTable: View {
             }
 
             // Sell Transactions
-            ForEach(Array(breakdown.sellTransactions.enumerated()), id: \.offset) { index, sellTransaction in
-                let verkaufLabel = breakdown.sellTransactions.count == 1 ? "Verkauf" : "Verkauf \(index + 1)"
+            ForEach(Array(self.breakdown.sellTransactions.enumerated()), id: \.offset) { index, sellTransaction in
+                let verkaufLabel = self.breakdown.sellTransactions.count == 1 ? "Verkauf" : "Verkauf \(index + 1)"
                 TransactionRow(transaction: sellTransaction, label: verkaufLabel)
 
                 // Sell Fees
@@ -52,10 +52,10 @@ struct TransactionDetailsTable: View {
                 }
 
                 // Sell Subtotal
-                let sellLabel = breakdown.sellTransactions.count == 1 ? "∑ Verkauf" : "∑ Verkauf \(index + 1)"
+                let sellLabel = self.breakdown.sellTransactions.count == 1 ? "∑ Verkauf" : "∑ Verkauf \(index + 1)"
                 SubtotalRow(amount: sellTransaction.subtotal, label: sellLabel)
 
-                if index < breakdown.sellTransactions.count - 1 {
+                if index < self.breakdown.sellTransactions.count - 1 {
                     Divider()
                 }
             }
@@ -67,10 +67,10 @@ struct TransactionDetailsTable: View {
                 Text("Ergebnis vor Steuern")
                     .tradeCalculationMediumStyle()
                 Spacer()
-                Text(breakdown.profitBeforeTaxes.formatted(.currency(code: "EUR")))
+                Text(self.breakdown.profitBeforeTaxes.formatted(.currency(code: "EUR")))
                     .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.medium)
-                    .foregroundColor(breakdown.profitBeforeTaxes >= 0 ? AppTheme.accentGreen : AppTheme.accentRed)
+                    .foregroundColor(self.breakdown.profitBeforeTaxes >= 0 ? AppTheme.accentGreen : AppTheme.accentRed)
             }
             .padding(.vertical, ResponsiveDesign.spacing(8))
             .padding(.horizontal, ResponsiveDesign.spacing(12))

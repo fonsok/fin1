@@ -1,5 +1,5 @@
-import SwiftUI
 import Foundation
+import SwiftUI
 
 // MARK: - Investment Sheet View Model
 /// ViewModel for InvestmentSheet following MVVM architecture
@@ -49,45 +49,45 @@ final class InvestmentSheetViewModel: ObservableObject {
     // MARK: - Computed Properties (Business Logic)
 
     var currentUser: User? {
-        userService.currentUser
+        self.userService.currentUser
     }
 
     var amountPerInvestment: Double {
         let totalAmount = Double(investmentAmount.replacingOccurrences(of: ".", with: "")) ?? 0
-        return totalAmount > 0 ? totalAmount / Double(numberOfInvestments) : 0
+        return totalAmount > 0 ? totalAmount / Double(self.numberOfInvestments) : 0
     }
 
     var totalInvestmentAmount: Double {
-        Double(investmentAmount.replacingOccurrences(of: ".", with: "")) ?? 0
+        Double(self.investmentAmount.replacingOccurrences(of: ".", with: "")) ?? 0
     }
 
     /// Calculates the app service charge for the current investment amount
     /// - Note: Service charge applies ONLY to investors (not traders)
     var appServiceCharge: Double {
-        totalInvestmentAmount * configurationService.effectiveAppServiceChargeRate
+        self.totalInvestmentAmount * self.configurationService.effectiveAppServiceChargeRate
     }
 
     /// Total amount required (investment + app service charge)
     var totalRequiredAmount: Double {
-        totalInvestmentAmount + appServiceCharge
+        self.totalInvestmentAmount + self.appServiceCharge
     }
 
     /// Validates that cash balance after investment + fee will be >= minimum cash reserve
     var hasSufficientCashBalance: Bool {
         guard let currentUser = currentUser else { return false }
-        let currentBalance = investorCashBalanceService.getBalance(for: currentUser.id)
-        let remainingBalance = currentBalance - totalRequiredAmount
-        let minimumReserve = configurationService.getMinimumCashReserve(for: currentUser.id)
+        let currentBalance = self.investorCashBalanceService.getBalance(for: currentUser.id)
+        let remainingBalance = currentBalance - self.totalRequiredAmount
+        let minimumReserve = self.configurationService.getMinimumCashReserve(for: currentUser.id)
         return remainingBalance >= minimumReserve
     }
 
     /// Shows warning when cash balance is insufficient
     var showInsufficientCashBalanceWarning: Bool {
-        guard !investmentAmount.isEmpty,
-              Double(investmentAmount.replacingOccurrences(of: ".", with: "")) ?? 0 > 0 else {
+        guard !self.investmentAmount.isEmpty,
+              Double(self.investmentAmount.replacingOccurrences(of: ".", with: "")) ?? 0 > 0 else {
             return false
         }
-        return !hasSufficientCashBalance
+        return !self.hasSufficientCashBalance
     }
 
     /// Message explaining insufficient cash balance
@@ -95,9 +95,9 @@ final class InvestmentSheetViewModel: ObservableObject {
         guard let currentUser = currentUser else {
             return "Please log in to check your balance."
         }
-        let currentBalance = investorCashBalanceService.getBalance(for: currentUser.id)
-        let remainingBalance = currentBalance - totalRequiredAmount
-        let minimumRequired = configurationService.getMinimumCashReserve(for: currentUser.id)
+        let currentBalance = self.investorCashBalanceService.getBalance(for: currentUser.id)
+        let remainingBalance = currentBalance - self.totalRequiredAmount
+        let minimumRequired = self.configurationService.getMinimumCashReserve(for: currentUser.id)
         let shortfall = max(0, minimumRequired - remainingBalance)
 
         return "Insufficient funds. Current balance: \(currentBalance.formattedAsLocalizedCurrency()), Estimated after investment: \(remainingBalance.formattedAsLocalizedCurrency()). Need \(shortfall.formattedAsLocalizedCurrency()) more to maintain minimum reserve of \(minimumRequired.formattedAsLocalizedCurrency())."
@@ -106,47 +106,47 @@ final class InvestmentSheetViewModel: ObservableObject {
     /// Current cash balance for the investor
     var currentCashBalance: Double {
         guard let currentUser = currentUser else { return 0 }
-        return investorCashBalanceService.getBalance(for: currentUser.id)
+        return self.investorCashBalanceService.getBalance(for: currentUser.id)
     }
 
     /// Remaining balance after investment and fee
     var remainingBalanceAfterInvestment: Double {
         guard let currentUser = currentUser else { return 0 }
-        let currentBalance = investorCashBalanceService.getBalance(for: currentUser.id)
-        return currentBalance - totalRequiredAmount
+        let currentBalance = self.investorCashBalanceService.getBalance(for: currentUser.id)
+        return currentBalance - self.totalRequiredAmount
     }
 
     var canProceed: Bool {
         let total = Double(investmentAmount.replacingOccurrences(of: ".", with: "")) ?? 0
-        let perSlot = amountPerInvestment
-        let minSlot = configurationService.minimumInvestmentAmount
-        let maxSlot = configurationService.maximumInvestmentAmount
+        let perSlot = self.amountPerInvestment
+        let minSlot = self.configurationService.minimumInvestmentAmount
+        let maxSlot = self.configurationService.maximumInvestmentAmount
         let withinSlotLimits = total > 0 && perSlot >= minSlot && perSlot <= maxSlot
-        return !investmentAmount.isEmpty &&
-        total > 0 &&
-        withinSlotLimits &&
-        numberOfInvestments >= 1 &&
-        numberOfInvestments <= 10 &&
-        hasSufficientCashBalance &&
-        isCommissionConfirmed
+        return !self.investmentAmount.isEmpty &&
+            total > 0 &&
+            withinSlotLimits &&
+            self.numberOfInvestments >= 1 &&
+            self.numberOfInvestments <= 10 &&
+            self.hasSufficientCashBalance &&
+            self.isCommissionConfirmed
     }
 
     /// Positive total entered, slot count valid, but amount per slot violates admin min/max (so „Invest“ stays disabled).
     var showInvestmentSlotLimitHint: Bool {
-        let total = totalInvestmentAmount
+        let total = self.totalInvestmentAmount
         guard total > 0,
-              numberOfInvestments >= 1,
-              numberOfInvestments <= 10 else { return false }
-        let per = amountPerInvestment
-        let minSlot = configurationService.minimumInvestmentAmount
-        let maxSlot = configurationService.maximumInvestmentAmount
+              self.numberOfInvestments >= 1,
+              self.numberOfInvestments <= 10 else { return false }
+        let per = self.amountPerInvestment
+        let minSlot = self.configurationService.minimumInvestmentAmount
+        let maxSlot = self.configurationService.maximumInvestmentAmount
         return per < minSlot || per > maxSlot
     }
 
     var investmentSlotLimitHintMessage: String {
-        let per = amountPerInvestment
-        let minSlot = configurationService.minimumInvestmentAmount
-        let maxSlot = configurationService.maximumInvestmentAmount
+        let per = self.amountPerInvestment
+        let minSlot = self.configurationService.minimumInvestmentAmount
+        let maxSlot = self.configurationService.maximumInvestmentAmount
         let perFormatted = per.formattedAsLocalizedCurrency()
         if per < minSlot {
             return
@@ -165,8 +165,8 @@ final class InvestmentSheetViewModel: ObservableObject {
 
     /// Pulls latest `getConfig` limits/fees, then caps the total amount field to the configured maximum.
     func prepareForInvestingFlow() async {
-        await configurationService.refreshConfigurationFromServerIfAvailable()
-        applyConfiguredMaximumToAmountField()
+        await self.configurationService.refreshConfigurationFromServerIfAvailable()
+        self.applyConfiguredMaximumToAmountField()
     }
 
     /// Caps `investmentAmount` (whole euros) to `maximumInvestmentAmount` after a config refresh.
@@ -175,7 +175,7 @@ final class InvestmentSheetViewModel: ObservableObject {
         guard maxEuros > 0 else { return }
         let raw = Int(investmentAmount.replacingOccurrences(of: ".", with: "")) ?? 0
         if raw > maxEuros {
-            investmentAmount = String(maxEuros)
+            self.investmentAmount = String(maxEuros)
         }
     }
 
@@ -183,12 +183,12 @@ final class InvestmentSheetViewModel: ObservableObject {
 
     func validateUserCanInvest() -> Bool {
         guard let currentUser = currentUser else {
-            showInvestmentError("Please log in to make investments")
+            self.showInvestmentError("Please log in to make investments")
             return false
         }
 
         if currentUser.role == .trader {
-            showInvestmentError("Traders cannot invest in other traders")
+            self.showInvestmentError("Traders cannot invest in other traders")
             return false
         }
 
@@ -198,14 +198,14 @@ final class InvestmentSheetViewModel: ObservableObject {
     // MARK: - Investment Creation
 
     func createInvestment() async {
-        guard validateUserCanInvest() else { return }
+        guard self.validateUserCanInvest() else { return }
         guard let currentUser = currentUser else { return }
 
-        isLoading = true
-        await prepareForInvestingFlow()
+        self.isLoading = true
+        await self.prepareForInvestingFlow()
 
-        guard canProceed else {
-            isLoading = false
+        guard self.canProceed else {
+            self.isLoading = false
             return
         }
 
@@ -214,13 +214,13 @@ final class InvestmentSheetViewModel: ObservableObject {
         Task {
             do {
                 // Create the investment using the current user and trader data
-                try await investmentService.createInvestment(
+                try await self.investmentService.createInvestment(
                     investor: currentUser,
-                    trader: trader,
+                    trader: self.trader,
                     amountPerInvestment: amountPerInvestment,
-                    numberOfInvestments: numberOfInvestments,
-                    specialization: trader.specialization,
-                    poolSelection: selectedInvestmentSelection
+                    numberOfInvestments: self.numberOfInvestments,
+                    specialization: self.trader.specialization,
+                    poolSelection: self.selectedInvestmentSelection
                 )
 
                 await MainActor.run {
@@ -271,11 +271,11 @@ final class InvestmentSheetViewModel: ObservableObject {
                         userRole: currentUser.role.displayName,
                         additionalData: [
                             "original_error": appError.errorDescription ?? "unknown",
-                            "trader_id": trader.id.uuidString,
+                            "trader_id": self.trader.id.uuidString,
                             "investment_amount": amountPerInvestment
                         ]
                     )
-                    telemetryService.trackAppError(appError, context: context)
+                    self.telemetryService.trackAppError(appError, context: context)
                 }
             }
         }
@@ -284,7 +284,7 @@ final class InvestmentSheetViewModel: ObservableObject {
     // MARK: - Error Handling
 
     private func showInvestmentError(_ message: String) {
-        investmentErrorMessage = message
-        showInvestmentError = true
+        self.investmentErrorMessage = message
+        self.showInvestmentError = true
     }
 }

@@ -28,9 +28,9 @@ struct InvoiceTaxCalculator {
     /// - Parameter profit: The profit amount
     /// - Returns: Total tax amount
     static func calculateTotalTax(for profit: Double) -> Double {
-        let capitalGainsTax = calculateCapitalGainsTax(for: profit)
-        let solidaritySurcharge = calculateSolidaritySurcharge(for: capitalGainsTax)
-        let churchTax = calculateChurchTax(for: capitalGainsTax)
+        let capitalGainsTax = self.calculateCapitalGainsTax(for: profit)
+        let solidaritySurcharge = self.calculateSolidaritySurcharge(for: capitalGainsTax)
+        let churchTax = self.calculateChurchTax(for: capitalGainsTax)
         return capitalGainsTax + solidaritySurcharge + churchTax
     }
 
@@ -38,7 +38,7 @@ struct InvoiceTaxCalculator {
     /// - Parameter profit: The profit amount
     /// - Returns: InvoiceItem for capital gains tax
     static func createCapitalGainsTaxItem(for profit: Double) -> InvoiceItem {
-        let amount = calculateCapitalGainsTax(for: profit)
+        let amount = self.calculateCapitalGainsTax(for: profit)
         return InvoiceItem(
             description: "Kapitalertragsteuer (25%)",
             quantity: 1,
@@ -51,8 +51,8 @@ struct InvoiceTaxCalculator {
     /// - Parameter profit: The profit amount
     /// - Returns: InvoiceItem for solidarity surcharge
     static func createSolidaritySurchargeItem(for profit: Double) -> InvoiceItem {
-        let capitalGainsTax = calculateCapitalGainsTax(for: profit)
-        let amount = calculateSolidaritySurcharge(for: capitalGainsTax)
+        let capitalGainsTax = self.calculateCapitalGainsTax(for: profit)
+        let amount = self.calculateSolidaritySurcharge(for: capitalGainsTax)
         return InvoiceItem(
             description: "Solidaritätszuschlag (5,5%)",
             quantity: 1,
@@ -65,8 +65,8 @@ struct InvoiceTaxCalculator {
     /// - Parameter profit: The profit amount
     /// - Returns: InvoiceItem for church tax
     static func createChurchTaxItem(for profit: Double) -> InvoiceItem {
-        let capitalGainsTax = calculateCapitalGainsTax(for: profit)
-        let amount = calculateChurchTax(for: capitalGainsTax)
+        let capitalGainsTax = self.calculateCapitalGainsTax(for: profit)
+        let amount = self.calculateChurchTax(for: capitalGainsTax)
         return InvoiceItem(
             description: "Kirchensteuer (8%)",
             quantity: 1,
@@ -83,9 +83,9 @@ struct InvoiceTaxCalculator {
 
         // Only create tax items if there's a profit
         if profit > 0 {
-            items.append(createCapitalGainsTaxItem(for: profit))
-            items.append(createSolidaritySurchargeItem(for: profit))
-            items.append(createChurchTaxItem(for: profit))
+            items.append(self.createCapitalGainsTaxItem(for: profit))
+            items.append(self.createSolidaritySurchargeItem(for: profit))
+            items.append(self.createChurchTaxItem(for: profit))
         }
 
         return items
@@ -95,7 +95,7 @@ struct InvoiceTaxCalculator {
     /// - Parameter profit: The profit amount
     /// - Returns: Net amount after taxes
     static func calculateNetAmountAfterTaxes(for profit: Double) -> Double {
-        return profit - calculateTotalTax(for: profit)
+        return profit - self.calculateTotalTax(for: profit)
     }
 }
 
@@ -111,9 +111,9 @@ struct TaxCalculationResult {
     init(profit: Double) {
         self.profit = profit
         self.capitalGainsTax = InvoiceTaxCalculator.calculateCapitalGainsTax(for: profit)
-        self.solidaritySurcharge = InvoiceTaxCalculator.calculateSolidaritySurcharge(for: capitalGainsTax)
-        self.churchTax = InvoiceTaxCalculator.calculateChurchTax(for: capitalGainsTax)
-        self.totalTax = capitalGainsTax + solidaritySurcharge + churchTax
-        self.netAmountAfterTaxes = profit - totalTax
+        self.solidaritySurcharge = InvoiceTaxCalculator.calculateSolidaritySurcharge(for: self.capitalGainsTax)
+        self.churchTax = InvoiceTaxCalculator.calculateChurchTax(for: self.capitalGainsTax)
+        self.totalTax = self.capitalGainsTax + self.solidaritySurcharge + self.churchTax
+        self.netAmountAfterTaxes = profit - self.totalTax
     }
 }

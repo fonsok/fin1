@@ -17,8 +17,8 @@ final class InvoiceFilteringHelper {
 
         return invoices.filter { invoice in
             invoice.invoiceNumber.localizedCaseInsensitiveContains(query) ||
-            invoice.customerInfo.name.localizedCaseInsensitiveContains(query) ||
-            invoice.customerInfo.customerNumber.localizedCaseInsensitiveContains(query)
+                invoice.customerInfo.name.localizedCaseInsensitiveContains(query) ||
+                invoice.customerInfo.customerNumber.localizedCaseInsensitiveContains(query)
         }
     }
 
@@ -28,8 +28,8 @@ final class InvoiceFilteringHelper {
         searchQuery: String,
         filterType: InvoiceType?
     ) -> [Invoice] {
-        let searchResults = searchInvoices(invoices, query: searchQuery)
-        let filtered = filterInvoices(invoices, by: filterType)
+        let searchResults = self.searchInvoices(invoices, query: searchQuery)
+        let filtered = self.filterInvoices(invoices, by: filterType)
         return filtered.filter { invoice in
             searchResults.contains { $0.id == invoice.id }
         }

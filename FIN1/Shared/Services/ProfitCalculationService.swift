@@ -113,7 +113,7 @@ final class ProfitCalculationService {
         ownershipPercentage: Double
     ) -> Double {
         // Calculate full trade profit using invoice-based method (same as trader)
-        let fullTradeProfit = calculateTaxableProfit(
+        let fullTradeProfit = self.calculateTaxableProfit(
             buyInvoice: buyInvoice,
             sellInvoices: sellInvoices
         )

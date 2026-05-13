@@ -5,18 +5,18 @@ struct PriorityBadge: View {
     let priority: SupportTicket.TicketPriority
 
     var body: some View {
-        Text(priority.rawValue)
+        Text(self.priority.rawValue)
             .font(ResponsiveDesign.captionFont())
             .fontWeight(.semibold)
             .foregroundColor(.white)
             .padding(.horizontal, ResponsiveDesign.spacing(6))
             .padding(.vertical, ResponsiveDesign.spacing(2))
-            .background(priorityColor)
+            .background(self.priorityColor)
             .cornerRadius(ResponsiveDesign.spacing(4))
     }
 
     private var priorityColor: Color {
-        switch priority {
+        switch self.priority {
         case .urgent: return AppTheme.accentRed
         case .high: return AppTheme.accentOrange
         case .medium: return AppTheme.accentLightBlue

@@ -29,7 +29,7 @@ final class TradeLifecyclePersistenceService: @unchecked Sendable {
 
     /// Loads persisted trades from disk, organized by trader ID
     func loadPersistedTrades(completion: @escaping @Sendable ([Trade]) -> Void) {
-        queue.async { [weak self] in
+        self.queue.async { [weak self] in
             guard let self = self else {
                 DispatchQueue.main.async { completion([]) }
                 return
@@ -74,7 +74,7 @@ final class TradeLifecyclePersistenceService: @unchecked Sendable {
         }
 
         do {
-            return try decoder.decode([Trade].self, from: data)
+            return try self.decoder.decode([Trade].self, from: data)
         } catch {
             print("⚠️ TradeLifecyclePersistenceManager: Failed to decode trades from \(url.lastPathComponent) - \(error)")
             return nil
@@ -83,7 +83,7 @@ final class TradeLifecyclePersistenceService: @unchecked Sendable {
 
     /// Persists all trades to disk, organized by trader ID
     func persistTrades(_ trades: [Trade]) {
-        queue.async(flags: .barrier) { [weak self] in
+        self.queue.async(flags: .barrier) { [weak self] in
             guard let self = self else { return }
 
             // Group trades by trader ID for per-trader file organization
@@ -106,7 +106,7 @@ final class TradeLifecyclePersistenceService: @unchecked Sendable {
 
     /// Clears all persisted trades from disk
     func clearPersistedTrades() {
-        queue.async(flags: .barrier) { [weak self] in
+        self.queue.async(flags: .barrier) { [weak self] in
             guard let self = self else { return }
 
             do {
@@ -128,7 +128,7 @@ final class TradeLifecyclePersistenceService: @unchecked Sendable {
 
     /// Clears persisted trades for a specific trader (synchronous to ensure it completes)
     func clearPersistedTradesForTrader(_ traderId: String) {
-        queue.sync(flags: .barrier) { [weak self] in
+        self.queue.sync(flags: .barrier) { [weak self] in
             guard let self = self else { return }
 
             let fileName = self.sanitizeTraderId(traderId) + ".json"

@@ -13,8 +13,8 @@ struct TraderPerformanceSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(16)) {
-            performanceHeader
-            performanceContent
+            self.performanceHeader
+            self.performanceContent
         }
         .padding(ResponsiveDesign.spacing(16))
         .frame(maxWidth: .infinity)
@@ -30,8 +30,8 @@ struct TraderPerformanceSection: View {
     // MARK: - Header
     private var performanceHeader: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
-            titleAndToggle
-            timePeriodSelector
+            self.titleAndToggle
+            self.timePeriodSelector
         }
     }
 
@@ -44,22 +44,22 @@ struct TraderPerformanceSection: View {
 
             Spacer()
 
-            viewModeToggle
+            self.viewModeToggle
         }
     }
 
     private var viewModeToggle: some View {
         HStack(spacing: ResponsiveDesign.spacing(12)) {
-            Button(action: { viewModel.updateViewMode(.chart) }, label: {
+            Button(action: { self.viewModel.updateViewMode(.chart) }, label: {
                 Image(systemName: "chart.bar")
                     .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize()))
-                    .foregroundColor(viewModel.viewMode == .chart ? AppTheme.accentLightBlue : AppTheme.fontColor.opacity(0.6))
+                    .foregroundColor(self.viewModel.viewMode == .chart ? AppTheme.accentLightBlue : AppTheme.fontColor.opacity(0.6))
             })
 
-            Button(action: { viewModel.updateViewMode(.table) }, label: {
+            Button(action: { self.viewModel.updateViewMode(.table) }, label: {
                 Image(systemName: "square.grid.2x2")
                     .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize()))
-                    .foregroundColor(viewModel.viewMode == .table ? AppTheme.accentLightBlue : AppTheme.fontColor.opacity(0.6))
+                    .foregroundColor(self.viewModel.viewMode == .table ? AppTheme.accentLightBlue : AppTheme.fontColor.opacity(0.6))
             })
         }
     }
@@ -68,10 +68,10 @@ struct TraderPerformanceSection: View {
         GeometryReader { geometry in
             Menu {
                 ForEach(TraderPerformanceViewModel.TimePeriodOption.allCases, id: \.self) { option in
-                    Button(action: { viewModel.updateTimePeriod(option) }, label: {
+                    Button(action: { self.viewModel.updateTimePeriod(option) }, label: {
                         HStack {
                             Text(option.rawValue)
-                            if viewModel.selectedTimePeriod == option {
+                            if self.viewModel.selectedTimePeriod == option {
                                 Image(systemName: "checkmark")
                             }
                         }
@@ -79,7 +79,7 @@ struct TraderPerformanceSection: View {
                 }
             } label: {
                 HStack {
-                    Text(viewModel.selectedTimePeriod.rawValue)
+                    Text(self.viewModel.selectedTimePeriod.rawValue)
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(AppTheme.inputText)
 
@@ -101,25 +101,25 @@ struct TraderPerformanceSection: View {
     // MARK: - Content
     @ViewBuilder
     private var performanceContent: some View {
-        if viewModel.viewMode == .table {
-            performanceTable
+        if self.viewModel.viewMode == .table {
+            self.performanceTable
         } else {
-            performanceChart
+            self.performanceChart
         }
     }
 
     private var performanceChart: some View {
-        TraderPerformanceBarChart(chartData: viewModel.chartDisplayData)
+        TraderPerformanceBarChart(chartData: self.viewModel.chartDisplayData)
             .frame(maxWidth: .infinity, minHeight: ResponsiveDesign.spacing(200))
     }
 
     // MARK: - Performance Table
     private var performanceTable: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(0)) {
-            if !viewModel.hasTrades {
-                emptyState
+            if !self.viewModel.hasTrades {
+                self.emptyState
             } else {
-                tableContent
+                self.tableContent
             }
         }
         .frame(maxWidth: .infinity)
@@ -131,7 +131,7 @@ struct TraderPerformanceSection: View {
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.6))
 
-            Text("Total trades: \(viewModel.totalTradesCount)")
+            Text("Total trades: \(self.viewModel.totalTradesCount)")
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.4))
         }
@@ -144,7 +144,7 @@ struct TraderPerformanceSection: View {
             ScrollView(.vertical, showsIndicators: true) {
                 ScrollView(.horizontal, showsIndicators: true) {
                     VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(0)) {
-                        tableHeader(availableWidth: geometry.size.width)
+                        self.tableHeader(availableWidth: geometry.size.width)
 
                         Divider()
                             .background(AppTheme.fontColor.opacity(0.2))
@@ -157,7 +157,7 @@ struct TraderPerformanceSection: View {
                                 .frame(height: ResponsiveDesign.spacing(30))
                                 .offset(y: -ResponsiveDesign.spacing(30))
 
-                            TraderPerformanceTableContent(weeks: viewModel.groupedWeeks, currentYear: viewModel.currentYear)
+                            TraderPerformanceTableContent(weeks: self.viewModel.groupedWeeks, currentYear: self.viewModel.currentYear)
                                 .frame(minHeight: ResponsiveDesign.spacing(100))
                         }
                         .clipped()
@@ -174,7 +174,7 @@ struct TraderPerformanceSection: View {
     // MARK: - Table Header
     private func tableHeader(availableWidth: CGFloat) -> some View {
         HStack(alignment: .center, spacing: ResponsiveDesign.spacing(0)) {
-            Text(String(format: "%d", viewModel.currentYear))
+            Text(String(format: "%d", self.viewModel.currentYear))
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.inputFieldText)
                 .frame(width: ResponsiveDesign.spacing(50), alignment: .leading)

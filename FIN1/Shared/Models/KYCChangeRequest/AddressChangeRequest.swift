@@ -84,15 +84,15 @@ struct AddressChangeRequest: Identifiable, Codable, Hashable {
     // MARK: - Computed Properties
 
     var currentFormattedAddress: String {
-        "\(currentStreetAndNumber), \(currentPostalCode) \(currentCity), \(currentState), \(currentCountry)"
+        "\(self.currentStreetAndNumber), \(self.currentPostalCode) \(self.currentCity), \(self.currentState), \(self.currentCountry)"
     }
 
     var newFormattedAddress: String {
-        "\(newStreetAndNumber), \(newPostalCode) \(newCity), \(newState), \(newCountry)"
+        "\(self.newStreetAndNumber), \(self.newPostalCode) \(self.newCity), \(self.newState), \(self.newCountry)"
     }
 
-    var isPending: Bool { status == .pending || status == .underReview }
-    var canCancel: Bool { status == .pending }
+    var isPending: Bool { self.status == .pending || self.status == .underReview }
+    var canCancel: Bool { self.status == .pending }
 }
 
 // MARK: - Address Components DTO
@@ -106,11 +106,11 @@ struct AddressComponents: Codable, Hashable {
     let country: String
 
     var formattedAddress: String {
-        "\(streetAndNumber), \(postalCode) \(city), \(state), \(country)"
+        "\(self.streetAndNumber), \(self.postalCode) \(self.city), \(self.state), \(self.country)"
     }
 
     var isComplete: Bool {
-        !streetAndNumber.isEmpty && !postalCode.isEmpty && !city.isEmpty && !country.isEmpty
+        !self.streetAndNumber.isEmpty && !self.postalCode.isEmpty && !self.city.isEmpty && !self.country.isEmpty
     }
 }
 

@@ -18,11 +18,11 @@ struct CustomerDetailTradesSection: View {
                 Menu {
                     ForEach(InvestmentTimePeriod.allCases, id: \.self) { period in
                         Button {
-                            viewModel.selectedTradeTimePeriod = period
+                            self.viewModel.selectedTradeTimePeriod = period
                         } label: {
                             HStack {
                                 Text(period.displayName)
-                                if viewModel.selectedTradeTimePeriod == period {
+                                if self.viewModel.selectedTradeTimePeriod == period {
                                     Image(systemName: "checkmark")
                                 }
                             }
@@ -30,7 +30,7 @@ struct CustomerDetailTradesSection: View {
                     }
                 } label: {
                     HStack(spacing: ResponsiveDesign.spacing(4)) {
-                        Text(viewModel.selectedTradeTimePeriod.displayName)
+                        Text(self.viewModel.selectedTradeTimePeriod.displayName)
                             .font(ResponsiveDesign.captionFont())
                             .foregroundColor(AppTheme.accentLightBlue)
 
@@ -45,13 +45,13 @@ struct CustomerDetailTradesSection: View {
                 }
             }
 
-            if viewModel.filteredTradesByTimePeriod.isEmpty {
+            if self.viewModel.filteredTradesByTimePeriod.isEmpty {
                 Text("Keine Trades vorhanden")
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
                     .padding()
             } else {
-                if !viewModel.ongoingTrades.isEmpty {
+                if !self.viewModel.ongoingTrades.isEmpty {
                     Text("Laufende Trades")
                         .font(ResponsiveDesign.captionFont())
                         .fontWeight(.medium)
@@ -59,15 +59,15 @@ struct CustomerDetailTradesSection: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.top, ResponsiveDesign.spacing(4))
 
-                    ForEach(viewModel.ongoingTrades) { trade in
+                    ForEach(self.viewModel.ongoingTrades) { trade in
                         TradeSummaryCard(trade: trade) {
-                            onSelectTrade(trade)
+                            self.onSelectTrade(trade)
                         }
                     }
                 }
 
-                if !viewModel.completedTrades.isEmpty {
-                    if !viewModel.ongoingTrades.isEmpty {
+                if !self.viewModel.completedTrades.isEmpty {
+                    if !self.viewModel.ongoingTrades.isEmpty {
                         Divider()
                             .padding(.vertical, ResponsiveDesign.spacing(8))
                     }
@@ -78,14 +78,14 @@ struct CustomerDetailTradesSection: View {
                         .foregroundColor(AppTheme.fontColor.opacity(0.7))
                         .frame(maxWidth: .infinity, alignment: .leading)
 
-                    ForEach(viewModel.completedTrades) { trade in
+                    ForEach(self.viewModel.completedTrades) { trade in
                         TradeSummaryCard(trade: trade) {
-                            onSelectTrade(trade)
+                            self.onSelectTrade(trade)
                         }
                     }
                 }
 
-                if viewModel.ongoingTrades.isEmpty && viewModel.completedTrades.isEmpty && !viewModel.filteredTradesByTimePeriod.isEmpty {
+                if self.viewModel.ongoingTrades.isEmpty && self.viewModel.completedTrades.isEmpty && !self.viewModel.filteredTradesByTimePeriod.isEmpty {
                     Text("Keine Trades im ausgewählten Zeitraum")
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(AppTheme.fontColor.opacity(0.7))

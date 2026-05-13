@@ -32,12 +32,12 @@ enum TestConstants {
     static let customerIdPrefixTrader = "TRD"
 
     static func investorDisplayName(for number: Int) -> String {
-        let entry = investorNames[(number - 1) % investorNames.count]
+        let entry = self.investorNames[(number - 1) % self.investorNames.count]
         return "\(entry.first.prefix(1)). \(entry.last)"
     }
 
     static func traderDisplayName(for number: Int) -> String {
-        let entry = traderNames[(number - 1) % traderNames.count]
+        let entry = self.traderNames[(number - 1) % self.traderNames.count]
         return "\(entry.first.prefix(1)). \(entry.last)"
     }
 }

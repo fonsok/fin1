@@ -27,46 +27,58 @@ struct SummaryStep: View {
             ScrollView {
                 VStack(spacing: ResponsiveDesign.spacing(16)) {
                     SummarySection(title: "Account Information") {
-                        SummaryRow(label: "Account Type", value: signUpData.accountType.displayName, icon: "person.2.fill")
-                        SummaryRow(label: "User Role", value: signUpData.userRole.displayName, icon: "person.crop.circle.fill")
+                        SummaryRow(label: "Account Type", value: self.signUpData.accountType.displayName, icon: "person.2.fill")
+                        SummaryRow(label: "User Role", value: self.signUpData.userRole.displayName, icon: "person.crop.circle.fill")
                     }
                     
                     SummarySection(title: "Contact Information") {
-                        SummaryRow(label: "Email", value: signUpData.email, icon: "envelope.fill")
-                        SummaryRow(label: "Username", value: signUpData.username, icon: "person.circle.fill")
-                        SummaryRow(label: "Phone", value: signUpData.phoneNumber, icon: "phone.fill")
+                        SummaryRow(label: "Email", value: self.signUpData.email, icon: "envelope.fill")
+                        SummaryRow(label: "Username", value: self.signUpData.username, icon: "person.circle.fill")
+                        SummaryRow(label: "Phone", value: self.signUpData.phoneNumber, icon: "phone.fill")
                     }
                     
                     SummarySection(title: "Personal Information") {
-                        SummaryRow(label: "Kundennummer", value: signUpData.customerNumber, icon: "number.circle.fill")
-                        SummaryRow(label: "Salutation", value: signUpData.salutation.displayName, icon: "person.fill")
-                        if !signUpData.academicTitle.isEmpty {
-                            SummaryRow(label: "Academic Title", value: signUpData.academicTitle, icon: "graduationcap.fill")
+                        SummaryRow(label: "Kundennummer", value: self.signUpData.customerNumber, icon: "number.circle.fill")
+                        SummaryRow(label: "Salutation", value: self.signUpData.salutation.displayName, icon: "person.fill")
+                        if !self.signUpData.academicTitle.isEmpty {
+                            SummaryRow(label: "Academic Title", value: self.signUpData.academicTitle, icon: "graduationcap.fill")
                         }
-                        SummaryRow(label: "First Name", value: signUpData.firstName, icon: "person.fill")
-                        SummaryRow(label: "Last Name", value: signUpData.lastName, icon: "person.fill")
-                        SummaryRow(label: "Street & Number", value: signUpData.streetAndNumber, icon: "house.fill")
-                        SummaryRow(label: "Postal Code", value: signUpData.postalCode, icon: "envelope.fill")
-                        SummaryRow(label: "City", value: signUpData.city, icon: "building.2.fill")
-                        SummaryRow(label: "State", value: signUpData.state, icon: "map.fill")
-                        SummaryRow(label: "Country", value: signUpData.country, icon: "globe")
-                        SummaryRow(label: "Date of Birth", value: signUpData.dateOfBirth.formatted(date: .abbreviated, time: .omitted), icon: "calendar")
-                        SummaryRow(label: "Place of Birth", value: signUpData.placeOfBirth, icon: "mappin.circle.fill")
-                        SummaryRow(label: "Country of Birth", value: signUpData.countryOfBirth, icon: "flag.fill")
+                        SummaryRow(label: "First Name", value: self.signUpData.firstName, icon: "person.fill")
+                        SummaryRow(label: "Last Name", value: self.signUpData.lastName, icon: "person.fill")
+                        SummaryRow(label: "Street & Number", value: self.signUpData.streetAndNumber, icon: "house.fill")
+                        SummaryRow(label: "Postal Code", value: self.signUpData.postalCode, icon: "envelope.fill")
+                        SummaryRow(label: "City", value: self.signUpData.city, icon: "building.2.fill")
+                        SummaryRow(label: "State", value: self.signUpData.state, icon: "map.fill")
+                        SummaryRow(label: "Country", value: self.signUpData.country, icon: "globe")
+                        SummaryRow(
+                            label: "Date of Birth",
+                            value: self.signUpData.dateOfBirth.formatted(date: .abbreviated, time: .omitted),
+                            icon: "calendar"
+                        )
+                        SummaryRow(label: "Place of Birth", value: self.signUpData.placeOfBirth, icon: "mappin.circle.fill")
+                        SummaryRow(label: "Country of Birth", value: self.signUpData.countryOfBirth, icon: "flag.fill")
                     }
                     
                     SummarySection(title: "Citizenship & Tax") {
-                        SummaryRow(label: "US Citizen", value: signUpData.isNotUSCitizen ? "No" : "Yes", icon: "flag.filled.and.flag.crossed")
-                        SummaryRow(label: "Nationality", value: signUpData.nationality, icon: "flag.fill")
-                        SummaryRow(label: "Tax Number", value: signUpData.taxNumber, icon: "doc.text.fill")
-                        if !signUpData.additionalResidenceCountry.isEmpty {
-                            SummaryRow(label: "Additional Tax Residence", value: signUpData.additionalResidenceCountry, icon: "building.2.crossed.fill")
+                        SummaryRow(
+                            label: "US Citizen",
+                            value: self.signUpData.isNotUSCitizen ? "No" : "Yes",
+                            icon: "flag.filled.and.flag.crossed"
+                        )
+                        SummaryRow(label: "Nationality", value: self.signUpData.nationality, icon: "flag.fill")
+                        SummaryRow(label: "Tax Number", value: self.signUpData.taxNumber, icon: "doc.text.fill")
+                        if !self.signUpData.additionalResidenceCountry.isEmpty {
+                            SummaryRow(
+                                label: "Additional Tax Residence",
+                                value: self.signUpData.additionalResidenceCountry,
+                                icon: "building.2.crossed.fill"
+                            )
                         }
                     }
                     
                     // Risk Assessment Section
                     SummarySection(title: "Risk Assessment") {
-                        RiskClassSummaryRow(signUpData: signUpData)
+                        RiskClassSummaryRow(signUpData: self.signUpData)
                     }
                 }
             }

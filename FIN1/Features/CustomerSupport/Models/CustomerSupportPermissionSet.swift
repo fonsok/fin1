@@ -109,12 +109,12 @@ struct CustomerSupportPermissionSet {
     /// Get permissions for a specific role
     static func forRole(_ role: CSRRole) -> Set<CustomerSupportPermission> {
         switch role {
-        case .level1: return level1
-        case .level2: return level2
-        case .fraud: return fraudAnalyst
-        case .compliance: return complianceOfficer
-        case .techSupport: return techSupport
-        case .teamlead: return teamlead
+        case .level1: return self.level1
+        case .level2: return self.level2
+        case .fraud: return self.fraudAnalyst
+        case .compliance: return self.complianceOfficer
+        case .techSupport: return self.techSupport
+        case .teamlead: return self.teamlead
         }
     }
 

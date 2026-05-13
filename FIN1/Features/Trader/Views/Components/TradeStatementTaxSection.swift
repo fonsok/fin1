@@ -18,7 +18,7 @@ struct TradeStatementTaxSection: View {
 
             // Tax Table
             VStack(spacing: ResponsiveDesign.spacing(0)) {
-                if taxItems.isEmpty {
+                if self.taxItems.isEmpty {
                     // No taxes due - show simple message
                     HStack {
                         Text("Gesamtsteuerlast")
@@ -61,13 +61,13 @@ struct TradeStatementTaxSection: View {
                     .background(AppTheme.inputFieldBackground)
 
                     // Tax Rows
-                    ForEach(taxItems, id: \.name) { tax in
+                    ForEach(self.taxItems, id: \.name) { tax in
                         TaxRowView(tax: tax)
                     }
                 }
 
                 // Total Tax Row (only show if there are tax items)
-                if !taxItems.isEmpty {
+                if !self.taxItems.isEmpty {
                     HStack {
                         Text("Gesamtsteuerlast")
                             .font(ResponsiveDesign.bodyFont())
@@ -78,7 +78,7 @@ struct TradeStatementTaxSection: View {
                         Spacer()
                         Text("")
                         Spacer()
-                        Text(totalTaxAmount)
+                        Text(self.totalTaxAmount)
                             .font(ResponsiveDesign.bodyFont())
                             .fontWeight(.bold)
                             .foregroundColor(AppTheme.accentRed)
@@ -102,10 +102,10 @@ struct TradeStatementTaxSection: View {
                     Spacer()
                     Text("")
                     Spacer()
-                    Text(netResult)
+                    Text(self.netResult)
                         .font(ResponsiveDesign.bodyFont())
                         .fontWeight(.bold)
-                        .foregroundColor(netResultColor)
+                        .foregroundColor(self.netResultColor)
                 }
                 .padding(.vertical, ResponsiveDesign.spacing(8))
                 .padding(.horizontal, ResponsiveDesign.spacing(12))
@@ -125,19 +125,19 @@ struct TaxRowView: View {
 
     var body: some View {
         HStack {
-            Text(tax.name)
+            Text(self.tax.name)
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor)
             Spacer()
-            Text(tax.basis)
+            Text(self.tax.basis)
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor)
             Spacer()
-            Text(tax.rate)
+            Text(self.tax.rate)
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor)
             Spacer()
-            Text(tax.amount)
+            Text(self.tax.amount)
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor)
         }

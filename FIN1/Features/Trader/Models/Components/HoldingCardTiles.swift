@@ -18,33 +18,33 @@ struct HoldingCardTiles {
         ]
 
         // Details controlled by warrant details selection
-        if isDetailSelected("Bewertungstag", in: warrantDetailsViewModel) {
+        if self.isDetailSelected("Bewertungstag", in: warrantDetailsViewModel) {
             tiles.append(TileData(title: "Bewertungstag", value: holding.valuationDate))
         }
 
-        if isDetailSelected("Strike Price", in: warrantDetailsViewModel) {
+        if self.isDetailSelected("Strike Price", in: warrantDetailsViewModel) {
             tiles.append(
                 TileData(
                     title: "Strike Price",
-                    value: formatStrikePrice(holding.strike, holding.underlyingAsset)
+                    value: self.formatStrikePrice(holding.strike, holding.underlyingAsset)
                 )
             )
         }
 
-        if isDetailSelected("Brief-Kurs", in: warrantDetailsViewModel) {
+        if self.isDetailSelected("Brief-Kurs", in: warrantDetailsViewModel) {
             tiles.append(
                 TileData(
                     title: "Brief-Kurs (Ask)",
-                    value: getMockBriefkurs(for: holding)
+                    value: self.getMockBriefkurs(for: holding)
                 )
             )
         }
 
-        if isDetailSelected("Emittent", in: warrantDetailsViewModel) {
+        if self.isDetailSelected("Emittent", in: warrantDetailsViewModel) {
             tiles.append(
                 TileData(
                     title: "Emittent",
-                    value: getEmittentFromWKN(holding.wkn)
+                    value: self.getEmittentFromWKN(holding.wkn)
                 )
             )
         }
@@ -56,11 +56,11 @@ struct HoldingCardTiles {
                 value: holding.remainingQuantity.formattedAsLocalizedNumber()
             )
         )
-        tiles.append(TileData(title: "Profit", value: calculateGewinnVerlust(holding)))
+        tiles.append(TileData(title: "Profit", value: self.calculateGewinnVerlust(holding)))
 
         // Additional details when expanded
         if showAdditionalDetails {
-            if isDetailSelected("Geld-Kurs", in: warrantDetailsViewModel) {
+            if self.isDetailSelected("Geld-Kurs", in: warrantDetailsViewModel) {
                 tiles.append(
                     TileData(
                         title: "Geld-Kurs (Bid)",
@@ -69,29 +69,29 @@ struct HoldingCardTiles {
                 )
             }
 
-            if isDetailSelected("Implizite Volatilität", in: warrantDetailsViewModel) {
+            if self.isDetailSelected("Implizite Volatilität", in: warrantDetailsViewModel) {
                 tiles.append(
                     TileData(
                         title: "Implizite Volatilität",
-                        value: getMockImpliziteVolatilitaet(for: holding)
+                        value: self.getMockImpliziteVolatilitaet(for: holding)
                     )
                 )
             }
 
-            if isDetailSelected("Omega", in: warrantDetailsViewModel) {
+            if self.isDetailSelected("Omega", in: warrantDetailsViewModel) {
                 tiles.append(
                     TileData(
                         title: "Omega",
-                        value: getMockOmega(for: holding)
+                        value: self.getMockOmega(for: holding)
                     )
                 )
             }
 
-            if isDetailSelected("Subscription ratio", in: warrantDetailsViewModel) {
+            if self.isDetailSelected("Subscription ratio", in: warrantDetailsViewModel) {
                 tiles.append(
                     TileData(
                         title: "Subscriptionratio",
-                        value: formatSubscriptionRatio(
+                        value: self.formatSubscriptionRatio(
                             subscriptionRatio: holding.subscriptionRatio,
                             denomination: holding.denomination,
                             isOptionsSecurity: holding.direction != nil
@@ -100,11 +100,11 @@ struct HoldingCardTiles {
                 )
             }
 
-            if isDetailSelected("Ausübung", in: warrantDetailsViewModel) {
+            if self.isDetailSelected("Ausübung", in: warrantDetailsViewModel) {
                 tiles.append(
                     TileData(
                         title: "Ausübung",
-                        value: getMockAusuebung(for: holding)
+                        value: self.getMockAusuebung(for: holding)
                     )
                 )
             }

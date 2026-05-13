@@ -10,7 +10,7 @@ struct InvoiceHeaderDisplayView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
             HStack {
-                Text(headerData.transactionType)
+                Text(self.headerData.transactionType)
                     .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.semibold)
                     .foregroundColor(DocumentDesignSystem.textColor)
@@ -39,10 +39,10 @@ struct InvoiceItemsDisplayView: View {
 
             VStack(spacing: ResponsiveDesign.spacing(0)) {
                 // Table Header - only show Stück/Preis columns if there are securities items
-                InvoiceItemsTableHeaderView(hasSecuritiesItems: items.contains { $0.itemType == .securities })
+                InvoiceItemsTableHeaderView(hasSecuritiesItems: self.items.contains { $0.itemType == .securities })
 
                 // Table Rows
-                ForEach(items) { item in
+                ForEach(self.items) { item in
                     InvoiceItemDisplayRowView(item: item)
                 }
             }
@@ -62,8 +62,8 @@ struct InvoiceItemDisplayRowView: View {
     var body: some View {
         HStack(alignment: .top, spacing: ResponsiveDesign.spacing(8)) {
             // Description column - allow multiple lines for service charge and securities items
-            let allowMultiLine = (item.itemType == .serviceCharge || item.itemType == .securities)
-            Text(item.description)
+            let allowMultiLine = (item.itemType == .serviceCharge || self.item.itemType == .securities)
+            Text(self.item.description)
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(DocumentDesignSystem.textColor)
                 .lineLimit(allowMultiLine ? nil : 1)
@@ -72,19 +72,19 @@ struct InvoiceItemDisplayRowView: View {
                 .fixedSize(horizontal: false, vertical: true)
 
             // Only show Stück and Preis columns for securities items
-            if item.itemType == .securities {
-                Text(item.quantity)
+            if self.item.itemType == .securities {
+                Text(self.item.quantity)
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(DocumentDesignSystem.textColorSecondary)
                     .frame(minWidth: 50, alignment: .trailing)
 
-                Text(item.unitPrice)
+                Text(self.item.unitPrice)
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(DocumentDesignSystem.textColorSecondary)
                     .frame(minWidth: 60, alignment: .trailing)
             }
 
-            Text(item.total)
+            Text(self.item.total)
                 .font(ResponsiveDesign.captionFont())
                 .fontWeight(.medium)
                 .foregroundColor(DocumentDesignSystem.textColor)
@@ -94,7 +94,7 @@ struct InvoiceItemDisplayRowView: View {
         .padding(.vertical, ResponsiveDesign.spacing(6))
         .background(
             Rectangle()
-                .fill(item.itemType == .securities ? DocumentDesignSystem.sectionBackground(level: 3) : Color.clear)
+                .fill(self.item.itemType == .securities ? DocumentDesignSystem.sectionBackground(level: 3) : Color.clear)
         )
     }
 }
@@ -112,7 +112,7 @@ struct InvoiceItemsTableHeaderView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             // Only show Stück and Preis columns if there are securities items
-            if hasSecuritiesItems {
+            if self.hasSecuritiesItems {
                 Text("Stück")
                     .font(ResponsiveDesign.captionFont())
                     .fontWeight(.semibold)
@@ -152,7 +152,7 @@ struct InvoiceTotalsDisplayView: View {
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(DocumentDesignSystem.textColorSecondary)
                 Spacer()
-                Text(totals.subtotal)
+                Text(self.totals.subtotal)
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(DocumentDesignSystem.textColor)
             }
@@ -162,7 +162,7 @@ struct InvoiceTotalsDisplayView: View {
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(DocumentDesignSystem.textColorSecondary)
                 Spacer()
-                Text(totals.tax)
+                Text(self.totals.tax)
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(DocumentDesignSystem.textColor)
             }
@@ -176,7 +176,7 @@ struct InvoiceTotalsDisplayView: View {
                     .fontWeight(.semibold)
                     .foregroundColor(DocumentDesignSystem.textColor)
                 Spacer()
-                Text(totals.total)
+                Text(self.totals.total)
                     .font(ResponsiveDesign.headlineFont())
                     .fontWeight(.semibold)
                     .foregroundColor(DocumentDesignSystem.textColor)
@@ -201,7 +201,7 @@ struct CustomerInfoDisplayView: View {
                     Text("Steuernummer")
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(DocumentDesignSystem.textColorSecondary)
-                    Text(customerData.taxNumber)
+                    Text(self.customerData.taxNumber)
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(DocumentDesignSystem.textColor)
                 }
@@ -212,7 +212,7 @@ struct CustomerInfoDisplayView: View {
                     Text("Kundennummer")
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(DocumentDesignSystem.textColorSecondary)
-                    Text(customerData.customerNumber)
+                    Text(self.customerData.customerNumber)
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(DocumentDesignSystem.textColor)
                 }

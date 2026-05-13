@@ -1,6 +1,6 @@
-import SwiftUI
-import Foundation
 import Combine
+import Foundation
+import SwiftUI
 
 @MainActor
 final class CompletedInvestmentsViewModel: ObservableObject {
@@ -46,16 +46,18 @@ final class CompletedInvestmentsViewModel: ObservableObject {
     /// is not (yet) available. See Documentation/RETURN_CALCULATION_SCHEMAS.md.
     @Published var canonicalSummaries: [String: ServerInvestmentCanonicalSummary] = [:]
 
-    init(userService: any UserServiceProtocol,
-         investmentService: any InvestmentServiceProtocol,
-         documentService: any DocumentServiceProtocol,
-         invoiceService: any InvoiceServiceProtocol,
-         traderDataService: any TraderDataServiceProtocol,
-         poolTradeParticipationService: any PoolTradeParticipationServiceProtocol,
-         tradeLifecycleService: any TradeLifecycleServiceProtocol,
-         configurationService: any ConfigurationServiceProtocol,
-         commissionCalculationService: any CommissionCalculationServiceProtocol,
-         settlementAPIService: (any SettlementAPIServiceProtocol)? = nil) {
+    init(
+        userService: any UserServiceProtocol,
+        investmentService: any InvestmentServiceProtocol,
+        documentService: any DocumentServiceProtocol,
+        invoiceService: any InvoiceServiceProtocol,
+        traderDataService: any TraderDataServiceProtocol,
+        poolTradeParticipationService: any PoolTradeParticipationServiceProtocol,
+        tradeLifecycleService: any TradeLifecycleServiceProtocol,
+        configurationService: any ConfigurationServiceProtocol,
+        commissionCalculationService: any CommissionCalculationServiceProtocol,
+        settlementAPIService: (any SettlementAPIServiceProtocol)? = nil
+    ) {
         self.userService = userService
         self.investmentService = investmentService
         self.documentService = documentService
@@ -69,14 +71,14 @@ final class CompletedInvestmentsViewModel: ObservableObject {
         self.tradeAPIService = nil
         self.boundInvestorId = userService.currentUser?.id
         self.currentRole = userService.currentUser?.role
-        setupBindings()
+        self.setupBindings()
     }
 
     // MARK: - Setup Observers
 
     private func setupRoleChangeObservers() {
         // Clear existing role change observers (if any)
-        roleChangeCancellables.removeAll()
+        self.roleChangeCancellables.removeAll()
 
         // Observe role changes to reload data for new user
         NotificationCenter.default.publisher(for: .userDataDidUpdate)
@@ -88,14 +90,16 @@ final class CompletedInvestmentsViewModel: ObservableObject {
 
                 // Reload if user ID changed OR role changed (for role testing)
                 if newInvestorId != self.boundInvestorId || newRole != self.currentRole {
-                    print("🔄 CompletedInvestmentsViewModel: User data changed (ID: \(newInvestorId ?? "nil") -> \(self.boundInvestorId ?? "nil"), Role: \(newRole?.displayName ?? "nil") -> \(self.currentRole?.displayName ?? "nil")) - reloading")
+                    print(
+                        "🔄 CompletedInvestmentsViewModel: User data changed (ID: \(newInvestorId ?? "nil") -> \(self.boundInvestorId ?? "nil"), Role: \(newRole?.displayName ?? "nil") -> \(self.currentRole?.displayName ?? "nil")) - reloading"
+                    )
                     self.boundInvestorId = newInvestorId
                     self.currentRole = newRole
                     // Re-setup investment publisher subscription with new investor ID
                     self.setupInvestmentPublisher()
                 }
             }
-            .store(in: &roleChangeCancellables)
+            .store(in: &self.roleChangeCancellables)
 
         NotificationCenter.default.publisher(for: NSNotification.Name("UserRoleChanged"))
             .receive(on: DispatchQueue.main)
@@ -111,27 +115,27 @@ final class CompletedInvestmentsViewModel: ObservableObject {
                 // Re-setup investment publisher subscription with new investor ID
                 self.setupInvestmentPublisher()
             }
-            .store(in: &roleChangeCancellables)
+            .store(in: &self.roleChangeCancellables)
     }
 
     // MARK: - Setup Bindings
 
     private func setupBindings() {
-        setupRoleChangeObservers()
-        setupInvestmentPublisher()
+        self.setupRoleChangeObservers()
+        self.setupInvestmentPublisher()
     }
 
     private func setupInvestmentPublisher() {
         // Cancel existing investment publisher subscription
-        cancellables.removeAll()
+        self.cancellables.removeAll()
 
         // Observe investment changes from service
-        let investorId = boundInvestorId
+        let investorId = self.boundInvestorId
         let publisher: AnyPublisher<[Investment], Never>
         if let investorId = investorId {
-            publisher = investmentService.investmentsPublisher(for: investorId)
+            publisher = self.investmentService.investmentsPublisher(for: investorId)
         } else {
-            publisher = investmentService.investmentsPublisher
+            publisher = self.investmentService.investmentsPublisher
         }
         publisher
             .receive(on: DispatchQueue.main)
@@ -143,17 +147,17 @@ final class CompletedInvestmentsViewModel: ObservableObject {
                 self.checkAndUpdateInvestmentCompletion()
                 print("✅ CompletedInvestmentsViewModel: Investments updated from service - count: \(updatedInvestments.count)")
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
 
         // Initial load
-        loadCompletedInvestments()
+        self.loadCompletedInvestments()
     }
 
     /// Reconfigures ViewModel with services from environment (preferred)
     func reconfigure(with services: AppServices) {
         // Cancel existing subscriptions
-        cancellables.removeAll()
-        roleChangeCancellables.removeAll()
+        self.cancellables.removeAll()
+        self.roleChangeCancellables.removeAll()
 
         self.userService = services.userService
         self.investmentService = services.investmentService
@@ -167,51 +171,51 @@ final class CompletedInvestmentsViewModel: ObservableObject {
         self.settlementAPIService = services.settlementAPIService
         self.tradeAPIService = services.parseAPIClient.map { TradeAPIService(apiClient: $0) }
         self.boundInvestorId = services.userService.currentUser?.id
-        refreshInvestmentDocRefs()
-        refreshDisplayData()
-        setupBindings()
+        self.refreshInvestmentDocRefs()
+        self.refreshDisplayData()
+        self.setupBindings()
     }
 
     var currentUser: User? {
-        userService.currentUser
+        self.userService.currentUser
     }
 
     // MARK: - Data Loading
 
     func loadCompletedInvestments() {
-        isLoading = true
+        self.isLoading = true
 
         if let investorId = boundInvestorId {
-            investments = investmentService.getInvestments(for: investorId)
+            self.investments = self.investmentService.getInvestments(for: investorId)
         } else {
-            investments = []
+            self.investments = []
         }
-        refreshInvestmentDocRefs()
-        refreshDisplayData()
-        checkAndUpdateInvestmentCompletion()
+        self.refreshInvestmentDocRefs()
+        self.refreshDisplayData()
+        self.checkAndUpdateInvestmentCompletion()
 
         // Auto-select current year for completed investments
-        if selectedYear == nil && !availableYears.isEmpty {
-            selectedYear = availableYears.first
+        if self.selectedYear == nil && !self.availableYears.isEmpty {
+            self.selectedYear = self.availableYears.first
         }
 
-        isLoading = false
+        self.isLoading = false
     }
 
     /// Beleg-/Rechnungsnummern aus Services (MVVM: keine Logik in der View).
     private func refreshInvestmentDocRefs() {
-        let userId = userService.currentUser?.id ?? ""
+        let userId = self.userService.currentUser?.id ?? ""
         var refs: [String: (docNumber: String?, invoiceNumber: String?)] = [:]
-        for inv in investments {
-            let docs = documentService.getDocumentsForInvestment(inv.id)
+        for inv in self.investments {
+            let docs = self.documentService.getDocumentsForInvestment(inv.id)
             let docNumber = docs.first { $0.type == .investorCollectionBill }?.accountingDocumentNumber
             let batchId = inv.batchId ?? ""
             let invoiceNumber = batchId.isEmpty
                 ? nil
-                : invoiceService.getServiceChargeInvoiceForBatch(batchId, userId: userId)?.invoiceNumber
+                : self.invoiceService.getServiceChargeInvoiceForBatch(batchId, userId: userId)?.invoiceNumber
             refs[inv.id] = (docNumber, invoiceNumber)
         }
-        investmentDocRefs = refs
+        self.investmentDocRefs = refs
     }
 
     /// Trader-Usernames, Trade-Nummern und Statement-Summaries aus Services (MVVM: keine Logik in der View).
@@ -219,25 +223,25 @@ final class CompletedInvestmentsViewModel: ObservableObject {
         Task { @MainActor [weak self] in
             guard let self else { return }
             var tradeIds: Set<String> = []
-            for inv in investments {
-                for p in poolTradeParticipationService.getParticipations(forInvestmentId: inv.id) {
+            for inv in self.investments {
+                for p in self.poolTradeParticipationService.getParticipations(forInvestmentId: inv.id) {
                     tradeIds.insert(p.tradeId)
                 }
             }
             let tradesById = await InvestorInvestmentStatementAggregator.resolveTradesForPoolParticipations(
                 investedTradeIds: tradeIds,
-                localTrades: tradeLifecycleService.completedTrades,
-                tradeAPIService: tradeAPIService
+                localTrades: self.tradeLifecycleService.completedTrades,
+                tradeAPIService: self.tradeAPIService
             )
             var usernames: [String: String] = [:]
             var tradeNums: [String: String] = [:]
             var summaries: [String: InvestorInvestmentStatementSummary] = [:]
-            let commissionRate = configurationService.effectiveCommissionRate
+            let commissionRate = self.configurationService.effectiveCommissionRate
             let calculationService = InvestorCollectionBillCalculationService()
 
-            for inv in investments {
-                usernames[inv.id] = traderDataService.getTrader(by: inv.traderId)?.username ?? "---"
-                let participations = poolTradeParticipationService.getParticipations(forInvestmentId: inv.id)
+            for inv in self.investments {
+                usernames[inv.id] = self.traderDataService.getTrader(by: inv.traderId)?.username ?? "---"
+                let participations = self.poolTradeParticipationService.getParticipations(forInvestmentId: inv.id)
 
                 if let first = participations.first,
                    let trade = tradesById[first.tradeId] {
@@ -259,11 +263,11 @@ final class CompletedInvestmentsViewModel: ObservableObject {
                     summaries[inv.id] = summary
                 }
             }
-            traderUsernames = usernames
-            tradeNumbers = tradeNums
-            investmentSummaries = summaries
+            self.traderUsernames = usernames
+            self.tradeNumbers = tradeNums
+            self.investmentSummaries = summaries
 
-            refreshCanonicalSummaries(for: investments)
+            self.refreshCanonicalSummaries(for: self.investments)
         }
     }
 
@@ -271,7 +275,7 @@ final class CompletedInvestmentsViewModel: ObservableObject {
     /// `canonicalSummaries`. Fallbacks (fehlende Bills / Netzwerkfehler) bleiben
     /// einfach unbelegt → die View nutzt dann `investmentSummaries` als Fallback.
     private func refreshCanonicalSummaries(for investments: [Investment]) {
-        let service = settlementAPIService
+        let service = self.settlementAPIService
         guard service != nil else { return }
         let relevantIds = investments
             .filter { $0.status == .completed || $0.reservationStatus == .completed }
@@ -298,17 +302,19 @@ final class CompletedInvestmentsViewModel: ObservableObject {
 
     /// Returns investments filtered by completed/cancelled, plus partially-completed (active with completed pool status)
     var completedInvestments: [Investment] {
-        let fullyDone = investments.filter { $0.status == .completed || $0.status == .cancelled }
+        let fullyDone = self.investments.filter { $0.status == .completed || $0.status == .cancelled }
         // Since each pool is an investment, check if active investment has completed pool status
-        let partials = investments.filter { inv in
+        let partials = self.investments.filter { inv in
             inv.status == .active && inv.reservationStatus == .completed
         }
         let completed = fullyDone + partials
         print("🔍 CompletedInvestmentsViewModel.completedInvestments:")
-        print("   📊 Total investments: \(investments.count)")
+        print("   📊 Total investments: \(self.investments.count)")
         print("   ✅ Completed investments: \(completed.count)")
         for (index, inv) in completed.enumerated() {
-            print("      [\(index)] Investment \(inv.id): trader='\(inv.traderName)', amount=€\(inv.amount), currentValue=€\(inv.currentValue), performance=\(inv.performance)%, completedAt=\(inv.completedAt?.description ?? "nil")")
+            print(
+                "      [\(index)] Investment \(inv.id): trader='\(inv.traderName)', amount=€\(inv.amount), currentValue=€\(inv.currentValue), performance=\(inv.performance)%, completedAt=\(inv.completedAt?.description ?? "nil")"
+            )
         }
         return completed
     }
@@ -318,7 +324,7 @@ final class CompletedInvestmentsViewModel: ObservableObject {
     private func checkAndUpdateInvestmentCompletion() {
         // The service's checkAndUpdateInvestmentCompletion() should handle the actual updates
         // This method is just for logging/debugging - the service will publish updates via the publisher
-        let activeInvestments = investments.filter { $0.status == .active && $0.reservationStatus == .completed }
+        let activeInvestments = self.investments.filter { $0.status == .active && $0.reservationStatus == .completed }
         if !activeInvestments.isEmpty {
             print("🔍 CompletedInvestmentsViewModel.checkAndUpdateInvestmentCompletion:")
             print("   📊 Found \(activeInvestments.count) active investments with completed pool status")
@@ -328,8 +334,8 @@ final class CompletedInvestmentsViewModel: ObservableObject {
 
     /// Returns completed/partial investments filtered by time period
     var completedInvestmentsByTimePeriod: [Investment] {
-        let allCompleted = completedInvestments
-        let cutoffDate = selectedTimePeriod.cutoffDate()
+        let allCompleted = self.completedInvestments
+        let cutoffDate = self.selectedTimePeriod.cutoffDate()
 
         return allCompleted.filter { investment in
             if let completedAt = investment.completedAt {
@@ -344,12 +350,12 @@ final class CompletedInvestmentsViewModel: ObservableObject {
     /// Returns completed/partial investments filtered by year (partials have no completedAt -> included)
     /// Deprecated: Use completedInvestmentsByTimePeriod instead
     var completedInvestmentsByYear: [Investment] {
-        completedInvestmentsByTimePeriod
+        self.completedInvestmentsByTimePeriod
     }
 
     /// Available years for filtering completed investments
     var availableYears: [Int] {
-        let years = completedInvestments.compactMap { investment -> Int? in
+        let years = self.completedInvestments.compactMap { investment -> Int? in
             guard let completedAt = investment.completedAt else { return nil }
             return Calendar.current.component(.year, from: completedAt)
         }
@@ -359,23 +365,23 @@ final class CompletedInvestmentsViewModel: ObservableObject {
     // MARK: - Error Handling
 
     func clearError() {
-        errorMessage = nil
-        showError = false
+        self.errorMessage = nil
+        self.showError = false
     }
 
     func showError(_ error: AppError) {
-        errorMessage = error.errorDescription ?? "An error occurred"
-        showError = true
+        self.errorMessage = error.errorDescription ?? "An error occurred"
+        self.showError = true
     }
 
     func handleError(_ error: Error) {
         let appError = error.toAppError()
-        errorMessage = appError.errorDescription ?? "An error occurred"
-        showError = true
+        self.errorMessage = appError.errorDescription ?? "An error occurred"
+        self.showError = true
     }
 
     /// Filters completed investments by the selected time period
     func filterCompletedInvestments(by period: InvestmentTimePeriod) {
-        selectedTimePeriod = period
+        self.selectedTimePeriod = period
     }
 }

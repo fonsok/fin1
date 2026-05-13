@@ -41,26 +41,26 @@ final class TradeCalculationService {
     /// Calculate detailed breakdown for a trade
     func calculateTradeBreakdown(for trade: Trade, buyInvoice: Invoice?, sellInvoices: [Invoice]) -> TransactionBreakdown {
         // Extract trade information
-        let wknIsin = extractWknIsin(from: trade)
-        let direction = extractDirection(from: trade)
-        let underlying = extractUnderlying(from: trade)
-        let strikePrice = extractStrikePrice(from: trade)
-        let issuer = extractIssuer(from: trade)
+        let wknIsin = self.extractWknIsin(from: trade)
+        let direction = self.extractDirection(from: trade)
+        let underlying = self.extractUnderlying(from: trade)
+        let strikePrice = self.extractStrikePrice(from: trade)
+        let issuer = self.extractIssuer(from: trade)
 
         // Calculate buy transaction
-        let buyTransaction = calculateBuyTransaction(trade: trade, invoice: buyInvoice)
+        let buyTransaction = self.calculateBuyTransaction(trade: trade, invoice: buyInvoice)
 
         // Calculate sell transactions
-        let sellTransactions = calculateSellTransactions(trade: trade, invoices: sellInvoices)
+        let sellTransactions = self.calculateSellTransactions(trade: trade, invoices: sellInvoices)
 
         // Calculate profit before taxes
-        let profitBeforeTaxes = calculateProfitBeforeTaxes(
+        let profitBeforeTaxes = self.calculateProfitBeforeTaxes(
             buyTransaction: buyTransaction,
             sellTransactions: sellTransactions
         )
 
         // Calculate taxes
-        let taxBreakdown = calculateTaxBreakdown(profit: profitBeforeTaxes)
+        let taxBreakdown = self.calculateTaxBreakdown(profit: profitBeforeTaxes)
 
         // Calculate net result
         let netResult = profitBeforeTaxes - taxBreakdown.totalTaxes
@@ -122,7 +122,7 @@ final class TradeCalculationService {
         let price = trade.buyOrder.price
         let amount = quantity * price
 
-        let fees = calculateFees(from: invoice)
+        let fees = self.calculateFees(from: invoice)
         let subtotal = amount + fees.reduce(0) { $0 + $1.amount }
 
         return TransactionDetails(
@@ -147,7 +147,7 @@ final class TradeCalculationService {
                 let securityItems = invoice.items.filter { $0.itemType == .securities }
                 if let securityItem = securityItems.first {
                     return abs(securityItem.quantity - sellOrder.quantity) < 0.01 &&
-                           abs(securityItem.unitPrice - sellOrder.price) < 0.01
+                        abs(securityItem.unitPrice - sellOrder.price) < 0.01
                 }
                 return false
             }
@@ -158,7 +158,7 @@ final class TradeCalculationService {
             let price = sellOrder.price
             let amount = quantity * price
 
-            let fees = calculateSellFees(from: invoice)
+            let fees = self.calculateSellFees(from: invoice)
             let subtotal = amount + fees.reduce(0) { $0 + $1.amount }
 
             return TransactionDetails(
@@ -209,7 +209,7 @@ final class TradeCalculationService {
         let capitalGainsTax = InvoiceTaxCalculator.calculateCapitalGainsTax(for: profit)
         let solidaritySurcharge = InvoiceTaxCalculator.calculateSolidaritySurcharge(for: capitalGainsTax)
         let churchTax = InvoiceTaxCalculator.calculateChurchTax(for: capitalGainsTax)
-        let totalTaxes = calculationGuardService.guardTaxCalculation(profit: profit)
+        let totalTaxes = self.calculationGuardService.guardTaxCalculation(profit: profit)
 
         return TaxBreakdown(
             capitalGainsTax: capitalGainsTax,

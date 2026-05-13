@@ -15,15 +15,17 @@ struct SavedSecuritiesFiltersView: View {
                 ScrollView {
                     VStack(spacing: ResponsiveDesign.spacing(16)) {
                         // Help text
-                        Text("Tap 'Activate' on any filter combination to apply it to your current search. The activated filter will be highlighted in orange.")
-                            .font(ResponsiveDesign.captionFont())
-                            .foregroundColor(AppTheme.inputFieldText.opacity(0.7))
-                            .padding(.horizontal, ResponsiveDesign.spacing(16))
-                            .padding(.vertical, ResponsiveDesign.spacing(12))
-                            .background(AppTheme.inputFieldBackground)
-                            .cornerRadius(ResponsiveDesign.spacing(8))
+                        Text(
+                            "Tap 'Activate' on any filter combination to apply it to your current search. The activated filter will be highlighted in orange."
+                        )
+                        .font(ResponsiveDesign.captionFont())
+                        .foregroundColor(AppTheme.inputFieldText.opacity(0.7))
+                        .padding(.horizontal, ResponsiveDesign.spacing(16))
+                        .padding(.vertical, ResponsiveDesign.spacing(12))
+                        .background(AppTheme.inputFieldBackground)
+                        .cornerRadius(ResponsiveDesign.spacing(8))
 
-                        if savedFiltersRepository.savedFilters.isEmpty {
+                        if self.savedFiltersRepository.savedFilters.isEmpty {
                             VStack(spacing: ResponsiveDesign.spacing(16)) {
                                 Image(systemName: "tray")
                                     .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2.0))
@@ -40,12 +42,12 @@ struct SavedSecuritiesFiltersView: View {
                             .padding(.vertical, ResponsiveDesign.spacing(40))
                         } else {
                             LazyVStack(spacing: ResponsiveDesign.spacing(16)) {
-                                ForEach(savedFiltersRepository.savedFilters) { savedFilter in
+                                ForEach(self.savedFiltersRepository.savedFilters) { savedFilter in
                                     SavedSecuritiesFilterRow(
                                         savedFilter: savedFilter,
-                                        onDelete: { savedFiltersRepository.removeFilter(savedFilter) },
-                                        onActivate: { onActivateFilter(savedFilter) },
-                                        isCurrentlyApplied: currentlyAppliedFilterID == savedFilter.id.uuidString
+                                        onDelete: { self.savedFiltersRepository.removeFilter(savedFilter) },
+                                        onActivate: { self.onActivateFilter(savedFilter) },
+                                        isCurrentlyApplied: self.currentlyAppliedFilterID == savedFilter.id.uuidString
                                     )
                                 }
                             }
@@ -59,7 +61,7 @@ struct SavedSecuritiesFiltersView: View {
             .navigationTitle("Saved Filters")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") { dismiss() }
+                    Button("Done") { self.dismiss() }
                         .foregroundColor(AppTheme.accentLightBlue)
                 }
             }
@@ -78,12 +80,12 @@ struct SavedSecuritiesFilterRow: View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
             HStack {
                 HStack(spacing: ResponsiveDesign.spacing(8)) {
-                    Text(savedFilter.name)
+                    Text(self.savedFilter.name)
                         .font(ResponsiveDesign.headlineFont())
                         .fontWeight(.medium)
                         .foregroundColor(AppTheme.fontColor)
 
-                    if isCurrentlyApplied {
+                    if self.isCurrentlyApplied {
                         Image(systemName: "checkmark")
                             .font(ResponsiveDesign.captionFont())
                             .foregroundColor(AppTheme.accentOrange)
@@ -92,7 +94,7 @@ struct SavedSecuritiesFilterRow: View {
 
                 Spacer()
 
-                if savedFilter.isDefault {
+                if self.savedFilter.isDefault {
                     Text("Default")
                         .font(ResponsiveDesign.captionFont())
                         .fontWeight(.medium)
@@ -104,7 +106,7 @@ struct SavedSecuritiesFilterRow: View {
                 }
 
                 HStack(spacing: ResponsiveDesign.spacing(12)) {
-                    if isCurrentlyApplied {
+                    if self.isCurrentlyApplied {
                         Text("Currently Applied")
                             .font(ResponsiveDesign.captionFont())
                             .fontWeight(.medium)
@@ -118,7 +120,7 @@ struct SavedSecuritiesFilterRow: View {
                             )
                             .cornerRadius(ResponsiveDesign.spacing(6))
                     } else {
-                        Button(action: onActivate, label: {
+                        Button(action: self.onActivate, label: {
                             Text("Activate")
                                 .font(ResponsiveDesign.captionFont())
                                 .fontWeight(.medium)
@@ -130,7 +132,7 @@ struct SavedSecuritiesFilterRow: View {
                         })
                     }
 
-                    Button(action: onDelete, label: {
+                    Button(action: self.onDelete, label: {
                         Image(systemName: "trash")
                             .foregroundColor(AppTheme.accentRed.opacity(0.6))
                     })
@@ -138,9 +140,9 @@ struct SavedSecuritiesFilterRow: View {
             }
 
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
-                FilterDetailRow(label: "Category", value: savedFilter.filters.category)
-                FilterDetailRow(label: "Underlying Asset", value: savedFilter.filters.underlyingAsset)
-                FilterDetailRow(label: "Direction", value: savedFilter.filters.direction.rawValue)
+                FilterDetailRow(label: "Category", value: self.savedFilter.filters.category)
+                FilterDetailRow(label: "Underlying Asset", value: self.savedFilter.filters.underlyingAsset)
+                FilterDetailRow(label: "Direction", value: self.savedFilter.filters.direction.rawValue)
 
                 if let strikePriceGap = savedFilter.filters.strikePriceGap {
                     FilterDetailRow(label: "Strike Price Gap", value: strikePriceGap)
@@ -156,15 +158,15 @@ struct SavedSecuritiesFilterRow: View {
                 }
             }
 
-            Text("Created: \(savedFilter.createdAt, style: .date)")
+            Text("Created: \(self.savedFilter.createdAt, style: .date)")
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.6))
         }
         .padding(ResponsiveDesign.spacing(16))
-        .background(isCurrentlyApplied ? AppTheme.accentGreen.opacity(0.05) : AppTheme.sectionBackground)
+        .background(self.isCurrentlyApplied ? AppTheme.accentGreen.opacity(0.05) : AppTheme.sectionBackground)
         .overlay(
             RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(12))
-                .stroke(isCurrentlyApplied ? AppTheme.accentGreen.opacity(0.3) : Color.clear, lineWidth: 1)
+                .stroke(self.isCurrentlyApplied ? AppTheme.accentGreen.opacity(0.3) : Color.clear, lineWidth: 1)
         )
         .cornerRadius(ResponsiveDesign.spacing(12))
     }
@@ -180,12 +182,12 @@ struct FilterDetailRow: View {
             Text("•")
                 .foregroundColor(AppTheme.accentLightBlue)
 
-            Text("\(label): ")
+            Text("\(self.label): ")
                 .font(ResponsiveDesign.bodyFont())
-            //    .foregroundColor(AppTheme.fontColor)
+                //    .foregroundColor(AppTheme.fontColor)
                 .foregroundColor(.white.opacity(0.7))
 
-            Text(value)
+            Text(self.value)
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor)
 

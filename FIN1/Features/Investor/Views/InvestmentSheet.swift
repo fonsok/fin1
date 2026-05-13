@@ -10,9 +10,9 @@ struct InvestmentSheet: View {
 
     var body: some View {
         InvestmentSheetContent(
-            trader: trader,
-            onInvestmentSuccess: onInvestmentSuccess,
-            services: services
+            trader: self.trader,
+            onInvestmentSuccess: self.onInvestmentSuccess,
+            services: self.services
         )
     }
 }
@@ -64,56 +64,56 @@ private struct InvestmentSheetContent: View {
                 ScrollView {
                     VStack(spacing: ResponsiveDesign.spacing(16)) {
                         // Header
-                        InvestmentHeaderView(trader: trader)
+                        InvestmentHeaderView(trader: self.trader)
 
                         // Investment Form
                         InvestmentFormView(
-                            investmentAmount: $viewModel.investmentAmount,
-                            selectedInvestmentSelection: $viewModel.selectedInvestmentSelection,
-                            numberOfInvestments: $viewModel.numberOfInvestments,
-                            configurationService: services.configurationService
+                            investmentAmount: self.$viewModel.investmentAmount,
+                            selectedInvestmentSelection: self.$viewModel.selectedInvestmentSelection,
+                            numberOfInvestments: self.$viewModel.numberOfInvestments,
+                            configurationService: self.services.configurationService
                         )
 
                         // Cash Balance Warning
-                        if viewModel.showInsufficientCashBalanceWarning {
-                            insufficientCashBalanceWarningView
+                        if self.viewModel.showInsufficientCashBalanceWarning {
+                            self.insufficientCashBalanceWarningView
                         }
 
-                        if viewModel.showInvestmentSlotLimitHint {
-                            investmentSlotLimitHintView
+                        if self.viewModel.showInvestmentSlotLimitHint {
+                            self.investmentSlotLimitHintView
                         }
 
                         // Investment Selection Section
                         InvestmentSelectionView(
-                            selectedInvestmentSelection: viewModel.selectedInvestmentSelection,
-                            numberOfInvestments: viewModel.numberOfInvestments,
-                            amountPerInvestment: viewModel.amountPerInvestment
+                            selectedInvestmentSelection: self.viewModel.selectedInvestmentSelection,
+                            numberOfInvestments: self.viewModel.numberOfInvestments,
+                            amountPerInvestment: self.viewModel.amountPerInvestment
                         )
 
                         // Investment Summary
                         InvestmentSummaryView(
-                            viewModel: investmentSummaryViewModel,
-                            remainingBalance: viewModel.remainingBalanceAfterInvestment,
-                            currentBalance: viewModel.currentCashBalance
+                            viewModel: self.investmentSummaryViewModel,
+                            remainingBalance: self.viewModel.remainingBalanceAfterInvestment,
+                            currentBalance: self.viewModel.currentCashBalance
                         )
 
                         // Commission Confirmation
                         CommissionConfirmationView(
-                            traderUsername: trader.username,
-                            commissionPercentage: services.configurationService.traderCommissionPercentage,
-                            isConfirmed: $viewModel.isCommissionConfirmed
+                            traderUsername: self.trader.username,
+                            commissionPercentage: self.services.configurationService.traderCommissionPercentage,
+                            isConfirmed: self.$viewModel.isCommissionConfirmed
                         )
 
                         // Action Buttons
                         InvestmentActionButtonsView(
-                            canProceed: viewModel.canProceed,
-                            isLoading: viewModel.isLoading,
+                            canProceed: self.viewModel.canProceed,
+                            isLoading: self.viewModel.isLoading,
                             onCreateInvestment: {
                                 Task {
-                                    await viewModel.createInvestment()
+                                    await self.viewModel.createInvestment()
                                 }
                             },
-                            onCancel: { dismiss() }
+                            onCancel: { self.dismiss() }
                         )
                     }
                     .padding()
@@ -124,17 +124,17 @@ private struct InvestmentSheetContent: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel") {
-                        dismiss()
+                        self.dismiss()
                     }
                 }
             }
         }
-        .alert("Investment nicht möglich", isPresented: $viewModel.showInvestmentError) {
+        .alert("Investment nicht möglich", isPresented: self.$viewModel.showInvestmentError) {
             Button("OK") { }
         } message: {
-            Text(viewModel.investmentErrorMessage)
+            Text(self.viewModel.investmentErrorMessage)
         }
-        .alert("Investment Created", isPresented: $viewModel.showSuccess) {
+        .alert("Investment Created", isPresented: self.$viewModel.showSuccess) {
             Button("OK") {
                 // This will be handled automatically by the timer
             }
@@ -143,17 +143,17 @@ private struct InvestmentSheetContent: View {
             Text("Your investment has been successfully created! Returning to dashboard...")
         }
         .accessibilityIdentifier("InvestmentSuccessAlert")
-        .onChange(of: viewModel.investmentAmount) {
-            updateInvestmentSummary()
+        .onChange(of: self.viewModel.investmentAmount) {
+            self.updateInvestmentSummary()
         }
-        .onChange(of: viewModel.numberOfInvestments) {
-            updateInvestmentSummary()
+        .onChange(of: self.viewModel.numberOfInvestments) {
+            self.updateInvestmentSummary()
         }
         .onAppear {
             Task { @MainActor in
-                await viewModel.prepareForInvestingFlow()
-                _ = viewModel.validateUserCanInvest()
-                updateInvestmentSummary()
+                await self.viewModel.prepareForInvestingFlow()
+                _ = self.viewModel.validateUserCanInvest()
+                self.updateInvestmentSummary()
             }
         }
     }
@@ -161,10 +161,10 @@ private struct InvestmentSheetContent: View {
     // MARK: - Helper Methods
 
     private func updateInvestmentSummary() {
-        investmentSummaryViewModel.update(
-            amountPerInvestment: viewModel.amountPerInvestment,
-            numberOfInvestments: viewModel.numberOfInvestments,
-            totalInvestmentAmount: viewModel.totalInvestmentAmount
+        self.investmentSummaryViewModel.update(
+            amountPerInvestment: self.viewModel.amountPerInvestment,
+            numberOfInvestments: self.viewModel.numberOfInvestments,
+            totalInvestmentAmount: self.viewModel.totalInvestmentAmount
         )
     }
 
@@ -182,7 +182,7 @@ private struct InvestmentSheetContent: View {
                     .foregroundColor(AppTheme.accentRed)
             }
 
-            Text(viewModel.insufficientCashBalanceMessage)
+            Text(self.viewModel.insufficientCashBalanceMessage)
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.primaryText)
                 .multilineTextAlignment(.leading)
@@ -208,7 +208,7 @@ private struct InvestmentSheetContent: View {
                     .foregroundColor(AppTheme.primaryText)
             }
 
-            Text(viewModel.investmentSlotLimitHintMessage)
+            Text(self.viewModel.investmentSlotLimitHintMessage)
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.primaryText)
                 .multilineTextAlignment(.leading)

@@ -86,37 +86,37 @@ enum FilterSuccessRateOption: String, CaseIterable, Codable {
 
     var requiredSuccessCount: Int? {
         switch self {
-            case .tenOutOfTen: return 10
-            case .atLeast9OutOf10: return 9
-            case .atLeast8OutOf10: return 8
-            case .atLeast7OutOf10: return 7
-            case .atLeast6OutOf10: return 6
-            case .twentyOutOf20: return 20
-            case .atLeast18OutOf20: return 18
-            case .atLeast16OutOf20: return 16
-            case .atLeast14OutOf20: return 14
-            case .atLeast12OutOf20: return 12
-            default: return nil
+        case .tenOutOfTen: return 10
+        case .atLeast9OutOf10: return 9
+        case .atLeast8OutOf10: return 8
+        case .atLeast7OutOf10: return 7
+        case .atLeast6OutOf10: return 6
+        case .twentyOutOf20: return 20
+        case .atLeast18OutOf20: return 18
+        case .atLeast16OutOf20: return 16
+        case .atLeast14OutOf20: return 14
+        case .atLeast12OutOf20: return 12
+        default: return nil
         }
     }
 
     var totalTrades: Int? {
         switch self {
-            case .tenOutOfTen, .atLeast9OutOf10, .atLeast8OutOf10, .atLeast7OutOf10, .atLeast6OutOf10: return 10
-            case .twentyOutOf20, .atLeast18OutOf20, .atLeast16OutOf20, .atLeast14OutOf20, .atLeast12OutOf20: return 20
-            default: return nil
+        case .tenOutOfTen, .atLeast9OutOf10, .atLeast8OutOf10, .atLeast7OutOf10, .atLeast6OutOf10: return 10
+        case .twentyOutOf20, .atLeast18OutOf20, .atLeast16OutOf20, .atLeast14OutOf20, .atLeast12OutOf20: return 20
+        default: return nil
         }
     }
 
     var timePeriod: TimePeriod? {
         switch self {
-            case .last8Days: return .days(8)
-            case .last2Weeks: return .weeks(2)
-            case .lastMonth: return .months(1)
-            case .last2Months: return .months(2)
-            case .last3Months: return .months(3)
-            case .last12Months: return .months(12)
-            default: return nil
+        case .last8Days: return .days(8)
+        case .last2Weeks: return .weeks(2)
+        case .lastMonth: return .months(1)
+        case .last2Months: return .months(2)
+        case .last3Months: return .months(3)
+        case .last12Months: return .months(12)
+        default: return nil
         }
     }
 }

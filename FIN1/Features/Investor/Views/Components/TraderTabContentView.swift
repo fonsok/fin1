@@ -9,20 +9,20 @@ struct TraderTabContentView: View {
 
     var body: some View {
         Group {
-            switch selectedTab {
+            switch self.selectedTab {
             case 0:
-                performanceTab
+                self.performanceTab
             case 1:
-                reviewsTab
+                self.reviewsTab
             case 2:
-                riskAnalysisTab
+                self.riskAnalysisTab
             case 3:
-                tradingHistoryTab
+                self.tradingHistoryTab
             default:
-                performanceTab
+                self.performanceTab
             }
         }
-        .animation(.easeInOut, value: selectedTab)
+        .animation(.easeInOut, value: self.selectedTab)
     }
 
     private var performanceTab: some View {
@@ -49,9 +49,9 @@ struct TraderTabContentView: View {
             HStack(spacing: ResponsiveDesign.spacing(12)) {
                 StatCard(
                     title: "Monthly Return",
-                    value: "\(String(format: "%.1f", trader.performance))%",
+                    value: "\(String(format: "%.1f", self.trader.performance))%",
                     icon: "arrow.up.right",
-                    color: trader.performance > 0 ? AppTheme.accentGreen : AppTheme.accentRed
+                    color: self.trader.performance > 0 ? AppTheme.accentGreen : AppTheme.accentRed
                 )
 
                 StatCard(

@@ -1,5 +1,5 @@
-import XCTest
 @testable import FIN1
+import XCTest
 
 /// Tests for CustomerSupportPermission enum and related functionality
 final class CustomerSupportPermissionTests: XCTestCase {

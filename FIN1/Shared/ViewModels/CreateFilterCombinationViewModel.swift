@@ -8,9 +8,9 @@ final class CreateFilterCombinationViewModel: ObservableObject {
     @Published var combinationName: String = "" {
         didSet {
             // Sanitize input: limit to 20 characters and only alphanumeric
-            let sanitized = sanitizeInput(combinationName)
-            if sanitized != combinationName {
-                combinationName = sanitized
+            let sanitized = self.sanitizeInput(self.combinationName)
+            if sanitized != self.combinationName {
+                self.combinationName = sanitized
             }
         }
     }
@@ -18,22 +18,22 @@ final class CreateFilterCombinationViewModel: ObservableObject {
     // MARK: - Computed Properties
 
     var canSave: Bool {
-        let trimmedName = combinationName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedName = self.combinationName.trimmingCharacters(in: .whitespacesAndNewlines)
         return !trimmedName.isEmpty &&
-               trimmedName.count <= 20 &&
-               trimmedName.allSatisfy { $0.isLetter || $0.isNumber || $0.isWhitespace }
+            trimmedName.count <= 20 &&
+            trimmedName.allSatisfy { $0.isLetter || $0.isNumber || $0.isWhitespace }
     }
 
     var characterCount: Int {
-        combinationName.count
+        self.combinationName.count
     }
 
     var isNameTooLong: Bool {
-        combinationName.count > 20
+        self.combinationName.count > 20
     }
 
     var hasInvalidCharacters: Bool {
-        let trimmedName = combinationName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedName = self.combinationName.trimmingCharacters(in: .whitespacesAndNewlines)
         return !trimmedName.isEmpty && !trimmedName.allSatisfy { $0.isLetter || $0.isNumber || $0.isWhitespace }
     }
 

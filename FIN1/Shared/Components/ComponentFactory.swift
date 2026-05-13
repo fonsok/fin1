@@ -83,14 +83,14 @@ final class ComponentFactory {
     ) -> some View {
         Button(action: action, label: {
             Text(title)
-            .frame(maxWidth: .infinity)
-            .padding(ResponsiveDesign.spacing(12))
-            .background(Color.clear)
-            .foregroundColor(AppTheme.buttonColor)
-            .overlay(
-                RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(8))
-                    .stroke(AppTheme.buttonColor, lineWidth: 1)
-            )
+                .frame(maxWidth: .infinity)
+                .padding(ResponsiveDesign.spacing(12))
+                .background(Color.clear)
+                .foregroundColor(AppTheme.buttonColor)
+                .overlay(
+                    RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(8))
+                        .stroke(AppTheme.buttonColor, lineWidth: 1)
+                )
         })
         .disabled(!isEnabled)
     }
@@ -155,7 +155,7 @@ final class ComponentFactory {
                 .multilineTextAlignment(.center)
 
             if let retryAction = retryAction {
-                createSecondaryButton(title: "Retry", action: retryAction)
+                self.createSecondaryButton(title: "Retry", action: retryAction)
             }
         }
         .padding(ResponsiveDesign.spacing(24))

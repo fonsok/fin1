@@ -13,15 +13,15 @@ struct TicketDetailSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: ResponsiveDesign.spacing(16)) {
-                    TicketDetailHeader(ticket: ticket)
-                    TicketInfoSection(ticket: ticket)
-                    TicketDescriptionSection(ticket: ticket)
+                    TicketDetailHeader(ticket: self.ticket)
+                    TicketInfoSection(ticket: self.ticket)
+                    TicketDescriptionSection(ticket: self.ticket)
 
-                    if !ticket.responses.isEmpty {
-                        TicketResponsesSection(responses: ticket.responses)
+                    if !self.ticket.responses.isEmpty {
+                        TicketResponsesSection(responses: self.ticket.responses)
                     }
 
-                    actionsSection
+                    self.actionsSection
                 }
                 .padding()
             }
@@ -30,22 +30,22 @@ struct TicketDetailSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Schließen") { dismiss() }
+                    Button("Schließen") { self.dismiss() }
                 }
             }
-            .sheet(isPresented: $viewModel.showRespondTicketSheet) {
+            .sheet(isPresented: self.$viewModel.showRespondTicketSheet) {
                 if let selectedTicket = viewModel.selectedTicket {
-                    RespondTicketSheet(ticket: selectedTicket, viewModel: viewModel)
+                    RespondTicketSheet(ticket: selectedTicket, viewModel: self.viewModel)
                 }
             }
-            .sheet(isPresented: $viewModel.showAssignTicketSheet) {
+            .sheet(isPresented: self.$viewModel.showAssignTicketSheet) {
                 if let ticketForAction = viewModel.ticketForAction {
-                    AssignTicketSheet(ticket: ticketForAction, viewModel: viewModel)
+                    AssignTicketSheet(ticket: ticketForAction, viewModel: self.viewModel)
                 }
             }
-            .sheet(isPresented: $viewModel.showResolveTicketSheet) {
+            .sheet(isPresented: self.$viewModel.showResolveTicketSheet) {
                 if let ticketForAction = viewModel.ticketForAction {
-                    ResolveTicketSheet(ticket: ticketForAction, viewModel: viewModel)
+                    ResolveTicketSheet(ticket: ticketForAction, viewModel: self.viewModel)
                 }
             }
         }
@@ -62,53 +62,53 @@ struct TicketDetailSheet: View {
 
             VStack(spacing: ResponsiveDesign.spacing(8)) {
                 // Respond to Ticket
-                if ticket.status != .closed && ticket.status != .resolved {
-                    actionButton(
+                if self.ticket.status != .closed && self.ticket.status != .resolved {
+                    self.actionButton(
                         icon: "bubble.left.fill",
                         title: "Antwort senden",
                         color: AppTheme.accentLightBlue
                     ) {
-                        viewModel.showRespondTicketSheet = true
+                        self.viewModel.showRespondTicketSheet = true
                     }
                 }
 
                 // Assign/Reassign Ticket
-                if ticket.status != .closed && ticket.status != .resolved {
-                    actionButton(
-                        icon: ticket.assignedTo != nil ? "arrow.triangle.2.circlepath" : "person.badge.plus",
-                        title: ticket.assignedTo != nil ? "Neu zuweisen" : "Zuweisen",
-                        color: ticket.assignedTo != nil ? AppTheme.accentOrange : AppTheme.accentLightBlue
+                if self.ticket.status != .closed && self.ticket.status != .resolved {
+                    self.actionButton(
+                        icon: self.ticket.assignedTo != nil ? "arrow.triangle.2.circlepath" : "person.badge.plus",
+                        title: self.ticket.assignedTo != nil ? "Neu zuweisen" : "Zuweisen",
+                        color: self.ticket.assignedTo != nil ? AppTheme.accentOrange : AppTheme.accentLightBlue
                     ) {
-                        viewModel.ticketForAction = ticket
-                        dismiss()
+                        self.viewModel.ticketForAction = self.ticket
+                        self.dismiss()
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                            viewModel.showAssignTicketSheet = true
+                            self.viewModel.showAssignTicketSheet = true
                         }
                     }
                 }
 
                 // Resolve Ticket
-                if ticket.status == .inProgress || ticket.status == .waitingForCustomer {
-                    actionButton(
+                if self.ticket.status == .inProgress || self.ticket.status == .waitingForCustomer {
+                    self.actionButton(
                         icon: "checkmark.circle.fill",
                         title: "Ticket lösen",
                         color: AppTheme.accentGreen
                     ) {
-                        viewModel.ticketForAction = ticket
-                        viewModel.showResolveTicketSheet = true
+                        self.viewModel.ticketForAction = self.ticket
+                        self.viewModel.showResolveTicketSheet = true
                     }
                 }
 
                 // Close Ticket (after resolved)
-                if ticket.status == .resolved {
-                    actionButton(
+                if self.ticket.status == .resolved {
+                    self.actionButton(
                         icon: "xmark.circle.fill",
                         title: "Ticket schließen",
                         color: AppTheme.fontColor.opacity(0.6)
                     ) {
                         Task {
-                            await viewModel.closeTicket(ticketId: ticket.id, closureReason: "Ticket gelöst und geschlossen")
-                            dismiss()
+                            await self.viewModel.closeTicket(ticketId: self.ticket.id, closureReason: "Ticket gelöst und geschlossen")
+                            self.dismiss()
                         }
                     }
                 }

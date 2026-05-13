@@ -69,7 +69,7 @@ final class DownloadsFolderUtility {
     /// - Returns: True if accessible, false otherwise
     static func isDownloadsAccessible() -> Bool {
         do {
-            _ = try getDownloadsURL()
+            _ = try self.getDownloadsURL()
             return true
         } catch {
             return false
@@ -80,7 +80,7 @@ final class DownloadsFolderUtility {
     /// - Returns: The Downloads folder path
     static func getDownloadsPath() -> String {
         do {
-            return try getDownloadsURL().path
+            return try self.getDownloadsURL().path
         } catch {
             return "Downloads folder not accessible"
         }

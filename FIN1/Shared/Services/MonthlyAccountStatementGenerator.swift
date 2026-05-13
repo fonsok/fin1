@@ -56,9 +56,9 @@ struct MonthlyAccountStatementGenerator {
             // Skip if statement for this month already exists
             let alreadyExists = existingDocs.contains {
                 $0.type == .monthlyAccountStatement &&
-                $0.statementYear == year &&
-                $0.statementMonth == month &&
-                $0.statementRole == user.role
+                    $0.statementYear == year &&
+                    $0.statementMonth == month &&
+                    $0.statementRole == user.role
             }
 
             if alreadyExists {
@@ -82,7 +82,7 @@ struct MonthlyAccountStatementGenerator {
                 type: .monthlyAccountStatement,
                 status: .verified,
                 fileURL: dummyFileURL,
-                size: 1024, // Non-zero placeholder for validation
+                size: 1_024, // Non-zero placeholder for validation
                 uploadedAt: Date(),
                 verifiedAt: Date(),
                 expiresAt: nil,
@@ -163,7 +163,7 @@ struct MonthlyAccountStatementGenerator {
             type: .monthlyAccountStatement,
             status: .verified,
             fileURL: dummyFileURL,
-            size: 1024,
+            size: 1_024,
             uploadedAt: Date(),
             verifiedAt: Date(),
             expiresAt: nil,

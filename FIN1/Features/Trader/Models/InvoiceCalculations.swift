@@ -40,7 +40,7 @@ struct InvoiceFeeCalculator {
     ///   - isNegative: Whether the fee should be negative (for sell orders)
     /// - Returns: InvoiceItem for order fee
     static func createOrderFeeItem(for orderAmount: Double, isNegative: Bool = false) -> InvoiceItem {
-        let amount = calculateOrderFee(for: orderAmount)
+        let amount = self.calculateOrderFee(for: orderAmount)
         return InvoiceItem(
             description: "Ordergebühr",
             quantity: 1,
@@ -55,7 +55,7 @@ struct InvoiceFeeCalculator {
     ///   - isNegative: Whether the fee should be negative (for sell orders)
     /// - Returns: InvoiceItem for exchange fee
     static func createExchangeFeeItem(for orderAmount: Double, isNegative: Bool = false) -> InvoiceItem {
-        let amount = calculateExchangeFee(for: orderAmount)
+        let amount = self.calculateExchangeFee(for: orderAmount)
         return InvoiceItem(
             description: "Börsenplatzgebühr (XETRA)",
             quantity: 1,
@@ -68,7 +68,7 @@ struct InvoiceFeeCalculator {
     /// - Parameter isNegative: Whether the fee should be negative (for sell orders)
     /// - Returns: InvoiceItem for foreign costs
     static func createForeignCostsItem(isNegative: Bool = false) -> InvoiceItem {
-        let amount = calculateForeignCosts()
+        let amount = self.calculateForeignCosts()
         return InvoiceItem(
             description: "Fremdkostenpauschale",
             quantity: 1,
@@ -94,7 +94,7 @@ struct InvoiceNumberGenerator {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyyMMdd"
         let dateString = formatter.string(from: Date())
-        let randomNumber = Int.random(in: 1000...9999)
+        let randomNumber = Int.random(in: 1_000...9_999)
         return "\(dateString)-\(randomNumber)"
     }
 }
@@ -105,8 +105,10 @@ struct InvoiceNotes {
     /// Tax note for buy orders
     static let buyOrderTaxNote = """
     Steuerlicher Hinweis:
-    Beim Kauf werden keine Steuern abgezogen. Die Besteuerung erfolgt erst beim Verkauf bzw. Gewinnrealisierung gemäß Abgeltungsteuer (dzt. \(CalculationConstants.TaxRates.capitalGainsTaxWithSoli)).
-
+    Beim Kauf werden keine Steuern abgezogen. Die Besteuerung erfolgt erst beim Verkauf bzw. Gewinnrealisierung gemäß Abgeltungsteuer (dzt. \(
+        CalculationConstants.TaxRates.capitalGainsTaxWithSoli
+    )).
+    
     Rechtlicher Hinweis:
     Die Versteuerung erfolgt mit Gewinnrealisierung laut aktueller Regelung (§ 20 EStG).
     """
@@ -115,7 +117,7 @@ struct InvoiceNotes {
     static let sellOrderTaxNote = """
     Steuerlicher Hinweis:
     Beim Verkauf erfolgt die Besteuerung gemäß Abgeltungsteuer (dzt. \(CalculationConstants.TaxRates.capitalGainsTaxWithSoli)) auf den realisierten Gewinn. Die Steuer wird automatisch von der Bank einbehalten.
-
+    
     Rechtlicher Hinweis:
     Die Versteuerung erfolgt mit Gewinnrealisierung laut aktueller Regelung (§ 20 EStG).
     """
@@ -127,7 +129,7 @@ struct InvoiceNotes {
     static let serviceChargeTaxNote = """
     Steuerlicher Hinweis:
     Die App-Servicegebühr unterliegt der Umsatzsteuer (\(CalculationConstants.VATRates.standardVATPercentage)). Der Rechnungsbetrag ist bereits die Bruttosumme inklusive Umsatzsteuer.
-
+    
     Rechtlicher Hinweis:
     Diese Gebühr wird bei Erstellung der Investition fällig und ist nicht erstattungsfähig.
     """

@@ -6,13 +6,13 @@ struct PasswordRequirement: View {
     
     var body: some View {
         HStack(spacing: ResponsiveDesign.spacing(8)) {
-            Image(systemName: isMet ? "checkmark.circle.fill" : "circle")
-                .foregroundColor(isMet ? AppTheme.accentGreen : AppTheme.fontColor.opacity(0.3))
+            Image(systemName: self.isMet ? "checkmark.circle.fill" : "circle")
+                .foregroundColor(self.isMet ? AppTheme.accentGreen : AppTheme.fontColor.opacity(0.3))
                 .font(ResponsiveDesign.captionFont())
             
-            Text(text)
+            Text(self.text)
                 .font(ResponsiveDesign.captionFont())
-                .foregroundColor(isMet ? AppTheme.fontColor : AppTheme.fontColor.opacity(0.6))
+                .foregroundColor(self.isMet ? AppTheme.fontColor : AppTheme.fontColor.opacity(0.6))
             
             Spacer()
         }

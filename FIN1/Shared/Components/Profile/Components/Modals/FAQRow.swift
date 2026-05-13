@@ -8,14 +8,14 @@ struct FAQRow: View {
 
     var body: some View {
         ExpandableSectionRow(
-            title: faq.question,
+            title: self.faq.question,
             icon: nil,
             iconColor: AppTheme.accentLightBlue,
-            isExpanded: isExpanded,
-            onToggle: onToggle,
+            isExpanded: self.isExpanded,
+            onToggle: self.onToggle,
             titleFontWeight: ResponsiveDesign.faqQuestionFontWeight
         ) {
-            FAQAnswerFormatter(answer: faq.answer)
+            FAQAnswerFormatter(answer: self.faq.answer)
         }
     }
 }

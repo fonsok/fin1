@@ -75,7 +75,7 @@ final class InvestmentCashDeductionProcessor {
             : (batch.appServiceCharge - netServiceCharge)
 
         // Build service charge metadata
-        let serviceChargeMetadata = buildServiceChargeMetadata(
+        let serviceChargeMetadata = self.buildServiceChargeMetadata(
             investor: investor,
             batch: batch,
             investments: investments,
@@ -92,7 +92,7 @@ final class InvestmentCashDeductionProcessor {
         )
 
         // Create invoice for app service charge
-        await createServiceChargeInvoice(
+        await self.createServiceChargeInvoice(
             investor: investor,
             serviceChargeAmount: batch.appServiceCharge,
             batchId: batch.id,
@@ -167,18 +167,18 @@ final class InvestmentCashDeductionProcessor {
         let invoice = Invoice.forServiceCharge(
             grossServiceChargeAmount: serviceChargeAmount,
             customerInfo: customerInfo,
-            transactionIdService: transactionIdService,
+            transactionIdService: self.transactionIdService,
             batchId: batchId,
             investmentIds: investmentIds,
             investmentAmounts: investmentAmounts,
-            serviceChargeRate: configurationService.effectiveAppServiceChargeRate(
+            serviceChargeRate: self.configurationService.effectiveAppServiceChargeRate(
                 for: investor.accountType.rawValue
             ),
             includeVAT: investor.accountType != .company
         )
 
         var shouldCreateInvoiceDocument = true
-        if configurationService.serviceChargeInvoiceFromBackend,
+        if self.configurationService.serviceChargeInvoiceFromBackend,
            let apiService = investmentAPIService,
            let representativeInvestmentId = investments.first?.id,
            canAttemptServerServiceChargeBooking(with: representativeInvestmentId) {
@@ -198,18 +198,22 @@ final class InvestmentCashDeductionProcessor {
                 print("   🆔 Server invoice id: \(invoiceId)")
                 print("   💰 Gross: €\(serviceChargeAmount.formatted(.currency(code: "EUR")))")
             } catch {
-                if isDuplicateServiceChargeInvoiceError(error) {
+                if self.isDuplicateServiceChargeInvoiceError(error) {
                     print("ℹ️ InvestmentCashDeductionProcessor: Service charge invoice already exists server-side — skipping client fallback")
                 } else {
-                if configurationService.serviceChargeLegacyClientFallbackEnabled {
-                    // Fail-safe: on transient technical error, use legacy fallback path.
-                    print("⚠️ InvestmentCashDeductionProcessor: bookAppServiceCharge failed, falling back to client path — \(error.localizedDescription)")
-                    await invoiceService.addInvoice(invoice)
-                } else {
-                    // Stability guard: fallback is disabled by admin configuration.
-                    print("❌ InvestmentCashDeductionProcessor: bookAppServiceCharge failed and legacy fallback is disabled — \(error.localizedDescription)")
-                    shouldCreateInvoiceDocument = false
-                }
+                    if self.configurationService.serviceChargeLegacyClientFallbackEnabled {
+                        // Fail-safe: on transient technical error, use legacy fallback path.
+                        print(
+                            "⚠️ InvestmentCashDeductionProcessor: bookAppServiceCharge failed, falling back to client path — \(error.localizedDescription)"
+                        )
+                        await invoiceService.addInvoice(invoice)
+                    } else {
+                        // Stability guard: fallback is disabled by admin configuration.
+                        print(
+                            "❌ InvestmentCashDeductionProcessor: bookAppServiceCharge failed and legacy fallback is disabled — \(error.localizedDescription)"
+                        )
+                        shouldCreateInvoiceDocument = false
+                    }
                 }
             }
         } else {
@@ -218,13 +222,15 @@ final class InvestmentCashDeductionProcessor {
             print("📄 InvestmentCashDeductionProcessor: Service Charge Invoice Created (client path)")
             print("   📋 Invoice Number: \(invoice.invoiceNumber)")
             print("   💰 Gross: €\(serviceChargeAmount.formatted(.currency(code: "EUR")))")
-            if configurationService.serviceChargeInvoiceFromBackend {
-                print("ℹ️ InvestmentCashDeductionProcessor: Skipping server-side bookAppServiceCharge for local-only investment id; using client path")
+            if self.configurationService.serviceChargeInvoiceFromBackend {
+                print(
+                    "ℹ️ InvestmentCashDeductionProcessor: Skipping server-side bookAppServiceCharge for local-only investment id; using client path"
+                )
             }
         }
 
         if shouldCreateInvoiceDocument {
-            await createServiceChargeInvoiceDocument(invoice: invoice, investor: investor, batchId: batchId)
+            await self.createServiceChargeInvoiceDocument(invoice: invoice, investor: investor, batchId: batchId)
         }
     }
 
@@ -265,7 +271,7 @@ final class InvestmentCashDeductionProcessor {
             type: .invoice,
             status: .verified,
             fileURL: "invoice://\(invoice.invoiceNumber).pdf",
-            size: 1024 * 50,
+            size: 1_024 * 50,
             uploadedAt: Date(),
             invoiceData: invoice,
             tradeId: nil,

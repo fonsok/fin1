@@ -7,14 +7,14 @@ struct SubtotalRow: View {
 
     var body: some View {
         HStack {
-            Text(label)
+            Text(self.label)
                 .tradeCalculationMediumStyle()
             Spacer()
             Text("")
             Spacer()
             Text("")
             Spacer()
-            Text(amount.formatted(.currency(code: "EUR")))
+            Text(self.amount.formatted(.currency(code: "EUR")))
                 .tradeCalculationMediumStyle()
         }
         .padding(.vertical, ResponsiveDesign.spacing(4))

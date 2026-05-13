@@ -16,7 +16,7 @@ struct PendingConfigurationRejectionSheet: View {
 
                 if let changeId = viewModel.selectedChangeId,
                    let change = viewModel.pendingChanges.first(where: { $0.id == changeId }) {
-                    PendingConfigurationChangeDetailsView(change: change, viewModel: viewModel)
+                    PendingConfigurationChangeDetailsView(change: change, viewModel: self.viewModel)
                 }
 
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
@@ -24,12 +24,12 @@ struct PendingConfigurationRejectionSheet: View {
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(.secondary)
 
-                    TextField("Provide reason for rejection...", text: $viewModel.rejectionReason, axis: .vertical)
+                    TextField("Provide reason for rejection...", text: self.$viewModel.rejectionReason, axis: .vertical)
                         .textFieldStyle(.roundedBorder)
                         .lineLimit(3...6)
                 }
 
-                if viewModel.rejectionReason.isEmpty {
+                if self.viewModel.rejectionReason.isEmpty {
                     Text("A reason is required to reject this change")
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(.orange)
@@ -39,16 +39,16 @@ struct PendingConfigurationRejectionSheet: View {
 
                 HStack(spacing: ResponsiveDesign.spacing(16)) {
                     Button("Cancel") {
-                        viewModel.dismissSheets()
+                        self.viewModel.dismissSheets()
                     }
                     .buttonStyle(.bordered)
 
                     Button {
                         Task {
-                            await viewModel.rejectSelectedChange()
+                            await self.viewModel.rejectSelectedChange()
                         }
                     } label: {
-                        if viewModel.isLoading {
+                        if self.viewModel.isLoading {
                             ProgressView()
                         } else {
                             Text("Reject")
@@ -56,7 +56,7 @@ struct PendingConfigurationRejectionSheet: View {
                     }
                     .buttonStyle(.borderedProminent)
                     .tint(.red)
-                    .disabled(viewModel.isLoading || viewModel.rejectionReason.isEmpty)
+                    .disabled(self.viewModel.isLoading || self.viewModel.rejectionReason.isEmpty)
                 }
             }
             .padding()
@@ -65,7 +65,7 @@ struct PendingConfigurationRejectionSheet: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
-                        viewModel.dismissSheets()
+                        self.viewModel.dismissSheets()
                     }
                 }
             }

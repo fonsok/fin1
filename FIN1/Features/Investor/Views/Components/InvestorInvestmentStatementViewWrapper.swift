@@ -40,9 +40,9 @@ struct InvestorInvestmentStatementViewWrapper: View {
     }
 
     var body: some View {
-        InvestorInvestmentStatementView(viewModel: viewModel)
-            .task(id: documentNumber) {
-                viewModel.documentNumber = documentNumber
+        InvestorInvestmentStatementView(viewModel: self.viewModel)
+            .task(id: self.documentNumber) {
+                self.viewModel.documentNumber = self.documentNumber
             }
     }
 }

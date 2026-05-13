@@ -17,21 +17,21 @@ struct CustomPicker<T: Hashable>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(title)
+            Text(self.title)
                 .font(ResponsiveDesign.bodyFont())
                 .fontWeight(.medium)
-                .foregroundColor(labelColor)
+                .foregroundColor(self.labelColor)
 
             Menu {
-                ForEach(options, id: \.self) { option in
+                ForEach(self.options, id: \.self) { option in
                     Button(action: { self.selection = option }, label: {
-                        Text(displayText(option))
+                        Text(self.displayText(option))
                             .foregroundColor(AppTheme.inputFieldText)
                     })
                 }
             } label: {
                 HStack {
-                    Text(displayText(selection))
+                    Text(self.displayText(self.selection))
                         .foregroundColor(AppTheme.inputFieldText)
                     Spacer()
                     Image(systemName: "chevron.up.chevron.down")
@@ -175,13 +175,13 @@ struct ExperiencePicker: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(title)
+            Text(self.title)
                 .font(ResponsiveDesign.bodyFont())
                 .fontWeight(.medium)
                 .foregroundColor(AppTheme.fontColor)
 
             Menu {
-                ForEach(options, id: \.0) { option in
+                ForEach(self.options, id: \.0) { option in
                     Button(action: { self.selection = option.0 }, label: {
                         Text(option.1)
                             .foregroundColor(AppTheme.inputFieldText)
@@ -189,7 +189,7 @@ struct ExperiencePicker: View {
                 }
             } label: {
                 HStack {
-                    Text(getDisplayText())
+                    Text(self.getDisplayText())
                         .foregroundColor(AppTheme.inputFieldText)
                     Spacer()
                     Image(systemName: "chevron.up.chevron.down")
@@ -203,7 +203,7 @@ struct ExperiencePicker: View {
     }
 
     private func getDisplayText() -> String {
-        return options.first { $0.0 == selection }?.1 ?? options.first?.1 ?? ""
+        return self.options.first { $0.0 == self.selection }?.1 ?? self.options.first?.1 ?? ""
     }
 }
 

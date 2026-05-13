@@ -92,32 +92,32 @@ struct ParseOrder: Codable {
     // MARK: - Conversion to Order
     
     func toOrder() -> Order {
-        let orderType: OrderType = type == "buy" ? .buy : .sell
+        let orderType: OrderType = self.type == "buy" ? .buy : .sell
         
         return Order(
-            id: objectId ?? UUID().uuidString,
-            traderId: traderId,
-            symbol: symbol,
-            description: description,
+            id: self.objectId ?? UUID().uuidString,
+            traderId: self.traderId,
+            symbol: self.symbol,
+            description: self.description,
             type: orderType,
-            quantity: quantity,
-            price: price,
-            totalAmount: totalAmount,
-            createdAt: createdAt,
-            executedAt: executedAt,
-            confirmedAt: confirmedAt,
-            updatedAt: updatedAt,
-            optionDirection: optionDirection,
-            underlyingAsset: underlyingAsset,
-            wkn: wkn,
-            category: category,
-            strike: strike,
-            orderInstruction: orderInstruction,
-            limitPrice: limitPrice,
-            subscriptionRatio: subscriptionRatio,
-            denomination: denomination,
-            originalHoldingId: originalHoldingId,
-            status: status
+            quantity: self.quantity,
+            price: self.price,
+            totalAmount: self.totalAmount,
+            createdAt: self.createdAt,
+            executedAt: self.executedAt,
+            confirmedAt: self.confirmedAt,
+            updatedAt: self.updatedAt,
+            optionDirection: self.optionDirection,
+            underlyingAsset: self.underlyingAsset,
+            wkn: self.wkn,
+            category: self.category,
+            strike: self.strike,
+            orderInstruction: self.orderInstruction,
+            limitPrice: self.limitPrice,
+            subscriptionRatio: self.subscriptionRatio,
+            denomination: self.denomination,
+            originalHoldingId: self.originalHoldingId,
+            status: self.status
         )
     }
     

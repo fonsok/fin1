@@ -26,101 +26,103 @@ struct LandingFAQView: View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(24)) {
             // Separator Line
             Rectangle()
-                .fill(style == .typewriter ? Color("InputText") : AppTheme.fontColor.opacity(0.5))
+                .fill(self.style == .typewriter ? Color("InputText") : AppTheme.fontColor.opacity(0.5))
                 .frame(height: 1)
 
             // FAQ Title
-            Text(isGerman ? "Häufige Fragen" : "Frequently Asked Questions")
-                .font(style == .typewriter
-                      ? .system(size: 18, weight: .bold, design: .monospaced)
-                      : ResponsiveDesign.headlineFont())
-                .foregroundColor(style == .typewriter ? Color("InputText") : AppTheme.fontColor)
+            Text(self.isGerman ? "Häufige Fragen" : "Frequently Asked Questions")
+                .font(self.style == .typewriter
+                    ? .system(size: 18, weight: .bold, design: .monospaced)
+                    : ResponsiveDesign.headlineFont())
+                .foregroundColor(self.style == .typewriter ? Color("InputText") : AppTheme.fontColor)
 
-            if isLoading {
+            if self.isLoading {
                 HStack(spacing: ResponsiveDesign.spacing(12)) {
                     ProgressView()
-                    Text(isGerman ? "Lade FAQs…" : "Loading FAQs…")
-                        .font(style == .typewriter
-                              ? .system(size: 14, weight: .regular, design: .monospaced)
-                              : ResponsiveDesign.bodyFont())
-                        .foregroundColor(style == .typewriter ? Color("InputText") : AppTheme.secondaryText)
+                    Text(self.isGerman ? "Lade FAQs…" : "Loading FAQs…")
+                        .font(self.style == .typewriter
+                            ? .system(size: 14, weight: .regular, design: .monospaced)
+                            : ResponsiveDesign.bodyFont())
+                        .foregroundColor(self.style == .typewriter ? Color("InputText") : AppTheme.secondaryText)
                 }
-            } else if serverCategories.isEmpty || serverFAQs.isEmpty {
+            } else if self.serverCategories.isEmpty || self.serverFAQs.isEmpty {
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
-                    Text(isGerman
-                         ? "Der FAQ‑Bereich ist gerade nicht verfügbar.\n(Evtl. Einstellungen⇒Apps⇒...Lokales Netzwerk Zugriff erlauben.)"
-                         : "FAQs are currently unavailable.")
-                        .font(style == .typewriter
-                              ? .system(size: 14, weight: .regular, design: .monospaced)
-                              : ResponsiveDesign.bodyFont())
-                        .foregroundColor(style == .typewriter ? Color("InputText") : AppTheme.secondaryText)
+                    Text(self.isGerman
+                        ? "Der FAQ‑Bereich ist gerade nicht verfügbar.\n(Evtl. Einstellungen⇒Apps⇒...Lokales Netzwerk Zugriff erlauben.)"
+                        : "FAQs are currently unavailable.")
+                        .font(self.style == .typewriter
+                            ? .system(size: 14, weight: .regular, design: .monospaced)
+                            : ResponsiveDesign.bodyFont())
+                        .foregroundColor(self.style == .typewriter ? Color("InputText") : AppTheme.secondaryText)
 
-                    Button(isGerman ? "Erneut versuchen" : "Retry") {
-                        Task { await loadServerFAQsIfAvailable(forceRefresh: true) }
+                    Button(self.isGerman ? "Erneut versuchen" : "Retry") {
+                        Task { await self.loadServerFAQsIfAvailable(forceRefresh: true) }
                     }
                     .buttonStyle(.borderedProminent)
                     .tint(AppTheme.accentLightBlue)
                     .foregroundStyle(Color.white)
-                    .disabled(isLoading)
+                    .disabled(self.isLoading)
 
-                    if loadFailed {
-                        Text(isGerman
-                             ? "Hinweis: Für die Landing‑FAQs müssen FAQCategory.showOnLanding=true und FAQs veröffentlicht sein."
-                             : "Note: Landing FAQs require FAQCategory.showOnLanding=true and published FAQs.")
-                            .font(style == .typewriter
-                                  ? .system(size: 12, weight: .regular, design: .monospaced)
-                                  : ResponsiveDesign.captionFont())
-                            .foregroundColor(style == .typewriter ? Color("InputText").opacity(0.7) : AppTheme.fontColor.opacity(0.7))
+                    if self.loadFailed {
+                        Text(self.isGerman
+                            ? "Hinweis: Für die Landing‑FAQs müssen FAQCategory.showOnLanding=true und FAQs veröffentlicht sein."
+                            : "Note: Landing FAQs require FAQCategory.showOnLanding=true and published FAQs.")
+                            .font(self.style == .typewriter
+                                ? .system(size: 12, weight: .regular, design: .monospaced)
+                                : ResponsiveDesign.captionFont())
+                            .foregroundColor(self.style == .typewriter ? Color("InputText").opacity(0.7) : AppTheme.fontColor.opacity(0.7))
 
                         if let hint = connectivityHintText {
                             Text(hint)
-                                .font(style == .typewriter
-                                      ? .system(size: 12, weight: .regular, design: .monospaced)
-                                      : ResponsiveDesign.captionFont())
-                                .foregroundColor(style == .typewriter ? Color("InputText").opacity(0.7) : AppTheme.fontColor.opacity(0.7))
+                                .font(self.style == .typewriter
+                                    ? .system(size: 12, weight: .regular, design: .monospaced)
+                                    : ResponsiveDesign.captionFont())
+                                .foregroundColor(
+                                    self.style == .typewriter ? Color("InputText").opacity(0.7) : AppTheme.fontColor.opacity(0.7)
+                                )
                         }
                     }
                 }
             } else {
                 // Group FAQs by category
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(24)) {
-                    ForEach(displayedCategories) { category in
-                        let faqs = displayedFAQs(for: category)
+                    ForEach(self.displayedCategories) { category in
+                        let faqs = self.displayedFAQs(for: category)
                         if !faqs.isEmpty {
-                            categorySection(category: category, faqs: faqs)
+                            self.categorySection(category: category, faqs: faqs)
                         }
                     }
                 }
             }
         }
         .padding(.horizontal, ResponsiveDesign.horizontalPadding())
-        .task { await loadServerFAQsIfAvailable(forceRefresh: false) }
+        .task { await self.loadServerFAQsIfAvailable(forceRefresh: false) }
     }
 
     private var displayedCategories: [FAQCategoryContent] {
-        serverCategories
+        self.serverCategories
     }
 
     private func displayedFAQs(for category: FAQCategoryContent) -> [FAQContentItem] {
-        serverFAQs.filter { $0.categoryId == category.id }
+        self.serverFAQs.filter { $0.categoryId == category.id }
             .sorted { $0.sortOrder < $1.sortOrder }
     }
 
     private var connectivityHintText: String? {
-        if appServices.parseAPIClient == nil {
-            return isGerman
+        if self.appServices.parseAPIClient == nil {
+            return self.isGerman
                 ? "Debug: Parse ist in der App gerade nicht konfiguriert."
                 : "Debug: Parse is not configured in the app."
         }
 
         let url = (appServices.configurationService.parseServerURL ?? "").lowercased()
         if url.contains("localhost:8443") || url.contains("127.0.0.1:8443") {
-            return isGerman
+            return self.isGerman
                 ? "Debug: Simulator nutzt https://localhost:8443 → SSH‑Tunnel: ssh -L 8443:127.0.0.1:443 io@192.168.178.24"
                 : "Debug: Simulator uses https://localhost:8443 → SSH tunnel: ssh -L 8443:127.0.0.1:443 io@192.168.178.24"
         }
         if url.contains("localhost:1338") || url.contains("127.0.0.1:1338") {
-            return isGerman
+            return self.isGerman
                 ? "Debug: Simulator nutzt localhost:1338 → SSH‑Tunnel zum Parse-Host: ssh -L 1338:127.0.0.1:1338 user@<server-ip>"
                 : "Debug: Simulator uses localhost:1338 → SSH tunnel to Parse host: ssh -L 1338:127.0.0.1:1338 user@<server-ip>"
         }
@@ -130,11 +132,11 @@ struct LandingFAQView: View {
 
     private func loadServerFAQsIfAvailable(forceRefresh: Bool = false) async {
         await MainActor.run {
-            isLoading = true
-            loadFailed = false
+            self.isLoading = true
+            self.loadFailed = false
         }
 
-        let service = appServices.faqContentService
+        let service = self.appServices.faqContentService
         do {
             if forceRefresh {
                 await service.clearCache(location: "landing", userRole: nil)
@@ -144,17 +146,17 @@ struct LandingFAQView: View {
             let categories = try await service.fetchFAQCategories(location: "landing")
             let faqs = try await service.fetchFAQsForLanding()
             await MainActor.run {
-                serverCategories = categories
-                serverFAQs = faqs
+                self.serverCategories = categories
+                self.serverFAQs = faqs
             }
         } catch {
             await MainActor.run {
-                loadFailed = true
+                self.loadFailed = true
             }
         }
 
         await MainActor.run {
-            isLoading = false
+            self.isLoading = false
         }
     }
 
@@ -167,25 +169,25 @@ struct LandingFAQView: View {
             title: category.title,
             icon: category.icon,
             iconColor: AppTheme.accentLightBlue,
-            isExpanded: expandedCategories.contains(category.id),
+            isExpanded: self.expandedCategories.contains(category.id),
             onToggle: {
                 withAnimation(.easeInOut(duration: 0.2)) {
-                    if expandedCategories.contains(category.id) {
-                        expandedCategories.remove(category.id)
+                    if self.expandedCategories.contains(category.id) {
+                        self.expandedCategories.remove(category.id)
                     } else {
-                        expandedCategories.insert(category.id)
+                        self.expandedCategories.insert(category.id)
                     }
                 }
             },
             // Do not indent nested FAQ "cards" based on the category icon.
             // The icon alignment indent is useful for text content, but here it creates excessive left whitespace.
             contentLeadingPaddingOverride: 0,
-            style: style
+            style: self.style
         ) {
             // FAQ Items in this category
             VStack(spacing: ResponsiveDesign.spacing(12)) {
                 ForEach(faqs) { faq in
-                    faqRow(faq: faq)
+                    self.faqRow(faq: faq)
                 }
             }
         }
@@ -199,20 +201,20 @@ struct LandingFAQView: View {
             title: faq.question,
             icon: nil,
             iconColor: AppTheme.accentLightBlue,
-            isExpanded: expandedFAQ == faq.id,
+            isExpanded: self.expandedFAQ == faq.id,
             onToggle: {
                 withAnimation(.easeInOut(duration: 0.2)) {
-                    if expandedFAQ == faq.id {
-                        expandedFAQ = nil
+                    if self.expandedFAQ == faq.id {
+                        self.expandedFAQ = nil
                     } else {
-                        expandedFAQ = faq.id
+                        self.expandedFAQ = faq.id
                     }
                 }
             },
             titleFontWeight: ResponsiveDesign.faqQuestionFontWeight,
-            style: style
+            style: self.style
         ) {
-            FAQAnswerFormatter(answer: faq.answer, style: style)
+            FAQAnswerFormatter(answer: faq.answer, style: self.style)
         }
     }
 }

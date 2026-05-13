@@ -14,11 +14,11 @@ struct TradeStatementSellSection: View {
     let finalAmountColor: Color
 
     var body: some View {
-        ForEach(Array(sellOrderData.enumerated()), id: \.offset) { index, sellOrder in
+        ForEach(Array(self.sellOrderData.enumerated()), id: \.offset) { index, sellOrder in
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
                 // VERKAUF Header
                 HStack {
-                    let verkaufLabel = sellOrderData.count == 1 ? "VERKAUF" : "VERKAUF - Nr. \(index + 1)/\(sellOrderData.count)"
+                    let verkaufLabel = self.sellOrderData.count == 1 ? "VERKAUF" : "VERKAUF - Nr. \(index + 1)/\(self.sellOrderData.count)"
                     Text(verkaufLabel)
                         .font(ResponsiveDesign.headlineFont())
                         .fontWeight(.semibold)
@@ -28,7 +28,7 @@ struct TradeStatementSellSection: View {
 
                 // Security Information (WKN - Richtung - Basiswert - Strike - Emittent aus Rechnung)
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
-                    Text(securityIdentifier)
+                    Text(self.securityIdentifier)
                         .font(ResponsiveDesign.bodyFont())
                         .fontWeight(.regular)
                         .foregroundColor(DocumentDesignSystem.textColorSecondary)
@@ -65,7 +65,7 @@ struct TradeStatementSellSection: View {
                     TradeStatementDetailRow(
                         label: "∑ VERKAUF",
                         value: sellOrder.finalAmount,
-                        valueColor: finalAmountColor,
+                        valueColor: self.finalAmountColor,
                         isBold: true
                     )
 
@@ -82,7 +82,7 @@ struct TradeStatementSellSection: View {
                         TradeStatementDetailRow(label: "Lagerstelle:", value: "Clearstream Nat.")
                         TradeStatementDetailRow(label: "Lagerland:", value: "Deutschland")
                         TradeStatementDetailRow(label: "Valuta:", value: sellOrder.valueDate)
-                        TradeStatementDetailRow(label: "Handelsplatz:", value: tradingVenue)
+                        TradeStatementDetailRow(label: "Handelsplatz:", value: self.tradingVenue)
                         TradeStatementDetailRow(label: "Schlusstag:", value: sellOrder.closingDate)
                     }
                 }

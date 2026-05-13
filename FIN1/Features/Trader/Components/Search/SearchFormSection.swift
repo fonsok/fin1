@@ -59,8 +59,8 @@ struct SearchFormSection: View {
 
                 SearchField(
                     label: "Kategorie",
-                    value: $category,
-                    onTap: onCategoryTap
+                    value: self.$category,
+                    onTap: self.onCategoryTap
                 )
 
                 Spacer()
@@ -75,9 +75,9 @@ struct SearchFormSection: View {
 
                 SearchField(
                     label: "Basiswert",
-                    value: $underlyingAsset,
-                    subtitle: getBasiswertSubtitle(),
-                    onTap: onBasiswertTap
+                    value: self.$underlyingAsset,
+                    subtitle: self.getBasiswertSubtitle(),
+                    onTap: self.onBasiswertTap
                 )
 
                 Spacer()
@@ -86,7 +86,7 @@ struct SearchFormSection: View {
             // Market data row
             HStack {
                 Spacer().frame(width: 100) // Align with underlyingAsset field
-                MarketDataRow(underlyingAsset: underlyingAsset)
+                MarketDataRow(underlyingAsset: self.underlyingAsset)
                 Spacer()
             }
 
@@ -97,7 +97,7 @@ struct SearchFormSection: View {
                     .frame(width: 100, alignment: .leading)
                     .lineLimit(1)
 
-                DirectionSegmentedControl(selection: $direction)
+                DirectionSegmentedControl(selection: self.$direction)
 
                 Spacer()
             }
@@ -106,8 +106,8 @@ struct SearchFormSection: View {
 
     private func getBasiswertSubtitle() -> String {
         // Use the WKN-based mapping from SearchResult to get the correct WKN
-        let wkn = getWKNForBasiswert(underlyingAsset)
-        let assetType = getAssetTypeForBasiswert(underlyingAsset)
+        let wkn = self.getWKNForBasiswert(self.underlyingAsset)
+        let assetType = self.getAssetTypeForBasiswert(self.underlyingAsset)
 
         return "\(assetType) - \(wkn)"
     }
@@ -165,7 +165,6 @@ struct SearchFormSection: View {
             return "Index" // Default fallback
         }
     }
-
 }
 
 #Preview {

@@ -40,7 +40,7 @@ struct TradeStatementBuySection: View {
 
             // Security Information (WKN - Richtung - Basiswert - Strike - Emittent aus Rechnung)
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
-                Text(securityIdentifier)
+                Text(self.securityIdentifier)
                     .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.regular)
                     .foregroundColor(DocumentDesignSystem.textColorSecondary)
@@ -50,10 +50,10 @@ struct TradeStatementBuySection: View {
             VStack(spacing: ResponsiveDesign.spacing(8)) {
                 // First Group: Order Details
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
-                    TradeStatementDetailRow(label: "Ordervolumen:", value: orderVolume)
-                    TradeStatementDetailRow(label: "davon ausgef.:", value: executedVolume)
-                    TradeStatementDetailRow(label: "Kurs (Ask):", value: price)
-                    TradeStatementDetailRow(label: "Kurswert:", value: marketValue)
+                    TradeStatementDetailRow(label: "Ordervolumen:", value: self.orderVolume)
+                    TradeStatementDetailRow(label: "davon ausgef.:", value: self.executedVolume)
+                    TradeStatementDetailRow(label: "Kurs (Ask):", value: self.price)
+                    TradeStatementDetailRow(label: "Kurswert:", value: self.marketValue)
                 }
 
                 // Separator line
@@ -63,10 +63,10 @@ struct TradeStatementBuySection: View {
 
                 // Second Group: Fees
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
-                    TradeStatementDetailRow(label: "Ordergebühr:", value: commission)
-                    TradeStatementDetailRow(label: "Handelsplatzgebühr:", value: ownExpenses)
-                    TradeStatementDetailRow(label: "Fremdkostenpauschale:", value: externalExpenses)
-                    TradeStatementDetailRow(label: "Commission:", value: commission)
+                    TradeStatementDetailRow(label: "Ordergebühr:", value: self.commission)
+                    TradeStatementDetailRow(label: "Handelsplatzgebühr:", value: self.ownExpenses)
+                    TradeStatementDetailRow(label: "Fremdkostenpauschale:", value: self.externalExpenses)
+                    TradeStatementDetailRow(label: "Commission:", value: self.commission)
                 }
 
                 // Separator line
@@ -77,8 +77,8 @@ struct TradeStatementBuySection: View {
                 // Third Group: Sum KAUF
                 TradeStatementDetailRow(
                     label: "∑ KAUF",
-                    value: finalAmount,
-                    valueColor: finalAmountColor,
+                    value: self.finalAmount,
+                    valueColor: self.finalAmountColor,
                     isBold: true
                 )
 
@@ -89,14 +89,14 @@ struct TradeStatementBuySection: View {
 
                 // Fourth Group: Additional Details
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
-                    TradeStatementDetailRow(label: "Devisenkurs:", value: exchangeRate)
-                    TradeStatementDetailRow(label: "Bew-Faktor:", value: conversionFactor)
-                    TradeStatementDetailRow(label: "Verwahrart:", value: custodyType)
-                    TradeStatementDetailRow(label: "Lagerstelle:", value: depository)
-                    TradeStatementDetailRow(label: "Lagerland:", value: depositoryCountry)
-                    TradeStatementDetailRow(label: "Valuta:", value: valueDate)
-                    TradeStatementDetailRow(label: "Handelsplatz:", value: tradingVenue)
-                    TradeStatementDetailRow(label: "Schlusstag:", value: closingDate)
+                    TradeStatementDetailRow(label: "Devisenkurs:", value: self.exchangeRate)
+                    TradeStatementDetailRow(label: "Bew-Faktor:", value: self.conversionFactor)
+                    TradeStatementDetailRow(label: "Verwahrart:", value: self.custodyType)
+                    TradeStatementDetailRow(label: "Lagerstelle:", value: self.depository)
+                    TradeStatementDetailRow(label: "Lagerland:", value: self.depositoryCountry)
+                    TradeStatementDetailRow(label: "Valuta:", value: self.valueDate)
+                    TradeStatementDetailRow(label: "Handelsplatz:", value: self.tradingVenue)
+                    TradeStatementDetailRow(label: "Schlusstag:", value: self.closingDate)
                 }
             }
         }
@@ -120,14 +120,14 @@ struct TradeStatementDetailRow: View {
 
     var body: some View {
         HStack {
-            Text(label)
+            Text(self.label)
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(DocumentDesignSystem.textColorSecondary)
             Spacer()
-            Text(value)
+            Text(self.value)
                 .font(ResponsiveDesign.bodyFont())
-                .fontWeight(isBold ? .regular : .light)
-                .foregroundColor(valueColor == .primary ? DocumentDesignSystem.textColor : valueColor)
+                .fontWeight(self.isBold ? .regular : .light)
+                .foregroundColor(self.valueColor == .primary ? DocumentDesignSystem.textColor : self.valueColor)
         }
     }
 }

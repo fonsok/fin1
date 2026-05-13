@@ -26,7 +26,7 @@ struct TicketTag: Identifiable, Codable, Hashable {
     }
 
     var color: Color {
-        Color(hex: colorHex)
+        Color(hex: self.colorHex)
     }
 }
 

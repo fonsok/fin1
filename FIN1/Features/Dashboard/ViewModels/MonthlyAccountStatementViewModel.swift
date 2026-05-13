@@ -30,13 +30,13 @@ final class MonthlyAccountStatementViewModel: ObservableObject {
     var title: String {
         let formatter = DateFormatter()
         formatter.dateFormat = "LLLL yyyy"
-        let date = Calendar.current.date(from: DateComponents(year: year, month: month, day: 1)) ?? Date()
+        let date = Calendar.current.date(from: DateComponents(year: self.year, month: self.month, day: 1)) ?? Date()
         return formatter.string(from: date)
     }
 
     var periodLabel: String {
         let calendar = Calendar.current
-        let start = calendar.date(from: DateComponents(year: year, month: month, day: 1)) ?? Date()
+        let start = calendar.date(from: DateComponents(year: self.year, month: self.month, day: 1)) ?? Date()
         let end = calendar.date(byAdding: DateComponents(month: 1, day: -1), to: start) ?? start
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
@@ -47,7 +47,7 @@ final class MonthlyAccountStatementViewModel: ObservableObject {
     /// e.g. "Opening balance as of 29 Aug 2025".
     var openingBalanceDateLabel: String {
         let calendar = Calendar.current
-        let start = calendar.date(from: DateComponents(year: year, month: month, day: 1)) ?? Date()
+        let start = calendar.date(from: DateComponents(year: self.year, month: self.month, day: 1)) ?? Date()
         let previousDay = calendar.date(byAdding: .day, value: -1, to: start) ?? start
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
@@ -69,67 +69,67 @@ final class MonthlyAccountStatementViewModel: ObservableObject {
 
     /// Statement index shown in the header (mocked as calendar month number).
     var statementNumber: Int {
-        month
+        self.month
     }
 
     var hasTransactions: Bool {
-        !entries.isEmpty
+        !self.entries.isEmpty
     }
 
     var totalCredits: Double {
-        entries
+        self.entries
             .filter { $0.direction == .credit }
             .reduce(0) { $0 + $1.amount }
     }
 
     var totalDebits: Double {
-        entries
+        self.entries
             .filter { $0.direction == .debit }
             .reduce(0) { $0 + $1.amount }
     }
 
     var netChange: Double {
-        entries.reduce(0) { $0 + $1.signedAmount }
+        self.entries.reduce(0) { $0 + $1.signedAmount }
     }
 
     var netChangeFormatted: String {
-        let prefix = netChange >= 0 ? "+" : "−"
-        return "\(prefix)\(abs(netChange).formattedAsLocalizedCurrency())"
+        let prefix = self.netChange >= 0 ? "+" : "−"
+        return "\(prefix)\(abs(self.netChange).formattedAsLocalizedCurrency())"
     }
 
     func load() {
         guard let currentUser = userService.currentUser else {
-            entries = []
-            openingBalance = 0
-            closingBalance = 0
+            self.entries = []
+            self.openingBalance = 0
+            self.closingBalance = 0
             return
         }
 
         let calendar = Calendar.current
-        let startOfMonth = calendar.date(from: DateComponents(year: year, month: month, day: 1)) ?? Date()
+        let startOfMonth = calendar.date(from: DateComponents(year: self.year, month: self.month, day: 1)) ?? Date()
         let startOfNextMonth = calendar.date(byAdding: .month, value: 1, to: startOfMonth) ?? startOfMonth
 
         let allEntries: [AccountStatementEntry]
         var baseOpeningBalance: Double = 0
         switch currentUser.role {
         case .investor:
-            let ledger = investorCashBalanceService.getTransactions(for: currentUser.id)
-            let closingNow = investorCashBalanceService.getBalance(for: currentUser.id)
+            let ledger = self.investorCashBalanceService.getTransactions(for: currentUser.id)
+            let closingNow = self.investorCashBalanceService.getBalance(for: currentUser.id)
             let totalDeltaAll = ledger.reduce(0) { $0 + $1.signedAmount }
             baseOpeningBalance = closingNow - totalDeltaAll
             allEntries = ledger
         case .trader:
             let snapshot = TraderAccountStatementBuilder.buildSnapshot(
                 for: currentUser,
-                invoiceService: invoiceService,
-                configurationService: configurationService
+                invoiceService: self.invoiceService,
+                configurationService: self.configurationService
             )
             baseOpeningBalance = snapshot.openingBalance
             allEntries = snapshot.entries
         default:
-            openingBalance = 0
-            closingBalance = 0
-            entries = []
+            self.openingBalance = 0
+            self.closingBalance = 0
+            self.entries = []
             return
         }
 
@@ -140,13 +140,13 @@ final class MonthlyAccountStatementViewModel: ObservableObject {
             .filter { $0.occurredAt >= startOfMonth && $0.occurredAt < startOfNextMonth }
             .reduce(0) { $0 + $1.signedAmount }
 
-        openingBalance = baseOpeningBalance + preMonthDelta
-        closingBalance = openingBalance + monthDelta
+        self.openingBalance = baseOpeningBalance + preMonthDelta
+        self.closingBalance = self.openingBalance + monthDelta
 
         let monthlyEntries = allEntries.filter { entry in
             entry.occurredAt >= startOfMonth && entry.occurredAt < startOfNextMonth
         }
 
-        entries = monthlyEntries.sorted { $0.occurredAt > $1.occurredAt }
+        self.entries = monthlyEntries.sorted { $0.occurredAt > $1.occurredAt }
     }
 }

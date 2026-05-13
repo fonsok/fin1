@@ -11,7 +11,7 @@ struct ActiveFiltersSection: View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
             // Header
             HStack {
-                Text("Active Filters (\(activeFilters.count))")
+                Text("Active Filters (\(self.activeFilters.count))")
                     .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.thin)
                     .foregroundColor(AppTheme.fontColor)
@@ -20,9 +20,9 @@ struct ActiveFiltersSection: View {
 
                 Spacer()
 
-                if !activeFilters.isEmpty {
+                if !self.activeFilters.isEmpty {
                     Button("Clear All") {
-                        onClearAll()
+                        self.onClearAll()
                     }
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.accentRed)
@@ -34,9 +34,9 @@ struct ActiveFiltersSection: View {
                 GridItem(.flexible(), spacing: ResponsiveDesign.spacing(8)),
                 GridItem(.flexible(), spacing: ResponsiveDesign.spacing(8))
             ], spacing: ResponsiveDesign.spacing(8)) {
-                ForEach(activeFilters, id: \.type) { filter in
+                ForEach(self.activeFilters, id: \.type) { filter in
                     ActiveFilterChip(filter: filter) {
-                        onRemoveFilter(filter.type)
+                        self.onRemoveFilter(filter.type)
                     }
                 }
             }
@@ -53,14 +53,14 @@ struct ActiveFilterChip: View {
         HStack(alignment: .center, spacing: ResponsiveDesign.spacing(6)) {
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(2)) {
                 // Label - smaller font, less opacity, allows line breaks
-                Text(filter.type.displayName)
+                Text(self.filter.type.displayName)
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
                     .fixedSize(horizontal: false, vertical: true)
                     .multilineTextAlignment(.leading)
 
                 // Value - normal font, normal opacity, allows line breaks
-                Text(displayValue)
+                Text(self.displayValue)
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.fontColor)
                     .fixedSize(horizontal: false, vertical: true)
@@ -68,7 +68,7 @@ struct ActiveFilterChip: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            Button(action: onRemove, label: {
+            Button(action: self.onRemove, label: {
                 Image(systemName: "xmark.circle.fill")
                     .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 0.7))
                     .foregroundColor(AppTheme.accentRed.opacity(0.8))
@@ -88,13 +88,13 @@ struct ActiveFilterChip: View {
     // Use displayName for all filter options (English)
     // Handle different filter types with their specific option types
     private var displayValue: String {
-        switch filter.type {
+        switch self.filter.type {
         case .returnRate:
-            return filter.returnPercentageOption?.displayName ?? "---"
+            return self.filter.returnPercentageOption?.displayName ?? "---"
         case .numberOfTrades:
-            return filter.numberOfTradesOption?.displayName ?? "---"
+            return self.filter.numberOfTradesOption?.displayName ?? "---"
         case .recentSuccessfulTrades, .highestReturn, .timeRange:
-            return filter.successRateOption?.displayName ?? "---"
+            return self.filter.successRateOption?.displayName ?? "---"
         }
     }
 }

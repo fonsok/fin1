@@ -5,8 +5,8 @@
 //  Created by ra on 17.08.25.
 //
 
-import Testing
 @testable import FIN1
+import Testing
 
 struct UsernameValidationTests {
     

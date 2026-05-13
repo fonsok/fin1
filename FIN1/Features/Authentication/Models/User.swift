@@ -93,5 +93,4 @@ struct User: Identifiable, Codable, Sendable {
     var lastLoginDate: Date?
     var createdAt: Date
     var updatedAt: Date
-
 }

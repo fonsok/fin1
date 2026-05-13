@@ -106,5 +106,4 @@ extension UnifiedInputField {
             onTap: onTap
         )
     }
-
 }

@@ -14,22 +14,22 @@ struct InteractiveElement: View {
     var body: some View {
         ZStack {
             // Background shape
-            RoundedRectangle(cornerRadius: cornerRadius)
-                .fill(backgroundColor)
+            RoundedRectangle(cornerRadius: self.cornerRadius)
+                .fill(self.backgroundColor)
                 .frame(width: 32, height: 32)
             
             // Icon overlay
-            if isSelected {
-                selectedIcon
+            if self.isSelected {
+                self.selectedIcon
             } else {
-                unselectedIcon
+                self.unselectedIcon
             }
         }
     }
     
     private var selectedIcon: some View {
         Group {
-            switch type {
+            switch self.type {
             case .checkbox:
                 Image(systemName: "checkmark")
                     .foregroundColor(AppTheme.fontColor)
@@ -44,7 +44,7 @@ struct InteractiveElement: View {
     
     private var unselectedIcon: some View {
         Group {
-            switch type {
+            switch self.type {
             case .checkbox:
                 // Empty view - no icon for unselected checkbox
                 EmptyView()
@@ -56,15 +56,15 @@ struct InteractiveElement: View {
     }
     
     private var backgroundColor: Color {
-        if isSelected {
-            return color // Use the accent color for selected state
+        if self.isSelected {
+            return self.color // Use the accent color for selected state
         } else {
             return AppTheme.inputFieldBackground // Use input field background for unselected
         }
     }
     
     private var cornerRadius: CGFloat {
-        switch type {
+        switch self.type {
         case .checkbox:
             return 4
         case .radioButton, .confirmationCircle:

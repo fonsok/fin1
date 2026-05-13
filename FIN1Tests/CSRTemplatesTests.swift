@@ -1,5 +1,5 @@
-import XCTest
 @testable import FIN1
+import XCTest
 
 /// Tests for CSR Response Templates
 final class CSRTemplatesTests: XCTestCase {

@@ -23,12 +23,12 @@ struct CollectionBillHeaderComponent: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
-            Text(title)
+            Text(self.title)
                 .font(ResponsiveDesign.titleFont())
                 .fontWeight(.bold)
                 .foregroundColor(DocumentDesignSystem.textColor)
 
-            Text(subtitle)
+            Text(self.subtitle)
                 .font(ResponsiveDesign.headlineFont())
                 .foregroundColor(DocumentDesignSystem.textColor)
 

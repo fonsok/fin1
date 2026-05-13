@@ -24,14 +24,14 @@ struct PhoneVerificationStep: View {
                     .fontWeight(.bold)
                     .foregroundColor(AppTheme.fontColor)
 
-                Text("Wir haben einen 6-stelligen Code per SMS an **\(maskedPhone)** gesendet.")
+                Text("Wir haben einen 6-stelligen Code per SMS an **\(self.maskedPhone)** gesendet.")
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.8))
                     .multilineTextAlignment(.center)
             }
 
             VStack(spacing: ResponsiveDesign.spacing(8)) {
-                TextField("000000", text: $verificationCode)
+                TextField("000000", text: self.$verificationCode)
                     .keyboardType(.numberPad)
                     .font(ResponsiveDesign.monospacedFont(size: 32, weight: .bold))
                     .multilineTextAlignment(.center)
@@ -41,13 +41,13 @@ struct PhoneVerificationStep: View {
                     .cornerRadius(ResponsiveDesign.spacing(12))
                     .overlay(
                         RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(12))
-                            .stroke(errorMessage != nil ? Color.red : AppTheme.accentLightBlue.opacity(0.4), lineWidth: 1)
+                            .stroke(self.errorMessage != nil ? Color.red : AppTheme.accentLightBlue.opacity(0.4), lineWidth: 1)
                     )
-                    .focused($isCodeFieldFocused)
-                    .onChange(of: verificationCode) { _, newValue in
+                    .focused(self.$isCodeFieldFocused)
+                    .onChange(of: self.verificationCode) { _, newValue in
                         let filtered = String(newValue.filter(\.isNumber).prefix(6))
-                        if filtered != newValue { verificationCode = filtered }
-                        if filtered.count == 6 { onVerify() }
+                        if filtered != newValue { self.verificationCode = filtered }
+                        if filtered.count == 6 { self.onVerify() }
                     }
 
                 if let error = errorMessage {
@@ -58,10 +58,10 @@ struct PhoneVerificationStep: View {
                 }
             }
 
-            if verificationCode.count == 6 {
-                Button(action: onVerify) {
+            if self.verificationCode.count == 6 {
+                Button(action: self.onVerify) {
                     HStack {
-                        if isVerifying {
+                        if self.isVerifying {
                             ProgressView()
                                 .progressViewStyle(CircularProgressViewStyle(tint: .white))
                                 .scaleEffect(0.8)
@@ -76,7 +76,7 @@ struct PhoneVerificationStep: View {
                     .background(AppTheme.accentLightBlue)
                     .cornerRadius(ResponsiveDesign.spacing(12))
                 }
-                .disabled(isVerifying)
+                .disabled(self.isVerifying)
             }
 
             VStack(spacing: ResponsiveDesign.spacing(4)) {
@@ -84,12 +84,12 @@ struct PhoneVerificationStep: View {
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.6))
 
-                if canResend {
-                    Button("Neuen Code senden", action: onResend)
+                if self.canResend {
+                    Button("Neuen Code senden", action: self.onResend)
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(AppTheme.accentLightBlue)
                 } else {
-                    Text("Neuer Code in \(resendCountdown)s")
+                    Text("Neuer Code in \(self.resendCountdown)s")
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(AppTheme.fontColor.opacity(0.4))
                 }
@@ -97,15 +97,15 @@ struct PhoneVerificationStep: View {
             .padding(.top, ResponsiveDesign.spacing(8))
         }
         .onAppear {
-            isCodeFieldFocused = true
+            self.isCodeFieldFocused = true
         }
     }
 
     /// Mask phone for display: +49***4567
     private var maskedPhone: String {
-        guard phoneNumber.count > 6 else { return phoneNumber }
-        let prefix = phoneNumber.prefix(3)
-        let suffix = phoneNumber.suffix(4)
+        guard self.phoneNumber.count > 6 else { return self.phoneNumber }
+        let prefix = self.phoneNumber.prefix(3)
+        let suffix = self.phoneNumber.suffix(4)
         return "\(prefix)***\(suffix)"
     }
 }

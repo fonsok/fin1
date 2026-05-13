@@ -32,13 +32,13 @@ struct AdminSummaryReport {
     }
 
     var netReturn: Double {
-        guard totalInvestedAmount > 0 else { return 0 }
-        return ((totalCurrentValue - totalInvestedAmount) / totalInvestedAmount) * 100
+        guard self.totalInvestedAmount > 0 else { return 0 }
+        return ((self.totalCurrentValue - self.totalInvestedAmount) / self.totalInvestedAmount) * 100
     }
 
     var averageReturnPerInvestment: Double {
-        guard totalInvestments > 0 else { return 0 }
-        return totalGrossProfit / Double(totalInvestments)
+        guard self.totalInvestments > 0 else { return 0 }
+        return self.totalGrossProfit / Double(self.totalInvestments)
     }
 }
 
@@ -95,7 +95,7 @@ struct AdminInvestmentSummary: Identifiable {
     }
 
     var tradeNumbersText: String {
-        tradeNumbers.map { String(format: "%03d", $0) }.joined(separator: ", ")
+        self.tradeNumbers.map { String(format: "%03d", $0) }.joined(separator: ", ")
     }
 }
 
@@ -137,11 +137,11 @@ struct AdminTradeSummary: Identifiable {
     }
 
     var tradeNumberText: String {
-        String(format: "%03d", tradeNumber)
+        String(format: "%03d", self.tradeNumber)
     }
 
     var investorCount: Int {
-        investorIds.count
+        self.investorIds.count
     }
 }
 

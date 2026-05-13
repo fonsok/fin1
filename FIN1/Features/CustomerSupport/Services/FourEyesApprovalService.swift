@@ -52,11 +52,11 @@ final class FourEyesApprovalService: FourEyesApprovalServiceProtocol, @unchecked
             relatedEntityType: relatedEntityType
         )
 
-        pendingRequests.append(request)
+        self.pendingRequests.append(request)
 
         // Create audit entry for request creation
         let auditEntry = ApprovalAuditEntry(request: request)
-        auditEntries.append(auditEntry)
+        self.auditEntries.append(auditEntry)
 
         return request
     }
@@ -65,10 +65,10 @@ final class FourEyesApprovalService: FourEyesApprovalServiceProtocol, @unchecked
 
     func getPendingRequests() async throws -> [FourEyesApprovalRequest] {
         // Filter out expired requests
-        let validRequests = pendingRequests.filter { !$0.isExpired }
+        let validRequests = self.pendingRequests.filter { !$0.isExpired }
 
         // Mark expired requests
-        for index in pendingRequests.indices where pendingRequests[index].isExpired {
+        for index in self.pendingRequests.indices where self.pendingRequests[index].isExpired {
             pendingRequests[index].status = .expired
         }
 
@@ -84,7 +84,7 @@ final class FourEyesApprovalService: FourEyesApprovalServiceProtocol, @unchecked
     }
 
     func getRequestsByRequester(requesterId: String) async throws -> [FourEyesApprovalRequest] {
-        let allRequests = pendingRequests + processedRequests
+        let allRequests = self.pendingRequests + self.processedRequests
         return allRequests
             .filter { $0.requesterId == requesterId }
             .sorted { $0.createdAt > $1.createdAt }
@@ -94,14 +94,14 @@ final class FourEyesApprovalService: FourEyesApprovalServiceProtocol, @unchecked
         if let pending = pendingRequests.first(where: { $0.id == id }) {
             return pending
         }
-        return processedRequests.first(where: { $0.id == id })
+        return self.processedRequests.first(where: { $0.id == id })
     }
 
     func getQueueStatistics() async throws -> ApprovalQueueStats {
         let pending = try await getPendingRequests()
         let today = Calendar.current.startOfDay(for: Date())
 
-        let todayProcessed = processedRequests.filter { request in
+        let todayProcessed = self.processedRequests.filter { request in
             guard let timestamp = request.approvalTimestamp else { return false }
             return timestamp >= today
         }
@@ -115,19 +115,19 @@ final class FourEyesApprovalService: FourEyesApprovalServiceProtocol, @unchecked
         let approvedToday = todayProcessed.filter { $0.status == .approved }.count
         let rejectedToday = todayProcessed.filter { $0.status == .rejected }.count
 
-        let expiredToday = pendingRequests.filter { request in
+        let expiredToday = self.pendingRequests.filter { request in
             request.status == .expired && request.expiresAt >= today
         }.count
 
         // Calculate average approval time
-        let approvedWithTime = processedRequests.filter {
+        let approvedWithTime = self.processedRequests.filter {
             $0.status == .approved && $0.approvalTimestamp != nil
         }
         let avgTime: Double
         if !approvedWithTime.isEmpty {
             let totalHours = approvedWithTime.reduce(0.0) { sum, request in
                 guard let approvalTime = request.approvalTimestamp else { return sum }
-                return sum + approvalTime.timeIntervalSince(request.createdAt) / 3600
+                return sum + approvalTime.timeIntervalSince(request.createdAt) / 3_600
             }
             avgTime = totalHours / Double(approvedWithTime.count)
         } else {
@@ -159,7 +159,7 @@ final class FourEyesApprovalService: FourEyesApprovalServiceProtocol, @unchecked
             throw FourEyesApprovalError.requestNotFound
         }
 
-        var request = pendingRequests[index]
+        var request = self.pendingRequests[index]
 
         // Validate request state
         guard request.status == .pending else {
@@ -171,12 +171,12 @@ final class FourEyesApprovalService: FourEyesApprovalServiceProtocol, @unchecked
         }
 
         // Validate 4-Augen principle
-        guard validateFourEyesPrinciple(requesterId: request.requesterId, approverId: approverId) else {
+        guard self.validateFourEyesPrinciple(requesterId: request.requesterId, approverId: approverId) else {
             throw FourEyesApprovalError.samePersonApproval
         }
 
         // Validate approver role
-        guard canApprove(agentRole: approverRole, requestType: request.requestType) else {
+        guard self.canApprove(agentRole: approverRole, requestType: request.requestType) else {
             throw FourEyesApprovalError.invalidApproverRole
         }
 
@@ -189,8 +189,8 @@ final class FourEyesApprovalService: FourEyesApprovalServiceProtocol, @unchecked
         request.approvalNotes = notes
 
         // Move to processed
-        pendingRequests.remove(at: index)
-        processedRequests.append(request)
+        self.pendingRequests.remove(at: index)
+        self.processedRequests.append(request)
 
         // Create audit entry
         let decision = ApprovalDecision(
@@ -202,7 +202,7 @@ final class FourEyesApprovalService: FourEyesApprovalServiceProtocol, @unchecked
             notes: notes
         )
         let auditEntry = ApprovalAuditEntry(request: request, decision: decision)
-        auditEntries.append(auditEntry)
+        self.auditEntries.append(auditEntry)
 
         return request
     }
@@ -218,13 +218,13 @@ final class FourEyesApprovalService: FourEyesApprovalServiceProtocol, @unchecked
             throw FourEyesApprovalError.requestNotFound
         }
 
-        var request = pendingRequests[index]
+        var request = self.pendingRequests[index]
 
         guard request.status == .pending else {
             throw FourEyesApprovalError.requestAlreadyProcessed
         }
 
-        guard canApprove(agentRole: approverRole, requestType: request.requestType) else {
+        guard self.canApprove(agentRole: approverRole, requestType: request.requestType) else {
             throw FourEyesApprovalError.invalidApproverRole
         }
 
@@ -237,8 +237,8 @@ final class FourEyesApprovalService: FourEyesApprovalServiceProtocol, @unchecked
         request.rejectionReason = reason
 
         // Move to processed
-        pendingRequests.remove(at: index)
-        processedRequests.append(request)
+        self.pendingRequests.remove(at: index)
+        self.processedRequests.append(request)
 
         // Create audit entry
         let decision = ApprovalDecision(
@@ -250,7 +250,7 @@ final class FourEyesApprovalService: FourEyesApprovalServiceProtocol, @unchecked
             rejectionReason: reason
         )
         let auditEntry = ApprovalAuditEntry(request: request, decision: decision)
-        auditEntries.append(auditEntry)
+        self.auditEntries.append(auditEntry)
 
         return request
     }
@@ -260,7 +260,7 @@ final class FourEyesApprovalService: FourEyesApprovalServiceProtocol, @unchecked
             throw FourEyesApprovalError.requestNotFound
         }
 
-        let request = pendingRequests[index]
+        let request = self.pendingRequests[index]
 
         guard request.requesterId == requesterId else {
             throw FourEyesApprovalError.cancellationNotAllowed
@@ -273,8 +273,8 @@ final class FourEyesApprovalService: FourEyesApprovalServiceProtocol, @unchecked
         var cancelledRequest = request
         cancelledRequest.status = .cancelled
 
-        pendingRequests.remove(at: index)
-        processedRequests.append(cancelledRequest)
+        self.pendingRequests.remove(at: index)
+        self.processedRequests.append(cancelledRequest)
     }
 
     // MARK: - Validation
@@ -291,13 +291,13 @@ final class FourEyesApprovalService: FourEyesApprovalServiceProtocol, @unchecked
     // MARK: - Audit
 
     func getAuditTrail(requestId: String) async throws -> [ApprovalAuditEntry] {
-        auditEntries
+        self.auditEntries
             .filter { $0.requestId == requestId }
             .sorted { $0.timestamp > $1.timestamp }
     }
 
     func getCustomerAuditTrail(customerId: String) async throws -> [ApprovalAuditEntry] {
-        auditEntries
+        self.auditEntries
             .filter { $0.customerId == customerId }
             .sorted { $0.timestamp > $1.timestamp }
     }

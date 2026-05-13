@@ -9,7 +9,7 @@ struct ProfileAccountInfoView: View {
         VStack(spacing: ResponsiveDesign.spacing(16)) {
             Button(action: {
                 withAnimation(.easeInOut(duration: 0.2)) {
-                    isExpanded.toggle()
+                    self.isExpanded.toggle()
                 }
             }) {
                 HStack {
@@ -17,40 +17,40 @@ struct ProfileAccountInfoView: View {
                         .font(ResponsiveDesign.headlineFont())
                         .foregroundColor(AppTheme.fontColor)
                     Spacer()
-                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                    Image(systemName: self.isExpanded ? "chevron.up" : "chevron.down")
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(AppTheme.fontColor.opacity(0.6))
                 }
             }
             .buttonStyle(PlainButtonStyle())
 
-            if isExpanded {
+            if self.isExpanded {
                 VStack(spacing: ResponsiveDesign.spacing(12)) {
                     SettingsRow(
                         title: "Edit Profile",
                         subtitle: "Update your account information",
                         icon: "person.circle.fill",
                         color: AppTheme.accentLightBlue,
-                        action: onEditProfile
+                        action: self.onEditProfile
                     )
 
                     InfoRow(
                         title: "Account Type",
-                        value: user?.role.displayName ?? "N/A",
+                        value: self.user?.role.displayName ?? "N/A",
                         icon: "person.badge.shield.checkmark.fill",
                         iconColor: AppTheme.accentLightBlue
                     )
 
                     InfoRow(
                         title: "Member Since",
-                        value: formatMemberSinceDate(user?.createdAt),
+                        value: self.formatMemberSinceDate(self.user?.createdAt),
                         icon: "calendar.badge.clock",
                         iconColor: AppTheme.accentLightBlue
                     )
 
                     InfoRow(
                         title: "Last Login",
-                        value: formatLastLoginDate(user?.lastLoginDate),
+                        value: self.formatLastLoginDate(self.user?.lastLoginDate),
                         icon: "clock.arrow.circlepath",
                         iconColor: AppTheme.accentLightBlue
                     )
@@ -67,7 +67,7 @@ struct ProfileAccountInfoView: View {
                     if let income = user?.income, income > 0 {
                         InfoRow(
                             title: "Annual Income",
-                            value: formatAnnualIncome(income),
+                            value: self.formatAnnualIncome(income),
                             icon: "dollarsign.circle.fill",
                             iconColor: AppTheme.accentLightBlue
                         )
@@ -75,7 +75,7 @@ struct ProfileAccountInfoView: View {
 
                     InfoRow(
                         title: "Risk Tolerance",
-                        value: user?.riskToleranceDescription ?? "N/A",
+                        value: self.user?.riskToleranceDescription ?? "N/A",
                         icon: "chart.line.uptrend.xyaxis",
                         iconColor: AppTheme.accentLightBlue
                     )
@@ -120,17 +120,17 @@ struct InfoRow: View {
 
     var body: some View {
         HStack(spacing: ResponsiveDesign.spacing(12)) {
-            Image(systemName: icon)
+            Image(systemName: self.icon)
                 .font(ResponsiveDesign.headlineFont())
-                .foregroundColor(iconColor)
+                .foregroundColor(self.iconColor)
                 .frame(width: 24)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(title)
+                Text(self.title)
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
 
-                Text(value)
+                Text(self.value)
                     .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.medium)
                     .foregroundColor(AppTheme.fontColor)

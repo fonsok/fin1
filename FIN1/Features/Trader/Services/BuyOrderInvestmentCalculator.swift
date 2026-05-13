@@ -56,10 +56,10 @@ final class BuyOrderInvestmentCalculator: BuyOrderInvestmentCalculatorProtocol {
         let allReservedInvestments = investmentService.getInvestments(forTrader: traderId)
             .filter { investment in
                 investment.status == .active &&
-                (investment.reservationStatus == .reserved ||
-                 investment.reservationStatus == .active ||
-                 investment.reservationStatus == .executing ||
-                 investment.reservationStatus == .closed)
+                    (investment.reservationStatus == .reserved ||
+                        investment.reservationStatus == .active ||
+                        investment.reservationStatus == .executing ||
+                        investment.reservationStatus == .closed)
             }
 
         // Calculate total available capital from all reserved investments

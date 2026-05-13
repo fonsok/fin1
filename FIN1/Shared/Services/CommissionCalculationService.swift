@@ -97,12 +97,12 @@ final class CommissionCalculationService: CommissionCalculationServiceProtocol, 
     }
 
     func calculateNetProfitAfterCommission(grossProfit: Double, rate: Double) -> Double {
-        let commission = calculateCommission(grossProfit: grossProfit, rate: rate)
+        let commission = self.calculateCommission(grossProfit: grossProfit, rate: rate)
         return grossProfit - commission
     }
 
     func calculateCommissionAndNetProfit(grossProfit: Double, rate: Double) -> (commission: Double, netProfit: Double) {
-        let commission = calculateCommission(grossProfit: grossProfit, rate: rate)
+        let commission = self.calculateCommission(grossProfit: grossProfit, rate: rate)
         return (commission, grossProfit - commission)
     }
 
@@ -136,7 +136,7 @@ final class CommissionCalculationService: CommissionCalculationServiceProtocol, 
             throw AppError.serviceError(.serviceUnavailable)
         }
         let grossProfit = try await investorGrossProfitService.getGrossProfit(for: investmentId, tradeId: tradeId)
-        return calculateCommission(grossProfit: grossProfit, rate: commissionRate)
+        return self.calculateCommission(grossProfit: grossProfit, rate: commissionRate)
     }
 
     func calculateTotalCommissionForTrade(
@@ -196,6 +196,6 @@ final class CommissionCalculationService: CommissionCalculationServiceProtocol, 
         }
         let grossProfits = try await investorGrossProfitService.getGrossProfitsForTrade(tradeId: tradeId)
         guard !grossProfits.isEmpty else { return 0.0 }
-        return grossProfits.values.reduce(0.0) { $0 + calculateCommission(grossProfit: $1, rate: commissionRate) }
+        return grossProfits.values.reduce(0.0) { $0 + self.calculateCommission(grossProfit: $1, rate: commissionRate) }
     }
 }

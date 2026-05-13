@@ -7,17 +7,17 @@ struct InvestmentsViewWrapper: View {
 
     var body: some View {
         InvestmentsView(
-            userService: services.userService,
-            investmentService: services.investmentService,
-            investorCashBalanceService: services.investorCashBalanceService,
-            poolTradeParticipationService: services.poolTradeParticipationService,
-            documentService: services.documentService,
-            invoiceService: services.invoiceService,
-            traderDataService: services.traderDataService,
-            tradeLifecycleService: services.tradeLifecycleService,
-            configurationService: services.configurationService,
-            commissionCalculationService: services.commissionCalculationService,
-            settlementAPIService: services.settlementAPIService
+            userService: self.services.userService,
+            investmentService: self.services.investmentService,
+            investorCashBalanceService: self.services.investorCashBalanceService,
+            poolTradeParticipationService: self.services.poolTradeParticipationService,
+            documentService: self.services.documentService,
+            invoiceService: self.services.invoiceService,
+            traderDataService: self.services.traderDataService,
+            tradeLifecycleService: self.services.tradeLifecycleService,
+            configurationService: self.services.configurationService,
+            commissionCalculationService: self.services.commissionCalculationService,
+            settlementAPIService: self.services.settlementAPIService
         )
     }
 }

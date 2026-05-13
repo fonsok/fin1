@@ -65,8 +65,8 @@ struct UserFactory {
         let customerPrefix = isTrader ? TestConstants.customerIdPrefixTrader : TestConstants.customerIdPrefixInvestor
 
         return User(
-            id: stableUserId(for: email),
-            customerNumber: "\(customerPrefix)-\(Calendar.current.component(.year, from: Date()))-\(String(format: "%05d", Int.random(in: 1...99999)))",
+            id: self.stableUserId(for: email),
+            customerNumber: "\(customerPrefix)-\(Calendar.current.component(.year, from: Date()))-\(String(format: "%05d", Int.random(in: 1...99_999)))",
             accountType: .individual,
             email: email,
             username: email.components(separatedBy: "@").first ?? "user",
@@ -86,7 +86,7 @@ struct UserFactory {
             countryOfBirth: "United States",
             role: userRole,
             employmentStatus: .employed,
-            income: 75000,
+            income: 75_000,
             incomeRange: .middle,
             riskTolerance: 3,
             address: "123 Main St",
@@ -132,5 +132,4 @@ struct UserFactory {
             updatedAt: Date()
         )
     }
-
 }

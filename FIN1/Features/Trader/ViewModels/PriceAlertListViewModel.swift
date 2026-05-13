@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Price Alert List ViewModel
 /// ViewModel for managing price alerts list
@@ -24,49 +24,49 @@ final class PriceAlertListViewModel: ObservableObject {
     
     init(priceAlertService: (any PriceAlertServiceProtocol)? = nil) {
         self.priceAlertService = priceAlertService
-        setupObservers()
+        self.setupObservers()
     }
     
     // MARK: - Public Methods
     
     func loadAlerts() async {
         await MainActor.run {
-            isLoading = true
-            errorMessage = nil
+            self.isLoading = true
+            self.errorMessage = nil
         }
         
         do {
-            try await priceAlertService?.loadAlerts()
-            updateAlerts()
+            try await self.priceAlertService?.loadAlerts()
+            self.updateAlerts()
         } catch {
             await MainActor.run {
-                errorMessage = error.localizedDescription
+                self.errorMessage = error.localizedDescription
             }
         }
         
         await MainActor.run {
-            isLoading = false
+            self.isLoading = false
         }
     }
     
     func deleteAlert(_ alert: PriceAlert) async {
         do {
-            try await priceAlertService?.deleteAlert(alert.id)
-            await loadAlerts()
+            try await self.priceAlertService?.deleteAlert(alert.id)
+            await self.loadAlerts()
         } catch {
             await MainActor.run {
-                errorMessage = error.localizedDescription
+                self.errorMessage = error.localizedDescription
             }
         }
     }
     
     func toggleAlertEnabled(_ alert: PriceAlert) async {
         do {
-            try await priceAlertService?.setAlertEnabled(alert.id, enabled: !alert.isEnabled)
-            await loadAlerts()
+            try await self.priceAlertService?.setAlertEnabled(alert.id, enabled: !alert.isEnabled)
+            await self.loadAlerts()
         } catch {
             await MainActor.run {
-                errorMessage = error.localizedDescription
+                self.errorMessage = error.localizedDescription
             }
         }
     }
@@ -82,7 +82,7 @@ final class PriceAlertListViewModel: ObservableObject {
                     self?.activeAlerts = activeAlerts
                     self?.updateAlertsLists()
                 }
-                .store(in: &cancellables)
+                .store(in: &self.cancellables)
             
             service.$allAlerts
                 .receive(on: DispatchQueue.main)
@@ -90,7 +90,7 @@ final class PriceAlertListViewModel: ObservableObject {
                     self?.alerts = allAlerts
                     self?.updateAlertsLists()
                 }
-                .store(in: &cancellables)
+                .store(in: &self.cancellables)
         }
         
         // Observe price alert triggered notifications
@@ -101,19 +101,19 @@ final class PriceAlertListViewModel: ObservableObject {
                     await self?.loadAlerts()
                 }
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
     }
     
     @MainActor
     private func updateAlerts() {
         if let service = priceAlertService as? PriceAlertService {
-            alerts = service.allAlerts
-            updateAlertsLists()
+            self.alerts = service.allAlerts
+            self.updateAlertsLists()
         }
     }
     
     private func updateAlertsLists() {
-        activeAlerts = alerts.filter { $0.status == .active && $0.isEnabled }
-        triggeredAlerts = alerts.filter { $0.status == .triggered }
+        self.activeAlerts = self.alerts.filter { $0.status == .active && $0.isEnabled }
+        self.triggeredAlerts = self.alerts.filter { $0.status == .triggered }
     }
 }

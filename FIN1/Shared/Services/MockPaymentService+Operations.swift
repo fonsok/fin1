@@ -22,9 +22,13 @@ extension MockPaymentService {
             await investorService.processDeposit(investorId: userId, amount: amount)
         }
         transactions.insert(transaction, at: 0)
-        persistTransactionIfNeeded(transaction)
-        NotificationCenter.default.post(name: .walletTransactionCompleted, object: nil, userInfo: ["userId": userId, "transactionType": "deposit", "amount": amount])
-        logComplianceTransaction(userId: userId, transaction: transaction, type: .deposit, amount: amount)
+        self.persistTransactionIfNeeded(transaction)
+        NotificationCenter.default.post(
+            name: .walletTransactionCompleted,
+            object: nil,
+            userInfo: ["userId": userId, "transactionType": "deposit", "amount": amount]
+        )
+        self.logComplianceTransaction(userId: userId, transaction: transaction, type: .deposit, amount: amount)
         logger.info("✅ Deposit completed: \(transaction.id)")
         return transaction
     }
@@ -32,7 +36,7 @@ extension MockPaymentService {
     func withdraw(amount: Double) async throws -> Transaction {
         guard amount > 0 else { throw PaymentError.invalidAmount }
         logger.info("💰 Processing withdrawal: \(amount.formatted(.currency(code: "EUR")))")
-        guard try await canWithdraw(amount: amount) else { throw PaymentError.insufficientFunds }
+        guard try await self.canWithdraw(amount: amount) else { throw PaymentError.insufficientFunds }
         try await Task.sleep(nanoseconds: simulatedDelay)
         guard let userId = userService.currentUser?.id else { throw PaymentError.serviceUnavailable }
         let currentBalance = await getUserSpecificBalance(userId: userId)
@@ -51,9 +55,13 @@ extension MockPaymentService {
             await investorService.processWithdrawal(investorId: userId, amount: amount)
         }
         transactions.insert(transaction, at: 0)
-        persistTransactionIfNeeded(transaction)
-        logComplianceTransaction(userId: userId, transaction: transaction, type: .withdrawal, amount: amount)
-        NotificationCenter.default.post(name: .walletTransactionCompleted, object: nil, userInfo: ["userId": userId, "transactionType": "withdrawal", "amount": amount])
+        self.persistTransactionIfNeeded(transaction)
+        self.logComplianceTransaction(userId: userId, transaction: transaction, type: .withdrawal, amount: amount)
+        NotificationCenter.default.post(
+            name: .walletTransactionCompleted,
+            object: nil,
+            userInfo: ["userId": userId, "transactionType": "withdrawal", "amount": amount]
+        )
         logger.info("✅ Withdrawal completed: \(transaction.id)")
         return transaction
     }

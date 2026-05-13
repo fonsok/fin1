@@ -1,6 +1,6 @@
+import PhotosUI
 import SwiftUI
 import UniformTypeIdentifiers
-import PhotosUI
 
 // Import UI components and managers
 // Note: These components are now in the UI subfolder
@@ -25,13 +25,13 @@ struct IdentificationUploadFrontStep: View {
                 .foregroundColor(AppTheme.fontColor)
                 .multilineTextAlignment(.center)
 
-            Text("Bitte laden Sie die Vorderseite Ihres \(identificationType.displayName)es hoch")
+            Text("Bitte laden Sie die Vorderseite Ihres \(self.identificationType.displayName)es hoch")
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.8))
                 .multilineTextAlignment(.leading)
 
             // Test Mode Toggle
-            if appServices.testModeService.isTestModeEnabled {
+            if self.appServices.testModeService.isTestModeEnabled {
                 HStack {
                     Image(systemName: "testtube.2")
                         .foregroundColor(AppTheme.accentOrange)
@@ -40,7 +40,7 @@ struct IdentificationUploadFrontStep: View {
                         .foregroundColor(AppTheme.accentOrange)
                     Spacer()
                     Button("Disable") {
-                        appServices.testModeService.disableTestMode()
+                        self.appServices.testModeService.disableTestMode()
                     }
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.accentRed)
@@ -61,12 +61,12 @@ struct IdentificationUploadFrontStep: View {
 
                     HStack(spacing: ResponsiveDesign.spacing(16)) {
                         Button("Neues Foto aufnehmen") {
-                            showingCameraPicker = true
+                            self.showingCameraPicker = true
                         }
                         .foregroundColor(AppTheme.accentLightBlue)
 
                         Button("Andere Datei auswählen") {
-                            showingDocumentPicker = true
+                            self.showingDocumentPicker = true
                         }
                         .foregroundColor(AppTheme.accentLightBlue)
                     }
@@ -80,14 +80,14 @@ struct IdentificationUploadFrontStep: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
 
                     // Test Mode Button
-                    if !appServices.testModeService.isTestModeEnabled {
+                    if !self.appServices.testModeService.isTestModeEnabled {
                         Button(action: {
-                            appServices.testModeService.enableTestMode()
+                            self.appServices.testModeService.enableTestMode()
                             // Use sample images for testing
-                            if identificationType == .passport {
-                                passportFrontImage = (appServices.testModeService as? TestModeService)?.samplePassportImage
+                            if self.identificationType == .passport {
+                                self.passportFrontImage = (self.appServices.testModeService as? TestModeService)?.samplePassportImage
                             } else {
-                                idCardFrontImage = (appServices.testModeService as? TestModeService)?.sampleIDCardImage
+                                self.idCardFrontImage = (self.appServices.testModeService as? TestModeService)?.sampleIDCardImage
                             }
                         }) {
                             HStack {
@@ -110,7 +110,7 @@ struct IdentificationUploadFrontStep: View {
                     HStack(spacing: ResponsiveDesign.spacing(16)) {
                         // Camera Button
                         Button(action: {
-                            showingCameraPicker = true
+                            self.showingCameraPicker = true
                         }) {
                             VStack(spacing: ResponsiveDesign.spacing(12)) {
                                 Image(systemName: "camera.fill")
@@ -144,7 +144,7 @@ struct IdentificationUploadFrontStep: View {
 
                         // File Picker Button
                         Button(action: {
-                            showingDocumentPicker = true
+                            self.showingDocumentPicker = true
                         }) {
                             VStack(spacing: ResponsiveDesign.spacing(12)) {
                                 Image(systemName: "doc.text.fill")
@@ -191,41 +191,41 @@ struct IdentificationUploadFrontStep: View {
             .background(AppTheme.sectionBackground)
             .cornerRadius(ResponsiveDesign.spacing(16))
         }
-        .sheet(isPresented: $showingCameraPicker) {
+        .sheet(isPresented: self.$showingCameraPicker) {
             CameraPicker(selectedImage: Binding(
                 get: { nil },
                 set: { newImage in
                     if let image = newImage {
-                        if identificationType == .passport {
-                            passportFrontImage = image
+                        if self.identificationType == .passport {
+                            self.passportFrontImage = image
                         } else {
-                            idCardFrontImage = image
+                            self.idCardFrontImage = image
                         }
                     }
                 }
             ))
         }
         .photosPicker(
-            isPresented: $showingPhotoPicker,
-            selection: $selectedPhotoItem,
+            isPresented: self.$showingPhotoPicker,
+            selection: self.$selectedPhotoItem,
             matching: .images
         )
-        .onChange(of: selectedPhotoItem) { _, newItem in
+        .onChange(of: self.selectedPhotoItem) { _, newItem in
             PhotoPickerHelper.handleSelection(newItem, binding: Binding(
                 get: { nil },
                 set: { newImage in
                     if let image = newImage {
-                        if identificationType == .passport {
-                            passportFrontImage = image
+                        if self.identificationType == .passport {
+                            self.passportFrontImage = image
                         } else {
-                            idCardFrontImage = image
+                            self.idCardFrontImage = image
                         }
                     }
                 }
             ))
         }
         .fileImporter(
-            isPresented: $showingDocumentPicker,
+            isPresented: self.$showingDocumentPicker,
             allowedContentTypes: [.image, .pdf],
             allowsMultipleSelection: false
         ) { result in
@@ -234,11 +234,11 @@ struct IdentificationUploadFrontStep: View {
                 if let file = files.first {
                     // Handle file import - convert to UIImage
                     // For testing purposes, we'll use our sample image
-                    if appServices.testModeService.isTestModeEnabled {
-                        if identificationType == .passport {
-                            passportFrontImage = (appServices.testModeService as? TestModeService)?.samplePassportImage
+                    if self.appServices.testModeService.isTestModeEnabled {
+                        if self.identificationType == .passport {
+                            self.passportFrontImage = (self.appServices.testModeService as? TestModeService)?.samplePassportImage
                         } else {
-                            idCardFrontImage = (appServices.testModeService as? TestModeService)?.sampleIDCardImage
+                            self.idCardFrontImage = (self.appServices.testModeService as? TestModeService)?.sampleIDCardImage
                         }
                     } else {
                         // This would need actual implementation for file processing
@@ -246,10 +246,10 @@ struct IdentificationUploadFrontStep: View {
 
                         // For now, just use the sample image in real mode too
                         // In production, this would be replaced with actual file processing
-                        if identificationType == .passport {
-                            passportFrontImage = (appServices.testModeService as? TestModeService)?.samplePassportImage
+                        if self.identificationType == .passport {
+                            self.passportFrontImage = (self.appServices.testModeService as? TestModeService)?.samplePassportImage
                         } else {
-                            idCardFrontImage = (appServices.testModeService as? TestModeService)?.sampleIDCardImage
+                            self.idCardFrontImage = (self.appServices.testModeService as? TestModeService)?.sampleIDCardImage
                         }
                     }
                 }

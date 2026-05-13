@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Price Alert Service Protocol
 /// Protocol for managing price alerts
@@ -75,7 +75,6 @@ final class PriceAlertService: PriceAlertServiceProtocol {
         self.userService = userService
         setupNotificationObserver()
     }
-
 }
 
 // MARK: - Notification Names

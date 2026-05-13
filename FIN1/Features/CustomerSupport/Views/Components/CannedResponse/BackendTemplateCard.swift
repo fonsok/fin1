@@ -10,7 +10,7 @@ struct BackendTemplateCard: View {
 
     private func fillPlaceholders(in text: String) -> String {
         var result = text
-        for (key, value) in placeholderValues {
+        for (key, value) in self.placeholderValues {
             result = result.replacingOccurrences(of: "{{\(key)}}", with: value)
             result = result.replacingOccurrences(of: "{{\(key.uppercased())}}", with: value)
         }
@@ -18,7 +18,7 @@ struct BackendTemplateCard: View {
     }
 
     private var previewContent: String {
-        let filled = fillPlaceholders(in: template.body)
+        let filled = self.fillPlaceholders(in: self.template.body)
         if filled.count > 100 {
             return String(filled.prefix(100)) + "..."
         }
@@ -26,21 +26,21 @@ struct BackendTemplateCard: View {
     }
 
     var body: some View {
-        Button(action: onSelect) {
+        Button(action: self.onSelect) {
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
                 HStack {
-                    Image(systemName: template.category.icon)
+                    Image(systemName: self.template.category.icon)
                         .foregroundColor(AppTheme.accentLightBlue)
                         .font(ResponsiveDesign.captionFont())
 
-                    Text(template.title)
+                    Text(self.template.title)
                         .font(ResponsiveDesign.bodyFont())
                         .fontWeight(.medium)
                         .foregroundColor(AppTheme.fontColor)
 
                     Spacer()
 
-                    if template.isEmail {
+                    if self.template.isEmail {
                         Label("E-Mail", systemImage: "envelope.fill")
                             .font(ResponsiveDesign.captionFont())
                             .foregroundColor(.white)
@@ -55,17 +55,17 @@ struct BackendTemplateCard: View {
                         .foregroundColor(AppTheme.fontColor.opacity(0.4))
                 }
 
-                Text(isExpanded ? fillPlaceholders(in: template.body) : previewContent)
+                Text(self.isExpanded ? self.fillPlaceholders(in: self.template.body) : self.previewContent)
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
-                    .lineLimit(isExpanded ? nil : 3)
+                    .lineLimit(self.isExpanded ? nil : 3)
                     .multilineTextAlignment(.leading)
 
-                if !template.placeholders.isEmpty {
-                    let missingPlaceholders = template.placeholders.filter { placeholder in
+                if !self.template.placeholders.isEmpty {
+                    let missingPlaceholders = self.template.placeholders.filter { placeholder in
                         let key = placeholder.replacingOccurrences(of: "{{", with: "")
                             .replacingOccurrences(of: "}}", with: "")
-                        return placeholderValues[key] == nil && placeholderValues[key.lowercased()] == nil
+                        return self.placeholderValues[key] == nil && self.placeholderValues[key.lowercased()] == nil
                     }
                     if !missingPlaceholders.isEmpty {
                         HStack(spacing: ResponsiveDesign.spacing(4)) {
@@ -82,13 +82,13 @@ struct BackendTemplateCard: View {
                     Spacer()
                     Button {
                         withAnimation(.easeInOut(duration: 0.2)) {
-                            isExpanded.toggle()
+                            self.isExpanded.toggle()
                         }
                     } label: {
                         HStack(spacing: ResponsiveDesign.spacing(4)) {
-                            Text(isExpanded ? "Weniger" : "Mehr anzeigen")
+                            Text(self.isExpanded ? "Weniger" : "Mehr anzeigen")
                                 .font(ResponsiveDesign.captionFont())
-                            Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                            Image(systemName: self.isExpanded ? "chevron.up" : "chevron.down")
                                 .font(ResponsiveDesign.captionFont())
                         }
                         .foregroundColor(AppTheme.accentLightBlue)

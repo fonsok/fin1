@@ -39,7 +39,7 @@ enum InvestorAccountStatementBuilder {
         // Try backend entries first; fall back to local ledger
         let investmentEntries: [AccountStatementEntry]
         if let settlementService = settlementAPIService {
-            investmentEntries = await loadBackendEntries(
+            investmentEntries = await self.loadBackendEntries(
                 for: user,
                 settlementAPIService: settlementService,
                 investorCashBalanceService: investorCashBalanceService
@@ -53,9 +53,9 @@ enum InvestorAccountStatementBuilder {
         if let configurationService {
             openingBalance = configurationService.initialAccountBalance
         } else {
-            openingBalance = calculateOpeningBalance(serviceBalance: serviceBalance, entries: allEntries)
+            openingBalance = self.calculateOpeningBalance(serviceBalance: serviceBalance, entries: allEntries)
         }
-        let recalculatedEntries = recalculateBalanceAfter(entries: allEntries, openingBalance: openingBalance)
+        let recalculatedEntries = self.recalculateBalanceAfter(entries: allEntries, openingBalance: openingBalance)
         let closingBalance: Double
         if configurationService != nil {
             closingBalance = recalculatedEntries.last?.balanceAfter ?? openingBalance
@@ -87,7 +87,7 @@ enum InvestorAccountStatementBuilder {
             guard !response.entries.isEmpty else {
                 return investorCashBalanceService.getTransactions(for: user.id)
             }
-            return response.entries.compactMap { convertBackendEntry($0) }
+            return response.entries.compactMap { self.convertBackendEntry($0) }
         } catch {
             print("⚠️ InvestorAccountStatementBuilder: Backend entries unavailable (\(error.localizedDescription)) — using local ledger")
             return investorCashBalanceService.getTransactions(for: user.id)
@@ -192,14 +192,16 @@ enum InvestorAccountStatementBuilder {
         }
 
         do {
-            let walletTransactions = try await paymentService.getTransactionHistory(limit: 1000, offset: 0)
+            let walletTransactions = try await paymentService.getTransactionHistory(limit: 1_000, offset: 0)
             let userWalletTransactions = walletTransactions.filter { $0.userId == user.id }
 
             return userWalletTransactions.map { transaction in
                 AccountStatementEntry.from(transaction: transaction)
             }
         } catch {
-            print("⚠️ InvestorAccountStatementBuilder: Wallet transactions unavailable (\(error.localizedDescription)) — showing investment-based entries only")
+            print(
+                "⚠️ InvestorAccountStatementBuilder: Wallet transactions unavailable (\(error.localizedDescription)) — showing investment-based entries only"
+            )
             return []
         }
     }

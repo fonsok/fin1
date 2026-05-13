@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Price Validity Timer Manager Protocol
 protocol PriceValidityTimerManagerProtocol {
@@ -22,10 +22,10 @@ final class PriceValidityTimerManager: ObservableObject, PriceValidityTimerManag
 
     func startTimer() {
         // Cancel any existing timer first
-        stopTimer()
-        priceValidityProgress = 1.0
+        self.stopTimer()
+        self.priceValidityProgress = 1.0
 
-        timerCancellable = Timer.publish(every: updateInterval, on: .main, in: .common)
+        self.timerCancellable = Timer.publish(every: self.updateInterval, on: .main, in: .common)
             .autoconnect()
             .sink { [weak self] _ in
                 guard let self = self else { return }
@@ -40,16 +40,16 @@ final class PriceValidityTimerManager: ObservableObject, PriceValidityTimerManag
             }
 
         // Store the timer cancellable to manage its lifecycle
-        timerCancellable?.store(in: &cancellables)
+        self.timerCancellable?.store(in: &self.cancellables)
     }
 
     func stopTimer() {
-        timerCancellable?.cancel()
-        timerCancellable = nil
+        self.timerCancellable?.cancel()
+        self.timerCancellable = nil
     }
 
     func cleanup() {
-        stopTimer()
-        cancellables.removeAll()
+        self.stopTimer()
+        self.cancellables.removeAll()
     }
 }

@@ -3,9 +3,9 @@ import Foundation
 extension ConfigurationService {
     // MARK: - ServiceLifecycle
     func start() {
-        loadConfiguration()
-        updateAdminModeStatus()
-        Task { await fetchRemoteDisplayConfig() }
+        self.loadConfiguration()
+        self.updateAdminModeStatus()
+        Task { await self.fetchRemoteDisplayConfig() }
     }
 
     func stop() {
@@ -14,17 +14,17 @@ extension ConfigurationService {
 
     func reset() {
         configuration = .default
-        updatePublishedValues()
-        saveConfiguration()
+        self.updatePublishedValues()
+        self.saveConfiguration()
     }
 
     // MARK: - Validation
-    func validateMinimumCashReserve(_ value: Double) -> Bool { value >= 0.01 && value <= 1000.0 }
+    func validateMinimumCashReserve(_ value: Double) -> Bool { value >= 0.01 && value <= 1_000.0 }
     func validateInitialAccountBalance(_ value: Double) -> Bool { value >= 0.0 && value <= 1_000_000.0 }
     func validatePoolBalanceDistributionThreshold(_ value: Double) -> Bool { value >= 1.0 && value <= 100.0 }
     func validateTraderCommissionRate(_ rate: Double) -> Bool { rate >= 0.0 && rate <= 1.0 }
     func validateAppServiceChargeRate(_ rate: Double) -> Bool { rate >= 0.0 && rate <= 0.1 }
-    func validateSLAMonitoringInterval(_ interval: TimeInterval) -> Bool { interval >= 60.0 && interval <= 3600.0 }
+    func validateSLAMonitoringInterval(_ interval: TimeInterval) -> Bool { interval >= 60.0 && interval <= 3_600.0 }
     func validateMaximumRiskExposurePercent(_ value: Double) -> Bool { value >= 0.0 && value <= 100.0 }
 
     func loadConfiguration() {
@@ -88,7 +88,7 @@ extension ConfigurationService {
     }
 
     func setupUserRoleObservation() {
-        updateAdminModeStatus()
+        self.updateAdminModeStatus()
     }
 
     func updateAdminModeStatus() {
@@ -143,7 +143,7 @@ extension ConfigurationService {
     }
 
     func refreshConfigurationFromServerIfAvailable() async {
-        await fetchRemoteDisplayConfig()
+        await self.fetchRemoteDisplayConfig()
     }
 
     func getParseAPIClient() -> (any ParseAPIClientProtocol)? {

@@ -20,17 +20,17 @@ extension CustomerSupportService {
         // If query is empty, return all customers
         let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmedQuery.isEmpty {
-            return mockCustomers.map { mapCustomerToSearchResult($0) }
+            return mockCustomers.map { self.mapCustomerToSearchResult($0) }
         }
 
         let lowercasedQuery = trimmedQuery.lowercased()
         return mockCustomers.compactMap { customer in
             let matches = customer.fullName.lowercased().contains(lowercasedQuery) ||
-                          customer.email.lowercased().contains(lowercasedQuery) ||
-                          customer.customerNumber.lowercased().contains(lowercasedQuery)
+                customer.email.lowercased().contains(lowercasedQuery) ||
+                customer.customerNumber.lowercased().contains(lowercasedQuery)
 
             guard matches else { return nil }
-            return mapCustomerToSearchResult(customer)
+            return self.mapCustomerToSearchResult(customer)
         }
     }
 
@@ -93,7 +93,7 @@ extension CustomerSupportService {
                         amount: investment.amount,
                         currentValue: investment.currentValue,
                         returnPercentage: serverReturn,
-                        status: mapInvestmentStatus(investment.status, reservationStatus: investment.reservationStatus),
+                        status: self.mapInvestmentStatus(investment.status, reservationStatus: investment.reservationStatus),
                         createdAt: investment.createdAt,
                         completedAt: investment.completedAt
                     ))
@@ -125,7 +125,9 @@ extension CustomerSupportService {
         if let tradeLifecycleService = tradeLifecycleService {
             let allTrades = tradeLifecycleService.completedTrades
             let traderTrades = allTrades.filter { $0.traderId == userId }
-            logger.info("📈 CSR: Looking up trades for userId='\(userId)', found \(traderTrades.count) real trades (from \(allTrades.count) total)")
+            logger.info(
+                "📈 CSR: Looking up trades for userId='\(userId)', found \(traderTrades.count) real trades (from \(allTrades.count) total)"
+            )
             if !traderTrades.isEmpty {
                 return traderTrades.map { trade in
                     CustomerTradeSummary(
@@ -137,7 +139,7 @@ extension CustomerSupportService {
                         entryPrice: trade.buyOrder.price,
                         currentPrice: trade.sellOrders.last?.price,
                         profitLoss: trade.calculatedProfit,
-                        status: mapTradeStatus(trade.status),
+                        status: self.mapTradeStatus(trade.status),
                         createdAt: trade.createdAt
                     )
                 }

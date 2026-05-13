@@ -118,7 +118,7 @@ struct SellOrderData {
     let invoice: Invoice
 
     var orderVolume: String {
-        let securityItems = invoice.items.filter { $0.itemType == .securities }
+        let securityItems = self.invoice.items.filter { $0.itemType == .securities }
         if let securityItem = securityItems.first {
             return "\(String(format: "%.0f", securityItem.quantity)) St."
         }
@@ -126,7 +126,7 @@ struct SellOrderData {
     }
 
     var price: String {
-        let securityItems = invoice.items.filter { $0.itemType == .securities }
+        let securityItems = self.invoice.items.filter { $0.itemType == .securities }
         if let securityItem = securityItems.first, securityItem.quantity > 0 {
             let price = securityItem.unitPrice
             // Use German decimal formatting (comma as decimal separator)
@@ -144,17 +144,17 @@ struct SellOrderData {
     var valueDate: String {
         let formatter = DateFormatter()
         formatter.dateFormat = "dd.MM.yy"
-        return formatter.string(from: invoice.createdAt)
+        return formatter.string(from: self.invoice.createdAt)
     }
 
     var closingDate: String {
         let formatter = DateFormatter()
         formatter.dateFormat = "dd.MM.yyyy, HH:mm 'Uhr'"
-        return formatter.string(from: invoice.createdAt)
+        return formatter.string(from: self.invoice.createdAt)
     }
 
     var marketValue: String {
-        let securityItems = invoice.items.filter { $0.itemType == .securities }
+        let securityItems = self.invoice.items.filter { $0.itemType == .securities }
         let totalValue = securityItems.reduce(0) { $0 + $1.totalAmount }
         return totalValue.formatted(.currency(code: "EUR"))
     }
@@ -162,7 +162,7 @@ struct SellOrderData {
     var commission: String {
         // Calculate individual fees using the same logic as Trade Details
         // For sell transactions, fees should be negative (like in TradeCalculationService.calculateSellFees)
-        let securitiesItems = invoice.items.filter { $0.itemType == .securities }
+        let securitiesItems = self.invoice.items.filter { $0.itemType == .securities }
         let securitiesAmount = securitiesItems.reduce(0) { $0 + $1.totalAmount }
         let feeBreakdown = FeeCalculationService.createFeeBreakdown(for: securitiesAmount)
 
@@ -174,7 +174,7 @@ struct SellOrderData {
     var ownExpenses: String {
         // Calculate individual fees using the same logic as Trade Details
         // For sell transactions, fees should be negative (like in TradeCalculationService.calculateSellFees)
-        let securitiesItems = invoice.items.filter { $0.itemType == .securities }
+        let securitiesItems = self.invoice.items.filter { $0.itemType == .securities }
         let securitiesAmount = securitiesItems.reduce(0) { $0 + $1.totalAmount }
         let feeBreakdown = FeeCalculationService.createFeeBreakdown(for: securitiesAmount)
 
@@ -185,7 +185,7 @@ struct SellOrderData {
     var externalExpenses: String {
         // Calculate individual fees using the same logic as Trade Details
         // For sell transactions, fees should be negative (like in TradeCalculationService.calculateSellFees)
-        let securitiesItems = invoice.items.filter { $0.itemType == .securities }
+        let securitiesItems = self.invoice.items.filter { $0.itemType == .securities }
         let securitiesAmount = securitiesItems.reduce(0) { $0 + $1.totalAmount }
         let feeBreakdown = FeeCalculationService.createFeeBreakdown(for: securitiesAmount)
 
@@ -194,6 +194,6 @@ struct SellOrderData {
     }
 
     var finalAmount: String {
-        return invoice.totalAmount.formatted(.currency(code: "EUR"))
+        return self.invoice.totalAmount.formatted(.currency(code: "EUR"))
     }
 }

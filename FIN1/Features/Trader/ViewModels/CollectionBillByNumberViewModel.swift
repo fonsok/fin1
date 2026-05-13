@@ -24,7 +24,7 @@ final class CollectionBillByNumberViewModel: ObservableObject {
     // MARK: - Current Trader ID
     /// Returns the current trader's ID from the user service
     private var currentTraderId: String? {
-        userService?.currentUser?.id
+        self.userService?.currentUser?.id
     }
 
     // MARK: - Initialization
@@ -57,11 +57,11 @@ final class CollectionBillByNumberViewModel: ObservableObject {
     // MARK: - Public Methods
 
     func loadTrade() async {
-        print("🔍 CollectionBillByNumberViewModel: Looking for trade #\(tradeNumber)")
+        print("🔍 CollectionBillByNumberViewModel: Looking for trade #\(self.tradeNumber)")
 
         // Find the trade by trade number from the trade service
         // CRITICAL: Filter by current trader ID to ensure trade isolation
-        let allTrades = tradeLifecycleService.completedTrades
+        let allTrades = self.tradeLifecycleService.completedTrades
         let completedTrades: [Trade]
         if let traderId = currentTraderId {
             completedTrades = allTrades.filter { $0.traderId == traderId }
@@ -80,8 +80,8 @@ final class CollectionBillByNumberViewModel: ObservableObject {
             print("✅ Found trade: ID=\(foundTrade.id), Number=\(foundTrade.tradeNumber)")
 
             // Convert Trade to TradeOverviewItem
-            let grossProfit = tradingStatisticsService.calculateGrossProfit(for: foundTrade)
-            let totalFees = tradingStatisticsService.calculateTotalFees(for: foundTrade)
+            let grossProfit = self.tradingStatisticsService.calculateGrossProfit(for: foundTrade)
+            let totalFees = self.tradingStatisticsService.calculateTotalFees(for: foundTrade)
 
             let tradeOverview = TradeOverviewItem(
                 tradeId: foundTrade.id,
@@ -102,22 +102,22 @@ final class CollectionBillByNumberViewModel: ObservableObject {
             print("✅ Created TradeOverviewItem with tradeId: \(tradeOverview.tradeId ?? "NIL")")
 
             let viewModel = TradeStatementViewModel(trade: tradeOverview)
-            viewModel.attach(invoiceService: invoiceService, tradeService: tradeLifecycleService)
+            viewModel.attach(invoiceService: self.invoiceService, tradeService: self.tradeLifecycleService)
 
-            tradeStatementViewModel = viewModel
-            isLoading = false
+            self.tradeStatementViewModel = viewModel
+            self.isLoading = false
         } else {
-            print("❌ Trade #\(tradeNumber) not found in completed trades")
+            print("❌ Trade #\(self.tradeNumber) not found in completed trades")
             // List available trade numbers for debugging
             let availableNumbers = completedTrades.map { $0.tradeNumber }
             print("📋 Available trade numbers: \(availableNumbers)")
-            errorMessage = "Trade #\(tradeNumber) not found"
-            isLoading = false
+            self.errorMessage = "Trade #\(self.tradeNumber) not found"
+            self.isLoading = false
         }
     }
 
     func refreshDisplayData() {
-        tradeStatementViewModel?.refreshDisplayData()
+        self.tradeStatementViewModel?.refreshDisplayData()
     }
 }
 

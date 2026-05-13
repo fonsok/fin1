@@ -10,11 +10,11 @@ struct LandingDebugButtonsView: View {
             TestUserSection(
                 title: "Test Investors",
                 count: 5,
-                style: viewModel.designStyle,
-                isLoading: viewModel.isLoading,
+                style: self.viewModel.designStyle,
+                isLoading: self.viewModel.isLoading,
                 action: { number in
                     Task {
-                        await viewModel.signInAsInvestor(number: number)
+                        await self.viewModel.signInAsInvestor(number: number)
                     }
                 },
                 buttonText: { number in
@@ -28,11 +28,11 @@ struct LandingDebugButtonsView: View {
             TestUserSection(
                 title: "Test Traders",
                 count: 5,
-                style: viewModel.designStyle,
-                isLoading: viewModel.isLoading,
+                style: self.viewModel.designStyle,
+                isLoading: self.viewModel.isLoading,
                 action: { number in
                     Task {
-                        await viewModel.signInAsTrader(number: number)
+                        await self.viewModel.signInAsTrader(number: number)
                     }
                 },
                 buttonText: { number in
@@ -44,32 +44,32 @@ struct LandingDebugButtonsView: View {
 
             // Test Admin
             TestAdminSection(
-                style: viewModel.designStyle,
-                isLoading: viewModel.isLoading,
+                style: self.viewModel.designStyle,
+                isLoading: self.viewModel.isLoading,
                 action: {
                     Task {
-                        await viewModel.signInAsAdmin()
+                        await self.viewModel.signInAsAdmin()
                     }
                 }
             )
 
             // Test CSR (mit 6 Rollen: L1, L2, Fraud, Compliance, Tech, Teamlead)
             TestCSRSection(
-                style: viewModel.designStyle,
-                isLoading: viewModel.isLoading,
+                style: self.viewModel.designStyle,
+                isLoading: self.viewModel.isLoading,
                 action: { number in
                     Task {
-                        await viewModel.signInAsCSR(number: number)
+                        await self.viewModel.signInAsCSR(number: number)
                     }
                 },
                 roleAction: { role in
                     Task {
-                        await viewModel.signInAsCSRWithRole(role)
+                        await self.viewModel.signInAsCSRWithRole(role)
                     }
                 }
             )
 
-            CompanyKybDebugSection(style: viewModel.designStyle)
+            CompanyKybDebugSection(style: self.viewModel.designStyle)
         }
     }
 }
@@ -83,14 +83,14 @@ private struct CompanyKybDebugSection: View {
     var body: some View {
         VStack(spacing: ResponsiveDesign.spacing(6)) {
             Text("Company KYB (Mock)")
-                .font(style == .typewriter
-                      ? ResponsiveDesign.monospacedFont(size: 14, weight: .bold)
-                      : ResponsiveDesign.captionFont())
-                .foregroundColor(style == .typewriter ? Color("InputText") : AppTheme.tertiaryText)
+                .font(self.style == .typewriter
+                    ? ResponsiveDesign.monospacedFont(size: 14, weight: .bold)
+                    : ResponsiveDesign.captionFont())
+                .foregroundColor(self.style == .typewriter ? Color("InputText") : AppTheme.tertiaryText)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-            Button(action: { showKybWizard = true }) {
-                if style == .typewriter {
+            Button(action: { self.showKybWizard = true }) {
+                if self.style == .typewriter {
                     HStack(spacing: ResponsiveDesign.spacing(6)) {
                         Image(systemName: "building.2")
                             .font(ResponsiveDesign.scaledSystemFont(size: 12))
@@ -117,7 +117,7 @@ private struct CompanyKybDebugSection: View {
                 }
             }
             .accessibilityIdentifier("DebugCompanyKybButton")
-            .fullScreenCover(isPresented: $showKybWizard) {
+            .fullScreenCover(isPresented: self.$showKybWizard) {
                 CompanyKybView(companyKybAPIService: MockCompanyKybAPIService())
             }
         }
@@ -138,21 +138,21 @@ private struct TestUserSection: View {
 
     var body: some View {
         VStack(spacing: ResponsiveDesign.spacing(6)) {
-            Text(title)
-                .font(style == .typewriter
-                      ? ResponsiveDesign.monospacedFont(size: 14, weight: .bold)
-                      : ResponsiveDesign.captionFont())
-                .foregroundColor(style == .typewriter ? Color("InputText") : AppTheme.tertiaryText)
+            Text(self.title)
+                .font(self.style == .typewriter
+                    ? ResponsiveDesign.monospacedFont(size: 14, weight: .bold)
+                    : ResponsiveDesign.captionFont())
+                .foregroundColor(self.style == .typewriter ? Color("InputText") : AppTheme.tertiaryText)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-            ForEach(1...count, id: \.self) { number in
+            ForEach(1...self.count, id: \.self) { number in
                 LandingDebugButton(
-                    text: buttonText(number),
-                    style: style,
-                    accentColor: accentColor,
-                    isLoading: isLoading,
-                    action: { action(number) },
-                    accessibilityIdentifier: "\(accessibilityPrefix)\(number)Button"
+                    text: self.buttonText(number),
+                    style: self.style,
+                    accentColor: self.accentColor,
+                    isLoading: self.isLoading,
+                    action: { self.action(number) },
+                    accessibilityIdentifier: "\(self.accessibilityPrefix)\(number)Button"
                 )
             }
         }
@@ -169,18 +169,18 @@ private struct TestAdminSection: View {
     var body: some View {
         VStack(spacing: ResponsiveDesign.spacing(6)) {
             Text("Test Admin")
-                .font(style == .typewriter
-                      ? ResponsiveDesign.monospacedFont(size: 14, weight: .bold)
-                      : ResponsiveDesign.captionFont())
-                .foregroundColor(style == .typewriter ? Color("InputText") : AppTheme.tertiaryText)
+                .font(self.style == .typewriter
+                    ? ResponsiveDesign.monospacedFont(size: 14, weight: .bold)
+                    : ResponsiveDesign.captionFont())
+                .foregroundColor(self.style == .typewriter ? Color("InputText") : AppTheme.tertiaryText)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             LandingDebugButton(
                 text: "Test: Sign In as Admin",
-                style: style,
+                style: self.style,
                 accentColor: AppTheme.accentLightBlue,
-                isLoading: isLoading,
-                action: action,
+                isLoading: self.isLoading,
+                action: self.action,
                 accessibilityIdentifier: "LoginAdminButton"
             )
         }
@@ -198,21 +198,21 @@ private struct TestCSRSection: View {
     var body: some View {
         VStack(spacing: ResponsiveDesign.spacing(6)) {
             Text("Test CSR (Rollenbasiert)")
-                .font(style == .typewriter
-                      ? ResponsiveDesign.monospacedFont(size: 14, weight: .bold)
-                      : ResponsiveDesign.captionFont())
-                .foregroundColor(style == .typewriter ? Color("InputText") : AppTheme.tertiaryText)
+                .font(self.style == .typewriter
+                    ? ResponsiveDesign.monospacedFont(size: 14, weight: .bold)
+                    : ResponsiveDesign.captionFont())
+                .foregroundColor(self.style == .typewriter ? Color("InputText") : AppTheme.tertiaryText)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-            if style == .typewriter {
+            if self.style == .typewriter {
                 // Typewriter style - vertical list
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
-                    csrRoleButton(role: .level1, color: AppTheme.accentLightBlue, icon: "1.circle.fill")
-                    csrRoleButton(role: .level2, color: AppTheme.accentLightBlue, icon: "2.circle.fill")
-                    csrRoleButton(role: .fraud, color: AppTheme.accentRed, icon: "exclamationmark.shield.fill")
-                    csrRoleButton(role: .compliance, color: AppTheme.accentGreen, icon: "checkmark.shield.fill")
-                    csrRoleButton(role: .techSupport, color: AppTheme.accentOrange, icon: "wrench.and.screwdriver.fill")
-                    csrRoleButton(role: .teamlead, color: Color.purple, icon: "star.fill")
+                    self.csrRoleButton(role: .level1, color: AppTheme.accentLightBlue, icon: "1.circle.fill")
+                    self.csrRoleButton(role: .level2, color: AppTheme.accentLightBlue, icon: "2.circle.fill")
+                    self.csrRoleButton(role: .fraud, color: AppTheme.accentRed, icon: "exclamationmark.shield.fill")
+                    self.csrRoleButton(role: .compliance, color: AppTheme.accentGreen, icon: "checkmark.shield.fill")
+                    self.csrRoleButton(role: .techSupport, color: AppTheme.accentOrange, icon: "wrench.and.screwdriver.fill")
+                    self.csrRoleButton(role: .teamlead, color: Color.purple, icon: "star.fill")
                 }
             } else {
                 // Original style - 2-column grid
@@ -220,12 +220,12 @@ private struct TestCSRSection: View {
                     GridItem(.flexible()),
                     GridItem(.flexible())
                 ], spacing: ResponsiveDesign.spacing(8)) {
-                    csrRoleButton(role: .level1, color: AppTheme.accentLightBlue, icon: "1.circle.fill")
-                    csrRoleButton(role: .level2, color: AppTheme.accentLightBlue, icon: "2.circle.fill")
-                    csrRoleButton(role: .fraud, color: AppTheme.accentRed, icon: "exclamationmark.shield.fill")
-                    csrRoleButton(role: .compliance, color: AppTheme.accentGreen, icon: "checkmark.shield.fill")
-                    csrRoleButton(role: .techSupport, color: AppTheme.accentOrange, icon: "wrench.and.screwdriver.fill")
-                    csrRoleButton(role: .teamlead, color: Color.purple, icon: "star.fill")
+                    self.csrRoleButton(role: .level1, color: AppTheme.accentLightBlue, icon: "1.circle.fill")
+                    self.csrRoleButton(role: .level2, color: AppTheme.accentLightBlue, icon: "2.circle.fill")
+                    self.csrRoleButton(role: .fraud, color: AppTheme.accentRed, icon: "exclamationmark.shield.fill")
+                    self.csrRoleButton(role: .compliance, color: AppTheme.accentGreen, icon: "checkmark.shield.fill")
+                    self.csrRoleButton(role: .techSupport, color: AppTheme.accentOrange, icon: "wrench.and.screwdriver.fill")
+                    self.csrRoleButton(role: .teamlead, color: Color.purple, icon: "star.fill")
                 }
             }
         }
@@ -237,9 +237,9 @@ private struct TestCSRSection: View {
             role: role,
             color: color,
             icon: icon,
-            style: style,
-            isLoading: isLoading,
-            action: { roleAction?(role) }
+            style: self.style,
+            isLoading: self.isLoading,
+            action: { self.roleAction?(role) }
         )
     }
 }
@@ -255,37 +255,37 @@ private struct CSRRoleDebugButton: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
-            if style == .typewriter {
+        Button(action: self.action) {
+            if self.style == .typewriter {
                 HStack(spacing: ResponsiveDesign.spacing(6)) {
-                    Image(systemName: icon)
+                    Image(systemName: self.icon)
                         .font(ResponsiveDesign.scaledSystemFont(size: 12))
-                    Text(role.displayName)
+                    Text(self.role.displayName)
                         .font(ResponsiveDesign.monospacedFont(size: 12, weight: .regular))
                 }
                 .foregroundColor(Color("InputText"))
                 .frame(maxWidth: .infinity, alignment: .leading)
             } else {
                 HStack(spacing: ResponsiveDesign.spacing(4)) {
-                    Image(systemName: icon)
+                    Image(systemName: self.icon)
                         .font(ResponsiveDesign.scaledSystemFont(size: 10))
-                    Text(role.rawValue)
+                    Text(self.role.rawValue)
                         .font(ResponsiveDesign.captionFont())
                         .fontWeight(.medium)
                 }
-                .foregroundColor(color.opacity(0.9))
+                .foregroundColor(self.color.opacity(0.9))
                 .frame(maxWidth: .infinity)
                 .frame(height: 36)
-                .background(color.opacity(0.1))
+                .background(self.color.opacity(0.1))
                 .overlay(
                     RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(8))
-                        .stroke(color.opacity(0.4), lineWidth: 1)
+                        .stroke(self.color.opacity(0.4), lineWidth: 1)
                 )
                 .cornerRadius(ResponsiveDesign.spacing(8))
             }
         }
-        .accessibilityIdentifier("LoginCSR\(role.rawValue)Button")
-        .disabled(isLoading)
+        .accessibilityIdentifier("LoginCSR\(self.role.rawValue)Button")
+        .disabled(self.isLoading)
     }
 }
 
@@ -300,27 +300,27 @@ struct LandingDebugButton: View {
     let accessibilityIdentifier: String
 
     var body: some View {
-        Button(action: action, label: {
-            if style == .typewriter {
-                Text("  - \(text)")
+        Button(action: self.action, label: {
+            if self.style == .typewriter {
+                Text("  - \(self.text)")
                     .font(ResponsiveDesign.monospacedFont(size: 14, weight: .regular))
                     .foregroundColor(Color("InputText"))
                     .frame(maxWidth: .infinity, alignment: .leading)
             } else {
-                Text(text)
+                Text(self.text)
                     .font(ResponsiveDesign.captionFont())
-                    .foregroundColor(accentColor.opacity(0.8))
+                    .foregroundColor(self.accentColor.opacity(0.8))
                     .frame(maxWidth: .infinity)
                     .frame(height: 32)
                     .background(Color.clear)
                     .overlay(
                         RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(8))
-                            .stroke(accentColor.opacity(0.3), lineWidth: 1)
+                            .stroke(self.accentColor.opacity(0.3), lineWidth: 1)
                     )
             }
         })
-        .accessibilityIdentifier(accessibilityIdentifier)
-        .disabled(isLoading)
+        .accessibilityIdentifier(self.accessibilityIdentifier)
+        .disabled(self.isLoading)
     }
 }
 

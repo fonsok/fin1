@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 import os.log
 
 // MARK: - FAQ Knowledge Base Service Implementation
@@ -20,39 +20,39 @@ final class FAQKnowledgeBaseService: FAQKnowledgeBaseServiceProtocol, ServiceLif
     let articlesSubject = CurrentValueSubject<[FAQArticle], Never>([])
 
     var articlesPublisher: AnyPublisher<[FAQArticle], Never> {
-        articlesSubject.eraseToAnyPublisher()
+        self.articlesSubject.eraseToAnyPublisher()
     }
 
     // MARK: - Initialization
 
     init(auditService: AuditLoggingServiceProtocol) {
         self.auditService = auditService
-        loadMockData()
+        self.loadMockData()
     }
 
     // MARK: - ServiceLifecycle
 
     func start() {
-        logger.info("FAQKnowledgeBaseService started")
+        self.logger.info("FAQKnowledgeBaseService started")
     }
 
     func stop() {
-        logger.info("FAQKnowledgeBaseService stopped")
+        self.logger.info("FAQKnowledgeBaseService stopped")
     }
 
     func reset() {
-        articles = []
-        feedbackStore = []
-        ticketArticleLinks = [:]
-        articlesSubject.send([])
-        loadMockData()
-        logger.info("FAQKnowledgeBaseService reset")
+        self.articles = []
+        self.feedbackStore = []
+        self.ticketArticleLinks = [:]
+        self.articlesSubject.send([])
+        self.loadMockData()
+        self.logger.info("FAQKnowledgeBaseService reset")
     }
 
     // MARK: - Article Retrieval
 
     func getArticles(includeUnpublished: Bool, includeArchived: Bool) async throws -> [FAQArticle] {
-        var result = articles
+        var result = self.articles
 
         if !includeUnpublished {
             result = result.filter { $0.isPublished }
@@ -66,17 +66,17 @@ final class FAQKnowledgeBaseService: FAQKnowledgeBaseServiceProtocol, ServiceLif
     }
 
     func getArticles(byCategory category: KnowledgeBaseCategory) async throws -> [FAQArticle] {
-        return articles
+        return self.articles
             .filter { $0.category == category && $0.isPublished && !$0.isArchived }
             .sorted { $0.relevanceScore > $1.relevanceScore }
     }
 
     func getArticle(byId articleId: String) async throws -> FAQArticle? {
-        return articles.first { $0.id == articleId }
+        return self.articles.first { $0.id == articleId }
     }
 
     func getPopularArticles(limit: Int) async throws -> [FAQArticle] {
-        return articles
+        return self.articles
             .filter { $0.isPublished && !$0.isArchived }
             .sorted { $0.viewCount + ($0.usedInTicketCount * 5) > $1.viewCount + ($1.usedInTicketCount * 5) }
             .prefix(limit)
@@ -84,7 +84,7 @@ final class FAQKnowledgeBaseService: FAQKnowledgeBaseServiceProtocol, ServiceLif
     }
 
     func getRecentArticles(limit: Int) async throws -> [FAQArticle] {
-        return articles
+        return self.articles
             .filter { $0.isPublished && !$0.isArchived }
             .sorted { $0.updatedAt > $1.updatedAt }
             .prefix(limit)
@@ -96,7 +96,7 @@ final class FAQKnowledgeBaseService: FAQKnowledgeBaseServiceProtocol, ServiceLif
 
     func createArticle(_ articleCreate: FAQArticleCreate, createdBy: String) async throws -> FAQArticle {
         // Check for duplicate title
-        if articles.contains(where: { $0.title.lowercased() == articleCreate.title.lowercased() }) {
+        if self.articles.contains(where: { $0.title.lowercased() == articleCreate.title.lowercased() }) {
             throw FAQServiceError.duplicateTitle
         }
 
@@ -114,10 +114,10 @@ final class FAQKnowledgeBaseService: FAQKnowledgeBaseServiceProtocol, ServiceLif
             isPublished: false
         )
 
-        articles.append(article)
-        articlesSubject.send(articles)
+        self.articles.append(article)
+        self.articlesSubject.send(self.articles)
 
-        logger.info("✅ FAQ article created: \(article.title)")
+        self.logger.info("✅ FAQ article created: \(article.title)")
         return article
     }
 
@@ -134,13 +134,13 @@ final class FAQKnowledgeBaseService: FAQKnowledgeBaseServiceProtocol, ServiceLif
             createdBy: createdBy
         )
 
-        articles.append(article)
-        articlesSubject.send(articles)
+        self.articles.append(article)
+        self.articlesSubject.send(self.articles)
 
         // Link ticket to article
         try await linkTicketToArticle(ticketId: ticket.id, articleId: article.id)
 
-        logger.info("✅ FAQ article created from ticket \(ticket.ticketNumber): \(article.title)")
+        self.logger.info("✅ FAQ article created from ticket \(ticket.ticketNumber): \(article.title)")
         return article
     }
 
@@ -149,7 +149,7 @@ final class FAQKnowledgeBaseService: FAQKnowledgeBaseServiceProtocol, ServiceLif
             throw FAQServiceError.articleNotFound
         }
 
-        var article = articles[index]
+        var article = self.articles[index]
 
         // Check for duplicate title if title is being updated
         if let newTitle = update.title,
@@ -190,10 +190,10 @@ final class FAQKnowledgeBaseService: FAQKnowledgeBaseServiceProtocol, ServiceLif
             isArchived: article.isArchived
         )
 
-        articles[index] = article
-        articlesSubject.send(articles)
+        self.articles[index] = article
+        self.articlesSubject.send(self.articles)
 
-        logger.info("✏️ FAQ article updated: \(article.title)")
+        self.logger.info("✏️ FAQ article updated: \(article.title)")
         return article
     }
 
@@ -202,12 +202,12 @@ final class FAQKnowledgeBaseService: FAQKnowledgeBaseServiceProtocol, ServiceLif
             throw FAQServiceError.articleNotFound
         }
 
-        let articleTitle = articles[index].title
-        articles[index].isPublished = true
-        articles[index].updatedAt = Date()
-        articlesSubject.send(articles)
+        let articleTitle = self.articles[index].title
+        self.articles[index].isPublished = true
+        self.articles[index].updatedAt = Date()
+        self.articlesSubject.send(self.articles)
 
-        logger.info("📢 FAQ article published: \(articleTitle)")
+        self.logger.info("📢 FAQ article published: \(articleTitle)")
     }
 
     func unpublishArticle(articleId: String) async throws {
@@ -215,12 +215,12 @@ final class FAQKnowledgeBaseService: FAQKnowledgeBaseServiceProtocol, ServiceLif
             throw FAQServiceError.articleNotFound
         }
 
-        let articleTitle = articles[index].title
-        articles[index].isPublished = false
-        articles[index].updatedAt = Date()
-        articlesSubject.send(articles)
+        let articleTitle = self.articles[index].title
+        self.articles[index].isPublished = false
+        self.articles[index].updatedAt = Date()
+        self.articlesSubject.send(self.articles)
 
-        logger.info("📝 FAQ article unpublished: \(articleTitle)")
+        self.logger.info("📝 FAQ article unpublished: \(articleTitle)")
     }
 
     func archiveArticle(articleId: String) async throws {
@@ -228,13 +228,13 @@ final class FAQKnowledgeBaseService: FAQKnowledgeBaseServiceProtocol, ServiceLif
             throw FAQServiceError.articleNotFound
         }
 
-        let articleTitle = articles[index].title
-        articles[index].isArchived = true
-        articles[index].isPublished = false
-        articles[index].updatedAt = Date()
-        articlesSubject.send(articles)
+        let articleTitle = self.articles[index].title
+        self.articles[index].isArchived = true
+        self.articles[index].isPublished = false
+        self.articles[index].updatedAt = Date()
+        self.articlesSubject.send(self.articles)
 
-        logger.info("📦 FAQ article archived: \(articleTitle)")
+        self.logger.info("📦 FAQ article archived: \(articleTitle)")
     }
 
     func deleteArticle(articleId: String) async throws {
@@ -242,20 +242,20 @@ final class FAQKnowledgeBaseService: FAQKnowledgeBaseServiceProtocol, ServiceLif
             throw FAQServiceError.articleNotFound
         }
 
-        let title = articles[index].title
-        articles.remove(at: index)
-        ticketArticleLinks.removeValue(forKey: articleId)
-        articlesSubject.send(articles)
+        let title = self.articles[index].title
+        self.articles.remove(at: index)
+        self.ticketArticleLinks.removeValue(forKey: articleId)
+        self.articlesSubject.send(self.articles)
 
-        logger.info("🗑️ FAQ article deleted: \(title)")
+        self.logger.info("🗑️ FAQ article deleted: \(title)")
     }
 
 
     // MARK: - Mock Data
 
     private func loadMockData() {
-        articles = Self.createMockArticles()
-        articlesSubject.send(articles)
+        self.articles = Self.createMockArticles()
+        self.articlesSubject.send(self.articles)
     }
 
     static func createMockArticles() -> [FAQArticle] {
@@ -266,7 +266,7 @@ final class FAQKnowledgeBaseService: FAQKnowledgeBaseServiceProtocol, ServiceLif
                 content: """
                 ## Problem
                 Sie haben Ihr Passwort vergessen und können sich nicht mehr einloggen.
-
+                
                 ## Lösung
                 1. Öffnen Sie die \(AppBrand.appName) App oder Website
                 2. Klicken Sie auf "Passwort vergessen?"
@@ -274,7 +274,7 @@ final class FAQKnowledgeBaseService: FAQKnowledgeBaseServiceProtocol, ServiceLif
                 4. Prüfen Sie Ihr E-Mail-Postfach (inkl. Spam-Ordner)
                 5. Klicken Sie auf den Link in der E-Mail
                 6. Erstellen Sie ein neues sicheres Passwort
-
+                
                 ## Hinweise
                 - Der Link ist 24 Stunden gültig
                 - Verwenden Sie mindestens 8 Zeichen mit Groß- und Kleinbuchstaben
@@ -283,7 +283,7 @@ final class FAQKnowledgeBaseService: FAQKnowledgeBaseServiceProtocol, ServiceLif
                 category: .login,
                 tags: ["Passwort", "Login", "Zugang"],
                 keywords: ["passwort", "vergessen", "zurücksetzen", "reset", "login", "zugang"],
-                viewCount: 1250,
+                viewCount: 1_250,
                 helpfulCount: 180,
                 notHelpfulCount: 12,
                 usedInTicketCount: 45,
@@ -295,23 +295,23 @@ final class FAQKnowledgeBaseService: FAQKnowledgeBaseServiceProtocol, ServiceLif
                 content: """
                 ## Problem
                 Der Login schlägt fehl oder zeigt eine Fehlermeldung.
-
+                
                 ## Mögliche Ursachen & Lösungen
-
+                
                 ### 1. Falsche Anmeldedaten
                 - Prüfen Sie die korrekte Schreibweise von E-Mail und Passwort
                 - Achten Sie auf Groß-/Kleinschreibung beim Passwort
                 - Nutzen Sie "Passwort vergessen?" falls nötig
-
+                
                 ### 2. Konto gesperrt
                 - Nach 5 fehlgeschlagenen Versuchen wird das Konto temporär gesperrt
                 - Warten Sie 15 Minuten oder kontaktieren Sie den Support
-
+                
                 ### 3. App veraltet
                 - Aktualisieren Sie die App auf die neueste Version
                 - iOS: App Store → Updates
                 - Android: Play Store → Meine Apps
-
+                
                 ### 4. Cache-Problem
                 - Schließen Sie die App vollständig
                 - Löschen Sie den App-Cache (Einstellungen → Apps → \(AppBrand.appName) → Cache leeren)
@@ -333,24 +333,24 @@ final class FAQKnowledgeBaseService: FAQKnowledgeBaseServiceProtocol, ServiceLif
                 ## Voraussetzungen
                 - Konto vollständig verifiziert (KYC abgeschlossen)
                 - Guthaben auf dem Konto
-
+                
                 ## Anleitung
-
+                
                 ### 1. Trader auswählen
                 - Gehen Sie zur Trader-Übersicht
                 - Analysieren Sie Performance und Risikoprofil
                 - Wählen Sie einen Trader, der zu Ihren Zielen passt
-
+                
                 ### 2. Investitionsbetrag festlegen
                 - Tippen Sie auf "Investieren"
                 - Geben Sie den gewünschten Betrag ein
                 - Beachten Sie den Mindestbetrag (100€)
-
+                
                 ### 3. Bestätigung
                 - Prüfen Sie die Zusammenfassung
                 - Akzeptieren Sie die Bedingungen
                 - Bestätigen Sie die Investition
-
+                
                 ### 4. Nachverfolgung
                 - Verfolgen Sie Ihre Investition unter Investments
                 - Sie erhalten Benachrichtigungen bei wichtigen Ereignissen
@@ -369,28 +369,28 @@ final class FAQKnowledgeBaseService: FAQKnowledgeBaseServiceProtocol, ServiceLif
                 summary: "Übersicht aller Gebühren und Kosten bei \(AppBrand.appName)",
                 content: """
                 ## Gebührenübersicht
-
+                
                 ### Depotführung
                 - Keine Grundgebühr für das Depot
-
+                
                 ### Trading-Gebühren
                 - Ordergebühr: 0,25% des Handelsvolumens
                 - Mindestgebühr: 4,90€ pro Order
                 - Maximale Gebühr: 59,90€ pro Order
-
+                
                 ### Börsengebühren
                 - Xetra: 0,01% (min. 1,50€)
                 - Frankfurt: 0,015% (min. 2,00€)
                 - NYSE/NASDAQ: 0,02% (min. 2,50€)
-
+                
                 ### Investorengebühren
                 - Performance Fee: 20% auf realisierte Gewinne
                 - Keine Gebühr bei Verlusten
-
+                
                 ### Ein- und Auszahlungen
                 - Einzahlung per Überweisung: kostenlos
                 - Auszahlung: kostenlos (1x monatlich, danach 2€)
-
+                
                 ## Hinweis
                 Alle Gebühren werden transparent vor jeder Transaktion angezeigt.
                 """,
@@ -409,28 +409,28 @@ final class FAQKnowledgeBaseService: FAQKnowledgeBaseServiceProtocol, ServiceLif
                 content: """
                 ## Problem
                 Die App stürzt beim Start ab oder friert ein.
-
+                
                 ## Schnelle Lösungen
-
+                
                 ### 1. Neustart erzwingen
                 - Schließen Sie die App vollständig
                 - iOS: Doppelklick Home-Button, App nach oben wischen
                 - Android: Kürzlich verwendete Apps, App schließen
-
+                
                 ### 2. Cache leeren
                 - Geräte-Einstellungen → Apps → \(AppBrand.appName) → Cache leeren
                 - Gerät neu starten
-
+                
                 ### 3. App aktualisieren
                 - Prüfen Sie auf Updates im App Store / Play Store
                 - Installieren Sie die neueste Version
-
+                
                 ### 4. App neu installieren
                 - App deinstallieren
                 - Gerät neu starten
                 - App neu installieren
                 - Mit Ihren Zugangsdaten anmelden
-
+                
                 ## Wichtig
                 Ihre Daten sind sicher in der Cloud gespeichert und gehen durch eine Neuinstallation nicht verloren.
                 """,
@@ -448,24 +448,24 @@ final class FAQKnowledgeBaseService: FAQKnowledgeBaseServiceProtocol, ServiceLif
                 summary: "Anleitung zur Adressänderung im Konto",
                 content: """
                 ## Vorgehensweise
-
+                
                 ### Online-Änderung
                 1. Melden Sie sich in der App an
                 2. Gehen Sie zu Einstellungen → Persönliche Daten
                 3. Tippen Sie auf "Adresse ändern"
                 4. Geben Sie Ihre neue Adresse ein
                 5. Laden Sie einen Nachweis hoch (Meldebescheinigung oder Rechnung)
-
+                
                 ### Bearbeitung
                 - Die Prüfung dauert in der Regel 1-2 Werktage
                 - Sie erhalten eine Bestätigung per E-Mail
-
+                
                 ### Akzeptierte Nachweise
                 - Aktuelle Meldebescheinigung
                 - Stromrechnung (max. 3 Monate alt)
                 - Telefonrechnung (max. 3 Monate alt)
                 - Kontoauszug (max. 3 Monate alt)
-
+                
                 ## Wichtig
                 Die Adresse muss mit Ihrem Ausweisdokument übereinstimmen.
                 """,

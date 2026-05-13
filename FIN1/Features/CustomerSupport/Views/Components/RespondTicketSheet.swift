@@ -18,14 +18,14 @@ struct RespondTicketSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: ResponsiveDesign.spacing(20)) {
-                    headerSection
-                    ticketInfoSection
-                    messageSection
-                    internalNoteToggle
-                    if !isInternal {
-                        confirmationRequestToggle
+                    self.headerSection
+                    self.ticketInfoSection
+                    self.messageSection
+                    self.internalNoteToggle
+                    if !self.isInternal {
+                        self.confirmationRequestToggle
                     }
-                    submitButton
+                    self.submitButton
                 }
                 .padding()
             }
@@ -35,20 +35,20 @@ struct RespondTicketSheet: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Abbrechen") {
-                        viewModel.closeRespondTicketSheet()
-                        dismiss()
+                        self.viewModel.closeRespondTicketSheet()
+                        self.dismiss()
                     }
                 }
             }
-            .sheet(isPresented: $showCannedResponses) {
+            .sheet(isPresented: self.$showCannedResponses) {
                 CannedResponsePicker(
                     selectedResponse: .constant(nil),
-                    placeholderValues: placeholderValues
+                    placeholderValues: self.placeholderValues
                 ) { content in
-                    if message.isEmpty {
-                        message = content
+                    if self.message.isEmpty {
+                        self.message = content
                     } else {
-                        message += "\n\n" + content
+                        self.message += "\n\n" + content
                     }
                 }
             }
@@ -59,9 +59,9 @@ struct RespondTicketSheet: View {
 
     private var placeholderValues: [String: String] {
         [
-            "customerName": ticket.customerName,
-            "ticketNumber": ticket.ticketNumber,
-            "agentName": viewModel.getAgentName(for: ticket.assignedTo ?? "")
+            "customerName": self.ticket.customerName,
+            "ticketNumber": self.ticket.ticketNumber,
+            "agentName": self.viewModel.getAgentName(for: self.ticket.assignedTo ?? "")
         ]
     }
 
@@ -74,15 +74,17 @@ struct RespondTicketSheet: View {
                     .font(ResponsiveDesign.titleFont())
                     .foregroundColor(AppTheme.accentLightBlue)
 
-                Text(isInternal ? "Interne Notiz hinzufügen" : "Antwort senden")
+                Text(self.isInternal ? "Interne Notiz hinzufügen" : "Antwort senden")
                     .font(ResponsiveDesign.titleFont())
                     .fontWeight(.bold)
                     .foregroundColor(AppTheme.fontColor)
             }
 
-            Text(isInternal ? "Fügen Sie eine interne Notiz hinzu, die nur für Mitarbeiter sichtbar ist." : "Senden Sie eine Antwort an den Kunden zu diesem Ticket.")
-                .font(ResponsiveDesign.bodyFont())
-                .foregroundColor(AppTheme.fontColor.opacity(0.7))
+            Text(
+                self.isInternal ? "Fügen Sie eine interne Notiz hinzu, die nur für Mitarbeiter sichtbar ist." : "Senden Sie eine Antwort an den Kunden zu diesem Ticket."
+            )
+            .font(ResponsiveDesign.bodyFont())
+            .foregroundColor(AppTheme.fontColor.opacity(0.7))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -97,9 +99,9 @@ struct RespondTicketSheet: View {
                 .foregroundColor(AppTheme.fontColor)
 
             VStack(spacing: ResponsiveDesign.spacing(8)) {
-                CSInfoRow(label: "Ticket-Nummer", value: ticket.ticketNumber)
-                CSInfoRow(label: "Betreff", value: ticket.subject)
-                CSInfoRow(label: "Kunde", value: ticket.customerName)
+                CSInfoRow(label: "Ticket-Nummer", value: self.ticket.ticketNumber)
+                CSInfoRow(label: "Betreff", value: self.ticket.subject)
+                CSInfoRow(label: "Kunde", value: self.ticket.customerName)
             }
         }
         .padding()
@@ -112,7 +114,7 @@ struct RespondTicketSheet: View {
     private var messageSection: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
             HStack {
-                Text(isInternal ? "Notiz" : "Antwort")
+                Text(self.isInternal ? "Notiz" : "Antwort")
                     .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.medium)
                     .foregroundColor(AppTheme.fontColor)
@@ -121,7 +123,7 @@ struct RespondTicketSheet: View {
 
                 // Canned Responses Button
                 Button {
-                    showCannedResponses = true
+                    self.showCannedResponses = true
                 } label: {
                     HStack(spacing: ResponsiveDesign.spacing(4)) {
                         Image(systemName: "doc.text.fill")
@@ -135,25 +137,25 @@ struct RespondTicketSheet: View {
                     .cornerRadius(ResponsiveDesign.spacing(8))
                 }
 
-                Text("\(message.count)/1000")
+                Text("\(self.message.count)/1000")
                     .font(ResponsiveDesign.captionFont())
-                    .foregroundColor(message.count > 900 ? AppTheme.accentOrange : AppTheme.fontColor.opacity(0.5))
+                    .foregroundColor(self.message.count > 900 ? AppTheme.accentOrange : AppTheme.fontColor.opacity(0.5))
             }
 
-            TextEditor(text: $message)
+            TextEditor(text: self.$message)
                 .frame(minHeight: 120)
                 .padding(ResponsiveDesign.spacing(12))
                 .background(AppTheme.inputFieldBackground)
                 .cornerRadius(ResponsiveDesign.spacing(10))
                 .foregroundColor(AppTheme.inputFieldText)
                 .scrollContentBackground(.hidden)
-                .onChange(of: message) { _, newValue in
-                    if newValue.count > 1000 {
-                        message = String(newValue.prefix(1000))
+                .onChange(of: self.message) { _, newValue in
+                    if newValue.count > 1_000 {
+                        self.message = String(newValue.prefix(1_000))
                     }
                 }
 
-            if message.count < 10 && !message.isEmpty {
+            if self.message.count < 10 && !self.message.isEmpty {
                 Text("Bitte geben Sie mehr Details an (mindestens 10 Zeichen)")
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.accentOrange)
@@ -166,8 +168,8 @@ struct RespondTicketSheet: View {
     private var internalNoteToggle: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
             HStack {
-                Image(systemName: isInternal ? "eye.slash.fill" : "eye.fill")
-                    .foregroundColor(isInternal ? AppTheme.accentOrange : AppTheme.accentLightBlue)
+                Image(systemName: self.isInternal ? "eye.slash.fill" : "eye.fill")
+                    .foregroundColor(self.isInternal ? AppTheme.accentOrange : AppTheme.accentLightBlue)
 
                 Text("Interne Notiz")
                     .font(ResponsiveDesign.bodyFont())
@@ -176,16 +178,18 @@ struct RespondTicketSheet: View {
 
                 Spacer()
 
-                Toggle("", isOn: $isInternal)
+                Toggle("", isOn: self.$isInternal)
                     .labelsHidden()
             }
             .padding()
             .background(AppTheme.sectionBackground)
             .cornerRadius(ResponsiveDesign.spacing(10))
 
-            Text(isInternal ? "Diese Notiz ist nur für Mitarbeiter sichtbar und wird dem Kunden nicht angezeigt." : "Die Antwort wird dem Kunden angezeigt und eine Benachrichtigung verschickt.")
-                .font(ResponsiveDesign.captionFont())
-                .foregroundColor(AppTheme.fontColor.opacity(0.7))
+            Text(
+                self.isInternal ? "Diese Notiz ist nur für Mitarbeiter sichtbar und wird dem Kunden nicht angezeigt." : "Die Antwort wird dem Kunden angezeigt und eine Benachrichtigung verschickt."
+            )
+            .font(ResponsiveDesign.captionFont())
+            .foregroundColor(AppTheme.fontColor.opacity(0.7))
         }
     }
 
@@ -194,8 +198,8 @@ struct RespondTicketSheet: View {
     private var confirmationRequestToggle: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
             HStack {
-                Image(systemName: requestConfirmation ? "checkmark.circle.fill" : "circle")
-                    .foregroundColor(requestConfirmation ? AppTheme.accentGreen : AppTheme.fontColor.opacity(0.5))
+                Image(systemName: self.requestConfirmation ? "checkmark.circle.fill" : "circle")
+                    .foregroundColor(self.requestConfirmation ? AppTheme.accentGreen : AppTheme.fontColor.opacity(0.5))
                     .font(ResponsiveDesign.headlineFont())
 
                 Text("Bestätigung Problem gelöst anfordern")
@@ -208,14 +212,14 @@ struct RespondTicketSheet: View {
             .contentShape(Rectangle())
             .onTapGesture {
                 withAnimation(.easeInOut(duration: 0.2)) {
-                    requestConfirmation.toggle()
+                    self.requestConfirmation.toggle()
                 }
             }
             .padding()
-            .background(requestConfirmation ? AppTheme.accentGreen.opacity(0.1) : AppTheme.sectionBackground)
+            .background(self.requestConfirmation ? AppTheme.accentGreen.opacity(0.1) : AppTheme.sectionBackground)
             .cornerRadius(ResponsiveDesign.spacing(10))
 
-            if requestConfirmation {
+            if self.requestConfirmation {
                 Text("Der Kunde wird gebeten zu bestätigen, ob das Problem gelöst wurde. Das Ticket wird auf \"Warte auf Kunde\" gesetzt.")
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.accentGreen)
@@ -228,64 +232,64 @@ struct RespondTicketSheet: View {
     private var submitButton: some View {
         Button(action: {
             Task {
-                await submitResponse()
+                await self.submitResponse()
             }
         }) {
             HStack {
-                if viewModel.isLoading {
+                if self.viewModel.isLoading {
                     ProgressView()
                         .scaleEffect(0.8)
                         .tint(AppTheme.screenBackground)
                 } else {
-                    Image(systemName: isInternal ? "note.text" : "paperplane.fill")
+                    Image(systemName: self.isInternal ? "note.text" : "paperplane.fill")
                         .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 0.8))
                 }
 
-                Text(isInternal ? "Notiz hinzufügen" : "Antwort senden")
+                Text(self.isInternal ? "Notiz hinzufügen" : "Antwort senden")
                     .font(ResponsiveDesign.headlineFont())
                     .fontWeight(.semibold)
             }
             .foregroundColor(AppTheme.screenBackground)
             .frame(maxWidth: .infinity)
             .frame(height: 50)
-            .background(isFormValid ? AppTheme.accentLightBlue : AppTheme.accentLightBlue.opacity(0.5))
+            .background(self.isFormValid ? AppTheme.accentLightBlue : AppTheme.accentLightBlue.opacity(0.5))
             .cornerRadius(ResponsiveDesign.spacing(12))
         }
-        .disabled(!isFormValid || viewModel.isLoading)
+        .disabled(!self.isFormValid || self.viewModel.isLoading)
     }
 
     // MARK: - Computed Properties
 
     private var isFormValid: Bool {
-        !message.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-        message.count >= 10
+        !self.message.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+            self.message.count >= 10
     }
 
     // MARK: - Private Methods
 
     private func submitResponse() async {
-        guard isFormValid else { return }
+        guard self.isFormValid else { return }
 
-        let trimmedMessage = message.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedMessage = self.message.trimmingCharacters(in: .whitespacesAndNewlines)
 
         // If confirmation requested (and not internal note), use requestCustomerConfirmation
         // which creates a single response with the confirmation request
-        if requestConfirmation && !isInternal {
-            await viewModel.requestCustomerConfirmation(
-                ticketId: ticket.id,
+        if self.requestConfirmation && !self.isInternal {
+            await self.viewModel.requestCustomerConfirmation(
+                ticketId: self.ticket.id,
                 message: trimmedMessage
             )
         } else {
             // Otherwise, send a regular response
-            await viewModel.respondToTicket(
-                ticket.id,
+            await self.viewModel.respondToTicket(
+                self.ticket.id,
                 message: trimmedMessage,
-                isInternal: isInternal
+                isInternal: self.isInternal
             )
         }
 
-        if !viewModel.showError {
-            dismiss()
+        if !self.viewModel.showError {
+            self.dismiss()
         }
     }
 }

@@ -11,7 +11,7 @@ struct TradeDetailsRoute: Hashable {
         lhs.tradeNumber == rhs.tradeNumber
     }
 
-    func hash(into hasher: inout Hasher) { hasher.combine(tradeNumber) }
+    func hash(into hasher: inout Hasher) { hasher.combine(self.tradeNumber) }
 }
 
 extension TradeDetailsRoute: View {

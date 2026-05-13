@@ -8,7 +8,7 @@ struct YearSeparatorRow: View {
     var body: some View {
         HStack(alignment: .center, spacing: ResponsiveDesign.spacing(0)) {
             // Column 1: Year label
-            Text(String(format: "%d", year))
+            Text(String(format: "%d", self.year))
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.inputFieldText)
                 .frame(width: ResponsiveDesign.spacing(50), alignment: .leading)
@@ -32,7 +32,7 @@ struct YearSeparatorRow: View {
 }
 
 #Preview {
-    YearSeparatorRow(year: 2024)
+    YearSeparatorRow(year: 2_024)
         .background(AppTheme.screenBackground)
 }
 

@@ -10,16 +10,32 @@ struct RiskClassCalculationBreakdownView: View {
                 .foregroundColor(AppTheme.fontColor)
             
             VStack(alignment: .leading, spacing: 12) {
-                BreakdownRow(title: "Income Range", value: signUpData.incomeRange.displayName, points: getIncomePoints())
-                BreakdownRow(title: "Cash & Assets", value: signUpData.cashAndLiquidAssets.displayName, points: getAssetsPoints())
-                BreakdownRow(title: "Income Sources", value: getIncomeSourcesText(), points: getIncomeSourcesPoints())
-                BreakdownRow(title: "Stocks Experience", value: signUpData.stocksTransactionsCount.displayName, points: getStocksPoints())
-                BreakdownRow(title: "ETFs Experience", value: signUpData.etfsTransactionsCount.displayName, points: getETFsPoints())
-                BreakdownRow(title: "Derivatives Experience", value: signUpData.derivativesTransactionsCount.displayName, points: getDerivativesPoints())
-                BreakdownRow(title: "Investment Amounts", value: getInvestmentAmountsText(), points: getInvestmentAmountsPoints())
-                BreakdownRow(title: "Derivatives Holding", value: signUpData.derivativesHoldingPeriod.displayName, points: getHoldingPeriodPoints())
-                BreakdownRow(title: "Desired Return", value: signUpData.desiredReturn.displayName, points: getReturnPoints())
-                BreakdownRow(title: "Other Assets", value: getOtherAssetsText(), points: getOtherAssetsPoints())
+                BreakdownRow(title: "Income Range", value: self.signUpData.incomeRange.displayName, points: self.getIncomePoints())
+                BreakdownRow(title: "Cash & Assets", value: self.signUpData.cashAndLiquidAssets.displayName, points: self.getAssetsPoints())
+                BreakdownRow(title: "Income Sources", value: self.getIncomeSourcesText(), points: self.getIncomeSourcesPoints())
+                BreakdownRow(
+                    title: "Stocks Experience",
+                    value: self.signUpData.stocksTransactionsCount.displayName,
+                    points: self.getStocksPoints()
+                )
+                BreakdownRow(
+                    title: "ETFs Experience",
+                    value: self.signUpData.etfsTransactionsCount.displayName,
+                    points: self.getETFsPoints()
+                )
+                BreakdownRow(
+                    title: "Derivatives Experience",
+                    value: self.signUpData.derivativesTransactionsCount.displayName,
+                    points: self.getDerivativesPoints()
+                )
+                BreakdownRow(title: "Investment Amounts", value: self.getInvestmentAmountsText(), points: self.getInvestmentAmountsPoints())
+                BreakdownRow(
+                    title: "Derivatives Holding",
+                    value: self.signUpData.derivativesHoldingPeriod.displayName,
+                    points: self.getHoldingPeriodPoints()
+                )
+                BreakdownRow(title: "Desired Return", value: self.signUpData.desiredReturn.displayName, points: self.getReturnPoints())
+                BreakdownRow(title: "Other Assets", value: self.getOtherAssetsText(), points: self.getOtherAssetsPoints())
                 
                 Divider()
                 
@@ -31,7 +47,7 @@ struct RiskClassCalculationBreakdownView: View {
                     
                     Spacer()
                     
-                    Text("\(getTotalScore()) points")
+                    Text("\(self.getTotalScore()) points")
                         .font(ResponsiveDesign.bodyFont())
                         .fontWeight(.bold)
                         .foregroundColor(AppTheme.accentOrange)
@@ -44,7 +60,7 @@ struct RiskClassCalculationBreakdownView: View {
     }
     
     private func getIncomePoints() -> Int {
-        switch signUpData.incomeRange {
+        switch self.signUpData.incomeRange {
         case .low: return 0
         case .lowMiddle: return 1
         case .middle: return 2
@@ -55,7 +71,7 @@ struct RiskClassCalculationBreakdownView: View {
     }
     
     private func getAssetsPoints() -> Int {
-        switch signUpData.cashAndLiquidAssets {
+        switch self.signUpData.cashAndLiquidAssets {
         case .lessThan10k: return 0
         case .tenKToFiftyK: return 1
         case .fiftyKToTwoHundredK: return 2
@@ -67,22 +83,22 @@ struct RiskClassCalculationBreakdownView: View {
     
     private func getIncomeSourcesText() -> String {
         var sources: [String] = []
-        if signUpData.incomeSources["Assets"] == true { sources.append("Assets") }
-        if signUpData.incomeSources["Inheritance"] == true { sources.append("Inheritance") }
-        if signUpData.incomeSources["Settlement"] == true { sources.append("Settlement") }
+        if self.signUpData.incomeSources["Assets"] == true { sources.append("Assets") }
+        if self.signUpData.incomeSources["Inheritance"] == true { sources.append("Inheritance") }
+        if self.signUpData.incomeSources["Settlement"] == true { sources.append("Settlement") }
         return sources.isEmpty ? "None" : sources.joined(separator: ", ")
     }
     
     private func getIncomeSourcesPoints() -> Int {
         var points = 0
-        if signUpData.incomeSources["Assets"] == true { points += 2 }
-        if signUpData.incomeSources["Inheritance"] == true { points += 1 }
-        if signUpData.incomeSources["Settlement"] == true { points += 1 }
+        if self.signUpData.incomeSources["Assets"] == true { points += 2 }
+        if self.signUpData.incomeSources["Inheritance"] == true { points += 1 }
+        if self.signUpData.incomeSources["Settlement"] == true { points += 1 }
         return points
     }
     
     private func getStocksPoints() -> Int {
-        switch signUpData.stocksTransactionsCount {
+        switch self.signUpData.stocksTransactionsCount {
         case .none: return 0
         case .oneToTen: return 1
         case .tenToFifty: return 2
@@ -91,7 +107,7 @@ struct RiskClassCalculationBreakdownView: View {
     }
     
     private func getETFsPoints() -> Int {
-        switch signUpData.etfsTransactionsCount {
+        switch self.signUpData.etfsTransactionsCount {
         case .none: return 0
         case .oneToTen: return 1
         case .tenToTwenty: return 2
@@ -100,7 +116,7 @@ struct RiskClassCalculationBreakdownView: View {
     }
     
     private func getDerivativesPoints() -> Int {
-        switch signUpData.derivativesTransactionsCount {
+        switch self.signUpData.derivativesTransactionsCount {
         case .none: return 0
         case .oneToTen: return 3
         case .tenToFifty: return 6
@@ -109,15 +125,15 @@ struct RiskClassCalculationBreakdownView: View {
     }
     
     private func getInvestmentAmountsText() -> String {
-        let stocks = signUpData.stocksInvestmentAmount.displayName
-        let etfs = signUpData.etfsInvestmentAmount.displayName
-        let derivatives = signUpData.derivativesInvestmentAmount.displayName
+        let stocks = self.signUpData.stocksInvestmentAmount.displayName
+        let etfs = self.signUpData.etfsInvestmentAmount.displayName
+        let derivatives = self.signUpData.derivativesInvestmentAmount.displayName
         return "Stocks: \(stocks), ETFs: \(etfs), Derivatives: \(derivatives)"
     }
     
     private func getInvestmentAmountsPoints() -> Int {
         let stocksAmountScore: Int
-        switch signUpData.stocksInvestmentAmount {
+        switch self.signUpData.stocksInvestmentAmount {
         case .hundredToTenThousand: stocksAmountScore = 0
         case .tenThousandToHundredThousand: stocksAmountScore = 1
         case .hundredThousandToMillion: stocksAmountScore = 2
@@ -125,7 +141,7 @@ struct RiskClassCalculationBreakdownView: View {
         }
         
         let etfsAmountScore: Int
-        switch signUpData.etfsInvestmentAmount {
+        switch self.signUpData.etfsInvestmentAmount {
         case .hundredToTenThousand: etfsAmountScore = 0
         case .tenThousandToHundredThousand: etfsAmountScore = 1
         case .hundredThousandToMillion: etfsAmountScore = 2
@@ -133,7 +149,7 @@ struct RiskClassCalculationBreakdownView: View {
         }
         
         let derivativesAmountScore: Int
-        switch signUpData.derivativesInvestmentAmount {
+        switch self.signUpData.derivativesInvestmentAmount {
         case .zeroToThousand: derivativesAmountScore = 0
         case .thousandToTenThousand: derivativesAmountScore = 2
         case .tenThousandToHundredThousand: derivativesAmountScore = 4
@@ -144,7 +160,7 @@ struct RiskClassCalculationBreakdownView: View {
     }
     
     private func getHoldingPeriodPoints() -> Int {
-        switch signUpData.derivativesHoldingPeriod {
+        switch self.signUpData.derivativesHoldingPeriod {
         case .monthsToYears: return 1
         case .daysToWeeks: return 2
         case .minutesToHours: return 4
@@ -152,7 +168,7 @@ struct RiskClassCalculationBreakdownView: View {
     }
     
     private func getReturnPoints() -> Int {
-        switch signUpData.desiredReturn {
+        switch self.signUpData.desiredReturn {
         case .atLeastTenPercent: return 1
         case .atLeastFiftyPercent: return 3
         case .atLeastHundredPercent: return 5
@@ -161,23 +177,23 @@ struct RiskClassCalculationBreakdownView: View {
     
     private func getOtherAssetsText() -> String {
         var assets: [String] = []
-        if signUpData.otherAssets["Real estate"] == true { assets.append("Real estate") }
-        if signUpData.otherAssets["Gold, silver"] == true { assets.append("Gold, silver") }
+        if self.signUpData.otherAssets["Real estate"] == true { assets.append("Real estate") }
+        if self.signUpData.otherAssets["Gold, silver"] == true { assets.append("Gold, silver") }
         return assets.isEmpty ? "None" : assets.joined(separator: ", ")
     }
     
     private func getOtherAssetsPoints() -> Int {
         var points = 0
-        if signUpData.otherAssets["Real estate"] == true { points += 2 }
-        if signUpData.otherAssets["Gold, silver"] == true { points += 1 }
+        if self.signUpData.otherAssets["Real estate"] == true { points += 2 }
+        if self.signUpData.otherAssets["Gold, silver"] == true { points += 1 }
         return points
     }
     
     private func getTotalScore() -> Int {
-        return getIncomePoints() + getAssetsPoints() + getIncomeSourcesPoints() + 
-               getStocksPoints() + getETFsPoints() + getDerivativesPoints() + 
-               getInvestmentAmountsPoints() + getHoldingPeriodPoints() + 
-               getReturnPoints() + getOtherAssetsPoints()
+        return self.getIncomePoints() + self.getAssetsPoints() + self.getIncomeSourcesPoints() + 
+            self.getStocksPoints() + self.getETFsPoints() + self.getDerivativesPoints() + 
+            self.getInvestmentAmountsPoints() + self.getHoldingPeriodPoints() + 
+            self.getReturnPoints() + self.getOtherAssetsPoints()
     }
 }
 
@@ -189,22 +205,22 @@ struct BreakdownRow: View {
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
-                Text(title)
+                Text(self.title)
                     .font(ResponsiveDesign.captionFont())
                     .fontWeight(.medium)
                     .foregroundColor(AppTheme.fontColor)
                 
-                Text(value)
+                Text(self.value)
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
             }
             
             Spacer()
             
-            Text("\(points) pts")
+            Text("\(self.points) pts")
                 .font(ResponsiveDesign.captionFont())
                 .fontWeight(.semibold)
-                .foregroundColor(points > 0 ? AppTheme.accentLightBlue : AppTheme.fontColor.opacity(0.5))
+                .foregroundColor(self.points > 0 ? AppTheme.accentLightBlue : AppTheme.fontColor.opacity(0.5))
         }
     }
 }

@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Dashboard Stats ViewModel
 /// ViewModel for DashboardStatsSection following MVVM architecture
@@ -34,15 +34,15 @@ final class DashboardStatsViewModel: ObservableObject {
     // MARK: - Computed Properties
 
     var isInvestor: Bool {
-        userService.currentUser?.role == .investor
+        self.userService.currentUser?.role == .investor
     }
 
     var isTrader: Bool {
-        userService.currentUser?.role == .trader
+        self.userService.currentUser?.role == .trader
     }
 
     var currentUserId: String? {
-        userService.currentUser?.id
+        self.userService.currentUser?.id
     }
 
     // MARK: - Initialization
@@ -70,7 +70,7 @@ final class DashboardStatsViewModel: ObservableObject {
         self.paymentService = paymentService
         self.settlementAPIService = settlementAPIService
 
-        setupNotificationObservers()
+        self.setupNotificationObservers()
     }
 
     /// Convenience initializer using AppServices
@@ -98,7 +98,7 @@ final class DashboardStatsViewModel: ObservableObject {
             .sink { [weak self] _ in
                 self?.refreshAllData()
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
 
         // Investor balance changed
         NotificationCenter.default.publisher(for: .investorBalanceDidChange)
@@ -110,7 +110,7 @@ final class DashboardStatsViewModel: ObservableObject {
                       investorId == self.currentUserId else { return }
                 self.updateInvestorBalance()
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
 
         // Investment completed
         NotificationCenter.default.publisher(for: .investmentCompleted)
@@ -118,7 +118,7 @@ final class DashboardStatsViewModel: ObservableObject {
             .sink { [weak self] _ in
                 self?.updateActiveInvestmentsCount()
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
 
         // Investment status updated
         NotificationCenter.default.publisher(for: .investmentStatusUpdated)
@@ -126,7 +126,7 @@ final class DashboardStatsViewModel: ObservableObject {
             .sink { [weak self] _ in
                 self?.updateActiveInvestmentsCount()
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
 
         // Wallet transaction completed (deposit/withdrawal)
         NotificationCenter.default.publisher(for: .walletTransactionCompleted)
@@ -139,7 +139,7 @@ final class DashboardStatsViewModel: ObservableObject {
                 // Refresh balance for both investors and traders
                 self.refreshAllData()
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
 
         // Trader balance changed (for trader role)
         NotificationCenter.default.publisher(for: .traderBalanceDidChange)
@@ -154,7 +154,7 @@ final class DashboardStatsViewModel: ObservableObject {
                     self.updateTraderAccountBalance()
                 }
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
 
         // Parse Live Query updates for Wallet Transactions
         NotificationCenter.default.publisher(for: .parseLiveQueryObjectUpdated)
@@ -173,62 +173,62 @@ final class DashboardStatsViewModel: ObservableObject {
                 // Refresh all data when wallet transaction is updated via Live Query
                 self.refreshAllData()
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
     }
 
     // MARK: - Public Methods
 
     /// Called when view appears or needs refresh
     func refreshAllData() {
-        if isInvestor {
-            updateInvestorBalance()
-            updateActiveInvestmentsCount()
-        } else if isTrader {
-            updateTraderAccountBalance()
-            updateDepotValue()
-            updateTraderPoolsStatus()
+        if self.isInvestor {
+            self.updateInvestorBalance()
+            self.updateActiveInvestmentsCount()
+        } else if self.isTrader {
+            self.updateTraderAccountBalance()
+            self.updateDepotValue()
+            self.updateTraderPoolsStatus()
         }
     }
 
     /// Called on view appear via .task modifier
     func onViewAppear() async {
-        await ensureInvoicesGenerated()
-        refreshAllData()
+        await self.ensureInvoicesGenerated()
+        self.refreshAllData()
     }
 
     /// Called when investments count changes
     func onInvestmentsCountChange() {
-        updateInvestorBalance()
-        updateActiveInvestmentsCount()
+        self.updateInvestorBalance()
+        self.updateActiveInvestmentsCount()
     }
 
     // MARK: - Investor Data Updates
 
     private func updateInvestorBalance() {
         guard let currentUser = userService.currentUser else {
-            investorBalance = "€ 0,00"
+            self.investorBalance = "€ 0,00"
             return
         }
 
         Task { @MainActor in
             let snapshot = await InvestorAccountStatementBuilder.buildSnapshotWithWallet(
                 for: currentUser,
-                investorCashBalanceService: investorCashBalanceService,
-                paymentService: paymentService,
-                settlementAPIService: settlementAPIService,
-                configurationService: configurationService
+                investorCashBalanceService: self.investorCashBalanceService,
+                paymentService: self.paymentService,
+                settlementAPIService: self.settlementAPIService,
+                configurationService: self.configurationService
             )
-            investorBalance = snapshot.closingBalance.formatted(.currency(code: "EUR"))
+            self.investorBalance = snapshot.closingBalance.formatted(.currency(code: "EUR"))
         }
     }
 
     private func updateActiveInvestmentsCount() {
         guard let currentUserId = currentUserId else {
-            activeInvestmentsCount = 0
+            self.activeInvestmentsCount = 0
             return
         }
-        let investorInvestments = investmentService.getInvestments(for: currentUserId)
-        activeInvestmentsCount = investorInvestments.filter { $0.status == .active }.count
+        let investorInvestments = self.investmentService.getInvestments(for: currentUserId)
+        self.activeInvestmentsCount = investorInvestments.filter { $0.status == .active }.count
     }
 
     // MARK: - Trader Data Updates
@@ -236,36 +236,36 @@ final class DashboardStatsViewModel: ObservableObject {
     private func updateTraderAccountBalance() {
         Task {
             let snapshot = await TraderAccountStatementBuilder.buildSnapshotWithWallet(
-                for: userService.currentUser,
-                invoiceService: invoiceService,
-                configurationService: configurationService,
-                paymentService: paymentService,
-                settlementAPIService: settlementAPIService
+                for: self.userService.currentUser,
+                invoiceService: self.invoiceService,
+                configurationService: self.configurationService,
+                paymentService: self.paymentService,
+                settlementAPIService: self.settlementAPIService
             )
 
             await MainActor.run {
-                accountBalance = snapshot.closingBalance
+                self.accountBalance = snapshot.closingBalance
             }
         }
     }
 
     private func updateDepotValue() {
         guard let currentTraderId = currentUserId else {
-            depotValue = 0.0
+            self.depotValue = 0.0
             return
         }
 
-        let completedTrades = traderService.completedTrades
+        let completedTrades = self.traderService.completedTrades
             .filter { $0.traderId == currentTraderId }
 
         guard !completedTrades.isEmpty else {
-            depotValue = 0.0
+            self.depotValue = 0.0
             return
         }
 
         // Calculate total depot value from remaining holdings
         let totalValue = completedTrades.compactMap { trade -> Double? in
-            let holding = holdingsConversionService.createHolding(
+            let holding = self.holdingsConversionService.createHolding(
                 from: trade,
                 position: 1,
                 ongoingOrders: []
@@ -273,25 +273,25 @@ final class DashboardStatsViewModel: ObservableObject {
             return Double(holding.remainingQuantity) * holding.currentPrice
         }.reduce(0, +)
 
-        depotValue = totalValue
+        self.depotValue = totalValue
     }
 
     private func updateTraderPoolsStatus() {
         guard let currentUser = userService.currentUser else {
-            traderPoolsStatus = "not active"
+            self.traderPoolsStatus = "not active"
             return
         }
 
-        let traderId = findTraderIdForMatching() ?? currentUser.id
+        let traderId = self.findTraderIdForMatching() ?? currentUser.id
 
-        let traderInvestments = investmentService.getInvestments(forTrader: traderId)
+        let traderInvestments = self.investmentService.getInvestments(forTrader: traderId)
             .filter { $0.status == .active }
 
         let hasRelevantInvestments = traderInvestments.contains { investment in
             investment.reservationStatus == .reserved || investment.reservationStatus == .active
         }
 
-        traderPoolsStatus = hasRelevantInvestments ? "active" : "not active"
+        self.traderPoolsStatus = hasRelevantInvestments ? "active" : "not active"
     }
 
     // MARK: - Helper Methods
@@ -330,11 +330,11 @@ final class DashboardStatsViewModel: ObservableObject {
     private func ensureInvoicesGenerated() async {
         guard let currentTraderId = currentUserId else { return }
 
-        let completedTrades = traderService.completedTrades
+        let completedTrades = self.traderService.completedTrades
             .filter { $0.traderId == currentTraderId }
 
         if !completedTrades.isEmpty {
-            await invoiceService.generateInvoicesForCompletedTrades(completedTrades)
+            await self.invoiceService.generateInvoicesForCompletedTrades(completedTrades)
         }
     }
 }

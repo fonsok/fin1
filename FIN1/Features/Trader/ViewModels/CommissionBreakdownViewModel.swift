@@ -37,7 +37,7 @@ final class CommissionBreakdownViewModel: ObservableObject {
     // MARK: - Computed Properties
 
     var commissionRate: Double {
-        configurationService.effectiveCommissionRate
+        self.configurationService.effectiveCommissionRate
     }
 
     var formattedCommissionRate: String {
@@ -46,8 +46,8 @@ final class CommissionBreakdownViewModel: ObservableObject {
         formatter.minimumFractionDigits = 1
         formatter.maximumFractionDigits = 3
         formatter.decimalSeparator = ","
-        return formatter.string(from: NSNumber(value: commissionRate))
-            ?? String(format: "%.1f", commissionRate).replacingOccurrences(of: ".", with: ",")
+        return formatter.string(from: NSNumber(value: self.commissionRate))
+            ?? String(format: "%.1f", self.commissionRate).replacingOccurrences(of: ".", with: ",")
     }
 
     // MARK: - Initialization
@@ -86,19 +86,19 @@ final class CommissionBreakdownViewModel: ObservableObject {
     // MARK: - Public Methods
 
     func loadBreakdown() async {
-        isLoading = true
+        self.isLoading = true
 
         // Get participations for this trade
-        let participations = poolTradeParticipationService.getParticipations(forTradeId: tradeId)
+        let participations = self.poolTradeParticipationService.getParticipations(forTradeId: self.tradeId)
 
         guard !participations.isEmpty else {
-            await loadBackendFallbackBreakdown()
-            isLoading = false
+            await self.loadBackendFallbackBreakdown()
+            self.isLoading = false
             return
         }
 
         // Get all investments to map investmentId to investorId
-        let allInvestments = investmentService.investments
+        let allInvestments = self.investmentService.investments
 
         // Group participations by investment to get unique investors
         let participationsByInvestment = Dictionary(grouping: participations) { $0.investmentId }
@@ -117,14 +117,14 @@ final class CommissionBreakdownViewModel: ObservableObject {
                 // Use centralized InvestorGrossProfitService to get gross profit
                 let investorGrossProfit = try await investorGrossProfitService.getGrossProfit(
                     for: investmentId,
-                    tradeId: tradeId
+                    tradeId: self.tradeId
                 )
 
                 // Use centralized CommissionCalculationService to calculate commission
                 let investorCommission = try await commissionCalculationService.calculateCommissionForInvestor(
                     investmentId: investmentId,
-                    tradeId: tradeId,
-                    commissionRate: commissionRate
+                    tradeId: self.tradeId,
+                    commissionRate: self.commissionRate
                 )
 
                 // Use investor username from investment (set during investment creation)
@@ -142,39 +142,39 @@ final class CommissionBreakdownViewModel: ObservableObject {
                 let appError = error.toAppError()
                 let errorMsg = "Fehler bei der Berechnung für Investor \(investment.investorId.prefix(8)): \(appError.errorDescription ?? "An error occurred")"
                 print("⚠️ CommissionBreakdownViewModel: \(errorMsg)")
-                errorMessage = errorMsg
-                showError = true
+                self.errorMessage = errorMsg
+                self.showError = true
                 // Continue with other investors even if one fails
                 continue
             }
         }
 
-        breakdownItems = items
-        totalCommission = total
-        isLoading = false
+        self.breakdownItems = items
+        self.totalCommission = total
+        self.isLoading = false
     }
 
     private func loadBackendFallbackBreakdown() async {
         guard let settlementAPIService else {
-            breakdownItems = []
-            totalCommission = 0
+            self.breakdownItems = []
+            self.totalCommission = 0
             return
         }
 
         do {
-            let settlement = try await settlementAPIService.fetchTradeSettlement(tradeId: tradeId)
+            let settlement = try await settlementAPIService.fetchTradeSettlement(tradeId: self.tradeId)
             let grouped = Dictionary(grouping: settlement.commissions) { $0.investmentId ?? $0.objectId }
-            let allInvestments = investmentService.investments
+            let allInvestments = self.investmentService.investments
             var items: [CommissionBreakdownItem] = []
             var total: Double = 0
 
             for (key, rows) in grouped {
                 let commission = rows.compactMap { $0.commissionAmount }.reduce(0, +)
                 guard commission > 0 else { continue }
-                let grossProfit = commissionRate > 0 ? (commission / commissionRate) : 0
+                let grossProfit = self.commissionRate > 0 ? (commission / self.commissionRate) : 0
                 let knownInvestment = allInvestments.first(where: { $0.id == key })
                 let investorName = knownInvestment?.investorName
-                    ?? displayNameFromInvestorId(rows.first?.investorId)
+                    ?? self.displayNameFromInvestorId(rows.first?.investorId)
                     ?? "Investor"
 
                 items.append(CommissionBreakdownItem(
@@ -186,13 +186,13 @@ final class CommissionBreakdownViewModel: ObservableObject {
                 total += commission
             }
 
-            breakdownItems = items.sorted { $0.investorName < $1.investorName }
-            totalCommission = total
+            self.breakdownItems = items.sorted { $0.investorName < $1.investorName }
+            self.totalCommission = total
         } catch {
-            breakdownItems = []
-            totalCommission = 0
-            errorMessage = "Investor-Aufschlüsselung konnte nicht geladen werden."
-            showError = true
+            self.breakdownItems = []
+            self.totalCommission = 0
+            self.errorMessage = "Investor-Aufschlüsselung konnte nicht geladen werden."
+            self.showError = true
         }
     }
 

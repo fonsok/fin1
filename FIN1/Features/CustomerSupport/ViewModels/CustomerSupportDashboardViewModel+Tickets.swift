@@ -73,7 +73,7 @@ extension CustomerSupportDashboardViewModel {
         do {
             try await supportService.respondToTicket(ticketId: ticketId, response: message, isInternal: isInternal)
             showSuccessMessage(isInternal ? "Interne Notiz hinzugefügt." : "Antwort gesendet.")
-            closeRespondTicketSheet()
+            self.closeRespondTicketSheet()
             await load()
         } catch {
             handleError(error)
@@ -103,7 +103,7 @@ extension CustomerSupportDashboardViewModel {
         do {
             try await supportService.escalateTicket(ticketId: ticketId, reason: reason)
             showSuccessMessage("Ticket wurde eskaliert.")
-            closeEscalateTicketSheet()
+            self.closeEscalateTicketSheet()
             await load()
         } catch {
             handleError(error)

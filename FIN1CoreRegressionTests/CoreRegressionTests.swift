@@ -1,7 +1,7 @@
-import XCTest
 import Combine
-import UIKit
 @testable import FIN1
+import UIKit
+import XCTest
 
 /// Core regression coverage for high-value investor flows.
 /// Mirrors current AppServices-style DI so we can grow a modern suite.
@@ -137,7 +137,12 @@ final class CoreRegressionTests: XCTestCase {
             return XCTFail("Expected updated investment")
         }
 
-        XCTAssertEqual(updatedInvestment.performance, 109.24, accuracy: 1.0, "Return should align with Collection Bill gross percentage (~108–110%)")
+        XCTAssertEqual(
+            updatedInvestment.performance,
+            109.24,
+            accuracy: 1.0,
+            "Return should align with Collection Bill gross percentage (~108–110%)"
+        )
     }
 }
 
@@ -165,7 +170,7 @@ private final class StubConfigurationService: ObservableObject, ConfigurationSer
 
     func updateMinimumCashReserve(_ value: Double) async throws {}
     func updateMinimumCashReserve(_ value: Double, for userId: String) async throws {}
-    func getMinimumCashReserve(for userId: String) -> Double { minimumCashReserve }
+    func getMinimumCashReserve(for userId: String) -> Double { self.minimumCashReserve }
     func updateInitialAccountBalance(_ value: Double) async throws {}
     func updatePoolBalanceDistributionStrategy(_ strategy: PoolBalanceDistributionStrategy) async throws {}
     func updatePoolBalanceDistributionThreshold(_ threshold: Double) async throws {}
@@ -195,19 +200,28 @@ private final class MockPoolTradeParticipationService: ObservableObject, PoolTra
         self.participations = participations
     }
 
-    func recordPoolParticipation(tradeId: String, investmentId: String, poolReservationId: String, poolNumber: Int, allocatedAmount: Double, totalTradeValue: Double) async { }
-    func getParticipations(forTradeId tradeId: String) -> [PoolTradeParticipation] { participations.filter { $0.tradeId == tradeId } }
-    func getParticipations(forInvestmentId investmentId: String) -> [PoolTradeParticipation] { participations.filter { $0.investmentId == investmentId } }
-    func getParticipations(forPoolReservationId poolReservationId: String) -> [PoolTradeParticipation] { participations.filter { $0.poolReservationId == poolReservationId } }
+    func recordPoolParticipation(
+        tradeId: String,
+        investmentId: String,
+        poolReservationId: String,
+        poolNumber: Int,
+        allocatedAmount: Double,
+        totalTradeValue: Double
+    ) async { }
+    func getParticipations(forTradeId tradeId: String) -> [PoolTradeParticipation] { self.participations.filter { $0.tradeId == tradeId } }
+    func getParticipations(forInvestmentId investmentId: String) -> [PoolTradeParticipation] { self.participations.filter { $0.investmentId == investmentId } }
+    func getParticipations(forPoolReservationId poolReservationId: String) -> [PoolTradeParticipation] { self.participations.filter { $0.poolReservationId == poolReservationId } }
     func distributeTradeProfit(tradeId: String, totalProfit: Double) async -> Double { 0 }
     func getAccumulatedProfit(for investmentId: String) -> Double {
-        getParticipations(forInvestmentId: investmentId).compactMap { $0.profitShare }.reduce(0, +)
+        self.getParticipations(forInvestmentId: investmentId).compactMap { $0.profitShare }.reduce(0, +)
     }
 
     func getAccumulatedProfit(forPoolReservationId poolReservationId: String) -> Double {
-        getParticipations(forPoolReservationId: poolReservationId).compactMap { $0.profitShare }.reduce(0, +)
+        self.getParticipations(forPoolReservationId: poolReservationId).compactMap { $0.profitShare }.reduce(0, +)
     }
-    func getAccumulatedProfit(forInvestmentReservationId investmentReservationId: String) -> Double { getAccumulatedProfit(forPoolReservationId: investmentReservationId) }
+    func getAccumulatedProfit(forInvestmentReservationId investmentReservationId: String) -> Double { self.getAccumulatedProfit(
+        forPoolReservationId: investmentReservationId
+    ) }
 }
 
 private final class MockTradeLifecycleService: ObservableObject, TradeLifecycleServiceProtocol, @unchecked Sendable {
@@ -220,7 +234,7 @@ private final class MockTradeLifecycleService: ObservableObject, TradeLifecycleS
     }
 
     var completedTradesPublisher: AnyPublisher<[Trade], Never> {
-        Just(completedTrades).eraseToAnyPublisher()
+        Just(self.completedTrades).eraseToAnyPublisher()
     }
 
     func createNewTrade(buyOrder: OrderBuy) async throws -> Trade { fatalError("Not implemented") }
@@ -252,10 +266,10 @@ private final class MockInvoiceService: ObservableObject, InvoiceServiceProtocol
     func generatePDF(for invoice: Invoice) async throws -> Data { Data() }
     func generatePDFPreview(for invoice: Invoice) async throws -> UIImage { UIImage() }
     func savePDFToDocuments(_ pdfData: Data, fileName: String) async throws -> URL { FileManager.default.temporaryDirectory }
-    func getInvoices(for userId: String) -> [Invoice] { invoices }
-    func getInvoicesByType(_ type: InvoiceType, for userId: String) -> [Invoice] { invoices }
-    func getInvoice(by id: String) -> Invoice? { invoices.first { $0.id == id } }
-    func getInvoicesForTrade(_ tradeId: String) -> [Invoice] { invoices.filter { $0.tradeId == tradeId } }
+    func getInvoices(for userId: String) -> [Invoice] { self.invoices }
+    func getInvoicesByType(_ type: InvoiceType, for userId: String) -> [Invoice] { self.invoices }
+    func getInvoice(by id: String) -> Invoice? { self.invoices.first { $0.id == id } }
+    func getInvoicesForTrade(_ tradeId: String) -> [Invoice] { self.invoices.filter { $0.tradeId == tradeId } }
     func getServiceChargeInvoiceForBatch(_ batchId: String, userId: String) -> Invoice? { nil }
     func invoice(matching document: Document) -> Invoice? {
         if let embedded = document.invoiceData { return embedded }
@@ -265,7 +279,7 @@ private final class MockInvoiceService: ObservableObject, InvoiceServiceProtocol
             return hit
         }
         if let tradeId = document.tradeId {
-            return invoices.first(where: { $0.tradeId == tradeId })
+            return self.invoices.first(where: { $0.tradeId == tradeId })
         }
         return nil
     }
@@ -314,10 +328,10 @@ private func makeTrade(id: String, buyQuantity: Double, buyPrice: Double, sellPr
         price: buyPrice,
         totalAmount: buyQuantity * buyPrice,
         status: .completed,
-        createdAt: now.addingTimeInterval(-3600),
+        createdAt: now.addingTimeInterval(-3_600),
         executedAt: nil,
         confirmedAt: nil,
-        updatedAt: now.addingTimeInterval(-3500),
+        updatedAt: now.addingTimeInterval(-3_500),
         optionDirection: nil,
         underlyingAsset: nil,
         wkn: nil,
@@ -336,10 +350,10 @@ private func makeTrade(id: String, buyQuantity: Double, buyPrice: Double, sellPr
         price: sellPrice,
         totalAmount: buyQuantity * sellPrice,
         status: .confirmed,
-        createdAt: now.addingTimeInterval(-3400),
+        createdAt: now.addingTimeInterval(-3_400),
         executedAt: nil,
         confirmedAt: nil,
-        updatedAt: now.addingTimeInterval(-3300),
+        updatedAt: now.addingTimeInterval(-3_300),
         optionDirection: nil,
         underlyingAsset: nil,
         wkn: nil,
@@ -360,8 +374,8 @@ private func makeTrade(id: String, buyQuantity: Double, buyPrice: Double, sellPr
         sellOrder: nil,
         sellOrders: [sellOrder],
         status: .completed,
-        createdAt: now.addingTimeInterval(-4000),
-        completedAt: now.addingTimeInterval(-1000),
+        createdAt: now.addingTimeInterval(-4_000),
+        completedAt: now.addingTimeInterval(-1_000),
         updatedAt: now.addingTimeInterval(-900),
         calculatedProfit: (sellPrice - buyPrice) * buyQuantity
     )

@@ -16,8 +16,8 @@ struct RiskClass7ConfirmationStep: View {
     }
 
     private var combinedWarningText: String {
-        let experienced = experiencedOnlyText.isEmpty ? defaultExperiencedOnlyText : experiencedOnlyText
-        let maxLoss = maxLossWarningText.isEmpty ? defaultMaxLossWarningText : maxLossWarningText
+        let experienced = self.experiencedOnlyText.isEmpty ? self.defaultExperiencedOnlyText : self.experiencedOnlyText
+        let maxLoss = self.maxLossWarningText.isEmpty ? self.defaultMaxLossWarningText : self.maxLossWarningText
         return "Sie haben Risikoklasse 7 ausgewählt. \(experienced) \(maxLoss)"
     }
 
@@ -39,16 +39,16 @@ struct RiskClass7ConfirmationStep: View {
                         .foregroundColor(AppTheme.accentOrange)
                         .font(ResponsiveDesign.titleFont())
 
-                        VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
-                            Text("Hochrisiko-Warnung")
-                                .font(ResponsiveDesign.headlineFont())
-                                .foregroundColor(AppTheme.fontColor)
+                    VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
+                        Text("Hochrisiko-Warnung")
+                            .font(ResponsiveDesign.headlineFont())
+                            .foregroundColor(AppTheme.fontColor)
 
-                            Text(combinedWarningText)
-                                .font(ResponsiveDesign.bodyFont())
-                                .foregroundColor(AppTheme.fontColor.opacity(0.8))
-                                .multilineTextAlignment(.leading)
-                        }
+                        Text(self.combinedWarningText)
+                            .font(ResponsiveDesign.bodyFont())
+                            .foregroundColor(AppTheme.fontColor.opacity(0.8))
+                            .multilineTextAlignment(.leading)
+                    }
 
                     Spacer()
                 }
@@ -118,7 +118,7 @@ struct RiskClass7ConfirmationStep: View {
             // Complete Registration button
             VStack(spacing: ResponsiveDesign.spacing(16)) {
                 Button("Complete Registration") {
-                    coordinator.presentWelcomePage()
+                    self.coordinator.presentWelcomePage()
                 }
                 .font(ResponsiveDesign.headlineFont())
                 .foregroundColor(AppTheme.fontColor)
@@ -136,19 +136,19 @@ struct RiskClass7ConfirmationStep: View {
                 for: .riskClass7MaxLossWarning,
                 language: language,
                 documentType: .terms,
-                defaultText: defaultMaxLossWarningText,
+                defaultText: self.defaultMaxLossWarningText,
                 placeholders: [:]
             )
             async let experiencedTask = provider.text(
                 for: .riskClass7ExperiencedOnly,
                 language: language,
                 documentType: .terms,
-                defaultText: defaultExperiencedOnlyText,
+                defaultText: self.defaultExperiencedOnlyText,
                 placeholders: [:]
             )
             let (maxLoss, experienced) = await (maxLossTask, experiencedTask)
-            maxLossWarningText = maxLoss
-            experiencedOnlyText = experienced
+            self.maxLossWarningText = maxLoss
+            self.experiencedOnlyText = experienced
         }
     }
 }

@@ -19,13 +19,13 @@ struct AddressChangeRequestView: View {
 
                 ScrollView {
                     VStack(spacing: ResponsiveDesign.spacing(20)) {
-                        complianceHeader
-                        currentAddressSection
-                        newAddressSection
-                        documentSection
-                        declarationSection
-                        errorSection
-                        submitSection
+                        self.complianceHeader
+                        self.currentAddressSection
+                        self.newAddressSection
+                        self.documentSection
+                        self.declarationSection
+                        self.errorSection
+                        self.submitSection
                     }
                     .padding(.horizontal, ResponsiveDesign.spacing(16))
                     .padding(.vertical, ResponsiveDesign.spacing(20))
@@ -35,17 +35,17 @@ struct AddressChangeRequestView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") { dismiss() }
+                    Button("Cancel") { self.dismiss() }
                         .foregroundColor(AppTheme.fontColor)
                 }
             }
-            .alert("Request Submitted", isPresented: $viewModel.showSuccessAlert) {
-                Button("OK") { dismiss() }
+            .alert("Request Submitted", isPresented: self.$viewModel.showSuccessAlert) {
+                Button("OK") { self.dismiss() }
             } message: {
                 Text("Your address change request has been submitted for compliance review.")
             }
         }
-        .onAppear { viewModel.configure(with: appServices) }
+        .onAppear { self.viewModel.configure(with: self.appServices) }
     }
 
     // MARK: - Compliance Header
@@ -65,11 +65,11 @@ struct AddressChangeRequestView: View {
             KYCSectionHeader(title: "Current Address", badge: "Verified", badgeColor: AppTheme.accentGreen)
 
             AddressDisplayCard(
-                streetAndNumber: viewModel.currentStreetAndNumber,
-                postalCode: viewModel.currentPostalCode,
-                city: viewModel.currentCity,
-                state: viewModel.currentState,
-                country: viewModel.currentCountry
+                streetAndNumber: self.viewModel.currentStreetAndNumber,
+                postalCode: self.viewModel.currentPostalCode,
+                city: self.viewModel.currentCity,
+                state: self.viewModel.currentState,
+                country: self.viewModel.currentCountry
             )
         }
     }
@@ -85,7 +85,7 @@ struct AddressChangeRequestView: View {
                     label: "Street and Number",
                     placeholder: "Enter street and number",
                     icon: "mappin.circle.fill",
-                    text: $viewModel.newStreetAndNumber
+                    text: self.$viewModel.newStreetAndNumber
                 )
 
                 HStack(spacing: ResponsiveDesign.spacing(12)) {
@@ -93,14 +93,14 @@ struct AddressChangeRequestView: View {
                         label: "Postal Code",
                         placeholder: "Enter postal code",
                         icon: "number",
-                        text: $viewModel.newPostalCode,
+                        text: self.$viewModel.newPostalCode,
                         maxLength: 10
                     )
                     LabeledInputField(
                         label: "City",
                         placeholder: "Enter city",
                         icon: "building.2.fill",
-                        text: $viewModel.newCity
+                        text: self.$viewModel.newCity
                     )
                 }
 
@@ -108,14 +108,14 @@ struct AddressChangeRequestView: View {
                     label: "State/Province",
                     placeholder: "Enter state or province",
                     icon: "map.fill",
-                    text: $viewModel.newState
+                    text: self.$viewModel.newState
                 )
 
                 LabeledInputField(
                     label: "Country",
                     placeholder: "Enter country",
                     icon: "globe",
-                    text: $viewModel.newCountry
+                    text: self.$viewModel.newCountry
                 )
             }
         }
@@ -127,8 +127,8 @@ struct AddressChangeRequestView: View {
         KYCDocumentUploadSection(
             title: "Proof of Address",
             documentTypes: AddressVerificationDocumentType.allCases,
-            selectedType: $viewModel.selectedDocumentType,
-            selectedImage: $viewModel.selectedDocument,
+            selectedType: self.$viewModel.selectedDocumentType,
+            selectedImage: self.$viewModel.selectedDocument,
             documentTypeName: { $0.displayName },
             documentTypeDescription: { $0.description },
             documentTypeIcon: { $0.icon }
@@ -142,7 +142,7 @@ struct AddressChangeRequestView: View {
             KYCSectionHeader(title: "Declaration")
 
             KYCDeclarationCheckbox(
-                isChecked: $viewModel.userDeclaration,
+                isChecked: self.$viewModel.userDeclaration,
                 text: "I declare that the information provided is true and accurate. I understand that providing false information may result in account suspension and legal action."
             )
         }
@@ -162,9 +162,9 @@ struct AddressChangeRequestView: View {
     private var submitSection: some View {
         KYCSubmitButton(
             title: "Submit Address Change Request",
-            isEnabled: viewModel.isFormValid,
-            isLoading: viewModel.isLoading,
-            action: { Task { await viewModel.submitRequest() } }
+            isEnabled: self.viewModel.isFormValid,
+            isLoading: self.viewModel.isLoading,
+            action: { Task { await self.viewModel.submitRequest() } }
         )
     }
 }
@@ -180,10 +180,10 @@ private struct AddressDisplayCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(6)) {
-            Text(streetAndNumber)
-            Text("\(postalCode) \(city)")
-            if !state.isEmpty { Text(state) }
-            Text(country)
+            Text(self.streetAndNumber)
+            Text("\(self.postalCode) \(self.city)")
+            if !self.state.isEmpty { Text(self.state) }
+            Text(self.country)
         }
         .font(ResponsiveDesign.bodyFont())
         .foregroundColor(AppTheme.fontColor.opacity(0.9))

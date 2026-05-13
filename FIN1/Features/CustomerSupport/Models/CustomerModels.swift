@@ -75,9 +75,9 @@ struct CustomerProfile: Identifiable, Codable {
 
     var fullName: String {
         if let title = academicTitle, !title.isEmpty {
-            return "\(title) \(firstName) \(lastName)"
+            return "\(title) \(self.firstName) \(self.lastName)"
         }
-        return "\(firstName) \(lastName)"
+        return "\(self.firstName) \(self.lastName)"
     }
 
     var formattedAddress: String? {

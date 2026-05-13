@@ -187,19 +187,19 @@ struct Document: Identifiable, Codable, Hashable {
     // MARK: - Computed Properties
 
     var title: String {
-        return name
+        return self.name
     }
 
     var description: String {
-        return "\(type.displayName) document uploaded on \(uploadedAt.formatted(date: .abbreviated, time: .omitted))"
+        return "\(self.type.displayName) document uploaded on \(self.uploadedAt.formatted(date: .abbreviated, time: .omitted))"
     }
 
     var timestamp: Date {
-        return uploadedAt
+        return self.uploadedAt
     }
 
     var fileSize: String {
-        return formattedSize
+        return self.formattedSize
     }
 
     var fileFormat: String {
@@ -208,14 +208,14 @@ struct Document: Identifiable, Codable, Hashable {
     }
 
     var icon: String {
-        return type.icon
+        return self.type.icon
     }
 
     var formattedSize: String {
         let formatter = ByteCountFormatter()
         formatter.allowedUnits = [.useKB, .useMB]
         formatter.countStyle = .file
-        return formatter.string(fromByteCount: size)
+        return formatter.string(fromByteCount: self.size)
     }
 
     var isExpired: Bool {
@@ -235,16 +235,16 @@ struct Document: Identifiable, Codable, Hashable {
     /// Gibt die Belegnummer zurück, falls vorhanden
     /// Für Buchhaltungsbelege (Invoices, Bills, Credit Notes) sollte dies immer gesetzt sein
     var accountingDocumentNumber: String? {
-        return documentNumber ?? invoiceData?.invoiceNumber
+        return self.documentNumber ?? self.invoiceData?.invoiceNumber
     }
 
     /// Prüft, ob das Dokument eine Belegnummer hat (erforderlich für Buchhaltungsbelege)
     var hasAccountingDocumentNumber: Bool {
-        return accountingDocumentNumber != nil
+        return self.accountingDocumentNumber != nil
     }
 
     /// Interner GoB-Eigenbeleg (Reservierung); nicht im Investor-Postfach „Dokumente“, sondern am App-Ledger zur Buchung.
     var isExcludedFromInvestorDocumentInbox: Bool {
-        type == .investmentReservationEigenbeleg
+        self.type == .investmentReservationEigenbeleg
     }
 }

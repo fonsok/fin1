@@ -13,49 +13,49 @@ struct AuthenticationView: View {
 
     var body: some View {
         Group {
-            if isAuthenticated {
+            if self.isAuthenticated {
                 ZStack {
-                    MainTabView(services: services)
+                    MainTabView(services: self.services)
                         .accessibilityIdentifier("MainTabView")
                         .onAppear {
                             print("🏠 MainTabView appeared - User is authenticated")
-                            checkTermsAcceptance()
+                            self.checkTermsAcceptance()
                         }
 
-                    if showTermsAcceptance {
+                    if self.showTermsAcceptance {
                         TermsAcceptanceModalView(
-                            termsAcceptanceService: services.termsAcceptanceService,
-                            userService: services.userService,
-                            parseAPIClient: services.parseAPIClient,
-                            termsContentService: services.termsContentService
+                            termsAcceptanceService: self.services.termsAcceptanceService,
+                            userService: self.services.userService,
+                            parseAPIClient: self.services.parseAPIClient,
+                            termsContentService: self.services.termsContentService
                         )
-                        .zIndex(1000)
+                        .zIndex(1_000)
                     }
                 }
-                .fullScreenCover(isPresented: $showOnboardingResume) {
+                .fullScreenCover(isPresented: self.$showOnboardingResume) {
                     SignUpView()
-                        .environment(\.appServices, services)
+                        .environment(\.appServices, self.services)
                 }
-                .fullScreenCover(isPresented: $showCompanyKybResume) {
+                .fullScreenCover(isPresented: self.$showCompanyKybResume) {
                     if let kybService = services.companyKybAPIService {
                         CompanyKybView(companyKybAPIService: kybService)
-                            .environment(\.appServices, services)
+                            .environment(\.appServices, self.services)
                     }
                 }
-                .fullScreenCover(isPresented: $showCompanyKybStatus) {
+                .fullScreenCover(isPresented: self.$showCompanyKybStatus) {
                     if let reviewStatus = companyKybReviewStatus {
                         CompanyKybStatusView(
                             status: reviewStatus,
-                            onDismiss: { showCompanyKybStatus = false },
+                            onDismiss: { self.showCompanyKybStatus = false },
                             onResubmit: {
-                                showCompanyKybStatus = false
-                                showCompanyKybResume = true
+                                self.showCompanyKybStatus = false
+                                self.showCompanyKybResume = true
                             }
                         )
                     }
                 }
             } else {
-                LandingView(userService: services.userService)
+                LandingView(userService: self.services.userService)
                     .accessibilityIdentifier("LandingView")
                     .onAppear {
                         print("🚪 LandingView appeared - User is not authenticated")
@@ -64,31 +64,31 @@ struct AuthenticationView: View {
         }
         .accessibilityIdentifier("AuthenticationView")
         .onAppear {
-            isAuthenticated = services.userService.isAuthenticated
-            if isAuthenticated {
-                checkTermsAcceptance()
-                checkOnboardingStatus()
+            self.isAuthenticated = self.services.userService.isAuthenticated
+            if self.isAuthenticated {
+                self.checkTermsAcceptance()
+                self.checkOnboardingStatus()
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .userDidSignIn)) { _ in
-            isAuthenticated = true
+            self.isAuthenticated = true
             print("🔍 AuthenticationView: User signed in")
-            checkTermsAcceptance()
-            checkOnboardingStatus()
+            self.checkTermsAcceptance()
+            self.checkOnboardingStatus()
         }
         .onReceive(NotificationCenter.default.publisher(for: .userDidSignOut)) { _ in
-            isAuthenticated = false
-            showTermsAcceptance = false
-            showOnboardingResume = false
-            showCompanyKybResume = false
-            showCompanyKybStatus = false
-            companyKybReviewStatus = nil
+            self.isAuthenticated = false
+            self.showTermsAcceptance = false
+            self.showOnboardingResume = false
+            self.showCompanyKybResume = false
+            self.showCompanyKybStatus = false
+            self.companyKybReviewStatus = nil
             print("🔍 AuthenticationView: User signed out")
         }
         .onReceive(NotificationCenter.default.publisher(for: .userDataDidUpdate)) { _ in
-            if isAuthenticated {
-                checkTermsAcceptance()
-                checkOnboardingStatus()
+            if self.isAuthenticated {
+                self.checkTermsAcceptance()
+                self.checkOnboardingStatus()
             }
         }
     }
@@ -97,9 +97,9 @@ struct AuthenticationView: View {
 
     private func checkOnboardingStatus() {
         guard let user = services.userService.currentUser else {
-            showOnboardingResume = false
-            showCompanyKybResume = false
-            showCompanyKybStatus = false
+            self.showOnboardingResume = false
+            self.showCompanyKybResume = false
+            self.showCompanyKybStatus = false
             return
         }
 
@@ -109,42 +109,42 @@ struct AuthenticationView: View {
 
             // Post-reset: status is 'draft' and completed is false -- re-enter wizard
             if kybStatus == "draft" && !user.companyKybCompleted {
-                showCompanyKybResume = true
-                showCompanyKybStatus = false
-                showOnboardingResume = false
+                self.showCompanyKybResume = true
+                self.showCompanyKybStatus = false
+                self.showOnboardingResume = false
                 return
             }
 
             if user.companyKybCompleted {
                 if let status = CompanyKybReviewStatus(from: kybStatus), status != .approved {
-                    companyKybReviewStatus = status
-                    showCompanyKybStatus = true
+                    self.companyKybReviewStatus = status
+                    self.showCompanyKybStatus = true
                 } else {
-                    showCompanyKybStatus = false
+                    self.showCompanyKybStatus = false
                 }
-                showCompanyKybResume = false
-                showOnboardingResume = false
+                self.showCompanyKybResume = false
+                self.showOnboardingResume = false
                 return
             }
 
             if user.companyKybStep != nil {
-                showCompanyKybResume = true
-                showCompanyKybStatus = false
-                showOnboardingResume = false
+                self.showCompanyKybResume = true
+                self.showCompanyKybStatus = false
+                self.showOnboardingResume = false
                 return
             }
         }
 
-        showCompanyKybResume = false
-        showCompanyKybStatus = false
-        showOnboardingResume = !user.onboardingCompleted && user.onboardingStep != nil
+        self.showCompanyKybResume = false
+        self.showCompanyKybStatus = false
+        self.showOnboardingResume = !user.onboardingCompleted && user.onboardingStep != nil
     }
 
     // MARK: - Private Methods
 
     private func checkTermsAcceptance() {
         guard let user = services.userService.currentUser else {
-            showTermsAcceptance = false
+            self.showTermsAcceptance = false
             return
         }
 
@@ -157,7 +157,7 @@ struct AuthenticationView: View {
             let needsPrivacy = (user.acceptedPrivacyPolicyVersion ?? "") != privacyVersion
 
             await MainActor.run {
-                showTermsAcceptance = needsTerms || needsPrivacy
+                self.showTermsAcceptance = needsTerms || needsPrivacy
             }
         }
     }

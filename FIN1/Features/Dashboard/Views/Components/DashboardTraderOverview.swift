@@ -36,7 +36,7 @@ struct DashboardTraderOverview: View {
             // Wrap in horizontal scroll to avoid width-driven clipping on smaller devices
             ScrollView(.horizontal, showsIndicators: false) {
                 DataTable.traderPerformanceTable(
-                    rows: viewModel.cachedRows,
+                    rows: self.viewModel.cachedRows,
                     showTraderColumn: true,
                     isInteractive: false
                 )
@@ -44,35 +44,35 @@ struct DashboardTraderOverview: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .sheet(item: $selectedTraderID) { traderIDItem in
-            TraderNavigationHelper.sheetView(for: traderIDItem.id, appServices: appServices)
+        .sheet(item: self.$selectedTraderID) { traderIDItem in
+            TraderNavigationHelper.sheetView(for: traderIDItem.id, appServices: self.appServices)
         }
         .onAppear {
             // Set up trader tap handler
-            viewModel.onTraderTap = { username in
+            self.viewModel.onTraderTap = { username in
                 if let traderID = viewModel.getTraderID(username: username) {
-                    selectedTraderID = TraderIDItem(id: traderID)
+                    self.selectedTraderID = TraderIDItem(id: traderID)
                 }
             }
         }
-        .onChange(of: appServices.traderDataService.traders.count) { _, _ in
-            viewModel.updateCachedData()
+        .onChange(of: self.appServices.traderDataService.traders.count) { _, _ in
+            self.viewModel.updateCachedData()
         }
-        .onChange(of: appServices.watchlistService.watchlist.count) { _, _ in
-            viewModel.updateCachedData()
+        .onChange(of: self.appServices.watchlistService.watchlist.count) { _, _ in
+            self.viewModel.updateCachedData()
         }
         .onReceive(NotificationCenter.default.publisher(for: .init("WatchlistUpdated"))) { _ in
-            viewModel.updateCachedData()
+            self.viewModel.updateCachedData()
         }
-        .onReceive(viewModel.$lastWatchlistError.dropFirst().receive(on: RunLoop.main)) { err in
+        .onReceive(self.viewModel.$lastWatchlistError.dropFirst().receive(on: RunLoop.main)) { err in
             guard let err else { return }
-            errorTitle = err
-            withAnimation(.spring(response: 0.35, dampingFraction: 0.9)) { showError = true }
+            self.errorTitle = err
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.9)) { self.showError = true }
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                withAnimation(.easeOut(duration: 0.25)) { showError = false }
+                withAnimation(.easeOut(duration: 0.25)) { self.showError = false }
             }
         }
-        .watchlistError(isShowing: showError, title: errorTitle)
+        .watchlistError(isShowing: self.showError, title: self.errorTitle)
     }
 }
 

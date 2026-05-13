@@ -9,8 +9,8 @@ private actor TransactionLimitMutableState {
     private let cacheTTL: TimeInterval = 300
 
     func reset() {
-        limits.removeAll()
-        transactionHistory.removeAll()
+        self.limits.removeAll()
+        self.transactionHistory.removeAll()
     }
 
     func validCachedLimit(for userId: String) -> TransactionLimit? {
@@ -20,32 +20,32 @@ private actor TransactionLimitMutableState {
     }
 
     func needsHistoryLoad(userId: String, useParseServer: Bool) -> Bool {
-        useParseServer && transactionHistory[userId] == nil
+        useParseServer && self.transactionHistory[userId] == nil
     }
 
     func setLimit(_ limit: TransactionLimit, for userId: String) {
-        limits[userId] = limit
+        self.limits[userId] = limit
     }
 
     func setLimitFromParse(_ limit: TransactionLimit, userId: String) {
-        limits[userId] = limit
+        self.limits[userId] = limit
     }
 
     func replaceTransactionHistory(_ history: [Date: Double], for userId: String) {
-        transactionHistory[userId] = history
+        self.transactionHistory[userId] = history
     }
 
     func recordLocalSpend(userId: String, dateKey: Date, amount: Double) {
-        if transactionHistory[userId] == nil {
-            transactionHistory[userId] = [:]
+        if self.transactionHistory[userId] == nil {
+            self.transactionHistory[userId] = [:]
         }
-        let prior = transactionHistory[userId]?[dateKey] ?? 0.0
-        transactionHistory[userId]?[dateKey] = prior + amount
-        limits.removeValue(forKey: userId)
+        let prior = self.transactionHistory[userId]?[dateKey] ?? 0.0
+        self.transactionHistory[userId]?[dateKey] = prior + amount
+        self.limits.removeValue(forKey: userId)
     }
 
     func allLimits() -> [String: TransactionLimit] {
-        limits
+        self.limits
     }
 
     func calculateSpentAmounts(userId: String) -> (daily: Double, weekly: Double, monthly: Double) {
@@ -92,7 +92,7 @@ final class TransactionLimitService: TransactionLimitServiceProtocol, @unchecked
     private let mutableState = TransactionLimitMutableState()
 
     private var useParseServer: Bool {
-        parseAPIClient != nil
+        self.parseAPIClient != nil
     }
 
     // MARK: - Initialization
@@ -109,20 +109,20 @@ final class TransactionLimitService: TransactionLimitServiceProtocol, @unchecked
     // MARK: - ServiceLifecycle
     func start() async {
         // Load limits from Parse Server if available
-        if useParseServer {
-            await loadLimitsFromParseServer()
+        if self.useParseServer {
+            await self.loadLimitsFromParseServer()
         }
     }
 
     func stop() async {
         // Save limits to Parse Server if available
-        if useParseServer {
-            await saveLimitsToParseServer()
+        if self.useParseServer {
+            await self.saveLimitsToParseServer()
         }
     }
 
     func reset() {
-        let state = mutableState
+        let state = self.mutableState
         Task { await state.reset() }
     }
 
@@ -185,16 +185,16 @@ final class TransactionLimitService: TransactionLimitServiceProtocol, @unchecked
             return cached
         }
 
-        let needsHistory = await mutableState.needsHistoryLoad(userId: userId, useParseServer: useParseServer)
+        let needsHistory = await mutableState.needsHistoryLoad(userId: userId, useParseServer: self.useParseServer)
         if needsHistory {
-            await loadTransactionHistoryFromParseServer(userId: userId)
+            await self.loadTransactionHistoryFromParseServer(userId: userId)
         }
 
         if let cached = await mutableState.validCachedLimit(for: userId) {
             return cached
         }
 
-        guard userService.currentUser != nil else {
+        guard self.userService.currentUser != nil else {
             throw AppError.service(.dataNotFound)
         }
 
@@ -217,9 +217,9 @@ final class TransactionLimitService: TransactionLimitServiceProtocol, @unchecked
             monthlySpent: spent.monthly
         )
 
-        await mutableState.setLimit(transactionLimit, for: userId)
+        await self.mutableState.setLimit(transactionLimit, for: userId)
 
-        if useParseServer, let client = parseAPIClient {
+        if self.useParseServer, let client = parseAPIClient {
             let limitsToSave = await mutableState.allLimits()
             await Self.persistLimitsSnapshot(limitsToSave, parseClient: client)
         }
@@ -232,7 +232,7 @@ final class TransactionLimitService: TransactionLimitServiceProtocol, @unchecked
         let calendar = Calendar.current
         let dateKey = calendar.startOfDay(for: now)
 
-        if useParseServer, let parseClient = parseAPIClient {
+        if self.useParseServer, let parseClient = parseAPIClient {
             do {
                 let parseHistory = ParseTransactionHistory(
                     userId: userId,
@@ -249,7 +249,7 @@ final class TransactionLimitService: TransactionLimitServiceProtocol, @unchecked
             }
         }
 
-        await mutableState.recordLocalSpend(userId: userId, dateKey: dateKey, amount: amount)
+        await self.mutableState.recordLocalSpend(userId: userId, dateKey: dateKey, amount: amount)
 
         if let auditService = auditLoggingService {
             let complianceEvent = ComplianceEvent(
@@ -283,7 +283,7 @@ final class TransactionLimitService: TransactionLimitServiceProtocol, @unchecked
             )
 
             if let parseLimit = parseLimits.first {
-                await mutableState.setLimitFromParse(parseLimit.toTransactionLimit(), userId: userId)
+                await self.mutableState.setLimitFromParse(parseLimit.toTransactionLimit(), userId: userId)
             }
         } catch {
             print("⚠️ Failed to load limits from Parse Server: \(error.localizedDescription)")
@@ -370,7 +370,7 @@ final class TransactionLimitService: TransactionLimitServiceProtocol, @unchecked
                 let currentAmount = history[dateKey] ?? 0.0
                 history[dateKey] = currentAmount + entry.amount
             }
-            await mutableState.replaceTransactionHistory(history, for: userId)
+            await self.mutableState.replaceTransactionHistory(history, for: userId)
         } catch {
             print("⚠️ Failed to load transaction history from Parse Server: \(error.localizedDescription)")
         }

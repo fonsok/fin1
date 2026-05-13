@@ -8,8 +8,8 @@ struct InvoiceItemRowView: View {
     var body: some View {
         HStack(alignment: .top, spacing: ResponsiveDesign.spacing(8)) {
             // Description - allow multiple lines for service charge and securities items
-            let allowMultiLine = (item.itemType == .serviceCharge || item.itemType == .securities)
-            Text(item.description)
+            let allowMultiLine = (item.itemType == .serviceCharge || self.item.itemType == .securities)
+            Text(self.item.description)
                 .font(ResponsiveDesign.captionFont())
                 .lineLimit(allowMultiLine ? nil : 1)
                 .truncationMode(allowMultiLine ? .tail : .middle)
@@ -17,17 +17,17 @@ struct InvoiceItemRowView: View {
                 .fixedSize(horizontal: false, vertical: true)
 
             // Only show Stück and Preis columns for securities items
-            if item.itemType == .securities {
-                Text(item.quantity.formattedAsLocalizedInteger())
+            if self.item.itemType == .securities {
+                Text(self.item.quantity.formattedAsLocalizedInteger())
                     .font(ResponsiveDesign.captionFont())
                     .frame(minWidth: 50, alignment: .trailing)
 
-                Text(item.unitPrice.formattedAsLocalizedCurrency())
+                Text(self.item.unitPrice.formattedAsLocalizedCurrency())
                     .font(ResponsiveDesign.captionFont())
                     .frame(minWidth: 60, alignment: .trailing)
             }
 
-            Text(item.totalAmount.formattedAsLocalizedCurrency())
+            Text(self.item.totalAmount.formattedAsLocalizedCurrency())
                 .font(ResponsiveDesign.captionFont())
                 .fontWeight(.medium)
                 .frame(minWidth: 80, alignment: .trailing)

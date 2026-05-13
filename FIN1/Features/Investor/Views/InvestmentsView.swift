@@ -14,17 +14,19 @@ struct InvestmentsView: View {
     @State private var partialSellSheetCollectionBills: [BackendCollectionBill] = []
     @State private var partialSellSheetServerLoading = false
 
-    init(userService: (any UserServiceProtocol)? = nil,
-         investmentService: (any InvestmentServiceProtocol)? = nil,
-         investorCashBalanceService: (any InvestorCashBalanceServiceProtocol)? = nil,
-         poolTradeParticipationService: (any PoolTradeParticipationServiceProtocol)? = nil,
-         documentService: (any DocumentServiceProtocol)? = nil,
-         invoiceService: (any InvoiceServiceProtocol)? = nil,
-         traderDataService: (any TraderDataServiceProtocol)? = nil,
-         tradeLifecycleService: (any TradeLifecycleServiceProtocol)? = nil,
-         configurationService: (any ConfigurationServiceProtocol)? = nil,
-         commissionCalculationService: (any CommissionCalculationServiceProtocol)? = nil,
-         settlementAPIService: (any SettlementAPIServiceProtocol)? = nil) {
+    init(
+        userService: (any UserServiceProtocol)? = nil,
+        investmentService: (any InvestmentServiceProtocol)? = nil,
+        investorCashBalanceService: (any InvestorCashBalanceServiceProtocol)? = nil,
+        poolTradeParticipationService: (any PoolTradeParticipationServiceProtocol)? = nil,
+        documentService: (any DocumentServiceProtocol)? = nil,
+        invoiceService: (any InvoiceServiceProtocol)? = nil,
+        traderDataService: (any TraderDataServiceProtocol)? = nil,
+        tradeLifecycleService: (any TradeLifecycleServiceProtocol)? = nil,
+        configurationService: (any ConfigurationServiceProtocol)? = nil,
+        commissionCalculationService: (any CommissionCalculationServiceProtocol)? = nil,
+        settlementAPIService: (any SettlementAPIServiceProtocol)? = nil
+    ) {
         guard let userSvc = userService, let invSvc = investmentService,
               let poolSvc = poolTradeParticipationService, let docSvc = documentService, let invSvc2 = invoiceService,
               let traderSvc = traderDataService, let tradeSvc = tradeLifecycleService,
@@ -54,31 +56,31 @@ struct InvestmentsView: View {
             ScrollView {
                 VStack(spacing: ResponsiveDesign.spacing(0)) {
                     // Header
-                    InvestmentsHeaderSectionView(currentUser: viewModel.currentUser)
+                    InvestmentsHeaderSectionView(currentUser: self.viewModel.currentUser)
 
                     // Separator
                     InvestmentsSectionSeparatorView()
 
                     // Reserved Investments Section
-                    reservedInvestmentsSection
+                    self.reservedInvestmentsSection
 
                     // Separator between sections
                     InvestmentsSectionSeparatorView()
 
                     // Active Investments Section
-                    activeInvestmentsSection
+                    self.activeInvestmentsSection
 
                     // Separator between sections
                     InvestmentsSectionSeparatorView()
 
                     // Active partial sell realizations
-                    partialSellRealizationsSection
+                    self.partialSellRealizationsSection
 
                     // Separator between sections
                     InvestmentsSectionSeparatorView()
 
                     // Completed Investments Section
-                    completedInvestmentsSection
+                    self.completedInvestmentsSection
                 }
             }
         }
@@ -86,14 +88,14 @@ struct InvestmentsView: View {
         .navigationTitle("Investments")
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button(action: { viewModel.showNewInvestmentSheet() }, label: {
+                Button(action: { self.viewModel.showNewInvestmentSheet() }, label: {
                     Image(systemName: "plus.circle.fill")
                         .foregroundColor(AppTheme.accentLightBlue)
                 })
                 .accessibilityIdentifier("NewInvestmentButton")
             }
         }
-        .sheet(isPresented: $viewModel.showNewInvestment) {
+        .sheet(isPresented: self.$viewModel.showNewInvestment) {
             // Placeholder for new investment creation
             // In a real app, this would navigate to trader selection or investment creation flow
             Text("New Investment")
@@ -101,42 +103,42 @@ struct InvestmentsView: View {
                 .foregroundColor(AppTheme.fontColor)
                 .padding()
         }
-        .sheet(item: $selectedCompletedInvestment) { investment in
+        .sheet(item: self.$selectedCompletedInvestment) { investment in
             CompletedInvestmentDetailSheet(investment: investment)
         }
-        .sheet(item: $selectedPartialSellInvestment) { investment in
-            partialSellDetailSheet(for: investment)
+        .sheet(item: self.$selectedPartialSellInvestment) { investment in
+            self.partialSellDetailSheet(for: investment)
                 .task(id: investment.id) {
-                    await refreshPartialSellSheetServerData(for: investment)
+                    await self.refreshPartialSellSheetServerData(for: investment)
                 }
                 .onDisappear {
-                    partialSellSheetMirrorSummary = nil
-                    partialSellSheetCollectionBills = []
+                    self.partialSellSheetMirrorSummary = nil
+                    self.partialSellSheetCollectionBills = []
                 }
         }
         .confirmationDialog(
             "Delete Investment",
-            isPresented: $showDeleteConfirmation,
+            isPresented: self.$showDeleteConfirmation,
             titleVisibility: .visible
         ) {
             if let investment = investmentToDelete {
                 Button("Delete", role: .destructive) {
                     Task {
                         do {
-                            try await viewModel.deleteInvestment(investment)
-                            investmentToDelete = nil
-                            showDeleteConfirmation = false
+                            try await self.viewModel.deleteInvestment(investment)
+                            self.investmentToDelete = nil
+                            self.showDeleteConfirmation = false
                         } catch {
                             let appError = error.toAppError()
-                            viewModel.showError(appError)
-                            investmentToDelete = nil
-                            showDeleteConfirmation = false
+                            self.viewModel.showError(appError)
+                            self.investmentToDelete = nil
+                            self.showDeleteConfirmation = false
                         }
                     }
                 }
                 Button("Cancel", role: .cancel) {
-                    investmentToDelete = nil
-                    showDeleteConfirmation = false
+                    self.investmentToDelete = nil
+                    self.showDeleteConfirmation = false
                 }
             }
         } message: {
@@ -144,14 +146,16 @@ struct InvestmentsView: View {
                 Text("Are you sure you want to delete Investment \(investment.sequenceNumber)? This action cannot be undone.")
             }
         }
-        .alert("Status Information", isPresented: $showStatusInfo) {
+        .alert("Status Information", isPresented: self.$showStatusInfo) {
             Button("OK", role: .cancel) { }
         } message: {
-            Text("Status meanings:\n• Reserved Investments: deletable rows are shown with a trash icon\n• Active Investments: rows are non-deletable and show status text (active/completed)")
+            Text(
+                "Status meanings:\n• Reserved Investments: deletable rows are shown with a trash icon\n• Active Investments: rows are non-deletable and show status text (active/completed)"
+            )
         }
         .task {
-            viewModel.reconfigure(with: appServices)
-            viewModel.loadInvestmentsData()
+            self.viewModel.reconfigure(with: self.appServices)
+            self.viewModel.loadInvestmentsData()
         }
     }
 
@@ -159,20 +163,20 @@ struct InvestmentsView: View {
 
     private var reservedInvestmentsSection: some View {
         InvestmentsReservedSectionView(
-            reservedInvestmentRows: viewModel.reservedInvestmentRows,
-            sortedTraderNames: viewModel.sortedReservedTraderNames,
-            groupedInvestments: viewModel.groupedReservedInvestments,
-            totalReservedAmount: viewModel.totalReservedAmount,
-            traderDataService: appServices.traderDataService,
-            columnWidths: $columnWidths,
+            reservedInvestmentRows: self.viewModel.reservedInvestmentRows,
+            sortedTraderNames: self.viewModel.sortedReservedTraderNames,
+            groupedInvestments: self.viewModel.groupedReservedInvestments,
+            totalReservedAmount: self.viewModel.totalReservedAmount,
+            traderDataService: self.appServices.traderDataService,
+            columnWidths: self.$columnWidths,
             onDeleteInvestment: { investment in
                 Task { @MainActor in
-                    investmentToDelete = investment
-                    showDeleteConfirmation = true
+                    self.investmentToDelete = investment
+                    self.showDeleteConfirmation = true
                 }
             },
             onShowStatusInfo: {
-                showStatusInfo = true
+                self.showStatusInfo = true
             }
         )
     }
@@ -181,19 +185,19 @@ struct InvestmentsView: View {
 
     private var activeInvestmentsSection: some View {
         InvestmentsActiveSectionView(
-            activeInvestmentRows: viewModel.activeInvestmentRows,
-            sortedTraderNames: viewModel.sortedActiveTraderNames,
-            groupedInvestments: viewModel.groupedActiveInvestments,
-            traderDataService: appServices.traderDataService,
-            columnWidths: $columnWidths,
+            activeInvestmentRows: self.viewModel.activeInvestmentRows,
+            sortedTraderNames: self.viewModel.sortedActiveTraderNames,
+            groupedInvestments: self.viewModel.groupedActiveInvestments,
+            traderDataService: self.appServices.traderDataService,
+            columnWidths: self.$columnWidths,
             onDeleteInvestment: { investment in
                 Task { @MainActor in
-                    investmentToDelete = investment
-                    showDeleteConfirmation = true
+                    self.investmentToDelete = investment
+                    self.showDeleteConfirmation = true
                 }
             },
             onShowStatusInfo: {
-                showStatusInfo = true
+                self.showStatusInfo = true
             }
         )
     }
@@ -202,19 +206,19 @@ struct InvestmentsView: View {
 
     private var completedInvestmentsSection: some View {
         InvestmentsCompletedSectionView(
-            selectedTimePeriod: $viewModel.selectedTimePeriod,
-            allCompletedCount: viewModel.completedInvestments.count,
-            completedInvestmentsByTimePeriod: viewModel.completedInvestmentsByTimePeriod,
-            completedInvestmentDocRefs: viewModel.completedInvestmentDocRefs,
-            completedTraderUsernames: viewModel.completedTraderUsernames,
-            completedTradeNumbers: viewModel.completedTradeNumbers,
-            completedInvestmentSummaries: viewModel.completedInvestmentSummaries,
-            completedCanonicalSummaries: viewModel.completedCanonicalSummaries,
+            selectedTimePeriod: self.$viewModel.selectedTimePeriod,
+            allCompletedCount: self.viewModel.completedInvestments.count,
+            completedInvestmentsByTimePeriod: self.viewModel.completedInvestmentsByTimePeriod,
+            completedInvestmentDocRefs: self.viewModel.completedInvestmentDocRefs,
+            completedTraderUsernames: self.viewModel.completedTraderUsernames,
+            completedTradeNumbers: self.viewModel.completedTradeNumbers,
+            completedInvestmentSummaries: self.viewModel.completedInvestmentSummaries,
+            completedCanonicalSummaries: self.viewModel.completedCanonicalSummaries,
             onTimePeriodChanged: { period in
-                viewModel.filterCompletedInvestments(by: period)
+                self.viewModel.filterCompletedInvestments(by: period)
             },
             onShowDetails: { investment in
-                selectedCompletedInvestment = investment
+                self.selectedCompletedInvestment = investment
             }
         )
     }
@@ -223,12 +227,12 @@ struct InvestmentsView: View {
 
     private var partialSellRealizationsSection: some View {
         InvestmentsPartialSellSectionView(
-            partialSellRows: viewModel.partialSellActiveInvestmentRows,
-            sortedTraderNames: viewModel.sortedPartialSellTraderNames,
-            groupedInvestments: viewModel.groupedPartialSellActiveInvestments,
-            traderDataService: appServices.traderDataService,
+            partialSellRows: self.viewModel.partialSellActiveInvestmentRows,
+            sortedTraderNames: self.viewModel.sortedPartialSellTraderNames,
+            groupedInvestments: self.viewModel.groupedPartialSellActiveInvestments,
+            traderDataService: self.appServices.traderDataService,
             onSelectInvestment: { investment in
-                selectedPartialSellInvestment = investment
+                self.selectedPartialSellInvestment = investment
             }
         )
     }
@@ -236,13 +240,13 @@ struct InvestmentsView: View {
     private func refreshPartialSellSheetServerData(for investment: Investment) async {
         guard let api = appServices.settlementAPIService else {
             await MainActor.run {
-                partialSellSheetServerLoading = false
-                partialSellSheetMirrorSummary = nil
-                partialSellSheetCollectionBills = []
+                self.partialSellSheetServerLoading = false
+                self.partialSellSheetMirrorSummary = nil
+                self.partialSellSheetCollectionBills = []
             }
             return
         }
-        await MainActor.run { partialSellSheetServerLoading = true }
+        await MainActor.run { self.partialSellSheetServerLoading = true }
         do {
             let response = try await api.fetchInvestorCollectionBills(
                 limit: 100,
@@ -252,15 +256,15 @@ struct InvestmentsView: View {
             )
             let summary = ServerCalculatedReturnResolver.canonicalSummary(fromCollectionBills: response.collectionBills)
             await MainActor.run {
-                partialSellSheetMirrorSummary = summary
-                partialSellSheetCollectionBills = response.collectionBills
-                partialSellSheetServerLoading = false
+                self.partialSellSheetMirrorSummary = summary
+                self.partialSellSheetCollectionBills = response.collectionBills
+                self.partialSellSheetServerLoading = false
             }
         } catch {
             await MainActor.run {
-                partialSellSheetMirrorSummary = nil
-                partialSellSheetCollectionBills = []
-                partialSellSheetServerLoading = false
+                self.partialSellSheetMirrorSummary = nil
+                self.partialSellSheetCollectionBills = []
+                self.partialSellSheetServerLoading = false
             }
         }
     }
@@ -269,11 +273,11 @@ struct InvestmentsView: View {
     private func partialSellDetailSheet(for investment: Investment) -> some View {
         InvestmentsPartialSellDetailSheetView(
             investment: investment,
-            appServices: appServices,
-            partialSellSheetMirrorSummary: partialSellSheetMirrorSummary,
-            partialSellSheetCollectionBills: partialSellSheetCollectionBills,
-            partialSellSheetServerLoading: partialSellSheetServerLoading,
-            onDone: { selectedPartialSellInvestment = nil }
+            appServices: self.appServices,
+            partialSellSheetMirrorSummary: self.partialSellSheetMirrorSummary,
+            partialSellSheetCollectionBills: self.partialSellSheetCollectionBills,
+            partialSellSheetServerLoading: self.partialSellSheetServerLoading,
+            onDone: { self.selectedPartialSellInvestment = nil }
         )
     }
 }

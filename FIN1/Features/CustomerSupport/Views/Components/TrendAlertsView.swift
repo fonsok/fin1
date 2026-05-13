@@ -13,17 +13,17 @@ struct TrendAlertsView: View {
 
     private var filteredTrends: [SupportTrend] {
         if let severity = selectedSeverity {
-            return trends.filter { $0.severity == severity }
+            return self.trends.filter { $0.severity == severity }
         }
-        return trends
+        return self.trends
     }
 
     var body: some View {
         NavigationStack {
             VStack(spacing: ResponsiveDesign.spacing(0)) {
-                headerSection
-                severityFilter
-                trendsList
+                self.headerSection
+                self.severityFilter
+                self.trendsList
             }
             .background(AppTheme.screenBackground.ignoresSafeArea())
             .navigationTitle("Trend-Analyse")
@@ -31,16 +31,16 @@ struct TrendAlertsView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button {
-                        Task { await detectTrends() }
+                        Task { await self.detectTrends() }
                     } label: {
                         Image(systemName: "arrow.clockwise")
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Schließen") { dismiss() }
+                    Button("Schließen") { self.dismiss() }
                 }
             }
-            .task { await detectTrends() }
+            .task { await self.detectTrends() }
         }
     }
 
@@ -48,9 +48,11 @@ struct TrendAlertsView: View {
 
     private var headerSection: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
-            Text("Erkennt automatisch Muster und Anomalien in Support-Tickets für proaktive Maßnahmen. Beispiel: Wenn die Anzahl von Login-Problemen innerhalb einer Woche um 50% steigt, wird ein Warn-Trend erkannt und Sie erhalten Handlungsempfehlungen.")
-                .font(ResponsiveDesign.captionFont())
-                .foregroundColor(AppTheme.fontColor.opacity(0.7))
+            Text(
+                "Erkennt automatisch Muster und Anomalien in Support-Tickets für proaktive Maßnahmen. Beispiel: Wenn die Anzahl von Login-Problemen innerhalb einer Woche um 50% steigt, wird ein Warn-Trend erkannt und Sie erhalten Handlungsempfehlungen."
+            )
+            .font(ResponsiveDesign.captionFont())
+            .foregroundColor(AppTheme.fontColor.opacity(0.7))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
@@ -64,38 +66,38 @@ struct TrendAlertsView: View {
             HStack(spacing: ResponsiveDesign.spacing(8)) {
                 SeverityFilterButton(
                     title: "Alle",
-                    count: trends.count,
-                    isSelected: selectedSeverity == nil,
+                    count: self.trends.count,
+                    isSelected: self.selectedSeverity == nil,
                     color: AppTheme.accentLightBlue
                 ) {
-                    selectedSeverity = nil
+                    self.selectedSeverity = nil
                 }
 
                 SeverityFilterButton(
                     title: "Kritisch",
-                    count: trends.filter { $0.severity == .critical }.count,
-                    isSelected: selectedSeverity == .critical,
+                    count: self.trends.filter { $0.severity == .critical }.count,
+                    isSelected: self.selectedSeverity == .critical,
                     color: AppTheme.accentRed
                 ) {
-                    selectedSeverity = .critical
+                    self.selectedSeverity = .critical
                 }
 
                 SeverityFilterButton(
                     title: "Warnung",
-                    count: trends.filter { $0.severity == .warning }.count,
-                    isSelected: selectedSeverity == .warning,
+                    count: self.trends.filter { $0.severity == .warning }.count,
+                    isSelected: self.selectedSeverity == .warning,
                     color: AppTheme.accentOrange
                 ) {
-                    selectedSeverity = .warning
+                    self.selectedSeverity = .warning
                 }
 
                 SeverityFilterButton(
                     title: "Info",
-                    count: trends.filter { $0.severity == .info }.count,
-                    isSelected: selectedSeverity == .info,
+                    count: self.trends.filter { $0.severity == .info }.count,
+                    isSelected: self.selectedSeverity == .info,
                     color: AppTheme.accentLightBlue
                 ) {
-                    selectedSeverity = .info
+                    self.selectedSeverity = .info
                 }
             }
             .padding()
@@ -107,14 +109,14 @@ struct TrendAlertsView: View {
 
     private var trendsList: some View {
         Group {
-            if isLoading {
-                loadingView
-            } else if filteredTrends.isEmpty {
-                emptyView
+            if self.isLoading {
+                self.loadingView
+            } else if self.filteredTrends.isEmpty {
+                self.emptyView
             } else {
                 ScrollView {
                     LazyVStack(spacing: ResponsiveDesign.spacing(12)) {
-                        ForEach(filteredTrends) { trend in
+                        ForEach(self.filteredTrends) { trend in
                             TrendCard(trend: trend)
                         }
                     }
@@ -156,7 +158,7 @@ struct TrendAlertsView: View {
     // MARK: - Actions
 
     private func detectTrends() async {
-        isLoading = true
+        self.isLoading = true
         defer { isLoading = false }
 
         let trendService = TrendDetectionService()
@@ -171,14 +173,14 @@ struct TrendAlertsView: View {
             let currentPeriod = allTickets.filter { $0.createdAt >= weekAgo }
             let previousPeriod = allTickets.filter { $0.createdAt >= twoWeeksAgo && $0.createdAt < weekAgo }
 
-            trends = trendService.detectTrends(
+            self.trends = trendService.detectTrends(
                 currentPeriodTickets: currentPeriod,
                 previousPeriodTickets: previousPeriod,
                 surveys: []
             )
             .sorted { $0.severity == .critical && $1.severity != .critical }
         } catch {
-            viewModel.handleError(error)
+            self.viewModel.handleError(error)
         }
     }
 }
@@ -193,27 +195,27 @@ private struct SeverityFilterButton: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
+        Button(action: self.action) {
             HStack(spacing: ResponsiveDesign.spacing(6)) {
-                Text(title)
+                Text(self.title)
                     .font(ResponsiveDesign.captionFont())
-                    .fontWeight(isSelected ? .bold : .regular)
+                    .fontWeight(self.isSelected ? .bold : .regular)
 
-                if count > 0 {
-                    Text("\(count)")
+                if self.count > 0 {
+                    Text("\(self.count)")
                         .font(ResponsiveDesign.captionFont())
                         .fontWeight(.bold)
-                        .foregroundColor(isSelected ? color : .white)
+                        .foregroundColor(self.isSelected ? self.color : .white)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
-                        .background(isSelected ? Color.white : color)
+                        .background(self.isSelected ? Color.white : self.color)
                         .cornerRadius(ResponsiveDesign.spacing(8))
                 }
             }
-            .foregroundColor(isSelected ? .white : AppTheme.fontColor)
+            .foregroundColor(self.isSelected ? .white : AppTheme.fontColor)
             .padding(.horizontal, ResponsiveDesign.spacing(14))
             .padding(.vertical, ResponsiveDesign.spacing(8))
-            .background(isSelected ? color : AppTheme.screenBackground)
+            .background(self.isSelected ? self.color : AppTheme.screenBackground)
             .cornerRadius(ResponsiveDesign.spacing(20))
         }
     }
@@ -228,16 +230,16 @@ private struct TrendCard: View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
             // Header
             HStack {
-                Image(systemName: trend.type.icon)
+                Image(systemName: self.trend.type.icon)
                     .font(ResponsiveDesign.headlineFont())
-                    .foregroundColor(severityColor)
+                    .foregroundColor(self.severityColor)
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(trend.type.displayName)
+                    Text(self.trend.type.displayName)
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(AppTheme.fontColor.opacity(0.7))
 
-                    Text(trend.title)
+                    Text(self.trend.title)
                         .font(ResponsiveDesign.bodyFont())
                         .fontWeight(.semibold)
                         .foregroundColor(AppTheme.fontColor)
@@ -245,23 +247,23 @@ private struct TrendCard: View {
 
                 Spacer()
 
-                SeverityBadge(severity: trend.severity)
+                SeverityBadge(severity: self.trend.severity)
             }
 
             // Description
-            Text(trend.description)
+            Text(self.trend.description)
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.8))
 
             // Stats
             HStack(spacing: ResponsiveDesign.spacing(16)) {
-                TrendStatItem(icon: "ticket.fill", value: "\(trend.ticketCount)", label: "Tickets")
-                TrendStatItem(icon: "person.2.fill", value: "\(trend.affectedCustomers)", label: "Kunden")
+                TrendStatItem(icon: "ticket.fill", value: "\(self.trend.ticketCount)", label: "Tickets")
+                TrendStatItem(icon: "person.2.fill", value: "\(self.trend.affectedCustomers)", label: "Kunden")
 
-                if trend.percentageChange != 0 {
+                if self.trend.percentageChange != 0 {
                     TrendStatItem(
-                        icon: trend.percentageChange > 0 ? "arrow.up" : "arrow.down",
-                        value: String(format: "%.0f%%", abs(trend.percentageChange)),
+                        icon: self.trend.percentageChange > 0 ? "arrow.up" : "arrow.down",
+                        value: String(format: "%.0f%%", abs(self.trend.percentageChange)),
                         label: "Änderung"
                     )
                 }
@@ -273,7 +275,7 @@ private struct TrendCard: View {
                     .foregroundColor(AppTheme.accentOrange)
                     .font(ResponsiveDesign.captionFont())
 
-                Text(trend.suggestedAction)
+                Text(self.trend.suggestedAction)
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
             }
@@ -286,12 +288,12 @@ private struct TrendCard: View {
         .cornerRadius(ResponsiveDesign.spacing(12))
         .overlay(
             RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(12))
-                .stroke(severityColor.opacity(0.3), lineWidth: 1)
+                .stroke(self.severityColor.opacity(0.3), lineWidth: 1)
         )
     }
 
     private var severityColor: Color {
-        switch trend.severity {
+        switch self.trend.severity {
         case .critical: return AppTheme.accentRed
         case .warning: return AppTheme.accentOrange
         case .info: return AppTheme.accentLightBlue
@@ -305,18 +307,18 @@ private struct SeverityBadge: View {
     let severity: SupportTrend.TrendSeverity
 
     var body: some View {
-        Text(severity.rawValue)
+        Text(self.severity.rawValue)
             .font(ResponsiveDesign.captionFont())
             .fontWeight(.semibold)
             .foregroundColor(.white)
             .padding(.horizontal, ResponsiveDesign.spacing(8))
             .padding(.vertical, ResponsiveDesign.spacing(4))
-            .background(severityColor)
+            .background(self.severityColor)
             .cornerRadius(ResponsiveDesign.spacing(6))
     }
 
     private var severityColor: Color {
-        switch severity {
+        switch self.severity {
         case .critical: return AppTheme.accentRed
         case .warning: return AppTheme.accentOrange
         case .info: return AppTheme.accentLightBlue
@@ -334,15 +336,15 @@ private struct TrendStatItem: View {
     var body: some View {
         VStack(spacing: ResponsiveDesign.spacing(2)) {
             HStack(spacing: ResponsiveDesign.spacing(4)) {
-                Image(systemName: icon)
+                Image(systemName: self.icon)
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.6))
-                Text(value)
+                Text(self.value)
                     .font(ResponsiveDesign.captionFont())
                     .fontWeight(.semibold)
                     .foregroundColor(AppTheme.fontColor)
             }
-            Text(label)
+            Text(self.label)
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.5))
         }

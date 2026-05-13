@@ -14,7 +14,7 @@ struct AdminAppSettingsView: View {
 
     // Use AppTheme for reactive theme updates
     private var currentColors: ThemeManager.ThemeColors {
-        themeManager.colors
+        self.themeManager.colors
     }
     @State private var selectedTargetGroup: ThemeManager.TargetGroup
 
@@ -28,22 +28,22 @@ struct AdminAppSettingsView: View {
             ScrollView {
                 VStack(spacing: ResponsiveDesign.spacing(20)) {
                     // Target Group Selection
-                    targetGroupSection
+                    self.targetGroupSection
 
                     // Theme Preview
-                    themePreviewSection
+                    self.themePreviewSection
 
                     // Current Configuration Summary
-                    configurationSummarySection
+                    self.configurationSummarySection
 
                     // Apply Changes Button
-                    applyChangesSection
+                    self.applyChangesSection
 
                     Spacer(minLength: ResponsiveDesign.spacing(20))
                 }
                 .padding()
                 .onAppear {
-                    selectedTargetGroup = themeManager.currentTargetGroup
+                    self.selectedTargetGroup = self.themeManager.currentTargetGroup
                 }
             }
             .background(AppTheme.screenBackground.ignoresSafeArea())
@@ -52,7 +52,7 @@ struct AdminAppSettingsView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") {
-                        dismiss()
+                        self.dismiss()
                     }
                     .foregroundColor(AppTheme.accentLightBlue)
                 }
@@ -63,10 +63,10 @@ struct AdminAppSettingsView: View {
     // MARK: - Target Group Section
     private var targetGroupSection: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
-                Text("Target Group")
-                    .font(ResponsiveDesign.headlineFont())
-                    .fontWeight(.semibold)
-                    .foregroundColor(AppTheme.primaryText)
+            Text("Target Group")
+                .font(ResponsiveDesign.headlineFont())
+                .fontWeight(.semibold)
+                .foregroundColor(AppTheme.primaryText)
 
             Text("Select the target group to customize the app's appearance and behavior for different user segments.")
                 .font(ResponsiveDesign.captionFont())
@@ -77,9 +77,9 @@ struct AdminAppSettingsView: View {
                 ForEach(ThemeManager.TargetGroup.allCases, id: \.self) { group in
                     TargetGroupRow(
                         group: group,
-                        isSelected: selectedTargetGroup == group,
-                        isCurrent: themeManager.currentTargetGroup == group,
-                        onSelect: { selectedTargetGroup = group }
+                        isSelected: self.selectedTargetGroup == group,
+                        isCurrent: self.themeManager.currentTargetGroup == group,
+                        onSelect: { self.selectedTargetGroup = group }
                     )
                 }
             }
@@ -97,7 +97,7 @@ struct AdminAppSettingsView: View {
                 .fontWeight(.semibold)
                 .foregroundColor(AppTheme.primaryText)
 
-            Text(selectedTargetGroup.description)
+            Text(self.selectedTargetGroup.description)
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.secondaryText)
 
@@ -107,7 +107,7 @@ struct AdminAppSettingsView: View {
                 GridItem(.flexible()),
                 GridItem(.flexible())
             ], spacing: ResponsiveDesign.spacing(12)) {
-                let previewTheme = themeManager.getThemeForGroup(selectedTargetGroup)
+                let previewTheme = self.themeManager.getThemeForGroup(self.selectedTargetGroup)
                 ColorPreviewCard(title: "Primary", color: previewTheme.primaryBackground)
                 ColorPreviewCard(title: "Card", color: previewTheme.cardBackground)
                 ColorPreviewCard(title: "Accent", color: previewTheme.accentColor)
@@ -127,10 +127,19 @@ struct AdminAppSettingsView: View {
                 .foregroundColor(AppTheme.primaryText)
 
             VStack(spacing: ResponsiveDesign.spacing(6)) {
-                AdminInfoRow(title: "Active Theme", value: themeManager.currentTargetGroup.displayName)
-                AdminInfoRow(title: "Commission Rate", value: "\((services.configurationService.traderCommissionRate * 100).formatted(.number.precision(.fractionLength(0...2))))%")
-                AdminInfoRow(title: "Min Cash Reserve", value: services.configurationService.minimumCashReserve.formattedAsLocalizedCurrency())
-                AdminInfoRow(title: "Initial Balance", value: services.configurationService.initialAccountBalance.formattedAsLocalizedCurrency())
+                AdminInfoRow(title: "Active Theme", value: self.themeManager.currentTargetGroup.displayName)
+                AdminInfoRow(
+                    title: "Commission Rate",
+                    value: "\((self.services.configurationService.traderCommissionRate * 100).formatted(.number.precision(.fractionLength(0...2))))%"
+                )
+                AdminInfoRow(
+                    title: "Min Cash Reserve",
+                    value: self.services.configurationService.minimumCashReserve.formattedAsLocalizedCurrency()
+                )
+                AdminInfoRow(
+                    title: "Initial Balance",
+                    value: self.services.configurationService.initialAccountBalance.formattedAsLocalizedCurrency()
+                )
             }
         }
         .padding()
@@ -141,7 +150,7 @@ struct AdminAppSettingsView: View {
     // MARK: - Apply Changes Section
     private var applyChangesSection: some View {
         Button(action: {
-            themeManager.switchTargetGroup(selectedTargetGroup)
+            self.themeManager.switchTargetGroup(self.selectedTargetGroup)
         }) {
             Text("Apply Theme Changes")
                 .font(ResponsiveDesign.bodyFont())
@@ -150,13 +159,13 @@ struct AdminAppSettingsView: View {
                 .frame(maxWidth: .infinity)
                 .padding()
                 .background(
-                    selectedTargetGroup == themeManager.currentTargetGroup
-                    ? AppTheme.primaryText.opacity(0.3)
-                    : AppTheme.accentLightBlue
+                    self.selectedTargetGroup == self.themeManager.currentTargetGroup
+                        ? AppTheme.primaryText.opacity(0.3)
+                        : AppTheme.accentLightBlue
                 )
                 .cornerRadius(ResponsiveDesign.spacing(10))
         }
-        .disabled(selectedTargetGroup == themeManager.currentTargetGroup)
+        .disabled(self.selectedTargetGroup == self.themeManager.currentTargetGroup)
         .padding()
         .background(AppTheme.sectionBackground)
         .cornerRadius(ResponsiveDesign.spacing(12))
@@ -171,30 +180,30 @@ struct TargetGroupRow: View {
     let onSelect: () -> Void
 
     var body: some View {
-        Button(action: onSelect, label: {
+        Button(action: self.onSelect, label: {
             HStack {
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
                     HStack {
-                        Text(group.displayName)
+                        Text(self.group.displayName)
                             .font(ResponsiveDesign.bodyFont())
                             .fontWeight(.medium)
                             .foregroundColor(AppTheme.primaryText)
 
-                        if isCurrent {
+                        if self.isCurrent {
                             Text("(Active)")
                                 .font(ResponsiveDesign.captionFont())
                                 .foregroundColor(AppTheme.successGreen)
                         }
                     }
 
-                    Text(group.description)
+                    Text(self.group.description)
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(AppTheme.secondaryText)
                 }
 
                 Spacer()
 
-                if isSelected {
+                if self.isSelected {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundColor(AppTheme.accentLightBlue)
                 } else {
@@ -204,15 +213,15 @@ struct TargetGroupRow: View {
             }
             .padding()
             .background(
-                isSelected
-                ? AppTheme.accentLightBlue.opacity(0.1)
-                : AppTheme.systemSecondaryBackground
+                self.isSelected
+                    ? AppTheme.accentLightBlue.opacity(0.1)
+                    : AppTheme.systemSecondaryBackground
             )
             .cornerRadius(ResponsiveDesign.spacing(8))
             .overlay(
                 RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(8))
                     .stroke(
-                        isSelected ? AppTheme.accentLightBlue : AppTheme.primaryText.opacity(0.1),
+                        self.isSelected ? AppTheme.accentLightBlue : AppTheme.primaryText.opacity(0.1),
                         lineWidth: 1
                     )
             )
@@ -229,14 +238,14 @@ struct ColorPreviewCard: View {
     var body: some View {
         VStack(spacing: ResponsiveDesign.spacing(6)) {
             RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(6))
-                .fill(color)
+                .fill(self.color)
                 .frame(height: 40)
                 .overlay(
                     RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(6))
                         .stroke(AppTheme.primaryText.opacity(0.2), lineWidth: 1)
                 )
 
-            Text(title)
+            Text(self.title)
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.secondaryText)
         }

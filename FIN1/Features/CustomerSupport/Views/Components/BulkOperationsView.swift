@@ -22,7 +22,7 @@ struct BulkOperationsView: View {
     }
 
     private var selectableTickets: [SupportTicket] {
-        viewModel.supportTickets.filter { ticket in
+        self.viewModel.supportTickets.filter { ticket in
             ticket.status != .closed && ticket.status != .resolved && ticket.status != .archived
         }
     }
@@ -30,10 +30,10 @@ struct BulkOperationsView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: ResponsiveDesign.spacing(0)) {
-                selectionHeader
-                ticketList
-                if !selectedTicketIds.isEmpty {
-                    actionBar
+                self.selectionHeader
+                self.ticketList
+                if !self.selectedTicketIds.isEmpty {
+                    self.actionBar
                 }
             }
             .background(AppTheme.screenBackground.ignoresSafeArea())
@@ -41,29 +41,29 @@ struct BulkOperationsView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Abbrechen") { dismiss() }
+                    Button("Abbrechen") { self.dismiss() }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(selectedTicketIds.count == selectableTickets.count ? "Keine" : "Alle") {
-                        if selectedTicketIds.count == selectableTickets.count {
-                            selectedTicketIds.removeAll()
+                    Button(self.selectedTicketIds.count == self.selectableTickets.count ? "Keine" : "Alle") {
+                        if self.selectedTicketIds.count == self.selectableTickets.count {
+                            self.selectedTicketIds.removeAll()
                         } else {
-                            selectedTicketIds = Set(selectableTickets.map { $0.id })
+                            self.selectedTicketIds = Set(self.selectableTickets.map { $0.id })
                         }
                     }
                 }
             }
-            .sheet(isPresented: $showAssignSheet) {
+            .sheet(isPresented: self.$showAssignSheet) {
                 BulkAssignSheet(
-                    selectedCount: selectedTicketIds.count,
-                    agents: viewModel.availableAgents
+                    selectedCount: self.selectedTicketIds.count,
+                    agents: self.viewModel.availableAgents
                 ) { agentId in
-                    Task { await bulkAssign(to: agentId) }
+                    Task { await self.bulkAssign(to: agentId) }
                 }
             }
-            .sheet(isPresented: $showCloseSheet) {
-                BulkCloseSheet(selectedCount: selectedTicketIds.count) { reason in
-                    Task { await bulkClose(reason: reason) }
+            .sheet(isPresented: self.$showCloseSheet) {
+                BulkCloseSheet(selectedCount: self.selectedTicketIds.count) { reason in
+                    Task { await self.bulkClose(reason: reason) }
                 }
             }
         }
@@ -71,16 +71,16 @@ struct BulkOperationsView: View {
 
     private var selectionHeader: some View {
         HStack {
-            Image(systemName: selectedTicketIds.isEmpty ? "square" : "checkmark.square.fill")
-                .foregroundColor(selectedTicketIds.isEmpty ? AppTheme.fontColor.opacity(0.5) : AppTheme.accentLightBlue)
+            Image(systemName: self.selectedTicketIds.isEmpty ? "square" : "checkmark.square.fill")
+                .foregroundColor(self.selectedTicketIds.isEmpty ? AppTheme.fontColor.opacity(0.5) : AppTheme.accentLightBlue)
 
-            Text("\(selectedTicketIds.count) von \(selectableTickets.count) ausgewählt")
+            Text("\(self.selectedTicketIds.count) von \(self.selectableTickets.count) ausgewählt")
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor)
 
             Spacer()
 
-            if !selectedTicketIds.isEmpty {
+            if !self.selectedTicketIds.isEmpty {
                 Text("Tickets ausgewählt")
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.accentLightBlue)
@@ -93,17 +93,17 @@ struct BulkOperationsView: View {
     private var ticketList: some View {
         ScrollView {
             LazyVStack(spacing: ResponsiveDesign.spacing(8)) {
-                ForEach(selectableTickets) { ticket in
+                ForEach(self.selectableTickets) { ticket in
                     BulkSelectableTicketRow(
                         ticket: ticket,
-                        isSelected: selectedTicketIds.contains(ticket.id)
+                        isSelected: self.selectedTicketIds.contains(ticket.id)
                     ) {
-                        toggleSelection(ticket.id)
+                        self.toggleSelection(ticket.id)
                     }
                 }
 
-                if selectableTickets.isEmpty {
-                    emptyState
+                if self.selectableTickets.isEmpty {
+                    self.emptyState
                 }
             }
             .padding()
@@ -132,7 +132,7 @@ struct BulkOperationsView: View {
         VStack(spacing: ResponsiveDesign.spacing(12)) {
             Divider()
 
-            if isProcessing {
+            if self.isProcessing {
                 HStack {
                     ProgressView()
                     Text("Verarbeite...")
@@ -148,7 +148,7 @@ struct BulkOperationsView: View {
                             icon: "person.badge.plus",
                             color: AppTheme.accentLightBlue
                         ) {
-                            showAssignSheet = true
+                            self.showAssignSheet = true
                         }
 
                         BulkActionButton(
@@ -156,7 +156,7 @@ struct BulkOperationsView: View {
                             icon: "xmark.circle.fill",
                             color: AppTheme.accentRed
                         ) {
-                            showCloseSheet = true
+                            self.showCloseSheet = true
                         }
 
                         BulkActionButton(
@@ -176,21 +176,21 @@ struct BulkOperationsView: View {
     }
 
     private func toggleSelection(_ ticketId: String) {
-        if selectedTicketIds.contains(ticketId) {
-            selectedTicketIds.remove(ticketId)
+        if self.selectedTicketIds.contains(ticketId) {
+            self.selectedTicketIds.remove(ticketId)
         } else {
-            selectedTicketIds.insert(ticketId)
+            self.selectedTicketIds.insert(ticketId)
         }
     }
 
     private func bulkAssign(to agentId: String) async {
-        isProcessing = true
+        self.isProcessing = true
         defer { isProcessing = false }
 
         var successCount = 0
-        for ticketId in selectedTicketIds {
+        for ticketId in self.selectedTicketIds {
             do {
-                try await viewModel.supportService.assignTicket(ticketId: ticketId, to: agentId)
+                try await self.viewModel.supportService.assignTicket(ticketId: ticketId, to: agentId)
                 successCount += 1
             } catch {
                 // Continue with other tickets
@@ -198,21 +198,21 @@ struct BulkOperationsView: View {
         }
 
         await MainActor.run {
-            showAssignSheet = false
-            viewModel.showSuccessMessage("\(successCount) Tickets zugewiesen")
-            selectedTicketIds.removeAll()
-            Task { await viewModel.load() }
+            self.showAssignSheet = false
+            self.viewModel.showSuccessMessage("\(successCount) Tickets zugewiesen")
+            self.selectedTicketIds.removeAll()
+            Task { await self.viewModel.load() }
         }
     }
 
     private func bulkClose(reason: String) async {
-        isProcessing = true
+        self.isProcessing = true
         defer { isProcessing = false }
 
         var successCount = 0
-        for ticketId in selectedTicketIds {
+        for ticketId in self.selectedTicketIds {
             do {
-                try await viewModel.supportService.closeTicket(ticketId: ticketId, closureReason: reason)
+                try await self.viewModel.supportService.closeTicket(ticketId: ticketId, closureReason: reason)
                 successCount += 1
             } catch {
                 // Continue with other tickets
@@ -220,10 +220,10 @@ struct BulkOperationsView: View {
         }
 
         await MainActor.run {
-            showCloseSheet = false
-            viewModel.showSuccessMessage("\(successCount) Tickets geschlossen")
-            selectedTicketIds.removeAll()
-            Task { await viewModel.load() }
+            self.showCloseSheet = false
+            self.viewModel.showSuccessMessage("\(successCount) Tickets geschlossen")
+            self.selectedTicketIds.removeAll()
+            Task { await self.viewModel.load() }
         }
     }
 }

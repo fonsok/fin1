@@ -16,13 +16,13 @@ struct BaseModalViewWrapper<Content: View>: BaseModalView {
         NavigationStack {
             ZStack {
                 AppTheme.screenBackground.ignoresSafeArea()
-                content()
+                self.content()
             }
-            .navigationTitle(title)
+            .navigationTitle(self.title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button(action: onDismiss, label: {
+                    Button(action: self.onDismiss, label: {
                         Image(systemName: "xmark")
                             .foregroundColor(AppTheme.fontColor)
                     })
@@ -50,13 +50,13 @@ struct GenericSelectionView<Item: Identifiable, ItemView: View>: SelectionModalV
     let itemView: (Item, Bool) -> ItemView
 
     var body: some View {
-        BaseModalViewWrapper(title: title, onDismiss: onDismiss) {
+        BaseModalViewWrapper(title: self.title, onDismiss: self.onDismiss) {
             List {
-                ForEach(items) { item in
-                    Button(action: { onItemSelected(item) }, label: {
-                        itemView(item, selectedItem?.id == item.id)
+                ForEach(self.items) { item in
+                    Button(action: { self.onItemSelected(item) }, label: {
+                        self.itemView(item, self.selectedItem?.id == item.id)
                     })
-                    .listRowBackground(selectedItem?.id == item.id ? AppTheme.accentGreen.opacity(0.2) : AppTheme.sectionBackground)
+                    .listRowBackground(self.selectedItem?.id == item.id ? AppTheme.accentGreen.opacity(0.2) : AppTheme.sectionBackground)
                 }
             }
             .listStyle(.plain)

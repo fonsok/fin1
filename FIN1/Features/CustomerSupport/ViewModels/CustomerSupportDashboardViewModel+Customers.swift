@@ -70,8 +70,8 @@ extension CustomerSupportDashboardViewModel {
     var activeCustomerTickets: [SupportTicket] {
         customerTickets.filter { ticket in
             ticket.status != .resolved &&
-            ticket.status != .closed &&
-            ticket.status != .archived
+                ticket.status != .closed &&
+                ticket.status != .archived
         }
     }
 
@@ -79,8 +79,8 @@ extension CustomerSupportDashboardViewModel {
     var closedCustomerTickets: [SupportTicket] {
         customerTickets.filter { ticket in
             ticket.status == .resolved ||
-            ticket.status == .closed ||
-            ticket.status == .archived
+                ticket.status == .closed ||
+                ticket.status == .archived
         }
     }
 
@@ -88,7 +88,7 @@ extension CustomerSupportDashboardViewModel {
 
     func openKYCStatusList() {
         Task {
-            await loadKYCStatusList()
+            await self.loadKYCStatusList()
             showKYCStatusList = true
         }
     }
@@ -172,14 +172,14 @@ extension CustomerSupportDashboardViewModel {
 
     /// Ongoing trades (open or active status)
     var ongoingTrades: [CustomerTradeSummary] {
-        filteredTradesByTimePeriod.filter { trade in
+        self.filteredTradesByTimePeriod.filter { trade in
             trade.status.lowercased() == "open" || trade.status.lowercased() == "active"
         }
     }
 
     /// Completed trades (closed or completed status)
     var completedTrades: [CustomerTradeSummary] {
-        filteredTradesByTimePeriod.filter { trade in
+        self.filteredTradesByTimePeriod.filter { trade in
             trade.status.lowercased() == "closed" || trade.status.lowercased() == "completed"
         }
     }

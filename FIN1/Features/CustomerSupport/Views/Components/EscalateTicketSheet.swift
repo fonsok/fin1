@@ -21,11 +21,11 @@ struct EscalateTicketSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: ResponsiveDesign.spacing(20)) {
-                    headerSection
-                    ticketInfoSection
-                    prioritySection
-                    reasonSection
-                    submitButton
+                    self.headerSection
+                    self.ticketInfoSection
+                    self.prioritySection
+                    self.reasonSection
+                    self.submitButton
                 }
                 .padding()
             }
@@ -35,8 +35,8 @@ struct EscalateTicketSheet: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Abbrechen") {
-                        viewModel.closeEscalateTicketSheet()
-                        dismiss()
+                        self.viewModel.closeEscalateTicketSheet()
+                        self.dismiss()
                     }
                 }
             }
@@ -75,10 +75,10 @@ struct EscalateTicketSheet: View {
                 .foregroundColor(AppTheme.fontColor)
 
             VStack(spacing: ResponsiveDesign.spacing(8)) {
-                CSInfoRow(label: "Ticket-Nummer", value: ticket.ticketNumber)
-                CSInfoRow(label: "Betreff", value: ticket.subject)
-                CSInfoRow(label: "Kunde", value: ticket.customerName)
-                CSInfoRow(label: "Aktuelle Priorität", value: ticket.priority.displayName)
+                CSInfoRow(label: "Ticket-Nummer", value: self.ticket.ticketNumber)
+                CSInfoRow(label: "Betreff", value: self.ticket.subject)
+                CSInfoRow(label: "Kunde", value: self.ticket.customerName)
+                CSInfoRow(label: "Aktuelle Priorität", value: self.ticket.priority.displayName)
             }
         }
         .padding()
@@ -99,9 +99,9 @@ struct EscalateTicketSheet: View {
                 ForEach([SupportTicket.TicketPriority.medium, .high, .urgent], id: \.self) { priority in
                     PriorityOption(
                         priority: priority,
-                        isSelected: selectedPriority == priority
+                        isSelected: self.selectedPriority == priority
                     ) {
-                        selectedPriority = priority
+                        self.selectedPriority = priority
                     }
                 }
             }
@@ -123,25 +123,25 @@ struct EscalateTicketSheet: View {
 
                 Spacer()
 
-                Text("\(reason.count)/500")
+                Text("\(self.reason.count)/500")
                     .font(ResponsiveDesign.captionFont())
-                    .foregroundColor(reason.count > 450 ? AppTheme.accentOrange : AppTheme.fontColor.opacity(0.5))
+                    .foregroundColor(self.reason.count > 450 ? AppTheme.accentOrange : AppTheme.fontColor.opacity(0.5))
             }
 
-            TextEditor(text: $reason)
+            TextEditor(text: self.$reason)
                 .frame(minHeight: 100)
                 .padding(ResponsiveDesign.spacing(12))
                 .background(AppTheme.inputFieldBackground)
                 .cornerRadius(ResponsiveDesign.spacing(10))
                 .foregroundColor(AppTheme.inputFieldText)
                 .scrollContentBackground(.hidden)
-                .onChange(of: reason) { _, newValue in
+                .onChange(of: self.reason) { _, newValue in
                     if newValue.count > 500 {
-                        reason = String(newValue.prefix(500))
+                        self.reason = String(newValue.prefix(500))
                     }
                 }
 
-            if reason.count < 10 && !reason.isEmpty {
+            if self.reason.count < 10 && !self.reason.isEmpty {
                 Text("Bitte geben Sie mehr Details an (mindestens 10 Zeichen)")
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.accentOrange)
@@ -154,11 +154,11 @@ struct EscalateTicketSheet: View {
     private var submitButton: some View {
         Button(action: {
             Task {
-                await submitEscalation()
+                await self.submitEscalation()
             }
         }) {
             HStack {
-                if viewModel.isLoading {
+                if self.viewModel.isLoading {
                     ProgressView()
                         .scaleEffect(0.8)
                         .tint(AppTheme.screenBackground)
@@ -174,31 +174,31 @@ struct EscalateTicketSheet: View {
             .foregroundColor(AppTheme.screenBackground)
             .frame(maxWidth: .infinity)
             .frame(height: 50)
-            .background(isFormValid ? AppTheme.accentOrange : AppTheme.accentOrange.opacity(0.5))
+            .background(self.isFormValid ? AppTheme.accentOrange : AppTheme.accentOrange.opacity(0.5))
             .cornerRadius(ResponsiveDesign.spacing(12))
         }
-        .disabled(!isFormValid || viewModel.isLoading)
+        .disabled(!self.isFormValid || self.viewModel.isLoading)
     }
 
     // MARK: - Computed Properties
 
     private var isFormValid: Bool {
-        !reason.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-        reason.count >= 10
+        !self.reason.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+            self.reason.count >= 10
     }
 
     // MARK: - Private Methods
 
     private func submitEscalation() async {
-        guard isFormValid else { return }
+        guard self.isFormValid else { return }
 
-        await viewModel.escalateTicket(
-            ticket.id,
-            reason: reason.trimmingCharacters(in: .whitespacesAndNewlines)
+        await self.viewModel.escalateTicket(
+            self.ticket.id,
+            reason: self.reason.trimmingCharacters(in: .whitespacesAndNewlines)
         )
 
-        if !viewModel.showError {
-            dismiss()
+        if !self.viewModel.showError {
+            self.dismiss()
         }
     }
 }
@@ -211,29 +211,29 @@ private struct PriorityOption: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
+        Button(action: self.action) {
             HStack {
-                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .foregroundColor(isSelected ? priorityColor : AppTheme.fontColor.opacity(0.5))
+                Image(systemName: self.isSelected ? "checkmark.circle.fill" : "circle")
+                    .foregroundColor(self.isSelected ? self.priorityColor : AppTheme.fontColor.opacity(0.5))
 
-                Text(priority.displayName)
+                Text(self.priority.displayName)
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.fontColor)
 
                 Spacer()
 
                 Circle()
-                    .fill(priorityColor)
+                    .fill(self.priorityColor)
                     .frame(width: 12, height: 12)
             }
             .padding()
-            .background(isSelected ? priorityColor.opacity(0.1) : AppTheme.systemTertiaryBackground)
+            .background(self.isSelected ? self.priorityColor.opacity(0.1) : AppTheme.systemTertiaryBackground)
             .cornerRadius(ResponsiveDesign.spacing(10))
         }
     }
 
     private var priorityColor: Color {
-        switch priority {
+        switch self.priority {
         case .low: return AppTheme.accentLightBlue
         case .medium: return AppTheme.accentOrange
         case .high: return AppTheme.accentRed

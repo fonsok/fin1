@@ -21,7 +21,7 @@ final class MockPaymentService: PaymentServiceProtocol, ObservableObject, @unche
     let simulatedDelay: UInt64 = 1_000_000_000 // 1 second
 
     var useParseServer: Bool {
-        parseAPIClient != nil
+        self.parseAPIClient != nil
     }
 
     // MARK: - Initialization
@@ -43,20 +43,19 @@ final class MockPaymentService: PaymentServiceProtocol, ObservableObject, @unche
     // MARK: - ServiceLifecycle
 
     func start() async {
-        logger.info("💰 MockPaymentService started")
+        self.logger.info("💰 MockPaymentService started")
         // Load existing transactions from Parse Server if available
-        if useParseServer {
+        if self.useParseServer {
             await loadTransactionsFromParseServer()
         }
     }
 
     func stop() async {
-        logger.info("💰 MockPaymentService stopped")
+        self.logger.info("💰 MockPaymentService stopped")
     }
 
     func reset() async {
-        transactions.removeAll()
-        logger.info("💰 MockPaymentService reset - all transactions cleared")
+        self.transactions.removeAll()
+        self.logger.info("💰 MockPaymentService reset - all transactions cleared")
     }
-
 }

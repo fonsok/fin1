@@ -36,7 +36,7 @@ final class BankContraAccountPostingService: BankContraAccountPostingServiceProt
     // MARK: - ServiceLifecycle
 
     func start() {
-        print("🏦 BankContraAccountPostingService started (ledger path: \(storageURL.path))")
+        print("🏦 BankContraAccountPostingService started (ledger path: \(self.storageURL.path))")
     }
 
     func stop() {
@@ -44,7 +44,7 @@ final class BankContraAccountPostingService: BankContraAccountPostingServiceProt
     }
 
     func reset() {
-        queue.async(flags: .barrier) {
+        self.queue.async(flags: .barrier) {
             self.postings.removeAll()
             self.persistPostingsLocked()
         }
@@ -95,7 +95,7 @@ final class BankContraAccountPostingService: BankContraAccountPostingServiceProt
             ]
         )
 
-        queue.async(flags: .barrier) {
+        self.queue.async(flags: .barrier) {
             self.postings.append(netPosting)
             self.postings.append(vatPosting)
             self.persistPostingsLocked()
@@ -117,7 +117,7 @@ final class BankContraAccountPostingService: BankContraAccountPostingServiceProt
         netAmount: Double,
         vatAmount: Double
     ) -> BankContraPostingPair {
-        recordAppServiceChargePosting(
+        self.recordAppServiceChargePosting(
             investorId: investorId,
             batchId: batchId,
             investmentIds: investmentIds,
@@ -133,8 +133,8 @@ final class BankContraAccountPostingService: BankContraAccountPostingServiceProt
         account: BankContraAccount? = nil,
         investorId: String? = nil
     ) -> [BankContraAccountPosting] {
-        queue.sync {
-            postings.filter { posting in
+        self.queue.sync {
+            self.postings.filter { posting in
                 let matchesAccount = account.map { $0 == posting.account } ?? true
                 let matchesInvestor = investorId.map { $0 == posting.investorId } ?? true
                 return matchesAccount && matchesInvestor
@@ -144,15 +144,15 @@ final class BankContraAccountPostingService: BankContraAccountPostingServiceProt
     }
 
     func getAllPostings() -> [BankContraAccountPosting] {
-        getPostings()
+        self.getPostings()
     }
 
     // MARK: - Persistence Helpers
 
     private func persistPostingsLocked() {
         do {
-            let data = try encoder.encode(postings)
-            try data.write(to: storageURL, options: .atomic)
+            let data = try encoder.encode(self.postings)
+            try data.write(to: self.storageURL, options: .atomic)
         } catch {
             print("⚠️ BankContraAccountPostingService: failed to persist ledger - \(error)")
         }

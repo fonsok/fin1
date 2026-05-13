@@ -19,14 +19,14 @@ struct WatchlistTraderData: Identifiable, Sendable {
     var notificationsEnabled: Bool
 
     var formattedPerformance: String {
-        "\(String(format: "%.1f", performance))%"
+        "\(String(format: "%.1f", self.performance))%"
     }
 
     var formattedMinimumInvestment: String {
-        minimumInvestment.formattedAsLocalizedCurrency()
+        self.minimumInvestment.formattedAsLocalizedCurrency()
     }
 
     var isPositivePerformance: Bool {
-        performance >= 0
+        self.performance >= 0
     }
 }

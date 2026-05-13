@@ -1,5 +1,5 @@
-import Foundation
 @testable import FIN1
+import Foundation
 
 // MARK: - Mock Investment Status Service
 /// Test double for `InvestmentStatusServiceProtocol`. Defaults are inert (`nil` / `false`); set handlers or return properties to drive behavior.
@@ -22,12 +22,12 @@ final class MockInvestmentStatusService: InvestmentStatusServiceProtocol {
         investmentPoolLifecycleService: (any InvestmentPoolLifecycleServiceProtocol)?,
         telemetryService: (any TelemetryServiceProtocol)?
     ) -> Investment? {
-        markInvestmentAsActiveCallCount += 1
-        lastMarkActiveTraderId = traderId
+        self.markInvestmentAsActiveCallCount += 1
+        self.lastMarkActiveTraderId = traderId
         if let markInvestmentAsActiveHandler {
             return markInvestmentAsActiveHandler(traderId, repository, investmentPoolLifecycleService, telemetryService)
         }
-        return markInvestmentAsActiveReturn
+        return self.markInvestmentAsActiveReturn
     }
 
     // MARK: - markInvestmentAsCompleted
@@ -36,7 +36,10 @@ final class MockInvestmentStatusService: InvestmentStatusServiceProtocol {
     var lastMarkCompletedTraderId: String?
     var markInvestmentAsCompletedReturn: (Investment, InvestmentReservation)?
     var markInvestmentAsCompletedHandler: (
-        (String, any InvestmentRepositoryProtocol, (any InvestmentPoolLifecycleServiceProtocol)?, (any TelemetryServiceProtocol)?) -> (Investment, InvestmentReservation)?
+        (String, any InvestmentRepositoryProtocol, (any InvestmentPoolLifecycleServiceProtocol)?, (any TelemetryServiceProtocol)?) -> (
+            Investment,
+            InvestmentReservation
+        )?
     )?
 
     func markInvestmentAsCompleted(
@@ -45,12 +48,12 @@ final class MockInvestmentStatusService: InvestmentStatusServiceProtocol {
         investmentPoolLifecycleService: (any InvestmentPoolLifecycleServiceProtocol)?,
         telemetryService: (any TelemetryServiceProtocol)?
     ) -> (Investment, InvestmentReservation)? {
-        markInvestmentAsCompletedCallCount += 1
-        lastMarkCompletedTraderId = traderId
+        self.markInvestmentAsCompletedCallCount += 1
+        self.lastMarkCompletedTraderId = traderId
         if let markInvestmentAsCompletedHandler {
             return markInvestmentAsCompletedHandler(traderId, repository, investmentPoolLifecycleService, telemetryService)
         }
-        return markInvestmentAsCompletedReturn
+        return self.markInvestmentAsCompletedReturn
     }
 
     // MARK: - markNextInvestmentAsActive
@@ -67,12 +70,12 @@ final class MockInvestmentStatusService: InvestmentStatusServiceProtocol {
         repository: any InvestmentRepositoryProtocol,
         investmentPoolLifecycleService: (any InvestmentPoolLifecycleServiceProtocol)?
     ) -> Investment? {
-        markNextInvestmentAsActiveCallCount += 1
-        lastMarkNextActiveInvestmentId = investmentId
+        self.markNextInvestmentAsActiveCallCount += 1
+        self.lastMarkNextActiveInvestmentId = investmentId
         if let markNextInvestmentAsActiveHandler {
             return markNextInvestmentAsActiveHandler(investmentId, repository, investmentPoolLifecycleService)
         }
-        return markNextInvestmentAsActiveReturn
+        return self.markNextInvestmentAsActiveReturn
     }
 
     // MARK: - markActiveInvestmentAsCompleted
@@ -89,12 +92,12 @@ final class MockInvestmentStatusService: InvestmentStatusServiceProtocol {
         repository: any InvestmentRepositoryProtocol,
         investmentPoolLifecycleService: (any InvestmentPoolLifecycleServiceProtocol)?
     ) -> (Investment, InvestmentReservation)? {
-        markActiveInvestmentAsCompletedCallCount += 1
-        lastMarkActiveCompletedInvestmentId = investmentId
+        self.markActiveInvestmentAsCompletedCallCount += 1
+        self.lastMarkActiveCompletedInvestmentId = investmentId
         if let markActiveInvestmentAsCompletedHandler {
             return markActiveInvestmentAsCompletedHandler(investmentId, repository, investmentPoolLifecycleService)
         }
-        return markActiveInvestmentAsCompletedReturn
+        return self.markActiveInvestmentAsCompletedReturn
     }
 
     // MARK: - deleteInvestment
@@ -108,40 +111,40 @@ final class MockInvestmentStatusService: InvestmentStatusServiceProtocol {
         investmentId: String,
         repository: any InvestmentRepositoryProtocol
     ) -> Bool {
-        deleteInvestmentCallCount += 1
-        lastDeleteInvestmentId = investmentId
+        self.deleteInvestmentCallCount += 1
+        self.lastDeleteInvestmentId = investmentId
         if let deleteInvestmentHandler {
             return deleteInvestmentHandler(investmentId, repository)
         }
-        return deleteInvestmentReturn
+        return self.deleteInvestmentReturn
     }
 
     // MARK: - Reset
 
     func reset() {
-        markInvestmentAsActiveCallCount = 0
-        lastMarkActiveTraderId = nil
-        markInvestmentAsActiveReturn = nil
-        markInvestmentAsActiveHandler = nil
+        self.markInvestmentAsActiveCallCount = 0
+        self.lastMarkActiveTraderId = nil
+        self.markInvestmentAsActiveReturn = nil
+        self.markInvestmentAsActiveHandler = nil
 
-        markInvestmentAsCompletedCallCount = 0
-        lastMarkCompletedTraderId = nil
-        markInvestmentAsCompletedReturn = nil
-        markInvestmentAsCompletedHandler = nil
+        self.markInvestmentAsCompletedCallCount = 0
+        self.lastMarkCompletedTraderId = nil
+        self.markInvestmentAsCompletedReturn = nil
+        self.markInvestmentAsCompletedHandler = nil
 
-        markNextInvestmentAsActiveCallCount = 0
-        lastMarkNextActiveInvestmentId = nil
-        markNextInvestmentAsActiveReturn = nil
-        markNextInvestmentAsActiveHandler = nil
+        self.markNextInvestmentAsActiveCallCount = 0
+        self.lastMarkNextActiveInvestmentId = nil
+        self.markNextInvestmentAsActiveReturn = nil
+        self.markNextInvestmentAsActiveHandler = nil
 
-        markActiveInvestmentAsCompletedCallCount = 0
-        lastMarkActiveCompletedInvestmentId = nil
-        markActiveInvestmentAsCompletedReturn = nil
-        markActiveInvestmentAsCompletedHandler = nil
+        self.markActiveInvestmentAsCompletedCallCount = 0
+        self.lastMarkActiveCompletedInvestmentId = nil
+        self.markActiveInvestmentAsCompletedReturn = nil
+        self.markActiveInvestmentAsCompletedHandler = nil
 
-        deleteInvestmentCallCount = 0
-        lastDeleteInvestmentId = nil
-        deleteInvestmentReturn = false
-        deleteInvestmentHandler = nil
+        self.deleteInvestmentCallCount = 0
+        self.lastDeleteInvestmentId = nil
+        self.deleteInvestmentReturn = false
+        self.deleteInvestmentHandler = nil
     }
 }

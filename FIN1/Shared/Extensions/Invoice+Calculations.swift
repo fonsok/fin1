@@ -28,33 +28,33 @@ extension Invoice {
     var feeItems: [InvoiceItem] {
         return items.filter { item in
             item.itemType == .orderFee ||
-            item.itemType == .exchangeFee ||
-            item.itemType == .foreignCosts
+                item.itemType == .exchangeFee ||
+                item.itemType == .foreignCosts
         }
     }
 
     /// Calculates the total amount of non-tax items
     /// This is the amount used for profit calculations
     var nonTaxTotal: Double {
-        return nonTaxItems.reduce(0) { $0 + $1.totalAmount }
+        return self.nonTaxItems.reduce(0) { $0 + $1.totalAmount }
     }
 
     /// Calculates the total amount of tax items
     /// This is the total tax amount for the invoice
     var taxTotal: Double {
-        return taxItems.reduce(0) { $0 + abs($1.totalAmount) }
+        return self.taxItems.reduce(0) { $0 + abs($1.totalAmount) }
     }
 
     /// Calculates the total amount of securities items
     /// This is the securities value for the invoice
     var securitiesTotal: Double {
-        return securitiesItems.reduce(0) { $0 + $1.totalAmount }
+        return self.securitiesItems.reduce(0) { $0 + $1.totalAmount }
     }
 
     /// Calculates the total amount of fee items
     /// This is the total fees for the invoice
     var feesTotal: Double {
-        return feeItems.reduce(0) { $0 + abs($1.totalAmount) }
+        return self.feeItems.reduce(0) { $0 + abs($1.totalAmount) }
     }
 }
 
@@ -84,22 +84,22 @@ extension Array where Element == Invoice {
 
     /// Calculates the total amount of all non-tax items
     var totalNonTaxAmount: Double {
-        return allNonTaxItems.reduce(0) { $0 + $1.totalAmount }
+        return self.allNonTaxItems.reduce(0) { $0 + $1.totalAmount }
     }
 
     /// Calculates the total amount of all tax items
     var totalTaxAmount: Double {
-        return allTaxItems.reduce(0) { $0 + abs($1.totalAmount) }
+        return self.allTaxItems.reduce(0) { $0 + abs($1.totalAmount) }
     }
 
     /// Calculates the total amount of all securities items
     var totalSecuritiesAmount: Double {
-        return allSecuritiesItems.reduce(0) { $0 + $1.totalAmount }
+        return self.allSecuritiesItems.reduce(0) { $0 + $1.totalAmount }
     }
 
     /// Calculates the total amount of all fee items
     var totalFeesAmount: Double {
-        return allFeeItems.reduce(0) { $0 + abs($1.totalAmount) }
+        return self.allFeeItems.reduce(0) { $0 + abs($1.totalAmount) }
     }
 }
 

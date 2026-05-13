@@ -135,98 +135,98 @@ struct PDFTypography {
 
     static func titleAttributes(alignment: NSTextAlignment = .left) -> [NSAttributedString.Key: Any] {
         [
-            .font: titleFont,
+            .font: self.titleFont,
             .foregroundColor: PDFColorScheme.textPrimary,
-            .paragraphStyle: createParagraphStyle(alignment: alignment, lineSpacing: 4.0)
+            .paragraphStyle: self.createParagraphStyle(alignment: alignment, lineSpacing: 4.0)
         ]
     }
 
     static func headerAttributes(alignment: NSTextAlignment = .left) -> [NSAttributedString.Key: Any] {
         [
-            .font: headerFont,
+            .font: self.headerFont,
             .foregroundColor: PDFColorScheme.textPrimary,
-            .paragraphStyle: createParagraphStyle(alignment: alignment, lineSpacing: 3.0)
+            .paragraphStyle: self.createParagraphStyle(alignment: alignment, lineSpacing: 3.0)
         ]
     }
 
     static func subheaderAttributes(alignment: NSTextAlignment = .left) -> [NSAttributedString.Key: Any] {
         [
-            .font: subheaderFont,
+            .font: self.subheaderFont,
             .foregroundColor: PDFColorScheme.textSecondary,
-            .paragraphStyle: createParagraphStyle(alignment: alignment, lineSpacing: 2.0)
+            .paragraphStyle: self.createParagraphStyle(alignment: alignment, lineSpacing: 2.0)
         ]
     }
 
     static func bodyAttributes(alignment: NSTextAlignment = .left) -> [NSAttributedString.Key: Any] {
         [
-            .font: bodyFont,
+            .font: self.bodyFont,
             .foregroundColor: PDFColorScheme.textPrimary,
-            .paragraphStyle: createParagraphStyle(alignment: alignment, lineSpacing: 2.0)
+            .paragraphStyle: self.createParagraphStyle(alignment: alignment, lineSpacing: 2.0)
         ]
     }
 
     static func bodyBoldAttributes(alignment: NSTextAlignment = .left) -> [NSAttributedString.Key: Any] {
         [
-            .font: bodyBoldFont,
+            .font: self.bodyBoldFont,
             .foregroundColor: PDFColorScheme.textPrimary,
-            .paragraphStyle: createParagraphStyle(alignment: alignment, lineSpacing: 2.0)
+            .paragraphStyle: self.createParagraphStyle(alignment: alignment, lineSpacing: 2.0)
         ]
     }
 
     static func smallAttributes(alignment: NSTextAlignment = .left) -> [NSAttributedString.Key: Any] {
         [
-            .font: smallFont,
+            .font: self.smallFont,
             .foregroundColor: PDFColorScheme.textTertiary,
-            .paragraphStyle: createParagraphStyle(alignment: alignment, lineSpacing: 1.5)
+            .paragraphStyle: self.createParagraphStyle(alignment: alignment, lineSpacing: 1.5)
         ]
     }
 
     static func tableHeaderAttributes(alignment: NSTextAlignment = .left) -> [NSAttributedString.Key: Any] {
         [
-            .font: tableHeaderFont,
+            .font: self.tableHeaderFont,
             .foregroundColor: PDFColorScheme.tableHeaderText,
-            .paragraphStyle: createParagraphStyle(alignment: alignment, lineSpacing: 0)
+            .paragraphStyle: self.createParagraphStyle(alignment: alignment, lineSpacing: 0)
         ]
     }
 
     static func tableCellAttributes(alignment: NSTextAlignment = .left) -> [NSAttributedString.Key: Any] {
         [
-            .font: tableCellFont,
+            .font: self.tableCellFont,
             .foregroundColor: PDFColorScheme.textPrimary,
-            .paragraphStyle: createParagraphStyle(alignment: alignment, lineSpacing: 0)
+            .paragraphStyle: self.createParagraphStyle(alignment: alignment, lineSpacing: 0)
         ]
     }
 
     static func returnAddressAttributes() -> [NSAttributedString.Key: Any] {
         [
-            .font: returnAddressFont,
+            .font: self.returnAddressFont,
             .foregroundColor: PDFColorScheme.textTertiary,
             .underlineStyle: NSUnderlineStyle.single.rawValue,
-            .paragraphStyle: createParagraphStyle(alignment: .left, lineSpacing: 0)
+            .paragraphStyle: self.createParagraphStyle(alignment: .left, lineSpacing: 0)
         ]
     }
 
     static func totalsLabelAttributes() -> [NSAttributedString.Key: Any] {
         [
-            .font: bodyFont,
+            .font: self.bodyFont,
             .foregroundColor: PDFColorScheme.textPrimary,
-            .paragraphStyle: createParagraphStyle(alignment: .left, lineSpacing: 0)
+            .paragraphStyle: self.createParagraphStyle(alignment: .left, lineSpacing: 0)
         ]
     }
 
     static func totalsValueAttributes() -> [NSAttributedString.Key: Any] {
         [
-            .font: bodyBoldFont,
+            .font: self.bodyBoldFont,
             .foregroundColor: PDFColorScheme.textPrimary,
-            .paragraphStyle: createParagraphStyle(alignment: .right, lineSpacing: 0)
+            .paragraphStyle: self.createParagraphStyle(alignment: .right, lineSpacing: 0)
         ]
     }
 
     static func totalsFinalAttributes() -> [NSAttributedString.Key: Any] {
         [
-            .font: headerFont,
+            .font: self.headerFont,
             .foregroundColor: PDFColorScheme.primary,
-            .paragraphStyle: createParagraphStyle(alignment: .right, lineSpacing: 0)
+            .paragraphStyle: self.createParagraphStyle(alignment: .right, lineSpacing: 0)
         ]
     }
 
@@ -261,7 +261,7 @@ struct PDFInvoiceTableConfig {
     ]
 
     static func columnWidths(for contentWidth: CGFloat) -> [CGFloat] {
-        columns.map { $0.widthRatio * contentWidth }
+        self.columns.map { $0.widthRatio * contentWidth }
     }
 
     static var columnTitles: [String] {
@@ -288,7 +288,7 @@ struct PDFTradeStatementTableConfig {
     ]
 
     static func sellColumnWidths(for contentWidth: CGFloat) -> [CGFloat] {
-        sellTransactionColumns.map { $0.widthRatio * contentWidth }
+        self.sellTransactionColumns.map { $0.widthRatio * contentWidth }
     }
 }
 

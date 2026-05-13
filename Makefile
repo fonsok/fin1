@@ -1,7 +1,7 @@
 .PHONY: format lint build test testplan
 
 format:
-	swiftformat . --lint || true
+	swiftformat FIN1 FIN1Tests FIN1UITests FIN1InvestorTests FIN1CoreRegressionTests --lint || true
 
 lint:
 	swiftlint --strict || true

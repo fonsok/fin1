@@ -5,7 +5,7 @@ extension InvestmentService {
 
     /// Syncs pending investments to backend in batch (called on app background).
     func syncToBackend() async {
-        try? await syncPendingInvestmentsToBackend(propagateFirstFailure: false)
+        try? await self.syncPendingInvestmentsToBackend(propagateFirstFailure: false)
     }
 
     /// - Parameter propagateFirstFailure: If true, first `saveInvestment` error is rethrown (e.g. user-initiated create).
@@ -64,10 +64,10 @@ extension InvestmentService {
                     if let local = localById[remote.id] {
                         let partialSellChanged =
                             local.partialSellCount != remote.partialSellCount
-                            || local.realizedSellQuantity != remote.realizedSellQuantity
-                            || abs(local.realizedSellAmount - remote.realizedSellAmount) > 0.005
-                            || local.lastPartialSellAt != remote.lastPartialSellAt
-                            || local.tradeSellVolumeProgress != remote.tradeSellVolumeProgress
+                                || local.realizedSellQuantity != remote.realizedSellQuantity
+                                || abs(local.realizedSellAmount - remote.realizedSellAmount) > 0.005
+                                || local.lastPartialSellAt != remote.lastPartialSellAt
+                                || local.tradeSellVolumeProgress != remote.tradeSellVolumeProgress
                         let needsUpdate = local.status != remote.status
                             || local.reservationStatus != remote.reservationStatus
                             || abs(local.currentValue - remote.currentValue) > 0.01
@@ -109,7 +109,9 @@ extension InvestmentService {
                         addedCount += 1
                     }
                 }
-                print("📡 InvestmentService: Backend sync — \(addedCount) added, \(updatedCount) updated (of \(remoteInvestments.count) remote)")
+                print(
+                    "📡 InvestmentService: Backend sync — \(addedCount) added, \(updatedCount) updated (of \(remoteInvestments.count) remote)"
+                )
             }
         } catch {
             print("⚠️ InvestmentService: Backend fetch failed: \(error)")

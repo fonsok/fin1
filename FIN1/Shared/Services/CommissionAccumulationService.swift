@@ -56,7 +56,7 @@ final class CommissionAccumulationService: CommissionAccumulationServiceProtocol
     }
 
     func reset() async {
-        accumulations.removeAll()
+        self.accumulations.removeAll()
         print("💰 CommissionAccumulationService reset - all accumulations cleared")
     }
 
@@ -84,7 +84,7 @@ final class CommissionAccumulationService: CommissionAccumulationServiceProtocol
             grossProfit: grossProfit
         )
 
-        accumulations.append(accumulation)
+        self.accumulations.append(accumulation)
 
         print("💰 CommissionAccumulationService: Recorded commission accumulation")
         print("   👤 Investor ID: \(investorId)")
@@ -94,27 +94,27 @@ final class CommissionAccumulationService: CommissionAccumulationServiceProtocol
     }
 
     func getUnsettledCommissions(for traderId: String) -> [CommissionAccumulation] {
-        accumulations.filter { $0.traderId == traderId && !$0.isSettled }
+        self.accumulations.filter { $0.traderId == traderId && !$0.isSettled }
     }
 
     func getUnsettledCommissions(forInvestor investorId: String) -> [CommissionAccumulation] {
-        accumulations.filter { $0.investorId == investorId && !$0.isSettled }
+        self.accumulations.filter { $0.investorId == investorId && !$0.isSettled }
     }
 
     func getUnsettledCommissionsByTrader() -> [String: [CommissionAccumulation]] {
-        let unsettled = accumulations.filter { !$0.isSettled }
+        let unsettled = self.accumulations.filter { !$0.isSettled }
         return Dictionary(grouping: unsettled, by: { $0.traderId })
     }
 
     func getUnsettledCommissionsByInvestor() -> [String: [CommissionAccumulation]] {
-        let unsettled = accumulations.filter { !$0.isSettled }
+        let unsettled = self.accumulations.filter { !$0.isSettled }
         return Dictionary(grouping: unsettled, by: { $0.investorId })
     }
 
     func markCommissionsAsSettled(commissionIds: [String], settlementId: String) async {
         for id in commissionIds {
             if let index = accumulations.firstIndex(where: { $0.id == id }) {
-                let existing = accumulations[index]
+                let existing = self.accumulations[index]
                 let updated = CommissionAccumulation(
                     id: existing.id,
                     investorId: existing.investorId,
@@ -127,7 +127,7 @@ final class CommissionAccumulationService: CommissionAccumulationServiceProtocol
                     settledAt: Date(),
                     settlementId: settlementId
                 )
-                accumulations[index] = updated
+                self.accumulations[index] = updated
             }
         }
 
@@ -136,13 +136,13 @@ final class CommissionAccumulationService: CommissionAccumulationServiceProtocol
     }
 
     func getTotalUnsettledCommission(for traderId: String) -> Double {
-        accumulations
+        self.accumulations
             .filter { $0.traderId == traderId && !$0.isSettled }
             .reduce(0.0) { $0 + $1.commissionAmount }
     }
 
     func getTotalUnsettledCommission(forInvestor investorId: String) -> Double {
-        accumulations
+        self.accumulations
             .filter { $0.investorId == investorId && !$0.isSettled }
             .reduce(0.0) { $0 + $1.commissionAmount }
     }

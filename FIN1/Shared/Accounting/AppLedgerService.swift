@@ -56,22 +56,22 @@ private struct AppLedgerResponse: Decodable {
 
         init(from decoder: Decoder) throws {
             let c = try decoder.container(keyedBy: CodingKeys.self)
-            id = try c.decode(String.self, forKey: .id)
-            account = try c.decode(String.self, forKey: .account)
-            side = try c.decode(String.self, forKey: .side)
-            amount = try c.decode(Double.self, forKey: .amount)
-            userId = (try? c.decode(String.self, forKey: .userId)) ?? ""
-            userRole = (try? c.decode(String.self, forKey: .userRole)) ?? ""
-            transactionType = (try? c.decode(String.self, forKey: .transactionType)) ?? ""
-            referenceId = (try? c.decode(String.self, forKey: .referenceId)) ?? ""
-            referenceType = (try? c.decode(String.self, forKey: .referenceType)) ?? ""
-            description = (try? c.decode(String.self, forKey: .description)) ?? ""
-            createdAt = try? c.decode(Date.self, forKey: .createdAt)
+            self.id = try c.decode(String.self, forKey: .id)
+            self.account = try c.decode(String.self, forKey: .account)
+            self.side = try c.decode(String.self, forKey: .side)
+            self.amount = try c.decode(Double.self, forKey: .amount)
+            self.userId = (try? c.decode(String.self, forKey: .userId)) ?? ""
+            self.userRole = (try? c.decode(String.self, forKey: .userRole)) ?? ""
+            self.transactionType = (try? c.decode(String.self, forKey: .transactionType)) ?? ""
+            self.referenceId = (try? c.decode(String.self, forKey: .referenceId)) ?? ""
+            self.referenceType = (try? c.decode(String.self, forKey: .referenceType)) ?? ""
+            self.description = (try? c.decode(String.self, forKey: .description)) ?? ""
+            self.createdAt = try? c.decode(Date.self, forKey: .createdAt)
 
             if let dict = try? c.decode([String: String].self, forKey: .metadata) {
-                metadata = dict
+                self.metadata = dict
             } else {
-                metadata = nil
+                self.metadata = nil
             }
         }
     }
@@ -120,7 +120,7 @@ final class AppLedgerService: AppLedgerServiceProtocol, @unchecked Sendable {
     }
 
     func reset() {
-        queue.async(flags: .barrier) {
+        self.queue.async(flags: .barrier) {
             self.cachedEntries = []
             self.cachedSummaries = []
             self.cachedRevenue = 0
@@ -135,7 +135,7 @@ final class AppLedgerService: AppLedgerServiceProtocol, @unchecked Sendable {
     func refreshFromBackend() async throws {
         let response: AppLedgerResponse = try await parseAPIClient.callFunction(
             "getAppLedger",
-            parameters: ["limit": 1000]
+            parameters: ["limit": 1_000]
         )
 
         let entries = response.entries.compactMap { self.mapEntry($0) }
@@ -146,7 +146,7 @@ final class AppLedgerService: AppLedgerServiceProtocol, @unchecked Sendable {
             inputVATClaimed: response.vatSummary.inputVATClaimed
         )
 
-        queue.async(flags: .barrier) {
+        self.queue.async(flags: .barrier) {
             self.cachedEntries = entries
             self.cachedSummaries = summaries
             self.cachedRevenue = response.totalRevenue
@@ -163,8 +163,8 @@ final class AppLedgerService: AppLedgerServiceProtocol, @unchecked Sendable {
         userId: String? = nil,
         transactionType: AppLedgerTransactionType? = nil
     ) -> [AppLedgerEntry] {
-        queue.sync {
-            cachedEntries.filter { entry in
+        self.queue.sync {
+            self.cachedEntries.filter { entry in
                 let matchesAccount = account.map { $0 == entry.account } ?? true
                 let matchesUser = userId.map { $0 == entry.userId } ?? true
                 let matchesType = transactionType.map { $0 == entry.transactionType } ?? true
@@ -175,19 +175,19 @@ final class AppLedgerService: AppLedgerServiceProtocol, @unchecked Sendable {
     }
 
     func getAllEntries() -> [AppLedgerEntry] {
-        getEntries()
+        self.getEntries()
     }
 
     func getAccountSummaries() -> [AppLedgerAccountSummary] {
-        queue.sync { cachedSummaries }
+        self.queue.sync { self.cachedSummaries }
     }
 
     func getTotalAppRevenue() -> Double {
-        queue.sync { cachedRevenue }
+        self.queue.sync { self.cachedRevenue }
     }
 
     func getVATSummary() -> AppVATSummary {
-        queue.sync { cachedVATSummary }
+        self.queue.sync { self.cachedVATSummary }
     }
 
     // MARK: - Mapping

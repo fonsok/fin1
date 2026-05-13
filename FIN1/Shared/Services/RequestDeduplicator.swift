@@ -41,7 +41,7 @@ actor RequestDeduplicator {
                 return RequestDeduplicationResult(value: typedResult)
             } catch {
                 // If existing task failed, remove it and retry
-                pendingRequests.removeValue(forKey: key)
+                self.pendingRequests.removeValue(forKey: key)
                 throw error
             }
         }
@@ -57,7 +57,7 @@ actor RequestDeduplicator {
             return AnySendableResult(value: value)
         }
 
-        pendingRequests[key] = task
+        self.pendingRequests[key] = task
 
         do {
             let boxed = try await task.value
@@ -67,27 +67,27 @@ actor RequestDeduplicator {
             }
             return RequestDeduplicationResult(value: typedResult)
         } catch {
-            pendingRequests.removeValue(forKey: key)
+            self.pendingRequests.removeValue(forKey: key)
             throw error
         }
     }
 
     /// Removes a completed request from the pending requests dictionary
     private func removeRequest(key: String) async {
-        pendingRequests.removeValue(forKey: key)
+        self.pendingRequests.removeValue(forKey: key)
     }
 
     /// Cancels all pending requests (useful for cleanup)
     func cancelAll() {
-        for (_, task) in pendingRequests {
+        for (_, task) in self.pendingRequests {
             task.cancel()
         }
-        pendingRequests.removeAll()
+        self.pendingRequests.removeAll()
     }
 
     /// Returns the number of pending requests
     var pendingCount: Int {
-        pendingRequests.count
+        self.pendingRequests.count
     }
 }
 

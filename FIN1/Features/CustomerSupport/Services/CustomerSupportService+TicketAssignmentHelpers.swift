@@ -23,7 +23,9 @@ extension CustomerSupportService {
             throw CustomerSupportError.invalidRequest("Agent nicht gefunden")
         }
         guard mockAgents[newAgentIndex].canAcceptTickets else {
-            throw CustomerSupportError.invalidRequest("Agent kann keine weiteren Tickets annehmen (\(mockAgents[newAgentIndex].currentTicketCount)/\(CSRAgent.maxTickets) Tickets)")
+            throw CustomerSupportError.invalidRequest(
+                "Agent kann keine weiteren Tickets annehmen (\(mockAgents[newAgentIndex].currentTicketCount)/\(CSRAgent.maxTickets) Tickets)"
+            )
         }
         if let oldAgentId = previousAgentId, let oldAgentIndex = mockAgents.firstIndex(where: { $0.id == oldAgentId }) {
             self.mockAgents[oldAgentIndex].currentTicketCount = max(0, self.mockAgents[oldAgentIndex].currentTicketCount - 1)
@@ -36,8 +38,12 @@ extension CustomerSupportService {
             mockTickets[ticketIndex].status = .inProgress
         }
         let newAgentName = mockAgents[newAgentIndex].name
-        await logAction(.respondToSupportTicket, customerId: ticket.userId, description: "Ticket \(ticket.ticketNumber) zugewiesen an \(newAgentName)")
-        await sendAgentAssignmentNotification(ticket: mockTickets[ticketIndex], agent: mockAgents[newAgentIndex])
+        await logAction(
+            .respondToSupportTicket,
+            customerId: ticket.userId,
+            description: "Ticket \(ticket.ticketNumber) zugewiesen an \(newAgentName)"
+        )
+        await self.sendAgentAssignmentNotification(ticket: mockTickets[ticketIndex], agent: mockAgents[newAgentIndex])
         logger.info("✅ Ticket \(ticket.ticketNumber) assigned to \(newAgentName) (\(agentId))")
     }
 

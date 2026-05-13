@@ -28,14 +28,14 @@ struct DevEscalationSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: ResponsiveDesign.spacing(16)) {
-                    ticketInfoSection
-                    severitySection
-                    bugDescriptionSection
-                    reproductionStepsSection
-                    behaviorSection
-                    impactSection
-                    workaroundSection
-                    teamSection
+                    self.ticketInfoSection
+                    self.severitySection
+                    self.bugDescriptionSection
+                    self.reproductionStepsSection
+                    self.behaviorSection
+                    self.impactSection
+                    self.workaroundSection
+                    self.teamSection
                 }
                 .padding()
             }
@@ -44,13 +44,13 @@ struct DevEscalationSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Abbrechen") { dismiss() }
+                    Button("Abbrechen") { self.dismiss() }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Eskalieren") {
-                        Task { await submitEscalation() }
+                        Task { await self.submitEscalation() }
                     }
-                    .disabled(!isFormValid || isSubmitting)
+                    .disabled(!self.isFormValid || self.isSubmitting)
                 }
             }
         }
@@ -63,12 +63,12 @@ struct DevEscalationSheet: View {
             HStack {
                 Image(systemName: "ladybug.fill")
                     .foregroundColor(AppTheme.accentRed)
-                Text("Bug Report für \(ticket.ticketNumber)")
+                Text("Bug Report für \(self.ticket.ticketNumber)")
                     .font(ResponsiveDesign.headlineFont())
                     .fontWeight(.semibold)
                     .foregroundColor(AppTheme.fontColor)
             }
-            Text(ticket.subject)
+            Text(self.ticket.subject)
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
         }
@@ -90,9 +90,9 @@ struct DevEscalationSheet: View {
             ForEach(BugSeverity.allCases, id: \.self) { sev in
                 SeverityButton(
                     severity: sev,
-                    isSelected: severity == sev
+                    isSelected: self.severity == sev
                 ) {
-                    severity = sev
+                    self.severity = sev
                 }
             }
         }
@@ -110,7 +110,7 @@ struct DevEscalationSheet: View {
                 .fontWeight(.semibold)
                 .foregroundColor(AppTheme.fontColor)
 
-            TextEditor(text: $description)
+            TextEditor(text: self.$description)
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor)
                 .frame(minHeight: 80)
@@ -121,7 +121,7 @@ struct DevEscalationSheet: View {
             CSInputField(
                 label: "JIRA Ticket ID (optional)",
                 placeholder: "z.B. FIN-1234",
-                text: $jiraTicketId
+                text: self.$jiraTicketId
             )
         }
         .padding()
@@ -138,23 +138,23 @@ struct DevEscalationSheet: View {
                 .fontWeight(.semibold)
                 .foregroundColor(AppTheme.fontColor)
 
-            ForEach(stepsToReproduce.indices, id: \.self) { index in
+            ForEach(self.stepsToReproduce.indices, id: \.self) { index in
                 HStack {
                     Text("\(index + 1).")
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(AppTheme.fontColor.opacity(0.7))
                         .frame(width: 25)
 
-                    TextField("Schritt beschreiben...", text: $stepsToReproduce[index])
+                    TextField("Schritt beschreiben...", text: self.$stepsToReproduce[index])
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(AppTheme.fontColor)
                         .padding(ResponsiveDesign.spacing(8))
                         .background(AppTheme.screenBackground)
                         .cornerRadius(ResponsiveDesign.spacing(6))
 
-                    if stepsToReproduce.count > 1 {
+                    if self.stepsToReproduce.count > 1 {
                         Button {
-                            stepsToReproduce.remove(at: index)
+                            self.stepsToReproduce.remove(at: index)
                         } label: {
                             Image(systemName: "minus.circle.fill")
                                 .foregroundColor(AppTheme.accentRed)
@@ -164,7 +164,7 @@ struct DevEscalationSheet: View {
             }
 
             Button {
-                stepsToReproduce.append("")
+                self.stepsToReproduce.append("")
             } label: {
                 Label("Schritt hinzufügen", systemImage: "plus.circle.fill")
                     .font(ResponsiveDesign.bodyFont())
@@ -190,7 +190,7 @@ struct DevEscalationSheet: View {
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
 
-                TextEditor(text: $expectedBehavior)
+                TextEditor(text: self.$expectedBehavior)
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.fontColor)
                     .frame(minHeight: 60)
@@ -204,7 +204,7 @@ struct DevEscalationSheet: View {
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
 
-                TextEditor(text: $actualBehavior)
+                TextEditor(text: self.$actualBehavior)
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.fontColor)
                     .frame(minHeight: 60)
@@ -232,7 +232,7 @@ struct DevEscalationSheet: View {
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.fontColor)
 
-                Stepper("\(affectedCustomers)", value: $affectedCustomers, in: 1...1000)
+                Stepper("\(self.affectedCustomers)", value: self.$affectedCustomers, in: 1...1_000)
                     .foregroundColor(AppTheme.fontColor)
             }
             .padding()
@@ -253,18 +253,18 @@ struct DevEscalationSheet: View {
                 .fontWeight(.semibold)
                 .foregroundColor(AppTheme.fontColor)
 
-            Toggle("Workaround verfügbar", isOn: $workaroundProvided)
+            Toggle("Workaround verfügbar", isOn: self.$workaroundProvided)
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor)
                 .tint(AppTheme.accentGreen)
 
-            if workaroundProvided {
+            if self.workaroundProvided {
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
                     Text("Workaround-Beschreibung")
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(AppTheme.fontColor.opacity(0.7))
 
-                    TextEditor(text: $workaroundDescription)
+                    TextEditor(text: self.$workaroundDescription)
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(AppTheme.fontColor)
                         .frame(minHeight: 60)
@@ -289,18 +289,18 @@ struct DevEscalationSheet: View {
                 .foregroundColor(AppTheme.fontColor)
 
             LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: ResponsiveDesign.spacing(8)) {
-                ForEach(devTeams, id: \.self) { team in
+                ForEach(self.devTeams, id: \.self) { team in
                     Button {
-                        selectedDevTeam = team
+                        self.selectedDevTeam = team
                     } label: {
                         Text(team)
                             .font(ResponsiveDesign.captionFont())
                             .fontWeight(.medium)
-                            .foregroundColor(selectedDevTeam == team ? .white : AppTheme.fontColor)
+                            .foregroundColor(self.selectedDevTeam == team ? .white : AppTheme.fontColor)
                             .padding(.horizontal, ResponsiveDesign.spacing(12))
                             .padding(.vertical, ResponsiveDesign.spacing(8))
                             .frame(maxWidth: .infinity)
-                            .background(selectedDevTeam == team ? AppTheme.accentLightBlue : AppTheme.screenBackground)
+                            .background(self.selectedDevTeam == team ? AppTheme.accentLightBlue : AppTheme.screenBackground)
                             .cornerRadius(ResponsiveDesign.spacing(8))
                     }
                 }
@@ -314,31 +314,31 @@ struct DevEscalationSheet: View {
     // MARK: - Helpers
 
     private var isFormValid: Bool {
-        !description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-        !expectedBehavior.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-        !actualBehavior.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-        stepsToReproduce.contains { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        !self.description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+            !self.expectedBehavior.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+            !self.actualBehavior.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+            self.stepsToReproduce.contains { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
     }
 
     private func submitEscalation() async {
-        isSubmitting = true
+        self.isSubmitting = true
         defer { isSubmitting = false }
 
         let escalation = DevEscalation(
-            jiraTicketId: jiraTicketId.isEmpty ? nil : jiraTicketId,
-            severity: severity,
-            description: description,
-            stepsToReproduce: stepsToReproduce.filter { !$0.isEmpty },
-            expectedBehavior: expectedBehavior,
-            actualBehavior: actualBehavior,
-            affectedCustomers: affectedCustomers,
-            workaroundProvided: workaroundProvided,
+            jiraTicketId: jiraTicketId.isEmpty ? nil : self.jiraTicketId,
+            severity: self.severity,
+            description: self.description,
+            stepsToReproduce: self.stepsToReproduce.filter { !$0.isEmpty },
+            expectedBehavior: self.expectedBehavior,
+            actualBehavior: self.actualBehavior,
+            affectedCustomers: self.affectedCustomers,
+            workaroundProvided: self.workaroundProvided,
             escalatedAt: Date(),
-            devTeam: selectedDevTeam
+            devTeam: self.selectedDevTeam
         )
 
-        await viewModel.escalateToDevTeam(ticketId: ticket.id, escalation: escalation)
-        dismiss()
+        await self.viewModel.escalateToDevTeam(ticketId: self.ticket.id, escalation: escalation)
+        self.dismiss()
     }
 }
 
@@ -350,7 +350,7 @@ struct SeverityButton: View {
     let action: () -> Void
 
     private var severityColor: Color {
-        switch severity {
+        switch self.severity {
         case .critical: return AppTheme.accentRed
         case .high: return AppTheme.accentOrange
         case .medium: return Color.yellow
@@ -359,7 +359,7 @@ struct SeverityButton: View {
     }
 
     private var severityDescription: String {
-        switch severity {
+        switch self.severity {
         case .critical: return "System nicht nutzbar, kein Workaround"
         case .high: return "Hauptfunktion betroffen, Workaround möglich"
         case .medium: return "Funktion teilweise betroffen"
@@ -368,32 +368,32 @@ struct SeverityButton: View {
     }
 
     var body: some View {
-        Button(action: action) {
+        Button(action: self.action) {
             HStack(spacing: ResponsiveDesign.spacing(12)) {
                 Circle()
-                    .fill(severityColor)
+                    .fill(self.severityColor)
                     .frame(width: 12, height: 12)
 
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(2)) {
-                    Text(severity.displayName)
+                    Text(self.severity.displayName)
                         .font(ResponsiveDesign.bodyFont())
                         .fontWeight(.medium)
-                        .foregroundColor(isSelected ? .white : AppTheme.fontColor)
+                        .foregroundColor(self.isSelected ? .white : AppTheme.fontColor)
 
-                    Text(severityDescription)
+                    Text(self.severityDescription)
                         .font(ResponsiveDesign.captionFont())
-                        .foregroundColor(isSelected ? .white.opacity(0.8) : AppTheme.fontColor.opacity(0.7))
+                        .foregroundColor(self.isSelected ? .white.opacity(0.8) : AppTheme.fontColor.opacity(0.7))
                 }
 
                 Spacer()
 
-                if isSelected {
+                if self.isSelected {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundColor(.white)
                 }
             }
             .padding()
-            .background(isSelected ? severityColor : AppTheme.screenBackground)
+            .background(self.isSelected ? self.severityColor : AppTheme.screenBackground)
             .cornerRadius(ResponsiveDesign.spacing(10))
         }
     }

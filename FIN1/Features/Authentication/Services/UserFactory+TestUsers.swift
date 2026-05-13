@@ -8,14 +8,14 @@ extension UserFactory {
         let signUpData = SignUpData()
 
         if email.contains("admin") {
-            return makeAdminTestUser(email: email, password: password, customerNumber: signUpData.customerNumber)
+            return self.makeAdminTestUser(email: email, password: password, customerNumber: signUpData.customerNumber)
         }
 
         if email.contains("csr") || email.contains("customerService") || email.contains("kundenberater") {
-            return makeCSRTestUser(email: email, password: password, customerNumber: signUpData.customerNumber)
+            return self.makeCSRTestUser(email: email, password: password, customerNumber: signUpData.customerNumber)
         }
 
-        return makeInvestorOrTraderTestUser(email: email, password: password, signUpData: signUpData)
+        return self.makeInvestorOrTraderTestUser(email: email, password: password, signUpData: signUpData)
     }
 
     private static func makeAdminTestUser(email: String, password: String, customerNumber: String) -> User {

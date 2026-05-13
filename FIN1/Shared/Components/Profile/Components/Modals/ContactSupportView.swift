@@ -25,10 +25,10 @@ struct ContactSupportView: View {
                 AppTheme.screenBackground.ignoresSafeArea()
                 ScrollView {
                     VStack(spacing: ResponsiveDesign.spacing(24)) {
-                        headerSection
-                        quickContactSection
-                        supportFormSection
-                        contactInfoSection
+                        self.headerSection
+                        self.quickContactSection
+                        self.supportFormSection
+                        self.contactInfoSection
                     }
                     .padding(.horizontal, ResponsiveDesign.spacing(16))
                     .padding(.bottom, ResponsiveDesign.spacing(16))
@@ -37,29 +37,29 @@ struct ContactSupportView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") { dismiss() }
+                    Button("Done") { self.dismiss() }
                         .foregroundColor(AppTheme.accentLightBlue)
                 }
             }
-            .alert("Request Submitted", isPresented: $viewModel.showSubmitSuccess) {
-                Button("OK") { viewModel.resetForm() }
+            .alert("Request Submitted", isPresented: self.$viewModel.showSubmitSuccess) {
+                Button("OK") { self.viewModel.resetForm() }
             } message: {
                 if let ticketNumber = viewModel.createdTicketNumber {
-                    Text("Your ticket \(ticketNumber) has been created. We'll respond \(viewModel.estimatedResponseTime.lowercased()).")
+                    Text("Your ticket \(ticketNumber) has been created. We'll respond \(self.viewModel.estimatedResponseTime.lowercased()).")
                 } else {
-                    Text("Thank you for contacting us. We'll respond to your request \(viewModel.estimatedResponseTime.lowercased()).")
+                    Text("Thank you for contacting us. We'll respond to your request \(self.viewModel.estimatedResponseTime.lowercased()).")
                 }
             }
-            .alert("Error", isPresented: $viewModel.showSubmitError) {
+            .alert("Error", isPresented: self.$viewModel.showSubmitError) {
                 Button("OK") {}
-            } message: { Text(viewModel.errorMessage) }
-            .alert("Call Support", isPresented: $viewModel.showCallConfirmation) {
+            } message: { Text(self.viewModel.errorMessage) }
+            .alert("Call Support", isPresented: self.$viewModel.showCallConfirmation) {
                 Button("Cancel", role: .cancel) {}
-                Button("Call") { if let url = viewModel.phoneURL() { openURL(url) } }
+                Button("Call") { if let url = viewModel.phoneURL() { self.openURL(url) } }
             } message: {
-                Text("Call \(viewModel.supportPhone)?\n\nSupport hours: \(viewModel.supportHours)")
+                Text("Call \(self.viewModel.supportPhone)?\n\nSupport hours: \(self.viewModel.supportHours)")
             }
-            .alert("Live Chat Unavailable", isPresented: $viewModel.showLiveChatUnavailable) {
+            .alert("Live Chat Unavailable", isPresented: self.$viewModel.showLiveChatUnavailable) {
                 Button("OK") {}
             } message: {
                 Text("Live chat is currently unavailable. Please try email or phone support, or submit a support request.")
@@ -96,13 +96,13 @@ struct ContactSupportView: View {
             }
             HStack(spacing: ResponsiveDesign.spacing(12)) {
                 ContactMethodButton(title: "Email", icon: "envelope.fill", color: AppTheme.accentLightBlue) {
-                    if let url = viewModel.emailURL() { openURL(url) }
+                    if let url = viewModel.emailURL() { self.openURL(url) }
                 }
                 ContactMethodButton(title: "Phone", icon: "phone.fill", color: AppTheme.accentGreen) {
-                    viewModel.initiatePhoneCall()
+                    self.viewModel.initiatePhoneCall()
                 }
                 ContactMethodButton(title: "Chat", icon: "bubble.left.and.bubble.right.fill", color: AppTheme.accentOrange) {
-                    viewModel.startLiveChat()
+                    self.viewModel.startLiveChat()
                 }
             }
         }
@@ -115,12 +115,12 @@ struct ContactSupportView: View {
 
     private var supportFormSection: some View {
         VStack(spacing: ResponsiveDesign.spacing(16)) {
-            sectionHeader(title: "Submit a Request", icon: "doc.text.fill", color: AppTheme.accentLightBlue)
-            categoryPicker
-            subjectField
-            messageField
-            screenshotToggle
-            submitButton
+            self.sectionHeader(title: "Submit a Request", icon: "doc.text.fill", color: AppTheme.accentLightBlue)
+            self.categoryPicker
+            self.subjectField
+            self.messageField
+            self.screenshotToggle
+            self.submitButton
         }
         .padding(ResponsiveDesign.spacing(16))
         .background(AppTheme.sectionBackground)
@@ -131,16 +131,16 @@ struct ContactSupportView: View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
             Text("Category").font(ResponsiveDesign.captionFont()).foregroundColor(AppTheme.fontColor.opacity(0.7))
             Menu {
-                ForEach(viewModel.availableCategories) { category in
-                    Button(action: { viewModel.selectedCategory = category }) {
+                ForEach(self.viewModel.availableCategories) { category in
+                    Button(action: { self.viewModel.selectedCategory = category }) {
                         Label(category.rawValue, systemImage: category.icon)
                     }
                 }
             } label: {
                 HStack {
-                    Image(systemName: viewModel.selectedCategory.icon)
-                        .foregroundColor(SupportCategoryHelper.color(for: viewModel.selectedCategory))
-                    Text(viewModel.selectedCategory.rawValue).font(ResponsiveDesign.bodyFont()).foregroundColor(AppTheme.fontColor)
+                    Image(systemName: self.viewModel.selectedCategory.icon)
+                        .foregroundColor(SupportCategoryHelper.color(for: self.viewModel.selectedCategory))
+                    Text(self.viewModel.selectedCategory.rawValue).font(ResponsiveDesign.bodyFont()).foregroundColor(AppTheme.fontColor)
                     Spacer()
                     Image(systemName: "chevron.down").font(ResponsiveDesign.captionFont()).foregroundColor(AppTheme.fontColor.opacity(0.5))
                 }
@@ -150,10 +150,10 @@ struct ContactSupportView: View {
             }
             HStack {
                 Text("Priority:").font(ResponsiveDesign.captionFont()).foregroundColor(AppTheme.fontColor.opacity(0.6))
-                Text(viewModel.selectedCategory.priority.rawValue)
+                Text(self.viewModel.selectedCategory.priority.rawValue)
                     .font(ResponsiveDesign.captionFont()).fontWeight(.medium)
-                    .foregroundColor(SupportCategoryHelper.priorityColor(for: viewModel.selectedCategory.priority))
-                Text("• Response: \(viewModel.estimatedResponseTime)")
+                    .foregroundColor(SupportCategoryHelper.priorityColor(for: self.viewModel.selectedCategory.priority))
+                Text("• Response: \(self.viewModel.estimatedResponseTime)")
                     .font(ResponsiveDesign.captionFont()).foregroundColor(AppTheme.fontColor.opacity(0.6))
             }
         }
@@ -162,7 +162,7 @@ struct ContactSupportView: View {
     private var subjectField: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
             Text("Subject").font(ResponsiveDesign.captionFont()).foregroundColor(AppTheme.fontColor.opacity(0.7))
-            TextField("Brief description of your issue", text: $viewModel.subject)
+            TextField("Brief description of your issue", text: self.$viewModel.subject)
                 .textFieldStyle(SettingsTextFieldStyle())
         }
     }
@@ -172,21 +172,21 @@ struct ContactSupportView: View {
             HStack {
                 Text("Message").font(ResponsiveDesign.captionFont()).foregroundColor(AppTheme.fontColor.opacity(0.7))
                 Spacer()
-                Text("\(viewModel.message.count)/1000")
+                Text("\(self.viewModel.message.count)/1000")
                     .font(ResponsiveDesign.captionFont())
-                    .foregroundColor(viewModel.message.count > 900 ? AppTheme.accentOrange : AppTheme.fontColor.opacity(0.5))
+                    .foregroundColor(self.viewModel.message.count > 900 ? AppTheme.accentOrange : AppTheme.fontColor.opacity(0.5))
             }
-            TextEditor(text: $viewModel.message)
+            TextEditor(text: self.$viewModel.message)
                 .frame(minHeight: 120)
                 .padding(ResponsiveDesign.spacing(12))
                 .background(AppTheme.systemTertiaryBackground)
                 .cornerRadius(ResponsiveDesign.spacing(8))
                 .foregroundColor(AppTheme.fontColor)
                 .scrollContentBackground(.hidden)
-                .onChange(of: viewModel.message) { _, newValue in
-                    if newValue.count > 1000 { viewModel.message = String(newValue.prefix(1000)) }
+                .onChange(of: self.viewModel.message) { _, newValue in
+                    if newValue.count > 1_000 { self.viewModel.message = String(newValue.prefix(1_000)) }
                 }
-            if viewModel.message.count < 10 && !viewModel.message.isEmpty {
+            if self.viewModel.message.count < 10 && !self.viewModel.message.isEmpty {
                 Text("Please provide more details (at least 10 characters)")
                     .font(ResponsiveDesign.captionFont()).foregroundColor(AppTheme.accentOrange)
             }
@@ -194,7 +194,7 @@ struct ContactSupportView: View {
     }
 
     private var screenshotToggle: some View {
-        Toggle(isOn: $viewModel.attachScreenshot) {
+        Toggle(isOn: self.$viewModel.attachScreenshot) {
             HStack {
                 Image(systemName: "camera.fill").foregroundColor(AppTheme.fontColor.opacity(0.6))
                 Text("Include screenshot").font(ResponsiveDesign.bodyFont()).foregroundColor(AppTheme.fontColor)
@@ -204,9 +204,9 @@ struct ContactSupportView: View {
     }
 
     private var submitButton: some View {
-        Button(action: { viewModel.submitRequest() }) {
+        Button(action: { self.viewModel.submitRequest() }) {
             HStack {
-                if viewModel.isSubmitting {
+                if self.viewModel.isSubmitting {
                     ProgressView().progressViewStyle(CircularProgressViewStyle(tint: .white))
                 } else {
                     Image(systemName: "paperplane.fill")
@@ -215,25 +215,30 @@ struct ContactSupportView: View {
             }
             .frame(maxWidth: .infinity)
             .padding()
-            .background(viewModel.isFormValid ? AppTheme.accentLightBlue : AppTheme.fontColor.opacity(0.3))
+            .background(self.viewModel.isFormValid ? AppTheme.accentLightBlue : AppTheme.fontColor.opacity(0.3))
             .foregroundColor(.white)
             .cornerRadius(ResponsiveDesign.spacing(12))
         }
-        .disabled(!viewModel.isFormValid || viewModel.isSubmitting)
+        .disabled(!self.viewModel.isFormValid || self.viewModel.isSubmitting)
     }
 
     // MARK: - Contact Info Section
 
     private var contactInfoSection: some View {
         VStack(spacing: ResponsiveDesign.spacing(16)) {
-            sectionHeader(title: "Contact Information", icon: "info.circle.fill", color: AppTheme.accentOrange)
+            self.sectionHeader(title: "Contact Information", icon: "info.circle.fill", color: AppTheme.accentOrange)
             VStack(spacing: ResponsiveDesign.spacing(12)) {
-                ContactInfoRow(icon: "envelope.fill", label: "Email", value: viewModel.supportEmail, color: AppTheme.accentLightBlue)
-                ContactInfoRow(icon: "phone.fill", label: "Phone (US)", value: viewModel.supportPhone, color: AppTheme.accentGreen)
-                ContactInfoRow(icon: "phone.fill", label: "Phone (DE)", value: viewModel.supportPhoneGermany, color: AppTheme.accentGreen)
-                ContactInfoRow(icon: "clock.fill", label: "Hours", value: viewModel.supportHours, color: AppTheme.accentOrange)
+                ContactInfoRow(icon: "envelope.fill", label: "Email", value: self.viewModel.supportEmail, color: AppTheme.accentLightBlue)
+                ContactInfoRow(icon: "phone.fill", label: "Phone (US)", value: self.viewModel.supportPhone, color: AppTheme.accentGreen)
+                ContactInfoRow(
+                    icon: "phone.fill",
+                    label: "Phone (DE)",
+                    value: self.viewModel.supportPhoneGermany,
+                    color: AppTheme.accentGreen
+                )
+                ContactInfoRow(icon: "clock.fill", label: "Hours", value: self.viewModel.supportHours, color: AppTheme.accentOrange)
             }
-            helpCenterTip
+            self.helpCenterTip
         }
         .padding(ResponsiveDesign.spacing(16))
         .background(AppTheme.sectionBackground)

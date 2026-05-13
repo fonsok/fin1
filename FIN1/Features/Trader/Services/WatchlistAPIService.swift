@@ -72,18 +72,18 @@ private struct ParseWatchlistResponse: Codable {
 
     func toSearchResult() -> SearchResult {
         return SearchResult(
-            valuationDate: valuationDate,
-            wkn: wkn,
-            strike: strike,
-            askPrice: askPrice,
-            direction: direction,
-            category: category,
-            underlyingType: underlyingType,
-            isin: isin,
-            underlyingAsset: underlyingAsset,
-            denomination: denomination,
-            subscriptionRatio: subscriptionRatio,
-            minimumOrderAmount: minimumOrderAmount
+            valuationDate: self.valuationDate,
+            wkn: self.wkn,
+            strike: self.strike,
+            askPrice: self.askPrice,
+            direction: self.direction,
+            category: self.category,
+            underlyingType: self.underlyingType,
+            isin: self.isin,
+            underlyingAsset: self.underlyingAsset,
+            denomination: self.denomination,
+            subscriptionRatio: self.subscriptionRatio,
+            minimumOrderAmount: self.minimumOrderAmount
         )
     }
 }
@@ -106,7 +106,7 @@ final class WatchlistAPIService: WatchlistAPIServiceProtocol {
 
         let input = ParseWatchlistInput.from(item: item, userId: userId)
         let response = try await apiClient.createObject(
-            className: className,
+            className: self.className,
             object: input
         )
 
@@ -123,7 +123,7 @@ final class WatchlistAPIService: WatchlistAPIServiceProtocol {
 
         // First, find the watchlist item by WKN and userId
         let items: [ParseWatchlistResponse] = try await apiClient.fetchObjects(
-            className: className,
+            className: self.className,
             query: [
                 "userId": userId,
                 "wkn": wkn
@@ -138,8 +138,8 @@ final class WatchlistAPIService: WatchlistAPIServiceProtocol {
             return
         }
 
-        try await apiClient.deleteObject(
-            className: className,
+        try await self.apiClient.deleteObject(
+            className: self.className,
             objectId: item.objectId
         )
 
@@ -152,7 +152,7 @@ final class WatchlistAPIService: WatchlistAPIServiceProtocol {
         print("📡 WatchlistAPIService: Fetching watchlist for user: \(userId)")
 
         let responses: [ParseWatchlistResponse] = try await apiClient.fetchObjects(
-            className: className,
+            className: self.className,
             query: ["userId": userId],
             include: nil,
             orderBy: "-createdAt",

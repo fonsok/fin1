@@ -11,21 +11,21 @@ struct LegalDocumentChangesOverlay: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
-            headerSection
-            versionComparisonSection
+            self.headerSection
+            self.versionComparisonSection
 
-            if !changesSummary.changes.isEmpty {
-                changesListSection
+            if !self.changesSummary.changes.isEmpty {
+                self.changesListSection
             } else {
-                noSignificantChangesView
+                self.noSignificantChangesView
             }
         }
         .padding(ResponsiveDesign.spacing(16))
-        .background(changesBackgroundColor)
+        .background(self.changesBackgroundColor)
         .cornerRadius(ResponsiveDesign.spacing(12))
         .overlay(
             RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(12))
-                .stroke(changesBorderColor, lineWidth: 1)
+                .stroke(self.changesBorderColor, lineWidth: 1)
         )
     }
 
@@ -37,14 +37,14 @@ struct LegalDocumentChangesOverlay: View {
                 .font(ResponsiveDesign.headlineFont())
                 .foregroundColor(AppTheme.accentOrange)
 
-            Text(isEnglish ? "What's Changed?" : "Was hat sich geändert?")
+            Text(self.isEnglish ? "What's Changed?" : "Was hat sich geändert?")
                 .font(ResponsiveDesign.headlineFont())
                 .fontWeight(.semibold)
                 .foregroundColor(AppTheme.fontColor)
 
             Spacer()
 
-            Text(isEnglish ? changesSummary.localizedSummaryEN : changesSummary.localizedSummary)
+            Text(self.isEnglish ? self.changesSummary.localizedSummaryEN : self.changesSummary.localizedSummary)
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
                 .padding(.horizontal, ResponsiveDesign.spacing(8))
@@ -58,10 +58,10 @@ struct LegalDocumentChangesOverlay: View {
 
     private var versionComparisonSection: some View {
         HStack(spacing: ResponsiveDesign.spacing(16)) {
-            versionBadge(
-                label: isEnglish ? "Previous" : "Bisher",
-                version: changesSummary.oldVersion,
-                date: changesSummary.oldEffectiveDate,
+            self.versionBadge(
+                label: self.isEnglish ? "Previous" : "Bisher",
+                version: self.changesSummary.oldVersion,
+                date: self.changesSummary.oldEffectiveDate,
                 isOld: true
             )
 
@@ -69,10 +69,10 @@ struct LegalDocumentChangesOverlay: View {
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.5))
 
-            versionBadge(
-                label: isEnglish ? "New" : "Neu",
-                version: changesSummary.newVersion,
-                date: changesSummary.newEffectiveDate,
+            self.versionBadge(
+                label: self.isEnglish ? "New" : "Neu",
+                version: self.changesSummary.newVersion,
+                date: self.changesSummary.newEffectiveDate,
                 isOld: false
             )
 
@@ -92,7 +92,7 @@ struct LegalDocumentChangesOverlay: View {
                 .foregroundColor(isOld ? AppTheme.fontColor.opacity(0.7) : AppTheme.accentLightBlue)
 
             if let date {
-                Text(dateFormatter.string(from: date))
+                Text(self.dateFormatter.string(from: date))
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.5))
             }
@@ -103,23 +103,23 @@ struct LegalDocumentChangesOverlay: View {
 
     private var changesListSection: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
-            Button(action: { withAnimation { isExpanded.toggle() } }) {
+            Button(action: { withAnimation { self.isExpanded.toggle() } }) {
                 HStack {
-                    Text(isEnglish ? "View Details" : "Details anzeigen")
+                    Text(self.isEnglish ? "View Details" : "Details anzeigen")
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(AppTheme.accentLightBlue)
 
-                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                    Image(systemName: self.isExpanded ? "chevron.up" : "chevron.down")
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(AppTheme.accentLightBlue)
                 }
             }
             .buttonStyle(PlainButtonStyle())
 
-            if isExpanded {
+            if self.isExpanded {
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
-                    ForEach(changesSummary.changes) { change in
-                        changeRow(change)
+                    ForEach(self.changesSummary.changes) { change in
+                        self.changeRow(change)
                     }
                 }
                 .padding(.top, ResponsiveDesign.spacing(4))
@@ -132,7 +132,7 @@ struct LegalDocumentChangesOverlay: View {
         HStack(alignment: .top, spacing: ResponsiveDesign.spacing(10)) {
             Image(systemName: change.changeType.icon)
                 .font(ResponsiveDesign.bodyFont())
-                .foregroundColor(colorForChangeType(change.changeType))
+                .foregroundColor(self.colorForChangeType(change.changeType))
                 .frame(width: ResponsiveDesign.spacing(20))
 
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(2)) {
@@ -142,12 +142,12 @@ struct LegalDocumentChangesOverlay: View {
                         .fontWeight(.medium)
                         .foregroundColor(AppTheme.fontColor)
 
-                    Text(isEnglish ? change.changeType.localizedLabelEN : change.changeType.localizedLabel)
+                    Text(self.isEnglish ? change.changeType.localizedLabelEN : change.changeType.localizedLabel)
                         .font(ResponsiveDesign.captionFont())
-                        .foregroundColor(colorForChangeType(change.changeType))
+                        .foregroundColor(self.colorForChangeType(change.changeType))
                         .padding(.horizontal, ResponsiveDesign.spacing(6))
                         .padding(.vertical, ResponsiveDesign.spacing(2))
-                        .background(colorForChangeType(change.changeType).opacity(0.15))
+                        .background(self.colorForChangeType(change.changeType).opacity(0.15))
                         .cornerRadius(ResponsiveDesign.spacing(4))
                 }
 
@@ -169,9 +169,9 @@ struct LegalDocumentChangesOverlay: View {
             Image(systemName: "checkmark.circle.fill")
                 .foregroundColor(AppTheme.accentGreen)
 
-            Text(isEnglish
-                 ? "Minor updates and clarifications only"
-                 : "Nur kleinere Aktualisierungen und Klarstellungen")
+            Text(self.isEnglish
+                ? "Minor updates and clarifications only"
+                : "Nur kleinere Aktualisierungen und Klarstellungen")
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
         }
@@ -202,7 +202,7 @@ struct LegalDocumentChangesOverlay: View {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         formatter.timeStyle = .none
-        formatter.locale = Locale(identifier: isEnglish ? "en_US" : "de_DE")
+        formatter.locale = Locale(identifier: self.isEnglish ? "en_US" : "de_DE")
         return formatter
     }
 }

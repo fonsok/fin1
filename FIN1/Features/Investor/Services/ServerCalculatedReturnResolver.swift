@@ -125,7 +125,7 @@ enum ServerCalculatedReturnResolver {
                 investmentId: investmentId,
                 tradeId: nil
             )
-            return canonicalSummary(fromCollectionBills: response.collectionBills)
+            return self.canonicalSummary(fromCollectionBills: response.collectionBills)
         } catch {
             print("⚠️ ServerCalculatedReturnResolver: Backend fetch failed for investment \(investmentId): \(error.localizedDescription)")
             return nil

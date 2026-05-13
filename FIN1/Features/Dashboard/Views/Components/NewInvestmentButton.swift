@@ -8,7 +8,7 @@ struct NewInvestmentButton: View {
     var body: some View {
         Button(action: {
             // Navigate to Discover tab (tab 1) which contains Find Trader
-            tabRouter.selectedTab = 1
+            self.tabRouter.selectedTab = 1
         }) {
             HStack(spacing: ResponsiveDesign.spacing(12)) {
                 Image(systemName: "plus.circle.fill")

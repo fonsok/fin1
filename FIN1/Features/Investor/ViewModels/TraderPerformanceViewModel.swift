@@ -1,5 +1,5 @@
-import SwiftUI
 import Foundation
+import SwiftUI
 
 // MARK: - Trader Performance ViewModel
 @MainActor
@@ -40,48 +40,48 @@ final class TraderPerformanceViewModel: ObservableObject {
     // MARK: - Initialization
     init(trader: MockTrader) {
         self.trader = trader
-        processTrades()
+        self.processTrades()
     }
 
     // MARK: - Public Methods
     func updateTimePeriod(_ period: TimePeriodOption) {
-        selectedTimePeriod = period
-        processTrades()
+        self.selectedTimePeriod = period
+        self.processTrades()
     }
 
     func updateViewMode(_ mode: ViewMode) {
-        viewMode = mode
+        self.viewMode = mode
     }
 
     // MARK: - Data Processing (Business Logic)
     private func processTrades() {
-        isLoading = true
+        self.isLoading = true
         defer { isLoading = false }
 
-        let cutoffDate = calendar.date(byAdding: .day, value: -selectedTimePeriod.days, to: Date()) ?? Date()
+        let cutoffDate = self.calendar.date(byAdding: .day, value: -self.selectedTimePeriod.days, to: Date()) ?? Date()
 
         // Filter trades within selected time period
-        let filteredTrades = trader.recentTrades.filter { $0.date >= cutoffDate }
+        let filteredTrades = self.trader.recentTrades.filter { $0.date >= cutoffDate }
 
         // Group by calendar week using a string key
         let grouped = Dictionary(grouping: filteredTrades) { trade in
-            let year = calendar.component(.yearForWeekOfYear, from: trade.date)
-            let week = calendar.component(.weekOfYear, from: trade.date)
+            let year = self.calendar.component(.yearForWeekOfYear, from: trade.date)
+            let week = self.calendar.component(.weekOfYear, from: trade.date)
             return "\(year)-\(week)"
         }
 
         // Convert to sorted array
-        groupedWeeks = grouped.map { _, trades in
+        self.groupedWeeks = grouped.map { _, trades in
             let weekDate = trades.first?.date ?? Date()
-            let weekNumber = calendar.component(.weekOfYear, from: weekDate)
-            let year = calendar.component(.year, from: weekDate)
-            let monthName = getMonthName(for: weekDate)
+            let weekNumber = self.calendar.component(.weekOfYear, from: weekDate)
+            let year = self.calendar.component(.year, from: weekDate)
+            let monthName = self.getMonthName(for: weekDate)
 
             // Create trade return data with active status detection
             let tradeReturns = trades.enumerated().map { index, trade in
                 // Determine if trade is active: recent trades (within last 7 days) with "Buy" type
                 // For mock data, we'll consider a trade active if it's a Buy and recent
-                let daysSinceTrade = calendar.dateComponents([.day], from: trade.date, to: Date()).day ?? 0
+                let daysSinceTrade = self.calendar.dateComponents([.day], from: trade.date, to: Date()).day ?? 0
                 let isActive = trade.tradeType == "Buy" && daysSinceTrade <= 7 && trade.roi == 0
 
                 // Trade number based on index (will be replaced with actual trade numbers when available)
@@ -108,7 +108,7 @@ final class TraderPerformanceViewModel: ObservableObject {
         }
 
         // Update chart display data when groupedWeeks changes
-        chartDisplayData = ChartDisplayData(weeks: groupedWeeks)
+        self.chartDisplayData = ChartDisplayData(weeks: self.groupedWeeks)
     }
 
     // MARK: - Helper Methods
@@ -121,15 +121,15 @@ final class TraderPerformanceViewModel: ObservableObject {
 
     // MARK: - Computed Properties
     var hasTrades: Bool {
-        !groupedWeeks.isEmpty
+        !self.groupedWeeks.isEmpty
     }
 
     var totalTradesCount: Int {
-        trader.recentTrades.count
+        self.trader.recentTrades.count
     }
 
     var currentYear: Int {
-        calendar.component(.year, from: Date())
+        self.calendar.component(.year, from: Date())
     }
 }
 
@@ -150,16 +150,16 @@ struct ChartDisplayData {
         }
 
         // Business logic: Group by month
-        self.monthGroups = ChartDisplayData.processMonthGroups(trades: allTrades)
+        self.monthGroups = ChartDisplayData.processMonthGroups(trades: self.allTrades)
 
         // Business logic: Calculate Y-axis range
-        self.yAxisRange = ChartDisplayData.calculateYAxisRange(trades: allTrades)
+        self.yAxisRange = ChartDisplayData.calculateYAxisRange(trades: self.allTrades)
 
         // Business logic: Generate Y-axis labels
-        self.yAxisLabels = ChartDisplayData.generateYAxisLabels(yAxisRange: yAxisRange)
+        self.yAxisLabels = ChartDisplayData.generateYAxisLabels(yAxisRange: self.yAxisRange)
 
         // Business logic: Check for log scale values
-        self.hasLogScaleValues = allTrades.contains { $0.tradeReturn.roi > 200 }
+        self.hasLogScaleValues = self.allTrades.contains { $0.tradeReturn.roi > 200 }
     }
 
     private static func processMonthGroups(trades: [ChartTradeItem]) -> [MonthChartGroup] {
@@ -198,7 +198,7 @@ struct ChartDisplayData {
         labels.append(100)
         labels.append(200)
         if yAxisRange.max > 200 {
-            let logLabels = generateLogScaleLabels(maxValue: yAxisRange.max)
+            let logLabels = self.generateLogScaleLabels(maxValue: yAxisRange.max)
             labels.append(contentsOf: logLabels)
         }
         return labels.sorted(by: >)
@@ -206,7 +206,7 @@ struct ChartDisplayData {
 
     private static func generateLogScaleLabels(maxValue: Double) -> [Double] {
         var logLabels: [Double] = []
-        let logSteps: [Double] = [200, 500, 1000, 2000, 5000, 10000]
+        let logSteps: [Double] = [200, 500, 1_000, 2_000, 5_000, 10_000]
         for step in logSteps {
             if step <= maxValue {
                 logLabels.append(step)
@@ -215,7 +215,7 @@ struct ChartDisplayData {
             }
         }
         if logLabels.isEmpty || (logLabels.last ?? 0) < maxValue {
-            let roundedMax = roundToSignificantValue(maxValue)
+            let roundedMax = self.roundToSignificantValue(maxValue)
             if roundedMax > 200 && !logLabels.contains(roundedMax) {
                 logLabels.append(roundedMax)
             }
@@ -225,10 +225,10 @@ struct ChartDisplayData {
 
     private static func roundToSignificantValue(_ value: Double) -> Double {
         if value <= 500 { return 500 }
-        if value <= 1000 { return 1000 }
-        if value <= 2000 { return 2000 }
-        if value <= 5000 { return 5000 }
-        return ceil(value / 1000) * 1000
+        if value <= 1_000 { return 1_000 }
+        if value <= 2_000 { return 2_000 }
+        if value <= 5_000 { return 5_000 }
+        return ceil(value / 1_000) * 1_000
     }
 }
 
@@ -270,7 +270,7 @@ struct WeekTradeData: Identifiable {
 
     // Convenience accessor for backward compatibility
     var returns: [Double] {
-        tradeReturns.map { $0.roi }
+        self.tradeReturns.map { $0.roi }
     }
 }
 

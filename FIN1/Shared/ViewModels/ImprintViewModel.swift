@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 /// ViewModel for the Imprint (Impressum) view
 /// Server-driven via `TermsContentService` with bundled fallback.
@@ -24,11 +24,11 @@ final class ImprintViewModel: ObservableObject {
     }
 
     var displayedVersion: String {
-        serverImprintContent?.version ?? "1.0"
+        self.serverImprintContent?.version ?? "1.0"
     }
 
     var displayedEffectiveDateISO: String? {
-        serverImprintContent?.effectiveDate
+        self.serverImprintContent?.effectiveDate
     }
 
     var displayedLastUpdatedText: String {
@@ -57,8 +57,8 @@ final class ImprintViewModel: ObservableObject {
         [
             .init(
                 id: "imprint",
-                title: currentLanguage == .german ? "Impressum" : "Imprint",
-                content: bundledImprintText(),
+                title: self.currentLanguage == .german ? "Impressum" : "Imprint",
+                content: self.bundledImprintText(),
                 icon: "building.2"
             )
         ]
@@ -67,66 +67,66 @@ final class ImprintViewModel: ObservableObject {
     var sections: [TermsOfServiceDataProvider.TermsSection] {
         // Imprint is usually short; always prefer server if present.
         if let serverImprintContent, !serverImprintContent.sections.isEmpty {
-            return serverSections
+            return self.serverSections
         }
-        return bundledSections
+        return self.bundledSections
     }
 
     var filteredSections: [TermsOfServiceDataProvider.TermsSection] {
-        guard !searchQuery.isEmpty else { return sections }
-        let q = searchQuery.lowercased()
-        return sections.filter { s in
+        guard !self.searchQuery.isEmpty else { return self.sections }
+        let q = self.searchQuery.lowercased()
+        return self.sections.filter { s in
             s.title.lowercased().contains(q) || s.content.lowercased().contains(q)
         }
     }
 
     var hasNoSearchResults: Bool {
-        !searchQuery.isEmpty && filteredSections.isEmpty
+        !self.searchQuery.isEmpty && self.filteredSections.isEmpty
     }
 
     func toggleSection(_ section: TermsOfServiceDataProvider.TermsSection) {
-        if expandedSectionIds.contains(section.id) {
-            expandedSectionIds.remove(section.id)
+        if self.expandedSectionIds.contains(section.id) {
+            self.expandedSectionIds.remove(section.id)
         } else {
-            expandedSectionIds.insert(section.id)
+            self.expandedSectionIds.insert(section.id)
         }
     }
 
     func isExpanded(_ section: TermsOfServiceDataProvider.TermsSection) -> Bool {
-        expandedSectionIds.contains(section.id)
+        self.expandedSectionIds.contains(section.id)
     }
 
     func expandAll() {
-        expandedSectionIds = Set(sections.map(\.id))
+        self.expandedSectionIds = Set(self.sections.map(\.id))
     }
 
     func collapseAll() {
-        expandedSectionIds.removeAll()
+        self.expandedSectionIds.removeAll()
     }
 
     func toggleLanguage() {
-        currentLanguage = (currentLanguage == .english) ? .german : .english
+        self.currentLanguage = (self.currentLanguage == .english) ? .german : .english
         Task { [weak self] in
             await self?.loadIfAvailable()
         }
     }
 
     private func bundledImprintText() -> String {
-        if currentLanguage == .german {
+        if self.currentLanguage == .german {
             return """
             **Anbieter / Verantwortlicher:**
             \(LegalIdentity.companyLegalName)
             \(LegalIdentity.companyAddressLine)
-
+            
             **Geschäftsführung:**
             \(LegalIdentity.companyManagement)
-
+            
             **Registereintrag:**
             \(LegalIdentity.companyRegisterNumber)
-
+            
             **USt-IdNr.:**
             \(LegalIdentity.companyVatId)
-
+            
             **Kontakt:**
             E-Mail: \(CompanyContactInfo.email)
             Telefon: \(CompanyContactInfo.phone)
@@ -138,16 +138,16 @@ final class ImprintViewModel: ObservableObject {
         **Provider / Responsible entity:**
         \(LegalIdentity.companyLegalName)
         \(LegalIdentity.companyAddressLine)
-
+        
         **Management:**
         \(LegalIdentity.companyManagement)
-
+        
         **Register:**
         \(LegalIdentity.companyRegisterNumber)
-
+        
         **VAT ID:**
         \(LegalIdentity.companyVatId)
-
+        
         **Contact:**
         Email: \(CompanyContactInfo.email)
         Phone: \(CompanyContactInfo.phone)
@@ -157,22 +157,22 @@ final class ImprintViewModel: ObservableObject {
 
     private func loadIfAvailable() async {
         guard let termsContentService else {
-            serverImprintContent = nil
-            serverContentSource = nil
+            self.serverImprintContent = nil
+            self.serverContentSource = nil
             return
         }
 
         // 1) Server
         do {
             let content = try await termsContentService.fetchCurrentTerms(
-                language: currentLanguage,
+                language: self.currentLanguage,
                 documentType: .imprint
             )
-            serverImprintContent = content
-            serverContentSource = "server"
+            self.serverImprintContent = content
+            self.serverContentSource = "server"
             await termsContentService.logDelivery(
                 documentType: .imprint,
-                language: currentLanguage,
+                language: self.currentLanguage,
                 servedVersion: content.version,
                 servedHash: content.documentHash,
                 source: "server"
@@ -184,11 +184,11 @@ final class ImprintViewModel: ObservableObject {
 
         // 2) Cache
         if let cached = termsContentService.getCachedTerms(language: currentLanguage, documentType: .imprint) {
-            serverImprintContent = cached
-            serverContentSource = "cache"
+            self.serverImprintContent = cached
+            self.serverContentSource = "cache"
             await termsContentService.logDelivery(
                 documentType: .imprint,
-                language: currentLanguage,
+                language: self.currentLanguage,
                 servedVersion: cached.version,
                 servedHash: cached.documentHash,
                 source: "cache"
@@ -197,11 +197,11 @@ final class ImprintViewModel: ObservableObject {
         }
 
         // 3) Bundled
-        serverImprintContent = nil
-        serverContentSource = "bundled"
+        self.serverImprintContent = nil
+        self.serverContentSource = "bundled"
         await termsContentService.logDelivery(
             documentType: .imprint,
-            language: currentLanguage,
+            language: self.currentLanguage,
             servedVersion: "1.0",
             servedHash: nil,
             source: "bundled"

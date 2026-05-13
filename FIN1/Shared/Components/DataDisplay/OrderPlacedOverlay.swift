@@ -25,21 +25,21 @@ struct OrderPlacedOverlay: View {
                     .foregroundColor(AppTheme.accentGreen)
 
                 // Title - specific to order type
-                Text(titleText)
+                Text(self.titleText)
                     .font(ResponsiveDesign.titleFont())
                     .fontWeight(.bold)
                     .foregroundColor(AppTheme.fontColor)
                     .multilineTextAlignment(.center)
 
                 // Subtitle
-                Text(subtitleText)
+                Text(self.subtitleText)
                     .font(ResponsiveDesign.headlineFont())
                     .fontWeight(.medium)
                     .foregroundColor(AppTheme.accentGreen)
                     .multilineTextAlignment(.center)
 
                 // Info text
-                Text(infoText)
+                Text(self.infoText)
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.8))
                     .multilineTextAlignment(.center)
@@ -70,7 +70,7 @@ struct OrderPlacedOverlay: View {
     // MARK: - Computed Properties
 
     private var titleText: String {
-        switch orderType {
+        switch self.orderType {
         case .buy:
             return "Kauf-Order erfolgreich platziert!"
         case .sell:
@@ -79,7 +79,7 @@ struct OrderPlacedOverlay: View {
     }
 
     private var subtitleText: String {
-        switch orderType {
+        switch self.orderType {
         case .buy:
             return "Ihre Kauf-Order wurde übermittelt"
         case .sell:
@@ -88,7 +88,7 @@ struct OrderPlacedOverlay: View {
     }
 
     private var infoText: String {
-        switch orderType {
+        switch self.orderType {
         case .buy:
             return "Die Order erscheint nun in den laufenden Transaktionen. Sie werden automatisch zum Depot weitergeleitet."
         case .sell:

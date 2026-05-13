@@ -12,8 +12,8 @@ struct PendingApprovalsNavigationLink: View {
             HStack {
                 Label("Pending Approvals", systemImage: "checkmark.seal")
                 Spacer()
-                if viewModel.pendingCount > 0 {
-                    Text("\(viewModel.pendingCount)")
+                if self.viewModel.pendingCount > 0 {
+                    Text("\(self.viewModel.pendingCount)")
                         .font(ResponsiveDesign.captionFont())
                         .fontWeight(.bold)
                         .foregroundColor(.white)
@@ -25,8 +25,8 @@ struct PendingApprovalsNavigationLink: View {
             }
         }
         .task {
-            viewModel.configure(with: appServices.configurationService)
-            await viewModel.loadPendingCount()
+            self.viewModel.configure(with: self.appServices.configurationService)
+            await self.viewModel.loadPendingCount()
         }
     }
 }

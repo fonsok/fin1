@@ -28,13 +28,13 @@ final class CalculationGuardService: @unchecked Sendable {
     /// Enables or disables calculation validation
     /// - Parameter enabled: Whether validation should be enabled
     func setValidationEnabled(_ enabled: Bool) {
-        isValidationEnabled = enabled
+        self.isValidationEnabled = enabled
     }
 
     /// Sets the validation mode
     /// - Parameter mode: The validation mode to use
     func setValidationMode(_ mode: ValidationMode) {
-        validationMode = mode
+        self.validationMode = mode
     }
 
     /// Guards a profit calculation to ensure it uses the correct method
@@ -54,7 +54,7 @@ final class CalculationGuardService: @unchecked Sendable {
             sellInvoices: sellInvoices
         )
 
-        if isValidationEnabled && validationMode != .disabled {
+        if self.isValidationEnabled && self.validationMode != .disabled {
             // Validate against fallback if provided
             if let fallback = fallbackCalculation {
                 _ = fallback() // Fallback result used for validation but not stored
@@ -66,9 +66,9 @@ final class CalculationGuardService: @unchecked Sendable {
                 )
 
                 if validation.hasErrors {
-                    logValidationError("Profit calculation inconsistency detected", validation.errors)
+                    self.logValidationError("Profit calculation inconsistency detected", validation.errors)
 
-                    if validationMode == .strict {
+                    if self.validationMode == .strict {
                         fatalError("Calculation validation failed: \(validation.errors)")
                     }
                 }
@@ -90,7 +90,7 @@ final class CalculationGuardService: @unchecked Sendable {
         // Always use the correct calculation method
         let correctTax = InvoiceTaxCalculator.calculateTotalTax(for: profit)
 
-        if isValidationEnabled && validationMode != .disabled {
+        if self.isValidationEnabled && self.validationMode != .disabled {
             // Validate against fallback if provided
             if let fallback = fallbackCalculation {
                 let fallbackResult = fallback()
@@ -102,9 +102,9 @@ final class CalculationGuardService: @unchecked Sendable {
                         actual: fallbackResult
                     )
 
-                    logValidationError("Tax calculation inconsistency detected", [error])
+                    self.logValidationError("Tax calculation inconsistency detected", [error])
 
-                    if validationMode == .strict {
+                    if self.validationMode == .strict {
                         fatalError("Tax calculation validation failed: \(error)")
                     }
                 }
@@ -126,7 +126,7 @@ final class CalculationGuardService: @unchecked Sendable {
         // Always use the correct calculation method
         let correctFees = FeeCalculationService.createFeeBreakdown(for: orderAmount)
 
-        if isValidationEnabled && validationMode != .disabled {
+        if self.isValidationEnabled && self.validationMode != .disabled {
             // Validate against fallback if provided
             if let fallback = fallbackCalculation {
                 let fallbackResult = fallback()
@@ -140,7 +140,7 @@ final class CalculationGuardService: @unchecked Sendable {
                         tolerance: 0.01
                     )
 
-                    logValidationWarning("Fee calculation deviation detected", [warning])
+                    self.logValidationWarning("Fee calculation deviation detected", [warning])
                 }
             }
         }
@@ -162,10 +162,10 @@ final class CalculationGuardService: @unchecked Sendable {
             // For profit calculations, exclude tax items
             let filteredItems = invoice.items.filter { $0.itemType != .tax }
 
-            if isValidationEnabled {
+            if self.isValidationEnabled {
                 let taxItems = invoice.items.filter { $0.itemType == .tax }
                 if !taxItems.isEmpty {
-                    logValidationWarning("Tax items found in profit calculation - properly filtered", [])
+                    self.logValidationWarning("Tax items found in profit calculation - properly filtered", [])
                 }
             }
 
@@ -179,8 +179,8 @@ final class CalculationGuardService: @unchecked Sendable {
             // For fee calculations, include fee items
             return invoice.items.filter {
                 $0.itemType == .orderFee ||
-                $0.itemType == .exchangeFee ||
-                $0.itemType == .foreignCosts
+                    $0.itemType == .exchangeFee ||
+                    $0.itemType == .foreignCosts
             }
 
         case .securitiesCalculation:
@@ -229,10 +229,10 @@ extension CalculationGuardService {
         sellInvoices: [Invoice]
     ) -> CalculationResult {
         // 1. Guard profit calculation
-        let profit = guardProfitCalculation(buyInvoice: buyInvoice, sellInvoices: sellInvoices)
+        let profit = self.guardProfitCalculation(buyInvoice: buyInvoice, sellInvoices: sellInvoices)
 
         // 2. Guard tax calculation
-        let totalTax = guardTaxCalculation(profit: profit)
+        let totalTax = self.guardTaxCalculation(profit: profit)
 
         // 3. Calculate individual taxes
         let capitalGainsTax = InvoiceTaxCalculator.calculateCapitalGainsTax(for: profit)

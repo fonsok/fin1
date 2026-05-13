@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Investor Notification Service Protocol
 /// Defines the contract for investor notifications and document generation
@@ -24,8 +24,10 @@ final class InvestorNotificationService: InvestorNotificationServiceProtocol, Se
     private let documentService: any DocumentServiceProtocol
     private let transactionIdService: any TransactionIdServiceProtocol
 
-    init(documentService: any DocumentServiceProtocol = DocumentService.shared,
-         transactionIdService: any TransactionIdServiceProtocol = TransactionIdService()) {
+    init(
+        documentService: any DocumentServiceProtocol = DocumentService.shared,
+        transactionIdService: any TransactionIdServiceProtocol = TransactionIdService()
+    ) {
         self.documentService = documentService
         self.transactionIdService = transactionIdService
     }
@@ -40,7 +42,7 @@ final class InvestorNotificationService: InvestorNotificationServiceProtocol, Se
     }
 
     func reset() {
-        errorMessage = nil
+        self.errorMessage = nil
     }
 
     // MARK: - Investment Notifications
@@ -58,7 +60,7 @@ final class InvestorNotificationService: InvestorNotificationServiceProtocol, Se
 
     func generateInvestmentDocument(for investment: Investment) async {
         // Create Investment document for completed investments
-        let documentNumber = transactionIdService.generateInvestorDocumentNumber()
+        let documentNumber = self.transactionIdService.generateInvestorDocumentNumber()
         print("📄 Investment Document Generated: \(documentNumber) for Investment #\(investment.id)")
 
         // Create document for the Investment with industry-standard naming
@@ -69,7 +71,7 @@ final class InvestorNotificationService: InvestorNotificationServiceProtocol, Se
             type: .investorCollectionBill,
             status: .verified,
             fileURL: "investment://\(documentNumber).pdf",
-            size: 1024 * 60, // Mock 60KB PDF size
+            size: 1_024 * 60, // Mock 60KB PDF size
             uploadedAt: Date(),
             investmentId: investment.id,
             documentNumber: documentNumber
@@ -77,7 +79,7 @@ final class InvestorNotificationService: InvestorNotificationServiceProtocol, Se
 
         // Add document to document service
         do {
-            try await documentService.uploadDocument(document)
+            try await self.documentService.uploadDocument(document)
             print("📄 Investment document added to notifications")
         } catch {
             print("❌ Failed to add Investment document: \(error)")

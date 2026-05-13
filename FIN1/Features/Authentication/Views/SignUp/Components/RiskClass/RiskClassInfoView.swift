@@ -40,7 +40,7 @@ struct RiskClassInfoView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Close") {
-                        dismiss()
+                        self.dismiss()
                     }
                     .foregroundColor(AppTheme.accentLightBlue)
                 }
@@ -56,7 +56,7 @@ struct RiskClassCard: View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
             // Header
             HStack {
-                Text(riskClass.displayName)
+                Text(self.riskClass.displayName)
                     .font(ResponsiveDesign.headlineFont())
                     .fontWeight(.semibold)
                     .foregroundColor(AppTheme.fontColor)
@@ -67,14 +67,14 @@ struct RiskClassCard: View {
                 HStack(spacing: ResponsiveDesign.spacing(4)) {
                     ForEach(1...7, id: \.self) { index in
                         Circle()
-                            .fill(index <= riskClass.rawValue ? riskClass.color : Color.gray.opacity(0.3))
+                            .fill(index <= self.riskClass.rawValue ? self.riskClass.color : Color.gray.opacity(0.3))
                             .frame(width: 8, height: 8)
                     }
                 }
             }
 
             // Description
-            Text(riskClass.description)
+            Text(self.riskClass.description)
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.8))
                 .multilineTextAlignment(.leading)
@@ -86,7 +86,7 @@ struct RiskClassCard: View {
                     .fontWeight(.medium)
                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
 
-                Text(riskClass.examples)
+                Text(self.riskClass.examples)
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.8))
                     .multilineTextAlignment(.leading)
@@ -97,7 +97,7 @@ struct RiskClassCard: View {
         .cornerRadius(ResponsiveDesign.spacing(12))
         .overlay(
             RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(12))
-                .stroke(riskClass.color.opacity(0.3), lineWidth: 1)
+                .stroke(self.riskClass.color.opacity(0.3), lineWidth: 1)
         )
     }
 }

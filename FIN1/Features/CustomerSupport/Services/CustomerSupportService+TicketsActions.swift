@@ -13,7 +13,7 @@ extension CustomerSupportService {
 
         var newTicket = SupportTicket(
             id: UUID().uuidString,
-            ticketNumber: "TKT-\(Int.random(in: 10000...99999))",
+            ticketNumber: "TKT-\(Int.random(in: 10_000...99_999))",
             userId: ticket.userId,
             customerName: customerName,
             subject: ticket.subject,
@@ -53,7 +53,7 @@ extension CustomerSupportService {
 
         var newTicket = SupportTicket(
             id: UUID().uuidString,
-            ticketNumber: "TKT-\(Int.random(in: 10000...99999))",
+            ticketNumber: "TKT-\(Int.random(in: 10_000...99_999))",
             userId: userId,
             customerName: customerName,
             subject: subject,
@@ -134,7 +134,7 @@ extension CustomerSupportService {
 
     func escalateTicket(ticketId: String, reason: String) async throws {
         try await validatePermission(.escalateToAdmin)
-        try await escalateTicketInternal(ticketId: ticketId, reason: reason, isAutomatic: false)
+        try await self.escalateTicketInternal(ticketId: ticketId, reason: reason, isAutomatic: false)
     }
 
     func escalateTicketInternal(ticketId: String, reason: String, isAutomatic: Bool) async throws {

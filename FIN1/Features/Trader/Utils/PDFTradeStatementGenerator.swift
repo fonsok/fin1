@@ -1,6 +1,6 @@
 import Foundation
-import UIKit
 import PDFKit
+import UIKit
 
 // MARK: - Professional Trade Statement PDF Generator
 /// Generates DIN A4 compliant trade statements (Collection Bills) following German business standards
@@ -18,7 +18,7 @@ struct PDFTradeStatementGenerator {
         for displayData: TradeStatementDisplayData,
         trade: TradeOverviewItem
     ) -> Data {
-        let pdfMetaData = createMetadata(for: trade)
+        let pdfMetaData = self.createMetadata(for: trade)
 
         let format = UIGraphicsPDFRendererFormat()
         format.documentInfo = pdfMetaData
@@ -29,9 +29,9 @@ struct PDFTradeStatementGenerator {
             context.beginPage()
 
             let cgContext = context.cgContext
-            configureRenderingQuality(cgContext)
+            self.configureRenderingQuality(cgContext)
 
-            drawTradeStatement(
+            self.drawTradeStatement(
                 in: cgContext,
                 displayData: displayData,
                 trade: trade,
@@ -47,7 +47,7 @@ struct PDFTradeStatementGenerator {
         for displayData: TradeStatementDisplayData,
         trade: TradeOverviewItem
     ) -> UIImage? {
-        let pdfData = generatePDF(for: displayData, trade: trade)
+        let pdfData = self.generatePDF(for: displayData, trade: trade)
 
         guard let document = PDFDocument(data: pdfData),
               let page = document.page(at: 0) else {
@@ -121,7 +121,7 @@ struct PDFTradeStatementGenerator {
         )
 
         // 4. Depot information section
-        currentY = drawDepotInfo(
+        currentY = self.drawDepotInfo(
             in: context,
             displayData: displayData,
             pageRect: pageRect,
@@ -130,7 +130,7 @@ struct PDFTradeStatementGenerator {
 
         // 5. Buy transaction (if exists)
         if let buyTransaction = displayData.buyTransaction {
-            currentY = drawBuyTransaction(
+            currentY = self.drawBuyTransaction(
                 in: context,
                 buyTransaction: buyTransaction,
                 pageRect: pageRect,
@@ -140,7 +140,7 @@ struct PDFTradeStatementGenerator {
 
         // 6. Sell transactions (if exist)
         if !displayData.sellTransactions.isEmpty {
-            currentY = drawSellTransactions(
+            currentY = self.drawSellTransactions(
                 in: context,
                 sellTransactions: displayData.sellTransactions,
                 pageRect: pageRect,
@@ -149,7 +149,7 @@ struct PDFTradeStatementGenerator {
         }
 
         // 7. Calculation breakdown
-        currentY = drawCalculationBreakdown(
+        currentY = self.drawCalculationBreakdown(
             in: context,
             calculationBreakdown: displayData.calculationBreakdown,
             pageRect: pageRect,
@@ -157,7 +157,7 @@ struct PDFTradeStatementGenerator {
         )
 
         // 8. Tax summary with net result
-        currentY = drawTaxSummary(
+        currentY = self.drawTaxSummary(
             in: context,
             taxSummary: displayData.taxSummary,
             pageRect: pageRect,

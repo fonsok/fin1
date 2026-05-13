@@ -29,7 +29,8 @@ final class InvestmentDocumentService: InvestmentDocumentServiceProtocol {
     func generateInvestmentDocument(for batch: InvestmentBatch, investments: [Investment]) async {
         // CRITICAL: Use proper document number generation for accounting compliance
         // Generate structured document number from TransactionIdService (not UUID)
-        let documentNumber = transactionIdService?.generateInvestorDocumentNumber() ?? TransactionIdService().generateInvestorDocumentNumber()
+        let documentNumber = self.transactionIdService?.generateInvestorDocumentNumber() ?? TransactionIdService().generateInvestorDocumentNumber(
+        )
         print("📄 InvestmentDocumentService: Investment Document Generated: \(documentNumber) for Batch #\(batch.id)")
 
         // Create document for the Batch with industry-standard naming
@@ -44,7 +45,7 @@ final class InvestmentDocumentService: InvestmentDocumentServiceProtocol {
             type: .investorCollectionBill,
             status: .verified,
             fileURL: "investment://\(documentNumber).pdf",
-            size: 1024 * 60, // Mock 60KB PDF size
+            size: 1_024 * 60, // Mock 60KB PDF size
             uploadedAt: Date(),
             investmentId: primaryInvestmentId,
             documentNumber: documentNumber
@@ -72,7 +73,8 @@ final class InvestmentDocumentService: InvestmentDocumentServiceProtocol {
     func generateInvestmentDocument(for investment: Investment) async {
         // CRITICAL: Use proper document number generation for accounting compliance
         // Generate structured document number from TransactionIdService (not UUID)
-        let documentNumber = transactionIdService?.generateInvestorDocumentNumber() ?? TransactionIdService().generateInvestorDocumentNumber()
+        let documentNumber = self.transactionIdService?.generateInvestorDocumentNumber() ?? TransactionIdService().generateInvestorDocumentNumber(
+        )
         let documentName = DocumentNamingUtility.investorCollectionBillName(for: investment)
 
         print("📄 InvestmentDocumentService: Investor Collection Bill Generated: \(documentNumber) for Investment \(investment.id)")
@@ -89,7 +91,7 @@ final class InvestmentDocumentService: InvestmentDocumentServiceProtocol {
             type: .investorCollectionBill,
             status: .verified,
             fileURL: "collectionbill://\(documentNumber).pdf",
-            size: 1024 * 60,
+            size: 1_024 * 60,
             uploadedAt: Date(),
             investmentId: investment.id,
             documentNumber: documentNumber

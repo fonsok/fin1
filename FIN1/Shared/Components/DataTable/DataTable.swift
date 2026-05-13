@@ -35,11 +35,11 @@ struct DataTable: View {
     var body: some View {
         VStack(spacing: ResponsiveDesign.spacing(0)) {
             // Table Header
-            tableHeader
+            self.tableHeader
 
             // Table Rows
-            ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
-                tableRow(row: row, index: index)
+            ForEach(Array(self.rows.enumerated()), id: \.element.id) { index, row in
+                self.tableRow(row: row, index: index)
             }
         }
         .background(TableColors.rowBackground)
@@ -52,8 +52,8 @@ struct DataTable: View {
 
     private var tableHeader: some View {
         HStack(spacing: ResponsiveDesign.spacing(0)) {
-            ForEach(columns, id: \.id) { column in
-                TableHeaderCell(column: column, headerColor: headerColor, headerFontWeight: headerFontWeight)
+            ForEach(self.columns, id: \.id) { column in
+                TableHeaderCell(column: column, headerColor: self.headerColor, headerFontWeight: self.headerFontWeight)
                     .frame(maxWidth: .infinity)
             }
 
@@ -74,7 +74,7 @@ struct DataTable: View {
 
     private func tableRow(row: TableRowData, index: Int) -> some View {
         HStack(spacing: ResponsiveDesign.spacing(0)) {
-            ForEach(columns, id: \.id) { column in
+            ForEach(self.columns, id: \.id) { column in
                 VVaaaStyleDataCell(column: column, row: row)
                     .frame(maxWidth: .infinity)
             }
@@ -105,36 +105,36 @@ struct VVaaaStyleDataCell: View {
     let row: TableRowData
 
     var body: some View {
-        if column.id == "trader" {
+        if self.column.id == "trader" {
             // Trader name - clickable, blue color
             Button(action: {
-                row.onTap?()
+                self.row.onTap?()
             }) {
-                Text(row.cells[column.id] ?? "")
+                Text(self.row.cells[self.column.id] ?? "")
                     .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.medium)
                     .foregroundColor(TableColors.traderNameColor)
-                    .frame(maxWidth: .infinity, alignment: column.alignment)
+                    .frame(maxWidth: .infinity, alignment: self.column.alignment)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
                     .contentShape(Rectangle())
             }
             .buttonStyle(PlainButtonStyle())
-        } else if column.id == "return" || column.id == "returnLastTrade" {
+        } else if self.column.id == "return" || self.column.id == "returnLastTrade" {
             // Return values - green for positive, red for negative
-            Text(row.cells[column.id] ?? "")
+            Text(self.row.cells[self.column.id] ?? "")
                 .font(ResponsiveDesign.bodyFont())
                 .fontWeight(.medium)
-                .foregroundColor((row.isPositive ?? true) ? TableColors.positiveValue : TableColors.negativeValue)
-                .frame(maxWidth: .infinity, alignment: column.alignment)
+                .foregroundColor((self.row.isPositive ?? true) ? TableColors.positiveValue : TableColors.negativeValue)
+                .frame(maxWidth: .infinity, alignment: self.column.alignment)
                 .minimumScaleFactor(0.8)
         } else {
             // Normal values - white text
-            Text(row.cells[column.id] ?? "")
+            Text(self.row.cells[self.column.id] ?? "")
                 .font(ResponsiveDesign.bodyFont())
                 .fontWeight(.medium)
                 .foregroundColor(TableColors.normalText)
-                .frame(maxWidth: .infinity, alignment: column.alignment)
+                .frame(maxWidth: .infinity, alignment: self.column.alignment)
                 .minimumScaleFactor(0.8)
         }
     }

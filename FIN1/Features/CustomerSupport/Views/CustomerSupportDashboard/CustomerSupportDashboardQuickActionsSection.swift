@@ -5,7 +5,7 @@ struct CustomerSupportDashboardQuickActionsSection: View {
     @ObservedObject var viewModel: CustomerSupportDashboardViewModel
 
     private var unassignedTicketCount: Int {
-        viewModel.supportTickets.filter { $0.assignedTo == nil && $0.status != .resolved && $0.status != .closed && $0.status != .archived }.count
+        self.viewModel.supportTickets.filter { $0.assignedTo == nil && $0.status != .resolved && $0.status != .closed && $0.status != .archived }.count
     }
 
     var body: some View {
@@ -21,9 +21,9 @@ struct CustomerSupportDashboardQuickActionsSection: View {
                     title: "Neues Ticket",
                     subtitle: "Support-Anfrage",
                     color: AppTheme.accentLightBlue,
-                    isEnabled: viewModel.hasPermission(.createSupportTicket)
+                    isEnabled: self.viewModel.hasPermission(.createSupportTicket)
                 ) {
-                    viewModel.openCreateTicketSheet()
+                    self.viewModel.openCreateTicketSheet()
                 }
 
                 QuickActionCard(
@@ -31,9 +31,9 @@ struct CustomerSupportDashboardQuickActionsSection: View {
                     title: "KYC-Prüfung",
                     subtitle: "Status anzeigen",
                     color: AppTheme.accentGreen,
-                    isEnabled: viewModel.hasPermission(.viewCustomerKYCStatus)
+                    isEnabled: self.viewModel.hasPermission(.viewCustomerKYCStatus)
                 ) {
-                    viewModel.openKYCStatusList()
+                    self.viewModel.openKYCStatusList()
                 }
 
                 QuickActionCard(
@@ -41,10 +41,10 @@ struct CustomerSupportDashboardQuickActionsSection: View {
                     title: "Warteschlange",
                     subtitle: "Ticket-Zuweisung",
                     color: AppTheme.accentOrange,
-                    isEnabled: viewModel.hasPermission(.respondToSupportTicket),
-                    badge: unassignedTicketCount > 0 ? "\(unassignedTicketCount)" : nil
+                    isEnabled: self.viewModel.hasPermission(.respondToSupportTicket),
+                    badge: self.unassignedTicketCount > 0 ? "\(self.unassignedTicketCount)" : nil
                 ) {
-                    viewModel.showTicketQueueSheet = true
+                    self.viewModel.showTicketQueueSheet = true
                 }
 
                 QuickActionCard(
@@ -52,9 +52,9 @@ struct CustomerSupportDashboardQuickActionsSection: View {
                     title: "Analytics",
                     subtitle: "Metriken & Berichte",
                     color: Color.purple,
-                    isEnabled: viewModel.hasPermission(.viewCustomerSupportHistory)
+                    isEnabled: self.viewModel.hasPermission(.viewCustomerSupportHistory)
                 ) {
-                    viewModel.showAnalyticsDashboard = true
+                    self.viewModel.showAnalyticsDashboard = true
                 }
 
                 QuickActionCard(
@@ -62,9 +62,9 @@ struct CustomerSupportDashboardQuickActionsSection: View {
                     title: "Archiv",
                     subtitle: "Geschlossene Tickets",
                     color: AppTheme.fontColor.opacity(0.6),
-                    isEnabled: viewModel.hasPermission(.viewCustomerSupportHistory)
+                    isEnabled: self.viewModel.hasPermission(.viewCustomerSupportHistory)
                 ) {
-                    viewModel.showArchiveView = true
+                    self.viewModel.showArchiveView = true
                 }
 
                 QuickActionCard(
@@ -72,10 +72,10 @@ struct CustomerSupportDashboardQuickActionsSection: View {
                     title: "Trends",
                     subtitle: "Muster & Alerts",
                     color: AppTheme.accentRed,
-                    isEnabled: viewModel.hasPermission(.viewCustomerSupportHistory),
+                    isEnabled: self.viewModel.hasPermission(.viewCustomerSupportHistory),
                     badge: nil
                 ) {
-                    viewModel.showTrendAlerts = true
+                    self.viewModel.showTrendAlerts = true
                 }
 
                 QuickActionCard(
@@ -83,9 +83,9 @@ struct CustomerSupportDashboardQuickActionsSection: View {
                     title: "Agent-Performance",
                     subtitle: "Team-Statistiken",
                     color: Color.cyan,
-                    isEnabled: viewModel.hasPermission(.viewCustomerSupportHistory)
+                    isEnabled: self.viewModel.hasPermission(.viewCustomerSupportHistory)
                 ) {
-                    viewModel.showAgentPerformance = true
+                    self.viewModel.showAgentPerformance = true
                 }
 
                 QuickActionCard(
@@ -93,9 +93,9 @@ struct CustomerSupportDashboardQuickActionsSection: View {
                     title: "Massenbearbeitung",
                     subtitle: "Mehrere Tickets",
                     color: Color.indigo,
-                    isEnabled: viewModel.hasPermission(.respondToSupportTicket)
+                    isEnabled: self.viewModel.hasPermission(.respondToSupportTicket)
                 ) {
-                    viewModel.showBulkOperations = true
+                    self.viewModel.showBulkOperations = true
                 }
 
                 QuickActionCard(
@@ -103,13 +103,13 @@ struct CustomerSupportDashboardQuickActionsSection: View {
                     title: "FAQ Wissensdatenbank",
                     subtitle: "Artikel & Lösungen",
                     color: Color.mint,
-                    isEnabled: viewModel.hasPermission(.viewCustomerSupportHistory)
+                    isEnabled: self.viewModel.hasPermission(.viewCustomerSupportHistory)
                 ) {
-                    viewModel.showFAQKnowledgeBase = true
+                    self.viewModel.showFAQKnowledgeBase = true
                 }
             }
 
-            if viewModel.hasPermission(.viewCustomerSupportHistory) {
+            if self.viewModel.hasPermission(.viewCustomerSupportHistory) {
                 Divider()
                     .padding(.vertical, ResponsiveDesign.spacing(8))
 
@@ -123,7 +123,7 @@ struct CustomerSupportDashboardQuickActionsSection: View {
                         title: "Benachrichtigungen",
                         color: AppTheme.accentOrange
                     ) {
-                        viewModel.showNotificationPreferences = true
+                        self.viewModel.showNotificationPreferences = true
                     }
 
                     SmallActionButton(
@@ -131,7 +131,7 @@ struct CustomerSupportDashboardQuickActionsSection: View {
                         title: "E-Mail-Vorlagen",
                         color: AppTheme.accentLightBlue
                     ) {
-                        viewModel.showEmailTemplates = true
+                        self.viewModel.showEmailTemplates = true
                     }
 
                     SmallActionButton(
@@ -139,7 +139,7 @@ struct CustomerSupportDashboardQuickActionsSection: View {
                         title: "Support-Einstellungen",
                         color: AppTheme.accentGreen
                     ) {
-                        viewModel.showSupportSettings = true
+                        self.viewModel.showSupportSettings = true
                     }
                 }
             }

@@ -23,7 +23,7 @@ struct PaginationPreview: PreviewProvider {
                         totalTrades: Int.random(in: 10...100),
                         winRate: Double.random(in: 0.3...0.9),
                         averageReturn: Double.random(in: -5...15),
-                        totalReturn: Double.random(in: -1000...5000),
+                        totalReturn: Double.random(in: -1_000...5_000),
                         riskLevel: .medium,
                         recentTrades: [],
                         lastNTrades: 10,

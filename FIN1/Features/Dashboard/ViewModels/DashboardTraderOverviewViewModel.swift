@@ -1,5 +1,5 @@
-import SwiftUI
 import Foundation
+import SwiftUI
 
 // MARK: - Dashboard Trader Overview ViewModel
 /// Provides cached rows for the trader performance table and watchlist interactions
@@ -24,18 +24,18 @@ final class DashboardTraderOverviewViewModel: ObservableObject {
     ) {
         self.traderDataService = traderDataService
         self.watchlistService = watchlistService
-        updateCachedData()
+        self.updateCachedData()
     }
 
     // MARK: - Public API
     func updateCachedData() {
-        let traders = traderDataService.traders
+        let traders = self.traderDataService.traders
             .sorted { $0.performance > $1.performance }
 
-        let watchlistStatus = getWatchlistStatus()
+        let watchlistStatus = self.getWatchlistStatus()
 
         print("📊 [Dashboard] updateCachedData traders=\(traders.count), watchlistStatus.true=\(watchlistStatus.filter { $0.value }.count)")
-        cachedRows = TableDataFactory.createTraderPerformanceRows(
+        self.cachedRows = TableDataFactory.createTraderPerformanceRows(
             from: traders.map { mock in
                 TraderData(
                     traderName: mock.username,
@@ -60,21 +60,21 @@ final class DashboardTraderOverviewViewModel: ObservableObject {
                 }
             },
             watchlistStatus: watchlistStatus,
-            busyStatus: Dictionary(uniqueKeysWithValues: busyUsernames.map { ($0, true) })
+            busyStatus: Dictionary(uniqueKeysWithValues: self.busyUsernames.map { ($0, true) })
         )
     }
 
     func getTraderID(username: String) -> String? {
-        return traderDataService.traders.first(where: { $0.username == username })?.id.uuidString
+        return self.traderDataService.traders.first(where: { $0.username == username })?.id.uuidString
     }
 
     // MARK: - Private Helpers
     private func getWatchlistStatus() -> [String: Bool] {
         let status = WatchlistHelper.getWatchlistStatus(
-            watchlistService: watchlistService,
-            traderDataService: traderDataService
+            watchlistService: self.watchlistService,
+            traderDataService: self.traderDataService
         )
-        let ids = watchlistService.watchlist.map { $0.id }
+        let ids = self.watchlistService.watchlist.map { $0.id }
         print("🧮 [Dashboard] computing watchlistStatus for ids=\(ids)")
         print("🧮 [Dashboard] watchlistStatus usernames=true -> \(Array(status.keys))")
         return status
@@ -85,15 +85,15 @@ final class DashboardTraderOverviewViewModel: ObservableObject {
 
         // Set busy state immediately
         Task { @MainActor in
-            busyUsernames.insert(username)
-            updateCachedData()
+            self.busyUsernames.insert(username)
+            self.updateCachedData()
         }
 
         // Use shared helper for core toggle logic, but wrap with error handling
         let toggleHandler = WatchlistHelper.createWatchlistToggleHandler(
             traderID: traderID,
-            traderDataService: traderDataService,
-            watchlistService: watchlistService
+            traderDataService: self.traderDataService,
+            watchlistService: self.watchlistService
         )
 
         // Execute toggle with error handling
@@ -102,12 +102,12 @@ final class DashboardTraderOverviewViewModel: ObservableObject {
                 print("➕ [Dashboard] adding to watchlist: id=\(traderID)")
                 toggleHandler(true)
                 try? await Task.sleep(nanoseconds: 100_000_000)
-                print("✅ [Dashboard] add completed. currentIds=\(watchlistService.watchlist.map { $0.id })")
+                print("✅ [Dashboard] add completed. currentIds=\(self.watchlistService.watchlist.map { $0.id })")
             } else {
                 print("➖ [Dashboard] removing from watchlist: id=\(traderID)")
                 toggleHandler(false)
                 try? await Task.sleep(nanoseconds: 100_000_000)
-                print("✅ [Dashboard] remove completed. currentIds=\(watchlistService.watchlist.map { $0.id })")
+                print("✅ [Dashboard] remove completed. currentIds=\(self.watchlistService.watchlist.map { $0.id })")
             }
 
             await MainActor.run {

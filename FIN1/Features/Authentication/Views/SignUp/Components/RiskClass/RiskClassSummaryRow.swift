@@ -17,7 +17,7 @@ struct RiskClassSummaryRow: View {
                 
                 // Info button
                 Button(action: {
-                    showRiskClassInfo = true
+                    self.showRiskClassInfo = true
                 }) {
                     Text("ⓘ")
                         .foregroundColor(AppTheme.accentLightBlue)
@@ -27,13 +27,13 @@ struct RiskClassSummaryRow: View {
             
             Spacer()
             
-            Text(": \(signUpData.finalRiskClass.shortName)")
+            Text(": \(self.signUpData.finalRiskClass.shortName)")
                 .font(ResponsiveDesign.bodyFont())
                 .fontWeight(.medium)
                 .foregroundColor(AppTheme.fontColor)
         }
         .padding(.vertical, 4)
-        .sheet(isPresented: $showRiskClassInfo) {
+        .sheet(isPresented: self.$showRiskClassInfo) {
             RiskClassInfoView()
         }
     }

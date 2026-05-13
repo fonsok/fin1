@@ -11,9 +11,9 @@ final class InvestorCashBalanceLedgerService {
 
     /// Gets ledger entries for a specific investor
     func getLedgerEntries(for investorId: String) -> [AccountStatementEntry] {
-        ledgerLock.lock()
+        self.ledgerLock.lock()
         defer { ledgerLock.unlock() }
-        return ledger[investorId] ?? []
+        return self.ledger[investorId] ?? []
     }
 
     /// Records a transaction in the ledger
@@ -40,26 +40,26 @@ final class InvestorCashBalanceLedgerService {
             balanceAfter: balanceAfter
         )
 
-        ledgerLock.lock()
-        var entries = ledger[investorId] ?? []
+        self.ledgerLock.lock()
+        var entries = self.ledger[investorId] ?? []
         entries.append(entry)
         entries.sort { $0.occurredAt < $1.occurredAt }
-        ledger[investorId] = entries
-        ledgerLock.unlock()
+        self.ledger[investorId] = entries
+        self.ledgerLock.unlock()
     }
 
     /// Resets the entire ledger
     func resetLedger() {
-        ledgerLock.lock()
-        ledger.removeAll()
-        ledgerLock.unlock()
+        self.ledgerLock.lock()
+        self.ledger.removeAll()
+        self.ledgerLock.unlock()
     }
 
     /// Clears transactions for a specific investor
     func clearTransactions(for investorId: String) {
-        ledgerLock.lock()
-        ledger[investorId] = []
-        ledgerLock.unlock()
+        self.ledgerLock.lock()
+        self.ledger[investorId] = []
+        self.ledgerLock.unlock()
     }
 }
 

@@ -15,7 +15,7 @@ struct BulkCloseSheet: View {
                     .font(ResponsiveDesign.largeTitleFont())
                     .foregroundColor(AppTheme.accentOrange)
 
-                Text("\(selectedCount) Tickets schließen?")
+                Text("\(self.selectedCount) Tickets schließen?")
                     .font(ResponsiveDesign.headlineFont())
                     .foregroundColor(AppTheme.fontColor)
 
@@ -29,7 +29,7 @@ struct BulkCloseSheet: View {
                         .fontWeight(.medium)
                         .foregroundColor(AppTheme.fontColor)
 
-                    TextEditor(text: $reason)
+                    TextEditor(text: self.$reason)
                         .frame(minHeight: 100)
                         .padding(ResponsiveDesign.spacing(12))
                         .background(AppTheme.sectionBackground)
@@ -45,11 +45,11 @@ struct BulkCloseSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Abbrechen") { dismiss() }
+                    Button("Abbrechen") { self.dismiss() }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Schließen") {
-                        onClose(reason.isEmpty ? "Massenbearbeitung" : reason)
+                        self.onClose(self.reason.isEmpty ? "Massenbearbeitung" : self.reason)
                     }
                     .foregroundColor(AppTheme.accentRed)
                 }

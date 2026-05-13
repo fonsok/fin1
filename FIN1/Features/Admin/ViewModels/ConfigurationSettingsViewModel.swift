@@ -29,34 +29,34 @@ final class ConfigurationSettingsViewModel: ObservableObject {
 
     func configure(with configurationService: any ConfigurationServiceProtocol) {
         self.configurationService = configurationService
-        minimumCashReserveInput = configurationService.minimumCashReserve
-        initialAccountBalanceInput = configurationService.initialAccountBalance
-        poolBalanceDistributionStrategy = configurationService.poolBalanceDistributionStrategy
-        poolBalanceDistributionThresholdInput = configurationService.poolBalanceDistributionThreshold
-        traderCommissionRateInput = configurationService.traderCommissionRate
-        showCommissionBreakdownInCreditNoteInput = configurationService.showCommissionBreakdownInCreditNote
-        showDocumentReferenceLinksInAccountStatementInput = configurationService.showDocumentReferenceLinksInAccountStatement
+        self.minimumCashReserveInput = configurationService.minimumCashReserve
+        self.initialAccountBalanceInput = configurationService.initialAccountBalance
+        self.poolBalanceDistributionStrategy = configurationService.poolBalanceDistributionStrategy
+        self.poolBalanceDistributionThresholdInput = configurationService.poolBalanceDistributionThreshold
+        self.traderCommissionRateInput = configurationService.traderCommissionRate
+        self.showCommissionBreakdownInCreditNoteInput = configurationService.showCommissionBreakdownInCreditNote
+        self.showDocumentReferenceLinksInAccountStatementInput = configurationService.showDocumentReferenceLinksInAccountStatement
     }
 
     var currentMinimumCashReserveText: String {
-        guard let configurationService else { return formattedCurrency(minimumCashReserveInput) }
-        return formattedCurrency(configurationService.minimumCashReserve)
+        guard let configurationService else { return self.formattedCurrency(self.minimumCashReserveInput) }
+        return self.formattedCurrency(configurationService.minimumCashReserve)
     }
 
     var currentInitialAccountBalanceText: String {
-        guard let configurationService else { return formattedCurrency(initialAccountBalanceInput) }
-        return formattedCurrency(configurationService.initialAccountBalance)
+        guard let configurationService else { return self.formattedCurrency(self.initialAccountBalanceInput) }
+        return self.formattedCurrency(configurationService.initialAccountBalance)
     }
 
     var currentTraderCommissionRateText: String {
-        let rate = configurationService?.traderCommissionRate ?? traderCommissionRateInput
+        let rate = self.configurationService?.traderCommissionRate ?? self.traderCommissionRateInput
         let percent = (rate * 100).formatted(.number.precision(.fractionLength(0...2)))
         return "\(percent)%"
     }
 
     var currentPoolBalanceDistributionThresholdText: String {
-        guard let configurationService else { return formattedCurrency(poolBalanceDistributionThresholdInput) }
-        return formattedCurrency(configurationService.poolBalanceDistributionThreshold)
+        guard let configurationService else { return self.formattedCurrency(self.poolBalanceDistributionThresholdInput) }
+        return self.formattedCurrency(configurationService.poolBalanceDistributionThreshold)
     }
 
     func currentUserMinimumCashReserveText(for userId: String) -> String? {
@@ -71,67 +71,67 @@ final class ConfigurationSettingsViewModel: ObservableObject {
     }
 
     var isValidMinimumCashReserve: Bool {
-        return minimumCashReserveInput >= 0.01 && minimumCashReserveInput <= 1000.0
+        return self.minimumCashReserveInput >= 0.01 && self.minimumCashReserveInput <= 1_000.0
     }
 
     var isValidInitialAccountBalance: Bool {
-        return initialAccountBalanceInput >= 0.0 && initialAccountBalanceInput <= 1_000_000.0
+        return self.initialAccountBalanceInput >= 0.0 && self.initialAccountBalanceInput <= 1_000_000.0
     }
 
     var isValidPoolBalanceDistributionThreshold: Bool {
-        return poolBalanceDistributionThresholdInput >= 1.0 && poolBalanceDistributionThresholdInput <= 100.0
+        return self.poolBalanceDistributionThresholdInput >= 1.0 && self.poolBalanceDistributionThresholdInput <= 100.0
     }
 
     var isValidTraderCommissionRate: Bool {
-        return traderCommissionRateInput >= 0.0 && traderCommissionRateInput <= 1.0
+        return self.traderCommissionRateInput >= 0.0 && self.traderCommissionRateInput <= 1.0
     }
 
     var isValidUserMinimumCashReserve: Bool {
-        return userMinimumCashReserveInput >= 0.01 && userMinimumCashReserveInput <= 1000.0 && !userMinimumCashReserveUserId.isEmpty
+        return self.userMinimumCashReserveInput >= 0.01 && self.userMinimumCashReserveInput <= 1_000.0 && !self.userMinimumCashReserveUserId.isEmpty
     }
 
     func updateMinimumCashReserve() async {
         guard let configurationService else {
-            minimumCashReserveError = "Configuration service unavailable"
+            self.minimumCashReserveError = "Configuration service unavailable"
             return
         }
-        guard isValidMinimumCashReserve else {
-            minimumCashReserveError = "Value must be between 0.01 and 1000.0"
+        guard self.isValidMinimumCashReserve else {
+            self.minimumCashReserveError = "Value must be between 0.01 and 1000.0"
             return
         }
 
-        isLoading = true
-        minimumCashReserveError = nil
+        self.isLoading = true
+        self.minimumCashReserveError = nil
 
         do {
-            try await configurationService.updateMinimumCashReserve(minimumCashReserveInput)
-            print("✅ Minimum cash reserve updated to \(minimumCashReserveInput)")
+            try await configurationService.updateMinimumCashReserve(self.minimumCashReserveInput)
+            print("✅ Minimum cash reserve updated to \(self.minimumCashReserveInput)")
         } catch {
             let appError = error.toAppError()
-            minimumCashReserveError = "Failed to update: \(appError.errorDescription ?? "An error occurred")"
+            self.minimumCashReserveError = "Failed to update: \(appError.errorDescription ?? "An error occurred")"
         }
 
-        isLoading = false
+        self.isLoading = false
     }
 
     func updateInitialAccountBalance() async {
         guard let configurationService else {
-            initialAccountBalanceError = "Configuration service unavailable"
+            self.initialAccountBalanceError = "Configuration service unavailable"
             return
         }
-        guard isValidInitialAccountBalance else {
-            initialAccountBalanceError = "Value must be between 0 and 1000000 EUR"
+        guard self.isValidInitialAccountBalance else {
+            self.initialAccountBalanceError = "Value must be between 0 and 1000000 EUR"
             return
         }
 
-        isLoading = true
-        initialAccountBalanceError = nil
-        initialAccountBalanceSuccess = nil
+        self.isLoading = true
+        self.initialAccountBalanceError = nil
+        self.initialAccountBalanceSuccess = nil
 
         do {
-            try await configurationService.updateInitialAccountBalance(initialAccountBalanceInput)
-            print("✅ Initial account balance updated to \(initialAccountBalanceInput)")
-            initialAccountBalanceSuccess = "Balance updated successfully"
+            try await configurationService.updateInitialAccountBalance(self.initialAccountBalanceInput)
+            print("✅ Initial account balance updated to \(self.initialAccountBalanceInput)")
+            self.initialAccountBalanceSuccess = "Balance updated successfully"
         } catch let error as ConfigurationError {
             if error.isPendingApproval {
                 initialAccountBalanceSuccess = "Change submitted for 4-eyes approval"
@@ -141,68 +141,68 @@ final class ConfigurationSettingsViewModel: ObservableObject {
             }
         } catch {
             let appError = error.toAppError()
-            initialAccountBalanceError = "Failed to update: \(appError.errorDescription ?? "An error occurred")"
+            self.initialAccountBalanceError = "Failed to update: \(appError.errorDescription ?? "An error occurred")"
         }
 
-        isLoading = false
+        self.isLoading = false
     }
 
     func updatePoolBalanceDistributionStrategy() async {
         guard let configurationService else { return }
-        isLoading = true
+        self.isLoading = true
 
         do {
-            try await configurationService.updatePoolBalanceDistributionStrategy(poolBalanceDistributionStrategy)
-            print("✅ Pool balance distribution strategy updated to \(poolBalanceDistributionStrategy.displayName)")
+            try await configurationService.updatePoolBalanceDistributionStrategy(self.poolBalanceDistributionStrategy)
+            print("✅ Pool balance distribution strategy updated to \(self.poolBalanceDistributionStrategy.displayName)")
         } catch {
             print("❌ Failed to update strategy: \(error.localizedDescription)")
         }
 
-        isLoading = false
+        self.isLoading = false
     }
 
     func updatePoolBalanceDistributionThreshold() async {
         guard let configurationService else {
-            poolBalanceDistributionThresholdError = "Configuration service unavailable"
+            self.poolBalanceDistributionThresholdError = "Configuration service unavailable"
             return
         }
-        guard isValidPoolBalanceDistributionThreshold else {
-            poolBalanceDistributionThresholdError = "Value must be between 1.0 and 100.0"
+        guard self.isValidPoolBalanceDistributionThreshold else {
+            self.poolBalanceDistributionThresholdError = "Value must be between 1.0 and 100.0"
             return
         }
 
-        isLoading = true
-        poolBalanceDistributionThresholdError = nil
+        self.isLoading = true
+        self.poolBalanceDistributionThresholdError = nil
 
         do {
-            try await configurationService.updatePoolBalanceDistributionThreshold(poolBalanceDistributionThresholdInput)
-            print("✅ Pool balance distribution threshold updated to \(poolBalanceDistributionThresholdInput)")
+            try await configurationService.updatePoolBalanceDistributionThreshold(self.poolBalanceDistributionThresholdInput)
+            print("✅ Pool balance distribution threshold updated to \(self.poolBalanceDistributionThresholdInput)")
         } catch {
             let appError = error.toAppError()
-            poolBalanceDistributionThresholdError = "Failed to update: \(appError.errorDescription ?? "An error occurred")"
+            self.poolBalanceDistributionThresholdError = "Failed to update: \(appError.errorDescription ?? "An error occurred")"
         }
 
-        isLoading = false
+        self.isLoading = false
     }
 
     func updateTraderCommissionRate() async {
         guard let configurationService else {
-            traderCommissionRateError = "Configuration service unavailable"
+            self.traderCommissionRateError = "Configuration service unavailable"
             return
         }
-        guard isValidTraderCommissionRate else {
-            traderCommissionRateError = "Rate must be between 0.0 (0%) and 1.0 (100%)"
+        guard self.isValidTraderCommissionRate else {
+            self.traderCommissionRateError = "Rate must be between 0.0 (0%) and 1.0 (100%)"
             return
         }
 
-        isLoading = true
-        traderCommissionRateError = nil
-        traderCommissionRateSuccess = nil
+        self.isLoading = true
+        self.traderCommissionRateError = nil
+        self.traderCommissionRateSuccess = nil
 
         do {
-            try await configurationService.updateTraderCommissionRate(traderCommissionRateInput)
-            print("✅ Trader commission rate updated to \(traderCommissionRateInput * 100)%")
-            traderCommissionRateSuccess = "Rate updated successfully"
+            try await configurationService.updateTraderCommissionRate(self.traderCommissionRateInput)
+            print("✅ Trader commission rate updated to \(self.traderCommissionRateInput * 100)%")
+            self.traderCommissionRateSuccess = "Rate updated successfully"
         } catch let error as ConfigurationError {
             if error.isPendingApproval {
                 traderCommissionRateSuccess = "Change submitted for 4-eyes approval"
@@ -212,99 +212,101 @@ final class ConfigurationSettingsViewModel: ObservableObject {
             }
         } catch {
             let appError = error.toAppError()
-            traderCommissionRateError = "Failed to update: \(appError.errorDescription ?? "An error occurred")"
+            self.traderCommissionRateError = "Failed to update: \(appError.errorDescription ?? "An error occurred")"
         }
 
-        isLoading = false
+        self.isLoading = false
     }
 
     func updateShowCommissionBreakdownInCreditNote() async {
         guard let configurationService else {
-            minimumCashReserveError = "Configuration service unavailable"
+            self.minimumCashReserveError = "Configuration service unavailable"
             return
         }
-        isLoading = true
+        self.isLoading = true
         do {
-            try await configurationService.updateShowCommissionBreakdownInCreditNote(showCommissionBreakdownInCreditNoteInput)
-            print("✅ Show commission breakdown in credit note updated to \(showCommissionBreakdownInCreditNoteInput)")
+            try await configurationService.updateShowCommissionBreakdownInCreditNote(self.showCommissionBreakdownInCreditNoteInput)
+            print("✅ Show commission breakdown in credit note updated to \(self.showCommissionBreakdownInCreditNoteInput)")
         } catch {
             let appError = error.toAppError()
-            minimumCashReserveError = "Failed to update: \(appError.errorDescription ?? "An error occurred")"
+            self.minimumCashReserveError = "Failed to update: \(appError.errorDescription ?? "An error occurred")"
         }
-        isLoading = false
+        self.isLoading = false
     }
 
     func updateShowDocumentReferenceLinksInAccountStatement() async {
         guard let configurationService else {
-            minimumCashReserveError = "Configuration service unavailable"
+            self.minimumCashReserveError = "Configuration service unavailable"
             return
         }
-        isLoading = true
+        self.isLoading = true
         do {
             try await configurationService.updateShowDocumentReferenceLinksInAccountStatement(
-                showDocumentReferenceLinksInAccountStatementInput
+                self.showDocumentReferenceLinksInAccountStatementInput
             )
-            print("✅ Show document reference links in account statement updated to \(showDocumentReferenceLinksInAccountStatementInput)")
+            print(
+                "✅ Show document reference links in account statement updated to \(self.showDocumentReferenceLinksInAccountStatementInput)"
+            )
         } catch {
             let appError = error.toAppError()
-            minimumCashReserveError = "Failed to update: \(appError.errorDescription ?? "An error occurred")"
+            self.minimumCashReserveError = "Failed to update: \(appError.errorDescription ?? "An error occurred")"
         }
-        isLoading = false
+        self.isLoading = false
     }
 
     func resetToDefaults() async {
         guard let configurationService else {
-            minimumCashReserveError = "Configuration service unavailable"
+            self.minimumCashReserveError = "Configuration service unavailable"
             return
         }
-        isLoading = true
-        minimumCashReserveError = nil
-        initialAccountBalanceError = nil
-        poolBalanceDistributionThresholdError = nil
-        traderCommissionRateError = nil
+        self.isLoading = true
+        self.minimumCashReserveError = nil
+        self.initialAccountBalanceError = nil
+        self.poolBalanceDistributionThresholdError = nil
+        self.traderCommissionRateError = nil
 
         do {
             try await configurationService.resetToDefaults()
-            minimumCashReserveInput = configurationService.minimumCashReserve
-            initialAccountBalanceInput = configurationService.initialAccountBalance
-            poolBalanceDistributionStrategy = configurationService.poolBalanceDistributionStrategy
-            poolBalanceDistributionThresholdInput = configurationService.poolBalanceDistributionThreshold
-            traderCommissionRateInput = configurationService.traderCommissionRate
-            showCommissionBreakdownInCreditNoteInput = configurationService.showCommissionBreakdownInCreditNote
-            showDocumentReferenceLinksInAccountStatementInput = configurationService.showDocumentReferenceLinksInAccountStatement
+            self.minimumCashReserveInput = configurationService.minimumCashReserve
+            self.initialAccountBalanceInput = configurationService.initialAccountBalance
+            self.poolBalanceDistributionStrategy = configurationService.poolBalanceDistributionStrategy
+            self.poolBalanceDistributionThresholdInput = configurationService.poolBalanceDistributionThreshold
+            self.traderCommissionRateInput = configurationService.traderCommissionRate
+            self.showCommissionBreakdownInCreditNoteInput = configurationService.showCommissionBreakdownInCreditNote
+            self.showDocumentReferenceLinksInAccountStatementInput = configurationService.showDocumentReferenceLinksInAccountStatement
             print("✅ Configuration reset to defaults")
         } catch {
             let appError = error.toAppError()
-            minimumCashReserveError = "Failed to reset: \(appError.errorDescription ?? "An error occurred")"
+            self.minimumCashReserveError = "Failed to reset: \(appError.errorDescription ?? "An error occurred")"
         }
 
-        isLoading = false
+        self.isLoading = false
     }
 
     func updateUserMinimumCashReserve() async {
         guard let configurationService else {
-            userMinimumCashReserveError = "Configuration service unavailable"
+            self.userMinimumCashReserveError = "Configuration service unavailable"
             return
         }
-        guard isValidUserMinimumCashReserve else {
-            userMinimumCashReserveError = "User ID is required and value must be between 0.01 and 1000.0"
+        guard self.isValidUserMinimumCashReserve else {
+            self.userMinimumCashReserveError = "User ID is required and value must be between 0.01 and 1000.0"
             return
         }
 
-        isLoading = true
-        userMinimumCashReserveError = nil
+        self.isLoading = true
+        self.userMinimumCashReserveError = nil
 
         do {
-            try await configurationService.updateMinimumCashReserve(userMinimumCashReserveInput, for: userMinimumCashReserveUserId)
-            print("✅ User \(userMinimumCashReserveUserId) minimum cash reserve updated to \(userMinimumCashReserveInput)")
-            userMinimumCashReserveUserId = ""
-            userMinimumCashReserveInput = configurationService.minimumCashReserve
+            try await configurationService.updateMinimumCashReserve(self.userMinimumCashReserveInput, for: self.userMinimumCashReserveUserId)
+            print("✅ User \(self.userMinimumCashReserveUserId) minimum cash reserve updated to \(self.userMinimumCashReserveInput)")
+            self.userMinimumCashReserveUserId = ""
+            self.userMinimumCashReserveInput = configurationService.minimumCashReserve
         } catch {
             let appError = error.toAppError()
-            userMinimumCashReserveError = "Failed to update: \(appError.errorDescription ?? "An error occurred")"
+            self.userMinimumCashReserveError = "Failed to update: \(appError.errorDescription ?? "An error occurred")"
         }
 
-        isLoading = false
+        self.isLoading = false
     }
 }
 

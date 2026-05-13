@@ -14,15 +14,15 @@ struct FourEyesApprovalQueueFilterSection: View {
                 HStack(spacing: ResponsiveDesign.spacing(8)) {
                     ApprovalFilterChip(
                         title: "Alle",
-                        isSelected: viewModel.selectedFilter == nil,
-                        action: { viewModel.selectedFilter = nil }
+                        isSelected: self.viewModel.selectedFilter == nil,
+                        action: { self.viewModel.selectedFilter = nil }
                     )
                     ForEach(ApprovalRiskLevel.allCases, id: \.self) { level in
                         ApprovalFilterChip(
                             title: level.displayName,
-                            isSelected: viewModel.selectedFilter == level,
-                            color: colorForRiskLevel(level),
-                            action: { viewModel.selectedFilter = level }
+                            isSelected: self.viewModel.selectedFilter == level,
+                            color: self.colorForRiskLevel(level),
+                            action: { self.viewModel.selectedFilter = level }
                         )
                     }
                 }

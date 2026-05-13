@@ -6,39 +6,39 @@ struct LandingLegalLinksSection: View {
     @Binding var showLegalImprint: Bool
     let style: LandingViewModel.DesignStyle
 
-    private var isTypewriter: Bool { style == .typewriter }
+    private var isTypewriter: Bool { self.style == .typewriter }
 
     var body: some View {
         VStack(spacing: ResponsiveDesign.spacing(12)) {
             Rectangle()
-                .fill(isTypewriter ? Color("InputText").opacity(0.4) : AppTheme.fontColor.opacity(0.2))
+                .fill(self.isTypewriter ? Color("InputText").opacity(0.4) : AppTheme.fontColor.opacity(0.2))
                 .frame(height: 1)
 
             HStack(spacing: ResponsiveDesign.spacing(16)) {
-                Button(action: { showLegalTerms = true }) {
+                Button(action: { self.showLegalTerms = true }) {
                     Text("Terms")
-                        .font(isTypewriter
-                              ? ResponsiveDesign.monospacedFont(size: 14, weight: .regular)
-                              : ResponsiveDesign.captionFont())
-                        .foregroundColor(isTypewriter ? Color("InputText") : AppTheme.accentLightBlue)
+                        .font(self.isTypewriter
+                            ? ResponsiveDesign.monospacedFont(size: 14, weight: .regular)
+                            : ResponsiveDesign.captionFont())
+                        .foregroundColor(self.isTypewriter ? Color("InputText") : AppTheme.accentLightBlue)
                 }
                 .buttonStyle(PlainButtonStyle())
 
-                Button(action: { showLegalPrivacy = true }) {
+                Button(action: { self.showLegalPrivacy = true }) {
                     Text("Privacy")
-                        .font(isTypewriter
-                              ? ResponsiveDesign.monospacedFont(size: 14, weight: .regular)
-                              : ResponsiveDesign.captionFont())
-                        .foregroundColor(isTypewriter ? Color("InputText") : AppTheme.accentLightBlue)
+                        .font(self.isTypewriter
+                            ? ResponsiveDesign.monospacedFont(size: 14, weight: .regular)
+                            : ResponsiveDesign.captionFont())
+                        .foregroundColor(self.isTypewriter ? Color("InputText") : AppTheme.accentLightBlue)
                 }
                 .buttonStyle(PlainButtonStyle())
 
-                Button(action: { showLegalImprint = true }) {
+                Button(action: { self.showLegalImprint = true }) {
                     Text("Imprint")
-                        .font(isTypewriter
-                              ? ResponsiveDesign.monospacedFont(size: 14, weight: .regular)
-                              : ResponsiveDesign.captionFont())
-                        .foregroundColor(isTypewriter ? Color("InputText") : AppTheme.accentLightBlue)
+                        .font(self.isTypewriter
+                            ? ResponsiveDesign.monospacedFont(size: 14, weight: .regular)
+                            : ResponsiveDesign.captionFont())
+                        .foregroundColor(self.isTypewriter ? Color("InputText") : AppTheme.accentLightBlue)
                 }
                 .buttonStyle(PlainButtonStyle())
 

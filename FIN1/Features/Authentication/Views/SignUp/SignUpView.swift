@@ -23,7 +23,7 @@ struct SignUpView: View {
                 AppTheme.screenBackground
                     .ignoresSafeArea()
 
-                if coordinator.isResuming {
+                if self.coordinator.isResuming {
                     VStack(spacing: ResponsiveDesign.spacing(16)) {
                         ProgressView()
                             .scaleEffect(1.2)
@@ -36,17 +36,17 @@ struct SignUpView: View {
                 VStack(spacing: ResponsiveDesign.spacing(0)) {
                     // Progress Bar
                     SignUpProgressBar(
-                        progress: coordinator.progress,
-                        currentStep: coordinator.currentStepNumber,
-                        totalSteps: coordinator.totalStepsForRole,
-                        phase: coordinator.currentStep.phase
+                        progress: self.coordinator.progress,
+                        currentStep: self.coordinator.currentStepNumber,
+                        totalSteps: self.coordinator.totalStepsForRole,
+                        phase: self.coordinator.currentStep.phase
                     )
                     .padding(.horizontal, ResponsiveDesign.lightBlueAreaHorizontalPadding())
 
                     // Step Content
                     ScrollView {
                         VStack(spacing: ResponsiveDesign.spacing(24)) {
-                            currentStepView
+                            self.currentStepView
                         }
                         .padding(.top, ResponsiveDesign.spacing(8))
                         .padding(.bottom, ResponsiveDesign.spacing(8))
@@ -58,250 +58,252 @@ struct SignUpView: View {
 
                     // Navigation Buttons
                     SignUpNavigationButtons(
-                        coordinator: coordinator,
-                        signUpData: signUpData,
-                        onComplete: completeRegistration,
-                        onShowTermsOfService: { showTermsOfService = true }
+                        coordinator: self.coordinator,
+                        signUpData: self.signUpData,
+                        onComplete: self.completeRegistration,
+                        onShowTermsOfService: { self.showTermsOfService = true }
                     )
                     .padding(.horizontal, ResponsiveDesign.lightBlueAreaHorizontalPadding())
                 }
-                .opacity(coordinator.isResuming ? 0 : 1)
+                .opacity(self.coordinator.isResuming ? 0 : 1)
             }
-            .navigationTitle(coordinator.isFirstStep ? "Konto eröffnen" : "Create Account")
+            .navigationTitle(self.coordinator.isFirstStep ? "Konto eröffnen" : "Create Account")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button(coordinator.isFirstStep ? "Abbrechen" : "Cancel") {
-                        dismiss()
+                    Button(self.coordinator.isFirstStep ? "Abbrechen" : "Cancel") {
+                        self.dismiss()
                     }
                     .foregroundColor(AppTheme.accentLightBlue)
                 }
             }
         }
-        .alert("Registration Error", isPresented: $coordinator.showAlert) {
+        .alert("Registration Error", isPresented: self.$coordinator.showAlert) {
             Button("OK") { }
         } message: {
-            Text(coordinator.alertMessage)
+            Text(self.coordinator.alertMessage)
         }
-        .alert("Session Timeout", isPresented: $coordinator.showTimeoutWarning) {
+        .alert("Session Timeout", isPresented: self.$coordinator.showTimeoutWarning) {
             Button("Continue Session") {
-                coordinator.extendSession()
+                self.coordinator.extendSession()
             }
             Button("End Session", role: .destructive) {
-                coordinator.stopInactivityTimers()
-                coordinator.requestDismissal()
+                self.coordinator.stopInactivityTimers()
+                self.coordinator.requestDismissal()
             }
         } message: {
-            Text("Your session will expire in \(coordinator.timeoutCountdown) seconds due to inactivity. Sensitive data will be cleared for your security.")
+            Text(
+                "Your session will expire in \(self.coordinator.timeoutCountdown) seconds due to inactivity. Sensitive data will be cleared for your security."
+            )
         }
         .onAppear {
-            coordinator.signUpData = signUpData
-            signUpData.injectServices(
-                riskClassCalculationService: appServices.riskClassCalculationService,
-                investmentExperienceCalculationService: appServices.investmentExperienceCalculationService
+            self.coordinator.signUpData = self.signUpData
+            self.signUpData.injectServices(
+                riskClassCalculationService: self.appServices.riskClassCalculationService,
+                investmentExperienceCalculationService: self.appServices.investmentExperienceCalculationService
             )
-            coordinator.setValidation(
-                DefaultStepValidation(testModeService: appServices.testModeService)
+            self.coordinator.setValidation(
+                DefaultStepValidation(testModeService: self.appServices.testModeService)
             )
-            coordinator.configureServices(
-                onboardingAPIService: appServices.onboardingAPIService,
-                userService: appServices.userService,
-                telemetryService: appServices.telemetryService
+            self.coordinator.configureServices(
+                onboardingAPIService: self.appServices.onboardingAPIService,
+                userService: self.appServices.userService,
+                telemetryService: self.appServices.telemetryService
             )
             Task {
-                await coordinator.resumeOnboarding()
-                coordinator.startInactivityTimer()
+                await self.coordinator.resumeOnboarding()
+                self.coordinator.startInactivityTimer()
             }
         }
-        .onChange(of: signUpData.userRole) { _, newRole in
-            coordinator.setUserRole(newRole)
+        .onChange(of: self.signUpData.userRole) { _, newRole in
+            self.coordinator.setUserRole(newRole)
         }
-        .onChange(of: coordinator.currentStep) { _, newStep in
+        .onChange(of: self.coordinator.currentStep) { _, newStep in
             if newStep == .emailVerification {
-                coordinator.sendVerificationCode()
+                self.coordinator.sendVerificationCode()
             } else if newStep == .phoneVerification {
-                coordinator.sendPhoneVerificationCode()
+                self.coordinator.sendPhoneVerificationCode()
             }
         }
-        .onChange(of: coordinator.shouldDismiss) { _, newValue in
+        .onChange(of: self.coordinator.shouldDismiss) { _, newValue in
             if newValue {
-                dismiss()
-                coordinator.shouldDismiss = false
+                self.dismiss()
+                self.coordinator.shouldDismiss = false
             }
         }
         .onDisappear {
-            coordinator.stopInactivityTimers()
-            coordinator.trackDropOffIfNeeded()
+            self.coordinator.stopInactivityTimers()
+            self.coordinator.trackDropOffIfNeeded()
         }
-        .fullScreenCover(isPresented: $coordinator.showWelcomePage) {
-            WelcomePage(coordinator: coordinator)
+        .fullScreenCover(isPresented: self.$coordinator.showWelcomePage) {
+            WelcomePage(coordinator: self.coordinator)
         }
-        .fullScreenCover(isPresented: $coordinator.showCompanyKyb) {
+        .fullScreenCover(isPresented: self.$coordinator.showCompanyKyb) {
             if let kybService = appServices.companyKybAPIService {
                 CompanyKybView(companyKybAPIService: kybService)
-                    .environment(\.appServices, appServices)
+                    .environment(\.appServices, self.appServices)
             }
         }
-        .sheet(isPresented: $showTermsOfService) {
+        .sheet(isPresented: self.$showTermsOfService) {
             TermsOfServiceView(
-                configurationService: appServices.configurationService,
-                termsContentService: appServices.termsContentService
+                configurationService: self.appServices.configurationService,
+                termsContentService: self.appServices.termsContentService
             )
         }
     }
 
     @ViewBuilder
     private var currentStepView: some View {
-        switch coordinator.currentStep {
+        switch self.coordinator.currentStep {
         case .welcome:
             WelcomeStep(
-                accountType: $signUpData.accountType,
-                userRole: $signUpData.userRole
+                accountType: self.$signUpData.accountType,
+                userRole: self.$signUpData.userRole
             )
         case .contact:
             ContactStep(
-                email: $signUpData.email,
-                phoneNumber: $signUpData.phoneNumber,
-                username: $signUpData.username,
-                password: $signUpData.password,
-                confirmPassword: $signUpData.confirmPassword
+                email: self.$signUpData.email,
+                phoneNumber: self.$signUpData.phoneNumber,
+                username: self.$signUpData.username,
+                password: self.$signUpData.password,
+                confirmPassword: self.$signUpData.confirmPassword
             )
         case .accountCreated:
             AccountCreatedStep()
         case .emailVerification:
             EmailVerificationStep(
-                email: signUpData.email,
-                verificationCode: $coordinator.verificationCode,
-                isVerifying: coordinator.isVerifyingCode,
-                errorMessage: coordinator.verificationError,
-                canResend: coordinator.canResendCode,
-                resendCountdown: coordinator.resendCountdown,
-                onVerify: coordinator.verifyCode,
-                onResend: coordinator.resendCode
+                email: self.signUpData.email,
+                verificationCode: self.$coordinator.verificationCode,
+                isVerifying: self.coordinator.isVerifyingCode,
+                errorMessage: self.coordinator.verificationError,
+                canResend: self.coordinator.canResendCode,
+                resendCountdown: self.coordinator.resendCountdown,
+                onVerify: self.coordinator.verifyCode,
+                onResend: self.coordinator.resendCode
             )
         case .phoneVerification:
             PhoneVerificationStep(
-                phoneNumber: signUpData.phoneNumber,
-                verificationCode: $coordinator.phoneVerificationCode,
-                isVerifying: coordinator.isVerifyingPhone,
-                errorMessage: coordinator.phoneVerificationError,
-                canResend: coordinator.canResendPhoneCode,
-                resendCountdown: coordinator.phoneResendCountdown,
-                onVerify: coordinator.verifyPhoneCode,
-                onResend: coordinator.resendPhoneCode
+                phoneNumber: self.signUpData.phoneNumber,
+                verificationCode: self.$coordinator.phoneVerificationCode,
+                isVerifying: self.coordinator.isVerifyingPhone,
+                errorMessage: self.coordinator.phoneVerificationError,
+                canResend: self.coordinator.canResendPhoneCode,
+                resendCountdown: self.coordinator.phoneResendCountdown,
+                onVerify: self.coordinator.verifyPhoneCode,
+                onResend: self.coordinator.resendPhoneCode
             )
         case .personalInfo:
             PersonalInfoStep(
-                salutation: $signUpData.salutation,
-                academicTitle: $signUpData.academicTitle,
-                firstName: $signUpData.firstName,
-                lastName: $signUpData.lastName,
-                streetAndNumber: $signUpData.streetAndNumber,
-                postalCode: $signUpData.postalCode,
-                city: $signUpData.city,
-                state: $signUpData.state,
-                country: $signUpData.country,
-                dateOfBirth: $signUpData.dateOfBirth,
-                placeOfBirth: $signUpData.placeOfBirth,
-                countryOfBirth: $signUpData.countryOfBirth
+                salutation: self.$signUpData.salutation,
+                academicTitle: self.$signUpData.academicTitle,
+                firstName: self.$signUpData.firstName,
+                lastName: self.$signUpData.lastName,
+                streetAndNumber: self.$signUpData.streetAndNumber,
+                postalCode: self.$signUpData.postalCode,
+                city: self.$signUpData.city,
+                state: self.$signUpData.state,
+                country: self.$signUpData.country,
+                dateOfBirth: self.$signUpData.dateOfBirth,
+                placeOfBirth: self.$signUpData.placeOfBirth,
+                countryOfBirth: self.$signUpData.countryOfBirth
             )
         case .citizenshipTax:
             CitizenshipTaxStep(
-                isNotUSCitizen: $signUpData.isNotUSCitizen,
-                nationality: $signUpData.nationality,
-                taxNumber: $signUpData.taxNumber,
-                additionalResidenceCountry: $signUpData.additionalResidenceCountry,
-                additionalTaxNumber: $signUpData.additionalTaxNumber,
-                address: $signUpData.address,
-                showAdditionalFields: $signUpData.showAdditionalFields
+                isNotUSCitizen: self.$signUpData.isNotUSCitizen,
+                nationality: self.$signUpData.nationality,
+                taxNumber: self.$signUpData.taxNumber,
+                additionalResidenceCountry: self.$signUpData.additionalResidenceCountry,
+                additionalTaxNumber: self.$signUpData.additionalTaxNumber,
+                address: self.$signUpData.address,
+                showAdditionalFields: self.$signUpData.showAdditionalFields
             )
         case .identificationType:
-            IdentificationTypeStep(identificationType: $signUpData.identificationType)
+            IdentificationTypeStep(identificationType: self.$signUpData.identificationType)
         case .identificationUploadFront:
             IdentificationUploadFrontStep(
-                identificationType: signUpData.identificationType,
-                passportFrontImage: $signUpData.passportFrontImage,
-                idCardFrontImage: $signUpData.idCardFrontImage
+                identificationType: self.signUpData.identificationType,
+                passportFrontImage: self.$signUpData.passportFrontImage,
+                idCardFrontImage: self.$signUpData.idCardFrontImage
             )
         case .identificationUploadBack:
             IdentificationUploadBackStep(
-                identificationType: signUpData.identificationType,
-                passportBackImage: $signUpData.passportBackImage,
-                idCardBackImage: $signUpData.idCardBackImage
+                identificationType: self.signUpData.identificationType,
+                passportBackImage: self.$signUpData.passportBackImage,
+                idCardBackImage: self.$signUpData.idCardBackImage
             )
         case .postidentConfirmation:
             PostidentConfirmationStep(
-                identificationConfirmed: $signUpData.identificationConfirmed
+                identificationConfirmed: self.$signUpData.identificationConfirmed
             )
         case .identificationConfirm:
             IdentificationConfirmStep(
-                identificationType: signUpData.identificationType,
-                passportFrontImage: signUpData.passportFrontImage,
-                passportBackImage: signUpData.passportBackImage,
-                idCardFrontImage: signUpData.idCardFrontImage,
-                idCardBackImage: signUpData.idCardBackImage,
-                identificationConfirmed: $signUpData.identificationConfirmed
+                identificationType: self.signUpData.identificationType,
+                passportFrontImage: self.signUpData.passportFrontImage,
+                passportBackImage: self.signUpData.passportBackImage,
+                idCardFrontImage: self.signUpData.idCardFrontImage,
+                idCardBackImage: self.signUpData.idCardBackImage,
+                identificationConfirmed: self.$signUpData.identificationConfirmed
             )
         case .addressConfirm:
             AddressConfirmStep(
-                addressConfirmed: $signUpData.addressConfirmed,
-                addressVerificationDocument: $signUpData.addressVerificationDocument
+                addressConfirmed: self.$signUpData.addressConfirmed,
+                addressVerificationDocument: self.$signUpData.addressVerificationDocument
             )
         case .addressConfirmSuccess:
             AddressConfirmSuccessStep()
         case .financial:
             FinancialStep(
-                employmentStatus: $signUpData.employmentStatus,
-                income: $signUpData.income,
-                incomeRange: $signUpData.incomeRange,
-                incomeSources: $signUpData.incomeSources,
-                otherIncomeSource: $signUpData.otherIncomeSource,
-                cashAndLiquidAssets: $signUpData.cashAndLiquidAssets
+                employmentStatus: self.$signUpData.employmentStatus,
+                income: self.$signUpData.income,
+                incomeRange: self.$signUpData.incomeRange,
+                incomeSources: self.$signUpData.incomeSources,
+                otherIncomeSource: self.$signUpData.otherIncomeSource,
+                cashAndLiquidAssets: self.$signUpData.cashAndLiquidAssets
             )
         case .experience:
             ExperienceStep(
-                stocksTransactionsCount: $signUpData.stocksTransactionsCount,
-                stocksInvestmentAmount: $signUpData.stocksInvestmentAmount,
-                etfsTransactionsCount: $signUpData.etfsTransactionsCount,
-                etfsInvestmentAmount: $signUpData.etfsInvestmentAmount,
-                derivativesTransactionsCount: $signUpData.derivativesTransactionsCount,
-                derivativesInvestmentAmount: $signUpData.derivativesInvestmentAmount,
-                derivativesHoldingPeriod: $signUpData.derivativesHoldingPeriod,
-                otherAssets: $signUpData.otherAssets
+                stocksTransactionsCount: self.$signUpData.stocksTransactionsCount,
+                stocksInvestmentAmount: self.$signUpData.stocksInvestmentAmount,
+                etfsTransactionsCount: self.$signUpData.etfsTransactionsCount,
+                etfsInvestmentAmount: self.$signUpData.etfsInvestmentAmount,
+                derivativesTransactionsCount: self.$signUpData.derivativesTransactionsCount,
+                derivativesInvestmentAmount: self.$signUpData.derivativesInvestmentAmount,
+                derivativesHoldingPeriod: self.$signUpData.derivativesHoldingPeriod,
+                otherAssets: self.$signUpData.otherAssets
             )
         case .desiredReturn:
-            DesiredReturnStep(desiredReturn: $signUpData.desiredReturn)
+            DesiredReturnStep(desiredReturn: self.$signUpData.desiredReturn)
         case .nonInsiderDeclaration:
-            NonInsiderDeclarationStep(insiderTradingOptions: $signUpData.insiderTradingOptions)
+            NonInsiderDeclarationStep(insiderTradingOptions: self.$signUpData.insiderTradingOptions)
         case .moneyLaunderingDeclaration:
             MoneyLaunderingDeclarationStep(
-                moneyLaunderingDeclaration: $signUpData.moneyLaunderingDeclaration,
-                assetType: $signUpData.assetType
+                moneyLaunderingDeclaration: self.$signUpData.moneyLaunderingDeclaration,
+                assetType: self.$signUpData.assetType
             )
         case .terms:
             TermsStep(
-                acceptedTerms: $signUpData.acceptedTerms,
-                acceptedPrivacyPolicy: $signUpData.acceptedPrivacyPolicy,
-                acceptedMarketingConsent: $signUpData.acceptedMarketingConsent
+                acceptedTerms: self.$signUpData.acceptedTerms,
+                acceptedPrivacyPolicy: self.$signUpData.acceptedPrivacyPolicy,
+                acceptedMarketingConsent: self.$signUpData.acceptedMarketingConsent
             )
         case .summary:
-            SummaryStep(signUpData: signUpData, coordinator: coordinator)
+            SummaryStep(signUpData: self.signUpData, coordinator: self.coordinator)
         case .riskClassificationNote:
-            RiskClassificationNoteStep(signUpData: signUpData, coordinator: coordinator)
+            RiskClassificationNoteStep(signUpData: self.signUpData, coordinator: self.coordinator)
         case .riskClass7Confirmation:
-            RiskClass7ConfirmationStep(signUpData: signUpData, coordinator: coordinator)
+            RiskClass7ConfirmationStep(signUpData: self.signUpData, coordinator: self.coordinator)
         }
     }
 
     private func completeRegistration() {
-        coordinator.isLoading = true
+        self.coordinator.isLoading = true
 
         Task {
             do {
                 let user = try signUpData.createUser()
-                let exportedData = signUpData.savedOnboardingData()
+                let exportedData = self.signUpData.savedOnboardingData()
 
-                try await appServices.userService.updateProfile(user)
+                try await self.appServices.userService.updateProfile(user)
 
                 if let onboardingAPI = appServices.onboardingAPIService {
                     // Mark legalConsent phase complete
@@ -316,12 +318,12 @@ struct SignUpView: View {
                     )
                 }
 
-                coordinator.trackOnboardingCompleted()
-                coordinator.isLoading = false
-                dismiss()
+                self.coordinator.trackOnboardingCompleted()
+                self.coordinator.isLoading = false
+                self.dismiss()
             } catch {
-                coordinator.isLoading = false
-                coordinator.showError(error.localizedDescription)
+                self.coordinator.isLoading = false
+                self.coordinator.showError(error.localizedDescription)
             }
         }
     }

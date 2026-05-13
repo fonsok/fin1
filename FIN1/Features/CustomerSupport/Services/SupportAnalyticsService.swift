@@ -42,12 +42,12 @@ final class SupportAnalyticsService: SupportAnalyticsServiceProtocol {
         let negativeCount = surveys.filter { $0.isNegative }.count
 
         // Calculate resolution times (mock calculation)
-        let avgResolutionTime = calculateAverageResolutionTime(tickets: closedTickets)
+        let avgResolutionTime = self.calculateAverageResolutionTime(tickets: closedTickets)
 
         // Category breakdown
         var ticketsByCategory: [String: Int] = [:]
         for ticket in filteredTickets {
-            let category = extractCategory(from: ticket)
+            let category = self.extractCategory(from: ticket)
             ticketsByCategory[category, default: 0] += 1
         }
 
@@ -74,7 +74,9 @@ final class SupportAnalyticsService: SupportAnalyticsServiceProtocol {
             negativeRatingPercentage: surveys.isEmpty ? 0 : Double(negativeCount) / Double(surveys.count) * 100,
             issueResolvedPercentage: surveys.isEmpty ? 0 : Double(surveys.filter { $0.wasIssueResolved }.count) / Double(surveys.count) * 100,
             agentHelpfulPercentage: surveys.isEmpty ? 0 : Double(surveys.filter { $0.wasAgentHelpful }.count) / Double(surveys.count) * 100,
-            responseTimeSatisfactoryPercentage: surveys.isEmpty ? 0 : Double(surveys.filter { $0.wasResponseTimeSatisfactory }.count) / Double(surveys.count) * 100,
+            responseTimeSatisfactoryPercentage: surveys.isEmpty ? 0 : Double(surveys.filter { $0.wasResponseTimeSatisfactory }.count) / Double(
+                surveys.count
+            ) * 100,
             ticketsByCategory: ticketsByCategory,
             ticketsByPriority: ticketsByPriority
         )
@@ -84,14 +86,14 @@ final class SupportAnalyticsService: SupportAnalyticsServiceProtocol {
         let calendar = Calendar.current
         let startOfDay = calendar.startOfDay(for: Date())
         let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) ?? Date()
-        return try await getMetrics(from: startOfDay, to: endOfDay)
+        return try await self.getMetrics(from: startOfDay, to: endOfDay)
     }
 
     func getWeeklyMetrics() async throws -> SupportMetrics {
         let calendar = Calendar.current
         let startOfWeek = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: Date())) ?? Date()
         let endOfWeek = calendar.date(byAdding: .day, value: 7, to: startOfWeek) ?? Date()
-        return try await getMetrics(from: startOfWeek, to: endOfWeek)
+        return try await self.getMetrics(from: startOfWeek, to: endOfWeek)
     }
 
     func getMonthlyMetrics() async throws -> SupportMetrics {
@@ -99,7 +101,7 @@ final class SupportAnalyticsService: SupportAnalyticsServiceProtocol {
         let components = calendar.dateComponents([.year, .month], from: Date())
         let startOfMonth = calendar.date(from: components) ?? Date()
         let endOfMonth = calendar.date(byAdding: .month, value: 1, to: startOfMonth) ?? Date()
-        return try await getMetrics(from: startOfMonth, to: endOfMonth)
+        return try await self.getMetrics(from: startOfMonth, to: endOfMonth)
     }
 
     // MARK: - Agent Performance
@@ -119,14 +121,14 @@ final class SupportAnalyticsService: SupportAnalyticsServiceProtocol {
 
         return AgentPerformanceMetrics(
             id: agentId,
-            agentName: getAgentName(for: agentId),
+            agentName: self.getAgentName(for: agentId),
             periodStart: startDate,
             periodEnd: endDate,
             ticketsHandled: agentTickets.count,
             ticketsClosed: agentTickets.filter { $0.status == .closed || $0.status == .resolved }.count,
             ticketsEscalated: agentTickets.filter { $0.status == .escalated }.count,
             averageFirstResponseTime: 2.0,
-            averageResolutionTime: calculateAverageResolutionTime(tickets: agentTickets),
+            averageResolutionTime: self.calculateAverageResolutionTime(tickets: agentTickets),
             surveysReceived: filteredSurveys.count,
             averageCSATScore: avgCSAT,
             positiveRatings: filteredSurveys.filter { $0.isPositive }.count,
@@ -165,8 +167,8 @@ final class SupportAnalyticsService: SupportAnalyticsServiceProtocol {
                 affectedCustomers: 12,
                 averageResolutionTime: 4.5,
                 suggestedAction: .productFix,
-                firstOccurrence: Date().addingTimeInterval(-30 * 24 * 3600),
-                lastOccurrence: Date().addingTimeInterval(-2 * 24 * 3600)
+                firstOccurrence: Date().addingTimeInterval(-30 * 24 * 3_600),
+                lastOccurrence: Date().addingTimeInterval(-2 * 24 * 3_600)
             ),
             RecurringIssue(
                 id: UUID().uuidString,
@@ -176,8 +178,8 @@ final class SupportAnalyticsService: SupportAnalyticsServiceProtocol {
                 affectedCustomers: 8,
                 averageResolutionTime: 2.0,
                 suggestedAction: .documentationUpdate,
-                firstOccurrence: Date().addingTimeInterval(-14 * 24 * 3600),
-                lastOccurrence: Date().addingTimeInterval(-1 * 24 * 3600)
+                firstOccurrence: Date().addingTimeInterval(-14 * 24 * 3_600),
+                lastOccurrence: Date().addingTimeInterval(-1 * 24 * 3_600)
             )
         ].filter { $0.occurrenceCount >= minOccurrences }
     }
@@ -187,7 +189,7 @@ final class SupportAnalyticsService: SupportAnalyticsServiceProtocol {
         var categoryCount: [String: Int] = [:]
 
         for ticket in tickets {
-            let category = extractCategory(from: ticket)
+            let category = self.extractCategory(from: ticket)
             categoryCount[category, default: 0] += 1
         }
 
@@ -243,7 +245,7 @@ final class SupportAnalyticsService: SupportAnalyticsServiceProtocol {
         guard !closedTickets.isEmpty else { return 0 }
 
         let totalHours = closedTickets.map { ticket in
-            ticket.updatedAt.timeIntervalSince(ticket.createdAt) / 3600
+            ticket.updatedAt.timeIntervalSince(ticket.createdAt) / 3_600
         }.reduce(0, +)
 
         return totalHours / Double(closedTickets.count)

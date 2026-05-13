@@ -8,7 +8,7 @@ struct PendingConfigurationChangeDetailsView: View {
     var body: some View {
         VStack(spacing: ResponsiveDesign.spacing(12)) {
             HStack {
-                Text(viewModel.formatParameterName(change.parameterName))
+                Text(self.viewModel.formatParameterName(self.change.parameterName))
                     .font(ResponsiveDesign.headlineFont())
                 Spacer()
             }
@@ -18,7 +18,7 @@ struct PendingConfigurationChangeDetailsView: View {
                     Text("Current Value")
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(.secondary)
-                    Text(viewModel.formatValue(change.oldValue, for: change.parameterName))
+                    Text(self.viewModel.formatValue(self.change.oldValue, for: self.change.parameterName))
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(.primary)
                 }
@@ -34,7 +34,7 @@ struct PendingConfigurationChangeDetailsView: View {
                     Text("New Value")
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(.secondary)
-                    Text(viewModel.formatValue(change.newValue, for: change.parameterName))
+                    Text(self.viewModel.formatValue(self.change.newValue, for: self.change.parameterName))
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(.blue)
                         .fontWeight(.semibold)
@@ -44,10 +44,10 @@ struct PendingConfigurationChangeDetailsView: View {
             Divider()
 
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
-                Text("Reason: \(change.reason)")
+                Text("Reason: \(self.change.reason)")
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(.secondary)
-                Text("Requested by: \(change.requesterEmail ?? change.requesterId)")
+                Text("Requested by: \(self.change.requesterEmail ?? self.change.requesterId)")
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(.secondary)
             }

@@ -1,7 +1,7 @@
 import Foundation
-import UIKit
-import PDFKit
 import OSLog
+import PDFKit
+import UIKit
 
 // MARK: - PDF Generation Mode
 
@@ -50,43 +50,43 @@ final class PDFGenerator {
     /// Generates a PDF from an invoice
     /// Uses configured generation mode (backend or local)
     static func generatePDF(from invoice: Invoice) -> Data {
-        logger.info("PDFGenerator.generatePDF - Mode: \(generationMode.rawValue)")
+        self.logger.info("PDFGenerator.generatePDF - Mode: \(self.generationMode.rawValue)")
 
-        switch generationMode {
+        switch self.generationMode {
         case .backend:
             // For synchronous API compatibility, fall back to local generation
             // Use generatePDFAsync for backend generation
-            logger.info("Falling back to local generation for sync call")
-            return generateLocalPDF(from: invoice)
+            self.logger.info("Falling back to local generation for sync call")
+            return self.generateLocalPDF(from: invoice)
 
         case .professionalLocal:
             return PDFInvoiceGenerator.generatePDF(from: invoice)
 
         case .local:
-            return generateLocalPDF(from: invoice)
+            return self.generateLocalPDF(from: invoice)
         }
     }
 
     /// Generates a PDF from an invoice asynchronously (supports backend generation)
     static func generatePDFAsync(from invoice: Invoice) async throws -> Data {
-        logger.info("PDFGenerator.generatePDFAsync - Mode: \(generationMode.rawValue)")
+        self.logger.info("PDFGenerator.generatePDFAsync - Mode: \(self.generationMode.rawValue)")
 
-        switch generationMode {
+        switch self.generationMode {
         case .backend:
             do {
                 let data = try await backendService.generateInvoicePDF(from: invoice)
-                logger.info("Backend PDF generated: \(data.count) bytes")
+                self.logger.info("Backend PDF generated: \(data.count) bytes")
                 return data
             } catch {
-                logger.error("Backend PDF generation failed, falling back to local: \(error.localizedDescription)")
-                return generateLocalPDF(from: invoice)
+                self.logger.error("Backend PDF generation failed, falling back to local: \(error.localizedDescription)")
+                return self.generateLocalPDF(from: invoice)
             }
 
         case .professionalLocal:
             return PDFInvoiceGenerator.generatePDF(from: invoice)
 
         case .local:
-            return generateLocalPDF(from: invoice)
+            return self.generateLocalPDF(from: invoice)
         }
     }
 
@@ -95,14 +95,14 @@ final class PDFGenerator {
         for displayData: TradeStatementDisplayData,
         trade: TradeOverviewItem
     ) async throws -> Data {
-        logger.info("Generating trade statement PDF - Mode: \(generationMode.rawValue)")
+        self.logger.info("Generating trade statement PDF - Mode: \(self.generationMode.rawValue)")
 
-        switch generationMode {
+        switch self.generationMode {
         case .backend:
             do {
-                return try await backendService.generateTradeStatementPDF(for: displayData, tradeNumber: trade.tradeNumber)
+                return try await self.backendService.generateTradeStatementPDF(for: displayData, tradeNumber: trade.tradeNumber)
             } catch {
-                logger.error("Backend trade statement PDF failed, falling back to local: \(error.localizedDescription)")
+                self.logger.error("Backend trade statement PDF failed, falling back to local: \(error.localizedDescription)")
                 return PDFTradeStatementGenerator.generatePDF(for: displayData, trade: trade)
             }
 
@@ -117,14 +117,14 @@ final class PDFGenerator {
 
     /// Generates a credit note PDF asynchronously
     static func generateCreditNotePDFAsync(from invoice: Invoice) async throws -> Data {
-        logger.info("Generating credit note PDF - Mode: \(generationMode.rawValue)")
+        self.logger.info("Generating credit note PDF - Mode: \(self.generationMode.rawValue)")
 
-        switch generationMode {
+        switch self.generationMode {
         case .backend:
             do {
-                return try await backendService.generateCreditNotePDF(from: invoice)
+                return try await self.backendService.generateCreditNotePDF(from: invoice)
             } catch {
-                logger.error("Backend credit note PDF failed, falling back to local: \(error.localizedDescription)")
+                self.logger.error("Backend credit note PDF failed, falling back to local: \(error.localizedDescription)")
                 return PDFInvoiceGenerator.generatePDF(from: invoice)
             }
 
@@ -135,12 +135,12 @@ final class PDFGenerator {
 
     /// Generates a preview image of the PDF
     static func generatePreview(from invoice: Invoice) -> UIImage? {
-        switch generationMode {
+        switch self.generationMode {
         case .professionalLocal:
             return PDFInvoiceGenerator.generatePreview(from: invoice)
 
         case .backend, .local:
-            if useImprovedGeneration {
+            if self.useImprovedGeneration {
                 return PDFCoreGeneratorImproved.generatePreview(from: invoice)
             } else {
                 return PDFCoreGenerator.generatePreview(from: invoice)
@@ -152,13 +152,13 @@ final class PDFGenerator {
 
     private static func generateLocalPDF(from invoice: Invoice) -> Data {
         let pdfData: Data
-        if useImprovedGeneration {
+        if self.useImprovedGeneration {
             pdfData = PDFCoreGeneratorImproved.generatePDF(from: invoice)
         } else {
             pdfData = PDFCoreGenerator.generatePDF(from: invoice)
         }
 
-        logger.info("Local PDF generated: \(pdfData.count) bytes")
+        self.logger.info("Local PDF generated: \(pdfData.count) bytes")
         return pdfData
     }
 }

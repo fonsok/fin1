@@ -9,7 +9,7 @@ struct PDFPreviewView: View {
     var body: some View {
         NavigationStack {
             ScrollView([.horizontal, .vertical], showsIndicators: true) {
-                Image(uiImage: image)
+                Image(uiImage: self.image)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(minWidth: UIScreen.main.bounds.width)
@@ -20,7 +20,7 @@ struct PDFPreviewView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Schließen") {
-                        dismiss()
+                        self.dismiss()
                     }
                 }
             }

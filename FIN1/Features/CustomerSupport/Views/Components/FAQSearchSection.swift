@@ -12,18 +12,18 @@ struct FAQSearchSection: View {
                 Image(systemName: "magnifyingglass")
                     .foregroundColor(AppTheme.fontColor.opacity(0.5))
 
-                TextField("FAQ durchsuchen...", text: $viewModel.searchQuery)
+                TextField("FAQ durchsuchen...", text: self.$viewModel.searchQuery)
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.fontColor)
 
-                if viewModel.isSearching {
+                if self.viewModel.isSearching {
                     ProgressView()
                         .scaleEffect(0.8)
                 }
 
-                if !viewModel.searchQuery.isEmpty {
+                if !self.viewModel.searchQuery.isEmpty {
                     Button {
-                        viewModel.clearSearch()
+                        self.viewModel.clearSearch()
                     } label: {
                         Image(systemName: "xmark.circle.fill")
                             .foregroundColor(AppTheme.fontColor.opacity(0.5))

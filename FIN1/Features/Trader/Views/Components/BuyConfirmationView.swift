@@ -51,7 +51,7 @@ struct BuyConfirmationView: View {
                                         Text("Emittent:")
                                             .fontWeight(.light)
                                         Spacer()
-                                        Text(getEmittentFromWKN(wkn))
+                                        Text(self.getEmittentFromWKN(wkn))
                                             .fontWeight(.regular)
                                     }
                                 }
@@ -92,7 +92,7 @@ struct BuyConfirmationView: View {
                                     Text("Strike Price:")
                                         .fontWeight(.light)
                                     Spacer()
-                                    Text(DepotUtils.formatStrikePrice(trade.buyOrder.strike ?? 0.0, trade.underlyingAsset))
+                                    Text(DepotUtils.formatStrikePrice(self.trade.buyOrder.strike ?? 0.0, self.trade.underlyingAsset))
                                         .fontWeight(.regular)
                                 }
 
@@ -100,7 +100,7 @@ struct BuyConfirmationView: View {
                                     Text("Stück:")
                                         .fontWeight(.light)
                                     Spacer()
-                                    Text(trade.totalQuantity.formattedAsLocalizedInteger())
+                                    Text(self.trade.totalQuantity.formattedAsLocalizedInteger())
                                         .fontWeight(.regular)
                                 }
 
@@ -108,7 +108,7 @@ struct BuyConfirmationView: View {
                                     Text("Brief-Kurs (Ask):")
                                         .fontWeight(.light)
                                     Spacer()
-                                    Text(trade.entryPrice.formattedAsLocalizedCurrency())
+                                    Text(self.trade.entryPrice.formattedAsLocalizedCurrency())
                                         .fontWeight(.regular)
                                 }
 
@@ -116,7 +116,7 @@ struct BuyConfirmationView: View {
                                     Text("Gesamtbetrag:")
                                         .fontWeight(.light)
                                     Spacer()
-                                    Text(trade.buyOrder.totalAmount.formattedAsLocalizedCurrency())
+                                    Text(self.trade.buyOrder.totalAmount.formattedAsLocalizedCurrency())
                                         .fontWeight(.regular)
                                 }
                             }
@@ -137,7 +137,7 @@ struct BuyConfirmationView: View {
                         .multilineTextAlignment(.center)
 
                         // Action Button
-                        Button(action: onDismiss, label: {
+                        Button(action: self.onDismiss, label: {
                             Text("Zum Depot")
                                 .font(ResponsiveDesign.bodyFont())
                                 .fontWeight(.semibold)
@@ -198,7 +198,7 @@ struct BuyConfirmationView: View {
                 description: "Apple Inc.",
                 quantity: 100,
                 price: 150.0,
-                totalAmount: 15000.0,
+                totalAmount: 15_000.0,
                 status: .completed,
                 createdAt: Date(),
                 executedAt: Date(),

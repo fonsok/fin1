@@ -25,19 +25,19 @@ final class OptimizedDataLoader: @unchecked Sendable {
         let data = try await loadFunction()
 
         // Cache the data
-        cache[key] = data
-        cacheTimestamps[key] = Date()
+        self.cache[key] = data
+        self.cacheTimestamps[key] = Date()
 
         return data
     }
 
     func clearCache(for key: String? = nil) {
         if let key = key {
-            cache.removeValue(forKey: key)
-            cacheTimestamps.removeValue(forKey: key)
+            self.cache.removeValue(forKey: key)
+            self.cacheTimestamps.removeValue(forKey: key)
         } else {
-            cache.removeAll()
-            cacheTimestamps.removeAll()
+            self.cache.removeAll()
+            self.cacheTimestamps.removeAll()
         }
     }
 }

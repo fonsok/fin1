@@ -17,7 +17,7 @@ struct CustomerSupportSettingsView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: ResponsiveDesign.spacing(20)) {
-                    slaMonitoringSection
+                    self.slaMonitoringSection
 
                     Spacer(minLength: ResponsiveDesign.spacing(20))
                 }
@@ -29,29 +29,29 @@ struct CustomerSupportSettingsView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Speichern") {
-                        Task { await saveSettings() }
+                        Task { await self.saveSettings() }
                     }
-                    .disabled(isSaving)
+                    .disabled(self.isSaving)
                     .foregroundColor(AppTheme.accentLightBlue)
                 }
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Abbrechen") {
-                        dismiss()
+                        self.dismiss()
                     }
                 }
             }
             .onAppear {
-                loadCurrentSettings()
+                self.loadCurrentSettings()
             }
-            .alert("Einstellungen gespeichert", isPresented: $showSaveSuccess) {
-                Button("OK") { dismiss() }
+            .alert("Einstellungen gespeichert", isPresented: self.$showSaveSuccess) {
+                Button("OK") { self.dismiss() }
             } message: {
                 Text("Die Support-Einstellungen wurden erfolgreich gespeichert.")
             }
-            .alert("Fehler", isPresented: $showError) {
+            .alert("Fehler", isPresented: self.$showError) {
                 Button("OK") { }
             } message: {
-                Text(errorMessage ?? "Ein Fehler ist aufgetreten")
+                Text(self.errorMessage ?? "Ein Fehler ist aufgetreten")
             }
         }
     }
@@ -70,9 +70,11 @@ struct CustomerSupportSettingsView: View {
                     .foregroundColor(AppTheme.fontColor)
             }
 
-            Text("Konfigurieren Sie das Intervall für die automatische Überprüfung von SLA-Verletzungen. Bei Verletzungen werden Tickets automatisch eskaliert.")
-                .font(ResponsiveDesign.captionFont())
-                .foregroundColor(AppTheme.fontColor.opacity(0.7))
+            Text(
+                "Konfigurieren Sie das Intervall für die automatische Überprüfung von SLA-Verletzungen. Bei Verletzungen werden Tickets automatisch eskaliert."
+            )
+            .font(ResponsiveDesign.captionFont())
+            .foregroundColor(AppTheme.fontColor.opacity(0.7))
 
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
                 Text("Prüfintervall")
@@ -81,13 +83,13 @@ struct CustomerSupportSettingsView: View {
 
                 HStack {
                     Slider(
-                        value: $slaMonitoringInterval,
-                        in: 60...3600,
+                        value: self.$slaMonitoringInterval,
+                        in: 60...3_600,
                         step: 60
                     )
                     .tint(AppTheme.accentGreen)
 
-                    Text(formatInterval(slaMonitoringInterval))
+                    Text(self.formatInterval(self.slaMonitoringInterval))
                         .font(ResponsiveDesign.bodyFont())
                         .fontWeight(.medium)
                         .foregroundColor(AppTheme.inputText)
@@ -95,15 +97,15 @@ struct CustomerSupportSettingsView: View {
                 }
 
                 HStack(spacing: ResponsiveDesign.spacing(16)) {
-                    ForEach([60.0, 300.0, 600.0, 1800.0, 3600.0], id: \.self) { interval in
-                        Button(formatInterval(interval)) {
-                            slaMonitoringInterval = interval
+                    ForEach([60.0, 300.0, 600.0, 1_800.0, 3_600.0], id: \.self) { interval in
+                        Button(self.formatInterval(interval)) {
+                            self.slaMonitoringInterval = interval
                         }
                         .font(ResponsiveDesign.captionFont())
-                        .foregroundColor(slaMonitoringInterval == interval ? .white : AppTheme.inputText)
+                        .foregroundColor(self.slaMonitoringInterval == interval ? .white : AppTheme.inputText)
                         .padding(.horizontal, ResponsiveDesign.spacing(8))
                         .padding(.vertical, ResponsiveDesign.spacing(4))
-                        .background(slaMonitoringInterval == interval ? AppTheme.accentGreen : AppTheme.inputFieldBackground)
+                        .background(self.slaMonitoringInterval == interval ? AppTheme.accentGreen : AppTheme.inputFieldBackground)
                         .cornerRadius(ResponsiveDesign.spacing(6))
                     }
                 }
@@ -130,25 +132,25 @@ struct CustomerSupportSettingsView: View {
     }
 
     private func loadCurrentSettings() {
-        slaMonitoringInterval = services.configurationService.slaMonitoringInterval
+        self.slaMonitoringInterval = self.services.configurationService.slaMonitoringInterval
     }
 
     private func saveSettings() async {
-        isSaving = true
+        self.isSaving = true
         defer { isSaving = false }
 
         do {
-            try await services.configurationService.updateSLAMonitoringInterval(slaMonitoringInterval)
+            try await self.services.configurationService.updateSLAMonitoringInterval(self.slaMonitoringInterval)
 
             // Restart SLA monitoring with new interval
-            services.slaMonitoringService.stopMonitoring()
-            await services.slaMonitoringService.startMonitoring(interval: slaMonitoringInterval)
+            self.services.slaMonitoringService.stopMonitoring()
+            await self.services.slaMonitoringService.startMonitoring(interval: self.slaMonitoringInterval)
 
-            showSaveSuccess = true
+            self.showSaveSuccess = true
         } catch {
             let appError = error.toAppError()
-            errorMessage = appError.errorDescription ?? "An error occurred"
-            showError = true
+            self.errorMessage = appError.errorDescription ?? "An error occurred"
+            self.showError = true
         }
     }
 }

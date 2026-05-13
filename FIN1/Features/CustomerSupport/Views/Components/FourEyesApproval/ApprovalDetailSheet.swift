@@ -13,11 +13,11 @@ struct ApprovalDetailSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: ResponsiveDesign.spacing(16)) {
-                    requestInfoSection
-                    customerInfoSection
-                    justificationSection
-                    metadataSection
-                    actionSection
+                    self.requestInfoSection
+                    self.customerInfoSection
+                    self.justificationSection
+                    self.metadataSection
+                    self.actionSection
                 }
                 .padding()
             }
@@ -26,16 +26,16 @@ struct ApprovalDetailSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Schließen") { dismiss() }
+                    Button("Schließen") { self.dismiss() }
                 }
             }
-            .alert("Anfrage ablehnen", isPresented: $showRejectConfirmation) {
-                TextField("Ablehnungsgrund", text: $rejectionReason)
+            .alert("Anfrage ablehnen", isPresented: self.$showRejectConfirmation) {
+                TextField("Ablehnungsgrund", text: self.$rejectionReason)
                 Button("Abbrechen", role: .cancel) {}
                 Button("Ablehnen", role: .destructive) {
                     Task {
-                        await viewModel.rejectRequest(request, reason: rejectionReason)
-                        dismiss()
+                        await self.viewModel.rejectRequest(self.request, reason: self.rejectionReason)
+                        self.dismiss()
                     }
                 }
             } message: {
@@ -55,11 +55,14 @@ struct ApprovalDetailSheet: View {
             }
 
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
-                ApprovalDetailRow(label: "Typ", value: request.requestType.displayName)
-                ApprovalDetailRow(label: "Risikostufe", value: request.requestType.riskLevel.displayName)
-                ApprovalDetailRow(label: "Angefordert von", value: "\(request.requesterName) (\(request.requesterRole.displayName))")
-                ApprovalDetailRow(label: "Erstellt am", value: formatDate(request.createdAt))
-                ApprovalDetailRow(label: "Läuft ab am", value: formatDate(request.expiresAt))
+                ApprovalDetailRow(label: "Typ", value: self.request.requestType.displayName)
+                ApprovalDetailRow(label: "Risikostufe", value: self.request.requestType.riskLevel.displayName)
+                ApprovalDetailRow(
+                    label: "Angefordert von",
+                    value: "\(self.request.requesterName) (\(self.request.requesterRole.displayName))"
+                )
+                ApprovalDetailRow(label: "Erstellt am", value: self.formatDate(self.request.createdAt))
+                ApprovalDetailRow(label: "Läuft ab am", value: self.formatDate(self.request.expiresAt))
             }
         }
         .padding()
@@ -101,12 +104,12 @@ struct ApprovalDetailSheet: View {
                     .fontWeight(.semibold)
             }
 
-            Text(request.sensitiveAction)
+            Text(self.request.sensitiveAction)
                 .font(ResponsiveDesign.bodyFont())
                 .fontWeight(.medium)
                 .foregroundColor(AppTheme.fontColor)
 
-            Text(request.justification)
+            Text(self.request.justification)
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.8))
         }
@@ -117,7 +120,7 @@ struct ApprovalDetailSheet: View {
 
     private var metadataSection: some View {
         Group {
-            if !request.metadata.isEmpty {
+            if !self.request.metadata.isEmpty {
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
                     HStack {
                         Image(systemName: "info.circle.fill")
@@ -127,7 +130,7 @@ struct ApprovalDetailSheet: View {
                             .fontWeight(.semibold)
                     }
 
-                    ForEach(Array(request.metadata.keys.sorted()), id: \.self) { key in
+                    ForEach(Array(self.request.metadata.keys.sorted()), id: \.self) { key in
                         if let value = request.metadata[key] {
                             ApprovalDetailRow(label: key, value: value)
                         }
@@ -142,7 +145,7 @@ struct ApprovalDetailSheet: View {
 
     private var actionSection: some View {
         VStack(spacing: ResponsiveDesign.spacing(12)) {
-            if !viewModel.canApproveRequest(request) {
+            if !self.viewModel.canApproveRequest(self.request) {
                 HStack {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .foregroundColor(AppTheme.accentOrange)
@@ -154,22 +157,22 @@ struct ApprovalDetailSheet: View {
                 .cornerRadius(ResponsiveDesign.spacing(8))
             }
 
-            TextField("Notizen zur Genehmigung (optional)", text: $approvalNotes)
+            TextField("Notizen zur Genehmigung (optional)", text: self.$approvalNotes)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
 
             HStack(spacing: ResponsiveDesign.spacing(12)) {
-                Button { showRejectConfirmation = true } label: {
+                Button { self.showRejectConfirmation = true } label: {
                     Label("Ablehnen", systemImage: "xmark.circle.fill")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
                 .tint(AppTheme.accentRed)
-                .disabled(!viewModel.canApproveRequest(request))
+                .disabled(!self.viewModel.canApproveRequest(self.request))
 
                 Button {
                     Task {
-                        await viewModel.approveRequest(request, notes: approvalNotes)
-                        dismiss()
+                        await self.viewModel.approveRequest(self.request, notes: self.approvalNotes)
+                        self.dismiss()
                     }
                 } label: {
                     Label("Genehmigen", systemImage: "checkmark.circle.fill")
@@ -177,7 +180,7 @@ struct ApprovalDetailSheet: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(AppTheme.accentGreen)
-                .disabled(!viewModel.canApproveRequest(request))
+                .disabled(!self.viewModel.canApproveRequest(self.request))
             }
         }
         .padding()

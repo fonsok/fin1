@@ -12,7 +12,7 @@ struct FilterCombinationNameInput: View {
                 .fontWeight(.bold)
                 .foregroundColor(AppTheme.fontColor)
 
-            TextField("Enter a name (max 20 chars)", text: $viewModel.combinationName)
+            TextField("Enter a name (max 20 chars)", text: self.$viewModel.combinationName)
                 .font(ResponsiveDesign.headlineFont())
                 .foregroundColor(AppTheme.inputFieldText)
                 .textFieldStyle(PlainTextFieldStyle())
@@ -21,7 +21,7 @@ struct FilterCombinationNameInput: View {
                 .background(AppTheme.inputFieldBackground)
                 .overlay(
                     RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(12))
-                        .stroke(viewModel.isNameTooLong ? AppTheme.accentRed.opacity(0.5) : Color.clear, lineWidth: 1)
+                        .stroke(self.viewModel.isNameTooLong ? AppTheme.accentRed.opacity(0.5) : Color.clear, lineWidth: 1)
                 )
                 .cornerRadius(ResponsiveDesign.spacing(12))
 
@@ -33,18 +33,18 @@ struct FilterCombinationNameInput: View {
 
                 Spacer()
 
-                Text("\(viewModel.characterCount)/20")
+                Text("\(self.viewModel.characterCount)/20")
                     .font(ResponsiveDesign.captionFont())
-                    .foregroundColor(viewModel.isNameTooLong ? AppTheme.accentRed : AppTheme.fontColor.opacity(0.6))
+                    .foregroundColor(self.viewModel.isNameTooLong ? AppTheme.accentRed : AppTheme.fontColor.opacity(0.6))
             }
 
             // Validation messages
-            if !viewModel.combinationName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                if viewModel.isNameTooLong {
+            if !self.viewModel.combinationName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                if self.viewModel.isNameTooLong {
                     Text("Name is too long (max 20 characters)")
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(AppTheme.accentRed)
-                } else if viewModel.hasInvalidCharacters {
+                } else if self.viewModel.hasInvalidCharacters {
                     Text("Name can only contain letters, numbers, and spaces")
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(AppTheme.accentRed)

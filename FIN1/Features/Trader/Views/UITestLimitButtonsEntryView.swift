@@ -15,14 +15,14 @@ struct UITestLimitButtonsEntryView: View {
 
     var body: some View {
         Group {
-            if isPreparingSession {
+            if self.isPreparingSession {
                 ProgressView()
                     .accessibilityIdentifier("UITestLimitEntryLoading")
-            } else if preparationError != nil {
-                Text(preparationError ?? "Unknown UI test setup error")
+            } else if self.preparationError != nil {
+                Text(self.preparationError ?? "Unknown UI test setup error")
                     .accessibilityIdentifier("UITestLimitEntryError")
             } else {
-                switch mode {
+                switch self.mode {
                 case .buy:
                     BuyOrderViewWrapper(
                         searchResult: SearchResult(
@@ -38,15 +38,15 @@ struct UITestLimitButtonsEntryView: View {
                             denomination: 10,
                             subscriptionRatio: 0.1
                         ),
-                        traderService: services.traderService,
-                        cashBalanceService: services.cashBalanceService,
-                        configurationService: services.configurationService,
-                        investmentQuantityCalculationService: services.investmentQuantityCalculationService,
-                        investmentService: services.investmentService,
-                        userService: services.userService,
-                        traderDataService: services.traderDataService,
-                        auditLoggingService: services.auditLoggingService,
-                        transactionLimitService: services.transactionLimitService
+                        traderService: self.services.traderService,
+                        cashBalanceService: self.services.cashBalanceService,
+                        configurationService: self.services.configurationService,
+                        investmentQuantityCalculationService: self.services.investmentQuantityCalculationService,
+                        investmentService: self.services.investmentService,
+                        userService: self.services.userService,
+                        traderDataService: self.services.traderDataService,
+                        auditLoggingService: self.services.auditLoggingService,
+                        transactionLimitService: self.services.transactionLimitService
                     )
                     .accessibilityIdentifier("UITestDirectBuyOrderRoot")
 
@@ -71,14 +71,14 @@ struct UITestLimitButtonsEntryView: View {
                             denomination: 10,
                             subscriptionRatio: 0.1
                         ),
-                        traderService: services.traderService,
-                        userService: services.userService
+                        traderService: self.services.traderService,
+                        userService: self.services.userService
                     )
                     .accessibilityIdentifier("UITestDirectSellOrderRoot")
                 }
             }
         }
-        .task { await prepareTraderSession() }
+        .task { await self.prepareTraderSession() }
     }
 
     @MainActor
@@ -86,9 +86,9 @@ struct UITestLimitButtonsEntryView: View {
         defer { isPreparingSession = false }
         if let user = services.userService.currentUser, user.role == .trader { return }
         do {
-            try await services.userService.signIn(email: "trader1@test.com", password: TestConstants.password)
+            try await self.services.userService.signIn(email: "trader1@test.com", password: TestConstants.password)
         } catch {
-            preparationError = error.localizedDescription
+            self.preparationError = error.localizedDescription
         }
     }
 }

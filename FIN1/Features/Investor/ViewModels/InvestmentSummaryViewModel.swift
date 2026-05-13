@@ -1,5 +1,5 @@
-import SwiftUI
 import Foundation
+import SwiftUI
 
 // MARK: - Investment Summary View Model
 /// ViewModel for InvestmentSummaryView following MVVM architecture
@@ -38,32 +38,32 @@ final class InvestmentSummaryViewModel: ObservableObject {
     // MARK: - Display Properties (Formatted for UI)
 
     var formattedAmountPerInvestment: String {
-        amountPerInvestment.formattedAsLocalizedCurrency()
+        self.amountPerInvestment.formattedAsLocalizedCurrency()
     }
 
     var formattedTotalInvestment: String {
-        totalInvestmentAmount.formattedAsLocalizedCurrency()
+        self.totalInvestmentAmount.formattedAsLocalizedCurrency()
     }
 
     var numberOfInvestmentsText: String {
-        "\(numberOfInvestments)"
+        "\(self.numberOfInvestments)"
     }
 
     var appServiceCharge: Double {
-        totalInvestmentAmount * configurationService.effectiveAppServiceChargeRate
+        self.totalInvestmentAmount * self.configurationService.effectiveAppServiceChargeRate
     }
 
     var formattedAppServiceCharge: String {
-        appServiceCharge.formattedAsLocalizedCurrency()
+        self.appServiceCharge.formattedAsLocalizedCurrency()
     }
 
     // MARK: - Error Handling
 
     func clearError() {
-        errorMessage = nil
+        self.errorMessage = nil
     }
 
     func showError(_ error: AppError) {
-        errorMessage = error.errorDescription ?? "An error occurred"
+        self.errorMessage = error.errorDescription ?? "An error occurred"
     }
 }

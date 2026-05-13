@@ -24,10 +24,10 @@ struct SatisfactionSurveyView: View {
             ZStack {
                 AppTheme.screenBackground.ignoresSafeArea()
 
-                if showThankYou {
-                    SurveyThankYouView(onDismiss: onDismiss)
+                if self.showThankYou {
+                    SurveyThankYouView(onDismiss: self.onDismiss)
                 } else {
-                    surveyContent
+                    self.surveyContent
                 }
             }
             .navigationTitle("Feedback")
@@ -35,8 +35,8 @@ struct SatisfactionSurveyView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Schließen") {
-                        onDismiss()
-                        dismiss()
+                        self.onDismiss()
+                        self.dismiss()
                     }
                 }
             }
@@ -49,13 +49,13 @@ struct SatisfactionSurveyView: View {
         ScrollView {
             VStack(spacing: ResponsiveDesign.spacing(24)) {
                 SurveyHeader(
-                    ticketNumber: surveyRequest.ticketNumber,
-                    agentName: surveyRequest.agentName
+                    ticketNumber: self.surveyRequest.ticketNumber,
+                    agentName: self.surveyRequest.agentName
                 )
-                ratingSection
-                quickFeedbackSection
-                commentSection
-                submitButton
+                self.ratingSection
+                self.quickFeedbackSection
+                self.commentSection
+                self.submitButton
             }
             .padding()
         }
@@ -69,12 +69,12 @@ struct SatisfactionSurveyView: View {
                 .font(ResponsiveDesign.headlineFont())
                 .foregroundColor(AppTheme.fontColor)
 
-            StarRatingView(rating: $rating)
+            StarRatingView(rating: self.$rating)
 
-            if rating > 0 {
-                Text(SurveyRatingHelper.ratingText(for: rating))
+            if self.rating > 0 {
+                Text(SurveyRatingHelper.ratingText(for: self.rating))
                     .font(ResponsiveDesign.bodyFont())
-                    .foregroundColor(SurveyRatingHelper.starColor(for: rating))
+                    .foregroundColor(SurveyRatingHelper.starColor(for: self.rating))
                     .transition(.opacity)
             }
         }
@@ -94,21 +94,21 @@ struct SatisfactionSurveyView: View {
             FeedbackToggle(
                 icon: "checkmark.circle.fill",
                 title: "Problem gelöst",
-                isOn: $wasIssueResolved,
+                isOn: self.$wasIssueResolved,
                 color: AppTheme.accentGreen
             )
 
             FeedbackToggle(
                 icon: "person.fill.checkmark",
                 title: "Mitarbeiter war hilfreich",
-                isOn: $wasAgentHelpful,
+                isOn: self.$wasAgentHelpful,
                 color: AppTheme.accentLightBlue
             )
 
             FeedbackToggle(
                 icon: "clock.fill",
                 title: "Antwortzeit zufriedenstellend",
-                isOn: $wasResponseTimeSatisfactory,
+                isOn: self.$wasResponseTimeSatisfactory,
                 color: AppTheme.accentOrange
             )
         }
@@ -131,7 +131,7 @@ struct SatisfactionSurveyView: View {
                     .foregroundColor(AppTheme.fontColor.opacity(0.5))
             }
 
-            TextEditor(text: $comment)
+            TextEditor(text: self.$comment)
                 .frame(minHeight: 100)
                 .padding(ResponsiveDesign.spacing(12))
                 .background(AppTheme.systemTertiaryBackground)
@@ -152,10 +152,10 @@ struct SatisfactionSurveyView: View {
 
     private var submitButton: some View {
         Button {
-            Task { await submitSurvey() }
+            Task { await self.submitSurvey() }
         } label: {
             HStack {
-                if isSubmitting {
+                if self.isSubmitting {
                     ProgressView()
                         .progressViewStyle(CircularProgressViewStyle(tint: .white))
                 } else {
@@ -166,28 +166,28 @@ struct SatisfactionSurveyView: View {
             }
             .frame(maxWidth: .infinity)
             .padding()
-            .background(rating > 0 ? AppTheme.accentGreen : AppTheme.fontColor.opacity(0.3))
+            .background(self.rating > 0 ? AppTheme.accentGreen : AppTheme.fontColor.opacity(0.3))
             .foregroundColor(.white)
             .cornerRadius(ResponsiveDesign.spacing(12))
         }
-        .disabled(rating == 0 || isSubmitting)
+        .disabled(self.rating == 0 || self.isSubmitting)
     }
 
     // MARK: - Actions
 
     private func submitSurvey() async {
-        isSubmitting = true
-        await onSubmit(
-            rating,
-            wasIssueResolved,
-            wasAgentHelpful,
-            wasResponseTimeSatisfactory,
-            comment.isEmpty ? nil : comment
+        self.isSubmitting = true
+        await self.onSubmit(
+            self.rating,
+            self.wasIssueResolved,
+            self.wasAgentHelpful,
+            self.wasResponseTimeSatisfactory,
+            self.comment.isEmpty ? nil : self.comment
         )
-        isSubmitting = false
+        self.isSubmitting = false
 
         withAnimation {
-            showThankYou = true
+            self.showThankYou = true
         }
     }
 }

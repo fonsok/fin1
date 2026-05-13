@@ -13,12 +13,12 @@ struct DepotHeaderView: View {
                 Text("Depot-Gesamtwert")
                     .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.medium)
-                Text(depotValue.formattedAsLocalizedCurrency())
+                Text(self.depotValue.formattedAsLocalizedCurrency())
                     .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.medium)
                 Spacer()
             }
-            Text("Depot-Nr. \(depotNumber)")
+            Text("Depot-Nr. \(self.depotNumber)")
                 .font(ResponsiveDesign.bodyFont())
         }
         .foregroundColor(AppTheme.fontColor)
@@ -29,9 +29,9 @@ struct DepotHeaderView: View {
 // MARK: - Preview
 #Preview {
     DepotHeaderView(
-        depotValue: 125000.50,
+        depotValue: 125_000.50,
         depotNumber: "DE12345678901234567890"
     )
-        .responsivePadding()
+    .responsivePadding()
     .background(AppTheme.screenBackground)
 }

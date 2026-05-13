@@ -1,5 +1,5 @@
-import XCTest
 @testable import FIN1
+import XCTest
 
 @MainActor
 final class CompanyKybViewModelTests: XCTestCase {
@@ -17,28 +17,28 @@ final class CompanyKybViewModelTests: XCTestCase {
 
         func getCompanyKybProgress() async throws -> CompanyKybProgress {
             if let error = errorToThrow { throw error }
-            return progressToReturn ?? CompanyKybProgress(
+            return self.progressToReturn ?? CompanyKybProgress(
                 currentStep: nil, completedSteps: [],
                 companyKybCompleted: false, companyKybStatus: nil, savedData: nil
             )
         }
 
         func completeStep(step: String, data: SavedCompanyKybData) async throws -> CompanyKybStepResponse {
-            completedStepCalls.append((step, data))
+            self.completedStepCalls.append((step, data))
             if let error = errorToThrow { throw error }
-            return stepResponseToReturn ?? CompanyKybStepResponse(
+            return self.stepResponseToReturn ?? CompanyKybStepResponse(
                 success: true, nextStep: nil,
                 companyKybCompleted: false, companyKybStatus: "draft"
             )
         }
 
         func savePartialProgress(step: String, data: SavedCompanyKybData) async throws {
-            partialSaveCalls.append((step, data))
+            self.partialSaveCalls.append((step, data))
             if let error = errorToThrow { throw error }
         }
 
         func savePartialProgressPositionOnly(step: String) async throws {
-            positionOnlyCalls.append(step)
+            self.positionOnlyCalls.append(step)
             if let error = errorToThrow { throw error }
         }
     }
@@ -50,219 +50,219 @@ final class CompanyKybViewModelTests: XCTestCase {
 
     override func setUp() {
         super.setUp()
-        service = StubKybService()
-        sut = CompanyKybViewModel(companyKybAPIService: service)
+        self.service = StubKybService()
+        self.sut = CompanyKybViewModel(companyKybAPIService: self.service)
     }
 
     override func tearDown() {
-        sut = nil
-        service = nil
+        self.sut = nil
+        self.service = nil
         super.tearDown()
     }
 
     // MARK: - Initial State
 
     func testInitialState() {
-        XCTAssertEqual(sut.currentStep, .legalEntity)
-        XCTAssertTrue(sut.completedSteps.isEmpty)
-        XCTAssertFalse(sut.isLoading)
-        XCTAssertFalse(sut.isResuming)
-        XCTAssertFalse(sut.showError)
-        XCTAssertFalse(sut.kybCompleted)
-        XCTAssertFalse(sut.shouldDismiss)
-        XCTAssertTrue(sut.isFirstStep)
-        XCTAssertFalse(sut.isLastStep)
+        XCTAssertEqual(self.sut.currentStep, .legalEntity)
+        XCTAssertTrue(self.sut.completedSteps.isEmpty)
+        XCTAssertFalse(self.sut.isLoading)
+        XCTAssertFalse(self.sut.isResuming)
+        XCTAssertFalse(self.sut.showError)
+        XCTAssertFalse(self.sut.kybCompleted)
+        XCTAssertFalse(self.sut.shouldDismiss)
+        XCTAssertTrue(self.sut.isFirstStep)
+        XCTAssertFalse(self.sut.isLastStep)
     }
 
     // MARK: - Progress
 
     func testProgress_FirstStep() {
-        XCTAssertEqual(sut.progress, 1.0 / 8.0, accuracy: 0.001)
+        XCTAssertEqual(self.sut.progress, 1.0 / 8.0, accuracy: 0.001)
     }
 
     func testProgress_LastStep() {
-        sut.currentStep = .submission
-        XCTAssertEqual(sut.progress, 1.0, accuracy: 0.001)
+        self.sut.currentStep = .submission
+        XCTAssertEqual(self.sut.progress, 1.0, accuracy: 0.001)
     }
 
     // MARK: - canCompleteCurrentStep
 
     func testCanComplete_LegalEntity_EmptyFields() {
-        XCTAssertFalse(sut.canCompleteCurrentStep)
+        XCTAssertFalse(self.sut.canCompleteCurrentStep)
     }
 
     func testCanComplete_LegalEntity_AllFilled() {
-        fillLegalEntity()
-        XCTAssertTrue(sut.canCompleteCurrentStep)
+        self.fillLegalEntity()
+        XCTAssertTrue(self.sut.canCompleteCurrentStep)
     }
 
     func testCanComplete_RegisteredAddress_EmptyFields() {
-        sut.currentStep = .registeredAddress
-        XCTAssertFalse(sut.canCompleteCurrentStep)
+        self.sut.currentStep = .registeredAddress
+        XCTAssertFalse(self.sut.canCompleteCurrentStep)
     }
 
     func testCanComplete_RegisteredAddress_RequiredFilled() {
-        sut.currentStep = .registeredAddress
-        sut.registeredAddress.streetAndNumber = "Musterstr. 1"
-        sut.registeredAddress.postalCode = "10115"
-        sut.registeredAddress.city = "Berlin"
-        XCTAssertTrue(sut.canCompleteCurrentStep)
+        self.sut.currentStep = .registeredAddress
+        self.sut.registeredAddress.streetAndNumber = "Musterstr. 1"
+        self.sut.registeredAddress.postalCode = "10115"
+        self.sut.registeredAddress.city = "Berlin"
+        XCTAssertTrue(self.sut.canCompleteCurrentStep)
     }
 
     func testCanComplete_TaxCompliance_VatIdOnly() {
-        sut.currentStep = .taxCompliance
-        sut.taxCompliance.vatId = "DE123456789"
-        XCTAssertTrue(sut.canCompleteCurrentStep)
+        self.sut.currentStep = .taxCompliance
+        self.sut.taxCompliance.vatId = "DE123456789"
+        XCTAssertTrue(self.sut.canCompleteCurrentStep)
     }
 
     func testCanComplete_TaxCompliance_NationalTaxOnly() {
-        sut.currentStep = .taxCompliance
-        sut.taxCompliance.nationalTaxNumber = "1234567890"
-        XCTAssertTrue(sut.canCompleteCurrentStep)
+        self.sut.currentStep = .taxCompliance
+        self.sut.taxCompliance.nationalTaxNumber = "1234567890"
+        XCTAssertTrue(self.sut.canCompleteCurrentStep)
     }
 
     func testCanComplete_TaxCompliance_NoVatDeclared() {
-        sut.currentStep = .taxCompliance
-        sut.taxCompliance.noVatIdDeclared = true
-        XCTAssertTrue(sut.canCompleteCurrentStep)
+        self.sut.currentStep = .taxCompliance
+        self.sut.taxCompliance.noVatIdDeclared = true
+        XCTAssertTrue(self.sut.canCompleteCurrentStep)
     }
 
     func testCanComplete_TaxCompliance_AllEmpty() {
-        sut.currentStep = .taxCompliance
-        XCTAssertFalse(sut.canCompleteCurrentStep)
+        self.sut.currentStep = .taxCompliance
+        XCTAssertFalse(self.sut.canCompleteCurrentStep)
     }
 
     func testCanComplete_BeneficialOwners_WithCompleteUbo() {
-        sut.currentStep = .beneficialOwners
+        self.sut.currentStep = .beneficialOwners
         var ubo = BeneficialOwnerEntry()
         ubo.fullName = "Max Mustermann"
         ubo.dateOfBirth = "1990-01-15"
         ubo.nationality = "DE"
-        sut.beneficialOwners.ubos = [ubo]
-        XCTAssertTrue(sut.canCompleteCurrentStep)
+        self.sut.beneficialOwners.ubos = [ubo]
+        XCTAssertTrue(self.sut.canCompleteCurrentStep)
     }
 
     func testCanComplete_BeneficialOwners_WithIncompleteUbo() {
-        sut.currentStep = .beneficialOwners
-        sut.beneficialOwners.ubos = [BeneficialOwnerEntry()]
-        XCTAssertFalse(sut.canCompleteCurrentStep)
+        self.sut.currentStep = .beneficialOwners
+        self.sut.beneficialOwners.ubos = [BeneficialOwnerEntry()]
+        XCTAssertFalse(self.sut.canCompleteCurrentStep)
     }
 
     func testCanComplete_BeneficialOwners_NoUboFlagSet() {
-        sut.currentStep = .beneficialOwners
-        sut.beneficialOwners.noUboOver25Percent = true
-        XCTAssertTrue(sut.canCompleteCurrentStep)
+        self.sut.currentStep = .beneficialOwners
+        self.sut.beneficialOwners.noUboOver25Percent = true
+        XCTAssertTrue(self.sut.canCompleteCurrentStep)
     }
 
     func testCanComplete_BeneficialOwners_Empty() {
-        sut.currentStep = .beneficialOwners
-        XCTAssertFalse(sut.canCompleteCurrentStep)
+        self.sut.currentStep = .beneficialOwners
+        XCTAssertFalse(self.sut.canCompleteCurrentStep)
     }
 
     func testCanComplete_AuthorizedRepresentatives_WithCompleteEntry() {
-        sut.currentStep = .authorizedRepresentatives
+        self.sut.currentStep = .authorizedRepresentatives
         var rep = RepresentativeEntry()
         rep.fullName = "Max Mustermann"
         rep.roleTitle = "CEO"
-        sut.authorizedRepresentatives.representatives = [rep]
-        XCTAssertTrue(sut.canCompleteCurrentStep)
+        self.sut.authorizedRepresentatives.representatives = [rep]
+        XCTAssertTrue(self.sut.canCompleteCurrentStep)
     }
 
     func testCanComplete_AuthorizedRepresentatives_WithIncompleteEntry() {
-        sut.currentStep = .authorizedRepresentatives
-        sut.authorizedRepresentatives.representatives = [RepresentativeEntry()]
-        XCTAssertFalse(sut.canCompleteCurrentStep)
+        self.sut.currentStep = .authorizedRepresentatives
+        self.sut.authorizedRepresentatives.representatives = [RepresentativeEntry()]
+        XCTAssertFalse(self.sut.canCompleteCurrentStep)
     }
 
     func testCanComplete_AuthorizedRepresentatives_Empty() {
-        sut.currentStep = .authorizedRepresentatives
-        XCTAssertFalse(sut.canCompleteCurrentStep)
+        self.sut.currentStep = .authorizedRepresentatives
+        XCTAssertFalse(self.sut.canCompleteCurrentStep)
     }
 
     func testCanComplete_Documents_Acknowledged() {
-        sut.currentStep = .documents
-        sut.documents.documentsAcknowledged = true
-        XCTAssertTrue(sut.canCompleteCurrentStep)
+        self.sut.currentStep = .documents
+        self.sut.documents.documentsAcknowledged = true
+        XCTAssertTrue(self.sut.canCompleteCurrentStep)
     }
 
     func testCanComplete_Declarations_AllAccepted() {
-        sut.currentStep = .declarations
-        sut.declarations.sanctionsSelfDeclarationAccepted = true
-        sut.declarations.accuracyDeclarationAccepted = true
-        sut.declarations.noTrustThirdPartyDeclarationAccepted = true
-        XCTAssertTrue(sut.canCompleteCurrentStep)
+        self.sut.currentStep = .declarations
+        self.sut.declarations.sanctionsSelfDeclarationAccepted = true
+        self.sut.declarations.accuracyDeclarationAccepted = true
+        self.sut.declarations.noTrustThirdPartyDeclarationAccepted = true
+        XCTAssertTrue(self.sut.canCompleteCurrentStep)
     }
 
     func testCanComplete_Declarations_PartiallyAccepted() {
-        sut.currentStep = .declarations
-        sut.declarations.sanctionsSelfDeclarationAccepted = true
-        sut.declarations.accuracyDeclarationAccepted = false
-        sut.declarations.noTrustThirdPartyDeclarationAccepted = true
-        XCTAssertFalse(sut.canCompleteCurrentStep)
+        self.sut.currentStep = .declarations
+        self.sut.declarations.sanctionsSelfDeclarationAccepted = true
+        self.sut.declarations.accuracyDeclarationAccepted = false
+        self.sut.declarations.noTrustThirdPartyDeclarationAccepted = true
+        XCTAssertFalse(self.sut.canCompleteCurrentStep)
     }
 
     func testCanComplete_Submission_Confirmed() {
-        sut.currentStep = .submission
-        sut.submission.confirmedSummary = true
-        XCTAssertTrue(sut.canCompleteCurrentStep)
+        self.sut.currentStep = .submission
+        self.sut.submission.confirmedSummary = true
+        XCTAssertTrue(self.sut.canCompleteCurrentStep)
     }
 
     func testCanComplete_Submission_NotConfirmed() {
-        sut.currentStep = .submission
-        XCTAssertFalse(sut.canCompleteCurrentStep)
+        self.sut.currentStep = .submission
+        XCTAssertFalse(self.sut.canCompleteCurrentStep)
     }
 
     // MARK: - nextStep Validation Guard
 
     func testNextStep_DoesNotAdvance_WhenIncomplete() {
-        sut.nextStep()
-        XCTAssertEqual(sut.currentStep, .legalEntity)
-        XCTAssertTrue(service.completedStepCalls.isEmpty)
+        self.sut.nextStep()
+        XCTAssertEqual(self.sut.currentStep, .legalEntity)
+        XCTAssertTrue(self.service.completedStepCalls.isEmpty)
     }
 
     // MARK: - previousStep
 
     func testPreviousStep_DoesNothing_OnFirstStep() {
-        sut.previousStep()
-        XCTAssertEqual(sut.currentStep, .legalEntity)
+        self.sut.previousStep()
+        XCTAssertEqual(self.sut.currentStep, .legalEntity)
     }
 
     func testPreviousStep_NavigatesBack() {
-        sut.currentStep = .registeredAddress
-        sut.previousStep()
-        XCTAssertEqual(sut.currentStep, .legalEntity)
+        self.sut.currentStep = .registeredAddress
+        self.sut.previousStep()
+        XCTAssertEqual(self.sut.currentStep, .legalEntity)
     }
 
     func testPreviousStep_SavesPositionOnly() async throws {
-        sut.currentStep = .taxCompliance
-        sut.previousStep()
+        self.sut.currentStep = .taxCompliance
+        self.sut.previousStep()
         try await Task.sleep(nanoseconds: 100_000_000) // let fire-and-forget Task run
-        XCTAssertEqual(service.positionOnlyCalls, ["registered_address"])
+        XCTAssertEqual(self.service.positionOnlyCalls, ["registered_address"])
     }
 
     // MARK: - Resume: Fresh Start
 
     func testResumeProgress_FreshStart() async {
-        service.progressToReturn = CompanyKybProgress(
+        self.service.progressToReturn = CompanyKybProgress(
             currentStep: nil, completedSteps: [],
             companyKybCompleted: false, companyKybStatus: nil, savedData: nil
         )
-        await sut.resumeProgress()
-        XCTAssertFalse(sut.kybCompleted)
-        XCTAssertFalse(sut.shouldDismiss)
-        XCTAssertTrue(sut.completedSteps.isEmpty)
+        await self.sut.resumeProgress()
+        XCTAssertFalse(self.sut.kybCompleted)
+        XCTAssertFalse(self.sut.shouldDismiss)
+        XCTAssertTrue(self.sut.completedSteps.isEmpty)
     }
 
     // MARK: - Resume: Already Completed
 
     func testResumeProgress_AlreadyCompleted_Dismisses() async {
-        service.progressToReturn = CompanyKybProgress(
+        self.service.progressToReturn = CompanyKybProgress(
             currentStep: "submission", completedSteps: CompanyKybStep.allCases.map(\.backendKey),
             companyKybCompleted: true, companyKybStatus: "approved", savedData: nil
         )
-        await sut.resumeProgress()
-        XCTAssertTrue(sut.kybCompleted)
-        XCTAssertTrue(sut.shouldDismiss)
+        await self.sut.resumeProgress()
+        XCTAssertTrue(self.sut.kybCompleted)
+        XCTAssertTrue(self.sut.shouldDismiss)
     }
 
     // MARK: - Resume: Mid-Progress
@@ -291,107 +291,107 @@ final class CompanyKybViewModelTests: XCTestCase {
             _positionOnly: nil
         )
 
-        service.progressToReturn = CompanyKybProgress(
+        self.service.progressToReturn = CompanyKybProgress(
             currentStep: "registered_address",
             completedSteps: ["legal_entity", "registered_address"],
             companyKybCompleted: false, companyKybStatus: "draft",
             savedData: savedData
         )
-        await sut.resumeProgress()
+        await self.sut.resumeProgress()
 
-        XCTAssertEqual(sut.completedSteps, [.legalEntity, .registeredAddress])
-        XCTAssertEqual(sut.currentStep, .taxCompliance)
-        XCTAssertEqual(sut.legalEntity.legalName, "ACME GmbH")
-        XCTAssertEqual(sut.legalEntity.registerNumber, "12345")
-        XCTAssertEqual(sut.registeredAddress.streetAndNumber, "Teststr. 1")
-        XCTAssertEqual(sut.registeredAddress.city, "Berlin")
+        XCTAssertEqual(self.sut.completedSteps, [.legalEntity, .registeredAddress])
+        XCTAssertEqual(self.sut.currentStep, .taxCompliance)
+        XCTAssertEqual(self.sut.legalEntity.legalName, "ACME GmbH")
+        XCTAssertEqual(self.sut.legalEntity.registerNumber, "12345")
+        XCTAssertEqual(self.sut.registeredAddress.streetAndNumber, "Teststr. 1")
+        XCTAssertEqual(self.sut.registeredAddress.city, "Berlin")
     }
 
     // MARK: - Resume: Error
 
     func testResumeProgress_Error_ShowsAlert() async {
-        service.errorToThrow = NSError(domain: "Test", code: 500, userInfo: [
+        self.service.errorToThrow = NSError(domain: "Test", code: 500, userInfo: [
             NSLocalizedDescriptionKey: "Server down"
         ])
-        await sut.resumeProgress()
-        XCTAssertTrue(sut.showError)
-        XCTAssertTrue(sut.errorMessage.contains("Server down"))
+        await self.sut.resumeProgress()
+        XCTAssertTrue(self.sut.showError)
+        XCTAssertTrue(self.sut.errorMessage.contains("Server down"))
     }
 
     // MARK: - completeAndAdvance (via nextStep)
 
     func testNextStep_CompletesStep_AdvancesViaResponse() async throws {
-        fillLegalEntity()
-        service.stepResponseToReturn = CompanyKybStepResponse(
+        self.fillLegalEntity()
+        self.service.stepResponseToReturn = CompanyKybStepResponse(
             success: true, nextStep: "registered_address",
             companyKybCompleted: false, companyKybStatus: "draft"
         )
-        sut.nextStep()
+        self.sut.nextStep()
         try await Task.sleep(nanoseconds: 200_000_000)
 
-        XCTAssertEqual(sut.currentStep, .registeredAddress)
-        XCTAssertTrue(sut.completedSteps.contains(.legalEntity))
-        XCTAssertEqual(service.completedStepCalls.count, 1)
-        XCTAssertEqual(service.completedStepCalls.first?.step, "legal_entity")
+        XCTAssertEqual(self.sut.currentStep, .registeredAddress)
+        XCTAssertTrue(self.sut.completedSteps.contains(.legalEntity))
+        XCTAssertEqual(self.service.completedStepCalls.count, 1)
+        XCTAssertEqual(self.service.completedStepCalls.first?.step, "legal_entity")
     }
 
     func testNextStep_CompletesStep_AdvancesViaFallback_WhenNoNextKey() async throws {
-        fillLegalEntity()
-        service.stepResponseToReturn = CompanyKybStepResponse(
+        self.fillLegalEntity()
+        self.service.stepResponseToReturn = CompanyKybStepResponse(
             success: true, nextStep: nil,
             companyKybCompleted: false, companyKybStatus: "draft"
         )
-        sut.nextStep()
+        self.sut.nextStep()
         try await Task.sleep(nanoseconds: 200_000_000)
 
-        XCTAssertEqual(sut.currentStep, .registeredAddress)
+        XCTAssertEqual(self.sut.currentStep, .registeredAddress)
     }
 
     func testNextStep_SubmissionCompletes_Dismisses() async throws {
-        sut.currentStep = .submission
-        sut.submission.confirmedSummary = true
-        service.stepResponseToReturn = CompanyKybStepResponse(
+        self.sut.currentStep = .submission
+        self.sut.submission.confirmedSummary = true
+        self.service.stepResponseToReturn = CompanyKybStepResponse(
             success: true, nextStep: nil,
             companyKybCompleted: true, companyKybStatus: "pending_review"
         )
-        sut.nextStep()
+        self.sut.nextStep()
         try await Task.sleep(nanoseconds: 200_000_000)
 
-        XCTAssertTrue(sut.kybCompleted)
-        XCTAssertTrue(sut.shouldDismiss)
-        XCTAssertEqual(sut.kybStatus, "pending_review")
+        XCTAssertTrue(self.sut.kybCompleted)
+        XCTAssertTrue(self.sut.shouldDismiss)
+        XCTAssertEqual(self.sut.kybStatus, "pending_review")
     }
 
     func testNextStep_Error_ShowsAlert() async throws {
-        fillLegalEntity()
-        service.errorToThrow = AppError.network(.noConnection)
-        sut.nextStep()
+        self.fillLegalEntity()
+        self.service.errorToThrow = AppError.network(.noConnection)
+        self.sut.nextStep()
         try await Task.sleep(nanoseconds: 200_000_000)
 
-        XCTAssertTrue(sut.showError)
-        XCTAssertEqual(sut.currentStep, .legalEntity)
-        XCTAssertTrue(sut.completedSteps.isEmpty)
+        XCTAssertTrue(self.sut.showError)
+        XCTAssertEqual(self.sut.currentStep, .legalEntity)
+        XCTAssertTrue(self.sut.completedSteps.isEmpty)
     }
 
     // MARK: - savePartialProgress
 
     func testSavePartialProgress_CallsService() async {
-        sut.legalEntity.legalName = "Draft Co"
-        await sut.savePartialProgress()
-        XCTAssertEqual(service.partialSaveCalls.count, 1)
-        XCTAssertEqual(service.partialSaveCalls.first?.step, "legal_entity")
-        XCTAssertEqual(service.partialSaveCalls.first?.data.legalName, "Draft Co")
+        self.sut.legalEntity.legalName = "Draft Co"
+        await self.sut.savePartialProgress()
+        XCTAssertEqual(self.service.partialSaveCalls.count, 1)
+        XCTAssertEqual(self.service.partialSaveCalls.first?.step, "legal_entity")
+        XCTAssertEqual(self.service.partialSaveCalls.first?.data.legalName, "Draft Co")
     }
 
     // MARK: - Data Mapping: toSavedData
 
     func testLegalEntityToSavedData_MapsCorrectly() {
-        sut.legalEntity.legalName = "Test AG"
-        sut.legalEntity.legalForm = "AG"
-        sut.legalEntity.registerType = "HRB"
-        sut.legalEntity.registerNumber = "99999"
-        sut.legalEntity.registerCourt = "München"
-        let data = sut.legalEntity.toSavedData()
+        self.sut.legalEntity.legalName = "Test AG"
+        self.sut.legalEntity.legalForm = "AG"
+        self.sut.legalEntity.registerType = "HRB"
+        self.sut.legalEntity.registerNumber = "99999"
+        self.sut.legalEntity.registerCourt = "München"
+        let data = self.sut.legalEntity.toSavedData()
         XCTAssertEqual(data.legalName, "Test AG")
         XCTAssertEqual(data.legalForm, "AG")
         XCTAssertEqual(data.registerNumber, "99999")
@@ -399,12 +399,12 @@ final class CompanyKybViewModelTests: XCTestCase {
     }
 
     func testDeclarationsToSavedData_PreservesAllFlags() {
-        sut.declarations.sanctionsSelfDeclarationAccepted = true
-        sut.declarations.accuracyDeclarationAccepted = true
-        sut.declarations.noTrustThirdPartyDeclarationAccepted = true
-        sut.declarations.isPoliticallyExposed = true
-        sut.declarations.pepDetails = "Bürgermeister"
-        let data = sut.declarations.toSavedData()
+        self.sut.declarations.sanctionsSelfDeclarationAccepted = true
+        self.sut.declarations.accuracyDeclarationAccepted = true
+        self.sut.declarations.noTrustThirdPartyDeclarationAccepted = true
+        self.sut.declarations.isPoliticallyExposed = true
+        self.sut.declarations.pepDetails = "Bürgermeister"
+        let data = self.sut.declarations.toSavedData()
         XCTAssertEqual(data.sanctionsSelfDeclarationAccepted, true)
         XCTAssertEqual(data.accuracyDeclarationAccepted, true)
         XCTAssertEqual(data.noTrustThirdPartyDeclarationAccepted, true)
@@ -413,8 +413,8 @@ final class CompanyKybViewModelTests: XCTestCase {
     }
 
     func testBeneficialOwnersToSavedData_NoUboFlag() {
-        sut.beneficialOwners.noUboOver25Percent = true
-        let data = sut.beneficialOwners.toSavedData()
+        self.sut.beneficialOwners.noUboOver25Percent = true
+        let data = self.sut.beneficialOwners.toSavedData()
         XCTAssertEqual(data.noUboOver25Percent, true)
         XCTAssertNil(data.ubos)
     }
@@ -423,8 +423,8 @@ final class CompanyKybViewModelTests: XCTestCase {
         var ubo = BeneficialOwnerEntry()
         ubo.fullName = "Max Mustermann"
         ubo.ownershipPercent = 51.0
-        sut.beneficialOwners.ubos = [ubo]
-        let data = sut.beneficialOwners.toSavedData()
+        self.sut.beneficialOwners.ubos = [ubo]
+        let data = self.sut.beneficialOwners.toSavedData()
         XCTAssertEqual(data.ubos?.count, 1)
         XCTAssertEqual(data.ubos?.first?.fullName, "Max Mustermann")
         XCTAssertEqual(data.ubos?.first?.ownershipPercent, 51.0)
@@ -462,27 +462,27 @@ final class CompanyKybViewModelTests: XCTestCase {
     // MARK: - Error Mapping
 
     func testErrorMapping_AppError() async {
-        service.errorToThrow = AppError.validation("Feld fehlt")
-        service.progressToReturn = nil
-        await sut.resumeProgress()
-        XCTAssertTrue(sut.errorMessage.contains("Validation Error"))
+        self.service.errorToThrow = AppError.validation("Feld fehlt")
+        self.service.progressToReturn = nil
+        await self.sut.resumeProgress()
+        XCTAssertTrue(self.sut.errorMessage.contains("Validation Error"))
     }
 
     func testErrorMapping_GenericNSError() async {
-        service.errorToThrow = NSError(domain: "X", code: 1, userInfo: [
+        self.service.errorToThrow = NSError(domain: "X", code: 1, userInfo: [
             NSLocalizedDescriptionKey: "Netzwerk nicht erreichbar"
         ])
-        await sut.resumeProgress()
-        XCTAssertTrue(sut.errorMessage.contains("Netzwerk nicht erreichbar"))
+        await self.sut.resumeProgress()
+        XCTAssertTrue(self.sut.errorMessage.contains("Netzwerk nicht erreichbar"))
     }
 
     // MARK: - Helpers
 
     private func fillLegalEntity() {
-        sut.legalEntity.legalName = "Test GmbH"
-        sut.legalEntity.legalForm = "GmbH"
-        sut.legalEntity.registerType = "HRB"
-        sut.legalEntity.registerNumber = "12345"
-        sut.legalEntity.registerCourt = "Berlin"
+        self.sut.legalEntity.legalName = "Test GmbH"
+        self.sut.legalEntity.legalForm = "GmbH"
+        self.sut.legalEntity.registerType = "HRB"
+        self.sut.legalEntity.registerNumber = "12345"
+        self.sut.legalEntity.registerCourt = "Berlin"
     }
 }

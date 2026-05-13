@@ -36,41 +36,41 @@ struct ModularProfileView: View {
                 ScrollView {
                     VStack(spacing: ResponsiveDesign.spacing(24)) {
                         // Profile Header
-                        ProfileHeaderView(user: appServices.userService.currentUser)
+                        ProfileHeaderView(user: self.appServices.userService.currentUser)
 
                         // Logout + Notifications grouped for consistent placement
                         profilePrimaryActionsSection
 
                         // Quick Actions
                         ProfileQuickActionsView(
-                            onEditProfile: { showEditProfile = true },
-                            onSettings: { showSettings = true },
-                            onSecurity: { showSecuritySettings = true },
-                            onHelpSupport: { showHelpCenter = true }
+                            onEditProfile: { self.showEditProfile = true },
+                            onSettings: { self.showSettings = true },
+                            onSecurity: { self.showSecuritySettings = true },
+                            onHelpSupport: { self.showHelpCenter = true }
                         )
 
                         // Settings & Preferences
                         ProfileSettingsView(
-                            onPrivacy: { showPrivacySettings = true },
-                            onSecurity: { showSecuritySettings = true },
-                            onAppearance: { showAppearanceSettings = true }
+                            onPrivacy: { self.showPrivacySettings = true },
+                            onSecurity: { self.showSecuritySettings = true },
+                            onAppearance: { self.showAppearanceSettings = true }
                         )
 
                         // Support & Legal
                         ProfileSupportView(
-                            onHelpCenter: { showHelpCenter = true },
-                            onContactSupport: { showContactSupport = true },
+                            onHelpCenter: { self.showHelpCenter = true },
+                            onContactSupport: { self.showContactSupport = true },
                             onTermsOfService: {
-                                showTermsOfService = true
+                                self.showTermsOfService = true
                             },
-                            onPrivacyPolicy: { showPrivacyPolicy = true },
-                            onImprint: { showImprint = true }
+                            onPrivacyPolicy: { self.showPrivacyPolicy = true },
+                            onImprint: { self.showImprint = true }
                         )
 
                         // Account Information
                         ProfileAccountInfoView(
-                            user: appServices.userService.currentUser,
-                            onEditProfile: { showEditProfile = true }
+                            user: self.appServices.userService.currentUser,
+                            onEditProfile: { self.showEditProfile = true }
                         )
                     }
                     .padding(.horizontal, 16)
@@ -84,58 +84,58 @@ struct ModularProfileView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Edit") {
-                        showEditProfile = true
+                        self.showEditProfile = true
                     }
                     .foregroundColor(AppTheme.accentLightBlue)
                 }
             }
         }
-        .sheet(isPresented: $showEditProfile) {
+        .sheet(isPresented: self.$showEditProfile) {
             EditProfileView()
         }
-        .sheet(isPresented: $showSettings) {
+        .sheet(isPresented: self.$showSettings) {
             SettingsView()
         }
-        .sheet(isPresented: $showNotifications) {
-            NotificationsView(services: appServices)
+        .sheet(isPresented: self.$showNotifications) {
+            NotificationsView(services: self.appServices)
         }
-        .sheet(isPresented: $showHelpCenter) {
+        .sheet(isPresented: self.$showHelpCenter) {
             HelpCenterView()
         }
-        .sheet(isPresented: $showTermsOfService) {
+        .sheet(isPresented: self.$showTermsOfService) {
             TermsOfServiceView(
-                configurationService: appServices.configurationService,
-                termsContentService: appServices.termsContentService
+                configurationService: self.appServices.configurationService,
+                termsContentService: self.appServices.termsContentService
             )
         }
-        .sheet(isPresented: $showPrivacyPolicy) {
+        .sheet(isPresented: self.$showPrivacyPolicy) {
             PrivacyPolicyView(
-                userService: appServices.userService,
-                termsContentService: appServices.termsContentService
+                userService: self.appServices.userService,
+                termsContentService: self.appServices.termsContentService
             )
         }
-        .sheet(isPresented: $showImprint) {
-            ImprintView(termsContentService: appServices.termsContentService)
+        .sheet(isPresented: self.$showImprint) {
+            ImprintView(termsContentService: self.appServices.termsContentService)
         }
-        .sheet(isPresented: $showPrivacySettings) {
+        .sheet(isPresented: self.$showPrivacySettings) {
             PrivacySettingsView()
         }
-        .sheet(isPresented: $showSecuritySettings) {
+        .sheet(isPresented: self.$showSecuritySettings) {
             SecuritySettingsView()
         }
-        .sheet(isPresented: $showContactSupport) {
+        .sheet(isPresented: self.$showContactSupport) {
             ContactSupportView()
         }
         .task {
             // Ensure ViewModel is using the same service instances from environment
             // Note: AppServices.live should be the same instance, but this ensures consistency
-            viewModel.updateCounts()
+            self.viewModel.updateCounts()
         }
-        .alert("Logout", isPresented: $showLogoutAlert) {
+        .alert("Logout", isPresented: self.$showLogoutAlert) {
             Button("Cancel", role: .cancel) { }
             Button("Logout", role: .destructive) {
                 Task {
-                    await appServices.userService.signOut()
+                    await self.appServices.userService.signOut()
                 }
             }
         } message: {
@@ -149,7 +149,7 @@ struct ModularProfileView: View {
     // MARK: - Notifications Button
     private var notificationsButton: some View {
         Button(action: {
-            showNotifications = true
+            self.showNotifications = true
         }) {
             HStack(spacing: ResponsiveDesign.spacing(16)) {
                 // Icon with unread count badge
@@ -162,8 +162,8 @@ struct ModularProfileView: View {
                         .clipShape(Circle())
 
                     // Unread count badge (includes notifications + documents)
-                    if viewModel.combinedUnreadCount > 0 {
-                        Text("\(viewModel.combinedUnreadCount)")
+                    if self.viewModel.combinedUnreadCount > 0 {
+                        Text("\(self.viewModel.combinedUnreadCount)")
                             .font(ResponsiveDesign.captionFont())
                             .fontWeight(.bold)
                             .foregroundColor(AppTheme.screenBackground)
@@ -184,12 +184,12 @@ struct ModularProfileView: View {
 
                         Spacer()
 
-                        Text("\(viewModel.totalNotificationsCount)")
+                        Text("\(self.viewModel.totalNotificationsCount)")
                             .font(ResponsiveDesign.captionFont())
                             .foregroundColor(AppTheme.fontColor.opacity(0.6))
                     }
 
-                    Text("\(viewModel.combinedUnreadCount) unread")
+                    Text("\(self.viewModel.combinedUnreadCount) unread")
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(AppTheme.accentLightBlue)
                 }
@@ -213,8 +213,8 @@ private extension ModularProfileView {
     @ViewBuilder
     var profilePrimaryActionsSection: some View {
         VStack(spacing: ResponsiveDesign.spacing(16)) {
-            ProfileLogoutButton(onLogout: { showLogoutAlert = true })
-            notificationsButton
+            ProfileLogoutButton(onLogout: { self.showLogoutAlert = true })
+            self.notificationsButton
         }
     }
 }

@@ -102,7 +102,7 @@ struct PDFProfessionalComponents {
         var y = currentY
 
         // Draw return address line first
-        y = drawReturnAddressLine(in: context, pageRect: pageRect, currentY: y)
+        y = self.drawReturnAddressLine(in: context, pageRect: pageRect, currentY: y)
         y += 4
 
         // === LEFT SIDE: Recipient Address ===
@@ -227,6 +227,5 @@ struct PDFProfessionalComponents {
 
         return y + 8
     }
-
 }
 

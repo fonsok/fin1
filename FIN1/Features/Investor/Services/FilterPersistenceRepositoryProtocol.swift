@@ -17,14 +17,14 @@ final class FilterPersistenceRepository: FilterPersistenceRepositoryProtocol {
     }
 
     func getAppliedFilterID() -> String? {
-        userDefaults.string(forKey: appliedFilterIDKey)
+        self.userDefaults.string(forKey: self.appliedFilterIDKey)
     }
 
     func setAppliedFilterID(_ id: String) {
-        userDefaults.set(id, forKey: appliedFilterIDKey)
+        self.userDefaults.set(id, forKey: self.appliedFilterIDKey)
     }
 
     func clearAppliedFilterID() {
-        userDefaults.removeObject(forKey: appliedFilterIDKey)
+        self.userDefaults.removeObject(forKey: self.appliedFilterIDKey)
     }
 }

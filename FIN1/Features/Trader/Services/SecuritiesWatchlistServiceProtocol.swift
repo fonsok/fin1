@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Securities Watchlist Service Protocol
 /// Defines the contract for securities watchlist operations and management

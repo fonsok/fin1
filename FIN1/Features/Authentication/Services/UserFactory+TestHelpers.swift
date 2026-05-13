@@ -53,16 +53,44 @@ extension UserFactory {
             return CSRInfo(firstName: "Lars", lastName: "Level-2", username: "csr_l2", salutation: .mr, roleCode: "L2", csrRole: .level2)
         }
         if lowercaseEmail.contains("fraud") {
-            return CSRInfo(firstName: "Frank", lastName: "Fraud-Analyst", username: "csr_fraud", salutation: .mr, roleCode: "FRAUD", csrRole: .fraud)
+            return CSRInfo(
+                firstName: "Frank",
+                lastName: "Fraud-Analyst",
+                username: "csr_fraud",
+                salutation: .mr,
+                roleCode: "FRAUD",
+                csrRole: .fraud
+            )
         }
         if lowercaseEmail.contains("compliance") {
-            return CSRInfo(firstName: "Claudia", lastName: "Compliance", username: "csr_compliance", salutation: .ms, roleCode: "COMPL", csrRole: .compliance)
+            return CSRInfo(
+                firstName: "Claudia",
+                lastName: "Compliance",
+                username: "csr_compliance",
+                salutation: .ms,
+                roleCode: "COMPL",
+                csrRole: .compliance
+            )
         }
         if lowercaseEmail.contains("tech") {
-            return CSRInfo(firstName: "Tim", lastName: "Tech-Support", username: "csr_tech", salutation: .mr, roleCode: "TECH", csrRole: .techSupport)
+            return CSRInfo(
+                firstName: "Tim",
+                lastName: "Tech-Support",
+                username: "csr_tech",
+                salutation: .mr,
+                roleCode: "TECH",
+                csrRole: .techSupport
+            )
         }
         if lowercaseEmail.contains("teamlead") || lowercaseEmail.contains("lead") {
-            return CSRInfo(firstName: "Tanja", lastName: "Teamlead", username: "csr_teamlead", salutation: .ms, roleCode: "TL", csrRole: .teamlead)
+            return CSRInfo(
+                firstName: "Tanja",
+                lastName: "Teamlead",
+                username: "csr_teamlead",
+                salutation: .ms,
+                roleCode: "TL",
+                csrRole: .teamlead
+            )
         }
         return CSRInfo(firstName: "Customer", lastName: "Service", username: "csr", salutation: .mr, roleCode: "000", csrRole: .level1)
     }

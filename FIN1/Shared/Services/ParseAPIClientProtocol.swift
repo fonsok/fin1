@@ -127,22 +127,22 @@ struct ParseUserMeResponse: Decodable {
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
-        id = try c.decodeIfPresent(String.self, forKey: .id)
-        email = try c.decodeIfPresent(String.self, forKey: .email)
-        role = try c.decodeIfPresent(String.self, forKey: .role)
-        kycStatus = try c.decodeIfPresent(String.self, forKey: .kycStatus)
-        accountType = try c.decodeIfPresent(String.self, forKey: .accountType)
-        companyKybCompleted = try c.decodeIfPresent(Bool.self, forKey: .companyKybCompleted)
-        companyKybStep = try c.decodeIfPresent(String.self, forKey: .companyKybStep)
-        companyKybStatus = try c.decodeIfPresent(String.self, forKey: .companyKybStatus)
-        onboardingCompleted = try c.decodeIfPresent(Bool.self, forKey: .onboardingCompleted)
-        onboardingStep = try c.decodeIfPresent(String.self, forKey: .onboardingStep)
+        self.id = try c.decodeIfPresent(String.self, forKey: .id)
+        self.email = try c.decodeIfPresent(String.self, forKey: .email)
+        self.role = try c.decodeIfPresent(String.self, forKey: .role)
+        self.kycStatus = try c.decodeIfPresent(String.self, forKey: .kycStatus)
+        self.accountType = try c.decodeIfPresent(String.self, forKey: .accountType)
+        self.companyKybCompleted = try c.decodeIfPresent(Bool.self, forKey: .companyKybCompleted)
+        self.companyKybStep = try c.decodeIfPresent(String.self, forKey: .companyKybStep)
+        self.companyKybStatus = try c.decodeIfPresent(String.self, forKey: .companyKybStatus)
+        self.onboardingCompleted = try c.decodeIfPresent(Bool.self, forKey: .onboardingCompleted)
+        self.onboardingStep = try c.decodeIfPresent(String.self, forKey: .onboardingStep)
         if let n = try c.decodeIfPresent(String.self, forKey: .customerNumber), !n.isEmpty {
-            customerNumber = n
+            self.customerNumber = n
         } else if let legacy = try c.decodeIfPresent(String.self, forKey: .legacyCustomerNumber), !legacy.isEmpty {
-            customerNumber = legacy
+            self.customerNumber = legacy
         } else {
-            customerNumber = nil
+            self.customerNumber = nil
         }
     }
 }

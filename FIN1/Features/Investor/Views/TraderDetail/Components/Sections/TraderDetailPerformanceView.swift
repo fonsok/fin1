@@ -15,8 +15,8 @@ struct TraderDetailPerformanceView: View {
             VStack(spacing: ResponsiveDesign.spacing(12)) {
                 PerformanceRow(
                     title: "Year-to-Date",
-                    value: trader.performance > 0 ? "+\(String(format: "%.1f", trader.performance))%" : "\(String(format: "%.1f", trader.performance))%",
-                    isPositive: trader.performance > 0
+                    value: self.trader.performance > 0 ? "+\(String(format: "%.1f", self.trader.performance))%" : "\(String(format: "%.1f", self.trader.performance))%",
+                    isPositive: self.trader.performance > 0
                 )
 
                 PerformanceRow(
@@ -42,16 +42,16 @@ struct PerformanceRow: View {
 
     var body: some View {
         HStack {
-            Text(title)
+            Text(self.title)
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor)
 
             Spacer()
 
-            Text(value)
+            Text(self.value)
                 .font(ResponsiveDesign.bodyFont())
                 .fontWeight(.medium)
-                .foregroundColor(isPositive ? AppTheme.accentGreen : AppTheme.accentRed)
+                .foregroundColor(self.isPositive ? AppTheme.accentGreen : AppTheme.accentRed)
         }
         .padding(ResponsiveDesign.spacing(12))
         .background(AppTheme.sectionBackground)

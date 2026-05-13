@@ -12,24 +12,24 @@ struct NotificationRow: View {
 
     var body: some View {
         Button(action: {
-            isRead = true
-            appServices.notificationService.markAsRead(notification)
+            self.isRead = true
+            self.appServices.notificationService.markAsRead(self.notification)
         }) {
             HStack(spacing: ResponsiveDesign.spacing(12)) {
                 // Icon
                 Circle()
-                    .fill(notificationColor.opacity(0.3))
+                    .fill(self.notificationColor.opacity(0.3))
                     .frame(width: 32, height: 32)
                     .overlay(
-                        Image(systemName: notification.type.icon)
+                        Image(systemName: self.notification.type.icon)
                             .font(ResponsiveDesign.captionFont())
-                            .foregroundColor(notificationColor)
+                            .foregroundColor(self.notificationColor)
                     )
 
                 // Content
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
                     HStack {
-                        Text(notification.title)
+                        Text(self.notification.title)
                             .font(ResponsiveDesign.bodyFont())
                             .fontWeight(.medium)
                             .foregroundColor(AppTheme.fontColor)
@@ -37,20 +37,20 @@ struct NotificationRow: View {
 
                         Spacer()
 
-                        if !isRead {
+                        if !self.isRead {
                             Circle()
                                 .fill(AppTheme.accentLightBlue)
                                 .frame(width: 6, height: 6)
                         }
                     }
 
-                    Text(notification.message)
+                    Text(self.notification.message)
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(AppTheme.fontColor.opacity(0.7))
                         .lineLimit(2)
                         .multilineTextAlignment(.leading)
 
-                    Text(notification.createdAt.formatted(date: .abbreviated, time: .omitted))
+                    Text(self.notification.createdAt.formatted(date: .abbreviated, time: .omitted))
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(AppTheme.fontColor.opacity(0.5))
                 }
@@ -60,13 +60,13 @@ struct NotificationRow: View {
             .padding(ResponsiveDesign.spacing(12))
             .background(AppTheme.sectionBackground)
             .cornerRadius(ResponsiveDesign.spacing(8))
-            .opacity(isRead ? 0.7 : 1.0)
+            .opacity(self.isRead ? 0.7 : 1.0)
         }
         .buttonStyle(PlainButtonStyle())
     }
 
     private var notificationColor: Color {
-        switch notification.type {
+        switch self.notification.type {
         case .investment:
             return AppTheme.accentGreen
         case .trader:
@@ -92,7 +92,7 @@ struct NotificationRow: View {
             type: .investment,
             priority: .medium,
             isRead: false,
-            createdAt: Date().addingTimeInterval(-3600)
+            createdAt: Date().addingTimeInterval(-3_600)
         ))
         NotificationRow(notification: AppNotification(
             userId: "user1",
@@ -101,7 +101,7 @@ struct NotificationRow: View {
             type: .investment,
             priority: .medium,
             isRead: true,
-            createdAt: Date().addingTimeInterval(-86400)
+            createdAt: Date().addingTimeInterval(-86_400)
         ))
     }
     .padding()

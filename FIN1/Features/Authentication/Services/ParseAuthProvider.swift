@@ -30,11 +30,11 @@ final class ParseAuthProvider: AuthProviderProtocol {
             let normalized = email.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
             do {
                 let response = try await apiClient.login(username: normalized, password: password)
-                let expiresAt = Date().addingTimeInterval(sessionTtl)
+                let expiresAt = Date().addingTimeInterval(self.sessionTtl)
 
                 // Store the session token as both access+refresh token so we can extend expiry
                 // without needing a separate refresh endpoint.
-                try await tokenStorage.store(
+                try await self.tokenStorage.store(
                     accessToken: response.sessionToken,
                     refreshToken: response.sessionToken,
                     idToken: nil,
@@ -71,7 +71,7 @@ final class ParseAuthProvider: AuthProviderProtocol {
 
         case .biometric:
             // Biometric is a local re-auth signal; if we still have valid tokens, treat as success.
-            guard await tokenStorage.hasValidTokens,
+            guard await self.tokenStorage.hasValidTokens,
                   let token = try? await tokenStorage.getAccessToken(),
                   let expiresAt = try? await tokenStorage.getExpirationDate()
             else {
@@ -80,8 +80,8 @@ final class ParseAuthProvider: AuthProviderProtocol {
 
             return AuthResult(
                 accessToken: token,
-                refreshToken: (try? await tokenStorage.getRefreshToken()) ?? nil,
-                idToken: (try? await tokenStorage.getIdToken()) ?? nil,
+                refreshToken: (try? await self.tokenStorage.getRefreshToken()) ?? nil,
+                idToken: (try? await self.tokenStorage.getIdToken()) ?? nil,
                 expiresAt: expiresAt,
                 tokenType: "Parse",
                 userId: "",
@@ -94,11 +94,11 @@ final class ParseAuthProvider: AuthProviderProtocol {
         case .refreshToken:
             // Supported via `refreshToken()` API.
             let token = try await refreshToken()
-            let expiresAt = (try? await tokenStorage.getExpirationDate()) ?? Date().addingTimeInterval(sessionTtl)
+            let expiresAt = (try? await tokenStorage.getExpirationDate()) ?? Date().addingTimeInterval(self.sessionTtl)
             return AuthResult(
                 accessToken: token,
-                refreshToken: (try? await tokenStorage.getRefreshToken()) ?? nil,
-                idToken: (try? await tokenStorage.getIdToken()) ?? nil,
+                refreshToken: (try? await self.tokenStorage.getRefreshToken()) ?? nil,
+                idToken: (try? await self.tokenStorage.getIdToken()) ?? nil,
                 expiresAt: expiresAt,
                 tokenType: "Parse",
                 userId: "",
@@ -120,8 +120,8 @@ final class ParseAuthProvider: AuthProviderProtocol {
             throw AuthProviderError.refreshFailed
         }
 
-        let newExpiry = Date().addingTimeInterval(sessionTtl)
-        try await tokenStorage.store(
+        let newExpiry = Date().addingTimeInterval(self.sessionTtl)
+        try await self.tokenStorage.store(
             accessToken: token,
             refreshToken: token,
             idToken: nil,
@@ -131,15 +131,15 @@ final class ParseAuthProvider: AuthProviderProtocol {
     }
 
     func revokeTokens() async throws {
-        try await tokenStorage.clear()
+        try await self.tokenStorage.clear()
     }
 
     var isSessionValid: Bool {
-        get async { await tokenStorage.hasValidTokens }
+        get async { await self.tokenStorage.hasValidTokens }
     }
 
     var currentAccessToken: String? {
-        get async { try? await tokenStorage.getAccessToken() }
+        get async { try? await self.tokenStorage.getAccessToken() }
     }
 }
 

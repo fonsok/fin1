@@ -1,5 +1,5 @@
-import Foundation
 import CryptoKit
+import Foundation
 
 // MARK: - Transaction ID Service
 
@@ -18,67 +18,67 @@ final class TransactionIdService: TransactionIdServiceProtocol {
     // MARK: - Initialization
 
     init() {
-        dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyyMMdd"
-        dateFormatter.timeZone = TimeZone(identifier: "Europe/Berlin")
+        self.dateFormatter = DateFormatter()
+        self.dateFormatter.dateFormat = "yyyyMMdd"
+        self.dateFormatter.timeZone = TimeZone(identifier: "Europe/Berlin")
 
-        timeFormatter = DateFormatter()
-        timeFormatter.dateFormat = "HHmmss"
-        timeFormatter.timeZone = TimeZone(identifier: "Europe/Berlin")
+        self.timeFormatter = DateFormatter()
+        self.timeFormatter.dateFormat = "HHmmss"
+        self.timeFormatter.timeZone = TimeZone(identifier: "Europe/Berlin")
     }
 
     // MARK: - ServiceLifecycle
 
     func start() async {
         // Initialize daily counters for current date
-        let today = dateFormatter.string(from: Date())
-        dailyCounters[today] = [:]
+        let today = self.dateFormatter.string(from: Date())
+        self.dailyCounters[today] = [:]
     }
 
     func stop() async {
         // Clean up old counters (keep only last 7 days)
         let cutoffDate = Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? Date()
-        let cutoffString = dateFormatter.string(from: cutoffDate)
+        let cutoffString = self.dateFormatter.string(from: cutoffDate)
 
-        dailyCounters = dailyCounters.filter { $0.key >= cutoffString }
+        self.dailyCounters = self.dailyCounters.filter { $0.key >= cutoffString }
     }
 
     func reset() async {
-        dailyCounters.removeAll()
-        await start()
+        self.dailyCounters.removeAll()
+        await self.start()
     }
 
     // MARK: - Public Methods
 
     func generateOrderId() -> String {
-        return generateId(prefix: "ORD")
+        return self.generateId(prefix: "ORD")
     }
 
     func generateTradeId() -> String {
-        return generateId(prefix: "TRD")
+        return self.generateId(prefix: "TRD")
     }
 
     func generateInvoiceNumber() -> String {
-        return generateId(prefix: "INV", includeTime: false)
+        return self.generateId(prefix: "INV", includeTime: false)
     }
 
     func generateInvestorDocumentNumber() -> String {
-        return generateId(prefix: "INVST", includeTime: false)
+        return self.generateId(prefix: "INVST", includeTime: false)
     }
 
     func generatePaymentId() -> String {
-        return generateId(prefix: "PAY")
+        return self.generateId(prefix: "PAY")
     }
 
     func generateCustomerId() -> String {
         let year = Calendar.current.component(.year, from: Date())
-        let randomNumber = String(format: "%05d", Int.random(in: 1...99999))
-        return "\(systemPrefix)-\(year)-\(randomNumber)"
+        let randomNumber = String(format: "%05d", Int.random(in: 1...99_999))
+        return "\(self.systemPrefix)-\(year)-\(randomNumber)"
     }
 
     func validateId(_ id: String) -> Bool {
         // Validate format: <PREFIX>-<TYPE>-YYYYMMDD[-HHMMSS]-XXXXX
-        let escapedPrefix = NSRegularExpression.escapedPattern(for: systemPrefix)
+        let escapedPrefix = NSRegularExpression.escapedPattern(for: self.systemPrefix)
         let pattern = "^\(escapedPrefix)-[A-Z]{3,5}-\\d{8}(-\\d{6})?-\\d{5}$"
         let regex = try? NSRegularExpression(pattern: pattern)
         let range = NSRange(location: 0, length: id.utf16.count)
@@ -88,23 +88,23 @@ final class TransactionIdService: TransactionIdServiceProtocol {
     // MARK: - Private Methods
 
     private func generateId(prefix: String, includeTime: Bool = true) -> String {
-        return queue.sync {
+        return self.queue.sync {
             let now = Date()
-            let dateString = dateFormatter.string(from: now)
+            let dateString = self.dateFormatter.string(from: now)
             let timeString = includeTime ? "-\(timeFormatter.string(from: now))" : ""
-            let counter = getNextCounter(for: dateString, prefix: prefix)
-            return "\(systemPrefix)-\(prefix)-\(dateString)\(timeString)-\(String(format: "%05d", counter))"
+            let counter = self.getNextCounter(for: dateString, prefix: prefix)
+            return "\(self.systemPrefix)-\(prefix)-\(dateString)\(timeString)-\(String(format: "%05d", counter))"
         }
     }
 
     private func getNextCounter(for date: String, prefix: String) -> Int {
-        if dailyCounters[date] == nil {
-            dailyCounters[date] = [:]
+        if self.dailyCounters[date] == nil {
+            self.dailyCounters[date] = [:]
         }
 
-        let currentCount = dailyCounters[date]?[prefix] ?? 0
+        let currentCount = self.dailyCounters[date]?[prefix] ?? 0
         let nextCount = currentCount + 1
-        dailyCounters[date]?[prefix] = nextCount
+        self.dailyCounters[date]?[prefix] = nextCount
         return nextCount
     }
 }

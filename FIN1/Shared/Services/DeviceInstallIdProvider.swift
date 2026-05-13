@@ -11,7 +11,7 @@ enum DeviceInstallIdProvider {
             return existing
         }
         let newId = UUID().uuidString
-        UserDefaults.standard.set(newId, forKey: key)
+        UserDefaults.standard.set(newId, forKey: self.key)
         return newId
     }
 }

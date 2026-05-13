@@ -68,7 +68,9 @@ struct DataFlowValidator {
 
             // Validate underlying asset consistency
             if underlyingAsset != searchResult.underlyingAsset {
-                issues.append("Underlying asset mismatch: expected \(searchResult.underlyingAsset ?? "nil"), got \(underlyingAsset ?? "nil")")
+                issues.append(
+                    "Underlying asset mismatch: expected \(searchResult.underlyingAsset ?? "nil"), got \(underlyingAsset ?? "nil")"
+                )
             }
 
             // Check for suspicious defaults
@@ -100,7 +102,9 @@ struct DataFlowValidator {
         print("🔄 DATA FLOW [\(fileName):\(line)] \(step)")
 
         if let result = searchResult {
-            print("   📊 SearchResult: direction=\(result.direction ?? "nil"), category=\(result.category ?? "nil"), underlyingType=\(result.underlyingType ?? "nil"), underlyingAsset=\(result.underlyingAsset ?? "nil"), wkn=\(result.wkn)")
+            print(
+                "   📊 SearchResult: direction=\(result.direction ?? "nil"), category=\(result.category ?? "nil"), underlyingType=\(result.underlyingType ?? "nil"), underlyingAsset=\(result.underlyingAsset ?? "nil"), wkn=\(result.wkn)"
+            )
         }
 
         if let optionDirection = optionDirection {

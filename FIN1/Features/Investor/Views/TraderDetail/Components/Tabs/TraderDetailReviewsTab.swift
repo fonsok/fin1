@@ -31,7 +31,7 @@ struct ReviewRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text(review.investorName)
+                Text(self.review.investorName)
                     .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.medium)
                     .foregroundColor(AppTheme.fontColor)
@@ -40,19 +40,19 @@ struct ReviewRow: View {
 
                 HStack(spacing: ResponsiveDesign.spacing(4)) {
                     ForEach(0..<5) { index in
-                        Image(systemName: index < review.rating ? "star.fill" : "star")
+                        Image(systemName: index < self.review.rating ? "star.fill" : "star")
                             .font(ResponsiveDesign.captionFont())
                             .foregroundColor(AppTheme.accentOrange)
                     }
                 }
             }
 
-            Text(review.comment)
+            Text(self.review.comment)
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.8))
                 .multilineTextAlignment(.leading)
 
-            Text(review.date.formatted(date: .abbreviated, time: .omitted))
+            Text(self.review.date.formatted(date: .abbreviated, time: .omitted))
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.6))
         }
@@ -73,9 +73,24 @@ struct MockReview: Identifiable {
 }
 
 let mockReviews = [
-    MockReview(investorName: "Alice Johnson", rating: 5, comment: "Excellent trader with consistent returns. Highly recommended!", date: Date().addingTimeInterval(-86400)),
-    MockReview(investorName: "Bob Smith", rating: 4, comment: "Good performance, but sometimes takes high risks.", date: Date().addingTimeInterval(-172800)),
-    MockReview(investorName: "Carol Davis", rating: 5, comment: "Best trader I've worked with. Clear communication and great results.", date: Date().addingTimeInterval(-259200))
+    MockReview(
+        investorName: "Alice Johnson",
+        rating: 5,
+        comment: "Excellent trader with consistent returns. Highly recommended!",
+        date: Date().addingTimeInterval(-86_400)
+    ),
+    MockReview(
+        investorName: "Bob Smith",
+        rating: 4,
+        comment: "Good performance, but sometimes takes high risks.",
+        date: Date().addingTimeInterval(-172_800)
+    ),
+    MockReview(
+        investorName: "Carol Davis",
+        rating: 5,
+        comment: "Best trader I've worked with. Clear communication and great results.",
+        date: Date().addingTimeInterval(-259_200)
+    )
 ]
 
 #Preview {

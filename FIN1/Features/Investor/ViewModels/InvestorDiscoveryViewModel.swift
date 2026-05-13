@@ -1,5 +1,5 @@
-import SwiftUI
 import Foundation
+import SwiftUI
 
 // MARK: - Investor Discovery ViewModel
 
@@ -30,18 +30,18 @@ final class InvestorDiscoveryViewModel: ObservableObject {
     // MARK: - Search Methods
 
     func loadTraders() {
-        allTraders = traderDataService.traders
+        self.allTraders = self.traderDataService.traders
     }
 
     func searchTraders(query: String) {
-        searchQuery = query
+        self.searchQuery = query
     }
 
     /// Handles search input with debounce; clears applied filter ID if non-empty after debounce
     func handleSearchChange(_ query: String) {
         let incoming = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        searchDebounceTask?.cancel()
-        searchDebounceTask = Task { [weak self] in
+        self.searchDebounceTask?.cancel()
+        self.searchDebounceTask = Task { [weak self] in
             guard let self else { return }
             // 300ms debounce
             try? await Task.sleep(nanoseconds: 300_000_000)
@@ -56,25 +56,25 @@ final class InvestorDiscoveryViewModel: ObservableObject {
 
     /// Clears the search query
     func clearSearch() {
-        searchQuery = ""
-        clearAppliedFilterID()
+        self.searchQuery = ""
+        self.clearAppliedFilterID()
     }
 
     // MARK: - Filter Management Methods
 
     /// Clears the currently applied filter ID using repository
     func clearAppliedFilterID() {
-        filterPersistence.clearAppliedFilterID()
+        self.filterPersistence.clearAppliedFilterID()
     }
 
     /// Sets the currently applied filter ID using repository
     func setAppliedFilterID(_ filterID: String) {
-        filterPersistence.setAppliedFilterID(filterID)
+        self.filterPersistence.setAppliedFilterID(filterID)
     }
 
     /// Gets the currently applied filter ID using repository
     func getAppliedFilterID() -> String? {
-        return filterPersistence.getAppliedFilterID()
+        return self.filterPersistence.getAppliedFilterID()
     }
 
     /// Gets the current filter name from saved filters
@@ -89,7 +89,9 @@ final class InvestorDiscoveryViewModel: ObservableObject {
     // MARK: - Watchlist Status Methods
 
     /// Creates a dictionary mapping usernames to watchlist status
-    func getWatchlistStatus(watchlistService: any InvestorWatchlistServiceProtocol, traderDataService: any TraderDataServiceProtocol) -> [String: Bool] {
+    func getWatchlistStatus(watchlistService: any InvestorWatchlistServiceProtocol, traderDataService: any TraderDataServiceProtocol) -> [
+        String: Bool
+    ] {
         var status: [String: Bool] = [:]
         for watchlistItem in watchlistService.watchlist {
             if let trader = traderDataService.getTrader(by: watchlistItem.id) {
@@ -139,7 +141,7 @@ final class InvestorDiscoveryViewModel: ObservableObject {
 
     /// Sets the saved filters list to check against when filters change
     func setSavedFiltersToCheck(_ savedFilters: [FilterCombination]) {
-        savedFiltersToCheck = savedFilters
+        self.savedFiltersToCheck = savedFilters
         // Note: checkAndUpdateAppliedFilter will be called by the View when activeFilters change
     }
 
@@ -149,9 +151,9 @@ final class InvestorDiscoveryViewModel: ObservableObject {
         if let matchingFilter = savedFiltersToCheck.first(where: { savedFilter in
             filtersMatch(savedFilter.filters, activeFilters)
         }) {
-            setAppliedFilterID(matchingFilter.id.uuidString)
+            self.setAppliedFilterID(matchingFilter.id.uuidString)
         } else {
-            clearAppliedFilterID()
+            self.clearAppliedFilterID()
         }
     }
 
@@ -171,10 +173,10 @@ final class InvestorDiscoveryViewModel: ObservableObject {
         activeFilters.append(filter)
 
         // Clear applied filter ID if not applying a saved filter
-        if !isApplyingSavedFilter {
-            clearAppliedFilterID()
+        if !self.isApplyingSavedFilter {
+            self.clearAppliedFilterID()
             // Check if current filters match any saved filter combination
-            checkAndUpdateAppliedFilter(for: activeFilters)
+            self.checkAndUpdateAppliedFilter(for: activeFilters)
         }
     }
 
@@ -182,12 +184,12 @@ final class InvestorDiscoveryViewModel: ObservableObject {
     func handleRemoveFilter(_ filterType: IndividualFilterCriteria.FilterType, from activeFilters: inout [IndividualFilterCriteria]) {
         activeFilters.removeAll { $0.type == filterType }
 
-        if !isApplyingSavedFilter {
+        if !self.isApplyingSavedFilter {
             if activeFilters.isEmpty {
-                clearAppliedFilterID()
+                self.clearAppliedFilterID()
             } else {
                 // Check if current filters match any saved filter combination
-                checkAndUpdateAppliedFilter(for: activeFilters)
+                self.checkAndUpdateAppliedFilter(for: activeFilters)
             }
         }
     }
@@ -195,28 +197,28 @@ final class InvestorDiscoveryViewModel: ObservableObject {
     /// Clears all active filters
     func clearAllFilters(_ activeFilters: inout [IndividualFilterCriteria]) {
         activeFilters.removeAll()
-        clearAppliedFilterID()
+        self.clearAppliedFilterID()
     }
 
     /// Applies a saved filter and sets the applied filter ID
     func applySavedFilter(_ savedFilter: FilterCombination, to activeFilters: inout [IndividualFilterCriteria]) {
-        isApplyingSavedFilter = true
+        self.isApplyingSavedFilter = true
         activeFilters = savedFilter.filters
-        setAppliedFilterID(savedFilter.id.uuidString)
-        isApplyingSavedFilter = false
+        self.setAppliedFilterID(savedFilter.id.uuidString)
+        self.isApplyingSavedFilter = false
     }
 
     // MARK: - Data Filtering
 
     func filteredTraders(by filters: [IndividualFilterCriteria], searchQuery: String = "") -> [MockTrader] {
-        var filtered = allTraders
+        var filtered = self.allTraders
 
         // Apply search query filter if provided
         if !searchQuery.isEmpty {
             filtered = filtered.filter { trader in
                 trader.username.localizedCaseInsensitiveContains(searchQuery) ||
-                trader.name.localizedCaseInsensitiveContains(searchQuery) ||
-                trader.specialization.localizedCaseInsensitiveContains(searchQuery)
+                    trader.name.localizedCaseInsensitiveContains(searchQuery) ||
+                    trader.specialization.localizedCaseInsensitiveContains(searchQuery)
             }
         }
 

@@ -17,12 +17,12 @@ struct FAQArticleDetailView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(16)) {
-                    headerSection
-                    contentSection
-                    feedbackSection
-                    if isCSRMode {
-                        metadataSection
-                        actionsSection
+                    self.headerSection
+                    self.contentSection
+                    self.feedbackSection
+                    if self.isCSRMode {
+                        self.metadataSection
+                        self.actionsSection
                     }
                 }
                 .padding(.horizontal, ResponsiveDesign.horizontalPadding())
@@ -34,28 +34,28 @@ struct FAQArticleDetailView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Schließen") {
-                        dismiss()
+                        self.dismiss()
                     }
                 }
 
-                if isCSRMode {
+                if self.isCSRMode {
                     ToolbarItem(placement: .navigationBarTrailing) {
                         Menu {
                             Button {
-                                viewModel.startEditArticle(article)
+                                self.viewModel.startEditArticle(self.article)
                             } label: {
                                 Label("Bearbeiten", systemImage: "pencil")
                             }
 
-                            if article.isPublished {
+                            if self.article.isPublished {
                                 Button {
-                                    Task { await viewModel.unpublishArticle(article) }
+                                    Task { await self.viewModel.unpublishArticle(self.article) }
                                 } label: {
                                     Label("Als Entwurf", systemImage: "doc.badge.ellipsis")
                                 }
                             } else {
                                 Button {
-                                    Task { await viewModel.publishArticle(article) }
+                                    Task { await self.viewModel.publishArticle(self.article) }
                                 } label: {
                                     Label("Veröffentlichen", systemImage: "checkmark.circle")
                                 }
@@ -64,13 +64,13 @@ struct FAQArticleDetailView: View {
                             Divider()
 
                             Button {
-                                Task { await viewModel.archiveArticle(article) }
+                                Task { await self.viewModel.archiveArticle(self.article) }
                             } label: {
                                 Label("Archivieren", systemImage: "archivebox")
                             }
 
                             Button(role: .destructive) {
-                                showDeleteConfirmation = true
+                                self.showDeleteConfirmation = true
                             } label: {
                                 Label("Löschen", systemImage: "trash")
                             }
@@ -80,19 +80,19 @@ struct FAQArticleDetailView: View {
                     }
                 }
             }
-            .alert("Artikel löschen?", isPresented: $showDeleteConfirmation) {
+            .alert("Artikel löschen?", isPresented: self.$showDeleteConfirmation) {
                 Button("Abbrechen", role: .cancel) {}
                 Button("Löschen", role: .destructive) {
                     Task {
-                        await viewModel.deleteArticle(article)
-                        dismiss()
+                        await self.viewModel.deleteArticle(self.article)
+                        self.dismiss()
                     }
                 }
             } message: {
                 Text("Dieser Vorgang kann nicht rückgängig gemacht werden.")
             }
-            .sheet(isPresented: $showFeedbackSheet) {
-                FAQFeedbackSheet(article: article, viewModel: viewModel, userId: userId)
+            .sheet(isPresented: self.$showFeedbackSheet) {
+                FAQFeedbackSheet(article: self.article, viewModel: self.viewModel, userId: self.userId)
             }
         }
     }
@@ -102,17 +102,17 @@ struct FAQArticleDetailView: View {
     private var headerSection: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
             HStack {
-                Image(systemName: article.category.icon)
+                Image(systemName: self.article.category.icon)
                     .font(ResponsiveDesign.headlineFont())
-                    .foregroundColor(Color(hex: article.category.color))
+                    .foregroundColor(Color(hex: self.article.category.color))
 
-                Text(article.category.displayName)
+                Text(self.article.category.displayName)
                     .font(ResponsiveDesign.captionFont())
-                    .foregroundColor(Color(hex: article.category.color))
+                    .foregroundColor(Color(hex: self.article.category.color))
 
                 Spacer()
 
-                if !article.isPublished {
+                if !self.article.isPublished {
                     Text("Entwurf")
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(.white)
@@ -122,7 +122,7 @@ struct FAQArticleDetailView: View {
                         .cornerRadius(ResponsiveDesign.spacing(4))
                 }
 
-                if article.isArchived {
+                if self.article.isArchived {
                     Text("Archiviert")
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(.white)
@@ -133,29 +133,29 @@ struct FAQArticleDetailView: View {
                 }
             }
 
-            Text(article.title)
+            Text(self.article.title)
                 .font(ResponsiveDesign.titleFont())
                 .fontWeight(.bold)
                 .foregroundColor(AppTheme.fontColor)
 
-            Text(article.summary)
+            Text(self.article.summary)
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.8))
 
             // Stats row
             HStack(spacing: ResponsiveDesign.spacing(16)) {
-                Label("\(article.viewCount) Aufrufe", systemImage: "eye")
-                Label("\(article.helpfulnessPercentage)% hilfreich", systemImage: "hand.thumbsup")
-                Label("\(article.usedInTicketCount)x verwendet", systemImage: "ticket")
+                Label("\(self.article.viewCount) Aufrufe", systemImage: "eye")
+                Label("\(self.article.helpfulnessPercentage)% hilfreich", systemImage: "hand.thumbsup")
+                Label("\(self.article.usedInTicketCount)x verwendet", systemImage: "ticket")
             }
             .font(ResponsiveDesign.captionFont())
             .foregroundColor(AppTheme.fontColor.opacity(0.6))
 
             // Tags
-            if !article.tags.isEmpty {
+            if !self.article.tags.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: ResponsiveDesign.spacing(8)) {
-                        ForEach(article.tags, id: \.self) { tag in
+                        ForEach(self.article.tags, id: \.self) { tag in
                             Text(tag)
                                 .font(ResponsiveDesign.captionFont())
                                 .foregroundColor(AppTheme.accentLightBlue)
@@ -183,8 +183,8 @@ struct FAQArticleDetailView: View {
                 .foregroundColor(AppTheme.fontColor)
 
             // Simple markdown-like rendering
-            ForEach(parseContent(article.content), id: \.self) { block in
-                contentBlockView(block)
+            ForEach(self.parseContent(self.article.content), id: \.self) { block in
+                self.contentBlockView(block)
             }
         }
         .padding()
@@ -245,11 +245,11 @@ struct FAQArticleDetailView: View {
             HStack(spacing: ResponsiveDesign.spacing(16)) {
                 Button {
                     Task {
-                        await viewModel.submitFeedback(
-                            forArticle: article,
+                        await self.viewModel.submitFeedback(
+                            forArticle: self.article,
                             isHelpful: true,
                             comment: nil,
-                            userId: userId
+                            userId: self.userId
                         )
                     }
                 } label: {
@@ -266,7 +266,7 @@ struct FAQArticleDetailView: View {
                 }
 
                 Button {
-                    showFeedbackSheet = true
+                    self.showFeedbackSheet = true
                 } label: {
                     HStack {
                         Image(systemName: "hand.thumbsdown.fill")
@@ -298,25 +298,25 @@ struct FAQArticleDetailView: View {
                 .foregroundColor(AppTheme.fontColor)
 
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
-                    FAQMetadataRow(label: "Erstellt", value: viewModel.formattedDate(article.createdAt))
-                    FAQMetadataRow(label: "Erstellt von", value: article.createdBy)
-                    FAQMetadataRow(label: "Aktualisiert", value: viewModel.formattedDate(article.updatedAt))
+                FAQMetadataRow(label: "Erstellt", value: self.viewModel.formattedDate(self.article.createdAt))
+                FAQMetadataRow(label: "Erstellt von", value: self.article.createdBy)
+                FAQMetadataRow(label: "Aktualisiert", value: self.viewModel.formattedDate(self.article.updatedAt))
 
-                    if let updatedBy = article.lastUpdatedBy {
-                        FAQMetadataRow(label: "Aktualisiert von", value: updatedBy)
-                    }
+                if let updatedBy = article.lastUpdatedBy {
+                    FAQMetadataRow(label: "Aktualisiert von", value: updatedBy)
+                }
 
-                    if let solutionType = article.solutionType {
-                        FAQMetadataRow(label: "Lösungstyp", value: solutionType.displayName)
-                    }
+                if let solutionType = article.solutionType {
+                    FAQMetadataRow(label: "Lösungstyp", value: solutionType.displayName)
+                }
 
-                    if !article.sourceTicketIds.isEmpty {
-                        FAQMetadataRow(label: "Quell-Tickets", value: "\(article.sourceTicketIds.count)")
-                    }
+                if !self.article.sourceTicketIds.isEmpty {
+                    FAQMetadataRow(label: "Quell-Tickets", value: "\(self.article.sourceTicketIds.count)")
+                }
 
-                    if !article.keywords.isEmpty {
-                        FAQMetadataRow(label: "Keywords", value: article.keywords.joined(separator: ", "))
-                    }
+                if !self.article.keywords.isEmpty {
+                    FAQMetadataRow(label: "Keywords", value: self.article.keywords.joined(separator: ", "))
+                }
             }
         }
         .padding()
@@ -339,7 +339,7 @@ struct FAQArticleDetailView: View {
                     title: "Kopieren",
                     color: AppTheme.accentLightBlue
                 ) {
-                    UIPasteboard.general.string = article.content
+                    UIPasteboard.general.string = self.article.content
                 }
 
                 FAQActionButton(
@@ -350,7 +350,7 @@ struct FAQArticleDetailView: View {
                     // Share functionality
                 }
 
-                if article.relatedHelpCenterArticleId != nil {
+                if self.article.relatedHelpCenterArticleId != nil {
                     FAQActionButton(
                         icon: "link",
                         title: "Help Center",

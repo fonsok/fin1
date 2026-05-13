@@ -65,7 +65,7 @@ final class NotificationAPIService: NotificationAPIServiceProtocol, @unchecked S
         var seenIds = Set<String>()
         var cursor: Date?
 
-        while all.count < maxTotal {
+        while all.count < self.maxTotal {
             var query = queryBase
             if let cursor {
                 query["createdAt"] = [
@@ -77,11 +77,11 @@ final class NotificationAPIService: NotificationAPIServiceProtocol, @unchecked S
             }
 
             let responses: [ParseNotificationResponse] = try await apiClient.fetchObjects(
-                className: className,
+                className: self.className,
                 query: query,
                 include: nil,
                 orderBy: "-createdAt",
-                limit: pageSize
+                limit: self.pageSize
             )
 
             if responses.isEmpty { break }
@@ -99,7 +99,7 @@ final class NotificationAPIService: NotificationAPIServiceProtocol, @unchecked S
             }
 
             // Last page (Parse returned fewer than requested).
-            if responses.count < pageSize { break }
+            if responses.count < self.pageSize { break }
         }
 
         return all.sorted { $0.createdAt > $1.createdAt }
@@ -140,15 +140,15 @@ private extension NotificationAPIService {
 
 private extension ParseNotificationResponse {
     func toAppNotification() -> AppNotification? {
-        let created = createdAt.flatMap { ISO8601DateFormatter().date(from: $0) } ?? Date()
-        let readDate = readAt.flatMap { ISO8601DateFormatter().date(from: $0) }
+        let created = self.createdAt.flatMap { ISO8601DateFormatter().date(from: $0) } ?? Date()
+        let readDate = self.readAt.flatMap { ISO8601DateFormatter().date(from: $0) }
         let effectiveReadAt: Date? = {
-            guard (isRead ?? false) else { return nil }
+            guard (self.isRead ?? false) else { return nil }
             return readDate ?? created
         }()
 
         let mappedType: NotificationType = {
-            switch (category ?? "").lowercased() {
+            switch (self.category ?? "").lowercased() {
             case "investment":
                 return .investment
             case "trading":
@@ -167,7 +167,7 @@ private extension ParseNotificationResponse {
         }()
 
         let mappedPriority: NotificationPriority = {
-            switch (priority ?? "").lowercased() {
+            switch (self.priority ?? "").lowercased() {
             case "low":
                 return .low
             case "high":
@@ -195,14 +195,14 @@ private extension ParseNotificationResponse {
         }
 
         return AppNotification(
-            id: objectId,
-            userId: userId,
-            title: title,
-            message: message,
+            id: self.objectId,
+            userId: self.userId,
+            title: self.title,
+            message: self.message,
             type: mappedType,
-            serverCategory: category,
+            serverCategory: self.category,
             priority: mappedPriority,
-            isRead: isRead ?? false,
+            isRead: self.isRead ?? false,
             readAt: effectiveReadAt,
             createdAt: created,
             metadata: mappedMetadata.isEmpty ? nil : mappedMetadata

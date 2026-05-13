@@ -55,24 +55,24 @@ final class BuyOrderInvestmentDataProvider: BuyOrderInvestmentDataProviderProtoc
         }
 
         // Use provided traderId or find one
-        var effectiveTraderId = traderId ?? findTraderIdForMatching(currentUser: currentUser) ?? currentUser.id
+        var effectiveTraderId = traderId ?? self.findTraderIdForMatching(currentUser: currentUser) ?? currentUser.id
         print("   📊 Using trader ID: \(effectiveTraderId)")
 
         // Get ALL investments for this trader
-        var allTraderInvestments = investmentService.getInvestments(forTrader: effectiveTraderId)
+        var allTraderInvestments = self.investmentService.getInvestments(forTrader: effectiveTraderId)
         print("   📊 Total investments for trader: \(allTraderInvestments.count)")
 
         // FALLBACK: If no investments found and traderDataService is nil, try matching by name
-        if allTraderInvestments.isEmpty && traderDataService == nil {
-            allTraderInvestments = fallbackMatchByName(currentUser: currentUser, effectiveTraderId: &effectiveTraderId)
+        if allTraderInvestments.isEmpty && self.traderDataService == nil {
+            allTraderInvestments = self.fallbackMatchByName(currentUser: currentUser, effectiveTraderId: &effectiveTraderId)
         }
 
         // Filter investments - match BuyOrderInvestmentCalculator logic
-        let filteredInvestments = filterEligibleInvestments(allTraderInvestments)
+        let filteredInvestments = self.filterEligibleInvestments(allTraderInvestments)
         print("   📊 Filtered to \(filteredInvestments.count) eligible investments")
 
         // Apply Round Robin: Select ONE investment per investor
-        let selectedInvestments = applyRoundRobinSelection(filteredInvestments)
+        let selectedInvestments = self.applyRoundRobinSelection(filteredInvestments)
         print("   ✅ Selected \(selectedInvestments.count) investments (Round Robin)")
 
         return selectedInvestments
@@ -106,7 +106,7 @@ final class BuyOrderInvestmentDataProvider: BuyOrderInvestmentDataProviderProtoc
         let displayName = "\(currentUser.firstName) \(currentUser.lastName)".trimmingCharacters(in: .whitespaces)
         print("   🔄 Fallback: Trying to match by traderName '\(displayName)'")
 
-        let allInvestments = investmentService.investments
+        let allInvestments = self.investmentService.investments
         let matched = allInvestments.filter { investment in
             investment.traderName.caseInsensitiveCompare(displayName) == .orderedSame
         }
@@ -125,9 +125,9 @@ final class BuyOrderInvestmentDataProvider: BuyOrderInvestmentDataProviderProtoc
         investments.filter { investment in
             let statusMatch = investment.status == .active
             let reservationMatch = investment.reservationStatus == .reserved ||
-                                 investment.reservationStatus == .active ||
-                                 investment.reservationStatus == .executing ||
-                                 investment.reservationStatus == .closed
+                investment.reservationStatus == .active ||
+                investment.reservationStatus == .executing ||
+                investment.reservationStatus == .closed
             return statusMatch && reservationMatch
         }
     }

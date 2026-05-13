@@ -36,24 +36,24 @@ final class InvestmentActivationService: InvestmentActivationServiceProtocol, @u
         // Keep order.traderId as fallback candidate because environments may use
         // mixed traderId formats (Parse userId / user:email / mock UUID / username).
         let matchedTraderId = TraderMatchingHelper.findTraderIdForMatching(
-            currentUser: userService.currentUser,
-            traderDataService: traderDataService
+            currentUser: self.userService.currentUser,
+            traderDataService: self.traderDataService
         )
         let traderId = matchedTraderId ?? order.traderId
 
         print("🔍 InvestmentActivationService.activateInvestmentsForBuyOrder:")
         print("   📋 Order traderId: '\(order.traderId)'")
-        print("   👤 Current user: \(userService.currentUser?.email ?? "nil")")
+        print("   👤 Current user: \(self.userService.currentUser?.email ?? "nil")")
         print("   🎯 Using traderId: '\(traderId)'")
         print("   📊 Total investments in service: \(investmentService.investments.count)")
 
         // Log all investments for debugging
-        logInvestments(investmentService: investmentService, traderId: traderId)
+        self.logInvestments(investmentService: investmentService, traderId: traderId)
 
         // Find eligible investments
-        let eligibleInvestments = findEligibleInvestments(
+        let eligibleInvestments = self.findEligibleInvestments(
             investmentService: investmentService,
-            traderIdCandidates: buildTraderIdCandidates(primaryTraderId: traderId, orderTraderId: order.traderId)
+            traderIdCandidates: self.buildTraderIdCandidates(primaryTraderId: traderId, orderTraderId: order.traderId)
         )
 
         guard !eligibleInvestments.isEmpty else {
@@ -117,17 +117,19 @@ final class InvestmentActivationService: InvestmentActivationServiceProtocol, @u
         // Filter for reserved investments matching this trader by any known id format.
         var eligibleInvestments = investmentService.investments.filter {
             normalizedCandidates.contains($0.traderId.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()) &&
-            $0.status == .active &&
-            $0.reservationStatus == .reserved
+                $0.status == .active &&
+                $0.reservationStatus == .reserved
         }
 
         // Fallback: if none matched by traderId, try matching by trader display name
         if eligibleInvestments.isEmpty {
-            let displayName = "\(userService.currentUser?.firstName ?? "") \(userService.currentUser?.lastName ?? "")".trimmingCharacters(in: .whitespaces)
+            let displayName = "\(userService.currentUser?.firstName ?? "") \(self.userService.currentUser?.lastName ?? "")".trimmingCharacters(
+                in: .whitespaces
+            )
             let alt = investmentService.investments.filter {
                 $0.traderName.caseInsensitiveCompare(displayName) == .orderedSame &&
-                $0.status == .active &&
-                $0.reservationStatus == .reserved
+                    $0.status == .active &&
+                    $0.reservationStatus == .reserved
             }
             if !alt.isEmpty {
                 print("   🔄 Fallback match by name '\(displayName)': \(alt.count) eligible investments")
@@ -151,7 +153,7 @@ final class InvestmentActivationService: InvestmentActivationServiceProtocol, @u
             }
         }
 
-        let displayName = "\(userService.currentUser?.firstName ?? "") \(userService.currentUser?.lastName ?? "")"
+        let displayName = "\(userService.currentUser?.firstName ?? "") \(self.userService.currentUser?.lastName ?? "")"
             .trimmingCharacters(in: .whitespacesAndNewlines)
         if !displayName.isEmpty {
             candidates.append(displayName)
@@ -181,13 +183,17 @@ final class InvestmentActivationService: InvestmentActivationServiceProtocol, @u
         for (investorId, investorInvestments) in investmentsByInvestor {
             if let selectedInvestment = await investmentService.selectNextInvestmentForInvestor(investorId, traderId: traderId) {
                 selectedInvestments.append(selectedInvestment)
-                print("   👤 Investor \(investorId): Selected investment \(selectedInvestment.id) via round-robin (out of \(investorInvestments.count) eligible)")
+                print(
+                    "   👤 Investor \(investorId): Selected investment \(selectedInvestment.id) via round-robin (out of \(investorInvestments.count) eligible)"
+                )
             } else {
                 // Fallback: use oldest investment
                 let sortedInvestments = investorInvestments.sorted(by: { $0.createdAt < $1.createdAt })
                 if let fallbackInvestment = sortedInvestments.first {
                     selectedInvestments.append(fallbackInvestment)
-                    print("   👤 Investor \(investorId): Selected investment \(fallbackInvestment.id) (fallback, out of \(investorInvestments.count) eligible)")
+                    print(
+                        "   👤 Investor \(investorId): Selected investment \(fallbackInvestment.id) (fallback, out of \(investorInvestments.count) eligible)"
+                    )
                 }
             }
         }
@@ -197,7 +203,9 @@ final class InvestmentActivationService: InvestmentActivationServiceProtocol, @u
         for selectedInvestment in selectedInvestments {
             await investmentService.markNextInvestmentAsActive(for: selectedInvestment.id)
 
-            if let refreshed = investmentService.investments.first(where: { $0.id == selectedInvestment.id && $0.reservationStatus == .active }) {
+            if let refreshed = investmentService.investments.first(
+                where: { $0.id == selectedInvestment.id && $0.reservationStatus == .active }
+            ) {
                 activatedInvestments.append(refreshed)
                 print("✅ InvestmentActivationService: Activated investment \(refreshed.id) from investor \(refreshed.investorId)")
             }

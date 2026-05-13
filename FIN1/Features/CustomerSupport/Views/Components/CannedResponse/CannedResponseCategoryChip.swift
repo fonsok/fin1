@@ -8,17 +8,17 @@ struct CannedResponseCategoryChip: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
+        Button(action: self.action) {
             HStack(spacing: ResponsiveDesign.spacing(4)) {
-                Image(systemName: icon)
+                Image(systemName: self.icon)
                     .font(ResponsiveDesign.captionFont())
-                Text(title)
+                Text(self.title)
                     .font(ResponsiveDesign.captionFont())
             }
-            .foregroundColor(isSelected ? .white : AppTheme.fontColor)
+            .foregroundColor(self.isSelected ? .white : AppTheme.fontColor)
             .padding(.horizontal, ResponsiveDesign.spacing(12))
             .padding(.vertical, ResponsiveDesign.spacing(6))
-            .background(isSelected ? AppTheme.accentLightBlue : AppTheme.sectionBackground)
+            .background(self.isSelected ? AppTheme.accentLightBlue : AppTheme.sectionBackground)
             .cornerRadius(ResponsiveDesign.spacing(16))
         }
     }

@@ -241,7 +241,7 @@ struct InvestmentProfitCalculator {
         guard let tradeLifecycleService = tradeLifecycleService,
               !participations.isEmpty else {
             // Fallback to reverse calculation if trade service not available
-            return calculateGrossProfitFromAccumulatedProfit(
+            return self.calculateGrossProfitFromAccumulatedProfit(
                 investmentId: investmentId,
                 poolTradeParticipationService: poolTradeParticipationService,
                 commissionRate: commissionRate

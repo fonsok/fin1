@@ -27,7 +27,7 @@ final class TradeMatchingService: TradeMatchingServiceProtocol, @unchecked Senda
         }
 
         // Fallback to WKN and timestamp matching
-        return await matchByWknAndTimestamp(
+        return await self.matchByWknAndTimestamp(
             sellOrder: sellOrder,
             trades: trades,
             tradeLifecycleService: tradeLifecycleService
@@ -60,10 +60,10 @@ final class TradeMatchingService: TradeMatchingServiceProtocol, @unchecked Senda
 
         do {
             try await tradeLifecycleService.addPartialSellOrderToTrade(tradeId, sellOrder: sellOrder)
-            logSuccessfulPartialSale(trade: trade, sellOrder: sellOrder)
+            self.logSuccessfulPartialSale(trade: trade, sellOrder: sellOrder)
             return updatedTrade
         } catch {
-            logPartialSaleError(trade: trade, sellOrder: sellOrder, error: error)
+            self.logPartialSaleError(trade: trade, sellOrder: sellOrder, error: error)
             return nil
         }
     }
@@ -81,7 +81,7 @@ final class TradeMatchingService: TradeMatchingServiceProtocol, @unchecked Senda
     /// Creates a DepotBestand from a trade, accounting for partial sales
     /// Uses centralized HoldingsConversionService as SINGLE SOURCE OF TRUTH
     private func createHoldingFromTrade(_ trade: Trade, position: Int) -> DepotHolding {
-        return holdingsConversionService.createHolding(
+        return self.holdingsConversionService.createHolding(
             from: trade,
             position: position,
             ongoingOrders: []  // No ongoing orders context in matching service
@@ -107,7 +107,7 @@ final class TradeMatchingService: TradeMatchingServiceProtocol, @unchecked Senda
         var positionCounter = 1
         let holdings = trades.map { trade in
             defer { positionCounter += 1 }
-            return createHoldingFromTrade(trade, position: positionCounter)
+            return self.createHoldingFromTrade(trade, position: positionCounter)
         }
 
         print("🔍 DEBUG: Available holdings orderIds: \(holdings.map { $0.orderId })")
@@ -120,7 +120,7 @@ final class TradeMatchingService: TradeMatchingServiceProtocol, @unchecked Senda
 
         print("🔍 DEBUG: Found holding with orderId: \(buyOrderId)")
 
-        return await findAndUpdateTradeByBuyOrderId(
+        return await self.findAndUpdateTradeByBuyOrderId(
             buyOrderId: buyOrderId,
             sellOrder: sellOrder,
             trades: trades,
@@ -142,17 +142,19 @@ final class TradeMatchingService: TradeMatchingServiceProtocol, @unchecked Senda
         }
 
         guard !candidates.isEmpty else {
-            logNoMatchFound(sellOrder: sellOrder)
+            self.logNoMatchFound(sellOrder: sellOrder)
             return nil
         }
 
         guard candidates.count == 1 else {
-            print("❌ DEBUG: Ambiguous WKN fallback match (\(candidates.count) candidates) for sell order \(sellOrder.id) - refusing cross-trade assignment")
+            print(
+                "❌ DEBUG: Ambiguous WKN fallback match (\(candidates.count) candidates) for sell order \(sellOrder.id) - refusing cross-trade assignment"
+            )
             return nil
         }
 
         let trade = candidates[0]
-        return await updateTradeWithSellOrder(
+        return await self.updateTradeWithSellOrder(
             trade: trade,
             sellOrder: sellOrder,
             tradeLifecycleService: tradeLifecycleService,
@@ -174,7 +176,7 @@ final class TradeMatchingService: TradeMatchingServiceProtocol, @unchecked Senda
         }
 
         let trade = trades[tradeIndex]
-        return await updateTradeWithSellOrder(
+        return await self.updateTradeWithSellOrder(
             trade: trade,
             sellOrder: sellOrder,
             tradeLifecycleService: tradeLifecycleService,
@@ -192,10 +194,10 @@ final class TradeMatchingService: TradeMatchingServiceProtocol, @unchecked Senda
 
         do {
             try await tradeLifecycleService.addPartialSellOrderToTrade(trade.id, sellOrder: sellOrder)
-            logSuccessfulMatch(trade: trade, sellOrder: sellOrder, matchType: matchType)
+            self.logSuccessfulMatch(trade: trade, sellOrder: sellOrder, matchType: matchType)
             return updatedTrade
         } catch {
-            logUpdateError(trade: trade, sellOrder: sellOrder, error: error)
+            self.logUpdateError(trade: trade, sellOrder: sellOrder, error: error)
             return nil
         }
     }
@@ -207,7 +209,9 @@ final class TradeMatchingService: TradeMatchingServiceProtocol, @unchecked Senda
     }
 
     private func logNoMatchFound(sellOrder: OrderSell) {
-        print("❌ DEBUG: No matching Trade found for sell order \(sellOrder.id) with originalHoldingId \(sellOrder.originalHoldingId ?? "nil") and WKN \(sellOrder.wkn ?? "unknown")")
+        print(
+            "❌ DEBUG: No matching Trade found for sell order \(sellOrder.id) with originalHoldingId \(sellOrder.originalHoldingId ?? "nil") and WKN \(sellOrder.wkn ?? "unknown")"
+        )
     }
 
     private func logUpdateError(trade: Trade, sellOrder: OrderSell, error: Error) {
@@ -215,7 +219,9 @@ final class TradeMatchingService: TradeMatchingServiceProtocol, @unchecked Senda
     }
 
     private func logSuccessfulPartialSale(trade: Trade, sellOrder: OrderSell) {
-        print("🔍 DEBUG: Successfully added partial sell order \(sellOrder.id) to Trade \(trade.id). Quantity: \(sellOrder.quantity), Remaining: \(trade.remainingQuantity)")
+        print(
+            "🔍 DEBUG: Successfully added partial sell order \(sellOrder.id) to Trade \(trade.id). Quantity: \(sellOrder.quantity), Remaining: \(trade.remainingQuantity)"
+        )
     }
 
     private func logPartialSaleError(trade: Trade, sellOrder: OrderSell, error: Error) {

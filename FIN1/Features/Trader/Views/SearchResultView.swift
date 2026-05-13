@@ -13,7 +13,7 @@ struct SearchResultView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(16)) {
-            if results.isEmpty {
+            if self.results.isEmpty {
                 // No results message
                 VStack(spacing: ResponsiveDesign.spacing(12)) {
                     Image(systemName: "magnifyingglass")
@@ -25,7 +25,7 @@ struct SearchResultView: View {
                         .foregroundColor(AppTheme.fontColor)
                         .multilineTextAlignment(.center)
 
-                    Text(filterDescription)
+                    Text(self.filterDescription)
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(AppTheme.accentLightBlue)
                         .multilineTextAlignment(.center)
@@ -38,14 +38,14 @@ struct SearchResultView: View {
             } else {
                 // Results header
                 HStack(spacing: ResponsiveDesign.spacing(0)) {
-                    Text("\(filterType) - Suchergebnis: ")
+                    Text("\(self.filterType) - Suchergebnis: ")
                         .foregroundColor(AppTheme.secondaryText)
-                    Text("\(results.count) Treffer")
+                    Text("\(self.results.count) Treffer")
                         .foregroundColor(AppTheme.accentGreen)
                 }
 
                 Button(action: {
-                    showWarrantDetails = true
+                    self.showWarrantDetails = true
                 }, label: {
                     HStack {
                         Text("Warrant details/tiles")
@@ -58,38 +58,38 @@ struct SearchResultView: View {
 
                 // Results list with lazy loading for better performance
                 LazyVStack(spacing: ResponsiveDesign.spacing(12)) {
-                    ForEach(Array(results.enumerated()), id: \.offset) { index, result in
+                    ForEach(Array(self.results.enumerated()), id: \.offset) { index, result in
                         let directionLabel = result.direction ?? "-"
                         SearchResultCard(
                             result: result,
                             position: index + 1,
-                            traderService: appServices.traderService,
+                            traderService: self.appServices.traderService,
                             directionLabel: directionLabel,
-                            warrantDetailsViewModel: warrantDetailsViewModel,
+                            warrantDetailsViewModel: self.warrantDetailsViewModel,
                             onKaufenTapped: {
-                                selectedResultForOrder = result
+                                self.selectedResultForOrder = result
                             }
                         )
                     }
                 }
             }
         }
-        .sheet(item: $selectedResultForOrder) { result in
+        .sheet(item: self.$selectedResultForOrder) { result in
             BuyOrderViewWrapper(
                 searchResult: result,
-                traderService: appServices.traderService,
-                cashBalanceService: appServices.cashBalanceService,
-                configurationService: appServices.configurationService,
-                investmentQuantityCalculationService: appServices.investmentQuantityCalculationService,
-                investmentService: appServices.investmentService,
-                userService: appServices.userService,
-                traderDataService: appServices.traderDataService,
-                auditLoggingService: appServices.auditLoggingService,
-                transactionLimitService: appServices.transactionLimitService
+                traderService: self.appServices.traderService,
+                cashBalanceService: self.appServices.cashBalanceService,
+                configurationService: self.appServices.configurationService,
+                investmentQuantityCalculationService: self.appServices.investmentQuantityCalculationService,
+                investmentService: self.appServices.investmentService,
+                userService: self.appServices.userService,
+                traderDataService: self.appServices.traderDataService,
+                auditLoggingService: self.appServices.auditLoggingService,
+                transactionLimitService: self.appServices.transactionLimitService
             )
         }
-        .sheet(isPresented: $showWarrantDetails) {
-            WarrantDetailsView(viewModel: warrantDetailsViewModel)
+        .sheet(isPresented: self.$showWarrantDetails) {
+            WarrantDetailsView(viewModel: self.warrantDetailsViewModel)
         }
     }
 }
@@ -106,7 +106,14 @@ struct SearchResultCard: View {
     @State private var showWatchlistToast = false
     @State private var watchlistToastMessage = ""
 
-    init(result: SearchResult, position: Int, traderService: any TraderServiceProtocol, directionLabel: String, warrantDetailsViewModel: WarrantDetailsViewModel, onKaufenTapped: @escaping () -> Void) {
+    init(
+        result: SearchResult,
+        position: Int,
+        traderService: any TraderServiceProtocol,
+        directionLabel: String,
+        warrantDetailsViewModel: WarrantDetailsViewModel,
+        onKaufenTapped: @escaping () -> Void
+    ) {
         self.result = result
         self.position = position
         self.traderService = traderService
@@ -122,21 +129,21 @@ struct SearchResultCard: View {
 
     var body: some View {
         CardContainer(
-            position: position,
+            position: self.position,
             showWatchlistIcon: true,
-            isInWatchlist: traderService.isInWatchlist(result.wkn),
+            isInWatchlist: self.traderService.isInWatchlist(self.result.wkn),
             onPapersheetTapped: {
-                openIssuerProductInfo()
+                self.openIssuerProductInfo()
             },
             onWatchlistTapped: {
-                toggleWatchlist()
+                self.toggleWatchlist()
             },
             chevronButton: {
                 AnyView(
                     Button(action: {
-                        viewModel.toggleAdditionalDetails()
+                        self.viewModel.toggleAdditionalDetails()
                     }, label: {
-                        Image(systemName: viewModel.showAdditionalDetails ? "chevron.up" : "chevron.down")
+                        Image(systemName: self.viewModel.showAdditionalDetails ? "chevron.up" : "chevron.down")
                             .font(ResponsiveDesign.bodyFont())
                             .foregroundColor(AppTheme.secondaryText)
                     })
@@ -146,34 +153,34 @@ struct SearchResultCard: View {
         ) {
             VStack(spacing: ResponsiveDesign.spacing(8)) {
                 // Main content grid using TileGrid - all logic in ViewModel
-                TileGrid(tiles: viewModel.tiles, columns: 2)
+                TileGrid(tiles: self.viewModel.tiles, columns: 2)
 
-                        // Full-width Buy button
-                        Button(action: {
-                            print("🔘 DEBUG: KAUFEN button tapped in SearchResultCard")
-                            onKaufenTapped()
-                        }, label: {
-                            Text("KAUFEN")
-                                .foregroundColor(AppTheme.fontColor)
-                                .fontWeight(.bold)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, ResponsiveDesign.spacing(12))
-                                .background(AppTheme.buttonColor)
-                                .cornerRadius(ResponsiveDesign.spacing(8))
-                        })
-                        .buttonStyle(PlainButtonStyle())
-                        .accessibilityIdentifier("KaufenButton_\(result.wkn)")
+                // Full-width Buy button
+                Button(action: {
+                    print("🔘 DEBUG: KAUFEN button tapped in SearchResultCard")
+                    self.onKaufenTapped()
+                }, label: {
+                    Text("KAUFEN")
+                        .foregroundColor(AppTheme.fontColor)
+                        .fontWeight(.bold)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, ResponsiveDesign.spacing(12))
+                        .background(AppTheme.buttonColor)
+                        .cornerRadius(ResponsiveDesign.spacing(8))
+                })
+                .buttonStyle(PlainButtonStyle())
+                .accessibilityIdentifier("KaufenButton_\(self.result.wkn)")
             }
         }
         .overlay(
             Group {
-                if showWatchlistToast {
+                if self.showWatchlistToast {
                     VStack {
                         Spacer()
                         HStack {
                             Image(systemName: "checkmark.circle.fill")
                                 .foregroundColor(AppTheme.accentGreen)
-                            Text(watchlistToastMessage)
+                            Text(self.watchlistToastMessage)
                                 .font(ResponsiveDesign.bodyFont())
                                 .foregroundColor(AppTheme.fontColor)
                         }
@@ -185,7 +192,7 @@ struct SearchResultCard: View {
                         Spacer()
                     }
                     .transition(.move(edge: .bottom).combined(with: .opacity))
-                    .animation(.easeInOut(duration: 0.3), value: showWatchlistToast)
+                    .animation(.easeInOut(duration: 0.3), value: self.showWatchlistToast)
                 }
             }
         )
@@ -194,16 +201,16 @@ struct SearchResultCard: View {
     private func toggleWatchlist() {
         Task {
             do {
-                if traderService.isInWatchlist(result.wkn) {
-                    try await traderService.removeFromWatchlist(result.wkn)
+                if self.traderService.isInWatchlist(self.result.wkn) {
+                    try await self.traderService.removeFromWatchlist(self.result.wkn)
                     await MainActor.run {
-                        showToast("\(result.wkn) aus Watchlist entfernt")
+                        self.showToast("\(self.result.wkn) aus Watchlist entfernt")
                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
                     }
                 } else {
-                    try await traderService.addToWatchlist(result)
+                    try await self.traderService.addToWatchlist(self.result)
                     await MainActor.run {
-                        showToast("\(result.wkn) zur Watchlist hinzugefügt")
+                        self.showToast("\(self.result.wkn) zur Watchlist hinzugefügt")
                         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                     }
                 }
@@ -214,16 +221,16 @@ struct SearchResultCard: View {
     }
 
     private func showToast(_ message: String) {
-        watchlistToastMessage = message
-        showWatchlistToast = true
+        self.watchlistToastMessage = message
+        self.showWatchlistToast = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) {
-            showWatchlistToast = false
+            self.showWatchlistToast = false
         }
     }
 
     private func openIssuerProductInfo() {
         // Open browser with issuer's product info page
-        let wkn = result.wkn
+        let wkn = self.result.wkn
         let issuerCode = String(wkn.prefix(2))
         let productInfoURL = "https://www.\(issuerCode.lowercased()).com/products/\(wkn)"
 

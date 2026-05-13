@@ -67,7 +67,7 @@ struct SellConfirmationView: View {
                                         Text("Emittent:")
                                             .fontWeight(.light)
                                         Spacer()
-                                        Text(getEmittentFromWKN(wkn))
+                                        Text(self.getEmittentFromWKN(wkn))
                                             .fontWeight(.regular)
                                     }
                                 }
@@ -93,12 +93,12 @@ struct SellConfirmationView: View {
                                     }
                                 }
 
-                                if !basiswert.isEmpty {
+                                if !self.basiswert.isEmpty {
                                     HStack {
                                         Text("Basiswert:")
                                             .fontWeight(.light)
                                         Spacer()
-                                        Text(basiswert)
+                                        Text(self.basiswert)
                                             .fontWeight(.regular)
                                     }
                                 }
@@ -107,7 +107,7 @@ struct SellConfirmationView: View {
                                     Text("Strike Price:")
                                         .fontWeight(.light)
                                     Spacer()
-                                    Text(DepotUtils.formatStrikePrice(strike, basiswert.isEmpty ? nil : basiswert))
+                                    Text(DepotUtils.formatStrikePrice(self.strike, self.basiswert.isEmpty ? nil : self.basiswert))
                                         .fontWeight(.regular)
                                 }
 
@@ -115,7 +115,7 @@ struct SellConfirmationView: View {
                                     Text("Stück:")
                                         .fontWeight(.light)
                                     Spacer()
-                                    Text("\(Int(quantity)) Stück")
+                                    Text("\(Int(self.quantity)) Stück")
                                         .fontWeight(.regular)
                                 }
 
@@ -123,7 +123,7 @@ struct SellConfirmationView: View {
                                     Text("Geld-Kurs (Bid):")
                                         .fontWeight(.light)
                                     Spacer()
-                                    Text(sellPrice.formattedAsLocalizedCurrency())
+                                    Text(self.sellPrice.formattedAsLocalizedCurrency())
                                         .fontWeight(.regular)
                                 }
 
@@ -131,7 +131,7 @@ struct SellConfirmationView: View {
                                     Text("Gesamtbetrag:")
                                         .fontWeight(.light)
                                     Spacer()
-                                    Text(totalAmount.formattedAsLocalizedCurrency())
+                                    Text(self.totalAmount.formattedAsLocalizedCurrency())
                                         .fontWeight(.regular)
                                 }
 
@@ -164,7 +164,7 @@ struct SellConfirmationView: View {
                         .multilineTextAlignment(.center)
 
                         // Action Button
-                        Button(action: onDismiss, label: {
+                        Button(action: self.onDismiss, label: {
                             Text("Zum Depot")
                                 .font(ResponsiveDesign.bodyFont())
                                 .fontWeight(.semibold)
@@ -211,26 +211,26 @@ struct SellConfirmationView: View {
     // MARK: - Computed Properties
 
     private var kategorie: String? {
-        trade?.buyOrder.category ?? order?.category
+        self.trade?.buyOrder.category ?? self.order?.category
     }
 
     private var richtung: String? {
-        trade?.buyOrder.optionDirection ?? order?.optionDirection
+        self.trade?.buyOrder.optionDirection ?? self.order?.optionDirection
     }
 
     private var basiswert: String {
         // Prefer underlying asset/wkn if available; fallback to description
-        let underlying = trade?.underlyingAsset ?? order?.underlyingAsset
+        let underlying = self.trade?.underlyingAsset ?? self.order?.underlyingAsset
         if let underlyingAsset = underlying, !underlyingAsset.isEmpty { return underlyingAsset }
-        return trade?.description ?? order?.description ?? ""
+        return self.trade?.description ?? self.order?.description ?? ""
     }
 
     private var strike: Double {
-        trade?.buyOrder.strike ?? order?.strike ?? 0.0
+        self.trade?.buyOrder.strike ?? self.order?.strike ?? 0.0
     }
 
     private var wkn: String? {
-        trade?.wkn ?? order?.wkn
+        self.trade?.wkn ?? self.order?.wkn
     }
 
     private var quantity: Double {
@@ -244,7 +244,7 @@ struct SellConfirmationView: View {
             }
         }
         // For order-based confirmation, use the order quantity
-        return order?.quantity ?? 0
+        return self.order?.quantity ?? 0
     }
 
     private var sellPrice: Double {
@@ -258,7 +258,7 @@ struct SellConfirmationView: View {
             }
         }
         // For order-based confirmation, use the order price
-        return order?.price ?? 0
+        return self.order?.price ?? 0
     }
 
     private var totalAmount: Double {
@@ -272,7 +272,7 @@ struct SellConfirmationView: View {
             }
         }
         // For order-based confirmation, use the order total amount
-        return order?.totalAmount ?? 0
+        return self.order?.totalAmount ?? 0
     }
 }
 
@@ -292,7 +292,7 @@ struct SellConfirmationView: View {
                 description: "Apple Inc.",
                 quantity: 100,
                 price: 150.0,
-                totalAmount: 15000.0,
+                totalAmount: 15_000.0,
                 status: .completed,
                 createdAt: Date(),
                 executedAt: Date(),
@@ -312,7 +312,7 @@ struct SellConfirmationView: View {
                 description: "Apple Inc.",
                 quantity: 100,
                 price: 160.0,
-                totalAmount: 16000.0,
+                totalAmount: 16_000.0,
                 status: .completed,
                 createdAt: Date(),
                 executedAt: Date(),

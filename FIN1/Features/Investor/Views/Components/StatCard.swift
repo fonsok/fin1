@@ -12,16 +12,16 @@ struct StatCard: View {
 
     var body: some View {
         VStack(spacing: ResponsiveDesign.spacing(8)) {
-            Image(systemName: icon)
+            Image(systemName: self.icon)
                 .font(ResponsiveDesign.headlineFont())
-                .foregroundColor(color)
+                .foregroundColor(self.color)
 
-            Text(value)
+            Text(self.value)
                 .font(ResponsiveDesign.headlineFont())
                 .fontWeight(.bold)
                 .foregroundColor(AppTheme.fontColor)
 
-            Text(title)
+            Text(self.title)
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.secondaryText)
                 .multilineTextAlignment(.center)

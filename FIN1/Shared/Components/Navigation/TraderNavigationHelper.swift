@@ -56,13 +56,13 @@ struct TraderNotFoundView: View {
                 .font(ResponsiveDesign.headlineFont())
                 .foregroundColor(AppTheme.fontColor)
 
-            Text("Unable to load trader details for: \(traderID)")
+            Text("Unable to load trader details for: \(self.traderID)")
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
                 .multilineTextAlignment(.center)
 
             Button("Close") {
-                dismiss()
+                self.dismiss()
             }
             .responsivePadding()
             .background(AppTheme.accentLightBlue)
@@ -75,7 +75,7 @@ struct TraderNotFoundView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button("Close") {
-                    dismiss()
+                    self.dismiss()
                 }
                 .foregroundColor(AppTheme.accentLightBlue)
             }

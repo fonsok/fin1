@@ -76,7 +76,7 @@ final class InvestmentExperienceCalculationService: InvestmentExperienceCalculat
         }
 
         // For investors, base on overall experience
-        let experience = calculateInvestmentExperienceLevel(for: signUpData)
+        let experience = self.calculateInvestmentExperienceLevel(for: signUpData)
         return min(experience / 2, 5) // Scale down for investors
     }
 
@@ -84,7 +84,7 @@ final class InvestmentExperienceCalculationService: InvestmentExperienceCalculat
         var knowledge = 0
 
         // Base knowledge from experience
-        knowledge += calculateInvestmentExperienceLevel(for: signUpData)
+        knowledge += self.calculateInvestmentExperienceLevel(for: signUpData)
 
         // Additional knowledge from investment amounts
         if signUpData.stocksInvestmentAmount != .hundredToTenThousand { knowledge += 1 }

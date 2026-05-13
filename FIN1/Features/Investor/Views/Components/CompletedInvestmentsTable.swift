@@ -52,32 +52,32 @@ struct CompletedInvestmentsTable: View {
         ScrollView(.horizontal, showsIndicators: true) {
             VStack(spacing: ResponsiveDesign.spacing(0)) {
                 CompletedInvestmentsTableHeaderRow(
-                    columnWidths: columnWidths,
+                    columnWidths: self.columnWidths,
                     forMeasurement: false
                 )
-                    .padding(.horizontal, ResponsiveDesign.horizontalPadding())
-                    .padding(.vertical, ResponsiveDesign.spacing(4))
-                    .background(AppTheme.sectionBackground.opacity(0.5))
+                .padding(.horizontal, ResponsiveDesign.horizontalPadding())
+                .padding(.vertical, ResponsiveDesign.spacing(4))
+                .background(AppTheme.sectionBackground.opacity(0.5))
 
-                ForEach(Array(investments.enumerated()), id: \.element.id) { index, investment in
+                ForEach(Array(self.investments.enumerated()), id: \.element.id) { index, investment in
                     let rowModel = CompletedInvestmentsTableRowModel(
                         investment: investment,
                         summary: investmentSummaries[investment.id],
-                        returnPercentage: returnPercentage(for: investment),
-                        traderUsername: traderUsernames[investment.id] ?? "---",
-                        tradeNumberText: tradeNumbers[investment.id] ?? "---",
-                        docNumber: investmentDocRefs[investment.id]?.docNumber,
-                        invoiceNumber: investmentDocRefs[investment.id]?.invoiceNumber
+                        returnPercentage: self.returnPercentage(for: investment),
+                        traderUsername: self.traderUsernames[investment.id] ?? "---",
+                        tradeNumberText: self.tradeNumbers[investment.id] ?? "---",
+                        docNumber: self.investmentDocRefs[investment.id]?.docNumber,
+                        invoiceNumber: self.investmentDocRefs[investment.id]?.invoiceNumber
                     )
                     CompletedInvestmentsTableDataRow(
                         model: rowModel,
                         isEven: index % 2 == 0,
-                        columnWidths: columnWidths,
+                        columnWidths: self.columnWidths,
                         onShowCommissionExplanation: {
-                            selectedInvestmentItem = InvestmentItem(investment: investment)
+                            self.selectedInvestmentItem = InvestmentItem(investment: investment)
                         },
                         onShowDetails: {
-                            onShowDetails(investment)
+                            self.onShowDetails(investment)
                         },
                         forMeasurement: false
                     )
@@ -92,15 +92,15 @@ struct CompletedInvestmentsTable: View {
                 )
 
                 VStack(spacing: ResponsiveDesign.spacing(0)) {
-                    ForEach(investments) { investment in
+                    ForEach(self.investments) { investment in
                         let rowModel = CompletedInvestmentsTableRowModel(
                             investment: investment,
                             summary: investmentSummaries[investment.id],
-                            returnPercentage: returnPercentage(for: investment),
-                            traderUsername: traderUsernames[investment.id] ?? "---",
-                            tradeNumberText: tradeNumbers[investment.id] ?? "---",
-                            docNumber: investmentDocRefs[investment.id]?.docNumber,
-                            invoiceNumber: investmentDocRefs[investment.id]?.invoiceNumber
+                            returnPercentage: self.returnPercentage(for: investment),
+                            traderUsername: self.traderUsernames[investment.id] ?? "---",
+                            tradeNumberText: self.tradeNumbers[investment.id] ?? "---",
+                            docNumber: self.investmentDocRefs[investment.id]?.docNumber,
+                            invoiceNumber: self.investmentDocRefs[investment.id]?.invoiceNumber
                         )
                         CompletedInvestmentsTableDataRow(
                             model: rowModel,
@@ -120,11 +120,11 @@ struct CompletedInvestmentsTable: View {
         }
         .onPreferenceChange(ColumnWidthPreferenceKey.self) { widths in
             // Add small padding to each column width for breathing room
-            columnWidths = widths.mapValues { width in
+            self.columnWidths = widths.mapValues { width in
                 max(width + ResponsiveDesign.spacing(4), 40) // Minimum 40pt width
             }
         }
-        .sheet(item: $selectedInvestmentItem) { item in
+        .sheet(item: self.$selectedInvestmentItem) { item in
             CommissionCalculationExplanationSheet(investment: item.investment)
         }
     }

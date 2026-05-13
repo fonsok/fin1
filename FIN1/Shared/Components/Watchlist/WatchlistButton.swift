@@ -8,20 +8,20 @@ struct WatchlistButton: View {
 
     var body: some View {
         Button(action: {
-            print("🔘 WatchlistButton tapped: isInWatchlist=\(isInWatchlist), onToggle is \(onToggle != nil ? "not nil" : "nil")")
+            print("🔘 WatchlistButton tapped: isInWatchlist=\(self.isInWatchlist), onToggle is \(onToggle != nil ? "not nil" : "nil")")
             if let onToggle = onToggle {
-                print("🔘 Calling onToggle with \(!isInWatchlist)")
-                onToggle(!isInWatchlist)
+                print("🔘 Calling onToggle with \(!self.isInWatchlist)")
+                onToggle(!self.isInWatchlist)
             } else {
                 print("❌ onToggle is nil - button won't work!")
             }
         }) {
-            Image(systemName: isInWatchlist ? "star.fill" : "star")
+            Image(systemName: self.isInWatchlist ? "star.fill" : "star")
                 .font(ResponsiveDesign.headlineFont())
-                .foregroundColor(isInWatchlist ? AppTheme.accentLightBlue : AppTheme.fontColor.opacity(0.6))
-                .opacity(isBusy ? 0.4 : 1.0)
+                .foregroundColor(self.isInWatchlist ? AppTheme.accentLightBlue : AppTheme.fontColor.opacity(0.6))
+                .opacity(self.isBusy ? 0.4 : 1.0)
         }
-        .disabled(isBusy)
+        .disabled(self.isBusy)
         .frame(width: ResponsiveDesign.iconSize(), alignment: .center)
         .padding(ResponsiveDesign.spacing(0)) // Remove any internal padding
     }

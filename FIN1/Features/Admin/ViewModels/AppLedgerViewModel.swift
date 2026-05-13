@@ -70,10 +70,10 @@ final class AppLedgerViewModel: ObservableObject {
     @Published private(set) var errorMessage: String?
 
     @Published var selectedAccount: AppLedgerAccount? {
-        didSet { applyFilters() }
+        didSet { self.applyFilters() }
     }
     @Published var userFilter: String = "" {
-        didSet { applyFilters() }
+        didSet { self.applyFilters() }
     }
 
     private let ledgerService: any AppLedgerServiceProtocol
@@ -85,54 +85,54 @@ final class AppLedgerViewModel: ObservableObject {
         self.dateFormatter = DateFormatter()
         self.dateFormatter.dateStyle = .medium
         self.dateFormatter.timeStyle = .short
-        Task { await load() }
+        Task { await self.load() }
     }
 
     func load() async {
-        isLoading = true
-        errorMessage = nil
+        self.isLoading = true
+        self.errorMessage = nil
         do {
-            try await ledgerService.refreshFromBackend()
+            try await self.ledgerService.refreshFromBackend()
         } catch {
-            errorMessage = "Ledger konnte nicht geladen werden: \(error.localizedDescription)"
+            self.errorMessage = "Ledger konnte nicht geladen werden: \(error.localizedDescription)"
         }
-        allEntries = ledgerService.getAllEntries().sorted { $0.createdAt > $1.createdAt }
-        accountSummaries = ledgerService.getAccountSummaries()
-        totalRevenue = ledgerService.getTotalAppRevenue()
-        vatSummary = ledgerService.getVATSummary()
-        applyFilters()
-        isLoading = false
+        self.allEntries = self.ledgerService.getAllEntries().sorted { $0.createdAt > $1.createdAt }
+        self.accountSummaries = self.ledgerService.getAccountSummaries()
+        self.totalRevenue = self.ledgerService.getTotalAppRevenue()
+        self.vatSummary = self.ledgerService.getVATSummary()
+        self.applyFilters()
+        self.isLoading = false
     }
 
-    func refresh() { Task { await load() } }
+    func refresh() { Task { await self.load() } }
 
     func clearFilters() {
-        selectedAccount = nil
-        userFilter = ""
+        self.selectedAccount = nil
+        self.userFilter = ""
     }
 
     func copyCSVToPasteboard() {
         #if os(iOS)
-        UIPasteboard.general.string = generateCSV()
+        UIPasteboard.general.string = self.generateCSV()
         #endif
     }
 
     private func applyFilters() {
-        let filtered = allEntries.filter { entry in
-            let matchesAccount = selectedAccount.map { $0 == entry.account } ?? true
+        let filtered = self.allEntries.filter { entry in
+            let matchesAccount = self.selectedAccount.map { $0 == entry.account } ?? true
             let matchesUser: Bool = {
-                guard !userFilter.isEmpty else { return true }
-                return entry.userId.localizedCaseInsensitiveContains(userFilter)
+                guard !self.userFilter.isEmpty else { return true }
+                return entry.userId.localizedCaseInsensitiveContains(self.userFilter)
             }()
             return matchesAccount && matchesUser
         }
 
-        entries = filtered.map { AppLedgerEntryDisplay(entry: $0, formatter: dateFormatter) }
+        self.entries = filtered.map { AppLedgerEntryDisplay(entry: $0, formatter: self.dateFormatter) }
     }
 
     private func generateCSV() -> String {
         var rows = ["Datum,Konto,Code,Seite,Betrag,User,Rolle,Typ,Referenz,Beschreibung"]
-        for entry in entries {
+        for entry in self.entries {
             let fields = [
                 entry.createdAtText, entry.accountName, entry.accountCode,
                 entry.sideText, entry.amountText, entry.userId,

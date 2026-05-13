@@ -17,17 +17,17 @@ struct PDFDrawingComponentsImproved {
         // Draw logo (if available) - placeholder for now
         // TODO: Add actual logo image when available
         /*
-        if let logoImage = UIImage(named: LegalIdentity.logoAssetName) {
-            let logoRect = CGRect(
-                x: PDFStylingImproved.margin,
-                y: y,
-                width: min(logoImage.size.width, PDFStylingImproved.logoMaxWidth),
-                height: min(logoImage.size.height, PDFStylingImproved.logoMaxHeight)
-            )
-            logoImage.draw(in: logoRect)
-            y += logoRect.height + 15
-        }
-        */
+         if let logoImage = UIImage(named: LegalIdentity.logoAssetName) {
+             let logoRect = CGRect(
+                 x: PDFStylingImproved.margin,
+                 y: y,
+                 width: min(logoImage.size.width, PDFStylingImproved.logoMaxWidth),
+                 height: min(logoImage.size.height, PDFStylingImproved.logoMaxHeight)
+             )
+             logoImage.draw(in: logoRect)
+             y += logoRect.height + 15
+         }
+         */
 
         // Company header with improved styling
         let companyText = PDFCompanyInfo.companyName
@@ -70,7 +70,7 @@ struct PDFDrawingComponentsImproved {
         y += PDFStylingImproved.bodyFont.lineHeight + 8
 
         // QR Code in top right (if needed)
-        y = drawQRCode(in: context, invoice: invoice, pageRect: pageRect, currentY: y)
+        y = self.drawQRCode(in: context, invoice: invoice, pageRect: pageRect, currentY: y)
 
         return y
     }

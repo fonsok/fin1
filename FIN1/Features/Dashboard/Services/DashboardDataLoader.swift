@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Dashboard Data Loader Protocol
 protocol DashboardDataLoaderProtocol: Sendable {
@@ -27,26 +27,26 @@ final class DashboardDataLoader: DashboardDataLoaderProtocol, @unchecked Sendabl
 
     func loadDashboardData() async throws {
         do {
-            try await dashboardService.loadDashboardData()
+            try await self.dashboardService.loadDashboardData()
         } catch let error as AppError {
             await trackError(error, context: "dashboard_data_loading")
             throw error
         } catch {
             let appError = error.toAppError()
-            await trackError(appError, context: "dashboard_data_loading")
+            await self.trackError(appError, context: "dashboard_data_loading")
             throw appError
         }
     }
 
     func refreshUserData() async throws {
         do {
-            try await userService.refreshUserData()
+            try await self.userService.refreshUserData()
         } catch let error as AppError {
             await trackError(error, context: "user_data_refresh")
             throw error
         } catch {
             let appError = error.toAppError()
-            await trackError(appError, context: "user_data_refresh")
+            await self.trackError(appError, context: "user_data_refresh")
             throw appError
         }
     }
@@ -58,16 +58,16 @@ final class DashboardDataLoader: DashboardDataLoaderProtocol, @unchecked Sendabl
             screen: "Dashboard",
             action: context,
             userId: userService.currentUser?.id,
-            userRole: userService.currentUser?.role.displayName,
+            userRole: self.userService.currentUser?.role.displayName,
             additionalData: [
-                "user_display_name": userService.userDisplayName,
-                "is_investor": userService.isInvestor,
-                "is_trader": userService.isTrader
+                "user_display_name": self.userService.userDisplayName,
+                "is_investor": self.userService.isInvestor,
+                "is_trader": self.userService.isTrader
             ]
         )
 
         await MainActor.run {
-            telemetryService.trackAppError(error, context: errorContext)
+            self.telemetryService.trackAppError(error, context: errorContext)
         }
     }
 }

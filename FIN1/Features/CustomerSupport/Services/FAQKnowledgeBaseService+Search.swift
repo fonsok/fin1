@@ -29,8 +29,8 @@ extension FAQKnowledgeBaseService {
     }
 
     func getSuggestions(forTicket ticket: SupportTicket) async throws -> [FAQSuggestion] {
-        let keywords = extractKeywords(from: ticket.subject + " " + ticket.description)
-        return try await getSuggestions(forKeywords: keywords, category: nil)
+        let keywords = self.extractKeywords(from: ticket.subject + " " + ticket.description)
+        return try await self.getSuggestions(forKeywords: keywords, category: nil)
     }
 
     func getSuggestions(forKeywords keywords: [String], category: KnowledgeBaseCategory?) async throws -> [FAQSuggestion] {
@@ -145,7 +145,37 @@ extension FAQKnowledgeBaseService {
     }
 
     func extractKeywords(from text: String) -> [String] {
-        let stopWords = Set(["der", "die", "das", "und", "oder", "ein", "eine", "ist", "sind", "hat", "haben", "ich", "sie", "wir", "mein", "ihr", "nicht", "kann", "können", "bitte", "für", "mit", "auf", "bei", "nach", "von", "zu"])
+        let stopWords = Set(
+            [
+                "der",
+                "die",
+                "das",
+                "und",
+                "oder",
+                "ein",
+                "eine",
+                "ist",
+                "sind",
+                "hat",
+                "haben",
+                "ich",
+                "sie",
+                "wir",
+                "mein",
+                "ihr",
+                "nicht",
+                "kann",
+                "können",
+                "bitte",
+                "für",
+                "mit",
+                "auf",
+                "bei",
+                "nach",
+                "von",
+                "zu"
+            ]
+        )
 
         return text.lowercased()
             .components(separatedBy: CharacterSet.alphanumerics.inverted)

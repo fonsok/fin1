@@ -18,17 +18,17 @@ struct CollectionBillViewWrapper: View {
     }
 
     var body: some View {
-        TradeStatementView(viewModel: viewModel, showCustomBackButton: true)
+        TradeStatementView(viewModel: self.viewModel, showCustomBackButton: true)
             .task {
-                viewModel.attach(
-                    invoiceService: services.invoiceService,
-                    tradeService: services.tradeLifecycleService,
-                    prefetchedFullTrade: fullTrade
+                self.viewModel.attach(
+                    invoiceService: self.services.invoiceService,
+                    tradeService: self.services.tradeLifecycleService,
+                    prefetchedFullTrade: self.fullTrade
                 )
                 // Set document number from document for accounting compliance
-                viewModel.documentNumber = document?.accountingDocumentNumber
+                self.viewModel.documentNumber = self.document?.accountingDocumentNumber
                 // Force refresh to ensure latest calculation logic is applied
-                viewModel.refreshDisplayData()
+                self.viewModel.refreshDisplayData()
             }
     }
 }

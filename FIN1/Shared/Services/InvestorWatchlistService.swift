@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Investor Watchlist Service Implementation
 /// Handles investor trader watchlist operations and management
@@ -31,14 +31,14 @@ final class InvestorWatchlistService: InvestorWatchlistServiceProtocol, ServiceL
     }
 
     private var currentInvestorId: String? {
-        userService?.currentUser?.id
+        self.userService?.currentUser?.id
     }
 
     // MARK: - ServiceLifecycle
     func start() {
         // Load watchlist from backend
         Task {
-            await loadFromBackend()
+            await self.loadFromBackend()
         }
     }
 
@@ -54,7 +54,7 @@ final class InvestorWatchlistService: InvestorWatchlistServiceProtocol, ServiceL
                 // Merge backend watchlist with local (avoid duplicates by traderId)
                 let existingIds = Set(watchlist.map { $0.id })
                 let newTraders = backendWatchlist.filter { !existingIds.contains($0.id) }
-                watchlist.append(contentsOf: newTraders)
+                self.watchlist.append(contentsOf: newTraders)
                 print("✅ Loaded \(backendWatchlist.count) traders from backend watchlist")
             }
         } catch {
@@ -67,8 +67,8 @@ final class InvestorWatchlistService: InvestorWatchlistServiceProtocol, ServiceL
     }
 
     func reset() {
-        watchlist.removeAll()
-        errorMessage = nil
+        self.watchlist.removeAll()
+        self.errorMessage = nil
     }
 
     // MARK: - Watchlist Management
@@ -76,8 +76,8 @@ final class InvestorWatchlistService: InvestorWatchlistServiceProtocol, ServiceL
     func addToWatchlist(_ trader: WatchlistTraderData) async throws {
         await MainActor.run {
             // Check if already in watchlist
-            if !watchlist.contains(where: { $0.id == trader.id }) {
-                watchlist.append(trader)
+            if !self.watchlist.contains(where: { $0.id == trader.id }) {
+                self.watchlist.append(trader)
                 print("✅ Added to investor watchlist: \(trader.name) (id: \(trader.id))")
                 // Post notification to trigger UI updates
                 NotificationCenter.default.post(name: .init("WatchlistUpdated"), object: nil)
@@ -103,12 +103,12 @@ final class InvestorWatchlistService: InvestorWatchlistServiceProtocol, ServiceL
     func removeFromWatchlist(_ traderId: String) async throws {
         await MainActor.run {
             print("🔍 removeFromWatchlist called with ID: \(traderId)")
-            print("🔍 Current watchlist count before removal: \(watchlist.count)")
-            print("🔍 Current watchlist IDs: \(watchlist.map { $0.id })")
+            print("🔍 Current watchlist count before removal: \(self.watchlist.count)")
+            print("🔍 Current watchlist IDs: \(self.watchlist.map { $0.id })")
 
-            let initialCount = watchlist.count
-            watchlist.removeAll { $0.id == traderId }
-            let finalCount = watchlist.count
+            let initialCount = self.watchlist.count
+            self.watchlist.removeAll { $0.id == traderId }
+            let finalCount = self.watchlist.count
 
             print("🔍 Watchlist count after removal: \(finalCount)")
             print("🔍 Items removed: \(initialCount - finalCount)")
@@ -133,11 +133,11 @@ final class InvestorWatchlistService: InvestorWatchlistServiceProtocol, ServiceL
 
     func clearWatchlist() async throws {
         await MainActor.run {
-            watchlist.removeAll()
+            self.watchlist.removeAll()
             print("🗑️ Cleared investor watchlist")
             // Post notification to trigger UI updates
             NotificationCenter.default.post(name: .init("WatchlistUpdated"), object: nil)
-            print("🔔 [Service] posted WatchlistUpdated after clear, count=\(watchlist.count)")
+            print("🔔 [Service] posted WatchlistUpdated after clear, count=\(self.watchlist.count)")
         }
 
         // Sync deletion to backend (remove all items)
@@ -170,7 +170,7 @@ final class InvestorWatchlistService: InvestorWatchlistServiceProtocol, ServiceL
         print("📤 Syncing investor watchlist to backend...")
 
         // Sync all current watchlist items
-        let itemsToSync = await MainActor.run { watchlist }
+        let itemsToSync = await MainActor.run { self.watchlist }
 
         for item in itemsToSync {
             do {
@@ -184,25 +184,24 @@ final class InvestorWatchlistService: InvestorWatchlistServiceProtocol, ServiceL
     }
 
     func isInWatchlist(_ traderId: String) -> Bool {
-        return watchlist.contains { $0.id == traderId }
+        return self.watchlist.contains { $0.id == traderId }
     }
 
     // MARK: - Legacy Support (for existing code)
 
     func addToWatchlist(_ trader: WatchlistTraderData) {
         Task {
-            try? await addToWatchlist(trader)
+            try? await self.addToWatchlist(trader)
         }
     }
 
     func removeTraderFromWatchlist(_ trader: WatchlistTraderData) {
         Task {
-            try? await removeFromWatchlist(trader.id)
+            try? await self.removeFromWatchlist(trader.id)
         }
     }
 
     func isInWatchlist(_ trader: WatchlistTraderData) -> Bool {
-        return isInWatchlist(trader.id)
+        return self.isInWatchlist(trader.id)
     }
-
 }

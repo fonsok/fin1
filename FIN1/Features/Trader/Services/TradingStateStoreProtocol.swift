@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Trading State Store Lifecycle Protocol
 /// Defines the contract for trading state management lifecycle

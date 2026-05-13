@@ -19,7 +19,7 @@ extension TradeStatementPDFServiceImproved {
             ["Kaufbetrag", calculationBreakdown.buyAmount],
             ["Ergebnis vor Steuern", calculationBreakdown.resultBeforeTaxes]
         ]
-        return drawInfoTable(in: context, data: tableData, pageRect: pageRect, currentY: y)
+        return self.drawInfoTable(in: context, data: tableData, pageRect: pageRect, currentY: y)
     }
 
     func drawTaxSummary(

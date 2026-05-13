@@ -42,17 +42,17 @@ public struct MeasuredTable<RowData>: View {
 
     public var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            header(measuredWidths)
-            ForEach(Array(rows.enumerated()), id: \.offset) { index, data in
-                row(data, index, measuredWidths)
+            self.header(self.measuredWidths)
+            ForEach(Array(self.rows.enumerated()), id: \.offset) { index, data in
+                self.row(data, index, self.measuredWidths)
             }
         }
         .overlay(alignment: .topLeading) {
             ZStack {
-                measureHeader()
+                self.measureHeader()
                 VStack(alignment: .leading, spacing: 0) {
-                    ForEach(Array(rows.enumerated()), id: \.offset) { _, data in
-                        measureRow(data)
+                    ForEach(Array(self.rows.enumerated()), id: \.offset) { _, data in
+                        self.measureRow(data)
                     }
                 }
             }
@@ -62,10 +62,10 @@ public struct MeasuredTable<RowData>: View {
             .accessibilityHidden(true)
         }
         .onPreferenceChange(ColumnWidthPreferenceKey.self) { widths in
-            measuredWidths = widths
+            self.measuredWidths = widths
         }
     }
 
     /// Exposes measured widths for outer callers if needed later
-    public var widths: [ColumnKey: CGFloat] { measuredWidths }
+    public var widths: [ColumnKey: CGFloat] { self.measuredWidths }
 }

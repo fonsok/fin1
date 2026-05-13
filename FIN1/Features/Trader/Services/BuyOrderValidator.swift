@@ -25,9 +25,9 @@ final class BuyOrderValidator: BuyOrderValidatorProtocol {
     func validateLimitPrice(_ limit: String) -> Bool {
         // Validate German format: only numbers and exactly one comma allowed
         let isValidGermanFormat = limit.allSatisfy { $0.isNumber || $0 == "," } &&
-                                 limit.filter { $0 == "," }.count <= 1 &&
-                                 !limit.hasPrefix(",") &&
-                                 !limit.hasSuffix(",")
+            limit.filter { $0 == "," }.count <= 1 &&
+            !limit.hasPrefix(",") &&
+            !limit.hasSuffix(",")
 
         guard isValidGermanFormat else {
             print("🔍 DEBUG: Invalid German format - limit: '\(limit)'")
@@ -54,7 +54,7 @@ final class BuyOrderValidator: BuyOrderValidatorProtocol {
         // For limit orders, validate the limit price format
         let hasValidLimitPrice = orderMode == .market || {
             guard orderMode == .limit, !limit.isEmpty else { return true }
-            return validateLimitPrice(limit)
+            return self.validateLimitPrice(limit)
         }()
 
         // Check if price data is still valid (not expired)
@@ -72,7 +72,9 @@ final class BuyOrderValidator: BuyOrderValidatorProtocol {
         let isValid = hasValidQuantity && hasValidOrderMode && hasValidLimitPrice && hasValidPrice && hasSufficientFunds
 
         // Debug logging
-        print("🔍 DEBUG: BuyOrder canPlaceOrder validation - quantity: \(quantity), orderMode: \(orderMode), limit: '\(limit)', priceValidityProgress: \(priceValidityProgress), estimatedCost: €\(estimatedCost.formatted(.currency(code: "EUR"))), hasValidQuantity: \(hasValidQuantity), hasValidOrderMode: \(hasValidOrderMode), hasValidLimitPrice: \(hasValidLimitPrice), hasValidPrice: \(hasValidPrice), hasSufficientFunds: \(hasSufficientFunds), isValid: \(isValid)")
+        print(
+            "🔍 DEBUG: BuyOrder canPlaceOrder validation - quantity: \(quantity), orderMode: \(orderMode), limit: '\(limit)', priceValidityProgress: \(priceValidityProgress), estimatedCost: €\(estimatedCost.formatted(.currency(code: "EUR"))), hasValidQuantity: \(hasValidQuantity), hasValidOrderMode: \(hasValidOrderMode), hasValidLimitPrice: \(hasValidLimitPrice), hasValidPrice: \(hasValidPrice), hasSufficientFunds: \(hasSufficientFunds), isValid: \(isValid)"
+        )
 
         return isValid
     }

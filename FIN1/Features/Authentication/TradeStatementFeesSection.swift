@@ -13,7 +13,7 @@ struct TradeStatementFeesSection: View {
                 .foregroundColor(AppTheme.fontColor.opacity(0.8))
 
             VStack(spacing: ResponsiveDesign.spacing(4)) {
-                ForEach(feeItems, id: \.name) { fee in
+                ForEach(self.feeItems, id: \.name) { fee in
                     HStack {
                         Text(fee.name)
                             .font(ResponsiveDesign.bodyFont())

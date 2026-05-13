@@ -1,5 +1,5 @@
-import XCTest
 @testable import FIN1
+import XCTest
 
 // MARK: - Filter API Service Tests
 
@@ -10,13 +10,13 @@ final class FilterAPIServiceTests: XCTestCase {
 
     override func setUp() {
         super.setUp()
-        mockAPIClient = MockParseAPIClient()
-        sut = FilterAPIService(apiClient: mockAPIClient)
+        self.mockAPIClient = MockParseAPIClient()
+        self.sut = FilterAPIService(apiClient: self.mockAPIClient)
     }
 
     override func tearDown() {
-        sut = nil
-        mockAPIClient = nil
+        self.sut = nil
+        self.mockAPIClient = nil
         super.tearDown()
     }
 
@@ -24,29 +24,29 @@ final class FilterAPIServiceTests: XCTestCase {
 
     func testSaveSecuritiesFilter_Success() async throws {
         // Given
-        let filter = createSampleSecuritiesFilter()
+        let filter = self.createSampleSecuritiesFilter()
         let userId = "test-user-123"
 
         // When
         let savedFilter = try await sut.saveSecuritiesFilter(filter, userId: userId)
 
         // Then
-        XCTAssertTrue(mockAPIClient.createObjectCalled)
-        XCTAssertEqual(mockAPIClient.lastClassName, "SavedFilter")
+        XCTAssertTrue(self.mockAPIClient.createObjectCalled)
+        XCTAssertEqual(self.mockAPIClient.lastClassName, "SavedFilter")
         XCTAssertEqual(savedFilter.name, filter.name)
         XCTAssertEqual(savedFilter.isDefault, filter.isDefault)
     }
 
     func testSaveSecuritiesFilter_NetworkError() async {
         // Given
-        let filter = createSampleSecuritiesFilter()
+        let filter = self.createSampleSecuritiesFilter()
         let userId = "test-user-123"
-        mockAPIClient.shouldThrowError = true
-        mockAPIClient.errorToThrow = NetworkError.noConnection
+        self.mockAPIClient.shouldThrowError = true
+        self.mockAPIClient.errorToThrow = NetworkError.noConnection
 
         // When/Then
         do {
-            _ = try await sut.saveSecuritiesFilter(filter, userId: userId)
+            _ = try await self.sut.saveSecuritiesFilter(filter, userId: userId)
             XCTFail("Expected error to be thrown")
         } catch {
             XCTAssertTrue(error is NetworkError)
@@ -57,15 +57,15 @@ final class FilterAPIServiceTests: XCTestCase {
 
     func testSaveTraderFilter_Success() async throws {
         // Given
-        let filter = createSampleTraderFilter()
+        let filter = self.createSampleTraderFilter()
         let userId = "test-user-123"
 
         // When
         let savedFilter = try await sut.saveTraderFilter(filter, userId: userId)
 
         // Then
-        XCTAssertTrue(mockAPIClient.createObjectCalled)
-        XCTAssertEqual(mockAPIClient.lastClassName, "SavedFilter")
+        XCTAssertTrue(self.mockAPIClient.createObjectCalled)
+        XCTAssertEqual(self.mockAPIClient.lastClassName, "SavedFilter")
         XCTAssertEqual(savedFilter.name, filter.name)
         XCTAssertEqual(savedFilter.isDefault, filter.isDefault)
     }
@@ -79,27 +79,27 @@ final class FilterAPIServiceTests: XCTestCase {
             createMockSecuritiesFilterResponse(objectId: "filter-1", name: "Tech Filter"),
             createMockSecuritiesFilterResponse(objectId: "filter-2", name: "Value Filter")
         ]
-        mockAPIClient.mockFetchResults = mockResponses
+        self.mockAPIClient.mockFetchResults = mockResponses
 
         // When
         let filters = try await sut.fetchSecuritiesFilters(for: userId)
 
         // Then
-        XCTAssertTrue(mockAPIClient.fetchObjectsCalled)
-        XCTAssertEqual(mockAPIClient.lastClassName, "SavedFilter")
+        XCTAssertTrue(self.mockAPIClient.fetchObjectsCalled)
+        XCTAssertEqual(self.mockAPIClient.lastClassName, "SavedFilter")
         XCTAssertEqual(filters.count, 2)
     }
 
     func testFetchSecuritiesFilters_EmptyResult() async throws {
         // Given
         let userId = "test-user-no-filters"
-        mockAPIClient.mockFetchResults = [ParseFilterResponse]()
+        self.mockAPIClient.mockFetchResults = [ParseFilterResponse]()
 
         // When
         let filters = try await sut.fetchSecuritiesFilters(for: userId)
 
         // Then
-        XCTAssertTrue(mockAPIClient.fetchObjectsCalled)
+        XCTAssertTrue(self.mockAPIClient.fetchObjectsCalled)
         XCTAssertTrue(filters.isEmpty)
     }
 
@@ -111,14 +111,14 @@ final class FilterAPIServiceTests: XCTestCase {
         let mockResponses = [
             createMockTraderFilterResponse(objectId: "filter-1", name: "High Performers")
         ]
-        mockAPIClient.mockFetchResults = mockResponses
+        self.mockAPIClient.mockFetchResults = mockResponses
 
         // When
         let filters = try await sut.fetchTraderFilters(for: userId)
 
         // Then
-        XCTAssertTrue(mockAPIClient.fetchObjectsCalled)
-        XCTAssertEqual(mockAPIClient.lastClassName, "SavedFilter")
+        XCTAssertTrue(self.mockAPIClient.fetchObjectsCalled)
+        XCTAssertEqual(self.mockAPIClient.lastClassName, "SavedFilter")
         XCTAssertEqual(filters.count, 1)
     }
 
@@ -128,15 +128,15 @@ final class FilterAPIServiceTests: XCTestCase {
         // Given
         let filterId = "filter-to-delete"
         let userId = "test-user-123"
-        let mockResponse = createMockSecuritiesFilterResponse(objectId: "parse-object-id")
-        mockAPIClient.mockFetchResults = [mockResponse]
+        let mockResponse = self.createMockSecuritiesFilterResponse(objectId: "parse-object-id")
+        self.mockAPIClient.mockFetchResults = [mockResponse]
 
         // When
-        try await sut.deleteFilter(filterId, context: .securitiesSearch, userId: userId)
+        try await self.sut.deleteFilter(filterId, context: .securitiesSearch, userId: userId)
 
         // Then
-        XCTAssertTrue(mockAPIClient.fetchObjectsCalled)
-        XCTAssertTrue(mockAPIClient.deleteObjectCalled)
+        XCTAssertTrue(self.mockAPIClient.fetchObjectsCalled)
+        XCTAssertTrue(self.mockAPIClient.deleteObjectCalled)
     }
 
     // MARK: - Helper Methods

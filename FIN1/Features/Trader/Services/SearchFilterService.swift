@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Filter Service Protocol
 // CRITICAL: This protocol defines the contract for ALL securities search filters
@@ -36,12 +36,12 @@ final class SearchFilterService: SearchFilterServiceProtocol {
     @Published var category: String = "Warrant"  // Default to Warrant
     @Published var underlyingAsset: String = "DAX" {         // Default to DAX
         didSet {
-            print("🔍 DEBUG: SearchFilterService.underlyingAsset changed from '\(oldValue)' to '\(underlyingAsset)'")
+            print("🔍 DEBUG: SearchFilterService.underlyingAsset changed from '\(oldValue)' to '\(self.underlyingAsset)'")
         }
     }
     @Published var direction: SecuritiesSearchView.Direction = .call {  // Default to Call
         didSet {
-            print("🔍 DEBUG: SearchFilterService.direction changed from '\(oldValue)' to '\(direction)'")
+            print("🔍 DEBUG: SearchFilterService.direction changed from '\(oldValue)' to '\(self.direction)'")
         }
     }
 
@@ -55,7 +55,7 @@ final class SearchFilterService: SearchFilterServiceProtocol {
     private nonisolated(unsafe) var cancellables = Set<AnyCancellable>()
 
     init() {
-        setupBindings()
+        self.setupBindings()
     }
 
     deinit {
@@ -67,9 +67,9 @@ final class SearchFilterService: SearchFilterServiceProtocol {
 
     var filtersPublisher: AnyPublisher<SearchFilters, Never> {
         Publishers.CombineLatest3(
-            Publishers.CombineLatest3($category, $underlyingAsset, $direction),
-            Publishers.CombineLatest3($strikePriceGap, $remainingTerm, $issuer),
-            $omega
+            Publishers.CombineLatest3(self.$category, self.$underlyingAsset, self.$direction),
+            Publishers.CombineLatest3(self.$strikePriceGap, self.$remainingTerm, self.$issuer),
+            self.$omega
         )
         .map { first, second, omega in
             SearchFilters(
@@ -88,15 +88,15 @@ final class SearchFilterService: SearchFilterServiceProtocol {
     // MARK: - Public Interface
 
     func getCurrentFilters() -> SearchFilters {
-        print("🔍 DEBUG: SearchFilterService.getCurrentFilters() - underlyingAsset = '\(underlyingAsset)'")
+        print("🔍 DEBUG: SearchFilterService.getCurrentFilters() - underlyingAsset = '\(self.underlyingAsset)'")
         return SearchFilters(
-            category: category,
-            underlyingAsset: underlyingAsset,
-            direction: direction,
-            strikePriceGap: strikePriceGap,
-            remainingTerm: remainingTerm,
-            issuer: issuer,
-            omega: omega
+            category: self.category,
+            underlyingAsset: self.underlyingAsset,
+            direction: self.direction,
+            strikePriceGap: self.strikePriceGap,
+            remainingTerm: self.remainingTerm,
+            issuer: self.issuer,
+            omega: self.omega
         )
     }
 
@@ -104,18 +104,18 @@ final class SearchFilterService: SearchFilterServiceProtocol {
         var filters: [String] = []
 
         // Category filter
-        if !category.isEmpty {
-            filters.append("Category: \(category)")
+        if !self.category.isEmpty {
+            filters.append("Category: \(self.category)")
         }
 
         // Direction filter
-        if category == "Warrants" {
-            filters.append("Direction: \(direction.rawValue)")
+        if self.category == "Warrants" {
+            filters.append("Direction: \(self.direction.rawValue)")
         }
 
         // Underlying Asset filter
-        if !underlyingAsset.isEmpty {
-            filters.append("Underlying Asset: \(underlyingAsset)")
+        if !self.underlyingAsset.isEmpty {
+            filters.append("Underlying Asset: \(self.underlyingAsset)")
         }
 
         // Issuer filter
@@ -148,14 +148,14 @@ final class SearchFilterService: SearchFilterServiceProtocol {
         let metals = ["Gold", "Silver"]
         let currencies = ["USD/JPY", "EUR/USD", "GBP/USD"]
 
-        if indices.contains(underlyingAsset) {
+        if indices.contains(self.underlyingAsset) {
             return "Index - 84690"
-        } else if stocks.contains(underlyingAsset) {
-            return "Stock - \(getStockCode(for: underlyingAsset))"
-        } else if metals.contains(underlyingAsset) {
-            return "Commodity - \(getMetalCode(for: underlyingAsset))"
-        } else if currencies.contains(underlyingAsset) {
-            return "Currency - \(getCurrencyCode(for: underlyingAsset))"
+        } else if stocks.contains(self.underlyingAsset) {
+            return "Stock - \(self.getStockCode(for: self.underlyingAsset))"
+        } else if metals.contains(self.underlyingAsset) {
+            return "Commodity - \(self.getMetalCode(for: self.underlyingAsset))"
+        } else if currencies.contains(self.underlyingAsset) {
+            return "Currency - \(self.getCurrencyCode(for: self.underlyingAsset))"
         } else {
             return "Index - 84690" // Default fallback
         }
@@ -163,28 +163,28 @@ final class SearchFilterService: SearchFilterServiceProtocol {
 
     func getUnderlyingAssetMarketData() -> SecuritiesSearchViewModel.MarketData {
         // Generate deterministic market data based on underlying asset for consistency
-        let seed = underlyingAsset.hash
+        let seed = self.underlyingAsset.hash
         var rng = Int(truncatingIfNeeded: seed)
         rng = abs(rng == .min ? 0 : rng)
 
         // Generate price based on underlying asset type
         let price: Double
-        switch underlyingAsset {
+        switch self.underlyingAsset {
         case "DAX", "MDAX", "Dow Jones", "S&P 500", "NASDAQ 100", "Euro Stoxx 50", "FTSE 100", "CAC 40", "SMI":
             // Index prices (higher values)
-            price = Double((rng % 4000000) + 1000000) / 100.0 // 10.000,00 - 50.000,00
+            price = Double((rng % 4_000_000) + 1_000_000) / 100.0 // 10.000,00 - 50.000,00
         case "Apple", "Microsoft", "Tesla":
             // Stock prices (medium values)
-            price = Double((rng % 20000) + 10000) / 100.0 // 100.00 - 300.00
+            price = Double((rng % 20_000) + 10_000) / 100.0 // 100.00 - 300.00
         case "BMW":
             // BMW stock price
-            price = Double((rng % 5000) + 5000) / 100.0 // 50.00 - 100.00
+            price = Double((rng % 5_000) + 5_000) / 100.0 // 50.00 - 100.00
         case "Gold", "Silver":
             // Commodity prices
-            price = Double((rng % 10000) + 10000) / 100.0 // 100.00 - 200.00
+            price = Double((rng % 10_000) + 10_000) / 100.0 // 100.00 - 200.00
         case "USD/JPY", "EUR/USD", "GBP/USD":
             // Currency prices
-            price = Double((rng % 5000) + 10000) / 100.0 // 100.00 - 150.00
+            price = Double((rng % 5_000) + 10_000) / 100.0 // 100.00 - 150.00
         default:
             price = 150.00
         }

@@ -33,9 +33,9 @@ enum CustomerSupportMockData {
                 phoneNumber: "+49 123 456\(String(format: "%03d", number))",
                 role: "investor",
                 accountType: "individual",
-                createdAt: Date().addingTimeInterval(-86400.0 * Double(90 - index * 10)),
+                createdAt: Date().addingTimeInterval(-86_400.0 * Double(90 - index * 10)),
                 streetAndNumber: "Investorstraße \(number)",
-                postalCode: "\(10000 + number)",
+                postalCode: "\(10_000 + number)",
                 city: "Berlin",
                 state: "Berlin",
                 country: "Deutschland",
@@ -45,7 +45,7 @@ enum CustomerSupportMockData {
                 identificationConfirmed: true,
                 addressConfirmed: true,
                 accountStatus: .active,
-                lastLoginDate: Date().addingTimeInterval(-Double(index) * 3600)
+                lastLoginDate: Date().addingTimeInterval(-Double(index) * 3_600)
             ))
         }
 
@@ -71,9 +71,9 @@ enum CustomerSupportMockData {
                 phoneNumber: "+49 987 654\(String(format: "%03d", number))",
                 role: "trader",
                 accountType: "individual",
-                createdAt: Date().addingTimeInterval(-86400.0 * Double(60 - index * 10)),
+                createdAt: Date().addingTimeInterval(-86_400.0 * Double(60 - index * 10)),
                 streetAndNumber: "Traderweg \(number)",
-                postalCode: "\(20000 + number)",
+                postalCode: "\(20_000 + number)",
                 city: "München",
                 state: "Bayern",
                 country: "Deutschland",
@@ -83,7 +83,7 @@ enum CustomerSupportMockData {
                 identificationConfirmed: true,
                 addressConfirmed: true,
                 accountStatus: .active,
-                lastLoginDate: Date().addingTimeInterval(-Double(index) * 1800)
+                lastLoginDate: Date().addingTimeInterval(-Double(index) * 1_800)
             ))
         }
 
@@ -100,7 +100,7 @@ enum CustomerSupportMockData {
                 phoneNumber: "+49 123 456789",
                 role: "investor",
                 accountType: "individual",
-                createdAt: Date().addingTimeInterval(-86400 * 90),
+                createdAt: Date().addingTimeInterval(-86_400 * 90),
                 streetAndNumber: "Musterstraße 1",
                 postalCode: "12345",
                 city: "Berlin",
@@ -112,7 +112,7 @@ enum CustomerSupportMockData {
                 identificationConfirmed: true,
                 addressConfirmed: true,
                 accountStatus: .active,
-                lastLoginDate: Date().addingTimeInterval(-3600)
+                lastLoginDate: Date().addingTimeInterval(-3_600)
             ),
             CustomerProfile(
                 id: UUID().uuidString,
@@ -125,7 +125,7 @@ enum CustomerSupportMockData {
                 phoneNumber: "+49 987 654321",
                 role: "trader",
                 accountType: "individual",
-                createdAt: Date().addingTimeInterval(-86400 * 60),
+                createdAt: Date().addingTimeInterval(-86_400 * 60),
                 streetAndNumber: "Beispielweg 42",
                 postalCode: "54321",
                 city: "München",
@@ -137,7 +137,7 @@ enum CustomerSupportMockData {
                 identificationConfirmed: true,
                 addressConfirmed: false,
                 accountStatus: .pendingVerification,
-                lastLoginDate: Date().addingTimeInterval(-86400)
+                lastLoginDate: Date().addingTimeInterval(-86_400)
             ),
             CustomerProfile(
                 id: UUID().uuidString,
@@ -150,7 +150,7 @@ enum CustomerSupportMockData {
                 phoneNumber: "+49 555 123456",
                 role: "investor",
                 accountType: "individual",
-                createdAt: Date().addingTimeInterval(-86400 * 180),
+                createdAt: Date().addingTimeInterval(-86_400 * 180),
                 streetAndNumber: "Hauptstraße 10",
                 postalCode: "60311",
                 city: "Frankfurt",
@@ -162,7 +162,7 @@ enum CustomerSupportMockData {
                 identificationConfirmed: true,
                 addressConfirmed: true,
                 accountStatus: .active,
-                lastLoginDate: Date().addingTimeInterval(-7200)
+                lastLoginDate: Date().addingTimeInterval(-7_200)
             )
         ])
 
@@ -176,22 +176,22 @@ enum CustomerSupportMockData {
                 id: UUID().uuidString,
                 investmentNumber: "INV-2024-001",
                 traderName: "Max Trader",
-                amount: 10000.0,
-                currentValue: 11500.0,
+                amount: 10_000.0,
+                currentValue: 11_500.0,
                 returnPercentage: 15.0,
                 status: "active",
-                createdAt: Date().addingTimeInterval(-86400 * 30),
+                createdAt: Date().addingTimeInterval(-86_400 * 30),
                 completedAt: nil
             ),
             CustomerInvestmentSummary(
                 id: UUID().uuidString,
                 investmentNumber: "INV-2024-002",
                 traderName: "Anna Händler",
-                amount: 5000.0,
-                currentValue: 5250.0,
+                amount: 5_000.0,
+                currentValue: 5_250.0,
                 returnPercentage: 5.0,
                 status: "active",
-                createdAt: Date().addingTimeInterval(-86400 * 60),
+                createdAt: Date().addingTimeInterval(-86_400 * 60),
                 completedAt: nil
             )
         ]
@@ -208,9 +208,9 @@ enum CustomerSupportMockData {
                 quantity: 100,
                 entryPrice: 150.0,
                 currentPrice: 165.0,
-                profitLoss: 1500.0,
+                profitLoss: 1_500.0,
                 status: "open",
-                createdAt: Date().addingTimeInterval(-86400 * 7)
+                createdAt: Date().addingTimeInterval(-86_400 * 7)
             )
         ]
     }
@@ -222,7 +222,7 @@ enum CustomerSupportMockData {
                 id: UUID().uuidString,
                 name: "Personalausweis",
                 type: "identity",
-                uploadedAt: Date().addingTimeInterval(-86400 * 90),
+                uploadedAt: Date().addingTimeInterval(-86_400 * 90),
                 isVerified: true,
                 category: "KYC"
             ),
@@ -230,7 +230,7 @@ enum CustomerSupportMockData {
                 id: UUID().uuidString,
                 name: "Adressnachweis",
                 type: "address",
-                uploadedAt: Date().addingTimeInterval(-86400 * 90),
+                uploadedAt: Date().addingTimeInterval(-86_400 * 90),
                 isVerified: true,
                 category: "KYC"
             )
@@ -257,8 +257,8 @@ enum CustomerSupportMockData {
                 status: .open,
                 priority: .medium,
                 assignedTo: nil,
-                createdAt: Date().addingTimeInterval(-86400 * 2),
-                updatedAt: Date().addingTimeInterval(-86400 * 2),
+                createdAt: Date().addingTimeInterval(-86_400 * 2),
+                updatedAt: Date().addingTimeInterval(-86_400 * 2),
                 responses: []
             ),
             // Assigned to CSR1 - Stefan Müller (General Support)
@@ -272,8 +272,8 @@ enum CustomerSupportMockData {
                 status: .inProgress,
                 priority: .high,
                 assignedTo: "user:csr1@test.com",
-                createdAt: Date().addingTimeInterval(-86400),
-                updatedAt: Date().addingTimeInterval(-3600),
+                createdAt: Date().addingTimeInterval(-86_400),
+                updatedAt: Date().addingTimeInterval(-3_600),
                 responses: [
                     TicketResponse(
                         id: UUID().uuidString,
@@ -281,7 +281,7 @@ enum CustomerSupportMockData {
                         agentName: "Stefan Müller",
                         message: "Wir haben Ihr Problem erhalten und bearbeiten es.",
                         isInternal: false,
-                        createdAt: Date().addingTimeInterval(-3600)
+                        createdAt: Date().addingTimeInterval(-3_600)
                     )
                 ]
             ),
@@ -296,8 +296,8 @@ enum CustomerSupportMockData {
                 status: .inProgress,
                 priority: .medium,
                 assignedTo: "user:csr2@test.com",
-                createdAt: Date().addingTimeInterval(-86400 * 3),
-                updatedAt: Date().addingTimeInterval(-7200),
+                createdAt: Date().addingTimeInterval(-86_400 * 3),
+                updatedAt: Date().addingTimeInterval(-7_200),
                 responses: []
             ),
             // Assigned to CSR3 - Markus Weber (Technical)
@@ -311,8 +311,8 @@ enum CustomerSupportMockData {
                 status: .inProgress,
                 priority: .high,
                 assignedTo: "user:csr3@test.com",
-                createdAt: Date().addingTimeInterval(-86400 * 1.5),
-                updatedAt: Date().addingTimeInterval(-1800),
+                createdAt: Date().addingTimeInterval(-86_400 * 1.5),
+                updatedAt: Date().addingTimeInterval(-1_800),
                 responses: [
                     TicketResponse(
                         id: UUID().uuidString,
@@ -320,7 +320,7 @@ enum CustomerSupportMockData {
                         agentName: "Markus Weber",
                         message: "Können Sie bitte die App-Version und Ihr Gerätemodell angeben?",
                         isInternal: false,
-                        createdAt: Date().addingTimeInterval(-1800)
+                        createdAt: Date().addingTimeInterval(-1_800)
                     )
                 ]
             )

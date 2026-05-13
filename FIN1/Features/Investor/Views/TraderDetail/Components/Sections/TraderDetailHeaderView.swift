@@ -17,23 +17,23 @@ struct TraderDetailHeaderView: View {
                     )
 
                 VStack(spacing: ResponsiveDesign.spacing(8)) {
-                    Text(trader.name)
+                    Text(self.trader.name)
                         .font(ResponsiveDesign.titleFont())
                         .fontWeight(.bold)
                         .foregroundColor(AppTheme.fontColor)
 
-                    Text(trader.specialization)
+                    Text(self.trader.specialization)
                         .font(ResponsiveDesign.headlineFont())
                         .foregroundColor(AppTheme.fontColor.opacity(0.8))
 
                     HStack(spacing: ResponsiveDesign.spacing(16)) {
-                        if trader.isVerified {
+                        if self.trader.isVerified {
                             Label("Verified", systemImage: "checkmark.seal.fill")
                                 .font(ResponsiveDesign.captionFont())
                                 .foregroundColor(AppTheme.accentGreen)
                         }
 
-                        Label("\(trader.experienceYears) years", systemImage: "clock.fill")
+                        Label("\(self.trader.experienceYears) years", systemImage: "clock.fill")
                             .font(ResponsiveDesign.captionFont())
                             .foregroundColor(AppTheme.fontColor.opacity(0.7))
                     }
@@ -42,9 +42,9 @@ struct TraderDetailHeaderView: View {
 
             // Quick Stats
             HStack(spacing: ResponsiveDesign.spacing(20)) {
-                QuickStatItem(title: "Total Trades", value: "\(trader.totalTrades)")
-                QuickStatItem(title: "Win Rate", value: "\(String(format: "%.1f", trader.winRate))%")
-                QuickStatItem(title: "Avg Return", value: "\(String(format: "%.1f", trader.averageReturn))%")
+                QuickStatItem(title: "Total Trades", value: "\(self.trader.totalTrades)")
+                QuickStatItem(title: "Win Rate", value: "\(String(format: "%.1f", self.trader.winRate))%")
+                QuickStatItem(title: "Avg Return", value: "\(String(format: "%.1f", self.trader.averageReturn))%")
             }
         }
         .padding(ResponsiveDesign.spacing(20))
@@ -59,12 +59,12 @@ struct QuickStatItem: View {
 
     var body: some View {
         VStack(spacing: ResponsiveDesign.spacing(8)) {
-            Text(value)
+            Text(self.value)
                 .font(ResponsiveDesign.headlineFont())
                 .fontWeight(.bold)
                 .foregroundColor(AppTheme.fontColor)
 
-            Text(title)
+            Text(self.title)
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
                 .multilineTextAlignment(.center)

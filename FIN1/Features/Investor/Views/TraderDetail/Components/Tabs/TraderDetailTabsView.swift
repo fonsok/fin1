@@ -6,7 +6,7 @@ struct TraderDetailTabsView: View {
     var body: some View {
         VStack(spacing: ResponsiveDesign.spacing(16)) {
             // Tab Picker
-            Picker("", selection: $selectedTab) {
+            Picker("", selection: self.$selectedTab) {
                 Text("Trading History").tag(0)
                 Text("Risk Analysis").tag(1)
                 Text("Reviews").tag(2)
@@ -15,7 +15,7 @@ struct TraderDetailTabsView: View {
             .padding(.horizontal)
             
             // Tab Content
-            switch selectedTab {
+            switch self.selectedTab {
             case 0:
                 TraderDetailTradingHistoryTab()
             case 1:

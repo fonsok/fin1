@@ -12,7 +12,7 @@ struct InvestmentHeaderView: View {
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.secondaryText)
 
-            Text(trader.username)
+            Text(self.trader.username)
                 .font(ResponsiveDesign.headlineFont())
                 .fontWeight(.semibold)
                 .foregroundColor(AppTheme.fontColor)

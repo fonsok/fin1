@@ -18,27 +18,29 @@ struct EditProfilePendingNameChange: View {
                         .fontWeight(.semibold)
                         .foregroundColor(AppTheme.fontColor)
 
-                    Text("Requested: \(request.newFullName)")
+                    Text("Requested: \(self.request.newFullName)")
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(AppTheme.fontColor.opacity(0.7))
                         .lineLimit(1)
 
                     HStack(spacing: ResponsiveDesign.spacing(4)) {
-                        Image(systemName: request.reason.icon)
+                        Image(systemName: self.request.reason.icon)
                             .font(ResponsiveDesign.captionFont())
-                        Text("Reason: \(request.reason.displayName)")
+                        Text("Reason: \(self.request.reason.displayName)")
                             .font(ResponsiveDesign.captionFont())
                     }
                     .foregroundColor(AppTheme.accentOrange)
 
-                    Text("Submitted \(request.submittedAt.formatted(date: .abbreviated, time: .omitted)) • \(request.status.displayName)")
-                        .font(ResponsiveDesign.captionFont())
-                        .foregroundColor(AppTheme.fontColor.opacity(0.6))
+                    Text(
+                        "Submitted \(self.request.submittedAt.formatted(date: .abbreviated, time: .omitted)) • \(self.request.status.displayName)"
+                    )
+                    .font(ResponsiveDesign.captionFont())
+                    .foregroundColor(AppTheme.fontColor.opacity(0.6))
                 }
 
                 Spacer()
 
-                if request.status == .pending || request.status == .underReview {
+                if self.request.status == .pending || self.request.status == .underReview {
                     ProgressView()
                         .scaleEffect(0.7)
                 }
@@ -68,19 +70,21 @@ struct EditProfilePendingAddressChange: View {
                         .fontWeight(.semibold)
                         .foregroundColor(AppTheme.fontColor)
 
-                    Text("Requested: \(request.newFormattedAddress)")
+                    Text("Requested: \(self.request.newFormattedAddress)")
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(AppTheme.fontColor.opacity(0.7))
                         .lineLimit(2)
 
-                    Text("Submitted \(request.submittedAt.formatted(date: .abbreviated, time: .omitted)) • \(request.status.displayName)")
-                        .font(ResponsiveDesign.captionFont())
-                        .foregroundColor(AppTheme.accentOrange)
+                    Text(
+                        "Submitted \(self.request.submittedAt.formatted(date: .abbreviated, time: .omitted)) • \(self.request.status.displayName)"
+                    )
+                    .font(ResponsiveDesign.captionFont())
+                    .foregroundColor(AppTheme.accentOrange)
                 }
 
                 Spacer()
 
-                if request.status == .pending || request.status == .underReview {
+                if self.request.status == .pending || self.request.status == .underReview {
                     ProgressView()
                         .scaleEffect(0.7)
                 }

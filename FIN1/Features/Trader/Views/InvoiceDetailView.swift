@@ -14,7 +14,9 @@ struct InvoiceDetailView: View {
 
     init(invoice: Invoice, invoiceService: any InvoiceServiceProtocol, notificationService: any NotificationServiceProtocol) {
         self.invoice = invoice
-        self._viewModel = StateObject(wrappedValue: InvoiceViewModel(invoiceService: invoiceService, notificationService: notificationService))
+        self._viewModel = StateObject(
+            wrappedValue: InvoiceViewModel(invoiceService: invoiceService, notificationService: notificationService)
+        )
         self._selectedStatus = State(initialValue: invoice.status)
     }
 
@@ -22,13 +24,13 @@ struct InvoiceDetailView: View {
         ScrollView {
             VStack(spacing: ResponsiveDesign.spacing(24)) {
                 // Use the new clean MVVM architecture
-                InvoiceDisplayView(invoice: invoice)
+                InvoiceDisplayView(invoice: self.invoice)
 
                 // Keep existing sections that aren't part of the display refactor
-                InvoiceNotesSection(invoice: invoice)
+                InvoiceNotesSection(invoice: self.invoice)
 
                 // Action Buttons
-                InvoiceActionButtonsSection(viewModel: viewModel, invoice: invoice)
+                InvoiceActionButtonsSection(viewModel: self.viewModel, invoice: self.invoice)
             }
             .padding()
             .background(DocumentDesignSystem.documentBackground)
@@ -41,7 +43,7 @@ struct InvoiceDetailView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button(action: {
-                    dismiss()
+                    self.dismiss()
                 }) {
                     Image(systemName: "chevron.left")
                         .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize(), weight: .medium))
@@ -53,28 +55,28 @@ struct InvoiceDetailView: View {
                 Menu {
                     // PDF Actions
                     Button(action: {
-                        viewModel.generatePDFPreview(for: invoice)
+                        self.viewModel.generatePDFPreview(for: self.invoice)
                     }, label: {
                         Label("PDF Vorschau", systemImage: "eye")
                     })
 
                     Button(action: {
-                        viewModel.generatePDF(for: invoice)
+                        self.viewModel.generatePDF(for: self.invoice)
                     }, label: {
                         Label("PDF Generieren", systemImage: "doc.badge.plus")
                     })
 
                     Button(action: {
                         Task {
-                            shareablePDFURL = await viewModel.createShareablePDFURL(for: invoice)
-                            showingShareSheet = true
+                            self.shareablePDFURL = await self.viewModel.createShareablePDFURL(for: self.invoice)
+                            self.showingShareSheet = true
                         }
                     }, label: {
                         Label("PDF Teilen", systemImage: "square.and.arrow.up")
                     })
 
                     Button(action: {
-                        viewModel.downloadPDFViaBrowser(for: invoice)
+                        self.viewModel.downloadPDFViaBrowser(for: self.invoice)
                     }, label: {
                         Label("PDF Download", systemImage: "arrow.down.circle")
                     })
@@ -83,7 +85,7 @@ struct InvoiceDetailView: View {
 
                     // Status Actions
                     Button(action: {
-                        showingStatusUpdate = true
+                        self.showingStatusUpdate = true
                     }, label: {
                         Label("Status ändern", systemImage: "pencil")
                     })
@@ -109,34 +111,33 @@ struct InvoiceDetailView: View {
                 }
             }
         }
-        .sheet(isPresented: $showingPDFPreview) {
+        .sheet(isPresented: self.$showingPDFPreview) {
             if let previewImage = viewModel.pdfPreviewImage {
                 PDFPreviewView(image: previewImage)
             }
         }
-        .sheet(isPresented: $showingStatusUpdate) {
+        .sheet(isPresented: self.$showingStatusUpdate) {
             StatusUpdateView(
-                currentStatus: invoice.status,
+                currentStatus: self.invoice.status,
                 onStatusSelected: { newStatus in
-                    viewModel.updateInvoiceStatus(invoice, status: newStatus)
-                    showingStatusUpdate = false
+                    self.viewModel.updateInvoiceStatus(self.invoice, status: newStatus)
+                    self.showingStatusUpdate = false
                 }
             )
         }
-        .sheet(isPresented: $showingShareSheet) {
+        .sheet(isPresented: self.$showingShareSheet) {
             if let pdfURL = shareablePDFURL {
-                ShareSheetView(pdfURL: pdfURL, invoiceNumber: invoice.formattedInvoiceNumber)
+                ShareSheetView(pdfURL: pdfURL, invoiceNumber: self.invoice.formattedInvoiceNumber)
             }
         }
-        .alert("Fehler", isPresented: $viewModel.showError) {
+        .alert("Fehler", isPresented: self.$viewModel.showError) {
             Button("OK") {
-                viewModel.clearError()
+                self.viewModel.clearError()
             }
         } message: {
-            Text(viewModel.errorMessage ?? "Ein unbekannter Fehler ist aufgetreten.")
+            Text(self.viewModel.errorMessage ?? "Ein unbekannter Fehler ist aufgetreten.")
         }
     }
-
 }
 // MARK: - Preview
 

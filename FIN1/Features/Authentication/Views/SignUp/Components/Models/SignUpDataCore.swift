@@ -133,7 +133,7 @@ final class SignUpData: ObservableObject {
     ) {
         self.riskClassCalculationService = riskClassCalculationService
         self.investmentExperienceCalculationService = investmentExperienceCalculationService
-        generateCustomerNumber()
+        self.generateCustomerNumber()
     }
 
     // MARK: - Service Injection
@@ -147,10 +147,10 @@ final class SignUpData: ObservableObject {
 
     // MARK: - Kundennummer Generation
     private func generateCustomerNumber() {
-        let prefix = userRole == .trader ? TestConstants.customerIdPrefixTrader : TestConstants.customerIdPrefixInvestor
+        let prefix = self.userRole == .trader ? TestConstants.customerIdPrefixTrader : TestConstants.customerIdPrefixInvestor
         let year = Calendar.current.component(.year, from: Date())
-        let randomNumber = String(format: "%05d", Int.random(in: 1...99999))
-        customerNumber = "\(prefix)-\(year)-\(randomNumber)"
+        let randomNumber = String(format: "%05d", Int.random(in: 1...99_999))
+        self.customerNumber = "\(prefix)-\(year)-\(randomNumber)"
     }
 
     // MARK: - Restore from Backend (Resume Flow)
@@ -159,93 +159,93 @@ final class SignUpData: ObservableObject {
     /// Skips password / confirmPassword (never persisted) and UIImage fields.
     func restoreFromSavedData(_ data: SavedOnboardingData) {
         // Account
-        if let v = data.accountType, let e = AccountType(rawValue: v) { accountType = e }
-        if let v = data.userRole, let e = UserRole(rawValue: v) { userRole = e }
+        if let v = data.accountType, let e = AccountType(rawValue: v) { self.accountType = e }
+        if let v = data.userRole, let e = UserRole(rawValue: v) { self.userRole = e }
 
         // Contact (password intentionally omitted — never sent to backend)
-        if let v = data.email, !v.isEmpty { email = v }
-        if let v = data.phoneNumber, !v.isEmpty { phoneNumber = v }
-        if let v = data.username, !v.isEmpty { username = v }
+        if let v = data.email, !v.isEmpty { self.email = v }
+        if let v = data.phoneNumber, !v.isEmpty { self.phoneNumber = v }
+        if let v = data.username, !v.isEmpty { self.username = v }
 
         // Personal
-        if let v = data.salutation, let e = Salutation(rawValue: v) { salutation = e }
-        if let v = data.academicTitle { academicTitle = v }
-        if let v = data.firstName, !v.isEmpty { firstName = v }
-        if let v = data.lastName, !v.isEmpty { lastName = v }
-        if let v = data.streetAndNumber, !v.isEmpty { streetAndNumber = v }
-        if let v = data.postalCode, !v.isEmpty { postalCode = v }
-        if let v = data.city, !v.isEmpty { city = v }
-        if let v = data.state { state = v }
-        if let v = data.country, !v.isEmpty { country = v }
-        if let v = data.placeOfBirth, !v.isEmpty { placeOfBirth = v }
-        if let v = data.countryOfBirth, !v.isEmpty { countryOfBirth = v }
-        if let v = data.dateOfBirth, let d = ISO8601DateFormatter().date(from: v) { dateOfBirth = d }
+        if let v = data.salutation, let e = Salutation(rawValue: v) { self.salutation = e }
+        if let v = data.academicTitle { self.academicTitle = v }
+        if let v = data.firstName, !v.isEmpty { self.firstName = v }
+        if let v = data.lastName, !v.isEmpty { self.lastName = v }
+        if let v = data.streetAndNumber, !v.isEmpty { self.streetAndNumber = v }
+        if let v = data.postalCode, !v.isEmpty { self.postalCode = v }
+        if let v = data.city, !v.isEmpty { self.city = v }
+        if let v = data.state { self.state = v }
+        if let v = data.country, !v.isEmpty { self.country = v }
+        if let v = data.placeOfBirth, !v.isEmpty { self.placeOfBirth = v }
+        if let v = data.countryOfBirth, !v.isEmpty { self.countryOfBirth = v }
+        if let v = data.dateOfBirth, let d = ISO8601DateFormatter().date(from: v) { self.dateOfBirth = d }
 
         // Citizenship & Tax
-        if let v = data.isNotUSCitizen { isNotUSCitizen = v }
-        if let v = data.nationality, !v.isEmpty { nationality = v }
-        if let v = data.additionalNationalities { additionalNationalities = v }
-        if let v = data.address { address = v }
-        if let v = data.taxNumber, !v.isEmpty { taxNumber = v }
-        if let v = data.additionalResidenceCountry { additionalResidenceCountry = v }
+        if let v = data.isNotUSCitizen { self.isNotUSCitizen = v }
+        if let v = data.nationality, !v.isEmpty { self.nationality = v }
+        if let v = data.additionalNationalities { self.additionalNationalities = v }
+        if let v = data.address { self.address = v }
+        if let v = data.taxNumber, !v.isEmpty { self.taxNumber = v }
+        if let v = data.additionalResidenceCountry { self.additionalResidenceCountry = v }
 
         // Identification (images excluded)
-        if let v = data.identificationType, let e = IdentificationType(rawValue: v) { identificationType = e }
+        if let v = data.identificationType, let e = IdentificationType(rawValue: v) { self.identificationType = e }
 
         // Financial
-        if let v = data.employmentStatus, let e = EmploymentStatus(rawValue: v) { employmentStatus = e }
-        if let v = data.income { income = v }
-        if let v = data.incomeRange, let e = IncomeRange(rawValue: v) { incomeRange = e }
-        if let v = data.incomeSources { incomeSources = v }
-        if let v = data.otherIncomeSource { otherIncomeSource = v }
-        if let v = data.cashAndLiquidAssets, let e = CashAndLiquidAssets(rawValue: v) { cashAndLiquidAssets = e }
+        if let v = data.employmentStatus, let e = EmploymentStatus(rawValue: v) { self.employmentStatus = e }
+        if let v = data.income { self.income = v }
+        if let v = data.incomeRange, let e = IncomeRange(rawValue: v) { self.incomeRange = e }
+        if let v = data.incomeSources { self.incomeSources = v }
+        if let v = data.otherIncomeSource { self.otherIncomeSource = v }
+        if let v = data.cashAndLiquidAssets, let e = CashAndLiquidAssets(rawValue: v) { self.cashAndLiquidAssets = e }
 
         // Experience
-        if let v = data.stocksTransactionsCount, let e = StocksTransactionCount(rawValue: v) { stocksTransactionsCount = e }
-        if let v = data.stocksInvestmentAmount, let e = InvestmentAmount(rawValue: v) { stocksInvestmentAmount = e }
-        if let v = data.etfsTransactionsCount, let e = ETFsTransactionCount(rawValue: v) { etfsTransactionsCount = e }
-        if let v = data.etfsInvestmentAmount, let e = InvestmentAmount(rawValue: v) { etfsInvestmentAmount = e }
-        if let v = data.derivativesTransactionsCount, let e = DerivativesTransactionCount(rawValue: v) { derivativesTransactionsCount = e }
-        if let v = data.derivativesInvestmentAmount, let e = DerivativesInvestmentAmount(rawValue: v) { derivativesInvestmentAmount = e }
-        if let v = data.derivativesHoldingPeriod, let e = HoldingPeriod(rawValue: v) { derivativesHoldingPeriod = e }
-        if let v = data.otherAssets { otherAssets = v }
+        if let v = data.stocksTransactionsCount, let e = StocksTransactionCount(rawValue: v) { self.stocksTransactionsCount = e }
+        if let v = data.stocksInvestmentAmount, let e = InvestmentAmount(rawValue: v) { self.stocksInvestmentAmount = e }
+        if let v = data.etfsTransactionsCount, let e = ETFsTransactionCount(rawValue: v) { self.etfsTransactionsCount = e }
+        if let v = data.etfsInvestmentAmount, let e = InvestmentAmount(rawValue: v) { self.etfsInvestmentAmount = e }
+        if let v = data.derivativesTransactionsCount, let e = DerivativesTransactionCount(rawValue: v) { self.derivativesTransactionsCount = e }
+        if let v = data.derivativesInvestmentAmount, let e = DerivativesInvestmentAmount(rawValue: v) { self.derivativesInvestmentAmount = e }
+        if let v = data.derivativesHoldingPeriod, let e = HoldingPeriod(rawValue: v) { self.derivativesHoldingPeriod = e }
+        if let v = data.otherAssets { self.otherAssets = v }
 
         // Risk & Return
-        if let v = data.desiredReturn, let e = DesiredReturn(rawValue: v) { desiredReturn = e }
-        if let v = data.finalRiskClass, let e = RiskClass(rawValue: v) { userSelectedRiskClass = e }
+        if let v = data.desiredReturn, let e = DesiredReturn(rawValue: v) { self.desiredReturn = e }
+        if let v = data.finalRiskClass, let e = RiskClass(rawValue: v) { self.userSelectedRiskClass = e }
 
         // Declarations
-        if let v = data.insiderTradingOptions { insiderTradingOptions = v }
-        if let v = data.moneyLaunderingDeclaration { moneyLaunderingDeclaration = v }
-        if let v = data.assetType, let e = AssetType(rawValue: v) { assetType = e }
-        if let v = data.leveragedProductsExperience { leveragedProductsExperience = v }
-        if let v = data.financialProductsExperience { financialProductsExperience = v }
+        if let v = data.insiderTradingOptions { self.insiderTradingOptions = v }
+        if let v = data.moneyLaunderingDeclaration { self.moneyLaunderingDeclaration = v }
+        if let v = data.assetType, let e = AssetType(rawValue: v) { self.assetType = e }
+        if let v = data.leveragedProductsExperience { self.leveragedProductsExperience = v }
+        if let v = data.financialProductsExperience { self.financialProductsExperience = v }
 
         // Terms
-        if let v = data.acceptedTerms { acceptedTerms = v }
-        if let v = data.acceptedPrivacyPolicy { acceptedPrivacyPolicy = v }
-        if let v = data.acceptedMarketingConsent { acceptedMarketingConsent = v }
+        if let v = data.acceptedTerms { self.acceptedTerms = v }
+        if let v = data.acceptedPrivacyPolicy { self.acceptedPrivacyPolicy = v }
+        if let v = data.acceptedMarketingConsent { self.acceptedMarketingConsent = v }
 
         // Meta
-        if let v = data.customerNumber ?? data.customerId, !v.isEmpty { customerNumber = v }
+        if let v = data.customerNumber ?? data.customerId, !v.isEmpty { self.customerNumber = v }
     }
 
     // MARK: - Pre-fill with Test Data (DEBUG only)
     #if DEBUG
     func prefillTestData() {
-        email = "test@example.com"
-        phoneNumber = "+49123456789"
-        username = "testuser"
-        password = TestConstants.password
-        confirmPassword = TestConstants.password
-        firstName = "Max"
-        lastName = "Mustermann"
-        streetAndNumber = "Musterstraße 123"
-        postalCode = "12345"
-        city = "Musterstadt"
-        state = "Bayern"
-        placeOfBirth = "München"
-        taxNumber = "12345678901"
+        self.email = "test@example.com"
+        self.phoneNumber = "+49123456789"
+        self.username = "testuser"
+        self.password = TestConstants.password
+        self.confirmPassword = TestConstants.password
+        self.firstName = "Max"
+        self.lastName = "Mustermann"
+        self.streetAndNumber = "Musterstraße 123"
+        self.postalCode = "12345"
+        self.city = "Musterstadt"
+        self.state = "Bayern"
+        self.placeOfBirth = "München"
+        self.taxNumber = "12345678901"
     }
     #endif
 }

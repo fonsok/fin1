@@ -10,7 +10,7 @@ struct OrderStatusView: View {
             Color("ScreenBackground").ignoresSafeArea()
 
             VStack(spacing: ResponsiveDesign.spacing(20)) {
-                switch viewModel.orderStatus {
+                switch self.viewModel.orderStatus {
                 case .transmitting:
                     ProgressView()
                         .progressViewStyle(CircularProgressViewStyle(tint: .white))
@@ -19,9 +19,9 @@ struct OrderStatusView: View {
                         .font(ResponsiveDesign.headlineFont())
                         .foregroundColor(AppTheme.fontColor)
                 case .orderPlaced(let executedPrice, let finalCost):
-                    orderPlacedView(executedPrice: executedPrice, finalCost: finalCost)
+                    self.orderPlacedView(executedPrice: executedPrice, finalCost: finalCost)
                 case .failed(let error):
-                    failureView(error: error)
+                    self.failureView(error: error)
                 case .idle:
                     EmptyView()
                 }
@@ -54,7 +54,7 @@ struct OrderStatusView: View {
             Spacer()
 
             Button(action: {
-                dismiss()
+                self.dismiss()
             }) {
                 Text(error.localizedDescription.contains("Preis hat sich geändert") ? "Neue Kauf-Order" : "Schließen")
                     .fontWeight(.bold)
@@ -82,16 +82,18 @@ struct OrderStatusView: View {
                 .foregroundColor(.secondary)
 
             VStack(alignment: .leading, spacing: 8) {
-                Text(viewModel.searchResult.underlyingAsset ?? "N/A")
+                Text(self.viewModel.searchResult.underlyingAsset ?? "N/A")
                     .font(ResponsiveDesign.bodyFont())
-                Text("Typ: \(viewModel.searchResult.category ?? (viewModel.searchResult.direction ?? "Stock"))")
-                Text("WKN: \(viewModel.searchResult.wkn)")
-                Text("ISIN: \(viewModel.searchResult.isin)")
+                Text("Typ: \(self.viewModel.searchResult.category ?? (self.viewModel.searchResult.direction ?? "Stock"))")
+                Text("WKN: \(self.viewModel.searchResult.wkn)")
+                Text("ISIN: \(self.viewModel.searchResult.isin)")
             }
             .padding(.horizontal)
 
             VStack(alignment: .leading, spacing: 12) {
-                Text("Order: Kauf \(viewModel.formattedQuantity) Stück des Wertpapiers WKN \(viewModel.searchResult.wkn) zum Kurs \(viewModel.formattedPrice(executedPrice))")
+                Text(
+                    "Order: Kauf \(self.viewModel.formattedQuantity) Stück des Wertpapiers WKN \(self.viewModel.searchResult.wkn) zum Kurs \(self.viewModel.formattedPrice(executedPrice))"
+                )
                 Text("Der Status Ihrer Order wird automatisch aktualisiert.")
                 Text("Bitte prüfen Sie Ihren Depotbestand für weitere Updates.")
             }
@@ -103,8 +105,8 @@ struct OrderStatusView: View {
             Spacer()
 
             Button(action: {
-                tabRouter.selectedTab = 2 // Navigate to Depot tab
-                dismiss()
+                self.tabRouter.selectedTab = 2 // Navigate to Depot tab
+                self.dismiss()
             }) {
                 Text("Zum Depot")
                     .fontWeight(.bold)
@@ -132,18 +134,20 @@ struct OrderStatusView: View {
                 .font(ResponsiveDesign.headlineFont())
 
             VStack(alignment: .leading, spacing: 8) {
-                Text(viewModel.searchResult.underlyingAsset ?? "N/A")
+                Text(self.viewModel.searchResult.underlyingAsset ?? "N/A")
                     .font(ResponsiveDesign.bodyFont())
-                Text("Typ: \(viewModel.searchResult.category ?? (viewModel.searchResult.direction ?? "Stock"))")
-                Text("WKN: \(viewModel.searchResult.wkn)")
-                Text("ISIN: \(viewModel.searchResult.isin)")
+                Text("Typ: \(self.viewModel.searchResult.category ?? (self.viewModel.searchResult.direction ?? "Stock"))")
+                Text("WKN: \(self.viewModel.searchResult.wkn)")
+                Text("ISIN: \(self.viewModel.searchResult.isin)")
             }
             .padding(.horizontal)
 
             VStack(alignment: .leading, spacing: 12) {
                 let quantity = Int(viewModel.quantity)
-                Text("Die Order Kauf \(viewModel.formattedNumber(quantity)) Stück des Wertpapiers WKN \(viewModel.searchResult.wkn) wurde zum Kurs \(viewModel.formattedPrice(executedPrice)) ausgeführt.")
-                Text("Ihr Cashkonto wurde mit dem Betrag von \(viewModel.formattedCost(finalCost)) belastet.")
+                Text(
+                    "Die Order Kauf \(self.viewModel.formattedNumber(quantity)) Stück des Wertpapiers WKN \(self.viewModel.searchResult.wkn) wurde zum Kurs \(self.viewModel.formattedPrice(executedPrice)) ausgeführt."
+                )
+                Text("Ihr Cashkonto wurde mit dem Betrag von \(self.viewModel.formattedCost(finalCost)) belastet.")
                 Text("Bitte prüfen Sie Ihren Depotbestand.")
             }
             .padding()
@@ -154,8 +158,8 @@ struct OrderStatusView: View {
             Spacer()
 
             Button(action: {
-                tabRouter.selectedTab = 2 // Navigate to Depot tab
-                dismiss()
+                self.tabRouter.selectedTab = 2 // Navigate to Depot tab
+                self.dismiss()
             }) {
                 Text("weiter")
                     .fontWeight(.bold)

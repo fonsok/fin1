@@ -12,7 +12,7 @@ struct StatusUpdateView: View {
             List {
                 ForEach(InvoiceStatus.allCases, id: \.self) { status in
                     Button(action: {
-                        onStatusSelected(status)
+                        self.onStatusSelected(status)
                     }, label: {
                         HStack {
                             VStack(alignment: .leading) {
@@ -20,7 +20,7 @@ struct StatusUpdateView: View {
                                     .font(ResponsiveDesign.bodyFont())
                                     .foregroundColor(.primary)
 
-                                if status == currentStatus {
+                                if status == self.currentStatus {
                                     Text("Aktueller Status")
                                         .font(ResponsiveDesign.captionFont())
                                         .foregroundColor(.secondary)
@@ -29,7 +29,7 @@ struct StatusUpdateView: View {
 
                             Spacer()
 
-                            if status == currentStatus {
+                            if status == self.currentStatus {
                                 Image(systemName: "checkmark")
                                     .foregroundColor(.accentColor)
                             }
@@ -43,7 +43,7 @@ struct StatusUpdateView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Abbrechen") {
-                        dismiss()
+                        self.dismiss()
                     }
                 }
             }

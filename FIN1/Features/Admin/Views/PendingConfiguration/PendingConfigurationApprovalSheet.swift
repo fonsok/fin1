@@ -16,7 +16,7 @@ struct PendingConfigurationApprovalSheet: View {
 
                 if let changeId = viewModel.selectedChangeId,
                    let change = viewModel.pendingChanges.first(where: { $0.id == changeId }) {
-                    PendingConfigurationChangeDetailsView(change: change, viewModel: viewModel)
+                    PendingConfigurationChangeDetailsView(change: change, viewModel: self.viewModel)
                 }
 
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
@@ -24,7 +24,7 @@ struct PendingConfigurationApprovalSheet: View {
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(.secondary)
 
-                    TextField("Add notes...", text: $viewModel.approvalNotes, axis: .vertical)
+                    TextField("Add notes...", text: self.$viewModel.approvalNotes, axis: .vertical)
                         .textFieldStyle(.roundedBorder)
                         .lineLimit(3...6)
                 }
@@ -33,16 +33,16 @@ struct PendingConfigurationApprovalSheet: View {
 
                 HStack(spacing: ResponsiveDesign.spacing(16)) {
                     Button("Cancel") {
-                        viewModel.dismissSheets()
+                        self.viewModel.dismissSheets()
                     }
                     .buttonStyle(.bordered)
 
                     Button {
                         Task {
-                            await viewModel.approveSelectedChange()
+                            await self.viewModel.approveSelectedChange()
                         }
                     } label: {
-                        if viewModel.isLoading {
+                        if self.viewModel.isLoading {
                             ProgressView()
                         } else {
                             Text("Approve")
@@ -50,7 +50,7 @@ struct PendingConfigurationApprovalSheet: View {
                     }
                     .buttonStyle(.borderedProminent)
                     .tint(.green)
-                    .disabled(viewModel.isLoading)
+                    .disabled(self.viewModel.isLoading)
                 }
             }
             .padding()
@@ -59,7 +59,7 @@ struct PendingConfigurationApprovalSheet: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
-                        viewModel.dismissSheets()
+                        self.viewModel.dismissSheets()
                     }
                 }
             }

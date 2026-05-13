@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Pagination Coordinator
 /// Coordinates pagination state and data loading for paginated lists
@@ -22,67 +22,67 @@ final class PaginationCoordinator<T: Identifiable>: ObservableObject {
     // MARK: - Public Methods
 
     func loadInitialData() async {
-        guard state == .idle else { return }
+        guard self.state == .idle else { return }
 
-        state = .loading
-        currentPage = 0
-        items.removeAll()
-        hasMoreData = true
+        self.state = .loading
+        self.currentPage = 0
+        self.items.removeAll()
+        self.hasMoreData = true
 
         do {
             let newItems = try await loadFunction(0, config.pageSize)
-            items = newItems
-            hasMoreData = newItems.count == config.pageSize
-            state = .loaded
+            self.items = newItems
+            self.hasMoreData = newItems.count == self.config.pageSize
+            self.state = .loaded
         } catch {
-            state = .error(error)
+            self.state = .error(error)
         }
     }
 
     func loadMoreData() async {
-        guard hasMoreData && state != .loadingMore else { return }
+        guard self.hasMoreData && self.state != .loadingMore else { return }
 
-        state = .loadingMore
-        currentPage += 1
+        self.state = .loadingMore
+        self.currentPage += 1
 
         do {
             let newItems = try await loadFunction(currentPage, config.pageSize)
-            items.append(contentsOf: newItems)
-            hasMoreData = newItems.count == config.pageSize
+            self.items.append(contentsOf: newItems)
+            self.hasMoreData = newItems.count == self.config.pageSize
 
             // Check if we've reached max pages
             if let maxPages = config.maxPages, currentPage >= maxPages {
-                hasMoreData = false
+                self.hasMoreData = false
             }
 
-            state = .loaded
+            self.state = .loaded
         } catch {
-            state = .error(error)
-            currentPage -= 1 // Revert page increment on error
+            self.state = .error(error)
+            self.currentPage -= 1 // Revert page increment on error
         }
     }
 
     func refresh() async {
-        await loadInitialData()
+        await self.loadInitialData()
     }
 
     func reset() {
-        items.removeAll()
-        currentPage = 0
-        hasMoreData = true
-        state = .idle
+        self.items.removeAll()
+        self.currentPage = 0
+        self.hasMoreData = true
+        self.state = .idle
     }
 
     // MARK: - Prefetching
 
     func shouldPrefetch(for index: Int) -> Bool {
-        return index >= items.count - config.prefetchThreshold
+        return index >= self.items.count - self.config.prefetchThreshold
     }
 
     func handlePrefetch(for index: Int) {
-        if shouldPrefetch(for: index) {
+        if self.shouldPrefetch(for: index) {
             Task {
-                await loadMoreData()
+                await self.loadMoreData()
             }
         }
     }

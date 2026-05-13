@@ -41,73 +41,73 @@ struct TransactionLimit: Codable, Identifiable {
     // MARK: - Computed Properties
     
     var remainingDailyLimit: Double {
-        max(0, dailyLimit - dailySpent)
+        max(0, self.dailyLimit - self.dailySpent)
     }
     
     var remainingWeeklyLimit: Double {
-        max(0, weeklyLimit - weeklySpent)
+        max(0, self.weeklyLimit - self.weeklySpent)
     }
     
     var remainingMonthlyLimit: Double {
-        max(0, monthlyLimit - monthlySpent)
+        max(0, self.monthlyLimit - self.monthlySpent)
     }
     
     var effectiveDailyLimit: Double {
-        min(dailyLimit, riskClassBasedLimit)
+        min(self.dailyLimit, self.riskClassBasedLimit)
     }
     
     var effectiveWeeklyLimit: Double {
-        min(weeklyLimit, riskClassBasedLimit * 7)
+        min(self.weeklyLimit, self.riskClassBasedLimit * 7)
     }
     
     var effectiveMonthlyLimit: Double {
-        min(monthlyLimit, riskClassBasedLimit * 30)
+        min(self.monthlyLimit, self.riskClassBasedLimit * 30)
     }
     
     func canSpend(amount: Double) -> TransactionLimitCheckResult {
-        let effectiveDaily = effectiveDailyLimit
-        let effectiveWeekly = effectiveWeeklyLimit
-        let effectiveMonthly = effectiveMonthlyLimit
+        let effectiveDaily = self.effectiveDailyLimit
+        let effectiveWeekly = self.effectiveWeeklyLimit
+        let effectiveMonthly = self.effectiveMonthlyLimit
         
-        let newDailySpent = dailySpent + amount
-        let newWeeklySpent = weeklySpent + amount
-        let newMonthlySpent = monthlySpent + amount
+        let newDailySpent = self.dailySpent + amount
+        let newWeeklySpent = self.weeklySpent + amount
+        let newMonthlySpent = self.monthlySpent + amount
         
         var violations: [TransactionLimitViolation] = []
         
         if newDailySpent > effectiveDaily {
             violations.append(.dailyLimitExceeded(
                 limit: effectiveDaily,
-                current: dailySpent,
+                current: self.dailySpent,
                 requested: amount,
-                remaining: remainingDailyLimit
+                remaining: self.remainingDailyLimit
             ))
         }
         
         if newWeeklySpent > effectiveWeekly {
             violations.append(.weeklyLimitExceeded(
                 limit: effectiveWeekly,
-                current: weeklySpent,
+                current: self.weeklySpent,
                 requested: amount,
-                remaining: remainingWeeklyLimit
+                remaining: self.remainingWeeklyLimit
             ))
         }
         
         if newMonthlySpent > effectiveMonthly {
             violations.append(.monthlyLimitExceeded(
                 limit: effectiveMonthly,
-                current: monthlySpent,
+                current: self.monthlySpent,
                 requested: amount,
-                remaining: remainingMonthlyLimit
+                remaining: self.remainingMonthlyLimit
             ))
         }
         
         return TransactionLimitCheckResult(
             isAllowed: violations.isEmpty,
             violations: violations,
-            remainingDaily: remainingDailyLimit,
-            remainingWeekly: remainingWeeklyLimit,
-            remainingMonthly: remainingMonthlyLimit
+            remainingDaily: self.remainingDailyLimit,
+            remainingWeekly: self.remainingWeeklyLimit,
+            remainingMonthly: self.remainingMonthlyLimit
         )
     }
 }
@@ -122,8 +122,8 @@ struct TransactionLimitCheckResult {
     let remainingMonthly: Double
     
     var errorMessage: String? {
-        guard !violations.isEmpty else { return nil }
-        return violations.map { $0.message }.joined(separator: "\n")
+        guard !self.violations.isEmpty else { return nil }
+        return self.violations.map { $0.message }.joined(separator: "\n")
     }
 }
 

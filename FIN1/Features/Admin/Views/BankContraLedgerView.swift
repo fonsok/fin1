@@ -10,9 +10,9 @@ struct BankContraLedgerView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: ResponsiveDesign.spacing(16)) {
-                filterSection
-                totalsSection
-                ledgerSection
+                self.filterSection
+                self.totalsSection
+                self.ledgerSection
             }
             .padding()
         }
@@ -21,14 +21,14 @@ struct BankContraLedgerView: View {
         .toolbar {
             ToolbarItemGroup(placement: .navigationBarTrailing) {
                 Button {
-                    viewModel.copyCSVToPasteboard()
+                    self.viewModel.copyCSVToPasteboard()
                 } label: {
                     Image(systemName: "doc.on.doc")
                 }
                 .help("Copy CSV to clipboard")
 
                 Button {
-                    viewModel.refresh()
+                    self.viewModel.refresh()
                 } label: {
                     Image(systemName: "arrow.clockwise")
                 }
@@ -44,8 +44,8 @@ struct BankContraLedgerView: View {
                 .fontWeight(.semibold)
 
             Picker("Account", selection: Binding(
-                get: { viewModel.selectedAccount },
-                set: { viewModel.selectedAccount = $0 }
+                get: { self.viewModel.selectedAccount },
+                set: { self.viewModel.selectedAccount = $0 }
             )) {
                 Text("All Accounts").tag(nil as BankContraAccount?)
                 ForEach(BankContraAccount.allCases, id: \.self) { account in
@@ -54,39 +54,39 @@ struct BankContraLedgerView: View {
             }
             .pickerStyle(.menu)
 
-            TextField("Investor ID contains…", text: $viewModel.investorFilter)
+            TextField("Investor ID contains…", text: self.$viewModel.investorFilter)
                 .textFieldStyle(.roundedBorder)
 
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
                 Toggle("Filter by start date", isOn: Binding(
-                    get: { viewModel.startDate != nil },
+                    get: { self.viewModel.startDate != nil },
                     set: { enabled in
-                        viewModel.startDate = enabled ? (viewModel.startDate ?? Date()) : nil
+                        self.viewModel.startDate = enabled ? (self.viewModel.startDate ?? Date()) : nil
                     }
                 ))
                 if let _ = viewModel.startDate {
                     DatePicker(
                         "Start Date",
                         selection: Binding(
-                            get: { viewModel.startDate ?? Date() },
-                            set: { viewModel.startDate = $0 }
+                            get: { self.viewModel.startDate ?? Date() },
+                            set: { self.viewModel.startDate = $0 }
                         ),
                         displayedComponents: .date
                     )
                 }
 
                 Toggle("Filter by end date", isOn: Binding(
-                    get: { viewModel.endDate != nil },
+                    get: { self.viewModel.endDate != nil },
                     set: { enabled in
-                        viewModel.endDate = enabled ? (viewModel.endDate ?? Date()) : nil
+                        self.viewModel.endDate = enabled ? (self.viewModel.endDate ?? Date()) : nil
                     }
                 ))
                 if let _ = viewModel.endDate {
                     DatePicker(
                         "End Date",
                         selection: Binding(
-                            get: { viewModel.endDate ?? Date() },
-                            set: { viewModel.endDate = $0 }
+                            get: { self.viewModel.endDate ?? Date() },
+                            set: { self.viewModel.endDate = $0 }
                         ),
                         displayedComponents: .date
                     )
@@ -94,7 +94,7 @@ struct BankContraLedgerView: View {
             }
 
             Button("Clear Filters") {
-                viewModel.clearFilters()
+                self.viewModel.clearFilters()
             }
             .buttonStyle(.bordered)
         }
@@ -111,7 +111,7 @@ struct BankContraLedgerView: View {
                 .font(ResponsiveDesign.headlineFont())
                 .fontWeight(.semibold)
 
-            if viewModel.totalsByAccount.isEmpty {
+            if self.viewModel.totalsByAccount.isEmpty {
                 Text("No entries for the selected filters.")
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(.secondary)
@@ -142,14 +142,14 @@ struct BankContraLedgerView: View {
                 .font(ResponsiveDesign.headlineFont())
                 .fontWeight(.semibold)
 
-            if viewModel.entries.isEmpty {
+            if self.viewModel.entries.isEmpty {
                 Text("No ledger entries match the current filters.")
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(.secondary)
                     .padding()
             } else {
                 LazyVStack(spacing: ResponsiveDesign.spacing(12)) {
-                    ForEach(viewModel.entries) { entry in
+                    ForEach(self.viewModel.entries) { entry in
                         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(6)) {
                             HStack {
                                 Text(entry.accountName)

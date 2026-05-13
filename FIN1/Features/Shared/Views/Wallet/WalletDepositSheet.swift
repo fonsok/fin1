@@ -40,19 +40,21 @@ struct WalletDepositSheet: View {
                                 GridItem(.flexible()),
                                 GridItem(.flexible())
                             ], spacing: ResponsiveDesign.spacing(3)) {
-                                ForEach([50.0, 100.0, 500.0, 1000.0], id: \.self) { amount in
+                                ForEach([50.0, 100.0, 500.0, 1_000.0], id: \.self) { amount in
                                     Button {
-                                        viewModel.depositAmount = String(format: "%.2f", amount)
+                                        self.viewModel.depositAmount = String(format: "%.2f", amount)
                                     } label: {
                                         Text(amount.formatted(.currency(code: "EUR").precision(.fractionLength(0))))
                                             .font(ResponsiveDesign.captionFont())
                                             .fontWeight(.medium)
-                                            .foregroundColor(viewModel.depositAmount == String(format: "%.2f", amount) ? .white : AppTheme.fontColor)
+                                            .foregroundColor(
+                                                self.viewModel.depositAmount == String(format: "%.2f", amount) ? .white : AppTheme.fontColor
+                                            )
                                             .frame(maxWidth: .infinity)
                                             .padding(.vertical, ResponsiveDesign.spacing(2))
                                             .background(
-                                                viewModel.depositAmount == String(format: "%.2f", amount)
-                                                ? AppTheme.accentLightBlue : AppTheme.cardBackground
+                                                self.viewModel.depositAmount == String(format: "%.2f", amount)
+                                                    ? AppTheme.accentLightBlue : AppTheme.cardBackground
                                             )
                                             .cornerRadius(ResponsiveDesign.spacing(2))
                                     }
@@ -71,7 +73,7 @@ struct WalletDepositSheet: View {
                                     .font(ResponsiveDesign.bodyFont())
                                     .foregroundColor(AppTheme.secondaryText)
 
-                                TextField("0,00", text: $viewModel.depositAmount)
+                                TextField("0,00", text: self.$viewModel.depositAmount)
                                     .keyboardType(.decimalPad)
                                     .font(ResponsiveDesign.titleFont())
                                     .foregroundColor(AppTheme.fontColor)
@@ -107,11 +109,11 @@ struct WalletDepositSheet: View {
 
                         Button {
                             Task {
-                                await viewModel.deposit()
+                                await self.viewModel.deposit()
                             }
                         } label: {
                             HStack {
-                                if viewModel.isLoading {
+                                if self.viewModel.isLoading {
                                     ProgressView()
                                         .progressViewStyle(CircularProgressViewStyle(tint: .white))
                                 } else {
@@ -124,12 +126,12 @@ struct WalletDepositSheet: View {
                             .frame(maxWidth: .infinity)
                             .padding(ResponsiveDesign.spacing(4))
                             .background(
-                                (viewModel.isLoading || viewModel.depositAmount.isEmpty)
-                                ? AppTheme.secondaryText : AppTheme.accentGreen
+                                (self.viewModel.isLoading || self.viewModel.depositAmount.isEmpty)
+                                    ? AppTheme.secondaryText : AppTheme.accentGreen
                             )
                             .cornerRadius(ResponsiveDesign.spacing(3))
                         }
-                        .disabled(viewModel.isLoading || viewModel.depositAmount.isEmpty)
+                        .disabled(self.viewModel.isLoading || self.viewModel.depositAmount.isEmpty)
                         .padding(.horizontal, ResponsiveDesign.horizontalPadding())
 
                         VStack(spacing: ResponsiveDesign.spacing(2)) {
@@ -161,7 +163,7 @@ struct WalletDepositSheet: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Abbrechen") {
-                        onDismiss()
+                        self.onDismiss()
                     }
                 }
             }

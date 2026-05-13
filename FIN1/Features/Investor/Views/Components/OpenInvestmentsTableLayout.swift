@@ -14,17 +14,17 @@ struct OpenInvestmentsHeaderCellModifier: ViewModifier {
     let alignment: Alignment
 
     func body(content: Content) -> some View {
-        if forMeasurement {
-            content.measureWidth(column: columnKey)
+        if self.forMeasurement {
+            content.measureWidth(column: self.columnKey)
         } else {
             content
                 .foregroundColor(AppTheme.fontColor)
-                .frame(width: columnWidths[columnKey] ?? defaultWidth, alignment: alignment)
+                .frame(width: self.columnWidths[self.columnKey] ?? self.defaultWidth, alignment: self.alignment)
         }
     }
 
     private var defaultWidth: CGFloat {
-        switch columnKey {
+        switch self.columnKey {
         case "pool": return 60
         case "status": return 80
         case "amount": return 110

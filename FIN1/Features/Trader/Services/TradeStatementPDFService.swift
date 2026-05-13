@@ -1,5 +1,5 @@
-import SwiftUI
 import Foundation
+import SwiftUI
 
 // MARK: - PDF Service Protocol
 
@@ -36,7 +36,7 @@ final class TradeStatementPDFService: TradeStatementPDFServiceProtocol {
         // Legacy implementation
         print("🔧 TradeStatementPDFService: Starting PDF generation for Trade #\(trade.tradeNumber)")
 
-        let pdfContent = createPDFContent(from: displayData, trade: trade)
+        let pdfContent = self.createPDFContent(from: displayData, trade: trade)
         let pdfData = try await createPDFData(from: pdfContent)
 
         print("🔧 TradeStatementPDFService: PDF generated successfully, size: \(pdfData.count) bytes")
@@ -81,10 +81,10 @@ final class TradeStatementPDFService: TradeStatementPDFServiceProtocol {
     private func createPDFContent(from displayData: TradeStatementDisplayData, trade: TradeOverviewItem) -> String {
         var content = """
         COLLECTION BILL - Trade #\(String(format: "%03d", trade.tradeNumber))
-
+        
         Depot Number: \(displayData.depotNumber)
         Depot Holder: \(displayData.depotHolder)
-
+        
         """
 
         if let buyTransaction = displayData.buyTransaction {
@@ -96,7 +96,7 @@ final class TradeStatementPDFService: TradeStatementPDFServiceProtocol {
             Market Value: \(buyTransaction.marketValue)
             Commission: \(buyTransaction.commission)
             Final Amount: \(buyTransaction.finalAmount)
-
+            
             """
         }
 
@@ -112,7 +112,7 @@ final class TradeStatementPDFService: TradeStatementPDFServiceProtocol {
                 Market Value: \(sellTransaction.marketValue)
                 Commission: \(sellTransaction.commission)
                 Final Amount: \(sellTransaction.finalAmount)
-
+                
                 """
             }
         }
@@ -122,7 +122,7 @@ final class TradeStatementPDFService: TradeStatementPDFServiceProtocol {
         Assessment Basis: \(displayData.taxSummary.assessmentBasis)
         Total Tax: \(displayData.taxSummary.totalTax)
         Net Result: \(displayData.taxSummary.netResult)
-
+        
         \(displayData.legalDisclaimer)
         """
 
@@ -131,7 +131,7 @@ final class TradeStatementPDFService: TradeStatementPDFServiceProtocol {
 
     private func createPDFData(from content: String) async throws -> Data {
         // Simple PDF creation - in a real app, you'd use a proper PDF library like PDFKit
-        let pdfString = generatePDFTemplate(with: content)
+        let pdfString = self.generatePDFTemplate(with: content)
 
         guard let data = pdfString.data(using: .utf8) else {
             throw PDFGenerationError.dataConversionFailed
@@ -146,12 +146,12 @@ final class TradeStatementPDFService: TradeStatementPDFServiceProtocol {
 
         return """
         %PDF-1.4
-        \(generatePDFCatalog())
-        \(generatePDFPages())
-        \(generatePDFPage(contentLength: contentLength))
-        \(generatePDFContent(content: content, contentLength: contentLength))
-        \(generatePDFXref())
-        \(generatePDFTrailer())
+        \(self.generatePDFCatalog())
+        \(self.generatePDFPages())
+        \(self.generatePDFPage(contentLength: contentLength))
+        \(self.generatePDFContent(content: content, contentLength: contentLength))
+        \(self.generatePDFXref())
+        \(self.generatePDFTrailer())
         startxref
         \(xrefOffset)
         %%EOF

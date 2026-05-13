@@ -17,7 +17,7 @@ struct FAQStatisticsPreviewSection: View {
                 Spacer()
 
                 Button {
-                    Task { await viewModel.loadStatistics() }
+                    Task { await self.viewModel.loadStatistics() }
                 } label: {
                     Text("Details")
                         .font(ResponsiveDesign.captionFont())
@@ -28,28 +28,28 @@ struct FAQStatisticsPreviewSection: View {
             HStack(spacing: ResponsiveDesign.spacing(12)) {
                 FAQStatisticCard(
                     icon: "doc.text.fill",
-                    value: viewModel.formattedStatisticsTotalArticles,
+                    value: self.viewModel.formattedStatisticsTotalArticles,
                     label: "Artikel",
                     color: AppTheme.accentLightBlue
                 )
 
                 FAQStatisticCard(
                     icon: "checkmark.circle.fill",
-                    value: viewModel.formattedStatisticsPublished,
+                    value: self.viewModel.formattedStatisticsPublished,
                     label: "Veröffentlicht",
                     color: AppTheme.accentGreen
                 )
 
                 FAQStatisticCard(
                     icon: "hand.thumbsup.fill",
-                    value: viewModel.formattedStatisticsHelpfulness,
+                    value: self.viewModel.formattedStatisticsHelpfulness,
                     label: "Hilfreich",
                     color: AppTheme.accentOrange
                 )
 
                 FAQStatisticCard(
                     icon: "eye.fill",
-                    value: viewModel.formattedStatisticsViews,
+                    value: self.viewModel.formattedStatisticsViews,
                     label: "Aufrufe",
                     color: Color.purple
                 )

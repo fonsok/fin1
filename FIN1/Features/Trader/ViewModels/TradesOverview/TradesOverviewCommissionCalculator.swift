@@ -70,7 +70,9 @@ final class TradesOverviewCommissionCalculator {
                 NSLog("🧮 TradesOverviewCalc[trade=\(tradeId)] backend lookup failed: \(error)")
             }
         } else {
-            NSLog("🧮 TradesOverviewCalc[trade=\(tradeId)] services missing (commCalcSvc=\(commissionCalculationService != nil), configSvc=\(configurationService != nil))")
+            NSLog(
+                "🧮 TradesOverviewCalc[trade=\(tradeId)] services missing (commCalcSvc=\(commissionCalculationService != nil), configSvc=\(configurationService != nil))"
+            )
         }
 
         // RACE CONDITION FIX: Credit note might be added asynchronously after trade completion
@@ -80,7 +82,9 @@ final class TradesOverviewCommissionCalculator {
            trade.isCompleted {
             try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
             if let commissionFromInvoice = getCommissionFromCreditNoteInvoice(tradeId: tradeId) {
-                print("✅ TradesOverviewCommissionCalculator: Using commission from Credit Note invoice (after retry): €\(String(format: "%.2f", commissionFromInvoice))")
+                print(
+                    "✅ TradesOverviewCommissionCalculator: Using commission from Credit Note invoice (after retry): €\(String(format: "%.2f", commissionFromInvoice))"
+                )
                 return commissionFromInvoice
             }
             // Retry backend call too — settlement happens asynchronously after the
@@ -92,7 +96,9 @@ final class TradesOverviewCommissionCalculator {
                     tradeId: tradeId,
                     commissionRate: commissionRate
                 ), total > 0 {
-                    print("✅ TradesOverviewCommissionCalculator: Backend commission (after retry) for trade \(tradeId): €\(String(format: "%.2f", total))")
+                    print(
+                        "✅ TradesOverviewCommissionCalculator: Backend commission (after retry) for trade \(tradeId): €\(String(format: "%.2f", total))"
+                    )
                     return total
                 }
             }
@@ -120,7 +126,7 @@ final class TradesOverviewCommissionCalculator {
         let creditNote = allInvoices.first { invoice in
             invoice.type == .creditNote && (
                 invoice.tradeId == tradeId ||
-                (invoice.tradeNumber != nil && invoice.tradeNumber == getTradeNumber(for: tradeId))
+                    (invoice.tradeNumber != nil && invoice.tradeNumber == self.getTradeNumber(for: tradeId))
             )
         }
 
@@ -147,7 +153,7 @@ final class TradesOverviewCommissionCalculator {
 
     /// Helper to get trade number for matching credit notes
     private func getTradeNumber(for tradeId: String) -> Int? {
-        return tradeService?.completedTrades.first(where: { $0.id == tradeId })?.tradeNumber
+        return self.tradeService?.completedTrades.first(where: { $0.id == tradeId })?.tradeNumber
     }
 }
 

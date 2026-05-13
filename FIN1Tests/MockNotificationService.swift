@@ -1,6 +1,6 @@
-import Foundation
 import Combine
 @testable import FIN1
+import Foundation
 
 // MARK: - Mock Notification Service
 class MockNotificationService: NotificationServiceProtocol {
@@ -10,7 +10,7 @@ class MockNotificationService: NotificationServiceProtocol {
     @Published var errorMessage: String?
     
     var notificationsPublisher: AnyPublisher<[AppNotification], Never> {
-        $notifications.eraseToAnyPublisher()
+        self.$notifications.eraseToAnyPublisher()
     }
 
     // Test configuration
@@ -38,13 +38,13 @@ class MockNotificationService: NotificationServiceProtocol {
     }
 
     func deleteNotification(_ notification: AppNotification) {
-        notifications.removeAll { $0.id == notification.id }
-        unreadCount = notifications.filter { !$0.isRead }.count
+        self.notifications.removeAll { $0.id == notification.id }
+        self.unreadCount = self.notifications.filter { !$0.isRead }.count
     }
 
     func clearAllNotifications() {
-        notifications.removeAll()
-        unreadCount = 0
+        self.notifications.removeAll()
+        self.unreadCount = 0
     }
 
     func createNotification(
@@ -66,36 +66,36 @@ class MockNotificationService: NotificationServiceProtocol {
             createdAt: Date(),
             metadata: metadata
         )
-        notifications.append(notification)
-        unreadCount = notifications.filter { !$0.isRead }.count
+        self.notifications.append(notification)
+        self.unreadCount = self.notifications.filter { !$0.isRead }.count
     }
 
     func getNotifications(for userId: String) -> [AppNotification] {
-        notifications.filter { $0.userId == userId }
+        self.notifications.filter { $0.userId == userId }
     }
 
     func getUnreadNotifications(for userId: String) -> [AppNotification] {
-        notifications.filter { $0.userId == userId && !$0.isRead }
+        self.notifications.filter { $0.userId == userId && !$0.isRead }
     }
 
     func getNotificationsByType(_ type: NotificationType, for userId: String) -> [AppNotification] {
-        notifications.filter { $0.userId == userId && $0.type == type }
+        self.notifications.filter { $0.userId == userId && $0.type == type }
     }
 
     func getCombinedUnreadCount(for userId: String? = nil) -> Int {
         // Count unread notifications (filter by userId if provided)
         let unreadNotifications: Int
         if let userId = userId {
-            unreadNotifications = notifications.filter { $0.userId == userId && !$0.isRead }.count
+            unreadNotifications = self.notifications.filter { $0.userId == userId && !$0.isRead }.count
         } else {
-            unreadNotifications = notifications.filter { !$0.isRead }.count
+            unreadNotifications = self.notifications.filter { !$0.isRead }.count
         }
         // Mock: no documents, just return notification count
         return unreadNotifications
     }
 
     func getCombinedItems() -> [NotificationItem] {
-        let notificationItems = notifications.map { NotificationItem.notification($0) }
+        let notificationItems = self.notifications.map { NotificationItem.notification($0) }
         return notificationItems
     }
 
@@ -116,10 +116,10 @@ class MockNotificationService: NotificationServiceProtocol {
     func start() {}
     func stop() {}
     func reset() {
-        notifications.removeAll()
-        unreadCount = 0
-        isLoading = false
-        errorMessage = nil
+        self.notifications.removeAll()
+        self.unreadCount = 0
+        self.isLoading = false
+        self.errorMessage = nil
     }
 }
 

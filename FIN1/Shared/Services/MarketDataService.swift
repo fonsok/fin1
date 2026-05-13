@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Market Data Service Protocol
 /// Protocol for managing real-time market data (stock prices, indices, etc.)
@@ -43,13 +43,13 @@ final class MarketDataService: MarketDataServiceProtocol {
     ) {
         self.parseLiveQueryClient = parseLiveQueryClient
         self.parseAPIClient = parseAPIClient
-        setupNotificationObserver()
+        self.setupNotificationObserver()
     }
 
     // MARK: - MarketDataServiceProtocol
 
     func getMarketData(for symbol: String) -> MarketData? {
-        return marketDataCache[symbol]
+        return self.marketDataCache[symbol]
     }
 
     func getMarketPrice(for symbol: String) -> Double? {
@@ -65,25 +65,25 @@ final class MarketDataService: MarketDataServiceProtocol {
     func subscribeToMarketData(symbols: [String]) async {
         guard let liveQueryClient = parseLiveQueryClient else {
             // Fallback to static data if Live Query is not available
-            loadStaticMarketData(for: symbols)
+            self.loadStaticMarketData(for: symbols)
             return
         }
 
         // Unsubscribe from previous subscriptions
-        unsubscribeFromMarketData()
+        self.unsubscribeFromMarketData()
 
         // Subscribe to each symbol
         for symbol in symbols {
-            await subscribeToSymbol(symbol, liveQueryClient: liveQueryClient)
+            await self.subscribeToSymbol(symbol, liveQueryClient: liveQueryClient)
         }
     }
 
     func unsubscribeFromMarketData() {
-        for (symbol, subscription) in liveQuerySubscriptions {
-            parseLiveQueryClient?.unsubscribe(subscription)
+        for (symbol, subscription) in self.liveQuerySubscriptions {
+            self.parseLiveQueryClient?.unsubscribe(subscription)
             print("📊 MarketDataService: Unsubscribed from Live Query for symbol \(symbol)")
         }
-        liveQuerySubscriptions.removeAll()
+        self.liveQuerySubscriptions.removeAll()
     }
 
     // MARK: - Private Methods
@@ -107,7 +107,7 @@ final class MarketDataService: MarketDataServiceProtocol {
                     await self.updateMarketDataFromParseObject(object, symbol: symbol)
                 }
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
     }
 
     private func subscribeToSymbol(_ symbol: String, liveQueryClient: any ParseLiveQueryClientProtocol) async {
@@ -130,16 +130,18 @@ final class MarketDataService: MarketDataServiceProtocol {
                 print("⚠️ Live Query error for MarketData (symbol \(symbol)): \(error.localizedDescription)")
             }
         )
-        liveQuerySubscriptions[symbol] = subscription
+        self.liveQuerySubscriptions[symbol] = subscription
         print("📊 MarketDataService: Subscribed to Live Query for symbol \(symbol)")
     }
 
     private func updateMarketData(_ parseMarketData: ParseMarketData) {
         let marketData = parseMarketData.toMarketData()
-        marketDataCache[parseMarketData.symbol] = marketData
-        priceCache[parseMarketData.symbol] = parseMarketData.price
+        self.marketDataCache[parseMarketData.symbol] = marketData
+        self.priceCache[parseMarketData.symbol] = parseMarketData.price
 
-        print("📊 MarketDataService: Updated market data for \(parseMarketData.symbol): €\(parseMarketData.price.formatted(.currency(code: "EUR")))")
+        print(
+            "📊 MarketDataService: Updated market data for \(parseMarketData.symbol): €\(parseMarketData.price.formatted(.currency(code: "EUR")))"
+        )
 
         // Post notification for UI updates
         NotificationCenter.default.post(
@@ -160,15 +162,15 @@ final class MarketDataService: MarketDataServiceProtocol {
             return
         }
 
-        updateMarketData(parseMarketData)
+        self.updateMarketData(parseMarketData)
     }
 
     private func loadStaticMarketData(for symbols: [String]) {
         // Fallback to static MarketPriceService data
         for symbol in symbols {
             let marketData = MarketPriceService.getMarketData(for: symbol)
-            marketDataCache[symbol] = marketData
-            priceCache[symbol] = MarketPriceService.getMarketPrice(for: symbol)
+            self.marketDataCache[symbol] = marketData
+            self.priceCache[symbol] = MarketPriceService.getMarketPrice(for: symbol)
         }
     }
 }

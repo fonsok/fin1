@@ -32,7 +32,9 @@ extension InvestorCashBalanceService {
             )
         }
         let newBalance = getBalance(for: investorId)
-        print("💰 Investor \(investorId) - Investment [ID: \(investmentId)]: -€\(amount.formatted(.currency(code: "EUR"))) | New balance: €\(newBalance.formatted(.currency(code: "EUR")))")
+        print(
+            "💰 Investor \(investorId) - Investment [ID: \(investmentId)]: -€\(amount.formatted(.currency(code: "EUR"))) | New balance: €\(newBalance.formatted(.currency(code: "EUR")))"
+        )
     }
 
     func processAppServiceCharge(
@@ -76,7 +78,9 @@ extension InvestorCashBalanceService {
             NotificationCenter.default.post(name: .investorBalanceDidChange, object: nil, userInfo: userInfo)
         }
         let newBalance = getBalance(for: investorId)
-        print("💰 Investor \(investorId) - App Service Charge [Investment ID: \(investmentId), NON-REFUNDABLE]: -€\(chargeAmount.formatted(.currency(code: "EUR"))) | New balance: €\(newBalance.formatted(.currency(code: "EUR")))")
+        print(
+            "💰 Investor \(investorId) - App Service Charge [Investment ID: \(investmentId), NON-REFUNDABLE]: -€\(chargeAmount.formatted(.currency(code: "EUR"))) | New balance: €\(newBalance.formatted(.currency(code: "EUR")))"
+        )
     }
 
     func processPlatformServiceCharge(
@@ -85,7 +89,7 @@ extension InvestorCashBalanceService {
         investmentId: String,
         metadata additionalMetadata: [String: String] = [:]
     ) async {
-        await processAppServiceCharge(
+        await self.processAppServiceCharge(
             investorId: investorId,
             chargeAmount: chargeAmount,
             investmentId: investmentId,
@@ -94,7 +98,13 @@ extension InvestorCashBalanceService {
     }
 
     func processProfitDistribution(investorId: String, profitAmount: Double, investmentId: String? = nil) async {
-        await processProfitDistribution(investorId: investorId, profitAmount: profitAmount, investmentId: investmentId, principalReturn: nil, grossProfit: nil)
+        await self.processProfitDistribution(
+            investorId: investorId,
+            profitAmount: profitAmount,
+            investmentId: investmentId,
+            principalReturn: nil,
+            grossProfit: nil
+        )
     }
 
     func processProfitDistributionWithBreakdown(
@@ -104,7 +114,7 @@ extension InvestorCashBalanceService {
         grossProfit: Double,
         investmentId: String? = nil
     ) async {
-        await processProfitDistribution(
+        await self.processProfitDistribution(
             investorId: investorId,
             profitAmount: profitAmount,
             investmentId: investmentId,
@@ -169,11 +179,13 @@ extension InvestorCashBalanceService {
         }
         let newBalance = getBalance(for: investorId)
         let investmentInfo = investmentId.map { " [Investment ID: \($0)]" } ?? ""
-        print("💰 Investor \(investorId) - Commission deduction\(investmentInfo): -€\(commissionAmount.formatted(.currency(code: "EUR"))) | New balance: €\(newBalance.formatted(.currency(code: "EUR")))")
+        print(
+            "💰 Investor \(investorId) - Commission deduction\(investmentInfo): -€\(commissionAmount.formatted(.currency(code: "EUR"))) | New balance: €\(newBalance.formatted(.currency(code: "EUR")))"
+        )
     }
 
     func processCommissionDeduction(investorId: String, commissionAmount: Double, investmentId: String? = nil) async {
-        await processCommissionDeduction(
+        await self.processCommissionDeduction(
             investorId: investorId,
             commissionAmount: commissionAmount,
             investmentId: investmentId,
@@ -206,7 +218,9 @@ extension InvestorCashBalanceService {
         }
         let newBalance = getBalance(for: investorId)
         let investmentInfo = investmentId.map { " [Investment ID: \($0)]" } ?? ""
-        print("💰 Investor \(investorId) - Remaining balance distribution\(investmentInfo): +€\(amount.formatted(.currency(code: "EUR"))) | New balance: €\(newBalance.formatted(.currency(code: "EUR")))")
+        print(
+            "💰 Investor \(investorId) - Remaining balance distribution\(investmentInfo): +€\(amount.formatted(.currency(code: "EUR"))) | New balance: €\(newBalance.formatted(.currency(code: "EUR")))"
+        )
     }
 
     func hasSufficientFunds(investorId: String, for amount: Double) -> Bool {
@@ -237,7 +251,9 @@ extension InvestorCashBalanceService {
             )
         }
         let newBalance = getBalance(for: investorId)
-        print("💰 Investor \(investorId) - Deposit: +€\(amount.formatted(.currency(code: "EUR"))) | New balance: €\(newBalance.formatted(.currency(code: "EUR")))")
+        print(
+            "💰 Investor \(investorId) - Deposit: +€\(amount.formatted(.currency(code: "EUR"))) | New balance: €\(newBalance.formatted(.currency(code: "EUR")))"
+        )
     }
 
     func processWithdrawal(investorId: String, amount: Double) async {
@@ -252,7 +268,9 @@ extension InvestorCashBalanceService {
             )
         }
         let newBalance = getBalance(for: investorId)
-        print("💰 Investor \(investorId) - Withdrawal: -€\(amount.formatted(.currency(code: "EUR"))) | New balance: €\(newBalance.formatted(.currency(code: "EUR")))")
+        print(
+            "💰 Investor \(investorId) - Withdrawal: -€\(amount.formatted(.currency(code: "EUR"))) | New balance: €\(newBalance.formatted(.currency(code: "EUR")))"
+        )
     }
 
     private func processProfitDistribution(
@@ -289,6 +307,8 @@ extension InvestorCashBalanceService {
         }
         let newBalance = getBalance(for: investorId)
         let investmentInfo = investmentId.map { " [Investment ID: \($0)]" } ?? ""
-        print("💰 Investor \(investorId) - Profit distribution\(investmentInfo): +€\(profitAmount.formatted(.currency(code: "EUR"))) | New balance: €\(newBalance.formatted(.currency(code: "EUR")))")
+        print(
+            "💰 Investor \(investorId) - Profit distribution\(investmentInfo): +€\(profitAmount.formatted(.currency(code: "EUR"))) | New balance: €\(newBalance.formatted(.currency(code: "EUR")))"
+        )
     }
 }

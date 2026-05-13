@@ -13,63 +13,68 @@ struct OrderCard: View {
 
     var body: some View {
         CardContainer(
-            position: position,
-            showInvoiceIcon: isCompletedBuyOrder,
+            position: self.position,
+            showInvoiceIcon: self.isCompletedBuyOrder,
             onPapersheetTapped: {
-                openIssuerProductInfo(for: order)
+                self.openIssuerProductInfo(for: self.order)
             },
             onInvoiceTapped: {
-                loadAndShowBuyInvoice()
+                self.loadAndShowBuyInvoice()
             },
             content: {
-            VStack(spacing: ResponsiveDesign.spacing(8)) {
-                // 8 Tiles in 4 Rows using TileGrid
-                TileGrid(tiles: orderTiles, columns: 2)
+                VStack(spacing: ResponsiveDesign.spacing(8)) {
+                    // 8 Tiles in 4 Rows using TileGrid
+                    TileGrid(tiles: self.orderTiles, columns: 2)
 
-                // STORNO button (full width)
-                Button(action: {
-                    if statusValue < 3 {
-                        Task {
-                            try? await services.traderService.cancelOrder(order.id)
+                    // STORNO button (full width)
+                    Button(action: {
+                        if self.statusValue < 3 {
+                            Task {
+                                try? await self.services.traderService.cancelOrder(self.order.id)
+                            }
                         }
-                    }
-                }, label: {
-                    HStack {
-                        Text("\(order.type.displayName.uppercased())")
-                            .font(ResponsiveDesign.bodyFont())
-                            .fontWeight(.thin)
-                            .foregroundColor(AppTheme.fontColor.opacity(statusValue < 3 ? 0.75 : 0.2))
+                    }, label: {
+                        HStack {
+                            Text("\(self.order.type.displayName.uppercased())")
+                                .font(ResponsiveDesign.bodyFont())
+                                .fontWeight(.thin)
+                                .foregroundColor(AppTheme.fontColor.opacity(self.statusValue < 3 ? 0.75 : 0.2))
 
-                        Spacer()
+                            Spacer()
 
-                        Text("STORNO")
-                            .font(ResponsiveDesign.bodyFont())
-                            .fontWeight(.regular)
-                            .foregroundColor(AppTheme.fontColor.opacity(statusValue < 3 ? 0.85 : 0.2))
-                    }
-                    .padding(ResponsiveDesign.spacing(8))
-                    .frame(maxWidth: .infinity, minHeight: 50, alignment: .leading)
-                    .background(statusValue < 3 ? AppTheme.accentRed.opacity(0.6) : AppTheme.accentRed.opacity(0.2))
-                    .cornerRadius(ResponsiveDesign.spacing(4))
-                })
-                .buttonStyle(PlainButtonStyle())
-                .disabled(statusValue >= 3)
+                            Text("STORNO")
+                                .font(ResponsiveDesign.bodyFont())
+                                .fontWeight(.regular)
+                                .foregroundColor(AppTheme.fontColor.opacity(self.statusValue < 3 ? 0.85 : 0.2))
+                        }
+                        .padding(ResponsiveDesign.spacing(8))
+                        .frame(maxWidth: .infinity, minHeight: 50, alignment: .leading)
+                        .background(self.statusValue < 3 ? AppTheme.accentRed.opacity(0.6) : AppTheme.accentRed.opacity(0.2))
+                        .cornerRadius(ResponsiveDesign.spacing(4))
+                    })
+                    .buttonStyle(PlainButtonStyle())
+                    .disabled(self.statusValue >= 3)
+                }
             }
-        })
-        .alert("Order Status Info", isPresented: $showStatusInfo) {
+        )
+        .alert("Order Status Info", isPresented: self.$showStatusInfo) {
             Button("OK") { }
         } message: {
-            Text(statusInfoMessage)
+            Text(self.statusInfoMessage)
         }
-        .alert("Orderzusatz Info", isPresented: $showOrderInstructionInfo) {
+        .alert("Orderzusatz Info", isPresented: self.$showOrderInstructionInfo) {
             Button("OK") { }
         } message: {
-            Text(orderInstructionInfoMessage)
+            Text(self.orderInstructionInfoMessage)
         }
-        .sheet(isPresented: $showInvoiceSheet) {
+        .sheet(isPresented: self.$showInvoiceSheet) {
             if let invoice = buyInvoice {
                 NavigationStack {
-                    InvoiceDetailView(invoice: invoice, invoiceService: services.invoiceService, notificationService: services.notificationService)
+                    InvoiceDetailView(
+                        invoice: invoice,
+                        invoiceService: self.services.invoiceService,
+                        notificationService: self.services.notificationService
+                    )
                 }
             }
         }
@@ -80,19 +85,19 @@ struct OrderCard: View {
     /// Determines if this is a completed buy order that should show the invoice icon
     private var isCompletedBuyOrder: Bool {
         // Show invoice icon for buy orders that are completed (status 5)
-        return order.type == .buy && statusValue >= 5
+        return self.order.type == .buy && self.statusValue >= 5
     }
 
     // MARK: - Private Methods
 
     /// Loads the buy invoice for this order and shows the sheet
     private func loadAndShowBuyInvoice() {
-        print("🔧 DEBUG: Loading buy invoice for order ID: \(order.id)")
+        print("🔧 DEBUG: Loading buy invoice for order ID: \(self.order.id)")
 
         // Find the buy invoice for this order
-        let invoices = services.invoiceService.getInvoices(for: "current_trader")
+        let invoices = self.services.invoiceService.getInvoices(for: "current_trader")
         let buyInvoice = invoices.first { invoice in
-            invoice.orderId == order.id && invoice.transactionType == .buy
+            invoice.orderId == self.order.id && invoice.transactionType == .buy
         }
 
         if let invoice = buyInvoice {
@@ -100,7 +105,7 @@ struct OrderCard: View {
             self.buyInvoice = invoice
             self.showInvoiceSheet = true
         } else {
-            print("❌ DEBUG: No buy invoice found for order ID: \(order.id)")
+            print("❌ DEBUG: No buy invoice found for order ID: \(self.order.id)")
             // Could show an alert here if needed
         }
     }
@@ -108,38 +113,41 @@ struct OrderCard: View {
     private var orderTiles: [TileData] {
         [
             // Row 1: Orderart and WKN
-            TileData(title: "Orderart", value: order.type.displayName.uppercased()),
-            TileData(title: "WKN", value: order.wkn ?? order.symbol),
+            TileData(title: "Orderart", value: self.order.type.displayName.uppercased()),
+            TileData(title: "WKN", value: self.order.wkn ?? self.order.symbol),
 
             // Row 2: Basiswert and Richtung
-            TileData(title: "Basiswert", value: order.underlyingAsset ?? "N/A"),
-            TileData(title: "Richtung", value: order.optionDirection ?? "N/A"),
+            TileData(title: "Basiswert", value: self.order.underlyingAsset ?? "N/A"),
+            TileData(title: "Richtung", value: self.order.optionDirection ?? "N/A"),
 
             // Row 3: Strike Price and Quantity
-            TileData(title: "Strike Price", value: formatStrikePrice(order.strike, order.underlyingAsset)),
-            TileData(title: "Stückzahl", value: order.quantity.formattedAsLocalizedNumber()),
+            TileData(title: "Strike Price", value: self.formatStrikePrice(self.order.strike, self.order.underlyingAsset)),
+            TileData(title: "Stückzahl", value: self.order.quantity.formattedAsLocalizedNumber()),
 
             // Row 4: Purchase Price/Current Price and Orderzusatz
-            TileData(title: order.type == .sell ? "Geld-Kurs (Bid)" : "Brief-Kurs (Ask)", value: order.price.formattedAsLocalizedCurrency()),
+            TileData(
+                title: self.order.type == .sell ? "Geld-Kurs (Bid)" : "Brief-Kurs (Ask)",
+                value: self.order.price.formattedAsLocalizedCurrency()
+            ),
             TileData(
                 title: "Orderzusatz",
-                value: getOrderInstruction(),
+                value: self.getOrderInstruction(),
                 showInfoIcon: true,
-                onInfoTapped: { showOrderInstructionInfo = true }
+                onInfoTapped: { self.showOrderInstructionInfo = true }
             ),
 
             // Row 5: Order-Status (centered)
             TileData(
                 title: "Status",
-                value: "\(statusValue)",
+                value: "\(self.statusValue)",
                 showInfoIcon: true,
-                onInfoTapped: { showStatusInfo = true }
+                onInfoTapped: { self.showStatusInfo = true }
             )
         ]
     }
 
     private var titleText: String {
-        let orderType = order.type.displayName.uppercased()
+        let orderType = self.order.type.displayName.uppercased()
 
         // For Optionsscheine: "BUY/SELL - Basiswert - Richtung"
         if let optionDirection = order.optionDirection, let underlyingAsset = order.underlyingAsset {
@@ -147,7 +155,7 @@ struct OrderCard: View {
         }
 
         // For regular stocks: "BUY/SELL - Symbol"
-        return "\(orderType) - \(order.symbol)"
+        return "\(orderType) - \(self.order.symbol)"
     }
 
     // Helper function to open issuer product info
@@ -159,7 +167,7 @@ struct OrderCard: View {
     }
 
     private var statusValue: Int {
-        switch order.status {
+        switch self.order.status {
         case "submitted":
             return 1
         case "suspended":
@@ -178,7 +186,7 @@ struct OrderCard: View {
     }
 
     private var statusInfoMessage: String {
-        switch order.status {
+        switch self.order.status {
         case "submitted":
             return "Status 1: übermittelt\nIhre Order wurde erfolgreich übermittelt und wird bearbeitet."
         case "suspended":
@@ -199,15 +207,15 @@ struct OrderCard: View {
     private var orderInstructionInfoMessage: String {
         return """
         Orderzusatz erklärt:
-
+        
         • Market: Die Order wird zum bestmöglichen Preis ausgeführt, der am Markt verfügbar ist.
-
+        
         • limit: Die Order wird nur zu einem bestimmten Preis oder besser ausgeführt. Der angegebene Preis ist der maximale Preis, den Sie zu zahlen bereit sind.
         """
     }
 
     private var orderStatusColor: Color {
-        switch order.status {
+        switch self.order.status {
         case "submitted":
             return AppTheme.accentOrange
         case "suspended":

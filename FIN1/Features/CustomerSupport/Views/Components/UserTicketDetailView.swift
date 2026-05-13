@@ -22,17 +22,17 @@ struct UserTicketDetailView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: ResponsiveDesign.spacing(16)) {
-                    ticketHeader
+                    self.ticketHeader
 
-                    if ticket.status == .waitingForCustomer {
-                        confirmationSection
+                    if self.ticket.status == .waitingForCustomer {
+                        self.confirmationSection
                     }
 
-                    ticketInfoSection
-                    ticketDescriptionSection
+                    self.ticketInfoSection
+                    self.ticketDescriptionSection
 
-                    if !ticket.responses.isEmpty {
-                        responsesSection
+                    if !self.ticket.responses.isEmpty {
+                        self.responsesSection
                     }
                 }
                 .padding()
@@ -42,25 +42,25 @@ struct UserTicketDetailView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Schließen") { dismiss() }
+                    Button("Schließen") { self.dismiss() }
                 }
             }
-            .alert("Erfolg", isPresented: $showSuccess) {
-                Button("OK") { dismiss() }
+            .alert("Erfolg", isPresented: self.$showSuccess) {
+                Button("OK") { self.dismiss() }
             } message: {
-                Text(successMessage)
+                Text(self.successMessage)
             }
-            .alert("Fehler", isPresented: $showError) {
+            .alert("Fehler", isPresented: self.$showError) {
                 Button("OK") {}
             } message: {
-                Text(errorMessage)
+                Text(self.errorMessage)
             }
-            .sheet(isPresented: $showNotSolvedSheet) {
+            .sheet(isPresented: self.$showNotSolvedSheet) {
                 ProblemNotSolvedSheet(
-                    additionalInfo: $additionalInfo,
-                    isSubmitting: isSubmitting,
-                    onSubmit: { Task { await reportProblemNotSolved() } },
-                    onCancel: { showNotSolvedSheet = false }
+                    additionalInfo: self.$additionalInfo,
+                    isSubmitting: self.isSubmitting,
+                    onSubmit: { Task { await self.reportProblemNotSolved() } },
+                    onCancel: { self.showNotSolvedSheet = false }
                 )
             }
         }
@@ -79,22 +79,22 @@ struct UserTicketDetailView: View {
             HStack {
                 Image(systemName: "ticket.fill")
                     .font(ResponsiveDesign.largeTitleFont())
-                    .foregroundColor(TicketPriorityHelper.color(for: ticket.priority))
+                    .foregroundColor(TicketPriorityHelper.color(for: self.ticket.priority))
 
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
-                    Text(ticket.subject)
+                    Text(self.ticket.subject)
                         .font(ResponsiveDesign.headlineFont())
                         .fontWeight(.bold)
                         .foregroundColor(AppTheme.fontColor)
 
-                    Text("Ticket #\(ticket.id.prefix(8))")
+                    Text("Ticket #\(self.ticket.id.prefix(8))")
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(AppTheme.fontColor.opacity(0.7))
                 }
 
                 Spacer()
 
-                priorityBadge
+                self.priorityBadge
             }
         }
         .padding()
@@ -103,13 +103,13 @@ struct UserTicketDetailView: View {
     }
 
     private var priorityBadge: some View {
-        Text(ticket.priority.displayName)
+        Text(self.ticket.priority.displayName)
             .font(ResponsiveDesign.captionFont())
             .fontWeight(.semibold)
-            .foregroundColor(TicketPriorityHelper.color(for: ticket.priority))
+            .foregroundColor(TicketPriorityHelper.color(for: self.ticket.priority))
             .padding(.horizontal, ResponsiveDesign.spacing(12))
             .padding(.vertical, ResponsiveDesign.spacing(6))
-            .background(TicketPriorityHelper.color(for: ticket.priority).opacity(0.1))
+            .background(TicketPriorityHelper.color(for: self.ticket.priority).opacity(0.1))
             .cornerRadius(ResponsiveDesign.spacing(8))
     }
 
@@ -123,10 +123,10 @@ struct UserTicketDetailView: View {
                 .foregroundColor(AppTheme.fontColor)
 
             VStack(spacing: ResponsiveDesign.spacing(8)) {
-                UserTicketInfoRow(label: "Status", value: ticket.status.displayName)
-                UserTicketInfoRow(label: "Priorität", value: ticket.priority.displayName)
-                UserTicketInfoRow(label: "Erstellt", value: ticket.createdAt.formatted(date: .abbreviated, time: .shortened))
-                UserTicketInfoRow(label: "Aktualisiert", value: ticket.updatedAt.formatted(date: .abbreviated, time: .shortened))
+                UserTicketInfoRow(label: "Status", value: self.ticket.status.displayName)
+                UserTicketInfoRow(label: "Priorität", value: self.ticket.priority.displayName)
+                UserTicketInfoRow(label: "Erstellt", value: self.ticket.createdAt.formatted(date: .abbreviated, time: .shortened))
+                UserTicketInfoRow(label: "Aktualisiert", value: self.ticket.updatedAt.formatted(date: .abbreviated, time: .shortened))
             }
         }
         .padding()
@@ -143,7 +143,7 @@ struct UserTicketDetailView: View {
                 .fontWeight(.semibold)
                 .foregroundColor(AppTheme.fontColor)
 
-            Text(ticket.description)
+            Text(self.ticket.description)
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.8))
         }
@@ -156,19 +156,19 @@ struct UserTicketDetailView: View {
 
     private var responsesSection: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
-            Text("Antworten (\(ticket.responses.count))")
+            Text("Antworten (\(self.ticket.responses.count))")
                 .font(ResponsiveDesign.headlineFont())
                 .fontWeight(.semibold)
                 .foregroundColor(AppTheme.fontColor)
 
             VStack(spacing: ResponsiveDesign.spacing(12)) {
-                ForEach(ticket.responses) { response in
+                ForEach(self.ticket.responses) { response in
                     UserTicketResponseCard(
                         response: response,
-                        showConfirmationButtons: ticket.status == .waitingForCustomer,
-                        isSubmitting: isSubmitting,
-                        onConfirmSolved: { Task { await confirmProblemSolved() } },
-                        onReportNotSolved: { showNotSolvedSheet = true }
+                        showConfirmationButtons: self.ticket.status == .waitingForCustomer,
+                        isSubmitting: self.isSubmitting,
+                        onConfirmSolved: { Task { await self.confirmProblemSolved() } },
+                        onReportNotSolved: { self.showNotSolvedSheet = true }
                     )
                 }
             }
@@ -182,38 +182,38 @@ struct UserTicketDetailView: View {
 
     @MainActor
     private func confirmProblemSolved() async {
-        isSubmitting = true
+        self.isSubmitting = true
         defer { isSubmitting = false }
 
         do {
-            try await supportService.userConfirmProblemSolved(ticketId: ticket.id, userId: userId)
-            successMessage = "Vielen Dank für Ihre Bestätigung! Das Ticket wurde als gelöst markiert."
-            showSuccess = true
+            try await self.supportService.userConfirmProblemSolved(ticketId: self.ticket.id, userId: self.userId)
+            self.successMessage = "Vielen Dank für Ihre Bestätigung! Das Ticket wurde als gelöst markiert."
+            self.showSuccess = true
         } catch {
             let appError = error.toAppError()
-            errorMessage = appError.errorDescription ?? "An error occurred"
-            showError = true
+            self.errorMessage = appError.errorDescription ?? "An error occurred"
+            self.showError = true
         }
     }
 
     @MainActor
     private func reportProblemNotSolved() async {
-        isSubmitting = true
+        self.isSubmitting = true
         defer { isSubmitting = false }
 
         do {
-            try await supportService.userReportProblemNotSolved(
-                ticketId: ticket.id,
-                userId: userId,
-                additionalInfo: additionalInfo
+            try await self.supportService.userReportProblemNotSolved(
+                ticketId: self.ticket.id,
+                userId: self.userId,
+                additionalInfo: self.additionalInfo
             )
-            showNotSolvedSheet = false
-            successMessage = "Ihr Feedback wurde gesendet. Ein Mitarbeiter wird sich umgehend bei Ihnen melden."
-            showSuccess = true
+            self.showNotSolvedSheet = false
+            self.successMessage = "Ihr Feedback wurde gesendet. Ein Mitarbeiter wird sich umgehend bei Ihnen melden."
+            self.showSuccess = true
         } catch {
             let appError = error.toAppError()
-            errorMessage = appError.errorDescription ?? "An error occurred"
-            showError = true
+            self.errorMessage = appError.errorDescription ?? "An error occurred"
+            self.showError = true
         }
     }
 }

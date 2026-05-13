@@ -7,10 +7,10 @@ enum TabBarAppearanceConfigurator {
     /// Configures the default tab bar appearance
     static func configureAppearance() {
         if Thread.isMainThread {
-            MainActor.assumeIsolated { applyTabBarChrome() }
+            MainActor.assumeIsolated { self.applyTabBarChrome() }
         } else {
             DispatchQueue.main.sync {
-                MainActor.assumeIsolated { applyTabBarChrome() }
+                MainActor.assumeIsolated { self.applyTabBarChrome() }
             }
         }
     }
@@ -34,6 +34,6 @@ enum TabBarAppearanceConfigurator {
     /// - Parameter theme: The color scheme to configure for
     static func updateAppearance(for theme: ColorScheme) {
         // Future: Add theme-specific appearance updates
-        configureAppearance()
+        self.configureAppearance()
     }
 }

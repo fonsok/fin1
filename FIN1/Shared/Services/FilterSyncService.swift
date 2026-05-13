@@ -30,13 +30,13 @@ final class FilterSyncService: FilterSyncServiceProtocol {
     /// Register securities filters repository for sync
     func registerSecuritiesFiltersRepository(_ repository: SavedSecuritiesFiltersRepository) {
         self.securitiesFiltersRepository = repository
-        repository.configure(filterAPIService: filterAPIService, userService: userService)
+        repository.configure(filterAPIService: self.filterAPIService, userService: self.userService)
     }
 
     /// Register trader filters manager for sync
     func registerTraderFiltersManager(_ manager: SavedFiltersManager) {
         self.traderFiltersManager = manager
-        manager.configure(filterAPIService: filterAPIService, userService: userService)
+        manager.configure(filterAPIService: self.filterAPIService, userService: self.userService)
     }
 
     func syncToBackend() async {

@@ -12,8 +12,8 @@ struct CustomerDetailContactSection: View {
                 .foregroundColor(AppTheme.fontColor)
 
             VStack(spacing: ResponsiveDesign.spacing(8)) {
-                CSContactInfoRow(icon: "envelope.fill", label: "E-Mail", value: customer.email)
-                CSContactInfoRow(icon: "phone.fill", label: "Telefon", value: customer.phoneNumber)
+                CSContactInfoRow(icon: "envelope.fill", label: "E-Mail", value: self.customer.email)
+                CSContactInfoRow(icon: "phone.fill", label: "Telefon", value: self.customer.phoneNumber)
                 if let address = customer.formattedAddress {
                     CSContactInfoRow(icon: "location.fill", label: "Adresse", value: address)
                 }

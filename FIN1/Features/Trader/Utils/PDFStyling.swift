@@ -88,12 +88,12 @@ struct PDFCompanyInfo {
     static var companyName: String { CompanyContactInfo.companyName }
     static var companyDetails: [String] {
         [
-        "Wertpapierhandelsbank",
-        LegalIdentity.companyAddressLine,
-        "Tel: \(CompanyContactInfo.phone)",
-        "E-Mail: \(CompanyContactInfo.email)",
-        "Handelsregister: \(LegalIdentity.companyRegisterNumber)",
-        "USt-IdNr.: \(LegalIdentity.companyVatId)"
+            "Wertpapierhandelsbank",
+            LegalIdentity.companyAddressLine,
+            "Tel: \(CompanyContactInfo.phone)",
+            "E-Mail: \(CompanyContactInfo.email)",
+            "Handelsregister: \(LegalIdentity.companyRegisterNumber)",
+            "USt-IdNr.: \(LegalIdentity.companyVatId)"
         ]
     }
 

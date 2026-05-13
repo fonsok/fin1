@@ -1,5 +1,5 @@
-import XCTest
 @testable import FIN1
+import XCTest
 
 final class NotificationsFilterTests: XCTestCase {
     func testCombinedUnreadCountAndFilterByType() {

@@ -29,14 +29,14 @@ struct PrivacyPolicyView: View {
 
                 ScrollView {
                     VStack(spacing: ResponsiveDesign.spacing(16)) {
-                        headerSection
-                        searchSection
-                        controlsSection
+                        self.headerSection
+                        self.searchSection
+                        self.controlsSection
 
-                        if viewModel.hasNoSearchResults {
-                            noResultsView
+                        if self.viewModel.hasNoSearchResults {
+                            self.noResultsView
                         } else {
-                            privacyContent
+                            self.privacyContent
                         }
                     }
                     .padding(.horizontal, ResponsiveDesign.spacing(16))
@@ -44,12 +44,12 @@ struct PrivacyPolicyView: View {
                     .padding(.bottom, ResponsiveDesign.spacing(24))
                 }
             }
-            .navigationTitle(navigationTitle)
+            .navigationTitle(self.navigationTitle)
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(doneButtonTitle) {
-                        dismiss()
+                    Button(self.doneButtonTitle) {
+                        self.dismiss()
                     }
                     .foregroundColor(AppTheme.accentLightBlue)
                 }
@@ -60,19 +60,19 @@ struct PrivacyPolicyView: View {
     // MARK: - Localized Strings
 
     private var displayedVersion: String {
-        viewModel.displayedVersion
+        self.viewModel.displayedVersion
     }
 
     private var displayedLastUpdatedText: String {
-        viewModel.displayedLastUpdatedText
+        self.viewModel.displayedLastUpdatedText
     }
 
     private var navigationTitle: String {
-        viewModel.isAmericanVersion ? "Privacy Policy" : "Datenschutzerklärung"
+        self.viewModel.isAmericanVersion ? "Privacy Policy" : "Datenschutzerklärung"
     }
 
     private var doneButtonTitle: String {
-        viewModel.isAmericanVersion ? "Done" : "Fertig"
+        self.viewModel.isAmericanVersion ? "Done" : "Fertig"
     }
 
     // MARK: - Header Section
@@ -84,7 +84,7 @@ struct PrivacyPolicyView: View {
                     .font(ResponsiveDesign.headlineFont())
                     .foregroundColor(AppTheme.accentRed)
 
-                Text(navigationTitle)
+                Text(self.navigationTitle)
                     .font(ResponsiveDesign.headlineFont())
                     .fontWeight(.bold)
                     .foregroundColor(AppTheme.fontColor)
@@ -92,15 +92,15 @@ struct PrivacyPolicyView: View {
                 Spacer()
             }
 
-            Text(viewModel.isAmericanVersion
-                 ? "Last Updated: \(displayedLastUpdatedText) | Version: \(displayedVersion)"
-                 : "Zuletzt aktualisiert: \(displayedLastUpdatedText) | Version: \(displayedVersion)")
+            Text(self.viewModel.isAmericanVersion
+                ? "Last Updated: \(self.displayedLastUpdatedText) | Version: \(self.displayedVersion)"
+                : "Zuletzt aktualisiert: \(self.displayedLastUpdatedText) | Version: \(self.displayedVersion)")
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
 
-            Text(viewModel.isAmericanVersion
-                 ? "This Privacy Policy describes how we collect, use, store, and protect your personal information in compliance with CCPA, CPRA, and applicable U.S. privacy laws."
-                 : "Diese Datenschutzerklärung beschreibt, wie wir Ihre personenbezogenen Daten in Übereinstimmung mit der DSGVO und geltenden Datenschutzgesetzen sammeln, verwenden, speichern und schützen.")
+            Text(self.viewModel.isAmericanVersion
+                ? "This Privacy Policy describes how we collect, use, store, and protect your personal information in compliance with CCPA, CPRA, and applicable U.S. privacy laws."
+                : "Diese Datenschutzerklärung beschreibt, wie wir Ihre personenbezogenen Daten in Übereinstimmung mit der DSGVO und geltenden Datenschutzgesetzen sammeln, verwenden, speichern und schützen.")
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.8))
                 .multilineTextAlignment(.leading)
@@ -117,12 +117,15 @@ struct PrivacyPolicyView: View {
             Image(systemName: "magnifyingglass")
                 .foregroundColor(AppTheme.fontColor.opacity(0.6))
 
-            TextField(viewModel.isAmericanVersion ? "Search privacy policy..." : "Datenschutzerklärung durchsuchen...", text: $viewModel.searchQuery)
-                .textFieldStyle(PlainTextFieldStyle())
-                .foregroundColor(AppTheme.fontColor)
+            TextField(
+                self.viewModel.isAmericanVersion ? "Search privacy policy..." : "Datenschutzerklärung durchsuchen...",
+                text: self.$viewModel.searchQuery
+            )
+            .textFieldStyle(PlainTextFieldStyle())
+            .foregroundColor(AppTheme.fontColor)
 
-            if !viewModel.searchQuery.isEmpty {
-                Button(action: { viewModel.searchQuery = "" }) {
+            if !self.viewModel.searchQuery.isEmpty {
+                Button(action: { self.viewModel.searchQuery = "" }) {
                     Image(systemName: "xmark.circle.fill")
                         .foregroundColor(AppTheme.fontColor.opacity(0.5))
                 }
@@ -137,33 +140,33 @@ struct PrivacyPolicyView: View {
 
     private var controlsSection: some View {
         HStack(spacing: ResponsiveDesign.spacing(12)) {
-            Button(action: { viewModel.expandAll() }) {
+            Button(action: { self.viewModel.expandAll() }) {
                 HStack(spacing: ResponsiveDesign.spacing(4)) {
                     Image(systemName: "chevron.down.circle")
                         .font(ResponsiveDesign.captionFont())
-                    Text(viewModel.isAmericanVersion ? "Expand All" : "Alle öffnen")
+                    Text(self.viewModel.isAmericanVersion ? "Expand All" : "Alle öffnen")
                         .font(ResponsiveDesign.captionFont())
                 }
                 .foregroundColor(AppTheme.accentLightBlue)
             }
 
-            Button(action: { viewModel.collapseAll() }) {
+            Button(action: { self.viewModel.collapseAll() }) {
                 HStack(spacing: ResponsiveDesign.spacing(4)) {
                     Image(systemName: "chevron.up.circle")
                         .font(ResponsiveDesign.captionFont())
-                    Text(viewModel.isAmericanVersion ? "Collapse All" : "Alle schließen")
+                    Text(self.viewModel.isAmericanVersion ? "Collapse All" : "Alle schließen")
                         .font(ResponsiveDesign.captionFont())
                 }
                 .foregroundColor(AppTheme.accentLightBlue)
             }
 
             // Jurisdiction toggle for testing
-            Button(action: { viewModel.toggleJurisdiction() }) {
-                Text(viewModel.isAmericanVersion ? "🇩🇪" : "🇺🇸")
+            Button(action: { self.viewModel.toggleJurisdiction() }) {
+                Text(self.viewModel.isAmericanVersion ? "🇩🇪" : "🇺🇸")
                     .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 1.2))
             }
             .buttonStyle(PlainButtonStyle())
-            .help(viewModel.isAmericanVersion ? "Switch to German version" : "Switch to American version")
+            .help(self.viewModel.isAmericanVersion ? "Switch to German version" : "Switch to American version")
 
             Spacer()
         }
@@ -173,11 +176,11 @@ struct PrivacyPolicyView: View {
 
     private var privacyContent: some View {
         VStack(spacing: ResponsiveDesign.spacing(12)) {
-            ForEach(viewModel.filteredSections) { section in
+            ForEach(self.viewModel.filteredSections) { section in
                 PrivacySectionRow(
                     section: section,
-                    isExpanded: viewModel.isExpanded(section),
-                    onToggle: { viewModel.toggleSection(section) }
+                    isExpanded: self.viewModel.isExpanded(section),
+                    onToggle: { self.viewModel.toggleSection(section) }
                 )
             }
         }
@@ -191,13 +194,13 @@ struct PrivacyPolicyView: View {
                 .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2.4))
                 .foregroundColor(AppTheme.fontColor.opacity(0.5))
 
-            Text(viewModel.isAmericanVersion ? "No Results Found" : "Keine Ergebnisse gefunden")
+            Text(self.viewModel.isAmericanVersion ? "No Results Found" : "Keine Ergebnisse gefunden")
                 .font(ResponsiveDesign.headlineFont())
                 .foregroundColor(AppTheme.fontColor)
 
-            Text(viewModel.isAmericanVersion
-                 ? "Try searching with different keywords"
-                 : "Versuchen Sie es mit anderen Suchbegriffen")
+            Text(self.viewModel.isAmericanVersion
+                ? "Try searching with different keywords"
+                : "Versuchen Sie es mit anderen Suchbegriffen")
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
                 .multilineTextAlignment(.center)
@@ -215,14 +218,14 @@ private struct PrivacySectionRow: View {
 
     var body: some View {
         ExpandableSectionRow(
-            title: section.title,
+            title: self.section.title,
             icon: nil, // Icons removed as requested
             iconColor: AppTheme.accentRed,
-            isExpanded: isExpanded,
-            onToggle: onToggle,
+            isExpanded: self.isExpanded,
+            onToggle: self.onToggle,
             titleFontWeight: ResponsiveDesign.faqQuestionFontWeight
         ) {
-            PrivacyContentView(text: section.content)
+            PrivacyContentView(text: self.section.content)
         }
     }
 }
@@ -233,7 +236,7 @@ private struct PrivacyContentView: View {
     let text: String
 
     var body: some View {
-        LegalDocumentFormatter(text: text)
+        LegalDocumentFormatter(text: self.text)
     }
 }
 

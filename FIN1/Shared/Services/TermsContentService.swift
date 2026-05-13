@@ -67,7 +67,7 @@ final class TermsContentService: TermsContentServiceProtocol, @unchecked Sendabl
         language: TermsOfServiceDataProvider.Language,
         documentType: LegalDocumentType
     ) -> TermsContent? {
-        let key = cacheKey(language: language, documentType: documentType)
+        let key = self.cacheKey(language: language, documentType: documentType)
         guard let data = userDefaults.data(forKey: key) else { return nil }
         guard let cached = try? JSONDecoder().decode(CachedTermsContent.self, from: data) else { return nil }
         return cached.content
@@ -78,10 +78,10 @@ final class TermsContentService: TermsContentServiceProtocol, @unchecked Sendabl
         language: TermsOfServiceDataProvider.Language,
         documentType: LegalDocumentType
     ) {
-        let key = cacheKey(language: language, documentType: documentType)
+        let key = self.cacheKey(language: language, documentType: documentType)
         let cached = CachedTermsContent(content: terms, cachedAt: Date())
         if let data = try? JSONEncoder().encode(cached) {
-            userDefaults.set(data, forKey: key)
+            self.userDefaults.set(data, forKey: key)
         }
     }
 
@@ -89,7 +89,7 @@ final class TermsContentService: TermsContentServiceProtocol, @unchecked Sendabl
         // Small + safe: only clear our own known prefixes
         for language in TermsOfServiceDataProvider.Language.allCases {
             for doc in LegalDocumentType.allCases {
-                userDefaults.removeObject(forKey: cacheKey(language: language, documentType: doc))
+                self.userDefaults.removeObject(forKey: self.cacheKey(language: language, documentType: doc))
             }
         }
     }
@@ -113,7 +113,7 @@ final class TermsContentService: TermsContentServiceProtocol, @unchecked Sendabl
             ]
         )
 
-        cacheTerms(result, language: language, documentType: documentType)
+        self.cacheTerms(result, language: language, documentType: documentType)
         return result
     }
 
@@ -135,7 +135,7 @@ final class TermsContentService: TermsContentServiceProtocol, @unchecked Sendabl
         guard let parseAPIClient else { return }
 
         // Dedupe locally by (docType, language, appVersion, servedVersion)
-        let dedupeKey = deliveryDedupeKey(
+        let dedupeKey = self.deliveryDedupeKey(
             language: language,
             documentType: documentType,
             appVersion: AppBuildInfo.appVersion
@@ -153,7 +153,7 @@ final class TermsContentService: TermsContentServiceProtocol, @unchecked Sendabl
             "appVersion": AppBuildInfo.appVersion,
             "buildNumber": AppBuildInfo.buildNumber,
             "deviceInstallId": DeviceInstallIdProvider.getOrCreate(),
-            "dedupeWindowSeconds": 86400
+            "dedupeWindowSeconds": 86_400
         ]
         if let servedHash, !servedHash.isEmpty {
             parameters["servedHash"] = servedHash
@@ -166,7 +166,7 @@ final class TermsContentService: TermsContentServiceProtocol, @unchecked Sendabl
 
         // Only persist dedupe state if the server call succeeded (created or skipped).
         if result != nil {
-            userDefaults.set(servedVersion, forKey: dedupeKey)
+            self.userDefaults.set(servedVersion, forKey: dedupeKey)
         }
     }
 }

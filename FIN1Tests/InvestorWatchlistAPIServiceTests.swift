@@ -1,5 +1,5 @@
-import XCTest
 @testable import FIN1
+import XCTest
 
 // MARK: - Investor Watchlist API Service Tests
 
@@ -10,13 +10,13 @@ final class InvestorWatchlistAPIServiceTests: XCTestCase {
 
     override func setUp() {
         super.setUp()
-        mockAPIClient = MockParseAPIClient()
-        sut = InvestorWatchlistAPIService(apiClient: mockAPIClient)
+        self.mockAPIClient = MockParseAPIClient()
+        self.sut = InvestorWatchlistAPIService(apiClient: self.mockAPIClient)
     }
 
     override func tearDown() {
-        sut = nil
-        mockAPIClient = nil
+        self.sut = nil
+        self.mockAPIClient = nil
         super.tearDown()
     }
 
@@ -24,23 +24,23 @@ final class InvestorWatchlistAPIServiceTests: XCTestCase {
 
     func testSaveWatchlistItem_Success() async throws {
         // Given
-        let trader = createSampleWatchlistTrader()
+        let trader = self.createSampleWatchlistTrader()
         let investorId = "investor-123"
-        mockAPIClient.mockObjectId = "server-watchlist-id-123"
+        self.mockAPIClient.mockObjectId = "server-watchlist-id-123"
 
         // When
         let savedItem = try await sut.saveWatchlistItem(trader, investorId: investorId)
 
         // Then
-        XCTAssertTrue(mockAPIClient.createObjectCalled)
-        XCTAssertEqual(mockAPIClient.lastClassName, "InvestorWatchlist")
+        XCTAssertTrue(self.mockAPIClient.createObjectCalled)
+        XCTAssertEqual(self.mockAPIClient.lastClassName, "InvestorWatchlist")
         XCTAssertEqual(savedItem.id, trader.id)
         XCTAssertEqual(savedItem.name, trader.name)
     }
 
     func testSaveWatchlistItem_PreservesAllFields() async throws {
         // Given
-        let trader = createSampleWatchlistTrader()
+        let trader = self.createSampleWatchlistTrader()
         let investorId = "investor-456"
 
         // When
@@ -54,14 +54,14 @@ final class InvestorWatchlistAPIServiceTests: XCTestCase {
 
     func testSaveWatchlistItem_NetworkError() async {
         // Given
-        let trader = createSampleWatchlistTrader()
+        let trader = self.createSampleWatchlistTrader()
         let investorId = "investor-123"
-        mockAPIClient.shouldThrowError = true
-        mockAPIClient.errorToThrow = NetworkError.noConnection
+        self.mockAPIClient.shouldThrowError = true
+        self.mockAPIClient.errorToThrow = NetworkError.noConnection
 
         // When/Then
         do {
-            _ = try await sut.saveWatchlistItem(trader, investorId: investorId)
+            _ = try await self.sut.saveWatchlistItem(trader, investorId: investorId)
             XCTFail("Expected error to be thrown")
         } catch {
             XCTAssertTrue(error is NetworkError)
@@ -74,40 +74,40 @@ final class InvestorWatchlistAPIServiceTests: XCTestCase {
         // Given
         let traderId = "trader-to-remove"
         let investorId = "investor-123"
-        let mockResponse = createMockWatchlistResponse(objectId: "parse-object-id", traderId: traderId)
-        mockAPIClient.mockFetchResults = [mockResponse]
+        let mockResponse = self.createMockWatchlistResponse(objectId: "parse-object-id", traderId: traderId)
+        self.mockAPIClient.mockFetchResults = [mockResponse]
 
         // When
-        try await sut.removeWatchlistItem(traderId, investorId: investorId)
+        try await self.sut.removeWatchlistItem(traderId, investorId: investorId)
 
         // Then
-        XCTAssertTrue(mockAPIClient.fetchObjectsCalled)
-        XCTAssertTrue(mockAPIClient.deleteObjectCalled)
-        XCTAssertEqual(mockAPIClient.lastObjectId, "parse-object-id")
+        XCTAssertTrue(self.mockAPIClient.fetchObjectsCalled)
+        XCTAssertTrue(self.mockAPIClient.deleteObjectCalled)
+        XCTAssertEqual(self.mockAPIClient.lastObjectId, "parse-object-id")
     }
 
     func testRemoveWatchlistItem_NotFound_NoError() async throws {
         // Given
         let traderId = "trader-not-in-watchlist"
         let investorId = "investor-123"
-        mockAPIClient.mockFetchResults = [ParseInvestorWatchlistResponse]()
+        self.mockAPIClient.mockFetchResults = [ParseInvestorWatchlistResponse]()
 
         // When/Then - Should not throw
-        try await sut.removeWatchlistItem(traderId, investorId: investorId)
-        XCTAssertTrue(mockAPIClient.fetchObjectsCalled)
-        XCTAssertFalse(mockAPIClient.deleteObjectCalled)
+        try await self.sut.removeWatchlistItem(traderId, investorId: investorId)
+        XCTAssertTrue(self.mockAPIClient.fetchObjectsCalled)
+        XCTAssertFalse(self.mockAPIClient.deleteObjectCalled)
     }
 
     func testRemoveWatchlistItem_NetworkError() async {
         // Given
         let traderId = "trader-123"
         let investorId = "investor-123"
-        mockAPIClient.shouldThrowError = true
-        mockAPIClient.errorToThrow = NetworkError.serverError(500)
+        self.mockAPIClient.shouldThrowError = true
+        self.mockAPIClient.errorToThrow = NetworkError.serverError(500)
 
         // When/Then
         do {
-            try await sut.removeWatchlistItem(traderId, investorId: investorId)
+            try await self.sut.removeWatchlistItem(traderId, investorId: investorId)
             XCTFail("Expected error to be thrown")
         } catch {
             XCTAssertTrue(error is NetworkError)
@@ -124,40 +124,40 @@ final class InvestorWatchlistAPIServiceTests: XCTestCase {
             createMockWatchlistResponse(objectId: "item-2", traderId: "trader-2"),
             createMockWatchlistResponse(objectId: "item-3", traderId: "trader-3")
         ]
-        mockAPIClient.mockFetchResults = mockResponses
+        self.mockAPIClient.mockFetchResults = mockResponses
 
         // When
         let watchlist = try await sut.fetchWatchlist(for: investorId)
 
         // Then
-        XCTAssertTrue(mockAPIClient.fetchObjectsCalled)
-        XCTAssertEqual(mockAPIClient.lastClassName, "InvestorWatchlist")
+        XCTAssertTrue(self.mockAPIClient.fetchObjectsCalled)
+        XCTAssertEqual(self.mockAPIClient.lastClassName, "InvestorWatchlist")
         XCTAssertEqual(watchlist.count, 3)
     }
 
     func testFetchWatchlist_EmptyResult() async throws {
         // Given
         let investorId = "investor-with-empty-watchlist"
-        mockAPIClient.mockFetchResults = [ParseInvestorWatchlistResponse]()
+        self.mockAPIClient.mockFetchResults = [ParseInvestorWatchlistResponse]()
 
         // When
         let watchlist = try await sut.fetchWatchlist(for: investorId)
 
         // Then
-        XCTAssertTrue(mockAPIClient.fetchObjectsCalled)
+        XCTAssertTrue(self.mockAPIClient.fetchObjectsCalled)
         XCTAssertTrue(watchlist.isEmpty)
     }
 
     func testFetchWatchlist_ParsesTraderData() async throws {
         // Given
         let investorId = "investor-123"
-        let mockResponse = createMockWatchlistResponse(
+        let mockResponse = self.createMockWatchlistResponse(
             objectId: "item-1",
             traderId: "trader-premium",
             traderName: "Premium Trader",
             riskClass: 3
         )
-        mockAPIClient.mockFetchResults = [mockResponse]
+        self.mockAPIClient.mockFetchResults = [mockResponse]
 
         // When
         let watchlist = try await sut.fetchWatchlist(for: investorId)
@@ -179,7 +179,7 @@ final class InvestorWatchlistAPIServiceTests: XCTestCase {
             performance: 25.5,
             riskClass: .riskClass2,
             totalInvestors: 150,
-            minimumInvestment: 5000.0,
+            minimumInvestment: 5_000.0,
             description: "Expert in DAX options trading",
             tradingStrategy: "Conservative growth strategy",
             experience: "5 years",
@@ -204,7 +204,7 @@ final class InvestorWatchlistAPIServiceTests: XCTestCase {
             traderSpecialization: "DAX Options",
             traderRiskClass: riskClass,
             notes: nil,
-            targetInvestmentAmount: 10000.0,
+            targetInvestmentAmount: 10_000.0,
             notifyOnNewTrade: true,
             notifyOnPerformanceChange: true,
             sortOrder: 0,

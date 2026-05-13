@@ -26,9 +26,9 @@ struct PoolBalanceDistributionSection: View {
                 HStack(spacing: ResponsiveDesign.spacing(8)) {
                     // Option 1: Immediate Distribution
                     Button(action: {
-                        viewModel.poolBalanceDistributionStrategy = PoolBalanceDistributionStrategy.immediateDistribution
+                        self.viewModel.poolBalanceDistributionStrategy = PoolBalanceDistributionStrategy.immediateDistribution
                         Task {
-                            await viewModel.updatePoolBalanceDistributionStrategy()
+                            await self.viewModel.updatePoolBalanceDistributionStrategy()
                         }
                     }) {
                         VStack(spacing: ResponsiveDesign.spacing(4)) {
@@ -45,14 +45,14 @@ struct PoolBalanceDistributionSection: View {
                                 .multilineTextAlignment(.center)
                                 .lineLimit(2)
                         }
-                        .foregroundColor(viewModel.poolBalanceDistributionStrategy == .immediateDistribution ? .white : .primary)
+                        .foregroundColor(self.viewModel.poolBalanceDistributionStrategy == .immediateDistribution ? .white : .primary)
                         .frame(maxWidth: .infinity)
                         .frame(minHeight: 100)
                         .padding(ResponsiveDesign.spacing(12))
                         .background(
                             RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(8))
                                 .fill(
-                                    viewModel.poolBalanceDistributionStrategy == .immediateDistribution
+                                    self.viewModel.poolBalanceDistributionStrategy == .immediateDistribution
                                         ? AppTheme.accentLightBlue
                                         : AppTheme.sectionBackground
                                 )
@@ -60,7 +60,7 @@ struct PoolBalanceDistributionSection: View {
                         .overlay(
                             RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(8))
                                 .stroke(
-                                    viewModel.poolBalanceDistributionStrategy == .immediateDistribution
+                                    self.viewModel.poolBalanceDistributionStrategy == .immediateDistribution
                                         ? AppTheme.accentLightBlue
                                         : Color.gray.opacity(0.5),
                                     lineWidth: 2
@@ -72,9 +72,9 @@ struct PoolBalanceDistributionSection: View {
 
                     // Option 2: Accumulate Until Threshold
                     Button(action: {
-                        viewModel.poolBalanceDistributionStrategy = PoolBalanceDistributionStrategy.accumulateUntilThreshold
+                        self.viewModel.poolBalanceDistributionStrategy = PoolBalanceDistributionStrategy.accumulateUntilThreshold
                         Task {
-                            await viewModel.updatePoolBalanceDistributionStrategy()
+                            await self.viewModel.updatePoolBalanceDistributionStrategy()
                         }
                     }) {
                         VStack(spacing: ResponsiveDesign.spacing(4)) {
@@ -91,14 +91,14 @@ struct PoolBalanceDistributionSection: View {
                                 .multilineTextAlignment(.center)
                                 .lineLimit(2)
                         }
-                        .foregroundColor(viewModel.poolBalanceDistributionStrategy == .accumulateUntilThreshold ? .white : .primary)
+                        .foregroundColor(self.viewModel.poolBalanceDistributionStrategy == .accumulateUntilThreshold ? .white : .primary)
                         .frame(maxWidth: .infinity)
                         .frame(minHeight: 100)
                         .padding(ResponsiveDesign.spacing(12))
                         .background(
                             RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(8))
                                 .fill(
-                                    viewModel.poolBalanceDistributionStrategy == .accumulateUntilThreshold
+                                    self.viewModel.poolBalanceDistributionStrategy == .accumulateUntilThreshold
                                         ? AppTheme.accentLightBlue
                                         : AppTheme.sectionBackground
                                 )
@@ -106,7 +106,7 @@ struct PoolBalanceDistributionSection: View {
                         .overlay(
                             RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(8))
                                 .stroke(
-                                    viewModel.poolBalanceDistributionStrategy == .accumulateUntilThreshold
+                                    self.viewModel.poolBalanceDistributionStrategy == .accumulateUntilThreshold
                                         ? AppTheme.accentLightBlue
                                         : Color.gray.opacity(0.5),
                                     lineWidth: 2
@@ -118,7 +118,7 @@ struct PoolBalanceDistributionSection: View {
                 }
 
                 // Description text below buttons
-                Text(viewModel.poolBalanceDistributionStrategy.description)
+                Text(self.viewModel.poolBalanceDistributionStrategy.description)
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(.secondary)
                     .padding(.top, ResponsiveDesign.spacing(4))
@@ -133,7 +133,7 @@ struct PoolBalanceDistributionSection: View {
 
                     Spacer()
 
-                    Text(viewModel.currentPoolBalanceDistributionThresholdText)
+                    Text(self.viewModel.currentPoolBalanceDistributionThresholdText)
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(.secondary)
                 }
@@ -143,16 +143,20 @@ struct PoolBalanceDistributionSection: View {
                     .foregroundColor(.secondary)
 
                 HStack {
-                    TextField("Enter threshold", value: $viewModel.poolBalanceDistributionThresholdInput, format: .currency(code: "EUR"))
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .keyboardType(.decimalPad)
+                    TextField(
+                        "Enter threshold",
+                        value: self.$viewModel.poolBalanceDistributionThresholdInput,
+                        format: .currency(code: "EUR")
+                    )
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .keyboardType(.decimalPad)
 
                     Button("Update") {
                         Task {
-                            await viewModel.updatePoolBalanceDistributionThreshold()
+                            await self.viewModel.updatePoolBalanceDistributionThreshold()
                         }
                     }
-                    .disabled(!viewModel.isValidPoolBalanceDistributionThreshold)
+                    .disabled(!self.viewModel.isValidPoolBalanceDistributionThreshold)
                     .buttonStyle(.borderedProminent)
                 }
 

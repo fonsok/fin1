@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Trading State Store Protocol
 /// Centralized state management for all trading-related data
@@ -50,15 +50,15 @@ final class TradingStateStore: TradingStateStoreProtocol {
 
     // MARK: - Publishers
     var holdingsPublisher: AnyPublisher<[DepotHolding], Never> {
-        $holdings.eraseToAnyPublisher()
+        self.$holdings.eraseToAnyPublisher()
     }
 
     var activeOrdersPublisher: AnyPublisher<[Order], Never> {
-        $activeOrders.eraseToAnyPublisher()
+        self.$activeOrders.eraseToAnyPublisher()
     }
 
     var completedTradesPublisher: AnyPublisher<[Trade], Never> {
-        $completedTrades.eraseToAnyPublisher()
+        self.$completedTrades.eraseToAnyPublisher()
     }
 
     // MARK: - Private Properties
@@ -80,32 +80,32 @@ final class TradingStateStore: TradingStateStoreProtocol {
     func updateCompletedTrades(_ trades: [Trade]) {
         self.completedTrades = trades
         // Automatically update holdings when trades change
-        updateHoldingsFromTrades()
+        self.updateHoldingsFromTrades()
     }
 
     func addOrder(_ order: Order) {
-        activeOrders.append(order)
+        self.activeOrders.append(order)
     }
 
     func removeOrder(_ orderId: String) {
-        activeOrders.removeAll { $0.id == orderId }
+        self.activeOrders.removeAll { $0.id == orderId }
     }
 
     func updateOrder(_ order: Order) {
         if let index = activeOrders.firstIndex(where: { $0.id == order.id }) {
-            activeOrders[index] = order
+            self.activeOrders[index] = order
         }
     }
 
     func addTrade(_ trade: Trade) {
-        completedTrades.append(trade)
-        updateHoldingsFromTrades()
+        self.completedTrades.append(trade)
+        self.updateHoldingsFromTrades()
     }
 
     func updateTrade(_ trade: Trade) {
         if let index = completedTrades.firstIndex(where: { $0.id == trade.id }) {
-            completedTrades[index] = trade
-            updateHoldingsFromTrades()
+            self.completedTrades[index] = trade
+            self.updateHoldingsFromTrades()
         }
     }
 
@@ -124,47 +124,47 @@ final class TradingStateStore: TradingStateStoreProtocol {
     // MARK: - Private Methods
     private func setupStateObservers() {
         // Observe completed trades changes to automatically update holdings
-        $completedTrades
+        self.$completedTrades
             .sink { [weak self] _ in
                 self?.updateHoldingsFromTrades()
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
     }
 
     private func updateHoldingsFromTrades() {
         var positionCounter = 1
-        let newHoldings = completedTrades.map { trade in
+        let newHoldings = self.completedTrades.map { trade in
             defer { positionCounter += 1 }
-            return createHoldingFromTrade(trade, position: positionCounter)
+            return self.createHoldingFromTrade(trade, position: positionCounter)
         }
 
         // Apply ongoing orders to holdings
         let updatedHoldings = newHoldings.map { holding in
-            applyOngoingOrdersToHolding(holding)
+            self.applyOngoingOrdersToHolding(holding)
         }
 
-        holdings = updatedHoldings.filter { $0.remainingQuantity > 0 }
+        self.holdings = updatedHoldings.filter { $0.remainingQuantity > 0 }
     }
 
     /// Creates a DepotBestand from a trade, accounting for partial sales
     /// Uses centralized HoldingsConversionService as SINGLE SOURCE OF TRUTH
     private func createHoldingFromTrade(_ trade: Trade, position: Int) -> DepotHolding {
-        return holdingsConversionService.createHolding(
+        return self.holdingsConversionService.createHolding(
             from: trade,
             position: position,
-            ongoingOrders: activeOrders
+            ongoingOrders: self.activeOrders
         )
     }
 
     private func applyOngoingOrdersToHolding(_ holding: DepotHolding) -> DepotHolding {
         // Find executed ongoing orders for this holding
-        let executedOngoingOrders = activeOrders.filter { order in
+        let executedOngoingOrders = self.activeOrders.filter { order in
             guard order.type == .sell else { return false }
 
             // Check if this order belongs to this holding
             let belongsToHolding = order.originalHoldingId == holding.orderId ||
-                                  order.originalHoldingId == holding.wkn ||
-                                  order.symbol == holding.wkn
+                order.originalHoldingId == holding.wkn ||
+                order.symbol == holding.wkn
 
             // Check if order is in executed or confirmed status
             let isExecutedOrConfirmed = order.sellStatus == .executed || order.sellStatus == .confirmed
@@ -186,26 +186,26 @@ final class TradingStateStore: TradingStateStoreProtocol {
 extension TradingStateStore {
     /// Computed property for filtered holdings (only those with remaining quantity)
     var availableHoldings: [DepotHolding] {
-        holdings.filter { $0.remainingQuantity > 0 }
+        self.holdings.filter { $0.remainingQuantity > 0 }
     }
 
     /// Computed property for all holdings (including fully sold)
     var allHoldings: [DepotHolding] {
-        holdings
+        self.holdings
     }
 
     /// Get holding by ID
     func getHolding(by id: String) -> DepotHolding? {
-        holdings.first { $0.id.uuidString == id }
+        self.holdings.first { $0.id.uuidString == id }
     }
 
     /// Get order by ID
     func getOrder(by id: String) -> Order? {
-        activeOrders.first { $0.id == id }
+        self.activeOrders.first { $0.id == id }
     }
 
     /// Get trade by ID
     func getTrade(by id: String) -> Trade? {
-        completedTrades.first { $0.id == id }
+        self.completedTrades.first { $0.id == id }
     }
 }

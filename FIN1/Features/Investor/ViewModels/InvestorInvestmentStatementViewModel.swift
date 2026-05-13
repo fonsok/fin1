@@ -1,5 +1,5 @@
-import SwiftUI
 import Foundation
+import SwiftUI
 
 // MARK: - Investor Investment Statement ViewModel
 /// Builds an investor-focused statement view for a single investment,
@@ -30,7 +30,7 @@ final class InvestorInvestmentStatementViewModel: ObservableObject {
 
     /// Admin-configured commission rate (single source of truth via ConfigurationService)
     var effectiveCommissionRate: Double {
-        configurationService.effectiveCommissionRate
+        self.configurationService.effectiveCommissionRate
     }
 
     // MARK: - Initialization
@@ -57,5 +57,4 @@ final class InvestorInvestmentStatementViewModel: ObservableObject {
 
         rebuildStatement()
     }
-
 }

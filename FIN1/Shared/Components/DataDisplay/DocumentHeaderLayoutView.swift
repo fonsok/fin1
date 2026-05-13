@@ -47,14 +47,14 @@ struct DocumentHeaderLayoutView<QRCodeContent: View>: View {
                 }
 
                 // Adresse (1 Zeile, kleine Schriftgröße)
-                Text(companyAddressLine)
+                Text(self.companyAddressLine)
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(DocumentDesignSystem.textColorSecondary)
 
                 // Account Holder Address (wie bei Briefköpfen üblich)
-                if !accountHolderName.isEmpty {
+                if !self.accountHolderName.isEmpty {
                     VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(2)) {
-                        Text(accountHolderName)
+                        Text(self.accountHolderName)
                             .font(ResponsiveDesign.bodyFont())
                             .foregroundColor(DocumentDesignSystem.textColor)
                             .padding(.top, ResponsiveDesign.spacing(8))
@@ -79,10 +79,10 @@ struct DocumentHeaderLayoutView<QRCodeContent: View>: View {
             // Right: QR Code + Company Info below
             VStack(alignment: .trailing, spacing: ResponsiveDesign.spacing(8)) {
                 // QR Code (passed as content)
-                qrCodeContent()
+                self.qrCodeContent()
 
                 // Company Info below QR Code
-                companyInfoView
+                self.companyInfoView
             }
         }
         .documentSection(level: 1)
@@ -97,7 +97,7 @@ struct DocumentHeaderLayoutView<QRCodeContent: View>: View {
                 Text("E-Mail:")
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(DocumentDesignSystem.textColorSecondary)
-                Text(companyEmail)
+                Text(self.companyEmail)
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(DocumentDesignSystem.textColor)
             }
@@ -107,7 +107,7 @@ struct DocumentHeaderLayoutView<QRCodeContent: View>: View {
                 Text("Telefon:")
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(DocumentDesignSystem.textColorSecondary)
-                Text(companyPhone)
+                Text(self.companyPhone)
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(DocumentDesignSystem.textColor)
             }
@@ -137,13 +137,13 @@ struct DocumentHeaderLayoutView<QRCodeContent: View>: View {
             }
 
             // Zeiten Erreichbarkeit
-            Text(companyHours)
+            Text(self.companyHours)
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(DocumentDesignSystem.textColorSecondary)
                 .multilineTextAlignment(.trailing)
 
             // Datum
-            Text(formattedDate)
+            Text(self.formattedDate)
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(DocumentDesignSystem.textColor)
                 .padding(.top, ResponsiveDesign.spacing(4))
@@ -190,7 +190,7 @@ struct DocumentHeaderLayoutView<QRCodeContent: View>: View {
         let formatter = DateFormatter()
         formatter.dateStyle = .long
         formatter.locale = Locale(identifier: "de_DE")
-        return formatter.string(from: documentDate)
+        return formatter.string(from: self.documentDate)
     }
 }
 

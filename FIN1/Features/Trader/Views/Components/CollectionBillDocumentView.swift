@@ -18,17 +18,17 @@ struct CollectionBillDocumentView: View {
 
     /// Merged document from `DocumentService` when the notification payload omits fields (investmentId, etc.).
     private var displayDocument: Document {
-        viewModel.canonicalDocument ?? viewModel.document
+        self.viewModel.canonicalDocument ?? self.viewModel.document
     }
 
     var body: some View {
         Group {
-            if viewModel.isLoading {
+            if self.viewModel.isLoading {
                 ProgressView("Loading Collection Bill...")
                     .task {
-                        await viewModel.loadTargetFromDocument()
+                        await self.viewModel.loadTargetFromDocument()
                     }
-            } else if displayDocument.type == .investorCollectionBill,
+            } else if self.displayDocument.type == .investorCollectionBill,
                       let investment = viewModel.investment {
                 // Show detailed Investment Collection Bill view.
                 // Wrapper owns the inner VM via @StateObject so SwiftUI body
@@ -38,25 +38,25 @@ struct CollectionBillDocumentView: View {
                 // previous instance).
                 InvestorInvestmentStatementViewWrapper(
                     investment: investment,
-                    documentNumber: (viewModel.canonicalDocument ?? viewModel.document).accountingDocumentNumber,
-                    services: services
+                    documentNumber: (self.viewModel.canonicalDocument ?? self.viewModel.document).accountingDocumentNumber,
+                    services: self.services
                 )
-            } else if displayDocument.type == .investorCollectionBill,
+            } else if self.displayDocument.type == .investorCollectionBill,
                       let previewImage = viewModel.investorPreviewImage {
                 // Fallback to PDF preview if investment not found
                 InvestorCollectionBillDocumentView(
-                    document: displayDocument,
+                    document: self.displayDocument,
                     previewImage: previewImage,
-                    pdfData: viewModel.investorPDFData
+                    pdfData: self.viewModel.investorPDFData
                 )
-            } else if viewModel.fallbackToDocumentViewer {
-                DocumentViewer(document: displayDocument)
+            } else if self.viewModel.fallbackToDocumentViewer {
+                DocumentViewer(document: self.displayDocument)
             } else if let trade = viewModel.trade {
-                CollectionBillViewWrapper(trade: trade, document: displayDocument, fullTrade: viewModel.resolvedFullTrade)
+                CollectionBillViewWrapper(trade: trade, document: self.displayDocument, fullTrade: self.viewModel.resolvedFullTrade)
             } else if let investment = viewModel.investment {
                 InvestmentDetailView(investment: investment)
             } else {
-                errorView
+                self.errorView
             }
         }
         .navigationTitle("Collection Bill")
@@ -80,7 +80,7 @@ struct CollectionBillDocumentView: View {
                     .multilineTextAlignment(.center)
             }
 
-            Text("Document: \(displayDocument.name)")
+            Text("Document: \(self.displayDocument.name)")
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
@@ -96,6 +96,6 @@ struct CollectionBillDocumentViewWrapper: View {
     @Environment(\.appServices) private var services
 
     var body: some View {
-        CollectionBillDocumentView(document: document, services: services)
+        CollectionBillDocumentView(document: self.document, services: self.services)
     }
 }

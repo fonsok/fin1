@@ -10,15 +10,15 @@ struct RiskClassCurrentDisplayView: View {
                 .font(ResponsiveDesign.headlineFont())
                 .foregroundColor(AppTheme.fontColor)
             
-            Text("\(signUpData.finalRiskClass.displayName)")
+            Text("\(self.signUpData.finalRiskClass.displayName)")
                 .font(ResponsiveDesign.headlineFont())
                 .fontWeight(.bold)
-                .foregroundColor(signUpData.finalRiskClass.color)
+                .foregroundColor(self.signUpData.finalRiskClass.color)
                 .padding()
-                .background(signUpData.finalRiskClass.color.opacity(0.1))
+                .background(self.signUpData.finalRiskClass.color.opacity(0.1))
                 .cornerRadius(ResponsiveDesign.spacing(8))
             
-            Text("Score: \(calculateCurrentScore()) points")
+            Text("Score: \(self.calculateCurrentScore()) points")
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
         }

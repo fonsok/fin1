@@ -69,15 +69,15 @@ struct RequirementSection: View {
     
     var body: some View {
         VStack(spacing: ResponsiveDesign.spacing(12)) {
-            Text(title)
+            Text(self.title)
                 .font(ResponsiveDesign.bodyFont())
                 .fontWeight(.medium)
-                .foregroundColor(textColor)
+                .foregroundColor(self.textColor)
                 .frame(maxWidth: .infinity, alignment: .leading)
             
             VStack(alignment: .leading, spacing: 8) {
-                ForEach(items, id: \.self) { item in
-                    InfoBullet(text: item, color: textColor)
+                ForEach(self.items, id: \.self) { item in
+                    InfoBullet(text: item, color: self.textColor)
                 }
             }
         }

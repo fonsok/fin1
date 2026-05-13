@@ -26,7 +26,7 @@ final class ServiceFactory {
             parseLiveQueryClient: nil,
             userService: nil
         )
-        self.invoiceService = InvoiceService(transactionIdService: transactionIdService)
+        self.invoiceService = InvoiceService(transactionIdService: self.transactionIdService)
         self.configurationService = configurationService
         self.userService = userService
     }
@@ -35,8 +35,8 @@ final class ServiceFactory {
 
     func createOrderManagementService(orderAPIService: OrderAPIServiceProtocol? = nil) -> OrderManagementService {
         return OrderManagementService(
-            transactionIdService: transactionIdService,
-            userService: userService,
+            transactionIdService: self.transactionIdService,
+            userService: self.userService,
             orderAPIService: orderAPIService
         )
     }
@@ -48,11 +48,11 @@ final class ServiceFactory {
         let service = TradeLifecycleService()
         // Note: auditLoggingService will be added in AppServicesBuilder after it's created
         service.attach(
-            tradeNumberService: tradeNumberService,
+            tradeNumberService: self.tradeNumberService,
             tradingNotificationService: tradingNotificationService,
-            invoiceService: invoiceService,
+            invoiceService: self.invoiceService,
             tradeAPIService: tradeAPIService,
-            userService: userService
+            userService: self.userService
         )
         return service
     }
@@ -64,10 +64,10 @@ final class ServiceFactory {
     func createTradingNotificationService(documentService: any DocumentServiceProtocol) -> TradingNotificationService {
         return TradingNotificationService(
             documentService: documentService,
-            invoiceService: invoiceService,
-            transactionIdService: transactionIdService,
-            userService: userService,
-            configurationService: configurationService
+            invoiceService: self.invoiceService,
+            transactionIdService: self.transactionIdService,
+            userService: self.userService,
+            configurationService: self.configurationService
         )
     }
 
@@ -113,7 +113,7 @@ final class ServiceFactory {
             investmentService: investmentService,
             userService: userService,
             traderDataService: traderDataService,
-            configurationService: configurationService,
+            configurationService: self.configurationService,
             settlementAPIService: settlementAPIService
         )
     }
@@ -155,14 +155,14 @@ final class ServiceFactory {
             tradingNotificationService: tradingNotificationService,
             tradeLifecycleService: tradeLifecycleService,
             tradeMatchingService: tradeMatchingService,
-            cashBalanceService: cashBalanceService,
+            cashBalanceService: self.cashBalanceService,
             investmentActivationService: investmentActivationService,
             profitDistributionService: profitDistributionService,
             poolTradeParticipationService: poolTradeParticipationService,
             userService: userService,
             investmentService: investmentService,
             documentService: documentService,
-            configurationService: configurationService,
+            configurationService: self.configurationService,
             investorGrossProfitService: investorGrossProfitService,
             commissionCalculationService: commissionCalculationService,
             auditLoggingService: auditLoggingService,
@@ -219,10 +219,10 @@ final class ServiceFactory {
             commissionAccumulationService: commissionAccumulationService,
             traderCashBalanceService: traderCashBalanceService,
             documentService: nil,
-            invoiceService: invoiceService,
-            transactionIdService: transactionIdService,
+            invoiceService: self.invoiceService,
+            transactionIdService: self.transactionIdService,
             userService: userService,
-            configurationService: configurationService
+            configurationService: self.configurationService
         )
     }
 
@@ -238,10 +238,10 @@ final class ServiceFactory {
         return InvestorGrossProfitService(
             poolTradeParticipationService: poolTradeParticipationService,
             tradeLifecycleService: tradeLifecycleService,
-            invoiceService: invoiceService,
+            invoiceService: self.invoiceService,
             investmentService: investmentService,
             calculationService: calculationService,
-            configurationService: configurationService
+            configurationService: self.configurationService
         )
     }
 
@@ -257,7 +257,7 @@ final class ServiceFactory {
         // Create new InvoiceService instance with ParseAPIClient
         // Note: This replaces the existing instance, so all references should use coreInvoiceService
         self.invoiceService = InvoiceService(
-            transactionIdService: transactionIdService,
+            transactionIdService: self.transactionIdService,
             parseAPIClient: parseAPIClient
         )
 
@@ -283,8 +283,8 @@ final class ServiceFactory {
     }
 
     // MARK: - Access to Core Services
-    var coreTransactionIdService: TransactionIdService { transactionIdService }
-    var coreTradeNumberService: TradeNumberService { tradeNumberService }
-    var coreCashBalanceService: CashBalanceService { cashBalanceService }
-    var coreInvoiceService: InvoiceService { invoiceService }
+    var coreTransactionIdService: TransactionIdService { self.transactionIdService }
+    var coreTradeNumberService: TradeNumberService { self.tradeNumberService }
+    var coreCashBalanceService: CashBalanceService { self.cashBalanceService }
+    var coreInvoiceService: InvoiceService { self.invoiceService }
 }

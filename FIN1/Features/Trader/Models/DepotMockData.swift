@@ -1,6 +1,6 @@
 import Foundation
 
-let mockDepotValue: Double = 123456.78
+let mockDepotValue: Double = 123_456.78
 let mockDepotNumber: String = "555556666"
 
 let mockRunningTransactions: [Order] = []
@@ -70,16 +70,16 @@ struct DepotHolding: Identifiable {
 
     // Computed properties for partial sales
     var isPartiallySold: Bool {
-        return soldQuantity > 0 && soldQuantity < originalQuantity
+        return self.soldQuantity > 0 && self.soldQuantity < self.originalQuantity
     }
 
     var isFullySold: Bool {
-        return soldQuantity >= originalQuantity
+        return self.soldQuantity >= self.originalQuantity
     }
 
     var sellProgressPercentage: Double {
-        guard originalQuantity > 0 else { return 0.0 }
-        return Double(soldQuantity) / Double(originalQuantity) * 100.0
+        guard self.originalQuantity > 0 else { return 0.0 }
+        return Double(self.soldQuantity) / Double(self.originalQuantity) * 100.0
     }
 
     // Architecture: DepotHolding represents holdings with split option information

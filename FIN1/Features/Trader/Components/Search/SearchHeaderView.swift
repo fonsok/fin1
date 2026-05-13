@@ -6,7 +6,7 @@ struct SearchHeaderView: View {
 
     var body: some View {
         HStack {
-            TextField("WKN/ISIN Derivat", text: $searchText)
+            TextField("WKN/ISIN Derivat", text: self.$searchText)
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.inputFieldText)
                 .padding(ResponsiveDesign.spacing(8))

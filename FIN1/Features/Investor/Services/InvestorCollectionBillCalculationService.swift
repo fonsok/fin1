@@ -11,16 +11,16 @@ final class InvestorCollectionBillCalculationService: InvestorCollectionBillCalc
 
     func calculateCollectionBill(input: InvestorCollectionBillInput) throws -> InvestorCollectionBillOutput {
         // Validate input first
-        let validation = validateInput(input)
+        let validation = self.validateInput(input)
         if !validation.isValid {
             throw AppError.validation(validation.errorMessage ?? "Unknown validation error")
         }
 
         // Calculate buy leg
-        let buyResult = calculateBuyLeg(input: input)
+        let buyResult = self.calculateBuyLeg(input: input)
 
         // Calculate sell leg
-        let sellResult = calculateSellLeg(input: input, buyQuantity: buyResult.quantity)
+        let sellResult = self.calculateSellLeg(input: input, buyQuantity: buyResult.quantity)
 
         // Calculate profit
         let grossProfit = sellResult.amount + sellResult.fees - (buyResult.amount + buyResult.fees)
@@ -110,7 +110,7 @@ final class InvestorCollectionBillCalculationService: InvestorCollectionBillCalc
 
         // Solve for buyAmount where: buyAmount + fees(buyAmount) = investmentCapital
         // This ensures Total Buy Cost ≤ Investment Amount (accounting principle)
-        let finalBuyAmount = solveForBuyAmount(investmentCapital: investmentCapital, tolerance: 0.01)
+        let finalBuyAmount = self.solveForBuyAmount(investmentCapital: investmentCapital, tolerance: 0.01)
 
         // Calculate quantity from the final buyAmount: buyAmount / buy price, rounded down to whole number
         // CRITICAL: Only whole pieces/units can be traded, not decimals (e.g., 22.78 → 22.00)
@@ -175,7 +175,9 @@ final class InvestorCollectionBillCalculationService: InvestorCollectionBillCalc
                 residualAmount = investmentCapital - currentTotalBuyCost
             } else {
                 // No, can't afford one more unit - we're done
-                print("   ✅ Cannot afford one more unit (need €\(String(format: "%.2f", nextTotalCost)), have €\(String(format: "%.2f", investmentCapital)))")
+                print(
+                    "   ✅ Cannot afford one more unit (need €\(String(format: "%.2f", nextTotalCost)), have €\(String(format: "%.2f", investmentCapital)))"
+                )
                 break
             }
         }
@@ -188,13 +190,17 @@ final class InvestorCollectionBillCalculationService: InvestorCollectionBillCalc
 
         // Verify Total Buy Cost ≤ Investment Capital (accounting principle)
         if currentTotalBuyCost > investmentCapital {
-            print("⚠️ WARNING: Total Buy Cost (\(String(format: "%.2f", currentTotalBuyCost))) exceeds Investment Capital (\(String(format: "%.2f", investmentCapital)))")
+            print(
+                "⚠️ WARNING: Total Buy Cost (\(String(format: "%.2f", currentTotalBuyCost))) exceeds Investment Capital (\(String(format: "%.2f", investmentCapital)))"
+            )
         }
 
         // CRITICAL VALIDATION: Residual must be less than buy price
         // If residual >= buy price, something is wrong (we could have bought more)
         if residualAmount >= input.buyPrice {
-            print("⚠️ CRITICAL WARNING: Residual (\(String(format: "%.2f", residualAmount))) >= buy price (\(String(format: "%.2f", input.buyPrice))) - calculation error!")
+            print(
+                "⚠️ CRITICAL WARNING: Residual (\(String(format: "%.2f", residualAmount))) >= buy price (\(String(format: "%.2f", input.buyPrice))) - calculation error!"
+            )
         }
 
         // ROI invested amount uses pure securities value (quantity × price)
@@ -288,7 +294,7 @@ final class InvestorCollectionBillCalculationService: InvestorCollectionBillCalc
 
         // Fees from invoices (scaled by sell share based on quantity ratio)
         let sellShare = totalSellQtyFromInvoices > 0 ? (investorSellQuantity / totalSellQtyFromInvoices) : input.ownershipPercentage
-        let sellFeeDetails = buildFeeDetails(from: sellInvoices, scale: sellShare)
+        let sellFeeDetails = self.buildFeeDetails(from: sellInvoices, scale: sellShare)
         let investorSellFees = sellFeeDetails.reduce(0) { $0 + $1.amount }
 
         return SellLegResult(
@@ -330,7 +336,9 @@ final class InvestorCollectionBillCalculationService: InvestorCollectionBillCalc
                 let response = try await api.fetchInvestorCollectionBills(
                     limit: 1, skip: 0, investmentId: investmentId, tradeId: tradeId
                 )
-                print("🔍 InvestorCollectionBillCalculationService: backend returned \(response.collectionBills.count) bill(s) for trade=\(tradeId) investment=\(investmentId)")
+                print(
+                    "🔍 InvestorCollectionBillCalculationService: backend returned \(response.collectionBills.count) bill(s) for trade=\(tradeId) investment=\(investmentId)"
+                )
                 if let bill = response.collectionBills.first {
                     let hasMeta = bill.metadata != nil
                     let hasBuyLeg = bill.metadata?.buyLeg != nil
@@ -340,18 +348,26 @@ final class InvestorCollectionBillCalculationService: InvestorCollectionBillCalc
                             print("✅ InvestorCollectionBillCalculationService: Using backend data for trade \(tradeId)")
                             return output
                         } else {
-                            print("⚠️ InvestorCollectionBillCalculationService: metadata present but mapping failed (buyLeg missing) — falling back to local")
+                            print(
+                                "⚠️ InvestorCollectionBillCalculationService: metadata present but mapping failed (buyLeg missing) — falling back to local"
+                            )
                         }
                     }
                 } else {
-                    print("⚠️ InvestorCollectionBillCalculationService: backend returned no bills — falling back to local for trade=\(tradeId)")
+                    print(
+                        "⚠️ InvestorCollectionBillCalculationService: backend returned no bills — falling back to local for trade=\(tradeId)"
+                    )
                 }
             } catch {
-                print("⚠️ InvestorCollectionBillCalculationService: Backend fetch failed, falling back to local: \(error.localizedDescription)")
+                print(
+                    "⚠️ InvestorCollectionBillCalculationService: Backend fetch failed, falling back to local: \(error.localizedDescription)"
+                )
                 usedLocalFallbackDueToBackendError = true
             }
         } else {
-            print("⚠️ InvestorCollectionBillCalculationService: backend disabled (api=\(settlementAPIService != nil) tradeId=\(tradeId ?? "nil") investmentId=\(investmentId ?? "nil"))")
+            print(
+                "⚠️ InvestorCollectionBillCalculationService: backend disabled (api=\(settlementAPIService != nil) tradeId=\(tradeId ?? "nil") investmentId=\(investmentId ?? "nil"))"
+            )
         }
         var output = try calculateCollectionBill(input: input)
         if usedLocalFallbackDueToBackendError {
@@ -386,13 +402,13 @@ final class InvestorCollectionBillCalculationService: InvestorCollectionBillCalc
         let buyFeesTotal = buyLeg.fees?.totalFees ?? 0
         let residual = buyLeg.residualAmount ?? 0
 
-        let buyFeeDetails = buildFeeDetailsFromBreakdown(buyLeg.fees)
+        let buyFeeDetails = self.buildFeeDetailsFromBreakdown(buyLeg.fees)
 
         let sellQty = meta.sellLeg?.quantity ?? 0
         let sellPrice = meta.sellLeg?.price ?? 0
         let sellAmt = meta.sellLeg?.amount ?? (sellQty * sellPrice)
         let sellFeesTotal = meta.sellLeg?.fees?.totalFees ?? 0
-        let sellFeeDetails = buildFeeDetailsFromBreakdown(meta.sellLeg?.fees)
+        let sellFeeDetails = self.buildFeeDetailsFromBreakdown(meta.sellLeg?.fees)
 
         let grossProfit = meta.grossProfit ?? (sellAmt - sellFeesTotal - buyAmt - buyFeesTotal)
         let roiInvestedAmount = buyQty * buyPrice

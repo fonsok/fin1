@@ -1,5 +1,5 @@
-import SwiftUI
 import Combine
+import SwiftUI
 
 // MARK: - Market Data Model
 extension SecuritiesSearchViewModel {
@@ -23,70 +23,72 @@ final class SecuritiesSearchViewModel: ObservableObject {
 
     private var isApplyingSavedFilter = false
 
-    private func delegateProperty<T>(_ setter: @escaping (T) -> Void,
-                                     _ newValue: T,
-                                     debugName: String? = nil) {
+    private func delegateProperty<T>(
+        _ setter: @escaping (T) -> Void,
+        _ newValue: T,
+        debugName: String? = nil
+    ) {
         if let debugName = debugName {
             print("🔍 DEBUG: SecuritiesSearchViewModel.\(debugName) setter called with '\(newValue)'")
         }
 
         // Clear applied filter ID if user manually changes a filter (not during saved filter application)
-        if !isApplyingSavedFilter && appliedFilterID != nil {
-            appliedFilterID = nil
+        if !self.isApplyingSavedFilter && self.appliedFilterID != nil {
+            self.appliedFilterID = nil
         }
 
         setter(newValue)
         objectWillChange.send()
 
         // Check if current filters match any saved filter combination after change
-        if !isApplyingSavedFilter {
-            checkAndUpdateAppliedFilter()
+        if !self.isApplyingSavedFilter {
+            self.checkAndUpdateAppliedFilter()
         }
     }
 
     // Computed properties that delegate to coordinator
     var category: String {
-        get { coordinator.category }
-        set { delegateProperty({ self.coordinator.category = $0 }, newValue, debugName: "category") }
+        get { self.coordinator.category }
+        set { self.delegateProperty({ self.coordinator.category = $0 }, newValue, debugName: "category") }
     }
 
     var underlyingAsset: String {
-        get { coordinator.underlyingAsset }
-        set { delegateProperty({ self.coordinator.underlyingAsset = $0 }, newValue, debugName: "underlyingAsset") }
+        get { self.coordinator.underlyingAsset }
+        set { self.delegateProperty({ self.coordinator.underlyingAsset = $0 }, newValue, debugName: "underlyingAsset") }
     }
 
     var direction: SecuritiesSearchView.Direction {
-        get { coordinator.direction }
-        set { delegateProperty({ self.coordinator.direction = $0 }, newValue, debugName: "direction") }
+        get { self.coordinator.direction }
+        set { self.delegateProperty({ self.coordinator.direction = $0 }, newValue, debugName: "direction") }
     }
 
     var strikePriceGap: String? {
-        get { coordinator.strikePriceGap }
-        set { delegateProperty({ self.coordinator.strikePriceGap = $0 }, newValue) }
+        get { self.coordinator.strikePriceGap }
+        set { self.delegateProperty({ self.coordinator.strikePriceGap = $0 }, newValue) }
     }
 
     var remainingTerm: String? {
-        get { coordinator.remainingTerm }
-        set { delegateProperty({ self.coordinator.remainingTerm = $0 }, newValue) }
+        get { self.coordinator.remainingTerm }
+        set { self.delegateProperty({ self.coordinator.remainingTerm = $0 }, newValue) }
     }
 
     var issuer: String? {
-        get { coordinator.issuer }
-        set { delegateProperty({ self.coordinator.issuer = $0 }, newValue) }
+        get { self.coordinator.issuer }
+        set { self.delegateProperty({ self.coordinator.issuer = $0 }, newValue) }
     }
 
     var omega: String? {
-        get { coordinator.omega }
-        set { delegateProperty({ self.coordinator.omega = $0 }, newValue) }
+        get { self.coordinator.omega }
+        set { self.delegateProperty({ self.coordinator.omega = $0 }, newValue) }
     }
 
     var activeSheet: SecuritiesSearchView.ActiveSheet? {
-        get { coordinator.activeSheet }
-        set { delegateProperty({ self.coordinator.activeSheet = $0 }, newValue) }
+        get { self.coordinator.activeSheet }
+        set { self.delegateProperty({ self.coordinator.activeSheet = $0 }, newValue) }
     }
 
     var searchResults: [SearchResult] {
-        coordinator.searchResults
+        self.coordinator.searchResults
     }
 
     // Removed warrantDetailsViewModel - ViewModels should be managed by Views, not Services
@@ -95,7 +97,7 @@ final class SecuritiesSearchViewModel: ObservableObject {
 
     init(coordinator: any SecuritiesSearchCoordinatorProtocol) {
         self.coordinator = coordinator
-        setupBindings()
+        self.setupBindings()
     }
 
     deinit {
@@ -106,32 +108,32 @@ final class SecuritiesSearchViewModel: ObservableObject {
 
     private func setupBindings() {
         // Listen to coordinator's search results changes and trigger ViewModel updates
-        coordinator.searchResultsPublisher
+        self.coordinator.searchResultsPublisher
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 print("🔍 DEBUG: SecuritiesSearchViewModel received search results update")
                 self?.objectWillChange.send()
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
     }
 
     func performSearch() {
-        coordinator.performSearch()
+        self.coordinator.performSearch()
         objectWillChange.send()
     }
 
     // MARK: - Delegation Methods
 
     func getFilterDescription() -> String {
-        coordinator.getFilterDescription()
+        self.coordinator.getFilterDescription()
     }
 
     func getUnderlyingAssetSubtitle() -> String {
-        coordinator.getUnderlyingAssetSubtitle()
+        self.coordinator.getUnderlyingAssetSubtitle()
     }
 
     func getUnderlyingAssetMarketData() -> SecuritiesSearchViewModel.MarketData {
-        coordinator.getUnderlyingAssetMarketData()
+        self.coordinator.getUnderlyingAssetMarketData()
     }
 
     // MARK: - Saved Filters Management
@@ -141,84 +143,84 @@ final class SecuritiesSearchViewModel: ObservableObject {
 
     /// Sets the saved filters list to check against when filters change
     func setSavedFiltersToCheck(_ savedFilters: [SecuritiesFilterCombination]) {
-        savedFiltersToCheck = savedFilters
-        checkAndUpdateAppliedFilter()
+        self.savedFiltersToCheck = savedFilters
+        self.checkAndUpdateAppliedFilter()
     }
 
     /// Checks if current filters match any saved filter combination and updates appliedFilterID accordingly
     private func checkAndUpdateAppliedFilter() {
-        let currentFilters = getCurrentFilters()
+        let currentFilters = self.getCurrentFilters()
 
         // Find matching saved filter
         if let matchingFilter = savedFiltersToCheck.first(where: { savedFilter in
             filtersMatch(savedFilter.filters, currentFilters)
         }) {
-            appliedFilterID = matchingFilter.id.uuidString
+            self.appliedFilterID = matchingFilter.id.uuidString
         } else {
-            appliedFilterID = nil
+            self.appliedFilterID = nil
         }
     }
 
     /// Compares two SearchFilters to see if they match
     private func filtersMatch(_ filter1: SearchFilters, _ filter2: SearchFilters) -> Bool {
         return filter1.category == filter2.category &&
-               filter1.underlyingAsset == filter2.underlyingAsset &&
-               filter1.direction == filter2.direction &&
-               filter1.strikePriceGap == filter2.strikePriceGap &&
-               filter1.remainingTerm == filter2.remainingTerm &&
-               filter1.issuer == filter2.issuer &&
-               filter1.omega == filter2.omega
+            filter1.underlyingAsset == filter2.underlyingAsset &&
+            filter1.direction == filter2.direction &&
+            filter1.strikePriceGap == filter2.strikePriceGap &&
+            filter1.remainingTerm == filter2.remainingTerm &&
+            filter1.issuer == filter2.issuer &&
+            filter1.omega == filter2.omega
     }
 
     /// Gets the current filter combination from the coordinator
     func getCurrentFilters() -> SearchFilters {
         SearchFilters(
-            category: coordinator.category,
-            underlyingAsset: coordinator.underlyingAsset,
-            direction: coordinator.direction,
-            strikePriceGap: coordinator.strikePriceGap,
-            remainingTerm: coordinator.remainingTerm,
-            issuer: coordinator.issuer,
-            omega: coordinator.omega
+            category: self.coordinator.category,
+            underlyingAsset: self.coordinator.underlyingAsset,
+            direction: self.coordinator.direction,
+            strikePriceGap: self.coordinator.strikePriceGap,
+            remainingTerm: self.coordinator.remainingTerm,
+            issuer: self.coordinator.issuer,
+            omega: self.coordinator.omega
         )
     }
 
     /// Applies a saved filter combination to the current search
     func applySavedFilter(_ savedFilter: SecuritiesFilterCombination) {
-        isApplyingSavedFilter = true
-        coordinator.category = savedFilter.filters.category
-        coordinator.underlyingAsset = savedFilter.filters.underlyingAsset
-        coordinator.direction = savedFilter.filters.direction
-        coordinator.strikePriceGap = savedFilter.filters.strikePriceGap
-        coordinator.remainingTerm = savedFilter.filters.remainingTerm
-        coordinator.issuer = savedFilter.filters.issuer
-        coordinator.omega = savedFilter.filters.omega
-        appliedFilterID = savedFilter.id.uuidString
-        isApplyingSavedFilter = false
+        self.isApplyingSavedFilter = true
+        self.coordinator.category = savedFilter.filters.category
+        self.coordinator.underlyingAsset = savedFilter.filters.underlyingAsset
+        self.coordinator.direction = savedFilter.filters.direction
+        self.coordinator.strikePriceGap = savedFilter.filters.strikePriceGap
+        self.coordinator.remainingTerm = savedFilter.filters.remainingTerm
+        self.coordinator.issuer = savedFilter.filters.issuer
+        self.coordinator.omega = savedFilter.filters.omega
+        self.appliedFilterID = savedFilter.id.uuidString
+        self.isApplyingSavedFilter = false
         objectWillChange.send()
         // Trigger search after applying filters
-        performSearch()
+        self.performSearch()
     }
 
     /// Gets the currently applied filter ID
     func getAppliedFilterID() -> String? {
-        appliedFilterID
+        self.appliedFilterID
     }
 
     /// Clears the applied filter ID
     func clearAppliedFilterID() {
-        appliedFilterID = nil
+        self.appliedFilterID = nil
     }
 
     /// Checks if there are active filters (beyond defaults)
     func hasActiveFilters() -> Bool {
-        let filters = getCurrentFilters()
+        let filters = self.getCurrentFilters()
         return filters.strikePriceGap != nil ||
-               filters.remainingTerm != nil ||
-               filters.issuer != nil ||
-               filters.omega != nil ||
-               filters.category != "Warrant" ||
-               filters.underlyingAsset != "DAX" ||
-               filters.direction != .call
+            filters.remainingTerm != nil ||
+            filters.issuer != nil ||
+            filters.omega != nil ||
+            filters.category != "Warrant" ||
+            filters.underlyingAsset != "DAX" ||
+            filters.direction != .call
     }
 }

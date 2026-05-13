@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Customer Support ViewModel Helpers
 /// Helper classes to organize ViewModel functionality
@@ -19,41 +19,41 @@ final class CustomerSupportSheetManager: ObservableObject {
     var ticketToEscalate: SupportTicket?
 
     func openCreateTicketSheet(userId: String? = nil) {
-        preselectedUserId = userId
-        showCreateTicketSheet = true
+        self.preselectedUserId = userId
+        self.showCreateTicketSheet = true
     }
 
     func closeCreateTicketSheet() {
-        showCreateTicketSheet = false
-        preselectedUserId = nil
+        self.showCreateTicketSheet = false
+        self.preselectedUserId = nil
     }
 
     func openRespondTicketSheet(for ticket: SupportTicket) {
-        ticketToRespond = ticket
-        showRespondTicketSheet = true
+        self.ticketToRespond = ticket
+        self.showRespondTicketSheet = true
     }
 
     func closeRespondTicketSheet() {
-        showRespondTicketSheet = false
-        ticketToRespond = nil
+        self.showRespondTicketSheet = false
+        self.ticketToRespond = nil
     }
 
     func openEscalateTicketSheet(for ticket: SupportTicket) {
-        ticketToEscalate = ticket
-        showEscalateTicketSheet = true
+        self.ticketToEscalate = ticket
+        self.showEscalateTicketSheet = true
     }
 
     func closeEscalateTicketSheet() {
-        showEscalateTicketSheet = false
-        ticketToEscalate = nil
+        self.showEscalateTicketSheet = false
+        self.ticketToEscalate = nil
     }
 
     func openKYCStatusList() {
-        showKYCStatusList = true
+        self.showKYCStatusList = true
     }
 
     func closeKYCStatusList() {
-        showKYCStatusList = false
+        self.showKYCStatusList = false
     }
 }
 
@@ -72,7 +72,7 @@ final class CustomerSupportSearchCoordinator: ObservableObject {
     }
 
     func setupSearchDebounce(cancellables: inout Set<AnyCancellable>, onSearch: @escaping (String) async -> Void) {
-        $searchQuery
+        self.$searchQuery
             .debounce(for: .milliseconds(300), scheduler: DispatchQueue.main)
             .removeDuplicates()
             .sink { query in
@@ -85,18 +85,18 @@ final class CustomerSupportSearchCoordinator: ObservableObject {
 
     func performSearch(query: String) async throws -> [CustomerSearchResult] {
         guard !query.isEmpty else {
-            searchResults = []
+            self.searchResults = []
             return []
         }
-        isSearching = true
+        self.isSearching = true
         defer { isSearching = false }
         let results = try await supportService.searchCustomers(query: query)
-        searchResults = results
+        self.searchResults = results
         return results
     }
 
     func getAllCustomers() async throws -> [CustomerSearchResult] {
-        try await supportService.searchCustomers(query: "")
+        try await self.supportService.searchCustomers(query: "")
     }
 }
 
@@ -111,28 +111,28 @@ final class CustomerSupportErrorHandler: ObservableObject {
 
     func handleError(_ error: Error) {
         let appError = error.toAppError()
-        errorMessage = appError.errorDescription ?? "An error occurred"
-        showError = true
+        self.errorMessage = appError.errorDescription ?? "An error occurred"
+        self.showError = true
     }
 
     func clearError() {
-        showError = false
-        errorMessage = nil
+        self.showError = false
+        self.errorMessage = nil
     }
 
     func showSuccessMessage(_ message: String) {
-        successMessage = message
-        showSuccess = true
+        self.successMessage = message
+        self.showSuccess = true
     }
 
     func clearSuccess() {
-        showSuccess = false
-        successMessage = nil
+        self.showSuccess = false
+        self.successMessage = nil
     }
 
     func showPermissionError(_ permission: CustomerSupportPermission) {
-        errorMessage = "Keine Berechtigung: \(permission.displayName)"
-        showError = true
+        self.errorMessage = "Keine Berechtigung: \(permission.displayName)"
+        self.showError = true
     }
 }
 
@@ -147,7 +147,7 @@ final class CustomerSupportTicketCoordinator {
     }
 
     func loadTickets(userId: String?) async throws -> [SupportTicket] {
-        try await supportService.getSupportTickets(userId: userId)
+        try await self.supportService.getSupportTickets(userId: userId)
     }
 }
 
@@ -162,7 +162,7 @@ final class CustomerSupportCustomerCoordinator {
     }
 
     func getProfile(userId: String) async throws -> CustomerProfile? {
-        try await supportService.getCustomerProfile(userId: userId)
+        try await self.supportService.getCustomerProfile(userId: userId)
     }
 }
 
@@ -177,7 +177,7 @@ final class CustomerSupportKYCCoordinator {
     }
 
     func getKYCStatus(customerNumber: String) async throws -> CustomerKYCStatus {
-        try await supportService.getCustomerKYCStatus(customerNumber: customerNumber)
+        try await self.supportService.getCustomerKYCStatus(customerNumber: customerNumber)
     }
 }
 
@@ -192,11 +192,11 @@ final class CustomerSupportCustomerDataLoader {
     }
 
     func loadInvestments(userId: String) async throws -> [CustomerInvestmentSummary] {
-        try await supportService.getCustomerInvestments(userId: userId)
+        try await self.supportService.getCustomerInvestments(userId: userId)
     }
 
     func loadDocuments(customerNumber: String) async throws -> [CustomerDocumentSummary] {
-        try await supportService.getCustomerDocuments(customerNumber: customerNumber)
+        try await self.supportService.getCustomerDocuments(customerNumber: customerNumber)
     }
 }
 
@@ -215,31 +215,31 @@ final class CustomerSupportTicketOperationsHandler {
     func createTicket(userId: String, subject: String, description: String, priority: SupportTicket.TicketPriority) async {
         do {
             let ticket = SupportTicketCreate(userId: userId, subject: subject, description: description, priority: priority)
-            _ = try await supportService.createSupportTicket(ticket)
-            viewModel?.showSuccessMessage("Ticket wurde erstellt.")
-            await viewModel?.load()
+            _ = try await self.supportService.createSupportTicket(ticket)
+            self.viewModel?.showSuccessMessage("Ticket wurde erstellt.")
+            await self.viewModel?.load()
         } catch {
-            viewModel?.handleError(error)
+            self.viewModel?.handleError(error)
         }
     }
 
     func respondToTicket(_ ticketId: String, message: String, isInternal: Bool, selectedTicketId: String?) async {
         do {
-            try await supportService.respondToTicket(ticketId: ticketId, response: message, isInternal: isInternal)
-            viewModel?.showSuccessMessage("Antwort wurde gesendet.")
-            await viewModel?.load()
+            try await self.supportService.respondToTicket(ticketId: ticketId, response: message, isInternal: isInternal)
+            self.viewModel?.showSuccessMessage("Antwort wurde gesendet.")
+            await self.viewModel?.load()
         } catch {
-            viewModel?.handleError(error)
+            self.viewModel?.handleError(error)
         }
     }
 
     func escalateTicket(_ ticketId: String, reason: String) async {
         do {
-            try await supportService.escalateTicket(ticketId: ticketId, reason: reason)
-            viewModel?.showSuccessMessage("Ticket wurde eskaliert.")
-            await viewModel?.load()
+            try await self.supportService.escalateTicket(ticketId: ticketId, reason: reason)
+            self.viewModel?.showSuccessMessage("Ticket wurde eskaliert.")
+            await self.viewModel?.load()
         } catch {
-            viewModel?.handleError(error)
+            self.viewModel?.handleError(error)
         }
     }
 }
@@ -258,19 +258,19 @@ final class CustomerSupportCustomerOperationsHandler {
 
     func initiatePasswordReset(customerNumber: String) async {
         do {
-            try await supportService.initiatePasswordReset(customerNumber: customerNumber)
-            viewModel?.showSuccessMessage("Passwort-Reset wurde initiiert.")
+            try await self.supportService.initiatePasswordReset(customerNumber: customerNumber)
+            self.viewModel?.showSuccessMessage("Passwort-Reset wurde initiiert.")
         } catch {
-            viewModel?.handleError(error)
+            self.viewModel?.handleError(error)
         }
     }
 
     func unlockAccount(customerNumber: String, reason: String) async {
         do {
-            try await supportService.unlockAccount(customerNumber: customerNumber, reason: reason)
-            viewModel?.showSuccessMessage("Konto wurde entsperrt.")
+            try await self.supportService.unlockAccount(customerNumber: customerNumber, reason: reason)
+            self.viewModel?.showSuccessMessage("Konto wurde entsperrt.")
         } catch {
-            viewModel?.handleError(error)
+            self.viewModel?.handleError(error)
         }
     }
 }
@@ -283,7 +283,11 @@ final class CustomerSupportCustomerSelectionHandler {
     private let dataLoader: CustomerSupportCustomerDataLoader
     private weak var viewModel: CustomerSupportDashboardViewModel?
 
-    init(supportService: CustomerSupportServiceProtocol, dataLoader: CustomerSupportCustomerDataLoader, viewModel: CustomerSupportDashboardViewModel) {
+    init(
+        supportService: CustomerSupportServiceProtocol,
+        dataLoader: CustomerSupportCustomerDataLoader,
+        viewModel: CustomerSupportDashboardViewModel
+    ) {
         self.supportService = supportService
         self.dataLoader = dataLoader
         self.viewModel = viewModel
@@ -292,14 +296,16 @@ final class CustomerSupportCustomerSelectionHandler {
     func selectCustomer(_ result: CustomerSearchResult) async {
         do {
             let profile = try await supportService.getCustomerProfile(userId: result.id)
-            viewModel?.selectedCustomer = profile
+            self.viewModel?.selectedCustomer = profile
             if let profile {
-                viewModel?.customerKYCStatus = try await supportService.getCustomerKYCStatus(customerNumber: profile.customerNumber)
-                viewModel?.customerInvestments = try await dataLoader.loadInvestments(userId: profile.id)
-                viewModel?.customerDocuments = try await dataLoader.loadDocuments(customerNumber: profile.customerNumber)
+                self.viewModel?.customerKYCStatus = try await self.supportService.getCustomerKYCStatus(
+                    customerNumber: profile.customerNumber
+                )
+                self.viewModel?.customerInvestments = try await self.dataLoader.loadInvestments(userId: profile.id)
+                self.viewModel?.customerDocuments = try await self.dataLoader.loadDocuments(customerNumber: profile.customerNumber)
             }
         } catch {
-            viewModel?.handleError(error)
+            self.viewModel?.handleError(error)
         }
     }
 }
@@ -319,9 +325,9 @@ final class CustomerSupportKYCOperationsHandler {
     func loadKYCStatusList() async {
         do {
             let customers = try await supportService.searchCustomers(query: "")
-            viewModel?.kycStatusList = customers
+            self.viewModel?.kycStatusList = customers
         } catch {
-            viewModel?.handleError(error)
+            self.viewModel?.handleError(error)
         }
     }
 }
@@ -348,7 +354,11 @@ enum CustomerSupportViewModelBuilder {
         Handlers(
             ticketOperationsHandler: CustomerSupportTicketOperationsHandler(supportService: supportService, viewModel: viewModel),
             customerOperationsHandler: CustomerSupportCustomerOperationsHandler(supportService: supportService, viewModel: viewModel),
-            customerSelectionHandler: CustomerSupportCustomerSelectionHandler(supportService: supportService, dataLoader: customerDataLoader, viewModel: viewModel),
+            customerSelectionHandler: CustomerSupportCustomerSelectionHandler(
+                supportService: supportService,
+                dataLoader: customerDataLoader,
+                viewModel: viewModel
+            ),
             kycOperationsHandler: CustomerSupportKYCOperationsHandler(supportService: supportService, viewModel: viewModel)
         )
     }
@@ -357,7 +367,9 @@ enum CustomerSupportViewModelBuilder {
 // MARK: - Permissions Helper
 
 enum CustomerSupportPermissionsHelper {
-    static func permissionsByCategory(hasPermission: (CustomerSupportPermission) -> Bool) -> [PermissionCategory: [CustomerSupportPermission]] {
+    static func permissionsByCategory(hasPermission: (CustomerSupportPermission) -> Bool) -> [
+        PermissionCategory: [CustomerSupportPermission]
+    ] {
         var result: [PermissionCategory: [CustomerSupportPermission]] = [:]
         for permission in CustomerSupportPermission.allCases {
             if hasPermission(permission) {

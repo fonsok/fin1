@@ -1,6 +1,6 @@
-import Foundation
 import Combine
 @testable import FIN1
+import Foundation
 
 // MARK: - Mock Document Service (Simplified)
 /// Simplified mock using closure-based behavior instead of multiple configuration properties
@@ -11,7 +11,7 @@ class MockDocumentService: DocumentServiceProtocol {
     @Published var showError: Bool = false
     
     var documentsPublisher: AnyPublisher<[Document], Never> {
-        $documents.eraseToAnyPublisher()
+        self.$documents.eraseToAnyPublisher()
     }
 
     // MARK: - Behavior Closures (Simplified Approach)
@@ -33,7 +33,7 @@ class MockDocumentService: DocumentServiceProtocol {
         if let handler = uploadDocumentHandler {
             try await handler(document)
         } else {
-            documents.append(document)
+            self.documents.append(document)
         }
     }
 
@@ -41,7 +41,7 @@ class MockDocumentService: DocumentServiceProtocol {
         if let handler = deleteDocumentHandler {
             try await handler(document)
         } else {
-            documents.removeAll { $0.id == document.id }
+            self.documents.removeAll { $0.id == document.id }
         }
     }
 
@@ -56,15 +56,15 @@ class MockDocumentService: DocumentServiceProtocol {
 
     // MARK: - Queries
     func getDocuments(for userId: String) -> [Document] {
-        documents.filter { $0.userId == userId }
+        self.documents.filter { $0.userId == userId }
     }
 
     func getDocumentsByType(_ type: DocumentType, for userId: String) -> [Document] {
-        documents.filter { $0.userId == userId && $0.type == type }
+        self.documents.filter { $0.userId == userId && $0.type == type }
     }
 
     func getDocument(by id: String) -> Document? {
-        documents.first { $0.id == id }
+        self.documents.first { $0.id == id }
     }
 
     @MainActor
@@ -76,19 +76,19 @@ class MockDocumentService: DocumentServiceProtocol {
     }
 
     func getDocumentsForTrade(_ tradeId: String) -> [Document] {
-        documents.filter { $0.tradeId == tradeId }
+        self.documents.filter { $0.tradeId == tradeId }
     }
 
     func getDocumentsForInvestment(_ investmentId: String) -> [Document] {
-        documents.filter { $0.investmentId == investmentId }
+        self.documents.filter { $0.investmentId == investmentId }
     }
 
     func documentExists(for tradeId: String, ofType type: DocumentType) -> Bool {
-        documents.contains { $0.tradeId == tradeId && $0.type == type }
+        self.documents.contains { $0.tradeId == tradeId && $0.type == type }
     }
 
     func documentExists(forInvestmentId investmentId: String, ofType type: DocumentType) -> Bool {
-        documents.contains { $0.investmentId == investmentId && $0.type == type }
+        self.documents.contains { $0.investmentId == investmentId && $0.type == type }
     }
 
     // MARK: - Validation & Status
@@ -102,12 +102,12 @@ class MockDocumentService: DocumentServiceProtocol {
 
     // MARK: - Status Management
     func markAllDocumentsAsRead() {
-        for idx in documents.indices { documents[idx].readAt = Date() }
+        for idx in self.documents.indices { self.documents[idx].readAt = Date() }
     }
 
     func markDocumentAsRead(_ document: Document) {
         if let idx = documents.firstIndex(where: { $0.id == document.id }) {
-            documents[idx].readAt = Date()
+            self.documents[idx].readAt = Date()
         }
     }
 
@@ -123,13 +123,13 @@ class MockDocumentService: DocumentServiceProtocol {
     func stop() {}
 
     func reset() {
-        documents.removeAll()
-        isLoading = false
-        errorMessage = nil
-        showError = false
+        self.documents.removeAll()
+        self.isLoading = false
+        self.errorMessage = nil
+        self.showError = false
         // Reset all handlers
-        uploadDocumentHandler = nil
-        deleteDocumentHandler = nil
-        downloadDocumentHandler = nil
+        self.uploadDocumentHandler = nil
+        self.deleteDocumentHandler = nil
+        self.downloadDocumentHandler = nil
     }
 }

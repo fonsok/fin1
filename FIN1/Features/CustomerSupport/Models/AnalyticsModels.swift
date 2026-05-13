@@ -34,21 +34,21 @@ struct TicketMetrics: Codable {
 
     // Computed display values
     var firstResponseTimeFormatted: String {
-        formatHours(averageFirstResponseTime)
+        self.formatHours(self.averageFirstResponseTime)
     }
 
     var resolutionTimeFormatted: String {
-        formatHours(averageResolutionTime)
+        self.formatHours(self.averageResolutionTime)
     }
 
     var closureRate: Double {
-        guard totalTickets > 0 else { return 0 }
-        return Double(closedTickets) / Double(totalTickets) * 100
+        guard self.totalTickets > 0 else { return 0 }
+        return Double(self.closedTickets) / Double(self.totalTickets) * 100
     }
 
     var escalationRate: Double {
-        guard totalTickets > 0 else { return 0 }
-        return Double(escalatedTickets) / Double(totalTickets) * 100
+        guard self.totalTickets > 0 else { return 0 }
+        return Double(self.escalatedTickets) / Double(self.totalTickets) * 100
     }
 
     private func formatHours(_ hours: Double) -> String {
@@ -88,7 +88,7 @@ struct TicketMetrics: Codable {
 
 /// Individual agent performance metrics
 struct AgentMetrics: Identifiable, Codable {
-    var id: String { agentId }
+    var id: String { self.agentId }
 
     let agentId: String
     let agentName: String
@@ -113,29 +113,29 @@ struct AgentMetrics: Identifiable, Codable {
 
     // Computed properties
     var closureRate: Double {
-        guard ticketsAssigned > 0 else { return 0 }
-        return Double(ticketsClosed) / Double(ticketsAssigned) * 100
+        guard self.ticketsAssigned > 0 else { return 0 }
+        return Double(self.ticketsClosed) / Double(self.ticketsAssigned) * 100
     }
 
     var escalationRate: Double {
-        guard ticketsAssigned > 0 else { return 0 }
-        return Double(ticketsEscalated) / Double(ticketsAssigned) * 100
+        guard self.ticketsAssigned > 0 else { return 0 }
+        return Double(self.ticketsEscalated) / Double(self.ticketsAssigned) * 100
     }
 
     var reopenRate: Double {
-        guard ticketsClosed > 0 else { return 0 }
-        return Double(ticketsReopened) / Double(ticketsClosed) * 100
+        guard self.ticketsClosed > 0 else { return 0 }
+        return Double(self.ticketsReopened) / Double(self.ticketsClosed) * 100
     }
 
     var positiveRatingPercentage: Double {
-        guard surveysReceived > 0 else { return 0 }
-        return Double(positiveRatings) / Double(surveysReceived) * 100
+        guard self.surveysReceived > 0 else { return 0 }
+        return Double(self.positiveRatings) / Double(self.surveysReceived) * 100
     }
 
     var performanceLevel: PerformanceLevel {
-        if customerSatisfactionScore >= 4.5 && closureRate >= 80 { return .excellent }
-        if customerSatisfactionScore >= 4.0 && closureRate >= 70 { return .good }
-        if customerSatisfactionScore >= 3.0 && closureRate >= 50 { return .average }
+        if self.customerSatisfactionScore >= 4.5 && self.closureRate >= 80 { return .excellent }
+        if self.customerSatisfactionScore >= 4.0 && self.closureRate >= 70 { return .good }
+        if self.customerSatisfactionScore >= 3.0 && self.closureRate >= 50 { return .average }
         return .needsImprovement
     }
 

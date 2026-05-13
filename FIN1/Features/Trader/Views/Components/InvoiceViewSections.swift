@@ -144,7 +144,7 @@ struct InvoiceViewSections {
 
                     Spacer()
 
-                    Text(calculateEstimatedTotal(order: order).formattedAsLocalizedCurrency())
+                    Text(self.calculateEstimatedTotal(order: order).formattedAsLocalizedCurrency())
                         .font(ResponsiveDesign.bodyFont())
                         .fontWeight(.semibold)
                         .foregroundColor(.accentColor)

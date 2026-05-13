@@ -143,26 +143,26 @@ struct AuthResult: Equatable {
 
     /// Check if the token is expired
     var isExpired: Bool {
-        Date() >= expiresAt
+        Date() >= self.expiresAt
     }
 
     /// Check if the token will expire soon (within 5 minutes)
     var willExpireSoon: Bool {
-        Date().addingTimeInterval(300) >= expiresAt
+        Date().addingTimeInterval(300) >= self.expiresAt
     }
 
     // MARK: - Equatable (excluding claims)
 
     static func == (lhs: AuthResult, rhs: AuthResult) -> Bool {
         lhs.accessToken == rhs.accessToken &&
-        lhs.refreshToken == rhs.refreshToken &&
-        lhs.idToken == rhs.idToken &&
-        lhs.expiresAt == rhs.expiresAt &&
-        lhs.tokenType == rhs.tokenType &&
-        lhs.userId == rhs.userId &&
-        lhs.email == rhs.email &&
-        lhs.fullName == rhs.fullName &&
-        lhs.method == rhs.method
+            lhs.refreshToken == rhs.refreshToken &&
+            lhs.idToken == rhs.idToken &&
+            lhs.expiresAt == rhs.expiresAt &&
+            lhs.tokenType == rhs.tokenType &&
+            lhs.userId == rhs.userId &&
+            lhs.email == rhs.email &&
+            lhs.fullName == rhs.fullName &&
+            lhs.method == rhs.method
     }
 }
 

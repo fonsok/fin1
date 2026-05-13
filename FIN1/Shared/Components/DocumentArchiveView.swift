@@ -13,17 +13,17 @@ struct DocumentArchiveView: View {
 
                 VStack(spacing: ResponsiveDesign.spacing(0)) {
                     // Filter Header
-                    filterHeader
+                    self.filterHeader
 
                     // Archived Documents List
                     ScrollView {
                         LazyVStack(spacing: ResponsiveDesign.spacing(16)) {
-                            ForEach(filteredArchivedDocuments) { document in
+                            ForEach(self.filteredArchivedDocuments) { document in
                                 ArchivedDocumentCard(document: document)
                             }
 
-                            if filteredArchivedDocuments.isEmpty {
-                                emptyStateView
+                            if self.filteredArchivedDocuments.isEmpty {
+                                self.emptyStateView
                             }
                         }
                         .padding(.horizontal, 16)
@@ -37,7 +37,7 @@ struct DocumentArchiveView: View {
             .toolbar(content: {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Close") {
-                        dismiss()
+                        self.dismiss()
                     }
                     .foregroundColor(AppTheme.accentLightBlue)
                 }
@@ -54,18 +54,18 @@ struct DocumentArchiveView: View {
                     // All documents filter
                     DocumentFilterPill(
                         title: "All",
-                        isSelected: selectedFilter == nil
+                        isSelected: self.selectedFilter == nil
                     ) {
-                        selectedFilter = nil
+                        self.selectedFilter = nil
                     }
 
                     // Document type filters
                     ForEach(DocumentType.allCases, id: \.self) { documentType in
                         DocumentFilterPill(
                             title: documentType.rawValue,
-                            isSelected: selectedFilter == documentType
+                            isSelected: self.selectedFilter == documentType
                         ) {
-                            selectedFilter = documentType
+                            self.selectedFilter = documentType
                         }
                     }
                 }
@@ -78,7 +78,7 @@ struct DocumentArchiveView: View {
 
     // MARK: - Filtered Archived Documents
     private var filteredArchivedDocuments: [Document] {
-        let currentUser = appServices.userService.currentUser
+        let currentUser = self.appServices.userService.currentUser
         let directUserId = currentUser?.id ?? ""
         let stableUserId: String = {
             guard let email = currentUser?.email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased(),
@@ -87,14 +87,14 @@ struct DocumentArchiveView: View {
         }()
         let allDocuments = [directUserId, stableUserId]
             .filter { !$0.isEmpty }
-            .flatMap { appServices.documentService.getDocuments(for: $0) }
+            .flatMap { self.appServices.documentService.getDocuments(for: $0) }
             .reduce(into: [String: Document]()) { dict, doc in dict[doc.id] = doc }
             .map(\.value)
 
         // Get documents that are older than 24 hours after being read
         let archivedDocuments = allDocuments.filter { document in
             guard let readAt = document.readAt else { return false }
-            return Date().timeIntervalSince(readAt) > 86400 // 24 hours
+            return Date().timeIntervalSince(readAt) > 86_400 // 24 hours
         }
 
         let withoutInternalLedgerBelege = archivedDocuments.filter { !$0.isExcludedFromInvestorDocumentInbox }
@@ -134,14 +134,14 @@ struct DocumentFilterPill: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: action, label: {
-            Text(title)
+        Button(action: self.action, label: {
+            Text(self.title)
                 .font(ResponsiveDesign.captionFont())
                 .fontWeight(.medium)
-                .foregroundColor(isSelected ? AppTheme.screenBackground : AppTheme.accentLightBlue)
+                .foregroundColor(self.isSelected ? AppTheme.screenBackground : AppTheme.accentLightBlue)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
-                .background(isSelected ? AppTheme.accentLightBlue : Color.clear)
+                .background(self.isSelected ? AppTheme.accentLightBlue : Color.clear)
                 .overlay(
                     RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(20))
                         .stroke(AppTheme.accentLightBlue, lineWidth: 1)
@@ -160,17 +160,17 @@ struct ArchivedDocumentCard: View {
         VStack(spacing: ResponsiveDesign.spacing(12)) {
             HStack(spacing: ResponsiveDesign.spacing(16)) {
                 // Icon
-                Image(systemName: document.icon)
+                Image(systemName: self.document.icon)
                     .font(ResponsiveDesign.headlineFont())
-                    .foregroundColor(document.type.color)
+                    .foregroundColor(self.document.type.color)
                     .frame(width: 40, height: 40)
-                    .background(document.type.color.opacity(0.1))
+                    .background(self.document.type.color.opacity(0.1))
                     .clipShape(Circle())
 
                 // Content
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
-                        Text(document.title)
+                        Text(self.document.title)
                             .font(ResponsiveDesign.headlineFont())
                             .fontWeight(.semibold)
                             .foregroundColor(AppTheme.fontColor.opacity(0.7))
@@ -183,21 +183,21 @@ struct ArchivedDocumentCard: View {
                             .foregroundColor(AppTheme.fontColor.opacity(0.5))
                     }
 
-                    Text(document.description)
+                    Text(self.document.description)
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(AppTheme.fontColor.opacity(0.6))
                         .lineLimit(2)
                         .multilineTextAlignment(.leading)
 
                     HStack {
-                        Text(document.timestamp, style: .date)
+                        Text(self.document.timestamp, style: .date)
                             .font(ResponsiveDesign.captionFont())
                             .foregroundColor(AppTheme.fontColor.opacity(0.5))
                             .textCase(.uppercase)
 
                         Spacer()
 
-                        Text("\(document.fileSize) • \(document.fileFormat)")
+                        Text("\(self.document.fileSize) • \(self.document.fileFormat)")
                             .font(ResponsiveDesign.captionFont())
                             .foregroundColor(AppTheme.fontColor.opacity(0.5))
                     }
@@ -211,7 +211,7 @@ struct ArchivedDocumentCard: View {
                 Button(action: {
                     Task {
                         do {
-                            _ = try await appServices.documentService.downloadDocument(document)
+                            _ = try await self.appServices.documentService.downloadDocument(self.document)
                             // Handle successful download if needed
                         } catch {
                             // Handle download error if needed
@@ -220,7 +220,7 @@ struct ArchivedDocumentCard: View {
                     }
                 }) {
                     HStack {
-                        if document.downloadedAt != nil {
+                        if self.document.downloadedAt != nil {
                             Image(systemName: "checkmark.circle.fill")
                             Text("Downloaded")
                         } else {
@@ -229,13 +229,13 @@ struct ArchivedDocumentCard: View {
                         }
                     }
                     .font(ResponsiveDesign.captionFont())
-                    .foregroundColor(document.downloadedAt != nil ? AppTheme.accentLightBlue : AppTheme.accentGreen)
+                    .foregroundColor(self.document.downloadedAt != nil ? AppTheme.accentLightBlue : AppTheme.accentGreen)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
-                    .background((document.downloadedAt != nil ? AppTheme.accentLightBlue : AppTheme.accentGreen).opacity(0.1))
+                    .background((self.document.downloadedAt != nil ? AppTheme.accentLightBlue : AppTheme.accentGreen).opacity(0.1))
                     .cornerRadius(ResponsiveDesign.spacing(6))
                 }
-                .disabled(document.downloadedAt != nil)
+                .disabled(self.document.downloadedAt != nil)
 
                 Spacer()
             }

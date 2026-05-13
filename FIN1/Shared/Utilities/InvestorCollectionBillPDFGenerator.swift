@@ -1,5 +1,5 @@
-import UIKit
 import PDFKit
+import UIKit
 
 struct InvestorCollectionBillPDFGenerator {
 
@@ -9,11 +9,11 @@ struct InvestorCollectionBillPDFGenerator {
     nonisolated(unsafe) static var useImprovedGeneration: Bool = true
 
     static func generatePreviewImage(for document: Document) -> UIImage {
-        if useImprovedGeneration {
-            let pdfData = generatePDFData(for: document)
+        if self.useImprovedGeneration {
+            let pdfData = self.generatePDFData(for: document)
             guard let pdfDocument = PDFDocument(data: pdfData),
                   let page = pdfDocument.page(at: 0) else {
-                return generateLegacyPreview(for: document)
+                return self.generateLegacyPreview(for: document)
             }
 
             let pageRect = page.bounds(for: .mediaBox)
@@ -24,24 +24,24 @@ struct InvestorCollectionBillPDFGenerator {
             defer { UIGraphicsEndImageContext() }
 
             guard let context = UIGraphicsGetCurrentContext() else {
-                return generateLegacyPreview(for: document)
+                return self.generateLegacyPreview(for: document)
             }
 
             context.scaleBy(x: scale, y: scale)
             page.draw(with: .mediaBox, to: context)
 
-            return UIGraphicsGetImageFromCurrentImageContext() ?? generateLegacyPreview(for: document)
+            return UIGraphicsGetImageFromCurrentImageContext() ?? self.generateLegacyPreview(for: document)
         }
 
-        return generateLegacyPreview(for: document)
+        return self.generateLegacyPreview(for: document)
     }
 
     static func generatePDFData(for document: Document) -> Data {
-        if useImprovedGeneration {
-            return generateImprovedPDF(for: document)
+        if self.useImprovedGeneration {
+            return self.generateImprovedPDF(for: document)
         }
 
-        return generateLegacyPDF(for: document)
+        return self.generateLegacyPDF(for: document)
     }
 
     // MARK: - Improved PDF Generation
@@ -68,7 +68,7 @@ struct InvestorCollectionBillPDFGenerator {
             cgContext.setShouldSmoothFonts(true)
             cgContext.interpolationQuality = .high
 
-            drawImprovedContent(in: cgContext, document: document, pageRect: pageRect)
+            self.drawImprovedContent(in: cgContext, document: document, pageRect: pageRect)
         }
     }
 
@@ -113,7 +113,7 @@ struct InvestorCollectionBillPDFGenerator {
             ["Dateigröße", document.formattedSize]
         ]
 
-        y = drawInfoTable(in: context, data: tableData, pageRect: pageRect, currentY: y)
+        y = self.drawInfoTable(in: context, data: tableData, pageRect: pageRect, currentY: y)
 
         // Footer
         y += PDFStylingImproved.sectionSpacing
@@ -195,7 +195,7 @@ struct InvestorCollectionBillPDFGenerator {
         let renderer = UIGraphicsPDFRenderer(bounds: bounds)
         return renderer.pdfData { ctx in
             ctx.beginPage()
-            drawLegacyContent(in: ctx.cgContext, rect: bounds, document: document)
+            self.drawLegacyContent(in: ctx.cgContext, rect: bounds, document: document)
         }
     }
 
@@ -203,7 +203,7 @@ struct InvestorCollectionBillPDFGenerator {
         let size = CGSize(width: 612, height: 792)
         let renderer = UIGraphicsImageRenderer(size: size)
         return renderer.image { context in
-            drawLegacyContent(in: context.cgContext, rect: CGRect(origin: .zero, size: size), document: document)
+            self.drawLegacyContent(in: context.cgContext, rect: CGRect(origin: .zero, size: size), document: document)
         }
     }
 
@@ -244,7 +244,7 @@ struct InvestorCollectionBillPDFGenerator {
         Status: \(document.status.displayName)
         Uploaded: \(uploaded)
         File Size: \(document.formattedSize)
-
+        
         This preview contains placeholder data for investor documentation.
         """
 

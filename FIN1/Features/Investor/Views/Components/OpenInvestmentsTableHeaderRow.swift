@@ -13,8 +13,8 @@ struct OpenInvestmentsTableHeaderRow: View {
             }
             .modifier(OpenInvestmentsHeaderCellModifier(
                 columnKey: "pool",
-                columnWidths: columnWidths,
-                forMeasurement: forMeasurement,
+                columnWidths: self.columnWidths,
+                forMeasurement: self.forMeasurement,
                 alignment: .leading
             ))
 
@@ -22,13 +22,13 @@ struct OpenInvestmentsTableHeaderRow: View {
                 HStack(spacing: ResponsiveDesign.spacing(2)) {
                     Text("Status")
                         .font(ResponsiveDesign.bodyFont())
-                        .foregroundColor(forMeasurement ? .clear : AppTheme.fontColor)
+                        .foregroundColor(self.forMeasurement ? .clear : AppTheme.fontColor)
 
-                    if forMeasurement {
+                    if self.forMeasurement {
                         Image(systemName: "info.circle")
                             .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 0.8))
                     } else {
-                        Button(action: onShowStatusInfo) {
+                        Button(action: self.onShowStatusInfo) {
                             Image(systemName: "info.circle")
                                 .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 0.8))
                                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
@@ -38,8 +38,8 @@ struct OpenInvestmentsTableHeaderRow: View {
             }
             .modifier(OpenInvestmentsHeaderCellModifier(
                 columnKey: "status",
-                columnWidths: columnWidths,
-                forMeasurement: forMeasurement,
+                columnWidths: self.columnWidths,
+                forMeasurement: self.forMeasurement,
                 alignment: .leading
             ))
 
@@ -49,8 +49,8 @@ struct OpenInvestmentsTableHeaderRow: View {
             }
             .modifier(OpenInvestmentsHeaderCellModifier(
                 columnKey: "amount",
-                columnWidths: columnWidths,
-                forMeasurement: forMeasurement,
+                columnWidths: self.columnWidths,
+                forMeasurement: self.forMeasurement,
                 alignment: .trailing
             ))
 
@@ -60,8 +60,8 @@ struct OpenInvestmentsTableHeaderRow: View {
             }
             .modifier(OpenInvestmentsHeaderCellModifier(
                 columnKey: "profit",
-                columnWidths: columnWidths,
-                forMeasurement: forMeasurement,
+                columnWidths: self.columnWidths,
+                forMeasurement: self.forMeasurement,
                 alignment: .trailing
             ))
 
@@ -71,8 +71,8 @@ struct OpenInvestmentsTableHeaderRow: View {
             }
             .modifier(OpenInvestmentsHeaderCellModifier(
                 columnKey: "return",
-                columnWidths: columnWidths,
-                forMeasurement: forMeasurement,
+                columnWidths: self.columnWidths,
+                forMeasurement: self.forMeasurement,
                 alignment: .trailing
             ))
 
@@ -85,8 +85,8 @@ struct OpenInvestmentsTableHeaderRow: View {
             }
             .modifier(OpenInvestmentsHeaderCellModifier(
                 columnKey: "docRef",
-                columnWidths: columnWidths,
-                forMeasurement: forMeasurement,
+                columnWidths: self.columnWidths,
+                forMeasurement: self.forMeasurement,
                 alignment: .leading
             ))
         }

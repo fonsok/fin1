@@ -22,8 +22,8 @@ final class InvoiceBackfillService {
     func backfillInvoices() async {
         print("📄 Starting invoice backfill for existing trades...")
 
-        let completedTrades = tradeService.completedTrades
-        let existingInvoices = invoiceService.invoices
+        let completedTrades = self.tradeService.completedTrades
+        let existingInvoices = self.invoiceService.invoices
 
         for trade in completedTrades where trade.status == .completed {
             // CRITICAL: Use trade.traderId as customer number for proper trader isolation
@@ -85,18 +85,18 @@ final class InvoiceBackfillService {
             }
         }
 
-        print("📄 Invoice backfill complete. Total invoices: \(invoiceService.invoices.count)")
+        print("📄 Invoice backfill complete. Total invoices: \(self.invoiceService.invoices.count)")
     }
 
     /// Remove sample invoices that don't match any real trades
     func cleanupSampleInvoices() async {
         print("🧹 Cleaning up sample invoices...")
 
-        let completedTrades = tradeService.completedTrades
+        let completedTrades = self.tradeService.completedTrades
         let tradeIds = Set(completedTrades.map { $0.id })
 
         // Remove invoices that have sample-trade-id or don't match any real trade
-        let invoicesToKeep = invoiceService.invoices.filter { invoice in
+        let invoicesToKeep = self.invoiceService.invoices.filter { invoice in
             guard let tradeId = invoice.tradeId else { return false }
             return tradeIds.contains(tradeId)
         }

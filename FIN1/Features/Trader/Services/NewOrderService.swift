@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Order Status Configuration
 /// Centralized configuration for order status progression timing
@@ -41,7 +41,7 @@ final class NewOrderService: NewOrderServiceProtocol {
     // MARK: - Current Trader ID
     /// Returns the current trader's ID from the user service
     private var currentTraderId: String {
-        userService?.currentUser?.id ?? "unknown_trader"
+        self.userService?.currentUser?.id ?? "unknown_trader"
     }
 
     init(userService: (any UserServiceProtocol)? = nil) {
@@ -50,7 +50,7 @@ final class NewOrderService: NewOrderServiceProtocol {
 
     // MARK: - Order Operations
     func placeBuyOrder(_ request: NewBuyOrderRequest) async throws -> NewOrder {
-        isLoading = true
+        self.isLoading = true
         defer { isLoading = false }
 
         let order = NewOrder(
@@ -69,17 +69,17 @@ final class NewOrderService: NewOrderServiceProtocol {
             limitPrice: request.limitPrice
         )
 
-        activeOrders.append(order)
-        print("🔍 DEBUG: Added buy order \(order.id) to activeOrders. Total: \(activeOrders.count)")
+        self.activeOrders.append(order)
+        print("🔍 DEBUG: Added buy order \(order.id) to activeOrders. Total: \(self.activeOrders.count)")
 
         // Start status progression
-        startOrderStatusProgression(order.id)
+        self.startOrderStatusProgression(order.id)
 
         return order
     }
 
     func placeSellOrder(_ request: NewSellOrderRequest) async throws -> NewOrder {
-        isLoading = true
+        self.isLoading = true
         defer { isLoading = false }
 
         let order = NewOrder(
@@ -99,24 +99,24 @@ final class NewOrderService: NewOrderServiceProtocol {
             originalHoldingId: request.originalHoldingId
         )
 
-        activeOrders.append(order)
-        print("🔍 DEBUG: Added sell order \(order.id) to activeOrders. Total: \(activeOrders.count)")
+        self.activeOrders.append(order)
+        print("🔍 DEBUG: Added sell order \(order.id) to activeOrders. Total: \(self.activeOrders.count)")
 
         // Start status progression
-        startOrderStatusProgression(order.id)
+        self.startOrderStatusProgression(order.id)
 
         return order
     }
 
     func cancelOrder(_ orderId: String) async throws {
         if let index = activeOrders.firstIndex(where: { $0.id == orderId }) {
-            let order = activeOrders[index]
+            let order = self.activeOrders[index]
             let cancelledOrder = order.withStatus(.cancelled)
-            activeOrders[index] = cancelledOrder
+            self.activeOrders[index] = cancelledOrder
 
             // Stop status progression
-            orderStatusTimers[orderId]?.invalidate()
-            orderStatusTimers.removeValue(forKey: orderId)
+            self.orderStatusTimers[orderId]?.invalidate()
+            self.orderStatusTimers.removeValue(forKey: orderId)
 
             print("🔍 DEBUG: Cancelled order \(orderId)")
         }
@@ -124,16 +124,16 @@ final class NewOrderService: NewOrderServiceProtocol {
 
     func updateOrderStatus(_ orderId: String, status: NewOrderStatus) async throws {
         if let index = activeOrders.firstIndex(where: { $0.id == orderId }) {
-            let order = activeOrders[index]
+            let order = self.activeOrders[index]
             let updatedOrder = order.withStatus(status)
-            activeOrders[index] = updatedOrder
+            self.activeOrders[index] = updatedOrder
 
             print("🔍 DEBUG: Updated order \(orderId) status to \(status.rawValue)")
 
             // Stop progression if completed
             if status == .completed {
-                orderStatusTimers[orderId]?.invalidate()
-                orderStatusTimers.removeValue(forKey: orderId)
+                self.orderStatusTimers[orderId]?.invalidate()
+                self.orderStatusTimers.removeValue(forKey: orderId)
             }
         }
     }
@@ -141,10 +141,12 @@ final class NewOrderService: NewOrderServiceProtocol {
     // MARK: - Private Methods
     private func startOrderStatusProgression(_ orderId: String) {
         // Cancel any existing timer
-        orderStatusTimers[orderId]?.invalidate()
+        self.orderStatusTimers[orderId]?.invalidate()
 
         // Start progression timer using centralized configuration
-        orderStatusTimers[orderId] = Timer.scheduledTimer(withTimeInterval: OrderStatusConfig.progressionInterval, repeats: true) { [weak self] _ in
+        self.orderStatusTimers[orderId] = Timer.scheduledTimer(withTimeInterval: OrderStatusConfig.progressionInterval, repeats: true) { [
+            weak self
+        ] _ in
             Task { @MainActor in
                 await self?.advanceOrderStatus(orderId)
             }
@@ -153,12 +155,12 @@ final class NewOrderService: NewOrderServiceProtocol {
 
     private func advanceOrderStatus(_ orderId: String) async {
         guard let index = activeOrders.firstIndex(where: { $0.id == orderId }) else {
-            orderStatusTimers[orderId]?.invalidate()
-            orderStatusTimers.removeValue(forKey: orderId)
+            self.orderStatusTimers[orderId]?.invalidate()
+            self.orderStatusTimers.removeValue(forKey: orderId)
             return
         }
 
-        let order = activeOrders[index]
+        let order = self.activeOrders[index]
         let nextStatus: NewOrderStatus
 
         switch order.status {
@@ -172,12 +174,11 @@ final class NewOrderService: NewOrderServiceProtocol {
             nextStatus = .completed
         case .completed, .cancelled:
             // Stop progression
-            orderStatusTimers[orderId]?.invalidate()
-            orderStatusTimers.removeValue(forKey: orderId)
+            self.orderStatusTimers[orderId]?.invalidate()
+            self.orderStatusTimers.removeValue(forKey: orderId)
             return
         }
 
-        try? await updateOrderStatus(orderId, status: nextStatus)
+        try? await self.updateOrderStatus(orderId, status: nextStatus)
     }
-
 }

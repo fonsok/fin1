@@ -27,8 +27,8 @@ struct EmittentListView: View {
             List {
                 Section {
                     Button(action: {
-                        selectedEmittent = "Alle"
-                        dismiss()
+                        self.selectedEmittent = "Alle"
+                        self.dismiss()
                     }, label: {
                         Text("Alle")
                             .foregroundColor(AppTheme.fontColor)
@@ -36,10 +36,10 @@ struct EmittentListView: View {
                 }
 
                 Section(header: Text("Emittenten").foregroundColor(AppTheme.fontColor)) {
-                    ForEach(alleEmittenten) { emittent in
+                    ForEach(self.alleEmittenten) { emittent in
                         Button(action: {
-                            selectedEmittent = emittent.name
-                            dismiss()
+                            self.selectedEmittent = emittent.name
+                            self.dismiss()
                         }, label: {
                             Text(emittent.name)
                                 .foregroundColor(AppTheme.fontColor)
@@ -54,7 +54,7 @@ struct EmittentListView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") {
-                        dismiss()
+                        self.dismiss()
                     }
                 }
             }

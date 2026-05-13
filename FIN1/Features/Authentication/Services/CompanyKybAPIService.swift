@@ -116,7 +116,7 @@ final class CompanyKybAPIService: CompanyKybAPIServiceProtocol, @unchecked Senda
     }
 
     func getCompanyKybProgress() async throws -> CompanyKybProgress {
-        try await apiClient.callFunction(
+        try await self.apiClient.callFunction(
             "getCompanyKybProgress",
             parameters: nil
         )
@@ -127,7 +127,7 @@ final class CompanyKybAPIService: CompanyKybAPIServiceProtocol, @unchecked Senda
             "step": step,
             "data": try data.encodeToJSONDictionary()
         ]
-        return try await apiClient.callFunction(
+        return try await self.apiClient.callFunction(
             "completeCompanyKybStep",
             parameters: params
         )

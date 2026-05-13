@@ -48,11 +48,11 @@ struct TradeStatementView: View {
                     if let displayProperties = viewModel.displayProperties {
                         DocumentHeaderLayoutView(
                             accountHolderName: displayProperties.depotHolder,
-                            accountHolderAddress: viewModel.buyInvoice?.customerInfo.address,
-                            accountHolderCity: viewModel.buyInvoice != nil ? "\(viewModel.buyInvoice!.customerInfo.postalCode) \(viewModel.buyInvoice!.customerInfo.city)" : nil,
-                            documentDate: viewModel.trade.endDate
+                            accountHolderAddress: self.viewModel.buyInvoice?.customerInfo.address,
+                            accountHolderCity: self.viewModel.buyInvoice != nil ? "\(self.viewModel.buyInvoice!.customerInfo.postalCode) \(self.viewModel.buyInvoice!.customerInfo.city)" : nil,
+                            documentDate: self.viewModel.trade.endDate
                         ) {
-                            CollectionBillQRCodeView(trade: viewModel.trade, displayProperties: displayProperties)
+                            CollectionBillQRCodeView(trade: self.viewModel.trade, displayProperties: displayProperties)
                         }
                     }
 
@@ -77,7 +77,7 @@ struct TradeStatementView: View {
                         TradeStatementHeaderView(
                             depotNumber: displayProperties.depotNumber,
                             depotHolder: displayProperties.depotHolder,
-                            tradeNumber: viewModel.trade.tradeNumber
+                            tradeNumber: self.viewModel.trade.tradeNumber
                         )
                     }
 
@@ -85,7 +85,7 @@ struct TradeStatementView: View {
                     if let displayProperties = viewModel.displayProperties, displayProperties.hasBuyTransaction {
                         TradeStatementBuySection(
                             securityIdentifier: displayProperties.securityIdentifier,
-                            underlyingAsset: viewModel.fullTrade?.underlyingAsset,
+                            underlyingAsset: self.viewModel.fullTrade?.underlyingAsset,
                             orderVolume: displayProperties.buyOrderVolume,
                             executedVolume: displayProperties.buyExecutedVolume,
                             price: displayProperties.buyPrice,
@@ -115,7 +115,7 @@ struct TradeStatementView: View {
                         TradeStatementSellSection(
                             sellOrderData: displayProperties.sellOrderData,
                             securityIdentifier: displayProperties.securityIdentifier,
-                            underlyingAsset: viewModel.fullTrade?.underlyingAsset,
+                            underlyingAsset: self.viewModel.fullTrade?.underlyingAsset,
                             tradingVenue: displayProperties.sellTradingVenue,
                             profitLoss: displayProperties.sellProfitLoss,
                             profitLossColor: displayProperties.sellProfitLossColor,
@@ -130,9 +130,9 @@ struct TradeStatementView: View {
                         TradeStatementReferenceSection(
                             taxReportTransactionNumber: displayProperties.taxReportTransactionNumber,
                             accountNumber: displayProperties.accountNumber,
-                        referenceText: referenceText,
-                        legalDisclaimer: legalDisclaimerText,
-                        footerNote: footerNoteText
+                            referenceText: self.referenceText,
+                            legalDisclaimer: self.legalDisclaimerText,
+                            footerNote: self.footerNoteText
                         )
                     }
 
@@ -181,17 +181,17 @@ struct TradeStatementView: View {
             )
 
             let (ref, legal, footer) = await (referenceTask, legalTask, footerTask)
-            referenceText = ref
-            legalDisclaimerText = legal
-            footerNoteText = footer
+            self.referenceText = ref
+            self.legalDisclaimerText = legal
+            self.footerNoteText = footer
         }
         .toolbarColorScheme(.light, for: .navigationBar)
         .toolbarBackground(DocumentDesignSystem.documentBackground, for: .navigationBar)
         .toolbar {
-            if showCustomBackButton {
+            if self.showCustomBackButton {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button(action: {
-                        dismiss()
+                        self.dismiss()
                     }, label: {
                         Image(systemName: "chevron.left")
                             .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize(), weight: .medium))
@@ -204,26 +204,26 @@ struct TradeStatementView: View {
                 Menu {
                     // PDF Actions
                     Button(action: {
-                        viewModel.generatePDFPreview()
-                        showingPDFPreview = true
+                        self.viewModel.generatePDFPreview()
+                        self.showingPDFPreview = true
                     }, label: {
                         Label("PDF Vorschau", systemImage: "eye")
                     })
 
                     Button(action: {
-                        viewModel.generatePDF()
+                        self.viewModel.generatePDF()
                     }, label: {
                         Label("PDF Generieren", systemImage: "doc.badge.plus")
                     })
 
                     Button(action: {
-                        viewModel.sharePDF()
+                        self.viewModel.sharePDF()
                     }, label: {
                         Label("PDF Teilen", systemImage: "square.and.arrow.up")
                     })
 
                     Button(action: {
-                        viewModel.downloadPDFViaBrowser()
+                        self.viewModel.downloadPDFViaBrowser()
                     }, label: {
                         Label("PDF Download", systemImage: "arrow.down.circle")
                     })
@@ -251,17 +251,17 @@ struct TradeStatementView: View {
                 }
             }
         }
-        .sheet(isPresented: $showingPDFPreview) {
+        .sheet(isPresented: self.$showingPDFPreview) {
             if let previewImage = viewModel.pdfPreviewImage {
                 PDFPreviewView(image: previewImage)
             }
         }
-        .alert("Fehler", isPresented: $viewModel.showError) {
+        .alert("Fehler", isPresented: self.$viewModel.showError) {
             Button("OK") {
-                viewModel.clearError()
+                self.viewModel.clearError()
             }
         } message: {
-            Text(viewModel.errorMessage ?? "Ein unbekannter Fehler ist aufgetreten.")
+            Text(self.viewModel.errorMessage ?? "Ein unbekannter Fehler ist aufgetreten.")
         }
     }
 
@@ -275,16 +275,16 @@ struct TradeStatementView_Previews: PreviewProvider {
         let sampleTrade = TradeOverviewItem(
             tradeId: "sample-trade-id",
             tradeNumber: 288,
-            startDate: Date().addingTimeInterval(-86400),
+            startDate: Date().addingTimeInterval(-86_400),
             endDate: Date(),
-            profitLoss: 1712.57,
+            profitLoss: 1_712.57,
             returnPercentage: 23,
             commission: 45.14,
             isActive: false,
             statusText: "",
             statusDetail: "",
             onDetailsTapped: {},
-            grossProfit: 1750.0,
+            grossProfit: 1_750.0,
             totalFees: 37.43
         )
 

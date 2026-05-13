@@ -21,7 +21,7 @@ enum TraderAccountStatementBuilder {
             )
         }
 
-        let invoices = fetchInvoices(for: user, invoiceService: invoiceService)
+        let invoices = self.fetchInvoices(for: user, invoiceService: invoiceService)
         guard !invoices.isEmpty else {
             return TraderAccountStatementSnapshot(
                 entries: [],
@@ -128,7 +128,7 @@ enum TraderAccountStatementBuilder {
                 creditNote.createdAt,
                 tradeLatest?.addingTimeInterval(1) ?? creditNote.createdAt
             )
-            let entry = createCommissionEntry(
+            let entry = self.createCommissionEntry(
                 from: creditNote,
                 runningBalance: &runningBalance,
                 adjustedDate: adjustedDate

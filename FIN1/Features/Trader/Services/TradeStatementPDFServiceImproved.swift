@@ -1,7 +1,7 @@
 import Foundation
-import UIKit
-import PDFKit
 import OSLog
+import PDFKit
+import UIKit
 
 // MARK: - Improved Trade Statement PDF Service
 /// Professional PDF generator for trade statements (Collection Bills) with improved styling
@@ -14,7 +14,7 @@ final class TradeStatementPDFServiceImproved: TradeStatementPDFServiceProtocol {
     // MARK: - Public Methods
 
     func generatePDF(for displayData: TradeStatementDisplayData, trade: TradeOverviewItem) async throws -> Data {
-        logger.info("Starting PDF generation for Trade #\(trade.tradeNumber)")
+        self.logger.info("Starting PDF generation for Trade #\(trade.tradeNumber)")
 
         let pdfMetaData: [String: Any] = [
             kCGPDFContextCreator as String: "\(LegalIdentity.platformName) Trading App",
@@ -39,15 +39,15 @@ final class TradeStatementPDFServiceImproved: TradeStatementPDFServiceProtocol {
             cgContext.setShouldSmoothFonts(true)
             cgContext.interpolationQuality = .high
 
-            drawCollectionBill(in: cgContext, displayData: displayData, trade: trade, pageRect: pageRect)
+            self.drawCollectionBill(in: cgContext, displayData: displayData, trade: trade, pageRect: pageRect)
         }
 
-        logger.info("PDF generated successfully, size: \(pdfData.count) bytes")
+        self.logger.info("PDF generated successfully, size: \(pdfData.count) bytes")
         return pdfData
     }
 
     func generatePreview(for displayData: TradeStatementDisplayData, trade: TradeOverviewItem) async throws -> UIImage {
-        logger.info("Generating PDF preview for Trade #\(trade.tradeNumber)")
+        self.logger.info("Generating PDF preview for Trade #\(trade.tradeNumber)")
 
         let pdfData = try await generatePDF(for: displayData, trade: trade)
 
@@ -77,7 +77,7 @@ final class TradeStatementPDFServiceImproved: TradeStatementPDFServiceProtocol {
             throw PDFGenerationError.previewConversionFailed
         }
 
-        logger.info("PDF preview generated successfully")
+        self.logger.info("PDF preview generated successfully")
         return image
     }
 
@@ -86,7 +86,7 @@ final class TradeStatementPDFServiceImproved: TradeStatementPDFServiceProtocol {
         let fileURL = documentsPath.appendingPathComponent("\(fileName).pdf")
 
         try pdfData.write(to: fileURL)
-        logger.info("PDF saved to \(fileURL.path)")
+        self.logger.info("PDF saved to \(fileURL.path)")
         return fileURL
     }
 
@@ -161,5 +161,4 @@ final class TradeStatementPDFServiceImproved: TradeStatementPDFServiceProtocol {
             currentY: currentY + 20
         )
     }
-
 }

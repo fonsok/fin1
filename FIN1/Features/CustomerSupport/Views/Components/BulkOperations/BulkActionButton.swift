@@ -8,18 +8,18 @@ struct BulkActionButton: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
+        Button(action: self.action) {
             HStack(spacing: ResponsiveDesign.spacing(6)) {
-                Image(systemName: icon)
+                Image(systemName: self.icon)
                     .font(ResponsiveDesign.captionFont())
-                Text(title)
+                Text(self.title)
                     .font(ResponsiveDesign.captionFont())
                     .fontWeight(.medium)
             }
             .foregroundColor(.white)
             .padding(.horizontal, ResponsiveDesign.spacing(16))
             .padding(.vertical, ResponsiveDesign.spacing(10))
-            .background(color)
+            .background(self.color)
             .cornerRadius(ResponsiveDesign.spacing(20))
         }
     }

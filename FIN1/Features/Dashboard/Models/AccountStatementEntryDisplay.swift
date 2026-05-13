@@ -51,21 +51,21 @@ extension AccountStatementEntry {
     var descriptionTitle: String {
         switch category {
         case .investment:
-            return investmentDescriptionTitle
+            return self.investmentDescriptionTitle
         case .walletDeposit:
             return "Einzahlung"
         case .walletWithdrawal:
             return "Auszahlung"
         case .serviceCharge:
-            return serviceChargeDescriptionTitle
+            return self.serviceChargeDescriptionTitle
         case .profitDistribution:
-            return profitDistributionDescriptionTitle
+            return self.profitDistributionDescriptionTitle
         case .remainingBalance:
-            return remainingBalanceDescriptionTitle
+            return self.remainingBalanceDescriptionTitle
         case .tradeSettlement:
-            return tradeSettlementDescriptionTitle
+            return self.tradeSettlementDescriptionTitle
         case .commission:
-            return commissionDescriptionTitle
+            return self.commissionDescriptionTitle
         case .adjustment:
             return "Account adjustment"
         case .other:
@@ -80,33 +80,33 @@ extension AccountStatementEntry {
         let base: String?
         switch category {
         case .investment:
-            base = investmentDescriptionSubtitle
+            base = self.investmentDescriptionSubtitle
         case .walletDeposit:
             base = "Geldeingang von Ihrem Referenzkonto auf Ihr \(AppBrand.appName)-Wallet."
         case .walletWithdrawal:
             base = "Geldausgang von Ihrem \(AppBrand.appName)-Wallet auf Ihr Referenzkonto."
         case .serviceCharge:
-            base = serviceChargeDescriptionSubtitle
+            base = self.serviceChargeDescriptionSubtitle
         case .profitDistribution:
-            base = profitDistributionDescriptionSubtitle
+            base = self.profitDistributionDescriptionSubtitle
         case .remainingBalance:
-            base = remainingBalanceDescriptionSubtitle
+            base = self.remainingBalanceDescriptionSubtitle
         case .tradeSettlement:
-            base = tradeSettlementDescriptionSubtitle
+            base = self.tradeSettlementDescriptionSubtitle
         case .commission:
-            base = commissionDescriptionSubtitle
+            base = self.commissionDescriptionSubtitle
         case .adjustment:
             base = "Manual accounting adjustment applied to your cash balance."
         case .other:
             base = subtitle
         }
-        return appendDocumentNumber(to: base)
+        return self.appendDocumentNumber(to: base)
     }
 
     // MARK: - Private Title Helpers
 
     private var investmentDescriptionTitle: String {
-        let investmentId = preferredInvestmentReference
+        let investmentId = self.preferredInvestmentReference
         if direction == .debit {
             if let investmentId {
                 return "Reserved for Investment \(investmentId)"
@@ -121,7 +121,7 @@ extension AccountStatementEntry {
     }
 
     private var serviceChargeDescriptionTitle: String {
-        let investmentId = preferredInvestmentReference
+        let investmentId = self.preferredInvestmentReference
         if let investmentId {
             return "App service charge for Investment \(investmentId)"
         }
@@ -129,7 +129,7 @@ extension AccountStatementEntry {
     }
 
     private var profitDistributionDescriptionTitle: String {
-        let investmentId = preferredInvestmentReference
+        let investmentId = self.preferredInvestmentReference
         if let investmentId, !investmentId.isEmpty {
             return "Profit distribution from Investment \(investmentId)"
         }
@@ -137,7 +137,7 @@ extension AccountStatementEntry {
     }
 
     private var remainingBalanceDescriptionTitle: String {
-        let investmentId = preferredInvestmentReference
+        let investmentId = self.preferredInvestmentReference
         if let investmentId, !investmentId.isEmpty {
             return "Remaining balance distribution from Investment \(investmentId)"
         }
@@ -169,9 +169,9 @@ extension AccountStatementEntry {
 
     private var commissionDescriptionTitle: String {
         if direction == .credit {
-            return traderCommissionTitle
+            return self.traderCommissionTitle
         } else {
-            return investorCommissionTitle
+            return self.investorCommissionTitle
         }
     }
 
@@ -206,7 +206,7 @@ extension AccountStatementEntry {
     // MARK: - Private Subtitle Helpers
 
     private var investmentDescriptionSubtitle: String? {
-        let investmentId = preferredInvestmentReference
+        let investmentId = self.preferredInvestmentReference
         if direction == .debit {
             if let investmentId {
                 return "Cash moved out of available balance and locked for Investment \(investmentId)."
@@ -221,7 +221,7 @@ extension AccountStatementEntry {
     }
 
     private var serviceChargeDescriptionSubtitle: String? {
-        let investmentId = preferredInvestmentReference
+        let investmentId = self.preferredInvestmentReference
         let isRefundableFlag = metadata["isRefundable"] ?? "false"
         let refundableText = isRefundableFlag == "true" ? "refundable fee" : "non‑refundable fee"
         if let investmentId {
@@ -231,7 +231,7 @@ extension AccountStatementEntry {
     }
 
     private var profitDistributionDescriptionSubtitle: String? {
-        let investmentId = preferredInvestmentReference
+        let investmentId = self.preferredInvestmentReference
         if let investmentId, !investmentId.isEmpty {
             return "Cash inflow from realized profits on Investment \(investmentId)."
         }
@@ -239,7 +239,7 @@ extension AccountStatementEntry {
     }
 
     private var remainingBalanceDescriptionSubtitle: String? {
-        let investmentId = preferredInvestmentReference
+        let investmentId = self.preferredInvestmentReference
         if let investmentId, !investmentId.isEmpty {
             return "Cash returned from Investment \(investmentId) after cancellation or deletion."
         }
@@ -290,9 +290,9 @@ extension AccountStatementEntry {
 
     private var commissionDescriptionSubtitle: String? {
         if direction == .credit {
-            return traderCommissionSubtitle
+            return self.traderCommissionSubtitle
         } else {
-            return investorCommissionSubtitle
+            return self.investorCommissionSubtitle
         }
     }
 

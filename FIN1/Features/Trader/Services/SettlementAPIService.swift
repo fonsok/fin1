@@ -57,7 +57,7 @@ struct BackendAccountEntry: Decodable, Identifiable {
     let referenceDocumentNumber: String?
     let createdAt: String?
 
-    var id: String { objectId }
+    var id: String { self.objectId }
 
     /// Parses the ISO-8601 `createdAt` string returned by Parse `toJSON()`.
     var createdAtDate: Date? {
@@ -137,7 +137,7 @@ struct BackendSettlementDocument: Decodable, Identifiable {
     let metadata: BackendDocumentMetadata?
     let source: String?
 
-    var id: String { objectId }
+    var id: String { self.objectId }
 }
 
 struct BackendDocumentMetadata: Decodable {
@@ -160,7 +160,7 @@ struct BackendSettlementCommission: Decodable, Identifiable {
     let investorGrossProfit: Double?
     let status: String?
 
-    var id: String { objectId }
+    var id: String { self.objectId }
 }
 
 struct BackendAccountStatementResponse: Decodable {
@@ -235,7 +235,7 @@ struct BackendInvoice: Decodable, Identifiable {
     let investmentIds: [String]?
     let metadata: BackendInvoiceMetadata?
 
-    var id: String { objectId }
+    var id: String { self.objectId }
 
     /// Represents Parse Server date values which can arrive as either a string or a `{ __type: "Date", iso: "..." }` object.
     enum DateValue: Decodable {
@@ -314,7 +314,7 @@ struct BackendCollectionBill: Decodable, Identifiable {
     let metadata: BackendCollectionBillMetadata?
     let createdAt: String?
 
-    var id: String { objectId }
+    var id: String { self.objectId }
 }
 
 struct BackendCollectionBillResponse: Decodable {
@@ -347,7 +347,7 @@ final class SettlementAPIService: SettlementAPIServiceProtocol, @unchecked Senda
     }
 
     func fetchTradeSettlement(tradeId: String) async throws -> TradeSettlementResponse {
-        try await apiClient.callFunction(
+        try await self.apiClient.callFunction(
             "getTradeSettlement",
             parameters: ["tradeId": tradeId]
         )
@@ -358,14 +358,14 @@ final class SettlementAPIService: SettlementAPIServiceProtocol, @unchecked Senda
         if let entryType = entryType {
             params["entryType"] = entryType
         }
-        return try await apiClient.callFunction(
+        return try await self.apiClient.callFunction(
             "getAccountStatement",
             parameters: params
         )
     }
 
     func fetchTradeInvoices(tradeId: String) async throws -> BackendInvoiceListResponse {
-        try await apiClient.callFunction(
+        try await self.apiClient.callFunction(
             "getTradeInvoices",
             parameters: ["tradeId": tradeId]
         )
@@ -376,7 +376,7 @@ final class SettlementAPIService: SettlementAPIServiceProtocol, @unchecked Senda
         if let invoiceType = invoiceType {
             params["invoiceType"] = invoiceType
         }
-        return try await apiClient.callFunction(
+        return try await self.apiClient.callFunction(
             "getUserInvoices",
             parameters: params
         )
@@ -386,7 +386,7 @@ final class SettlementAPIService: SettlementAPIServiceProtocol, @unchecked Senda
         var params: [String: Any] = ["limit": limit, "skip": skip]
         if let investmentId = investmentId { params["investmentId"] = investmentId }
         if let tradeId = tradeId { params["tradeId"] = tradeId }
-        return try await apiClient.callFunction(
+        return try await self.apiClient.callFunction(
             "getInvestorCollectionBills",
             parameters: params
         )

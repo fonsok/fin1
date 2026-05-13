@@ -1,6 +1,6 @@
+import Combine
 import Foundation
 import SwiftUI
-import Combine
 
 // MARK: - Investment Service Protocol
 /// Defines the contract for investment operations and investment overview

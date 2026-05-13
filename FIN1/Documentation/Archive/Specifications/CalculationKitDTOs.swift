@@ -114,7 +114,7 @@ public struct CKAccountStatementEntry: Codable {
     public let balanceAfter: Double
 
     public var signedAmount: Double {
-        direction == .credit ? amount : -amount
+        self.direction == .credit ? self.amount : -self.amount
     }
 }
 

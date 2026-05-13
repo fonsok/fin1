@@ -31,30 +31,30 @@ struct NotificationsView: View {
                         .padding(.bottom, ResponsiveDesign.spacing(8))
 
                     // Filter Tabs
-                    filterTabs
+                    self.filterTabs
 
                     // Notifications List
-                    notificationsList
+                    self.notificationsList
                 }
             }
             .navigationBarTitleDisplayMode(.inline)
-            .sheet(isPresented: $viewModel.showDocumentArchive) {
-                ArchivedItemsView(items: viewModel.archivedItems, notificationService: notificationService)
+            .sheet(isPresented: self.$viewModel.showDocumentArchive) {
+                ArchivedItemsView(items: self.viewModel.archivedItems, notificationService: self.notificationService)
             }
             .navigationDestination(for: Document.self) { document in
-                DocumentNavigationHelper.navigationDestination(for: document, appServices: appServices)
+                DocumentNavigationHelper.navigationDestination(for: document, appServices: self.appServices)
             }
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Done") {
-                        dismiss()
+                        self.dismiss()
                     }
                     .foregroundColor(AppTheme.fontColor)
                 }
 
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: {
-                        viewModel.markAllAsRead()
+                        self.viewModel.markAllAsRead()
                     }) {
                         Text("Mark All Read")
                             .font(ResponsiveDesign.bodyFont())
@@ -69,17 +69,17 @@ struct NotificationsView: View {
     // MARK: - Filter Tabs
     private var filterTabs: some View {
         HStack(spacing: ResponsiveDesign.spacing(12)) {
-            ForEach(viewModel.availableFilters(), id: \.self) { filter in
+            ForEach(self.viewModel.availableFilters(), id: \.self) { filter in
                 Button(action: {
-                    viewModel.selectedFilter = filter
+                    self.viewModel.selectedFilter = filter
                 }) {
                     Text(filter.displayName)
                         .font(ResponsiveDesign.bodyFont())
                         .fontWeight(.medium)
-                        .foregroundColor(viewModel.selectedFilter == filter ? AppTheme.screenBackground : AppTheme.fontColor)
+                        .foregroundColor(self.viewModel.selectedFilter == filter ? AppTheme.screenBackground : AppTheme.fontColor)
                         .padding(.horizontal, ResponsiveDesign.spacing(16))
                         .padding(.vertical, ResponsiveDesign.spacing(8))
-                        .background(viewModel.selectedFilter == filter ? AppTheme.accentLightBlue : Color.clear)
+                        .background(self.viewModel.selectedFilter == filter ? AppTheme.accentLightBlue : Color.clear)
                         .overlay(
                             RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(20))
                                 .stroke(AppTheme.accentLightBlue, lineWidth: 1)
@@ -120,8 +120,8 @@ struct NotificationsView: View {
                 .background(AppTheme.accentLightBlue.opacity(0.1))
                 .cornerRadius(ResponsiveDesign.spacing(12))
 
-                ForEach(viewModel.filteredItems) { item in
-                    UnifiedItemCard(item: item, notificationService: notificationService)
+                ForEach(self.viewModel.filteredItems) { item in
+                    UnifiedItemCard(item: item, notificationService: self.notificationService)
                 }
 
                 // Info about automatic cleanup
@@ -139,9 +139,9 @@ struct NotificationsView: View {
                     }
 
                     // Archive button for older notifications
-                    if viewModel.hasHiddenOlderItems {
+                    if self.viewModel.hasHiddenOlderItems {
                         Button(action: {
-                            viewModel.showDocumentArchive = true
+                            self.viewModel.showDocumentArchive = true
                         }) {
                             HStack {
                                 Image(systemName: "archivebox")
@@ -153,7 +153,7 @@ struct NotificationsView: View {
 
                                 Spacer()
 
-                                Text("\(viewModel.archivedCount)")
+                                Text("\(self.viewModel.archivedCount)")
                                     .font(ResponsiveDesign.captionFont())
                                     .padding(.horizontal, ResponsiveDesign.spacing(6))
                                     .padding(.vertical, ResponsiveDesign.spacing(2))

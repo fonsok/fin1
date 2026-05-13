@@ -25,10 +25,10 @@ struct MainTabView: View {
 
     var body: some View {
         ZStack {
-            TabView(selection: $tabCoordinator.selectedTab) {
-                ForEach(tabCoordinator.getTabConfigurations(), id: \.id) { config in
+            TabView(selection: self.$tabCoordinator.selectedTab) {
+                ForEach(self.tabCoordinator.getTabConfigurations(), id: \.id) { config in
                     config.view
-                        .environmentObject(legacyTabRouter) // Use shared TabRouter instance
+                        .environmentObject(self.legacyTabRouter) // Use shared TabRouter instance
                         .tabItem {
                             Image(systemName: config.icon)
                             Text(config.title)
@@ -37,13 +37,13 @@ struct MainTabView: View {
                         .badge(config.badge ?? 0)
                 }
             }
-            .id(tabCoordinator.currentRole) // Force TabView recreation on role change
+            .id(self.tabCoordinator.currentRole) // Force TabView recreation on role change
             .accentColor(AppTheme.accentLightBlue)
 
             VStack {
                 // Impersonation Banner (if impersonating)
-                if isImpersonating {
-                    ImpersonationBanner(services: services)
+                if self.isImpersonating {
+                    ImpersonationBanner(services: self.services)
                         .transition(.move(edge: .top).combined(with: .opacity))
                 }
 
@@ -51,52 +51,52 @@ struct MainTabView: View {
             }
             .zIndex(100) // Ensure banner is above content
             .onAppear {
-                isImpersonating = services.userService.isImpersonating
+                self.isImpersonating = self.services.userService.isImpersonating
             }
             .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("UserImpersonationStarted"))) { _ in
-                isImpersonating = true
+                self.isImpersonating = true
             }
             .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("UserImpersonationStopped"))) { _ in
-                isImpersonating = false
+                self.isImpersonating = false
             }
             .onReceive(NotificationCenter.default.publisher(for: .userDataDidUpdate)) { _ in
-                isImpersonating = services.userService.isImpersonating
+                self.isImpersonating = self.services.userService.isImpersonating
             }
 
             // API Failure Info Overlay
             InfoOverlay(
                 message: "Trades konnten nicht vom Server geladen werden. Trade-Nummerierung beginnt bei 1.",
-                isVisible: showAPIFailureInfo
+                isVisible: self.showAPIFailureInfo
             )
         }
         .onAppear {
             // Update tab configurations when view appears
-            tabCoordinator.objectWillChange.send()
+            self.tabCoordinator.objectWillChange.send()
             // Synchronize legacy router with current tab
-            legacyTabRouter.selectedTab = tabCoordinator.selectedTab
+            self.legacyTabRouter.selectedTab = self.tabCoordinator.selectedTab
         }
-        .onChange(of: tabCoordinator.selectedTab) { _, newValue in
+        .onChange(of: self.tabCoordinator.selectedTab) { _, newValue in
             // Keep legacy router in sync with main tab coordinator
             print("🎯 MainTabView: tabCoordinator.selectedTab changed to \(newValue), syncing to legacyTabRouter")
-            legacyTabRouter.selectedTab = newValue
+            self.legacyTabRouter.selectedTab = newValue
         }
         .onReceive(NotificationCenter.default.publisher(for: TradeLifecycleService.showAPIFailureInfoNotification)) { _ in
-            showAPIFailureInfo = true
+            self.showAPIFailureInfo = true
             // Auto-hide after 1 second
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
                 withAnimation {
-                    showAPIFailureInfo = false
+                    self.showAPIFailureInfo = false
                 }
             }
         }
-        .onChange(of: legacyTabRouter.selectedTab) { _, newValue in
+        .onChange(of: self.legacyTabRouter.selectedTab) { _, newValue in
             // Keep main tab coordinator in sync with legacy router
             print("🎯 MainTabView: legacyTabRouter.selectedTab changed to \(newValue), syncing to tabCoordinator")
-            if tabCoordinator.selectedTab != newValue {
-                tabCoordinator.selectedTab = newValue
+            if self.tabCoordinator.selectedTab != newValue {
+                self.tabCoordinator.selectedTab = newValue
             }
         }
-        .onChange(of: tabCoordinator.currentRole) { oldRole, newRole in
+        .onChange(of: self.tabCoordinator.currentRole) { oldRole, newRole in
             // Force view refresh when role changes
             print("🔄 MainTabView: Role changed from \(oldRole?.displayName ?? "nil") to \(newRole?.displayName ?? "nil")")
         }

@@ -8,15 +8,15 @@ struct TraderPerformanceTableContent: View {
 
     var body: some View {
         VStack(spacing: ResponsiveDesign.spacing(0)) {
-            ForEach(Array(groupedByYearAndMonth.enumerated()), id: \.element.id) { yearIndex, yearGroup in
+            ForEach(Array(self.groupedByYearAndMonth.enumerated()), id: \.element.id) { yearIndex, yearGroup in
                 // Year separator row (if not the first year group and not current year)
-                if yearIndex > 0 && yearGroup.year < currentYear {
+                if yearIndex > 0 && yearGroup.year < self.currentYear {
                     YearSeparatorRow(year: yearGroup.year)
                 }
 
                 // Month groups within this year
                 ForEach(yearGroup.monthGroups) { monthGroup in
-                    monthGroupRow(monthGroup: monthGroup)
+                    self.monthGroupRow(monthGroup: monthGroup)
                 }
             }
         }
@@ -28,7 +28,7 @@ struct TraderPerformanceTableContent: View {
     private func monthGroupRow(monthGroup: MonthGroup) -> some View {
         HStack(alignment: .top, spacing: ResponsiveDesign.spacing(0)) {
             // Month Label Column (spans all weeks in this month)
-            monthLabelColumn(monthGroup: monthGroup)
+            self.monthLabelColumn(monthGroup: monthGroup)
 
             // Weeks Column with Returns (scrollable section)
             VStack(spacing: ResponsiveDesign.spacing(0)) {
@@ -52,7 +52,7 @@ struct TraderPerformanceTableContent: View {
             Spacer()
         }
         .frame(width: ResponsiveDesign.spacing(50))
-        .frame(height: calculateMonthHeight(weekCount: monthGroup.weeks.count))
+        .frame(height: self.calculateMonthHeight(weekCount: monthGroup.weeks.count))
         .padding(.horizontal, 2)
         .contentShape(Rectangle())
         .clipped()

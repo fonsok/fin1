@@ -120,7 +120,7 @@ extension PriceAlertService {
             isEnabled: enabled,
             notes: parseAlert.notes
         )
-        try await updateAlert(PriceAlert(from: modifiedParseAlert))
+        try await self.updateAlert(PriceAlert(from: modifiedParseAlert))
     }
 
     func loadAlerts() async throws {

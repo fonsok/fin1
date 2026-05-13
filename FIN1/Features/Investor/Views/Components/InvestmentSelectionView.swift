@@ -14,7 +14,7 @@ struct InvestmentSelectionView: View {
                 .foregroundColor(AppTheme.fontColor)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-            MultipleInvestmentsPreview(numberOfInvestments: numberOfInvestments, amountPerInvestment: amountPerInvestment)
+            MultipleInvestmentsPreview(numberOfInvestments: self.numberOfInvestments, amountPerInvestment: self.amountPerInvestment)
         }
         .padding(.horizontal, ResponsiveDesign.spacing(16))
         .padding(.vertical, ResponsiveDesign.spacing(8))

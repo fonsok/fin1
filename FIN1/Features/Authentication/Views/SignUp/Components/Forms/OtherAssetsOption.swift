@@ -5,15 +5,15 @@ struct OtherAssetsOption: View {
     @Binding var isSelected: Bool
 
     var body: some View {
-        Button(action: { isSelected.toggle() }, label: {
+        Button(action: { self.isSelected.toggle() }, label: {
             HStack {
                 // Clean square checkbox - double size, no borders
                 Rectangle()
-                    .fill(isSelected ? AppTheme.accentGreen : AppTheme.inputFieldBackground)
+                    .fill(self.isSelected ? AppTheme.accentGreen : AppTheme.inputFieldBackground)
                     .frame(width: 32, height: 32) // Double the size
                     .overlay(
                         Group {
-                            if isSelected {
+                            if self.isSelected {
                                 Image(systemName: "checkmark")
                                     .foregroundColor(AppTheme.fontColor)
                                     .font(ResponsiveDesign.scaledSystemFont(size: 18, weight: .bold))
@@ -21,7 +21,7 @@ struct OtherAssetsOption: View {
                         }
                     )
 
-                Text(title)
+                Text(self.title)
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.fontColor)
                     .multilineTextAlignment(.leading)

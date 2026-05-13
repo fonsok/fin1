@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Investor Watchlist Service Protocol
 /// Defines the contract for investor trader watchlist operations and management

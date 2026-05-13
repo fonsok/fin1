@@ -15,7 +15,7 @@ extension User {
 
     /// Whether the user is an adult (18 or older)
     var isAdult: Bool {
-        age >= 18
+        self.age >= 18
     }
 
     /// Whether the user has completed all required verification steps
@@ -31,9 +31,9 @@ extension User {
     /// User's display name for UI purposes
     var displayName: String {
         if !academicTitle.isEmpty {
-            return "\(academicTitle) \(fullName)"
+            return "\(academicTitle) \(self.fullName)"
         }
-        return fullName
+        return self.fullName
     }
 
     /// Formatted address string
@@ -106,14 +106,14 @@ extension User {
 
     /// User's experience level description
     var experienceLevel: String {
-        if isTrader {
-            if hasTradingExperience {
+        if self.isTrader {
+            if self.hasTradingExperience {
                 return "Experienced Trader"
             } else {
                 return "New Trader"
             }
         } else {
-            if hasInvestmentExperience {
+            if self.hasInvestmentExperience {
                 return "Experienced Investor"
             } else {
                 return "New Investor"

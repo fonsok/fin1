@@ -23,10 +23,10 @@ struct CitizenshipTaxStep: View {
             // US Citizenship Declaration
             VStack(spacing: ResponsiveDesign.spacing(16)) {
                 HStack {
-                    Button(action: { isNotUSCitizen = true }, label: {
+                    Button(action: { self.isNotUSCitizen = true }, label: {
                         HStack {
                             InteractiveElement(
-                                isSelected: isNotUSCitizen,
+                                isSelected: self.isNotUSCitizen,
                                 type: .confirmationCircle
                             )
 
@@ -41,11 +41,11 @@ struct CitizenshipTaxStep: View {
                     .buttonStyle(PlainButtonStyle())
                 }
                 .responsivePadding()
-                .background(isNotUSCitizen ? AppTheme.accentGreen.opacity(0.1) : AppTheme.sectionBackground)
+                .background(self.isNotUSCitizen ? AppTheme.accentGreen.opacity(0.1) : AppTheme.sectionBackground)
                 .cornerRadius(ResponsiveDesign.spacing(12))
                 .overlay(
                     RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(12))
-                        .stroke(isNotUSCitizen ? AppTheme.accentGreen : Color.clear, lineWidth: 2)
+                        .stroke(self.isNotUSCitizen ? AppTheme.accentGreen : Color.clear, lineWidth: 2)
                 )
             }
             .responsivePadding()
@@ -65,44 +65,46 @@ struct CitizenshipTaxStep: View {
                         label: "Staatsangehörigkeit",
                         placeholder: "Deutschland",
                         icon: "flag.fill",
-                        text: $nationality
+                        text: self.$nationality
                     )
 
                     LabeledInputField(
                         label: "Steuernummer",
                         placeholder: "Steuernummer eingeben",
                         icon: "doc.text.fill",
-                        text: $taxNumber
+                        text: self.$taxNumber
                     )
                 }
 
                 // Additional fields (shown when + button is pressed)
-                if showAdditionalFields {
+                if self.showAdditionalFields {
                     VStack(spacing: ResponsiveDesign.spacing(16)) {
                         LabeledInputField(
                             label: "Zusätzlicher steuerlicher Wohnsitz",
                             placeholder: "Zusätzliches Land eingeben",
                             icon: "building.2.crossed.fill",
-                            text: $additionalResidenceCountry
+                            text: self.$additionalResidenceCountry
                         )
 
                         LabeledInputField(
                             label: "Zusätzliche Steuernummer",
                             placeholder: "Zusätzliche Steuernummer eingeben",
                             icon: "doc.text.2.crossed.fill",
-                            text: $additionalTaxNumber
+                            text: self.$additionalTaxNumber
                         )
                     }
                     .transition(.opacity.combined(with: .move(edge: .top)))
                 }
 
                 // Single unified + button
-                Button(action: { showAdditionalFields.toggle() }, label: {
+                Button(action: { self.showAdditionalFields.toggle() }, label: {
                     HStack {
-                        Image(systemName: showAdditionalFields ? "minus.circle" : "plus.circle")
+                        Image(systemName: self.showAdditionalFields ? "minus.circle" : "plus.circle")
                             .foregroundColor(AppTheme.accentLightBlue)
-                        Text(showAdditionalFields ? "Zusätzliche Felder ausblenden" : "Zusätzlichen steuerlichen Wohnsitz & Steuernummer hinzufügen")
-                            .foregroundColor(AppTheme.accentLightBlue)
+                        Text(
+                            self.showAdditionalFields ? "Zusätzliche Felder ausblenden" : "Zusätzlichen steuerlichen Wohnsitz & Steuernummer hinzufügen"
+                        )
+                        .foregroundColor(AppTheme.accentLightBlue)
                     }
                     .font(ResponsiveDesign.bodyFont())
                 })
@@ -111,9 +113,8 @@ struct CitizenshipTaxStep: View {
             .responsivePadding()
             .background(AppTheme.sectionBackground)
             .cornerRadius(ResponsiveDesign.spacing(16))
-
         }
-        .animation(.easeInOut(duration: 0.3), value: showAdditionalFields)
+        .animation(.easeInOut(duration: 0.3), value: self.showAdditionalFields)
     }
 }
 

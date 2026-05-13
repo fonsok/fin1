@@ -17,16 +17,16 @@ struct AdminFinancialSettingsView: View {
             ScrollView {
                 VStack(spacing: ResponsiveDesign.spacing(20)) {
                     // Fee Structure Section
-                    feeStructureSection
+                    self.feeStructureSection
 
                     // Investment Limits Section
-                    investmentLimitsSection
+                    self.investmentLimitsSection
 
                     // Tax Settings Section
-                    taxSettingsSection
+                    self.taxSettingsSection
 
                     // Save Changes Button
-                    saveChangesSection
+                    self.saveChangesSection
 
                     Spacer(minLength: ResponsiveDesign.spacing(20))
                 }
@@ -38,16 +38,16 @@ struct AdminFinancialSettingsView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") {
-                        dismiss()
+                        self.dismiss()
                     }
                     .foregroundColor(AppTheme.accentLightBlue)
                 }
             }
             .onAppear {
-                viewModel.loadCurrentSettings()
+                self.viewModel.loadCurrentSettings()
             }
-            .alert("Settings Saved", isPresented: $viewModel.showSaveSuccess) {
-                Button("OK") { dismiss() }
+            .alert("Settings Saved", isPresented: self.$viewModel.showSaveSuccess) {
+                Button("OK") { self.dismiss() }
             } message: {
                 Text("Your financial settings have been saved successfully.")
             }
@@ -69,29 +69,29 @@ struct AdminFinancialSettingsView: View {
             VStack(spacing: ResponsiveDesign.spacing(12)) {
                 FinancialInputRow(
                     title: "Trading Fee",
-                    value: $viewModel.tradingFeePercentage,
+                    value: self.$viewModel.tradingFeePercentage,
                     unit: "%",
                     multiplier: 100,
                     precision: 2,
-                    onValueChange: { viewModel.markAsChanged() }
+                    onValueChange: { self.viewModel.markAsChanged() }
                 )
 
                 FinancialInputRow(
                     title: "Management Fee",
-                    value: $viewModel.managementFeePercentage,
+                    value: self.$viewModel.managementFeePercentage,
                     unit: "%",
                     multiplier: 100,
                     precision: 2,
-                    onValueChange: { viewModel.markAsChanged() }
+                    onValueChange: { self.viewModel.markAsChanged() }
                 )
 
                 FinancialInputRow(
                     title: "Performance Fee",
-                    value: $viewModel.performanceFeePercentage,
+                    value: self.$viewModel.performanceFeePercentage,
                     unit: "%",
                     multiplier: 100,
                     precision: 1,
-                    onValueChange: { viewModel.markAsChanged() }
+                    onValueChange: { self.viewModel.markAsChanged() }
                 )
             }
         }
@@ -115,20 +115,20 @@ struct AdminFinancialSettingsView: View {
             VStack(spacing: ResponsiveDesign.spacing(12)) {
                 FinancialInputRow(
                     title: "Minimum Investment",
-                    value: $viewModel.minimumInvestmentAmount,
+                    value: self.$viewModel.minimumInvestmentAmount,
                     unit: "€",
                     multiplier: 1,
                     precision: 0,
-                    onValueChange: { viewModel.markAsChanged() }
+                    onValueChange: { self.viewModel.markAsChanged() }
                 )
 
                 FinancialInputRow(
                     title: "Maximum Investment",
-                    value: $viewModel.maximumInvestmentAmount,
+                    value: self.$viewModel.maximumInvestmentAmount,
                     unit: "€",
                     multiplier: 1,
                     precision: 0,
-                    onValueChange: { viewModel.markAsChanged() }
+                    onValueChange: { self.viewModel.markAsChanged() }
                 )
             }
         }
@@ -170,16 +170,16 @@ struct AdminFinancialSettingsView: View {
     private var saveChangesSection: some View {
         Button {
             Task {
-                await viewModel.saveChanges()
+                await self.viewModel.saveChanges()
             }
         } label: {
             HStack {
-                if viewModel.isSaving {
+                if self.viewModel.isSaving {
                     ProgressView()
                         .progressViewStyle(CircularProgressViewStyle(tint: .white))
                         .scaleEffect(0.8)
                 }
-                Text(viewModel.isSaving ? "Saving..." : "Save Changes")
+                Text(self.viewModel.isSaving ? "Saving..." : "Save Changes")
                     .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.semibold)
             }
@@ -187,13 +187,13 @@ struct AdminFinancialSettingsView: View {
             .frame(maxWidth: .infinity)
             .padding()
             .background(
-                viewModel.hasUnsavedChanges
-                ? AppTheme.accentLightBlue
-                : AppTheme.fontColor.opacity(0.3)
+                self.viewModel.hasUnsavedChanges
+                    ? AppTheme.accentLightBlue
+                    : AppTheme.fontColor.opacity(0.3)
             )
             .cornerRadius(ResponsiveDesign.spacing(10))
         }
-        .disabled(!viewModel.hasUnsavedChanges || viewModel.isSaving)
+        .disabled(!self.viewModel.hasUnsavedChanges || self.viewModel.isSaving)
         .padding()
         .background(AppTheme.sectionBackground)
         .cornerRadius(ResponsiveDesign.spacing(12))
@@ -213,14 +213,14 @@ struct FinancialInputRow: View {
 
     var body: some View {
         HStack {
-            Text(title)
+            Text(self.title)
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor)
 
             Spacer()
 
             HStack(spacing: ResponsiveDesign.spacing(8)) {
-                TextField("0", text: $textValue)
+                TextField("0", text: self.$textValue)
                     .keyboardType(.decimalPad)
                     .multilineTextAlignment(.trailing)
                     .frame(width: 80)
@@ -230,24 +230,24 @@ struct FinancialInputRow: View {
                     .cornerRadius(ResponsiveDesign.spacing(6))
                     .foregroundColor(AppTheme.inputFieldText)
                     .onAppear {
-                        textValue = formatValue(value * multiplier)
+                        self.textValue = self.formatValue(self.value * self.multiplier)
                     }
-                    .onChange(of: textValue) { _, newValue in
+                    .onChange(of: self.textValue) { _, newValue in
                         // Filter non-numeric characters
                         let filtered = newValue.filter { "0123456789,.".contains($0) }
                         if filtered != newValue {
-                            textValue = filtered
+                            self.textValue = filtered
                         }
                     }
                     .onSubmit {
                         if let parsed = parseValue(textValue) {
-                            value = parsed / multiplier
-                            textValue = formatValue(parsed)
-                            onValueChange()
+                            self.value = parsed / self.multiplier
+                            self.textValue = self.formatValue(parsed)
+                            self.onValueChange()
                         }
                     }
 
-                Text(unit)
+                Text(self.unit)
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
                     .frame(width: 20, alignment: .leading)
@@ -258,11 +258,11 @@ struct FinancialInputRow: View {
     private func formatValue(_ value: Double) -> String {
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal
-        formatter.minimumFractionDigits = precision
-        formatter.maximumFractionDigits = precision
+        formatter.minimumFractionDigits = self.precision
+        formatter.maximumFractionDigits = self.precision
         formatter.decimalSeparator = ","
         formatter.groupingSeparator = "."
-        return formatter.string(from: NSNumber(value: value)) ?? String(format: "%.\(precision)f", value)
+        return formatter.string(from: NSNumber(value: value)) ?? String(format: "%.\(self.precision)f", value)
     }
 
     private func parseValue(_ text: String) -> Double? {

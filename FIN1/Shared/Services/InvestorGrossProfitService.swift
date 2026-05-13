@@ -79,13 +79,13 @@ final class InvestorGrossProfitService: InvestorGrossProfitServiceProtocol, Obse
         let summary = await MainActor.run {
             InvestorInvestmentStatementAggregator.summarizeInvestment(
                 investmentId: investmentId,
-                poolTradeParticipationService: poolTradeParticipationService,
-                tradeLifecycleService: tradeLifecycleService,
-                invoiceService: invoiceService,
-                investmentService: investmentService,
-                calculationService: calculationService,
+                poolTradeParticipationService: self.poolTradeParticipationService,
+                tradeLifecycleService: self.tradeLifecycleService,
+                invoiceService: self.invoiceService,
+                investmentService: self.investmentService,
+                calculationService: self.calculationService,
                 commissionCalculationService: nil,
-                commissionRate: configurationService.effectiveCommissionRate
+                commissionRate: self.configurationService.effectiveCommissionRate
             )
         }
         guard let summary else {
@@ -109,7 +109,7 @@ final class InvestorGrossProfitService: InvestorGrossProfitServiceProtocol, Obse
         tradeId: String
     ) async throws -> [String: Double] {
         // Get all participations for this trade
-        let participations = poolTradeParticipationService.getParticipations(forTradeId: tradeId)
+        let participations = self.poolTradeParticipationService.getParticipations(forTradeId: tradeId)
 
         guard !participations.isEmpty else {
             return [:]

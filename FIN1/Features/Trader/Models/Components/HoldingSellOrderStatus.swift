@@ -8,19 +8,19 @@ struct HoldingSellOrderStatus {
 
     /// Checks if there's an active sell order for this holding
     var hasActiveSellOrder: Bool {
-        return activeSellOrder != nil
+        return self.activeSellOrder != nil
     }
 
     /// Gets the active sell order for this holding (if any)
     var activeSellOrder: Order? {
-        return ongoingOrders.first { order in
+        return self.ongoingOrders.first { order in
             guard order.type == .sell else { return false }
             // Check both originalHoldingId and WKN symbol for compatibility
-            let holdingId = holding.id.uuidString
-            let holdingWkn = holding.wkn
+            let holdingId = self.holding.id.uuidString
+            let holdingWkn = self.holding.wkn
             return order.originalHoldingId == holdingId ||
-                   order.originalHoldingId == holdingWkn ||
-                   order.symbol == holdingWkn
+                order.originalHoldingId == holdingWkn ||
+                order.symbol == holdingWkn
         }
     }
 

@@ -1,5 +1,5 @@
-import XCTest
 @testable import FIN1
+import XCTest
 
 @MainActor
 final class MockInvestmentStatusServiceTests: XCTestCase {

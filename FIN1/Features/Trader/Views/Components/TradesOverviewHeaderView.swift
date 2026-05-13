@@ -12,12 +12,12 @@ struct TradesOverviewHeaderView: View {
         VStack(spacing: ResponsiveDesign.spacing(16)) {
             HStack {
                 // Time period filter
-                timePeriodFilter
+                self.timePeriodFilter
 
                 Spacer()
 
                 // Customize details button
-                customizeDetailsButton
+                self.customizeDetailsButton
             }
             .padding(.horizontal, ResponsiveDesign.spacing(16))
             .padding(.top, ResponsiveDesign.spacing(8))
@@ -37,13 +37,13 @@ struct TradesOverviewHeaderView: View {
             Menu {
                 ForEach(TradeTimePeriod.allCases, id: \.self) { period in
                     Button(period.displayName) {
-                        selectedTimePeriod = period
-                        onTimePeriodChanged(period)
+                        self.selectedTimePeriod = period
+                        self.onTimePeriodChanged(period)
                     }
                 }
             } label: {
                 HStack {
-                    Text(selectedTimePeriod.displayName)
+                    Text(self.selectedTimePeriod.displayName)
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(AppTheme.accentOrange)
 
@@ -59,7 +59,7 @@ struct TradesOverviewHeaderView: View {
 
     private var customizeDetailsButton: some View {
         Button(action: {
-            showCustomizeDetails = true
+            self.showCustomizeDetails = true
         }, label: {
             HStack(spacing: ResponsiveDesign.spacing(4)) {
                 Text("weitere Details hinzufügen")

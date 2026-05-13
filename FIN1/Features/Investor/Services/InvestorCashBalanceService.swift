@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Investor Cash Balance Service
 
@@ -41,17 +41,17 @@ final class InvestorCashBalanceService: InvestorCashBalanceServiceProtocol, Obse
     // MARK: - Public Methods
 
     func getBalance(for investorId: String) -> Double {
-        return queue.sync {
-            return balances[investorId] ?? initialInvestorBalance
+        return self.queue.sync {
+            return self.balances[investorId] ?? self.initialInvestorBalance
         }
     }
 
     func getFormattedBalance(for investorId: String) -> String {
-        let balance = getBalance(for: investorId)
+        let balance = self.getBalance(for: investorId)
         return balance.formatted(.currency(code: "EUR"))
     }
 
     func getTransactions(for investorId: String) -> [AccountStatementEntry] {
-        ledgerService.getLedgerEntries(for: investorId)
+        self.ledgerService.getLedgerEntries(for: investorId)
     }
 }

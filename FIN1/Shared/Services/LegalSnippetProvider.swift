@@ -65,17 +65,17 @@ struct LegalSnippetProvider: LegalSnippetProviderProtocol, Sendable {
         // Try cache first
         if let cached = termsContentService.getCachedTerms(language: language, documentType: documentType),
            let section = cached.sections.first(where: { $0.id == key.rawValue }) {
-            return applyPlaceholders(to: section.content, placeholders: placeholders)
+            return self.applyPlaceholders(to: section.content, placeholders: placeholders)
         }
 
         // Fallback to fetch from server
         if let fetched = try? await termsContentService.fetchCurrentTerms(language: language, documentType: documentType),
            let section = fetched.sections.first(where: { $0.id == key.rawValue }) {
-            return applyPlaceholders(to: section.content, placeholders: placeholders)
+            return self.applyPlaceholders(to: section.content, placeholders: placeholders)
         }
 
         // Final fallback: local default text
-        return applyPlaceholders(to: defaultText, placeholders: placeholders)
+        return self.applyPlaceholders(to: defaultText, placeholders: placeholders)
     }
 
     func snippet(
@@ -98,9 +98,9 @@ struct LegalSnippetProvider: LegalSnippetProviderProtocol, Sendable {
         let title = section.flatMap { $0.titleOrEmpty.isEmpty ? nil : $0.titleOrEmpty } ?? defaultTitle
         let content: String
         if let raw = section?.content, !raw.isEmpty {
-            content = applyPlaceholders(to: raw, placeholders: placeholders)
+            content = self.applyPlaceholders(to: raw, placeholders: placeholders)
         } else {
-            content = applyPlaceholders(to: defaultContent, placeholders: placeholders)
+            content = self.applyPlaceholders(to: defaultContent, placeholders: placeholders)
         }
         return LegalSnippetResult(title: title, content: content)
     }

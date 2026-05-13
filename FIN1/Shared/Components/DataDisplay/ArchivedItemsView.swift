@@ -14,11 +14,11 @@ struct ArchivedItemsView: View {
 
                 ScrollView {
                     LazyVStack(spacing: ResponsiveDesign.spacing(12)) {
-                        if items.isEmpty {
-                            emptyState
+                        if self.items.isEmpty {
+                            self.emptyState
                         } else {
-                            ForEach(items) { item in
-                                UnifiedItemCard(item: item, notificationService: notificationService)
+                            ForEach(self.items) { item in
+                                UnifiedItemCard(item: item, notificationService: self.notificationService)
                             }
                         }
                     }
@@ -30,7 +30,7 @@ struct ArchivedItemsView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Close") {
-                        dismiss()
+                        self.dismiss()
                     }
                     .foregroundColor(AppTheme.accentLightBlue)
                 }

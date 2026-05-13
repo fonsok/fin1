@@ -103,37 +103,37 @@ struct Order: Identifiable, Codable, Sendable {
     // MARK: - Computed Properties
 
     var isActive: Bool {
-        switch type {
+        switch self.type {
         case .buy:
-            return buyStatus == .submitted || buyStatus == .executed
+            return self.buyStatus == .submitted || self.buyStatus == .executed
         case .sell:
-            return sellStatus == .submitted || sellStatus == .executed
+            return self.sellStatus == .submitted || self.sellStatus == .executed
         }
     }
 
     var isCompleted: Bool {
-        switch type {
+        switch self.type {
         case .buy:
-            return buyStatus == .completed
+            return self.buyStatus == .completed
         case .sell:
-            return sellStatus == .confirmed
+            return self.sellStatus == .confirmed
         }
     }
 
     var buyStatus: OrderBuyStatus? {
-        type == .buy ? OrderBuyStatus(rawValue: status) : nil
+        self.type == .buy ? OrderBuyStatus(rawValue: self.status) : nil
     }
 
     var sellStatus: OrderSellStatus? {
-        type == .sell ? OrderSellStatus(rawValue: status) : nil
+        self.type == .sell ? OrderSellStatus(rawValue: self.status) : nil
     }
 
     var currentStatusDisplayName: String {
-        switch type {
+        switch self.type {
         case .buy:
-            return buyStatus?.displayName ?? "Unknown"
+            return self.buyStatus?.displayName ?? "Unknown"
         case .sell:
-            return sellStatus?.displayName ?? "Unknown"
+            return self.sellStatus?.displayName ?? "Unknown"
         }
     }
 }

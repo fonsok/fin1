@@ -14,30 +14,30 @@ struct CompanyKybTaxStep: View {
                 label: "USt-IdNr.",
                 placeholder: "z. B. DE123456789",
                 icon: "doc.text",
-                text: $formData.vatId
+                text: self.$formData.vatId
             )
 
             LabeledInputField(
                 label: "Nationale Steuernummer",
                 placeholder: "z. B. 12/345/67890",
                 icon: "doc.text",
-                text: $formData.nationalTaxNumber
+                text: self.$formData.nationalTaxNumber
             )
 
             LabeledInputField(
                 label: "Wirtschafts-Identifikationsnr. (optional)",
                 placeholder: "W-ID",
                 icon: "number",
-                text: $formData.economicIdentificationNumber
+                text: self.$formData.economicIdentificationNumber
             )
 
             toggleRow(
                 title: "Keine USt-IdNr. vorhanden (Kleinunternehmer o. Ä.)",
-                isOn: $formData.noVatIdDeclared
+                isOn: self.$formData.noVatIdDeclared
             )
 
-            if formData.vatId.isEmpty && formData.nationalTaxNumber.isEmpty
-                && !formData.noVatIdDeclared {
+            if self.formData.vatId.isEmpty && self.formData.nationalTaxNumber.isEmpty
+                && !self.formData.noVatIdDeclared {
                 HStack(spacing: ResponsiveDesign.spacing(8)) {
                     Image(systemName: "exclamationmark.triangle")
                         .foregroundColor(.orange)

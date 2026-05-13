@@ -39,15 +39,15 @@ struct ExpandableSectionRow<Content: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            sectionHeader
-            if isExpanded {
-                sectionContent
+            self.sectionHeader
+            if self.isExpanded {
+                self.sectionContent
             }
         }
-        .cornerRadius(style == .typewriter ? 0 : ResponsiveDesign.spacing(12))
+        .cornerRadius(self.style == .typewriter ? 0 : ResponsiveDesign.spacing(12))
         .overlay(
             Group {
-                if style != .typewriter {
+                if self.style != .typewriter {
                     RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(12))
                         .stroke(AppTheme.fontColor.opacity(0.1), lineWidth: 1)
                 }
@@ -56,41 +56,41 @@ struct ExpandableSectionRow<Content: View>: View {
     }
 
     private var sectionHeader: some View {
-        Button(action: onToggle) {
+        Button(action: self.onToggle) {
             HStack(spacing: ResponsiveDesign.spacing(12)) {
                 if let icon = icon, style != .typewriter {
                     Image(systemName: icon)
                         .font(ResponsiveDesign.headlineFont())
-                        .foregroundColor(iconColor)
+                        .foregroundColor(self.iconColor)
                         .frame(width: ResponsiveDesign.iconSize())
                 }
 
-                Text(title)
-                    .font(style == .typewriter
-                          ? .system(size: 16, weight: titleFontWeight == .semibold ? .bold : .regular, design: .monospaced)
-                          : ResponsiveDesign.headlineFont())
-                    .fontWeight(style == .typewriter ? (titleFontWeight == .semibold ? .bold : .regular) : titleFontWeight)
-                    .foregroundColor(style == .typewriter ? Color("InputText") : AppTheme.fontColor)
+                Text(self.title)
+                    .font(self.style == .typewriter
+                        ? .system(size: 16, weight: self.titleFontWeight == .semibold ? .bold : .regular, design: .monospaced)
+                        : ResponsiveDesign.headlineFont())
+                    .fontWeight(self.style == .typewriter ? (self.titleFontWeight == .semibold ? .bold : .regular) : self.titleFontWeight)
+                    .foregroundColor(self.style == .typewriter ? Color("InputText") : AppTheme.fontColor)
                     .multilineTextAlignment(.leading)
 
                 Spacer()
 
-                chevronIcon
+                self.chevronIcon
             }
             .padding(ResponsiveDesign.spacing(16))
-            .background(style == .typewriter ? Color.clear : AppTheme.sectionBackground)
+            .background(self.style == .typewriter ? Color.clear : AppTheme.sectionBackground)
         }
         .buttonStyle(PlainButtonStyle())
     }
 
     private var chevronIcon: some View {
         Group {
-            if style == .typewriter {
-                Text(isExpanded ? "[-]" : "[+]")
+            if self.style == .typewriter {
+                Text(self.isExpanded ? "[-]" : "[+]")
                     .font(ResponsiveDesign.monospacedFont(size: 16, weight: .regular))
                     .foregroundColor(Color("InputText"))
             } else {
-                Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                Image(systemName: self.isExpanded ? "chevron.up" : "chevron.down")
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.6))
             }
@@ -98,11 +98,11 @@ struct ExpandableSectionRow<Content: View>: View {
     }
 
     private var sectionContent: some View {
-        content()
+        self.content()
             .padding(ResponsiveDesign.spacing(16))
-            .padding(.leading, style == .typewriter ? 0 : effectiveContentLeadingPadding)
+            .padding(.leading, self.style == .typewriter ? 0 : self.effectiveContentLeadingPadding)
             .frame(maxWidth: .infinity, alignment: .topLeading)
-            .background(style == .typewriter ? Color.clear : AppTheme.systemTertiaryBackground)
+            .background(self.style == .typewriter ? Color.clear : AppTheme.systemTertiaryBackground)
             .transition(.opacity.combined(with: .move(edge: .top)))
     }
 
@@ -118,9 +118,8 @@ struct ExpandableSectionRow<Content: View>: View {
     }
 
     private var effectiveContentLeadingPadding: CGFloat {
-        contentLeadingPaddingOverride ?? calculatedContentLeadingPadding
+        self.contentLeadingPaddingOverride ?? self.calculatedContentLeadingPadding
     }
-
 }
 
 // MARK: - Preview

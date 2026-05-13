@@ -7,33 +7,33 @@ struct CustomerSearchResultRow: View {
     let onSelect: () -> Void
 
     var body: some View {
-        Button(action: onSelect) {
+        Button(action: self.onSelect) {
             HStack(spacing: ResponsiveDesign.spacing(12)) {
                 Circle()
                     .fill(AppTheme.accentLightBlue.opacity(0.2))
                     .frame(width: 44, height: 44)
                     .overlay(
-                        Text(result.fullName.prefix(2).uppercased())
+                        Text(self.result.fullName.prefix(2).uppercased())
                             .font(ResponsiveDesign.captionFont())
                             .fontWeight(.bold)
                             .foregroundColor(AppTheme.accentLightBlue)
                     )
 
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(2)) {
-                    Text(result.fullName)
+                    Text(self.result.fullName)
                         .font(ResponsiveDesign.bodyFont())
                         .fontWeight(.medium)
                         .foregroundColor(AppTheme.fontColor)
 
-                    Text(result.email)
+                    Text(self.result.email)
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(AppTheme.fontColor.opacity(0.7))
 
                     HStack(spacing: ResponsiveDesign.spacing(8)) {
-                        CSStatusBadge(text: result.role.capitalized, color: AppTheme.accentLightBlue)
+                        CSStatusBadge(text: self.result.role.capitalized, color: AppTheme.accentLightBlue)
                         CSStatusBadge(
-                            text: result.accountStatus.displayName,
-                            color: statusColor(for: result.accountStatus)
+                            text: self.result.accountStatus.displayName,
+                            color: self.statusColor(for: self.result.accountStatus)
                         )
                     }
                 }
@@ -68,13 +68,13 @@ struct CSStatusBadge: View {
     let color: Color
 
     var body: some View {
-        Text(text)
+        Text(self.text)
             .font(ResponsiveDesign.captionFont())
             .fontWeight(.medium)
-            .foregroundColor(color)
+            .foregroundColor(self.color)
             .padding(.horizontal, ResponsiveDesign.spacing(8))
             .padding(.vertical, ResponsiveDesign.spacing(2))
-            .background(color.opacity(0.15))
+            .background(self.color.opacity(0.15))
             .cornerRadius(ResponsiveDesign.spacing(4))
     }
 }
@@ -92,15 +92,15 @@ struct QuickActionCard: View {
 
     var body: some View {
         Button(action: {
-            if isEnabled {
-                action?()
+            if self.isEnabled {
+                self.action?()
             }
         }) {
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
                 HStack {
-                    Image(systemName: icon)
+                    Image(systemName: self.icon)
                         .font(ResponsiveDesign.headlineFont())
-                        .foregroundColor(isEnabled ? color : AppTheme.fontColor.opacity(0.3))
+                        .foregroundColor(self.isEnabled ? self.color : AppTheme.fontColor.opacity(0.3))
 
                     Spacer()
 
@@ -111,17 +111,17 @@ struct QuickActionCard: View {
                             .foregroundColor(.white)
                             .padding(.horizontal, ResponsiveDesign.spacing(6))
                             .padding(.vertical, ResponsiveDesign.spacing(2))
-                            .background(color)
+                            .background(self.color)
                             .cornerRadius(ResponsiveDesign.spacing(8))
                     }
                 }
 
-                Text(title)
+                Text(self.title)
                     .font(ResponsiveDesign.captionFont())
                     .fontWeight(.semibold)
-                    .foregroundColor(isEnabled ? AppTheme.fontColor : AppTheme.fontColor.opacity(0.5))
+                    .foregroundColor(self.isEnabled ? AppTheme.fontColor : AppTheme.fontColor.opacity(0.5))
 
-                Text(subtitle)
+                Text(self.subtitle)
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.5))
             }
@@ -131,12 +131,12 @@ struct QuickActionCard: View {
             .cornerRadius(ResponsiveDesign.spacing(10))
             .overlay(
                 RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(10))
-                    .stroke(isEnabled ? color.opacity(0.3) : AppTheme.fontColor.opacity(0.1), lineWidth: 1)
+                    .stroke(self.isEnabled ? self.color.opacity(0.3) : AppTheme.fontColor.opacity(0.1), lineWidth: 1)
             )
-            .opacity(isEnabled ? 1 : 0.6)
+            .opacity(self.isEnabled ? 1 : 0.6)
         }
         .buttonStyle(PlainButtonStyle())
-        .disabled(!isEnabled)
+        .disabled(!self.isEnabled)
     }
 }
 
@@ -149,13 +149,13 @@ struct SmallActionButton: View {
     var action: (() -> Void)?
 
     var body: some View {
-        Button(action: { action?() }) {
+        Button(action: { self.action?() }) {
             HStack(spacing: ResponsiveDesign.spacing(8)) {
-                Image(systemName: icon)
+                Image(systemName: self.icon)
                     .font(ResponsiveDesign.captionFont())
-                    .foregroundColor(color)
+                    .foregroundColor(self.color)
 
-                Text(title)
+                Text(self.title)
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor)
             }
@@ -165,7 +165,7 @@ struct SmallActionButton: View {
             .cornerRadius(ResponsiveDesign.spacing(8))
             .overlay(
                 RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(8))
-                    .stroke(color.opacity(0.3), lineWidth: 1)
+                    .stroke(self.color.opacity(0.3), lineWidth: 1)
             )
         }
         .buttonStyle(PlainButtonStyle())
@@ -179,39 +179,39 @@ struct TicketRow: View {
     let onSelect: () -> Void
 
     private var slaInfo: SLAInfo {
-        ticket.getSLAInfo()
+        self.ticket.getSLAInfo()
     }
 
     private var showSLABadge: Bool {
         // Show SLA badge only for active tickets that aren't resolved/closed
-        ticket.status != .resolved && ticket.status != .closed && ticket.status != .archived
+        self.ticket.status != .resolved && self.ticket.status != .closed && self.ticket.status != .archived
     }
 
     var body: some View {
-        Button(action: onSelect) {
+        Button(action: self.onSelect) {
             HStack(spacing: ResponsiveDesign.spacing(12)) {
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
                     HStack {
-                        Text(ticket.ticketNumber)
+                        Text(self.ticket.ticketNumber)
                             .font(ResponsiveDesign.captionFont())
                             .fontWeight(.medium)
                             .foregroundColor(AppTheme.accentLightBlue)
 
-                        CSStatusBadge(text: ticket.status.displayName, color: ticketStatusColor)
+                        CSStatusBadge(text: self.ticket.status.displayName, color: self.ticketStatusColor)
 
                         // SLA Badge
-                        if showSLABadge {
-                            SLABadge(slaInfo: slaInfo, showTime: true)
+                        if self.showSLABadge {
+                            SLABadge(slaInfo: self.slaInfo, showTime: true)
                         }
                     }
 
-                    Text(ticket.subject)
+                    Text(self.ticket.subject)
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(AppTheme.fontColor)
                         .lineLimit(1)
 
                     HStack {
-                        Text(ticket.customerName)
+                        Text(self.ticket.customerName)
                             .font(ResponsiveDesign.captionFont())
                             .foregroundColor(AppTheme.fontColor.opacity(0.7))
 
@@ -239,14 +239,14 @@ struct TicketRow: View {
             .cornerRadius(ResponsiveDesign.spacing(10))
             .overlay(
                 RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(10))
-                    .stroke(slaBorderColor, lineWidth: slaBorderColor == .clear ? 0 : 1)
+                    .stroke(self.slaBorderColor, lineWidth: self.slaBorderColor == .clear ? 0 : 1)
             )
         }
         .buttonStyle(PlainButtonStyle())
     }
 
     private var ticketStatusColor: Color {
-        switch ticket.status {
+        switch self.ticket.status {
         case .open, .inProgress: return AppTheme.accentLightBlue
         case .waitingForCustomer: return AppTheme.accentOrange
         case .escalated: return AppTheme.accentRed
@@ -256,8 +256,8 @@ struct TicketRow: View {
     }
 
     private var slaBorderColor: Color {
-        guard showSLABadge else { return .clear }
-        switch slaInfo.overallStatus {
+        guard self.showSLABadge else { return .clear }
+        switch self.slaInfo.overallStatus {
         case .breached: return AppTheme.accentRed.opacity(0.5)
         case .warning: return AppTheme.accentOrange.opacity(0.5)
         default: return .clear
@@ -274,18 +274,18 @@ struct PermissionCategoryRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(6)) {
             HStack {
-                Image(systemName: category.icon)
+                Image(systemName: self.category.icon)
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.accentLightBlue)
 
-                Text(category.displayName)
+                Text(self.category.displayName)
                     .font(ResponsiveDesign.captionFont())
                     .fontWeight(.medium)
                     .foregroundColor(AppTheme.fontColor)
             }
 
             CSFlowLayout(spacing: ResponsiveDesign.spacing(6)) {
-                ForEach(permissions, id: \.self) { permission in
+                ForEach(self.permissions, id: \.self) { permission in
                     HStack(spacing: ResponsiveDesign.spacing(4)) {
                         Image(systemName: permission.isReadOnly ? "eye.fill" : "pencil")
                             .font(ResponsiveDesign.captionFont())
@@ -311,16 +311,16 @@ struct CSFlowLayout: Layout {
     var spacing: CGFloat = 8
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout Void) -> CGSize {
-        let result = FlowResult(in: proposal.width ?? 0, subviews: subviews, spacing: spacing)
+        let result = FlowResult(in: proposal.width ?? 0, subviews: subviews, spacing: self.spacing)
         return result.size
     }
 
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout Void) {
-        let result = FlowResult(in: bounds.width, subviews: subviews, spacing: spacing)
+        let result = FlowResult(in: bounds.width, subviews: subviews, spacing: self.spacing)
         for (index, subview) in subviews.enumerated() {
             subview.place(at: CGPoint(x: bounds.minX + result.positions[index].x,
                                       y: bounds.minY + result.positions[index].y),
-                         proposal: .unspecified)
+                          proposal: .unspecified)
         }
     }
 
@@ -340,12 +340,12 @@ struct CSFlowLayout: Layout {
                     currentY += maxHeight + spacing
                     maxHeight = 0
                 }
-                positions.append(CGPoint(x: currentX, y: currentY))
+                self.positions.append(CGPoint(x: currentX, y: currentY))
                 maxHeight = max(maxHeight, viewSize.height)
                 currentX += viewSize.width + spacing
             }
 
-            size = CGSize(width: width, height: currentY + maxHeight)
+            self.size = CGSize(width: width, height: currentY + maxHeight)
         }
     }
 }

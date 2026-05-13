@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - FAQKnowledgeBaseViewModel + Search & Filtering
 /// Extension handling search, filtering, and article selection
@@ -34,7 +34,7 @@ extension FAQKnowledgeBaseViewModel {
 
     func selectCategory(_ category: KnowledgeBaseCategory?) {
         selectedCategory = category
-        applyFilters()
+        self.applyFilters()
     }
 
     func toggleUnpublished() {

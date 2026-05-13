@@ -17,7 +17,7 @@ struct TradeStatementCalculationSection: View {
             // Calculation Breakdown
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
                 // Sell amounts
-                ForEach(Array(calculationBreakdown.sellAmounts.enumerated()), id: \.offset) { index, sellAmount in
+                ForEach(Array(self.calculationBreakdown.sellAmounts.enumerated()), id: \.offset) { index, sellAmount in
                     HStack {
                         if index == 0 {
                             Text("∑ Verkauf")
@@ -46,7 +46,7 @@ struct TradeStatementCalculationSection: View {
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(AppTheme.fontColor)
                     Spacer()
-                    Text("- \(calculationBreakdown.buyAmount)")
+                    Text("- \(self.calculationBreakdown.buyAmount)")
                         .font(ResponsiveDesign.bodyFont())
                         .fontWeight(.medium)
                         .foregroundColor(AppTheme.fontColor)
@@ -63,10 +63,12 @@ struct TradeStatementCalculationSection: View {
                         .fontWeight(.bold)
                         .foregroundColor(AppTheme.fontColor)
                     Spacer()
-                    Text(calculationBreakdown.resultBeforeTaxes)
+                    Text(self.calculationBreakdown.resultBeforeTaxes)
                         .font(ResponsiveDesign.bodyFont())
                         .fontWeight(.bold)
-                        .foregroundColor(calculationBreakdown.resultBeforeTaxesColor == "fin1AccentGreen" ? AppTheme.accentGreen : AppTheme.accentRed)
+                        .foregroundColor(
+                            self.calculationBreakdown.resultBeforeTaxesColor == "fin1AccentGreen" ? AppTheme.accentGreen : AppTheme.accentRed
+                        )
                 }
 
                 // Final separator line

@@ -12,14 +12,14 @@ struct InvoiceCustomerInfoSection: View {
                 .fontWeight(.semibold)
 
             VStack(alignment: .leading, spacing: 8) {
-                Text(invoice.customerInfo.name)
+                Text(self.invoice.customerInfo.name)
                     .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.medium)
 
-                Text(invoice.customerInfo.address)
+                Text(self.invoice.customerInfo.address)
                     .font(ResponsiveDesign.bodyFont())
 
-                Text("\(invoice.customerInfo.postalCode) \(invoice.customerInfo.city)")
+                Text("\(self.invoice.customerInfo.postalCode) \(self.invoice.customerInfo.city)")
                     .font(ResponsiveDesign.bodyFont())
 
                 Divider()
@@ -29,7 +29,7 @@ struct InvoiceCustomerInfoSection: View {
                         Text("Steuernummer")
                             .font(ResponsiveDesign.captionFont())
                             .foregroundColor(.secondary)
-                        Text(invoice.customerInfo.taxNumber)
+                        Text(self.invoice.customerInfo.taxNumber)
                             .font(ResponsiveDesign.bodyFont())
                     }
 
@@ -39,7 +39,7 @@ struct InvoiceCustomerInfoSection: View {
                         Text("Kundennummer")
                             .font(ResponsiveDesign.captionFont())
                             .foregroundColor(.secondary)
-                        Text(invoice.customerInfo.customerNumber)
+                        Text(self.invoice.customerInfo.customerNumber)
                             .font(ResponsiveDesign.bodyFont())
                     }
                 }
@@ -49,7 +49,7 @@ struct InvoiceCustomerInfoSection: View {
                         Text("Depotnummer")
                             .font(ResponsiveDesign.captionFont())
                             .foregroundColor(.secondary)
-                        Text(invoice.customerInfo.depotNumber)
+                        Text(self.invoice.customerInfo.depotNumber)
                             .font(ResponsiveDesign.bodyFont())
                     }
 
@@ -59,7 +59,7 @@ struct InvoiceCustomerInfoSection: View {
                         Text("Bank")
                             .font(ResponsiveDesign.captionFont())
                             .foregroundColor(.secondary)
-                        Text(invoice.customerInfo.bank)
+                        Text(self.invoice.customerInfo.bank)
                             .font(ResponsiveDesign.bodyFont())
                     }
                 }

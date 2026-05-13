@@ -8,7 +8,7 @@ struct MultipleInvestmentsPreview: View {
 
     var body: some View {
         VStack(spacing: ResponsiveDesign.spacing(8)) {
-            ForEach(1...min(numberOfInvestments, 3), id: \.self) { investmentNumber in
+            ForEach(1...min(self.numberOfInvestments, 3), id: \.self) { investmentNumber in
                 HStack {
                     VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
                         Text("Investment #\(investmentNumber)")
@@ -22,11 +22,11 @@ struct MultipleInvestmentsPreview: View {
                     Spacer()
 
                     VStack(alignment: .trailing, spacing: ResponsiveDesign.spacing(4)) {
-                        Text(amountPerInvestment.formattedAsLocalizedCurrency())
+                        Text(self.amountPerInvestment.formattedAsLocalizedCurrency())
                             .font(ResponsiveDesign.bodyFont())
                             .fontWeight(.semibold)
                             .foregroundColor(AppTheme.accentGreen)
-                        Text("\(amountPerInvestment.formattedAsLocalizedCurrency()) per investment")
+                        Text("\(self.amountPerInvestment.formattedAsLocalizedCurrency()) per investment")
                             .font(ResponsiveDesign.captionFont())
                             .foregroundColor(AppTheme.fontColor.opacity(0.7))
                     }
@@ -36,8 +36,8 @@ struct MultipleInvestmentsPreview: View {
                 .cornerRadius(ResponsiveDesign.spacing(12))
             }
 
-            if numberOfInvestments > 3 {
-                Text("+ \(numberOfInvestments - 3) more investment\(numberOfInvestments - 3 == 1 ? "" : "s")")
+            if self.numberOfInvestments > 3 {
+                Text("+ \(self.numberOfInvestments - 3) more investment\(self.numberOfInvestments - 3 == 1 ? "" : "s")")
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
                     .padding(.top, ResponsiveDesign.spacing(4))

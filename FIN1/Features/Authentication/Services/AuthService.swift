@@ -74,10 +74,10 @@ final class AuthService: AuthServiceProtocol, ObservableObject {
             let result = try await authProvider.authenticate(
                 with: .emailPassword(email: email, password: password)
             )
-            updateAuthState(with: result)
+            self.updateAuthState(with: result)
             return result
         } catch {
-            throw mapToAppError(error)
+            throw self.mapToAppError(error)
         }
     }
 
@@ -94,10 +94,10 @@ final class AuthService: AuthServiceProtocol, ObservableObject {
                     fullName: fullName
                 )
             )
-            updateAuthState(with: result)
+            self.updateAuthState(with: result)
             return result
         } catch {
-            throw mapToAppError(error)
+            throw self.mapToAppError(error)
         }
     }
 
@@ -110,10 +110,10 @@ final class AuthService: AuthServiceProtocol, ObservableObject {
             let result = try await authProvider.authenticate(
                 with: .biometric(userId: userId)
             )
-            updateAuthState(with: result)
+            self.updateAuthState(with: result)
             return result
         } catch {
-            throw mapToAppError(error)
+            throw self.mapToAppError(error)
         }
     }
 
@@ -126,34 +126,34 @@ final class AuthService: AuthServiceProtocol, ObservableObject {
             let result = try await authProvider.authenticate(
                 with: .sso(provider: provider, code: code, state: state)
             )
-            updateAuthState(with: result)
+            self.updateAuthState(with: result)
             return result
         } catch {
-            throw mapToAppError(error)
+            throw self.mapToAppError(error)
         }
     }
 
     func signOut() async throws {
         do {
-            try await authProvider.revokeTokens()
-            clearAuthState()
-            logger.info("👋 User signed out")
+            try await self.authProvider.revokeTokens()
+            self.clearAuthState()
+            self.logger.info("👋 User signed out")
         } catch {
-            throw mapToAppError(error)
+            throw self.mapToAppError(error)
         }
     }
 
     func refreshSession() async throws {
         do {
-            guard await authProvider.isSessionValid else {
+            guard await self.authProvider.isSessionValid else {
                 // Try to refresh token
                 let newToken = try await authProvider.refreshToken()
-                logger.info("🔄 Session refreshed with new token: \(newToken.prefix(20))...")
+                self.logger.info("🔄 Session refreshed with new token: \(newToken.prefix(20))...")
                 return
             }
-            logger.info("✅ Session is still valid")
+            self.logger.info("✅ Session is still valid")
         } catch {
-            throw mapToAppError(error)
+            throw self.mapToAppError(error)
         }
     }
 
@@ -219,9 +219,9 @@ final class AuthService: AuthServiceProtocol, ObservableObject {
 
         if hasValidTokens {
             // Restore session from stored tokens
-            if (try? await tokenStorage.getAccessToken()) != nil {
-                logger.info("🔐 Restored existing session")
-                isAuthenticated = true
+            if (try? await self.tokenStorage.getAccessToken()) != nil {
+                self.logger.info("🔐 Restored existing session")
+                self.isAuthenticated = true
                 // Note: userId would need to be decoded from token in production
             }
         }

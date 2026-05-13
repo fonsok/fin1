@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Dashboard Service Protocol
 /// Defines the contract for dashboard data operations and management

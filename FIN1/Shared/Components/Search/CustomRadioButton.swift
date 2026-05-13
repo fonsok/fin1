@@ -6,7 +6,7 @@ struct CustomRadioButton: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: action, label: {
+        Button(action: self.action, label: {
             HStack(spacing: ResponsiveDesign.spacing(8)) {
                 ZStack {
                     Circle()
@@ -15,13 +15,13 @@ struct CustomRadioButton: View {
                     Circle()
                         .strokeBorder(Color.gray.opacity(0.5), lineWidth: 1)
                         .frame(width: 20, height: 20)
-                    if isSelected {
+                    if self.isSelected {
                         Circle()
                             .fill(AppTheme.accentLightBlue)
                             .frame(width: 12, height: 12)
                     }
                 }
-                Text(title)
+                Text(self.title)
                     .foregroundColor(AppTheme.fontColor)
             }
         })

@@ -16,37 +16,37 @@ struct PaginatedListView<T: Identifiable, Content: View>: View {
 
     var body: some View {
         VStack(spacing: ResponsiveDesign.spacing(0)) {
-            if paginationCoordinator.state == .loading && paginationCoordinator.items.isEmpty {
-                loadingView
-            } else if paginationCoordinator.state.isError {
-                errorView
+            if self.paginationCoordinator.state == .loading && self.paginationCoordinator.items.isEmpty {
+                self.loadingView
+            } else if self.paginationCoordinator.state.isError {
+                self.errorView
             } else {
                 ScrollView {
                     LazyVStack(spacing: ResponsiveDesign.spacing(12)) {
-                        ForEach(Array(paginationCoordinator.items.enumerated()), id: \.element.id) { index, item in
-                            content(item)
+                        ForEach(Array(self.paginationCoordinator.items.enumerated()), id: \.element.id) { index, item in
+                            self.content(item)
                                 .onAppear {
-                                    paginationCoordinator.handlePrefetch(for: index)
+                                    self.paginationCoordinator.handlePrefetch(for: index)
                                 }
                         }
 
                         // Loading more indicator
-                        if paginationCoordinator.state == .loadingMore {
-                            loadingMoreView
-                        } else if !paginationCoordinator.hasMoreData && !paginationCoordinator.items.isEmpty {
-                            noMoreDataView
+                        if self.paginationCoordinator.state == .loadingMore {
+                            self.loadingMoreView
+                        } else if !self.paginationCoordinator.hasMoreData && !self.paginationCoordinator.items.isEmpty {
+                            self.noMoreDataView
                         }
                     }
                     .padding()
                 }
                 .refreshable {
-                    await paginationCoordinator.refresh()
+                    await self.paginationCoordinator.refresh()
                 }
             }
         }
         .onAppear {
             Task {
-                await paginationCoordinator.loadInitialData()
+                await self.paginationCoordinator.loadInitialData()
             }
         }
     }
@@ -92,7 +92,7 @@ struct PaginatedListView<T: Identifiable, Content: View>: View {
                 .foregroundColor(AppTheme.fontColor)
             Button("Retry") {
                 Task {
-                    await paginationCoordinator.refresh()
+                    await self.paginationCoordinator.refresh()
                 }
             }
             .foregroundColor(AppTheme.accentLightBlue)

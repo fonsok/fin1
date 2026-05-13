@@ -35,7 +35,7 @@ final class TermsAcceptanceService: TermsAcceptanceServiceProtocol {
     }
 
     func needsToAcceptAnyNewDocument(user: User) -> Bool {
-        needsToAcceptNewTerms(user: user) || needsToAcceptNewPrivacyPolicy(user: user)
+        self.needsToAcceptNewTerms(user: user) || self.needsToAcceptNewPrivacyPolicy(user: user)
     }
 
     // MARK: - Acceptance Recording

@@ -9,20 +9,20 @@ struct ContactMethodButton: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
+        Button(action: self.action) {
             VStack(spacing: ResponsiveDesign.spacing(8)) {
-                Image(systemName: icon)
+                Image(systemName: self.icon)
                     .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 1.5))
-                    .foregroundColor(color)
+                    .foregroundColor(self.color)
 
-                Text(title)
+                Text(self.title)
                     .font(ResponsiveDesign.captionFont())
                     .fontWeight(.medium)
                     .foregroundColor(AppTheme.fontColor)
             }
             .frame(maxWidth: .infinity)
             .padding(ResponsiveDesign.spacing(16))
-            .background(color.opacity(0.1))
+            .background(self.color.opacity(0.1))
             .cornerRadius(ResponsiveDesign.spacing(12))
         }
     }
@@ -38,17 +38,17 @@ struct ContactInfoRow: View {
 
     var body: some View {
         HStack(spacing: ResponsiveDesign.spacing(12)) {
-            Image(systemName: icon)
+            Image(systemName: self.icon)
                 .font(ResponsiveDesign.bodyFont())
-                .foregroundColor(color)
+                .foregroundColor(self.color)
                 .frame(width: 24)
 
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(2)) {
-                Text(label)
+                Text(self.label)
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.6))
 
-                Text(value)
+                Text(self.value)
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.fontColor)
             }

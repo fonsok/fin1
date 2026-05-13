@@ -20,16 +20,16 @@ struct CreateFilterCombinationView: View {
 
                 VStack(spacing: ResponsiveDesign.spacing(24)) {
                     // Combination Name Input
-                    FilterCombinationNameInput(viewModel: viewModel)
+                    FilterCombinationNameInput(viewModel: self.viewModel)
 
                     // Active Filters Preview
                     VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
-                        Text("Active Filters (\(activeFilters.count))")
+                        Text("Active Filters (\(self.activeFilters.count))")
                             .font(ResponsiveDesign.headlineFont())
                             .fontWeight(.bold)
                             .foregroundColor(AppTheme.fontColor)
 
-                        if activeFilters.isEmpty {
+                        if self.activeFilters.isEmpty {
                             Text("No filters selected. Add filters from the main screen first.")
                                 .foregroundColor(AppTheme.fontColor.opacity(0.6))
                                 .padding()
@@ -39,8 +39,8 @@ struct CreateFilterCombinationView: View {
                                 GridItem(.flexible(), spacing: ResponsiveDesign.spacing(8)),
                                 GridItem(.flexible(), spacing: ResponsiveDesign.spacing(8))
                             ], spacing: ResponsiveDesign.spacing(8)) {
-                                ForEach(activeFilters, id: \.type) { filter in
-                                    FilterPreviewChip(filter: filter, displayValue: displayValue(for: filter))
+                                ForEach(self.activeFilters, id: \.type) { filter in
+                                    FilterPreviewChip(filter: filter, displayValue: self.displayValue(for: filter))
                                 }
                             }
                         }
@@ -49,20 +49,20 @@ struct CreateFilterCombinationView: View {
                     Spacer()
 
                     // Save Button
-                    Button(action: saveCombination, label: {
+                    Button(action: self.saveCombination, label: {
                         Text("Save Combination")
                             .font(ResponsiveDesign.headlineFont())
                             .fontWeight(.bold)
                             .foregroundColor(AppTheme.screenBackground)
                             .frame(maxWidth: .infinity)
                             .padding()
-                            .background(canSave ? AppTheme.accentGreen : AppTheme.inputFieldBackground)
+                            .background(self.canSave ? AppTheme.accentGreen : AppTheme.inputFieldBackground)
                             .cornerRadius(ResponsiveDesign.spacing(12))
                     })
-                    .disabled(!canSave)
+                    .disabled(!self.canSave)
 
                     // Save button hint
-                    if !canSave {
+                    if !self.canSave {
                         Text("Name must be 1-20 alphanumeric characters and have active filters")
                             .font(ResponsiveDesign.captionFont())
                             .foregroundColor(AppTheme.fontColor.opacity(0.6))
@@ -76,28 +76,28 @@ struct CreateFilterCombinationView: View {
             .navigationTitle("Create Filter Combination")
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") { dismiss() }
+                    Button("Cancel") { self.dismiss() }
                         .foregroundColor(AppTheme.accentRed)
                 }
 
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Save") { saveCombination() }
+                    Button("Save") { self.saveCombination() }
                         .foregroundColor(AppTheme.accentLightBlue)
-                        .disabled(!canSave)
+                        .disabled(!self.canSave)
                 }
             }
         }
     }
 
     private var canSave: Bool {
-        viewModel.canSave && !activeFilters.isEmpty
+        self.viewModel.canSave && !self.activeFilters.isEmpty
     }
 
     private func saveCombination() {
-        let trimmedName = viewModel.combinationName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedName = self.viewModel.combinationName.trimmingCharacters(in: .whitespacesAndNewlines)
         let newCombination = FilterCombination(name: trimmedName, filters: activeFilters)
-        savedFiltersManager.addFilter(newCombination)
-        dismiss()
+        self.savedFiltersManager.addFilter(newCombination)
+        self.dismiss()
     }
 
     // Helper function to get display value for each filter type
@@ -121,14 +121,14 @@ private struct FilterPreviewChip: View {
     var body: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(2)) {
             // Label - smaller font, less opacity, allows line breaks
-            Text(filter.type.displayName)
+            Text(self.filter.type.displayName)
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
                 .fixedSize(horizontal: false, vertical: true)
                 .multilineTextAlignment(.leading)
 
             // Value - normal font, normal opacity, allows line breaks
-            Text(displayValue)
+            Text(self.displayValue)
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor)
                 .fixedSize(horizontal: false, vertical: true)

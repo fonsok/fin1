@@ -18,9 +18,9 @@ final class PDFDownloadService {
         print("🔧 DEBUG: PDF data size: \(pdfData.count) bytes")
 
         // For very large PDFs, use share sheet instead of data URL
-        if pdfData.count > 1000000 { // 1MB limit for data URLs
+        if pdfData.count > 1_000_000 { // 1MB limit for data URLs
             print("🔧 DEBUG: PDF too large for data URL (\(pdfData.count) bytes), using share sheet instead")
-            downloadPDFViaShareSheet(pdfData, fileName: fileName, fileExtension: fileExtension)
+            self.downloadPDFViaShareSheet(pdfData, fileName: fileName, fileExtension: fileExtension)
             return
         }
 
@@ -32,15 +32,15 @@ final class PDFDownloadService {
         print("🔧 DEBUG: Data URL length: \(dataURL.count) characters")
 
         // Check if data URL is too long (some browsers have limits)
-        if dataURL.count > 2000000 { // 2MB limit for data URLs
+        if dataURL.count > 2_000_000 { // 2MB limit for data URLs
             print("🔧 DEBUG: Data URL too long (\(dataURL.count) chars), using share sheet instead")
-            downloadPDFViaShareSheet(pdfData, fileName: fileName, fileExtension: fileExtension)
+            self.downloadPDFViaShareSheet(pdfData, fileName: fileName, fileExtension: fileExtension)
             return
         }
 
         guard let url = URL(string: dataURL) else {
             print("❌ DEBUG: Failed to create data URL for PDF")
-            downloadPDFViaShareSheet(pdfData, fileName: fileName, fileExtension: fileExtension)
+            self.downloadPDFViaShareSheet(pdfData, fileName: fileName, fileExtension: fileExtension)
             return
         }
 
@@ -53,12 +53,12 @@ final class PDFDownloadService {
                         print("📱 PDF opened in browser successfully")
                     } else {
                         print("❌ Failed to open PDF in browser, falling back to share sheet")
-                        downloadPDFViaShareSheet(pdfData, fileName: fileName, fileExtension: fileExtension)
+                        self.downloadPDFViaShareSheet(pdfData, fileName: fileName, fileExtension: fileExtension)
                     }
                 }
             } else {
                 print("❌ Cannot open URL in browser, falling back to share sheet")
-                downloadPDFViaShareSheet(pdfData, fileName: fileName, fileExtension: fileExtension)
+                self.downloadPDFViaShareSheet(pdfData, fileName: fileName, fileExtension: fileExtension)
             }
         }
     }
@@ -92,7 +92,11 @@ final class PDFDownloadService {
     static func savePDFToDocuments(_ pdfData: Data, fileName: String, fileExtension: String = "pdf") async throws -> URL {
         do {
             guard let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
-                throw NSError(domain: "PDFDownloadService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Could not access documents directory"])
+                throw NSError(
+                    domain: "PDFDownloadService",
+                    code: -1,
+                    userInfo: [NSLocalizedDescriptionKey: "Could not access documents directory"]
+                )
             }
             let fileURL = documentsURL.appendingPathComponent("\(fileName).\(fileExtension)")
 
@@ -122,7 +126,7 @@ extension PDFDownloadService {
     @ViewBuilder
     static func sharePDFButton(pdfData: Data, fileName: String, fileExtension: String = "pdf") -> some View {
         ShareLink(
-            item: createTemporaryPDFFile(pdfData: pdfData, fileName: fileName, fileExtension: fileExtension),
+            item: self.createTemporaryPDFFile(pdfData: pdfData, fileName: fileName, fileExtension: fileExtension),
             subject: Text("Wertpapierabrechnung"),
             message: Text("Anbei finden Sie Ihre Wertpapierabrechnung.")
         ) {

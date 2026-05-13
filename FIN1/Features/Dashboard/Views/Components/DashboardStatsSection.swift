@@ -20,9 +20,9 @@ struct DashboardStatsSection: View {
 
     var body: some View {
         Group {
-            if viewModel.isInvestor {
+            if self.viewModel.isInvestor {
                 VStack(spacing: ResponsiveDesign.spacing(12)) {
-                    investorStatsContent
+                    self.investorStatsContent
                 }
                 .padding(ResponsiveDesign.spacing(16))
                 .background(AppTheme.sectionBackground.opacity(0.5))
@@ -30,7 +30,7 @@ struct DashboardStatsSection: View {
             } else {
                 // Trader: Show rows with section wrapper matching welcome section
                 VStack(spacing: ResponsiveDesign.spacing(12)) {
-                    traderStatsContent
+                    self.traderStatsContent
                 }
                 .padding(ResponsiveDesign.spacing(16))
                 .background(AppTheme.sectionBackground.opacity(0.5))
@@ -38,13 +38,13 @@ struct DashboardStatsSection: View {
             }
         }
         .task {
-            await viewModel.onViewAppear()
+            await self.viewModel.onViewAppear()
         }
         .onAppear {
-            viewModel.refreshAllData()
+            self.viewModel.refreshAllData()
         }
-        .onChange(of: appServices.investmentService.investments.count) { _, _ in
-            viewModel.onInvestmentsCountChange()
+        .onChange(of: self.appServices.investmentService.investments.count) { _, _ in
+            self.viewModel.onInvestmentsCountChange()
         }
     }
 
@@ -65,13 +65,13 @@ struct DashboardStatsSection: View {
     private var investorStatsContent: some View {
         VStack(spacing: ResponsiveDesign.spacing(12)) {
             // Cash Balance row
-            cashBalanceRow
+            self.cashBalanceRow
 
             // Account action shortcuts directly below balance
-            accountActionsRow
+            self.accountActionsRow
 
             // Active Investments row
-            activeInvestmentsRow
+            self.activeInvestmentsRow
         }
     }
 
@@ -89,13 +89,13 @@ struct DashboardStatsSection: View {
             }
             .contentShape(Rectangle())
             .onTapGesture {
-                openAccountStatement()
+                self.openAccountStatement()
             }
             .accessibilityLabel("Cash balance")
             .accessibilityHint("Opens detailed account statement")
             .accessibilityAddTraits(.isButton)
             Spacer()
-            Text(viewModel.investorBalance)
+            Text(self.viewModel.investorBalance)
                 .font(ResponsiveDesign.headlineFont())
                 .fontWeight(.regular)
                 .foregroundColor(AppTheme.fontColor)
@@ -109,13 +109,13 @@ struct DashboardStatsSection: View {
                 .fontWeight(.light)
                 .foregroundColor(AppTheme.tertiaryText)
             Spacer()
-            Text("\(viewModel.activeInvestmentsCount)")
+            Text("\(self.viewModel.activeInvestmentsCount)")
                 .font(ResponsiveDesign.headlineFont())
                 .fontWeight(.medium)
                 .foregroundColor(AppTheme.accentGreen.opacity(0.8))
                 .contentShape(Rectangle())
                 .onTapGesture {
-                    tabRouter.selectedTab = 2
+                    self.tabRouter.selectedTab = 2
                 }
                 .accessibilityLabel("Active Investments")
                 .accessibilityHint("Tap to view your investments")
@@ -128,16 +128,16 @@ struct DashboardStatsSection: View {
     private var traderStatsContent: some View {
         VStack(spacing: ResponsiveDesign.spacing(12)) {
             // Row 1: Account Balance
-            traderAccountBalanceRow
+            self.traderAccountBalanceRow
 
             // Row 1b: Account action shortcuts directly below balance
-            accountActionsRow
+            self.accountActionsRow
 
             // Row 2: Depot Value
-            traderDepotValueRow
+            self.traderDepotValueRow
 
             // Row 3: Pool
-            traderPoolRow
+            self.traderPoolRow
         }
     }
 
@@ -155,13 +155,13 @@ struct DashboardStatsSection: View {
             }
             .contentShape(Rectangle())
             .onTapGesture {
-                openAccountStatement()
+                self.openAccountStatement()
             }
             .accessibilityLabel("Account balance")
             .accessibilityHint("Opens trader account statement")
             .accessibilityAddTraits(.isButton)
             Spacer()
-            Text(viewModel.accountBalance.formattedAsLocalizedCurrency())
+            Text(self.viewModel.accountBalance.formattedAsLocalizedCurrency())
                 .font(ResponsiveDesign.headlineFont())
                 .fontWeight(.medium)
                 .foregroundColor(AppTheme.fontColor)
@@ -175,7 +175,7 @@ struct DashboardStatsSection: View {
                 .fontWeight(.light)
                 .foregroundColor(AppTheme.tertiaryText)
             Spacer()
-            Text(viewModel.depotValue.formattedAsLocalizedCurrency())
+            Text(self.viewModel.depotValue.formattedAsLocalizedCurrency())
                 .font(ResponsiveDesign.headlineFont())
                 .fontWeight(.medium)
                 .foregroundColor(AppTheme.fontColor)
@@ -189,14 +189,14 @@ struct DashboardStatsSection: View {
                 .fontWeight(.light)
                 .foregroundColor(AppTheme.tertiaryText)
             Spacer()
-            poolStatusText
+            self.poolStatusText
         }
     }
 
     private var accountActionsRow: some View {
         HStack(spacing: ResponsiveDesign.spacing(8)) {
             Button {
-                openAccountActions()
+                self.openAccountActions()
             } label: {
                 HStack(spacing: ResponsiveDesign.spacing(6)) {
                     Image(systemName: "arrow.down.circle.fill")
@@ -212,7 +212,7 @@ struct DashboardStatsSection: View {
             }
 
             Button {
-                openAccountActions()
+                self.openAccountActions()
             } label: {
                 HStack(spacing: ResponsiveDesign.spacing(6)) {
                     Image(systemName: "arrow.up.circle.fill")
@@ -231,7 +231,7 @@ struct DashboardStatsSection: View {
 
     @ViewBuilder
     private var poolStatusText: some View {
-        let isActive = viewModel.traderPoolsStatus == "active"
+        let isActive = self.viewModel.traderPoolsStatus == "active"
         if isActive {
             Text("active")
                 .font(ResponsiveDesign.headlineFont())
@@ -249,11 +249,11 @@ struct DashboardStatsSection: View {
     // MARK: - Navigation
 
     private func openAccountStatement() {
-        navigationPath.append(DashboardRoute.accountStatement)
+        self.navigationPath.append(DashboardRoute.accountStatement)
     }
 
     private func openAccountActions() {
-        navigationPath.append(DashboardRoute.wallet)
+        self.navigationPath.append(DashboardRoute.wallet)
     }
 }
 

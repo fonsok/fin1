@@ -19,28 +19,28 @@ struct LazyDataView<T: Identifiable, Content: View>: View {
 
     var body: some View {
         Group {
-            if isLoading && items.isEmpty {
-                loadingView
+            if self.isLoading && self.items.isEmpty {
+                self.loadingView
             } else if let error = error {
-                errorView(error)
+                self.errorView(error)
             } else {
                 LazyVStack(spacing: ResponsiveDesign.spacing(12)) {
-                    ForEach(items) { item in
-                        content(item)
+                    ForEach(self.items) { item in
+                        self.content(item)
                     }
                 }
             }
         }
         .onAppear {
-            loadData()
+            self.loadData()
         }
     }
 
     private func loadData() {
-        guard !isLoading else { return }
+        guard !self.isLoading else { return }
 
-        isLoading = true
-        error = nil
+        self.isLoading = true
+        self.error = nil
 
         Task {
             do {
@@ -83,7 +83,7 @@ struct LazyDataView<T: Identifiable, Content: View>: View {
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
                 .multilineTextAlignment(.center)
             Button("Retry") {
-                loadData()
+                self.loadData()
             }
             .foregroundColor(AppTheme.accentLightBlue)
         }

@@ -19,7 +19,7 @@ struct ValidationMessageView: View {
 
     var body: some View {
         Group {
-            switch validationState {
+            switch self.validationState {
             case .none:
                 EmptyView()
             case .valid:

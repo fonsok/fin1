@@ -14,7 +14,7 @@ struct DefaultStepValidation: StepValidation {
         self.testModeService = testModeService
     }
 
-    var isTestModeEnabled: Bool { testModeService?.isTestModeEnabled ?? false }
+    var isTestModeEnabled: Bool { self.testModeService?.isTestModeEnabled ?? false }
 
     func canProceedToNextStep(for step: SignUpStep, with data: SignUpData) -> Bool {
         switch step {
@@ -35,8 +35,8 @@ struct DefaultStepValidation: StepValidation {
 
         case .personalInfo:
             return !data.firstName.isEmpty && !data.lastName.isEmpty &&
-                   !data.streetAndNumber.isEmpty && !data.postalCode.isEmpty &&
-                   !data.city.isEmpty && !data.country.isEmpty
+                !data.streetAndNumber.isEmpty && !data.postalCode.isEmpty &&
+                !data.city.isEmpty && !data.country.isEmpty
 
         case .citizenshipTax:
             return !data.nationality.isEmpty && !data.taxNumber.isEmpty
@@ -49,11 +49,11 @@ struct DefaultStepValidation: StepValidation {
             return true
             #else
             // Allow proceeding if test mode is enabled
-            if isTestModeEnabled {
+            if self.isTestModeEnabled {
                 return true
             }
             return (data.identificationType == .passport && data.passportFrontImage != nil) ||
-                   (data.identificationType == .idCard && data.idCardFrontImage != nil)
+                (data.identificationType == .idCard && data.idCardFrontImage != nil)
             #endif
 
         case .identificationUploadBack:
@@ -61,11 +61,11 @@ struct DefaultStepValidation: StepValidation {
             return true
             #else
             // Allow proceeding if test mode is enabled
-            if isTestModeEnabled {
+            if self.isTestModeEnabled {
                 return true
             }
             return (data.identificationType == .passport && data.passportBackImage != nil) ||
-                   (data.identificationType == .idCard && data.idCardBackImage != nil)
+                (data.identificationType == .idCard && data.idCardBackImage != nil)
             #endif
 
         case .postidentConfirmation:
@@ -76,7 +76,7 @@ struct DefaultStepValidation: StepValidation {
 
         case .addressConfirm:
             // Allow proceeding if test mode is enabled
-            if isTestModeEnabled {
+            if self.isTestModeEnabled {
                 return true
             }
             return data.addressConfirmed
@@ -173,7 +173,7 @@ struct DefaultStepValidation: StepValidation {
             return nil
             #else
             // Skip validation if test mode is enabled
-            if isTestModeEnabled {
+            if self.isTestModeEnabled {
                 return nil
             }
             if data.identificationType == .passport && data.passportFrontImage == nil {
@@ -189,7 +189,7 @@ struct DefaultStepValidation: StepValidation {
             return nil
             #else
             // Skip validation if test mode is enabled
-            if isTestModeEnabled {
+            if self.isTestModeEnabled {
                 return nil
             }
             if data.identificationType == .passport && data.passportBackImage == nil {
@@ -208,7 +208,7 @@ struct DefaultStepValidation: StepValidation {
 
         case .addressConfirm:
             // Skip validation if test mode is enabled
-            if isTestModeEnabled {
+            if self.isTestModeEnabled {
                 return nil
             }
             return !data.addressConfirmed ? "Please confirm your address" : nil

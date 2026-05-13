@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Investment Pool Lifecycle Service Protocol
 /// Pools, reservation/status transitions, and fair round-robin selection for investor–trader investments.

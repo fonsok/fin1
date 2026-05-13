@@ -8,22 +8,22 @@ struct CategoryChip: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
+        Button(action: self.action) {
             VStack(spacing: ResponsiveDesign.spacing(4)) {
-                Image(systemName: icon)
+                Image(systemName: self.icon)
                     .font(ResponsiveDesign.captionFont())
 
-                Text(title)
+                Text(self.title)
                     .font(ResponsiveDesign.captionFont())
                     .fontWeight(.medium)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .foregroundColor(isSelected ? AppTheme.screenBackground : AppTheme.fontColor)
+            .foregroundColor(self.isSelected ? AppTheme.screenBackground : AppTheme.fontColor)
             .padding(.horizontal, ResponsiveDesign.spacing(12))
             .padding(.vertical, ResponsiveDesign.spacing(8))
             .frame(maxWidth: .infinity)
-            .background(isSelected ? AppTheme.accentLightBlue : AppTheme.systemTertiaryBackground)
+            .background(self.isSelected ? AppTheme.accentLightBlue : AppTheme.systemTertiaryBackground)
             .cornerRadius(ResponsiveDesign.spacing(20))
         }
         .buttonStyle(PlainButtonStyle())

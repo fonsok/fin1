@@ -9,21 +9,21 @@ struct AdminDashboardView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: ResponsiveDesign.spacing(20)) {
-                    adminHeaderSection
-                    webPortalBannerSection
-                    systemInfoSection
-                    MirrorBasisDriftHealthSection(apiClient: services.parseAPIClient)
-                    appSettingsSection
-                    appLedgerSection
-                    userImpersonationSection
-                    roleTestingSection
+                    self.adminHeaderSection
+                    self.webPortalBannerSection
+                    self.systemInfoSection
+                    MirrorBasisDriftHealthSection(apiClient: self.services.parseAPIClient)
+                    self.appSettingsSection
+                    self.appLedgerSection
+                    self.userImpersonationSection
+                    self.roleTestingSection
                     Spacer(minLength: ResponsiveDesign.spacing(20))
                 }
                 .padding()
             }
             .background(AppTheme.screenBackground.ignoresSafeArea())
             .navigationTitle("Admin")
-            .sheet(isPresented: $showingAppSettings) {
+            .sheet(isPresented: self.$showingAppSettings) {
                 AdminAppSettingsView()
             }
         }
@@ -69,12 +69,12 @@ struct AdminDashboardView: View {
             }
 
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(6)) {
-                webPortalFeatureRow(icon: "slider.horizontal.3", title: "Konfiguration", subtitle: "4-Augen-Prinzip")
-                webPortalFeatureRow(icon: "chart.bar.doc.horizontal", title: "Summary Report", subtitle: "Investments & Trades")
-                webPortalFeatureRow(icon: "building.columns", title: "Bank Contra Ledger", subtitle: "Verrechnungskonten")
-                webPortalFeatureRow(icon: "eurosign.circle", title: "Finanzen", subtitle: "Rundungsdifferenzen & Korrekturen")
-                webPortalFeatureRow(icon: "checkmark.shield", title: "Freigaben", subtitle: "4-Augen-Workflow")
-                webPortalFeatureRow(icon: "server.rack", title: "System-Status", subtitle: "Health Checks")
+                self.webPortalFeatureRow(icon: "slider.horizontal.3", title: "Konfiguration", subtitle: "4-Augen-Prinzip")
+                self.webPortalFeatureRow(icon: "chart.bar.doc.horizontal", title: "Summary Report", subtitle: "Investments & Trades")
+                self.webPortalFeatureRow(icon: "building.columns", title: "Bank Contra Ledger", subtitle: "Verrechnungskonten")
+                self.webPortalFeatureRow(icon: "eurosign.circle", title: "Finanzen", subtitle: "Rundungsdifferenzen & Korrekturen")
+                self.webPortalFeatureRow(icon: "checkmark.shield", title: "Freigaben", subtitle: "4-Augen-Workflow")
+                self.webPortalFeatureRow(icon: "server.rack", title: "System-Status", subtitle: "Health Checks")
             }
         }
         .padding()
@@ -117,12 +117,18 @@ struct AdminDashboardView: View {
                 .foregroundColor(AppTheme.fontColor)
 
             VStack(spacing: ResponsiveDesign.spacing(6)) {
-                AdminInfoRow(title: "Current Theme", value: themeManager.currentTargetGroup.displayName)
+                AdminInfoRow(title: "Current Theme", value: self.themeManager.currentTargetGroup.displayName)
                 AdminInfoRow(title: "App Version", value: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0")
                 AdminInfoRow(title: "Build Number", value: Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1")
-                AdminInfoRow(title: "User Role", value: services.userService.userRole?.displayName ?? "Unknown")
-                AdminInfoRow(title: "Commission Rate", value: "\((services.configurationService.traderCommissionRate * 100).formatted(.number.precision(.fractionLength(0...2))))%")
-                AdminInfoRow(title: "Initial Balance", value: services.configurationService.initialAccountBalance.formatted(.currency(code: "EUR")))
+                AdminInfoRow(title: "User Role", value: self.services.userService.userRole?.displayName ?? "Unknown")
+                AdminInfoRow(
+                    title: "Commission Rate",
+                    value: "\((self.services.configurationService.traderCommissionRate * 100).formatted(.number.precision(.fractionLength(0...2))))%"
+                )
+                AdminInfoRow(
+                    title: "Initial Balance",
+                    value: self.services.configurationService.initialAccountBalance.formatted(.currency(code: "EUR"))
+                )
             }
         }
         .padding()
@@ -138,7 +144,7 @@ struct AdminDashboardView: View {
                 .fontWeight(.semibold)
                 .foregroundColor(AppTheme.fontColor)
 
-            Button(action: { showingAppSettings = true }, label: {
+            Button(action: { self.showingAppSettings = true }, label: {
                 AdminActionCard(
                     icon: "gear",
                     title: "App Settings",
@@ -160,12 +166,14 @@ struct AdminDashboardView: View {
                 .fontWeight(.semibold)
                 .foregroundColor(AppTheme.fontColor)
 
-            Text("Eigenkonten-Buchungen und Belege (Rechnungen, Gutschriften, Eigenbelege …) — Belege sind an der jeweiligen Buchung verlinkt.")
-                .font(ResponsiveDesign.captionFont())
-                .foregroundColor(AppTheme.fontColor.opacity(0.7))
+            Text(
+                "Eigenkonten-Buchungen und Belege (Rechnungen, Gutschriften, Eigenbelege …) — Belege sind an der jeweiligen Buchung verlinkt."
+            )
+            .font(ResponsiveDesign.captionFont())
+            .foregroundColor(AppTheme.fontColor.opacity(0.7))
 
             NavigationLink {
-                AppLedgerView(viewModel: AppLedgerViewModel(ledgerService: services.appLedgerService))
+                AppLedgerView(viewModel: AppLedgerViewModel(ledgerService: self.services.appLedgerService))
             } label: {
                 AdminActionCard(
                     icon: "books.vertical.fill",
@@ -206,10 +214,10 @@ struct AdminDashboardView: View {
 
                 Spacer()
 
-                if services.userService.isImpersonating {
+                if self.services.userService.isImpersonating {
                     Button(action: {
                         Task {
-                            await services.userService.stopImpersonating()
+                            await self.services.userService.stopImpersonating()
                         }
                     }) {
                         HStack(spacing: ResponsiveDesign.spacing(4)) {
@@ -226,16 +234,16 @@ struct AdminDashboardView: View {
                 }
             }
 
-            if services.userService.isImpersonating {
+            if self.services.userService.isImpersonating {
                 HStack(spacing: ResponsiveDesign.spacing(8)) {
                     Image(systemName: "person.badge.key.fill")
                         .foregroundColor(AppTheme.accentOrange)
                     VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(2)) {
-                        Text("Impersonating: \(services.userService.currentUser?.displayName ?? "Unknown")")
+                        Text("Impersonating: \(self.services.userService.currentUser?.displayName ?? "Unknown")")
                             .font(ResponsiveDesign.bodyFont())
                             .fontWeight(.medium)
                             .foregroundColor(AppTheme.fontColor)
-                        Text("Role: \(services.userService.userRole?.displayName ?? "Unknown")")
+                        Text("Role: \(self.services.userService.userRole?.displayName ?? "Unknown")")
                             .font(ResponsiveDesign.captionFont())
                             .foregroundColor(AppTheme.secondaryText)
                     }
@@ -270,10 +278,10 @@ struct AdminDashboardView: View {
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
 
             VStack(spacing: ResponsiveDesign.spacing(10)) {
-                RoleTestButton(role: .investor, color: AppTheme.accentLightBlue, services: services)
-                RoleTestButton(role: .trader, color: AppTheme.accentGreen, services: services)
-                RoleTestButton(role: .customerService, color: AppTheme.accentOrange, services: services)
-                RoleTestButton(role: .admin, color: AppTheme.accentRed, services: services)
+                RoleTestButton(role: .investor, color: AppTheme.accentLightBlue, services: self.services)
+                RoleTestButton(role: .trader, color: AppTheme.accentGreen, services: self.services)
+                RoleTestButton(role: .customerService, color: AppTheme.accentOrange, services: self.services)
+                RoleTestButton(role: .admin, color: AppTheme.accentRed, services: self.services)
             }
         }
         .padding()
@@ -291,18 +299,18 @@ struct AdminActionCard: View {
 
     var body: some View {
         HStack(spacing: ResponsiveDesign.spacing(12)) {
-            Image(systemName: icon)
+            Image(systemName: self.icon)
                 .font(ResponsiveDesign.headlineFont())
-                .foregroundColor(color)
+                .foregroundColor(self.color)
                 .frame(width: 30)
 
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
-                Text(title)
+                Text(self.title)
                     .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.medium)
                     .foregroundColor(AppTheme.fontColor)
 
-                Text(subtitle)
+                Text(self.subtitle)
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
             }
@@ -330,13 +338,13 @@ struct AdminInfoRow: View {
 
     var body: some View {
         HStack {
-            Text(title)
+            Text(self.title)
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
 
             Spacer()
 
-            Text(value)
+            Text(self.value)
                 .font(ResponsiveDesign.captionFont())
                 .fontWeight(.medium)
                 .foregroundColor(AppTheme.fontColor)
@@ -351,20 +359,20 @@ struct RoleTestButton: View {
     let services: AppServices
 
     var body: some View {
-        Button(action: { switchToRole(role) }, label: {
+        Button(action: { self.switchToRole(self.role) }, label: {
             HStack(spacing: ResponsiveDesign.spacing(12)) {
-                Image(systemName: role.icon)
+                Image(systemName: self.role.icon)
                     .font(ResponsiveDesign.headlineFont())
-                    .foregroundColor(color)
+                    .foregroundColor(self.color)
                     .frame(width: 30)
 
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
-                    Text("Switch to \(role.displayName)")
+                    Text("Switch to \(self.role.displayName)")
                         .font(ResponsiveDesign.bodyFont())
                         .fontWeight(.medium)
                         .foregroundColor(AppTheme.fontColor)
 
-                    Text("Test \(role.displayName.lowercased()) interface")
+                    Text("Test \(self.role.displayName.lowercased()) interface")
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(AppTheme.fontColor.opacity(0.7))
                 }
@@ -373,7 +381,7 @@ struct RoleTestButton: View {
 
                 Image(systemName: "arrow.right.circle")
                     .font(ResponsiveDesign.headlineFont())
-                    .foregroundColor(color)
+                    .foregroundColor(self.color)
             }
             .padding()
             .background(AppTheme.sectionBackground)
@@ -388,7 +396,7 @@ struct RoleTestButton: View {
 
     private func switchToRole(_ newRole: UserRole) {
         Task {
-            await services.userService.switchUserRole(to: newRole)
+            await self.services.userService.switchUserRole(to: newRole)
         }
     }
 }

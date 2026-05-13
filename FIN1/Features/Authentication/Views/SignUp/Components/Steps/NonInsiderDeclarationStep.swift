@@ -34,15 +34,15 @@ struct NonInsiderDeclarationStep: View {
                 VStack(spacing: ResponsiveDesign.spacing(12)) {
                     // Option 1: Brokerage or Stock Exchange Employee
                     Button(action: {
-                        insiderTradingOptions["Brokerage or Stock Exchange Employee"]?.toggle()
+                        self.insiderTradingOptions["Brokerage or Stock Exchange Employee"]?.toggle()
                         // If this is selected, uncheck "None of the above"
-                        if insiderTradingOptions["Brokerage or Stock Exchange Employee"] == true {
-                            insiderTradingOptions["None of the above"] = false
+                        if self.insiderTradingOptions["Brokerage or Stock Exchange Employee"] == true {
+                            self.insiderTradingOptions["None of the above"] = false
                         }
                     }) {
                         HStack {
                             InteractiveElement(
-                                isSelected: insiderTradingOptions["Brokerage or Stock Exchange Employee"] == true,
+                                isSelected: self.insiderTradingOptions["Brokerage or Stock Exchange Employee"] == true,
                                 type: .checkbox
                             )
                             
@@ -58,15 +58,15 @@ struct NonInsiderDeclarationStep: View {
                     
                     // Option 2: Director or 10% Shareholder
                     Button(action: {
-                        insiderTradingOptions["Director or 10% Shareholder"]?.toggle()
+                        self.insiderTradingOptions["Director or 10% Shareholder"]?.toggle()
                         // If this is selected, uncheck "None of the above"
-                        if insiderTradingOptions["Director or 10% Shareholder"] == true {
-                            insiderTradingOptions["None of the above"] = false
+                        if self.insiderTradingOptions["Director or 10% Shareholder"] == true {
+                            self.insiderTradingOptions["None of the above"] = false
                         }
                     }) {
                         HStack {
                             InteractiveElement(
-                                isSelected: insiderTradingOptions["Director or 10% Shareholder"] == true,
+                                isSelected: self.insiderTradingOptions["Director or 10% Shareholder"] == true,
                                 type: .checkbox
                             )
                             
@@ -82,15 +82,15 @@ struct NonInsiderDeclarationStep: View {
                     
                     // Option 3: High-Ranking Official
                     Button(action: {
-                        insiderTradingOptions["High-Ranking Official"]?.toggle()
+                        self.insiderTradingOptions["High-Ranking Official"]?.toggle()
                         // If this is selected, uncheck "None of the above"
-                        if insiderTradingOptions["High-Ranking Official"] == true {
-                            insiderTradingOptions["None of the above"] = false
+                        if self.insiderTradingOptions["High-Ranking Official"] == true {
+                            self.insiderTradingOptions["None of the above"] = false
                         }
                     }) {
                         HStack {
                             InteractiveElement(
-                                isSelected: insiderTradingOptions["High-Ranking Official"] == true,
+                                isSelected: self.insiderTradingOptions["High-Ranking Official"] == true,
                                 type: .checkbox
                             )
                             
@@ -106,17 +106,17 @@ struct NonInsiderDeclarationStep: View {
                     
                     // Option 4: None of the above
                     Button(action: {
-                        insiderTradingOptions["None of the above"]?.toggle()
+                        self.insiderTradingOptions["None of the above"]?.toggle()
                         // If "None of the above" is selected, uncheck all others
-                        if insiderTradingOptions["None of the above"] == true {
-                            insiderTradingOptions["Brokerage or Stock Exchange Employee"] = false
-                            insiderTradingOptions["Director or 10% Shareholder"] = false
-                            insiderTradingOptions["High-Ranking Official"] = false
+                        if self.insiderTradingOptions["None of the above"] == true {
+                            self.insiderTradingOptions["Brokerage or Stock Exchange Employee"] = false
+                            self.insiderTradingOptions["Director or 10% Shareholder"] = false
+                            self.insiderTradingOptions["High-Ranking Official"] = false
                         }
                     }) {
                         HStack {
                             InteractiveElement(
-                                isSelected: insiderTradingOptions["None of the above"] == true,
+                                isSelected: self.insiderTradingOptions["None of the above"] == true,
                                 type: .checkbox
                             )
                             

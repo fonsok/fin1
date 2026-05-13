@@ -11,15 +11,15 @@ final class UncheckedFAQContentServiceBridge: @unchecked Sendable {
     }
 
     func clearCache(location: String?, userRole: String?) async {
-        await service.clearCache(location: location, userRole: userRole)
+        await self.service.clearCache(location: location, userRole: userRole)
     }
 
     func fetchFAQCategories(location: String, userRole: String?) async throws -> [FAQCategoryContent] {
-        try await service.fetchFAQCategories(location: location, userRole: userRole)
+        try await self.service.fetchFAQCategories(location: location, userRole: userRole)
     }
 
     func fetchFAQsForHelpCenter(userRole: String?) async throws -> [FAQContentItem] {
-        try await service.fetchFAQsForHelpCenter(userRole: userRole)
+        try await self.service.fetchFAQsForHelpCenter(userRole: userRole)
     }
 }
 
@@ -42,7 +42,7 @@ final class UncheckedNameChangeRequestServiceBridge: @unchecked Sendable {
         userDeclaration: Bool,
         acknowledgesRiskProfileUpdate: Bool
     ) async throws -> NameChangeRequest {
-        try await service.submitNameChangeRequest(
+        try await self.service.submitNameChangeRequest(
             userId: userId,
             currentName: currentName,
             newName: newName,
@@ -57,10 +57,10 @@ final class UncheckedNameChangeRequestServiceBridge: @unchecked Sendable {
     }
 
     func cancelRequest(_ requestId: String) async throws {
-        try await service.cancelRequest(requestId)
+        try await self.service.cancelRequest(requestId)
     }
 
     func getPendingRequest(for userId: String) -> NameChangeRequest? {
-        service.getPendingRequest(for: userId)
+        self.service.getPendingRequest(for: userId)
     }
 }

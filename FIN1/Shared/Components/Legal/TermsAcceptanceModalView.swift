@@ -30,25 +30,25 @@ struct TermsAcceptanceModalView: View {
             AppTheme.screenBackground
                 .ignoresSafeArea()
 
-            if viewModel.isLoading {
-                loadingView
+            if self.viewModel.isLoading {
+                self.loadingView
             } else {
-                contentView
+                self.contentView
             }
         }
-        .sheet(isPresented: $showTermsOfService) {
+        .sheet(isPresented: self.$showTermsOfService) {
             TermsOfServiceView(
-                configurationService: appServices.configurationService,
-                termsContentService: appServices.termsContentService
+                configurationService: self.appServices.configurationService,
+                termsContentService: self.appServices.termsContentService
             )
         }
-        .sheet(isPresented: $showPrivacyPolicy) {
+        .sheet(isPresented: self.$showPrivacyPolicy) {
             PrivacyPolicyView(
-                userService: appServices.userService,
-                termsContentService: appServices.termsContentService
+                userService: self.appServices.userService,
+                termsContentService: self.appServices.termsContentService
             )
         }
-        .onChange(of: viewModel.canProceed) { _, canProceed in
+        .onChange(of: self.viewModel.canProceed) { _, canProceed in
             // Hide modal when all documents are accepted
             if canProceed {
                 // Notify that acceptance is complete
@@ -62,22 +62,22 @@ struct TermsAcceptanceModalView: View {
     private var contentView: some View {
         VStack(spacing: ResponsiveDesign.spacing(24)) {
             // Header
-            headerSection
+            self.headerSection
 
             // Acceptance Items
             VStack(spacing: ResponsiveDesign.spacing(16)) {
-                if viewModel.needsTermsAcceptance {
-                    termsAcceptanceCard
+                if self.viewModel.needsTermsAcceptance {
+                    self.termsAcceptanceCard
                 }
 
-                if viewModel.needsPrivacyPolicyAcceptance {
-                    privacyPolicyAcceptanceCard
+                if self.viewModel.needsPrivacyPolicyAcceptance {
+                    self.privacyPolicyAcceptanceCard
                 }
             }
 
             // Error Message
             if let errorMessage = viewModel.errorMessage {
-                errorView(message: errorMessage)
+                self.errorView(message: errorMessage)
             }
         }
         .padding(ResponsiveDesign.spacing(24))
@@ -116,20 +116,20 @@ struct TermsAcceptanceModalView: View {
                 Spacer()
             }
 
-            Text("Version \(viewModel.currentTermsVersionForDisplay)")
+            Text("Version \(self.viewModel.currentTermsVersionForDisplay)")
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.6))
 
             HStack(spacing: ResponsiveDesign.spacing(12)) {
                 Button("Review") {
-                    showTermsOfService = true
+                    self.showTermsOfService = true
                 }
                 .buttonStyle(.bordered)
                 .foregroundColor(AppTheme.accentLightBlue)
 
                 Button("Accept") {
                     Task {
-                        await viewModel.acceptTerms()
+                        await self.viewModel.acceptTerms()
                     }
                 }
                 .buttonStyle(.borderedProminent)
@@ -156,20 +156,20 @@ struct TermsAcceptanceModalView: View {
                 Spacer()
             }
 
-            Text("Version \(viewModel.currentPrivacyVersionForDisplay)")
+            Text("Version \(self.viewModel.currentPrivacyVersionForDisplay)")
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.6))
 
             HStack(spacing: ResponsiveDesign.spacing(12)) {
                 Button("Review") {
-                    showPrivacyPolicy = true
+                    self.showPrivacyPolicy = true
                 }
                 .buttonStyle(.bordered)
                 .foregroundColor(AppTheme.accentLightBlue)
 
                 Button("Accept") {
                     Task {
-                        await viewModel.acceptPrivacyPolicy()
+                        await self.viewModel.acceptPrivacyPolicy()
                     }
                 }
                 .buttonStyle(.borderedProminent)

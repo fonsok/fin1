@@ -13,21 +13,21 @@ struct HoldingCard: View {
 
     var body: some View {
         CardContainer(
-            position: holding.position,
+            position: self.holding.position,
             showWatchlistIcon: false,
-            isInWatchlist: services.traderService.isInWatchlist(holding.wkn),
+            isInWatchlist: self.services.traderService.isInWatchlist(self.holding.wkn),
             onPapersheetTapped: {
-                openIssuerProductInfo(for: holding)
+                self.openIssuerProductInfo(for: self.holding)
             },
             onWatchlistTapped: {
-                toggleWatchlist()
+                self.toggleWatchlist()
             },
             chevronButton: {
                 AnyView(
                     Button(action: {
-                        showAdditionalDetails.toggle()
+                        self.showAdditionalDetails.toggle()
                     }, label: {
-                        Image(systemName: showAdditionalDetails ? "chevron.up" : "chevron.down")
+                        Image(systemName: self.showAdditionalDetails ? "chevron.up" : "chevron.down")
                             .font(ResponsiveDesign.bodyFont())
                             .foregroundColor(AppTheme.secondaryText)
                     })
@@ -37,29 +37,29 @@ struct HoldingCard: View {
         ) {
             VStack(spacing: ResponsiveDesign.spacing(8)) {
                 // Show partial sales progress if applicable
-                if holding.isPartiallySold {
-                    partialSalesProgressView
+                if self.holding.isPartiallySold {
+                    self.partialSalesProgressView
                 }
 
                 // Main content grid using TileGrid
                 TileGrid(
                     tiles: HoldingCardTiles.generateTiles(
-                        for: holding,
-                        showAdditionalDetails: showAdditionalDetails,
-                        warrantDetailsViewModel: warrantDetailsViewModel
+                        for: self.holding,
+                        showAdditionalDetails: self.showAdditionalDetails,
+                        warrantDetailsViewModel: self.warrantDetailsViewModel
                     ),
                     columns: 2
                 )
 
                 // Sell button or info tile based on remaining quantity and existing sell orders
-                sellActionView
+                self.sellActionView
             }
         }
-        .sheet(isPresented: $showSellOrder) {
+        .sheet(isPresented: self.$showSellOrder) {
             SellOrderViewWrapper(
-                holding: holding,
-                traderService: services.traderService,
-                userService: services.userService
+                holding: self.holding,
+                traderService: self.services.traderService,
+                userService: self.services.userService
             )
         }
     }
@@ -77,16 +77,16 @@ struct HoldingCard: View {
             }
 
             HStack {
-                Text("Sold: \(holding.soldQuantity)")
+                Text("Sold: \(self.holding.soldQuantity)")
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.secondaryText)
                 Spacer()
-                Text("Remaining: \(holding.remainingQuantity)")
+                Text("Remaining: \(self.holding.remainingQuantity)")
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.secondaryText)
             }
 
-            ProgressView(value: Double(holding.soldQuantity), total: Double(holding.originalQuantity))
+            ProgressView(value: Double(self.holding.soldQuantity), total: Double(self.holding.originalQuantity))
                 .progressViewStyle(LinearProgressViewStyle(tint: AppTheme.accentLightBlue))
         }
         .padding(.horizontal, ResponsiveDesign.spacing(12))
@@ -99,15 +99,15 @@ struct HoldingCard: View {
     private var sellActionView: some View {
         let sellOrderStatus = HoldingSellOrderStatus(holding: holding, ongoingOrders: ongoingOrders)
 
-        if holding.remainingQuantity <= 0 {
+        if self.holding.remainingQuantity <= 0 {
             // Show info tile when fully sold
-            return AnyView(fullySoldInfoView)
+            return AnyView(self.fullySoldInfoView)
         } else if sellOrderStatus.hasActiveSellOrder {
             // Show active sell order status
-            return AnyView(activeSellOrderView(sellOrderStatus))
+            return AnyView(self.activeSellOrderView(sellOrderStatus))
         } else {
             // Show sell button
-            return AnyView(sellButtonView)
+            return AnyView(self.sellButtonView)
         }
     }
 
@@ -156,7 +156,7 @@ struct HoldingCard: View {
 
     private var sellButtonView: some View {
         Button(action: {
-            showSellOrder = true
+            self.showSellOrder = true
         }, label: {
             Text("VERKAUFEN")
                 .font(ResponsiveDesign.bodyFont())
@@ -185,22 +185,22 @@ struct HoldingCard: View {
 
     private func toggleWatchlist() {
         Task {
-            if services.traderService.isInWatchlist(holding.wkn) {
-                try? await services.traderService.removeFromWatchlist(holding.wkn)
+            if self.services.traderService.isInWatchlist(self.holding.wkn) {
+                try? await self.services.traderService.removeFromWatchlist(self.holding.wkn)
             } else {
                 // Create a SearchResult from the holding for watchlist
                 let searchResult = SearchResult(
                     valuationDate: holding.valuationDate,
-                    wkn: holding.wkn,
-                    strike: String(holding.strike),
-                    askPrice: String(holding.currentPrice),
-                    direction: holding.direction,
-                    category: holding.direction,
+                    wkn: self.holding.wkn,
+                    strike: String(self.holding.strike),
+                    askPrice: String(self.holding.currentPrice),
+                    direction: self.holding.direction,
+                    category: self.holding.direction,
                     underlyingType: nil,
-                    isin: holding.wkn, // Use WKN as ISIN fallback
-                    underlyingAsset: holding.underlyingAsset
+                    isin: self.holding.wkn, // Use WKN as ISIN fallback
+                    underlyingAsset: self.holding.underlyingAsset
                 )
-                try? await services.traderService.addToWatchlist(searchResult)
+                try? await self.services.traderService.addToWatchlist(searchResult)
             }
         }
     }
@@ -226,7 +226,7 @@ struct HoldingCard: View {
                 originalQuantity: 100,
                 soldQuantity: 30, // Partially sold example
                 remainingQuantity: 70,
-                totalValue: 16000.0
+                totalValue: 16_000.0
             ),
             ongoingOrders: [],
             warrantDetailsViewModel: WarrantDetailsViewModel()

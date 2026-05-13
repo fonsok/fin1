@@ -28,11 +28,11 @@ struct AddSolutionSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: ResponsiveDesign.spacing(16)) {
-                    ticketInfoSection
-                    solutionTypeSection
-                    solutionDetailsSection
-                    customerMessageSection
-                    verificationStepsSection
+                    self.ticketInfoSection
+                    self.solutionTypeSection
+                    self.solutionDetailsSection
+                    self.customerMessageSection
+                    self.verificationStepsSection
                 }
                 .padding()
             }
@@ -41,13 +41,13 @@ struct AddSolutionSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Abbrechen") { dismiss() }
+                    Button("Abbrechen") { self.dismiss() }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Senden") {
-                        Task { await submitSolution() }
+                        Task { await self.submitSolution() }
                     }
-                    .disabled(!isFormValid || isSubmitting)
+                    .disabled(!self.isFormValid || self.isSubmitting)
                 }
             }
         }
@@ -60,12 +60,12 @@ struct AddSolutionSheet: View {
             HStack {
                 Image(systemName: "ticket.fill")
                     .foregroundColor(AppTheme.accentLightBlue)
-                Text(ticket.ticketNumber)
+                Text(self.ticket.ticketNumber)
                     .font(ResponsiveDesign.headlineFont())
                     .fontWeight(.semibold)
                     .foregroundColor(AppTheme.fontColor)
             }
-            Text(ticket.subject)
+            Text(self.ticket.subject)
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
         }
@@ -87,9 +87,9 @@ struct AddSolutionSheet: View {
             ForEach([SolutionType.helpCenterArticle, .configurationChange, .manualResolution, .noActionRequired], id: \.self) { type in
                 SolutionTypeButton(
                     type: type,
-                    isSelected: selectedSolutionType == type
+                    isSelected: self.selectedSolutionType == type
                 ) {
-                    selectedSolutionType = type
+                    self.selectedSolutionType = type
                 }
             }
         }
@@ -108,15 +108,15 @@ struct AddSolutionSheet: View {
                 .fontWeight(.semibold)
                 .foregroundColor(AppTheme.fontColor)
 
-            switch selectedSolutionType {
+            switch self.selectedSolutionType {
             case .helpCenterArticle:
-                helpCenterFields
+                self.helpCenterFields
             case .configurationChange:
-                configurationFields
+                self.configurationFields
             case .manualResolution:
-                manualResolutionFields
+                self.manualResolutionFields
             case .noActionRequired:
-                noActionFields
+                self.noActionFields
             case .devEscalation:
                 EmptyView() // Handled in separate sheet
             }
@@ -131,12 +131,12 @@ struct AddSolutionSheet: View {
             CSInputField(
                 label: "Artikel-ID",
                 placeholder: "z.B. HC-001",
-                text: $helpCenterArticleId
+                text: self.$helpCenterArticleId
             )
             CSInputField(
                 label: "Artikeltitel",
                 placeholder: "Name des Help Center Artikels",
-                text: $helpCenterArticleTitle
+                text: self.$helpCenterArticleTitle
             )
         }
     }
@@ -147,26 +147,26 @@ struct AddSolutionSheet: View {
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
 
-            ForEach(configChanges) { change in
+            ForEach(self.configChanges) { change in
                 ConfigChangeRow(change: change) {
-                    configChanges.removeAll { $0.id == change.id }
+                    self.configChanges.removeAll { $0.id == change.id }
                 }
             }
 
             VStack(spacing: ResponsiveDesign.spacing(8)) {
-                CSInputField(label: "Einstellung", placeholder: "Name der Einstellung", text: $newConfigSetting)
+                CSInputField(label: "Einstellung", placeholder: "Name der Einstellung", text: self.$newConfigSetting)
                 HStack(spacing: ResponsiveDesign.spacing(8)) {
-                    CSInputField(label: "Alter Wert", placeholder: "Optional", text: $newConfigOldValue)
-                    CSInputField(label: "Neuer Wert", placeholder: "Erforderlich", text: $newConfigNewValue)
+                    CSInputField(label: "Alter Wert", placeholder: "Optional", text: self.$newConfigOldValue)
+                    CSInputField(label: "Neuer Wert", placeholder: "Erforderlich", text: self.$newConfigNewValue)
                 }
-                CSInputField(label: "Grund", placeholder: "Warum wurde die Änderung vorgenommen?", text: $newConfigReason)
+                CSInputField(label: "Grund", placeholder: "Warum wurde die Änderung vorgenommen?", text: self.$newConfigReason)
 
-                Button(action: addConfigChange) {
+                Button(action: self.addConfigChange) {
                     Label("Änderung hinzufügen", systemImage: "plus.circle.fill")
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(AppTheme.accentLightBlue)
                 }
-                .disabled(newConfigSetting.isEmpty || newConfigNewValue.isEmpty)
+                .disabled(self.newConfigSetting.isEmpty || self.newConfigNewValue.isEmpty)
             }
             .padding()
             .background(AppTheme.screenBackground)
@@ -183,7 +183,7 @@ struct AddSolutionSheet: View {
             CSInputField(
                 label: "Workaround (optional)",
                 placeholder: "Falls ein Workaround bereitgestellt wurde...",
-                text: $workaround
+                text: self.$workaround
             )
         }
     }
@@ -211,7 +211,7 @@ struct AddSolutionSheet: View {
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
 
-            TextEditor(text: $customerMessage)
+            TextEditor(text: self.$customerMessage)
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor)
                 .frame(minHeight: 120)
@@ -237,23 +237,23 @@ struct AddSolutionSheet: View {
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
 
-            ForEach(verificationSteps.indices, id: \.self) { index in
+            ForEach(self.verificationSteps.indices, id: \.self) { index in
                 HStack {
                     Text("\(index + 1).")
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(AppTheme.fontColor.opacity(0.7))
                         .frame(width: 25)
 
-                    TextField("Schritt beschreiben...", text: $verificationSteps[index])
+                    TextField("Schritt beschreiben...", text: self.$verificationSteps[index])
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(AppTheme.fontColor)
                         .padding(ResponsiveDesign.spacing(8))
                         .background(AppTheme.screenBackground)
                         .cornerRadius(ResponsiveDesign.spacing(6))
 
-                    if verificationSteps.count > 1 {
+                    if self.verificationSteps.count > 1 {
                         Button {
-                            verificationSteps.remove(at: index)
+                            self.verificationSteps.remove(at: index)
                         } label: {
                             Image(systemName: "minus.circle.fill")
                                 .foregroundColor(AppTheme.accentRed)
@@ -263,7 +263,7 @@ struct AddSolutionSheet: View {
             }
 
             Button {
-                verificationSteps.append("")
+                self.verificationSteps.append("")
             } label: {
                 Label("Schritt hinzufügen", systemImage: "plus.circle.fill")
                     .font(ResponsiveDesign.bodyFont())
@@ -278,43 +278,43 @@ struct AddSolutionSheet: View {
     // MARK: - Helpers
 
     private var isFormValid: Bool {
-        !customerMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        !self.customerMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     private func addConfigChange() {
         let change = ConfigurationChange(
             settingName: newConfigSetting,
-            previousValue: newConfigOldValue.isEmpty ? nil : newConfigOldValue,
-            newValue: newConfigNewValue,
-            reason: newConfigReason
+            previousValue: newConfigOldValue.isEmpty ? nil : self.newConfigOldValue,
+            newValue: self.newConfigNewValue,
+            reason: self.newConfigReason
         )
-        configChanges.append(change)
-        newConfigSetting = ""
-        newConfigOldValue = ""
-        newConfigNewValue = ""
-        newConfigReason = ""
+        self.configChanges.append(change)
+        self.newConfigSetting = ""
+        self.newConfigOldValue = ""
+        self.newConfigNewValue = ""
+        self.newConfigReason = ""
     }
 
     private func submitSolution() async {
-        isSubmitting = true
+        self.isSubmitting = true
         defer { isSubmitting = false }
 
         let solution = SolutionDetails(
             solutionType: selectedSolutionType,
-            helpCenterArticleId: helpCenterArticleId.isEmpty ? nil : helpCenterArticleId,
-            helpCenterArticleTitle: helpCenterArticleTitle.isEmpty ? nil : helpCenterArticleTitle,
-            configurationChanges: configChanges.isEmpty ? nil : configChanges,
-            workaround: workaround.isEmpty ? nil : workaround,
-            verificationSteps: verificationSteps.filter { !$0.isEmpty }
+            helpCenterArticleId: helpCenterArticleId.isEmpty ? nil : self.helpCenterArticleId,
+            helpCenterArticleTitle: self.helpCenterArticleTitle.isEmpty ? nil : self.helpCenterArticleTitle,
+            configurationChanges: self.configChanges.isEmpty ? nil : self.configChanges,
+            workaround: self.workaround.isEmpty ? nil : self.workaround,
+            verificationSteps: self.verificationSteps.filter { !$0.isEmpty }
         )
 
-        await viewModel.addSolution(
-            ticketId: ticket.id,
+        await self.viewModel.addSolution(
+            ticketId: self.ticket.id,
             solution: solution,
-            customerMessage: customerMessage
+            customerMessage: self.customerMessage
         )
 
-        dismiss()
+        self.dismiss()
     }
 }
 
@@ -326,33 +326,33 @@ struct SolutionTypeButton: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
+        Button(action: self.action) {
             HStack(spacing: ResponsiveDesign.spacing(12)) {
-                Image(systemName: type.icon)
+                Image(systemName: self.type.icon)
                     .font(ResponsiveDesign.headlineFont())
-                    .foregroundColor(isSelected ? .white : AppTheme.accentLightBlue)
+                    .foregroundColor(self.isSelected ? .white : AppTheme.accentLightBlue)
                     .frame(width: 32)
 
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(2)) {
-                    Text(type.displayName)
+                    Text(self.type.displayName)
                         .font(ResponsiveDesign.bodyFont())
                         .fontWeight(.medium)
-                        .foregroundColor(isSelected ? .white : AppTheme.fontColor)
+                        .foregroundColor(self.isSelected ? .white : AppTheme.fontColor)
 
-                    Text(type.description)
+                    Text(self.type.description)
                         .font(ResponsiveDesign.captionFont())
-                        .foregroundColor(isSelected ? .white.opacity(0.8) : AppTheme.fontColor.opacity(0.7))
+                        .foregroundColor(self.isSelected ? .white.opacity(0.8) : AppTheme.fontColor.opacity(0.7))
                 }
 
                 Spacer()
 
-                if isSelected {
+                if self.isSelected {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundColor(.white)
                 }
             }
             .padding()
-            .background(isSelected ? AppTheme.accentLightBlue : AppTheme.screenBackground)
+            .background(self.isSelected ? AppTheme.accentLightBlue : AppTheme.screenBackground)
             .cornerRadius(ResponsiveDesign.spacing(10))
         }
     }
@@ -367,7 +367,7 @@ struct ConfigChangeRow: View {
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
-                Text(change.settingName)
+                Text(self.change.settingName)
                     .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.medium)
                     .foregroundColor(AppTheme.fontColor)
@@ -380,7 +380,7 @@ struct ConfigChangeRow: View {
                     }
                     Image(systemName: "arrow.right")
                         .foregroundColor(AppTheme.fontColor.opacity(0.5))
-                    Text(change.newValue)
+                    Text(self.change.newValue)
                         .foregroundColor(AppTheme.accentGreen)
                 }
                 .font(ResponsiveDesign.captionFont())
@@ -388,7 +388,7 @@ struct ConfigChangeRow: View {
 
             Spacer()
 
-            Button(action: onDelete) {
+            Button(action: self.onDelete) {
                 Image(systemName: "trash.fill")
                     .foregroundColor(AppTheme.accentRed)
             }
@@ -408,11 +408,11 @@ struct CSInputField: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
-            Text(label)
+            Text(self.label)
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
 
-            TextField(placeholder, text: $text)
+            TextField(self.placeholder, text: self.$text)
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor)
                 .padding(ResponsiveDesign.spacing(10))

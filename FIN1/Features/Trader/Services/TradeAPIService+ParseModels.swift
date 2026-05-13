@@ -27,21 +27,21 @@ struct ParseTrade: Codable {
         let dateFormatter = ISO8601DateFormatter()
         dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
 
-        let createdDate = dateFormatter.date(from: createdAt) ?? Date()
-        let updatedDate = dateFormatter.date(from: updatedAt) ?? Date()
-        let completedDate = completedAt.flatMap { dateFormatter.date(from: $0) }
+        let createdDate = dateFormatter.date(from: self.createdAt) ?? Date()
+        let updatedDate = dateFormatter.date(from: self.updatedAt) ?? Date()
+        let completedDate = self.completedAt.flatMap { dateFormatter.date(from: $0) }
         let tradeStatus = TradeStatus(rawValue: status) ?? .pending
 
         let buyOrderModel = try buyOrder.toOrderBuy()
-        let sellOrderModel = sellOrder.flatMap { try? $0.toOrderSell() }
+        let sellOrderModel = self.sellOrder.flatMap { try? $0.toOrderSell() }
         let sellOrdersModel = (sellOrders ?? []).compactMap { try? $0.toOrderSell() }
 
         return Trade(
-            id: objectId,
-            tradeNumber: tradeNumber,
-            traderId: traderId,
-            symbol: symbol,
-            description: description,
+            id: self.objectId,
+            tradeNumber: self.tradeNumber,
+            traderId: self.traderId,
+            symbol: self.symbol,
+            description: self.description,
             buyOrder: buyOrderModel,
             sellOrder: sellOrderModel,
             sellOrders: sellOrdersModel,
@@ -49,7 +49,7 @@ struct ParseTrade: Codable {
             createdAt: createdDate,
             completedAt: completedDate,
             updatedAt: updatedDate,
-            calculatedProfit: calculatedProfit
+            calculatedProfit: self.calculatedProfit
         )
     }
 }
@@ -78,32 +78,32 @@ struct ParseOrderBuy: Codable {
     func toOrderBuy() throws -> OrderBuy {
         let dateFormatter = ISO8601DateFormatter()
         dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        let createdDate = dateFormatter.date(from: createdAt) ?? Date()
-        let updatedDate = dateFormatter.date(from: updatedAt) ?? Date()
-        let executedDate = executedAt.flatMap { dateFormatter.date(from: $0) }
-        let confirmedDate = confirmedAt.flatMap { dateFormatter.date(from: $0) }
+        let createdDate = dateFormatter.date(from: self.createdAt) ?? Date()
+        let updatedDate = dateFormatter.date(from: self.updatedAt) ?? Date()
+        let executedDate = self.executedAt.flatMap { dateFormatter.date(from: $0) }
+        let confirmedDate = self.confirmedAt.flatMap { dateFormatter.date(from: $0) }
         let orderStatus = OrderBuyStatus(rawValue: status) ?? .submitted
 
         return OrderBuy(
-            id: id,
-            traderId: traderId,
-            symbol: symbol,
-            description: description,
-            quantity: quantity,
-            price: price,
-            totalAmount: totalAmount,
+            id: self.id,
+            traderId: self.traderId,
+            symbol: self.symbol,
+            description: self.description,
+            quantity: self.quantity,
+            price: self.price,
+            totalAmount: self.totalAmount,
             status: orderStatus,
             createdAt: createdDate,
             executedAt: executedDate,
             confirmedAt: confirmedDate,
             updatedAt: updatedDate,
-            optionDirection: optionDirection,
-            underlyingAsset: underlyingAsset,
-            wkn: wkn,
-            category: category,
-            strike: strike,
-            orderInstruction: orderInstruction,
-            limitPrice: limitPrice
+            optionDirection: self.optionDirection,
+            underlyingAsset: self.underlyingAsset,
+            wkn: self.wkn,
+            category: self.category,
+            strike: self.strike,
+            orderInstruction: self.orderInstruction,
+            limitPrice: self.limitPrice
         )
     }
 }
@@ -133,33 +133,33 @@ struct ParseOrderSell: Codable {
     func toOrderSell() throws -> OrderSell {
         let dateFormatter = ISO8601DateFormatter()
         dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        let createdDate = dateFormatter.date(from: createdAt) ?? Date()
-        let updatedDate = dateFormatter.date(from: updatedAt) ?? Date()
-        let executedDate = executedAt.flatMap { dateFormatter.date(from: $0) }
-        let confirmedDate = confirmedAt.flatMap { dateFormatter.date(from: $0) }
+        let createdDate = dateFormatter.date(from: self.createdAt) ?? Date()
+        let updatedDate = dateFormatter.date(from: self.updatedAt) ?? Date()
+        let executedDate = self.executedAt.flatMap { dateFormatter.date(from: $0) }
+        let confirmedDate = self.confirmedAt.flatMap { dateFormatter.date(from: $0) }
         let orderStatus = OrderSellStatus(rawValue: status) ?? .submitted
 
         return OrderSell(
-            id: id,
-            traderId: traderId,
-            symbol: symbol,
-            description: description,
-            quantity: quantity,
-            price: price,
-            totalAmount: totalAmount,
+            id: self.id,
+            traderId: self.traderId,
+            symbol: self.symbol,
+            description: self.description,
+            quantity: self.quantity,
+            price: self.price,
+            totalAmount: self.totalAmount,
             status: orderStatus,
             createdAt: createdDate,
             executedAt: executedDate,
             confirmedAt: confirmedDate,
             updatedAt: updatedDate,
-            optionDirection: optionDirection,
-            underlyingAsset: underlyingAsset,
-            wkn: wkn,
-            category: category,
-            strike: strike,
-            orderInstruction: orderInstruction,
-            limitPrice: limitPrice,
-            originalHoldingId: originalHoldingId
+            optionDirection: self.optionDirection,
+            underlyingAsset: self.underlyingAsset,
+            wkn: self.wkn,
+            category: self.category,
+            strike: self.strike,
+            orderInstruction: self.orderInstruction,
+            limitPrice: self.limitPrice,
+            originalHoldingId: self.originalHoldingId
         )
     }
 }

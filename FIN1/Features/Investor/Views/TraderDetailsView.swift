@@ -11,23 +11,23 @@ struct TraderDetailsView: View {
         ScrollView {
             VStack(spacing: ResponsiveDesign.spacing(12)) {
                 // Trader Header (Trader identification section)
-                TraderHeaderView(trader: trader)
+                TraderHeaderView(trader: self.trader)
 
                 // Data Table
-                TraderDetailsDataTableView(trader: trader)
+                TraderDetailsDataTableView(trader: self.trader)
 
                 investmentPerformanceSection
 
                 // Investment Information (for investors)
-                if appServices.userService.currentUser?.role == .investor {
-                    TraderInvestmentInformationView(trader: trader)
+                if self.appServices.userService.currentUser?.role == .investor {
+                    TraderInvestmentInformationView(trader: self.trader)
                 }
 
                 // Tab Navigation
-                TraderTabNavigationView(selectedTab: $selectedTab)
+                TraderTabNavigationView(selectedTab: self.$selectedTab)
 
                 // Tab Content
-                TraderTabContentView(trader: trader, selectedTab: $selectedTab)
+                TraderTabContentView(trader: self.trader, selectedTab: self.$selectedTab)
             }
             .padding()
         }
@@ -36,7 +36,7 @@ struct TraderDetailsView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button(action: {
-                    dismiss()
+                    self.dismiss()
                 }, label: {
                     Image(systemName: "chevron.left")
                         .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize(), weight: .medium))
@@ -51,10 +51,10 @@ struct TraderDetailsView: View {
                     .foregroundColor(AppTheme.fontColor)
             }
         }
-        .sheet(isPresented: $showInvestSheet) {
-            InvestmentSheet(trader: trader, onInvestmentSuccess: {
+        .sheet(isPresented: self.$showInvestSheet) {
+            InvestmentSheet(trader: self.trader, onInvestmentSuccess: {
                 // Navigate back to investor dashboard
-                dismiss()
+                self.dismiss()
             })
         }
     }
@@ -65,8 +65,8 @@ private extension TraderDetailsView {
     @ViewBuilder
     var investmentPerformanceSection: some View {
         VStack(spacing: ResponsiveDesign.spacing(12)) {
-            TraderInvestButton(trader: trader, showInvestSheet: $showInvestSheet)
-            TraderPerformanceSection(trader: trader)
+            TraderInvestButton(trader: self.trader, showInvestSheet: self.$showInvestSheet)
+            TraderPerformanceSection(trader: self.trader)
         }
     }
 }

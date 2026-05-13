@@ -13,23 +13,23 @@ struct DepotInfoBox: View {
     var body: some View {
         VStack(alignment: .leading) {
             HStack {
-                Text(title)
+                Text(self.title)
                     .font(ResponsiveDesign.captionFont())
                     .fontWeight(.thin)
-                    .foregroundColor(AppTheme.fontColor.opacity(titleOpacity))
-                if showInfoIcon {
+                    .foregroundColor(AppTheme.fontColor.opacity(self.titleOpacity))
+                if self.showInfoIcon {
                     Spacer()
                     Image(systemName: "info.circle")
-                        .foregroundColor(AppTheme.fontColor.opacity(titleOpacity))
+                        .foregroundColor(AppTheme.fontColor.opacity(self.titleOpacity))
                 }
             }
-            Text(value)
+            Text(self.value)
                 .fontWeight(.regular)
-                .foregroundColor(AppTheme.fontColor.opacity(valueOpacity))
+                .foregroundColor(AppTheme.fontColor.opacity(self.valueOpacity))
         }
         .padding(ResponsiveDesign.spacing(8))
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(backgroundColor)
+        .background(self.backgroundColor)
         .cornerRadius(ResponsiveDesign.spacing(4))
     }
 }

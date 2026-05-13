@@ -22,13 +22,13 @@ struct CreatePriceAlertView: View {
             Form {
                 // Symbol Section
                 Section("Symbol") {
-                    TextField("Symbol (e.g., DAX, Apple)", text: $symbol)
+                    TextField("Symbol (e.g., DAX, Apple)", text: self.$symbol)
                         .textInputAutocapitalization(.never)
                 }
                 
                 // Alert Type Section
                 Section("Alert Type") {
-                    Picker("Type", selection: $selectedAlertType) {
+                    Picker("Type", selection: self.$selectedAlertType) {
                         Text("Above").tag(PriceAlertType.above)
                         Text("Below").tag(PriceAlertType.below)
                         Text("Change").tag(PriceAlertType.change)
@@ -37,30 +37,30 @@ struct CreatePriceAlertView: View {
                 
                 // Threshold Section
                 Section("Threshold") {
-                    if selectedAlertType == .change {
-                        TextField("Change Percentage", text: $thresholdChangePercent)
+                    if self.selectedAlertType == .change {
+                        TextField("Change Percentage", text: self.$thresholdChangePercent)
                             .keyboardType(.decimalPad)
                     } else {
-                        TextField("Price (€)", text: $thresholdPrice)
+                        TextField("Price (€)", text: self.$thresholdPrice)
                             .keyboardType(.decimalPad)
                     }
                 }
                 
                 // Expiration Section
                 Section("Expiration") {
-                    Toggle("Set Expiration", isOn: $hasExpiration)
+                    Toggle("Set Expiration", isOn: self.$hasExpiration)
                     
-                    if hasExpiration {
+                    if self.hasExpiration {
                         DatePicker("Expires At", selection: Binding(
-                            get: { expiresAt ?? Date().addingTimeInterval(86400 * 7) },
-                            set: { expiresAt = $0 }
+                            get: { self.expiresAt ?? Date().addingTimeInterval(86_400 * 7) },
+                            set: { self.expiresAt = $0 }
                         ), displayedComponents: [.date, .hourAndMinute])
                     }
                 }
                 
                 // Notes Section
                 Section("Notes (Optional)") {
-                    TextField("Add notes...", text: $notes, axis: .vertical)
+                    TextField("Add notes...", text: self.$notes, axis: .vertical)
                         .lineLimit(3...6)
                 }
             }
@@ -69,30 +69,30 @@ struct CreatePriceAlertView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel") {
-                        dismiss()
+                        self.dismiss()
                     }
                 }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Create") {
                         Task { @MainActor in
-                            await createAlert()
+                            await self.createAlert()
                         }
                     }
-                    .disabled(!isValid)
+                    .disabled(!self.isValid)
                 }
             }
         }
     }
     
     private var isValid: Bool {
-        guard !symbol.isEmpty else { return false }
+        guard !self.symbol.isEmpty else { return false }
         
-        switch selectedAlertType {
+        switch self.selectedAlertType {
         case .above, .below:
-            return !thresholdPrice.isEmpty && Double(thresholdPrice) != nil
+            return !self.thresholdPrice.isEmpty && Double(self.thresholdPrice) != nil
         case .change:
-            return !thresholdChangePercent.isEmpty && Double(thresholdChangePercent) != nil
+            return !self.thresholdChangePercent.isEmpty && Double(self.thresholdChangePercent) != nil
         }
     }
     
@@ -101,15 +101,15 @@ struct CreatePriceAlertView: View {
         let changePercent = Double(thresholdChangePercent)
         
         do {
-            _ = try await viewModel.createAlert(
-                symbol: symbol,
-                alertType: selectedAlertType,
+            _ = try await self.viewModel.createAlert(
+                symbol: self.symbol,
+                alertType: self.selectedAlertType,
                 thresholdPrice: price,
                 thresholdChangePercent: changePercent,
-                expiresAt: hasExpiration ? expiresAt : nil,
-                notes: notes.isEmpty ? nil : notes
+                expiresAt: self.hasExpiration ? self.expiresAt : nil,
+                notes: self.notes.isEmpty ? nil : self.notes
             )
-            dismiss()
+            self.dismiss()
         } catch {
             // Handle error (could show alert)
             print("Error creating alert: \(error.localizedDescription)")
@@ -134,7 +134,7 @@ final class CreatePriceAlertViewModel: ObservableObject {
         expiresAt: Date?,
         notes: String?
     ) async throws -> PriceAlert {
-        return try await priceAlertService?.createAlert(
+        return try await self.priceAlertService?.createAlert(
             symbol: symbol,
             alertType: alertType,
             thresholdPrice: thresholdPrice,

@@ -22,7 +22,7 @@ struct AuthenticationCoordinator {
         }
 
         context.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics,
-                             localizedReason: "Sign in to \(AppBrand.appName)") { success, _ in
+                               localizedReason: "Sign in to \(AppBrand.appName)") { success, _ in
             if success {
                 Task { @MainActor in
                     do {

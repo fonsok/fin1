@@ -41,7 +41,7 @@ struct CannedResponse: Identifiable, Codable {
 
     /// Replace placeholders with actual values
     func fillPlaceholders(_ values: [String: String]) -> String {
-        var filledContent = content
+        var filledContent = self.content
         for (key, value) in values {
             filledContent = filledContent.replacingOccurrences(of: "{{\(key)}}", with: value)
         }

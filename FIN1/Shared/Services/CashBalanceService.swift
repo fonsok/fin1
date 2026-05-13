@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Cash Balance Service
 
@@ -32,96 +32,98 @@ final class CashBalanceService: CashBalanceServiceProtocol, ObservableObject {
         let initial = configurationService.initialAccountBalance
         self.currentBalance = initial
         self.baselineInitialFromConfig = initial
-        setupConfigurationObservation()
-        setupLiveQuerySubscription()
+        self.setupConfigurationObservation()
+        self.setupLiveQuerySubscription()
     }
 
     // MARK: - ServiceLifecycle
 
     func start() async {
         // Initialize with starting balance
-        let initial = configurationService.initialAccountBalance
-        currentBalance = initial
-        baselineInitialFromConfig = initial
-        print("💰 CashBalanceService started with balance: €\(formattedBalance)")
+        let initial = self.configurationService.initialAccountBalance
+        self.currentBalance = initial
+        self.baselineInitialFromConfig = initial
+        print("💰 CashBalanceService started with balance: €\(self.formattedBalance)")
 
         // Subscribe to Live Query updates
-        await subscribeToLiveUpdates()
+        await self.subscribeToLiveUpdates()
     }
 
     func stop() async {
         // Unsubscribe from Live Query
         if let subscription = liveQuerySubscription {
-            parseLiveQueryClient?.unsubscribe(subscription)
-            liveQuerySubscription = nil
+            self.parseLiveQueryClient?.unsubscribe(subscription)
+            self.liveQuerySubscription = nil
         }
         print("💰 CashBalanceService stopped")
     }
 
     func reset() async {
-        let initial = configurationService.initialAccountBalance
-        currentBalance = initial
-        baselineInitialFromConfig = initial
-        print("💰 CashBalanceService reset to initial balance: €\(formattedBalance)")
+        let initial = self.configurationService.initialAccountBalance
+        self.currentBalance = initial
+        self.baselineInitialFromConfig = initial
+        print("💰 CashBalanceService reset to initial balance: €\(self.formattedBalance)")
     }
 
     // MARK: - Public Methods
 
     var formattedBalance: String {
-        currentBalance.formatted(.currency(code: "EUR"))
+        self.currentBalance.formatted(.currency(code: "EUR"))
     }
 
     func processBuyOrderExecution(amount: Double) async {
         await MainActor.run {
-            currentBalance -= amount
+            self.currentBalance -= amount
         }
-        print("💰 Buy order executed: -€\(amount.formatted(.currency(code: "EUR"))) | New balance: €\(formattedBalance)")
+        print("💰 Buy order executed: -€\(amount.formatted(.currency(code: "EUR"))) | New balance: €\(self.formattedBalance)")
     }
 
     func processSellOrderExecution(amount: Double) async {
         await MainActor.run {
-            currentBalance += amount
+            self.currentBalance += amount
         }
-        print("💰 Sell order executed: +€\(amount.formatted(.currency(code: "EUR"))) | New balance: €\(formattedBalance)")
+        print("💰 Sell order executed: +€\(amount.formatted(.currency(code: "EUR"))) | New balance: €\(self.formattedBalance)")
     }
 
     func processGutschrift(amount: Double) async {
         await MainActor.run {
-            currentBalance += amount
+            self.currentBalance += amount
         }
-        print("💰 Gutschrift processed: +€\(amount.formatted(.currency(code: "EUR"))) | New balance: €\(formattedBalance)")
+        print("💰 Gutschrift processed: +€\(amount.formatted(.currency(code: "EUR"))) | New balance: €\(self.formattedBalance)")
     }
 
     func processWithdrawal(amount: Double) async {
         await MainActor.run {
-            currentBalance -= amount
+            self.currentBalance -= amount
         }
-        print("💰 Withdrawal processed: -€\(amount.formatted(.currency(code: "EUR"))) | New balance: €\(formattedBalance)")
+        print("💰 Withdrawal processed: -€\(amount.formatted(.currency(code: "EUR"))) | New balance: €\(self.formattedBalance)")
     }
 
     func resetToInitialBalance() async {
         await MainActor.run {
-            let initial = configurationService.initialAccountBalance
-            currentBalance = initial
-            baselineInitialFromConfig = initial
+            let initial = self.configurationService.initialAccountBalance
+            self.currentBalance = initial
+            self.baselineInitialFromConfig = initial
         }
-        print("💰 Cash balance reset to initial: €\(formattedBalance)")
+        print("💰 Cash balance reset to initial: €\(self.formattedBalance)")
     }
 
     // MARK: - Validation Methods
 
     /// Calculates estimated balance after a purchase
     func estimatedBalanceAfterPurchase(amount: Double) -> Double {
-        return currentBalance - amount
+        return self.currentBalance - amount
     }
 
     /// Checks if there are sufficient funds for a purchase with minimum reserve
     func hasSufficientFunds(for amount: Double, minimumReserve: Double? = nil) -> Bool {
-        let estimatedBalance = estimatedBalanceAfterPurchase(amount: amount)
-        let effectiveMinimumReserve = minimumReserve ?? configurationService.minimumCashReserve
+        let estimatedBalance = self.estimatedBalanceAfterPurchase(amount: amount)
+        let effectiveMinimumReserve = minimumReserve ?? self.configurationService.minimumCashReserve
         let hasSufficientFunds = estimatedBalance >= effectiveMinimumReserve
 
-        print("💰 Cash balance validation - Current: €\(formattedBalance), Purchase: €\(amount.formatted(.currency(code: "EUR"))), Estimated: €\(estimatedBalance.formatted(.currency(code: "EUR"))), Minimum: €\(effectiveMinimumReserve.formatted(.currency(code: "EUR"))), Sufficient: \(hasSufficientFunds)")
+        print(
+            "💰 Cash balance validation - Current: €\(self.formattedBalance), Purchase: €\(amount.formatted(.currency(code: "EUR"))), Estimated: €\(estimatedBalance.formatted(.currency(code: "EUR"))), Minimum: €\(effectiveMinimumReserve.formatted(.currency(code: "EUR"))), Sufficient: \(hasSufficientFunds)"
+        )
 
         return hasSufficientFunds
     }
@@ -129,7 +131,7 @@ final class CashBalanceService: CashBalanceServiceProtocol, ObservableObject {
     // MARK: - Private Methods
 
     private func setupConfigurationObservation() {
-        configurationService.configurationChanged
+        self.configurationService.configurationChanged
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 guard let self else { return }
@@ -144,7 +146,7 @@ final class CashBalanceService: CashBalanceServiceProtocol, ObservableObject {
                     self.baselineInitialFromConfig = serverValue
                 }
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
     }
 
     private func setupLiveQuerySubscription() {
@@ -169,7 +171,7 @@ final class CashBalanceService: CashBalanceServiceProtocol, ObservableObject {
                     print("💰 CashBalanceService: Balance updated via Live Query: €\(self.formattedBalance)")
                 }
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
     }
 
     private func subscribeToLiveUpdates() async {
@@ -179,7 +181,7 @@ final class CashBalanceService: CashBalanceServiceProtocol, ObservableObject {
         }
 
         // Subscribe to WalletTransaction updates for current user
-        liveQuerySubscription = liveQueryClient.subscribe(
+        self.liveQuerySubscription = liveQueryClient.subscribe(
             className: "WalletTransaction",
             query: ["userId": userId],
             onUpdate: { [weak self] (parseTransaction: ParseWalletTransaction) in

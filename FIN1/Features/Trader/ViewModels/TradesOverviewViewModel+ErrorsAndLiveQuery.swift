@@ -4,23 +4,23 @@ import Foundation
 extension TradesOverviewViewModel {
     func clearError() {
         errorMessage = nil
-        showError = false
+        self.showError = false
     }
 
     func showError(_ message: String) {
         errorMessage = message
-        showError = true
+        self.showError = true
     }
 
     func showError(_ error: AppError) {
         errorMessage = error.errorDescription ?? "An error occurred"
-        showError = true
+        self.showError = true
     }
 
     func handleError(_ error: Error) {
         let appError = error.toAppError()
         errorMessage = appError.errorDescription ?? "An error occurred"
-        showError = true
+        self.showError = true
     }
 
     func subscribeToLiveUpdates() async {

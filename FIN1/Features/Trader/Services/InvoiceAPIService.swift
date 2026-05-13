@@ -121,7 +121,7 @@ extension BackendInvoice {
             // Backend stores subtotal (net), taxAmount, taxRate, totalAmount on the Invoice
             // row directly (see bookAppServiceCharge). Build a minimal Net + USt line set so
             // the display view can render description and 19%-aufteilung correctly.
-            items = buildServiceChargeItems()
+            items = self.buildServiceChargeItems()
         } else {
             let desc = txType == .buy ? "Kauf" : txType == .sell ? "Verkauf" : "Rechnung"
             items = [InvoiceItem(description: desc, quantity: 1, unitPrice: totalAmount ?? 0, itemType: .securities)]
@@ -183,15 +183,15 @@ private struct ParseInvoice: Codable {
         let dateFormatter = ISO8601DateFormatter()
         dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
 
-        guard dateFormatter.date(from: createdAt) != nil,
-              dateFormatter.date(from: invoiceDate) != nil,
+        guard dateFormatter.date(from: self.createdAt) != nil,
+              dateFormatter.date(from: self.invoiceDate) != nil,
               let invoiceStatus = InvoiceStatus(rawValue: status) else {
             return nil
         }
 
         // Map Parse Server invoiceType to app InvoiceType
         let appInvoiceType: InvoiceType
-        switch invoiceType {
+        switch self.invoiceType {
         case "buy_invoice", "buy":
             appInvoiceType = .securitiesSettlement // Will be mapped via transactionType
         case "sell_invoice", "sell":
@@ -208,9 +208,9 @@ private struct ParseInvoice: Codable {
 
         // Determine transaction type from invoiceType
         let transactionType: TransactionType?
-        if invoiceType == "buy_invoice" || invoiceType == "buy" {
+        if self.invoiceType == "buy_invoice" || self.invoiceType == "buy" {
             transactionType = .buy
-        } else if invoiceType == "sell_invoice" || invoiceType == "sell" {
+        } else if self.invoiceType == "sell_invoice" || self.invoiceType == "sell" {
             transactionType = .sell
         } else {
             transactionType = nil
@@ -225,8 +225,8 @@ private struct ParseInvoice: Codable {
             taxNumber: "",
             depotNumber: "",
             bank: "",
-            customerNumber: customerId ?? userId,
-            userId: userId
+            customerNumber: customerId ?? self.userId,
+            userId: self.userId
         )
 
         // Build invoice items from totals
@@ -234,13 +234,13 @@ private struct ParseInvoice: Codable {
         // We'll create a single item representing the total
         let itemDescription: String
         let itemType: InvoiceItemType
-        if invoiceType == "buy_invoice" {
+        if self.invoiceType == "buy_invoice" {
             itemDescription = "Kauf"
             itemType = .securities
-        } else if invoiceType == "sell_invoice" {
+        } else if self.invoiceType == "sell_invoice" {
             itemDescription = "Verkauf"
             itemType = .securities
-        } else if invoiceType == "service_charge" {
+        } else if self.invoiceType == "service_charge" {
             itemDescription = "Service Charge"
             itemType = .serviceCharge
         } else {
@@ -258,17 +258,17 @@ private struct ParseInvoice: Codable {
         ]
 
         return Invoice(
-            id: objectId,
-            invoiceNumber: invoiceNumber,
+            id: self.objectId,
+            invoiceNumber: self.invoiceNumber,
             type: appInvoiceType,
             status: invoiceStatus,
             customerInfo: customerInfo,
             items: items,
-            tradeId: tradeId,
-            orderId: orderId,
+            tradeId: self.tradeId,
+            orderId: self.orderId,
             transactionType: transactionType,
             dueDate: nil,
-            traderCommissionRateSnapshot: traderCommissionRateSnapshot
+            traderCommissionRateSnapshot: self.traderCommissionRateSnapshot
         )
     }
 }
@@ -365,7 +365,7 @@ final class InvoiceAPIService: InvoiceAPIServiceProtocol {
         let parseInput = ParseInvoiceInput.from(invoice: invoice)
 
         let response = try await apiClient.createObject(
-            className: invoiceClassName,
+            className: self.invoiceClassName,
             object: parseInput
         )
 
@@ -397,13 +397,13 @@ final class InvoiceAPIService: InvoiceAPIServiceProtocol {
         // Only update if invoice has Parse objectId (not local-only)
         guard !invoice.id.starts(with: "local-") && invoice.id.contains("-") else {
             // Local-only invoice - save as new instead
-            return try await saveInvoice(invoice)
+            return try await self.saveInvoice(invoice)
         }
 
         let parseInput = ParseInvoiceInput.from(invoice: invoice)
 
         let response = try await apiClient.updateObject(
-            className: invoiceClassName,
+            className: self.invoiceClassName,
             objectId: invoice.id,
             object: parseInput
         )
@@ -448,7 +448,7 @@ final class InvoiceAPIService: InvoiceAPIServiceProtocol {
         // Fallback: direct Parse query
         let query: [String: Any] = ["userId": userId]
         let parseInvoices: [ParseInvoice] = try await apiClient.fetchObjects(
-            className: invoiceClassName,
+            className: self.invoiceClassName,
             query: query,
             include: nil,
             orderBy: "-invoiceDate",
@@ -461,8 +461,8 @@ final class InvoiceAPIService: InvoiceAPIServiceProtocol {
     func deleteInvoice(_ invoiceId: String) async throws {
         print("📡 InvoiceAPIService: Deleting invoice: \(invoiceId)")
 
-        try await apiClient.deleteObject(
-            className: invoiceClassName,
+        try await self.apiClient.deleteObject(
+            className: self.invoiceClassName,
             objectId: invoiceId
         )
 

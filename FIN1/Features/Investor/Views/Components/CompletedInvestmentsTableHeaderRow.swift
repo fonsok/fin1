@@ -12,8 +12,8 @@ struct CompletedInvestmentsTableHeaderRow: View {
             }
             .modifier(CompletedInvestmentsHeaderCellModifier(
                 columnKey: "investmentNr",
-                columnWidths: columnWidths,
-                forMeasurement: forMeasurement,
+                columnWidths: self.columnWidths,
+                forMeasurement: self.forMeasurement,
                 alignment: .leading
             ))
 
@@ -26,8 +26,8 @@ struct CompletedInvestmentsTableHeaderRow: View {
             }
             .modifier(CompletedInvestmentsHeaderCellModifier(
                 columnKey: "traderUsername",
-                columnWidths: columnWidths,
-                forMeasurement: forMeasurement,
+                columnWidths: self.columnWidths,
+                forMeasurement: self.forMeasurement,
                 alignment: .leading
             ))
 
@@ -37,8 +37,8 @@ struct CompletedInvestmentsTableHeaderRow: View {
             }
             .modifier(CompletedInvestmentsHeaderCellModifier(
                 columnKey: "tradeNr",
-                columnWidths: columnWidths,
-                forMeasurement: forMeasurement,
+                columnWidths: self.columnWidths,
+                forMeasurement: self.forMeasurement,
                 alignment: .leading
             ))
 
@@ -48,8 +48,8 @@ struct CompletedInvestmentsTableHeaderRow: View {
             }
             .modifier(CompletedInvestmentsHeaderCellModifier(
                 columnKey: "amount",
-                columnWidths: columnWidths,
-                forMeasurement: forMeasurement,
+                columnWidths: self.columnWidths,
+                forMeasurement: self.forMeasurement,
                 alignment: .trailing
             ))
 
@@ -59,8 +59,8 @@ struct CompletedInvestmentsTableHeaderRow: View {
             }
             .modifier(CompletedInvestmentsHeaderCellModifier(
                 columnKey: "profit",
-                columnWidths: columnWidths,
-                forMeasurement: forMeasurement,
+                columnWidths: self.columnWidths,
+                forMeasurement: self.forMeasurement,
                 alignment: .trailing
             ))
 
@@ -70,8 +70,8 @@ struct CompletedInvestmentsTableHeaderRow: View {
             }
             .modifier(CompletedInvestmentsHeaderCellModifier(
                 columnKey: "return",
-                columnWidths: columnWidths,
-                forMeasurement: forMeasurement,
+                columnWidths: self.columnWidths,
+                forMeasurement: self.forMeasurement,
                 alignment: .trailing
             ))
 
@@ -84,8 +84,8 @@ struct CompletedInvestmentsTableHeaderRow: View {
             }
             .modifier(CompletedInvestmentsHeaderCellModifier(
                 columnKey: "docRef",
-                columnWidths: columnWidths,
-                forMeasurement: forMeasurement,
+                columnWidths: self.columnWidths,
+                forMeasurement: self.forMeasurement,
                 alignment: .leading
             ))
 
@@ -95,8 +95,8 @@ struct CompletedInvestmentsTableHeaderRow: View {
             }
             .modifier(CompletedInvestmentsHeaderCellModifier(
                 columnKey: "details",
-                columnWidths: columnWidths,
-                forMeasurement: forMeasurement,
+                columnWidths: self.columnWidths,
+                forMeasurement: self.forMeasurement,
                 alignment: .center
             ))
         }

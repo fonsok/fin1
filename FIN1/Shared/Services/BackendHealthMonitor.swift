@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Backend Health Monitor
 
@@ -56,9 +56,9 @@ final class BackendHealthMonitor: ObservableObject {
 
     /// Start monitoring backend health
     func startMonitoring() {
-        guard monitoringTask == nil else { return }
+        guard self.monitoringTask == nil else { return }
 
-        monitoringTask = Task { [weak self] in
+        self.monitoringTask = Task { [weak self] in
             guard let self = self else { return }
 
             while !Task.isCancelled {
@@ -68,14 +68,14 @@ final class BackendHealthMonitor: ObservableObject {
         }
 
         #if DEBUG
-        print("🏥 BackendHealthMonitor: Started monitoring (interval: \(checkInterval)s)")
+        print("🏥 BackendHealthMonitor: Started monitoring (interval: \(self.checkInterval)s)")
         #endif
     }
 
     /// Stop monitoring backend health
     func stopMonitoring() {
-        monitoringTask?.cancel()
-        monitoringTask = nil
+        self.monitoringTask?.cancel()
+        self.monitoringTask = nil
 
         #if DEBUG
         print("🏥 BackendHealthMonitor: Stopped monitoring")
@@ -87,7 +87,7 @@ final class BackendHealthMonitor: ObservableObject {
     func checkHealth() async {
         guard let url = healthCheckURL, let appId = applicationId else {
             // Fallback to ParseAPIClient if direct URL not configured
-            await checkHealthViaClient()
+            await self.checkHealthViaClient()
             return
         }
 
@@ -115,16 +115,16 @@ final class BackendHealthMonitor: ObservableObject {
                 let duration = Date().timeIntervalSince(startTime)
 
                 await MainActor.run {
-                    isHealthy = true
-                    lastHealthCheck = Date()
-                    lastError = nil
-                    consecutiveFailures = 0
+                    self.isHealthy = true
+                    self.lastHealthCheck = Date()
+                    self.lastError = nil
+                    self.consecutiveFailures = 0
 
-                    responseTimes.append(duration)
-                    if responseTimes.count > maxResponseTimeHistory {
-                        responseTimes.removeFirst()
+                    self.responseTimes.append(duration)
+                    if self.responseTimes.count > self.maxResponseTimeHistory {
+                        self.responseTimes.removeFirst()
                     }
-                    averageResponseTime = responseTimes.reduce(0, +) / Double(responseTimes.count)
+                    self.averageResponseTime = self.responseTimes.reduce(0, +) / Double(self.responseTimes.count)
 
                     #if DEBUG
                     print("✅ BackendHealthMonitor: Health check passed (\(String(format: "%.3f", duration))s)")
@@ -146,16 +146,16 @@ final class BackendHealthMonitor: ObservableObject {
                status == "healthy" {
                 let duration = Date().timeIntervalSince(startTime)
                 await MainActor.run {
-                    isHealthy = true
-                    lastHealthCheck = Date()
-                    lastError = nil
-                    consecutiveFailures = 0
+                    self.isHealthy = true
+                    self.lastHealthCheck = Date()
+                    self.lastError = nil
+                    self.consecutiveFailures = 0
 
-                    responseTimes.append(duration)
-                    if responseTimes.count > maxResponseTimeHistory {
-                        responseTimes.removeFirst()
+                    self.responseTimes.append(duration)
+                    if self.responseTimes.count > self.maxResponseTimeHistory {
+                        self.responseTimes.removeFirst()
                     }
-                    averageResponseTime = responseTimes.reduce(0, +) / Double(responseTimes.count)
+                    self.averageResponseTime = self.responseTimes.reduce(0, +) / Double(self.responseTimes.count)
 
                     #if DEBUG
                     print("✅ BackendHealthMonitor: Health check passed (\(String(format: "%.3f", duration))s)")
@@ -173,16 +173,16 @@ final class BackendHealthMonitor: ObservableObject {
             let duration = Date().timeIntervalSince(startTime)
 
             await MainActor.run {
-                isHealthy = false
-                lastHealthCheck = Date()
-                lastError = error.localizedDescription
-                consecutiveFailures += 1
+                self.isHealthy = false
+                self.lastHealthCheck = Date()
+                self.lastError = error.localizedDescription
+                self.consecutiveFailures += 1
 
-                responseTimes.append(duration)
-                if responseTimes.count > maxResponseTimeHistory {
-                    responseTimes.removeFirst()
+                self.responseTimes.append(duration)
+                if self.responseTimes.count > self.maxResponseTimeHistory {
+                    self.responseTimes.removeFirst()
                 }
-                averageResponseTime = responseTimes.reduce(0, +) / Double(responseTimes.count)
+                self.averageResponseTime = self.responseTimes.reduce(0, +) / Double(self.responseTimes.count)
 
                 #if DEBUG
                 print("❌ BackendHealthMonitor: Health check failed - \(error.localizedDescription)")
@@ -195,9 +195,9 @@ final class BackendHealthMonitor: ObservableObject {
     private func checkHealthViaClient() async {
         guard let apiClient = parseAPIClient else {
             await MainActor.run {
-                isHealthy = false
-                lastError = "ParseAPIClient not configured"
-                lastHealthCheck = Date()
+                self.isHealthy = false
+                self.lastError = "ParseAPIClient not configured"
+                self.lastHealthCheck = Date()
             }
             return
         }
@@ -209,16 +209,16 @@ final class BackendHealthMonitor: ObservableObject {
             let duration = Date().timeIntervalSince(startTime)
 
             await MainActor.run {
-                isHealthy = true
-                lastHealthCheck = Date()
-                lastError = nil
-                consecutiveFailures = 0
+                self.isHealthy = true
+                self.lastHealthCheck = Date()
+                self.lastError = nil
+                self.consecutiveFailures = 0
 
-                responseTimes.append(duration)
-                if responseTimes.count > maxResponseTimeHistory {
-                    responseTimes.removeFirst()
+                self.responseTimes.append(duration)
+                if self.responseTimes.count > self.maxResponseTimeHistory {
+                    self.responseTimes.removeFirst()
                 }
-                averageResponseTime = responseTimes.reduce(0, +) / Double(responseTimes.count)
+                self.averageResponseTime = self.responseTimes.reduce(0, +) / Double(self.responseTimes.count)
 
                 #if DEBUG
                 print("✅ BackendHealthMonitor: Health check passed (\(String(format: "%.3f", duration))s)")
@@ -228,16 +228,16 @@ final class BackendHealthMonitor: ObservableObject {
             let duration = Date().timeIntervalSince(startTime)
 
             await MainActor.run {
-                isHealthy = false
-                lastHealthCheck = Date()
-                lastError = error.localizedDescription
-                consecutiveFailures += 1
+                self.isHealthy = false
+                self.lastHealthCheck = Date()
+                self.lastError = error.localizedDescription
+                self.consecutiveFailures += 1
 
-                responseTimes.append(duration)
-                if responseTimes.count > maxResponseTimeHistory {
-                    responseTimes.removeFirst()
+                self.responseTimes.append(duration)
+                if self.responseTimes.count > self.maxResponseTimeHistory {
+                    self.responseTimes.removeFirst()
                 }
-                averageResponseTime = responseTimes.reduce(0, +) / Double(responseTimes.count)
+                self.averageResponseTime = self.responseTimes.reduce(0, +) / Double(self.responseTimes.count)
 
                 #if DEBUG
                 print("❌ BackendHealthMonitor: Health check failed - \(error.localizedDescription)")
@@ -249,11 +249,11 @@ final class BackendHealthMonitor: ObservableObject {
     /// Get health status summary
     func getHealthStatus() -> HealthStatus {
         return HealthStatus(
-            isHealthy: isHealthy,
-            lastCheck: lastHealthCheck,
-            consecutiveFailures: consecutiveFailures,
-            averageResponseTime: averageResponseTime,
-            lastError: lastError
+            isHealthy: self.isHealthy,
+            lastCheck: self.lastHealthCheck,
+            consecutiveFailures: self.consecutiveFailures,
+            averageResponseTime: self.averageResponseTime,
+            lastError: self.lastError
         )
     }
 
@@ -274,9 +274,9 @@ extension BackendHealthMonitor {
     func checkHealthFallback() async {
         guard let apiClient = parseAPIClient else {
             await MainActor.run {
-                isHealthy = false
-                lastError = "ParseAPIClient not configured"
-                lastHealthCheck = Date()
+                self.isHealthy = false
+                self.lastError = "ParseAPIClient not configured"
+                self.lastHealthCheck = Date()
             }
             return
         }
@@ -297,20 +297,20 @@ extension BackendHealthMonitor {
             let duration = Date().timeIntervalSince(startTime)
 
             await MainActor.run {
-                isHealthy = true
-                lastHealthCheck = Date()
-                lastError = nil
-                consecutiveFailures = 0
+                self.isHealthy = true
+                self.lastHealthCheck = Date()
+                self.lastError = nil
+                self.consecutiveFailures = 0
 
-                responseTimes.append(duration)
-                if responseTimes.count > maxResponseTimeHistory {
-                    responseTimes.removeFirst()
+                self.responseTimes.append(duration)
+                if self.responseTimes.count > self.maxResponseTimeHistory {
+                    self.responseTimes.removeFirst()
                 }
-                averageResponseTime = responseTimes.reduce(0, +) / Double(responseTimes.count)
+                self.averageResponseTime = self.responseTimes.reduce(0, +) / Double(self.responseTimes.count)
             }
         } catch {
             // If fallback also fails, try the main health check
-            await checkHealth()
+            await self.checkHealth()
         }
     }
 }

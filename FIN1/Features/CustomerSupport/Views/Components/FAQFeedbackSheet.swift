@@ -19,7 +19,7 @@ struct FAQFeedbackSheet: View {
                     .fontWeight(.semibold)
                     .foregroundColor(AppTheme.fontColor)
 
-                TextEditor(text: $comment)
+                TextEditor(text: self.$comment)
                     .font(ResponsiveDesign.bodyFont())
                     .frame(minHeight: ResponsiveDesign.spacing(120))
                     .padding(ResponsiveDesign.spacing(8))
@@ -28,13 +28,13 @@ struct FAQFeedbackSheet: View {
 
                 Button {
                     Task {
-                        await viewModel.submitFeedback(
-                            forArticle: article,
+                        await self.viewModel.submitFeedback(
+                            forArticle: self.article,
                             isHelpful: false,
-                            comment: comment.isEmpty ? nil : comment,
-                            userId: userId
+                            comment: self.comment.isEmpty ? nil : self.comment,
+                            userId: self.userId
                         )
-                        dismiss()
+                        self.dismiss()
                     }
                 } label: {
                     Text("Feedback senden")
@@ -56,7 +56,7 @@ struct FAQFeedbackSheet: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Abbrechen") {
-                        dismiss()
+                        self.dismiss()
                     }
                 }
             }

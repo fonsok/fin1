@@ -15,39 +15,39 @@ struct InvestmentsPartialSellDetailSheetView: View {
     }()
 
     private var collectionBillRef: String? {
-        let investmentDocuments = appServices.documentService.getDocumentsForInvestment(investment.id)
+        let investmentDocuments = self.appServices.documentService.getDocumentsForInvestment(self.investment.id)
         return investmentDocuments
             .first(where: { $0.type == .investorCollectionBill })?
             .accountingDocumentNumber
     }
 
     private var commissionRef: String? {
-        let investmentDocuments = appServices.documentService.getDocumentsForInvestment(investment.id)
+        let investmentDocuments = self.appServices.documentService.getDocumentsForInvestment(self.investment.id)
         return investmentDocuments
             .first(where: { $0.type == .traderCreditNote })?
             .accountingDocumentNumber
     }
 
     private var serviceChargeInvoiceRef: String? {
-        let currentUserId = appServices.userService.currentUser?.id ?? ""
-        return investment.batchId.flatMap {
-            appServices.invoiceService.getServiceChargeInvoiceForBatch($0, userId: currentUserId)?.invoiceNumber
+        let currentUserId = self.appServices.userService.currentUser?.id ?? ""
+        return self.investment.batchId.flatMap {
+            self.appServices.invoiceService.getServiceChargeInvoiceForBatch($0, userId: currentUserId)?.invoiceNumber
         }
     }
 
     private var sortedBills: [BackendCollectionBill] {
-        partialSellSheetCollectionBills.sorted { ($0.createdAt ?? "") > ($1.createdAt ?? "") }
+        self.partialSellSheetCollectionBills.sorted { ($0.createdAt ?? "") > ($1.createdAt ?? "") }
     }
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
-                    Text("Investment \(investment.canonicalDisplayReference)")
+                    Text("Investment \(self.investment.canonicalDisplayReference)")
                         .font(ResponsiveDesign.headlineFont())
                         .foregroundColor(AppTheme.fontColor)
 
-                    Text("Teil-Sells: \(investment.partialSellCount)")
+                    Text("Teil-Sells: \(self.investment.partialSellCount)")
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(AppTheme.fontColor)
 
@@ -57,15 +57,17 @@ struct InvestmentsPartialSellDetailSheetView: View {
                             .foregroundColor(AppTheme.fontColor)
                     }
 
-                    Text("Bruttoerlös / Einlage: \(investment.realizedSellSharePercentage.formatted(.number.precision(.fractionLength(1))))%")
+                    Text(
+                        "Bruttoerlös / Einlage: \(self.investment.realizedSellSharePercentage.formatted(.number.precision(.fractionLength(1))))%"
+                    )
+                    .font(ResponsiveDesign.bodyFont())
+                    .foregroundColor(AppTheme.fontColor)
+
+                    Text("Realisierter Betrag (Pool-Anteil Verkauf): \(self.investment.realizedSellAmount.formattedAsLocalizedCurrency())")
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(AppTheme.fontColor)
 
-                    Text("Realisierter Betrag (Pool-Anteil Verkauf): \(investment.realizedSellAmount.formattedAsLocalizedCurrency())")
-                        .font(ResponsiveDesign.bodyFont())
-                        .foregroundColor(AppTheme.fontColor)
-
-                    Text("Letzter Teil-Sell: \(formattedPartialSellDate(investment.lastPartialSellAt))")
+                    Text("Letzter Teil-Sell: \(self.formattedPartialSellDate(self.investment.lastPartialSellAt))")
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(AppTheme.secondaryText)
 
@@ -75,11 +77,13 @@ struct InvestmentsPartialSellDetailSheetView: View {
                         .font(ResponsiveDesign.headlineFont())
                         .foregroundColor(AppTheme.fontColor)
 
-                    Text("Kumuliert aus allen gültigen Investor-Collection-Bills (inkl. Teil-Sell-Deltas). Entspricht den GoB-Belegen inkl. buyLeg/sellLeg-Metadaten.")
-                        .font(ResponsiveDesign.captionFont())
-                        .foregroundColor(AppTheme.tertiaryText)
+                    Text(
+                        "Kumuliert aus allen gültigen Investor-Collection-Bills (inkl. Teil-Sell-Deltas). Entspricht den GoB-Belegen inkl. buyLeg/sellLeg-Metadaten."
+                    )
+                    .font(ResponsiveDesign.captionFont())
+                    .foregroundColor(AppTheme.tertiaryText)
 
-                    mirrorSummaryBlock
+                    self.mirrorSummaryBlock
 
                     Divider()
 
@@ -87,7 +91,7 @@ struct InvestmentsPartialSellDetailSheetView: View {
                         .font(ResponsiveDesign.headlineFont())
                         .foregroundColor(AppTheme.fontColor)
 
-                    billsBlock
+                    self.billsBlock
 
                     Divider()
 
@@ -95,21 +99,23 @@ struct InvestmentsPartialSellDetailSheetView: View {
                         .font(ResponsiveDesign.headlineFont())
                         .foregroundColor(AppTheme.fontColor)
 
-                    Text("Collection Bill (lokal, erste Kachel): \(collectionBillRef ?? "kein lokaler Eintrag")")
+                    Text("Collection Bill (lokal, erste Kachel): \(self.collectionBillRef ?? "kein lokaler Eintrag")")
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(AppTheme.secondaryText)
 
-                    Text("Commission-/Credit-Note Beleg: \(commissionRef ?? "noch nicht vorhanden")")
+                    Text("Commission-/Credit-Note Beleg: \(self.commissionRef ?? "noch nicht vorhanden")")
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(AppTheme.secondaryText)
 
-                    Text("Service-Charge Rechnung: \(serviceChargeInvoiceRef ?? "nicht zutreffend/noch nicht vorhanden")")
+                    Text("Service-Charge Rechnung: \(self.serviceChargeInvoiceRef ?? "nicht zutreffend/noch nicht vorhanden")")
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(AppTheme.secondaryText)
 
-                    Text("Hinweis: „Trade (Stück)“ und „Bruttoerlös/Einlage“ beziehen sich auf Pool-Anteile am Trade. Mirror-P&L stammt aus den gleichen Collection Bills wie die Buchhaltung (Teil-Sell: `bookInvestorPartialRealizationDeltaIfAny`). Abschluss-Belege kommen bei Trade-Completion hinzu.")
-                        .font(ResponsiveDesign.captionFont())
-                        .foregroundColor(AppTheme.tertiaryText)
+                    Text(
+                        "Hinweis: „Trade (Stück)“ und „Bruttoerlös/Einlage“ beziehen sich auf Pool-Anteile am Trade. Mirror-P&L stammt aus den gleichen Collection Bills wie die Buchhaltung (Teil-Sell: `bookInvestorPartialRealizationDeltaIfAny`). Abschluss-Belege kommen bei Trade-Completion hinzu."
+                    )
+                    .font(ResponsiveDesign.captionFont())
+                    .foregroundColor(AppTheme.tertiaryText)
                 }
                 .padding(ResponsiveDesign.horizontalPadding())
                 .padding(.bottom, ResponsiveDesign.spacing(24))
@@ -119,7 +125,7 @@ struct InvestmentsPartialSellDetailSheetView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Fertig", action: onDone)
+                    Button("Fertig", action: self.onDone)
                 }
             }
         }
@@ -127,7 +133,7 @@ struct InvestmentsPartialSellDetailSheetView: View {
 
     @ViewBuilder
     private var mirrorSummaryBlock: some View {
-        if partialSellSheetServerLoading {
+        if self.partialSellSheetServerLoading {
             ProgressView()
                 .padding(.vertical, ResponsiveDesign.spacing(8))
         } else if let mirror = partialSellSheetMirrorSummary {
@@ -144,36 +150,42 @@ struct InvestmentsPartialSellDetailSheetView: View {
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.secondaryText)
             if mirror.hasReturnPercentage {
-                Text("Gewichtete Rendite (aus Beleg-Metadaten): \(mirror.returnPercentage.formatted(.number.precision(.fractionLength(2))))%")
-                    .font(ResponsiveDesign.captionFont())
-                    .foregroundColor(AppTheme.secondaryText)
+                Text(
+                    "Gewichtete Rendite (aus Beleg-Metadaten): \(mirror.returnPercentage.formatted(.number.precision(.fractionLength(2))))%"
+                )
+                .font(ResponsiveDesign.captionFont())
+                .foregroundColor(AppTheme.secondaryText)
             }
             Text("Anzahl einbezogener Bills: \(mirror.billCount)")
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.tertiaryText)
-        } else if partialSellSheetCollectionBills.isEmpty && appServices.settlementAPIService != nil {
-            Text("Keine Collection Bills auf dem Server für dieses Investment — Teil-Sell-Abrechnung wurde noch nicht verbucht oder Daten sind nicht geladen.")
-                .font(ResponsiveDesign.captionFont())
-                .foregroundColor(AppTheme.tertiaryText)
-        } else if partialSellSheetCollectionBills.isEmpty {
+        } else if self.partialSellSheetCollectionBills.isEmpty && self.appServices.settlementAPIService != nil {
+            Text(
+                "Keine Collection Bills auf dem Server für dieses Investment — Teil-Sell-Abrechnung wurde noch nicht verbucht oder Daten sind nicht geladen."
+            )
+            .font(ResponsiveDesign.captionFont())
+            .foregroundColor(AppTheme.tertiaryText)
+        } else if self.partialSellSheetCollectionBills.isEmpty {
             Text("Settlement-API nicht verfügbar — P&L aus Belegen kann nicht geladen werden.")
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.tertiaryText)
         } else {
-            Text("Collection Bills vorhanden, aber ohne kanonische Rendite-Metadaten — Bitte Admin-Audit „auditCollectionBillReturnPercentage“ prüfen.")
-                .font(ResponsiveDesign.captionFont())
-                .foregroundColor(AppTheme.tertiaryText)
+            Text(
+                "Collection Bills vorhanden, aber ohne kanonische Rendite-Metadaten — Bitte Admin-Audit „auditCollectionBillReturnPercentage“ prüfen."
+            )
+            .font(ResponsiveDesign.captionFont())
+            .foregroundColor(AppTheme.tertiaryText)
         }
     }
 
     @ViewBuilder
     private var billsBlock: some View {
-        if sortedBills.isEmpty && !partialSellSheetServerLoading {
+        if self.sortedBills.isEmpty && !self.partialSellSheetServerLoading {
             Text("Keine Einträge.")
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.tertiaryText)
         } else {
-            ForEach(sortedBills, id: \.objectId) { bill in
+            ForEach(self.sortedBills, id: \.objectId) { bill in
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
                     Text(bill.accountingDocumentNumber ?? "—")
                         .font(ResponsiveDesign.bodyFont())
@@ -190,7 +202,7 @@ struct InvestmentsPartialSellDetailSheetView: View {
                             .font(ResponsiveDesign.captionFont())
                             .foregroundColor(AppTheme.secondaryText)
                     }
-                    Text(formattedBackendBillDate(bill.createdAt))
+                    Text(self.formattedBackendBillDate(bill.createdAt))
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(AppTheme.tertiaryText)
                     Divider()

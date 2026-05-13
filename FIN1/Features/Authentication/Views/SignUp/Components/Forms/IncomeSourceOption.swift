@@ -6,15 +6,15 @@ struct IncomeSourceOption: View {
     @Binding var otherText: String
 
     var body: some View {
-        Button(action: { isSelected.toggle() }, label: {
+        Button(action: { self.isSelected.toggle() }, label: {
             HStack {
                 // Clean square checkbox - double size, no borders
                 Rectangle()
-                    .fill(isSelected ? AppTheme.accentGreen : AppTheme.inputFieldBackground)
+                    .fill(self.isSelected ? AppTheme.accentGreen : AppTheme.inputFieldBackground)
                     .frame(width: 32, height: 32) // Double the size (was ~16)
                     .overlay(
                         Group {
-                            if isSelected {
+                            if self.isSelected {
                                 Image(systemName: "checkmark")
                                     .foregroundColor(AppTheme.fontColor)
                                     .font(ResponsiveDesign.headlineFont().weight(.bold))
@@ -22,8 +22,8 @@ struct IncomeSourceOption: View {
                         }
                     )
 
-                if title == "Other (please specify)" && isSelected {
-                    TextField("Please specify", text: $otherText)
+                if self.title == "Other (please specify)" && self.isSelected {
+                    TextField("Please specify", text: self.$otherText)
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(AppTheme.inputFieldText)
                         .textFieldStyle(PlainTextFieldStyle())
@@ -31,19 +31,19 @@ struct IncomeSourceOption: View {
                         .padding(.vertical, 8)
                         .background(AppTheme.inputFieldBackground)
                         .cornerRadius(ResponsiveDesign.spacing(8))
-                        .onChange(of: otherText) { _, newValue in
+                        .onChange(of: self.otherText) { _, newValue in
                             // Only allow A-Z, a-z, -, and spaces, max 20 chars
                             let filtered = newValue.filter { char in
                                 char.isLetter || char == "-" || char == " "
                             }
                             if filtered.count <= 20 {
-                                otherText = filtered
+                                self.otherText = filtered
                             } else {
-                                otherText = String(filtered.prefix(20))
+                                self.otherText = String(filtered.prefix(20))
                             }
                         }
                 } else {
-                    Text(title)
+                    Text(self.title)
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(AppTheme.fontColor)
                         .multilineTextAlignment(.leading)

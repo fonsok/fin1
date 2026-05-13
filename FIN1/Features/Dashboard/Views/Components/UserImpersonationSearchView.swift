@@ -21,21 +21,21 @@ struct UserImpersonationSearchView: View {
                 Image(systemName: "magnifyingglass")
                     .foregroundColor(AppTheme.fontColor.opacity(0.5))
 
-                TextField("Name, E-Mail oder Kundennummer...", text: $viewModel.searchQuery)
+                TextField("Name, E-Mail oder Kundennummer...", text: self.$viewModel.searchQuery)
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.fontColor)
                     .onSubmit {
-                        viewModel.performSearch()
+                        self.viewModel.performSearch()
                     }
 
-                if viewModel.isLoading {
+                if self.viewModel.isLoading {
                     ProgressView()
                         .scaleEffect(0.8)
                 }
 
-                if !viewModel.searchQuery.isEmpty {
+                if !self.viewModel.searchQuery.isEmpty {
                     Button(action: {
-                        viewModel.clearSearch()
+                        self.viewModel.clearSearch()
                     }) {
                         Image(systemName: "xmark.circle.fill")
                             .foregroundColor(AppTheme.fontColor.opacity(0.5))
@@ -47,28 +47,28 @@ struct UserImpersonationSearchView: View {
             .cornerRadius(ResponsiveDesign.spacing(10))
 
             // Search Results
-            if viewModel.isLoading && viewModel.searchResults.isEmpty {
+            if self.viewModel.isLoading && self.viewModel.searchResults.isEmpty {
                 ProgressView()
                     .padding()
-            } else if viewModel.showError, let error = viewModel.errorMessage {
+            } else if self.viewModel.showError, let error = viewModel.errorMessage {
                 Text(error)
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.accentRed)
                     .padding()
-            } else if !viewModel.searchResults.isEmpty {
+            } else if !self.viewModel.searchResults.isEmpty {
                 ScrollView {
                     VStack(spacing: ResponsiveDesign.spacing(8)) {
-                        ForEach(viewModel.searchResults) { result in
+                        ForEach(self.viewModel.searchResults) { result in
                             UserSearchResultRow(result: result) {
                                 Task {
-                                    await viewModel.impersonateUser(result)
+                                    await self.viewModel.impersonateUser(result)
                                 }
                             }
                         }
                     }
                 }
                 .frame(maxHeight: 300)
-            } else if !viewModel.searchQuery.isEmpty && !viewModel.isLoading {
+            } else if !self.viewModel.searchQuery.isEmpty && !self.viewModel.isLoading {
                 Text("No users found")
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.tertiaryText)
@@ -77,7 +77,7 @@ struct UserImpersonationSearchView: View {
         }
         .task {
             // Reconfigure ViewModel with environment services
-            viewModel.reconfigure(with: services)
+            self.viewModel.reconfigure(with: self.services)
         }
     }
 }
@@ -88,36 +88,36 @@ struct UserSearchResultRow: View {
     let onImpersonate: () -> Void
 
     var body: some View {
-        Button(action: onImpersonate) {
+        Button(action: self.onImpersonate) {
             HStack(spacing: ResponsiveDesign.spacing(12)) {
                 // Role Icon
-                Image(systemName: roleIcon)
+                Image(systemName: self.roleIcon)
                     .font(ResponsiveDesign.headlineFont())
-                    .foregroundColor(roleColor)
+                    .foregroundColor(self.roleColor)
                     .frame(width: 30)
 
                 // User Info
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
-                    Text(result.fullName)
+                    Text(self.result.fullName)
                         .font(ResponsiveDesign.bodyFont())
                         .fontWeight(.medium)
                         .foregroundColor(AppTheme.fontColor)
 
-                    Text(result.email)
+                    Text(self.result.email)
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(AppTheme.secondaryText)
 
                     HStack(spacing: ResponsiveDesign.spacing(8)) {
-                        Text("Kundennummer: \(result.customerNumber)")
+                        Text("Kundennummer: \(self.result.customerNumber)")
                             .font(ResponsiveDesign.captionFont())
                             .foregroundColor(AppTheme.tertiaryText)
 
                         Text("•")
                             .foregroundColor(AppTheme.tertiaryText)
 
-                        Text(result.role.capitalized)
+                        Text(self.result.role.capitalized)
                             .font(ResponsiveDesign.captionFont())
-                            .foregroundColor(roleColor)
+                            .foregroundColor(self.roleColor)
                     }
                 }
 
@@ -140,7 +140,7 @@ struct UserSearchResultRow: View {
     }
 
     private var roleIcon: String {
-        switch result.role.lowercased() {
+        switch self.result.role.lowercased() {
         case "investor": return "chart.pie.fill"
         case "trader": return "chart.bar.fill"
         case "admin": return "shield.lefthalf.filled"
@@ -150,7 +150,7 @@ struct UserSearchResultRow: View {
     }
 
     private var roleColor: Color {
-        switch result.role.lowercased() {
+        switch self.result.role.lowercased() {
         case "investor": return AppTheme.accentLightBlue
         case "trader": return AppTheme.accentGreen
         case "admin": return AppTheme.accentRed

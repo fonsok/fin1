@@ -9,13 +9,13 @@ struct WatchlistSearchBar: View {
             Image(systemName: "magnifyingglass")
                 .foregroundColor(AppTheme.fontColor.opacity(0.6))
             
-            TextField("Search watchlist...", text: $searchText)
+            TextField("Search watchlist...", text: self.$searchText)
                 .textFieldStyle(PlainTextFieldStyle())
                 .foregroundColor(AppTheme.fontColor)
             
-            if !searchText.isEmpty {
+            if !self.searchText.isEmpty {
                 Button(action: {
-                    searchText = ""
+                    self.searchText = ""
                 }) {
                     Image(systemName: "xmark.circle.fill")
                         .foregroundColor(AppTheme.fontColor.opacity(0.6))

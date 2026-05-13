@@ -12,8 +12,8 @@ final class CalculationValidationService {
         let errors: [ValidationError]
         let warnings: [ValidationWarning]
 
-        var hasErrors: Bool { !errors.isEmpty }
-        var hasWarnings: Bool { !warnings.isEmpty }
+        var hasErrors: Bool { !self.errors.isEmpty }
+        var hasWarnings: Bool { !self.warnings.isEmpty }
     }
 
     enum ValidationError: Error, Equatable {
@@ -232,26 +232,30 @@ extension CalculationValidationService {
                 name: "Solidaritätszuschlag",
                 basis: InvoiceTaxCalculator.calculateCapitalGainsTax(for: expectedProfit).formatted(.currency(code: "EUR")),
                 rate: "5,5%",
-                amount: InvoiceTaxCalculator.calculateSolidaritySurcharge(for: InvoiceTaxCalculator.calculateCapitalGainsTax(for: expectedProfit)).formatted(.currency(code: "EUR"))
+                amount: InvoiceTaxCalculator.calculateSolidaritySurcharge(
+                    for: InvoiceTaxCalculator.calculateCapitalGainsTax(for: expectedProfit)
+                ).formatted(.currency(code: "EUR"))
             ),
             TaxItem(
                 name: "Kirchensteuer",
                 basis: InvoiceTaxCalculator.calculateCapitalGainsTax(for: expectedProfit).formatted(.currency(code: "EUR")),
                 rate: "8%",
-                amount: InvoiceTaxCalculator.calculateChurchTax(for: InvoiceTaxCalculator.calculateCapitalGainsTax(for: expectedProfit)).formatted(.currency(code: "EUR"))
+                amount: InvoiceTaxCalculator.calculateChurchTax(for: InvoiceTaxCalculator.calculateCapitalGainsTax(for: expectedProfit)).formatted(
+                    .currency(code: "EUR")
+                )
             )
         ]
 
         // Run all validations
-        let consistencyResult = validateCalculationConsistency(
+        let consistencyResult = self.validateCalculationConsistency(
             buyInvoice: buyInvoice,
             sellInvoices: sellInvoices,
             expectedProfit: expectedProfit,
             expectedTaxes: expectedTaxes
         )
 
-        let methodsResult = validateCalculationMethods(calculationTrace: calculationTrace)
-        let dataResult = validateInvoiceData(buyInvoice: buyInvoice, sellInvoices: sellInvoices)
+        let methodsResult = self.validateCalculationMethods(calculationTrace: calculationTrace)
+        let dataResult = self.validateInvoiceData(buyInvoice: buyInvoice, sellInvoices: sellInvoices)
 
         // Combine results
         let allErrors = consistencyResult.errors + methodsResult.errors + dataResult.errors

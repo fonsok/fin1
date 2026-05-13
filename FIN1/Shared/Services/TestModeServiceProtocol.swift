@@ -1,6 +1,6 @@
+import Combine
 import Foundation
 import SwiftUI
-import Combine
 
 // MARK: - Test Mode Service Protocol
 /// Defines the contract for test mode operations and management
@@ -45,9 +45,9 @@ final class TestModeService: TestModeServiceProtocol, ServiceLifecycle, @uncheck
     private var cancellables = Set<AnyCancellable>()
 
     init() {
-        setupDefaultTestUsers()
-        setupSampleImages()
-        loadTestModeSettings()
+        self.setupDefaultTestUsers()
+        self.setupSampleImages()
+        self.loadTestModeSettings()
     }
 
     // MARK: - ServiceLifecycle
@@ -61,65 +61,65 @@ final class TestModeService: TestModeServiceProtocol, ServiceLifecycle, @uncheck
     }
 
     func reset() {
-        resetTestMode()
+        self.resetTestMode()
         print("🔄 TestModeService reset")
     }
 
     // MARK: - Test Mode Management
 
     func enableTestMode() {
-        isTestModeEnabled = true
-        saveTestModeSettings()
+        self.isTestModeEnabled = true
+        self.saveTestModeSettings()
     }
 
     func disableTestMode() {
-        isTestModeEnabled = false
-        currentTestUser = nil
-        saveTestModeSettings()
+        self.isTestModeEnabled = false
+        self.currentTestUser = nil
+        self.saveTestModeSettings()
     }
 
     func toggleTestMode() {
-        isTestModeEnabled.toggle()
-        if !isTestModeEnabled {
-            currentTestUser = nil
+        self.isTestModeEnabled.toggle()
+        if !self.isTestModeEnabled {
+            self.currentTestUser = nil
         }
-        saveTestModeSettings()
+        self.saveTestModeSettings()
     }
 
     func resetTestMode() {
-        isTestModeEnabled = false
-        currentTestUser = nil
-        testModeSettings = TestModeSettings()
-        saveTestModeSettings()
+        self.isTestModeEnabled = false
+        self.currentTestUser = nil
+        self.testModeSettings = TestModeSettings()
+        self.saveTestModeSettings()
     }
 
     // MARK: - Test User Management
 
     func createTestUser(_ user: TestUser) {
-        if !availableTestUsers.contains(where: { $0.id == user.id }) {
-            availableTestUsers.append(user)
+        if !self.availableTestUsers.contains(where: { $0.id == user.id }) {
+            self.availableTestUsers.append(user)
         }
     }
 
     func switchToTestUser(_ user: TestUser) {
-        currentTestUser = user
-        saveTestModeSettings()
+        self.currentTestUser = user
+        self.saveTestModeSettings()
     }
 
     func clearTestUsers() {
-        availableTestUsers.removeAll()
-        currentTestUser = nil
-        saveTestModeSettings()
+        self.availableTestUsers.removeAll()
+        self.currentTestUser = nil
+        self.saveTestModeSettings()
     }
 
     // MARK: - Test Mode Queries
 
     func isInTestMode() -> Bool {
-        return isTestModeEnabled
+        return self.isTestModeEnabled
     }
 
     func getTestModeStatus() -> String {
-        if isTestModeEnabled {
+        if self.isTestModeEnabled {
             if let currentUser = currentTestUser {
                 return "Test Mode: \(currentUser.name) (\(currentUser.role.displayName))"
             } else {
@@ -132,16 +132,16 @@ final class TestModeService: TestModeServiceProtocol, ServiceLifecycle, @uncheck
 
     func getTestModeConfiguration() -> TestModeConfiguration {
         return TestModeConfiguration(
-            isEnabled: isTestModeEnabled,
-            settings: testModeSettings,
-            currentUser: currentTestUser
+            isEnabled: self.isTestModeEnabled,
+            settings: self.testModeSettings,
+            currentUser: self.currentTestUser
         )
     }
 
     // MARK: - Private Methods
 
     private func setupDefaultTestUsers() {
-        availableTestUsers = [
+        self.availableTestUsers = [
             TestUser(
                 id: "test1",
                 name: "Test Investor",
@@ -172,9 +172,9 @@ final class TestModeService: TestModeServiceProtocol, ServiceLifecycle, @uncheck
     private func setupSampleImages() {
         // Create sample images for test mode
         // These would typically be loaded from the app bundle or created programmatically
-        sampleAddressDocument = createSampleImage(named: "sample_address_document")
-        samplePassportImage = createSampleImage(named: "sample_passport")
-        sampleIDCardImage = createSampleImage(named: "sample_id_card")
+        self.sampleAddressDocument = self.createSampleImage(named: "sample_address_document")
+        self.samplePassportImage = self.createSampleImage(named: "sample_passport")
+        self.sampleIDCardImage = self.createSampleImage(named: "sample_id_card")
     }
 
     private func createSampleImage(named: String) -> UIImage? {
@@ -207,14 +207,14 @@ final class TestModeService: TestModeServiceProtocol, ServiceLifecycle, @uncheck
         // Load from UserDefaults or other persistent storage
         if let data = UserDefaults.standard.data(forKey: "TestModeSettings"),
            let settings = try? JSONDecoder().decode(TestModeSettings.self, from: data) {
-            testModeSettings = settings
+            self.testModeSettings = settings
         }
 
-        isTestModeEnabled = UserDefaults.standard.bool(forKey: "TestModeEnabled")
+        self.isTestModeEnabled = UserDefaults.standard.bool(forKey: "TestModeEnabled")
 
         if let userData = UserDefaults.standard.data(forKey: "CurrentTestUser"),
            let user = try? JSONDecoder().decode(TestUser.self, from: userData) {
-            currentTestUser = user
+            self.currentTestUser = user
         }
     }
 
@@ -224,7 +224,7 @@ final class TestModeService: TestModeServiceProtocol, ServiceLifecycle, @uncheck
             UserDefaults.standard.set(data, forKey: "TestModeSettings")
         }
 
-        UserDefaults.standard.set(isTestModeEnabled, forKey: "TestModeEnabled")
+        UserDefaults.standard.set(self.isTestModeEnabled, forKey: "TestModeEnabled")
 
         if let user = currentTestUser,
            let userData = try? JSONEncoder().encode(user) {

@@ -75,8 +75,8 @@ private struct ParseTicket: Codable {
             return nil
         }
 
-        let closedDate = closedAt.flatMap { dateFormatter.date(from: $0) }
-        let resolvedDate = resolvedAt.flatMap { dateFormatter.date(from: $0) }
+        let closedDate = self.closedAt.flatMap { dateFormatter.date(from: $0) }
+        let resolvedDate = self.resolvedAt.flatMap { dateFormatter.date(from: $0) }
 
         let endCustomerUserId = [userId, customerId].compactMap { $0 }.first(where: { !$0.isEmpty })
         guard let endCustomerUserId else {
@@ -87,15 +87,15 @@ private struct ParseTicket: Codable {
         let responses = (messages ?? []).compactMap { $0.toTicketResponse() }
 
         return SupportTicket(
-            id: objectId,
-            ticketNumber: ticketNumber,
+            id: self.objectId,
+            ticketNumber: self.ticketNumber,
             userId: endCustomerUserId,
-            customerName: customerName ?? endCustomerUserId,
-            subject: subject,
-            description: description,
+            customerName: self.customerName ?? endCustomerUserId,
+            subject: self.subject,
+            description: self.description,
             status: ticketStatus,
             priority: ticketPriority,
-            assignedTo: assignedTo,
+            assignedTo: self.assignedTo,
             createdAt: createdDate,
             updatedAt: updatedDate,
             responses: responses,
@@ -126,13 +126,13 @@ private struct ParseTicketMessage: Codable {
         }
 
         return TicketResponse(
-            id: objectId,
-            agentId: senderId,
-            agentName: senderName ?? senderRole ?? "Support",
-            message: message,
-            isInternal: isInternal,
+            id: self.objectId,
+            agentId: self.senderId,
+            agentName: self.senderName ?? self.senderRole ?? "Support",
+            message: self.message,
+            isInternal: self.isInternal,
             createdAt: createdDate,
-            responseType: isInternal ? .internalNote : .message,
+            responseType: self.isInternal ? .internalNote : .message,
             solutionDetails: nil
         )
     }
@@ -227,7 +227,7 @@ final class TicketAPIService: TicketAPIServiceProtocol, @unchecked Sendable {
         print("✅ TicketAPIService: Ticket created with objectId: \(response.objectId)")
 
         // Fetch the created ticket to get full details (including ticketNumber from trigger)
-        return try await fetchTicket(ticketId: response.objectId) ?? SupportTicket(
+        return try await self.fetchTicket(ticketId: response.objectId) ?? SupportTicket(
             id: response.objectId,
             ticketNumber: "TKT-\(Calendar.current.component(.year, from: Date()))-00001",
             userId: ticket.userId,

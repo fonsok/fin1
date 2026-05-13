@@ -11,7 +11,7 @@ struct ResponsiveDesign {
         let aspectRatio = screenWidth / screenHeight
 
         // More flexible breakpoints considering aspect ratio
-        if isLandscape() {
+        if self.isLandscape() {
             return screenWidth < 600 || aspectRatio > 1.8
         } else {
             return screenWidth < 375 || aspectRatio < 0.4
@@ -19,7 +19,7 @@ struct ResponsiveDesign {
     }
 
     static func isStandardDevice() -> Bool {
-        return !isCompactDevice() && !isLargeDevice()
+        return !self.isCompactDevice() && !self.isLargeDevice()
     }
 
     static func isLargeDevice() -> Bool {
@@ -28,7 +28,7 @@ struct ResponsiveDesign {
         let aspectRatio = screenWidth / screenHeight
 
         // More flexible breakpoints considering aspect ratio
-        if isLandscape() {
+        if self.isLandscape() {
             return screenWidth >= 900 || aspectRatio > 2.0
         } else {
             return screenWidth >= 428 || aspectRatio > 0.6
@@ -54,18 +54,18 @@ struct ResponsiveDesign {
     }
 
     static func topSafeAreaPadding() -> CGFloat {
-        return safeAreaInsets().top
+        return self.safeAreaInsets().top
     }
 
     static func bottomSafeAreaPadding() -> CGFloat {
-        return safeAreaInsets().bottom
+        return self.safeAreaInsets().bottom
     }
 
     // MARK: - Responsive Spacing
     static func spacing(_ base: CGFloat) -> CGFloat {
-        if isCompactDevice() {
+        if self.isCompactDevice() {
             return base * 0.8
-        } else if isLargeDevice() {
+        } else if self.isLargeDevice() {
             return base * 1.2
         }
         return base
@@ -73,61 +73,61 @@ struct ResponsiveDesign {
 
     // MARK: - Specific Spacing Values (replacing SpacingConfig)
     static func lightBlueAreaHorizontalPadding() -> CGFloat {
-        return spacing(8)
+        return self.spacing(8)
     }
 
     static func scrollSectionHorizontalPadding() -> CGFloat {
-        return spacing(12)
+        return self.spacing(12)
     }
 
     static func signUpSectionSpacing() -> CGFloat {
-        return spacing(24)
+        return self.spacing(24)
     }
 
     static func signUpElementSpacing() -> CGFloat {
-        return spacing(16)
+        return self.spacing(16)
     }
 
     static func componentHorizontalPadding() -> CGFloat {
-        return spacing(12)
+        return self.spacing(12)
     }
 
     static func componentVerticalPadding() -> CGFloat {
-        return spacing(8)
+        return self.spacing(8)
     }
 
     static func navigationVerticalPadding() -> CGFloat {
-        return spacing(32)
+        return self.spacing(32)
     }
 
     static func progressBarTopPadding() -> CGFloat {
-        return spacing(20)
+        return self.spacing(20)
     }
 
     static func mainHorizontalPadding() -> CGFloat {
-        return spacing(16)
+        return self.spacing(16)
     }
 
     static func mainVerticalPadding() -> CGFloat {
-        return spacing(24)
+        return self.spacing(24)
     }
 
     static func authHorizontalPadding() -> CGFloat {
-        return spacing(24)
+        return self.spacing(24)
     }
 
     static func authVerticalPadding() -> CGFloat {
-        return spacing(32)
+        return self.spacing(32)
     }
 
     static func dashboardHorizontalPadding() -> CGFloat {
         // Ensure minimum 16pt padding regardless of device classification
         // This prevents edge-to-edge content on any device
-        return max(16, spacing(16))
+        return max(16, self.spacing(16))
     }
 
     static func dashboardVerticalPadding() -> CGFloat {
-        return spacing(20)
+        return self.spacing(20)
     }
 
     static func horizontalPadding() -> CGFloat {
@@ -137,10 +137,10 @@ struct ResponsiveDesign {
         // 3. The padding value from this function is applied to both leading and trailing
         let basePadding: CGFloat = 16
 
-        if isCompactDevice() {
+        if self.isCompactDevice() {
             // Minimum 12pt even on compact devices
             return max(12, basePadding * 0.75)
-        } else if isLargeDevice() {
+        } else if self.isLargeDevice() {
             return max(24, basePadding * 1.5)
         }
         // Standard devices get 16pt minimum
@@ -154,9 +154,9 @@ struct ResponsiveDesign {
         // 3. The padding value from this function is applied to both top and bottom
         let basePadding: CGFloat = 16
 
-        if isCompactDevice() {
+        if self.isCompactDevice() {
             return max(12, basePadding * 0.75)
-        } else if isLargeDevice() {
+        } else if self.isLargeDevice() {
             return max(20, basePadding * 1.25)
         }
         return basePadding
@@ -164,36 +164,36 @@ struct ResponsiveDesign {
 
     // MARK: - Accessibility-Aware Font Sizes
     static func titleFont() -> Font {
-        if isCompactDevice() {
+        if self.isCompactDevice() {
             return .title3
-        } else if isLargeDevice() {
+        } else if self.isLargeDevice() {
             return .largeTitle
         }
         return .title
     }
 
     static func headlineFont() -> Font {
-        if isCompactDevice() {
+        if self.isCompactDevice() {
             return .subheadline
-        } else if isLargeDevice() {
+        } else if self.isLargeDevice() {
             return .title2
         }
         return .headline
     }
 
     static func bodyFont() -> Font {
-        if isCompactDevice() {
+        if self.isCompactDevice() {
             return .caption
-        } else if isLargeDevice() {
+        } else if self.isLargeDevice() {
             return .body
         }
         return .subheadline
     }
 
     static func captionFont() -> Font {
-        if isCompactDevice() {
+        if self.isCompactDevice() {
             return .caption2
-        } else if isLargeDevice() {
+        } else if self.isLargeDevice() {
             return .subheadline
         }
         return .caption
@@ -201,9 +201,9 @@ struct ResponsiveDesign {
 
     /// Footnote-tier text (secondary legal/helper copy), scaled by device class like other text styles.
     static func footnoteFont() -> Font {
-        if isCompactDevice() {
+        if self.isCompactDevice() {
             return .caption2
-        } else if isLargeDevice() {
+        } else if self.isLargeDevice() {
             return .subheadline
         }
         return .footnote
@@ -217,14 +217,14 @@ struct ResponsiveDesign {
 
     /// Primary label styling for large input fields (matches prior title3 / title2 split).
     static func inputFieldPrimaryFont() -> Font {
-        isCompactDevice() ? .title3 : .title2
+        self.isCompactDevice() ? .title3 : .title2
     }
 
     /// Large title font for prominent headers
     static func largeTitleFont() -> Font {
-        if isCompactDevice() {
+        if self.isCompactDevice() {
             return .title
-        } else if isLargeDevice() {
+        } else if self.isLargeDevice() {
             return .largeTitle
         }
         return .largeTitle
@@ -232,9 +232,9 @@ struct ResponsiveDesign {
 
     /// Icon font with appropriate sizing for SF Symbols
     static func iconFont() -> Font {
-        if isCompactDevice() {
+        if self.isCompactDevice() {
             return .system(size: UIFontMetrics.default.scaledValue(for: 16))
-        } else if isLargeDevice() {
+        } else if self.isLargeDevice() {
             return .system(size: UIFontMetrics.default.scaledValue(for: 24))
         }
         return .system(size: UIFontMetrics.default.scaledValue(for: 20))
@@ -256,9 +256,9 @@ struct ResponsiveDesign {
         let baseSize: CGFloat = 20
         let accessibilityMultiplier = UIFontMetrics.default.scaledValue(for: baseSize) / baseSize
 
-        if isCompactDevice() {
+        if self.isCompactDevice() {
             return baseSize * 0.8 * accessibilityMultiplier
-        } else if isLargeDevice() {
+        } else if self.isLargeDevice() {
             return baseSize * 1.2 * accessibilityMultiplier
         }
         return baseSize * accessibilityMultiplier
@@ -268,9 +268,9 @@ struct ResponsiveDesign {
         let baseSize: CGFloat = 60
         let accessibilityMultiplier = UIFontMetrics.default.scaledValue(for: baseSize) / baseSize
 
-        if isCompactDevice() {
+        if self.isCompactDevice() {
             return baseSize * 0.67 * accessibilityMultiplier
-        } else if isLargeDevice() {
+        } else if self.isLargeDevice() {
             return baseSize * 1.33 * accessibilityMultiplier
         }
         return baseSize * accessibilityMultiplier
@@ -306,9 +306,9 @@ struct ResponsiveDesign {
         }
 
         // Apply device size multiplier
-        if isCompactDevice() {
+        if self.isCompactDevice() {
             multiplier = 0.85 // Smaller on compact devices
-        } else if isLargeDevice() {
+        } else if self.isLargeDevice() {
             multiplier = 1.15 // Larger on large devices
         } else {
             multiplier = 1.0 // Standard size
@@ -344,7 +344,7 @@ struct ResponsiveSpacing: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .environment(\.spacing, ResponsiveDesign.spacing(spacing))
+            .environment(\.spacing, ResponsiveDesign.spacing(self.spacing))
     }
 }
 

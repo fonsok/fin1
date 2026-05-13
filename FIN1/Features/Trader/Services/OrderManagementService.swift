@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Order Management Service Implementation
 /// Handles order placement, status updates, and management
@@ -15,7 +15,7 @@ final class OrderManagementService: OrderManagementServiceProtocol, ServiceLifec
     private var orderAPIService: OrderAPIServiceProtocol?
 
     var activeOrdersPublisher: AnyPublisher<[Order], Never> {
-        $activeOrders
+        self.$activeOrders
             .handleEvents(receiveOutput: { orders in
                 print("🔍 DEBUG: OrderManagementService activeOrdersPublisher emitted \(orders.count) orders")
             })
@@ -44,40 +44,40 @@ final class OrderManagementService: OrderManagementServiceProtocol, ServiceLifec
     /// Returns the current trader's ID from the user service
     /// Falls back to "unknown_trader" if no user is logged in
     private var currentTraderId: String {
-        userService?.currentUser?.id ?? "unknown_trader"
+        self.userService?.currentUser?.id ?? "unknown_trader"
     }
 
     // MARK: - ServiceLifecycle
     func start() {
         Task {
-            try? await loadActiveOrders()
+            try? await self.loadActiveOrders()
         }
     }
 
     func stop() {
         // Clean up all order timers
-        orderStatusTimers.values.forEach { $0.invalidate() }
-        orderStatusTimers.removeAll()
+        self.orderStatusTimers.values.forEach { $0.invalidate() }
+        self.orderStatusTimers.removeAll()
     }
 
     func reset() {
-        activeOrders.removeAll()
-        errorMessage = nil
-        stop() // Clean up timers
+        self.activeOrders.removeAll()
+        self.errorMessage = nil
+        self.stop() // Clean up timers
     }
 
     // MARK: - Order Data Management
 
     func loadActiveOrders() async throws {
         await MainActor.run {
-            isLoading = true
-            errorMessage = nil
+            self.isLoading = true
+            self.errorMessage = nil
         }
 
         // Try to fetch from backend first
         if let apiService = orderAPIService {
             do {
-                let orders = try await apiService.fetchActiveOrders(for: currentTraderId)
+                let orders = try await apiService.fetchActiveOrders(for: self.currentTraderId)
                 await MainActor.run {
                     self.activeOrders = orders
                     self.isLoading = false
@@ -93,27 +93,39 @@ final class OrderManagementService: OrderManagementServiceProtocol, ServiceLifec
 
         await MainActor.run {
             loadActiveOrdersSync()
-            isLoading = false
+            self.isLoading = false
         }
     }
 
     func refreshActiveOrders() async throws {
         await MainActor.run {
-            isLoading = true
-            errorMessage = nil
+            self.isLoading = true
+            self.errorMessage = nil
         }
 
         try await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
 
         await MainActor.run {
             loadActiveOrdersSync()
-            isLoading = false
+            self.isLoading = false
         }
     }
 
     // MARK: - Order Management
 
-    func placeBuyOrder(symbol: String, quantity: Int, price: Double, optionDirection: String?, description: String?, orderInstruction: String?, limitPrice: Double?, strike: Double?, subscriptionRatio: Double?, denomination: Int?, isMirrorPoolOrder: Bool?) async throws -> OrderBuy {
+    func placeBuyOrder(
+        symbol: String,
+        quantity: Int,
+        price: Double,
+        optionDirection: String?,
+        description: String?,
+        orderInstruction: String?,
+        limitPrice: Double?,
+        strike: Double?,
+        subscriptionRatio: Double?,
+        denomination: Int?,
+        isMirrorPoolOrder: Bool?
+    ) async throws -> OrderBuy {
         let params = BuyOrderParameters(
             symbol: symbol,
             quantity: quantity,
@@ -128,7 +140,7 @@ final class OrderManagementService: OrderManagementServiceProtocol, ServiceLifec
             isMirrorPoolOrder: isMirrorPoolOrder
         )
 
-        return try await placeBuyOrder(params: params)
+        return try await self.placeBuyOrder(params: params)
     }
 
     func placeBuyOrder(params: BuyOrderParameters) async throws -> OrderBuy {
@@ -139,7 +151,7 @@ final class OrderManagementService: OrderManagementServiceProtocol, ServiceLifec
         )
 
         let orderDetails = try validateAndProcessOrderDetails(params)
-        let order = createOrder(from: orderDetails, params: params)
+        let order = self.createOrder(from: orderDetails, params: params)
         let newOrder = OrderBuy(from: order)
 
         await addOrderToActiveList(order)
@@ -165,11 +177,11 @@ final class OrderManagementService: OrderManagementServiceProtocol, ServiceLifec
         let isOptionsOrder = params.optionDirection != nil
 
         if isOptionsOrder {
-            try validateOptionsOrder(params)
+            try self.validateOptionsOrder(params)
         }
 
-        let finalOptionType = determineOptionType(params, isOptionsOrder: isOptionsOrder)
-        let underlyingAsset = determineUnderlyingAsset(params, isOptionsOrder: isOptionsOrder)
+        let finalOptionType = self.determineOptionType(params, isOptionsOrder: isOptionsOrder)
+        let underlyingAsset = self.determineUnderlyingAsset(params, isOptionsOrder: isOptionsOrder)
 
         print("🔍 DEBUG: finalOptionType = \(finalOptionType ?? "nil")")
         print("🔍 DEBUG: underlyingAsset = \(underlyingAsset ?? "nil")")
@@ -215,8 +227,8 @@ final class OrderManagementService: OrderManagementServiceProtocol, ServiceLifec
 
     private func createOrder(from details: OrderDetails, params: BuyOrderParameters) -> Order {
         return Order(
-            id: transactionIdService.generateOrderId(),
-            traderId: currentTraderId, // Use actual logged-in trader ID
+            id: self.transactionIdService.generateOrderId(),
+            traderId: self.currentTraderId, // Use actual logged-in trader ID
             symbol: params.symbol,
             description: details.isOptionsOrder ? "Optionsschein - \(details.underlyingAsset ?? "Unknown")" : "Aktie",
             type: .buy,
@@ -242,8 +254,8 @@ final class OrderManagementService: OrderManagementServiceProtocol, ServiceLifec
 
     private func addOrderToActiveList(_ order: Order) async {
         await MainActor.run {
-            activeOrders.append(order)
-            print("🔍 DEBUG: OrderManagementService added order \(order.id) to activeOrders. Total count: \(activeOrders.count)")
+            self.activeOrders.append(order)
+            print("🔍 DEBUG: OrderManagementService added order \(order.id) to activeOrders. Total count: \(self.activeOrders.count)")
         }
     }
 }
@@ -260,7 +272,7 @@ extension OrderManagementService {
     func placeSellOrder(symbol: String, quantity: Int, price: Double) async throws -> OrderSell {
         let newOrder = OrderSell(
             id: transactionIdService.generateOrderId(),
-            traderId: currentTraderId, // Use actual logged-in trader ID
+            traderId: self.currentTraderId, // Use actual logged-in trader ID
             symbol: symbol,
             description: "Typ - Basiswert", // Placeholder
             quantity: Double(quantity),
@@ -304,7 +316,7 @@ extension OrderManagementService {
                 limitPrice: newOrder.limitPrice,
                 originalHoldingId: newOrder.originalHoldingId
             )
-            activeOrders.append(order)
+            self.activeOrders.append(order)
         }
 
         // Sync to backend (write-through pattern)
@@ -325,7 +337,7 @@ extension OrderManagementService {
     func updateOrderStatus(_ orderId: String, status: String) async throws {
         await MainActor.run {
             if let index = activeOrders.firstIndex(where: { $0.id == orderId }) {
-                let order = activeOrders[index]
+                let order = self.activeOrders[index]
                 let updatedOrder = Order(
                     id: order.id,
                     traderId: order.traderId,
@@ -346,10 +358,10 @@ extension OrderManagementService {
                     strike: order.strike,
                     orderInstruction: order.orderInstruction,
                     limitPrice: order.limitPrice,
-                isMirrorPoolOrder: order.isMirrorPoolOrder,
+                    isMirrorPoolOrder: order.isMirrorPoolOrder,
                     status: status
                 )
-                activeOrders[index] = updatedOrder
+                self.activeOrders[index] = updatedOrder
             }
         }
     }
@@ -357,7 +369,7 @@ extension OrderManagementService {
     func cancelOrder(_ orderId: String) async throws {
         await MainActor.run {
             if let index = activeOrders.firstIndex(where: { $0.id == orderId }) {
-                activeOrders.remove(at: index)
+                self.activeOrders.remove(at: index)
             }
         }
     }
@@ -366,15 +378,15 @@ extension OrderManagementService {
 
     private func loadMockData() {
         // Load mock orders for testing
-        activeOrders = mockRunningTransactions
-        print("🔍 DEBUG: OrderManagementService loaded \(activeOrders.count) mock orders")
-        loadActiveOrdersSync()
+        self.activeOrders = mockRunningTransactions
+        print("🔍 DEBUG: OrderManagementService loaded \(self.activeOrders.count) mock orders")
+        self.loadActiveOrdersSync()
     }
 
     func addOrderToActiveOrders(_ order: Order) async {
         await MainActor.run {
-            activeOrders.append(order)
-            print("🔍 DEBUG: OrderManagementService added order \(order.id) to activeOrders. Total count: \(activeOrders.count)")
+            self.activeOrders.append(order)
+            print("🔍 DEBUG: OrderManagementService added order \(order.id) to activeOrders. Total count: \(self.activeOrders.count)")
         }
     }
 
@@ -385,7 +397,7 @@ extension OrderManagementService {
         // activeOrders = [] // Commented out to preserve ongoing orders
 
         // Force @Published update to notify subscribers
-        print("🔍 DEBUG: OrderManagementService loadActiveOrdersSync - publishing \(activeOrders.count) orders")
+        print("🔍 DEBUG: OrderManagementService loadActiveOrdersSync - publishing \(self.activeOrders.count) orders")
         objectWillChange.send()
     }
 
@@ -399,7 +411,7 @@ extension OrderManagementService {
             return
         }
 
-        let ordersToSync = activeOrders.filter { order in
+        let ordersToSync = self.activeOrders.filter { order in
             // Sync orders that are not yet completed or cancelled
             let status = order.status.lowercased()
             return status != "completed" && status != "cancelled"

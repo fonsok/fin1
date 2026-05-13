@@ -53,7 +53,7 @@ enum AutoLockTimeout: String, Codable, CaseIterable {
         case .oneMinute: return 60
         case .fiveMinutes: return 300
         case .fifteenMinutes: return 900
-        case .thirtyMinutes: return 1800
+        case .thirtyMinutes: return 1_800
         case .never: return -1
         }
     }

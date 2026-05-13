@@ -27,7 +27,7 @@ final class InvestmentFormViewModel: ObservableObject {
 
     /// Whole-euro cap for the **total** in „Investment Amount“ (matches admin `maximumInvestmentAmount`).
     private var maxTotalInvestmentWholeEuros: Int {
-        let cap = configurationService.maximumInvestmentAmount
+        let cap = self.configurationService.maximumInvestmentAmount
         guard cap.isFinite, cap > 0 else {
             return Int(CalculationConstants.Investment.fallbackMaximumInvestmentAmount)
         }
@@ -41,8 +41,8 @@ final class InvestmentFormViewModel: ObservableObject {
 
         // If empty, clear both display and amount
         if cleanedInput.isEmpty {
-            displayAmount = ""
-            updateInvestmentAmount("")
+            self.displayAmount = ""
+            self.updateInvestmentAmount("")
             return
         }
 
@@ -52,11 +52,11 @@ final class InvestmentFormViewModel: ObservableObject {
         // Validate that it's a valid integer
         guard let integerValue = Int(numericString), integerValue >= 0 else {
             // If invalid, revert to previous valid state
-            updateDisplayFromAmount()
+            self.updateDisplayFromAmount()
             return
         }
 
-        let maxEuros = maxTotalInvestmentWholeEuros
+        let maxEuros = self.maxTotalInvestmentWholeEuros
         let capped = min(integerValue, maxEuros)
         let cappedString = String(capped)
 
@@ -64,23 +64,23 @@ final class InvestmentFormViewModel: ObservableObject {
         let formattedString = capped.formattedAsLocalizedInteger()
 
         // Update both display and backing amount
-        displayAmount = formattedString
-        updateInvestmentAmount(cappedString)
+        self.displayAmount = formattedString
+        self.updateInvestmentAmount(cappedString)
     }
 
     /// Updates the display amount from the backing investment amount
     func updateDisplayFromAmount() {
-        let investmentAmount = getInvestmentAmount()
+        let investmentAmount = self.getInvestmentAmount()
         guard let integerValue = Int(investmentAmount), integerValue >= 0 else {
-            displayAmount = ""
+            self.displayAmount = ""
             return
         }
-        let maxEuros = maxTotalInvestmentWholeEuros
+        let maxEuros = self.maxTotalInvestmentWholeEuros
         let capped = min(integerValue, maxEuros)
         if capped != integerValue {
-            updateInvestmentAmount(String(capped))
+            self.updateInvestmentAmount(String(capped))
         }
-        displayAmount = capped.formattedAsLocalizedInteger()
+        self.displayAmount = capped.formattedAsLocalizedInteger()
     }
 
     // MARK: - App Service Charge Calculation
@@ -89,19 +89,19 @@ final class InvestmentFormViewModel: ObservableObject {
     /// - Note: Currently applies to investors when creating investments (not traders).
     ///   Can be extended to traders in the future if needed.
     var appServiceCharge: Double {
-        let investmentAmount = getInvestmentAmount()
+        let investmentAmount = self.getInvestmentAmount()
         let amountValue = Double(investmentAmount.replacingOccurrences(of: ".", with: "")) ?? 0
-        return amountValue * configurationService.effectiveAppServiceChargeRate
+        return amountValue * self.configurationService.effectiveAppServiceChargeRate
     }
 
     /// Formatted app service charge for display
     var formattedAppServiceCharge: String {
-        appServiceCharge.formattedAsLocalizedCurrency()
+        self.appServiceCharge.formattedAsLocalizedCurrency()
     }
 
     /// Whether the investment amount is greater than zero
     var hasValidAmount: Bool {
-        let investmentAmount = getInvestmentAmount()
+        let investmentAmount = self.getInvestmentAmount()
         let amountValue = Double(investmentAmount.replacingOccurrences(of: ".", with: "")) ?? 0
         return amountValue > 0
     }

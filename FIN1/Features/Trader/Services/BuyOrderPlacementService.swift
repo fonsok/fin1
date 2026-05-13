@@ -117,7 +117,7 @@ final class BuyOrderPlacementService: BuyOrderPlacementServiceProtocol, @uncheck
 
             // No pool mirror leg: trader-only order (must run on MainActor for TraderService)
             if mirrorPoolQuantity <= 0 {
-                let orderRequest = makeBuyOrderRequest(
+                let orderRequest = self.makeBuyOrderRequest(
                     searchResult: searchResult,
                     quantity: traderQuantity,
                     executedPrice: executedPrice,
@@ -129,8 +129,8 @@ final class BuyOrderPlacementService: BuyOrderPlacementServiceProtocol, @uncheck
                     try await traderService.placeBuyOrder(orderRequest)
                 }.value
 
-                await recordTransactionIfNeeded(amount: estimatedCost)
-                logOrderPlacedCompliance(
+                await self.recordTransactionIfNeeded(amount: estimatedCost)
+                self.logOrderPlacedCompliance(
                     description: "Trader buy placed (no mirror pool leg): qty=\(traderQuantity) for \(searchResult.underlyingAsset ?? searchResult.wkn) @ €\(safeCurrencyString(executedPrice))",
                     notes: "Mode: \(orderMode.rawValue), Symbol: \(searchResult.wkn)"
                 )
@@ -173,7 +173,9 @@ final class BuyOrderPlacementService: BuyOrderPlacementServiceProtocol, @uncheck
             guard JSONSerialization.isValidJSONObject(payload) else {
                 return BuyOrderPlacementResult(
                     success: false,
-                    error: AppError.validationError("Ungültige Auftragsparameter (Numerik oder Format). Bitte Ansicht neu laden und erneut versuchen.")
+                    error: AppError.validationError(
+                        "Ungültige Auftragsparameter (Numerik oder Format). Bitte Ansicht neu laden und erneut versuchen."
+                    )
                 )
             }
 
@@ -189,11 +191,11 @@ final class BuyOrderPlacementService: BuyOrderPlacementServiceProtocol, @uncheck
                 )
             }
 
-            await recordTransactionIfNeeded(amount: estimatedCost)
+            await self.recordTransactionIfNeeded(amount: estimatedCost)
 
             let pairId = executionResult.pairExecutionId ?? "unknown"
             let underlyingAsset = searchResult.underlyingAsset ?? "N/A"
-            logOrderPlacedCompliance(
+            self.logOrderPlacedCompliance(
                 description: "Paired buy committed: trader=\(traderQuantity), mirror=\(mirrorPoolQuantity) for \(underlyingAsset) @ €\(safeCurrencyString(executedPrice))",
                 notes: "PairExecutionId: \(pairId), Mode: \(orderMode.rawValue), Symbol: \(searchResult.wkn)"
             )
@@ -260,7 +262,7 @@ final class BuyOrderPlacementService: BuyOrderPlacementServiceProtocol, @uncheck
             notes: notes
         )
         Task {
-            await auditLoggingService.logComplianceEvent(complianceEvent)
+            await self.auditLoggingService.logComplianceEvent(complianceEvent)
         }
     }
 }
@@ -278,9 +280,9 @@ private struct ExecutePairedBuyResult: Decodable {
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
-        pairExecutionId = try c.decodeIfPresent(String.self, forKey: .pairExecutionId)
-        idempotentReplay = try c.decodeIfPresent(Bool.self, forKey: .idempotentReplay)
-        status = try c.decodeIfPresent(String.self, forKey: .status) ?? ""
+        self.pairExecutionId = try c.decodeIfPresent(String.self, forKey: .pairExecutionId)
+        self.idempotentReplay = try c.decodeIfPresent(Bool.self, forKey: .idempotentReplay)
+        self.status = try c.decodeIfPresent(String.self, forKey: .status) ?? ""
     }
 }
 

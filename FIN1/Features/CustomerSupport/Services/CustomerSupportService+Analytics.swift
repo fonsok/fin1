@@ -35,9 +35,9 @@ extension CustomerSupportService {
         }
 
         // Calculate time metrics (mock values - in production, calculate from actual data)
-        let avgFirstResponse = calculateAverageFirstResponseTime(tickets: closedInPeriod)
-        let avgResolution = calculateAverageResolutionTime(tickets: closedInPeriod)
-        let medianResolution = calculateMedianResolutionTime(tickets: closedInPeriod)
+        let avgFirstResponse = self.calculateAverageFirstResponseTime(tickets: closedInPeriod)
+        let avgResolution = self.calculateAverageResolutionTime(tickets: closedInPeriod)
+        let medianResolution = self.calculateMedianResolutionTime(tickets: closedInPeriod)
 
         return TicketMetrics(
             periodStart: startDate,
@@ -69,7 +69,7 @@ extension CustomerSupportService {
 
         let agentTickets = mockTickets.filter { ticket in
             ticket.assignedTo == agentId &&
-            ticket.createdAt >= startDate && ticket.createdAt <= endDate
+                ticket.createdAt >= startDate && ticket.createdAt <= endDate
         }
 
         let closedTickets = agentTickets.filter { $0.status == .closed || $0.status == .resolved }
@@ -88,8 +88,8 @@ extension CustomerSupportService {
             ticketsClosed: closedTickets.count,
             ticketsEscalated: escalatedTickets.count,
             ticketsReopened: reopenedTickets.count,
-            averageFirstResponseTime: calculateAverageFirstResponseTime(tickets: closedTickets),
-            averageResolutionTime: calculateAverageResolutionTime(tickets: closedTickets),
+            averageFirstResponseTime: self.calculateAverageFirstResponseTime(tickets: closedTickets),
+            averageResolutionTime: self.calculateAverageResolutionTime(tickets: closedTickets),
             customerSatisfactionScore: surveyData.averageScore,
             surveysReceived: surveyData.totalSurveys,
             positiveRatings: surveyData.positiveCount,
@@ -118,7 +118,7 @@ extension CustomerSupportService {
 
         for ticket in tickets {
             if let firstResponse = ticket.responses.first(where: { !$0.isInternal }) {
-                let hours = firstResponse.createdAt.timeIntervalSince(ticket.createdAt) / 3600
+                let hours = firstResponse.createdAt.timeIntervalSince(ticket.createdAt) / 3_600
                 totalHours += hours
                 count += 1
             }
@@ -136,7 +136,7 @@ extension CustomerSupportService {
 
         for ticket in tickets {
             if let closedAt = ticket.closedAt {
-                let hours = closedAt.timeIntervalSince(ticket.createdAt) / 3600
+                let hours = closedAt.timeIntervalSince(ticket.createdAt) / 3_600
                 totalHours += hours
                 count += 1
             }
@@ -149,7 +149,7 @@ extension CustomerSupportService {
     private func calculateMedianResolutionTime(tickets: [SupportTicket]) -> Double {
         let resolutionTimes = tickets.compactMap { ticket -> Double? in
             guard let closedAt = ticket.closedAt else { return nil }
-            return closedAt.timeIntervalSince(ticket.createdAt) / 3600
+            return closedAt.timeIntervalSince(ticket.createdAt) / 3_600
         }.sorted()
 
         guard !resolutionTimes.isEmpty else { return 0 }
@@ -162,7 +162,12 @@ extension CustomerSupportService {
         }
     }
 
-    private func getAgentSurveyData(agentId: String, from: Date, to: Date) async -> (averageScore: Double, totalSurveys: Int, positiveCount: Int, negativeCount: Int) {
+    private func getAgentSurveyData(agentId: String, from: Date, to: Date) async -> (
+        averageScore: Double,
+        totalSurveys: Int,
+        positiveCount: Int,
+        negativeCount: Int
+    ) {
         // Mock survey data - in production, would query satisfactionSurveyService
         do {
             let surveys = try await satisfactionSurveyService.getAgentSurveys(agentId: agentId)

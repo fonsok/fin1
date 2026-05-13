@@ -21,27 +21,27 @@ struct ResolveTicketSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: ResponsiveDesign.spacing(16)) {
-                    ticketInfoSection
-                    actionTypeSection
-                    detailsSection
-                    if selectedAction == .resolve {
-                        confirmationSection
+                    self.ticketInfoSection
+                    self.actionTypeSection
+                    self.detailsSection
+                    if self.selectedAction == .resolve {
+                        self.confirmationSection
                     }
                 }
                 .padding()
             }
             .background(AppTheme.screenBackground.ignoresSafeArea())
-            .navigationTitle(selectedAction == .resolve ? "Ticket lösen" : "Ticket schließen")
+            .navigationTitle(self.selectedAction == .resolve ? "Ticket lösen" : "Ticket schließen")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Abbrechen") { dismiss() }
+                    Button("Abbrechen") { self.dismiss() }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(selectedAction == .resolve ? "Lösen" : "Schließen") {
-                        Task { await submitAction() }
+                    Button(self.selectedAction == .resolve ? "Lösen" : "Schließen") {
+                        Task { await self.submitAction() }
                     }
-                    .disabled(!isFormValid || isSubmitting)
+                    .disabled(!self.isFormValid || self.isSubmitting)
                 }
             }
         }
@@ -53,32 +53,32 @@ struct ResolveTicketSheet: View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
             HStack {
                 Image(systemName: "ticket.fill")
-                    .foregroundColor(ticketStatusColor)
-                Text(ticket.ticketNumber)
+                    .foregroundColor(self.ticketStatusColor)
+                Text(self.ticket.ticketNumber)
                     .font(ResponsiveDesign.headlineFont())
                     .fontWeight(.semibold)
                     .foregroundColor(AppTheme.fontColor)
                 Spacer()
-                CSStatusBadge(text: ticket.status.displayName, color: ticketStatusColor)
+                CSStatusBadge(text: self.ticket.status.displayName, color: self.ticketStatusColor)
             }
 
-            Text(ticket.subject)
+            Text(self.ticket.subject)
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
 
             HStack {
-                Label(ticket.customerName, systemImage: "person.fill")
+                Label(self.ticket.customerName, systemImage: "person.fill")
                 Spacer()
-                Label(ticket.createdAt.formatted(date: .abbreviated, time: .omitted), systemImage: "calendar")
+                Label(self.ticket.createdAt.formatted(date: .abbreviated, time: .omitted), systemImage: "calendar")
             }
             .font(ResponsiveDesign.captionFont())
             .foregroundColor(AppTheme.fontColor.opacity(0.7))
 
             // Show responses count
-            if !ticket.responses.isEmpty {
+            if !self.ticket.responses.isEmpty {
                 HStack {
                     Image(systemName: "bubble.left.and.bubble.right.fill")
-                    Text("\(ticket.responses.count) Antworten")
+                    Text("\(self.ticket.responses.count) Antworten")
                 }
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
@@ -101,16 +101,16 @@ struct ResolveTicketSheet: View {
             HStack(spacing: ResponsiveDesign.spacing(12)) {
                 ActionTypeButton(
                     action: .resolve,
-                    isSelected: selectedAction == .resolve
+                    isSelected: self.selectedAction == .resolve
                 ) {
-                    selectedAction = .resolve
+                    self.selectedAction = .resolve
                 }
 
                 ActionTypeButton(
                     action: .close,
-                    isSelected: selectedAction == .close
+                    isSelected: self.selectedAction == .close
                 ) {
-                    selectedAction = .close
+                    self.selectedAction = .close
                 }
             }
         }
@@ -124,10 +124,10 @@ struct ResolveTicketSheet: View {
     @ViewBuilder
     private var detailsSection: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
-            if selectedAction == .resolve {
-                resolveDetailsSection
+            if self.selectedAction == .resolve {
+                self.resolveDetailsSection
             } else {
-                closeDetailsSection
+                self.closeDetailsSection
             }
         }
         .padding()
@@ -146,7 +146,7 @@ struct ResolveTicketSheet: View {
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
 
-            TextEditor(text: $resolutionNote)
+            TextEditor(text: self.$resolutionNote)
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor)
                 .frame(minHeight: 100)
@@ -163,13 +163,13 @@ struct ResolveTicketSheet: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: ResponsiveDesign.spacing(8)) {
                         QuickResponseChip(text: "Problem gelöst") {
-                            resolutionNote = "Ihr Problem wurde erfolgreich gelöst. Vielen Dank für Ihre Geduld."
+                            self.resolutionNote = "Ihr Problem wurde erfolgreich gelöst. Vielen Dank für Ihre Geduld."
                         }
                         QuickResponseChip(text: "Wie besprochen") {
-                            resolutionNote = "Wie telefonisch besprochen, wurde das Problem behoben. Bei weiteren Fragen stehen wir Ihnen gerne zur Verfügung."
+                            self.resolutionNote = "Wie telefonisch besprochen, wurde das Problem behoben. Bei weiteren Fragen stehen wir Ihnen gerne zur Verfügung."
                         }
                         QuickResponseChip(text: "Einstellung angepasst") {
-                            resolutionNote = "Wir haben die erforderlichen Einstellungen in Ihrem Konto angepasst. Das Problem sollte nun behoben sein."
+                            self.resolutionNote = "Wir haben die erforderlichen Einstellungen in Ihrem Konto angepasst. Das Problem sollte nun behoben sein."
                         }
                     }
                 }
@@ -187,17 +187,17 @@ struct ResolveTicketSheet: View {
             ForEach(ClosureReason.allCases, id: \.self) { reason in
                 ClosureReasonButton(
                     reason: reason,
-                    isSelected: closureReason == reason
+                    isSelected: self.closureReason == reason
                 ) {
-                    closureReason = reason
+                    self.closureReason = reason
                 }
             }
 
-            if closureReason == .other {
+            if self.closureReason == .other {
                 CSInputField(
                     label: "Anderer Grund",
                     placeholder: "Grund eingeben...",
-                    text: $customClosureReason
+                    text: self.$customClosureReason
                 )
             }
         }
@@ -212,7 +212,7 @@ struct ResolveTicketSheet: View {
                 .fontWeight(.semibold)
                 .foregroundColor(AppTheme.fontColor)
 
-            Toggle(isOn: $customerConfirmed) {
+            Toggle(isOn: self.$customerConfirmed) {
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
                     Text("Kunde hat Lösung bestätigt")
                         .font(ResponsiveDesign.bodyFont())
@@ -233,7 +233,7 @@ struct ResolveTicketSheet: View {
     // MARK: - Helpers
 
     private var ticketStatusColor: Color {
-        switch ticket.status {
+        switch self.ticket.status {
         case .open, .inProgress: return AppTheme.accentLightBlue
         case .waitingForCustomer: return AppTheme.accentOrange
         case .escalated: return AppTheme.accentRed
@@ -243,32 +243,32 @@ struct ResolveTicketSheet: View {
     }
 
     private var isFormValid: Bool {
-        if selectedAction == .resolve {
-            return !resolutionNote.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        if self.selectedAction == .resolve {
+            return !self.resolutionNote.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         } else {
-            if closureReason == .other {
-                return !customClosureReason.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            if self.closureReason == .other {
+                return !self.customClosureReason.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             }
             return true
         }
     }
 
     private func submitAction() async {
-        isSubmitting = true
+        self.isSubmitting = true
         defer { isSubmitting = false }
 
-        if selectedAction == .resolve {
-            await viewModel.resolveTicket(
-                ticketId: ticket.id,
-                resolutionNote: resolutionNote,
-                customerConfirmed: customerConfirmed
+        if self.selectedAction == .resolve {
+            await self.viewModel.resolveTicket(
+                ticketId: self.ticket.id,
+                resolutionNote: self.resolutionNote,
+                customerConfirmed: self.customerConfirmed
             )
         } else {
-            let reason = closureReason == .other ? customClosureReason : closureReason.displayName
-            await viewModel.closeTicket(ticketId: ticket.id, closureReason: reason)
+            let reason = self.closureReason == .other ? self.customClosureReason : self.closureReason.displayName
+            await self.viewModel.closeTicket(ticketId: self.ticket.id, closureReason: reason)
         }
 
-        dismiss()
+        self.dismiss()
     }
 }
 
@@ -348,25 +348,25 @@ struct ActionTypeButton: View {
     let onTap: () -> Void
 
     var body: some View {
-        Button(action: onTap) {
+        Button(action: self.onTap) {
             VStack(spacing: ResponsiveDesign.spacing(8)) {
-                Image(systemName: action.icon)
+                Image(systemName: self.action.icon)
                     .font(ResponsiveDesign.headlineFont())
-                    .foregroundColor(isSelected ? .white : action.color)
+                    .foregroundColor(self.isSelected ? .white : self.action.color)
 
-                Text(action.displayName)
+                Text(self.action.displayName)
                     .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.medium)
-                    .foregroundColor(isSelected ? .white : AppTheme.fontColor)
+                    .foregroundColor(self.isSelected ? .white : AppTheme.fontColor)
 
-                Text(action.description)
+                Text(self.action.description)
                     .font(ResponsiveDesign.captionFont())
-                    .foregroundColor(isSelected ? .white.opacity(0.8) : AppTheme.fontColor.opacity(0.7))
+                    .foregroundColor(self.isSelected ? .white.opacity(0.8) : AppTheme.fontColor.opacity(0.7))
                     .multilineTextAlignment(.center)
             }
             .frame(maxWidth: .infinity)
             .padding()
-            .background(isSelected ? action.color : AppTheme.screenBackground)
+            .background(self.isSelected ? self.action.color : AppTheme.screenBackground)
             .cornerRadius(ResponsiveDesign.spacing(12))
         }
     }
@@ -380,24 +380,24 @@ struct ClosureReasonButton: View {
     let onTap: () -> Void
 
     var body: some View {
-        Button(action: onTap) {
+        Button(action: self.onTap) {
             HStack(spacing: ResponsiveDesign.spacing(12)) {
-                Image(systemName: reason.icon)
-                    .foregroundColor(isSelected ? .white : AppTheme.accentOrange)
+                Image(systemName: self.reason.icon)
+                    .foregroundColor(self.isSelected ? .white : AppTheme.accentOrange)
 
-                Text(reason.displayName)
+                Text(self.reason.displayName)
                     .font(ResponsiveDesign.bodyFont())
-                    .foregroundColor(isSelected ? .white : AppTheme.fontColor)
+                    .foregroundColor(self.isSelected ? .white : AppTheme.fontColor)
 
                 Spacer()
 
-                if isSelected {
+                if self.isSelected {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundColor(.white)
                 }
             }
             .padding()
-            .background(isSelected ? AppTheme.accentOrange : AppTheme.screenBackground)
+            .background(self.isSelected ? AppTheme.accentOrange : AppTheme.screenBackground)
             .cornerRadius(ResponsiveDesign.spacing(8))
         }
     }
@@ -410,8 +410,8 @@ struct QuickResponseChip: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
-            Text(text)
+        Button(action: self.action) {
+            Text(self.text)
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.accentLightBlue)
                 .padding(.horizontal, ResponsiveDesign.spacing(12))

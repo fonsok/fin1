@@ -23,7 +23,7 @@ struct TradeOverviewItem: Identifiable {
 
     var backgroundColor: Color {
         // Alternate row colors for better readability
-        return tradeNumber % 2 == 0 ? AppTheme.sectionBackground : AppTheme.sectionBackground.opacity(0.8)
+        return self.tradeNumber % 2 == 0 ? AppTheme.sectionBackground : AppTheme.sectionBackground.opacity(0.8)
     }
 }
 

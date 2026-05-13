@@ -21,17 +21,17 @@ struct KYCComplianceHeaderView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
             HStack(spacing: ResponsiveDesign.spacing(8)) {
-                Image(systemName: icon)
+                Image(systemName: self.icon)
                     .font(ResponsiveDesign.titleFont())
                     .foregroundColor(AppTheme.accentLightBlue)
 
-                Text(title)
+                Text(self.title)
                     .font(ResponsiveDesign.headlineFont())
                     .fontWeight(.bold)
                     .foregroundColor(AppTheme.fontColor)
             }
 
-            Text(description)
+            Text(self.description)
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.8))
                 .fixedSize(horizontal: false, vertical: true)
@@ -50,13 +50,13 @@ struct KYCRequestStatusBadge: View {
     let color: Color
 
     var body: some View {
-        Text(status)
+        Text(self.status)
             .font(ResponsiveDesign.captionFont())
             .fontWeight(.medium)
-            .foregroundColor(color)
+            .foregroundColor(self.color)
             .padding(.horizontal, ResponsiveDesign.spacing(10))
             .padding(.vertical, ResponsiveDesign.spacing(4))
-            .background(color.opacity(0.15))
+            .background(self.color.opacity(0.15))
             .cornerRadius(ResponsiveDesign.spacing(8))
     }
 }
@@ -69,13 +69,13 @@ struct KYCDeclarationCheckbox: View {
     let text: String
 
     var body: some View {
-        Button(action: { isChecked.toggle() }) {
+        Button(action: { self.isChecked.toggle() }) {
             HStack(alignment: .top, spacing: ResponsiveDesign.spacing(12)) {
-                Image(systemName: isChecked ? "checkmark.square.fill" : "square")
+                Image(systemName: self.isChecked ? "checkmark.square.fill" : "square")
                     .font(ResponsiveDesign.headlineFont())
-                    .foregroundColor(isChecked ? AppTheme.accentGreen : AppTheme.fontColor.opacity(0.5))
+                    .foregroundColor(self.isChecked ? AppTheme.accentGreen : AppTheme.fontColor.opacity(0.5))
 
-                Text(text)
+                Text(self.text)
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.8))
                     .multilineTextAlignment(.leading)
@@ -83,7 +83,7 @@ struct KYCDeclarationCheckbox: View {
         }
         .buttonStyle(PlainButtonStyle())
         .padding(ResponsiveDesign.spacing(16))
-        .background(isChecked ? AppTheme.accentGreen.opacity(0.1) : AppTheme.sectionBackground)
+        .background(self.isChecked ? AppTheme.accentGreen.opacity(0.1) : AppTheme.sectionBackground)
         .cornerRadius(ResponsiveDesign.spacing(12))
     }
 }
@@ -98,7 +98,7 @@ struct KYCErrorMessageView: View {
         HStack {
             Image(systemName: "exclamationmark.triangle.fill")
                 .foregroundColor(AppTheme.accentRed)
-            Text(message)
+            Text(self.message)
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.accentRed)
             Spacer()
@@ -125,7 +125,7 @@ struct KYCSectionHeader: View {
 
     var body: some View {
         HStack {
-            Text(title)
+            Text(self.title)
                 .font(ResponsiveDesign.headlineFont())
                 .fontWeight(.semibold)
                 .foregroundColor(AppTheme.fontColor)
@@ -136,10 +136,10 @@ struct KYCSectionHeader: View {
                 HStack(spacing: ResponsiveDesign.spacing(4)) {
                     Image(systemName: "checkmark.shield.fill")
                         .font(ResponsiveDesign.captionFont())
-                        .foregroundColor(badgeColor)
+                        .foregroundColor(self.badgeColor)
                     Text(badge)
                         .font(ResponsiveDesign.captionFont())
-                        .foregroundColor(badgeColor)
+                        .foregroundColor(self.badgeColor)
                 }
             }
         }
@@ -156,25 +156,25 @@ struct KYCSubmitButton: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
+        Button(action: self.action) {
             HStack {
-                if isLoading {
+                if self.isLoading {
                     ProgressView()
                         .progressViewStyle(CircularProgressViewStyle(tint: AppTheme.screenBackground))
                 } else {
                     Image(systemName: "paperplane.fill")
-                    Text(title)
+                    Text(self.title)
                         .font(ResponsiveDesign.headlineFont())
                         .fontWeight(.semibold)
                 }
             }
             .frame(maxWidth: .infinity)
             .frame(height: ResponsiveDesign.spacing(50))
-            .foregroundColor(isEnabled && !isLoading ? AppTheme.screenBackground : AppTheme.fontColor.opacity(0.5))
-            .background(isEnabled && !isLoading ? AppTheme.accentLightBlue : AppTheme.systemTertiaryBackground)
+            .foregroundColor(self.isEnabled && !self.isLoading ? AppTheme.screenBackground : AppTheme.fontColor.opacity(0.5))
+            .background(self.isEnabled && !self.isLoading ? AppTheme.accentLightBlue : AppTheme.systemTertiaryBackground)
             .cornerRadius(ResponsiveDesign.spacing(12))
         }
-        .disabled(!isEnabled || isLoading)
+        .disabled(!self.isEnabled || self.isLoading)
         .padding(.top, ResponsiveDesign.spacing(8))
     }
 }

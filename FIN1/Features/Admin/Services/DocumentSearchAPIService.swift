@@ -29,14 +29,14 @@ struct DocumentSearchFilters: Equatable, Sendable {
     var dateTo: Date?
 
     var isEmpty: Bool {
-        documentNumber.trimmingCharacters(in: .whitespaces).isEmpty
-            && freeText.trimmingCharacters(in: .whitespaces).isEmpty
-            && types.isEmpty
-            && userId.trimmingCharacters(in: .whitespaces).isEmpty
-            && investmentId.trimmingCharacters(in: .whitespaces).isEmpty
-            && tradeId.trimmingCharacters(in: .whitespaces).isEmpty
-            && dateFrom == nil
-            && dateTo == nil
+        self.documentNumber.trimmingCharacters(in: .whitespaces).isEmpty
+            && self.freeText.trimmingCharacters(in: .whitespaces).isEmpty
+            && self.types.isEmpty
+            && self.userId.trimmingCharacters(in: .whitespaces).isEmpty
+            && self.investmentId.trimmingCharacters(in: .whitespaces).isEmpty
+            && self.tradeId.trimmingCharacters(in: .whitespaces).isEmpty
+            && self.dateFrom == nil
+            && self.dateTo == nil
     }
 }
 
@@ -96,8 +96,8 @@ final class DocumentSearchAPIService: DocumentSearchAPIServiceProtocol, @uncheck
         let tradeId = filters.tradeId.trimmingCharacters(in: .whitespacesAndNewlines)
         if !tradeId.isEmpty { params["tradeId"] = tradeId }
 
-        if let dateFrom = filters.dateFrom { params["dateFrom"] = isoFormatter.string(from: dateFrom) }
-        if let dateTo = filters.dateTo { params["dateTo"] = isoFormatter.string(from: dateTo) }
+        if let dateFrom = filters.dateFrom { params["dateFrom"] = self.isoFormatter.string(from: dateFrom) }
+        if let dateTo = filters.dateTo { params["dateTo"] = self.isoFormatter.string(from: dateTo) }
 
         let response: SearchDocumentsResponse = try await parseAPIClient.callFunction(
             "searchDocuments",
@@ -105,7 +105,7 @@ final class DocumentSearchAPIService: DocumentSearchAPIServiceProtocol, @uncheck
         )
 
         return DocumentSearchPageResult(
-            items: response.items.map { $0.toDocument(isoFormatter: isoFormatter) },
+            items: response.items.map { $0.toDocument(isoFormatter: self.isoFormatter) },
             hasMore: response.hasMore,
             total: response.total,
             limit: response.limit,
@@ -118,7 +118,7 @@ final class DocumentSearchAPIService: DocumentSearchAPIServiceProtocol, @uncheck
             "getDocumentByObjectId",
             parameters: ["objectId": objectId]
         )
-        return response.toDocument(isoFormatter: isoFormatter)
+        return response.toDocument(isoFormatter: self.isoFormatter)
     }
 }
 
@@ -152,32 +152,32 @@ private struct DocumentSearchRow: Decodable {
     let accountingSummaryText: String?
 
     func toDocument(isoFormatter: ISO8601DateFormatter) -> Document {
-        let uploaded = uploadedAt.flatMap { isoFormatter.date(from: $0) } ?? Date()
-        let verified = verifiedAt.flatMap { isoFormatter.date(from: $0) }
-        let role = statementRole.flatMap { UserRole(rawValue: $0) }
+        let uploaded = self.uploadedAt.flatMap { isoFormatter.date(from: $0) } ?? Date()
+        let verified = self.verifiedAt.flatMap { isoFormatter.date(from: $0) }
+        let role = self.statementRole.flatMap { UserRole(rawValue: $0) }
         let docType = DocumentType(rawValue: type) ?? .other
         let docStatus = DocumentStatus(rawValue: status) ?? .pending
 
         return Document(
-            id: objectId,
-            userId: userId,
-            name: name,
+            id: self.objectId,
+            userId: self.userId,
+            name: self.name,
             type: docType,
             status: docStatus,
-            fileURL: fileURL,
-            size: size,
+            fileURL: self.fileURL,
+            size: self.size,
             uploadedAt: uploaded,
             verifiedAt: verified,
             expiresAt: nil,
             invoiceData: nil,
-            tradeId: tradeId,
-            investmentId: investmentId,
-            statementYear: statementYear,
-            statementMonth: statementMonth,
+            tradeId: self.tradeId,
+            investmentId: self.investmentId,
+            statementYear: self.statementYear,
+            statementMonth: self.statementMonth,
             statementRole: role,
-            documentNumber: documentNumber ?? accountingDocumentNumber,
+            documentNumber: self.documentNumber ?? self.accountingDocumentNumber,
             traderCommissionRateSnapshot: nil,
-            accountingSummaryText: accountingSummaryText
+            accountingSummaryText: self.accountingSummaryText
         )
     }
 }

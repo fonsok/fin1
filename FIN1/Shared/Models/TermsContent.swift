@@ -23,7 +23,7 @@ struct TermsContentSection: Codable, Hashable, Identifiable {
     let content: String
     let icon: String?
 
-    var titleOrEmpty: String { title?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "" }
+    var titleOrEmpty: String { self.title?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "" }
 }
 
 enum LegalDocumentType: String, Codable, CaseIterable {

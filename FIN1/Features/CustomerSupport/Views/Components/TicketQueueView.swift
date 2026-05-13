@@ -12,9 +12,9 @@ struct TicketQueueView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: ResponsiveDesign.spacing(16)) {
-                    queueStatsSection
-                    agentWorkloadSection
-                    unassignedTicketsSection
+                    self.queueStatsSection
+                    self.agentWorkloadSection
+                    self.unassignedTicketsSection
                 }
                 .padding()
             }
@@ -23,19 +23,19 @@ struct TicketQueueView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Schließen") { dismiss() }
+                    Button("Schließen") { self.dismiss() }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: {
-                        Task { await viewModel.load() }
+                        Task { await self.viewModel.load() }
                     }, label: {
                         Image(systemName: "arrow.clockwise")
                     })
                 }
             }
-            .sheet(isPresented: $viewModel.showAssignTicketSheet) {
+            .sheet(isPresented: self.$viewModel.showAssignTicketSheet) {
                 if let ticket = viewModel.ticketForAction {
-                    AssignTicketSheet(ticket: ticket, viewModel: viewModel)
+                    AssignTicketSheet(ticket: ticket, viewModel: self.viewModel)
                 }
             }
         }
@@ -57,23 +57,23 @@ struct TicketQueueView: View {
             HStack(spacing: ResponsiveDesign.spacing(16)) {
                 QueueStatCard(
                     title: "In Warteschlange",
-                    value: "\(unassignedTickets.count)",
+                    value: "\(self.unassignedTickets.count)",
                     icon: "tray.full.fill",
-                    color: unassignedTickets.isEmpty ? AppTheme.accentGreen : AppTheme.accentOrange
+                    color: self.unassignedTickets.isEmpty ? AppTheme.accentGreen : AppTheme.accentOrange
                 )
 
                 QueueStatCard(
                     title: "Agenten verfügbar",
-                    value: "\(availableAgentsCount)/\(viewModel.availableAgents.count)",
+                    value: "\(self.availableAgentsCount)/\(self.viewModel.availableAgents.count)",
                     icon: "person.2.fill",
-                    color: availableAgentsCount > 0 ? AppTheme.accentGreen : AppTheme.accentRed
+                    color: self.availableAgentsCount > 0 ? AppTheme.accentGreen : AppTheme.accentRed
                 )
 
                 QueueStatCard(
                     title: "Ø Auslastung",
-                    value: "\(Int(averageWorkload))%",
+                    value: "\(Int(self.averageWorkload))%",
                     icon: "gauge.with.needle.fill",
-                    color: averageWorkload < 60 ? AppTheme.accentGreen : averageWorkload < 80 ? AppTheme.accentOrange : AppTheme.accentRed
+                    color: self.averageWorkload < 60 ? AppTheme.accentGreen : self.averageWorkload < 80 ? AppTheme.accentOrange : AppTheme.accentRed
                 )
             }
         }
@@ -95,7 +95,7 @@ struct TicketQueueView: View {
                     .foregroundColor(AppTheme.fontColor)
             }
 
-            ForEach(viewModel.availableAgents) { agent in
+            ForEach(self.viewModel.availableAgents) { agent in
                 AgentWorkloadRow(agent: agent)
             }
         }
@@ -118,17 +118,17 @@ struct TicketQueueView: View {
 
                 Spacer()
 
-                Text("\(unassignedTickets.count)")
+                Text("\(self.unassignedTickets.count)")
                     .font(ResponsiveDesign.captionFont())
                     .fontWeight(.bold)
                     .foregroundColor(.white)
                     .padding(.horizontal, ResponsiveDesign.spacing(8))
                     .padding(.vertical, ResponsiveDesign.spacing(4))
-                    .background(unassignedTickets.isEmpty ? AppTheme.accentGreen : AppTheme.accentOrange)
+                    .background(self.unassignedTickets.isEmpty ? AppTheme.accentGreen : AppTheme.accentOrange)
                     .cornerRadius(ResponsiveDesign.spacing(8))
             }
 
-            if unassignedTickets.isEmpty {
+            if self.unassignedTickets.isEmpty {
                 VStack(spacing: ResponsiveDesign.spacing(8)) {
                     Image(systemName: "checkmark.circle.fill")
                         .font(ResponsiveDesign.largeTitleFont())
@@ -140,10 +140,10 @@ struct TicketQueueView: View {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, ResponsiveDesign.spacing(24))
             } else {
-                ForEach(unassignedTickets) { ticket in
+                ForEach(self.unassignedTickets) { ticket in
                     UnassignedTicketRow(ticket: ticket) {
-                        viewModel.ticketForAction = ticket
-                        viewModel.showAssignTicketSheet = true
+                        self.viewModel.ticketForAction = ticket
+                        self.viewModel.showAssignTicketSheet = true
                     }
                 }
             }
@@ -156,17 +156,17 @@ struct TicketQueueView: View {
     // MARK: - Computed Properties
 
     private var unassignedTickets: [SupportTicket] {
-        viewModel.supportTickets.filter { $0.assignedTo == nil }
+        self.viewModel.supportTickets.filter { $0.assignedTo == nil }
     }
 
     private var availableAgentsCount: Int {
-        viewModel.availableAgents.filter { $0.canAcceptTickets }.count
+        self.viewModel.availableAgents.filter { $0.canAcceptTickets }.count
     }
 
     private var averageWorkload: Double {
-        guard !viewModel.availableAgents.isEmpty else { return 0 }
-        let totalWorkload = viewModel.availableAgents.reduce(0.0) { $0 + $1.workloadPercentage }
-        return totalWorkload / Double(viewModel.availableAgents.count)
+        guard !self.viewModel.availableAgents.isEmpty else { return 0 }
+        let totalWorkload = self.viewModel.availableAgents.reduce(0.0) { $0 + $1.workloadPercentage }
+        return totalWorkload / Double(self.viewModel.availableAgents.count)
     }
 }
 
@@ -180,16 +180,16 @@ private struct QueueStatCard: View {
 
     var body: some View {
         VStack(spacing: ResponsiveDesign.spacing(4)) {
-            Image(systemName: icon)
+            Image(systemName: self.icon)
                 .font(ResponsiveDesign.bodyFont())
-                .foregroundColor(color)
+                .foregroundColor(self.color)
 
-            Text(value)
+            Text(self.value)
                 .font(ResponsiveDesign.headlineFont())
                 .fontWeight(.bold)
                 .foregroundColor(AppTheme.fontColor)
 
-            Text(title)
+            Text(self.title)
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.6))
                 .multilineTextAlignment(.center)
@@ -212,29 +212,29 @@ private struct AgentWorkloadRow: View {
             // Avatar
             ZStack {
                 Circle()
-                    .fill(agent.canAcceptTickets ? AppTheme.accentLightBlue.opacity(0.2) : AppTheme.fontColor.opacity(0.1))
+                    .fill(self.agent.canAcceptTickets ? AppTheme.accentLightBlue.opacity(0.2) : AppTheme.fontColor.opacity(0.1))
                     .frame(width: 36, height: 36)
 
-                Text(agent.name.prefix(2).uppercased())
+                Text(self.agent.name.prefix(2).uppercased())
                     .font(ResponsiveDesign.captionFont())
                     .fontWeight(.semibold)
-                    .foregroundColor(agent.canAcceptTickets ? AppTheme.accentLightBlue : AppTheme.fontColor.opacity(0.5))
+                    .foregroundColor(self.agent.canAcceptTickets ? AppTheme.accentLightBlue : AppTheme.fontColor.opacity(0.5))
             }
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack {
-                    Text(agent.name)
+                    Text(self.agent.name)
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(AppTheme.fontColor)
 
-                    if !agent.isAvailable {
+                    if !self.agent.isAvailable {
                         Text("(offline)")
                             .font(ResponsiveDesign.captionFont())
                             .foregroundColor(AppTheme.fontColor.opacity(0.5))
                     }
                 }
 
-                Text(agent.specializations.prefix(2).joined(separator: ", "))
+                Text(self.agent.specializations.prefix(2).joined(separator: ", "))
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.6))
                     .lineLimit(1)
@@ -244,10 +244,10 @@ private struct AgentWorkloadRow: View {
 
             // Workload bar
             VStack(alignment: .trailing, spacing: 2) {
-                Text("\(agent.currentTicketCount)/\(CSRAgent.maxTickets)")
+                Text("\(self.agent.currentTicketCount)/\(CSRAgent.maxTickets)")
                     .font(ResponsiveDesign.captionFont())
                     .fontWeight(.medium)
-                    .foregroundColor(workloadColor)
+                    .foregroundColor(self.workloadColor)
 
                 GeometryReader { geo in
                     ZStack(alignment: .leading) {
@@ -255,8 +255,8 @@ private struct AgentWorkloadRow: View {
                             .fill(AppTheme.screenBackground)
 
                         RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(2))
-                            .fill(workloadColor)
-                            .frame(width: geo.size.width * min(agent.workloadPercentage / 100, 1.0))
+                            .fill(self.workloadColor)
+                            .frame(width: geo.size.width * min(self.agent.workloadPercentage / 100, 1.0))
                     }
                 }
                 .frame(width: 60, height: 4)
@@ -266,8 +266,8 @@ private struct AgentWorkloadRow: View {
     }
 
     private var workloadColor: Color {
-        if agent.workloadPercentage < 50 { return AppTheme.accentGreen }
-        if agent.workloadPercentage < 80 { return AppTheme.accentOrange }
+        if self.agent.workloadPercentage < 50 { return AppTheme.accentGreen }
+        if self.agent.workloadPercentage < 80 { return AppTheme.accentOrange }
         return AppTheme.accentRed
     }
 }
@@ -282,25 +282,25 @@ private struct UnassignedTicketRow: View {
         HStack(spacing: ResponsiveDesign.spacing(12)) {
             // Priority indicator
             Circle()
-                .fill(priorityColor)
+                .fill(self.priorityColor)
                 .frame(width: 8, height: 8)
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack {
-                    Text(ticket.ticketNumber)
+                    Text(self.ticket.ticketNumber)
                         .font(ResponsiveDesign.captionFont())
                         .fontWeight(.semibold)
                         .foregroundColor(AppTheme.fontColor.opacity(0.7))
 
-                    CSStatusBadge(text: ticket.priority.displayName, color: priorityColor)
+                    CSStatusBadge(text: self.ticket.priority.displayName, color: self.priorityColor)
                 }
 
-                Text(ticket.subject)
+                Text(self.ticket.subject)
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.fontColor)
                     .lineLimit(1)
 
-                Text(ticket.customerName)
+                Text(self.ticket.customerName)
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.6))
             }
@@ -309,11 +309,11 @@ private struct UnassignedTicketRow: View {
 
             // Time waiting
             VStack(alignment: .trailing, spacing: 2) {
-                Text(timeAgo(ticket.createdAt))
+                Text(self.timeAgo(self.ticket.createdAt))
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.5))
 
-                Button(action: onAssign) {
+                Button(action: self.onAssign) {
                     Text("Zuweisen")
                         .font(ResponsiveDesign.captionFont())
                         .fontWeight(.medium)
@@ -331,7 +331,7 @@ private struct UnassignedTicketRow: View {
     }
 
     private var priorityColor: Color {
-        switch ticket.priority {
+        switch self.ticket.priority {
         case .low: return AppTheme.accentGreen
         case .medium: return AppTheme.accentLightBlue
         case .high: return AppTheme.accentOrange

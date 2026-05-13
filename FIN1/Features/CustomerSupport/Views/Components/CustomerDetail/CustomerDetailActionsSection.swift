@@ -13,36 +13,36 @@ struct CustomerDetailActionsSection: View {
                 .foregroundColor(AppTheme.fontColor)
 
             VStack(spacing: ResponsiveDesign.spacing(8)) {
-                if viewModel.hasPermission(.createSupportTicket) {
+                if self.viewModel.hasPermission(.createSupportTicket) {
                     CSActionButton(
                         icon: "ticket.fill",
                         title: "Support-Ticket erstellen",
                         color: AppTheme.accentLightBlue
                     ) {
-                        viewModel.openCreateTicketSheet(userId: customer.id)
+                        self.viewModel.openCreateTicketSheet(userId: self.customer.id)
                     }
                 }
 
-                if viewModel.hasPermission(.resetCustomerPassword) {
+                if self.viewModel.hasPermission(.resetCustomerPassword) {
                     CSActionButton(
                         icon: "key.fill",
                         title: "Passwort zurücksetzen",
                         color: AppTheme.accentOrange
                     ) {
                         Task {
-                            await viewModel.initiatePasswordReset(customerNumber: customer.customerNumber)
+                            await self.viewModel.initiatePasswordReset(customerNumber: self.customer.customerNumber)
                         }
                     }
                 }
 
-                if viewModel.hasPermission(.unlockCustomerAccount) && customer.accountStatus == .locked {
+                if self.viewModel.hasPermission(.unlockCustomerAccount) && self.customer.accountStatus == .locked {
                     CSActionButton(
                         icon: "lock.open.fill",
                         title: "Konto entsperren",
                         color: AppTheme.accentGreen
                     ) {
                         Task {
-                            await viewModel.unlockAccount(customerNumber: customer.customerNumber, reason: "Kundenanfrage")
+                            await self.viewModel.unlockAccount(customerNumber: self.customer.customerNumber, reason: "Kundenanfrage")
                         }
                     }
                 }

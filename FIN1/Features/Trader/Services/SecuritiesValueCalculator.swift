@@ -47,7 +47,7 @@ struct SecuritiesValueCalculator {
             return 0.0
         }
 
-        let upperBound = calculateUpperBound(
+        let upperBound = self.calculateUpperBound(
             maxPossibleQuantity: maxPossibleQuantity,
             denomination: denomination,
             verbose: verbose
@@ -58,7 +58,7 @@ struct SecuritiesValueCalculator {
             return 0.0
         }
 
-        let bestQuantity = findOptimalQuantity(
+        let bestQuantity = self.findOptimalQuantity(
             upperBound: upperBound,
             pricePerUnit: pricePerUnit,
             totalCapital: totalCapital,
@@ -73,7 +73,9 @@ struct SecuritiesValueCalculator {
             print("      📦 Best quantity: \(bestQuantity) units")
             print("      💵 Securities value: €\(String(format: "%.2f", securitiesValue))")
             print("      💵 Remaining capital: €\(String(format: "%.2f", remainingCapital))")
-            print("      📊 Capital utilization: \(totalCapital > 0 ? String(format: "%.2f", ((totalCapital - remainingCapital) / totalCapital) * 100) : "0")%")
+            print(
+                "      📊 Capital utilization: \(totalCapital > 0 ? String(format: "%.2f", ((totalCapital - remainingCapital) / totalCapital) * 100) : "0")%"
+            )
         }
 
         return securitiesValue
@@ -110,7 +112,7 @@ struct SecuritiesValueCalculator {
 
         if let denomination = denomination {
             if verbose { print("   🔍 Searching with denomination constraint: \(denomination)") }
-            bestQuantity = searchWithDenomination(
+            bestQuantity = self.searchWithDenomination(
                 upperBound: upperBound,
                 denomination: denomination,
                 pricePerUnit: pricePerUnit,
@@ -119,7 +121,7 @@ struct SecuritiesValueCalculator {
             )
         } else {
             if verbose { print("   🔍 Using binary search (no denomination)") }
-            bestQuantity = binarySearch(
+            bestQuantity = self.binarySearch(
                 upperBound: upperBound,
                 pricePerUnit: pricePerUnit,
                 totalCapital: totalCapital,
@@ -146,7 +148,9 @@ struct SecuritiesValueCalculator {
             let totalCost = orderAmount + fees
 
             if verbose {
-                print("      Testing quantity \(testQuantity): orderAmount=€\(String(format: "%.2f", orderAmount)), fees=€\(String(format: "%.2f", fees)), totalCost=€\(String(format: "%.2f", totalCost)), capital=€\(String(format: "%.2f", totalCapital))")
+                print(
+                    "      Testing quantity \(testQuantity): orderAmount=€\(String(format: "%.2f", orderAmount)), fees=€\(String(format: "%.2f", fees)), totalCost=€\(String(format: "%.2f", totalCost)), capital=€\(String(format: "%.2f", totalCapital))"
+                )
             }
 
             if totalCost <= totalCapital {
@@ -181,12 +185,16 @@ struct SecuritiesValueCalculator {
             if totalCost <= totalCapital {
                 bestQuantity = mid
                 if verbose {
-                    print("      ✅ Can afford \(mid) units (orderAmount=€\(String(format: "%.2f", orderAmount)), fees=€\(String(format: "%.2f", fees)), totalCost=€\(String(format: "%.2f", totalCost)))")
+                    print(
+                        "      ✅ Can afford \(mid) units (orderAmount=€\(String(format: "%.2f", orderAmount)), fees=€\(String(format: "%.2f", fees)), totalCost=€\(String(format: "%.2f", totalCost)))"
+                    )
                 }
                 low = mid + 1
             } else {
                 if verbose {
-                    print("      ❌ Cannot afford \(mid) units (totalCost=€\(String(format: "%.2f", totalCost)) > capital=€\(String(format: "%.2f", totalCapital)))")
+                    print(
+                        "      ❌ Cannot afford \(mid) units (totalCost=€\(String(format: "%.2f", totalCost)) > capital=€\(String(format: "%.2f", totalCapital)))"
+                    )
                 }
                 high = mid - 1
             }

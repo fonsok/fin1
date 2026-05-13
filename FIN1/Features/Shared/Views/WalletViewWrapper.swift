@@ -22,6 +22,6 @@ struct WalletViewWrapper: View {
     }
     
     var body: some View {
-        WalletView(viewModel: viewModel)
+        WalletView(viewModel: self.viewModel)
     }
 }

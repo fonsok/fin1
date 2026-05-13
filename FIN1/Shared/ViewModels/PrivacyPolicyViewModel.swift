@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 /// ViewModel for Privacy Policy view
 /// Manages section expansion, search filtering, and jurisdiction-based content
@@ -36,14 +36,14 @@ final class PrivacyPolicyViewModel: ObservableObject {
 
         // Determine jurisdiction from current user
         if let currentUser = userService?.currentUser {
-            currentJurisdiction = PrivacyPolicyDataProvider.determineJurisdiction(
+            self.currentJurisdiction = PrivacyPolicyDataProvider.determineJurisdiction(
                 country: currentUser.country,
                 nationality: currentUser.nationality,
                 isNotUSCitizen: currentUser.isNotUSCitizen
             )
         } else {
             // Default to German if no user data available
-            currentJurisdiction = .german
+            self.currentJurisdiction = .german
         }
 
         Task { [weak self] in
@@ -54,7 +54,7 @@ final class PrivacyPolicyViewModel: ObservableObject {
     // MARK: - Computed Properties
 
     private var bundledSections: [PrivacySection] {
-        PrivacyPolicyDataProvider.sections(for: currentJurisdiction)
+        PrivacyPolicyDataProvider.sections(for: self.currentJurisdiction)
     }
 
     private var serverSections: [PrivacySection] {
@@ -75,17 +75,17 @@ final class PrivacyPolicyViewModel: ObservableObject {
     var isUsingServerContent: Bool {
         guard let serverPrivacyContent else { return false }
         guard !serverPrivacyContent.sections.isEmpty else { return false }
-        return serverPrivacyContent.sections.count >= bundledSections.count
+        return serverPrivacyContent.sections.count >= self.bundledSections.count
     }
 
     var displayedVersion: String {
-        isUsingServerContent
-            ? (serverPrivacyContent?.version ?? TermsVersionConstants.currentPrivacyPolicyVersion)
+        self.isUsingServerContent
+            ? (self.serverPrivacyContent?.version ?? TermsVersionConstants.currentPrivacyPolicyVersion)
             : TermsVersionConstants.currentPrivacyPolicyVersion
     }
 
     var displayedEffectiveDateISO: String? {
-        isUsingServerContent ? serverPrivacyContent?.effectiveDate : nil
+        self.isUsingServerContent ? self.serverPrivacyContent?.effectiveDate : nil
     }
 
     var displayedLastUpdatedText: String {
@@ -93,60 +93,60 @@ final class PrivacyPolicyViewModel: ObservableObject {
            let formatted = ISO8601DisplayDateFormatter.formattedDateOrNil(from: iso) {
             return formatted
         }
-        return isAmericanVersion ? "December 2024" : "Dezember 2024"
+        return self.isAmericanVersion ? "December 2024" : "Dezember 2024"
     }
 
     var sections: [PrivacySection] {
-        isUsingServerContent ? serverSections : bundledSections
+        self.isUsingServerContent ? self.serverSections : self.bundledSections
     }
 
     var filteredSections: [PrivacySection] {
-        guard !searchQuery.isEmpty else { return sections }
-        let query = searchQuery.lowercased()
-        return sections.filter { section in
+        guard !self.searchQuery.isEmpty else { return self.sections }
+        let query = self.searchQuery.lowercased()
+        return self.sections.filter { section in
             section.title.lowercased().contains(query) ||
-            section.content.lowercased().contains(query)
+                section.content.lowercased().contains(query)
         }
     }
 
     var hasNoSearchResults: Bool {
-        !searchQuery.isEmpty && filteredSections.isEmpty
+        !self.searchQuery.isEmpty && self.filteredSections.isEmpty
     }
 
     var isAmericanVersion: Bool {
-        currentJurisdiction == .american
+        self.currentJurisdiction == .american
     }
 
     var isGermanVersion: Bool {
-        currentJurisdiction == .german
+        self.currentJurisdiction == .german
     }
 
     // MARK: - Section Management
 
     func toggleSection(_ section: PrivacySection) {
-        if expandedSectionIds.contains(section.id) {
-            expandedSectionIds.remove(section.id)
+        if self.expandedSectionIds.contains(section.id) {
+            self.expandedSectionIds.remove(section.id)
         } else {
-            expandedSectionIds.insert(section.id)
+            self.expandedSectionIds.insert(section.id)
         }
     }
 
     func isExpanded(_ section: PrivacySection) -> Bool {
-        expandedSectionIds.contains(section.id)
+        self.expandedSectionIds.contains(section.id)
     }
 
     func expandAll() {
-        expandedSectionIds = Set(sections.map(\.id))
+        self.expandedSectionIds = Set(self.sections.map(\.id))
     }
 
     func collapseAll() {
-        expandedSectionIds.removeAll()
+        self.expandedSectionIds.removeAll()
     }
 
     // MARK: - Jurisdiction Management (for testing)
 
     func toggleJurisdiction() {
-        currentJurisdiction = (currentJurisdiction == .american) ? .german : .american
+        self.currentJurisdiction = (self.currentJurisdiction == .american) ? .german : .american
         Task { [weak self] in
             await self?.loadServerDrivenPrivacyIfAvailable()
         }
@@ -155,7 +155,7 @@ final class PrivacyPolicyViewModel: ObservableObject {
     // MARK: - Server-Driven Privacy (Hybrid)
 
     private var languageForCurrentJurisdiction: TermsOfServiceDataProvider.Language {
-        currentJurisdiction == .american ? .english : .german
+        self.currentJurisdiction == .american ? .english : .german
     }
 
     private func loadServerDrivenPrivacyIfAvailable() async {
@@ -167,8 +167,8 @@ final class PrivacyPolicyViewModel: ObservableObject {
             return
         }
 
-        let language = languageForCurrentJurisdiction
-        let bundledCount = bundledSections.count
+        let language = self.languageForCurrentJurisdiction
+        let bundledCount = self.bundledSections.count
 
         // 1) Try server
         do {

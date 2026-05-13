@@ -34,7 +34,7 @@ extension TraderAccountStatementBuilder {
         )
 
         let allEntries = baseSnapshot.entries + walletEntries
-        let recalculatedEntries = recalculateBalanceAfter(
+        let recalculatedEntries = self.recalculateBalanceAfter(
             entries: allEntries,
             openingBalance: baseSnapshot.openingBalance
         )
@@ -58,7 +58,7 @@ extension TraderAccountStatementBuilder {
         }
 
         do {
-            let walletTransactions = try await paymentService.getTransactionHistory(limit: 1000, offset: 0)
+            let walletTransactions = try await paymentService.getTransactionHistory(limit: 1_000, offset: 0)
             let userWalletTransactions = walletTransactions.filter { $0.userId == userId }
 
             let walletEntries = userWalletTransactions.map { transaction in
@@ -78,7 +78,9 @@ extension TraderAccountStatementBuilder {
 
             return (walletEntries, walletDelta)
         } catch {
-            print("⚠️ TraderAccountStatementBuilder: Wallet transactions unavailable (\(error.localizedDescription)) — showing invoice-based entries only")
+            print(
+                "⚠️ TraderAccountStatementBuilder: Wallet transactions unavailable (\(error.localizedDescription)) — showing invoice-based entries only"
+            )
             return ([], 0.0)
         }
     }

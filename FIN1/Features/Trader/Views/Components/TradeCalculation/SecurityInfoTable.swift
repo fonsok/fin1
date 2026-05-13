@@ -28,16 +28,16 @@ struct SecurityInfoTable: View {
 
             // Data Row
             HStack {
-                Text(breakdown.wknIsin)
+                Text(self.breakdown.wknIsin)
                     .tradeCalculationValueStyle()
                 Spacer()
-                Text(breakdown.direction)
+                Text(self.breakdown.direction)
                     .tradeCalculationValueStyle()
                 Spacer()
-                Text(breakdown.underlying)
+                Text(self.breakdown.underlying)
                     .tradeCalculationValueStyle()
                 Spacer()
-                Text(breakdown.strikePrice?.formatted(.number.precision(.fractionLength(2))) ?? "N/A")
+                Text(self.breakdown.strikePrice?.formatted(.number.precision(.fractionLength(2))) ?? "N/A")
                     .tradeCalculationValueStyle()
             }
             .padding(.vertical, ResponsiveDesign.spacing(8))

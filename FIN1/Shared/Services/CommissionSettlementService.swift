@@ -51,7 +51,7 @@ final class CommissionSettlementService: CommissionSettlementServiceProtocol {
 
     func settleCommissions(for traderId: String) async throws -> CommissionSettlement {
         // 1. Get all unsettled commissions for this trader
-        let unsettledCommissions = commissionAccumulationService.getUnsettledCommissions(for: traderId)
+        let unsettledCommissions = self.commissionAccumulationService.getUnsettledCommissions(for: traderId)
 
         guard !unsettledCommissions.isEmpty else {
             throw CommissionSettlementError.noUnsettledCommissions
@@ -101,7 +101,7 @@ final class CommissionSettlementService: CommissionSettlementServiceProtocol {
 
         // 6. Mark commissions as settled
         let commissionIds = unsettledCommissions.map { $0.id }
-        await commissionAccumulationService.markCommissionsAsSettled(
+        await self.commissionAccumulationService.markCommissionsAsSettled(
             commissionIds: commissionIds,
             settlementId: settlement.id
         )
@@ -124,7 +124,7 @@ final class CommissionSettlementService: CommissionSettlementServiceProtocol {
     }
 
     func settleAllCommissions() async throws -> [CommissionSettlement] {
-        let commissionsByTrader = commissionAccumulationService.getUnsettledCommissionsByTrader()
+        let commissionsByTrader = self.commissionAccumulationService.getUnsettledCommissionsByTrader()
 
         var settlements: [CommissionSettlement] = []
 
@@ -171,10 +171,10 @@ final class CommissionSettlementService: CommissionSettlementServiceProtocol {
         let creditNote = Invoice.creditNote(
             totalCommissionAmount: totalCommission,
             customerInfo: customerInfo,
-            transactionIdService: transactionIdService,
+            transactionIdService: self.transactionIdService,
             tradeNumbers: tradeNumbers,
             commissions: unsettledCommissions,
-            traderCommissionRateSnapshot: configurationService.effectiveCommissionRate
+            traderCommissionRateSnapshot: self.configurationService.effectiveCommissionRate
         )
 
         // Save credit note as document
@@ -236,7 +236,7 @@ final class CommissionSettlementService: CommissionSettlementServiceProtocol {
         let invoice = Invoice.commissionInvoice(
             totalCommissionAmount: totalCommission,
             customerInfo: customerInfo,
-            transactionIdService: transactionIdService,
+            transactionIdService: self.transactionIdService,
             commissions: commissions
         )
 

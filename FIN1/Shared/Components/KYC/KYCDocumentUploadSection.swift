@@ -1,5 +1,5 @@
-import SwiftUI
 import PhotosUI
+import SwiftUI
 import UniformTypeIdentifiers
 
 // MARK: - KYC Document Upload Section
@@ -21,29 +21,29 @@ struct KYCDocumentUploadSection<DocumentType: Hashable>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(16)) {
-            KYCSectionHeader(title: title)
+            KYCSectionHeader(title: self.title)
 
-            documentTypePicker
-            documentTypeInfo
-            uploadArea
+            self.documentTypePicker
+            self.documentTypeInfo
+            self.uploadArea
         }
-        .sheet(isPresented: $showingCameraPicker) {
-            CameraPicker(selectedImage: $selectedImage)
+        .sheet(isPresented: self.$showingCameraPicker) {
+            CameraPicker(selectedImage: self.$selectedImage)
         }
         .photosPicker(
-            isPresented: $showingPhotoPicker,
-            selection: $selectedPhotoItem,
+            isPresented: self.$showingPhotoPicker,
+            selection: self.$selectedPhotoItem,
             matching: .images
         )
-        .onChange(of: selectedPhotoItem) { _, newItem in
-            PhotoPickerHelper.handleSelection(newItem, binding: $selectedImage)
+        .onChange(of: self.selectedPhotoItem) { _, newItem in
+            PhotoPickerHelper.handleSelection(newItem, binding: self.$selectedImage)
         }
         .fileImporter(
-            isPresented: $showingFilePicker,
+            isPresented: self.$showingFilePicker,
             allowedContentTypes: [.image, .pdf],
             allowsMultipleSelection: false
         ) { result in
-            handleFileImport(result)
+            self.handleFileImport(result)
         }
     }
 
@@ -57,16 +57,16 @@ struct KYCDocumentUploadSection<DocumentType: Hashable>: View {
                 .foregroundColor(AppTheme.fontColor)
 
             Menu {
-                ForEach(documentTypes, id: \.self) { type in
-                    Button(action: { selectedType = type }) {
-                        Label(documentTypeName(type), systemImage: documentTypeIcon(type))
+                ForEach(self.documentTypes, id: \.self) { type in
+                    Button(action: { self.selectedType = type }) {
+                        Label(self.documentTypeName(type), systemImage: self.documentTypeIcon(type))
                     }
                 }
             } label: {
                 HStack {
-                    Image(systemName: documentTypeIcon(selectedType))
+                    Image(systemName: self.documentTypeIcon(self.selectedType))
                         .foregroundColor(AppTheme.accentLightBlue)
-                    Text(documentTypeName(selectedType))
+                    Text(self.documentTypeName(self.selectedType))
                         .foregroundColor(AppTheme.fontColor)
                     Spacer()
                     Image(systemName: "chevron.up.chevron.down")
@@ -85,7 +85,7 @@ struct KYCDocumentUploadSection<DocumentType: Hashable>: View {
         HStack(alignment: .top, spacing: ResponsiveDesign.spacing(8)) {
             Image(systemName: "info.circle.fill")
                 .foregroundColor(AppTheme.accentLightBlue)
-            Text(documentTypeDescription(selectedType))
+            Text(self.documentTypeDescription(self.selectedType))
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.8))
         }
@@ -99,9 +99,9 @@ struct KYCDocumentUploadSection<DocumentType: Hashable>: View {
     @ViewBuilder
     private var uploadArea: some View {
         if let image = selectedImage {
-            documentPreview(image: image)
+            self.documentPreview(image: image)
         } else {
-            uploadButtons
+            self.uploadButtons
         }
     }
 
@@ -118,19 +118,19 @@ struct KYCDocumentUploadSection<DocumentType: Hashable>: View {
                 )
 
             HStack(spacing: ResponsiveDesign.spacing(12)) {
-                Button(action: { showingCameraPicker = true }) {
+                Button(action: { self.showingCameraPicker = true }) {
                     Label("Retake", systemImage: "camera.fill")
                         .font(ResponsiveDesign.captionFont())
                 }
                 .buttonStyle(.bordered)
 
-                Button(action: { showingPhotoPicker = true }) {
+                Button(action: { self.showingPhotoPicker = true }) {
                     Label("Replace", systemImage: "photo.fill")
                         .font(ResponsiveDesign.captionFont())
                 }
                 .buttonStyle(.bordered)
 
-                Button(role: .destructive, action: { selectedImage = nil }) {
+                Button(role: .destructive, action: { self.selectedImage = nil }) {
                     Label("Remove", systemImage: "trash.fill")
                         .font(ResponsiveDesign.captionFont())
                 }
@@ -153,22 +153,22 @@ struct KYCDocumentUploadSection<DocumentType: Hashable>: View {
     private var uploadButtons: some View {
         VStack(spacing: ResponsiveDesign.spacing(12)) {
             HStack(spacing: ResponsiveDesign.spacing(12)) {
-                uploadOptionButton(
+                self.uploadOptionButton(
                     icon: "camera.fill",
                     title: "Take Photo",
-                    action: { showingCameraPicker = true }
+                    action: { self.showingCameraPicker = true }
                 )
 
-                uploadOptionButton(
+                self.uploadOptionButton(
                     icon: "photo.fill",
                     title: "Photo Library",
-                    action: { showingPhotoPicker = true }
+                    action: { self.showingPhotoPicker = true }
                 )
 
-                uploadOptionButton(
+                self.uploadOptionButton(
                     icon: "folder.fill",
                     title: "Files",
-                    action: { showingFilePicker = true }
+                    action: { self.showingFilePicker = true }
                 )
             }
 
@@ -217,7 +217,7 @@ struct KYCDocumentUploadSection<DocumentType: Hashable>: View {
             do {
                 let data = try Data(contentsOf: url)
                 if let image = UIImage(data: data) {
-                    selectedImage = image
+                    self.selectedImage = image
                 }
             } catch {
                 print("Error loading file: \(error)")

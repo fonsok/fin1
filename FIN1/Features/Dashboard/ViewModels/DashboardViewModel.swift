@@ -1,6 +1,6 @@
-import SwiftUI
-import Foundation
 import Combine
+import Foundation
+import SwiftUI
 
 // MARK: - Simplified Dashboard ViewModel
 /// Simplified ViewModel focused on UI state and user role information
@@ -20,7 +20,7 @@ final class DashboardViewModel: ObservableObject {
     // MARK: - Published Properties
     @Published var selectedTab: String? {
         didSet {
-            navigationCoordinator.selectedTab = selectedTab
+            self.navigationCoordinator.selectedTab = self.selectedTab
         }
     }
 
@@ -46,7 +46,7 @@ final class DashboardViewModel: ObservableObject {
         )
         self.navigationCoordinator = navigationCoordinator ?? DashboardNavigationCoordinator()
 
-        setupObservers()
+        self.setupObservers()
     }
 
     deinit {
@@ -85,23 +85,23 @@ final class DashboardViewModel: ObservableObject {
     // MARK: - User Information (Computed Properties)
 
     var currentUser: User? {
-        userService.currentUser
+        self.userService.currentUser
     }
 
     var isInvestor: Bool {
-        userService.isInvestor
+        self.userService.isInvestor
     }
 
     var isTrader: Bool {
-        userService.isTrader
+        self.userService.isTrader
     }
 
     var userDisplayName: String {
-        userService.userDisplayName
+        self.userService.userDisplayName
     }
 
     var userRoleDisplayName: String {
-        switch userService.currentUser?.role {
+        switch self.userService.currentUser?.role {
         case .investor: return "Investor"
         case .trader: return "Trader"
         case .admin: return "Admin"
@@ -114,45 +114,45 @@ final class DashboardViewModel: ObservableObject {
     // MARK: - Dashboard Service Properties (Delegated)
 
     var quickStats: DashboardStats {
-        dashboardService.quickStats
+        self.dashboardService.quickStats
     }
 
     var isLoading: Bool {
-        dashboardService.isLoading
+        self.dashboardService.isLoading
     }
 
     // MARK: - Error Handling (Delegated)
 
     var errorMessage: String? {
-        errorHandler.errorMessage
+        self.errorHandler.errorMessage
     }
 
     var showError: Bool {
-        errorHandler.showError
+        self.errorHandler.showError
     }
 
     // MARK: - Navigation (Delegated)
 
     func navigateToTraderDiscovery() {
-        navigationCoordinator.navigateToTraderDiscovery()
-        selectedTab = navigationCoordinator.selectedTab
+        self.navigationCoordinator.navigateToTraderDiscovery()
+        self.selectedTab = self.navigationCoordinator.selectedTab
     }
 
     func clearNavigationSelection() {
-        navigationCoordinator.clearNavigationSelection()
-        selectedTab = navigationCoordinator.selectedTab
+        self.navigationCoordinator.clearNavigationSelection()
+        self.selectedTab = self.navigationCoordinator.selectedTab
     }
 
     // MARK: - Data Loading (Delegated)
 
     func loadDashboardDataAsync() async {
         do {
-            try await dataLoader.loadDashboardData()
+            try await self.dataLoader.loadDashboardData()
         } catch {
-            errorHandler.handleDataLoadingError(
+            self.errorHandler.handleDataLoadingError(
                 error,
-                userId: currentUser?.id,
-                userRole: currentUser?.role.displayName
+                userId: self.currentUser?.id,
+                userRole: self.currentUser?.role.displayName
             )
         }
     }
@@ -160,12 +160,12 @@ final class DashboardViewModel: ObservableObject {
     func refreshUserData() {
         Task {
             do {
-                try await dataLoader.refreshUserData()
+                try await self.dataLoader.refreshUserData()
             } catch {
-                errorHandler.handleUserRefreshError(
+                self.errorHandler.handleUserRefreshError(
                     error,
-                    userId: currentUser?.id,
-                    userRole: currentUser?.role.displayName
+                    userId: self.currentUser?.id,
+                    userRole: self.currentUser?.role.displayName
                 )
             }
         }
@@ -173,11 +173,11 @@ final class DashboardViewModel: ObservableObject {
 
     func signOut() {
         Task {
-            await userService.signOut()
+            await self.userService.signOut()
         }
     }
 
     func clearError() {
-        errorHandler.clearError()
+        self.errorHandler.clearError()
     }
 }

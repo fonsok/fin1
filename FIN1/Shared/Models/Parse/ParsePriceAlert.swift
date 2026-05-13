@@ -91,37 +91,37 @@ struct ParsePriceAlert: Codable, @unchecked Sendable {
     
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        objectId = try container.decodeIfPresent(String.self, forKey: .objectId)
-        userId = try container.decode(String.self, forKey: .userId)
-        symbol = try container.decode(String.self, forKey: .symbol)
-        alertType = try container.decode(PriceAlertType.self, forKey: .alertType)
-        thresholdPrice = try container.decodeIfPresent(Double.self, forKey: .thresholdPrice)
-        thresholdChangePercent = try container.decodeIfPresent(Double.self, forKey: .thresholdChangePercent)
-        status = try container.decode(PriceAlertStatus.self, forKey: .status)
-        createdAt = try container.decode(Date.self, forKey: .createdAt)
-        triggeredAt = try container.decodeIfPresent(Date.self, forKey: .triggeredAt)
-        expiresAt = try container.decodeIfPresent(Date.self, forKey: .expiresAt)
-        notificationSent = try container.decode(Bool.self, forKey: .notificationSent)
-        isEnabled = try container.decode(Bool.self, forKey: .isEnabled)
-        notes = try container.decodeIfPresent(String.self, forKey: .notes)
-        metadata = nil // Metadata is not decoded from JSON
+        self.objectId = try container.decodeIfPresent(String.self, forKey: .objectId)
+        self.userId = try container.decode(String.self, forKey: .userId)
+        self.symbol = try container.decode(String.self, forKey: .symbol)
+        self.alertType = try container.decode(PriceAlertType.self, forKey: .alertType)
+        self.thresholdPrice = try container.decodeIfPresent(Double.self, forKey: .thresholdPrice)
+        self.thresholdChangePercent = try container.decodeIfPresent(Double.self, forKey: .thresholdChangePercent)
+        self.status = try container.decode(PriceAlertStatus.self, forKey: .status)
+        self.createdAt = try container.decode(Date.self, forKey: .createdAt)
+        self.triggeredAt = try container.decodeIfPresent(Date.self, forKey: .triggeredAt)
+        self.expiresAt = try container.decodeIfPresent(Date.self, forKey: .expiresAt)
+        self.notificationSent = try container.decode(Bool.self, forKey: .notificationSent)
+        self.isEnabled = try container.decode(Bool.self, forKey: .isEnabled)
+        self.notes = try container.decodeIfPresent(String.self, forKey: .notes)
+        self.metadata = nil // Metadata is not decoded from JSON
     }
     
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encodeIfPresent(objectId, forKey: .objectId)
-        try container.encode(userId, forKey: .userId)
-        try container.encode(symbol, forKey: .symbol)
-        try container.encode(alertType, forKey: .alertType)
-        try container.encodeIfPresent(thresholdPrice, forKey: .thresholdPrice)
-        try container.encodeIfPresent(thresholdChangePercent, forKey: .thresholdChangePercent)
-        try container.encode(status, forKey: .status)
-        try container.encode(createdAt, forKey: .createdAt)
-        try container.encodeIfPresent(triggeredAt, forKey: .triggeredAt)
-        try container.encodeIfPresent(expiresAt, forKey: .expiresAt)
-        try container.encode(notificationSent, forKey: .notificationSent)
-        try container.encode(isEnabled, forKey: .isEnabled)
-        try container.encodeIfPresent(notes, forKey: .notes)
+        try container.encodeIfPresent(self.objectId, forKey: .objectId)
+        try container.encode(self.userId, forKey: .userId)
+        try container.encode(self.symbol, forKey: .symbol)
+        try container.encode(self.alertType, forKey: .alertType)
+        try container.encodeIfPresent(self.thresholdPrice, forKey: .thresholdPrice)
+        try container.encodeIfPresent(self.thresholdChangePercent, forKey: .thresholdChangePercent)
+        try container.encode(self.status, forKey: .status)
+        try container.encode(self.createdAt, forKey: .createdAt)
+        try container.encodeIfPresent(self.triggeredAt, forKey: .triggeredAt)
+        try container.encodeIfPresent(self.expiresAt, forKey: .expiresAt)
+        try container.encode(self.notificationSent, forKey: .notificationSent)
+        try container.encode(self.isEnabled, forKey: .isEnabled)
+        try container.encodeIfPresent(self.notes, forKey: .notes)
         // Metadata is not encoded to JSON
     }
 }
@@ -165,19 +165,19 @@ struct PriceAlert: Identifiable, Equatable {
     
     func toParsePriceAlert() -> ParsePriceAlert {
         return ParsePriceAlert(
-            objectId: id,
-            userId: userId,
-            symbol: symbol,
-            alertType: alertType,
-            thresholdPrice: thresholdPrice,
-            thresholdChangePercent: thresholdChangePercent,
-            status: status,
-            createdAt: createdAt,
-            triggeredAt: triggeredAt,
-            expiresAt: expiresAt,
-            notificationSent: notificationSent,
-            isEnabled: isEnabled,
-            notes: notes
+            objectId: self.id,
+            userId: self.userId,
+            symbol: self.symbol,
+            alertType: self.alertType,
+            thresholdPrice: self.thresholdPrice,
+            thresholdChangePercent: self.thresholdChangePercent,
+            status: self.status,
+            createdAt: self.createdAt,
+            triggeredAt: self.triggeredAt,
+            expiresAt: self.expiresAt,
+            notificationSent: self.notificationSent,
+            isEnabled: self.isEnabled,
+            notes: self.notes
         )
     }
 }

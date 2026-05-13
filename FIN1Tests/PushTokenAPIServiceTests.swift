@@ -1,5 +1,5 @@
-import XCTest
 @testable import FIN1
+import XCTest
 
 // MARK: - Push Token API Service Tests
 
@@ -10,13 +10,13 @@ final class PushTokenAPIServiceTests: XCTestCase {
 
     override func setUp() {
         super.setUp()
-        mockAPIClient = MockParseAPIClient()
-        sut = PushTokenAPIService(apiClient: mockAPIClient)
+        self.mockAPIClient = MockParseAPIClient()
+        self.sut = PushTokenAPIService(apiClient: self.mockAPIClient)
     }
 
     override func tearDown() {
-        sut = nil
-        mockAPIClient = nil
+        self.sut = nil
+        self.mockAPIClient = nil
         super.tearDown()
     }
 
@@ -28,15 +28,15 @@ final class PushTokenAPIServiceTests: XCTestCase {
         let tokenType = PushTokenType.apns
         let userId = "test-user-123"
         let deviceId = "iPhone-14-test"
-        mockAPIClient.mockObjectId = "server-push-token-id"
-        mockAPIClient.mockFetchResults = [ParsePushTokenResponse]() // No existing tokens
+        self.mockAPIClient.mockObjectId = "server-push-token-id"
+        self.mockAPIClient.mockFetchResults = [ParsePushTokenResponse]() // No existing tokens
 
         // When
         let savedToken = try await sut.registerPushToken(token, tokenType: tokenType, userId: userId, deviceId: deviceId)
 
         // Then
-        XCTAssertTrue(mockAPIClient.createObjectCalled)
-        XCTAssertEqual(mockAPIClient.lastClassName, "PushToken")
+        XCTAssertTrue(self.mockAPIClient.createObjectCalled)
+        XCTAssertEqual(self.mockAPIClient.lastClassName, "PushToken")
         XCTAssertEqual(savedToken.id, "server-push-token-id")
         XCTAssertEqual(savedToken.token, token)
         XCTAssertEqual(savedToken.tokenType, tokenType)
@@ -49,26 +49,26 @@ final class PushTokenAPIServiceTests: XCTestCase {
         let token = "apns-token-existing"
         let tokenType = PushTokenType.apns
         let userId = "test-user-123"
-        let existingToken = createMockPushTokenResponse(objectId: "existing-id", token: token)
-        mockAPIClient.mockFetchResults = [existingToken]
+        let existingToken = self.createMockPushTokenResponse(objectId: "existing-id", token: token)
+        self.mockAPIClient.mockFetchResults = [existingToken]
 
         // When
         let savedToken = try await sut.registerPushToken(token, tokenType: tokenType, userId: userId, deviceId: nil)
 
         // Then
-        XCTAssertTrue(mockAPIClient.updateObjectCalled)
+        XCTAssertTrue(self.mockAPIClient.updateObjectCalled)
         XCTAssertEqual(savedToken.token, token)
     }
 
     func testRegisterPushToken_NetworkError() async {
         // Given
         let token = "apns-token-error"
-        mockAPIClient.shouldThrowError = true
-        mockAPIClient.errorToThrow = NetworkError.noConnection
+        self.mockAPIClient.shouldThrowError = true
+        self.mockAPIClient.errorToThrow = NetworkError.noConnection
 
         // When/Then
         do {
-            _ = try await sut.registerPushToken(token, tokenType: .apns, userId: "test-user", deviceId: nil)
+            _ = try await self.sut.registerPushToken(token, tokenType: .apns, userId: "test-user", deviceId: nil)
             XCTFail("Expected error to be thrown")
         } catch {
             XCTAssertTrue(error is NetworkError)
@@ -82,16 +82,16 @@ final class PushTokenAPIServiceTests: XCTestCase {
         let token = "apns-token-to-update"
         let tokenType = PushTokenType.apns
         let userId = "test-user-123"
-        let existingToken = createMockPushTokenResponse(objectId: "existing-id", token: token)
-        mockAPIClient.mockFetchResults = [existingToken]
+        let existingToken = self.createMockPushTokenResponse(objectId: "existing-id", token: token)
+        self.mockAPIClient.mockFetchResults = [existingToken]
 
         // When
         let updatedToken = try await sut.updatePushToken(token, tokenType: tokenType, userId: userId, deviceId: "new-device-id")
 
         // Then
-        XCTAssertTrue(mockAPIClient.updateObjectCalled)
-        XCTAssertEqual(mockAPIClient.lastClassName, "PushToken")
-        XCTAssertEqual(mockAPIClient.lastObjectId, "existing-id")
+        XCTAssertTrue(self.mockAPIClient.updateObjectCalled)
+        XCTAssertEqual(self.mockAPIClient.lastClassName, "PushToken")
+        XCTAssertEqual(self.mockAPIClient.lastObjectId, "existing-id")
         XCTAssertEqual(updatedToken.token, token)
     }
 
@@ -100,14 +100,14 @@ final class PushTokenAPIServiceTests: XCTestCase {
         let token = "apns-token-new"
         let tokenType = PushTokenType.apns
         let userId = "test-user-123"
-        mockAPIClient.mockFetchResults = [ParsePushTokenResponse]() // No existing tokens
-        mockAPIClient.mockObjectId = "new-token-id"
+        self.mockAPIClient.mockFetchResults = [ParsePushTokenResponse]() // No existing tokens
+        self.mockAPIClient.mockObjectId = "new-token-id"
 
         // When
         let savedToken = try await sut.updatePushToken(token, tokenType: tokenType, userId: userId, deviceId: nil)
 
         // Then
-        XCTAssertTrue(mockAPIClient.createObjectCalled)
+        XCTAssertTrue(self.mockAPIClient.createObjectCalled)
         XCTAssertEqual(savedToken.id, "new-token-id")
     }
 
@@ -118,15 +118,15 @@ final class PushTokenAPIServiceTests: XCTestCase {
         let token = "apns-token-to-deactivate"
         let tokenType = PushTokenType.apns
         let userId = "test-user-123"
-        let existingToken = createMockPushTokenResponse(objectId: "existing-id", token: token)
-        mockAPIClient.mockFetchResults = [existingToken]
+        let existingToken = self.createMockPushTokenResponse(objectId: "existing-id", token: token)
+        self.mockAPIClient.mockFetchResults = [existingToken]
 
         // When
-        try await sut.deactivatePushToken(token, tokenType: tokenType, userId: userId)
+        try await self.sut.deactivatePushToken(token, tokenType: tokenType, userId: userId)
 
         // Then
-        XCTAssertTrue(mockAPIClient.updateObjectCalled)
-        XCTAssertEqual(mockAPIClient.lastObjectId, "existing-id")
+        XCTAssertTrue(self.mockAPIClient.updateObjectCalled)
+        XCTAssertEqual(self.mockAPIClient.lastObjectId, "existing-id")
     }
 
     func testDeactivatePushToken_NotFound_NoError() async throws {
@@ -134,11 +134,11 @@ final class PushTokenAPIServiceTests: XCTestCase {
         let token = "apns-token-not-found"
         let tokenType = PushTokenType.apns
         let userId = "test-user-123"
-        mockAPIClient.mockFetchResults = [ParsePushTokenResponse]() // No tokens
+        self.mockAPIClient.mockFetchResults = [ParsePushTokenResponse]() // No tokens
 
         // When/Then - Should not throw
-        try await sut.deactivatePushToken(token, tokenType: tokenType, userId: userId)
-        XCTAssertFalse(mockAPIClient.updateObjectCalled)
+        try await self.sut.deactivatePushToken(token, tokenType: tokenType, userId: userId)
+        XCTAssertFalse(self.mockAPIClient.updateObjectCalled)
     }
 
     // MARK: - Fetch Push Tokens Tests
@@ -150,27 +150,27 @@ final class PushTokenAPIServiceTests: XCTestCase {
             createMockPushTokenResponse(objectId: "token-1", token: "apns-token-1"),
             createMockPushTokenResponse(objectId: "token-2", token: "fcm-token-1", tokenType: "fcm")
         ]
-        mockAPIClient.mockFetchResults = mockTokens
+        self.mockAPIClient.mockFetchResults = mockTokens
 
         // When
         let tokens = try await sut.fetchPushTokens(for: userId)
 
         // Then
-        XCTAssertTrue(mockAPIClient.fetchObjectsCalled)
-        XCTAssertEqual(mockAPIClient.lastClassName, "PushToken")
+        XCTAssertTrue(self.mockAPIClient.fetchObjectsCalled)
+        XCTAssertEqual(self.mockAPIClient.lastClassName, "PushToken")
         XCTAssertEqual(tokens.count, 2)
     }
 
     func testFetchPushTokens_EmptyResult() async throws {
         // Given
         let userId = "test-user-no-tokens"
-        mockAPIClient.mockFetchResults = [ParsePushTokenResponse]()
+        self.mockAPIClient.mockFetchResults = [ParsePushTokenResponse]()
 
         // When
         let tokens = try await sut.fetchPushTokens(for: userId)
 
         // Then
-        XCTAssertTrue(mockAPIClient.fetchObjectsCalled)
+        XCTAssertTrue(self.mockAPIClient.fetchObjectsCalled)
         XCTAssertTrue(tokens.isEmpty)
     }
 

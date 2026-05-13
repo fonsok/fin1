@@ -1,5 +1,5 @@
-import SwiftUI
 import Foundation
+import SwiftUI
 
 // MARK: - Data Model & ViewModel
 struct WarrantDetailItem: Identifiable {
@@ -52,7 +52,7 @@ final class WarrantDetailsViewModel: ObservableObject {
             }
         } else {
             self.items = defaultItems
-            saveSelection()
+            self.saveSelection()
         }
     }
 
@@ -67,14 +67,14 @@ final class WarrantDetailsViewModel: ObservableObject {
             return
         }
 
-        items[index].isSelected.toggle()
-        saveSelection()
+        self.items[index].isSelected.toggle()
+        self.saveSelection()
     }
 
     private func saveSelection() {
         let selection = Dictionary(uniqueKeysWithValues: items.map { ($0.name, $0.isSelected) })
         if let data = try? JSONEncoder().encode(selection) {
-            UserDefaults.standard.set(data, forKey: userDefaultsKey)
+            UserDefaults.standard.set(data, forKey: self.userDefaultsKey)
         }
     }
 }
@@ -90,8 +90,8 @@ struct WarrantDetailsView: View {
 
                 VStack(spacing: ResponsiveDesign.spacing(0)) {
                     List {
-                        ForEach(viewModel.items) { item in
-                            Button(action: { viewModel.toggleSelection(for: item) }, label: {
+                        ForEach(self.viewModel.items) { item in
+                            Button(action: { self.viewModel.toggleSelection(for: item) }, label: {
                                 HStack(spacing: ResponsiveDesign.spacing(16)) {
                                     Image(systemName: item.isSelected ? "checkmark.square.fill" : "square")
                                         .foregroundColor(item.isSelected ? AppTheme.accentGreen : .gray)
@@ -105,7 +105,7 @@ struct WarrantDetailsView: View {
                     }
                     .listStyle(.plain)
 
-                    Button(action: { dismiss() }, label: {
+                    Button(action: { self.dismiss() }, label: {
                         Text("Apply")
                             .foregroundColor(AppTheme.fontColor)
                             .fontWeight(.bold)

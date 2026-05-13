@@ -15,19 +15,19 @@ struct ModularTraderDetailView: View {
                 ScrollView {
                     VStack(spacing: ResponsiveDesign.spacing(24)) {
                         // Header Section
-                        TraderDetailHeaderView(trader: trader)
+                        TraderDetailHeaderView(trader: self.trader)
 
                         // Invest Button positioned before performance insights
                         TraderInvestButton(
-                            trader: trader,
-                            showInvestSheet: $showInvestmentSheet
+                            trader: self.trader,
+                            showInvestSheet: self.$showInvestmentSheet
                         )
 
                         // Performance Overview
-                        TraderDetailPerformanceView(trader: trader)
+                        TraderDetailPerformanceView(trader: self.trader)
 
                         // Tab Content
-                        TraderDetailTabsView(selectedTab: $selectedTab)
+                        TraderDetailTabsView(selectedTab: self.$selectedTab)
                     }
                     .padding(.horizontal, 16)
                     .padding(.top, 16)
@@ -37,14 +37,14 @@ struct ModularTraderDetailView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Close") {
-                        dismiss()
+                        self.dismiss()
                     }
                     .foregroundColor(AppTheme.accentLightBlue)
                 }
 
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Invest") {
-                        showInvestmentSheet = true
+                        self.showInvestmentSheet = true
                     }
                     .foregroundColor(AppTheme.screenBackground)
                     .padding(.horizontal, 16)
@@ -55,10 +55,10 @@ struct ModularTraderDetailView: View {
                 }
             }
         }
-        .sheet(isPresented: $showInvestmentSheet) {
-            InvestmentSheet(trader: trader) {
+        .sheet(isPresented: self.$showInvestmentSheet) {
+            InvestmentSheet(trader: self.trader) {
                 // Navigate back to investor dashboard
-                dismiss()
+                self.dismiss()
             }
         }
     }

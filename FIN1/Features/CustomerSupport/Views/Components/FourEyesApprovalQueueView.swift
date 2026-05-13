@@ -27,10 +27,10 @@ struct FourEyesApprovalQueueView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: ResponsiveDesign.spacing(16)) {
-                    FourEyesApprovalQueueStatsSection(statistics: viewModel.statistics)
-                    FourEyesApprovalQueueFilterSection(viewModel: viewModel)
-                    FourEyesApprovalQueueRequestsSection(viewModel: viewModel) { request in
-                        viewModel.selectedRequest = request
+                    FourEyesApprovalQueueStatsSection(statistics: self.viewModel.statistics)
+                    FourEyesApprovalQueueFilterSection(viewModel: self.viewModel)
+                    FourEyesApprovalQueueRequestsSection(viewModel: self.viewModel) { request in
+                        self.viewModel.selectedRequest = request
                     }
                 }
                 .padding()
@@ -40,26 +40,26 @@ struct FourEyesApprovalQueueView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Schließen") { dismiss() }
+                    Button("Schließen") { self.dismiss() }
                 }
             }
-            .task { await viewModel.loadRequests() }
-            .refreshable { await viewModel.loadRequests() }
-            .sheet(item: $viewModel.selectedRequest) { request in
+            .task { await self.viewModel.loadRequests() }
+            .refreshable { await self.viewModel.loadRequests() }
+            .sheet(item: self.$viewModel.selectedRequest) { request in
                 ApprovalDetailSheet(
                     request: request,
-                    viewModel: viewModel
+                    viewModel: self.viewModel
                 )
             }
-            .alert("Fehler", isPresented: $viewModel.showError) {
-                Button("OK") { viewModel.clearError() }
+            .alert("Fehler", isPresented: self.$viewModel.showError) {
+                Button("OK") { self.viewModel.clearError() }
             } message: {
-                Text(viewModel.errorMessage ?? "Ein Fehler ist aufgetreten")
+                Text(self.viewModel.errorMessage ?? "Ein Fehler ist aufgetreten")
             }
-            .alert("Erfolg", isPresented: $viewModel.showSuccess) {
-                Button("OK") { viewModel.clearSuccess() }
+            .alert("Erfolg", isPresented: self.$viewModel.showSuccess) {
+                Button("OK") { self.viewModel.clearSuccess() }
             } message: {
-                Text(viewModel.successMessage ?? "")
+                Text(self.viewModel.successMessage ?? "")
             }
         }
     }

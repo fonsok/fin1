@@ -1,6 +1,6 @@
-import Foundation
-@preconcurrency import Dispatch
 import Combine
+@preconcurrency import Dispatch
+import Foundation
 
 // MARK: - Configuration Service Implementation
 /// Manages application configuration settings with admin controls
@@ -100,12 +100,12 @@ final class ConfigurationService: ConfigurationServiceProtocol, ServiceLifecycle
         self.userService = userService
         loadConfiguration()
         setupUserRoleObservation()
-        setupRemoteConfigRefreshOnSignIn()
+        self.setupRemoteConfigRefreshOnSignIn()
     }
 
     /// Injects Parse API client for fetching/saving config from Parse (getConfig / updateConfig).
     func configureParseAPIClient(_ client: (any ParseAPIClientProtocol)?) {
-        queue.sync(flags: .barrier) { [weak self] in
+        self.queue.sync(flags: .barrier) { [weak self] in
             self?.parseAPIClient = client
         }
         Task { [weak self] in
@@ -122,7 +122,7 @@ final class ConfigurationService: ConfigurationServiceProtocol, ServiceLifecycle
                     await self?.fetchRemoteDisplayConfig()
                 }
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
     }
 
     private var cancellables = Set<AnyCancellable>()

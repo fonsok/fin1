@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 import os.log
 
 // MARK: - Audit Logging Service Implementation
@@ -18,7 +18,7 @@ final class AuditLoggingService: AuditLoggingServiceProtocol, ServiceLifecycle, 
     private let parseAPIClient: (any ParseAPIClientProtocol)?
     
     private var useParseServer: Bool {
-        parseAPIClient != nil
+        self.parseAPIClient != nil
     }
 
     // MARK: - Retention Configuration (GDPR/AML compliant)
@@ -38,28 +38,28 @@ final class AuditLoggingService: AuditLoggingServiceProtocol, ServiceLifecycle, 
     // MARK: - ServiceLifecycle
 
     func start() async {
-        logger.info("AuditLoggingService started")
+        self.logger.info("AuditLoggingService started")
         // Load recent compliance events from Parse Server if available
-        if useParseServer {
-            await loadRecentComplianceEventsFromParseServer()
+        if self.useParseServer {
+            await self.loadRecentComplianceEventsFromParseServer()
         }
     }
 
     func stop() async {
-        logger.info("AuditLoggingService stopped")
+        self.logger.info("AuditLoggingService stopped")
         // Save pending compliance events to Parse Server if available
-        if useParseServer {
-            await savePendingComplianceEventsToParseServer()
+        if self.useParseServer {
+            await self.savePendingComplianceEventsToParseServer()
         }
     }
 
     func reset() {
-        queue.sync {
-            auditLogs.removeAll()
-            dataAccessLogs.removeAll()
-            complianceEvents.removeAll()
+        self.queue.sync {
+            self.auditLogs.removeAll()
+            self.dataAccessLogs.removeAll()
+            self.complianceEvents.removeAll()
         }
-        logger.info("AuditLoggingService reset")
+        self.logger.info("AuditLoggingService reset")
     }
 
     // MARK: - AuditLoggingServiceProtocol
@@ -75,19 +75,19 @@ final class AuditLoggingService: AuditLoggingServiceProtocol, ServiceLifecycle, 
             action: action.actionType.rawValue,
             description: action.description,
             timestamp: action.timestamp,
-            metadata: buildActionMetadata(action)
+            metadata: self.buildActionMetadata(action)
         )
 
-        await storeLogEntry(entry)
+        await self.storeLogEntry(entry)
 
         #if DEBUG
-        logger.debug("📝 Audit Action: \(action.actionType.displayName) by \(action.agentId)")
+        self.logger.debug("📝 Audit Action: \(action.actionType.displayName) by \(action.agentId)")
         #endif
     }
 
     func logDataAccess(_ access: DataAccessLog) async {
-        queue.sync {
-            dataAccessLogs.append(access)
+        self.queue.sync {
+            self.dataAccessLogs.append(access)
         }
 
         let entry = AuditLogEntry(
@@ -109,20 +109,20 @@ final class AuditLoggingService: AuditLoggingServiceProtocol, ServiceLifecycle, 
             ]
         )
 
-        await storeLogEntry(entry)
+        await self.storeLogEntry(entry)
 
         #if DEBUG
-        logger.debug("👁️ Data Access: \(access.dataCategory.displayName) for customer \(access.customerId)")
+        self.logger.debug("👁️ Data Access: \(access.dataCategory.displayName) for customer \(access.customerId)")
         #endif
     }
 
     func logComplianceEvent(_ event: ComplianceEvent) async {
-        queue.sync {
-            complianceEvents.append(event)
+        self.queue.sync {
+            self.complianceEvents.append(event)
         }
 
         // Save to Parse Server if available (async, don't wait)
-        if useParseServer, let parseClient = parseAPIClient {
+        if self.useParseServer, let parseClient = parseAPIClient {
             let client: any ParseAPIClientProtocol = parseClient
             let parseEvent = ParseComplianceEvent(
                 userId: event.customerId,
@@ -161,25 +161,25 @@ final class AuditLoggingService: AuditLoggingServiceProtocol, ServiceLifecycle, 
             ]
         )
 
-        await storeLogEntry(entry)
+        await self.storeLogEntry(entry)
 
         // Log high severity events prominently
         if event.severity == .high || event.severity == .critical {
-            logger.warning("⚠️ Compliance Event [\(event.severity.displayName)]: \(event.description)")
+            self.logger.warning("⚠️ Compliance Event [\(event.severity.displayName)]: \(event.description)")
         } else {
             #if DEBUG
-            logger.debug("🔒 Compliance Event: \(event.eventType.displayName)")
+            self.logger.debug("🔒 Compliance Event: \(event.eventType.displayName)")
             #endif
         }
     }
 
     func getAuditLogs(for customerId: String, dateRange: DateInterval?) async throws -> [AuditLogEntry] {
-        var logs = queue.sync {
-            auditLogs.filter { $0.customerId == customerId }
+        var logs = self.queue.sync {
+            self.auditLogs.filter { $0.customerId == customerId }
         }
         
         // Load from Parse Server if available
-        if useParseServer, let parseClient = parseAPIClient {
+        if self.useParseServer, let parseClient = parseAPIClient {
             do {
                 var query: [String: Any] = ["userId": customerId]
                 if let range = dateRange {
@@ -194,7 +194,7 @@ final class AuditLoggingService: AuditLoggingServiceProtocol, ServiceLifecycle, 
                     query: query,
                     include: nil,
                     orderBy: "-timestamp",
-                    limit: 1000
+                    limit: 1_000
                 )
                 
                 // Convert to AuditLogEntry
@@ -214,7 +214,7 @@ final class AuditLoggingService: AuditLoggingServiceProtocol, ServiceLifecycle, 
                 }
                 logs.append(contentsOf: parseEntries)
             } catch {
-                logger.error("⚠️ Failed to load audit logs from Parse Server: \(error.localizedDescription)")
+                self.logger.error("⚠️ Failed to load audit logs from Parse Server: \(error.localizedDescription)")
             }
         }
         
@@ -227,12 +227,12 @@ final class AuditLoggingService: AuditLoggingServiceProtocol, ServiceLifecycle, 
     }
 
     func getAgentActions(agentId: String, dateRange: DateInterval?) async throws -> [AuditLogEntry] {
-        var logs = queue.sync {
-            auditLogs.filter { $0.agentId == agentId }
+        var logs = self.queue.sync {
+            self.auditLogs.filter { $0.agentId == agentId }
         }
         
         // Load from Parse Server if available (compliance events where agentId = userId)
-        if useParseServer, let parseClient = parseAPIClient {
+        if self.useParseServer, let parseClient = parseAPIClient {
             do {
                 var query: [String: Any] = ["userId": agentId]
                 if let range = dateRange {
@@ -247,7 +247,7 @@ final class AuditLoggingService: AuditLoggingServiceProtocol, ServiceLifecycle, 
                     query: query,
                     include: nil,
                     orderBy: "-timestamp",
-                    limit: 1000
+                    limit: 1_000
                 )
                 
                 // Convert to AuditLogEntry
@@ -267,7 +267,7 @@ final class AuditLoggingService: AuditLoggingServiceProtocol, ServiceLifecycle, 
                 }
                 logs.append(contentsOf: parseEntries)
             } catch {
-                logger.error("⚠️ Failed to load agent actions from Parse Server: \(error.localizedDescription)")
+                self.logger.error("⚠️ Failed to load agent actions from Parse Server: \(error.localizedDescription)")
             }
         }
         
@@ -282,8 +282,8 @@ final class AuditLoggingService: AuditLoggingServiceProtocol, ServiceLifecycle, 
     // MARK: - Private Methods
 
     private func storeLogEntry(_ entry: AuditLogEntry) async {
-        queue.sync {
-            auditLogs.append(entry)
+        self.queue.sync {
+            self.auditLogs.append(entry)
         }
 
         // Persist to Parse Server if available (for compliance events)
@@ -311,16 +311,16 @@ final class AuditLoggingService: AuditLoggingServiceProtocol, ServiceLifecycle, 
             )
             
             // Convert to ComplianceEvent and add to in-memory cache
-            queue.sync {
+            self.queue.sync {
                 for parseEvent in parseEvents {
                     let event = parseEvent.toComplianceEvent()
-                    if !complianceEvents.contains(where: { $0.id == event.id }) {
-                        complianceEvents.append(event)
+                    if !self.complianceEvents.contains(where: { $0.id == event.id }) {
+                        self.complianceEvents.append(event)
                     }
                 }
             }
         } catch {
-            logger.error("⚠️ Failed to load compliance events from Parse Server: \(error.localizedDescription)")
+            self.logger.error("⚠️ Failed to load compliance events from Parse Server: \(error.localizedDescription)")
         }
     }
     
@@ -329,8 +329,8 @@ final class AuditLoggingService: AuditLoggingServiceProtocol, ServiceLifecycle, 
             return
         }
         
-        let pendingEvents = queue.sync {
-            Array(complianceEvents)
+        let pendingEvents = self.queue.sync {
+            Array(self.complianceEvents)
         }
         
         for event in pendingEvents {
@@ -350,7 +350,7 @@ final class AuditLoggingService: AuditLoggingServiceProtocol, ServiceLifecycle, 
                     object: parseEvent
                 )
             } catch {
-                logger.error("⚠️ Failed to save compliance event to Parse Server: \(error.localizedDescription)")
+                self.logger.error("⚠️ Failed to save compliance event to Parse Server: \(error.localizedDescription)")
             }
         }
     }
@@ -405,7 +405,7 @@ extension AuditLoggingService {
             permission: .viewCustomerProfile,
             description: "Ansicht: \(viewedData)"
         )
-        await logAction(action)
+        await self.logAction(action)
     }
 
     /// Log a customer data modification with compliance check
@@ -430,7 +430,7 @@ extension AuditLoggingService {
             previousValue: previousValue,
             newValue: newValue
         )
-        await logAction(action)
+        await self.logAction(action)
 
         // If compliance check is required, log compliance event
         if permission.triggersComplianceCheck, let eventType = complianceEventType {
@@ -442,7 +442,7 @@ extension AuditLoggingService {
                 severity: eventType.defaultSeverity,
                 requiresReview: true
             )
-            await logComplianceEvent(event)
+            await self.logComplianceEvent(event)
         }
     }
 }

@@ -104,7 +104,7 @@ enum SignUpStep: Int, CaseIterable, Identifiable {
 
     /// Get total steps for a specific role
     static func totalStepsForRole(_ role: UserRole) -> Int {
-        return stepsForRole(role).count
+        return self.stepsForRole(role).count
     }
 
     /// Stable string key for backend persistence (mirrors enum case name)

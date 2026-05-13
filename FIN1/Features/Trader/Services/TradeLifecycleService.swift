@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Trade Lifecycle Service Implementation
 /// Handles trade creation, completion, and management
@@ -14,7 +14,7 @@ final class TradeLifecycleService: TradeLifecycleServiceProtocol, ServiceLifecyc
     private var isFirstLoad = true
 
     var completedTradesPublisher: AnyPublisher<[Trade], Never> {
-        $completedTrades.eraseToAnyPublisher()
+        self.$completedTrades.eraseToAnyPublisher()
     }
 
     private var tradeNumberService: (any TradeNumberServiceProtocol)?
@@ -56,29 +56,29 @@ final class TradeLifecycleService: TradeLifecycleServiceProtocol, ServiceLifecyc
     // MARK: - ServiceLifecycle
     func start() {
         // Reset first load flag on service start (app relaunch)
-        isFirstLoad = true
+        self.isFirstLoad = true
         Task {
-            try? await loadCompletedTrades()
+            try? await self.loadCompletedTrades()
         }
     }
 
     func stop() {
         // Persist trades before stopping
-        persistenceService.persistTrades(completedTrades)
+        self.persistenceService.persistTrades(self.completedTrades)
     }
 
     func reset() {
-        completedTrades.removeAll()
-        errorMessage = nil
+        self.completedTrades.removeAll()
+        self.errorMessage = nil
         // Clear persisted trades
-        persistenceService.clearPersistedTrades()
+        self.persistenceService.clearPersistedTrades()
     }
 
     // MARK: - Trade Data Management
 
     func loadCompletedTrades() async throws {
         await MainActor.run {
-            isLoading = true
+            self.isLoading = true
         }
 
         // Load trades from Parse Server API if available
@@ -91,16 +91,16 @@ final class TradeLifecycleService: TradeLifecycleServiceProtocol, ServiceLifecyc
                 await MainActor.run {
                     // Replace existing trades with fetched trades
                     // This ensures we have the latest data from the backend
-                    completedTrades = fetchedTrades
-                    isLoading = false
+                    self.completedTrades = fetchedTrades
+                    self.isLoading = false
                 }
 
                 // Drop stale on-disk trades for this trader so a later offline/API-fallback load
                 // cannot resurrect rows after a DEV backend reset (persistTrades only overwrites files it writes).
                 if let tid = userService?.currentUser?.id {
-                    persistenceService.clearPersistedTradesForTrader(tid)
+                    self.persistenceService.clearPersistedTradesForTrader(tid)
                 }
-                persistenceService.persistTrades(fetchedTrades)
+                self.persistenceService.persistTrades(fetchedTrades)
 
                 print("✅ TradeLifecycleService: Loaded \(fetchedTrades.count) trades from Parse Server")
 
@@ -120,8 +120,8 @@ final class TradeLifecycleService: TradeLifecycleServiceProtocol, ServiceLifecyc
 
                 // On app relaunch (first load), show info overlay, but DO NOT clear local/persisted trades.
                 // Losing local history when backend is down is not acceptable.
-                if isFirstLoad {
-                    isFirstLoad = false
+                if self.isFirstLoad {
+                    self.isFirstLoad = false
                     await MainActor.run {
                         NotificationCenter.default.post(
                             name: TradeLifecycleService.showAPIFailureInfoNotification,
@@ -139,33 +139,33 @@ final class TradeLifecycleService: TradeLifecycleServiceProtocol, ServiceLifecyc
         // In that case, we still load persisted trades (but numbering won't be reset)
         await MainActor.run {
             // Only load persisted trades if we haven't already cleared them (i.e., not first load with API failure)
-            if completedTrades.isEmpty {
-                loadPersistedTradesSync()
+            if self.completedTrades.isEmpty {
+                self.loadPersistedTradesSync()
             }
 
             // Synchronize trade numbers from loaded trades to ensure correct numbering
             if let tradeNumberService = tradeNumberService {
-                tradeNumberService.synchronizeTradeNumbers(from: completedTrades)
+                tradeNumberService.synchronizeTradeNumbers(from: self.completedTrades)
             }
 
-            isLoading = false
-            isFirstLoad = false // Mark as no longer first load
+            self.isLoading = false
+            self.isFirstLoad = false // Mark as no longer first load
         }
 
         // Verify and regenerate collection bills for completed trades
         if let tradingNotificationService = tradingNotificationService {
-            await tradingNotificationService.regenerateCollectionBills(for: completedTrades)
+            await tradingNotificationService.regenerateCollectionBills(for: self.completedTrades)
         }
     }
 
     func refreshCompletedTrades() async throws {
         await MainActor.run {
-            isLoading = true
-            errorMessage = nil
+            self.isLoading = true
+            self.errorMessage = nil
         }
 
         // Try to load from API first, then fallback to persistence
-        try await loadCompletedTrades()
+        try await self.loadCompletedTrades()
     }
 
     // MARK: - Trade Management
@@ -174,7 +174,7 @@ final class TradeLifecycleService: TradeLifecycleServiceProtocol, ServiceLifecyc
     func createNewTrade(buyOrder: OrderBuy) async throws -> Trade {
         // CRITICAL: Use per-trader trade numbering for proper isolation
         // Each trader has their own sequence starting from 1
-        let tradeNumber = tradeNumberService?.generateNextTradeNumber(for: buyOrder.traderId) ?? 0
+        let tradeNumber = self.tradeNumberService?.generateNextTradeNumber(for: buyOrder.traderId) ?? 0
         let initialTrade = Trade.from(buyOrder: buyOrder, tradeNumber: tradeNumber)
 
         // Save to Parse Server if available and get updated trade (with server-assigned ID if any)
@@ -193,9 +193,9 @@ final class TradeLifecycleService: TradeLifecycleServiceProtocol, ServiceLifecyc
         }
 
         await MainActor.run {
-            completedTrades.append(finalTrade)
+            self.completedTrades.append(finalTrade)
             // Persist immediately after adding trade
-            persistenceService.persistTrades(completedTrades)
+            self.persistenceService.persistTrades(self.completedTrades)
         }
 
         return finalTrade
@@ -204,11 +204,11 @@ final class TradeLifecycleService: TradeLifecycleServiceProtocol, ServiceLifecyc
     func addSellOrderToTrade(_ tradeId: String, sellOrder: OrderSell) async throws {
         let updatedTrade: Trade? = await MainActor.run {
             if let index = completedTrades.firstIndex(where: { $0.id == tradeId }) {
-                let trade = completedTrades[index]
+                let trade = self.completedTrades[index]
                 let updated = trade.with(sellOrder: sellOrder).updateStatus()
-                completedTrades[index] = updated
+                self.completedTrades[index] = updated
                 // Persist after update
-                persistenceService.persistTrades(completedTrades)
+                self.persistenceService.persistTrades(self.completedTrades)
                 return updated
             }
             return nil
@@ -228,11 +228,11 @@ final class TradeLifecycleService: TradeLifecycleServiceProtocol, ServiceLifecyc
     func addPartialSellOrderToTrade(_ tradeId: String, sellOrder: OrderSell) async throws {
         let updatedTrade: Trade? = await MainActor.run {
             if let index = completedTrades.firstIndex(where: { $0.id == tradeId }) {
-                let trade = completedTrades[index]
+                let trade = self.completedTrades[index]
                 let updated = trade.withPartialSellOrder(sellOrder).updateStatus()
-                completedTrades[index] = updated
+                self.completedTrades[index] = updated
                 // Persist after update
-                persistenceService.persistTrades(completedTrades)
+                self.persistenceService.persistTrades(self.completedTrades)
                 return updated
             }
             return nil
@@ -252,7 +252,7 @@ final class TradeLifecycleService: TradeLifecycleServiceProtocol, ServiceLifecyc
     func cancelTrade(_ tradeId: String) async throws {
         let cancelledTrade: Trade? = await MainActor.run {
             if let index = completedTrades.firstIndex(where: { $0.id == tradeId }) {
-                let trade = completedTrades[index]
+                let trade = self.completedTrades[index]
                 let cancelled = Trade(
                     id: trade.id,
                     tradeNumber: trade.tradeNumber,
@@ -267,9 +267,9 @@ final class TradeLifecycleService: TradeLifecycleServiceProtocol, ServiceLifecyc
                     completedAt: trade.completedAt,
                     updatedAt: Date()
                 )
-                completedTrades[index] = cancelled
+                self.completedTrades[index] = cancelled
                 // Persist after update
-                persistenceService.persistTrades(completedTrades)
+                self.persistenceService.persistTrades(self.completedTrades)
                 return cancelled
             }
             return nil
@@ -292,7 +292,7 @@ final class TradeLifecycleService: TradeLifecycleServiceProtocol, ServiceLifecyc
                 return nil
             }
             
-            let trade = completedTrades[index]
+            let trade = self.completedTrades[index]
             let updatedTrade = trade.updateStatus()
 
             // Calculate and store profit if trade is completed and we have invoice service
@@ -309,9 +309,9 @@ final class TradeLifecycleService: TradeLifecycleServiceProtocol, ServiceLifecyc
                 resultTrade = updatedTrade
             }
 
-            completedTrades[index] = resultTrade
+            self.completedTrades[index] = resultTrade
             // Persist after completion
-            persistenceService.persistTrades(completedTrades)
+            self.persistenceService.persistTrades(self.completedTrades)
             
             return resultTrade
         }
@@ -359,7 +359,7 @@ final class TradeLifecycleService: TradeLifecycleServiceProtocol, ServiceLifecyc
     // MARK: - Private Methods
 
     private func loadMockData() {
-        loadCompletedTradesSync()
+        self.loadCompletedTradesSync()
     }
 
     private func loadCompletedTradesSync() {
@@ -370,8 +370,8 @@ final class TradeLifecycleService: TradeLifecycleServiceProtocol, ServiceLifecyc
     /// Loads persisted trades synchronously (called when API is unavailable)
     private func loadPersistedTradesSync() {
         // Load persisted trades if not already loaded
-        if completedTrades.isEmpty {
-            persistenceService.loadPersistedTrades { [weak self] trades in
+        if self.completedTrades.isEmpty {
+            self.persistenceService.loadPersistedTrades { [weak self] trades in
                 Task { @MainActor [weak self] in
                     guard let self = self else { return }
                     self.completedTrades = trades

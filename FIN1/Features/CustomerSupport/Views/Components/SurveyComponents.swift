@@ -13,23 +13,23 @@ struct FeedbackToggle: View {
 
     var body: some View {
         HStack(spacing: ResponsiveDesign.spacing(12)) {
-            Image(systemName: icon)
+            Image(systemName: self.icon)
                 .font(ResponsiveDesign.bodyFont())
-                .foregroundColor(isOn ? color : AppTheme.fontColor.opacity(0.4))
+                .foregroundColor(self.isOn ? self.color : AppTheme.fontColor.opacity(0.4))
                 .frame(width: 24)
 
-            Text(title)
+            Text(self.title)
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor)
 
             Spacer()
 
-            Toggle("", isOn: $isOn)
-                .toggleStyle(SwitchToggleStyle(tint: color))
+            Toggle("", isOn: self.$isOn)
+                .toggleStyle(SwitchToggleStyle(tint: self.color))
                 .labelsHidden()
         }
         .padding(ResponsiveDesign.spacing(12))
-        .background(isOn ? color.opacity(0.1) : AppTheme.systemTertiaryBackground)
+        .background(self.isOn ? self.color.opacity(0.1) : AppTheme.systemTertiaryBackground)
         .cornerRadius(ResponsiveDesign.spacing(8))
     }
 }
@@ -42,16 +42,16 @@ struct StarRatingView: View {
 
     var body: some View {
         HStack(spacing: ResponsiveDesign.spacing(12)) {
-            ForEach(1...maxRating, id: \.self) { star in
+            ForEach(1...self.maxRating, id: \.self) { star in
                 Button {
                     withAnimation(.spring(response: 0.3)) {
-                        rating = star
+                        self.rating = star
                     }
                 } label: {
-                    Image(systemName: star <= rating ? "star.fill" : "star")
+                    Image(systemName: star <= self.rating ? "star.fill" : "star")
                         .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2))
-                        .foregroundColor(star <= rating ? starColor(for: rating) : AppTheme.fontColor.opacity(0.3))
-                        .scaleEffect(star <= rating ? 1.1 : 1.0)
+                        .foregroundColor(star <= self.rating ? self.starColor(for: self.rating) : AppTheme.fontColor.opacity(0.3))
+                        .scaleEffect(star <= self.rating ? 1.1 : 1.0)
                 }
             }
         }
@@ -124,8 +124,8 @@ struct SurveyThankYouView: View {
             Spacer()
 
             Button {
-                onDismiss()
-                dismiss()
+                self.onDismiss()
+                self.dismiss()
             } label: {
                 Text("Fertig")
                     .fontWeight(.semibold)
@@ -160,11 +160,11 @@ struct SurveyHeader: View {
                 .multilineTextAlignment(.center)
 
             VStack(spacing: ResponsiveDesign.spacing(4)) {
-                Text("Ticket: \(ticketNumber)")
+                Text("Ticket: \(self.ticketNumber)")
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
 
-                Text("Bearbeitet von: \(agentName)")
+                Text("Bearbeitet von: \(self.agentName)")
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.6))
             }

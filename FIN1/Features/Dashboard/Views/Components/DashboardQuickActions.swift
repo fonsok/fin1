@@ -13,16 +13,16 @@ struct DashboardQuickActionsSection: View {
 
     /// Current user's role for explicit role-based rendering
     private var currentUserRole: UserRole? {
-        appServices.userService.currentUser?.role
+        self.appServices.userService.currentUser?.role
     }
 
     var body: some View {
         VStack(spacing: ResponsiveDesign.spacing(16)) {
             // Role-specific content based on user type
-            roleSpecificContent
+            self.roleSpecificContent
         }
-        .sheet(isPresented: $showOrderBuy) {
-            SecuritiesSearchView(services: appServices)
+        .sheet(isPresented: self.$showOrderBuy) {
+            SecuritiesSearchView(services: self.appServices)
         }
     }
 
@@ -36,18 +36,18 @@ struct DashboardQuickActionsSection: View {
     /// - **Other roles**: Shows generic Quick Actions grid (Get Started, Learn More)
     @ViewBuilder
     private var roleSpecificContent: some View {
-        switch currentUserRole {
+        switch self.currentUserRole {
         case .trader:
-            traderQuickActions
+            self.traderQuickActions
 
         case .investor:
             // NOTE: Investor's "New Investment" button is displayed in DashboardContainer
             // as a separate section above Quick Actions. This section intentionally shows nothing.
-            investorQuickActions
+            self.investorQuickActions
 
         case .admin, .customerService, .other:
             // Admin, Customer Service, and other roles get generic Quick Actions
-            otherRolesQuickActions
+            self.otherRolesQuickActions
 
         case .none:
             // Fallback for when user role is not determined
@@ -61,7 +61,7 @@ struct DashboardQuickActionsSection: View {
     private var traderQuickActions: some View {
         VStack(spacing: ResponsiveDesign.spacing(12)) {
             Button(action: {
-                showOrderBuy = true
+                self.showOrderBuy = true
             }) {
                 HStack(spacing: ResponsiveDesign.spacing(12)) {
                     Image(systemName: "chart.line.uptrend.xyaxis")

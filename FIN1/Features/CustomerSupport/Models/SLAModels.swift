@@ -74,19 +74,19 @@ struct SLAInfo {
 
     var overallStatus: SLAStatus {
         // If either is breached, overall is breached
-        if firstResponseStatus == .breached || resolutionStatus == .breached {
+        if self.firstResponseStatus == .breached || self.resolutionStatus == .breached {
             return .breached
         }
         // If either is warning, overall is warning
-        if firstResponseStatus == .warning || resolutionStatus == .warning {
+        if self.firstResponseStatus == .warning || self.resolutionStatus == .warning {
             return .warning
         }
         // If both completed, overall is completed
-        if firstResponseStatus == .completed && resolutionStatus == .completed {
+        if self.firstResponseStatus == .completed && self.resolutionStatus == .completed {
             return .completed
         }
         // If either is paused, overall is paused
-        if firstResponseStatus == .paused || resolutionStatus == .paused {
+        if self.firstResponseStatus == .paused || self.resolutionStatus == .paused {
             return .paused
         }
         return .onTrack
@@ -104,8 +104,8 @@ struct SLAInfo {
             return "Überfällig"
         }
 
-        let hours = Int(time / 3600)
-        let minutes = Int((time.truncatingRemainder(dividingBy: 3600)) / 60)
+        let hours = Int(time / 3_600)
+        let minutes = Int((time.truncatingRemainder(dividingBy: 3_600)) / 60)
 
         if hours > 24 {
             let days = hours / 24
@@ -128,7 +128,7 @@ extension SupportTicket {
 
         // First Response SLA
         let firstResponseTarget = config.firstResponseTargets[priority] ?? 24
-        let firstResponseDeadline = createdAt.addingTimeInterval(firstResponseTarget * 3600)
+        let firstResponseDeadline = createdAt.addingTimeInterval(firstResponseTarget * 3_600)
         let hasFirstResponse = responses.contains { !$0.isInternal && $0.agentId != userId }
 
         let firstResponseStatus: SLAStatus
@@ -145,7 +145,7 @@ extension SupportTicket {
             firstResponseTimeRemaining = firstResponseDeadline.timeIntervalSince(now)
         } else {
             let remaining = firstResponseDeadline.timeIntervalSince(now)
-            let total = firstResponseTarget * 3600
+            let total = firstResponseTarget * 3_600
             if remaining / total <= config.warningThreshold {
                 firstResponseStatus = .warning
             } else {
@@ -156,7 +156,7 @@ extension SupportTicket {
 
         // Resolution SLA
         let resolutionTarget = config.resolutionTargets[priority] ?? 72
-        let resolutionDeadline = createdAt.addingTimeInterval(resolutionTarget * 3600)
+        let resolutionDeadline = createdAt.addingTimeInterval(resolutionTarget * 3_600)
 
         let resolutionStatus: SLAStatus
         let resolutionTimeRemaining: TimeInterval?
@@ -172,7 +172,7 @@ extension SupportTicket {
             resolutionTimeRemaining = resolutionDeadline.timeIntervalSince(now)
         } else {
             let remaining = resolutionDeadline.timeIntervalSince(now)
-            let total = resolutionTarget * 3600
+            let total = resolutionTarget * 3_600
             if remaining / total <= config.warningThreshold {
                 resolutionStatus = .warning
             } else {

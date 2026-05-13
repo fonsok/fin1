@@ -1,5 +1,5 @@
-import SwiftUI
 import Combine
+import SwiftUI
 
 /// ViewModel for Help Center view
 /// Manages FAQ data, search, and category filtering
@@ -28,88 +28,88 @@ final class HelpCenterViewModel: ObservableObject {
     }
 
     func reload() async {
-        await loadServerFAQsIfAvailable(forceRefresh: true)
+        await self.loadServerFAQsIfAvailable(forceRefresh: true)
     }
 
     // MARK: - Computed Properties
 
     var hasNoFAQs: Bool {
-        !isLoading && categories.isEmpty && faqs.isEmpty
+        !self.isLoading && self.categories.isEmpty && self.faqs.isEmpty
     }
 
     var filteredFAQs: [FAQContentItem] {
-        if !searchQuery.isEmpty {
-            let q = searchQuery.lowercased()
-            return faqs.filter { faq in
+        if !self.searchQuery.isEmpty {
+            let q = self.searchQuery.lowercased()
+            return self.faqs.filter { faq in
                 faq.question.lowercased().contains(q) || faq.answer.lowercased().contains(q)
             }
         }
 
         if let category = selectedCategory {
-            return faqs(for: category)
+            return self.faqs(for: category)
         }
 
-        return faqs
+        return self.faqs
     }
 
     var hasSearchResults: Bool {
-        !searchQuery.isEmpty && !filteredFAQs.isEmpty
+        !self.searchQuery.isEmpty && !self.filteredFAQs.isEmpty
     }
 
     var hasNoSearchResults: Bool {
-        !searchQuery.isEmpty && filteredFAQs.isEmpty
+        !self.searchQuery.isEmpty && self.filteredFAQs.isEmpty
     }
 
     // MARK: - Methods
 
     func toggleFAQ(_ faq: FAQContentItem) {
-        if expandedFAQIds.contains(faq.id) {
-            expandedFAQIds.remove(faq.id)
+        if self.expandedFAQIds.contains(faq.id) {
+            self.expandedFAQIds.remove(faq.id)
         } else {
-            expandedFAQIds.insert(faq.id)
+            self.expandedFAQIds.insert(faq.id)
         }
     }
 
     func isExpanded(_ faq: FAQContentItem) -> Bool {
-        expandedFAQIds.contains(faq.id)
+        self.expandedFAQIds.contains(faq.id)
     }
 
     func selectCategory(_ category: FAQCategoryContent?) {
-        selectedCategory = category
+        self.selectedCategory = category
         // Clear search when selecting a category
         if category != nil {
-            searchQuery = ""
+            self.searchQuery = ""
         }
     }
 
     func clearFilters() {
-        selectedCategory = nil
-        searchQuery = ""
+        self.selectedCategory = nil
+        self.searchQuery = ""
     }
 
     private func loadServerFAQsIfAvailable(forceRefresh: Bool = false) async {
         guard let faqContentBridge else { return }
-        isLoading = true
-        loadFailed = false
+        self.isLoading = true
+        self.loadFailed = false
         do {
             if forceRefresh {
-                await faqContentBridge.clearCache(location: "help_center", userRole: userRole)
+                await faqContentBridge.clearCache(location: "help_center", userRole: self.userRole)
             }
-            let categories = try await faqContentBridge.fetchFAQCategories(location: "help_center", userRole: userRole)
-            let faqs = try await faqContentBridge.fetchFAQsForHelpCenter(userRole: userRole)
+            let categories = try await faqContentBridge.fetchFAQCategories(location: "help_center", userRole: self.userRole)
+            let faqs = try await faqContentBridge.fetchFAQsForHelpCenter(userRole: self.userRole)
             // Always apply a successful response (even if empty) so retry/refresh replaces stale data.
             self.categories = categories
             self.faqs = faqs
         } catch {
-            loadFailed = true
+            self.loadFailed = true
             self.categories = []
             self.faqs = []
         }
-        isLoading = false
+        self.isLoading = false
     }
 
     func faqs(for category: FAQCategoryContent) -> [FAQContentItem] {
-        faqs.filter { $0.categoryId == category.id }
+        self.faqs.filter { $0.categoryId == category.id }
     }
 }
 

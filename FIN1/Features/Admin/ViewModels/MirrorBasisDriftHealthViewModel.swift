@@ -36,11 +36,11 @@ final class MirrorBasisDriftHealthViewModel: ObservableObject {
     }
 
     var overall: String {
-        status?.overall ?? "unknown"
+        self.status?.overall ?? "unknown"
     }
 
     var badgeColor: Color {
-        switch overall {
+        switch self.overall {
         case "healthy":
             return AppTheme.successGreen
         case "degraded":
@@ -52,7 +52,7 @@ final class MirrorBasisDriftHealthViewModel: ObservableObject {
         }
     }
 
-    var isLoading: Bool { state == .loading }
+    var isLoading: Bool { self.state == .loading }
 
     /// Human-friendly "X days ago" string, falling back to ISO when parsing fails.
     var runAtDisplay: String {
@@ -65,16 +65,16 @@ final class MirrorBasisDriftHealthViewModel: ObservableObject {
 
     func load() async {
         guard let service = service else {
-            state = .failed(message: "Parse API client unavailable")
+            self.state = .failed(message: "Parse API client unavailable")
             return
         }
-        state = .loading
+        self.state = .loading
         do {
             let result = try await service.fetchMirrorBasisDriftStatus()
-            status = result
-            state = .loaded
+            self.status = result
+            self.state = .loaded
         } catch {
-            state = .failed(message: error.localizedDescription)
+            self.state = .failed(message: error.localizedDescription)
         }
     }
 

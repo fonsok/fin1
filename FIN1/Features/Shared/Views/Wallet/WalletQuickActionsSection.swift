@@ -13,7 +13,7 @@ struct WalletQuickActionsSection: View {
                 .foregroundColor(AppTheme.fontColor)
 
             HStack(spacing: ResponsiveDesign.spacing(4)) {
-                Button(action: onDeposit) {
+                Button(action: self.onDeposit) {
                     VStack(spacing: ResponsiveDesign.spacing(2)) {
                         Image(systemName: "arrow.down.circle.fill")
                             .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize()))
@@ -24,12 +24,12 @@ struct WalletQuickActionsSection: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding(ResponsiveDesign.spacing(4))
-                    .background(actionsEnabled ? AppTheme.accentGreen : AppTheme.secondaryText)
+                    .background(self.actionsEnabled ? AppTheme.accentGreen : AppTheme.secondaryText)
                     .cornerRadius(ResponsiveDesign.spacing(3))
                 }
-                .disabled(!actionsEnabled)
+                .disabled(!self.actionsEnabled)
 
-                Button(action: onWithdrawal) {
+                Button(action: self.onWithdrawal) {
                     VStack(spacing: ResponsiveDesign.spacing(2)) {
                         Image(systemName: "arrow.up.circle.fill")
                             .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize()))
@@ -40,10 +40,10 @@ struct WalletQuickActionsSection: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding(ResponsiveDesign.spacing(4))
-                    .background(actionsEnabled ? AppTheme.accentRed : AppTheme.secondaryText)
+                    .background(self.actionsEnabled ? AppTheme.accentRed : AppTheme.secondaryText)
                     .cornerRadius(ResponsiveDesign.spacing(3))
                 }
-                .disabled(!actionsEnabled)
+                .disabled(!self.actionsEnabled)
             }
         }
     }

@@ -1,5 +1,5 @@
-import XCTest
 @testable import FIN1
+import XCTest
 
 final class FAQContentServicePlaceholderTests: XCTestCase {
 
@@ -60,15 +60,15 @@ final class FAQContentServicePlaceholderTests: XCTestCase {
 
     override func setUp() {
         super.setUp()
-        suiteName = "FAQContentServicePlaceholderTests-\(UUID().uuidString)"
-        userDefaults = UserDefaults(suiteName: suiteName)
+        self.suiteName = "FAQContentServicePlaceholderTests-\(UUID().uuidString)"
+        self.userDefaults = UserDefaults(suiteName: self.suiteName)
     }
 
     override func tearDown() {
         if let suiteName {
-            userDefaults.removePersistentDomain(forName: suiteName)
+            self.userDefaults.removePersistentDomain(forName: suiteName)
         }
-        userDefaults = nil
+        self.userDefaults = nil
         suiteName = nil
         super.tearDown()
     }
@@ -111,7 +111,10 @@ final class FAQContentServicePlaceholderTests: XCTestCase {
 
         XCTAssertEqual(faqs.count, 1)
         let answer = faqs[0].answer
-        XCTAssertEqual(answer, "Service \(formatPercentDE(CalculationConstants.ServiceCharges.appServiceChargeRate)), Provision \(formatPercentDE(CalculationConstants.FeeRates.traderCommissionRate))")
+        XCTAssertEqual(
+            answer,
+            "Service \(self.formatPercentDE(CalculationConstants.ServiceCharges.appServiceChargeRate)), Provision \(self.formatPercentDE(CalculationConstants.FeeRates.traderCommissionRate))"
+        )
         XCTAssertFalse(answer.contains("{{APP_SERVICE_CHARGE_RATE}}"))
         XCTAssertFalse(answer.contains("{(TRADER_COMMISSION_RATE)}"))
     }

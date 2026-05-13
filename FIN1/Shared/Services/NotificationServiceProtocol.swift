@@ -1,6 +1,6 @@
+import Combine
 import Foundation
 import SwiftUI
-import Combine
 
 // MARK: - Notification Service Protocol
 /// Defines the contract for notification operations and management
@@ -50,7 +50,7 @@ final class NotificationService: NotificationServiceProtocol, ServiceLifecycle, 
 
     @Published var notifications: [AppNotification] = []
     var notificationsPublisher: AnyPublisher<[AppNotification], Never> {
-        $notifications.eraseToAnyPublisher()
+        self.$notifications.eraseToAnyPublisher()
     }
     @Published var unreadCount: Int = 0
     @Published var combinedUnreadCount: Int = 0
@@ -75,9 +75,9 @@ final class NotificationService: NotificationServiceProtocol, ServiceLifecycle, 
         self.pushTokenAPIService = pushTokenAPIService
 
         // Start with empty notifications - notifications will be loaded from actual data sources
-        notifications = []
-        updateUnreadCount()
-        updateCombinedUnreadCount()
+        self.notifications = []
+        self.updateUnreadCount()
+        self.updateCombinedUnreadCount()
 
         // Debug: Log instance creation
         print("🔔 NotificationService.init: Created new instance \(ObjectIdentifier(self))")
@@ -97,7 +97,7 @@ final class NotificationService: NotificationServiceProtocol, ServiceLifecycle, 
                     self.updateUnreadCount()
                     self.updateCombinedUnreadCount()
                 }
-                .store(in: &cancellables)
+                .store(in: &self.cancellables)
 
             print("✅ NotificationService: Document observation set up, observing \(documentService.documents.count) documents")
         } else {
@@ -110,15 +110,15 @@ final class NotificationService: NotificationServiceProtocol, ServiceLifecycle, 
     func stop() { /* stop timers */ }
     func reset() {
         print("⚠️ NotificationService.reset: Resetting instance \(ObjectIdentifier(self))")
-        clearAllNotifications()
+        self.clearAllNotifications()
     }
 
     // MARK: - Notification Management
 
     func loadNotifications(for user: User) {
         let uid = user.id
-        isLoading = true
-        errorMessage = nil
+        self.isLoading = true
+        self.errorMessage = nil
 
         guard let api = notificationAPIService else {
             DispatchQueue.main.async { [weak self] in
@@ -149,10 +149,10 @@ final class NotificationService: NotificationServiceProtocol, ServiceLifecycle, 
     /// Keeps client-only rows (e.g. UUID ids) for this user; replaces overlapping ids with server payload.
     private func applyMergedServerNotifications(fetched: [AppNotification], userId: String) {
         let serverIds = Set(fetched.map(\.id))
-        let localsForUser = notifications.filter { $0.userId == userId && !serverIds.contains($0.id) }
+        let localsForUser = self.notifications.filter { $0.userId == userId && !serverIds.contains($0.id) }
         var merged = fetched + localsForUser
         merged.sort { $0.createdAt > $1.createdAt }
-        notifications = merged
+        self.notifications = merged
     }
 
     func markAsRead(_ notification: AppNotification) {
@@ -167,12 +167,12 @@ final class NotificationService: NotificationServiceProtocol, ServiceLifecycle, 
             }
         }
         if let index = notifications.firstIndex(where: { $0.id == notification.id }) {
-            var updatedNotification = notifications[index]
+            var updatedNotification = self.notifications[index]
             updatedNotification.isRead = true
             updatedNotification.readAt = Date()
-            notifications[index] = updatedNotification
-            updateUnreadCount()
-            updateCombinedUnreadCount()
+            self.notifications[index] = updatedNotification
+            self.updateUnreadCount()
+            self.updateCombinedUnreadCount()
         }
     }
 
@@ -187,25 +187,25 @@ final class NotificationService: NotificationServiceProtocol, ServiceLifecycle, 
                 }
             }
         }
-        for i in 0..<notifications.count {
-            notifications[i].isRead = true
-            notifications[i].readAt = Date()
+        for i in 0..<self.notifications.count {
+            self.notifications[i].isRead = true
+            self.notifications[i].readAt = Date()
         }
-        updateUnreadCount()
-        updateCombinedUnreadCount()
+        self.updateUnreadCount()
+        self.updateCombinedUnreadCount()
     }
 
     func deleteNotification(_ notification: AppNotification) {
-        notifications.removeAll { $0.id == notification.id }
-        updateUnreadCount()
-        updateCombinedUnreadCount()
+        self.notifications.removeAll { $0.id == notification.id }
+        self.updateUnreadCount()
+        self.updateCombinedUnreadCount()
     }
 
     func clearAllNotifications() {
         print("⚠️ NotificationService.clearAllNotifications: Clearing all notifications from instance \(ObjectIdentifier(self))")
-        notifications.removeAll()
-        updateUnreadCount()
-        updateCombinedUnreadCount()
+        self.notifications.removeAll()
+        self.updateUnreadCount()
+        self.updateCombinedUnreadCount()
     }
 
     // MARK: - Notification Creation
@@ -222,13 +222,27 @@ final class NotificationService: NotificationServiceProtocol, ServiceLifecycle, 
         if Thread.isMainThread {
             // Already on main thread, use MainActor.assumeIsolated
             MainActor.assumeIsolated {
-                self.createNotificationOnMainThread(title: title, message: message, type: type, priority: priority, for: userId, metadata: metadata)
+                self.createNotificationOnMainThread(
+                    title: title,
+                    message: message,
+                    type: type,
+                    priority: priority,
+                    for: userId,
+                    metadata: metadata
+                )
             }
         } else {
             // Use DispatchQueue.main.sync to ensure synchronous execution
             DispatchQueue.main.sync {
                 MainActor.assumeIsolated {
-                    self.createNotificationOnMainThread(title: title, message: message, type: type, priority: priority, for: userId, metadata: metadata)
+                    self.createNotificationOnMainThread(
+                        title: title,
+                        message: message,
+                        type: type,
+                        priority: priority,
+                        for: userId,
+                        metadata: metadata
+                    )
                 }
             }
         }
@@ -255,51 +269,55 @@ final class NotificationService: NotificationServiceProtocol, ServiceLifecycle, 
             metadata: metadata
         )
 
-        notifications.append(notification)
-        updateUnreadCount()
-        updateCombinedUnreadCount()
+        self.notifications.append(notification)
+        self.updateUnreadCount()
+        self.updateCombinedUnreadCount()
 
-        print("✅ NotificationService.createNotification: Added notification for userId '\(userId)', total notifications: \(notifications.count)")
+        print(
+            "✅ NotificationService.createNotification: Added notification for userId '\(userId)', total notifications: \(self.notifications.count)"
+        )
         print("   📋 Notification details: title='\(title)', type=\(type), userId='\(userId)'")
         print("   🔍 NotificationService instance: \(ObjectIdentifier(self))")
 
         // Debug: Print all notifications for this user
-        let userNotifications = notifications.filter { $0.userId == userId }
+        let userNotifications = self.notifications.filter { $0.userId == userId }
         print("   📊 User '\(userId)' now has \(userNotifications.count) total notifications")
     }
 
     // MARK: - Notification Queries
 
     func getNotifications(for userId: String) -> [AppNotification] {
-        return notifications.filter { $0.userId == userId }
+        return self.notifications.filter { $0.userId == userId }
     }
 
     func getUnreadNotifications(for userId: String) -> [AppNotification] {
-        return notifications.filter { $0.userId == userId && !$0.isRead }
+        return self.notifications.filter { $0.userId == userId && !$0.isRead }
     }
 
     func getNotificationsByType(_ type: NotificationType, for userId: String) -> [AppNotification] {
-        return notifications.filter { $0.userId == userId && $0.type == type }
+        return self.notifications.filter { $0.userId == userId && $0.type == type }
     }
 
     // MARK: - Private Methods
 
     private func updateUnreadCount() {
-        unreadCount = notifications.filter { !$0.isRead }.count
+        self.unreadCount = self.notifications.filter { !$0.isRead }.count
     }
 
     private func updateCombinedUnreadCount() {
         // Update combined count for current user (if available)
         // This will be recalculated per-user in getCombinedUnreadCount()
         // but we publish it so views can observe changes
-        let unreadNotifications = notifications.filter { !$0.isRead }.count
-        let unreadDocuments = documentService.documents.filter {
+        let unreadNotifications = self.notifications.filter { !$0.isRead }.count
+        let unreadDocuments = self.documentService.documents.filter {
             $0.readAt == nil && !$0.isExcludedFromInvestorDocumentInbox
         }.count
         let newCount = unreadNotifications + unreadDocuments
-        if combinedUnreadCount != newCount {
-            combinedUnreadCount = newCount
-            print("🔔 NotificationService: Updated combinedUnreadCount to \(newCount) (notifications: \(unreadNotifications), documents: \(unreadDocuments))")
+        if self.combinedUnreadCount != newCount {
+            self.combinedUnreadCount = newCount
+            print(
+                "🔔 NotificationService: Updated combinedUnreadCount to \(newCount) (notifications: \(unreadNotifications), documents: \(unreadDocuments))"
+            )
         }
     }
 
@@ -309,9 +327,9 @@ final class NotificationService: NotificationServiceProtocol, ServiceLifecycle, 
         // Count unread notifications (filter by userId if provided)
         let unreadNotifications: Int
         if let userId = userId {
-            unreadNotifications = notifications.filter { $0.userId == userId && !$0.isRead }.count
+            unreadNotifications = self.notifications.filter { $0.userId == userId && !$0.isRead }.count
         } else {
-            unreadNotifications = notifications.filter { !$0.isRead }.count
+            unreadNotifications = self.notifications.filter { !$0.isRead }.count
         }
 
         // Count unread documents (documents where readAt == nil, filter by userId if provided)
@@ -319,13 +337,13 @@ final class NotificationService: NotificationServiceProtocol, ServiceLifecycle, 
         // mock documents or documents from other users
         let unreadDocuments: Int
         if let userId = userId {
-            let userDocuments = documentService.getDocuments(for: userId)
+            let userDocuments = self.documentService.getDocuments(for: userId)
             unreadDocuments = userDocuments.filter {
                 $0.readAt == nil && !$0.isExcludedFromInvestorDocumentInbox
             }.count
 
             // Debug logging to help diagnose issues
-            let allUnread = documentService.documents.filter { $0.readAt == nil }.count
+            let allUnread = self.documentService.documents.filter { $0.readAt == nil }.count
             let totalCount = unreadNotifications + unreadDocuments
             print("🔔 NotificationService.getCombinedUnreadCount: userId=\(userId)")
             print("   📊 Unread notifications: \(unreadNotifications)")
@@ -334,14 +352,14 @@ final class NotificationService: NotificationServiceProtocol, ServiceLifecycle, 
             print("   📊 Combined unread count: \(totalCount)")
 
             if unreadDocuments < allUnread {
-                let otherUsersDocs = documentService.documents.filter { $0.readAt == nil && $0.userId != userId }
+                let otherUsersDocs = self.documentService.documents.filter { $0.readAt == nil && $0.userId != userId }
                 print("   ⚠️ Found \(otherUsersDocs.count) unread documents from other users (not counted)")
                 for doc in otherUsersDocs.prefix(3) {
                     print("      - \(doc.name.prefix(40))... (userId: '\(doc.userId)')")
                 }
             }
         } else {
-            unreadDocuments = documentService.documents.filter {
+            unreadDocuments = self.documentService.documents.filter {
                 $0.readAt == nil && !$0.isExcludedFromInvestorDocumentInbox
             }.count
         }
@@ -351,8 +369,8 @@ final class NotificationService: NotificationServiceProtocol, ServiceLifecycle, 
 
     func getCombinedItems() -> [NotificationItem] {
         // Combine notifications and documents
-        let notificationItems = notifications.map { NotificationItem.notification($0) }
-        let documentItems = documentService.documents
+        let notificationItems = self.notifications.map { NotificationItem.notification($0) }
+        let documentItems = self.documentService.documents
             .filter { !$0.isExcludedFromInvestorDocumentInbox }
             .map { NotificationItem.document($0) }
         return notificationItems + documentItems
@@ -372,7 +390,7 @@ final class NotificationService: NotificationServiceProtocol, ServiceLifecycle, 
         }
 
         // Store token for sync
-        currentPushToken = (token: token, type: tokenType, deviceId: deviceId)
+        self.currentPushToken = (token: token, type: tokenType, deviceId: deviceId)
 
         // Register token with backend (write-through pattern)
         do {
@@ -391,8 +409,8 @@ final class NotificationService: NotificationServiceProtocol, ServiceLifecycle, 
         }
 
         // Clear stored token
-        if currentPushToken?.token == token && currentPushToken?.type == tokenType {
-            currentPushToken = nil
+        if self.currentPushToken?.token == token && self.currentPushToken?.type == tokenType {
+            self.currentPushToken = nil
         }
 
         // Deactivate token on backend (write-through pattern)

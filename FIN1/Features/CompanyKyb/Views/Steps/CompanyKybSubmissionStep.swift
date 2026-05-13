@@ -11,15 +11,15 @@ struct CompanyKybSubmissionStep: View {
                 subtitle: "Bitte prüfen Sie die Zusammenfassung und reichen Sie den Antrag ein."
             )
 
-            summarySection
+            self.summarySection
 
             toggleRow(
                 title: "Ich habe die Zusammenfassung geprüft und bestätige die Richtigkeit aller Angaben.",
-                isOn: $formData.confirmedSummary
+                isOn: self.$formData.confirmedSummary
             )
 
-            if viewModel.completedSteps.count < CompanyKybStep.totalSteps - 1 {
-                incompleteWarning
+            if self.viewModel.completedSteps.count < CompanyKybStep.totalSteps - 1 {
+                self.incompleteWarning
             }
         }
     }
@@ -31,33 +31,32 @@ struct CompanyKybSubmissionStep: View {
                 .fontWeight(.bold)
                 .foregroundColor(AppTheme.fontColor)
 
-            summaryRow(label: "Firma", value: viewModel.legalEntity.legalName)
-            summaryRow(label: "Rechtsform", value: viewModel.legalEntity.legalForm)
-            summaryRow(
+            self.summaryRow(label: "Firma", value: self.viewModel.legalEntity.legalName)
+            self.summaryRow(label: "Rechtsform", value: self.viewModel.legalEntity.legalForm)
+            self.summaryRow(
                 label: "Sitz",
-                value: "\(viewModel.registeredAddress.city), \(viewModel.registeredAddress.country)"
+                value: "\(self.viewModel.registeredAddress.city), \(self.viewModel.registeredAddress.country)"
             )
-            summaryRow(label: "USt-IdNr.", value: viewModel.taxCompliance.vatId.isEmpty
-                ? (viewModel.taxCompliance.noVatIdDeclared ? "Nicht vorhanden" : "–")
-                : viewModel.taxCompliance.vatId
-            )
-            summaryRow(
+            self.summaryRow(label: "USt-IdNr.", value: self.viewModel.taxCompliance.vatId.isEmpty
+                ? (self.viewModel.taxCompliance.noVatIdDeclared ? "Nicht vorhanden" : "–")
+                : self.viewModel.taxCompliance.vatId)
+            self.summaryRow(
                 label: "UBOs",
-                value: viewModel.beneficialOwners.noUboOver25Percent
+                value: self.viewModel.beneficialOwners.noUboOver25Percent
                     ? "Kein UBO > 25 %"
-                    : "\(viewModel.beneficialOwners.ubos.count) eingetragen"
+                    : "\(self.viewModel.beneficialOwners.ubos.count) eingetragen"
             )
-            summaryRow(
+            self.summaryRow(
                 label: "Vertreter",
-                value: "\(viewModel.authorizedRepresentatives.representatives.count) eingetragen"
+                value: "\(self.viewModel.authorizedRepresentatives.representatives.count) eingetragen"
             )
-            summaryRow(
+            self.summaryRow(
                 label: "Dokumente",
-                value: viewModel.documents.documentsAcknowledged ? "Bestätigt" : "Ausstehend"
+                value: self.viewModel.documents.documentsAcknowledged ? "Bestätigt" : "Ausstehend"
             )
-            summaryRow(
+            self.summaryRow(
                 label: "Erklärungen",
-                value: viewModel.declarations.accuracyDeclarationAccepted ? "Abgegeben" : "Ausstehend"
+                value: self.viewModel.declarations.accuracyDeclarationAccepted ? "Abgegeben" : "Ausstehend"
             )
         }
         .padding(ResponsiveDesign.spacing(16))

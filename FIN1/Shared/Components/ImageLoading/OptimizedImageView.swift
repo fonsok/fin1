@@ -5,27 +5,27 @@ import UIKit
 final class ImageCacheManager: @unchecked Sendable {
     static let shared = ImageCacheManager()
     private let cache = NSCache<NSString, UIImage>()
-    private let maxCacheSize = 50 * 1024 * 1024 // 50MB
+    private let maxCacheSize = 50 * 1_024 * 1_024 // 50MB
 
     private init() {
-        cache.totalCostLimit = maxCacheSize
+        self.cache.totalCostLimit = self.maxCacheSize
     }
 
     func setImage(_ image: UIImage, forKey key: String) {
         let cost = image.jpegData(compressionQuality: 0.8)?.count ?? 0
-        cache.setObject(image, forKey: key as NSString, cost: cost)
+        self.cache.setObject(image, forKey: key as NSString, cost: cost)
     }
 
     func getImage(forKey key: String) -> UIImage? {
-        return cache.object(forKey: key as NSString)
+        return self.cache.object(forKey: key as NSString)
     }
 
     func removeImage(forKey key: String) {
-        cache.removeObject(forKey: key as NSString)
+        self.cache.removeObject(forKey: key as NSString)
     }
 
     func clearCache() {
-        cache.removeAllObjects()
+        self.cache.removeAllObjects()
     }
 }
 
@@ -59,34 +59,34 @@ struct OptimizedImageView: View {
             if let image = cachedImage ?? image {
                 Image(uiImage: image)
                     .resizable()
-                    .aspectRatio(contentMode: contentMode)
-                    .frame(maxHeight: maxHeight)
-                    .cornerRadius(cornerRadius)
+                    .aspectRatio(contentMode: self.contentMode)
+                    .frame(maxHeight: self.maxHeight)
+                    .cornerRadius(self.cornerRadius)
                     .onAppear {
-                        loadImage()
+                        self.loadImage()
                     }
             } else {
                 // Placeholder with loading state
-                RoundedRectangle(cornerRadius: cornerRadius)
+                RoundedRectangle(cornerRadius: self.cornerRadius)
                     .fill(AppTheme.inputFieldBackground)
-                    .frame(height: maxHeight)
+                    .frame(height: self.maxHeight)
                     .overlay(
                         VStack(spacing: ResponsiveDesign.spacing(8)) {
-                            if isLoading {
+                            if self.isLoading {
                                 ProgressView()
                                     .progressViewStyle(CircularProgressViewStyle(tint: AppTheme.accentLightBlue))
                             } else {
-                                Image(systemName: placeholder)
+                                Image(systemName: self.placeholder)
                                     .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 1.6))
                                     .foregroundColor(AppTheme.fontColor.opacity(0.6))
                             }
-                            Text(isLoading ? "Loading..." : "No Image")
+                            Text(self.isLoading ? "Loading..." : "No Image")
                                 .font(ResponsiveDesign.captionFont())
                                 .foregroundColor(AppTheme.fontColor.opacity(0.6))
                         }
                     )
                     .onAppear {
-                        loadImage()
+                        self.loadImage()
                     }
             }
         }
@@ -96,16 +96,16 @@ struct OptimizedImageView: View {
         guard let image = image else { return }
 
         // Generate cache key based on image data
-        let cacheKey = generateCacheKey(for: image)
+        let cacheKey = self.generateCacheKey(for: image)
 
         // Check cache first
         if let cached = ImageCacheManager.shared.getImage(forKey: cacheKey) {
-            cachedImage = cached
+            self.cachedImage = cached
             return
         }
 
         // Load image asynchronously
-        isLoading = true
+        self.isLoading = true
 
         Task {
             // Simulate processing time for large images
@@ -113,10 +113,10 @@ struct OptimizedImageView: View {
 
             await MainActor.run {
                 // Compress and cache the image
-                let compressedImage = compressImage(image)
+                let compressedImage = self.compressImage(image)
                 ImageCacheManager.shared.setImage(compressedImage, forKey: cacheKey)
-                cachedImage = compressedImage
-                isLoading = false
+                self.cachedImage = compressedImage
+                self.isLoading = false
             }
         }
     }
@@ -168,9 +168,9 @@ struct LazyImageGrid<Item: Identifiable, Content: View>: View {
     }
 
     var body: some View {
-        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: spacing), count: columns), spacing: spacing) {
-            ForEach(items) { item in
-                content(item)
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: self.spacing), count: self.columns), spacing: self.spacing) {
+            ForEach(self.items) { item in
+                self.content(item)
             }
         }
     }
@@ -207,30 +207,30 @@ struct AsyncImageLoader: View {
 
     var body: some View {
         Group {
-            switch loadingState {
+            switch self.loadingState {
             case .loading:
-                loadingView
+                self.loadingView
             case .loaded(let image):
                 Image(uiImage: image)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .frame(maxHeight: maxHeight)
-                    .cornerRadius(cornerRadius)
+                    .frame(maxHeight: self.maxHeight)
+                    .cornerRadius(self.cornerRadius)
             case .failed:
-                errorView
+                self.errorView
             case .empty:
-                emptyView
+                self.emptyView
             }
         }
         .onAppear {
-            loadImage()
+            self.loadImage()
         }
     }
 
     private var loadingView: some View {
-        RoundedRectangle(cornerRadius: cornerRadius)
+        RoundedRectangle(cornerRadius: self.cornerRadius)
             .fill(AppTheme.inputFieldBackground)
-            .frame(height: maxHeight)
+            .frame(height: self.maxHeight)
             .overlay(
                 VStack(spacing: ResponsiveDesign.spacing(8)) {
                     ProgressView()
@@ -243,9 +243,9 @@ struct AsyncImageLoader: View {
     }
 
     private var errorView: some View {
-        RoundedRectangle(cornerRadius: cornerRadius)
+        RoundedRectangle(cornerRadius: self.cornerRadius)
             .fill(AppTheme.inputFieldBackground)
-            .frame(height: maxHeight)
+            .frame(height: self.maxHeight)
             .overlay(
                 VStack(spacing: ResponsiveDesign.spacing(8)) {
                     Image(systemName: "exclamationmark.triangle")
@@ -259,12 +259,12 @@ struct AsyncImageLoader: View {
     }
 
     private var emptyView: some View {
-        RoundedRectangle(cornerRadius: cornerRadius)
+        RoundedRectangle(cornerRadius: self.cornerRadius)
             .fill(AppTheme.inputFieldBackground)
-            .frame(height: maxHeight)
+            .frame(height: self.maxHeight)
             .overlay(
                 VStack(spacing: ResponsiveDesign.spacing(8)) {
-                    Image(systemName: placeholder)
+                    Image(systemName: self.placeholder)
                         .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 1.6))
                         .foregroundColor(AppTheme.fontColor.opacity(0.6))
                     Text("No Image")
@@ -276,13 +276,13 @@ struct AsyncImageLoader: View {
 
     private func loadImage() {
         guard let urlString = imageURL, !urlString.isEmpty else {
-            loadingState = .empty
+            self.loadingState = .empty
             return
         }
 
         // Check cache first
         if let cachedImage = ImageCacheManager.shared.getImage(forKey: urlString) {
-            loadingState = .loaded(cachedImage)
+            self.loadingState = .loaded(cachedImage)
             return
         }
 
@@ -297,16 +297,16 @@ struct AsyncImageLoader: View {
                 // let image = UIImage(data: data)!
 
                 // For now, create a placeholder image
-                let image = createPlaceholderImage()
+                let image = self.createPlaceholderImage()
 
                 await MainActor.run {
                     // Cache the image
                     ImageCacheManager.shared.setImage(image, forKey: urlString)
-                    loadingState = .loaded(image)
+                    self.loadingState = .loaded(image)
                 }
             } catch {
                 await MainActor.run {
-                    loadingState = .failed(error)
+                    self.loadingState = .failed(error)
                 }
             }
         }

@@ -60,7 +60,7 @@ struct SecuritiesDetailsSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
-            Text(title)
+            Text(self.title)
                 .font(ResponsiveDesign.headlineFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.8))
 
@@ -71,28 +71,28 @@ struct SecuritiesDetailsSection: View {
             }
 
             // Common rows
-            OrderInfoRow(label: "Strike Price", value: strike)
-            OrderInfoRow(label: "Bewertungstag", value: valuationDate)
-            OrderInfoRow(label: "WKN", value: wkn)
+            OrderInfoRow(label: "Strike Price", value: self.strike)
+            OrderInfoRow(label: "Bewertungstag", value: self.valuationDate)
+            OrderInfoRow(label: "WKN", value: self.wkn)
 
             // Additional rows (for sell order specific data)
-            ForEach(additionalRows, id: \.label) { row in
+            ForEach(self.additionalRows, id: \.label) { row in
                 OrderInfoRow(label: row.label, value: row.value)
             }
 
             // Current price section
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
                 HStack {
-                    Text(priceLabel)
+                    Text(self.priceLabel)
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(AppTheme.fontColor.opacity(0.8))
                     Spacer()
-                    Text(currentPrice)
+                    Text(self.currentPrice)
                         .foregroundColor(AppTheme.fontColor.opacity(0.8))
 
                     // Show monitoring status or refresh button
-                    if isLimitOrder && limitPrice != nil {
-                        if isMonitoringLimitOrder {
+                    if self.isLimitOrder && self.limitPrice != nil {
+                        if self.isMonitoringLimitOrder {
                             HStack(spacing: ResponsiveDesign.spacing(4)) {
                                 Image(systemName: "clock.fill")
                                     .foregroundColor(.orange)
@@ -101,14 +101,14 @@ struct SecuritiesDetailsSection: View {
                                     .foregroundColor(.orange)
                             }
                         } else {
-                            Button(action: onReloadPrice, label: {
+                            Button(action: self.onReloadPrice, label: {
                                 Image(systemName: "arrow.clockwise")
                             })
                             .accessibilityLabel("Reload current price")
                             .accessibilityHint("Tap to refresh the current market price")
                         }
                     } else {
-                        Button(action: onReloadPrice, label: {
+                        Button(action: self.onReloadPrice, label: {
                             Image(systemName: "arrow.clockwise")
                         })
                         .accessibilityLabel("Reload current price")
@@ -118,12 +118,12 @@ struct SecuritiesDetailsSection: View {
                 .padding(.vertical, ResponsiveDesign.spacing(4))
 
                 // Limit order info text
-                if isLimitOrder && limitPrice != nil {
-                    limitOrderInfoText
+                if self.isLimitOrder && self.limitPrice != nil {
+                    self.limitOrderInfoText
                 }
 
                 // Price validity indicator
-                PriceValidityIndicator(priceValidityProgress: priceValidityProgress)
+                PriceValidityIndicator(priceValidityProgress: self.priceValidityProgress)
             }
         }
         .padding()
@@ -136,20 +136,20 @@ struct SecuritiesDetailsSection: View {
     private func shouldExecuteLimitOrder() -> Bool {
         guard let limitPrice = limitPrice else { return false }
 
-        if orderType == "buy" {
+        if self.orderType == "buy" {
             // For buy orders: execute when current price is below or equal to limit
-            return currentPriceValue <= limitPrice
+            return self.currentPriceValue <= limitPrice
         } else {
             // For sell orders: execute when current price is above or equal to limit
-            return currentPriceValue >= limitPrice
+            return self.currentPriceValue >= limitPrice
         }
     }
 
     private var limitOrderInfoText: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
-            if isMonitoringLimitOrder {
-                let limitText = NumberFormatter.localizedDecimalFormatter.string(for: limitPrice ?? 0) ?? "0,00"
-                if orderType == "buy" {
+            if self.isMonitoringLimitOrder {
+                let limitText = NumberFormatter.localizedDecimalFormatter.string(for: self.limitPrice ?? 0) ?? "0,00"
+                if self.orderType == "buy" {
                     Text("🔄 Automatische Überwachung: Briefkurs ≤ \(limitText) €")
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(.orange)
@@ -159,8 +159,8 @@ struct SecuritiesDetailsSection: View {
                         .foregroundColor(.orange)
                 }
             } else {
-                let limitText = NumberFormatter.localizedDecimalFormatter.string(for: limitPrice ?? 0) ?? "0,00"
-                if orderType == "buy" {
+                let limitText = NumberFormatter.localizedDecimalFormatter.string(for: self.limitPrice ?? 0) ?? "0,00"
+                if self.orderType == "buy" {
                     Text("⏳ Warten auf Briefkurs ≤ \(limitText) €")
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(AppTheme.fontColor.opacity(0.6))
@@ -187,13 +187,13 @@ struct OrderInfoRow: View {
 
     var body: some View {
         HStack {
-            Text(label)
+            Text(self.label)
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.8))
 
             Spacer()
 
-            Text(value)
+            Text(self.value)
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor)
         }

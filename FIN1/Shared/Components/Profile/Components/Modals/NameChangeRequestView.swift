@@ -1,5 +1,5 @@
-import SwiftUI
 import PhotosUI
+import SwiftUI
 
 // MARK: - Name Change Request View
 
@@ -19,17 +19,17 @@ struct NameChangeRequestView: View {
                 AppTheme.screenBackground.ignoresSafeArea()
                 ScrollView {
                     VStack(spacing: ResponsiveDesign.spacing(20)) {
-                        complianceHeader
-                        if viewModel.hasPendingRequest {
-                            pendingRequestSection
+                        self.complianceHeader
+                        if self.viewModel.hasPendingRequest {
+                            self.pendingRequestSection
                         } else {
-                            currentNameSection
-                            reasonSection
-                            newNameSection
-                            documentsSection
-                            declarationsSection
-                            errorSection
-                            submitSection
+                            self.currentNameSection
+                            self.reasonSection
+                            self.newNameSection
+                            self.documentsSection
+                            self.declarationsSection
+                            self.errorSection
+                            self.submitSection
                         }
                     }
                     .padding(.horizontal, ResponsiveDesign.spacing(16))
@@ -38,22 +38,22 @@ struct NameChangeRequestView: View {
             }
             .navigationTitle("Name Change Request")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar { toolbarContent }
-            .alert("Request Submitted", isPresented: $viewModel.showSuccessAlert) {
-                Button("OK") { dismiss() }
-            } message: { Text(viewModel.successMessage) }
-            .alert("Cancel Request?", isPresented: $viewModel.showCancelConfirmation) {
+            .toolbar { self.toolbarContent }
+            .alert("Request Submitted", isPresented: self.$viewModel.showSuccessAlert) {
+                Button("OK") { self.dismiss() }
+            } message: { Text(self.viewModel.successMessage) }
+            .alert("Cancel Request?", isPresented: self.$viewModel.showCancelConfirmation) {
                 Button("Keep Request", role: .cancel) {}
-                Button("Cancel Request", role: .destructive) { Task { await viewModel.cancelPendingRequest() } }
+                Button("Cancel Request", role: .destructive) { Task { await self.viewModel.cancelPendingRequest() } }
             } message: { Text("Are you sure you want to cancel your pending name change request?") }
         }
-        .onAppear { viewModel.configure(with: appServices) }
+        .onAppear { self.viewModel.configure(with: self.appServices) }
     }
 
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
         ToolbarItem(placement: .navigationBarLeading) {
-            Button("Cancel") { dismiss() }.foregroundColor(AppTheme.fontColor)
+            Button("Cancel") { self.dismiss() }.foregroundColor(AppTheme.fontColor)
         }
     }
 
@@ -68,7 +68,7 @@ struct NameChangeRequestView: View {
     private var pendingRequestSection: some View {
         Group {
             if let request = viewModel.pendingRequest {
-                PendingNameChangeCard(request: request) { viewModel.showCancelConfirmation = true }
+                PendingNameChangeCard(request: request) { self.viewModel.showCancelConfirmation = true }
             }
         }
     }
@@ -77,8 +77,8 @@ struct NameChangeRequestView: View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
             KYCSectionHeader(title: "Current Name", badge: "Verified")
             NameDisplayCard(
-                salutation: viewModel.currentSalutation, academicTitle: viewModel.currentAcademicTitle,
-                firstName: viewModel.currentFirstName, lastName: viewModel.currentLastName
+                salutation: self.viewModel.currentSalutation, academicTitle: self.viewModel.currentAcademicTitle,
+                firstName: self.viewModel.currentFirstName, lastName: self.viewModel.currentLastName
             )
         }
     }
@@ -86,8 +86,8 @@ struct NameChangeRequestView: View {
     private var reasonSection: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
             KYCSectionHeader(title: "Reason for Change")
-            NameChangeReasonPicker(selectedReason: $viewModel.selectedReason)
-            if viewModel.isSignificantLifeEvent { significantLifeEventBanner }
+            NameChangeReasonPicker(selectedReason: self.$viewModel.selectedReason)
+            if self.viewModel.isSignificantLifeEvent { self.significantLifeEventBanner }
         }
     }
 
@@ -107,14 +107,14 @@ struct NameChangeRequestView: View {
             KYCSectionHeader(title: "New Name")
             VStack(spacing: ResponsiveDesign.spacing(12)) {
                 HStack(spacing: ResponsiveDesign.spacing(12)) {
-                    NameChangeSalutationPicker(selectedSalutation: $viewModel.newSalutation)
+                    NameChangeSalutationPicker(selectedSalutation: self.$viewModel.newSalutation)
                     LabeledInputField(label: "Academic Title", placeholder: "e.g., Dr.",
-                        icon: "graduationcap.fill", text: $viewModel.newAcademicTitle)
+                                      icon: "graduationcap.fill", text: self.$viewModel.newAcademicTitle)
                 }
                 LabeledInputField(label: "First Name", placeholder: "Enter first name",
-                    icon: "person.fill", text: $viewModel.newFirstName)
+                                  icon: "person.fill", text: self.$viewModel.newFirstName)
                 LabeledInputField(label: "Last Name", placeholder: "Enter last name",
-                    icon: "person.fill", text: $viewModel.newLastName)
+                                  icon: "person.fill", text: self.$viewModel.newLastName)
             }
         }
     }
@@ -125,25 +125,25 @@ struct NameChangeRequestView: View {
             Text("Two documents required: Official proof + New government ID")
                 .font(ResponsiveDesign.captionFont()).foregroundColor(AppTheme.fontColor.opacity(0.7))
             KYCDocumentUploadSection(title: "1. Official Document",
-                documentTypes: viewModel.requiredPrimaryDocumentTypes,
-                selectedType: $viewModel.selectedPrimaryDocType, selectedImage: $viewModel.primaryDocument,
-                documentTypeName: { $0.displayName }, documentTypeDescription: { $0.description },
-                documentTypeIcon: { $0.icon })
+                                     documentTypes: self.viewModel.requiredPrimaryDocumentTypes,
+                                     selectedType: self.$viewModel.selectedPrimaryDocType, selectedImage: self.$viewModel.primaryDocument,
+                                     documentTypeName: { $0.displayName }, documentTypeDescription: { $0.description },
+                                     documentTypeIcon: { $0.icon })
             KYCDocumentUploadSection(title: "2. New Government ID",
-                documentTypes: viewModel.identityDocumentTypes,
-                selectedType: $viewModel.selectedIdentityDocType, selectedImage: $viewModel.identityDocument,
-                documentTypeName: { $0.displayName }, documentTypeDescription: { $0.description },
-                documentTypeIcon: { $0.icon })
+                                     documentTypes: self.viewModel.identityDocumentTypes,
+                                     selectedType: self.$viewModel.selectedIdentityDocType, selectedImage: self.$viewModel.identityDocument,
+                                     documentTypeName: { $0.displayName }, documentTypeDescription: { $0.description },
+                                     documentTypeIcon: { $0.icon })
         }
     }
 
     private var declarationsSection: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
             KYCSectionHeader(title: "Declarations")
-            KYCDeclarationCheckbox(isChecked: $viewModel.userDeclaration,
-                text: "I declare all information is true. False info may result in suspension.")
-            KYCDeclarationCheckbox(isChecked: $viewModel.acknowledgesRiskProfile,
-                text: "I understand my risk profile will be reassessed.")
+            KYCDeclarationCheckbox(isChecked: self.$viewModel.userDeclaration,
+                                   text: "I declare all information is true. False info may result in suspension.")
+            KYCDeclarationCheckbox(isChecked: self.$viewModel.acknowledgesRiskProfile,
+                                   text: "I understand my risk profile will be reassessed.")
         }
     }
 
@@ -152,8 +152,8 @@ struct NameChangeRequestView: View {
     }
 
     private var submitSection: some View {
-        KYCSubmitButton(title: "Submit Name Change Request", isEnabled: viewModel.isFormValid,
-            isLoading: viewModel.isLoading, action: { Task { await viewModel.submitRequest() } })
+        KYCSubmitButton(title: "Submit Name Change Request", isEnabled: self.viewModel.isFormValid,
+                        isLoading: self.viewModel.isLoading, action: { Task { await self.viewModel.submitRequest() } })
     }
 }
 

@@ -14,9 +14,9 @@ struct WatchlistEmptyStateView: View {
                 .font(ResponsiveDesign.headlineFont())
                 .foregroundColor(AppTheme.fontColor)
             
-            Text(userRole == .investor ? 
-                 "Start watching traders to track their performance" : 
-                 "Start watching securities to monitor market movements")
+            Text(self.userRole == .investor ? 
+                "Start watching traders to track their performance" : 
+                "Start watching securities to monitor market movements")
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
                 .multilineTextAlignment(.center)
@@ -24,7 +24,7 @@ struct WatchlistEmptyStateView: View {
             Button(action: {
                 // TODO: Navigate to discovery/trading view
             }) {
-                Text("Browse \(userRole == .investor ? "Traders" : "Securities")")
+                Text("Browse \(self.userRole == .investor ? "Traders" : "Securities")")
                     .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.medium)
                     .foregroundColor(AppTheme.screenBackground)
@@ -45,7 +45,7 @@ struct WatchlistSuccessMessageOverlay: View {
     let isVisible: Bool
     
     var body: some View {
-        if isVisible {
+        if self.isVisible {
             VStack {
                 Spacer()
                 
@@ -53,7 +53,7 @@ struct WatchlistSuccessMessageOverlay: View {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundColor(AppTheme.accentGreen)
                     
-                    Text(message)
+                    Text(self.message)
                         .font(ResponsiveDesign.bodyFont())
                         .fontWeight(.medium)
                         .foregroundColor(AppTheme.screenBackground)
@@ -68,7 +68,7 @@ struct WatchlistSuccessMessageOverlay: View {
                 .padding(.bottom, 100)
             }
             .transition(.move(edge: .bottom))
-            .animation(.easeInOut(duration: 0.3), value: isVisible)
+            .animation(.easeInOut(duration: 0.3), value: self.isVisible)
         }
     }
 }

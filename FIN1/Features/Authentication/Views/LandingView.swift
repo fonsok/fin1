@@ -16,52 +16,52 @@ struct LandingView: View {
 
     var body: some View {
         Group {
-            if viewModel.designStyle == .typewriter {
+            if self.viewModel.designStyle == .typewriter {
                 LandingTypewriterStyleBody(
-                    viewModel: viewModel,
-                    showLogin: $showLogin,
-                    showSignUp: $showSignUp,
-                    showLegalTerms: $showLegalTerms,
-                    showLegalPrivacy: $showLegalPrivacy,
-                    showLegalImprint: $showLegalImprint
+                    viewModel: self.viewModel,
+                    showLogin: self.$showLogin,
+                    showSignUp: self.$showSignUp,
+                    showLegalTerms: self.$showLegalTerms,
+                    showLegalPrivacy: self.$showLegalPrivacy,
+                    showLegalImprint: self.$showLegalImprint
                 )
             } else {
                 LandingOriginalStyleBody(
-                    viewModel: viewModel,
-                    showLogin: $showLogin,
-                    showSignUp: $showSignUp,
-                    showLegalTerms: $showLegalTerms,
-                    showLegalPrivacy: $showLegalPrivacy,
-                    showLegalImprint: $showLegalImprint
+                    viewModel: self.viewModel,
+                    showLogin: self.$showLogin,
+                    showSignUp: self.$showSignUp,
+                    showLegalTerms: self.$showLegalTerms,
+                    showLegalPrivacy: self.$showLegalPrivacy,
+                    showLegalImprint: self.$showLegalImprint
                 )
             }
         }
-        .sheet(isPresented: $showLogin) {
+        .sheet(isPresented: self.$showLogin) {
             DirectLoginView()
-                .environment(\.appServices, appServices)
+                .environment(\.appServices, self.appServices)
         }
-        .sheet(isPresented: $showLegalTerms) {
+        .sheet(isPresented: self.$showLegalTerms) {
             TermsOfServiceView(
-                configurationService: appServices.configurationService,
-                termsContentService: appServices.termsContentService
+                configurationService: self.appServices.configurationService,
+                termsContentService: self.appServices.termsContentService
             )
         }
-        .sheet(isPresented: $showLegalPrivacy) {
+        .sheet(isPresented: self.$showLegalPrivacy) {
             PrivacyPolicyView(
-                userService: appServices.userService,
-                termsContentService: appServices.termsContentService
+                userService: self.appServices.userService,
+                termsContentService: self.appServices.termsContentService
             )
         }
-        .sheet(isPresented: $showLegalImprint) {
-            ImprintView(termsContentService: appServices.termsContentService)
+        .sheet(isPresented: self.$showLegalImprint) {
+            ImprintView(termsContentService: self.appServices.termsContentService)
         }
-        .fullScreenCover(isPresented: $showSignUp) {
+        .fullScreenCover(isPresented: self.$showSignUp) {
             SignUpView()
         }
-        .alert("Login Error", isPresented: $viewModel.showError) {
+        .alert("Login Error", isPresented: self.$viewModel.showError) {
             Button("OK", role: .cancel) { }
         } message: {
-            Text(viewModel.errorMessage ?? "An error occurred during login")
+            Text(self.viewModel.errorMessage ?? "An error occurred during login")
         }
     }
 }

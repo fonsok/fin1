@@ -77,31 +77,31 @@ final class TicketAssignmentService {
         customerLanguage: String? = nil
     ) -> AssignmentResult {
 
-        logger.info("🎯 Finding best agent for ticket \(ticket.ticketNumber)")
+        self.logger.info("🎯 Finding best agent for ticket \(ticket.ticketNumber)")
 
         // Step 1: Filter available agents
         let availableAgents = agents.filter { $0.isAvailable }
         guard !availableAgents.isEmpty else {
-            logger.warning("⚠️ No available agents")
-            return handleNoAvailableAgents(ticket: ticket, agents: agents)
+            self.logger.warning("⚠️ No available agents")
+            return self.handleNoAvailableAgents(ticket: ticket, agents: agents)
         }
 
         // Step 2: Filter by workload capacity
         let agentsWithCapacity = availableAgents.filter {
-            $0.currentTicketCount < configuration.maxTicketsPerAgent
+            $0.currentTicketCount < self.configuration.maxTicketsPerAgent
         }
 
         if agentsWithCapacity.isEmpty {
-            logger.warning("⚠️ All agents at capacity")
-            return handleAllAgentsAtCapacity(ticket: ticket, agents: availableAgents)
+            self.logger.warning("⚠️ All agents at capacity")
+            return self.handleAllAgentsAtCapacity(ticket: ticket, agents: availableAgents)
         }
 
         // Step 3: Score agents by skills match
-        let ticketLanguage = customerLanguage ?? detectTicketLanguage(ticket)
-        let ticketSpecializations = mapTicketToSpecializations(ticket)
+        let ticketLanguage = customerLanguage ?? self.detectTicketLanguage(ticket)
+        let ticketSpecializations = self.mapTicketToSpecializations(ticket)
 
         var scoredAgents: [(agent: CSRAgent, score: Double)] = agentsWithCapacity.map { agent in
-            let score = calculateAgentScore(
+            let score = self.calculateAgentScore(
                 agent: agent,
                 ticketLanguage: ticketLanguage,
                 ticketSpecializations: ticketSpecializations
@@ -118,15 +118,15 @@ final class TicketAssignmentService {
         let topAgents = scoredAgents.filter { $0.score >= topScore - tolerance }
 
         // Round-robin selection among top candidates
-        let selectedAgent = selectWithRoundRobin(from: topAgents.map { $0.agent }, allAgents: agents)
+        let selectedAgent = self.selectWithRoundRobin(from: topAgents.map { $0.agent }, allAgents: agents)
 
-        let reason = buildAssignmentReason(
+        let reason = self.buildAssignmentReason(
             agent: selectedAgent,
             ticketLanguage: ticketLanguage,
             ticketSpecializations: ticketSpecializations
         )
 
-        logger.info("✅ Assigned ticket \(ticket.ticketNumber) to \(selectedAgent.name): \(reason)")
+        self.logger.info("✅ Assigned ticket \(ticket.ticketNumber) to \(selectedAgent.name): \(reason)")
 
         return .assigned(agentId: selectedAgent.id, agentName: selectedAgent.name, reason: reason)
     }
@@ -136,7 +136,7 @@ final class TicketAssignmentService {
         var results: [(String, AssignmentResult)] = []
 
         // Process queue from oldest to newest
-        for ticketId in unassignedTicketQueue {
+        for ticketId in self.unassignedTicketQueue {
             // In a real implementation, we'd fetch the ticket details
             // For now, return that it needs manual handling
             results.append((ticketId, .queued(reason: "Wartet auf manuelle Zuweisung")))
@@ -147,27 +147,27 @@ final class TicketAssignmentService {
 
     /// Add ticket to unassigned queue
     func addToQueue(ticketId: String) {
-        if !unassignedTicketQueue.contains(ticketId) {
-            unassignedTicketQueue.append(ticketId)
-            logger.info("📥 Ticket \(ticketId) added to assignment queue")
+        if !self.unassignedTicketQueue.contains(ticketId) {
+            self.unassignedTicketQueue.append(ticketId)
+            self.logger.info("📥 Ticket \(ticketId) added to assignment queue")
         }
     }
 
     /// Remove ticket from queue (when manually assigned)
     func removeFromQueue(ticketId: String) {
-        unassignedTicketQueue.removeAll { $0 == ticketId }
-        logger.info("📤 Ticket \(ticketId) removed from assignment queue")
+        self.unassignedTicketQueue.removeAll { $0 == ticketId }
+        self.logger.info("📤 Ticket \(ticketId) removed from assignment queue")
     }
 
     /// Get current queue status
     var queueStatus: (count: Int, ticketIds: [String]) {
-        (unassignedTicketQueue.count, unassignedTicketQueue)
+        (self.unassignedTicketQueue.count, self.unassignedTicketQueue)
     }
 
     /// Update configuration
     func updateConfiguration(_ newConfig: Configuration) {
-        configuration = newConfig
-        logger.info("⚙️ Assignment configuration updated")
+        self.configuration = newConfig
+        self.logger.info("⚙️ Assignment configuration updated")
     }
 
     // MARK: - Private Methods
@@ -183,11 +183,11 @@ final class TicketAssignmentService {
         if let language = ticketLanguage {
             let languageMatch = agent.languages.contains { $0.lowercased() == language.lowercased() }
             if languageMatch {
-                score += configuration.languageMatchWeight
+                score += self.configuration.languageMatchWeight
             }
         } else {
             // No language requirement, give partial score
-            score += configuration.languageMatchWeight * 0.5
+            score += self.configuration.languageMatchWeight * 0.5
         }
 
         // Specialization match score
@@ -196,16 +196,16 @@ final class TicketAssignmentService {
                 agent.specializations.contains { $0.lowercased().contains(spec.lowercased()) }
             }
             let specScore = Double(matchingSpecs.count) / Double(ticketSpecializations.count)
-            score += configuration.specializationMatchWeight * specScore
+            score += self.configuration.specializationMatchWeight * specScore
         } else {
             // No specialization requirement, give partial score
-            score += configuration.specializationMatchWeight * 0.5
+            score += self.configuration.specializationMatchWeight * 0.5
         }
 
         // Workload score (lower workload = higher score)
-        let workloadRatio = Double(agent.currentTicketCount) / Double(configuration.maxTicketsPerAgent)
+        let workloadRatio = Double(agent.currentTicketCount) / Double(self.configuration.maxTicketsPerAgent)
         let workloadScore = 1.0 - workloadRatio
-        score += configuration.workloadWeight * workloadScore
+        score += self.configuration.workloadWeight * workloadScore
 
         return score
     }
@@ -224,20 +224,20 @@ final class TicketAssignmentService {
         let sortedIndices = candidateIndices.sorted()
 
         for index in sortedIndices {
-            if index > lastAssignedAgentIndex {
-                lastAssignedAgentIndex = index
+            if index > self.lastAssignedAgentIndex {
+                self.lastAssignedAgentIndex = index
                 return allAgents[index]
             }
         }
 
         // Wrap around to the beginning
         if let firstIndex = sortedIndices.first {
-            lastAssignedAgentIndex = firstIndex
+            self.lastAssignedAgentIndex = firstIndex
             return allAgents[firstIndex]
         }
 
         // Fallback: return first candidate
-        lastAssignedAgentIndex = candidateIndices.first ?? 0
+        self.lastAssignedAgentIndex = candidateIndices.first ?? 0
         return candidates.first!
     }
 
@@ -315,15 +315,15 @@ final class TicketAssignmentService {
             reasons.append("Expertise: \(matchingSpecs.joined(separator: ", "))")
         }
 
-        reasons.append("Auslastung: \(agent.currentTicketCount)/\(configuration.maxTicketsPerAgent)")
+        reasons.append("Auslastung: \(agent.currentTicketCount)/\(self.configuration.maxTicketsPerAgent)")
 
         return reasons.joined(separator: " | ")
     }
 
     private func handleNoAvailableAgents(ticket: SupportTicket, agents: [CSRAgent]) -> AssignmentResult {
-        switch configuration.fallbackBehavior {
+        switch self.configuration.fallbackBehavior {
         case .queueForManualAssignment:
-            addToQueue(ticketId: ticket.id)
+            self.addToQueue(ticketId: ticket.id)
             return .queued(reason: "Keine verfügbaren Agenten - in Warteschlange")
 
         case .assignToLeastBusy:
@@ -337,16 +337,16 @@ final class TicketAssignmentService {
             return .failed(error: "Keine Agenten im System")
 
         case .notifyAdmins:
-            addToQueue(ticketId: ticket.id)
+            self.addToQueue(ticketId: ticket.id)
             return .queued(reason: "Admins benachrichtigt - manuelle Zuweisung erforderlich")
         }
     }
 
     private func handleAllAgentsAtCapacity(ticket: SupportTicket, agents: [CSRAgent]) -> AssignmentResult {
-        switch configuration.fallbackBehavior {
+        switch self.configuration.fallbackBehavior {
         case .queueForManualAssignment:
-            addToQueue(ticketId: ticket.id)
-            return .queued(reason: "Alle Agenten ausgelastet (\(configuration.maxTicketsPerAgent) Tickets) - in Warteschlange")
+            self.addToQueue(ticketId: ticket.id)
+            return .queued(reason: "Alle Agenten ausgelastet (\(self.configuration.maxTicketsPerAgent) Tickets) - in Warteschlange")
 
         case .assignToLeastBusy:
             if let leastBusy = agents.min(by: { $0.currentTicketCount < $1.currentTicketCount }) {
@@ -359,7 +359,7 @@ final class TicketAssignmentService {
             return .failed(error: "Keine Agenten verfügbar")
 
         case .notifyAdmins:
-            addToQueue(ticketId: ticket.id)
+            self.addToQueue(ticketId: ticket.id)
             return .queued(reason: "Kapazitätsgrenze erreicht - Admins benachrichtigt")
         }
     }
@@ -379,7 +379,7 @@ extension TicketAssignmentService {
 
     func getStatistics(agents: [CSRAgent]) -> AssignmentStats {
         let workloads = agents.map { agent in
-            (agent.name, agent.currentTicketCount, configuration.maxTicketsPerAgent)
+            (agent.name, agent.currentTicketCount, self.configuration.maxTicketsPerAgent)
         }
 
         let totalTickets = agents.reduce(0) { $0 + $1.currentTicketCount }
@@ -387,10 +387,10 @@ extension TicketAssignmentService {
 
         return AssignmentStats(
             totalAssigned: totalTickets,
-            totalQueued: unassignedTicketQueue.count,
+            totalQueued: self.unassignedTicketQueue.count,
             agentWorkloads: workloads,
             averageWorkload: avgWorkload,
-            queueLength: unassignedTicketQueue.count
+            queueLength: self.unassignedTicketQueue.count
         )
     }
 }

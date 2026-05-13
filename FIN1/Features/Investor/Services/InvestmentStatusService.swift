@@ -21,7 +21,9 @@ final class InvestmentStatusService: InvestmentStatusServiceProtocol {
         Self.log.debug("markInvestmentAsActive traderId=\(traderId, privacy: .public)")
 
         guard let investmentPoolLifecycleService = investmentPoolLifecycleService else {
-            assertionFailure("InvestmentStatusService: investmentPoolLifecycleService is nil — cannot mark investment active for trader \(traderId)")
+            assertionFailure(
+                "InvestmentStatusService: investmentPoolLifecycleService is nil — cannot mark investment active for trader \(traderId)"
+            )
             Self.log.error("investmentPoolLifecycleService nil; markInvestmentAsActive skipped traderId=\(traderId, privacy: .public)")
             return nil
         }
@@ -59,7 +61,9 @@ final class InvestmentStatusService: InvestmentStatusServiceProtocol {
         Self.log.debug("markInvestmentAsCompleted traderId=\(traderId, privacy: .public)")
 
         guard let investmentPoolLifecycleService = investmentPoolLifecycleService else {
-            assertionFailure("InvestmentStatusService: investmentPoolLifecycleService is nil — cannot mark investment completed for trader \(traderId)")
+            assertionFailure(
+                "InvestmentStatusService: investmentPoolLifecycleService is nil — cannot mark investment completed for trader \(traderId)"
+            )
             Self.log.error("investmentPoolLifecycleService nil; markInvestmentAsCompleted skipped traderId=\(traderId, privacy: .public)")
             return nil
         }
@@ -93,8 +97,12 @@ final class InvestmentStatusService: InvestmentStatusServiceProtocol {
         investmentPoolLifecycleService: (any InvestmentPoolLifecycleServiceProtocol)?
     ) -> Investment? {
         guard let investmentPoolLifecycleService = investmentPoolLifecycleService else {
-            assertionFailure("InvestmentStatusService: investmentPoolLifecycleService is nil — markNextInvestmentAsActive investmentId=\(investmentId)")
-            Self.log.error("investmentPoolLifecycleService nil; markNextInvestmentAsActive skipped investmentId=\(investmentId, privacy: .public)")
+            assertionFailure(
+                "InvestmentStatusService: investmentPoolLifecycleService is nil — markNextInvestmentAsActive investmentId=\(investmentId)"
+            )
+            Self.log.error(
+                "investmentPoolLifecycleService nil; markNextInvestmentAsActive skipped investmentId=\(investmentId, privacy: .public)"
+            )
             return nil
         }
 
@@ -119,8 +127,12 @@ final class InvestmentStatusService: InvestmentStatusServiceProtocol {
         investmentPoolLifecycleService: (any InvestmentPoolLifecycleServiceProtocol)?
     ) -> (Investment, InvestmentReservation)? {
         guard let investmentPoolLifecycleService = investmentPoolLifecycleService else {
-            assertionFailure("InvestmentStatusService: investmentPoolLifecycleService is nil — markActiveInvestmentAsCompleted investmentId=\(investmentId)")
-            Self.log.error("investmentPoolLifecycleService nil; markActiveInvestmentAsCompleted skipped investmentId=\(investmentId, privacy: .public)")
+            assertionFailure(
+                "InvestmentStatusService: investmentPoolLifecycleService is nil — markActiveInvestmentAsCompleted investmentId=\(investmentId)"
+            )
+            Self.log.error(
+                "investmentPoolLifecycleService nil; markActiveInvestmentAsCompleted skipped investmentId=\(investmentId, privacy: .public)"
+            )
             return nil
         }
 
@@ -153,7 +165,9 @@ final class InvestmentStatusService: InvestmentStatusServiceProtocol {
         let investment = repository.investments[investmentIndex]
 
         guard investment.reservationStatus == .reserved else {
-            Self.log.warning("deleteInvestment rejected status=\(investment.reservationStatus.rawValue) id=\(investmentId, privacy: .public)")
+            Self.log.warning(
+                "deleteInvestment rejected status=\(investment.reservationStatus.rawValue) id=\(investmentId, privacy: .public)"
+            )
             return false
         }
 

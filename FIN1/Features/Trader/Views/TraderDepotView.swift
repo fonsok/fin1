@@ -29,20 +29,20 @@ struct TraderDepotView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(6)) {
                         DepotHeaderView(
-                            depotValue: viewModel.depotValue,
-                            depotNumber: viewModel.depotNumber
+                            depotValue: self.viewModel.depotValue,
+                            depotNumber: self.viewModel.depotNumber
                         )
                         .padding(.bottom, ResponsiveDesign.spacing(8))
 
-                        OngoingOrdersSection(ongoingOrders: viewModel.ongoingOrders)
+                        OngoingOrdersSection(ongoingOrders: self.viewModel.ongoingOrders)
 
                         Divider().background(Color.white.opacity(0.5))
                             .padding(.vertical, ResponsiveDesign.spacing(8))
 
                         HoldingsSection(
-                            holdings: viewModel.holdings,
-                            ongoingOrders: viewModel.ongoingOrders,
-                            warrantDetailsViewModel: warrantDetailsViewModel
+                            holdings: self.viewModel.holdings,
+                            ongoingOrders: self.viewModel.ongoingOrders,
+                            warrantDetailsViewModel: self.warrantDetailsViewModel
                         )
                     }
                     .padding(.horizontal, ResponsiveDesign.horizontalPadding())
@@ -61,48 +61,48 @@ struct TraderDepotView: View {
             .dismissKeyboardOnTap()
             .onReceive(NotificationCenter.default.publisher(for: .buyOrderCompleted)) { notification in
                 if let trade = notification.object as? Trade {
-                    completedTrade = trade
-                    completedOrderType = .buy
-                    showTradeSuccess = true
+                    self.completedTrade = trade
+                    self.completedOrderType = .buy
+                    self.showTradeSuccess = true
                 }
             }
             .onReceive(NotificationCenter.default.publisher(for: .sellOrderCompleted)) { notification in
                 if let trade = notification.object as? Trade {
                     // Store the trade data first
-                    completedTrade = trade
-                    completedOrderType = .sell
+                    self.completedTrade = trade
+                    self.completedOrderType = .sell
                     // Delay showing the overlay to allow depot to fully update
                     // This ensures the sold position is removed before showing success
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        showTradeSuccess = true
+                        self.showTradeSuccess = true
                     }
                 }
             }
 
             // Success Message Overlay
-            if showTradeSuccess, let trade = completedTrade, let orderType = completedOrderType {
+            if self.showTradeSuccess, let trade = completedTrade, let orderType = completedOrderType {
                 Color.black.opacity(0.5)
                     .ignoresSafeArea()
                     .onTapGesture {
-                        dismissSuccessMessage()
+                        self.dismissSuccessMessage()
                     }
 
                 OrderSuccessMessageOverlay(
                     trade: trade,
                     orderType: orderType,
                     onDismiss: {
-                        dismissSuccessMessage()
+                        self.dismissSuccessMessage()
                     }
                 )
                 .transition(.scale.combined(with: .opacity))
             }
         }
-        .animation(.easeInOut(duration: 0.3), value: showTradeSuccess)
-        .onChange(of: showTradeSuccess) { _, isShowing in
+        .animation(.easeInOut(duration: 0.3), value: self.showTradeSuccess)
+        .onChange(of: self.showTradeSuccess) { _, isShowing in
             if isShowing {
                 // Auto-dismiss after 2 seconds
                 DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                    dismissSuccessMessage()
+                    self.dismissSuccessMessage()
                 }
             }
         }
@@ -110,11 +110,11 @@ struct TraderDepotView: View {
 
     // MARK: - Helper Methods
     private func dismissSuccessMessage() {
-        showTradeSuccess = false
+        self.showTradeSuccess = false
         // Delay clearing the trade to allow animation to complete
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            completedTrade = nil
-            completedOrderType = nil
+            self.completedTrade = nil
+            self.completedOrderType = nil
         }
     }
 }
@@ -125,7 +125,7 @@ private struct OngoingOrdersSection: View {
     let ongoingOrders: [Order]
 
     var body: some View {
-        if ongoingOrders.isEmpty {
+        if self.ongoingOrders.isEmpty {
             Text("Keine laufenden Orders")
                 .font(ResponsiveDesign.headlineFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.8))
@@ -136,7 +136,7 @@ private struct OngoingOrdersSection: View {
                     .foregroundColor(AppTheme.accentOrange)
 
                 LazyVStack(spacing: ResponsiveDesign.spacing(12)) {
-                    ForEach(Array(ongoingOrders.enumerated()), id: \.offset) { index, order in
+                    ForEach(Array(self.ongoingOrders.enumerated()), id: \.offset) { index, order in
                         OrderCard(order: order, position: index + 1)
                     }
                 }
@@ -158,7 +158,7 @@ private struct HoldingsSection: View {
                 .font(ResponsiveDesign.headlineFont())
                 .foregroundColor(AppTheme.fontColor)
 
-            if holdings.isEmpty {
+            if self.holdings.isEmpty {
                 VStack(spacing: ResponsiveDesign.spacing(16)) {
                     Image(systemName: "chart.pie")
                         .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2.4))
@@ -177,11 +177,11 @@ private struct HoldingsSection: View {
                 .frame(maxWidth: .infinity)
             } else {
                 LazyVStack(spacing: ResponsiveDesign.spacing(12)) {
-                    ForEach(holdings) { holding in
+                    ForEach(self.holdings) { holding in
                         HoldingCard(
                             holding: holding,
-                            ongoingOrders: ongoingOrders,
-                            warrantDetailsViewModel: warrantDetailsViewModel
+                            ongoingOrders: self.ongoingOrders,
+                            warrantDetailsViewModel: self.warrantDetailsViewModel
                         )
                     }
                 }

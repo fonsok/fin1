@@ -21,7 +21,6 @@ struct AddressConfirmSuccessStep: View {
                     .foregroundColor(AppTheme.fontColor.opacity(0.8))
                     .multilineTextAlignment(.center)
             }
-            
         }
     }
 }

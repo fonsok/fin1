@@ -12,7 +12,7 @@ struct SignUpProgressBar: View {
             HStack(spacing: ResponsiveDesign.spacing(4)) {
                 ForEach(OnboardingPhase.allCases) { p in
                     Capsule()
-                        .fill(capsuleColor(for: p))
+                        .fill(self.capsuleColor(for: p))
                         .frame(height: ResponsiveDesign.spacing(4))
                 }
             }
@@ -20,14 +20,14 @@ struct SignUpProgressBar: View {
 
             // Phase title + step counter
             HStack {
-                Text(phase.title)
+                Text(self.phase.title)
                     .font(ResponsiveDesign.captionFont())
                     .fontWeight(.medium)
                     .foregroundColor(AppTheme.fontColor)
 
                 Spacer()
 
-                Text("Step \(currentStep) of \(totalSteps)")
+                Text("Step \(self.currentStep) of \(self.totalSteps)")
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
             }
@@ -35,9 +35,9 @@ struct SignUpProgressBar: View {
     }
 
     private func capsuleColor(for p: OnboardingPhase) -> Color {
-        if p.rawValue < phase.rawValue {
+        if p.rawValue < self.phase.rawValue {
             return AppTheme.accentGreen
-        } else if p == phase {
+        } else if p == self.phase {
             return AppTheme.accentLightBlue
         } else {
             return AppTheme.fontColor.opacity(0.2)

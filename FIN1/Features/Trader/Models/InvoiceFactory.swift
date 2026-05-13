@@ -4,7 +4,13 @@ import Foundation
 extension Invoice {
 
     /// Creates a securities settlement invoice from an order using actual order values
-    static func from(order: OrderBuy, customerInfo: CustomerInfo, transactionIdService: any TransactionIdServiceProtocol, tradeId: String? = nil, tradeNumber: Int? = nil) -> Invoice {
+    static func from(
+        order: OrderBuy,
+        customerInfo: CustomerInfo,
+        transactionIdService: any TransactionIdServiceProtocol,
+        tradeId: String? = nil,
+        tradeNumber: Int? = nil
+    ) -> Invoice {
         let invoiceNumber = InvoiceNumberGenerator.generate(using: transactionIdService)
 
         // Create invoice items from actual order data
@@ -51,7 +57,13 @@ extension Invoice {
     }
 
     /// Creates a securities settlement invoice from a sell order using actual order values
-    static func from(sellOrder: OrderSell, customerInfo: CustomerInfo, transactionIdService: any TransactionIdServiceProtocol, tradeId: String? = nil, tradeNumber: Int? = nil) -> Invoice {
+    static func from(
+        sellOrder: OrderSell,
+        customerInfo: CustomerInfo,
+        transactionIdService: any TransactionIdServiceProtocol,
+        tradeId: String? = nil,
+        tradeNumber: Int? = nil
+    ) -> Invoice {
         let invoiceNumber = InvoiceNumberGenerator.generate(using: transactionIdService)
 
         // Create invoice items from actual sell order data

@@ -32,7 +32,7 @@ struct DesiredReturnStep: View {
                     }
                 } label: {
                     HStack {
-                        Text(desiredReturn.displayName)
+                        Text(self.desiredReturn.displayName)
                             .foregroundColor(AppTheme.inputFieldText)
                         Spacer()
                         Image(systemName: "chevron.up.chevron.down")

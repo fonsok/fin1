@@ -16,13 +16,13 @@ struct SupportAnalyticsDashboard: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: ResponsiveDesign.spacing(20)) {
-                    periodSelector
-                    if isLoading {
-                        loadingView
+                    self.periodSelector
+                    if self.isLoading {
+                        self.loadingView
                     } else {
-                        overviewSection
-                        statusBreakdownSection
-                        agentPerformanceSection
+                        self.overviewSection
+                        self.statusBreakdownSection
+                        self.agentPerformanceSection
                     }
                 }
                 .padding()
@@ -32,10 +32,10 @@ struct SupportAnalyticsDashboard: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Schließen") { dismiss() }
+                    Button("Schließen") { self.dismiss() }
                 }
             }
-            .task { await loadMetrics() }
+            .task { await self.loadMetrics() }
         }
     }
 
@@ -46,16 +46,16 @@ struct SupportAnalyticsDashboard: View {
             HStack(spacing: ResponsiveDesign.spacing(8)) {
                 ForEach([MetricsPeriod.today, .week, .month, .quarter], id: \.rawValue) { period in
                     Button {
-                        selectedPeriod = period
-                        Task { await loadMetrics() }
+                        self.selectedPeriod = period
+                        Task { await self.loadMetrics() }
                     } label: {
                         Text(period.rawValue)
                             .font(ResponsiveDesign.captionFont())
-                            .fontWeight(selectedPeriod == period ? .bold : .regular)
-                            .foregroundColor(selectedPeriod == period ? .white : AppTheme.fontColor)
+                            .fontWeight(self.selectedPeriod == period ? .bold : .regular)
+                            .foregroundColor(self.selectedPeriod == period ? .white : AppTheme.fontColor)
                             .padding(.horizontal, ResponsiveDesign.spacing(16))
                             .padding(.vertical, ResponsiveDesign.spacing(8))
-                            .background(selectedPeriod == period ? AppTheme.accentLightBlue : AppTheme.sectionBackground)
+                            .background(self.selectedPeriod == period ? AppTheme.accentLightBlue : AppTheme.sectionBackground)
                             .cornerRadius(ResponsiveDesign.spacing(20))
                     }
                 }
@@ -88,25 +88,25 @@ struct SupportAnalyticsDashboard: View {
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: ResponsiveDesign.spacing(12)) {
                 MetricCard(
                     title: "Tickets gesamt",
-                    value: "\(ticketMetrics.totalTickets)",
+                    value: "\(self.ticketMetrics.totalTickets)",
                     icon: "ticket.fill",
                     color: AppTheme.accentLightBlue
                 )
                 MetricCard(
                     title: "Geschlossen",
-                    value: "\(ticketMetrics.closedTickets)",
+                    value: "\(self.ticketMetrics.closedTickets)",
                     icon: "checkmark.circle.fill",
                     color: AppTheme.accentGreen
                 )
                 MetricCard(
                     title: "Ø Antwortzeit",
-                    value: ticketMetrics.firstResponseTimeFormatted,
+                    value: self.ticketMetrics.firstResponseTimeFormatted,
                     icon: "clock.fill",
                     color: AppTheme.accentOrange
                 )
                 MetricCard(
                     title: "Ø Lösungszeit",
-                    value: ticketMetrics.resolutionTimeFormatted,
+                    value: self.ticketMetrics.resolutionTimeFormatted,
                     icon: "timer",
                     color: Color.purple
                 )
@@ -127,11 +127,36 @@ struct SupportAnalyticsDashboard: View {
                 .foregroundColor(AppTheme.fontColor)
 
             VStack(spacing: ResponsiveDesign.spacing(8)) {
-                StatusBar(label: "Offen", count: ticketMetrics.openTickets, total: ticketMetrics.totalTickets, color: AppTheme.accentLightBlue)
-                StatusBar(label: "In Bearbeitung", count: ticketMetrics.inProgressTickets, total: ticketMetrics.totalTickets, color: Color.cyan)
-                StatusBar(label: "Wartet auf Kunde", count: ticketMetrics.waitingForCustomerTickets, total: ticketMetrics.totalTickets, color: AppTheme.accentOrange)
-                StatusBar(label: "Eskaliert", count: ticketMetrics.escalatedTickets, total: ticketMetrics.totalTickets, color: AppTheme.accentRed)
-                StatusBar(label: "Gelöst", count: ticketMetrics.resolvedTickets, total: ticketMetrics.totalTickets, color: AppTheme.accentGreen)
+                StatusBar(
+                    label: "Offen",
+                    count: self.ticketMetrics.openTickets,
+                    total: self.ticketMetrics.totalTickets,
+                    color: AppTheme.accentLightBlue
+                )
+                StatusBar(
+                    label: "In Bearbeitung",
+                    count: self.ticketMetrics.inProgressTickets,
+                    total: self.ticketMetrics.totalTickets,
+                    color: Color.cyan
+                )
+                StatusBar(
+                    label: "Wartet auf Kunde",
+                    count: self.ticketMetrics.waitingForCustomerTickets,
+                    total: self.ticketMetrics.totalTickets,
+                    color: AppTheme.accentOrange
+                )
+                StatusBar(
+                    label: "Eskaliert",
+                    count: self.ticketMetrics.escalatedTickets,
+                    total: self.ticketMetrics.totalTickets,
+                    color: AppTheme.accentRed
+                )
+                StatusBar(
+                    label: "Gelöst",
+                    count: self.ticketMetrics.resolvedTickets,
+                    total: self.ticketMetrics.totalTickets,
+                    color: AppTheme.accentGreen
+                )
             }
         }
         .padding()
@@ -148,13 +173,13 @@ struct SupportAnalyticsDashboard: View {
                 .fontWeight(.semibold)
                 .foregroundColor(AppTheme.fontColor)
 
-            if agentMetrics.isEmpty {
+            if self.agentMetrics.isEmpty {
                 Text("Keine Agent-Daten verfügbar")
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.6))
                     .padding()
             } else {
-                ForEach(agentMetrics) { agent in
+                ForEach(self.agentMetrics) { agent in
                     AgentPerformanceRow(agent: agent)
                 }
             }
@@ -167,13 +192,13 @@ struct SupportAnalyticsDashboard: View {
     // MARK: - Actions
 
     private func loadMetrics() async {
-        isLoading = true
+        self.isLoading = true
         defer { isLoading = false }
 
-        let dateRange = selectedPeriod.dateRange
+        let dateRange = self.selectedPeriod.dateRange
 
         do {
-            ticketMetrics = try await viewModel.supportService.getTicketMetrics(
+            self.ticketMetrics = try await self.viewModel.supportService.getTicketMetrics(
                 from: dateRange.start,
                 to: dateRange.end
             )
@@ -189,9 +214,9 @@ struct SupportAnalyticsDashboard: View {
                 )
                 metrics.append(agentMetric)
             }
-            agentMetrics = metrics.sorted { $0.customerSatisfactionScore > $1.customerSatisfactionScore }
+            self.agentMetrics = metrics.sorted { $0.customerSatisfactionScore > $1.customerSatisfactionScore }
         } catch {
-            viewModel.handleError(error)
+            self.viewModel.handleError(error)
         }
     }
 }

@@ -10,13 +10,13 @@ struct DashboardQuickActionCard: View {
     @Environment(\.themeManager) private var themeManager
 
     var body: some View {
-        Button(action: action, label: {
+        Button(action: self.action, label: {
             VStack(spacing: ResponsiveDesign.spacing(12)) {
-                Image(systemName: icon)
+                Image(systemName: self.icon)
                     .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize()))
-                    .foregroundColor(color)
+                    .foregroundColor(self.color)
 
-                Text(title)
+                Text(self.title)
                     .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.medium)
                     .foregroundColor(AppTheme.fontColor)
@@ -27,8 +27,8 @@ struct DashboardQuickActionCard: View {
             .background(AppTheme.sectionBackground)
             .cornerRadius(ResponsiveDesign.spacing(12))
         })
-        .accessibilityLabel(title)
-        .accessibilityHint("Tap to \(title.lowercased())")
+        .accessibilityLabel(self.title)
+        .accessibilityHint("Tap to \(self.title.lowercased())")
     }
 }
 

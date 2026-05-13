@@ -51,19 +51,19 @@ struct FlexibleParseDate: Codable, Sendable {
     init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         if container.decodeNil() {
-            dateString = nil
+            self.dateString = nil
         } else if let str = try? container.decode(String.self) {
-            dateString = str
+            self.dateString = str
         } else if let dict = try? container.decode([String: String].self), let iso = dict["iso"] {
-            dateString = iso
+            self.dateString = iso
         } else {
-            dateString = nil
+            self.dateString = nil
         }
     }
 
     func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
-        try container.encode(dateString)
+        try container.encode(self.dateString)
     }
 
     func toDate() -> Date? {
@@ -106,37 +106,37 @@ struct ParseInvestment: Codable, Sendable {
     let tradeSellVolumeProgress: Double?
 
     func toInvestment() -> Investment {
-        let createdDate = createdAt.toDate() ?? Date()
-        let updatedDate = updatedAt.toDate() ?? Date()
-        let completedDate = completedAt?.toDate()
+        let createdDate = self.createdAt.toDate() ?? Date()
+        let updatedDate = self.updatedAt.toDate() ?? Date()
+        let completedDate = self.completedAt?.toDate()
         let investmentStatus = InvestmentStatus(rawValue: status) ?? .active
-        let reservStatus = InvestmentReservationStatus(rawValue: reservationStatus ?? status) ?? .active
+        let reservStatus = InvestmentReservationStatus(rawValue: reservationStatus ?? self.status) ?? .active
 
         return Investment(
-            id: objectId,
-            investmentNumber: investmentNumber,
-            batchId: batchId,
-            investorId: investorId,
-            investorName: investorName ?? "",
-            traderId: traderId,
-            traderName: traderName ?? "",
-            amount: amount,
-            currentValue: currentValue ?? amount,
+            id: self.objectId,
+            investmentNumber: self.investmentNumber,
+            batchId: self.batchId,
+            investorId: self.investorId,
+            investorName: self.investorName ?? "",
+            traderId: self.traderId,
+            traderName: self.traderName ?? "",
+            amount: self.amount,
+            currentValue: self.currentValue ?? self.amount,
             date: createdDate,
             status: investmentStatus,
-            performance: profitPercentage ?? performance ?? 0.0,
-            numberOfTrades: numberOfTrades ?? 0,
-            sequenceNumber: sequenceNumber,
+            performance: self.profitPercentage ?? self.performance ?? 0.0,
+            numberOfTrades: self.numberOfTrades ?? 0,
+            sequenceNumber: self.sequenceNumber,
             createdAt: createdDate,
             updatedAt: updatedDate,
             completedAt: completedDate,
-            specialization: specialization ?? "General",
+            specialization: self.specialization ?? "General",
             reservationStatus: reservStatus,
-            partialSellCount: partialSellCount ?? 0,
-            realizedSellQuantity: realizedSellQuantity ?? 0,
-            realizedSellAmount: realizedSellAmount ?? 0,
-            lastPartialSellAt: lastPartialSellAt?.toDate(),
-            tradeSellVolumeProgress: tradeSellVolumeProgress
+            partialSellCount: self.partialSellCount ?? 0,
+            realizedSellQuantity: self.realizedSellQuantity ?? 0,
+            realizedSellAmount: self.realizedSellAmount ?? 0,
+            lastPartialSellAt: self.lastPartialSellAt?.toDate(),
+            tradeSellVolumeProgress: self.tradeSellVolumeProgress
         )
     }
 }
@@ -235,21 +235,21 @@ private struct ParsePoolParticipationResponse: Decodable {
     let updatedAt: FlexibleParseDate?
 
     func toModel(fallback: PoolTradeParticipation) -> PoolTradeParticipation {
-        let rawOwnership = ownershipPercentage ?? fallback.ownershipPercentage
+        let rawOwnership = self.ownershipPercentage ?? fallback.ownershipPercentage
         let normalizedOwnership = rawOwnership > 1.0 ? rawOwnership / 100.0 : rawOwnership
 
         return PoolTradeParticipation(
-            id: objectId,
-            tradeId: tradeId,
-            investmentId: investmentId,
-            poolReservationId: poolReservationId ?? fallback.poolReservationId,
-            poolNumber: poolNumber ?? fallback.poolNumber,
-            allocatedAmount: allocatedAmount ?? fallback.allocatedAmount,
-            totalTradeValue: totalTradeValue ?? fallback.totalTradeValue,
+            id: self.objectId,
+            tradeId: self.tradeId,
+            investmentId: self.investmentId,
+            poolReservationId: self.poolReservationId ?? fallback.poolReservationId,
+            poolNumber: self.poolNumber ?? fallback.poolNumber,
+            allocatedAmount: self.allocatedAmount ?? fallback.allocatedAmount,
+            totalTradeValue: self.totalTradeValue ?? fallback.totalTradeValue,
             ownershipPercentage: normalizedOwnership,
-            profitShare: profitShare ?? fallback.profitShare,
-            createdAt: createdAt?.toDate() ?? fallback.createdAt,
-            updatedAt: updatedAt?.toDate() ?? Date()
+            profitShare: self.profitShare ?? fallback.profitShare,
+            createdAt: self.createdAt?.toDate() ?? fallback.createdAt,
+            updatedAt: self.updatedAt?.toDate() ?? Date()
         )
     }
 }
@@ -274,7 +274,7 @@ final class InvestmentAPIService: InvestmentAPIServiceProtocol, @unchecked Senda
         let parseInput = ParseInvestmentInput.from(investment: investment)
 
         let response = try await apiClient.createObject(
-            className: investmentClassName,
+            className: self.investmentClassName,
             object: parseInput
         )
 
@@ -314,8 +314,8 @@ final class InvestmentAPIService: InvestmentAPIServiceProtocol, @unchecked Senda
 
         let parseInput = ParseInvestmentInput.from(investment: investment)
 
-        _ = try await apiClient.updateObject(
-            className: investmentClassName,
+        _ = try await self.apiClient.updateObject(
+            className: self.investmentClassName,
             objectId: investment.id,
             object: parseInput
         )
@@ -330,11 +330,11 @@ final class InvestmentAPIService: InvestmentAPIServiceProtocol, @unchecked Senda
         let query: [String: Any] = ["investorId": investorId]
 
         let parseInvestments: [ParseInvestment] = try await apiClient.fetchObjects(
-            className: investmentClassName,
+            className: self.investmentClassName,
             query: query,
             include: nil,
             orderBy: "-createdAt",
-            limit: 1000
+            limit: 1_000
         )
 
         print("📡 InvestmentAPIService: Fetched \(parseInvestments.count) investments")

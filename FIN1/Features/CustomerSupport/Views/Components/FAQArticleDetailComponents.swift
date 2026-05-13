@@ -26,12 +26,12 @@ struct FAQMetadataRow: View {
 
     var body: some View {
         HStack {
-            Text(label)
+            Text(self.label)
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.6))
                 .frame(width: ResponsiveDesign.spacing(100), alignment: .leading)
 
-            Text(value)
+            Text(self.value)
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor)
                 .lineLimit(2)
@@ -50,18 +50,18 @@ struct FAQActionButton: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
+        Button(action: self.action) {
             VStack(spacing: ResponsiveDesign.spacing(4)) {
-                Image(systemName: icon)
+                Image(systemName: self.icon)
                     .font(ResponsiveDesign.headlineFont())
 
-                Text(title)
+                Text(self.title)
                     .font(ResponsiveDesign.captionFont())
             }
-            .foregroundColor(color)
+            .foregroundColor(self.color)
             .frame(maxWidth: .infinity)
             .padding(.vertical, ResponsiveDesign.spacing(12))
-            .background(color.opacity(0.15))
+            .background(self.color.opacity(0.15))
             .cornerRadius(ResponsiveDesign.spacing(8))
         }
     }

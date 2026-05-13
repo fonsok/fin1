@@ -20,13 +20,13 @@ struct AccountStatementView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: ResponsiveDesign.spacing(20)) {
-                header
-                summarySection
+                self.header
+                self.summarySection
 
-                if viewModel.hasTransactions {
-                    entriesTable
+                if self.viewModel.hasTransactions {
+                    self.entriesTable
                 } else {
-                    emptyState
+                    self.emptyState
                 }
 
                 AccountStatementImportantNoticesView()
@@ -41,9 +41,9 @@ struct AccountStatementView: View {
             ToolbarItem(placement: .navigationBarTrailing) {
                 HStack(spacing: ResponsiveDesign.spacing(12)) {
                     Button(action: {
-                        generateAccountStatement()
+                        self.generateAccountStatement()
                     }) {
-                        if isGeneratingStatement {
+                        if self.isGeneratingStatement {
                             ProgressView()
                                 .progressViewStyle(CircularProgressViewStyle(tint: AppTheme.fontColor))
                         } else {
@@ -51,32 +51,32 @@ struct AccountStatementView: View {
                                 .foregroundColor(AppTheme.accentLightBlue)
                         }
                     }
-                    .disabled(isGeneratingStatement)
+                    .disabled(self.isGeneratingStatement)
                     .accessibilityIdentifier("GenerateStatementButton")
                     .accessibilityLabel("Generate account statement")
                     .accessibilityHint("Creates a monthly account statement document for the current month")
 
                     Button("Done") {
-                        dismiss()
+                        self.dismiss()
                     }
                 }
             }
         }
         .task {
-            viewModel.refresh()
+            self.viewModel.refresh()
         }
-        .alert("Account Statement Generated", isPresented: $showGenerationSuccess) {
+        .alert("Account Statement Generated", isPresented: self.$showGenerationSuccess) {
             Button("OK") { }
         } message: {
             Text("Your monthly account statement has been created and is available in your documents.")
         }
-        .alert("Beleg nicht gefunden", isPresented: $showMissingDocumentAlert) {
+        .alert("Beleg nicht gefunden", isPresented: self.$showMissingDocumentAlert) {
             Button("OK", role: .cancel) { }
         } message: {
             Text("Für diese Buchung wurde kein passender Beleg geladen. Bitte Dokumente aktualisieren und erneut versuchen.")
         }
-        .sheet(item: $selectedDocument) { document in
-            DocumentNavigationHelper.sheetView(for: document, appServices: services)
+        .sheet(item: self.$selectedDocument) { document in
+            DocumentNavigationHelper.sheetView(for: document, appServices: self.services)
         }
     }
 
@@ -85,19 +85,19 @@ struct AccountStatementView: View {
     private func generateAccountStatement() {
         guard let currentUser = services.userService.currentUser else { return }
 
-        isGeneratingStatement = true
+        self.isGeneratingStatement = true
 
         Task {
             await MonthlyAccountStatementGenerator.createMockCurrentMonthStatement(
                 for: currentUser,
-                services: services
+                services: self.services
             )
 
             await MainActor.run {
-                isGeneratingStatement = false
-                showGenerationSuccess = true
+                self.isGeneratingStatement = false
+                self.showGenerationSuccess = true
                 // Refresh the view to show any new entries
-                viewModel.refresh()
+                self.viewModel.refresh()
             }
         }
     }
@@ -110,23 +110,23 @@ struct AccountStatementView: View {
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
 
-            Text(viewModel.currentBalance.formattedAsLocalizedCurrency())
+            Text(self.viewModel.currentBalance.formattedAsLocalizedCurrency())
                 .font(ResponsiveDesign.bodyFont())
                 .fontWeight(.regular)
                 .foregroundColor(AppTheme.fontColor.opacity(0.9))
 
             HStack(spacing: ResponsiveDesign.spacing(8)) {
-                Text("Opening balance: \(viewModel.openingBalance.formattedAsLocalizedCurrency())")
+                Text("Opening balance: \(self.viewModel.openingBalance.formattedAsLocalizedCurrency())")
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.9))
 
-                Text(viewModel.netChangeFormatted)
+                Text(self.viewModel.netChangeFormatted)
                     .font(ResponsiveDesign.captionFont())
                     .fontWeight(.medium)
-                    .foregroundColor(viewModel.netChange >= 0 ? AppTheme.accentGreen.opacity(0.9) : AppTheme.accentRed.opacity(0.9))
+                    .foregroundColor(self.viewModel.netChange >= 0 ? AppTheme.accentGreen.opacity(0.9) : AppTheme.accentRed.opacity(0.9))
             }
 
-            Picker("Range", selection: $viewModel.selectedRange) {
+            Picker("Range", selection: self.$viewModel.selectedRange) {
                 ForEach(AccountStatementRange.allCases) { range in
                     Text(range.title).tag(range)
                 }
@@ -140,37 +140,37 @@ struct AccountStatementView: View {
     }
 
     private var summarySection: some View {
-        LazyVGrid(columns: summaryColumns, spacing: ResponsiveDesign.spacing(12)) {
-            summaryCard(
+        LazyVGrid(columns: self.summaryColumns, spacing: ResponsiveDesign.spacing(12)) {
+            self.summaryCard(
                 title: "Credits",
-                value: viewModel.totalCredits.formattedAsLocalizedCurrency(),
+                value: self.viewModel.totalCredits.formattedAsLocalizedCurrency(),
                 subtitle: "Inflows",
                 color: AppTheme.accentGreen.opacity(0.9)
             )
 
-            summaryCard(
+            self.summaryCard(
                 title: "Debits",
-                value: viewModel.totalDebits.formattedAsLocalizedCurrency(),
+                value: self.viewModel.totalDebits.formattedAsLocalizedCurrency(),
                 subtitle: "Outflows",
                 color: AppTheme.accentRed.opacity(0.6)
             )
 
-            summaryCard(
+            self.summaryCard(
                 title: "Net Change",
-                value: viewModel.netChangeFormatted,
-                subtitle: viewModel.selectedRange.title,
-                color: viewModel.netChange >= 0 ? AppTheme.accentGreen.opacity(0.9) : AppTheme.accentRed.opacity(0.6)
+                value: self.viewModel.netChangeFormatted,
+                subtitle: self.viewModel.selectedRange.title,
+                color: self.viewModel.netChange >= 0 ? AppTheme.accentGreen.opacity(0.9) : AppTheme.accentRed.opacity(0.6)
             )
 
-            withdrawalToVerifiedAccountButton
+            self.withdrawalToVerifiedAccountButton
         }
     }
 
     private var entriesTable: some View {
         AccountStatementEntriesTable(
-            entries: viewModel.filteredEntries,
-            showDocumentReferenceLinks: services.configurationService.showDocumentReferenceLinksInAccountStatement,
-            onEntryTap: openReferencedDocument(for:)
+            entries: self.viewModel.filteredEntries,
+            showDocumentReferenceLinks: self.services.configurationService.showDocumentReferenceLinksInAccountStatement,
+            onEntryTap: self.openReferencedDocument(for:)
         )
     }
 
@@ -220,21 +220,21 @@ struct AccountStatementView: View {
 
     private func openReferencedDocument(for entry: AccountStatementEntry) {
         if let cached = entry.referencedDocument(documentService: services.documentService) {
-            selectedDocument = cached
+            self.selectedDocument = cached
             return
         }
         Task { @MainActor in
             if let resolved = await entry.resolveReferencedDocument(documentService: services.documentService) {
-                selectedDocument = resolved
+                self.selectedDocument = resolved
             } else {
-                showMissingDocumentAlert = true
+                self.showMissingDocumentAlert = true
             }
         }
     }
 
     private var withdrawalToVerifiedAccountButton: some View {
         Button {
-            showWithdrawalInfo = true
+            self.showWithdrawalInfo = true
         } label: {
             HStack(spacing: ResponsiveDesign.spacing(8)) {
                 Image(systemName: "arrow.down.left")
@@ -260,13 +260,12 @@ struct AccountStatementView: View {
         .accessibilityIdentifier("WithdrawalToVerifiedAccountButton")
         .accessibilityLabel("Withdrawal to verified account")
         .accessibilityHint("Start a withdrawal to your verified payout account")
-        .alert("Withdrawal to verified account", isPresented: $showWithdrawalInfo) {
+        .alert("Withdrawal to verified account", isPresented: self.$showWithdrawalInfo) {
             Button("OK", role: .cancel) { }
         } message: {
             Text("Withdrawals are processed to the verified payout account on file. This action will connect to the withdrawal flow.")
         }
     }
-
 }
 
 // MARK: - ViewModel Extension

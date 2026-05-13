@@ -3,7 +3,7 @@ import SwiftUI
 struct PostidentConfirmationStep: View {
     @Binding var identificationConfirmed: Bool
     @State private var showingPostidentWebView = false
-    @State private var postidentCode: String = "\(LegalIdentity.documentPrefix)-\(Int.random(in: 100000...999999))"
+    @State private var postidentCode: String = "\(LegalIdentity.documentPrefix)-\(Int.random(in: 100_000...999_999))"
 
     var body: some View {
         VStack(spacing: ResponsiveDesign.spacing(24)) {
@@ -43,7 +43,7 @@ struct PostidentConfirmationStep: View {
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(AppTheme.fontColor)
 
-                    Text(postidentCode)
+                    Text(self.postidentCode)
                         .font(ResponsiveDesign.headlineFont())
                         .fontWeight(.bold)
                         .foregroundColor(AppTheme.accentLightBlue)
@@ -66,7 +66,7 @@ struct PostidentConfirmationStep: View {
 
                 // Video-Ident Option
                 Button(action: {
-                    showingPostidentWebView = true
+                    self.showingPostidentWebView = true
                 }) {
                     HStack {
                         Image(systemName: "video.fill")
@@ -172,10 +172,10 @@ struct PostidentConfirmationStep: View {
 
             // Confirmation
             VStack(spacing: ResponsiveDesign.spacing(16)) {
-                Button(action: { identificationConfirmed.toggle() }, label: {
+                Button(action: { self.identificationConfirmed.toggle() }, label: {
                     HStack {
                         InteractiveElement(
-                            isSelected: identificationConfirmed,
+                            isSelected: self.identificationConfirmed,
                             type: .confirmationCircle
                         )
 
@@ -193,9 +193,9 @@ struct PostidentConfirmationStep: View {
             .background(AppTheme.sectionBackground)
             .cornerRadius(ResponsiveDesign.spacing(16))
         }
-        .sheet(isPresented: $showingPostidentWebView) {
+        .sheet(isPresented: self.$showingPostidentWebView) {
             // In a real app, this would be a WebView showing the Postident video identification process
-            PostidentWebViewPlaceholder(postidentCode: postidentCode)
+            PostidentWebViewPlaceholder(postidentCode: self.postidentCode)
         }
     }
 }
@@ -224,7 +224,7 @@ struct PostidentWebViewPlaceholder: View {
                 Text("Ihr Postident-Code:")
                     .font(ResponsiveDesign.headlineFont())
 
-                Text(postidentCode)
+                Text(self.postidentCode)
                     .font(ResponsiveDesign.headlineFont())
                     .fontWeight(.bold)
                     .padding()
@@ -234,7 +234,7 @@ struct PostidentWebViewPlaceholder: View {
                 Spacer()
 
                 Button("Schließen") {
-                    presentationMode.wrappedValue.dismiss()
+                    self.presentationMode.wrappedValue.dismiss()
                 }
                 .padding()
                 .frame(maxWidth: .infinity)
@@ -246,7 +246,7 @@ struct PostidentWebViewPlaceholder: View {
             .padding()
             .navigationBarTitle("Video-Identifikation", displayMode: .inline)
             .navigationBarItems(trailing: Button("Schließen") {
-                presentationMode.wrappedValue.dismiss()
+                self.presentationMode.wrappedValue.dismiss()
             })
         }
     }

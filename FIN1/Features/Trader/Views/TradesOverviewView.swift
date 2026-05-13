@@ -1,5 +1,5 @@
-import SwiftUI
 import Combine
+import SwiftUI
 
 // MARK: - Trades Overview View
 
@@ -18,9 +18,12 @@ struct TradesOverviewView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: viewModel.filteredOngoingTrades.isEmpty ? ResponsiveDesign.spacing(2) : ResponsiveDesign.spacing(16)) {
+                VStack(
+                    alignment: .leading,
+                    spacing: self.viewModel.filteredOngoingTrades.isEmpty ? ResponsiveDesign.spacing(2) : ResponsiveDesign.spacing(16)
+                ) {
                     // Ongoing Trades Section (at the top)
-                    OngoingTradesSection(ongoingTrades: viewModel.filteredOngoingTrades)
+                    OngoingTradesSection(ongoingTrades: self.viewModel.filteredOngoingTrades)
 
                     // Horizontal separator line below ongoing section
                     Divider()
@@ -28,7 +31,7 @@ struct TradesOverviewView: View {
                         .padding(.vertical, ResponsiveDesign.spacing(8))
 
                     // Divider between sections (legacy - keeping for backward compatibility)
-                    if !viewModel.filteredOngoingTrades.isEmpty && !viewModel.filteredCompletedTrades.isEmpty {
+                    if !self.viewModel.filteredOngoingTrades.isEmpty && !self.viewModel.filteredCompletedTrades.isEmpty {
                         Divider()
                             .background(Color.white.opacity(0.5))
                             .padding(.vertical, ResponsiveDesign.spacing(8))
@@ -36,68 +39,71 @@ struct TradesOverviewView: View {
 
                     // Completed Trades Section (with header inside)
                     CompletedTradesSection(
-                        completedTrades: viewModel.filteredCompletedTrades,
-                        tableRows: viewModel.createTableRows(from: viewModel.filteredCompletedTrades),
-                        columnWidths: viewModel.columnWidths,
-                        commissionPercentage: viewModel.commissionPercentage,
-                        selectedTimePeriod: $selectedTimePeriod,
-                        showCustomizeDetails: $showCustomizeDetails,
+                        completedTrades: self.viewModel.filteredCompletedTrades,
+                        tableRows: self.viewModel.createTableRows(from: self.viewModel.filteredCompletedTrades),
+                        columnWidths: self.viewModel.columnWidths,
+                        commissionPercentage: self.viewModel.commissionPercentage,
+                        selectedTimePeriod: self.$selectedTimePeriod,
+                        showCustomizeDetails: self.$showCustomizeDetails,
                         onTimePeriodChanged: { period in
                             Task {
-                                await viewModel.filterTrades(by: period)
+                                await self.viewModel.filterTrades(by: period)
                             }
                         }
                     )
                 }
                 .padding(.horizontal, ResponsiveDesign.horizontalPadding())
-                .padding(.top, viewModel.filteredOngoingTrades.isEmpty ? ResponsiveDesign.spacing(2) : ResponsiveDesign.verticalPadding())
+                .padding(
+                    .top,
+                    self.viewModel.filteredOngoingTrades.isEmpty ? ResponsiveDesign.spacing(2) : ResponsiveDesign.verticalPadding()
+                )
                 .padding(.bottom, ResponsiveDesign.verticalPadding())
             }
             .background(AppTheme.screenBackground)
             .navigationTitle("Überblick Trades-Profit")
             .navigationBarTitleDisplayMode(.inline)
-            .sheet(isPresented: $showCustomizeDetails) {
+            .sheet(isPresented: self.$showCustomizeDetails) {
                 Text("Customize Details")
                     .padding(.horizontal, ResponsiveDesign.horizontalPadding())
                     .padding(.top, ResponsiveDesign.spacing(8))
             }
-            .navigationDestination(isPresented: $viewModel.showDepot) {
+            .navigationDestination(isPresented: self.$viewModel.showDepot) {
                 TraderDepotView()
             }
-            .navigationDestination(isPresented: $viewModel.showTradeDetails) {
+            .navigationDestination(isPresented: self.$viewModel.showTradeDetails) {
                 if let trade = viewModel.selectedTrade {
                     TradeDetailsViewWrapper(trade: trade)
                 }
             }
             .overlay {
-                if viewModel.isCalculatingCommission {
+                if self.viewModel.isCalculatingCommission {
                     ProgressView("Provision wird berechnet...")
                         .padding()
                         .background(AppTheme.sectionBackground.opacity(0.9))
                         .cornerRadius(ResponsiveDesign.spacing(8))
                 }
             }
-            .alert("Fehler", isPresented: $viewModel.showError) {
+            .alert("Fehler", isPresented: self.$viewModel.showError) {
                 Button("OK") {
-                    viewModel.clearError()
+                    self.viewModel.clearError()
                 }
             } message: {
-                Text(viewModel.errorMessage ?? "Ein unbekannter Fehler ist aufgetreten.")
+                Text(self.viewModel.errorMessage ?? "Ein unbekannter Fehler ist aufgetreten.")
             }
         }
         .dismissKeyboardOnTap()
         .onAppear {
-            viewModel.attach(
-                orderService: services.orderManagementService,
-                tradeService: services.tradeLifecycleService,
-                statisticsService: services.tradingStatisticsService,
-                invoiceService: services.invoiceService,
-                configurationService: services.configurationService,
-                poolTradeParticipationService: services.poolTradeParticipationService,
-                commissionCalculationService: services.commissionCalculationService,
-                investorGrossProfitService: services.investorGrossProfitService,
-                userService: services.userService,
-                parseLiveQueryClient: services.parseLiveQueryClient
+            self.viewModel.attach(
+                orderService: self.services.orderManagementService,
+                tradeService: self.services.tradeLifecycleService,
+                statisticsService: self.services.tradingStatisticsService,
+                invoiceService: self.services.invoiceService,
+                configurationService: self.services.configurationService,
+                poolTradeParticipationService: self.services.poolTradeParticipationService,
+                commissionCalculationService: self.services.commissionCalculationService,
+                investorGrossProfitService: self.services.investorGrossProfitService,
+                userService: self.services.userService,
+                parseLiveQueryClient: self.services.parseLiveQueryClient
             )
         }
     }

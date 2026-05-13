@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Order Lifecycle Coordinator Implementation
 /// Handles order lifecycle management and business logic
@@ -83,7 +83,7 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
         )
 
         // Start status progression simulation
-        orderStatusSimulationService.startOrderStatusProgression(buyOrder.id) { [weak self] status, order in
+        self.orderStatusSimulationService.startOrderStatusProgression(buyOrder.id) { [weak self] status, order in
             Task { @MainActor in
                 await self?.handleOrderCompletion(orderId: order.id, status: status, order: order)
             }
@@ -93,7 +93,7 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
     }
 
     func placeSellOrder(symbol: String, quantity: Int, price: Double) async throws -> OrderSell {
-        return try await orderManagementService.placeSellOrder(symbol: symbol, quantity: quantity, price: price)
+        return try await self.orderManagementService.placeSellOrder(symbol: symbol, quantity: quantity, price: price)
     }
 
     func submitOrder(_ order: OrderSell) async throws {
@@ -123,11 +123,11 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
         )
 
         // Also add to OrderManagementService for status progression
-        await orderManagementService.addOrderToActiveOrders(genericOrder)
+        await self.orderManagementService.addOrderToActiveOrders(genericOrder)
 
         // ✅ MiFID II Compliance: Log sell order placement
         if let auditLoggingService = auditLoggingService {
-            let userId = userService.currentUser?.id ?? order.traderId
+            let userId = self.userService.currentUser?.id ?? order.traderId
             let underlyingAsset = order.underlyingAsset ?? order.description
             let complianceEvent = ComplianceEvent(
                 eventType: .orderPlaced,
@@ -146,23 +146,23 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
         }
 
         // Start status progression simulation for sell orders
-        orderStatusSimulationService.startOrderStatusProgression(order.id) { [weak self] status, order in
+        self.orderStatusSimulationService.startOrderStatusProgression(order.id) { [weak self] status, order in
             Task { @MainActor in
                 await self?.handleOrderCompletion(orderId: order.id, status: status, order: order)
             }
         }
 
         // Send notification
-        await tradingNotificationService.sendOrderStatusNotification(orderId: order.id, status: "submitted")
+        await self.tradingNotificationService.sendOrderStatusNotification(orderId: order.id, status: "submitted")
     }
 
     func cancelOrder(_ orderId: String) async throws {
-        orderStatusSimulationService.stopOrderStatusProgression(orderId)
-        try await orderManagementService.cancelOrder(orderId)
+        self.orderStatusSimulationService.stopOrderStatusProgression(orderId)
+        try await self.orderManagementService.cancelOrder(orderId)
 
         // ✅ MiFID II Compliance: Log order cancellation
         if let auditLoggingService = auditLoggingService {
-            let userId = userService.currentUser?.id ?? "unknown"
+            let userId = self.userService.currentUser?.id ?? "unknown"
             let complianceEvent = ComplianceEvent(
                 eventType: .orderCancelled,
                 agentId: userId,
@@ -180,23 +180,23 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
     }
 
     func updateOrderStatus(_ orderId: String, status: String) async throws {
-        try await orderManagementService.updateOrderStatus(orderId, status: status)
+        try await self.orderManagementService.updateOrderStatus(orderId, status: status)
     }
 
     // MARK: - Order Completion Handling
 
     func handleOrderCompletion(orderId: String, status: String, order: Order) async {
         // Update the order status
-        try? await orderManagementService.updateOrderStatus(orderId, status: status)
+        try? await self.orderManagementService.updateOrderStatus(orderId, status: status)
 
         // Send notification
-        await tradingNotificationService.sendOrderStatusNotification(orderId: orderId, status: status)
+        await self.tradingNotificationService.sendOrderStatusNotification(orderId: orderId, status: status)
 
         // Handle order completion based on order type
         if status == "completed" {
             // ✅ MiFID II Compliance: Log order completion
             if let auditLoggingService = auditLoggingService {
-                let userId = userService.currentUser?.id ?? order.traderId
+                let userId = self.userService.currentUser?.id ?? order.traderId
                 let orderType = order.type == .buy ? "Buy" : "Sell"
                 let underlyingAsset = order.underlyingAsset ?? order.description
                 let complianceEvent = ComplianceEvent(
@@ -215,9 +215,9 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
             }
 
             if order.type == .buy {
-                await handleBuyOrderCompletion(orderId: orderId, order: order)
+                await self.handleBuyOrderCompletion(orderId: orderId, order: order)
             } else if order.type == .sell {
-                await handleSellOrderCompletion(orderId: orderId, order: order)
+                await self.handleSellOrderCompletion(orderId: orderId, order: order)
             }
         }
     }
@@ -255,7 +255,7 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
         if let trade = trade {
             // Trader cash debit belongs only to trader-originated buy orders.
             if order.isMirrorPoolOrder != true {
-                await cashBalanceService.processBuyOrderExecution(amount: order.totalAmount)
+                await self.cashBalanceService.processBuyOrderExecution(amount: order.totalAmount)
             }
 
             // Investment activation/deploy belongs only to mirror-pool buy orders.
@@ -264,13 +264,17 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
             }
 
             // Show buy confirmation
-            await tradingNotificationService.showBuyConfirmation(for: trade)
+            await self.tradingNotificationService.showBuyConfirmation(for: trade)
 
             // Generate invoice and send notification with trade ID and trade number
-            await tradingNotificationService.generateInvoiceAndNotification(for: order, tradeId: trade.id, tradeNumber: trade.tradeNumber)
+            await self.tradingNotificationService.generateInvoiceAndNotification(
+                for: order,
+                tradeId: trade.id,
+                tradeNumber: trade.tradeNumber
+            )
 
             // Remove completed order from ongoing (activeOrders)
-            try? await orderManagementService.cancelOrder(orderId)
+            try? await self.orderManagementService.cancelOrder(orderId)
         }
     }
 
@@ -303,21 +307,23 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
 
         // Find the existing Trade that contains this sell order
         // CRITICAL: Filter trades by trader ID to ensure sell order is matched to correct trader's trade
-        let allTrades = tradeLifecycleService.completedTrades
+        let allTrades = self.tradeLifecycleService.completedTrades
         let trades = allTrades.filter { $0.traderId == sellOrder.traderId }
-        print("🔍 DEBUG: Looking for trade match - trades count: \(trades.count) (filtered from \(allTrades.count) total), sellOrder.traderId: \(sellOrder.traderId), originalHoldingId: \(sellOrder.originalHoldingId ?? "nil")")
+        print(
+            "🔍 DEBUG: Looking for trade match - trades count: \(trades.count) (filtered from \(allTrades.count) total), sellOrder.traderId: \(sellOrder.traderId), originalHoldingId: \(sellOrder.originalHoldingId ?? "nil")"
+        )
 
         let updatedTrade = await tradeMatchingService.findAndUpdateTradeWithSellOrder(
             sellOrder: sellOrder,
             trades: trades,
-            tradeLifecycleService: tradeLifecycleService
+            tradeLifecycleService: self.tradeLifecycleService
         )
 
         print("🔍 DEBUG: Trade matching result - updatedTrade: \(updatedTrade?.id ?? "nil")")
 
         // FIRST: Remove completed order from ongoing (activeOrders) before showing overlay
         // This ensures the depot is updated before the success message is displayed
-        try? await orderManagementService.cancelOrder(orderId)
+        try? await self.orderManagementService.cancelOrder(orderId)
 
         // Notify depot view model about completed sell order (to refresh holdings)
         await MainActor.run {
@@ -330,17 +336,21 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
 
         if let trade = updatedTrade {
             // Update cash balance (money comes in for sell order)
-            await cashBalanceService.processSellOrderExecution(amount: order.totalAmount)
+            await self.cashBalanceService.processSellOrderExecution(amount: order.totalAmount)
 
             // Generate invoice and send notification for sell order with trade ID and trade number
-            await tradingNotificationService.generateInvoiceAndNotification(for: order, tradeId: trade.id, tradeNumber: trade.tradeNumber)
+            await self.tradingNotificationService.generateInvoiceAndNotification(
+                for: order,
+                tradeId: trade.id,
+                tradeNumber: trade.tradeNumber
+            )
 
             // Check if trade is now fully completed and generate Collection Bill
             if trade.isCompleted {
                 // RACE CONDITION FIX: Ensure completion logic runs only once per trade
                 if let documentService = documentService, documentService.documentExists(for: trade.id, ofType: .traderCollectionBill) {
                     print("ℹ️ Trade #\(trade.tradeNumber) completion logic already ran; skipping duplicate run.")
-                    await tradingNotificationService.showSellConfirmation(for: trade)
+                    await self.tradingNotificationService.showSellConfirmation(for: trade)
                     return
                 }
 
@@ -349,8 +359,8 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
 
                 if !settledByBackend {
                     print("🎯 Trade #\(trade.tradeNumber) is now fully completed - generating local documents")
-                    await tradingNotificationService.generateCollectionBillDocument(for: trade)
-                    await generateCreditNoteIfCommissionExists(for: trade)
+                    await self.tradingNotificationService.generateCollectionBillDocument(for: trade)
+                    await self.generateCreditNoteIfCommissionExists(for: trade)
                 } else {
                     print("🎯 Trade #\(trade.tradeNumber) settled by backend — skipping local document creation")
                 }
@@ -370,7 +380,9 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
                     } else {
                         for participation in participations {
                             await investmentService.markActiveInvestmentAsCompleted(for: participation.investmentId)
-                            print("✅ OrderLifecycleCoordinator: Marked completed pool for investment \(participation.investmentId) (trade \(trade.id))")
+                            print(
+                                "✅ OrderLifecycleCoordinator: Marked completed pool for investment \(participation.investmentId) (trade \(trade.id))"
+                            )
                         }
                     }
                 } else {
@@ -379,10 +391,10 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
             }
 
             // LAST: Show sell confirmation with the updated Trade (after depot is fully updated)
-            await tradingNotificationService.showSellConfirmation(for: trade)
+            await self.tradingNotificationService.showSellConfirmation(for: trade)
         } else {
             // Generate invoice even if no trade found (no trade ID available)
-            await tradingNotificationService.generateInvoiceAndNotification(for: order, tradeId: nil, tradeNumber: nil)
+            await self.tradingNotificationService.generateInvoiceAndNotification(for: order, tradeId: nil, tradeNumber: nil)
         }
     }
 
@@ -406,7 +418,7 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
                 let settlement = try await settlementAPI.fetchTradeSettlement(tradeId: trade.id)
                 if settlement.isSettledByBackend && settlement.totalFees > 0 {
                     print("📄 CreditNote: Using backend-authoritative commission for trade #\(trade.tradeNumber)")
-                    await tradingNotificationService.generateCreditNoteDocument(
+                    await self.tradingNotificationService.generateCreditNoteDocument(
                         for: trade,
                         commissionAmount: settlement.totalFees,
                         grossProfit: settlement.grossProfit
@@ -433,7 +445,7 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
             return
         }
 
-        let commissionRate = configurationService.effectiveCommissionRate
+        let commissionRate = self.configurationService.effectiveCommissionRate
         let participationsByInvestment = Dictionary(grouping: participations) { $0.investmentId }
         let allInvestments = investmentService.investments
 
@@ -461,7 +473,7 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
             return
         }
 
-        await tradingNotificationService.generateCreditNoteDocument(
+        await self.tradingNotificationService.generateCreditNoteDocument(
             for: trade,
             commissionAmount: totalCommission,
             grossProfit: totalGrossProfit

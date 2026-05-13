@@ -11,16 +11,16 @@ struct FAQStatisticCard: View {
 
     var body: some View {
         VStack(spacing: ResponsiveDesign.spacing(4)) {
-            Image(systemName: icon)
+            Image(systemName: self.icon)
                 .font(ResponsiveDesign.bodyFont())
-                .foregroundColor(color)
+                .foregroundColor(self.color)
 
-            Text(value)
+            Text(self.value)
                 .font(ResponsiveDesign.headlineFont())
                 .fontWeight(.bold)
                 .foregroundColor(AppTheme.inputText)
 
-            Text(label)
+            Text(self.label)
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.inputText)
         }
@@ -38,18 +38,18 @@ struct FAQCategoryChip: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
+        Button(action: self.action) {
             HStack(spacing: ResponsiveDesign.spacing(4)) {
-                Image(systemName: icon)
+                Image(systemName: self.icon)
                     .font(ResponsiveDesign.captionFont())
 
-                Text(title)
+                Text(self.title)
                     .font(ResponsiveDesign.captionFont())
             }
             .padding(.horizontal, ResponsiveDesign.spacing(12))
             .padding(.vertical, ResponsiveDesign.spacing(8))
-            .background(isSelected ? AppTheme.accentLightBlue : AppTheme.inputFieldBackground)
-            .foregroundColor(isSelected ? .white : AppTheme.inputText)
+            .background(self.isSelected ? AppTheme.accentLightBlue : AppTheme.inputFieldBackground)
+            .foregroundColor(self.isSelected ? .white : AppTheme.inputText)
             .cornerRadius(ResponsiveDesign.spacing(16))
         }
     }
@@ -62,16 +62,16 @@ struct FAQArticleRow: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
+        Button(action: self.action) {
             HStack(alignment: .top, spacing: ResponsiveDesign.spacing(12)) {
-                Image(systemName: article.category.icon)
+                Image(systemName: self.article.category.icon)
                     .font(ResponsiveDesign.headlineFont())
-                    .foregroundColor(Color(hex: article.category.color))
+                    .foregroundColor(Color(hex: self.article.category.color))
                     .frame(width: ResponsiveDesign.spacing(32))
 
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
                     HStack {
-                        Text(article.title)
+                        Text(self.article.title)
                             .font(ResponsiveDesign.bodyFont())
                             .fontWeight(.medium)
                             .foregroundColor(AppTheme.inputText)
@@ -80,7 +80,7 @@ struct FAQArticleRow: View {
 
                         Spacer()
 
-                        if !article.isPublished {
+                        if !self.article.isPublished {
                             Text("Entwurf")
                                 .font(ResponsiveDesign.captionFont())
                                 .foregroundColor(.white)
@@ -90,21 +90,21 @@ struct FAQArticleRow: View {
                                 .cornerRadius(ResponsiveDesign.spacing(4))
                         }
 
-                        if showReviewBadge {
+                        if self.showReviewBadge {
                             Image(systemName: "exclamationmark.circle.fill")
                                 .foregroundColor(AppTheme.accentRed)
                         }
                     }
 
-                    Text(article.summary)
+                    Text(self.article.summary)
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(AppTheme.inputText)
                         .lineLimit(2)
                         .multilineTextAlignment(.leading)
 
                     HStack(spacing: ResponsiveDesign.spacing(12)) {
-                        Label("\(article.viewCount)", systemImage: "eye")
-                        Label("\(article.helpfulnessPercentage)%", systemImage: "hand.thumbsup")
+                        Label("\(self.article.viewCount)", systemImage: "eye")
+                        Label("\(self.article.helpfulnessPercentage)%", systemImage: "hand.thumbsup")
 
                         Spacer()
 
@@ -129,40 +129,40 @@ struct FAQSearchResultRow: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
+        Button(action: self.action) {
             HStack(alignment: .top, spacing: ResponsiveDesign.spacing(12)) {
                 VStack {
-                    Image(systemName: result.article.category.icon)
+                    Image(systemName: self.result.article.category.icon)
                         .font(ResponsiveDesign.headlineFont())
-                        .foregroundColor(Color(hex: result.article.category.color))
+                        .foregroundColor(Color(hex: self.result.article.category.color))
 
-                    Text(String(format: "%.0f%%", result.matchScore * 20))
+                    Text(String(format: "%.0f%%", self.result.matchScore * 20))
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(AppTheme.accentGreen)
                 }
                 .frame(width: ResponsiveDesign.spacing(40))
 
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
-                    Text(result.article.title)
+                    Text(self.result.article.title)
                         .font(ResponsiveDesign.bodyFont())
                         .fontWeight(.medium)
                         .foregroundColor(AppTheme.inputText)
                         .lineLimit(2)
                         .multilineTextAlignment(.leading)
 
-                    Text(result.article.summary)
+                    Text(self.result.article.summary)
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(AppTheme.inputText)
                         .lineLimit(2)
                         .multilineTextAlignment(.leading)
 
-                    if !result.matchedTerms.isEmpty {
+                    if !self.result.matchedTerms.isEmpty {
                         HStack {
                             Text("Treffer:")
                                 .font(ResponsiveDesign.captionFont())
                                 .foregroundColor(AppTheme.fontColor.opacity(0.5))
 
-                            Text(result.matchedTerms.joined(separator: ", "))
+                            Text(self.result.matchedTerms.joined(separator: ", "))
                                 .font(ResponsiveDesign.captionFont())
                                 .foregroundColor(AppTheme.accentLightBlue)
                         }

@@ -20,14 +20,14 @@ extension TraderData {
         isWatchlistBusy: Bool = false
     ) -> TableRowData {
         return TableRowData(
-            id: traderName,
+            id: self.traderName,
             cells: [
-                "trader": traderName,
-                "return": returnPercentage,
-                "successRate": successRate,
-                "avgReturnPerTrade": avgReturnPerTrade
+                "trader": self.traderName,
+                "return": self.returnPercentage,
+                "successRate": self.successRate,
+                "avgReturnPerTrade": self.avgReturnPerTrade
             ],
-            isPositive: isPositive,
+            isPositive: self.isPositive,
             onTap: onTraderTap,
             onWatchlistToggle: onWatchlistToggle,
             isInWatchlist: isInWatchlist,

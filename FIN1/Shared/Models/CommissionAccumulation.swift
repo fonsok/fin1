@@ -40,7 +40,7 @@ struct CommissionAccumulation: Identifiable, Codable, Hashable {
     }
 
     var isSettled: Bool {
-        return settledAt != nil && settlementId != nil
+        return self.settledAt != nil && self.settlementId != nil
     }
 }
 

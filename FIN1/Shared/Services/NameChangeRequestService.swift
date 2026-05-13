@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Name Change Request Service
 
@@ -34,9 +34,9 @@ final class NameChangeRequestService: NameChangeRequestServiceProtocol, ServiceL
     }
 
     func reset() {
-        allRequests = []
-        pendingRequests = []
-        requestHistory = []
+        self.allRequests = []
+        self.pendingRequests = []
+        self.requestHistory = []
     }
 
     // MARK: - Request Submission
@@ -85,14 +85,14 @@ final class NameChangeRequestService: NameChangeRequestServiceProtocol, ServiceL
         }
 
         // Check for existing pending requests
-        if hasPendingRequest(for: userId) {
+        if self.hasPendingRequest(for: userId) {
             throw AppError.validationError(
                 "You already have a pending name change request. Please wait for it to be reviewed or cancel it first."
             )
         }
 
         await MainActor.run {
-            isLoading = true
+            self.isLoading = true
         }
 
         // Simulate API call (longer for significant life events)
@@ -120,9 +120,9 @@ final class NameChangeRequestService: NameChangeRequestServiceProtocol, ServiceL
         )
 
         await MainActor.run {
-            allRequests.append(request)
-            updateRequestLists(for: userId)
-            isLoading = false
+            self.allRequests.append(request)
+            self.updateRequestLists(for: userId)
+            self.isLoading = false
         }
 
         // Post notification for new request
@@ -138,15 +138,15 @@ final class NameChangeRequestService: NameChangeRequestServiceProtocol, ServiceL
 
     func fetchRequests(for userId: String) async throws {
         await MainActor.run {
-            isLoading = true
+            self.isLoading = true
         }
 
         // Simulate API call
         try await Task.sleep(nanoseconds: 500_000_000)
 
         await MainActor.run {
-            updateRequestLists(for: userId)
-            isLoading = false
+            self.updateRequestLists(for: userId)
+            self.isLoading = false
         }
     }
 
@@ -155,25 +155,25 @@ final class NameChangeRequestService: NameChangeRequestServiceProtocol, ServiceL
             throw AppError.serviceError(.dataNotFound)
         }
 
-        guard allRequests[index].canCancel else {
+        guard self.allRequests[index].canCancel else {
             throw AppError.validationError(
                 "This request cannot be cancelled. It may already be under review or processed."
             )
         }
 
         await MainActor.run {
-            isLoading = true
+            self.isLoading = true
         }
 
         // Simulate API call
         try await Task.sleep(nanoseconds: 500_000_000)
 
-        let userId = allRequests[index].userId
+        let userId = self.allRequests[index].userId
 
         await MainActor.run {
-            allRequests[index].status = .cancelled
-            updateRequestLists(for: userId)
-            isLoading = false
+            self.allRequests[index].status = .cancelled
+            self.updateRequestLists(for: userId)
+            self.isLoading = false
         }
 
         NotificationCenter.default.post(
@@ -183,11 +183,11 @@ final class NameChangeRequestService: NameChangeRequestServiceProtocol, ServiceL
     }
 
     func getPendingRequest(for userId: String) -> NameChangeRequest? {
-        allRequests.first { $0.userId == userId && $0.isPending }
+        self.allRequests.first { $0.userId == userId && $0.isPending }
     }
 
     func hasPendingRequest(for userId: String) -> Bool {
-        allRequests.contains { $0.userId == userId && $0.isPending }
+        self.allRequests.contains { $0.userId == userId && $0.isPending }
     }
 
     // MARK: - Admin Operations
@@ -197,33 +197,33 @@ final class NameChangeRequestService: NameChangeRequestServiceProtocol, ServiceL
             throw AppError.serviceError(.dataNotFound)
         }
 
-        guard allRequests[index].isPending else {
+        guard self.allRequests[index].isPending else {
             throw AppError.validationError(
                 "This request has already been processed."
             )
         }
 
         await MainActor.run {
-            isLoading = true
+            self.isLoading = true
         }
 
         // Simulate API call (longer review for significant life events)
-        let delay: UInt64 = allRequests[index].isSignificantLifeEvent ? 1_500_000_000 : 1_000_000_000
+        let delay: UInt64 = self.allRequests[index].isSignificantLifeEvent ? 1_500_000_000 : 1_000_000_000
         try await Task.sleep(nanoseconds: delay)
 
-        let userId = allRequests[index].userId
+        let userId = self.allRequests[index].userId
 
         await MainActor.run {
-            allRequests[index].status = .approved
-            allRequests[index].reviewedAt = Date()
-            allRequests[index].reviewedBy = reviewerId
-            updateRequestLists(for: userId)
-            isLoading = false
+            self.allRequests[index].status = .approved
+            self.allRequests[index].reviewedAt = Date()
+            self.allRequests[index].reviewedBy = reviewerId
+            self.updateRequestLists(for: userId)
+            self.isLoading = false
         }
 
         NotificationCenter.default.post(
             name: .nameChangeRequestApproved,
-            object: allRequests[index]
+            object: self.allRequests[index]
         )
     }
 
@@ -232,49 +232,49 @@ final class NameChangeRequestService: NameChangeRequestServiceProtocol, ServiceL
             throw AppError.serviceError(.dataNotFound)
         }
 
-        guard allRequests[index].isPending else {
+        guard self.allRequests[index].isPending else {
             throw AppError.validationError(
                 "This request has already been processed."
             )
         }
 
         await MainActor.run {
-            isLoading = true
+            self.isLoading = true
         }
 
         // Simulate API call
         try await Task.sleep(nanoseconds: 1_000_000_000)
 
-        let userId = allRequests[index].userId
+        let userId = self.allRequests[index].userId
 
         await MainActor.run {
-            allRequests[index].status = .rejected
-            allRequests[index].reviewedAt = Date()
-            allRequests[index].reviewedBy = reviewerId
-            allRequests[index].rejectionReason = reason
-            updateRequestLists(for: userId)
-            isLoading = false
+            self.allRequests[index].status = .rejected
+            self.allRequests[index].reviewedAt = Date()
+            self.allRequests[index].reviewedBy = reviewerId
+            self.allRequests[index].rejectionReason = reason
+            self.updateRequestLists(for: userId)
+            self.isLoading = false
         }
 
         NotificationCenter.default.post(
             name: .nameChangeRequestRejected,
-            object: allRequests[index]
+            object: self.allRequests[index]
         )
     }
 
     func fetchAllPendingRequests() async throws -> [NameChangeRequest] {
         // Simulate API call
         try await Task.sleep(nanoseconds: 500_000_000)
-        return allRequests.filter { $0.isPending }
+        return self.allRequests.filter { $0.isPending }
     }
 
     // MARK: - Private Methods
 
     private func updateRequestLists(for userId: String) {
-        let userRequests = allRequests.filter { $0.userId == userId }
-        pendingRequests = userRequests.filter { $0.isPending }
+        let userRequests = self.allRequests.filter { $0.userId == userId }
+        self.pendingRequests = userRequests.filter { $0.isPending }
             .sorted { $0.submittedAt > $1.submittedAt }
-        requestHistory = userRequests.filter { $0.status.isTerminal }
+        self.requestHistory = userRequests.filter { $0.status.isTerminal }
             .sorted { $0.submittedAt > $1.submittedAt }
     }
 }

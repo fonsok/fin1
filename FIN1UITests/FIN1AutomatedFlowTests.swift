@@ -18,27 +18,27 @@ final class FIN1AutomatedFlowTests: XCTestCase {
 
     override func setUpWithError() throws {
         continueAfterFailure = false
-        app = XCUIApplication()
+        self.app = XCUIApplication()
 
         // Configure app for UI testing - reset state for each test
-        app.launchArguments = ["--uitesting", "--reset-state"]
+        self.app.launchArguments = ["--uitesting", "--reset-state"]
 
         // Terminate any existing instance
-        app.terminate()
+        self.app.terminate()
     }
 
     override func tearDownWithError() throws {
         // Take final screenshot on failure
         if let failureCount = testRun?.failureCount, failureCount > 0 {
-            let screenshot = app.screenshot()
+            let screenshot = self.app.screenshot()
             let attachment = XCTAttachment(screenshot: screenshot)
             attachment.name = "FailureScreenshot"
             attachment.lifetime = .keepAlways
             add(attachment)
         }
 
-        app.terminate()
-        app = nil
+        self.app.terminate()
+        self.app = nil
     }
 
     // MARK: - Test Helpers
@@ -73,7 +73,7 @@ final class FIN1AutomatedFlowTests: XCTestCase {
     /// Debug helper - print all visible tabs
     private func debugPrintTabs() {
         print("  📋 Available tabs:")
-        let tabButtons = app.tabBars.buttons.allElementsBoundByIndex
+        let tabButtons = self.app.tabBars.buttons.allElementsBoundByIndex
         for (index, tab) in tabButtons.enumerated() {
             print("    [\(index)] \(tab.label)")
         }
@@ -81,7 +81,7 @@ final class FIN1AutomatedFlowTests: XCTestCase {
 
     /// Debug helper - print button info
     private func debugPrintButtons(prefix: String = "") {
-        let allButtons = app.buttons.allElementsBoundByIndex.prefix(15)
+        let allButtons = self.app.buttons.allElementsBoundByIndex.prefix(15)
         print("  📋 \(prefix)First 15 buttons:")
         for (index, button) in allButtons.enumerated() {
             print("    [\(index)] '\(button.label)' id=\(button.identifier)")
@@ -95,7 +95,7 @@ final class FIN1AutomatedFlowTests: XCTestCase {
         print("\n🔐 Logging in as Investor \(number)...")
 
         // Check if already logged in
-        let tabBar = app.tabBars.firstMatch
+        let tabBar = self.app.tabBars.firstMatch
         if tabBar.exists {
             print("  ✅ Already logged in - tab bar visible")
             return true
@@ -109,7 +109,7 @@ final class FIN1AutomatedFlowTests: XCTestCase {
         print("  🔍 Looking for button: '\(exactLabel)'")
 
         // Try finding by exact label first (most reliable)
-        let buttonByLabel = app.buttons[exactLabel]
+        let buttonByLabel = self.app.buttons[exactLabel]
 
         if buttonByLabel.waitForExistence(timeout: 3) {
             print("  ✅ Found button by exact label!")
@@ -127,14 +127,14 @@ final class FIN1AutomatedFlowTests: XCTestCase {
             }
         } else {
             // Try by accessibility identifier
-            let buttonById = app.buttons["LoginInvestor\(number)Button"]
+            let buttonById = self.app.buttons["LoginInvestor\(number)Button"]
             if buttonById.waitForExistence(timeout: 2) {
                 print("  ✅ Found by identifier")
                 buttonById.tap()
             } else {
                 // Last resort: find by partial match
                 print("  🔍 Trying partial match...")
-                let buttons = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Investor \(number)'"))
+                let buttons = self.app.buttons.matching(NSPredicate(format: "label CONTAINS 'Investor \(number)'"))
                 print("  📊 Found \(buttons.count) matching buttons")
 
                 if buttons.count > 0 {
@@ -157,7 +157,7 @@ final class FIN1AutomatedFlowTests: XCTestCase {
         } else {
             print("  ❌ Login failed - Tab bar did not appear")
             // Take screenshot to see what's on screen
-            let screenshot = app.screenshot()
+            let screenshot = self.app.screenshot()
             let attachment = XCTAttachment(screenshot: screenshot)
             attachment.name = "LoginFailed_Investor\(number)"
             attachment.lifetime = .keepAlways
@@ -171,7 +171,7 @@ final class FIN1AutomatedFlowTests: XCTestCase {
         print("\n🔐 Logging in as Trader \(number)...")
 
         // Check if already logged in
-        let tabBar = app.tabBars.firstMatch
+        let tabBar = self.app.tabBars.firstMatch
         if tabBar.exists {
             print("  ✅ Already logged in - tab bar visible")
             return true
@@ -185,7 +185,7 @@ final class FIN1AutomatedFlowTests: XCTestCase {
         print("  🔍 Looking for button: '\(exactLabel)'")
 
         // Try finding by exact label first (most reliable)
-        let buttonByLabel = app.buttons[exactLabel]
+        let buttonByLabel = self.app.buttons[exactLabel]
 
         if buttonByLabel.waitForExistence(timeout: 3) {
             print("  ✅ Found button by exact label!")
@@ -203,14 +203,14 @@ final class FIN1AutomatedFlowTests: XCTestCase {
             }
         } else {
             // Try by accessibility identifier
-            let buttonById = app.buttons["LoginTrader\(number)Button"]
+            let buttonById = self.app.buttons["LoginTrader\(number)Button"]
             if buttonById.waitForExistence(timeout: 2) {
                 print("  ✅ Found by identifier")
                 buttonById.tap()
             } else {
                 // Last resort: find by partial match
                 print("  🔍 Trying partial match...")
-                let buttons = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Trader \(number)'"))
+                let buttons = self.app.buttons.matching(NSPredicate(format: "label CONTAINS 'Trader \(number)'"))
                 print("  📊 Found \(buttons.count) matching buttons")
 
                 if buttons.count > 0 {
@@ -233,7 +233,7 @@ final class FIN1AutomatedFlowTests: XCTestCase {
         } else {
             print("  ❌ Login failed - Tab bar did not appear")
             // Take screenshot to see what's on screen
-            let screenshot = app.screenshot()
+            let screenshot = self.app.screenshot()
             let attachment = XCTAttachment(screenshot: screenshot)
             attachment.name = "LoginFailed_Trader\(number)"
             attachment.lifetime = .keepAlways
@@ -247,24 +247,24 @@ final class FIN1AutomatedFlowTests: XCTestCase {
     /// Tests the complete investment creation flow for investors
     @MainActor
     func testInvestmentCreationFlowMultiInvestors() throws {
-        logSection("Investment Creation Flow (Multi-Investors)")
+        self.logSection("Investment Creation Flow (Multi-Investors)")
 
         // Launch the app
-        logStep(0, "Launching app")
-        app.launch()
+        self.logStep(0, "Launching app")
+        self.app.launch()
         sleep(3)
 
         // Print initial state
         print("  📱 App launched")
-        print("  📱 Current elements: \(app.buttons.count) buttons, \(app.tabBars.count) tab bars")
-        debugPrintButtons(prefix: "After launch - ")
+        print("  📱 Current elements: \(self.app.buttons.count) buttons, \(self.app.tabBars.count) tab bars")
+        self.debugPrintButtons(prefix: "After launch - ")
 
         // Login as Investor
-        logStep(1, "Logging in as Investor")
-        let loginSuccess = loginAsInvestor(number: 1)
+        self.logStep(1, "Logging in as Investor")
+        let loginSuccess = self.loginAsInvestor(number: 1)
 
         if !loginSuccess {
-            let screenshot = app.screenshot()
+            let screenshot = self.app.screenshot()
             let attachment = XCTAttachment(screenshot: screenshot)
             attachment.name = "InvestorLoginFailed"
             attachment.lifetime = .keepAlways
@@ -274,40 +274,42 @@ final class FIN1AutomatedFlowTests: XCTestCase {
         }
 
         // Debug: Show available tabs
-        debugPrintTabs()
+        self.debugPrintTabs()
 
         // Navigate to Investments tab (for Investor it's "Discover" then find a trader)
-        logStep(2, "Navigating to find a trader to invest with")
+        self.logStep(2, "Navigating to find a trader to invest with")
 
         // For investors, we need to go to Discover tab to find traders
-        let discoverTab = app.tabBars.buttons["Discover"]
-        if waitForElement(discoverTab, timeout: 5) {
-            tapElement(discoverTab, description: "Discover Tab")
+        let discoverTab = self.app.tabBars.buttons["Discover"]
+        if self.waitForElement(discoverTab, timeout: 5) {
+            self.tapElement(discoverTab, description: "Discover Tab")
         }
 
         sleep(2)
 
         // Look for any trader card/row to tap
-        logStep(3, "Looking for a trader to select")
+        self.logStep(3, "Looking for a trader to select")
 
         // Try finding "Invest with" buttons or trader rows
-        let investButtons = app.buttons.matching(NSPredicate(format: "identifier CONTAINS 'InvestWithTraderButton' OR label CONTAINS[c] 'Invest with'"))
+        let investButtons = self.app.buttons.matching(
+            NSPredicate(format: "identifier CONTAINS 'InvestWithTraderButton' OR label CONTAINS[c] 'Invest with'")
+        )
 
         if investButtons.count > 0 {
-            logStep(4, "Tapping on a trader to invest")
-            tapElement(investButtons.element(boundBy: 0), description: "Invest with Trader button")
+            self.logStep(4, "Tapping on a trader to invest")
+            self.tapElement(investButtons.element(boundBy: 0), description: "Invest with Trader button")
         } else {
             // Try finding any clickable trader cell
-            let traderCells = app.cells.allElementsBoundByIndex
+            let traderCells = self.app.cells.allElementsBoundByIndex
             if traderCells.count > 0 {
-                tapElement(traderCells[0], description: "First trader cell")
+                self.tapElement(traderCells[0], description: "First trader cell")
             } else {
                 // Try tapping on static text that might be a trader name
-                let results = app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] 'trader' OR label CONTAINS[c] 'Results'"))
+                let results = self.app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] 'trader' OR label CONTAINS[c] 'Results'"))
                 print("  📊 Found \(results.count) potential trader elements")
 
                 // Take a screenshot for debugging
-                let screenshot = app.screenshot()
+                let screenshot = self.app.screenshot()
                 let attachment = XCTAttachment(screenshot: screenshot)
                 attachment.name = "InvestorDiscovery"
                 add(attachment)
@@ -317,36 +319,36 @@ final class FIN1AutomatedFlowTests: XCTestCase {
         sleep(2)
 
         // Look for Investment Sheet elements
-        logStep(5, "Looking for Investment form elements")
+        self.logStep(5, "Looking for Investment form elements")
 
-        let amountField = app.textFields["InvestmentAmountField"]
-        let slider = app.sliders["InvestmentCountSlider"]
-        let createButton = app.buttons["CreateInvestmentButton"]
+        let amountField = self.app.textFields["InvestmentAmountField"]
+        let slider = self.app.sliders["InvestmentCountSlider"]
+        let createButton = self.app.buttons["CreateInvestmentButton"]
 
-        if waitForElement(amountField, timeout: 5) {
-            logStep(6, "Entering investment amount: 1000")
+        if self.waitForElement(amountField, timeout: 5) {
+            self.logStep(6, "Entering investment amount: 1000")
             amountField.tap()
             amountField.typeText("1000")
 
-            if waitForElement(slider, timeout: 3) {
-                logStep(7, "Adjusting slider for multiple investments")
+            if self.waitForElement(slider, timeout: 3) {
+                self.logStep(7, "Adjusting slider for multiple investments")
                 slider.adjust(toNormalizedSliderPosition: 0.3)
             }
 
             // Take a screenshot
-            let screenshot = app.screenshot()
+            let screenshot = self.app.screenshot()
             let attachment = XCTAttachment(screenshot: screenshot)
             attachment.name = "InvestmentFormFilled"
             add(attachment)
 
-            if waitForElement(createButton, timeout: 3) && createButton.isEnabled {
-                logStep(8, "Tapping Create Investment button")
-                tapElement(createButton, description: "Create Investment")
+            if self.waitForElement(createButton, timeout: 3) && createButton.isEnabled {
+                self.logStep(8, "Tapping Create Investment button")
+                self.tapElement(createButton, description: "Create Investment")
 
                 sleep(2)
 
                 // Check for success
-                let alerts = app.alerts
+                let alerts = self.app.alerts
                 if alerts.count > 0 {
                     print("  ✅ Success alert appeared!")
                     alerts.firstMatch.buttons.firstMatch.tap()
@@ -358,7 +360,7 @@ final class FIN1AutomatedFlowTests: XCTestCase {
             print("  ⚠️ Investment form not displayed - may need to select a trader first")
 
             // Take screenshot for debugging
-            let screenshot = app.screenshot()
+            let screenshot = self.app.screenshot()
             let attachment = XCTAttachment(screenshot: screenshot)
             attachment.name = "NoInvestmentForm"
             add(attachment)
@@ -372,41 +374,41 @@ final class FIN1AutomatedFlowTests: XCTestCase {
     /// Tests the complete trading flow for traders
     @MainActor
     func testTradingFlowWithSecuritiesSearch() throws {
-        logSection("Trading Flow with Securities Search")
+        self.logSection("Trading Flow with Securities Search")
 
         // Launch the app
-        logStep(0, "Launching app")
-        app.launch()
+        self.logStep(0, "Launching app")
+        self.app.launch()
         sleep(2)
 
         // Login as Trader
-        logStep(1, "Logging in as Trader")
-        let loginSuccess = loginAsTrader(number: 1)
+        self.logStep(1, "Logging in as Trader")
+        let loginSuccess = self.loginAsTrader(number: 1)
         XCTAssertTrue(loginSuccess, "Should be able to login as Trader")
 
         // Navigate to Dashboard
-        logStep(2, "Navigating to Dashboard")
-        let dashboardTab = app.tabBars.buttons["Dashboard"]
-        if waitForElement(dashboardTab, timeout: 5) {
-            tapElement(dashboardTab, description: "Dashboard Tab")
+        self.logStep(2, "Navigating to Dashboard")
+        let dashboardTab = self.app.tabBars.buttons["Dashboard"]
+        if self.waitForElement(dashboardTab, timeout: 5) {
+            self.tapElement(dashboardTab, description: "Dashboard Tab")
         }
 
         sleep(1)
 
         // Tap "Handeln" button
-        logStep(3, "Looking for Handeln button")
-        let handelnButton = app.buttons["HandelnButton"]
+        self.logStep(3, "Looking for Handeln button")
+        let handelnButton = self.app.buttons["HandelnButton"]
 
-        if waitForElement(handelnButton, timeout: 5) {
-            tapElement(handelnButton, description: "Handeln Button")
+        if self.waitForElement(handelnButton, timeout: 5) {
+            self.tapElement(handelnButton, description: "Handeln Button")
         } else {
             // Try finding by label
-            let buttons = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'Handeln'"))
+            let buttons = self.app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'Handeln'"))
             if buttons.count > 0 {
-                tapElement(buttons.element(boundBy: 0), description: "Handeln (by label)")
+                self.tapElement(buttons.element(boundBy: 0), description: "Handeln (by label)")
             } else {
                 // Take screenshot
-                let screenshot = app.screenshot()
+                let screenshot = self.app.screenshot()
                 let attachment = XCTAttachment(screenshot: screenshot)
                 attachment.name = "NoHandelnButton"
                 add(attachment)
@@ -418,19 +420,19 @@ final class FIN1AutomatedFlowTests: XCTestCase {
         sleep(2)
 
         // Securities search should appear
-        logStep(4, "Searching for securities")
-        let searchField = app.textFields["SecuritiesSearchField"]
+        self.logStep(4, "Searching for securities")
+        let searchField = self.app.textFields["SecuritiesSearchField"]
 
-        if waitForElement(searchField, timeout: 5) {
-            tapElement(searchField, description: "Search Field")
+        if self.waitForElement(searchField, timeout: 5) {
+            self.tapElement(searchField, description: "Search Field")
             searchField.typeText("DAX")
             print("  ⌨️ Typed 'DAX' in search field")
         } else {
             // Try any text field
-            let textFields = app.textFields
+            let textFields = self.app.textFields
             if textFields.count > 0 {
                 let field = textFields.element(boundBy: 0)
-                tapElement(field, description: "First text field")
+                self.tapElement(field, description: "First text field")
                 field.typeText("DAX")
             } else {
                 print("  ⚠️ No search field found")
@@ -440,73 +442,75 @@ final class FIN1AutomatedFlowTests: XCTestCase {
         sleep(2)
 
         // Look for search results
-        logStep(5, "Looking for KAUFEN buttons in results")
-        let kaufenButtons = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'KAUFEN'"))
+        self.logStep(5, "Looking for KAUFEN buttons in results")
+        let kaufenButtons = self.app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'KAUFEN'"))
         print("  📊 Found \(kaufenButtons.count) KAUFEN buttons")
 
         if kaufenButtons.count > 0 {
-            logStep(6, "Tapping first KAUFEN button")
-            tapElement(kaufenButtons.element(boundBy: 0), description: "KAUFEN button")
+            self.logStep(6, "Tapping first KAUFEN button")
+            self.tapElement(kaufenButtons.element(boundBy: 0), description: "KAUFEN button")
 
             sleep(2)
 
             // Enter quantity
-            logStep(7, "Entering quantity")
-            let quantityField = app.textFields["QuantityInputField"]
-            if waitForElement(quantityField, timeout: 5) {
-                tapElement(quantityField, description: "Quantity field")
+            self.logStep(7, "Entering quantity")
+            let quantityField = self.app.textFields["QuantityInputField"]
+            if self.waitForElement(quantityField, timeout: 5) {
+                self.tapElement(quantityField, description: "Quantity field")
                 quantityField.typeText("10")
             } else {
                 // Try any text field in the order form
-                let textFields = app.textFields
+                let textFields = self.app.textFields
                 if textFields.count > 0 {
-                    tapElement(textFields.element(boundBy: 0), description: "First text field")
+                    self.tapElement(textFields.element(boundBy: 0), description: "First text field")
                     textFields.element(boundBy: 0).typeText("10")
                 }
             }
 
             // Take screenshot before placing order
-            let screenshot = app.screenshot()
+            let screenshot = self.app.screenshot()
             let attachment = XCTAttachment(screenshot: screenshot)
             attachment.name = "OrderFormFilled"
             add(attachment)
 
             // Place order
-            logStep(8, "Looking for Place Order button")
-            let placeOrderButton = app.buttons["PlaceOrderButton"]
-            let orderButtons = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'Kaufen' AND NOT label CONTAINS[c] 'KAUFEN'"))
+            self.logStep(8, "Looking for Place Order button")
+            let placeOrderButton = self.app.buttons["PlaceOrderButton"]
+            let orderButtons = self.app.buttons.matching(
+                NSPredicate(format: "label CONTAINS[c] 'Kaufen' AND NOT label CONTAINS[c] 'KAUFEN'")
+            )
 
-            if waitForElement(placeOrderButton, timeout: 3) && placeOrderButton.isEnabled {
-                tapElement(placeOrderButton, description: "Place Order")
+            if self.waitForElement(placeOrderButton, timeout: 3) && placeOrderButton.isEnabled {
+                self.tapElement(placeOrderButton, description: "Place Order")
             } else if orderButtons.count > 0 {
                 let btn = orderButtons.element(boundBy: 0)
                 if btn.isEnabled {
-                    tapElement(btn, description: "Buy Order button")
+                    self.tapElement(btn, description: "Buy Order button")
                 }
             }
 
             sleep(3)
 
             // Check for success overlay
-            logStep(9, "Checking for confirmation")
-            let successOverlay = app.otherElements["OrderSuccessOverlay"]
-            let dismissButton = app.buttons["OrderSuccessDismissButton"]
+            self.logStep(9, "Checking for confirmation")
+            let successOverlay = self.app.otherElements["OrderSuccessOverlay"]
+            let dismissButton = self.app.buttons["OrderSuccessDismissButton"]
 
             if successOverlay.exists || dismissButton.exists {
                 print("  ✅ Order success overlay appeared!")
                 if dismissButton.exists {
-                    tapElement(dismissButton, description: "Dismiss success")
+                    self.tapElement(dismissButton, description: "Dismiss success")
                 }
             } else {
                 // Take screenshot
-                let screenshot2 = app.screenshot()
+                let screenshot2 = self.app.screenshot()
                 let attachment2 = XCTAttachment(screenshot: screenshot2)
                 attachment2.name = "AfterPlaceOrder"
                 add(attachment2)
             }
         } else {
             // Take screenshot
-            let screenshot = app.screenshot()
+            let screenshot = self.app.screenshot()
             let attachment = XCTAttachment(screenshot: screenshot)
             attachment.name = "NoSearchResults"
             add(attachment)
@@ -522,22 +526,22 @@ final class FIN1AutomatedFlowTests: XCTestCase {
     /// Tests showing results at investor and trader relevant state
     @MainActor
     func testResultsAndAccountStatements() throws {
-        logSection("Results & Account Statements Verification")
+        self.logSection("Results & Account Statements Verification")
 
         // Launch the app
-        logStep(0, "Launching app")
-        app.launch()
+        self.logStep(0, "Launching app")
+        self.app.launch()
         sleep(3)
 
         // Debug
-        debugPrintButtons(prefix: "After launch - ")
+        self.debugPrintButtons(prefix: "After launch - ")
 
         // Login as Investor first to check investor views
-        logStep(1, "Logging in as Investor to check investor views")
-        let loginSuccess = loginAsInvestor(number: 1)
+        self.logStep(1, "Logging in as Investor to check investor views")
+        let loginSuccess = self.loginAsInvestor(number: 1)
 
         if !loginSuccess {
-            let screenshot = app.screenshot()
+            let screenshot = self.app.screenshot()
             let attachment = XCTAttachment(screenshot: screenshot)
             attachment.name = "InvestorLoginFailed_Statements"
             attachment.lifetime = .keepAlways
@@ -547,73 +551,75 @@ final class FIN1AutomatedFlowTests: XCTestCase {
         }
 
         // Debug: Show available tabs
-        debugPrintTabs()
+        self.debugPrintTabs()
 
         // Check Investments tab
-        logStep(2, "Checking Investments tab")
-        let investmentsTab = app.tabBars.buttons["Investments"]
-        if waitForElement(investmentsTab, timeout: 5) {
-            tapElement(investmentsTab, description: "Investments Tab")
+        self.logStep(2, "Checking Investments tab")
+        let investmentsTab = self.app.tabBars.buttons["Investments"]
+        if self.waitForElement(investmentsTab, timeout: 5) {
+            self.tapElement(investmentsTab, description: "Investments Tab")
             sleep(2)
 
             // Take screenshot
-            let screenshot = app.screenshot()
+            let screenshot = self.app.screenshot()
             let attachment = XCTAttachment(screenshot: screenshot)
             attachment.name = "InvestorInvestmentsView"
             add(attachment)
 
             // Verify content
-            let hasContent = app.staticTexts.count > 0
-            print("  📊 Investments view has \(app.staticTexts.count) text elements")
+            let hasContent = self.app.staticTexts.count > 0
+            print("  📊 Investments view has \(self.app.staticTexts.count) text elements")
             XCTAssertTrue(hasContent, "Investments view should have content")
         }
 
         // Check Profile for notifications
-        logStep(3, "Checking Profile tab for notifications")
-        let profileTab = app.tabBars.buttons["Profile"]
-        if waitForElement(profileTab, timeout: 5) {
-            tapElement(profileTab, description: "Profile Tab")
+        self.logStep(3, "Checking Profile tab for notifications")
+        let profileTab = self.app.tabBars.buttons["Profile"]
+        if self.waitForElement(profileTab, timeout: 5) {
+            self.tapElement(profileTab, description: "Profile Tab")
             sleep(2)
 
             // Take screenshot
-            let screenshot = app.screenshot()
+            let screenshot = self.app.screenshot()
             let attachment = XCTAttachment(screenshot: screenshot)
             attachment.name = "InvestorProfileView"
             add(attachment)
 
-            print("  📊 Profile view loaded with \(app.staticTexts.count) text elements")
+            print("  📊 Profile view loaded with \(self.app.staticTexts.count) text elements")
         }
 
         // Navigate to Dashboard to check account statement access
-        logStep(4, "Checking Dashboard for account statement")
-        let dashboardTab = app.tabBars.buttons["Dashboard"]
-        if waitForElement(dashboardTab, timeout: 5) {
-            tapElement(dashboardTab, description: "Dashboard Tab")
+        self.logStep(4, "Checking Dashboard for account statement")
+        let dashboardTab = self.app.tabBars.buttons["Dashboard"]
+        if self.waitForElement(dashboardTab, timeout: 5) {
+            self.tapElement(dashboardTab, description: "Dashboard Tab")
             sleep(2)
 
             // Take screenshot
-            let screenshot = app.screenshot()
+            let screenshot = self.app.screenshot()
             let attachment = XCTAttachment(screenshot: screenshot)
             attachment.name = "InvestorDashboardView"
             add(attachment)
 
             // Look for account statement button/section
-            let statementButtons = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'Statement' OR label CONTAINS[c] 'Kontoauszug' OR label CONTAINS[c] 'Balance'"))
+            let statementButtons = self.app.buttons.matching(
+                NSPredicate(format: "label CONTAINS[c] 'Statement' OR label CONTAINS[c] 'Kontoauszug' OR label CONTAINS[c] 'Balance'")
+            )
             print("  📊 Found \(statementButtons.count) statement-related buttons")
 
             if statementButtons.count > 0 {
-                tapElement(statementButtons.element(boundBy: 0), description: "Account Statement")
+                self.tapElement(statementButtons.element(boundBy: 0), description: "Account Statement")
                 sleep(2)
 
-                let screenshot2 = app.screenshot()
+                let screenshot2 = self.app.screenshot()
                 let attachment2 = XCTAttachment(screenshot: screenshot2)
                 attachment2.name = "AccountStatementView"
                 add(attachment2)
 
                 // Dismiss if needed
-                let doneButton = app.buttons["Done"]
+                let doneButton = self.app.buttons["Done"]
                 if doneButton.exists {
-                    tapElement(doneButton, description: "Done button")
+                    self.tapElement(doneButton, description: "Done button")
                 }
             }
         }
@@ -626,23 +632,23 @@ final class FIN1AutomatedFlowTests: XCTestCase {
     /// Tests the complete trader journey: Dashboard -> Trade -> View Results
     @MainActor
     func testTraderJourneyWithResults() throws {
-        logSection("Complete Trader Journey")
+        self.logSection("Complete Trader Journey")
 
         // Launch the app
-        logStep(0, "Launching app")
-        app.launch()
+        self.logStep(0, "Launching app")
+        self.app.launch()
         sleep(3)
 
         // Debug: Show what's on screen
-        debugPrintButtons(prefix: "After launch - ")
+        self.debugPrintButtons(prefix: "After launch - ")
 
         // Login as Trader
-        logStep(1, "Logging in as Trader")
-        let loginSuccess = loginAsTrader(number: 1)
+        self.logStep(1, "Logging in as Trader")
+        let loginSuccess = self.loginAsTrader(number: 1)
 
         if !loginSuccess {
             // Take screenshot and skip remaining steps instead of failing hard
-            let screenshot = app.screenshot()
+            let screenshot = self.app.screenshot()
             let attachment = XCTAttachment(screenshot: screenshot)
             attachment.name = "TraderLoginFailed"
             attachment.lifetime = .keepAlways
@@ -652,16 +658,16 @@ final class FIN1AutomatedFlowTests: XCTestCase {
         }
 
         // Debug: Show available tabs
-        debugPrintTabs()
+        self.debugPrintTabs()
 
         // Check Dashboard
-        logStep(2, "Viewing Dashboard")
-        let dashboardTab = app.tabBars.buttons["Dashboard"]
+        self.logStep(2, "Viewing Dashboard")
+        let dashboardTab = self.app.tabBars.buttons["Dashboard"]
         if dashboardTab.exists {
-            tapElement(dashboardTab, description: "Dashboard Tab")
+            self.tapElement(dashboardTab, description: "Dashboard Tab")
             sleep(2)
 
-            let screenshot = app.screenshot()
+            let screenshot = self.app.screenshot()
             let attachment = XCTAttachment(screenshot: screenshot)
             attachment.name = "TraderDashboard"
             add(attachment)
@@ -670,55 +676,59 @@ final class FIN1AutomatedFlowTests: XCTestCase {
         }
 
         // Check Depot tab
-        logStep(3, "Viewing Depot")
-        let depotTab = app.tabBars.buttons["Depot"]
+        self.logStep(3, "Viewing Depot")
+        let depotTab = self.app.tabBars.buttons["Depot"]
         if depotTab.exists {
-            tapElement(depotTab, description: "Depot Tab")
+            self.tapElement(depotTab, description: "Depot Tab")
             sleep(2)
 
-            let screenshot = app.screenshot()
+            let screenshot = self.app.screenshot()
             let attachment = XCTAttachment(screenshot: screenshot)
             attachment.name = "TraderDepot"
             add(attachment)
 
-            print("  📊 Depot view has \(app.staticTexts.count) text elements")
+            print("  📊 Depot view has \(self.app.staticTexts.count) text elements")
         } else {
             print("  ⚠️ Depot tab not found - may not be trader role")
         }
 
         // Check Trades tab
-        logStep(4, "Viewing Trades")
-        let tradesTab = app.tabBars.buttons["Trades"]
+        self.logStep(4, "Viewing Trades")
+        let tradesTab = self.app.tabBars.buttons["Trades"]
         if tradesTab.exists {
-            tapElement(tradesTab, description: "Trades Tab")
+            self.tapElement(tradesTab, description: "Trades Tab")
             sleep(2)
 
-            let screenshot = app.screenshot()
+            let screenshot = self.app.screenshot()
             let attachment = XCTAttachment(screenshot: screenshot)
             attachment.name = "TraderTradesOverview"
             add(attachment)
 
             // Look for P&L indicators
-            let pnlElements = app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] 'Profit' OR label CONTAINS[c] 'Gewinn' OR label CONTAINS[c] 'Verlust' OR label CONTAINS[c] '€'"))
+            let pnlElements = self.app.staticTexts.matching(
+                NSPredicate(
+                    format: "label CONTAINS[c] 'Profit' OR label CONTAINS[c] 'Gewinn' OR label CONTAINS[c] 'Verlust' OR label CONTAINS[c] '€'"
+                )
+            )
             print("  📊 Found \(pnlElements.count) P&L related elements")
         } else {
             print("  ⚠️ Trades tab not found - may not be trader role")
         }
 
         // Check Profile
-        logStep(5, "Viewing Profile & Notifications")
-        let profileTab = app.tabBars.buttons["Profile"]
+        self.logStep(5, "Viewing Profile & Notifications")
+        let profileTab = self.app.tabBars.buttons["Profile"]
         if profileTab.exists {
-            tapElement(profileTab, description: "Profile Tab")
+            self.tapElement(profileTab, description: "Profile Tab")
             sleep(2)
 
-            let screenshot = app.screenshot()
+            let screenshot = self.app.screenshot()
             let attachment = XCTAttachment(screenshot: screenshot)
             attachment.name = "TraderProfile"
             add(attachment)
 
             // Check for notification badges
-            let badgeElements = app.staticTexts.matching(NSPredicate(format: "label MATCHES '[0-9]+'"))
+            let badgeElements = self.app.staticTexts.matching(NSPredicate(format: "label MATCHES '[0-9]+'"))
             print("  📊 Found \(badgeElements.count) potential notification badges")
         } else {
             print("  ⚠️ Profile tab not found")
@@ -732,63 +742,63 @@ final class FIN1AutomatedFlowTests: XCTestCase {
     /// Comprehensive end-to-end test demonstrating all flows
     @MainActor
     func testCompleteE2EFlow() throws {
-        logSection("Complete End-to-End Flow")
+        self.logSection("Complete End-to-End Flow")
 
         // Launch app
-        logStep(0, "Launching app")
-        app.launch()
+        self.logStep(0, "Launching app")
+        self.app.launch()
         sleep(2)
 
         // Take initial screenshot
-        let screenshot1 = app.screenshot()
+        let screenshot1 = self.app.screenshot()
         let attachment1 = XCTAttachment(screenshot: screenshot1)
         attachment1.name = "01_AppLaunched"
         add(attachment1)
 
         // Print what's visible
-        print("  📱 Visible buttons: \(app.buttons.count)")
-        print("  📱 Visible text elements: \(app.staticTexts.count)")
-        print("  📱 Tab bars: \(app.tabBars.count)")
+        print("  📱 Visible buttons: \(self.app.buttons.count)")
+        print("  📱 Visible text elements: \(self.app.staticTexts.count)")
+        print("  📱 Tab bars: \(self.app.tabBars.count)")
 
         // List some button labels for debugging
-        let buttonLabels = app.buttons.allElementsBoundByIndex.prefix(10).map { $0.label }
+        let buttonLabels = self.app.buttons.allElementsBoundByIndex.prefix(10).map { $0.label }
         print("  📱 First 10 button labels: \(buttonLabels)")
 
         // Try to login
-        logStep(1, "Attempting login")
+        self.logStep(1, "Attempting login")
 
         // First try Trader login
-        if loginAsTrader(number: 1) {
+        if self.loginAsTrader(number: 1) {
             print("  ✅ Logged in as Trader")
 
             // Navigate through tabs
             let tabs = ["Dashboard", "Depot", "Trades", "Profile"]
             for (index, tabName) in tabs.enumerated() {
-                logStep(2 + index, "Navigating to \(tabName)")
-                let tab = app.tabBars.buttons[tabName]
+                self.logStep(2 + index, "Navigating to \(tabName)")
+                let tab = self.app.tabBars.buttons[tabName]
                 if tab.exists {
-                    tapElement(tab, description: "\(tabName) Tab")
+                    self.tapElement(tab, description: "\(tabName) Tab")
                     sleep(1)
 
-                    let screenshot = app.screenshot()
+                    let screenshot = self.app.screenshot()
                     let attachment = XCTAttachment(screenshot: screenshot)
                     attachment.name = "Tab_\(tabName)"
                     add(attachment)
                 }
             }
-        } else if loginAsInvestor(number: 1) {
+        } else if self.loginAsInvestor(number: 1) {
             print("  ✅ Logged in as Investor")
 
             // Navigate through tabs
             let tabs = ["Dashboard", "Discover", "Investments", "Profile"]
             for (index, tabName) in tabs.enumerated() {
-                logStep(2 + index, "Navigating to \(tabName)")
-                let tab = app.tabBars.buttons[tabName]
+                self.logStep(2 + index, "Navigating to \(tabName)")
+                let tab = self.app.tabBars.buttons[tabName]
                 if tab.exists {
-                    tapElement(tab, description: "\(tabName) Tab")
+                    self.tapElement(tab, description: "\(tabName) Tab")
                     sleep(1)
 
-                    let screenshot = app.screenshot()
+                    let screenshot = self.app.screenshot()
                     let attachment = XCTAttachment(screenshot: screenshot)
                     attachment.name = "Tab_\(tabName)"
                     add(attachment)
@@ -796,7 +806,7 @@ final class FIN1AutomatedFlowTests: XCTestCase {
             }
         } else {
             // Take screenshot of current state
-            let screenshot = app.screenshot()
+            let screenshot = self.app.screenshot()
             let attachment = XCTAttachment(screenshot: screenshot)
             attachment.name = "LoginFailed"
             add(attachment)

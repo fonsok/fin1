@@ -11,12 +11,12 @@ struct TraderInvestButton: View {
         VStack(spacing: ResponsiveDesign.spacing(12)) {
             // Investment Button
             Button(action: {
-                showInvestSheet = true
+                self.showInvestSheet = true
             }) {
                 HStack(spacing: ResponsiveDesign.spacing(8)) {
                     Image(systemName: "plus.circle.fill")
                         .font(ResponsiveDesign.headlineFont())
-                    Text("Investiere mit \(trader.username)")
+                    Text("Investiere mit \(self.trader.username)")
                         .font(ResponsiveDesign.headlineFont())
                         .fontWeight(.semibold)
                 }

@@ -1,5 +1,5 @@
-import SwiftUI
 import PhotosUI
+import SwiftUI
 import UIKit
 
 // MARK: - Image Picker (Legacy - Deprecated)
@@ -18,15 +18,15 @@ struct ImagePicker: UIViewControllerRepresentable {
         let picker = UIImagePickerController()
 
         // If in test mode and trying to use camera, automatically return a sample image
-        if appServices.testModeService.isTestModeEnabled && sourceType == .camera {
+        if self.appServices.testModeService.isTestModeEnabled && self.sourceType == .camera {
             // Use a slight delay to simulate camera opening and then auto-dismiss
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                selectedImage = (appServices.testModeService as? TestModeService)?.samplePassportImage
-                dismiss()
+                self.selectedImage = (self.appServices.testModeService as? TestModeService)?.samplePassportImage
+                self.dismiss()
             }
         }
 
-        picker.sourceType = sourceType
+        picker.sourceType = self.sourceType
         picker.delegate = context.coordinator
         return picker
     }
@@ -44,15 +44,18 @@ struct ImagePicker: UIViewControllerRepresentable {
             self.parent = parent
         }
 
-        func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
+        func imagePickerController(
+            _ picker: UIImagePickerController,
+            didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]
+        ) {
             if let image = info[.originalImage] as? UIImage {
-                parent.selectedImage = image
+                self.parent.selectedImage = image
             }
-            parent.dismiss()
+            self.parent.dismiss()
         }
 
         func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
-            parent.dismiss()
+            self.parent.dismiss()
         }
     }
 }

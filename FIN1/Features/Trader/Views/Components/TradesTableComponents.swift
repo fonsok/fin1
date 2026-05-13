@@ -1,5 +1,5 @@
-import SwiftUI
 import Foundation
+import SwiftUI
 
 // MARK: - Data Table Adapter
 
@@ -182,11 +182,11 @@ struct TradesTable: View {
         ScrollView(.horizontal, showsIndicators: true) {
             VStack(alignment: .leading, spacing: 0) {
                 // Table Header
-                TradesTableHeader(columnWidths: columnWidths, commissionPercentage: commissionPercentage)
+                TradesTableHeader(columnWidths: self.columnWidths, commissionPercentage: self.commissionPercentage)
 
                 // Table Rows
-                ForEach(Array(trades.enumerated()), id: \.element.id) { index, trade in
-                    TradesTableRow(trade: trade, index: index, columnWidths: columnWidths, services: services)
+                ForEach(Array(self.trades.enumerated()), id: \.element.id) { index, trade in
+                    TradesTableRow(trade: trade, index: index, columnWidths: self.columnWidths, services: self.services)
                 }
             }
         }
@@ -200,17 +200,17 @@ struct TradesTableHeader: View {
     var body: some View {
         HStack(spacing: ResponsiveDesign.spacing(8)) {
             Text("Trade\nNr.")
-                .frame(width: columnWidths.tradeNumber, alignment: .leading)
+                .frame(width: self.columnWidths.tradeNumber, alignment: .leading)
             Text("Trade\nBeginn")
-                .frame(width: columnWidths.tradeStart, alignment: .leading)
+                .frame(width: self.columnWidths.tradeStart, alignment: .leading)
             Text("Trade\nEnde")
-                .frame(width: columnWidths.tradeEnde, alignment: .leading)
+                .frame(width: self.columnWidths.tradeEnde, alignment: .leading)
             Text("Profit")
-                .frame(width: columnWidths.gewinnVerlust, alignment: .leading)
-            Text("Commission\n(\(commissionPercentage))")
-                .frame(width: columnWidths.provision, alignment: .leading)
+                .frame(width: self.columnWidths.gewinnVerlust, alignment: .leading)
+            Text("Commission\n(\(self.commissionPercentage))")
+                .frame(width: self.columnWidths.provision, alignment: .leading)
             Text("i")
-                .frame(width: columnWidths.details, alignment: .center)
+                .frame(width: self.columnWidths.details, alignment: .center)
         }
         .font(ResponsiveDesign.bodyFont())
         .fontWeight(.regular)
@@ -235,45 +235,45 @@ struct TradesTableRow: View {
     var body: some View {
         HStack(spacing: ResponsiveDesign.spacing(8)) {
             // Trade Number
-            Text(trade.tradeNumber)
-                .frame(width: columnWidths.tradeNumber, alignment: .leading)
+            Text(self.trade.tradeNumber)
+                .frame(width: self.columnWidths.tradeNumber, alignment: .leading)
 
             // Trade Start Date
-            Text(trade.tradeStart)
+            Text(self.trade.tradeStart)
                 .foregroundColor(AppTheme.fontColor.opacity(0.8))
-                .frame(width: columnWidths.tradeStart, alignment: .leading)
+                .frame(width: self.columnWidths.tradeStart, alignment: .leading)
                 .lineLimit(nil)
                 .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
 
             // Trade End Date or Status
-            Text(trade.tradeEnde)
-                .foregroundColor(trade.isActive ? AppTheme.accentOrange : AppTheme.fontColor.opacity(0.8))
-                .frame(width: columnWidths.tradeEnde, alignment: .leading)
+            Text(self.trade.tradeEnde)
+                .foregroundColor(self.trade.isActive ? AppTheme.accentOrange : AppTheme.fontColor.opacity(0.8))
+                .frame(width: self.columnWidths.tradeEnde, alignment: .leading)
                 .lineLimit(nil)
                 .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
 
             // P/L with info icon moved to percentage row
             VStack(alignment: .leading, spacing: 2) {
-                if trade.isActive {
-                    Text(trade.gewinnVerlust)
+                if self.trade.isActive {
+                    Text(self.trade.gewinnVerlust)
                         .foregroundColor(AppTheme.accentLightBlue)
                 } else {
-                    let lines = trade.gewinnVerlust.components(separatedBy: "\n")
+                    let lines = self.trade.gewinnVerlust.components(separatedBy: "\n")
                     if lines.count >= 2 {
                         Text(lines[0]) // Currency amount - now has full width without icon
                             .fontWeight(.medium)
-                            .foregroundColor(trade.profitLoss >= 0 ? AppTheme.accentGreen : AppTheme.accentRed)
+                            .foregroundColor(self.trade.profitLoss >= 0 ? AppTheme.accentGreen : AppTheme.accentRed)
 
                         HStack(spacing: ResponsiveDesign.spacing(2)) {
                             Text(lines[1]) // Percentage
                                 .font(ResponsiveDesign.captionFont())
-                                .foregroundColor(trade.profitLoss >= 0 ? AppTheme.accentGreen : AppTheme.accentRed)
+                                .foregroundColor(self.trade.profitLoss >= 0 ? AppTheme.accentGreen : AppTheme.accentRed)
 
                             // Info icon moved to percentage row to avoid truncation
                             Button(action: {
-                                showProfitInfo = true
+                                self.showProfitInfo = true
                             }, label: {
                                 Image(systemName: "info.circle")
                                     .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 0.7))
@@ -283,20 +283,20 @@ struct TradesTableRow: View {
                     }
                 }
             }
-            .frame(width: columnWidths.gewinnVerlust, alignment: .leading)
+            .frame(width: self.columnWidths.gewinnVerlust, alignment: .leading)
 
             // Commission with info icon
-            if trade.isActive {
-                Text(trade.provision)
-                    .frame(width: columnWidths.provision, alignment: .leading)
+            if self.trade.isActive {
+                Text(self.trade.provision)
+                    .frame(width: self.columnWidths.provision, alignment: .leading)
             } else {
                 HStack(spacing: ResponsiveDesign.spacing(2)) {
-                    Text(trade.provision)
+                    Text(self.trade.provision)
 
                     // Info icon for commission breakdown (only show if commission > 0)
-                    if trade.provision != "-" {
+                    if self.trade.provision != "-" {
                         Button(action: {
-                            showCommissionInfo = true
+                            self.showCommissionInfo = true
                         }, label: {
                             Image(systemName: "info.circle")
                                 .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 0.7))
@@ -304,39 +304,40 @@ struct TradesTableRow: View {
                         })
                     }
                 }
-                .frame(width: columnWidths.provision, alignment: .leading)
+                .frame(width: self.columnWidths.provision, alignment: .leading)
             }
 
             // Details action
-            Button(action: trade.onDetailsTapped, label: {
-                Image(systemName: trade.details == "message" ? "shippingbox" : trade.details == "arrow.down.circle" ? "doc.text" : trade.details)
-                    .foregroundColor(AppTheme.accentLightBlue)
+            Button(action: self.trade.onDetailsTapped, label: {
+                Image(
+                    systemName: self.trade.details == "message" ? "shippingbox" : self.trade.details == "arrow.down.circle" ? "doc.text" : self.trade.details
+                )
+                .foregroundColor(AppTheme.accentLightBlue)
             })
-            .frame(width: columnWidths.details, alignment: .center)
+            .frame(width: self.columnWidths.details, alignment: .center)
         }
         .font(ResponsiveDesign.bodyFont())
         .foregroundColor(AppTheme.fontColor.opacity(0.8))
         .padding(.horizontal, ResponsiveDesign.spacing(16))
         .padding(.vertical, ResponsiveDesign.spacing(12))
-        .background(backgroundColor)
+        .background(self.backgroundColor)
         .cornerRadius(ResponsiveDesign.spacing(8))
-        .sheet(isPresented: $showProfitInfo) {
+        .sheet(isPresented: self.$showProfitInfo) {
             ProfitInfoSheet()
         }
-        .sheet(isPresented: $showCommissionInfo) {
+        .sheet(isPresented: self.$showCommissionInfo) {
             if let tradeId = trade.tradeId {
                 CommissionBreakdownSheet(
                     tradeId: tradeId,
-                    services: services
+                    services: self.services
                 )
             }
         }
     }
 
     private var backgroundColor: Color {
-        return index % 2 == 0 ? AppTheme.sectionBackground : AppTheme.sectionBackground.opacity(0.8)
+        return self.index % 2 == 0 ? AppTheme.sectionBackground : AppTheme.sectionBackground.opacity(0.8)
     }
-
 }
 
 // MARK: - Profit Info Sheet

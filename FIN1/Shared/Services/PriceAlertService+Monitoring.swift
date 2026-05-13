@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 @MainActor
 extension PriceAlertService {
@@ -36,9 +36,9 @@ extension PriceAlertService {
             }
 
             if shouldTrigger {
-                await triggerAlert(alert)
+                await self.triggerAlert(alert)
             } else if triggeredStatus == .expired {
-                await expireAlert(alert)
+                await self.expireAlert(alert)
             }
         }
     }
@@ -94,12 +94,12 @@ extension PriceAlertService {
         } else {
             allAlerts.append(alert)
         }
-        updateActiveAlerts()
+        self.updateActiveAlerts()
     }
 
     func handleAlertDelete(_ objectId: String) {
         allAlerts.removeAll { $0.id == objectId }
-        updateActiveAlerts()
+        self.updateActiveAlerts()
     }
 
     func updateActiveAlerts() {
@@ -140,7 +140,7 @@ extension PriceAlertService {
 
         if let index = allAlerts.firstIndex(where: { $0.id == alert.id }) {
             allAlerts[index] = triggeredAlert
-            updateActiveAlerts()
+            self.updateActiveAlerts()
         }
 
         NotificationCenter.default.post(
@@ -185,7 +185,7 @@ extension PriceAlertService {
 
         if let index = allAlerts.firstIndex(where: { $0.id == alert.id }) {
             allAlerts[index] = expiredAlert
-            updateActiveAlerts()
+            self.updateActiveAlerts()
         }
     }
 }

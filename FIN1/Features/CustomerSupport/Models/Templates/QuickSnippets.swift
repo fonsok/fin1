@@ -59,6 +59,6 @@ enum QuickSnippets {
 
     /// Get snippet for a specific key and role
     static func snippet(_ key: String, for role: CSRRole) -> String? {
-        snippets[key]?[role]
+        self.snippets[key]?[role]
     }
 }

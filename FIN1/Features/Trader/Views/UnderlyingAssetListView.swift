@@ -60,8 +60,8 @@ struct UnderlyingAssetListView: View {
                             ForEach(section.items) { item in
                                 Button(action: {
                                     if item.name != "..." {
-                                        selectedUnderlying = item.name
-                                        dismiss()
+                                        self.selectedUnderlying = item.name
+                                        self.dismiss()
                                     }
                                 }, label: {
                                     HStack {
@@ -73,7 +73,7 @@ struct UnderlyingAssetListView: View {
                                         Spacer()
                                     }
                                 })
-                                .listRowBackground(item.name == selectedUnderlying ? AppTheme.accentGreen : AppTheme.sectionBackground)
+                                .listRowBackground(item.name == self.selectedUnderlying ? AppTheme.accentGreen : AppTheme.sectionBackground)
                             }
                         }
                     }
@@ -84,7 +84,7 @@ struct UnderlyingAssetListView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button(action: { dismiss() }, label: {
+                    Button(action: { self.dismiss() }, label: {
                         Image(systemName: "xmark")
                     })
                 }

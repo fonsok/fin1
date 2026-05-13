@@ -12,6 +12,6 @@ struct TradeDetailsViewWrapper: View {
     }
 
     var body: some View {
-        TradeDetailsView(viewModel: viewModel)
+        TradeDetailsView(viewModel: self.viewModel)
     }
 }

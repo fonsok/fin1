@@ -8,7 +8,7 @@ extension FAQKnowledgeBaseViewModel {
     // MARK: - Article Management
 
     func startCreateArticle() {
-        resetArticleForm()
+        self.resetArticleForm()
         showCreateArticleSheet = true
     }
 
@@ -24,7 +24,7 @@ extension FAQKnowledgeBaseViewModel {
     }
 
     func createArticle(createdBy: String) async {
-        guard validateArticleForm() else { return }
+        guard self.validateArticleForm() else { return }
 
         isLoading = true
         defer {
@@ -47,7 +47,7 @@ extension FAQKnowledgeBaseViewModel {
 
             let article = try await faqService.createArticle(create, createdBy: createdBy)
             showSuccessMessage("Artikel '\(article.title)' erstellt")
-            resetArticleForm()
+            self.resetArticleForm()
             await load()
         } catch {
             handleError(error)
@@ -56,7 +56,7 @@ extension FAQKnowledgeBaseViewModel {
 
     func updateArticle(updatedBy: String) async {
         guard let article = editingArticle else { return }
-        guard validateArticleForm() else { return }
+        guard self.validateArticleForm() else { return }
 
         isLoading = true
         defer {
@@ -82,7 +82,7 @@ extension FAQKnowledgeBaseViewModel {
             )
             showSuccessMessage("Artikel '\(updated.title)' aktualisiert")
             editingArticle = nil
-            resetArticleForm()
+            self.resetArticleForm()
             await load()
         } catch {
             handleError(error)

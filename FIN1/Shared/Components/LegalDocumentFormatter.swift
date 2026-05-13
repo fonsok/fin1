@@ -8,8 +8,8 @@ struct LegalDocumentFormatter: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(6)) {
-            ForEach(Array(formattedLines.enumerated()), id: \.element.id) { index, line in
-                lineView(for: line, isFirst: index == 0)
+            ForEach(Array(self.formattedLines.enumerated()), id: \.element.id) { index, line in
+                self.lineView(for: line, isFirst: index == 0)
             }
         }
     }
@@ -22,8 +22,8 @@ struct LegalDocumentFormatter: View {
             }
 
             HStack(alignment: .top, spacing: ResponsiveDesign.spacing(4)) {
-                leadingSpace(for: line)
-                lineText(for: line)
+                self.leadingSpace(for: line)
+                self.lineText(for: line)
             }
         }
     }
@@ -58,7 +58,7 @@ struct LegalDocumentFormatter: View {
         let isContinuation: Bool
 
         var isBoldHeading: Bool {
-            text.hasPrefix("**") && text.hasSuffix("**") && !text.contains("-")
+            self.text.hasPrefix("**") && self.text.hasSuffix("**") && !self.text.contains("-")
         }
     }
 
@@ -66,7 +66,7 @@ struct LegalDocumentFormatter: View {
         var result: [FormattedLine] = []
         var previousWasBullet = false
 
-        for line in text.components(separatedBy: .newlines) {
+        for line in self.text.components(separatedBy: .newlines) {
             let trimmed = line.trimmingCharacters(in: .whitespaces)
             guard !trimmed.isEmpty else {
                 previousWasBullet = false
@@ -103,11 +103,11 @@ struct LegalDocumentFormatter: View {
         text: """
         **Introduction:**
         This is a sample legal document with formatting.
-
+        
         - First bullet point
         - Second bullet point
         - Third bullet point
-
+        
         **Another Section:**
         More content here with regular paragraphs.
         """

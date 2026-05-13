@@ -47,12 +47,12 @@ struct ParseComplianceEvent: Codable {
         let eventTypeEnum = ComplianceEventType(rawValue: eventType) ?? .riskCheck
         return ComplianceEvent(
             eventType: eventTypeEnum,
-            agentId: userId,
-            customerId: userId,
-            description: description,
+            agentId: self.userId,
+            customerId: self.userId,
+            description: self.description,
             severity: eventTypeEnum.defaultSeverity,
             requiresReview: false,
-            notes: metadata.isEmpty ? nil : metadata.map { "\($0.key): \($0.value)" }.joined(separator: ", ")
+            notes: self.metadata.isEmpty ? nil : self.metadata.map { "\($0.key): \($0.value)" }.joined(separator: ", ")
         )
     }
 }

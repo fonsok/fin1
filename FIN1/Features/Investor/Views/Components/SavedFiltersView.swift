@@ -15,15 +15,17 @@ struct SavedFiltersView: View {
                 ScrollView {
                     VStack(spacing: ResponsiveDesign.spacing(16)) {
                         // Help text
-                        Text("Tap 'Activate' on any filter combination to apply it to your current search. The activated filter will be highlighted in green.")
-                            .font(ResponsiveDesign.captionFont())
-                            .foregroundColor(AppTheme.fontColor.opacity(0.7))
-                            .padding(.horizontal, ResponsiveDesign.spacing(16))
-                            .padding(.vertical, ResponsiveDesign.spacing(12))
-                            .background(AppTheme.inputFieldBackground)
-                            .cornerRadius(ResponsiveDesign.spacing(8))
+                        Text(
+                            "Tap 'Activate' on any filter combination to apply it to your current search. The activated filter will be highlighted in green."
+                        )
+                        .font(ResponsiveDesign.captionFont())
+                        .foregroundColor(AppTheme.fontColor.opacity(0.7))
+                        .padding(.horizontal, ResponsiveDesign.spacing(16))
+                        .padding(.vertical, ResponsiveDesign.spacing(12))
+                        .background(AppTheme.inputFieldBackground)
+                        .cornerRadius(ResponsiveDesign.spacing(8))
 
-                        if savedFiltersManager.savedFilters.isEmpty {
+                        if self.savedFiltersManager.savedFilters.isEmpty {
                             VStack(spacing: ResponsiveDesign.spacing(16)) {
                                 Image(systemName: "tray")
                                     .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2.0))
@@ -40,12 +42,12 @@ struct SavedFiltersView: View {
                             .padding(.vertical, ResponsiveDesign.spacing(40))
                         } else {
                             LazyVStack(spacing: ResponsiveDesign.spacing(16)) {
-                                ForEach(savedFiltersManager.savedFilters) { savedFilter in
+                                ForEach(self.savedFiltersManager.savedFilters) { savedFilter in
                                     SavedFilterRow(
                                         savedFilter: savedFilter,
-                                        onDelete: { savedFiltersManager.removeFilter(savedFilter) },
-                                        onActivate: { onActivateFilter(savedFilter) },
-                                        isCurrentlyApplied: currentlyAppliedFilterID == savedFilter.id.uuidString
+                                        onDelete: { self.savedFiltersManager.removeFilter(savedFilter) },
+                                        onActivate: { self.onActivateFilter(savedFilter) },
+                                        isCurrentlyApplied: self.currentlyAppliedFilterID == savedFilter.id.uuidString
                                     )
                                 }
                             }
@@ -59,7 +61,7 @@ struct SavedFiltersView: View {
             .navigationTitle("Saved Filters")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") { dismiss() }
+                    Button("Done") { self.dismiss() }
                         .foregroundColor(AppTheme.accentLightBlue)
                 }
             }
@@ -79,12 +81,12 @@ struct SavedFilterRow: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 HStack(spacing: ResponsiveDesign.spacing(8)) {
-                    Text(savedFilter.name)
+                    Text(self.savedFilter.name)
                         .font(ResponsiveDesign.headlineFont())
                         .fontWeight(.medium)
                         .foregroundColor(AppTheme.fontColor)
 
-                    if isCurrentlyApplied {
+                    if self.isCurrentlyApplied {
                         Image(systemName: "checkmark.circle.fill")
                             .font(ResponsiveDesign.captionFont())
                             .foregroundColor(AppTheme.accentGreen)
@@ -93,7 +95,7 @@ struct SavedFilterRow: View {
 
                 Spacer()
 
-                if savedFilter.isDefault {
+                if self.savedFilter.isDefault {
                     Text("Default")
                         .font(ResponsiveDesign.captionFont())
                         .fontWeight(.medium)
@@ -105,7 +107,7 @@ struct SavedFilterRow: View {
                 }
 
                 HStack(spacing: ResponsiveDesign.spacing(12)) {
-                    if isCurrentlyApplied {
+                    if self.isCurrentlyApplied {
                         Text("Currently Applied")
                             .font(ResponsiveDesign.captionFont())
                             .fontWeight(.medium)
@@ -119,7 +121,7 @@ struct SavedFilterRow: View {
                             )
                             .cornerRadius(ResponsiveDesign.spacing(6))
                     } else {
-                        Button(action: onActivate, label: {
+                        Button(action: self.onActivate, label: {
                             Text("Activate")
                                 .font(ResponsiveDesign.captionFont())
                                 .fontWeight(.medium)
@@ -131,7 +133,7 @@ struct SavedFilterRow: View {
                         })
                     }
 
-                    Button(action: { showDeleteConfirmation = true }, label: {
+                    Button(action: { self.showDeleteConfirmation = true }, label: {
                         Image(systemName: "trash")
                             .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize()))
                             .foregroundColor(AppTheme.accentRed)
@@ -145,7 +147,7 @@ struct SavedFilterRow: View {
             }
 
             VStack(alignment: .leading, spacing: 8) {
-                ForEach(savedFilter.filters, id: \.type) { filter in
+                ForEach(self.savedFilter.filters, id: \.type) { filter in
                     HStack {
                         Text("•")
                             .foregroundColor(AppTheme.accentLightBlue)
@@ -159,24 +161,24 @@ struct SavedFilterRow: View {
                 }
             }
 
-            Text("Created: \(savedFilter.createdAt, style: .date)")
+            Text("Created: \(self.savedFilter.createdAt, style: .date)")
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.6))
         }
         .padding(ResponsiveDesign.spacing(16))
-        .background(isCurrentlyApplied ? AppTheme.accentGreen.opacity(0.05) : AppTheme.sectionBackground)
+        .background(self.isCurrentlyApplied ? AppTheme.accentGreen.opacity(0.05) : AppTheme.sectionBackground)
         .overlay(
             RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(12))
-                .stroke(isCurrentlyApplied ? AppTheme.accentGreen.opacity(0.3) : Color.clear, lineWidth: 1)
+                .stroke(self.isCurrentlyApplied ? AppTheme.accentGreen.opacity(0.3) : Color.clear, lineWidth: 1)
         )
         .cornerRadius(ResponsiveDesign.spacing(12))
-        .alert("Delete Filter Combination", isPresented: $showDeleteConfirmation) {
+        .alert("Delete Filter Combination", isPresented: self.$showDeleteConfirmation) {
             Button("Cancel", role: .cancel) { }
             Button("Delete", role: .destructive) {
-                onDelete()
+                self.onDelete()
             }
         } message: {
-            Text("Are you sure you want to delete \"\(savedFilter.name)\"? This action cannot be undone.")
+            Text("Are you sure you want to delete \"\(self.savedFilter.name)\"? This action cannot be undone.")
         }
     }
 }

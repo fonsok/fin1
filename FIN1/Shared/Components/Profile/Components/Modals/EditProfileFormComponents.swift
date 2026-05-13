@@ -14,31 +14,31 @@ struct EditProfileInputField: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
-            Text(label)
+            Text(self.label)
                 .font(ResponsiveDesign.bodyFont())
                 .fontWeight(.medium)
-                .foregroundColor(isDisabled ? AppTheme.fontColor.opacity(0.5) : AppTheme.fontColor)
+                .foregroundColor(self.isDisabled ? AppTheme.fontColor.opacity(0.5) : AppTheme.fontColor)
 
             HStack(spacing: ResponsiveDesign.spacing(12)) {
-                Image(systemName: icon)
-                    .foregroundColor(isDisabled ? AppTheme.inputFieldPlaceholder.opacity(0.5) : AppTheme.inputFieldPlaceholder)
+                Image(systemName: self.icon)
+                    .foregroundColor(self.isDisabled ? AppTheme.inputFieldPlaceholder.opacity(0.5) : AppTheme.inputFieldPlaceholder)
                     .frame(width: ResponsiveDesign.iconSize())
 
-                TextField(placeholder, text: $text)
+                TextField(self.placeholder, text: self.$text)
                     .font(ResponsiveDesign.isCompactDevice() ? .title3 : .title2)
-                    .foregroundColor(isDisabled ? AppTheme.inputFieldText.opacity(0.5) : AppTheme.inputFieldText)
-                    .textContentType(isEmail ? .emailAddress : nil)
-                    .keyboardType(isEmail ? .emailAddress : .default)
+                    .foregroundColor(self.isDisabled ? AppTheme.inputFieldText.opacity(0.5) : AppTheme.inputFieldText)
+                    .textContentType(self.isEmail ? .emailAddress : nil)
+                    .keyboardType(self.isEmail ? .emailAddress : .default)
                     .autocapitalization(.none)
-                    .disabled(isDisabled)
-                    .onChange(of: text) { _, newValue in
+                    .disabled(self.isDisabled)
+                    .onChange(of: self.text) { _, newValue in
                         if let maxLength = maxLength, newValue.count > maxLength {
-                            text = String(newValue.prefix(maxLength))
+                            self.text = String(newValue.prefix(maxLength))
                         }
                     }
             }
             .padding(ResponsiveDesign.spacing(16))
-            .background(isDisabled ? AppTheme.inputFieldBackground.opacity(0.5) : AppTheme.inputFieldBackground)
+            .background(self.isDisabled ? AppTheme.inputFieldBackground.opacity(0.5) : AppTheme.inputFieldBackground)
             .cornerRadius(ResponsiveDesign.isCompactDevice() ? 10 : 12)
         }
     }
@@ -53,28 +53,28 @@ struct EditProfileSalutationPicker: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
-            Text(title)
+            Text(self.title)
                 .font(ResponsiveDesign.bodyFont())
                 .fontWeight(.medium)
-                .foregroundColor(isDisabled ? AppTheme.fontColor.opacity(0.5) : AppTheme.fontColor)
+                .foregroundColor(self.isDisabled ? AppTheme.fontColor.opacity(0.5) : AppTheme.fontColor)
 
             Menu {
                 ForEach(Salutation.allCases, id: \.self) { option in
-                    Button(option.displayName) { selection = option }
+                    Button(option.displayName) { self.selection = option }
                 }
             } label: {
                 HStack {
-                    Text(selection.displayName)
-                        .foregroundColor(isDisabled ? AppTheme.inputFieldText.opacity(0.5) : AppTheme.inputFieldText)
+                    Text(self.selection.displayName)
+                        .foregroundColor(self.isDisabled ? AppTheme.inputFieldText.opacity(0.5) : AppTheme.inputFieldText)
                     Spacer()
                     Image(systemName: "chevron.up.chevron.down")
-                        .foregroundColor(isDisabled ? AppTheme.inputFieldText.opacity(0.5) : AppTheme.inputFieldText)
+                        .foregroundColor(self.isDisabled ? AppTheme.inputFieldText.opacity(0.5) : AppTheme.inputFieldText)
                 }
                 .padding()
-                .background(isDisabled ? AppTheme.inputFieldBackground.opacity(0.5) : AppTheme.inputFieldBackground)
+                .background(self.isDisabled ? AppTheme.inputFieldBackground.opacity(0.5) : AppTheme.inputFieldBackground)
                 .cornerRadius(ResponsiveDesign.spacing(12))
             }
-            .disabled(isDisabled)
+            .disabled(self.isDisabled)
         }
     }
 }
@@ -88,28 +88,28 @@ struct EditProfileEmploymentPicker: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
-            Text(title)
+            Text(self.title)
                 .font(ResponsiveDesign.bodyFont())
                 .fontWeight(.medium)
-                .foregroundColor(isDisabled ? AppTheme.fontColor.opacity(0.5) : AppTheme.fontColor)
+                .foregroundColor(self.isDisabled ? AppTheme.fontColor.opacity(0.5) : AppTheme.fontColor)
 
             Menu {
                 ForEach(EmploymentStatus.allCases, id: \.self) { option in
-                    Button(option.displayName) { selection = option }
+                    Button(option.displayName) { self.selection = option }
                 }
             } label: {
                 HStack {
-                    Text(selection.displayName)
-                        .foregroundColor(isDisabled ? AppTheme.inputFieldText.opacity(0.5) : AppTheme.inputFieldText)
+                    Text(self.selection.displayName)
+                        .foregroundColor(self.isDisabled ? AppTheme.inputFieldText.opacity(0.5) : AppTheme.inputFieldText)
                     Spacer()
                     Image(systemName: "chevron.up.chevron.down")
-                        .foregroundColor(isDisabled ? AppTheme.inputFieldText.opacity(0.5) : AppTheme.inputFieldText)
+                        .foregroundColor(self.isDisabled ? AppTheme.inputFieldText.opacity(0.5) : AppTheme.inputFieldText)
                 }
                 .padding()
-                .background(isDisabled ? AppTheme.inputFieldBackground.opacity(0.5) : AppTheme.inputFieldBackground)
+                .background(self.isDisabled ? AppTheme.inputFieldBackground.opacity(0.5) : AppTheme.inputFieldBackground)
                 .cornerRadius(ResponsiveDesign.spacing(12))
             }
-            .disabled(isDisabled)
+            .disabled(self.isDisabled)
         }
     }
 }
@@ -124,7 +124,7 @@ struct EditProfileLockMessage: View {
             Image(systemName: "lock.fill")
                 .foregroundColor(AppTheme.accentOrange)
                 .font(ResponsiveDesign.captionFont())
-            Text(message)
+            Text(self.message)
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.8))
             Spacer()
@@ -144,16 +144,16 @@ struct EditProfileKYCMessage: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: ResponsiveDesign.spacing(8)) {
-            Image(systemName: icon)
+            Image(systemName: self.icon)
                 .foregroundColor(AppTheme.accentLightBlue)
                 .font(ResponsiveDesign.bodyFont())
 
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
-                Text(title)
+                Text(self.title)
                     .font(ResponsiveDesign.captionFont())
                     .fontWeight(.semibold)
                     .foregroundColor(AppTheme.fontColor)
-                Text(message)
+                Text(self.message)
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.8))
             }
@@ -173,11 +173,11 @@ struct EditProfileRequestChangeButton: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
+        Button(action: self.action) {
             HStack {
-                Image(systemName: icon)
+                Image(systemName: self.icon)
                     .font(ResponsiveDesign.bodyFont())
-                Text(title)
+                Text(self.title)
                     .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.medium)
                 Spacer()
@@ -201,14 +201,14 @@ struct EditProfileSectionHeader: View {
 
     var body: some View {
         HStack {
-            Text(title)
+            Text(self.title)
                 .font(ResponsiveDesign.headlineFont())
                 .fontWeight(.semibold)
                 .foregroundColor(AppTheme.fontColor)
 
             Spacer()
 
-            if showKYCBadge {
+            if self.showKYCBadge {
                 HStack(spacing: ResponsiveDesign.spacing(4)) {
                     Image(systemName: "checkmark.shield.fill")
                         .font(ResponsiveDesign.captionFont())
@@ -217,7 +217,7 @@ struct EditProfileSectionHeader: View {
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(AppTheme.accentGreen)
                 }
-            } else if showLock {
+            } else if self.showLock {
                 Image(systemName: "lock.fill")
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.accentOrange)

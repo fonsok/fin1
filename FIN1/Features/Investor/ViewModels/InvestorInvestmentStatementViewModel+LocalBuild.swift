@@ -5,7 +5,7 @@ extension InvestorInvestmentStatementViewModel {
     func rebuildStatement() {
         let participations = poolTradeParticipationService.getParticipations(forInvestmentId: investment.id)
         let tradesById = Dictionary(uniqueKeysWithValues: tradeService.completedTrades.map { ($0.id, $0) })
-        statementItems = buildStatementItems(participations: participations, tradesById: tradesById)
+        statementItems = self.buildStatementItems(participations: participations, tradesById: tradesById)
     }
 
     /// Builds statement rows from participations and a trade lookup (local `Trade` models).
@@ -18,7 +18,9 @@ extension InvestorInvestmentStatementViewModel {
         }
 
         let totalInvestmentCapital = investment.amount
-        print("💰 InvestorInvestmentStatementViewModel: Investment capital (source of truth): €\(String(format: "%.2f", totalInvestmentCapital))")
+        print(
+            "💰 InvestorInvestmentStatementViewModel: Investment capital (source of truth): €\(String(format: "%.2f", totalInvestmentCapital))"
+        )
 
         var items: [InvestorInvestmentStatementItem] = []
         let effectiveRate = effectiveCommissionRate
@@ -41,7 +43,9 @@ extension InvestorInvestmentStatementViewModel {
                     : (totalInvestmentCapital / Double(participations.count))
             }
 
-            print("💰 InvestorInvestmentStatementViewModel: Trade \(trade.tradeNumber) capital share: €\(String(format: "%.2f", tradeCapitalShare))")
+            print(
+                "💰 InvestorInvestmentStatementViewModel: Trade \(trade.tradeNumber) capital share: €\(String(format: "%.2f", tradeCapitalShare))"
+            )
 
             do {
                 let item = try InvestorInvestmentStatementItem.build(

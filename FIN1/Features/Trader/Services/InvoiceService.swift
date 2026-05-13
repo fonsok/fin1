@@ -1,6 +1,6 @@
+import Combine
 import Foundation
 import SwiftUI
-import Combine
 
 // MARK: - Invoice Service Implementation
 /// Handles invoice CRUD, queries, validation, and backend sync. PDF generation/export is delegated to InvoicePDFService.
@@ -43,15 +43,15 @@ final class InvoiceService: InvoiceServiceProtocol, ServiceLifecycle, @unchecked
     }
 
     func reset() {
-        invoices.removeAll()
-        errorMessage = nil
+        self.invoices.removeAll()
+        self.errorMessage = nil
     }
 
     // MARK: - Invoice Management
 
     func loadInvoices(for userId: String) async throws {
         await MainActor.run {
-            isLoading = true
+            self.isLoading = true
         }
 
         // Try loading from backend first
@@ -82,13 +82,13 @@ final class InvoiceService: InvoiceServiceProtocol, ServiceLifecycle, @unchecked
 
     func createInvoice(from order: OrderBuy, customerInfo: CustomerInfo) async throws -> Invoice {
         await MainActor.run {
-            isLoading = true
+            self.isLoading = true
         }
 
         // Simulate API call
         try await Task.sleep(nanoseconds: 600_000_000) // 0.6 seconds
 
-        let invoice = Invoice.from(order: order, customerInfo: customerInfo, transactionIdService: transactionIdService)
+        let invoice = Invoice.from(order: order, customerInfo: customerInfo, transactionIdService: self.transactionIdService)
 
         await MainActor.run {
             self.invoices.append(invoice)
@@ -100,13 +100,13 @@ final class InvoiceService: InvoiceServiceProtocol, ServiceLifecycle, @unchecked
 
     func createInvoice(from sellOrder: OrderSell, customerInfo: CustomerInfo) async throws -> Invoice {
         await MainActor.run {
-            isLoading = true
+            self.isLoading = true
         }
 
         // Simulate API call
         try await Task.sleep(nanoseconds: 600_000_000) // 0.6 seconds
 
-        let invoice = Invoice.from(sellOrder: sellOrder, customerInfo: customerInfo, transactionIdService: transactionIdService)
+        let invoice = Invoice.from(sellOrder: sellOrder, customerInfo: customerInfo, transactionIdService: self.transactionIdService)
 
         await MainActor.run {
             self.invoices.append(invoice)
@@ -165,10 +165,10 @@ final class InvoiceService: InvoiceServiceProtocol, ServiceLifecycle, @unchecked
         print("📤 InvoiceService: Syncing pending invoices to backend...")
 
         // Sync pending invoices (without Parse objectId or with local- prefix)
-        let pendingInvoices = invoices.filter { invoice in
+        let pendingInvoices = self.invoices.filter { invoice in
             invoice.id.starts(with: "local-") ||
-            !invoice.id.contains("-") || // UUID without Parse objectId format
-            invoice.id.count == 36 // Standard UUID format (not Parse objectId)
+                !invoice.id.contains("-") || // UUID without Parse objectId format
+                invoice.id.count == 36 // Standard UUID format (not Parse objectId)
         }
 
         print("📤 InvoiceService: Found \(pendingInvoices.count) pending invoices to sync")
@@ -198,7 +198,7 @@ final class InvoiceService: InvoiceServiceProtocol, ServiceLifecycle, @unchecked
 
     func updateInvoiceStatus(_ invoice: Invoice, status: InvoiceStatus) async throws {
         await MainActor.run {
-            isLoading = true
+            self.isLoading = true
         }
 
         // Simulate API call
@@ -228,7 +228,7 @@ final class InvoiceService: InvoiceServiceProtocol, ServiceLifecycle, @unchecked
 
     func deleteInvoice(_ invoice: Invoice) async throws {
         await MainActor.run {
-            isLoading = true
+            self.isLoading = true
         }
 
         // Simulate API call
@@ -243,51 +243,51 @@ final class InvoiceService: InvoiceServiceProtocol, ServiceLifecycle, @unchecked
     // MARK: - PDF Generation (delegated to InvoicePDFService)
 
     func generatePDF(for invoice: Invoice) async throws -> Data {
-        await MainActor.run { isLoading = true }
+        await MainActor.run { self.isLoading = true }
         do {
             let data = try await pdfService.generatePDF(for: invoice)
-            await MainActor.run { isLoading = false }
+            await MainActor.run { self.isLoading = false }
             return data
         } catch {
-            await MainActor.run { isLoading = false }
+            await MainActor.run { self.isLoading = false }
             throw AppError.serviceError(.operationFailed)
         }
     }
 
     func generatePDFPreview(for invoice: Invoice) async throws -> UIImage {
-        await MainActor.run { isLoading = true }
+        await MainActor.run { self.isLoading = true }
         do {
             let image = try await pdfService.generatePDFPreview(for: invoice)
-            await MainActor.run { isLoading = false }
+            await MainActor.run { self.isLoading = false }
             return image
         } catch {
-            await MainActor.run { isLoading = false }
+            await MainActor.run { self.isLoading = false }
             throw error
         }
     }
 
     func savePDFToDocuments(_ pdfData: Data, fileName: String) async throws -> URL {
-        try await pdfService.savePDFToDocuments(pdfData, fileName: fileName)
+        try await self.pdfService.savePDFToDocuments(pdfData, fileName: fileName)
     }
 
     // MARK: - Invoice Queries
 
     func getInvoices(for userId: String) -> [Invoice] {
-        return invoices.filter { $0.customerInfo.customerNumber == userId }
+        return self.invoices.filter { $0.customerInfo.customerNumber == userId }
     }
 
     func getInvoicesByType(_ type: InvoiceType, for userId: String) -> [Invoice] {
-        return invoices.filter {
+        return self.invoices.filter {
             $0.type == type && $0.customerInfo.customerNumber == userId
         }
     }
 
     func getInvoice(by id: String) -> Invoice? {
-        return invoices.first { $0.id == id }
+        return self.invoices.first { $0.id == id }
     }
 
     func getInvoicesForTrade(_ tradeId: String) -> [Invoice] {
-        return invoices.filter { $0.tradeId == tradeId }
+        return self.invoices.filter { $0.tradeId == tradeId }
     }
 
     func invoice(matching document: Document) -> Invoice? {
@@ -306,7 +306,7 @@ final class InvoiceService: InvoiceServiceProtocol, ServiceLifecycle, @unchecked
         }
 
         if let tradeId = document.tradeId {
-            let forTrade = getInvoicesForTrade(tradeId)
+            let forTrade = self.getInvoicesForTrade(tradeId)
             for hint in numberHints where !hint.isEmpty {
                 if let inv = forTrade.first(where: { $0.invoiceNumber == hint }) { return inv }
             }
@@ -330,7 +330,7 @@ final class InvoiceService: InvoiceServiceProtocol, ServiceLifecycle, @unchecked
     }
 
     func getServiceChargeInvoiceForBatch(_ batchId: String, userId: String) -> Invoice? {
-        return getInvoicesByType(.appServiceCharge, for: userId)
+        return self.getInvoicesByType(.appServiceCharge, for: userId)
             .first { $0.tradeId == batchId }
     }
 
@@ -339,7 +339,7 @@ final class InvoiceService: InvoiceServiceProtocol, ServiceLifecycle, @unchecked
     private func loadMockInvoices() {
         // Invoices are now generated automatically when trades complete
         // No need for mock invoices - they will be created dynamically
-        invoices = []
+        self.invoices = []
     }
 
     private func handleError(_ error: Error) async {

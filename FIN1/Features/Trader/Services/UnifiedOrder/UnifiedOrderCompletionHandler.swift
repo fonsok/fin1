@@ -29,9 +29,9 @@ final class UnifiedOrderCompletionHandler: @unchecked Sendable {
     /// Handles order completion
     func handleOrderCompletion(order: Order, completedTrades: [Trade]) async {
         if order.type == .buy {
-            await handleBuyOrderCompletion(order: order, completedTrades: completedTrades)
+            await self.handleBuyOrderCompletion(order: order, completedTrades: completedTrades)
         } else {
-            await handleSellOrderCompletion(order: order, completedTrades: completedTrades)
+            await self.handleSellOrderCompletion(order: order, completedTrades: completedTrades)
         }
     }
 
@@ -42,10 +42,10 @@ final class UnifiedOrderCompletionHandler: @unchecked Sendable {
 
         if let trade = trade {
             // Show buy confirmation
-            await tradingNotificationService.showBuyConfirmation(for: trade)
+            await self.tradingNotificationService.showBuyConfirmation(for: trade)
 
             // Generate invoice
-            await tradingNotificationService.generateInvoiceAndNotification(
+            await self.tradingNotificationService.generateInvoiceAndNotification(
                 for: order,
                 tradeId: trade.id,
                 tradeNumber: trade.tradeNumber
@@ -58,17 +58,17 @@ final class UnifiedOrderCompletionHandler: @unchecked Sendable {
         let sellOrder = OrderSell(from: order)
 
         // Find matching trade
-        let matchingTrade = findMatchingTrade(for: sellOrder, in: completedTrades)
+        let matchingTrade = self.findMatchingTrade(for: sellOrder, in: completedTrades)
 
         if let trade = matchingTrade {
             let updatedTrade = try? await addSellOrderToTrade(trade.id, sellOrder: sellOrder, in: completedTrades)
 
             if let updatedTrade = updatedTrade {
                 // Show sell confirmation
-                await tradingNotificationService.showSellConfirmation(for: updatedTrade)
+                await self.tradingNotificationService.showSellConfirmation(for: updatedTrade)
 
                 // Generate invoice
-                await tradingNotificationService.generateInvoiceAndNotification(
+                await self.tradingNotificationService.generateInvoiceAndNotification(
                     for: order,
                     tradeId: updatedTrade.id,
                     tradeNumber: updatedTrade.tradeNumber
@@ -77,12 +77,12 @@ final class UnifiedOrderCompletionHandler: @unchecked Sendable {
                 // Check if trade is now fully completed and generate Collection Bill
                 if updatedTrade.isCompleted {
                     print("🎯 Trade #\(updatedTrade.tradeNumber) is now fully completed - generating Collection Bill")
-                    await tradingNotificationService.generateCollectionBillDocument(for: updatedTrade)
+                    await self.tradingNotificationService.generateCollectionBillDocument(for: updatedTrade)
                 }
             }
         } else {
             // Generate invoice even if no trade found
-            await tradingNotificationService.generateInvoiceAndNotification(
+            await self.tradingNotificationService.generateInvoiceAndNotification(
                 for: order,
                 tradeId: nil,
                 tradeNumber: nil
@@ -94,7 +94,7 @@ final class UnifiedOrderCompletionHandler: @unchecked Sendable {
     func createTrade(from buyOrder: OrderBuy) async throws -> Trade {
         // CRITICAL: Use per-trader trade numbering for proper isolation
         // Each trader has their own sequence starting from 1
-        let tradeNumber = tradeNumberService.generateNextTradeNumber(for: buyOrder.traderId)
+        let tradeNumber = self.tradeNumberService.generateNextTradeNumber(for: buyOrder.traderId)
         let initialTrade = Trade.from(buyOrder: buyOrder, tradeNumber: tradeNumber)
 
         // Save to Parse Server if available
@@ -102,7 +102,9 @@ final class UnifiedOrderCompletionHandler: @unchecked Sendable {
         if let tradeAPIService = tradeAPIService {
             do {
                 finalTrade = try await tradeAPIService.saveTrade(initialTrade)
-                print("✅ UnifiedOrderCompletionHandler: Trade #\(finalTrade.tradeNumber) saved to Parse Server with objectId: \(finalTrade.id)")
+                print(
+                    "✅ UnifiedOrderCompletionHandler: Trade #\(finalTrade.tradeNumber) saved to Parse Server with objectId: \(finalTrade.id)"
+                )
             } catch {
                 print("⚠️ UnifiedOrderCompletionHandler: Failed to save trade to Parse Server: \(error)")
                 // Continue with local trade even if server save fails
@@ -114,7 +116,7 @@ final class UnifiedOrderCompletionHandler: @unchecked Sendable {
         }
 
         // Update cash balance
-        await cashBalanceService.processBuyOrderExecution(amount: buyOrder.totalAmount)
+        await self.cashBalanceService.processBuyOrderExecution(amount: buyOrder.totalAmount)
 
         return finalTrade
     }
@@ -130,7 +132,7 @@ final class UnifiedOrderCompletionHandler: @unchecked Sendable {
         // Calculate and store profit if trade is completed
         let finalTrade: Trade
         if updatedTrade.isCompleted {
-            let allInvoices = invoiceService.getInvoicesForTrade(trade.id)
+            let allInvoices = self.invoiceService.getInvoicesForTrade(trade.id)
             let buyInvoices = allInvoices.filter { $0.transactionType == .buy }
             let sellInvoices = allInvoices.filter { $0.transactionType == .sell }
             let buyInvoice = buyInvoices.first
@@ -152,7 +154,7 @@ final class UnifiedOrderCompletionHandler: @unchecked Sendable {
         }
 
         // Update cash balance
-        await cashBalanceService.processSellOrderExecution(amount: sellOrder.totalAmount)
+        await self.cashBalanceService.processSellOrderExecution(amount: sellOrder.totalAmount)
 
         return finalTrade
     }

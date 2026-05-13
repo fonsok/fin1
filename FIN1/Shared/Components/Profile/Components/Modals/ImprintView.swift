@@ -24,14 +24,14 @@ struct ImprintView: View {
 
                 ScrollView {
                     VStack(spacing: ResponsiveDesign.spacing(16)) {
-                        headerSection
-                        searchSection
-                        controlsSection
+                        self.headerSection
+                        self.searchSection
+                        self.controlsSection
 
-                        if viewModel.hasNoSearchResults {
-                            noResultsView
+                        if self.viewModel.hasNoSearchResults {
+                            self.noResultsView
                         } else {
-                            contentSection
+                            self.contentSection
                         }
                     }
                     .padding(.horizontal, ResponsiveDesign.spacing(16))
@@ -39,12 +39,12 @@ struct ImprintView: View {
                     .padding(.bottom, ResponsiveDesign.spacing(24))
                 }
             }
-            .navigationTitle(viewModel.currentLanguage == .german ? "Impressum" : "Imprint")
+            .navigationTitle(self.viewModel.currentLanguage == .german ? "Impressum" : "Imprint")
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(viewModel.currentLanguage == .german ? "Fertig" : "Done") {
-                        dismiss()
+                    Button(self.viewModel.currentLanguage == .german ? "Fertig" : "Done") {
+                        self.dismiss()
                     }
                     .foregroundColor(AppTheme.accentLightBlue)
                 }
@@ -59,7 +59,7 @@ struct ImprintView: View {
                     .font(ResponsiveDesign.headlineFont())
                     .foregroundColor(AppTheme.accentLightBlue)
 
-                Text(viewModel.currentLanguage == .german ? "Impressum" : "Imprint")
+                Text(self.viewModel.currentLanguage == .german ? "Impressum" : "Imprint")
                     .font(ResponsiveDesign.headlineFont())
                     .fontWeight(.bold)
                     .foregroundColor(AppTheme.fontColor)
@@ -67,11 +67,11 @@ struct ImprintView: View {
                 Spacer()
             }
 
-            Text(viewModel.currentLanguage == .german
-                 ? "Stand: \(viewModel.displayedLastUpdatedText) | Version: \(viewModel.displayedVersion)"
-                 : "Last Updated: \(viewModel.displayedLastUpdatedText) | Version: \(viewModel.displayedVersion)")
-            .font(ResponsiveDesign.captionFont())
-            .foregroundColor(AppTheme.fontColor.opacity(0.7))
+            Text(self.viewModel.currentLanguage == .german
+                ? "Stand: \(self.viewModel.displayedLastUpdatedText) | Version: \(self.viewModel.displayedVersion)"
+                : "Last Updated: \(self.viewModel.displayedLastUpdatedText) | Version: \(self.viewModel.displayedVersion)")
+                .font(ResponsiveDesign.captionFont())
+                .foregroundColor(AppTheme.fontColor.opacity(0.7))
         }
         .padding(ResponsiveDesign.spacing(16))
         .background(AppTheme.sectionBackground)
@@ -84,14 +84,14 @@ struct ImprintView: View {
                 .foregroundColor(AppTheme.fontColor.opacity(0.6))
 
             TextField(
-                viewModel.currentLanguage == .german ? "Impressum durchsuchen..." : "Search imprint...",
-                text: $viewModel.searchQuery
+                self.viewModel.currentLanguage == .german ? "Impressum durchsuchen..." : "Search imprint...",
+                text: self.$viewModel.searchQuery
             )
             .textFieldStyle(PlainTextFieldStyle())
             .foregroundColor(AppTheme.fontColor)
 
-            if !viewModel.searchQuery.isEmpty {
-                Button(action: { viewModel.searchQuery = "" }) {
+            if !self.viewModel.searchQuery.isEmpty {
+                Button(action: { self.viewModel.searchQuery = "" }) {
                     Image(systemName: "xmark.circle.fill")
                         .foregroundColor(AppTheme.fontColor.opacity(0.5))
                 }
@@ -104,28 +104,28 @@ struct ImprintView: View {
 
     private var controlsSection: some View {
         HStack(spacing: ResponsiveDesign.spacing(12)) {
-            Button(action: { viewModel.expandAll() }) {
+            Button(action: { self.viewModel.expandAll() }) {
                 HStack(spacing: ResponsiveDesign.spacing(4)) {
                     Image(systemName: "chevron.down.circle")
                         .font(ResponsiveDesign.captionFont())
-                    Text(viewModel.currentLanguage == .german ? "Alle öffnen" : "Expand All")
+                    Text(self.viewModel.currentLanguage == .german ? "Alle öffnen" : "Expand All")
                         .font(ResponsiveDesign.captionFont())
                 }
                 .foregroundColor(AppTheme.accentLightBlue)
             }
 
-            Button(action: { viewModel.collapseAll() }) {
+            Button(action: { self.viewModel.collapseAll() }) {
                 HStack(spacing: ResponsiveDesign.spacing(4)) {
                     Image(systemName: "chevron.up.circle")
                         .font(ResponsiveDesign.captionFont())
-                    Text(viewModel.currentLanguage == .german ? "Alle schließen" : "Collapse All")
+                    Text(self.viewModel.currentLanguage == .german ? "Alle schließen" : "Collapse All")
                         .font(ResponsiveDesign.captionFont())
                 }
                 .foregroundColor(AppTheme.accentLightBlue)
             }
 
-            Button(action: { viewModel.toggleLanguage() }) {
-                Text(viewModel.currentLanguage == .english ? "🇩🇪" : "🇬🇧")
+            Button(action: { self.viewModel.toggleLanguage() }) {
+                Text(self.viewModel.currentLanguage == .english ? "🇩🇪" : "🇬🇧")
                     .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 1.2))
             }
             .buttonStyle(PlainButtonStyle())
@@ -136,13 +136,13 @@ struct ImprintView: View {
 
     private var contentSection: some View {
         VStack(spacing: ResponsiveDesign.spacing(12)) {
-            ForEach(viewModel.filteredSections) { section in
+            ForEach(self.viewModel.filteredSections) { section in
                 ExpandableSectionRow(
                     title: section.title,
                     icon: nil,
                     iconColor: AppTheme.accentLightBlue,
-                    isExpanded: viewModel.isExpanded(section),
-                    onToggle: { viewModel.toggleSection(section) },
+                    isExpanded: self.viewModel.isExpanded(section),
+                    onToggle: { self.viewModel.toggleSection(section) },
                     titleFontWeight: ResponsiveDesign.faqQuestionFontWeight
                 ) {
                     LegalDocumentFormatter(text: section.content)
@@ -157,11 +157,11 @@ struct ImprintView: View {
                 .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2.4))
                 .foregroundColor(AppTheme.fontColor.opacity(0.5))
 
-            Text(viewModel.currentLanguage == .german ? "Keine Ergebnisse gefunden" : "No Results Found")
+            Text(self.viewModel.currentLanguage == .german ? "Keine Ergebnisse gefunden" : "No Results Found")
                 .font(ResponsiveDesign.headlineFont())
                 .foregroundColor(AppTheme.fontColor)
 
-            Text(viewModel.currentLanguage == .german ? "Versuchen Sie andere Suchbegriffe" : "Try searching with different keywords")
+            Text(self.viewModel.currentLanguage == .german ? "Versuchen Sie andere Suchbegriffe" : "Try searching with different keywords")
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
                 .multilineTextAlignment(.center)

@@ -139,7 +139,14 @@ extension TradeStatementPDFServiceImproved {
             context.setLineWidth(PDFStylingImproved.tableBorderWidth)
             context.stroke(rowRect)
             x = PDFStylingImproved.margin
-            let rowData = [transaction.transactionNumber, transaction.orderVolume, transaction.price, transaction.marketValue, transaction.commission, transaction.finalAmount]
+            let rowData = [
+                transaction.transactionNumber,
+                transaction.orderVolume,
+                transaction.price,
+                transaction.marketValue,
+                transaction.commission,
+                transaction.finalAmount
+            ]
             for (colIndex, data) in rowData.enumerated() {
                 let alignment: NSTextAlignment = colIndex == 0 ? .left : .right
                 let cellRect = CGRect(

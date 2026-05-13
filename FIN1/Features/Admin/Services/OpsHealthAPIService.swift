@@ -61,7 +61,7 @@ final class OpsHealthAPIService: OpsHealthAPIServiceProtocol, @unchecked Sendabl
     }
 
     func fetchMirrorBasisDriftStatus() async throws -> MirrorBasisDriftStatus {
-        return try await apiClient.callFunction(
+        return try await self.apiClient.callFunction(
             "getMirrorBasisDriftStatus",
             parameters: nil
         )

@@ -27,10 +27,10 @@ struct OmegaFilterView: View {
                         .padding(.top, ResponsiveDesign.spacing(20))
 
                     LazyVStack(spacing: ResponsiveDesign.spacing(12)) {
-                        ForEach(omegaOptions, id: \.self) { option in
+                        ForEach(self.omegaOptions, id: \.self) { option in
                             Button(action: {
-                                selectedOmega = option == "Alle" ? nil : option
-                                dismiss()
+                                self.selectedOmega = option == "Alle" ? nil : option
+                                self.dismiss()
                             }) {
                                 HStack {
                                     Text(option)
@@ -39,7 +39,7 @@ struct OmegaFilterView: View {
 
                                     Spacer()
 
-                                    if (selectedOmega == option) || (selectedOmega == nil && option == "Alle") {
+                                    if (self.selectedOmega == option) || (self.selectedOmega == nil && option == "Alle") {
                                         Image(systemName: "checkmark")
                                             .foregroundColor(AppTheme.accentGreen)
                                     }
@@ -61,7 +61,7 @@ struct OmegaFilterView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") {
-                        dismiss()
+                        self.dismiss()
                     }
                 }
             }

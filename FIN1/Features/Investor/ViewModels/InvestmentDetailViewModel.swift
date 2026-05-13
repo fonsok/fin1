@@ -1,5 +1,5 @@
-import SwiftUI
 import Foundation
+import SwiftUI
 
 // MARK: - Investment Detail View Model
 /// ViewModel for InvestmentDetailView following MVVM architecture
@@ -20,11 +20,11 @@ final class InvestmentDetailViewModel: ObservableObject {
     // MARK: - Display Properties (Formatted for UI)
 
     var formattedAmount: String {
-        investment.amount.formattedAsLocalizedCurrency()
+        self.investment.amount.formattedAsLocalizedCurrency()
     }
 
     var traderIdText: String {
-        investment.traderId
+        self.investment.traderId
     }
 
     var numberOfInvestmentsText: String {
@@ -36,19 +36,19 @@ final class InvestmentDetailViewModel: ObservableObject {
     }
 
     var specializationText: String {
-        investment.specialization
+        self.investment.specialization
     }
 
     var statusText: String {
-        investment.status.displayName
+        self.investment.status.displayName
     }
 
     var formattedCreatedDate: String {
-        investment.createdAt.formatted(date: .abbreviated, time: .shortened)
+        self.investment.createdAt.formatted(date: .abbreviated, time: .shortened)
     }
 
     var formattedUpdatedDate: String {
-        investment.updatedAt.formatted(date: .abbreviated, time: .shortened)
+        self.investment.updatedAt.formatted(date: .abbreviated, time: .shortened)
     }
 
     var hasInvestmentReservations: Bool {
@@ -59,13 +59,13 @@ final class InvestmentDetailViewModel: ObservableObject {
     var investmentReservations: [InvestmentReservation] {
         // Create an InvestmentReservation from the investment for backward compatibility
         [InvestmentReservation(
-            id: investment.id,
-            sequenceNumber: investment.sequenceNumber ?? 1,
-            status: investment.reservationStatus,
+            id: self.investment.id,
+            sequenceNumber: self.investment.sequenceNumber ?? 1,
+            status: self.investment.reservationStatus,
             actualInvestmentId: nil,
-            allocatedAmount: investment.amount,
-            reservedAt: investment.createdAt,
-            isLocked: investment.reservationStatus != .reserved
+            allocatedAmount: self.investment.amount,
+            reservedAt: self.investment.createdAt,
+            isLocked: self.investment.reservationStatus != .reserved
         )]
     }
 
@@ -77,10 +77,10 @@ final class InvestmentDetailViewModel: ObservableObject {
     // MARK: - Error Handling
 
     func clearError() {
-        errorMessage = nil
+        self.errorMessage = nil
     }
 
     func showError(_ error: AppError) {
-        errorMessage = error.errorDescription ?? "An error occurred"
+        self.errorMessage = error.errorDescription ?? "An error occurred"
     }
 }

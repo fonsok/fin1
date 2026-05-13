@@ -29,13 +29,13 @@ struct EmailTemplate: Identifiable, Codable {
 
     /// Available placeholders for this template type
     var availablePlaceholders: [String] {
-        type.availablePlaceholders
+        self.type.availablePlaceholders
     }
 
     /// Fill template with values
     func render(with values: [String: String]) -> (subject: String, body: String) {
-        var filledSubject = subject
-        var filledBody = bodyTemplate
+        var filledSubject = self.subject
+        var filledBody = self.bodyTemplate
 
         for (key, value) in values {
             filledSubject = filledSubject.replacingOccurrences(of: "{{\(key)}}", with: value)
@@ -101,22 +101,22 @@ extension EmailTemplate {
             subject: "[{{companyName}}] Ticket {{ticketNumber}} wurde erstellt",
             bodyTemplate: """
             Guten Tag {{customerName}},
-
+            
             vielen Dank für Ihre Anfrage. Wir haben Ihr Support-Ticket erfolgreich erstellt.
-
+            
             Ticket-Details:
             • Ticket-Nummer: {{ticketNumber}}
             • Betreff: {{ticketSubject}}
             • Priorität: {{ticketPriority}}
-
+            
             Ihr Anliegen:
             {{ticketDescription}}
-
+            
             Unser Support-Team wird sich schnellstmöglich bei Ihnen melden.
-
+            
             Mit freundlichen Grüßen,
             Ihr {{companyName}} Support-Team
-
+            
             ---
             Sie können den Status Ihres Tickets jederzeit in der App verfolgen.
             """
@@ -128,18 +128,18 @@ extension EmailTemplate {
             subject: "[{{companyName}}] Neue Antwort auf Ticket {{ticketNumber}}",
             bodyTemplate: """
             Guten Tag {{customerName}},
-
+            
             Sie haben eine neue Antwort auf Ihr Support-Ticket erhalten.
-
+            
             Ticket: {{ticketNumber}} - {{ticketSubject}}
-
+            
             Antwort von {{agentName}}:
             {{responseMessage}}
-
+            
             ---
-
+            
             Um zu antworten, öffnen Sie bitte die App oder antworten Sie direkt auf diese E-Mail.
-
+            
             Mit freundlichen Grüßen,
             Ihr {{companyName}} Support-Team
             """
@@ -151,16 +151,16 @@ extension EmailTemplate {
             subject: "[{{companyName}}] Status-Update für Ticket {{ticketNumber}}",
             bodyTemplate: """
             Guten Tag {{customerName}},
-
+            
             der Status Ihres Support-Tickets hat sich geändert.
-
+            
             Ticket: {{ticketNumber}} - {{ticketSubject}}
-
+            
             Alter Status: {{oldStatus}}
             Neuer Status: {{newStatus}}
-
+            
             Sie können den aktuellen Stand jederzeit in der App einsehen.
-
+            
             Mit freundlichen Grüßen,
             Ihr {{companyName}} Support-Team
             """
@@ -172,17 +172,17 @@ extension EmailTemplate {
             subject: "[{{companyName}}] Ticket {{ticketNumber}} wurde gelöst ✓",
             bodyTemplate: """
             Guten Tag {{customerName}},
-
+            
             gute Nachrichten! Ihr Support-Ticket wurde gelöst.
-
+            
             Ticket: {{ticketNumber}} - {{ticketSubject}}
             Bearbeitet von: {{agentName}}
-
+            
             Zusammenfassung der Lösung:
             {{resolutionSummary}}
-
+            
             Sollte das Problem weiterhin bestehen, können Sie dieses Ticket innerhalb von 7 Tagen wiedereröffnen.
-
+            
             Mit freundlichen Grüßen,
             Ihr {{companyName}} Support-Team
             """
@@ -194,15 +194,15 @@ extension EmailTemplate {
             subject: "[{{companyName}}] Ticket {{ticketNumber}} wurde geschlossen",
             bodyTemplate: """
             Guten Tag {{customerName}},
-
+            
             Ihr Support-Ticket wurde geschlossen.
-
+            
             Ticket: {{ticketNumber}} - {{ticketSubject}}
-
+            
             Grund: {{closureReason}}
-
+            
             Vielen Dank, dass Sie sich an unseren Support gewandt haben. Bei weiteren Fragen können Sie jederzeit ein neues Ticket erstellen.
-
+            
             Mit freundlichen Grüßen,
             Ihr {{companyName}} Support-Team
             """
@@ -214,17 +214,17 @@ extension EmailTemplate {
             subject: "[{{companyName}}] Wie war unser Support? ⭐",
             bodyTemplate: """
             Guten Tag {{customerName}},
-
+            
             Ihr Support-Ticket {{ticketNumber}} wurde von {{agentName}} bearbeitet.
-
+            
             Wir würden uns freuen, wenn Sie sich einen Moment Zeit nehmen könnten, um unseren Service zu bewerten.
-
+            
             Ihre Meinung hilft uns, unseren Support kontinuierlich zu verbessern.
-
+            
             → Jetzt bewerten: {{surveyLink}}
-
+            
             Vielen Dank für Ihre Unterstützung!
-
+            
             Mit freundlichen Grüßen,
             Ihr {{companyName}} Support-Team
             """
@@ -236,16 +236,16 @@ extension EmailTemplate {
             subject: "⚠️ SLA-Warnung: Ticket {{ticketNumber}}",
             bodyTemplate: """
             Achtung!
-
+            
             Das folgende Ticket nähert sich der SLA-Deadline:
-
+            
             Ticket: {{ticketNumber}} - {{ticketSubject}}
             Kunde: {{customerName}}
             Verbleibende Zeit: {{timeRemaining}}
             Deadline: {{deadline}}
-
+            
             Bitte bearbeiten Sie dieses Ticket umgehend.
-
+            
             ---
             Diese E-Mail wurde automatisch generiert.
             """

@@ -1,5 +1,5 @@
-import SwiftUI
 import Combine
+import SwiftUI
 
 // MARK: - Investor-Specific Notifications View
 struct NotificationsInvestorView: View {
@@ -12,10 +12,10 @@ struct NotificationsInvestorView: View {
 
     var body: some View {
         NotificationsInvestorContentView(
-            appServices: appServices,
-            selectedFilter: $selectedFilter,
-            showFilters: $showFilters,
-            availableFilters: availableFilters
+            appServices: self.appServices,
+            selectedFilter: self.$selectedFilter,
+            showFilters: self.$showFilters,
+            availableFilters: self.availableFilters
         )
     }
 }
@@ -31,7 +31,12 @@ private struct NotificationsInvestorContentView: View {
     @State private var notifications: [AppNotification] = []
     @State private var cancellables = Set<AnyCancellable>()
 
-    init(appServices: AppServices, selectedFilter: Binding<NotificationFilter>, showFilters: Binding<Bool>, availableFilters: [NotificationFilter]) {
+    init(
+        appServices: AppServices,
+        selectedFilter: Binding<NotificationFilter>,
+        showFilters: Binding<Bool>,
+        availableFilters: [NotificationFilter]
+    ) {
         self.appServices = appServices
         _selectedFilter = selectedFilter
         _showFilters = showFilters
@@ -49,19 +54,19 @@ private struct NotificationsInvestorContentView: View {
 
                 VStack(spacing: ResponsiveDesign.spacing(0)) {
                     // Filter Header
-                    filterHeader
+                    self.filterHeader
 
                     // Notifications List
                     ScrollView {
                         LazyVStack(spacing: ResponsiveDesign.spacing(16)) {
-                            ForEach(filteredNotifications) { notification in
+                            ForEach(self.filteredNotifications) { notification in
                                 NotificationCardView(
                                     notification: notification,
-                                    notificationService: notificationService,
-                                    userId: appServices.userService.currentUser?.id ?? "",
-                                    customerSupportService: appServices.customerSupportService,
-                                    satisfactionSurveyService: appServices.satisfactionSurveyService,
-                                    documentService: appServices.documentService
+                                    notificationService: self.notificationService,
+                                    userId: self.appServices.userService.currentUser?.id ?? "",
+                                    customerSupportService: self.appServices.customerSupportService,
+                                    satisfactionSurveyService: self.appServices.satisfactionSurveyService,
+                                    documentService: self.appServices.documentService
                                 )
                             }
                         }
@@ -76,7 +81,7 @@ private struct NotificationsInvestorContentView: View {
             .navigationTitle("Notifications")
             .toolbar(content: {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: { showFilters = true }, label: {
+                    Button(action: { self.showFilters = true }, label: {
                         Image(systemName: "line.3.horizontal.decrease.circle")
                             .foregroundColor(AppTheme.accentLightBlue)
                     })
@@ -84,25 +89,25 @@ private struct NotificationsInvestorContentView: View {
             })
         }
         .navigationDestination(for: Document.self) { document in
-            DocumentNavigationHelper.navigationDestination(for: document, appServices: appServices)
+            DocumentNavigationHelper.navigationDestination(for: document, appServices: self.appServices)
         }
-        .sheet(isPresented: $showFilters) {
-            NotificationFilterView(selectedFilter: $selectedFilter, availableFilters: availableFilters)
+        .sheet(isPresented: self.$showFilters) {
+            NotificationFilterView(selectedFilter: self.$selectedFilter, availableFilters: self.availableFilters)
         }
         .onAppear {
-            selectedFilter = .all
+            self.selectedFilter = .all
             // Keep role-based view reactive without depending on concrete NotificationService.
-            cancellables.removeAll()
-            notifications = notificationService.notifications
-            notificationService.notificationsPublisher
+            self.cancellables.removeAll()
+            self.notifications = self.notificationService.notifications
+            self.notificationService.notificationsPublisher
                 .receive(on: DispatchQueue.main)
                 .sink { newNotifications in
                     self.notifications = newNotifications
                 }
-                .store(in: &cancellables)
+                .store(in: &self.cancellables)
         }
         .onDisappear {
-            cancellables.removeAll()
+            self.cancellables.removeAll()
         }
     }
 
@@ -111,12 +116,12 @@ private struct NotificationsInvestorContentView: View {
             // Quick Filter Pills
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: ResponsiveDesign.spacing(12)) {
-                    ForEach(availableFilters, id: \.self) { filter in
+                    ForEach(self.availableFilters, id: \.self) { filter in
                         NotificationFilterPill(
                             title: filter.displayName,
-                            isSelected: selectedFilter == filter
+                            isSelected: self.selectedFilter == filter
                         ) {
-                            selectedFilter = filter
+                            self.selectedFilter = filter
                         }
                     }
                 }
@@ -128,10 +133,10 @@ private struct NotificationsInvestorContentView: View {
     }
 
     private var filteredNotifications: [AppNotification] {
-        let currentUserId = appServices.userService.currentUser?.id ?? ""
-        let userNotifications = notifications.filter { $0.userId == currentUserId }
+        let currentUserId = self.appServices.userService.currentUser?.id ?? ""
+        let userNotifications = self.notifications.filter { $0.userId == currentUserId }
 
-        switch selectedFilter {
+        switch self.selectedFilter {
         case .all:
             return userNotifications
         case .investments:
@@ -144,7 +149,6 @@ private struct NotificationsInvestorContentView: View {
             return [] // Documents are handled separately in the unified view
         }
     }
-
 }
 
 // MARK: - Investor-Specific Notification Card
@@ -153,22 +157,22 @@ struct InvestorNotificationCard: View {
     @State private var isRead = false
 
     var body: some View {
-        Button(action: { isRead = true }, label: {
+        Button(action: { self.isRead = true }, label: {
             HStack(spacing: ResponsiveDesign.spacing(16)) {
                 // Icon with investor-specific styling
                 Circle()
-                    .fill(notificationColor.opacity(0.3))
+                    .fill(self.notificationColor.opacity(0.3))
                     .frame(width: 50, height: 50)
                     .overlay(
-                        Image(systemName: notification.type.icon)
+                        Image(systemName: self.notification.type.icon)
                             .font(ResponsiveDesign.headlineFont())
-                            .foregroundColor(notificationColor)
+                            .foregroundColor(self.notificationColor)
                     )
 
                 // Content
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
                     HStack {
-                        Text(notification.title)
+                        Text(self.notification.title)
                             .font(ResponsiveDesign.bodyFont())
                             .fontWeight(.medium)
                             .foregroundColor(AppTheme.fontColor)
@@ -176,27 +180,27 @@ struct InvestorNotificationCard: View {
 
                         Spacer()
 
-                        if !isRead {
+                        if !self.isRead {
                             Circle()
                                 .fill(AppTheme.accentGreen)
                                 .frame(width: 8, height: 8)
                         }
                     }
 
-                    Text(notification.message)
+                    Text(self.notification.message)
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(AppTheme.fontColor.opacity(0.8))
                         .multilineTextAlignment(.leading)
                         .lineLimit(2)
 
                     HStack {
-                        Text(notification.createdAt.formatted(date: .abbreviated, time: .shortened))
+                        Text(self.notification.createdAt.formatted(date: .abbreviated, time: .shortened))
                             .font(ResponsiveDesign.captionFont())
                             .foregroundColor(AppTheme.fontColor.opacity(0.6))
 
                         Spacer()
 
-                        if notification.priority == .high || notification.priority == .urgent {
+                        if self.notification.priority == .high || self.notification.priority == .urgent {
                             Text("Tap to view")
                                 .font(ResponsiveDesign.captionFont())
                                 .foregroundColor(AppTheme.accentGreen)
@@ -207,13 +211,13 @@ struct InvestorNotificationCard: View {
             .padding(ResponsiveDesign.spacing(16))
             .background(AppTheme.sectionBackground)
             .cornerRadius(ResponsiveDesign.spacing(16))
-            .opacity(isRead ? 0.7 : 1.0)
+            .opacity(self.isRead ? 0.7 : 1.0)
         })
         .buttonStyle(PlainButtonStyle())
     }
 
     private var notificationColor: Color {
-        switch notification.type {
+        switch self.notification.type {
         case .investment:
             return AppTheme.accentGreen
         case .system:

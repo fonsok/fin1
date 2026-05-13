@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 import LocalAuthentication
 
 // MARK: - Security Settings ViewModel
@@ -51,9 +51,9 @@ final class SecuritySettingsViewModel: ObservableObject {
 
     init(userService: any UserServiceProtocol) {
         self.userService = userService
-        checkBiometricAvailability()
-        loadSettings()
-        loadMockSecurityEvents()
+        self.checkBiometricAvailability()
+        self.loadSettings()
+        self.loadMockSecurityEvents()
     }
 
     // MARK: - Public Methods
@@ -71,7 +71,7 @@ final class SecuritySettingsViewModel: ObservableObject {
         )
 
         if let data = try? JSONEncoder().encode(settings) {
-            UserDefaults.standard.set(data, forKey: userDefaultsKey)
+            UserDefaults.standard.set(data, forKey: self.userDefaultsKey)
         }
     }
 
@@ -99,35 +99,35 @@ final class SecuritySettingsViewModel: ObservableObject {
 
     /// Disables biometric authentication
     func disableBiometricAuth() {
-        biometricAuthEnabled = false
-        saveSettings()
+        self.biometricAuthEnabled = false
+        self.saveSettings()
     }
 
     /// Validates and changes the user password
     func changePassword() {
-        passwordChangeError = nil
+        self.passwordChangeError = nil
 
-        guard !currentPassword.isEmpty else {
-            passwordChangeError = "Please enter your current password"
+        guard !self.currentPassword.isEmpty else {
+            self.passwordChangeError = "Please enter your current password"
             return
         }
 
-        guard newPassword.count >= 8 else {
-            passwordChangeError = "New password must be at least 8 characters"
+        guard self.newPassword.count >= 8 else {
+            self.passwordChangeError = "New password must be at least 8 characters"
             return
         }
 
-        guard newPassword == confirmPassword else {
-            passwordChangeError = "New passwords do not match"
+        guard self.newPassword == self.confirmPassword else {
+            self.passwordChangeError = "New passwords do not match"
             return
         }
 
-        guard newPassword != currentPassword else {
-            passwordChangeError = "New password must be different from current password"
+        guard self.newPassword != self.currentPassword else {
+            self.passwordChangeError = "New password must be different from current password"
             return
         }
 
-        isChangingPassword = true
+        self.isChangingPassword = true
 
         Task { @MainActor [weak self] in
             // Simulate password change API call
@@ -141,7 +141,7 @@ final class SecuritySettingsViewModel: ObservableObject {
 
     /// Terminates all other active sessions
     func terminateAllSessions() {
-        recentSecurityEvents.insert(
+        self.recentSecurityEvents.insert(
             SecurityEvent(
                 id: UUID().uuidString,
                 type: .sessionTerminated,
@@ -155,13 +155,13 @@ final class SecuritySettingsViewModel: ObservableObject {
 
     /// Resets security settings to defaults
     func resetToDefaults() {
-        biometricAuthEnabled = false
-        twoFactorEnabled = false
-        twoFactorMethod = .sms
-        requirePasswordOnLaunch = true
-        autoLockTimeout = .fiveMinutes
-        loginAlertsEnabled = true
-        rememberDevice = true
+        self.biometricAuthEnabled = false
+        self.twoFactorEnabled = false
+        self.twoFactorMethod = .sms
+        self.requirePasswordOnLaunch = true
+        self.autoLockTimeout = .fiveMinutes
+        self.loginAlertsEnabled = true
+        self.rememberDevice = true
     }
 
     // MARK: - Private Methods
@@ -170,22 +170,22 @@ final class SecuritySettingsViewModel: ObservableObject {
         let context = LAContext()
         var error: NSError?
 
-        isBiometricAvailable = context.canEvaluatePolicy(
+        self.isBiometricAvailable = context.canEvaluatePolicy(
             .deviceOwnerAuthenticationWithBiometrics,
             error: &error
         )
 
         switch context.biometryType {
         case .faceID:
-            biometricType = .faceID
+            self.biometricType = .faceID
         case .touchID:
-            biometricType = .touchID
+            self.biometricType = .touchID
         case .opticID:
-            biometricType = .opticID
+            self.biometricType = .opticID
         case .none:
-            biometricType = .none
+            self.biometricType = .none
         @unknown default:
-            biometricType = .none
+            self.biometricType = .none
         }
     }
 
@@ -195,50 +195,50 @@ final class SecuritySettingsViewModel: ObservableObject {
             return
         }
 
-        biometricAuthEnabled = settings.biometricAuthEnabled && isBiometricAvailable
-        twoFactorEnabled = settings.twoFactorEnabled
-        twoFactorMethod = settings.twoFactorMethod
-        requirePasswordOnLaunch = settings.requirePasswordOnLaunch
-        autoLockTimeout = settings.autoLockTimeout
-        loginAlertsEnabled = settings.loginAlertsEnabled
-        rememberDevice = settings.rememberDevice
+        self.biometricAuthEnabled = settings.biometricAuthEnabled && self.isBiometricAvailable
+        self.twoFactorEnabled = settings.twoFactorEnabled
+        self.twoFactorMethod = settings.twoFactorMethod
+        self.requirePasswordOnLaunch = settings.requirePasswordOnLaunch
+        self.autoLockTimeout = settings.autoLockTimeout
+        self.loginAlertsEnabled = settings.loginAlertsEnabled
+        self.rememberDevice = settings.rememberDevice
     }
 
     private func clearPasswordFields() {
-        currentPassword = ""
-        newPassword = ""
-        confirmPassword = ""
-        passwordChangeError = nil
+        self.currentPassword = ""
+        self.newPassword = ""
+        self.confirmPassword = ""
+        self.passwordChangeError = nil
     }
 
     private func loadMockSecurityEvents() {
-        recentSecurityEvents = [
+        self.recentSecurityEvents = [
             SecurityEvent(
                 id: "1",
                 type: .login,
                 description: "Successful login",
-                timestamp: Date().addingTimeInterval(-3600),
+                timestamp: Date().addingTimeInterval(-3_600),
                 location: "San Francisco, CA"
             ),
             SecurityEvent(
                 id: "2",
                 type: .passwordChanged,
                 description: "Password was changed",
-                timestamp: Date().addingTimeInterval(-86400 * 3),
+                timestamp: Date().addingTimeInterval(-86_400 * 3),
                 location: nil
             ),
             SecurityEvent(
                 id: "3",
                 type: .twoFactorEnabled,
                 description: "Two-factor authentication enabled",
-                timestamp: Date().addingTimeInterval(-86400 * 7),
+                timestamp: Date().addingTimeInterval(-86_400 * 7),
                 location: nil
             ),
             SecurityEvent(
                 id: "4",
                 type: .login,
                 description: "Successful login",
-                timestamp: Date().addingTimeInterval(-86400 * 10),
+                timestamp: Date().addingTimeInterval(-86_400 * 10),
                 location: "New York, NY"
             )
         ]

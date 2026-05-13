@@ -5,16 +5,18 @@ struct CompletedInvestmentsView: View {
     @Environment(\.appServices) private var appServices
     @State private var selectedCompletedInvestment: Investment?
 
-    init(userService: (any UserServiceProtocol)? = nil,
-         investmentService: (any InvestmentServiceProtocol)? = nil,
-         documentService: (any DocumentServiceProtocol)? = nil,
-         invoiceService: (any InvoiceServiceProtocol)? = nil,
-         traderDataService: (any TraderDataServiceProtocol)? = nil,
-         poolTradeParticipationService: (any PoolTradeParticipationServiceProtocol)? = nil,
-         tradeLifecycleService: (any TradeLifecycleServiceProtocol)? = nil,
-         configurationService: (any ConfigurationServiceProtocol)? = nil,
-         commissionCalculationService: (any CommissionCalculationServiceProtocol)? = nil,
-         settlementAPIService: (any SettlementAPIServiceProtocol)? = nil) {
+    init(
+        userService: (any UserServiceProtocol)? = nil,
+        investmentService: (any InvestmentServiceProtocol)? = nil,
+        documentService: (any DocumentServiceProtocol)? = nil,
+        invoiceService: (any InvoiceServiceProtocol)? = nil,
+        traderDataService: (any TraderDataServiceProtocol)? = nil,
+        poolTradeParticipationService: (any PoolTradeParticipationServiceProtocol)? = nil,
+        tradeLifecycleService: (any TradeLifecycleServiceProtocol)? = nil,
+        configurationService: (any ConfigurationServiceProtocol)? = nil,
+        commissionCalculationService: (any CommissionCalculationServiceProtocol)? = nil,
+        settlementAPIService: (any SettlementAPIServiceProtocol)? = nil
+    ) {
         // Services must be provided - wrapper handles injection
         guard let userSvc = userService, let invSvc = investmentService,
               let docSvc = documentService, let invoiceSvc = invoiceService,
@@ -45,24 +47,24 @@ struct CompletedInvestmentsView: View {
             ScrollView {
                 VStack(spacing: ResponsiveDesign.spacing(0)) {
                     // Header
-                    headerSection
+                    self.headerSection
 
                     // Separator
-                    separator
+                    self.separator
 
                     // Completed Investments Section
-                    completedInvestmentsSection
+                    self.completedInvestmentsSection
                 }
             }
         }
         .navigationBarTitleDisplayMode(.inline)
         .navigationTitle("(Partially) Completed Investments")
-        .sheet(item: $selectedCompletedInvestment) { investment in
+        .sheet(item: self.$selectedCompletedInvestment) { investment in
             CompletedInvestmentDetailSheet(investment: investment)
         }
         .task {
-            viewModel.reconfigure(with: appServices)
-            viewModel.loadCompletedInvestments()
+            self.viewModel.reconfigure(with: self.appServices)
+            self.viewModel.loadCompletedInvestments()
         }
     }
 
@@ -120,25 +122,25 @@ struct CompletedInvestmentsView: View {
 
             // Time Period Header
             InvestmentsTimePeriodHeaderView(
-                selectedTimePeriod: $viewModel.selectedTimePeriod,
+                selectedTimePeriod: self.$viewModel.selectedTimePeriod,
                 onTimePeriodChanged: { period in
-                    viewModel.filterCompletedInvestments(by: period)
+                    self.viewModel.filterCompletedInvestments(by: period)
                 }
             )
 
             // Table
-            let allCompletedCount = viewModel.completedInvestments.count
+            let allCompletedCount = self.viewModel.completedInvestments.count
 
-            if !viewModel.completedInvestmentsByTimePeriod.isEmpty {
+            if !self.viewModel.completedInvestmentsByTimePeriod.isEmpty {
                 CompletedInvestmentsTable(
-                    investments: viewModel.completedInvestmentsByTimePeriod,
-                    investmentDocRefs: viewModel.investmentDocRefs,
-                    traderUsernames: viewModel.traderUsernames,
-                    tradeNumbers: viewModel.tradeNumbers,
-                    investmentSummaries: viewModel.investmentSummaries,
-                    canonicalSummaries: viewModel.canonicalSummaries,
+                    investments: self.viewModel.completedInvestmentsByTimePeriod,
+                    investmentDocRefs: self.viewModel.investmentDocRefs,
+                    traderUsernames: self.viewModel.traderUsernames,
+                    tradeNumbers: self.viewModel.tradeNumbers,
+                    investmentSummaries: self.viewModel.investmentSummaries,
+                    canonicalSummaries: self.viewModel.canonicalSummaries,
                     onShowDetails: { investment in
-                        selectedCompletedInvestment = investment
+                        self.selectedCompletedInvestment = investment
                     }
                 )
             } else {
@@ -190,16 +192,16 @@ struct CompletedInvestmentsViewWrapper: View {
 
     var body: some View {
         CompletedInvestmentsView(
-            userService: services.userService,
-            investmentService: services.investmentService,
-            documentService: services.documentService,
-            invoiceService: services.invoiceService,
-            traderDataService: services.traderDataService,
-            poolTradeParticipationService: services.poolTradeParticipationService,
-            tradeLifecycleService: services.tradeLifecycleService,
-            configurationService: services.configurationService,
-            commissionCalculationService: services.commissionCalculationService,
-            settlementAPIService: services.settlementAPIService
+            userService: self.services.userService,
+            investmentService: self.services.investmentService,
+            documentService: self.services.documentService,
+            invoiceService: self.services.invoiceService,
+            traderDataService: self.services.traderDataService,
+            poolTradeParticipationService: self.services.poolTradeParticipationService,
+            tradeLifecycleService: self.services.tradeLifecycleService,
+            configurationService: self.services.configurationService,
+            commissionCalculationService: self.services.commissionCalculationService,
+            settlementAPIService: self.services.settlementAPIService
         )
     }
 }

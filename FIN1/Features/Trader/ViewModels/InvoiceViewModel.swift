@@ -1,6 +1,6 @@
+import Combine
 import Foundation
 import SwiftUI
-import Combine
 
 // MARK: - Invoice ViewModel
 /// Manages invoice state and business logic following MVVM pattern
@@ -38,7 +38,7 @@ final class InvoiceViewModel: ObservableObject {
         )
         self.filteringHelper = InvoiceFilteringHelper()
 
-        setupBindings()
+        self.setupBindings()
     }
 
     // MARK: - Public Methods
@@ -50,11 +50,11 @@ final class InvoiceViewModel: ObservableObject {
                 self.isLoading = true
             }
             do {
-                try await invoiceService.loadInvoices(for: userId)
+                try await self.invoiceService.loadInvoices(for: userId)
                 // Sync invoices from service after loading
                 await MainActor.run {
                     // Get invoices from service and filter by user ID
-                    let serviceInvoices = invoiceService.getInvoices(for: userId)
+                    let serviceInvoices = self.invoiceService.getInvoices(for: userId)
                     self.invoices = serviceInvoices
                     self.isLoading = false
                 }
@@ -62,7 +62,7 @@ final class InvoiceViewModel: ObservableObject {
                 await MainActor.run {
                     self.isLoading = false
                 }
-                handleError(error)
+                self.handleError(error)
             }
         }
     }
@@ -72,7 +72,7 @@ final class InvoiceViewModel: ObservableObject {
         Task {
             await MainActor.run {
                 // Get all invoices from service and filter by user ID
-                let serviceInvoices = invoiceService.getInvoices(for: userId)
+                let serviceInvoices = self.invoiceService.getInvoices(for: userId)
                 self.invoices = serviceInvoices
             }
         }
@@ -88,7 +88,7 @@ final class InvoiceViewModel: ObservableObject {
                     self.selectedInvoice = invoice
                 }
             } catch {
-                handleError(error)
+                self.handleError(error)
             }
         }
     }
@@ -97,7 +97,7 @@ final class InvoiceViewModel: ObservableObject {
     func updateInvoiceStatus(_ invoice: Invoice, status: InvoiceStatus) {
         Task {
             do {
-                try await invoiceService.updateInvoiceStatus(invoice, status: status)
+                try await self.invoiceService.updateInvoiceStatus(invoice, status: status)
                 await MainActor.run {
                     if let index = self.invoices.firstIndex(where: { $0.id == invoice.id }) {
                         let updatedInvoice = Invoice(
@@ -119,7 +119,7 @@ final class InvoiceViewModel: ObservableObject {
                     }
                 }
             } catch {
-                handleError(error)
+                self.handleError(error)
             }
         }
     }
@@ -128,7 +128,7 @@ final class InvoiceViewModel: ObservableObject {
     func deleteInvoice(_ invoice: Invoice) {
         Task {
             do {
-                try await invoiceService.deleteInvoice(invoice)
+                try await self.invoiceService.deleteInvoice(invoice)
                 await MainActor.run {
                     self.invoices.removeAll { $0.id == invoice.id }
                     if self.selectedInvoice?.id == invoice.id {
@@ -136,7 +136,7 @@ final class InvoiceViewModel: ObservableObject {
                     }
                 }
             } catch {
-                handleError(error)
+                self.handleError(error)
             }
         }
     }
@@ -149,7 +149,7 @@ final class InvoiceViewModel: ObservableObject {
                 self.pdfGenerationProgress = 0.0
             }
 
-            await pdfHandler.generatePDF(
+            await self.pdfHandler.generatePDF(
                 for: invoice,
                 progressCallback: { progress in
                     Task { @MainActor in
@@ -180,7 +180,7 @@ final class InvoiceViewModel: ObservableObject {
         let url = await pdfHandler.createShareablePDFURL(for: invoice)
         if url == nil {
             await MainActor.run {
-                handleError(AppError.unknown("Failed to generate PDF"))
+                self.handleError(AppError.unknown("Failed to generate PDF"))
             }
         }
         return url
@@ -190,10 +190,10 @@ final class InvoiceViewModel: ObservableObject {
     func downloadPDFViaBrowser(for invoice: Invoice) {
         Task {
             do {
-                try await pdfHandler.downloadPDFViaBrowser(for: invoice)
+                try await self.pdfHandler.downloadPDFViaBrowser(for: invoice)
             } catch {
                 await MainActor.run {
-                    handleError(error)
+                    self.handleError(error)
                 }
             }
         }
@@ -209,24 +209,24 @@ final class InvoiceViewModel: ObservableObject {
                     self.showPDFPreview = true
                 }
             } catch {
-                handleError(error)
+                self.handleError(error)
             }
         }
     }
 
     /// Filters invoices by type
     func filterInvoices(by type: InvoiceType?) -> [Invoice] {
-        filteringHelper.filterInvoices(invoices, by: type)
+        self.filteringHelper.filterInvoices(self.invoices, by: type)
     }
 
     /// Searches invoices by invoice number or customer name
     func searchInvoices(query: String) -> [Invoice] {
-        filteringHelper.searchInvoices(invoices, query: query)
+        self.filteringHelper.searchInvoices(self.invoices, query: query)
     }
 
     /// Filters and searches invoices (combines both operations)
     func filteredInvoices(searchQuery: String, filterType: InvoiceType?) -> [Invoice] {
-        filteringHelper.filteredInvoices(invoices, searchQuery: searchQuery, filterType: filterType)
+        self.filteringHelper.filteredInvoices(self.invoices, searchQuery: searchQuery, filterType: filterType)
     }
 
     // MARK: - Formatting Methods
@@ -243,29 +243,29 @@ final class InvoiceViewModel: ObservableObject {
 
     /// Gets invoices for a specific trade
     func getInvoicesForTrade(_ tradeId: String) -> [Invoice] {
-        return invoiceService.getInvoicesForTrade(tradeId)
+        return self.invoiceService.getInvoicesForTrade(tradeId)
     }
 
     /// Validates customer information
     func validateCustomerInfo(_ customerInfo: CustomerInfo) -> Bool {
-        return invoiceService.validateCustomerInfo(customerInfo)
+        return self.invoiceService.validateCustomerInfo(customerInfo)
     }
 
     /// Validates an invoice
     func validateInvoice(_ invoice: Invoice) -> Bool {
-        return invoiceService.validateInvoice(invoice)
+        return self.invoiceService.validateInvoice(invoice)
     }
 
     /// Clears error message
     func clearError() {
-        errorMessage = nil
-        showError = false
+        self.errorMessage = nil
+        self.showError = false
     }
 
     /// Dismisses PDF preview
     func dismissPDFPreview() {
-        showPDFPreview = false
-        pdfPreviewImage = nil
+        self.showPDFPreview = false
+        self.pdfPreviewImage = nil
     }
 
     // MARK: - Private Methods
@@ -280,18 +280,17 @@ final class InvoiceViewModel: ObservableObject {
                 print("📄 InvoiceViewModel: Received invoice change notification")
                 _ = self // Acknowledge self capture for weak reference
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
     }
 
     private func handleError(_ error: Error) {
         let appError = error.toAppError()
-        errorMessage = appError.errorDescription ?? "An error occurred"
-        showError = true
-        isLoading = false
-        isGeneratingPDF = false
-        pdfGenerationProgress = 0.0
+        self.errorMessage = appError.errorDescription ?? "An error occurred"
+        self.showError = true
+        self.isLoading = false
+        self.isGeneratingPDF = false
+        self.pdfGenerationProgress = 0.0
     }
-
 }
 
 // MARK: - Computed Properties
@@ -300,52 +299,52 @@ extension InvoiceViewModel {
 
     /// Returns the total number of invoices
     var totalInvoices: Int {
-        invoices.count
+        self.invoices.count
     }
 
     /// Returns the number of paid invoices
     var paidInvoicesCount: Int {
-        invoices.filter { $0.isPaid }.count
+        self.invoices.filter { $0.isPaid }.count
     }
 
     /// Returns the number of overdue invoices
     var overdueInvoicesCount: Int {
-        invoices.filter { $0.isOverdue }.count
+        self.invoices.filter { $0.isOverdue }.count
     }
 
     /// Returns the total amount of all invoices
     var totalAmount: Double {
-        invoices.reduce(0) { $0 + $1.totalAmount }
+        self.invoices.reduce(0) { $0 + $1.totalAmount }
     }
 
     /// Returns the total amount of paid invoices
     var paidAmount: Double {
-        invoices.filter { $0.isPaid }.reduce(0) { $0 + $1.totalAmount }
+        self.invoices.filter { $0.isPaid }.reduce(0) { $0 + $1.totalAmount }
     }
 
     /// Returns the total amount of outstanding invoices
     var outstandingAmount: Double {
-        invoices.filter { !$0.isPaid }.reduce(0) { $0 + $1.totalAmount }
+        self.invoices.filter { !$0.isPaid }.reduce(0) { $0 + $1.totalAmount }
     }
 
     /// Returns invoices grouped by status
     var invoicesByStatus: [InvoiceStatus: [Invoice]] {
-        Dictionary(grouping: invoices) { $0.status }
+        Dictionary(grouping: self.invoices) { $0.status }
     }
 
     /// Returns invoices grouped by type
     var invoicesByType: [InvoiceType: [Invoice]] {
-        Dictionary(grouping: invoices) { $0.type }
+        Dictionary(grouping: self.invoices) { $0.type }
     }
 
     /// Returns the most recent invoice
     var mostRecentInvoice: Invoice? {
-        invoices.max { $0.createdAt < $1.createdAt }
+        self.invoices.max { $0.createdAt < $1.createdAt }
     }
 
     /// Returns invoices created in the last 30 days
     var recentInvoices: [Invoice] {
         let thirtyDaysAgo = Calendar.current.date(byAdding: .day, value: -30, to: Date()) ?? Date()
-        return invoices.filter { $0.createdAt >= thirtyDaysAgo }
+        return self.invoices.filter { $0.createdAt >= thirtyDaysAgo }
     }
 }

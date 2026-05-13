@@ -16,12 +16,12 @@ final class SimplifiedSellOrderViewModel: ObservableObject {
 
     // MARK: - Computed Properties
     var estimatedProceeds: Double {
-        let orderPrice = orderMode == .market ? currentPrice : (limitPrice ?? currentPrice)
-        return Double(quantity) * orderPrice
+        let orderPrice = self.orderMode == .market ? self.currentPrice : (self.limitPrice ?? self.currentPrice)
+        return Double(self.quantity) * orderPrice
     }
 
     var maxQuantity: Int {
-        Int(holding.remainingQuantity)
+        Int(self.holding.remainingQuantity)
     }
 
     // MARK: - Dependencies
@@ -43,61 +43,61 @@ final class SimplifiedSellOrderViewModel: ObservableObject {
 
     // MARK: - Public Methods
     func placeOrder() async {
-        guard quantity > 0 && quantity <= maxQuantity else {
-            errorMessage = "Invalid quantity"
+        guard self.quantity > 0 && self.quantity <= self.maxQuantity else {
+            self.errorMessage = "Invalid quantity"
             return
         }
 
-        isLoading = true
-        errorMessage = nil
+        self.isLoading = true
+        self.errorMessage = nil
 
         do {
-            let orderPrice = orderMode == .market ? currentPrice : (limitPrice ?? currentPrice)
+            let orderPrice = self.orderMode == .market ? self.currentPrice : (self.limitPrice ?? self.currentPrice)
 
             let request = SellOrderRequest(
                 symbol: holding.wkn,
-                quantity: quantity,
+                quantity: self.quantity,
                 price: orderPrice,
-                optionDirection: holding.direction,
-                description: holding.designation,
-                orderInstruction: orderMode == .market ? "market" : "limit",
-                limitPrice: limitPrice,
-                strike: holding.strike,
-                originalHoldingId: holding.orderId
+                optionDirection: self.holding.direction,
+                description: self.holding.designation,
+                orderInstruction: self.orderMode == .market ? "market" : "limit",
+                limitPrice: self.limitPrice,
+                strike: self.holding.strike,
+                originalHoldingId: self.holding.orderId
             )
 
-            _ = try await orderService.placeSellOrder(request)
+            _ = try await self.orderService.placeSellOrder(request)
 
             // Success - navigate to depot view
-            shouldShowDepotView = true
+            self.shouldShowDepotView = true
 
         } catch {
             let appError = error.toAppError()
-            errorMessage = appError.errorDescription ?? "An error occurred"
+            self.errorMessage = appError.errorDescription ?? "An error occurred"
         }
 
-        isLoading = false
+        self.isLoading = false
     }
 
     func reloadPrice() {
         // Simulate price update
         let priceChange = Double.random(in: -0.05...0.05)
-        currentPrice = max(0.01, currentPrice + priceChange)
+        self.currentPrice = max(0.01, self.currentPrice + priceChange)
     }
 
     func updateQuantity(_ newQuantity: Int) {
-        quantity = max(1, min(newQuantity, maxQuantity))
+        self.quantity = max(1, min(newQuantity, self.maxQuantity))
     }
 
     func setOrderMode(_ mode: OrderMode) {
-        orderMode = mode
+        self.orderMode = mode
         if mode == .market {
-            limitPrice = nil
+            self.limitPrice = nil
         }
     }
 
     func setLimitPrice(_ price: Double?) {
-        limitPrice = price
+        self.limitPrice = price
     }
 }
 
@@ -117,8 +117,8 @@ final class SimplifiedBuyOrderViewModel: ObservableObject {
 
     // MARK: - Computed Properties
     var estimatedCost: Double {
-        let orderPrice = orderMode == .market ? currentPrice : (limitPrice ?? currentPrice)
-        return Double(quantity) * orderPrice
+        let orderPrice = self.orderMode == .market ? self.currentPrice : (self.limitPrice ?? self.currentPrice)
+        return Double(self.quantity) * orderPrice
     }
 
     // MARK: - Dependencies
@@ -140,61 +140,61 @@ final class SimplifiedBuyOrderViewModel: ObservableObject {
 
     // MARK: - Public Methods
     func placeOrder() async {
-        guard quantity > 0 else {
-            errorMessage = "Invalid quantity"
+        guard self.quantity > 0 else {
+            self.errorMessage = "Invalid quantity"
             return
         }
 
-        isLoading = true
-        errorMessage = nil
+        self.isLoading = true
+        self.errorMessage = nil
 
         do {
-            let orderPrice = orderMode == .market ? currentPrice : (limitPrice ?? currentPrice)
+            let orderPrice = self.orderMode == .market ? self.currentPrice : (self.limitPrice ?? self.currentPrice)
 
             let request = BuyOrderRequest(
                 symbol: searchResult.wkn,
-                quantity: quantity,
+                quantity: self.quantity,
                 price: orderPrice,
-                optionDirection: searchResult.direction,
-                description: searchResult.underlyingAsset,
-                orderInstruction: orderMode == .market ? "market" : "limit",
-                limitPrice: limitPrice,
-                strike: Double(searchResult.strike.replacingOccurrences(of: ",", with: ".")),
-                subscriptionRatio: searchResult.subscriptionRatio,
-                denomination: searchResult.denomination
+                optionDirection: self.searchResult.direction,
+                description: self.searchResult.underlyingAsset,
+                orderInstruction: self.orderMode == .market ? "market" : "limit",
+                limitPrice: self.limitPrice,
+                strike: Double(self.searchResult.strike.replacingOccurrences(of: ",", with: ".")),
+                subscriptionRatio: self.searchResult.subscriptionRatio,
+                denomination: self.searchResult.denomination
             )
 
-            _ = try await orderService.placeBuyOrder(request)
+            _ = try await self.orderService.placeBuyOrder(request)
 
             // Success - navigate to depot view
-            shouldShowDepotView = true
+            self.shouldShowDepotView = true
 
         } catch {
             let appError = error.toAppError()
-            errorMessage = appError.errorDescription ?? "An error occurred"
+            self.errorMessage = appError.errorDescription ?? "An error occurred"
         }
 
-        isLoading = false
+        self.isLoading = false
     }
 
     func reloadPrice() {
         // Simulate price update
         let priceChange = Double.random(in: -0.05...0.05)
-        currentPrice = max(0.01, currentPrice + priceChange)
+        self.currentPrice = max(0.01, self.currentPrice + priceChange)
     }
 
     func updateQuantity(_ newQuantity: Int) {
-        quantity = max(1, newQuantity)
+        self.quantity = max(1, newQuantity)
     }
 
     func setOrderMode(_ mode: OrderMode) {
-        orderMode = mode
+        self.orderMode = mode
         if mode == .market {
-            limitPrice = nil
+            self.limitPrice = nil
         }
     }
 
     func setLimitPrice(_ price: Double?) {
-        limitPrice = price
+        self.limitPrice = price
     }
 }

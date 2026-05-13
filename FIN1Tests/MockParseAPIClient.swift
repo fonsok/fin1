@@ -1,5 +1,5 @@
-import Foundation
 @testable import FIN1
+import Foundation
 
 // MARK: - Mock Parse API Client
 
@@ -43,12 +43,12 @@ final class MockParseAPIClient: ParseAPIClientProtocol, @unchecked Sendable {
         orderBy: String?,
         limit: Int?
     ) async throws -> [T] {
-        fetchObjectsCalled = true
-        lastClassName = className
-        lastQuery = query
+        self.fetchObjectsCalled = true
+        self.lastClassName = className
+        self.lastQuery = query
 
-        if shouldThrowError {
-            throw errorToThrow
+        if self.shouldThrowError {
+            throw self.errorToThrow
         }
 
         if let results = mockFetchResults as? [T] {
@@ -63,12 +63,12 @@ final class MockParseAPIClient: ParseAPIClientProtocol, @unchecked Sendable {
         objectId: String,
         include: [String]?
     ) async throws -> T {
-        fetchObjectCalled = true
-        lastClassName = className
-        lastObjectId = objectId
+        self.fetchObjectCalled = true
+        self.lastClassName = className
+        self.lastObjectId = objectId
 
-        if shouldThrowError {
-            throw errorToThrow
+        if self.shouldThrowError {
+            throw self.errorToThrow
         }
 
         guard let result = mockFetchSingleResult as? T else {
@@ -82,17 +82,17 @@ final class MockParseAPIClient: ParseAPIClientProtocol, @unchecked Sendable {
         className: String,
         object: T
     ) async throws -> ParseResponse {
-        createObjectCalled = true
-        lastClassName = className
+        self.createObjectCalled = true
+        self.lastClassName = className
 
-        if shouldThrowError {
-            throw errorToThrow
+        if self.shouldThrowError {
+            throw self.errorToThrow
         }
 
         return ParseResponse(
-            objectId: mockObjectId,
-            createdAt: mockCreatedAt,
-            updatedAt: mockUpdatedAt
+            objectId: self.mockObjectId,
+            createdAt: self.mockCreatedAt,
+            updatedAt: self.mockUpdatedAt
         )
     }
 
@@ -101,18 +101,18 @@ final class MockParseAPIClient: ParseAPIClientProtocol, @unchecked Sendable {
         objectId: String,
         object: T
     ) async throws -> ParseResponse {
-        updateObjectCalled = true
-        lastClassName = className
-        lastObjectId = objectId
+        self.updateObjectCalled = true
+        self.lastClassName = className
+        self.lastObjectId = objectId
 
-        if shouldThrowError {
-            throw errorToThrow
+        if self.shouldThrowError {
+            throw self.errorToThrow
         }
 
         return ParseResponse(
             objectId: objectId,
-            createdAt: mockCreatedAt,
-            updatedAt: mockUpdatedAt
+            createdAt: self.mockCreatedAt,
+            updatedAt: self.mockUpdatedAt
         )
     }
 
@@ -120,12 +120,12 @@ final class MockParseAPIClient: ParseAPIClientProtocol, @unchecked Sendable {
         className: String,
         objectId: String
     ) async throws {
-        deleteObjectCalled = true
-        lastClassName = className
-        lastObjectId = objectId
+        self.deleteObjectCalled = true
+        self.lastClassName = className
+        self.lastObjectId = objectId
 
-        if shouldThrowError {
-            throw errorToThrow
+        if self.shouldThrowError {
+            throw self.errorToThrow
         }
     }
 
@@ -133,33 +133,33 @@ final class MockParseAPIClient: ParseAPIClientProtocol, @unchecked Sendable {
         _ name: String,
         parameters: [String: Any]?
     ) async throws -> T {
-        callFunctionCalled = true
-        lastFunctionName = name
-        lastFunctionParameters = parameters
+        self.callFunctionCalled = true
+        self.lastFunctionName = name
+        self.lastFunctionParameters = parameters
 
-        if shouldThrowError {
-            throw errorToThrow
+        if self.shouldThrowError {
+            throw self.errorToThrow
         }
 
         // Tests that do not explicitly set mockFunctionResult can still succeed for
         // the pool-participation cloud-function contract by synthesizing a response.
-        if mockFunctionResult == nil,
+        if self.mockFunctionResult == nil,
            (name == "recordPoolTradeParticipation" || name == "updatePoolTradeParticipation"),
            let params = parameters,
            let synthesized: T = decodeFromJSONDictionary([
-                "objectId": (name == "updatePoolTradeParticipation"
-                             ? (params["participationId"] as? String ?? mockObjectId)
-                             : mockObjectId),
-                "tradeId": params["tradeId"] as? String ?? "",
-                "investmentId": params["investmentId"] as? String ?? "",
-                "poolReservationId": (params["poolReservationId"] as? String) as Any,
-                "poolNumber": (params["poolNumber"] as? Int) as Any,
-                "allocatedAmount": (params["allocatedAmount"] as? Double) as Any,
-                "totalTradeValue": (params["totalTradeValue"] as? Double) as Any,
-                "ownershipPercentage": (params["ownershipPercentage"] as? Double) as Any,
-                "profitShare": (params["profitShare"] as? Double) as Any,
-                "createdAt": ["iso": mockCreatedAt],
-                "updatedAt": ["iso": mockUpdatedAt]
+               "objectId": (name == "updatePoolTradeParticipation"
+                   ? (params["participationId"] as? String ?? mockObjectId)
+                   : mockObjectId),
+               "tradeId": params["tradeId"] as? String ?? "",
+               "investmentId": params["investmentId"] as? String ?? "",
+               "poolReservationId": (params["poolReservationId"] as? String) as Any,
+               "poolNumber": (params["poolNumber"] as? Int) as Any,
+               "allocatedAmount": (params["allocatedAmount"] as? Double) as Any,
+               "totalTradeValue": (params["totalTradeValue"] as? Double) as Any,
+               "ownershipPercentage": (params["ownershipPercentage"] as? Double) as Any,
+               "profitShare": (params["profitShare"] as? Double) as Any,
+               "createdAt": ["iso": mockCreatedAt],
+               "updatedAt": ["iso": mockUpdatedAt]
            ]) {
             return synthesized
         }
@@ -172,7 +172,7 @@ final class MockParseAPIClient: ParseAPIClientProtocol, @unchecked Sendable {
     }
 
     func login(username: String, password: String) async throws -> ParseLoginResponse {
-        if shouldThrowError { throw errorToThrow }
+        if self.shouldThrowError { throw self.errorToThrow }
         return ParseLoginResponse(
             objectId: "mock-id",
             sessionToken: "r:mock-token",
@@ -196,18 +196,18 @@ final class MockParseAPIClient: ParseAPIClientProtocol, @unchecked Sendable {
     // MARK: - Helper Methods
 
     func reset() {
-        createObjectCalled = false
-        updateObjectCalled = false
-        fetchObjectsCalled = false
-        fetchObjectCalled = false
-        deleteObjectCalled = false
-        callFunctionCalled = false
-        lastClassName = nil
-        lastObjectId = nil
-        lastQuery = nil
-        lastFunctionName = nil
-        lastFunctionParameters = nil
-        shouldThrowError = false
+        self.createObjectCalled = false
+        self.updateObjectCalled = false
+        self.fetchObjectsCalled = false
+        self.fetchObjectCalled = false
+        self.deleteObjectCalled = false
+        self.callFunctionCalled = false
+        self.lastClassName = nil
+        self.lastObjectId = nil
+        self.lastQuery = nil
+        self.lastFunctionName = nil
+        self.lastFunctionParameters = nil
+        self.shouldThrowError = false
     }
 
     private func decodeFromJSONDictionary<T: Decodable>(_ dictionary: [String: Any]) -> T? {

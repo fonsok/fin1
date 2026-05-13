@@ -110,7 +110,7 @@ struct InvestorInvestmentStatementItem: Identifiable {
         let buyTotal = (buyInvoice?.securitiesTotal ?? 0.0) * ownershipPercentage
         let buyQty = investorBuyQty
         let roiInvestedAmount = investorBuyQty * buyPrice
-        let buyFeeDetails = buildFeeDetails(from: buyInvoice, scale: ownershipPercentage)
+        let buyFeeDetails = self.buildFeeDetails(from: buyInvoice, scale: ownershipPercentage)
         let buyFeesInvestor = buyFeeDetails.reduce(0) { $0 + $1.amount }
 
         let totalSellQtyFromInvoices = sellInvoices.reduce(0.0) { total, invoice in
@@ -126,7 +126,7 @@ struct InvestorInvestmentStatementItem: Identifiable {
         let investorSellValue = totalSellValueFromInvoices * ownershipPercentage
 
         let sellShare = totalSellValueFromInvoices > 0 ? (investorSellValue / totalSellValueFromInvoices) : ownershipPercentage
-        let sellFeeDetails = buildFeeDetails(from: sellInvoices, scale: sellShare)
+        let sellFeeDetails = self.buildFeeDetails(from: sellInvoices, scale: sellShare)
         let investorSellFees = sellFeeDetails.reduce(0) { $0 + $1.amount }
 
         let grossProfit = investorSellValue - investorSellFees - (buyTotal + buyFeesInvestor)
@@ -169,7 +169,7 @@ struct InvestorInvestmentStatementItem: Identifiable {
 
     private static func buildFeeDetails(from invoice: Invoice?, scale: Double) -> [InvestorFeeDetail] {
         guard let invoice = invoice else { return [] }
-        return buildFeeDetails(from: [invoice], scale: scale)
+        return self.buildFeeDetails(from: [invoice], scale: scale)
     }
 
     private static func buildFeeDetails(from invoices: [Invoice], scale: Double) -> [InvestorFeeDetail] {

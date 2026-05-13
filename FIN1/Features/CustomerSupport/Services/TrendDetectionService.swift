@@ -30,7 +30,7 @@ final class TrendDetectionService {
         }
 
         // 2. Recurring Issues Detection
-        trends.append(contentsOf: detectRecurringIssues(tickets: currentPeriodTickets))
+        trends.append(contentsOf: self.detectRecurringIssues(tickets: currentPeriodTickets))
 
         // 3. Long Resolution Time Detection
         if let resolutionTrend = detectLongResolutionTimes(tickets: currentPeriodTickets) {
@@ -52,7 +52,7 @@ final class TrendDetectionService {
             trends.append(reopenTrend)
         }
 
-        logger.info("🔍 Detected \(trends.count) trends")
+        self.logger.info("🔍 Detected \(trends.count) trends")
         return trends
     }
 
@@ -64,8 +64,8 @@ final class TrendDetectionService {
 
         let percentageChange = (Double(currentCount - previousCount) / Double(previousCount)) * 100
 
-        guard currentCount >= config.volumeSpikeThreshold,
-              percentageChange >= config.volumeSpikePercentage else {
+        guard currentCount >= self.config.volumeSpikeThreshold,
+              percentageChange >= self.config.volumeSpikePercentage else {
             return nil
         }
 
@@ -103,7 +103,7 @@ final class TrendDetectionService {
         }
 
         // Create trends for categories exceeding threshold
-        for category in categories where category.ticketCount >= config.recurringIssueThreshold {
+        for category in categories where category.ticketCount >= self.config.recurringIssueThreshold {
             let relatedTickets = tickets.filter { ticket in
                 let searchText = "\(ticket.subject) \(ticket.description)".lowercased()
                 return category.keywords.contains(where: { searchText.contains($0) })
@@ -136,8 +136,8 @@ final class TrendDetectionService {
 
         let slowTickets = closedTickets.filter { ticket in
             guard let closedAt = ticket.closedAt else { return false }
-            let hours = closedAt.timeIntervalSince(ticket.createdAt) / 3600
-            return hours > config.longResolutionHours
+            let hours = closedAt.timeIntervalSince(ticket.createdAt) / 3_600
+            return hours > self.config.longResolutionHours
         }
 
         let slowPercentage = (Double(slowTickets.count) / Double(closedTickets.count)) * 100
@@ -147,7 +147,7 @@ final class TrendDetectionService {
             id: UUID().uuidString,
             type: .longResolutionTime,
             title: "\(Int(slowPercentage))% der Tickets mit langer Lösungszeit",
-            description: "\(slowTickets.count) von \(closedTickets.count) Tickets brauchten länger als \(Int(config.longResolutionHours)) Stunden.",
+            description: "\(slowTickets.count) von \(closedTickets.count) Tickets brauchten länger als \(Int(self.config.longResolutionHours)) Stunden.",
             severity: slowPercentage > 40 ? .critical : .warning,
             ticketCount: slowTickets.count,
             affectedCustomers: Set(slowTickets.map { $0.userId }).count,
@@ -166,7 +166,7 @@ final class TrendDetectionService {
         let escalatedTickets = tickets.filter { $0.status == .escalated }
         let escalationRate = (Double(escalatedTickets.count) / Double(tickets.count)) * 100
 
-        guard escalationRate >= config.highEscalationRateThreshold else { return nil }
+        guard escalationRate >= self.config.highEscalationRateThreshold else { return nil }
 
         return SupportTrend(
             id: UUID().uuidString,
@@ -189,7 +189,7 @@ final class TrendDetectionService {
         guard !surveys.isEmpty else { return nil }
 
         let avgScore = Double(surveys.reduce(0) { $0 + $1.rating }) / Double(surveys.count)
-        guard avgScore < config.lowCSATThreshold else { return nil }
+        guard avgScore < self.config.lowCSATThreshold else { return nil }
 
         let negativeSurveys = surveys.filter { $0.rating <= 2 }
 
@@ -216,7 +216,7 @@ final class TrendDetectionService {
         let reopenedTickets = tickets.filter { $0.parentTicketId != nil }
         let reopenRate = (Double(reopenedTickets.count) / Double(tickets.count)) * 100
 
-        guard reopenRate >= config.highReopenRateThreshold else { return nil }
+        guard reopenRate >= self.config.highReopenRateThreshold else { return nil }
 
         return SupportTrend(
             id: UUID().uuidString,
@@ -237,25 +237,25 @@ final class TrendDetectionService {
 
     func createAlert(from trend: SupportTrend) -> TrendAlert {
         let alert = TrendAlert(trend: trend)
-        alerts.append(alert)
+        self.alerts.append(alert)
         return alert
     }
 
     func getActiveAlerts() -> [TrendAlert] {
-        alerts.filter { !$0.isDismissed }
+        self.alerts.filter { !$0.isDismissed }
     }
 
     func acknowledgeAlert(_ alertId: String, by agentId: String) {
         if let index = alerts.firstIndex(where: { $0.id == alertId }) {
-            alerts[index].isRead = true
-            alerts[index].acknowledgedBy = agentId
-            alerts[index].acknowledgedAt = Date()
+            self.alerts[index].isRead = true
+            self.alerts[index].acknowledgedBy = agentId
+            self.alerts[index].acknowledgedAt = Date()
         }
     }
 
     func dismissAlert(_ alertId: String) {
         if let index = alerts.firstIndex(where: { $0.id == alertId }) {
-            alerts[index].isDismissed = true
+            self.alerts[index].isDismissed = true
         }
     }
 }

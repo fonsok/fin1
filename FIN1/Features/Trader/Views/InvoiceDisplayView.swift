@@ -14,16 +14,16 @@ struct InvoiceDisplayView: View {
             VStack(spacing: ResponsiveDesign.spacing(12)) {
                 // Document Header (einheitliches Layout für alle Dokumente)
                 DocumentHeaderLayoutView(
-                    accountHolderName: viewModel.invoice.customerInfo.name,
-                    accountHolderAddress: viewModel.invoice.customerInfo.address,
-                    accountHolderCity: "\(viewModel.invoice.customerInfo.postalCode) \(viewModel.invoice.customerInfo.city)",
-                    documentDate: viewModel.invoice.createdAt
+                    accountHolderName: self.viewModel.invoice.customerInfo.name,
+                    accountHolderAddress: self.viewModel.invoice.customerInfo.address,
+                    accountHolderCity: "\(self.viewModel.invoice.customerInfo.postalCode) \(self.viewModel.invoice.customerInfo.city)",
+                    documentDate: self.viewModel.invoice.createdAt
                 ) {
-                    InvoiceQRCodeView(invoice: viewModel.invoice)
+                    InvoiceQRCodeView(invoice: self.viewModel.invoice)
                 }
 
                 // Header Section with Invoice Number, Trade Nr., etc.
-                InvoiceHeaderSection(invoice: viewModel.invoice)
+                InvoiceHeaderSection(invoice: self.viewModel.invoice)
 
                 // Transaction Type Header (only show if there's a valid transaction type, not for app service charge)
                 if let headerData = viewModel.headerData,
@@ -46,7 +46,7 @@ struct InvoiceDisplayView: View {
                 }
 
                 // Loading State
-                if viewModel.isLoading {
+                if self.viewModel.isLoading {
                     ProgressView("Loading invoice...")
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
@@ -74,7 +74,7 @@ struct InvoiceDisplayView: View {
         .navigationTitle("Rechnung")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
-            viewModel.refreshDisplayData()
+            self.viewModel.refreshDisplayData()
         }
     }
 }

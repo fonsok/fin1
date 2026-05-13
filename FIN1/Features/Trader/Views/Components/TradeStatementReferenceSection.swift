@@ -20,11 +20,11 @@ struct TradeStatementReferenceSection: View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(16)) {
             // Reference Information
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
-                Text(referenceText)
+                Text(self.referenceText)
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(DocumentDesignSystem.textColorSecondary)
 
-                Text(taxReportTransactionNumber)
+                Text(self.taxReportTransactionNumber)
                     .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.medium)
                     .foregroundColor(DocumentDesignSystem.textColor)
@@ -34,7 +34,7 @@ struct TradeStatementReferenceSection: View {
                     .foregroundColor(DocumentDesignSystem.textColorSecondary)
                     .padding(.top, ResponsiveDesign.spacing(4))
 
-                Text(accountNumber)
+                Text(self.accountNumber)
                     .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.medium)
                     .foregroundColor(DocumentDesignSystem.textColor)
@@ -43,13 +43,13 @@ struct TradeStatementReferenceSection: View {
 
             // Legal Disclaimer
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
-                Text(legalDisclaimer)
+                Text(self.legalDisclaimer)
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(DocumentDesignSystem.textColorSecondary)
                     .multilineTextAlignment(.leading)
 
                 // Additional disclaimer text
-                Text(footerNote)
+                Text(self.footerNote)
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(DocumentDesignSystem.textColorSecondary)
                     .multilineTextAlignment(.leading)

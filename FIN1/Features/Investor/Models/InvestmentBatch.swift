@@ -28,30 +28,30 @@ struct InvestmentBatch: Identifiable, Codable {
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
-        id = try c.decode(String.self, forKey: .id)
-        investorId = try c.decode(String.self, forKey: .investorId)
-        traderId = try c.decode(String.self, forKey: .traderId)
-        traderName = try c.decode(String.self, forKey: .traderName)
-        totalAmount = try c.decode(Double.self, forKey: .totalAmount)
-        appServiceCharge =
+        self.id = try c.decode(String.self, forKey: .id)
+        self.investorId = try c.decode(String.self, forKey: .investorId)
+        self.traderId = try c.decode(String.self, forKey: .traderId)
+        self.traderName = try c.decode(String.self, forKey: .traderName)
+        self.totalAmount = try c.decode(Double.self, forKey: .totalAmount)
+        self.appServiceCharge =
             try c.decodeIfPresent(Double.self, forKey: .appServiceCharge)
-            ?? c.decode(Double.self, forKey: .platformServiceCharge)
-        specialization = try c.decode(String.self, forKey: .specialization)
-        createdAt = try c.decode(Date.self, forKey: .createdAt)
-        updatedAt = try c.decode(Date.self, forKey: .updatedAt)
+                ?? c.decode(Double.self, forKey: .platformServiceCharge)
+        self.specialization = try c.decode(String.self, forKey: .specialization)
+        self.createdAt = try c.decode(Date.self, forKey: .createdAt)
+        self.updatedAt = try c.decode(Date.self, forKey: .updatedAt)
     }
 
     func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
-        try c.encode(id, forKey: .id)
-        try c.encode(investorId, forKey: .investorId)
-        try c.encode(traderId, forKey: .traderId)
-        try c.encode(traderName, forKey: .traderName)
-        try c.encode(totalAmount, forKey: .totalAmount)
-        try c.encode(appServiceCharge, forKey: .appServiceCharge)
-        try c.encode(specialization, forKey: .specialization)
-        try c.encode(createdAt, forKey: .createdAt)
-        try c.encode(updatedAt, forKey: .updatedAt)
+        try c.encode(self.id, forKey: .id)
+        try c.encode(self.investorId, forKey: .investorId)
+        try c.encode(self.traderId, forKey: .traderId)
+        try c.encode(self.traderName, forKey: .traderName)
+        try c.encode(self.totalAmount, forKey: .totalAmount)
+        try c.encode(self.appServiceCharge, forKey: .appServiceCharge)
+        try c.encode(self.specialization, forKey: .specialization)
+        try c.encode(self.createdAt, forKey: .createdAt)
+        try c.encode(self.updatedAt, forKey: .updatedAt)
     }
 
     /// Creates a new investment batch

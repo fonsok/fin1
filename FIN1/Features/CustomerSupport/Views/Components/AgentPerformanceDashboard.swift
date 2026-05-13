@@ -16,11 +16,11 @@ struct AgentPerformanceDashboard: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: ResponsiveDesign.spacing(20)) {
-                    periodSelector
-                    summarySection
-                    agentRankingSection
+                    self.periodSelector
+                    self.summarySection
+                    self.agentRankingSection
                     if let agent = selectedAgent {
-                        agentDetailSection(agent)
+                        self.agentDetailSection(agent)
                     }
                 }
                 .padding()
@@ -30,10 +30,10 @@ struct AgentPerformanceDashboard: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Schließen") { dismiss() }
+                    Button("Schließen") { self.dismiss() }
                 }
             }
-            .task(id: selectedPeriod) { await loadMetrics() }
+            .task(id: self.selectedPeriod) { await self.loadMetrics() }
         }
     }
 
@@ -44,15 +44,15 @@ struct AgentPerformanceDashboard: View {
             HStack(spacing: ResponsiveDesign.spacing(8)) {
                 ForEach(MetricsPeriod.allCases, id: \.self) { period in
                     Button {
-                        selectedPeriod = period
+                        self.selectedPeriod = period
                     } label: {
                         Text(period.rawValue)
                             .font(ResponsiveDesign.captionFont())
-                            .fontWeight(selectedPeriod == period ? .semibold : .regular)
-                            .foregroundColor(selectedPeriod == period ? .white : AppTheme.fontColor)
+                            .fontWeight(self.selectedPeriod == period ? .semibold : .regular)
+                            .foregroundColor(self.selectedPeriod == period ? .white : AppTheme.fontColor)
                             .padding(.horizontal, ResponsiveDesign.spacing(14))
                             .padding(.vertical, ResponsiveDesign.spacing(8))
-                            .background(selectedPeriod == period ? AppTheme.accentLightBlue : AppTheme.sectionBackground)
+                            .background(self.selectedPeriod == period ? AppTheme.accentLightBlue : AppTheme.sectionBackground)
                             .cornerRadius(ResponsiveDesign.spacing(20))
                     }
                 }
@@ -72,28 +72,28 @@ struct AgentPerformanceDashboard: View {
             LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 2), spacing: ResponsiveDesign.spacing(12)) {
                 AgentSummaryCard(
                     title: "Aktive Agents",
-                    value: "\(viewModel.availableAgents.filter { $0.isAvailable }.count)",
+                    value: "\(self.viewModel.availableAgents.filter { $0.isAvailable }.count)",
                     icon: "person.fill.checkmark",
                     color: AppTheme.accentGreen
                 )
 
                 AgentSummaryCard(
                     title: "Durchschn. Auslastung",
-                    value: String(format: "%.0f%%", averageWorkload),
+                    value: String(format: "%.0f%%", self.averageWorkload),
                     icon: "chart.bar.fill",
-                    color: workloadColor
+                    color: self.workloadColor
                 )
 
                 AgentSummaryCard(
                     title: "Tickets bearbeitet",
-                    value: "\(totalTicketsHandled)",
+                    value: "\(self.totalTicketsHandled)",
                     icon: "ticket.fill",
                     color: AppTheme.accentLightBlue
                 )
 
                 AgentSummaryCard(
                     title: "Durchschn. CSAT",
-                    value: String(format: "%.1f", averageCSAT),
+                    value: String(format: "%.1f", self.averageCSAT),
                     icon: "star.fill",
                     color: AppTheme.accentOrange
                 )
@@ -113,29 +113,29 @@ struct AgentPerformanceDashboard: View {
                 .fontWeight(.semibold)
                 .foregroundColor(AppTheme.fontColor)
 
-            if isLoading {
+            if self.isLoading {
                 ProgressView()
                     .frame(maxWidth: .infinity)
                     .padding()
-            } else if agentMetrics.isEmpty {
+            } else if self.agentMetrics.isEmpty {
                 Text("Keine Daten verfügbar")
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
                     .frame(maxWidth: .infinity)
                     .padding()
             } else {
-                ForEach(Array(sortedAgentMetrics.enumerated()), id: \.element.id) { index, metrics in
+                ForEach(Array(self.sortedAgentMetrics.enumerated()), id: \.element.id) { index, metrics in
                     AgentRankingRow(
                         rank: index + 1,
                         metrics: metrics,
-                        agent: viewModel.availableAgents.first { $0.id == metrics.id },
-                        isSelected: selectedAgent?.id == metrics.id
+                        agent: self.viewModel.availableAgents.first { $0.id == metrics.id },
+                        isSelected: self.selectedAgent?.id == metrics.id
                     ) {
                         withAnimation {
-                            if selectedAgent?.id == metrics.id {
-                                selectedAgent = nil
+                            if self.selectedAgent?.id == metrics.id {
+                                self.selectedAgent = nil
                             } else {
-                                selectedAgent = viewModel.availableAgents.first { $0.id == metrics.id }
+                                self.selectedAgent = self.viewModel.availableAgents.first { $0.id == metrics.id }
                             }
                         }
                     }
@@ -150,7 +150,7 @@ struct AgentPerformanceDashboard: View {
     // MARK: - Agent Detail Section
 
     private func agentDetailSection(_ agent: CSRAgent) -> some View {
-        let metrics = agentMetrics.first { $0.id == agent.id }
+        let metrics = self.agentMetrics.first { $0.id == agent.id }
 
         return VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
             HStack {
@@ -162,7 +162,7 @@ struct AgentPerformanceDashboard: View {
                 Spacer()
 
                 Button {
-                    withAnimation { selectedAgent = nil }
+                    withAnimation { self.selectedAgent = nil }
                 } label: {
                     Image(systemName: "xmark.circle.fill")
                         .foregroundColor(AppTheme.fontColor.opacity(0.5))
@@ -197,8 +197,8 @@ struct AgentPerformanceDashboard: View {
                     AgentDetailMetric(label: "Tickets geschlossen", value: "\(metrics.ticketsClosed)")
                     AgentDetailMetric(label: "Eskaliert", value: "\(metrics.ticketsEscalated)")
                     AgentDetailMetric(label: "CSAT Score", value: String(format: "%.1f", metrics.customerSatisfactionScore))
-                    AgentDetailMetric(label: "Ø Erste Antwort", value: formatHours(metrics.averageFirstResponseTime))
-                    AgentDetailMetric(label: "Ø Lösungszeit", value: formatHours(metrics.averageResolutionTime))
+                    AgentDetailMetric(label: "Ø Erste Antwort", value: self.formatHours(metrics.averageFirstResponseTime))
+                    AgentDetailMetric(label: "Ø Lösungszeit", value: self.formatHours(metrics.averageResolutionTime))
                     AgentDetailMetric(label: "Positive Bewertungen", value: "\(metrics.positiveRatings)")
                     AgentDetailMetric(label: "Negative Bewertungen", value: "\(metrics.negativeRatings)")
                 }
@@ -220,7 +220,7 @@ struct AgentPerformanceDashboard: View {
                 }
 
                 ProgressView(value: agent.workloadPercentage, total: 100)
-                    .tint(workloadColorFor(agent.workloadPercentage))
+                    .tint(self.workloadColorFor(agent.workloadPercentage))
             }
         }
         .padding()
@@ -231,17 +231,17 @@ struct AgentPerformanceDashboard: View {
     // MARK: - Computed Properties
 
     private var sortedAgentMetrics: [AgentMetrics] {
-        agentMetrics.sorted { $0.ticketsClosed > $1.ticketsClosed }
+        self.agentMetrics.sorted { $0.ticketsClosed > $1.ticketsClosed }
     }
 
     private var averageWorkload: Double {
-        let agents = viewModel.availableAgents
+        let agents = self.viewModel.availableAgents
         guard !agents.isEmpty else { return 0 }
         return agents.reduce(0) { $0 + $1.workloadPercentage } / Double(agents.count)
     }
 
     private var workloadColor: Color {
-        workloadColorFor(averageWorkload)
+        self.workloadColorFor(self.averageWorkload)
     }
 
     private func workloadColorFor(_ percentage: Double) -> Color {
@@ -251,11 +251,11 @@ struct AgentPerformanceDashboard: View {
     }
 
     private var totalTicketsHandled: Int {
-        agentMetrics.reduce(0) { $0 + $1.ticketsAssigned }
+        self.agentMetrics.reduce(0) { $0 + $1.ticketsAssigned }
     }
 
     private var averageCSAT: Double {
-        let scores = agentMetrics.filter { $0.surveysReceived > 0 }
+        let scores = self.agentMetrics.filter { $0.surveysReceived > 0 }
         guard !scores.isEmpty else { return 0 }
         return scores.reduce(0) { $0 + $1.customerSatisfactionScore } / Double(scores.count)
     }
@@ -273,13 +273,13 @@ struct AgentPerformanceDashboard: View {
     // MARK: - Actions
 
     private func loadMetrics() async {
-        isLoading = true
+        self.isLoading = true
         defer { isLoading = false }
 
-        let (startDate, endDate) = selectedPeriod.dateRange
+        let (startDate, endDate) = self.selectedPeriod.dateRange
 
         var metrics: [AgentMetrics] = []
-        for agent in viewModel.availableAgents {
+        for agent in self.viewModel.availableAgents {
             do {
                 let agentMetric = try await viewModel.supportService.getAgentMetrics(
                     agentId: agent.id,
@@ -291,7 +291,7 @@ struct AgentPerformanceDashboard: View {
                 // Skip agents with errors
             }
         }
-        agentMetrics = metrics
+        self.agentMetrics = metrics
     }
 }
 
@@ -306,18 +306,18 @@ private struct AgentSummaryCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
             HStack {
-                Image(systemName: icon)
-                    .foregroundColor(color)
+                Image(systemName: self.icon)
+                    .foregroundColor(self.color)
                     .font(ResponsiveDesign.captionFont())
                 Spacer()
             }
 
-            Text(value)
+            Text(self.value)
                 .font(ResponsiveDesign.titleFont())
                 .fontWeight(.bold)
                 .foregroundColor(AppTheme.fontColor)
 
-            Text(title)
+            Text(self.title)
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
         }
@@ -337,33 +337,33 @@ private struct AgentRankingRow: View {
     let onTap: () -> Void
 
     var body: some View {
-        Button(action: onTap) {
+        Button(action: self.onTap) {
             HStack(spacing: ResponsiveDesign.spacing(12)) {
                 // Rank badge
                 ZStack {
                     Circle()
-                        .fill(rankColor)
+                        .fill(self.rankColor)
                         .frame(width: 28, height: 28)
 
-                    Text("\(rank)")
+                    Text("\(self.rank)")
                         .font(ResponsiveDesign.scaledSystemFont(size: 12, weight: .bold))
                         .foregroundColor(.white)
                 }
 
                 // Agent info
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(metrics.agentName)
+                    Text(self.metrics.agentName)
                         .font(ResponsiveDesign.bodyFont())
                         .fontWeight(.medium)
                         .foregroundColor(AppTheme.fontColor)
 
                     HStack(spacing: ResponsiveDesign.spacing(8)) {
-                        Label("\(metrics.ticketsClosed)", systemImage: "checkmark.circle.fill")
+                        Label("\(self.metrics.ticketsClosed)", systemImage: "checkmark.circle.fill")
                             .font(ResponsiveDesign.captionFont())
                             .foregroundColor(AppTheme.accentGreen)
 
-                        if metrics.surveysReceived > 0 {
-                            Label(String(format: "%.1f", metrics.customerSatisfactionScore), systemImage: "star.fill")
+                        if self.metrics.surveysReceived > 0 {
+                            Label(String(format: "%.1f", self.metrics.customerSatisfactionScore), systemImage: "star.fill")
                                 .font(ResponsiveDesign.captionFont())
                                 .foregroundColor(AppTheme.accentOrange)
                         }
@@ -385,19 +385,19 @@ private struct AgentRankingRow: View {
                     }
                 }
 
-                Image(systemName: isSelected ? "chevron.up" : "chevron.down")
+                Image(systemName: self.isSelected ? "chevron.up" : "chevron.down")
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.5))
             }
             .padding()
-            .background(isSelected ? AppTheme.accentLightBlue.opacity(0.1) : AppTheme.screenBackground)
+            .background(self.isSelected ? AppTheme.accentLightBlue.opacity(0.1) : AppTheme.screenBackground)
             .cornerRadius(ResponsiveDesign.spacing(10))
         }
         .buttonStyle(PlainButtonStyle())
     }
 
     private var rankColor: Color {
-        switch rank {
+        switch self.rank {
         case 1: return Color(red: 1, green: 0.84, blue: 0) // Gold
         case 2: return Color(red: 0.75, green: 0.75, blue: 0.75) // Silver
         case 3: return Color(red: 0.8, green: 0.5, blue: 0.2) // Bronze
@@ -414,12 +414,12 @@ private struct AgentDetailMetric: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(value)
+            Text(self.value)
                 .font(ResponsiveDesign.bodyFont())
                 .fontWeight(.semibold)
                 .foregroundColor(AppTheme.fontColor)
 
-            Text(label)
+            Text(self.label)
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.6))
         }
@@ -433,12 +433,12 @@ private struct FlowLayout: Layout {
     var spacing: CGFloat = 8
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let result = FlowResult(in: proposal.width ?? 0, subviews: subviews, spacing: spacing)
+        let result = FlowResult(in: proposal.width ?? 0, subviews: subviews, spacing: self.spacing)
         return result.size
     }
 
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        let result = FlowResult(in: bounds.width, subviews: subviews, spacing: spacing)
+        let result = FlowResult(in: bounds.width, subviews: subviews, spacing: self.spacing)
         for (index, position) in result.positions.enumerated() {
             subviews[index].place(at: CGPoint(x: bounds.minX + position.x, y: bounds.minY + position.y), proposal: .unspecified)
         }
@@ -462,7 +462,7 @@ private struct FlowLayout: Layout {
                     rowHeight = 0
                 }
 
-                positions.append(CGPoint(x: x, y: y))
+                self.positions.append(CGPoint(x: x, y: y))
                 rowHeight = max(rowHeight, size.height)
                 x += size.width + spacing
             }

@@ -12,9 +12,9 @@ struct InvestmentActionButtonsView: View {
     var body: some View {
         VStack(spacing: ResponsiveDesign.spacing(12)) {
             // Create Investment Button
-            Button(action: onCreateInvestment, label: {
+            Button(action: self.onCreateInvestment, label: {
                 HStack {
-                    if isLoading {
+                    if self.isLoading {
                         ProgressView()
                             .progressViewStyle(CircularProgressViewStyle(tint: .white))
                             .scaleEffect(0.8)
@@ -25,16 +25,16 @@ struct InvestmentActionButtonsView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding()
-                .background(canProceed ? AppTheme.buttonColor : AppTheme.fontColor.opacity(0.3))
+                .background(self.canProceed ? AppTheme.buttonColor : AppTheme.fontColor.opacity(0.3))
                 .foregroundColor(AppTheme.fontColor)
                 .cornerRadius(ResponsiveDesign.spacing(12))
             })
-            .disabled(!canProceed || isLoading)
+            .disabled(!self.canProceed || self.isLoading)
             .accessibilityIdentifier("CreateInvestmentButton")
 
             // Cancel Button
             Button("Cancel") {
-                onCancel()
+                self.onCancel()
             }
             .foregroundColor(AppTheme.secondaryText)
         }

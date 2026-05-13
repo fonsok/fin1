@@ -19,12 +19,12 @@ struct DepotUtils {
            indices.contains(where: { underlyingAsset.lowercased().contains($0.lowercased()) }) {
             // For indices, ensure realistic mock values (10.000 - 50.000 Pkt.)
             let value: Double
-            if strike >= 1000 {
+            if strike >= 1_000 {
                 // Already a realistic index-like value
                 value = strike
             } else {
                 // Likely an option price (e.g., 2.15). Generate deterministic index price for display.
-                value = deterministicIndexPrice(for: underlyingAsset)
+                value = self.deterministicIndexPrice(for: underlyingAsset)
             }
 
             let formattedValue = value.formattedAsLocalizedInteger()
@@ -32,7 +32,7 @@ struct DepotUtils {
         }
 
         // If underlyingAsset is nil but strike value looks like an index value, treat as index
-        if underlyingAsset == nil && strike >= 1000 {
+        if underlyingAsset == nil && strike >= 1_000 {
             let formattedValue = strike.formattedAsLocalizedInteger()
             return "\(formattedValue) Pkt."
         }
@@ -76,12 +76,12 @@ struct DepotUtils {
            indices.contains(where: { underlyingAsset.lowercased().contains($0.lowercased()) }) {
             // For indices, ensure realistic mock values (10.000 - 50.000 Pkt.)
             let value: Double
-            if let parsed = Double(strike), parsed >= 1000 {
+            if let parsed = Double(strike), parsed >= 1_000 {
                 // Already a realistic index-like value
                 value = parsed
             } else {
                 // Likely an option price (e.g., 2.15). Generate deterministic index price for display.
-                value = deterministicIndexPrice(for: underlyingAsset)
+                value = self.deterministicIndexPrice(for: underlyingAsset)
             }
 
             let formattedValue = value.formattedAsLocalizedInteger()
@@ -89,7 +89,7 @@ struct DepotUtils {
         }
 
         // If underlyingAsset is nil but strike value looks like an index value, treat as index
-        if underlyingAsset == nil, let parsed = Double(strike), parsed >= 1000 {
+        if underlyingAsset == nil, let parsed = Double(strike), parsed >= 1_000 {
             let formattedValue = parsed.formattedAsLocalizedInteger()
             return "\(formattedValue) Pkt."
         }
@@ -102,9 +102,9 @@ struct DepotUtils {
     /// to keep displays stable between runs and consistent with search results.
     private static func deterministicIndexPrice(for underlyingAsset: String) -> Double {
         var seed = underlyingAsset.hashValue
-        seed = seed &* 1103515245 &+ 12345
-        let normalized = Double(abs(seed) % 1000) / 1000.0
-        let raw = 10000.0 + (50000.0 - 10000.0) * normalized
+        seed = seed &* 1_103_515_245 &+ 12_345
+        let normalized = Double(abs(seed) % 1_000) / 1_000.0
+        let raw = 10_000.0 + (50_000.0 - 10_000.0) * normalized
         // Round to nearest 50 points for more realistic index ticks
         return (raw / 50.0).rounded() * 50.0
     }

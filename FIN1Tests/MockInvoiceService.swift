@@ -1,7 +1,7 @@
-import Foundation
-import UIKit
 import Combine
 @testable import FIN1
+import Foundation
+import UIKit
 
 // MARK: - Mock Invoice Service (Simplified)
 /// Simplified mock using closure-based behavior instead of multiple configuration properties
@@ -66,7 +66,7 @@ final class MockInvoiceService: InvoiceServiceProtocol, @unchecked Sendable {
                 items: [],
                 tradeId: order.id,
                 orderId: order.id,
-                dueDate: Date().addingTimeInterval(86400 * 30)
+                dueDate: Date().addingTimeInterval(86_400 * 30)
             )
             await MainActor.run {
                 self.invoices.append(invoice)
@@ -92,7 +92,7 @@ final class MockInvoiceService: InvoiceServiceProtocol, @unchecked Sendable {
                 items: [],
                 tradeId: sellOrder.id,
                 orderId: sellOrder.id,
-                dueDate: Date().addingTimeInterval(86400 * 30)
+                dueDate: Date().addingTimeInterval(86_400 * 30)
             )
             await MainActor.run {
                 self.invoices.append(invoice)
@@ -184,19 +184,19 @@ final class MockInvoiceService: InvoiceServiceProtocol, @unchecked Sendable {
     // MARK: - Invoice Queries
 
     func getInvoices(for userId: String) -> [Invoice] {
-        return invoices.filter { $0.customerInfo.customerNumber == userId }
+        return self.invoices.filter { $0.customerInfo.customerNumber == userId }
     }
 
     func getInvoicesByType(_ type: InvoiceType, for userId: String) -> [Invoice] {
-        return invoices.filter { $0.type == type && $0.customerInfo.customerNumber == userId }
+        return self.invoices.filter { $0.type == type && $0.customerInfo.customerNumber == userId }
     }
 
     func getInvoice(by id: String) -> Invoice? {
-        return invoices.first { $0.id == id }
+        return self.invoices.first { $0.id == id }
     }
 
     func getInvoicesForTrade(_ tradeId: String) -> [Invoice] {
-        return invoices.filter { $0.tradeId == tradeId }
+        return self.invoices.filter { $0.tradeId == tradeId }
     }
 
     func invoice(matching document: Document) -> Invoice? {
@@ -207,14 +207,14 @@ final class MockInvoiceService: InvoiceServiceProtocol, @unchecked Sendable {
             return hit
         }
         if let tradeId = document.tradeId {
-            return invoices.first(where: { $0.tradeId == tradeId })
+            return self.invoices.first(where: { $0.tradeId == tradeId })
         }
         return nil
     }
 
     func getServiceChargeInvoiceForBatch(_ batchId: String, userId: String) -> Invoice? {
         // Find invoice where tradeId == batchId and type is platform service charge
-        for invoice in invoices {
+        for invoice in self.invoices {
             if invoice.tradeId == batchId,
                invoice.type == .appServiceCharge,
                invoice.customerInfo.customerNumber == userId {
@@ -242,18 +242,18 @@ final class MockInvoiceService: InvoiceServiceProtocol, @unchecked Sendable {
     func syncToBackend() async {}
 
     func reset() {
-        invoices.removeAll()
-        isLoading = false
-        errorMessage = nil
-        showError = false
+        self.invoices.removeAll()
+        self.isLoading = false
+        self.errorMessage = nil
+        self.showError = false
         // Reset all handlers
-        loadInvoicesHandler = nil
-        createInvoiceFromOrderHandler = nil
-        createInvoiceFromSellOrderHandler = nil
-        updateInvoiceStatusHandler = nil
-        deleteInvoiceHandler = nil
-        generatePDFHandler = nil
-        generatePDFPreviewHandler = nil
-        savePDFToDocumentsHandler = nil
+        self.loadInvoicesHandler = nil
+        self.createInvoiceFromOrderHandler = nil
+        self.createInvoiceFromSellOrderHandler = nil
+        self.updateInvoiceStatusHandler = nil
+        self.deleteInvoiceHandler = nil
+        self.generatePDFHandler = nil
+        self.generatePDFPreviewHandler = nil
+        self.savePDFToDocumentsHandler = nil
     }
 }

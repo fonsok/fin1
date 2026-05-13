@@ -8,9 +8,9 @@ struct InvoiceNotesSection: View {
 
     var body: some View {
         DocumentNotesSection(
-            accountNumber: invoice.customerInfo.depotNumber,
-            taxNote: invoice.taxNote,
-            legalNote: invoice.legalNote
+            accountNumber: self.invoice.customerInfo.depotNumber,
+            taxNote: self.invoice.taxNote,
+            legalNote: self.invoice.legalNote
         )
     }
 }

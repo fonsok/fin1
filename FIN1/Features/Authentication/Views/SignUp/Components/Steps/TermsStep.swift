@@ -16,17 +16,20 @@ struct TermsStep: View {
                 .foregroundColor(AppTheme.fontColor)
 
             VStack(spacing: ResponsiveDesign.spacing(16)) {
-                Toggle("I accept the Terms of Service", isOn: $acceptedTerms)
+                Toggle("I accept the Terms of Service", isOn: self.$acceptedTerms)
                     .foregroundColor(AppTheme.fontColor)
                     .toggleStyle(SwitchToggleStyle(tint: AppTheme.accentLightBlue))
 
-                Toggle("I accept the Privacy Policy", isOn: $acceptedPrivacyPolicy)
+                Toggle("I accept the Privacy Policy", isOn: self.$acceptedPrivacyPolicy)
                     .foregroundColor(AppTheme.fontColor)
                     .toggleStyle(SwitchToggleStyle(tint: AppTheme.accentLightBlue))
 
-                Toggle("I agree that information about products and promotional offers may be sent to me.", isOn: $acceptedMarketingConsent)
-                    .foregroundColor(AppTheme.fontColor)
-                    .toggleStyle(SwitchToggleStyle(tint: AppTheme.accentLightBlue))
+                Toggle(
+                    "I agree that information about products and promotional offers may be sent to me.",
+                    isOn: self.$acceptedMarketingConsent
+                )
+                .foregroundColor(AppTheme.fontColor)
+                .toggleStyle(SwitchToggleStyle(tint: AppTheme.accentLightBlue))
             }
             .padding()
             .background(AppTheme.sectionBackground)
@@ -64,10 +67,12 @@ struct TermsStep: View {
                     Spacer()
                 }
 
-                Text("Bitte lesen Sie die vollständigen Bedingungen und Datenschutzrichtlinien, bevor Sie fortfahren. Diese enthalten wichtige Informationen zu Ihren Rechten und Pflichten.")
-                    .font(ResponsiveDesign.bodyFont())
-                    .foregroundColor(AppTheme.fontColor.opacity(0.8))
-                    .multilineTextAlignment(.leading)
+                Text(
+                    "Bitte lesen Sie die vollständigen Bedingungen und Datenschutzrichtlinien, bevor Sie fortfahren. Diese enthalten wichtige Informationen zu Ihren Rechten und Pflichten."
+                )
+                .font(ResponsiveDesign.bodyFont())
+                .foregroundColor(AppTheme.fontColor.opacity(0.8))
+                .multilineTextAlignment(.leading)
             }
             .padding()
             .background(AppTheme.accentOrange.opacity(0.1))

@@ -73,9 +73,9 @@ extension SignUpData {
             addressVerificationDocumentURL: nil, // TODO: Handle image upload
             leveragedProductsExperience: leveragedProductsExperience,
             financialProductsExperience: financialProductsExperience,
-            investmentExperience: getInvestmentExperienceLevel(),
-            tradingFrequency: getTradingFrequency(),
-            investmentKnowledge: getInvestmentKnowledge(),
+            investmentExperience: self.getInvestmentExperienceLevel(),
+            tradingFrequency: self.getTradingFrequency(),
+            investmentKnowledge: self.getInvestmentKnowledge(),
             desiredReturn: desiredReturn,
             insiderTradingOptions: insiderTradingOptions,
             moneyLaunderingDeclaration: moneyLaunderingDeclaration,
@@ -98,7 +98,7 @@ extension SignUpData {
             return service.calculateInvestmentExperienceLevel(for: self)
         }
         // Fallback to legacy implementation
-        return calculateInvestmentExperienceLevelLegacy()
+        return self.calculateInvestmentExperienceLevelLegacy()
     }
 
     private func getTradingFrequency() -> Int {
@@ -106,7 +106,7 @@ extension SignUpData {
             return service.calculateTradingFrequency(for: self)
         }
         // Fallback to legacy implementation
-        return calculateTradingFrequencyLegacy()
+        return self.calculateTradingFrequencyLegacy()
     }
 
     private func getInvestmentKnowledge() -> Int {
@@ -114,7 +114,7 @@ extension SignUpData {
             return service.calculateInvestmentKnowledge(for: self)
         }
         // Fallback to legacy implementation
-        return calculateInvestmentKnowledgeLegacy()
+        return self.calculateInvestmentKnowledgeLegacy()
     }
 
     // MARK: - Legacy Experience Level Calculations (kept for backward compatibility)
@@ -161,7 +161,7 @@ extension SignUpData {
         }
 
         // For investors, base on overall experience
-        let experience = calculateInvestmentExperienceLevelLegacy()
+        let experience = self.calculateInvestmentExperienceLevelLegacy()
         return min(experience / 2, 5) // Scale down for investors
     }
 
@@ -169,7 +169,7 @@ extension SignUpData {
         var knowledge = 0
 
         // Base knowledge from experience
-        knowledge += calculateInvestmentExperienceLevelLegacy()
+        knowledge += self.calculateInvestmentExperienceLevelLegacy()
 
         // Additional knowledge from investment amounts
         if stocksInvestmentAmount != .hundredToTenThousand { knowledge += 1 }

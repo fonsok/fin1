@@ -9,14 +9,14 @@ struct LandingDesignStyleToggleView: View {
         VStack(spacing: ResponsiveDesign.spacing(8)) {
             HStack {
                 Text("Design Style:")
-                    .font(designStyle == .typewriter
-                          ? ResponsiveDesign.monospacedFont(size: 14, weight: .regular)
-                          : ResponsiveDesign.captionFont())
-                    .foregroundColor(designStyle == .typewriter ? Color("InputText") : AppTheme.tertiaryText)
+                    .font(self.designStyle == .typewriter
+                        ? ResponsiveDesign.monospacedFont(size: 14, weight: .regular)
+                        : ResponsiveDesign.captionFont())
+                    .foregroundColor(self.designStyle == .typewriter ? Color("InputText") : AppTheme.tertiaryText)
 
                 Spacer()
 
-                Picker("", selection: $designStyle) {
+                Picker("", selection: self.$designStyle) {
                     ForEach(LandingViewModel.DesignStyle.allCases, id: \.self) { style in
                         Text(style.rawValue).tag(style)
                     }

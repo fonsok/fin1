@@ -17,23 +17,23 @@ struct IndividualFilterCriteria: Codable, Equatable {
 
     // Computed properties to get the correct option type
     var returnPercentageOption: ReturnPercentageOption? {
-        guard type == .returnRate else { return nil }
-        return ReturnPercentageOption(rawValue: optionValue)
+        guard self.type == .returnRate else { return nil }
+        return ReturnPercentageOption(rawValue: self.optionValue)
     }
 
     var numberOfTradesOption: NumberOfTradesOption? {
-        guard type == .numberOfTrades else { return nil }
-        return NumberOfTradesOption(rawValue: optionValue)
+        guard self.type == .numberOfTrades else { return nil }
+        return NumberOfTradesOption(rawValue: self.optionValue)
     }
 
     var successRateOption: FilterSuccessRateOption? {
-        guard type == .recentSuccessfulTrades || type == .highestReturn || type == .timeRange else { return nil }
-        return FilterSuccessRateOption(rawValue: optionValue)
+        guard self.type == .recentSuccessfulTrades || self.type == .highestReturn || self.type == .timeRange else { return nil }
+        return FilterSuccessRateOption(rawValue: self.optionValue)
     }
 
     // Legacy compatibility: selectedOption (for existing code)
     var selectedOption: FilterSuccessRateOption {
-        return FilterSuccessRateOption(rawValue: optionValue) ?? .none
+        return FilterSuccessRateOption(rawValue: self.optionValue) ?? .none
     }
 
     // Initializers for each filter type
@@ -65,14 +65,14 @@ struct IndividualFilterCriteria: Codable, Equatable {
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        type = try container.decode(FilterType.self, forKey: .type)
-        optionValue = try container.decode(String.self, forKey: .optionValue)
+        self.type = try container.decode(FilterType.self, forKey: .type)
+        self.optionValue = try container.decode(String.self, forKey: .optionValue)
     }
 
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(type, forKey: .type)
-        try container.encode(optionValue, forKey: .optionValue)
+        try container.encode(self.type, forKey: .type)
+        try container.encode(self.optionValue, forKey: .optionValue)
     }
 
     // Equatable conformance

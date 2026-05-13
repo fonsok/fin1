@@ -8,7 +8,7 @@ final class NetworkLogger: @unchecked Sendable {
     static let shared = NetworkLogger()
 
     private let logger = Logger(subsystem: "com.fin1.app", category: "Network")
-    private let maxLogEntries = 1000
+    private let maxLogEntries = 1_000
     private var logEntries: [LogEntry] = []
     private let logQueue = DispatchQueue(label: "NetworkLogger", qos: .utility)
 
@@ -50,7 +50,7 @@ final class NetworkLogger: @unchecked Sendable {
     }
 
     private init() {
-        loadPersistedLogs()
+        self.loadPersistedLogs()
     }
 
     // MARK: - Logging
@@ -76,7 +76,7 @@ final class NetworkLogger: @unchecked Sendable {
             retryCount: retryCount
         )
 
-        logQueue.async { [weak self] in
+        self.logQueue.async { [weak self] in
             self?.addLogEntry(entry)
         }
 
@@ -85,39 +85,39 @@ final class NetworkLogger: @unchecked Sendable {
         let durationStr = String(format: "%.3f", duration)
         let sizeStr = responseSize.map { "\($0) bytes" } ?? "unknown"
 
-        logger.info("\(statusEmoji) [\(method)] \(endpoint) - \(statusCode?.description ?? "N/A") - \(durationStr)s - \(sizeStr)")
+        self.logger.info("\(statusEmoji) [\(method)] \(endpoint) - \(statusCode?.description ?? "N/A") - \(durationStr)s - \(sizeStr)")
 
         if let error = error {
-            logger.error("Error: \(error.localizedDescription)")
+            self.logger.error("Error: \(error.localizedDescription)")
         }
 
         if retryCount > 0 {
-            logger.info("Retry count: \(retryCount)")
+            self.logger.info("Retry count: \(retryCount)")
         }
     }
 
     // MARK: - Log Management
 
     private func addLogEntry(_ entry: LogEntry) {
-        logEntries.append(entry)
+        self.logEntries.append(entry)
 
         // Keep only recent entries
-        if logEntries.count > maxLogEntries {
-            logEntries.removeFirst(logEntries.count - maxLogEntries)
+        if self.logEntries.count > self.maxLogEntries {
+            self.logEntries.removeFirst(self.logEntries.count - self.maxLogEntries)
         }
 
-        persistLogs()
+        self.persistLogs()
     }
 
     func getRecentLogs(limit: Int = 100) -> [LogEntry] {
-        return logQueue.sync {
-            Array(logEntries.suffix(limit))
+        return self.logQueue.sync {
+            Array(self.logEntries.suffix(limit))
         }
     }
 
     func getLogsForEndpoint(_ endpoint: String, limit: Int = 50) -> [LogEntry] {
-        return logQueue.sync {
-            logEntries
+        return self.logQueue.sync {
+            self.logEntries
                 .filter { $0.endpoint.contains(endpoint) }
                 .suffix(limit)
                 .reversed()
@@ -125,8 +125,8 @@ final class NetworkLogger: @unchecked Sendable {
     }
 
     func getErrorLogs(limit: Int = 50) -> [LogEntry] {
-        return logQueue.sync {
-            logEntries
+        return self.logQueue.sync {
+            self.logEntries
                 .filter { $0.error != nil || ($0.statusCode != nil && $0.statusCode! >= 400) }
                 .suffix(limit)
                 .reversed()
@@ -134,7 +134,7 @@ final class NetworkLogger: @unchecked Sendable {
     }
 
     func clearLogs() {
-        logQueue.async { [weak self] in
+        self.logQueue.async { [weak self] in
             self?.logEntries.removeAll()
             self?.persistLogs()
         }
@@ -152,12 +152,12 @@ final class NetworkLogger: @unchecked Sendable {
     }
 
     func getStatistics() -> Statistics {
-        return logQueue.sync {
-            let total = logEntries.count
-            let successful = logEntries.filter { $0.statusCode != nil && $0.statusCode! >= 200 && $0.statusCode! < 300 }.count
-            let failed = logEntries.filter { $0.error != nil || ($0.statusCode != nil && $0.statusCode! >= 400) }.count
-            let avgDuration = logEntries.isEmpty ? 0 : logEntries.map { $0.duration }.reduce(0, +) / Double(logEntries.count)
-            let totalData = logEntries.compactMap { $0.responseSize }.reduce(0, +)
+        return self.logQueue.sync {
+            let total = self.logEntries.count
+            let successful = self.logEntries.filter { $0.statusCode != nil && $0.statusCode! >= 200 && $0.statusCode! < 300 }.count
+            let failed = self.logEntries.filter { $0.error != nil || ($0.statusCode != nil && $0.statusCode! >= 400) }.count
+            let avgDuration = self.logEntries.isEmpty ? 0 : self.logEntries.map { $0.duration }.reduce(0, +) / Double(self.logEntries.count)
+            let totalData = self.logEntries.compactMap { $0.responseSize }.reduce(0, +)
             let errorRate = total > 0 ? Double(failed) / Double(total) : 0.0
 
             return Statistics(
@@ -184,7 +184,7 @@ final class NetworkLogger: @unchecked Sendable {
     private func loadPersistedLogs() {
         if let data = UserDefaults.standard.data(forKey: "network_logs"),
            let logs = try? JSONDecoder().decode([LogEntry].self, from: data) {
-            logEntries = logs
+            self.logEntries = logs
         }
     }
 }

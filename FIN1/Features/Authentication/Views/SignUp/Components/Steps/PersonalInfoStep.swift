@@ -36,7 +36,7 @@ struct PersonalInfoStep: View {
             HStack(spacing: ResponsiveDesign.spacing(16)) {
                 CustomPicker(
                     title: "Anrede",
-                    selection: $salutation,
+                    selection: self.$salutation,
                     labelColor: Color(red: 0.96, green: 0.96, blue: 0.96) // #f5f5f5
                 )
                 
@@ -46,7 +46,7 @@ struct PersonalInfoStep: View {
                         .fontWeight(.medium)
                         .foregroundColor(AppTheme.fontColor)
                     
-                    TextField("Optional", text: $academicTitle)
+                    TextField("Optional", text: self.$academicTitle)
                         .font(ResponsiveDesign.isCompactDevice() ? .title3 : .title2)
                         .foregroundColor(AppTheme.inputFieldText)
                         .padding(ResponsiveDesign.spacing(16))
@@ -60,14 +60,14 @@ struct PersonalInfoStep: View {
                 label: "Vorname",
                 placeholder: "Vorname eingeben",
                 icon: "person.fill",
-                text: $firstName
+                text: self.$firstName
             )
             
             LabeledInputField(
                 label: "Name",
                 placeholder: "Name eingeben",
                 icon: "person.fill",
-                text: $lastName
+                text: self.$lastName
             )
             
             // Address Fields
@@ -75,35 +75,35 @@ struct PersonalInfoStep: View {
                 label: "Straße und Hausnummer",
                 placeholder: "Straße und Hausnummer eingeben",
                 icon: "house.fill",
-                text: $streetAndNumber
+                text: self.$streetAndNumber
             )
             
             LabeledInputField(
                 label: "PLZ",
                 placeholder: "PLZ eingeben",
                 icon: "envelope.fill",
-                text: $postalCode
+                text: self.$postalCode
             )
             
             LabeledInputField(
                 label: "Wohnort",
                 placeholder: "Wohnort eingeben",
                 icon: "building.2.fill",
-                text: $city
+                text: self.$city
             )
             
             LabeledInputField(
                 label: "Bundesland",
                 placeholder: "Bundesland eingeben",
                 icon: "map.fill",
-                text: $state
+                text: self.$state
             )
             
             LabeledInputField(
                 label: "Land",
                 placeholder: "Land eingeben",
                 icon: "globe",
-                text: $country
+                text: self.$country
             )
             
             // Birth Information
@@ -113,7 +113,7 @@ struct PersonalInfoStep: View {
                     .fontWeight(.medium)
                     .foregroundColor(AppTheme.fontColor)
                 
-                DatePicker("", selection: $dateOfBirth, displayedComponents: .date)
+                DatePicker("", selection: self.$dateOfBirth, displayedComponents: .date)
                     .datePickerStyle(WheelDatePickerStyle())
                     .labelsHidden()
                     .foregroundColor(AppTheme.inputFieldText)
@@ -126,14 +126,14 @@ struct PersonalInfoStep: View {
                 label: "Geburtsort",
                 placeholder: "Geburtsort eingeben",
                 icon: "mappin.circle.fill",
-                text: $placeOfBirth
+                text: self.$placeOfBirth
             )
             
             LabeledInputField(
                 label: "Geburtsland",
                 placeholder: "Geburtsland eingeben",
                 icon: "flag.fill",
-                text: $countryOfBirth
+                text: self.$countryOfBirth
             )
         }
     }

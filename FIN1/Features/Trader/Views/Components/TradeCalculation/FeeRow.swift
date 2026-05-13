@@ -6,14 +6,14 @@ struct FeeRow: View {
 
     var body: some View {
         HStack {
-            Text("- \(fee.name)")
+            Text("- \(self.fee.name)")
                 .tradeCalculationFeeTaxStyle()
             Spacer()
             Text("")
             Spacer()
             Text("")
             Spacer()
-            Text(fee.amount.formatted(.currency(code: "EUR")))
+            Text(self.fee.amount.formatted(.currency(code: "EUR")))
                 .tradeCalculationFeeTaxStyle()
         }
         .padding(.vertical, ResponsiveDesign.spacing(2))

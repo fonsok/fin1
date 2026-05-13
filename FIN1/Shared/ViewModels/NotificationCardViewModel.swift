@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 @MainActor
 final class NotificationCardViewModel: ObservableObject {
@@ -35,22 +35,22 @@ final class NotificationCardViewModel: ObservableObject {
     }
 
     func handlePrimaryTap() async {
-        notificationService.markAsRead(notification)
+        self.notificationService.markAsRead(self.notification)
 
-        switch NotificationMetadataActionResolver.resolve(for: notification) {
+        switch NotificationMetadataActionResolver.resolve(for: self.notification) {
         case .survey(let surveyRequestId):
-            await loadAndShowSurvey(surveyRequestId: surveyRequestId)
+            await self.loadAndShowSurvey(surveyRequestId: surveyRequestId)
         case .ticket(let ticketId):
-            await loadAndShowTicket(ticketId: ticketId)
+            await self.loadAndShowTicket(ticketId: ticketId)
         case .document(let documentId):
-            await loadAndShowDocument(documentId: documentId)
+            await self.loadAndShowDocument(documentId: documentId)
         case .none:
             break
         }
     }
 
     func dismissSurvey() {
-        showSurvey = false
+        self.showSurvey = false
     }
 
     func submitSurvey(
@@ -62,7 +62,7 @@ final class NotificationCardViewModel: ObservableObject {
         comment: String?
     ) async {
         do {
-            _ = try await satisfactionSurveyService.submitSurvey(
+            _ = try await self.satisfactionSurveyService.submitSurvey(
                 surveyRequestId: requestId,
                 rating: rating,
                 wasIssueResolved: issueResolved,
@@ -71,92 +71,92 @@ final class NotificationCardViewModel: ObservableObject {
                 comment: comment
             )
         } catch {
-            errorMessage = "Fehler beim Senden des Feedbacks: \(error.localizedDescription)"
-            showErrorAlert = true
+            self.errorMessage = "Fehler beim Senden des Feedbacks: \(error.localizedDescription)"
+            self.showErrorAlert = true
         }
     }
 
     private func loadAndShowSurvey(surveyRequestId: String) async {
-        isLoadingTicket = true
-        showErrorAlert = false
-        showSurvey = false
-        surveyRequest = nil
+        self.isLoadingTicket = true
+        self.showErrorAlert = false
+        self.showSurvey = false
+        self.surveyRequest = nil
 
         do {
             if let request = try await satisfactionSurveyService.getSurveyRequest(id: surveyRequestId) {
-                surveyRequest = request
+                self.surveyRequest = request
 
                 if !request.isCompleted && !request.isExpired {
-                    showSurvey = true
+                    self.showSurvey = true
                 } else {
-                    errorMessage = request.isExpired ? "Diese Umfrage ist abgelaufen." : "Diese Umfrage wurde bereits ausgefüllt."
-                    showErrorAlert = true
+                    self.errorMessage = request.isExpired ? "Diese Umfrage ist abgelaufen." : "Diese Umfrage wurde bereits ausgefüllt."
+                    self.showErrorAlert = true
                 }
             } else {
-                errorMessage = "Die Umfrage konnte nicht gefunden werden."
-                showErrorAlert = true
+                self.errorMessage = "Die Umfrage konnte nicht gefunden werden."
+                self.showErrorAlert = true
             }
         } catch {
-            errorMessage = "Die Umfrage konnte nicht geladen werden: \(error.localizedDescription)"
-            showErrorAlert = true
+            self.errorMessage = "Die Umfrage konnte nicht geladen werden: \(error.localizedDescription)"
+            self.showErrorAlert = true
         }
 
-        isLoadingTicket = false
+        self.isLoadingTicket = false
     }
 
     private func loadAndShowTicket(ticketId: String) async {
-        isLoadingTicket = true
-        showErrorAlert = false
-        showTicketDetail = false
-        ticket = nil
+        self.isLoadingTicket = true
+        self.showErrorAlert = false
+        self.showTicketDetail = false
+        self.ticket = nil
 
         do {
             if let loadedTicket = try await customerSupportService.getTicket(ticketId: ticketId) {
-                ticket = loadedTicket
-                showTicketDetail = true
+                self.ticket = loadedTicket
+                self.showTicketDetail = true
             } else {
-                errorMessage = "Das Ticket konnte nicht gefunden werden. Bitte versuchen Sie es später erneut."
-                showErrorAlert = true
+                self.errorMessage = "Das Ticket konnte nicht gefunden werden. Bitte versuchen Sie es später erneut."
+                self.showErrorAlert = true
             }
         } catch {
             // Provide user-friendly error message
             if let nsError = error as NSError? {
                 if nsError.domain == NSURLErrorDomain {
-                    errorMessage = "Verbindungsfehler. Bitte überprüfen Sie Ihre Internetverbindung und versuchen Sie es erneut."
+                    self.errorMessage = "Verbindungsfehler. Bitte überprüfen Sie Ihre Internetverbindung und versuchen Sie es erneut."
                 } else {
-                    errorMessage = "Das Ticket konnte nicht geladen werden: \(error.localizedDescription)"
+                    self.errorMessage = "Das Ticket konnte nicht geladen werden: \(error.localizedDescription)"
                 }
             } else {
-                errorMessage = "Das Ticket konnte nicht geladen werden. Bitte versuchen Sie es später erneut."
+                self.errorMessage = "Das Ticket konnte nicht geladen werden. Bitte versuchen Sie es später erneut."
             }
-            showErrorAlert = true
+            self.showErrorAlert = true
         }
 
-        isLoadingTicket = false
+        self.isLoadingTicket = false
     }
 
     private func loadAndShowDocument(documentId: String) async {
-        isLoadingTicket = true
-        showErrorAlert = false
-        sheetDocument = nil
+        self.isLoadingTicket = true
+        self.showErrorAlert = false
+        self.sheetDocument = nil
 
         do {
             let document = try await documentService.resolveDocumentForDeepLink(objectId: documentId)
-            documentService.markDocumentAsRead(document)
-            sheetDocument = document
+            self.documentService.markDocumentAsRead(document)
+            self.sheetDocument = document
         } catch let error as DocumentDeepLinkResolveError {
             errorMessage = error.localizedDescription
             showErrorAlert = true
         } catch {
             if let nsError = error as NSError?, nsError.domain == NSURLErrorDomain {
-                errorMessage = "Verbindungsfehler. Bitte überprüfen Sie Ihre Internetverbindung und versuchen Sie es erneut."
+                self.errorMessage = "Verbindungsfehler. Bitte überprüfen Sie Ihre Internetverbindung und versuchen Sie es erneut."
             } else {
-                errorMessage = "Das Dokument konnte nicht geladen werden: \(error.localizedDescription)"
+                self.errorMessage = "Das Dokument konnte nicht geladen werden: \(error.localizedDescription)"
             }
-            showErrorAlert = true
+            self.showErrorAlert = true
         }
 
-        isLoadingTicket = false
+        self.isLoadingTicket = false
     }
 }
 

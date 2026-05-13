@@ -22,7 +22,7 @@ struct QRCodeView: View {
                     .interpolation(.none)
                     .resizable()
                     .scaledToFit()
-                    .frame(width: size, height: size)
+                    .frame(width: self.size, height: self.size)
                     .background(Color.white)
                     .cornerRadius(ResponsiveDesign.spacing(8))
                     .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
@@ -30,11 +30,11 @@ struct QRCodeView: View {
                 // Fallback view if QR code generation fails
                 RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(8))
                     .fill(Color.gray.opacity(0.3))
-                    .frame(width: size, height: size)
+                    .frame(width: self.size, height: self.size)
                     .overlay(
                         VStack(spacing: ResponsiveDesign.spacing(4)) {
                             Image(systemName: "qrcode")
-                                .font(ResponsiveDesign.scaledSystemFont(size: size * 0.3))
+                                .font(ResponsiveDesign.scaledSystemFont(size: self.size * 0.3))
                                 .foregroundColor(.gray)
                             Text("QR Code")
                                 .font(ResponsiveDesign.captionFont())
@@ -54,7 +54,7 @@ struct InvoiceQRCodeView: View {
     var body: some View {
         VStack(alignment: .trailing, spacing: ResponsiveDesign.spacing(8)) {
             // QR Code
-            QRCodeView(qrCodeImage: qrCodeImage, size: ResponsiveDesign.spacing(120))
+            QRCodeView(qrCodeImage: self.qrCodeImage, size: ResponsiveDesign.spacing(120))
 
             // QR Code label
             Text("QR Code")
@@ -63,16 +63,16 @@ struct InvoiceQRCodeView: View {
                 .multilineTextAlignment(.trailing)
         }
         .task {
-            generateQRCode()
+            self.generateQRCode()
         }
         .onDisappear {
             // Clear image from memory when view disappears
-            qrCodeImage = nil
+            self.qrCodeImage = nil
         }
     }
 
     private func generateQRCode() {
-        qrCodeImage = QRCodeGenerator.generateInvoiceQRCode(for: invoice)
+        self.qrCodeImage = QRCodeGenerator.generateInvoiceQRCode(for: self.invoice)
     }
 }
 
@@ -85,7 +85,7 @@ struct CollectionBillQRCodeView: View {
     var body: some View {
         VStack(alignment: .trailing, spacing: ResponsiveDesign.spacing(8)) {
             // QR Code
-            QRCodeView(qrCodeImage: qrCodeImage, size: ResponsiveDesign.spacing(120))
+            QRCodeView(qrCodeImage: self.qrCodeImage, size: ResponsiveDesign.spacing(120))
 
             // QR Code label
             Text("QR Code")
@@ -94,16 +94,16 @@ struct CollectionBillQRCodeView: View {
                 .multilineTextAlignment(.trailing)
         }
         .task {
-            generateQRCode()
+            self.generateQRCode()
         }
         .onDisappear {
             // Clear image from memory when view disappears
-            qrCodeImage = nil
+            self.qrCodeImage = nil
         }
     }
 
     private func generateQRCode() {
-        qrCodeImage = QRCodeGenerator.generateCollectionBillQRCode(for: trade, displayProperties: displayProperties)
+        self.qrCodeImage = QRCodeGenerator.generateCollectionBillQRCode(for: self.trade, displayProperties: self.displayProperties)
     }
 }
 
@@ -115,7 +115,7 @@ struct CreditNoteQRCodeView: View {
     var body: some View {
         VStack(alignment: .trailing, spacing: ResponsiveDesign.spacing(8)) {
             // QR Code
-            QRCodeView(qrCodeImage: qrCodeImage, size: ResponsiveDesign.spacing(120))
+            QRCodeView(qrCodeImage: self.qrCodeImage, size: ResponsiveDesign.spacing(120))
 
             // QR Code label
             Text("QR Code")
@@ -124,16 +124,16 @@ struct CreditNoteQRCodeView: View {
                 .multilineTextAlignment(.trailing)
         }
         .task {
-            generateQRCode()
+            self.generateQRCode()
         }
         .onDisappear {
             // Clear image from memory when view disappears
-            qrCodeImage = nil
+            self.qrCodeImage = nil
         }
     }
 
     private func generateQRCode() {
-        qrCodeImage = QRCodeGenerator.generateCreditNoteQRCode(for: document)
+        self.qrCodeImage = QRCodeGenerator.generateCreditNoteQRCode(for: self.document)
     }
 }
 
@@ -146,7 +146,7 @@ struct InvestorCollectionBillQRCodeView: View {
     var body: some View {
         VStack(alignment: .trailing, spacing: ResponsiveDesign.spacing(8)) {
             // QR Code
-            QRCodeView(qrCodeImage: qrCodeImage, size: ResponsiveDesign.spacing(120))
+            QRCodeView(qrCodeImage: self.qrCodeImage, size: ResponsiveDesign.spacing(120))
 
             // QR Code label
             Text("QR Code")
@@ -155,18 +155,18 @@ struct InvestorCollectionBillQRCodeView: View {
                 .multilineTextAlignment(.trailing)
         }
         .task {
-            generateQRCode()
+            self.generateQRCode()
         }
         .onDisappear {
             // Clear image from memory when view disappears
-            qrCodeImage = nil
+            self.qrCodeImage = nil
         }
     }
 
     private func generateQRCode() {
-        qrCodeImage = QRCodeGenerator.generateInvestorCollectionBillQRCode(
-            for: investment,
-            documentNumber: documentNumber
+        self.qrCodeImage = QRCodeGenerator.generateInvestorCollectionBillQRCode(
+            for: self.investment,
+            documentNumber: self.documentNumber
         )
     }
 }

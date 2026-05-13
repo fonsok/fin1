@@ -9,34 +9,34 @@ extension MockTrader {
         switch criteria.type {
         case .returnRate:
             if let option = criteria.returnPercentageOption {
-                return matchesReturnRateFilter(option)
+                return self.matchesReturnRateFilter(option)
             }
             return false
         case .recentSuccessfulTrades:
             if let option = criteria.successRateOption {
-                return matchesRecentSuccessfulTradesFilter(option)
+                return self.matchesRecentSuccessfulTradesFilter(option)
             }
             return false
         case .highestReturn:
             if let option = criteria.successRateOption {
-                return matchesHighestReturnFilter(option)
+                return self.matchesHighestReturnFilter(option)
             }
             return false
         case .numberOfTrades:
             if let option = criteria.numberOfTradesOption {
-                return matchesNumberOfTradesFilter(option)
+                return self.matchesNumberOfTradesFilter(option)
             }
             return false
         case .timeRange:
             if let option = criteria.successRateOption {
-                return matchesTimeRangeFilter(option)
+                return self.matchesTimeRangeFilter(option)
             }
             return false
         }
     }
 
     func matchesFilterCombination(_ combination: FilterCombination) -> Bool {
-        return combination.filters.allSatisfy { matchesFilterCriteria($0) }
+        return combination.filters.allSatisfy { self.matchesFilterCriteria($0) }
     }
 
     // MARK: - Individual Filter Matching

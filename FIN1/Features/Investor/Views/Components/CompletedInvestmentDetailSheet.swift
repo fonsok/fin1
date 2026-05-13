@@ -18,29 +18,29 @@ struct CompletedInvestmentDetailSheet: View {
 
                 ScrollView {
                     VStack(spacing: ResponsiveDesign.spacing(16)) {
-                        summarySection
-                        financialOverviewSection
-                        taxBreakdownSection
-                        netOutcomeSection
-                        investmentDetailsSection
-                        tradeLinesSection
+                        self.summarySection
+                        self.financialOverviewSection
+                        self.taxBreakdownSection
+                        self.netOutcomeSection
+                        self.investmentDetailsSection
+                        self.tradeLinesSection
                     }
                     .padding(.horizontal, ResponsiveDesign.horizontalPadding())
                     .padding(.vertical, ResponsiveDesign.spacing(12))
                 }
             }
-            .navigationTitle("Investment \(viewModel.investmentNumber)")
+            .navigationTitle("Investment \(self.viewModel.investmentNumber)")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") {
-                        dismiss()
+                        self.dismiss()
                     }
                     .foregroundColor(AppTheme.accentLightBlue)
                 }
             }
             .task {
-                viewModel.reconfigure(with: services)
+                self.viewModel.reconfigure(with: self.services)
             }
         }
     }
@@ -50,23 +50,23 @@ struct CompletedInvestmentDetailSheet: View {
     private var summarySection: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
             HStack(alignment: .firstTextBaseline, spacing: ResponsiveDesign.spacing(8)) {
-                Text(viewModel.traderName)
+                Text(self.viewModel.traderName)
                     .font(ResponsiveDesign.headlineFont())
                     .foregroundColor(AppTheme.fontColor)
 
                 Spacer()
 
-                statusBadge
+                self.statusBadge
             }
 
-            detailRow(title: "Trader Specialization", value: viewModel.traderSpecialization)
-            detailRow(title: "Trade Nr.", value: viewModel.tradeNumberText)
-            detailRow(title: "Created On", value: viewModel.createdDateText)
-            detailRow(title: "Completed On", value: viewModel.completedDateText)
-            detailRow(title: "Number of Investments", value: viewModel.numberOfInvestmentsText)
-            detailRow(title: "Active Investments", value: viewModel.activeInvestmentCountText)
-            detailRow(title: "Completed Investments", value: viewModel.completedInvestmentCountText)
-            detailRow(title: "Your Quantity (Total)", value: "\(viewModel.totalInvestorQuantityText) Stk")
+            self.detailRow(title: "Trader Specialization", value: self.viewModel.traderSpecialization)
+            self.detailRow(title: "Trade Nr.", value: self.viewModel.tradeNumberText)
+            self.detailRow(title: "Created On", value: self.viewModel.createdDateText)
+            self.detailRow(title: "Completed On", value: self.viewModel.completedDateText)
+            self.detailRow(title: "Number of Investments", value: self.viewModel.numberOfInvestmentsText)
+            self.detailRow(title: "Active Investments", value: self.viewModel.activeInvestmentCountText)
+            self.detailRow(title: "Completed Investments", value: self.viewModel.completedInvestmentCountText)
+            self.detailRow(title: "Your Quantity (Total)", value: "\(self.viewModel.totalInvestorQuantityText) Stk")
         }
         .padding(ResponsiveDesign.spacing(12))
         .background(AppTheme.sectionBackground)
@@ -75,25 +75,25 @@ struct CompletedInvestmentDetailSheet: View {
 
     private var financialOverviewSection: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
-            sectionHeader(title: "Financial Overview")
+            self.sectionHeader(title: "Financial Overview")
 
             VStack(spacing: ResponsiveDesign.spacing(8)) {
                 HStack(spacing: ResponsiveDesign.spacing(12)) {
-                    metricView(title: "Current Value", value: viewModel.currentValueText, valueColor: AppTheme.accentLightBlue)
-                    metricView(title: "Invested Amount", value: viewModel.investedAmountText)
+                    self.metricView(title: "Current Value", value: self.viewModel.currentValueText, valueColor: AppTheme.accentLightBlue)
+                    self.metricView(title: "Invested Amount", value: self.viewModel.investedAmountText)
                 }
 
                 HStack(spacing: ResponsiveDesign.spacing(12)) {
-                    metricView(
+                    self.metricView(
                         title: "Profit",
-                        value: viewModel.profitText,
-                        valueColor: viewModel.isProfitPositive ? AppTheme.accentGreen : AppTheme.accentRed
+                        value: self.viewModel.profitText,
+                        valueColor: self.viewModel.isProfitPositive ? AppTheme.accentGreen : AppTheme.accentRed
                     )
 
-                    metricView(
+                    self.metricView(
                         title: "Return",
-                        value: viewModel.returnPercentageText,
-                        valueColor: viewModel.isProfitPositive ? AppTheme.accentGreen : AppTheme.accentRed
+                        value: self.viewModel.returnPercentageText,
+                        valueColor: self.viewModel.isProfitPositive ? AppTheme.accentGreen : AppTheme.accentRed
                     )
                 }
             }
@@ -190,14 +190,14 @@ struct CompletedInvestmentDetailSheet: View {
 
     private var netOutcomeSection: some View {
         // Mirror the trader's "Ergebnis nach Steuern und Gebühren" banner
-        let netResult = viewModel.netProfitAfterCharges
+        let netResult = self.viewModel.netProfitAfterCharges
 
         return VStack(spacing: ResponsiveDesign.spacing(0)) {
             HStack {
                 Text("Ergebnis nach Steuern und Gebühren")
                     .tradeCalculationBoldStyle()
                 Spacer()
-                Text(viewModel.netProfitAfterChargesText)
+                Text(self.viewModel.netProfitAfterChargesText)
                     .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.bold)
                     .foregroundColor(netResult >= 0 ? AppTheme.accentGreen : AppTheme.accentRed)
@@ -211,12 +211,12 @@ struct CompletedInvestmentDetailSheet: View {
 
     private var investmentDetailsSection: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
-            sectionHeader(title: "Investment Details")
+            self.sectionHeader(title: "Investment Details")
 
-            if viewModel.hasInvestmentDetails {
+            if self.viewModel.hasInvestmentDetails {
                 VStack(spacing: ResponsiveDesign.spacing(8)) {
-                    ForEach(viewModel.investmentDetails) { investment in
-                        investmentDetailRow(investment)
+                    ForEach(self.viewModel.investmentDetails) { investment in
+                        self.investmentDetailRow(investment)
                     }
                 }
             } else {
@@ -233,17 +233,17 @@ struct CompletedInvestmentDetailSheet: View {
 
     private var tradeLinesSection: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
-            sectionHeader(title: "Trades for this Investment")
+            self.sectionHeader(title: "Trades for this Investment")
 
-            if viewModel.tradeLineItems.isEmpty {
+            if self.viewModel.tradeLineItems.isEmpty {
                 Text("No trade participations recorded for this investment.")
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.6))
                     .padding(.vertical, ResponsiveDesign.spacing(4))
             } else {
                 VStack(spacing: ResponsiveDesign.spacing(8)) {
-                    ForEach(viewModel.tradeLineItems) { line in
-                        tradeLineRow(line)
+                    ForEach(self.viewModel.tradeLineItems) { line in
+                        self.tradeLineRow(line)
                     }
                 }
             }
@@ -256,18 +256,18 @@ struct CompletedInvestmentDetailSheet: View {
     // MARK: - Components
 
     private var statusBadge: some View {
-        Text(viewModel.statusText)
+        Text(self.viewModel.statusText)
             .font(ResponsiveDesign.captionFont())
             .fontWeight(.semibold)
             .padding(.horizontal, ResponsiveDesign.spacing(6))
             .padding(.vertical, ResponsiveDesign.spacing(2))
-            .background(viewModel.statusColor.opacity(0.2))
+            .background(self.viewModel.statusColor.opacity(0.2))
             .overlay(
                 RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(6))
-                    .stroke(viewModel.statusColor.opacity(0.6), lineWidth: 1)
+                    .stroke(self.viewModel.statusColor.opacity(0.6), lineWidth: 1)
             )
             .cornerRadius(ResponsiveDesign.spacing(6))
-            .foregroundColor(viewModel.statusColor)
+            .foregroundColor(self.viewModel.statusColor)
     }
 
     private func sectionHeader(title: String) -> some View {
@@ -322,7 +322,7 @@ struct CompletedInvestmentDetailSheet: View {
                     .foregroundColor(investment.statusColor)
             }
 
-            detailRow(title: "Allocated Amount", value: investment.amountText)
+            self.detailRow(title: "Allocated Amount", value: investment.amountText)
 
             if investment.isLocked {
                 Text("Investment is locked until completion.")

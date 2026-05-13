@@ -34,9 +34,9 @@ if echo "$STAGED_FILES" | grep -qE '\.swift$'; then
     # SwiftFormat first so cheap style fixes apply before SwiftLint
     if command -v swiftformat &> /dev/null; then
         echo "🔍 Running SwiftFormat check..."
-        if ! swiftformat . --lint; then
+        if ! swiftformat FIN1 FIN1Tests FIN1UITests FIN1InvestorTests FIN1CoreRegressionTests --lint; then
             echo "❌ SwiftFormat check failed!"
-            echo "Please run 'swiftformat .' to fix formatting issues."
+            echo "Please run: swiftformat FIN1 FIN1Tests FIN1UITests FIN1InvestorTests FIN1CoreRegressionTests"
             exit 1
         fi
     else

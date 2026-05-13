@@ -217,72 +217,72 @@ struct UnifiedInputField: View {
 
     // MARK: - Body
     var body: some View {
-        switch layoutStyle {
+        switch self.layoutStyle {
         case .standard:
             InputFieldLayoutComponents.standardLayout(
-                label: label,
-                isRequired: isRequired,
-                content: { inputContainer },
-                validationState: validationState
+                label: self.label,
+                isRequired: self.isRequired,
+                content: { self.inputContainer },
+                validationState: self.validationState
             )
         case .horizontal:
             InputFieldLayoutComponents.horizontalLayout(
-                label: label,
-                isRequired: isRequired,
-                labelWidth: labelWidth,
-                content: { inputContainer }
+                label: self.label,
+                isRequired: self.isRequired,
+                labelWidth: self.labelWidth,
+                content: { self.inputContainer }
             )
         case .inline:
             InputFieldLayoutComponents.inlineLayout(
-                label: label,
-                isRequired: isRequired,
-                content: { inputContainer }
+                label: self.label,
+                isRequired: self.isRequired,
+                content: { self.inputContainer }
             )
         }
     }
 
     // MARK: - Input Container
     private var inputContainer: some View {
-        InputContainer(isEnabled: isEnabled) {
+        InputContainer(isEnabled: self.isEnabled) {
             Group {
-                switch inputType {
+                switch self.inputType {
                 case .textField:
                     TextFieldInput(
-                        placeholder: placeholder,
-                        icon: icon,
-                        text: $text,
-                        maxLength: maxLength,
-                        onTextChange: onTextChange
+                        placeholder: self.placeholder,
+                        icon: self.icon,
+                        text: self.$text,
+                        maxLength: self.maxLength,
+                        onTextChange: self.onTextChange
                     )
                 case .secureField:
                     SecureFieldInput(
-                        placeholder: placeholder,
-                        icon: icon,
-                        text: $text,
-                        maxLength: maxLength,
-                        onTextChange: onTextChange
+                        placeholder: self.placeholder,
+                        icon: self.icon,
+                        text: self.$text,
+                        maxLength: self.maxLength,
+                        onTextChange: self.onTextChange
                     )
                 case .picker:
                     PickerInput(
-                        placeholder: placeholder,
-                        selection: $selection,
-                        options: options,
-                        displayText: displayText
+                        placeholder: self.placeholder,
+                        selection: self.$selection,
+                        options: self.options,
+                        displayText: self.displayText
                     )
                 case .searchField:
                     SearchFieldInput(
-                        text: text,
-                        subtitle: subtitle,
-                        cornerRadius: cornerRadius,
-                        onTap: onTap
+                        text: self.text,
+                        subtitle: self.subtitle,
+                        cornerRadius: self.cornerRadius,
+                        onTap: self.onTap
                     )
                 case .custom:
                     CustomInput(
-                        text: text,
-                        subtitle: subtitle,
-                        icon: icon,
-                        cornerRadius: cornerRadius,
-                        onTap: onTap
+                        text: self.text,
+                        subtitle: self.subtitle,
+                        icon: self.icon,
+                        cornerRadius: self.cornerRadius,
+                        onTap: self.onTap
                     )
                 }
             }

@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Trading Statistics Service Implementation
 /// Handles trading statistics calculations and management
@@ -23,33 +23,33 @@ final class TradingStatisticsService: TradingStatisticsServiceProtocol, ServiceL
     }
 
     func reset() {
-        errorMessage = nil
+        self.errorMessage = nil
     }
 
     // MARK: - Statistics Data Management
 
     func loadTradingStats() async throws {
         await MainActor.run {
-            isLoading = true
+            self.isLoading = true
         }
 
         try await Task.sleep(nanoseconds: 300_000_000) // 0.3 seconds
 
         await MainActor.run {
-            isLoading = false
+            self.isLoading = false
         }
     }
 
     func refreshTradingStats() async throws {
         await MainActor.run {
-            isLoading = true
-            errorMessage = nil
+            self.isLoading = true
+            self.errorMessage = nil
         }
 
         try await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
 
         await MainActor.run {
-            isLoading = false
+            self.isLoading = false
         }
     }
 
@@ -70,18 +70,18 @@ final class TradingStatisticsService: TradingStatisticsServiceProtocol, ServiceL
             return Calendar.current.isDate(completedAt, inSameDayAs: today)
         }
 
-        return calculatePnL(for: todayTrades)
+        return self.calculatePnL(for: todayTrades)
     }
 
     func calculateTotalPnL(completedTrades: [Trade]) -> Double {
-        return calculatePnL(for: completedTrades)
+        return self.calculatePnL(for: completedTrades)
     }
 
     func calculateWinRate(completedTrades: [Trade]) -> Double {
         guard !completedTrades.isEmpty else { return 0.0 }
 
         let profitableTrades = completedTrades.filter { trade in
-            calculateTradePnL(trade) > 0
+            self.calculateTradePnL(trade) > 0
         }
 
         return Double(profitableTrades.count) / Double(completedTrades.count) * 100.0
@@ -98,7 +98,7 @@ final class TradingStatisticsService: TradingStatisticsServiceProtocol, ServiceL
 
     private func calculatePnL(for trades: [Trade]) -> Double {
         return trades.reduce(0) { total, trade in
-            total + calculateTradePnL(trade)
+            total + self.calculateTradePnL(trade)
         }
     }
 
@@ -137,8 +137,8 @@ final class TradingStatisticsService: TradingStatisticsServiceProtocol, ServiceL
         let buySecuritiesValue = trade.buyOrder.price * Double(trade.buyOrder.quantity)
         let sellSecuritiesValue = sellOrders.reduce(0) { $0 + ($1.price * Double($1.quantity)) }
 
-        let buyFees = calculateOrderFees(for: buySecuritiesValue)
-        let sellFees = calculateOrderFees(for: sellSecuritiesValue)
+        let buyFees = self.calculateOrderFees(for: buySecuritiesValue)
+        let sellFees = self.calculateOrderFees(for: sellSecuritiesValue)
 
         // Return net fee impact: sell fees reduce profit, buy fees reduce profit
         // This represents the total fee burden on the trade

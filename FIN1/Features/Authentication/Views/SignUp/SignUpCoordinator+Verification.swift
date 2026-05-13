@@ -10,7 +10,7 @@ extension SignUpCoordinator {
         Task {
             do {
                 _ = try await onboardingAPI.sendVerificationCode()
-                startResendCountdown()
+                self.startResendCountdown()
             } catch {
                 verificationError = error.localizedDescription
             }
@@ -32,7 +32,7 @@ extension SignUpCoordinator {
                 if result.verified {
                     // Route through coordinator flow logic to respect account-type specific paths.
                     nextStep()
-                    stopResendTimer()
+                    self.stopResendTimer()
                 }
             } catch {
                 isVerifyingCode = false
@@ -45,13 +45,13 @@ extension SignUpCoordinator {
     func resendCode() {
         verificationCode = ""
         verificationError = nil
-        sendVerificationCode()
+        self.sendVerificationCode()
     }
 
     func startResendCountdown() {
         canResendCode = false
         resendCountdown = 60
-        stopResendTimer()
+        self.stopResendTimer()
         resendTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 guard let self else { return }
@@ -79,7 +79,7 @@ extension SignUpCoordinator {
         Task {
             do {
                 _ = try await onboardingAPI.sendPhoneVerificationCode(phoneNumber: phone)
-                startPhoneResendCountdown()
+                self.startPhoneResendCountdown()
             } catch {
                 phoneVerificationError = error.localizedDescription
             }
@@ -101,7 +101,7 @@ extension SignUpCoordinator {
                 if result.verified {
                     // Route through coordinator flow logic to respect account-type specific paths.
                     nextStep()
-                    stopPhoneResendTimer()
+                    self.stopPhoneResendTimer()
                 }
             } catch {
                 isVerifyingPhone = false
@@ -114,13 +114,13 @@ extension SignUpCoordinator {
     func resendPhoneCode() {
         phoneVerificationCode = ""
         phoneVerificationError = nil
-        sendPhoneVerificationCode()
+        self.sendPhoneVerificationCode()
     }
 
     func startPhoneResendCountdown() {
         canResendPhoneCode = false
         phoneResendCountdown = 60
-        stopPhoneResendTimer()
+        self.stopPhoneResendTimer()
         phoneResendTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 guard let self else { return }

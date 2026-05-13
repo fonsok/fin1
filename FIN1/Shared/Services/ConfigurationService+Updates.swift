@@ -1,5 +1,5 @@
-import Foundation
 @preconcurrency import Dispatch
+import Foundation
 
 // MARK: - ConfigurationService Update Methods Extension
 /// Update methods for ConfigurationService
@@ -292,5 +292,4 @@ extension ConfigurationService {
             }
         }
     }
-
 }

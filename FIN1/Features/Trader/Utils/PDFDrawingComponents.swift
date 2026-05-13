@@ -53,7 +53,7 @@ struct PDFDrawingComponents {
         y += 20
 
         // QR Code in top right
-        y = drawQRCode(in: context, invoice: invoice, pageRect: pageRect, currentY: y)
+        y = self.drawQRCode(in: context, invoice: invoice, pageRect: pageRect, currentY: y)
 
         return y
     }
@@ -157,7 +157,7 @@ struct PDFDrawingComponents {
 
         for (index, title) in PDFTableConfig.columnTitles.enumerated() {
             title.draw(in: CGRect(x: x + 5, y: y + 5, width: columnWidths[index] - 10, height: PDFStyling.headerHeight - 10),
-                      withAttributes: headerAttributes)
+                       withAttributes: headerAttributes)
             x += columnWidths[index]
         }
 
@@ -184,7 +184,7 @@ struct PDFDrawingComponents {
 
             for (colIndex, data) in rowData.enumerated() {
                 data.draw(in: CGRect(x: x + 5, y: y + 5, width: columnWidths[colIndex] - 10, height: PDFStyling.rowHeight - 10),
-                         withAttributes: rowAttributes)
+                          withAttributes: rowAttributes)
                 x += columnWidths[colIndex]
             }
 

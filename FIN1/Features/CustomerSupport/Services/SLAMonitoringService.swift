@@ -1,6 +1,6 @@
+import Combine
 import Foundation
 import os.log
-import Combine
 
 // MARK: - SLA Monitoring Service
 /// Monitors tickets for SLA violations and automatically escalates when deadlines are breached
@@ -38,18 +38,18 @@ final class SLAMonitoringService: SLAMonitoringServiceProtocol {
         self.configurationService = configurationService
 
         // Observe configuration changes and restart monitoring with new interval
-        setupConfigurationObserver()
+        self.setupConfigurationObserver()
     }
 
     private func setupConfigurationObserver() {
         // Cast to concrete type to access @Published publisher
         // This is safe because AppServicesBuilder always creates ConfigurationService
         guard let configService = configurationService as? ConfigurationService else {
-            logger.warning("⚠️ ConfigurationService is not the expected concrete type")
+            self.logger.warning("⚠️ ConfigurationService is not the expected concrete type")
             return
         }
 
-        configurationObserver = configService.$slaMonitoringInterval
+        self.configurationObserver = configService.$slaMonitoringInterval
             .dropFirst() // Skip initial value
             .sink { [weak self] (newInterval: TimeInterval) in
                 Task { @MainActor [weak self] in
@@ -64,14 +64,14 @@ final class SLAMonitoringService: SLAMonitoringServiceProtocol {
     // MARK: - Monitoring Control
 
     func startMonitoring(interval: TimeInterval? = nil) async {
-        stopMonitoring()
+        self.stopMonitoring()
 
         // Use provided interval or read from configuration
-        let monitoringInterval = interval ?? configurationService.slaMonitoringInterval
+        let monitoringInterval = interval ?? self.configurationService.slaMonitoringInterval
 
-        logger.info("🔍 Starting SLA monitoring with interval: \(monitoringInterval)s")
+        self.logger.info("🔍 Starting SLA monitoring with interval: \(monitoringInterval)s")
 
-        monitoringTask = Task { @MainActor [weak self] in
+        self.monitoringTask = Task { @MainActor [weak self] in
             while !Task.isCancelled {
                 do {
                     try await self?.checkAndEscalateViolations()
@@ -85,16 +85,16 @@ final class SLAMonitoringService: SLAMonitoringServiceProtocol {
     }
 
     func stopMonitoring() {
-        monitoringTask?.cancel()
-        monitoringTask = nil
-        logger.info("🛑 SLA monitoring stopped")
+        self.monitoringTask?.cancel()
+        self.monitoringTask = nil
+        self.logger.info("🛑 SLA monitoring stopped")
     }
 
     // MARK: - Violation Checking
 
     func checkAndEscalateViolations() async throws {
         guard let supportService = supportService else {
-            logger.warning("⚠️ Support service not available for SLA monitoring")
+            self.logger.warning("⚠️ Support service not available for SLA monitoring")
             return
         }
 
@@ -102,35 +102,35 @@ final class SLAMonitoringService: SLAMonitoringServiceProtocol {
         let tickets = try await supportService.getSupportTickets(userId: nil)
         let activeTickets = tickets.filter { ticket in
             ticket.status != .resolved &&
-            ticket.status != .closed &&
-            ticket.status != .archived
+                ticket.status != .closed &&
+                ticket.status != .archived
         }
 
-        logger.info("🔍 Checking \(activeTickets.count) active tickets for SLA violations")
+        self.logger.info("🔍 Checking \(activeTickets.count) active tickets for SLA violations")
 
         var violationCount = 0
 
         for ticket in activeTickets {
             let hasViolation = await checkTicketForViolation(ticket)
 
-            if hasViolation && !escalatedTicketIds.contains(ticket.id) {
+            if hasViolation && !self.escalatedTicketIds.contains(ticket.id) {
                 do {
-                    try await escalateTicketForSLAViolation(ticket)
-                    escalatedTicketIds.insert(ticket.id)
+                    try await self.escalateTicketForSLAViolation(ticket)
+                    self.escalatedTicketIds.insert(ticket.id)
                     violationCount += 1
                 } catch {
-                    logger.error("❌ Failed to escalate ticket \(ticket.ticketNumber): \(error.localizedDescription)")
+                    self.logger.error("❌ Failed to escalate ticket \(ticket.ticketNumber): \(error.localizedDescription)")
                 }
             }
         }
 
         if violationCount > 0 {
-            logger.info("⚠️ Escalated \(violationCount) ticket(s) due to SLA violations")
+            self.logger.info("⚠️ Escalated \(violationCount) ticket(s) due to SLA violations")
         }
     }
 
     func checkTicketForViolation(_ ticket: SupportTicket) async -> Bool {
-        let slaInfo = ticket.getSLAInfo(config: slaConfig)
+        let slaInfo = ticket.getSLAInfo(config: self.slaConfig)
 
         // Check if either first response or resolution SLA is breached
         return slaInfo.firstResponseStatus == .breached || slaInfo.resolutionStatus == .breached
@@ -143,7 +143,7 @@ final class SLAMonitoringService: SLAMonitoringServiceProtocol {
             throw CustomerSupportError.serviceUnavailable
         }
 
-        let slaInfo = ticket.getSLAInfo(config: slaConfig)
+        let slaInfo = ticket.getSLAInfo(config: self.slaConfig)
 
         // Determine which SLA was violated
         var violationReason = "SLA-Deadline überschritten"
@@ -164,7 +164,7 @@ final class SLAMonitoringService: SLAMonitoringServiceProtocol {
 
         // Send notification to assigned agent (if any)
         if let assignedAgentId = ticket.assignedTo {
-            await sendSLAViolationNotification(
+            await self.sendSLAViolationNotification(
                 ticket: ticket,
                 agentId: assignedAgentId,
                 violationReason: violationReason
@@ -180,9 +180,9 @@ final class SLAMonitoringService: SLAMonitoringServiceProtocol {
             severity: .high,
             requiresReview: true
         )
-        await auditService.logComplianceEvent(event)
+        await self.auditService.logComplianceEvent(event)
 
-        logger.warning("⚠️ Automatically escalated ticket \(ticket.ticketNumber) due to SLA violation: \(violationReason)")
+        self.logger.warning("⚠️ Automatically escalated ticket \(ticket.ticketNumber) due to SLA violation: \(violationReason)")
     }
 
     // MARK: - Notifications
@@ -192,7 +192,7 @@ final class SLAMonitoringService: SLAMonitoringServiceProtocol {
         agentId: String,
         violationReason: String
     ) async {
-        notificationService.createNotification(
+        self.notificationService.createNotification(
             title: "⚠️ SLA-Verletzung: Ticket \(ticket.ticketNumber)",
             message: "Das Ticket wurde automatisch eskaliert. \(violationReason)",
             type: .system,
@@ -206,7 +206,7 @@ final class SLAMonitoringService: SLAMonitoringServiceProtocol {
             ]
         )
 
-        logger.info("📧 SLA violation notification sent to agent \(agentId) for ticket \(ticket.ticketNumber)")
+        self.logger.info("📧 SLA violation notification sent to agent \(agentId) for ticket \(ticket.ticketNumber)")
     }
 
     // MARK: - Cleanup

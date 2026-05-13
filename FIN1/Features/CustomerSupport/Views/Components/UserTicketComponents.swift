@@ -11,13 +11,13 @@ struct UserTicketInfoRow: View {
 
     var body: some View {
         HStack {
-            Text(label)
+            Text(self.label)
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
 
             Spacer()
 
-            Text(value)
+            Text(self.value)
                 .font(ResponsiveDesign.bodyFont())
                 .fontWeight(.medium)
                 .foregroundColor(AppTheme.fontColor)
@@ -36,42 +36,42 @@ struct UserTicketResponseCard: View {
 
     /// Check if this response contains a confirmation request
     var isConfirmationRequest: Bool {
-        response.message.contains("⏳") || response.message.contains("Bitte bestätigen Sie")
+        self.response.message.contains("⏳") || self.response.message.contains("Bitte bestätigen Sie")
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
             HStack {
-                Image(systemName: response.isInternal ? "lock.fill" : "person.fill")
+                Image(systemName: self.response.isInternal ? "lock.fill" : "person.fill")
                     .font(ResponsiveDesign.captionFont())
-                    .foregroundColor(response.isInternal ? AppTheme.accentRed : AppTheme.accentLightBlue)
+                    .foregroundColor(self.response.isInternal ? AppTheme.accentRed : AppTheme.accentLightBlue)
 
-                Text(response.isInternal ? "Interne Notiz" : "Antwort")
+                Text(self.response.isInternal ? "Interne Notiz" : "Antwort")
                     .font(ResponsiveDesign.captionFont())
                     .fontWeight(.semibold)
-                    .foregroundColor(response.isInternal ? AppTheme.accentRed : AppTheme.accentLightBlue)
+                    .foregroundColor(self.response.isInternal ? AppTheme.accentRed : AppTheme.accentLightBlue)
 
                 Spacer()
 
-                Text(response.createdAt.formatted(date: .abbreviated, time: .shortened))
+                Text(self.response.createdAt.formatted(date: .abbreviated, time: .shortened))
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.6))
             }
 
-            if !response.isInternal {
-                Text(response.message)
+            if !self.response.isInternal {
+                Text(self.response.message)
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.fontColor)
 
                 // Show confirmation buttons if this is a confirmation request and buttons are enabled
-                if showConfirmationButtons && isConfirmationRequest {
+                if self.showConfirmationButtons && self.isConfirmationRequest {
                     Divider()
                         .padding(.vertical, ResponsiveDesign.spacing(8))
 
                     InlineConfirmationButtons(
-                        isSubmitting: isSubmitting,
-                        onConfirmSolved: onConfirmSolved ?? {},
-                        onReportNotSolved: onReportNotSolved ?? {}
+                        isSubmitting: self.isSubmitting,
+                        onConfirmSolved: self.onConfirmSolved ?? {},
+                        onReportNotSolved: self.onReportNotSolved ?? {}
                     )
                 }
             } else {
@@ -82,7 +82,7 @@ struct UserTicketResponseCard: View {
             }
         }
         .padding()
-        .background(response.isInternal ? AppTheme.accentRed.opacity(0.1) : AppTheme.accentLightBlue.opacity(0.1))
+        .background(self.response.isInternal ? AppTheme.accentRed.opacity(0.1) : AppTheme.accentLightBlue.opacity(0.1))
         .cornerRadius(ResponsiveDesign.spacing(8))
     }
 }
@@ -97,10 +97,10 @@ struct InlineConfirmationButtons: View {
     var body: some View {
         VStack(spacing: ResponsiveDesign.spacing(8)) {
             Button {
-                onConfirmSolved()
+                self.onConfirmSolved()
             } label: {
                 HStack {
-                    if isSubmitting {
+                    if self.isSubmitting {
                         ProgressView()
                             .progressViewStyle(CircularProgressViewStyle(tint: .white))
                     } else {
@@ -116,10 +116,10 @@ struct InlineConfirmationButtons: View {
                 .foregroundColor(.white)
                 .cornerRadius(ResponsiveDesign.spacing(8))
             }
-            .disabled(isSubmitting)
+            .disabled(self.isSubmitting)
 
             Button {
-                onReportNotSolved()
+                self.onReportNotSolved()
             } label: {
                 HStack {
                     Image(systemName: "xmark.circle.fill")
@@ -133,7 +133,7 @@ struct InlineConfirmationButtons: View {
                 .foregroundColor(AppTheme.accentRed)
                 .cornerRadius(ResponsiveDesign.spacing(8))
             }
-            .disabled(isSubmitting)
+            .disabled(self.isSubmitting)
         }
     }
 }
@@ -176,10 +176,10 @@ struct ConfirmationButtons: View {
     var body: some View {
         HStack(spacing: ResponsiveDesign.spacing(12)) {
             Button {
-                onConfirmSolved()
+                self.onConfirmSolved()
             } label: {
                 HStack {
-                    if isSubmitting {
+                    if self.isSubmitting {
                         ProgressView()
                             .progressViewStyle(CircularProgressViewStyle(tint: .white))
                     } else {
@@ -194,10 +194,10 @@ struct ConfirmationButtons: View {
                 .foregroundColor(.white)
                 .cornerRadius(ResponsiveDesign.spacing(10))
             }
-            .disabled(isSubmitting)
+            .disabled(self.isSubmitting)
 
             Button {
-                onReportNotSolved()
+                self.onReportNotSolved()
             } label: {
                 HStack {
                     Image(systemName: "xmark.circle.fill")
@@ -210,7 +210,7 @@ struct ConfirmationButtons: View {
                 .foregroundColor(AppTheme.accentRed)
                 .cornerRadius(ResponsiveDesign.spacing(10))
             }
-            .disabled(isSubmitting)
+            .disabled(self.isSubmitting)
         }
     }
 }
@@ -240,7 +240,7 @@ struct ProblemNotSolvedSheet: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
 
-                    TextEditor(text: $additionalInfo)
+                    TextEditor(text: self.$additionalInfo)
                         .frame(minHeight: 150)
                         .padding(ResponsiveDesign.spacing(12))
                         .background(AppTheme.systemTertiaryBackground)
@@ -249,10 +249,10 @@ struct ProblemNotSolvedSheet: View {
                         .scrollContentBackground(.hidden)
 
                     Button {
-                        onSubmit()
+                        self.onSubmit()
                     } label: {
                         HStack {
-                            if isSubmitting {
+                            if self.isSubmitting {
                                 ProgressView()
                                     .progressViewStyle(CircularProgressViewStyle(tint: .white))
                             } else {
@@ -262,11 +262,11 @@ struct ProblemNotSolvedSheet: View {
                         }
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(additionalInfo.isEmpty ? AppTheme.fontColor.opacity(0.3) : AppTheme.accentOrange)
+                        .background(self.additionalInfo.isEmpty ? AppTheme.fontColor.opacity(0.3) : AppTheme.accentOrange)
                         .foregroundColor(.white)
                         .cornerRadius(ResponsiveDesign.spacing(10))
                     }
-                    .disabled(additionalInfo.isEmpty || isSubmitting)
+                    .disabled(self.additionalInfo.isEmpty || self.isSubmitting)
 
                     Spacer()
                 }
@@ -277,7 +277,7 @@ struct ProblemNotSolvedSheet: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Abbrechen") {
-                        onCancel()
+                        self.onCancel()
                     }
                 }
             }

@@ -1,6 +1,6 @@
 import Foundation
-import SwiftUI
 import os.log
+import SwiftUI
 
 // MARK: - Performance Monitor
 /// Comprehensive performance monitoring for the FIN1 app
@@ -17,41 +17,41 @@ final class AppPerformanceMonitor: ObservableObject {
     init() {
         // Enable performance monitoring in debug builds
         #if DEBUG
-        isEnabled = true
+        self.isEnabled = true
         #else
-        isEnabled = false
+        self.isEnabled = false
         #endif
     }
 
     // MARK: - Timing Methods
 
     func startTiming(_ operation: String) {
-        guard isEnabled else { return }
-        startTimes[operation] = Date()
-        logger.debug("⏱️ Started timing: \(operation)")
+        guard self.isEnabled else { return }
+        self.startTimes[operation] = Date()
+        self.logger.debug("⏱️ Started timing: \(operation)")
     }
 
     func endTiming(_ operation: String) -> TimeInterval? {
-        guard isEnabled,
+        guard self.isEnabled,
               let startTime = startTimes.removeValue(forKey: operation) else {
             return nil
         }
 
         let duration = Date().timeIntervalSince(startTime)
-        updateMetric(operation, duration: duration)
+        self.updateMetric(operation, duration: duration)
 
-        logger.debug("⏱️ Completed timing: \(operation) - \(String(format: "%.3f", duration))s")
+        self.logger.debug("⏱️ Completed timing: \(operation) - \(String(format: "%.3f", duration))s")
         return duration
     }
 
     func measure<T>(_ operation: String, block: () throws -> T) rethrows -> T {
-        startTiming(operation)
+        self.startTiming(operation)
         defer { _ = endTiming(operation) }
         return try block()
     }
 
     func measureAsync<T>(_ operation: String, block: () async throws -> T) async rethrows -> T {
-        startTiming(operation)
+        self.startTiming(operation)
         defer { _ = endTiming(operation) }
         return try await block()
     }
@@ -59,7 +59,7 @@ final class AppPerformanceMonitor: ObservableObject {
     // MARK: - Memory Monitoring
 
     func logMemoryUsage(_ context: String) {
-        guard isEnabled else { return }
+        guard self.isEnabled else { return }
 
         var memoryInfo = mach_task_basic_info()
         var count = mach_msg_type_number_t(MemoryLayout<mach_task_basic_info>.size)/4
@@ -67,19 +67,19 @@ final class AppPerformanceMonitor: ObservableObject {
         let kerr: kern_return_t = withUnsafeMutablePointer(to: &memoryInfo) {
             $0.withMemoryRebound(to: integer_t.self, capacity: 1) {
                 task_info(mach_task_self_,
-                         task_flavor_t(MACH_TASK_BASIC_INFO),
-                         $0,
-                         &count)
+                          task_flavor_t(MACH_TASK_BASIC_INFO),
+                          $0,
+                          &count)
             }
         }
 
         if kerr == KERN_SUCCESS {
-            let memoryMB = Double(memoryInfo.resident_size) / 1024.0 / 1024.0
-            logger.debug("🧠 Memory usage (\(context)): \(String(format: "%.2f", memoryMB)) MB")
+            let memoryMB = Double(memoryInfo.resident_size) / 1_024.0 / 1_024.0
+            self.logger.debug("🧠 Memory usage (\(context)): \(String(format: "%.2f", memoryMB)) MB")
 
             // Alert if memory usage is high
             if memoryMB > 200 {
-                logger.warning("⚠️ High memory usage detected: \(String(format: "%.2f", memoryMB)) MB")
+                self.logger.warning("⚠️ High memory usage detected: \(String(format: "%.2f", memoryMB)) MB")
             }
         }
     }
@@ -87,46 +87,46 @@ final class AppPerformanceMonitor: ObservableObject {
     // MARK: - View Performance
 
     func trackViewAppear(_ viewName: String) {
-        guard isEnabled else { return }
-        logger.debug("👁️ View appeared: \(viewName)")
-        updateMetric("view_\(viewName)_appear", duration: 0)
+        guard self.isEnabled else { return }
+        self.logger.debug("👁️ View appeared: \(viewName)")
+        self.updateMetric("view_\(viewName)_appear", duration: 0)
     }
 
     func trackViewDisappear(_ viewName: String) {
-        guard isEnabled else { return }
-        logger.debug("👁️ View disappeared: \(viewName)")
-        updateMetric("view_\(viewName)_disappear", duration: 0)
+        guard self.isEnabled else { return }
+        self.logger.debug("👁️ View disappeared: \(viewName)")
+        self.updateMetric("view_\(viewName)_disappear", duration: 0)
     }
 
     // MARK: - Network Performance
 
     func trackNetworkRequest(_ endpoint: String, duration: TimeInterval, success: Bool) {
-        guard isEnabled else { return }
+        guard self.isEnabled else { return }
 
         let status = success ? "success" : "failure"
-        logger.debug("🌐 Network request: \(endpoint) - \(String(format: "%.3f", duration))s - \(status)")
+        self.logger.debug("🌐 Network request: \(endpoint) - \(String(format: "%.3f", duration))s - \(status)")
 
-        updateMetric("network_\(endpoint)_\(status)", duration: duration)
+        self.updateMetric("network_\(endpoint)_\(status)", duration: duration)
 
         // Alert on slow network requests
         if duration > 5.0 {
-            logger.warning("⚠️ Slow network request: \(endpoint) - \(String(format: "%.3f", duration))s")
+            self.logger.warning("⚠️ Slow network request: \(endpoint) - \(String(format: "%.3f", duration))s")
         }
     }
 
     // MARK: - Database Performance
 
     func trackDatabaseOperation(_ operation: String, duration: TimeInterval, recordCount: Int? = nil) {
-        guard isEnabled else { return }
+        guard self.isEnabled else { return }
 
         let countInfo = recordCount.map { " (\($0) records)" } ?? ""
-        logger.debug("💾 Database operation: \(operation) - \(String(format: "%.3f", duration))s\(countInfo)")
+        self.logger.debug("💾 Database operation: \(operation) - \(String(format: "%.3f", duration))s\(countInfo)")
 
-        updateMetric("db_\(operation)", duration: duration)
+        self.updateMetric("db_\(operation)", duration: duration)
 
         // Alert on slow database operations
         if duration > 2.0 {
-            logger.warning("⚠️ Slow database operation: \(operation) - \(String(format: "%.3f", duration))s")
+            self.logger.warning("⚠️ Slow database operation: \(operation) - \(String(format: "%.3f", duration))s")
         }
     }
 
@@ -134,7 +134,7 @@ final class AppPerformanceMonitor: ObservableObject {
 
     private func updateMetric(_ operation: String, duration: TimeInterval) {
         if let existing = metrics[operation] {
-            metrics[operation] = PerformanceMetric(
+            self.metrics[operation] = PerformanceMetric(
                 operation: operation,
                 totalDuration: existing.totalDuration + duration,
                 callCount: existing.callCount + 1,
@@ -144,7 +144,7 @@ final class AppPerformanceMonitor: ObservableObject {
                 lastUpdated: Date()
             )
         } else {
-            metrics[operation] = PerformanceMetric(
+            self.metrics[operation] = PerformanceMetric(
                 operation: operation,
                 totalDuration: duration,
                 callCount: 1,
@@ -162,7 +162,7 @@ final class AppPerformanceMonitor: ObservableObject {
         var report = "📊 Performance Report\n"
         report += "==================\n\n"
 
-        let sortedMetrics = metrics.values.sorted { $0.averageDuration > $1.averageDuration }
+        let sortedMetrics = self.metrics.values.sorted { $0.averageDuration > $1.averageDuration }
 
         for metric in sortedMetrics.prefix(10) {
             report += "\(metric.operation):\n"
@@ -176,8 +176,8 @@ final class AppPerformanceMonitor: ObservableObject {
     }
 
     func clearMetrics() {
-        metrics.removeAll()
-        logger.debug("🧹 Performance metrics cleared")
+        self.metrics.removeAll()
+        self.logger.debug("🧹 Performance metrics cleared")
     }
 }
 
@@ -200,10 +200,10 @@ struct PerformanceMonitorModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .onAppear {
-                monitor.trackViewAppear(viewName)
+                self.monitor.trackViewAppear(self.viewName)
             }
             .onDisappear {
-                monitor.trackViewDisappear(viewName)
+                self.monitor.trackViewDisappear(self.viewName)
             }
     }
 }
@@ -223,16 +223,16 @@ struct AppPerformanceDebugView: View {
         NavigationStack {
             List {
                 Section("Settings") {
-                    Toggle("Enable Monitoring", isOn: $monitor.isEnabled)
+                    Toggle("Enable Monitoring", isOn: self.$monitor.isEnabled)
 
                     Button("Clear Metrics") {
-                        monitor.clearMetrics()
+                        self.monitor.clearMetrics()
                     }
                     .foregroundColor(.red)
                 }
 
                 Section("Metrics") {
-                    ForEach(Array(monitor.metrics.keys.sorted()), id: \.self) { key in
+                    ForEach(Array(self.monitor.metrics.keys.sorted()), id: \.self) { key in
                         if let metric = monitor.metrics[key] {
                             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
                                 Text(metric.operation)

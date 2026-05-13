@@ -18,7 +18,7 @@ extension MockPaymentService {
                 orderBy: "-timestamp",
                 limit: 100
             )
-            transactions = mergeTransactions(primary: transactions, secondary: parseTransactions.map { $0.toTransaction() })
+            transactions = self.mergeTransactions(primary: transactions, secondary: parseTransactions.map { $0.toTransaction() })
             logger.info("✅ Loaded \(parseTransactions.count) transactions from Parse Server")
         } catch {
             logger.error("⚠️ Failed to load transactions from Parse Server: \(error.localizedDescription)")

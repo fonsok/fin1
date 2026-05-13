@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Event Types
 /// Centralized event system for loose coupling between services
@@ -104,21 +104,21 @@ final class EventBus: ObservableObject, @unchecked Sendable {
     /// Publishes an event to all subscribers
     func publish<T: AppEvent>(_ event: T) {
         print("📡 EventBus: Publishing \(type(of: event)) - \(event.id)")
-        eventSubject.send(event)
+        self.eventSubject.send(event)
     }
 
     // MARK: - Event Subscription
 
     /// Subscribes to events of a specific type
     func subscribe<T: AppEvent>(to eventType: T.Type) -> AnyPublisher<T, Never> {
-        return eventSubject
+        return self.eventSubject
             .compactMap { $0 as? T }
             .eraseToAnyPublisher()
     }
 
     /// Subscribes to all events
     func subscribeToAll() -> AnyPublisher<AppEvent, Never> {
-        return eventSubject.eraseToAnyPublisher()
+        return self.eventSubject.eraseToAnyPublisher()
     }
 
     // MARK: - Convenience Methods
@@ -132,7 +132,7 @@ final class EventBus: ObservableObject, @unchecked Sendable {
             quantity: quantity,
             price: price
         )
-        publish(event)
+        self.publish(event)
     }
 
     /// Publishes an order completed event
@@ -144,7 +144,7 @@ final class EventBus: ObservableObject, @unchecked Sendable {
             quantity: quantity,
             price: price
         )
-        publish(event)
+        self.publish(event)
     }
 
     /// Publishes a trade created event
@@ -155,7 +155,7 @@ final class EventBus: ObservableObject, @unchecked Sendable {
             symbol: symbol,
             buyOrderId: buyOrderId
         )
-        publish(event)
+        self.publish(event)
     }
 
     /// Publishes a trade completed event
@@ -166,7 +166,7 @@ final class EventBus: ObservableObject, @unchecked Sendable {
             symbol: symbol,
             totalPnL: totalPnL
         )
-        publish(event)
+        self.publish(event)
     }
 
     /// Publishes an invoice created event
@@ -178,25 +178,25 @@ final class EventBus: ObservableObject, @unchecked Sendable {
             transactionType: transactionType,
             amount: amount
         )
-        publish(event)
+        self.publish(event)
     }
 
     /// Publishes a user signed in event
     func publishUserSignedIn(userId: String, userRole: UserRole) {
         let event = UserSignedInEvent(userId: userId, userRole: userRole)
-        publish(event)
+        self.publish(event)
     }
 
     /// Publishes a user signed out event
     func publishUserSignedOut(userId: String) {
         let event = UserSignedOutEvent(userId: userId)
-        publish(event)
+        self.publish(event)
     }
 
     /// Publishes a depot value updated event
     func publishDepotValueUpdated(newValue: Double, previousValue: Double) {
         let event = DepotValueUpdatedEvent(newValue: newValue, previousValue: previousValue)
-        publish(event)
+        self.publish(event)
     }
 
     /// Publishes a holding updated event
@@ -206,7 +206,7 @@ final class EventBus: ObservableObject, @unchecked Sendable {
             remainingQuantity: remainingQuantity,
             soldQuantity: soldQuantity
         )
-        publish(event)
+        self.publish(event)
     }
 }
 

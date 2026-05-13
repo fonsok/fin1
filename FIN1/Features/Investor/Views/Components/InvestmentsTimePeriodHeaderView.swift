@@ -10,7 +10,7 @@ struct InvestmentsTimePeriodHeaderView: View {
         VStack(spacing: ResponsiveDesign.spacing(16)) {
             HStack {
                 // Time period filter
-                timePeriodFilter
+                self.timePeriodFilter
 
                 Spacer()
             }
@@ -32,13 +32,13 @@ struct InvestmentsTimePeriodHeaderView: View {
             Menu {
                 ForEach(InvestmentTimePeriod.allCases, id: \.self) { period in
                     Button(period.displayName) {
-                        selectedTimePeriod = period
-                        onTimePeriodChanged(period)
+                        self.selectedTimePeriod = period
+                        self.onTimePeriodChanged(period)
                     }
                 }
             } label: {
                 HStack {
-                    Text(selectedTimePeriod.displayName)
+                    Text(self.selectedTimePeriod.displayName)
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(AppTheme.accentOrange)
 

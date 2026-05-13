@@ -12,10 +12,10 @@ struct CSRInvestmentDetailSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: ResponsiveDesign.spacing(16)) {
-                    headerSection
-                    financialSection
-                    statusSection
-                    timelineSection
+                    self.headerSection
+                    self.financialSection
+                    self.statusSection
+                    self.timelineSection
                 }
                 .padding(.horizontal, ResponsiveDesign.horizontalPadding())
                 .padding(.vertical, ResponsiveDesign.spacing(16))
@@ -26,7 +26,7 @@ struct CSRInvestmentDetailSheet: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Schließen") {
-                        dismiss()
+                        self.dismiss()
                     }
                     .foregroundColor(AppTheme.accentLightBlue)
                 }
@@ -39,7 +39,7 @@ struct CSRInvestmentDetailSheet: View {
     private var headerSection: some View {
         VStack(spacing: ResponsiveDesign.spacing(12)) {
             // Investment number badge
-            Text(investment.investmentNumber)
+            Text(self.investment.investmentNumber)
                 .font(ResponsiveDesign.captionFont())
                 .fontWeight(.semibold)
                 .foregroundColor(AppTheme.accentLightBlue)
@@ -49,7 +49,7 @@ struct CSRInvestmentDetailSheet: View {
                 .cornerRadius(ResponsiveDesign.spacing(6))
 
             // Customer name
-            Text("Investor: \(customerName)")
+            Text("Investor: \(self.customerName)")
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.8))
 
@@ -59,7 +59,7 @@ struct CSRInvestmentDetailSheet: View {
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.accentLightBlue)
 
-                Text("Trader: \(investment.traderName)")
+                Text("Trader: \(self.investment.traderName)")
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.fontColor)
             }
@@ -83,7 +83,7 @@ struct CSRInvestmentDetailSheet: View {
             CSRDetailRow(
                 icon: "eurosign.circle.fill",
                 label: "Investitionsbetrag",
-                value: investment.amount.formattedAsLocalizedCurrency(),
+                value: self.investment.amount.formattedAsLocalizedCurrency(),
                 valueColor: AppTheme.fontColor
             )
 
@@ -93,7 +93,7 @@ struct CSRInvestmentDetailSheet: View {
             CSRDetailRow(
                 icon: "chart.line.uptrend.xyaxis",
                 label: "Aktueller Wert",
-                value: investment.currentValue.formattedAsLocalizedCurrency(),
+                value: self.investment.currentValue.formattedAsLocalizedCurrency(),
                 valueColor: AppTheme.fontColor
             )
 
@@ -120,7 +120,7 @@ struct CSRInvestmentDetailSheet: View {
             Divider()
 
             // Profit/Loss
-            let profitLoss = investment.currentValue - investment.amount
+            let profitLoss = self.investment.currentValue - self.investment.amount
             CSRDetailRow(
                 icon: "plusminus.circle.fill",
                 label: "Return (€)",
@@ -150,8 +150,8 @@ struct CSRInvestmentDetailSheet: View {
                 Spacer()
 
                 CSStatusBadge(
-                    text: statusDisplayText,
-                    color: statusColor
+                    text: self.statusDisplayText,
+                    color: self.statusColor
                 )
             }
         }
@@ -173,7 +173,7 @@ struct CSRInvestmentDetailSheet: View {
             CSRDetailRow(
                 icon: "calendar.badge.plus",
                 label: "Erstellt am",
-                value: investment.createdAt.formatted(date: .long, time: .shortened),
+                value: self.investment.createdAt.formatted(date: .long, time: .shortened),
                 valueColor: AppTheme.fontColor
             )
 
@@ -188,8 +188,8 @@ struct CSRInvestmentDetailSheet: View {
                 )
 
                 // Duration
-                let duration = completedAt.timeIntervalSince(investment.createdAt)
-                let days = Int(duration / 86400)
+                let duration = completedAt.timeIntervalSince(self.investment.createdAt)
+                let days = Int(duration / 86_400)
                 Divider()
 
                 CSRDetailRow(
@@ -208,17 +208,17 @@ struct CSRInvestmentDetailSheet: View {
     // MARK: - Helpers
 
     private var statusDisplayText: String {
-        switch investment.status.lowercased() {
+        switch self.investment.status.lowercased() {
         case "active": return "Aktiv"
         case "submitted": return "Eingereicht"
         case "completed": return "Abgeschlossen"
         case "cancelled": return "Storniert"
-        default: return investment.status.capitalized
+        default: return self.investment.status.capitalized
         }
     }
 
     private var statusColor: Color {
-        switch investment.status.lowercased() {
+        switch self.investment.status.lowercased() {
         case "active": return AppTheme.accentOrange
         case "submitted": return AppTheme.accentLightBlue
         case "completed": return AppTheme.accentGreen
@@ -238,21 +238,21 @@ struct CSRDetailRow: View {
 
     var body: some View {
         HStack(spacing: ResponsiveDesign.spacing(12)) {
-            Image(systemName: icon)
+            Image(systemName: self.icon)
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.accentLightBlue)
                 .frame(width: ResponsiveDesign.spacing(24))
 
-            Text(label)
+            Text(self.label)
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
 
             Spacer()
 
-            Text(value)
+            Text(self.value)
                 .font(ResponsiveDesign.bodyFont())
                 .fontWeight(.medium)
-                .foregroundColor(valueColor)
+                .foregroundColor(self.valueColor)
         }
     }
 }

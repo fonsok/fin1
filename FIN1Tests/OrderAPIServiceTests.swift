@@ -1,5 +1,5 @@
-import XCTest
 @testable import FIN1
+import XCTest
 
 // MARK: - Order API Service Tests
 
@@ -10,13 +10,13 @@ final class OrderAPIServiceTests: XCTestCase {
 
     override func setUp() {
         super.setUp()
-        mockAPIClient = MockParseAPIClient()
-        sut = OrderAPIService(apiClient: mockAPIClient)
+        self.mockAPIClient = MockParseAPIClient()
+        self.sut = OrderAPIService(apiClient: self.mockAPIClient)
     }
 
     override func tearDown() {
-        sut = nil
-        mockAPIClient = nil
+        self.sut = nil
+        self.mockAPIClient = nil
         super.tearDown()
     }
 
@@ -24,15 +24,15 @@ final class OrderAPIServiceTests: XCTestCase {
 
     func testSaveBuyOrder_Success() async throws {
         // Given
-        let buyOrder = createSampleBuyOrder()
-        mockAPIClient.mockObjectId = "server-order-id-123"
+        let buyOrder = self.createSampleBuyOrder()
+        self.mockAPIClient.mockObjectId = "server-order-id-123"
 
         // When
         let savedOrder = try await sut.saveBuyOrder(buyOrder)
 
         // Then
-        XCTAssertTrue(mockAPIClient.createObjectCalled)
-        XCTAssertEqual(mockAPIClient.lastClassName, "Order")
+        XCTAssertTrue(self.mockAPIClient.createObjectCalled)
+        XCTAssertEqual(self.mockAPIClient.lastClassName, "Order")
         XCTAssertEqual(savedOrder.id, "server-order-id-123")
         XCTAssertEqual(savedOrder.symbol, buyOrder.symbol)
         XCTAssertEqual(savedOrder.quantity, buyOrder.quantity)
@@ -41,13 +41,13 @@ final class OrderAPIServiceTests: XCTestCase {
 
     func testSaveBuyOrder_NetworkError() async {
         // Given
-        let buyOrder = createSampleBuyOrder()
-        mockAPIClient.shouldThrowError = true
-        mockAPIClient.errorToThrow = NetworkError.noConnection
+        let buyOrder = self.createSampleBuyOrder()
+        self.mockAPIClient.shouldThrowError = true
+        self.mockAPIClient.errorToThrow = NetworkError.noConnection
 
         // When/Then
         do {
-            _ = try await sut.saveBuyOrder(buyOrder)
+            _ = try await self.sut.saveBuyOrder(buyOrder)
             XCTFail("Expected error to be thrown")
         } catch {
             XCTAssertTrue(error is NetworkError)
@@ -58,15 +58,15 @@ final class OrderAPIServiceTests: XCTestCase {
 
     func testSaveSellOrder_Success() async throws {
         // Given
-        let sellOrder = createSampleSellOrder()
-        mockAPIClient.mockObjectId = "server-sell-order-id-456"
+        let sellOrder = self.createSampleSellOrder()
+        self.mockAPIClient.mockObjectId = "server-sell-order-id-456"
 
         // When
         let savedOrder = try await sut.saveSellOrder(sellOrder)
 
         // Then
-        XCTAssertTrue(mockAPIClient.createObjectCalled)
-        XCTAssertEqual(mockAPIClient.lastClassName, "Order")
+        XCTAssertTrue(self.mockAPIClient.createObjectCalled)
+        XCTAssertEqual(self.mockAPIClient.lastClassName, "Order")
         XCTAssertEqual(savedOrder.id, "server-sell-order-id-456")
         XCTAssertEqual(savedOrder.symbol, sellOrder.symbol)
         XCTAssertEqual(savedOrder.quantity, sellOrder.quantity)
@@ -76,15 +76,15 @@ final class OrderAPIServiceTests: XCTestCase {
 
     func testUpdateOrder_Success() async throws {
         // Given
-        let order = createSampleOrder()
+        let order = self.createSampleOrder()
 
         // When
         let updatedOrder = try await sut.updateOrder(order)
 
         // Then
-        XCTAssertTrue(mockAPIClient.updateObjectCalled)
-        XCTAssertEqual(mockAPIClient.lastClassName, "Order")
-        XCTAssertEqual(mockAPIClient.lastObjectId, order.id)
+        XCTAssertTrue(self.mockAPIClient.updateObjectCalled)
+        XCTAssertEqual(self.mockAPIClient.lastClassName, "Order")
+        XCTAssertEqual(self.mockAPIClient.lastObjectId, order.id)
         XCTAssertEqual(updatedOrder.id, order.id)
     }
 
@@ -97,27 +97,27 @@ final class OrderAPIServiceTests: XCTestCase {
             createMockOrderResponse(objectId: "order-1", type: "buy"),
             createMockOrderResponse(objectId: "order-2", type: "sell")
         ]
-        mockAPIClient.mockFetchResults = mockResponses
+        self.mockAPIClient.mockFetchResults = mockResponses
 
         // When
         let orders = try await sut.fetchOrders(for: traderId)
 
         // Then
-        XCTAssertTrue(mockAPIClient.fetchObjectsCalled)
-        XCTAssertEqual(mockAPIClient.lastClassName, "Order")
+        XCTAssertTrue(self.mockAPIClient.fetchObjectsCalled)
+        XCTAssertEqual(self.mockAPIClient.lastClassName, "Order")
         XCTAssertEqual(orders.count, 2)
     }
 
     func testFetchOrders_EmptyResult() async throws {
         // Given
         let traderId = "trader-no-orders"
-        mockAPIClient.mockFetchResults = [ParseOrderResponse]()
+        self.mockAPIClient.mockFetchResults = [ParseOrderResponse]()
 
         // When
         let orders = try await sut.fetchOrders(for: traderId)
 
         // Then
-        XCTAssertTrue(mockAPIClient.fetchObjectsCalled)
+        XCTAssertTrue(self.mockAPIClient.fetchObjectsCalled)
         XCTAssertTrue(orders.isEmpty)
     }
 
@@ -132,7 +132,7 @@ final class OrderAPIServiceTests: XCTestCase {
             createMockOrderResponse(objectId: "order-3", type: "sell", status: "cancelled"),
             createMockOrderResponse(objectId: "order-4", type: "sell", status: "executed")
         ]
-        mockAPIClient.mockFetchResults = mockResponses
+        self.mockAPIClient.mockFetchResults = mockResponses
 
         // When
         let activeOrders = try await sut.fetchActiveOrders(for: traderId)
@@ -154,20 +154,20 @@ final class OrderAPIServiceTests: XCTestCase {
         try await sut.cancelOrder(orderId)
 
         // Then
-        XCTAssertTrue(mockAPIClient.updateObjectCalled)
-        XCTAssertEqual(mockAPIClient.lastClassName, "Order")
-        XCTAssertEqual(mockAPIClient.lastObjectId, orderId)
+        XCTAssertTrue(self.mockAPIClient.updateObjectCalled)
+        XCTAssertEqual(self.mockAPIClient.lastClassName, "Order")
+        XCTAssertEqual(self.mockAPIClient.lastObjectId, orderId)
     }
 
     func testCancelOrder_NetworkError() async {
         // Given
         let orderId = "order-to-cancel-123"
-        mockAPIClient.shouldThrowError = true
-        mockAPIClient.errorToThrow = NetworkError.serverError(500)
+        self.mockAPIClient.shouldThrowError = true
+        self.mockAPIClient.errorToThrow = NetworkError.serverError(500)
 
         // When/Then
         do {
-            try await sut.cancelOrder(orderId)
+            try await self.sut.cancelOrder(orderId)
             XCTFail("Expected error to be thrown")
         } catch {
             XCTAssertTrue(error is NetworkError)
@@ -184,7 +184,7 @@ final class OrderAPIServiceTests: XCTestCase {
             description: "Apple Inc.",
             quantity: 100,
             price: 150.0,
-            totalAmount: 15000.0,
+            totalAmount: 15_000.0,
             status: .submitted,
             createdAt: Date(),
             executedAt: nil,
@@ -210,7 +210,7 @@ final class OrderAPIServiceTests: XCTestCase {
             description: "Apple Inc.",
             quantity: 50,
             price: 155.0,
-            totalAmount: 7750.0,
+            totalAmount: 7_750.0,
             status: .submitted,
             createdAt: Date(),
             executedAt: nil,
@@ -236,7 +236,7 @@ final class OrderAPIServiceTests: XCTestCase {
             type: .buy,
             quantity: 100,
             price: 150.0,
-            totalAmount: 15000.0,
+            totalAmount: 15_000.0,
             createdAt: Date(),
             executedAt: nil,
             confirmedAt: nil,
@@ -264,7 +264,7 @@ final class OrderAPIServiceTests: XCTestCase {
             type: type,
             quantity: 100,
             price: 150.0,
-            totalAmount: 15000.0,
+            totalAmount: 15_000.0,
             status: status,
             createdAt: "2026-02-04T10:00:00.000Z",
             updatedAt: "2026-02-04T10:00:00.000Z",

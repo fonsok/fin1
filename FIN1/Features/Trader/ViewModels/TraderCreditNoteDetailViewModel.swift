@@ -53,19 +53,19 @@ final class TraderCreditNoteDetailViewModel: ObservableObject {
             document.traderCommissionRateSnapshot ?? document.invoiceData?.traderCommissionRateSnapshot
 
         if let invoiceData = document.invoiceData, !invoiceData.customerInfo.name.isEmpty {
-            accountHolderName = invoiceData.customerInfo.name
+            self.accountHolderName = invoiceData.customerInfo.name
         } else if let currentUser = services.userService.currentUser {
-            accountHolderName = currentUser.displayName
+            self.accountHolderName = currentUser.displayName
         } else {
-            accountHolderName = "Trader \(document.userId.prefix(8))"
+            self.accountHolderName = "Trader \(document.userId.prefix(8))"
         }
 
         if let invoiceData = document.invoiceData, !invoiceData.customerInfo.depotNumber.isEmpty {
-            accountNumber = invoiceData.customerInfo.depotNumber
+            self.accountNumber = invoiceData.customerInfo.depotNumber
         } else if let currentUser = services.userService.currentUser {
-            accountNumber = "DE\(String(format: "%020d", abs(currentUser.id.hashValue)))"
+            self.accountNumber = "DE\(String(format: "%020d", abs(currentUser.id.hashValue)))"
         } else {
-            accountNumber = "DE\(String(format: "%020d", abs(document.userId.hashValue)))"
+            self.accountNumber = "DE\(String(format: "%020d", abs(document.userId.hashValue)))"
         }
     }
 
@@ -77,11 +77,11 @@ final class TraderCreditNoteDetailViewModel: ObservableObject {
         if let displayRateFromBreakdown {
             return displayRateFromBreakdown
         }
-        return appServices?.configurationService.effectiveCommissionRate ?? 0.0
+        return self.appServices?.configurationService.effectiveCommissionRate ?? 0.0
     }
 
     var formattedCommissionRate: String {
-        let rate = commissionRate
+        let rate = self.commissionRate
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal
         formatter.minimumFractionDigits = 2
@@ -96,23 +96,23 @@ final class TraderCreditNoteDetailViewModel: ObservableObject {
         formatter.minimumFractionDigits = 0
         formatter.maximumFractionDigits = 2
         formatter.locale = Locale(identifier: "de_DE")
-        let percent = formatter.string(from: NSNumber(value: commissionRate * 100)) ?? "0"
+        let percent = formatter.string(from: NSNumber(value: self.commissionRate * 100)) ?? "0"
         return "\(percent)%"
     }
 
     // MARK: - Data Loading
     func loadBreakdown() async {
         guard let appServices = appServices else {
-            errorMessage = "Services not configured"
+            self.errorMessage = "Services not configured"
             return
         }
 
-        isLoading = true
-        errorMessage = nil
+        self.isLoading = true
+        self.errorMessage = nil
 
         guard let tradeId = tradeId else {
-            errorMessage = "Keine Trade-ID verfügbar"
-            isLoading = false
+            self.errorMessage = "Keine Trade-ID verfügbar"
+            self.isLoading = false
             return
         }
 
@@ -120,7 +120,7 @@ final class TraderCreditNoteDetailViewModel: ObservableObject {
         let participations = appServices.poolTradeParticipationService.getParticipations(forTradeId: tradeId)
 
         guard !participations.isEmpty else {
-            await loadBreakdownFromBackendSettlement(tradeId: tradeId, services: appServices)
+            await self.loadBreakdownFromBackendSettlement(tradeId: tradeId, services: appServices)
             return
         }
 
@@ -131,7 +131,7 @@ final class TraderCreditNoteDetailViewModel: ObservableObject {
         }
 
         // Get commission rate
-        let rate = commissionRate
+        let rate = self.commissionRate
 
         // Get all investments
         let allInvestments = appServices.investmentService.investments
@@ -181,19 +181,19 @@ final class TraderCreditNoteDetailViewModel: ObservableObject {
             }
         }
 
-        breakdownItems = items
-        tradeGrossProfit = totalProfit
-        totalCommission = totalComm
-        displayRateFromBreakdown = Self.impliedCommissionRate(from: items)
-        isLoading = false
+        self.breakdownItems = items
+        self.tradeGrossProfit = totalProfit
+        self.totalCommission = totalComm
+        self.displayRateFromBreakdown = Self.impliedCommissionRate(from: items)
+        self.isLoading = false
     }
 
     private func loadBreakdownFromBackendSettlement(tradeId: String, services: AppServices) async {
         guard let settlementAPI = services.settlementAPIService else {
-            breakdownItems = []
-            tradeGrossProfit = 0
-            totalCommission = 0
-            isLoading = false
+            self.breakdownItems = []
+            self.tradeGrossProfit = 0
+            self.totalCommission = 0
+            self.isLoading = false
             return
         }
 
@@ -210,12 +210,12 @@ final class TraderCreditNoteDetailViewModel: ObservableObject {
                 let commission = rows.compactMap { $0.commissionAmount }.reduce(0, +)
                 guard commission > 0 else { continue }
                 let explicitGross = rows.compactMap { $0.investorGrossProfit }.reduce(0, +)
-                let rate = rows.compactMap { $0.commissionRate }.first ?? commissionRate
+                let rate = rows.compactMap { $0.commissionRate }.first ?? self.commissionRate
                 let gross = explicitGross > 0 ? explicitGross : (rate > 0 ? commission / rate : 0)
 
                 let investment = allInvestments.first { $0.id == investmentId }
                 let investorName = investment?.investorName
-                    ?? displayName(from: rows.first?.investorId)
+                    ?? self.displayName(from: rows.first?.investorId)
                     ?? "Investor"
                 let investmentNumber = investment?.investmentNumber ?? investmentId.extractInvestmentNumber()
 
@@ -231,17 +231,17 @@ final class TraderCreditNoteDetailViewModel: ObservableObject {
                 totalComm += commission
             }
 
-            breakdownItems = items.sorted { $0.investorName < $1.investorName }
-            tradeGrossProfit = totalGross
-            totalCommission = totalComm
-            displayRateFromBreakdown = Self.impliedCommissionRate(from: items)
-            isLoading = false
+            self.breakdownItems = items.sorted { $0.investorName < $1.investorName }
+            self.tradeGrossProfit = totalGross
+            self.totalCommission = totalComm
+            self.displayRateFromBreakdown = Self.impliedCommissionRate(from: items)
+            self.isLoading = false
         } catch {
-            errorMessage = "Gutschrift-Details konnten nicht aus dem Settlement geladen werden."
-            breakdownItems = []
-            tradeGrossProfit = 0
-            totalCommission = 0
-            isLoading = false
+            self.errorMessage = "Gutschrift-Details konnten nicht aus dem Settlement geladen werden."
+            self.breakdownItems = []
+            self.tradeGrossProfit = 0
+            self.totalCommission = 0
+            self.isLoading = false
         }
     }
 
@@ -260,5 +260,4 @@ final class TraderCreditNoteDetailViewModel: ObservableObject {
         guard average.isFinite, average >= 0 else { return nil }
         return average
     }
-
 }

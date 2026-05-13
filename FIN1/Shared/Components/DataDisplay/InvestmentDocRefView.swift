@@ -7,7 +7,7 @@ struct InvestmentDocRefView: View {
     let rechnungNumber: String?
 
     var body: some View {
-        if verrechnungNumber != nil || rechnungNumber != nil {
+        if self.verrechnungNumber != nil || self.rechnungNumber != nil {
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(2)) {
                 if let docNumber = verrechnungNumber {
                     Text("Verrechnung: \(docNumber)")

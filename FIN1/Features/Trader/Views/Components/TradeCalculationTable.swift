@@ -8,16 +8,16 @@ struct TradeCalculationTable: View {
     var body: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(16)) {
             // Security Information Table
-            SecurityInfoTable(breakdown: breakdown)
+            SecurityInfoTable(breakdown: self.breakdown)
 
             // Transaction Details
-            TransactionDetailsTable(breakdown: breakdown)
+            TransactionDetailsTable(breakdown: self.breakdown)
 
             // Tax Breakdown
-            TaxBreakdownTable(breakdown: breakdown)
+            TaxBreakdownTable(breakdown: self.breakdown)
 
             // Final Result
-            FinalResultTable(breakdown: breakdown)
+            FinalResultTable(breakdown: self.breakdown)
         }
         .padding(.horizontal, ResponsiveDesign.spacing(16))
         .background(AppTheme.sectionBackground)
@@ -31,7 +31,7 @@ struct TradeCalculationTable: View {
         wknIsin: "DE000VU9GG06",
         direction: "Put",
         underlying: "DAX",
-        strikePrice: 15000.0,
+        strikePrice: 15_000.0,
         issuer: "Vontobel",
         buyTransaction: TransactionDetails(
             type: .buy,

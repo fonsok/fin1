@@ -20,7 +20,7 @@ struct FAQArticleEditorSheet: View {
                             .font(ResponsiveDesign.captionFont())
                             .foregroundColor(AppTheme.fontColor.opacity(0.7))
 
-                        TextField("Artikel-Titel", text: $viewModel.newArticleTitle)
+                        TextField("Artikel-Titel", text: self.$viewModel.newArticleTitle)
                             .font(ResponsiveDesign.bodyFont())
                             .padding()
                             .background(AppTheme.inputFieldBackground)
@@ -33,7 +33,7 @@ struct FAQArticleEditorSheet: View {
                             .font(ResponsiveDesign.captionFont())
                             .foregroundColor(AppTheme.fontColor.opacity(0.7))
 
-                        Picker("Kategorie", selection: $viewModel.newArticleCategory) {
+                        Picker("Kategorie", selection: self.$viewModel.newArticleCategory) {
                             ForEach(KnowledgeBaseCategory.allCases) { category in
                                 HStack {
                                     Image(systemName: category.icon)
@@ -55,7 +55,7 @@ struct FAQArticleEditorSheet: View {
                             .font(ResponsiveDesign.captionFont())
                             .foregroundColor(AppTheme.fontColor.opacity(0.7))
 
-                        TextField("Kurze Beschreibung", text: $viewModel.newArticleSummary, axis: .vertical)
+                        TextField("Kurze Beschreibung", text: self.$viewModel.newArticleSummary, axis: .vertical)
                             .font(ResponsiveDesign.bodyFont())
                             .lineLimit(3...5)
                             .padding()
@@ -69,7 +69,7 @@ struct FAQArticleEditorSheet: View {
                             .font(ResponsiveDesign.captionFont())
                             .foregroundColor(AppTheme.fontColor.opacity(0.7))
 
-                        TextEditor(text: $viewModel.newArticleContent)
+                        TextEditor(text: self.$viewModel.newArticleContent)
                             .font(ResponsiveDesign.bodyFont())
                             .frame(minHeight: ResponsiveDesign.spacing(200))
                             .padding(ResponsiveDesign.spacing(8))
@@ -88,8 +88,10 @@ struct FAQArticleEditorSheet: View {
                             .foregroundColor(AppTheme.fontColor.opacity(0.7))
 
                         TextField("z.B. Login, Passwort, Sicherheit", text: Binding(
-                            get: { viewModel.newArticleTags.joined(separator: ", ") },
-                            set: { viewModel.newArticleTags = $0.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty } }
+                            get: { self.viewModel.newArticleTags.joined(separator: ", ") },
+                            set: { self.viewModel.newArticleTags = $0.components(separatedBy: ",").map { $0.trimmingCharacters(
+                                in: .whitespaces
+                            ) }.filter { !$0.isEmpty } }
                         ))
                         .font(ResponsiveDesign.bodyFont())
                         .padding()
@@ -104,8 +106,10 @@ struct FAQArticleEditorSheet: View {
                             .foregroundColor(AppTheme.fontColor.opacity(0.7))
 
                         TextField("Suchbegriffe für bessere Auffindbarkeit", text: Binding(
-                            get: { viewModel.newArticleKeywords.joined(separator: ", ") },
-                            set: { viewModel.newArticleKeywords = $0.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty } }
+                            get: { self.viewModel.newArticleKeywords.joined(separator: ", ") },
+                            set: { self.viewModel.newArticleKeywords = $0.components(separatedBy: ",").map { $0.trimmingCharacters(
+                                in: .whitespaces
+                            ) }.filter { !$0.isEmpty } }
                         ))
                         .font(ResponsiveDesign.bodyFont())
                         .padding()
@@ -116,27 +120,27 @@ struct FAQArticleEditorSheet: View {
                 .padding()
             }
             .background(AppTheme.screenBackground.ignoresSafeArea())
-            .navigationTitle(isEditing ? "Artikel bearbeiten" : "Neuer Artikel")
+            .navigationTitle(self.isEditing ? "Artikel bearbeiten" : "Neuer Artikel")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Abbrechen") {
-                        dismiss()
+                        self.dismiss()
                     }
                 }
 
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(isEditing ? "Speichern" : "Erstellen") {
+                    Button(self.isEditing ? "Speichern" : "Erstellen") {
                         Task {
-                            let userId = services.userService.currentUser?.id ?? "unknown"
-                            if isEditing {
-                                await viewModel.updateArticle(updatedBy: userId)
+                            let userId = self.services.userService.currentUser?.id ?? "unknown"
+                            if self.isEditing {
+                                await self.viewModel.updateArticle(updatedBy: userId)
                             } else {
-                                await viewModel.createArticle(createdBy: userId)
+                                await self.viewModel.createArticle(createdBy: userId)
                             }
                         }
                     }
-                    .disabled(viewModel.newArticleTitle.isEmpty || viewModel.newArticleContent.isEmpty)
+                    .disabled(self.viewModel.newArticleTitle.isEmpty || self.viewModel.newArticleContent.isEmpty)
                 }
             }
         }

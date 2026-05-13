@@ -1,5 +1,5 @@
-import SwiftUI
 import Foundation
+import SwiftUI
 
 // MARK: - Mock Trader Model
 /// Core model representing a mock trader with basic properties and risk level
@@ -25,7 +25,26 @@ struct MockTrader: Identifiable {
     let sharpeRatio: Double
 
     // Default initializer with random UUID
-    init(name: String, username: String, specialization: String, experienceYears: Int, isVerified: Bool, performance: Double, totalTrades: Int, winRate: Double, averageReturn: Double, totalReturn: Double, riskLevel: RiskLevel, recentTrades: [MockTradePerformance], lastNTrades: Int, successfulTradesInLastN: Int, averageReturnLastNTrades: Double, consecutiveWinningTrades: Int, maxDrawdown: Double, sharpeRatio: Double) {
+    init(
+        name: String,
+        username: String,
+        specialization: String,
+        experienceYears: Int,
+        isVerified: Bool,
+        performance: Double,
+        totalTrades: Int,
+        winRate: Double,
+        averageReturn: Double,
+        totalReturn: Double,
+        riskLevel: RiskLevel,
+        recentTrades: [MockTradePerformance],
+        lastNTrades: Int,
+        successfulTradesInLastN: Int,
+        averageReturnLastNTrades: Double,
+        consecutiveWinningTrades: Int,
+        maxDrawdown: Double,
+        sharpeRatio: Double
+    ) {
         self.id = UUID()
         self.name = name
         self.username = username
@@ -48,7 +67,27 @@ struct MockTrader: Identifiable {
     }
 
     // Custom initializer with specific ID
-    init(id: UUID, name: String, username: String, specialization: String, experienceYears: Int, isVerified: Bool, performance: Double, totalTrades: Int, winRate: Double, averageReturn: Double, totalReturn: Double, riskLevel: RiskLevel, recentTrades: [MockTradePerformance], lastNTrades: Int, successfulTradesInLastN: Int, averageReturnLastNTrades: Double, consecutiveWinningTrades: Int, maxDrawdown: Double, sharpeRatio: Double) {
+    init(
+        id: UUID,
+        name: String,
+        username: String,
+        specialization: String,
+        experienceYears: Int,
+        isVerified: Bool,
+        performance: Double,
+        totalTrades: Int,
+        winRate: Double,
+        averageReturn: Double,
+        totalReturn: Double,
+        riskLevel: RiskLevel,
+        recentTrades: [MockTradePerformance],
+        lastNTrades: Int,
+        successfulTradesInLastN: Int,
+        averageReturnLastNTrades: Double,
+        consecutiveWinningTrades: Int,
+        maxDrawdown: Double,
+        sharpeRatio: Double
+    ) {
         self.id = id
         self.name = name
         self.username = username

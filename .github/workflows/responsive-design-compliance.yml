@@ -34,7 +34,8 @@ jobs:
       run: swiftlint
 
     - name: Run SwiftFormat Check
-      run: swiftformat . --lint
+      run: |
+        swiftformat FIN1 FIN1Tests FIN1UITests FIN1InvestorTests FIN1CoreRegressionTests --lint
 
     - name: Build Project
       run: |

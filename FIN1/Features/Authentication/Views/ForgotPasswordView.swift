@@ -41,15 +41,15 @@ struct ForgotPasswordView: View {
                             label: "Email Address",
                             placeholder: "Enter your email address",
                             icon: "envelope.fill",
-                            text: $email,
+                            text: self.$email,
                             isEmail: true
                         )
                         .authPadding()
 
                         // Reset Button
-                        Button(action: resetPassword, label: {
+                        Button(action: self.resetPassword, label: {
                             HStack {
-                                if isLoading {
+                                if self.isLoading {
                                     ProgressView()
                                         .progressViewStyle(CircularProgressViewStyle(tint: .white))
                                         .scaleEffect(0.8)
@@ -64,7 +64,7 @@ struct ForgotPasswordView: View {
                             .background(AppTheme.accentLightBlue)
                             .cornerRadius(ResponsiveDesign.spacing(12))
                         })
-                        .disabled(isLoading || email.isEmpty)
+                        .disabled(self.isLoading || self.email.isEmpty)
                         .authPadding()
                     }
 
@@ -75,38 +75,38 @@ struct ForgotPasswordView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel") {
-                        dismiss()
+                        self.dismiss()
                     }
                     .foregroundColor(AppTheme.accentLightBlue)
                 }
             }
         }
-        .alert(isSuccess ? "Success" : "Error", isPresented: $showAlert) {
+        .alert(self.isSuccess ? "Success" : "Error", isPresented: self.$showAlert) {
             Button("OK") {
-                if isSuccess {
-                    dismiss()
+                if self.isSuccess {
+                    self.dismiss()
                 }
             }
         } message: {
-            Text(alertMessage)
+            Text(self.alertMessage)
         }
     }
 
     private func resetPassword() {
-        guard !email.isEmpty else {
-            alertMessage = "Please enter your email address"
-            showAlert = true
+        guard !self.email.isEmpty else {
+            self.alertMessage = "Please enter your email address"
+            self.showAlert = true
             return
         }
 
-        isLoading = true
+        self.isLoading = true
 
         // Simulate password reset
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-            isLoading = false
-            isSuccess = true
-            alertMessage = "Password reset link has been sent to your email"
-            showAlert = true
+            self.isLoading = false
+            self.isSuccess = true
+            self.alertMessage = "Password reset link has been sent to your email"
+            self.showAlert = true
         }
     }
 }

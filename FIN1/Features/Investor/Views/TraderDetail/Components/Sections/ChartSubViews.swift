@@ -9,7 +9,7 @@ struct ChartYAxisView: View {
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            if hasLogScale {
+            if self.hasLogScale {
                 Text("Log")
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.5))
@@ -20,27 +20,27 @@ struct ChartYAxisView: View {
                 .fontWeight(.bold)
                 .foregroundColor(AppTheme.accentGreen)
                 .position(x: ResponsiveDesign.spacing(8), y: ResponsiveDesign.spacing(28))
-            ForEach(labels, id: \.self) { value in
-                Text(formatLabel(value))
+            ForEach(self.labels, id: \.self) { value in
+                Text(self.formatLabel(value))
                     .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.spacing(9)))
                     .foregroundColor(AppTheme.fontColor.opacity(0.6))
-                    .position(x: ResponsiveDesign.spacing(30), y: yPositionForValue(value))
+                    .position(x: ResponsiveDesign.spacing(30), y: self.yPositionForValue(value))
             }
             Text("L")
                 .font(ResponsiveDesign.captionFont())
                 .fontWeight(.bold)
                 .foregroundColor(AppTheme.accentRed)
-                .position(x: ResponsiveDesign.spacing(8), y: chartHeight - ResponsiveDesign.spacing(20))
+                .position(x: ResponsiveDesign.spacing(8), y: self.chartHeight - ResponsiveDesign.spacing(20))
             Path { path in
                 path.move(to: CGPoint(x: ResponsiveDesign.spacing(48), y: 0))
-                path.addLine(to: CGPoint(x: ResponsiveDesign.spacing(48), y: chartHeight))
+                path.addLine(to: CGPoint(x: ResponsiveDesign.spacing(48), y: self.chartHeight))
             }
             .stroke(AppTheme.fontColor.opacity(0.2), style: StrokeStyle(lineWidth: 1, dash: [2, 2]))
         }
     }
 
     private func yPositionForValue(_ value: Double) -> CGFloat {
-        ChartPositionCalculator.calculateYPosition(value: value, yAxisRange: yAxisRange, chartHeight: chartHeight)
+        ChartPositionCalculator.calculateYPosition(value: value, yAxisRange: self.yAxisRange, chartHeight: self.chartHeight)
     }
 
     private func formatLabel(_ value: Double) -> String {
@@ -57,12 +57,12 @@ struct ChartGridLinesView: View {
 
     var body: some View {
         ZStack {
-            ForEach(labels, id: \.self) { value in
-                let yPos = yPositionForValue(value)
+            ForEach(self.labels, id: \.self) { value in
+                let yPos = self.yPositionForValue(value)
                 let isZeroLine = value == 0
                 Path { path in
                     path.move(to: CGPoint(x: 0, y: yPos))
-                    path.addLine(to: CGPoint(x: chartWidth, y: yPos))
+                    path.addLine(to: CGPoint(x: self.chartWidth, y: yPos))
                 }
                 .stroke(
                     isZeroLine ? AppTheme.fontColor.opacity(0.5) : AppTheme.fontColor.opacity(0.1),
@@ -73,7 +73,7 @@ struct ChartGridLinesView: View {
     }
 
     private func yPositionForValue(_ value: Double) -> CGFloat {
-        ChartPositionCalculator.calculateYPosition(value: value, yAxisRange: yAxisRange, chartHeight: chartHeight)
+        ChartPositionCalculator.calculateYPosition(value: value, yAxisRange: self.yAxisRange, chartHeight: self.chartHeight)
     }
 }
 
@@ -87,12 +87,12 @@ struct ChartXAxisView: View {
 
     var body: some View {
         let padding: CGFloat = ResponsiveDesign.spacing(8)
-        let totalBarSpace = barWidth + barSpacing
+        let totalBarSpace = self.barWidth + self.barSpacing
 
         HStack(alignment: .bottom, spacing: ResponsiveDesign.spacing(0)) {
             Spacer().frame(width: padding)
 
-            ForEach(Array(monthGroups.enumerated()), id: \.element.month) { index, group in
+            ForEach(Array(self.monthGroups.enumerated()), id: \.element.month) { index, group in
                 let monthWidth = CGFloat(group.trades.count) * totalBarSpace
                 VStack(spacing: ResponsiveDesign.spacing(2)) {
                     if index > 0 {
@@ -110,7 +110,7 @@ struct ChartXAxisView: View {
                 .frame(width: monthWidth, alignment: .leading)
             }
         }
-        .frame(width: contentWidth, alignment: .leading)
+        .frame(width: self.contentWidth, alignment: .leading)
         .padding(.top, ResponsiveDesign.spacing(4))
     }
 }
@@ -126,22 +126,22 @@ struct ChartBarsView: View {
     var body: some View {
         let padding: CGFloat = ResponsiveDesign.spacing(8)
         let barSpacing: CGFloat = ResponsiveDesign.spacing(8)
-        let totalBarSpace = barWidth + barSpacing
+        let totalBarSpace = self.barWidth + barSpacing
 
         HStack(alignment: .top, spacing: barSpacing) {
-            ForEach(trades) { item in
+            ForEach(self.trades) { item in
                 SingleBarView(
                     item: item,
-                    chartHeight: chartHeight,
-                    barWidth: barWidth,
+                    chartHeight: self.chartHeight,
+                    barWidth: self.barWidth,
                     totalSpace: totalBarSpace,
-                    yAxisRange: yAxisRange
+                    yAxisRange: self.yAxisRange
                 )
                 .frame(width: totalBarSpace)
             }
         }
         .padding(.horizontal, padding)
-        .frame(minWidth: chartWidth, alignment: .leading)
+        .frame(minWidth: self.chartWidth, alignment: .leading)
     }
 }
 
@@ -153,63 +153,63 @@ struct SingleBarView: View {
     let totalSpace: CGFloat
     let yAxisRange: (min: Double, max: Double)
 
-    private var zeroY: CGFloat { yPositionForValue(0) }
-    private var valueY: CGFloat { yPositionForValue(item.tradeReturn.roi) }
-    private var barHeight: CGFloat { max(abs(zeroY - valueY), 2) }
-    private var isPositive: Bool { item.tradeReturn.roi >= 0 }
+    private var zeroY: CGFloat { self.yPositionForValue(0) }
+    private var valueY: CGFloat { self.yPositionForValue(self.item.tradeReturn.roi) }
+    private var barHeight: CGFloat { max(abs(self.zeroY - self.valueY), 2) }
+    private var isPositive: Bool { self.item.tradeReturn.roi >= 0 }
 
     var body: some View {
         GeometryReader { _ in
             ZStack {
-                barStack
-                if !item.tradeReturn.isActive && item.tradeReturn.roi != 0 {
-                    roiLabel
+                self.barStack
+                if !self.item.tradeReturn.isActive && self.item.tradeReturn.roi != 0 {
+                    self.roiLabel
                 }
-                if item.tradeReturn.isActive {
-                    activeTradeLabel
+                if self.item.tradeReturn.isActive {
+                    self.activeTradeLabel
                 }
             }
         }
-        .frame(width: totalSpace, height: chartHeight)
+        .frame(width: self.totalSpace, height: self.chartHeight)
     }
 
     private var barStack: some View {
         VStack(spacing: ResponsiveDesign.spacing(0)) {
-            if isPositive {
-                Spacer().frame(height: valueY)
+            if self.isPositive {
+                Spacer().frame(height: self.valueY)
                 BarRectangle(
-                    isActive: item.tradeReturn.isActive,
-                    isPositive: isPositive,
-                    width: barWidth
+                    isActive: self.item.tradeReturn.isActive,
+                    isPositive: self.isPositive,
+                    width: self.barWidth
                 )
-                .frame(height: barHeight)
-                Spacer().frame(height: chartHeight - zeroY)
+                .frame(height: self.barHeight)
+                Spacer().frame(height: self.chartHeight - self.zeroY)
             } else {
-                Spacer().frame(height: zeroY)
+                Spacer().frame(height: self.zeroY)
                 BarRectangle(
-                    isActive: item.tradeReturn.isActive,
-                    isPositive: isPositive,
-                    width: barWidth
+                    isActive: self.item.tradeReturn.isActive,
+                    isPositive: self.isPositive,
+                    width: self.barWidth
                 )
-                .frame(height: barHeight)
+                .frame(height: self.barHeight)
                 Spacer()
             }
         }
-        .frame(width: barWidth, height: chartHeight)
+        .frame(width: self.barWidth, height: self.chartHeight)
     }
 
     private var roiLabel: some View {
-        let labelY = isPositive
-            ? valueY - ResponsiveDesign.spacing(12)
-            : valueY + barHeight + ResponsiveDesign.spacing(12)
-        return Text(item.tradeReturn.roi.formattedAsROIPercentage())
+        let labelY = self.isPositive
+            ? self.valueY - ResponsiveDesign.spacing(12)
+            : self.valueY + self.barHeight + ResponsiveDesign.spacing(12)
+        return Text(self.item.tradeReturn.roi.formattedAsROIPercentage())
             .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.spacing(7)))
-            .foregroundColor(isPositive ? AppTheme.accentGreen : AppTheme.accentRed)
+            .foregroundColor(self.isPositive ? AppTheme.accentGreen : AppTheme.accentRed)
             .rotationEffect(.degrees(-90))
             .fixedSize()
             .position(
-                x: totalSpace / 2,
-                y: max(ResponsiveDesign.spacing(15), min(labelY, chartHeight - ResponsiveDesign.spacing(15)))
+                x: self.totalSpace / 2,
+                y: max(ResponsiveDesign.spacing(15), min(labelY, self.chartHeight - ResponsiveDesign.spacing(15)))
             )
     }
 
@@ -221,11 +221,11 @@ struct SingleBarView: View {
                 .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.spacing(6)))
         }
         .foregroundColor(AppTheme.fontColor.opacity(0.6))
-        .position(x: totalSpace / 2, y: zeroY - ResponsiveDesign.spacing(15))
+        .position(x: self.totalSpace / 2, y: self.zeroY - ResponsiveDesign.spacing(15))
     }
 
     private func yPositionForValue(_ value: Double) -> CGFloat {
-        ChartPositionCalculator.calculateYPosition(value: value, yAxisRange: yAxisRange, chartHeight: chartHeight)
+        ChartPositionCalculator.calculateYPosition(value: value, yAxisRange: self.yAxisRange, chartHeight: self.chartHeight)
     }
 }
 
@@ -238,11 +238,11 @@ struct BarRectangle: View {
     var body: some View {
         Rectangle()
             .fill(
-                isActive
+                self.isActive
                     ? AppTheme.inputFieldBackground.opacity(0.6)
-                    : (isPositive ? AppTheme.accentGreen : AppTheme.accentRed)
+                    : (self.isPositive ? AppTheme.accentGreen : AppTheme.accentRed)
             )
-            .frame(width: width)
+            .frame(width: self.width)
     }
 }
 

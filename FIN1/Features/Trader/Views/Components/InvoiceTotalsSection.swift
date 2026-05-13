@@ -13,18 +13,18 @@ struct InvoiceTotalsSection: View {
 
                 Spacer()
 
-                Text(invoice.formattedSubtotal)
+                Text(self.invoice.formattedSubtotal)
                     .font(ResponsiveDesign.bodyFont())
             }
 
-            if invoice.totalTax > 0 {
+            if self.invoice.totalTax > 0 {
                 HStack {
                     Text("Steuer")
                         .font(ResponsiveDesign.bodyFont())
 
                     Spacer()
 
-                    Text(invoice.formattedTaxAmount)
+                    Text(self.invoice.formattedTaxAmount)
                         .font(ResponsiveDesign.bodyFont())
                 }
             }
@@ -38,7 +38,7 @@ struct InvoiceTotalsSection: View {
 
                 Spacer()
 
-                Text(invoice.formattedTotalAmount)
+                Text(self.invoice.formattedTotalAmount)
                     .font(ResponsiveDesign.headlineFont())
                     .fontWeight(.semibold)
                     .foregroundColor(.accentColor)

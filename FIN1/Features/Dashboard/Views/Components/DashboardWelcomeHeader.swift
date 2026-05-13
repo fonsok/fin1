@@ -1,5 +1,5 @@
-import SwiftUI
 import Combine
+import SwiftUI
 
 struct DashboardWelcomeHeader: View {
     @Environment(\.appServices) private var appServices
@@ -18,7 +18,7 @@ struct DashboardWelcomeHeader: View {
                             .font(ResponsiveDesign.headlineFont())
                             .foregroundColor(AppTheme.secondaryText)
 
-                        Text(currentUser?.fullName ?? "User")
+                        Text(self.currentUser?.fullName ?? "User")
                             .font(ResponsiveDesign.headlineFont())
                             .fontWeight(.medium)
                             .foregroundColor(AppTheme.fontColor)
@@ -82,19 +82,19 @@ struct DashboardWelcomeHeader: View {
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.tertiaryText)
 
-                Text(formatTime(logoutTimeRemaining))
+                Text(self.formatTime(self.logoutTimeRemaining))
                     .font(ResponsiveDesign.captionFont())
-                    .foregroundColor(logoutTimeRemaining <= 300 ? AppTheme.accentRed : AppTheme.tertiaryText) // Red when ≤ 5 minutes
+                    .foregroundColor(self.logoutTimeRemaining <= 300 ? AppTheme.accentRed : AppTheme.tertiaryText) // Red when ≤ 5 minutes
                     .frame(width: 50, alignment: .leading) // Fixed width to prevent + symbol movement
-                    .animation(.easeInOut(duration: 0.3), value: logoutTimeRemaining)
+                    .animation(.easeInOut(duration: 0.3), value: self.logoutTimeRemaining)
 
                 // Add 15 minutes button (directly after timer)
-                Button(action: addFifteenMinutes, label: {
+                Button(action: self.addFifteenMinutes, label: {
                     Image(systemName: "plus.circle.fill")
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(AppTheme.tertiaryText)
                 })
-                .disabled(logoutTimeRemaining <= 0)
+                .disabled(self.logoutTimeRemaining <= 0)
 
                 Spacer()
             }
@@ -103,30 +103,30 @@ struct DashboardWelcomeHeader: View {
         .background(AppTheme.sectionBackground.opacity(0.5))
         .cornerRadius(ResponsiveDesign.spacing(12))
         .onAppear {
-            currentUser = appServices.userService.currentUser
+            self.currentUser = self.appServices.userService.currentUser
         }
         .onReceive(Timer.publish(every: 1.0, on: .main, in: .common).autoconnect()) { _ in
-            guard logoutTimeRemaining > 0 else { return }
-            logoutTimeRemaining -= 1
-            if logoutTimeRemaining == 120 && !showLogoutWarning {
-                showLogoutWarning = true
+            guard self.logoutTimeRemaining > 0 else { return }
+            self.logoutTimeRemaining -= 1
+            if self.logoutTimeRemaining == 120 && !self.showLogoutWarning {
+                self.showLogoutWarning = true
             }
-            if logoutTimeRemaining == 0 {
-                performAutoLogout()
+            if self.logoutTimeRemaining == 0 {
+                self.performAutoLogout()
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .userDataDidUpdate)) { _ in
             // Update local state when user data (including role) changes
-            currentUser = appServices.userService.currentUser
+            self.currentUser = self.appServices.userService.currentUser
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("UserRoleChanged"))) { _ in
             // Update local state when role changes
-            currentUser = appServices.userService.currentUser
+            self.currentUser = self.appServices.userService.currentUser
         }
         .overlay(
             // Logout warning notification
             Group {
-                if showLogoutWarning {
+                if self.showLogoutWarning {
                     VStack {
                         HStack {
                             Image(systemName: "exclamationmark.triangle.fill")
@@ -136,7 +136,7 @@ struct DashboardWelcomeHeader: View {
                                 .foregroundColor(AppTheme.fontColor)
                             Spacer()
                             Button("Dismiss") {
-                                showLogoutWarning = false
+                                self.showLogoutWarning = false
                             }
                             .font(ResponsiveDesign.captionFont())
                             .foregroundColor(AppTheme.accentLightBlue)
@@ -149,7 +149,7 @@ struct DashboardWelcomeHeader: View {
                         Spacer()
                     }
                     .transition(.move(edge: .top).combined(with: .opacity))
-                    .animation(.easeInOut(duration: 0.3), value: showLogoutWarning)
+                    .animation(.easeInOut(duration: 0.3), value: self.showLogoutWarning)
                 }
             }
         )
@@ -158,17 +158,17 @@ struct DashboardWelcomeHeader: View {
     // MARK: - Timer Functions
 
     private func addFifteenMinutes() {
-        logoutTimeRemaining += 15 * 60 // Add 15 minutes
+        self.logoutTimeRemaining += 15 * 60 // Add 15 minutes
         // Hide warning if time is extended beyond 2 minutes
-        if logoutTimeRemaining > 120 {
-            showLogoutWarning = false
+        if self.logoutTimeRemaining > 120 {
+            self.showLogoutWarning = false
         }
     }
 
     private func performAutoLogout() {
         // Perform logout (countdown driven by main-runloop timer via .onReceive)
         Task {
-            await appServices.userService.signOut()
+            await self.appServices.userService.signOut()
         }
     }
 

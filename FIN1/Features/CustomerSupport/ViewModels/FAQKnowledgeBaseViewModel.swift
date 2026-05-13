@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - FAQ Knowledge Base ViewModel
 /// ViewModel for FAQ Knowledge Base views
@@ -74,37 +74,37 @@ final class FAQKnowledgeBaseViewModel: ObservableObject {
     }
 
     var articlesByCategory: [KnowledgeBaseCategory: [FAQArticle]] {
-        Dictionary(grouping: filteredArticles, by: { $0.category })
+        Dictionary(grouping: self.filteredArticles, by: { $0.category })
     }
 
     var hasSearchResults: Bool {
-        !searchQuery.isEmpty && !searchResults.isEmpty
+        !self.searchQuery.isEmpty && !self.searchResults.isEmpty
     }
 
     var isSearchActive: Bool {
-        !searchQuery.isEmpty
+        !self.searchQuery.isEmpty
     }
 
     var formattedSearchQuery: String {
-        searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     // MARK: - Formatted Properties for Views
 
     var formattedStatisticsTotalArticles: String {
-        "\(statistics?.totalArticles ?? 0)"
+        "\(self.statistics?.totalArticles ?? 0)"
     }
 
     var formattedStatisticsPublished: String {
-        "\(statistics?.publishedArticles ?? 0)"
+        "\(self.statistics?.publishedArticles ?? 0)"
     }
 
     var formattedStatisticsHelpfulness: String {
-        "\(statistics?.overallHelpfulnessPercentage ?? 0)%"
+        "\(self.statistics?.overallHelpfulnessPercentage ?? 0)%"
     }
 
     var formattedStatisticsViews: String {
-        "\(statistics?.totalViews ?? 0)"
+        "\(self.statistics?.totalViews ?? 0)"
     }
 
     // MARK: - Date Formatting
@@ -126,14 +126,14 @@ final class FAQKnowledgeBaseViewModel: ObservableObject {
         self.faqService = faqService
         self.auditService = auditService
 
-        setupSearchDebounce()
-        setupArticlesObservation()
+        self.setupSearchDebounce()
+        self.setupArticlesObservation()
     }
 
     // MARK: - Setup
 
     func setupSearchDebounce() {
-        $searchQuery
+        self.$searchQuery
             .debounce(for: .milliseconds(300), scheduler: DispatchQueue.main)
             .removeDuplicates()
             .sink { [weak self] query in
@@ -141,43 +141,43 @@ final class FAQKnowledgeBaseViewModel: ObservableObject {
                     await self?.performSearch(query: query)
                 }
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
     }
 
     private func setupArticlesObservation() {
-        faqService.articlesPublisher
+        self.faqService.articlesPublisher
             .receive(on: DispatchQueue.main)
             .sink { [weak self] articles in
                 self?.articles = articles
                 self?.applyFilters()
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
     }
 
     // MARK: - Loading
 
     func load() async {
-        isLoading = true
+        self.isLoading = true
         defer { isLoading = false }
 
         do {
-            articles = try await faqService.getArticles(
-                includeUnpublished: showUnpublished,
-                includeArchived: showArchived
+            self.articles = try await self.faqService.getArticles(
+                includeUnpublished: self.showUnpublished,
+                includeArchived: self.showArchived
             )
-            popularArticles = try await faqService.getPopularArticles(limit: 5)
-            recentArticles = try await faqService.getRecentArticles(limit: 5)
-            articlesNeedingReview = try await faqService.getArticlesNeedingReview()
-            statistics = try await faqService.getStatistics()
+            self.popularArticles = try await self.faqService.getPopularArticles(limit: 5)
+            self.recentArticles = try await self.faqService.getRecentArticles(limit: 5)
+            self.articlesNeedingReview = try await self.faqService.getArticlesNeedingReview()
+            self.statistics = try await self.faqService.getStatistics()
 
             applyFilters()
         } catch {
-            handleError(error)
+            self.handleError(error)
         }
     }
 
     func refresh() async {
-        await load()
+        await self.load()
     }
 
 
@@ -185,23 +185,23 @@ final class FAQKnowledgeBaseViewModel: ObservableObject {
 
     func handleError(_ error: Error) {
         let appError = error.toAppError()
-        errorMessage = appError.errorDescription ?? "An error occurred"
-        showError = true
+        self.errorMessage = appError.errorDescription ?? "An error occurred"
+        self.showError = true
     }
 
     func clearError() {
-        showError = false
-        errorMessage = nil
+        self.showError = false
+        self.errorMessage = nil
     }
 
     func showSuccessMessage(_ message: String) {
-        successMessage = message
-        showSuccess = true
+        self.successMessage = message
+        self.showSuccess = true
     }
 
     func clearSuccess() {
-        showSuccess = false
-        successMessage = nil
+        self.showSuccess = false
+        self.successMessage = nil
     }
 }
 

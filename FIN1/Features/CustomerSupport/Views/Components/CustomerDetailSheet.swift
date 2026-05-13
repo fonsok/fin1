@@ -17,37 +17,37 @@ struct CustomerDetailSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: ResponsiveDesign.spacing(16)) {
-                    CustomerDetailHeader(customer: customer)
+                    CustomerDetailHeader(customer: self.customer)
 
                     if let kyc = kycStatus {
                         CustomerDetailKYCSection(kyc: kyc)
                     }
 
-                    CustomerDetailContactSection(customer: customer)
+                    CustomerDetailContactSection(customer: self.customer)
 
-                    if customer.role.lowercased() == "investor" && viewModel.hasPermission(.viewCustomerInvestments) {
-                        CustomerDetailInvestmentsSection(viewModel: viewModel) { investment in
-                            selectedInvestment = investment
+                    if self.customer.role.lowercased() == "investor" && self.viewModel.hasPermission(.viewCustomerInvestments) {
+                        CustomerDetailInvestmentsSection(viewModel: self.viewModel) { investment in
+                            self.selectedInvestment = investment
                         }
                     }
 
-                    if customer.role.lowercased() == "trader" && viewModel.hasPermission(.viewCustomerTrades) {
-                        CustomerDetailTradesSection(viewModel: viewModel) { trade in
-                            selectedTrade = trade
+                    if self.customer.role.lowercased() == "trader" && self.viewModel.hasPermission(.viewCustomerTrades) {
+                        CustomerDetailTradesSection(viewModel: self.viewModel) { trade in
+                            self.selectedTrade = trade
                         }
                     }
 
-                    if viewModel.hasPermission(.viewCustomerDocuments) {
-                        CustomerDetailDocumentsSection(documents: documents)
+                    if self.viewModel.hasPermission(.viewCustomerDocuments) {
+                        CustomerDetailDocumentsSection(documents: self.documents)
                     }
 
-                    if viewModel.hasPermission(.viewCustomerSupportHistory) {
-                        CustomerDetailTicketsSection(viewModel: viewModel) { ticket in
-                            selectedTicket = ticket
+                    if self.viewModel.hasPermission(.viewCustomerSupportHistory) {
+                        CustomerDetailTicketsSection(viewModel: self.viewModel) { ticket in
+                            self.selectedTicket = ticket
                         }
                     }
 
-                    CustomerDetailActionsSection(customer: customer, viewModel: viewModel)
+                    CustomerDetailActionsSection(customer: self.customer, viewModel: self.viewModel)
                 }
                 .padding()
             }
@@ -57,31 +57,31 @@ struct CustomerDetailSheet: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Schließen") {
-                        viewModel.clearSelectedCustomer()
-                        dismiss()
+                        self.viewModel.clearSelectedCustomer()
+                        self.dismiss()
                     }
                 }
             }
-            .sheet(isPresented: $viewModel.showCreateTicketSheet) {
-                CreateTicketSheet(viewModel: viewModel)
+            .sheet(isPresented: self.$viewModel.showCreateTicketSheet) {
+                CreateTicketSheet(viewModel: self.viewModel)
             }
-            .sheet(item: $selectedTicket) { ticket in
-                TicketDetailSheet(ticket: ticket, viewModel: viewModel)
+            .sheet(item: self.$selectedTicket) { ticket in
+                TicketDetailSheet(ticket: ticket, viewModel: self.viewModel)
             }
-            .sheet(item: $selectedInvestment) { investment in
+            .sheet(item: self.$selectedInvestment) { investment in
                 CSRInvestmentDetailSheet(
                     investment: investment,
-                    customerName: customer.fullName
+                    customerName: self.customer.fullName
                 )
             }
-            .sheet(item: $selectedTrade) { trade in
+            .sheet(item: self.$selectedTrade) { trade in
                 CSRTradeDetailSheet(
                     trade: trade,
-                    customerName: customer.fullName
+                    customerName: self.customer.fullName
                 )
             }
             .task {
-                await viewModel.loadCustomerTickets(userId: customer.id)
+                await self.viewModel.loadCustomerTickets(userId: self.customer.id)
             }
         }
     }

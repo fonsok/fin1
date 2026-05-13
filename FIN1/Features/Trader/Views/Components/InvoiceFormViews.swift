@@ -12,9 +12,9 @@ struct OrderSelectionView: View {
             traderId: "trader1",
             symbol: "DAX PUT",
             description: "DAX Optionsschein PUT",
-            quantity: 1000,
+            quantity: 1_000,
             price: 1.20,
-            totalAmount: 1200.00,
+            totalAmount: 1_200.00,
             status: .completed,
             createdAt: Date(),
             executedAt: Date(),
@@ -24,17 +24,17 @@ struct OrderSelectionView: View {
             underlyingAsset: "DAX",
             wkn: "VT1234",
             category: "Optionsschein",
-            strike: 15000.0, orderInstruction: "market",
+            strike: 15_000.0, orderInstruction: "market",
             limitPrice: nil
         )
     ]
 
     var body: some View {
         NavigationStack {
-            List(mockOrders) { order in
+            List(self.mockOrders) { order in
                 Button(action: {
-                    selectedOrder = order
-                    dismiss()
+                    self.selectedOrder = order
+                    self.dismiss()
                 }, label: {
                     OrderSelectionCard(order: order) {
                         // This won't be called since we're handling the tap above
@@ -47,7 +47,7 @@ struct OrderSelectionView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Abbrechen") {
-                        dismiss()
+                        self.dismiss()
                     }
                 }
             }
@@ -64,20 +64,20 @@ struct CustomerInfoFormView: View {
         NavigationStack {
             Form {
                 Section("Persönliche Daten") {
-                    TextField("Name", text: $customerInfo.name)
-                    TextField("Straße und Hausnummer", text: $customerInfo.address)
-                    TextField("Stadt", text: $customerInfo.city)
-                    TextField("Postleitzahl", text: $customerInfo.postalCode)
+                    TextField("Name", text: self.$customerInfo.name)
+                    TextField("Straße und Hausnummer", text: self.$customerInfo.address)
+                    TextField("Stadt", text: self.$customerInfo.city)
+                    TextField("Postleitzahl", text: self.$customerInfo.postalCode)
                 }
 
                 Section("Steuerliche Daten") {
-                    TextField("Steuernummer", text: $customerInfo.taxNumber)
+                    TextField("Steuernummer", text: self.$customerInfo.taxNumber)
                 }
 
                 Section("Bankdaten") {
-                    TextField("Depotnummer", text: $customerInfo.depotNumber)
-                    TextField("Bank", text: $customerInfo.bank)
-                    TextField("Kundennummer", text: $customerInfo.customerNumber)
+                    TextField("Depotnummer", text: self.$customerInfo.depotNumber)
+                    TextField("Bank", text: self.$customerInfo.bank)
+                    TextField("Kundennummer", text: self.$customerInfo.customerNumber)
                 }
             }
             .navigationTitle("Kundendaten")
@@ -85,13 +85,13 @@ struct CustomerInfoFormView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Abbrechen") {
-                        dismiss()
+                        self.dismiss()
                     }
                 }
 
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Speichern") {
-                        dismiss()
+                        self.dismiss()
                     }
                 }
             }

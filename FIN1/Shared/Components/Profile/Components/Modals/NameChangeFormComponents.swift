@@ -11,8 +11,8 @@ struct NameDisplayCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
-            if !salutation.isEmpty { Text(salutation).font(ResponsiveDesign.captionFont()) }
-            Text("\(academicTitle.isEmpty ? "" : "\(academicTitle) ")\(firstName) \(lastName)")
+            if !self.salutation.isEmpty { Text(self.salutation).font(ResponsiveDesign.captionFont()) }
+            Text("\(self.academicTitle.isEmpty ? "" : "\(self.academicTitle) ")\(self.firstName) \(self.lastName)")
                 .font(ResponsiveDesign.headlineFont())
                 .fontWeight(.medium)
         }
@@ -33,15 +33,15 @@ struct NameChangeReasonPicker: View {
     var body: some View {
         Menu {
             ForEach(NameChangeReason.allCases, id: \.self) { reason in
-                Button(action: { selectedReason = reason }) {
+                Button(action: { self.selectedReason = reason }) {
                     Label(reason.displayName, systemImage: reason.icon)
                 }
             }
         } label: {
             HStack {
-                Image(systemName: selectedReason.icon)
+                Image(systemName: self.selectedReason.icon)
                     .foregroundColor(AppTheme.accentLightBlue)
-                Text(selectedReason.displayName)
+                Text(self.selectedReason.displayName)
                     .foregroundColor(AppTheme.fontColor)
                 Spacer()
                 Image(systemName: "chevron.up.chevron.down")
@@ -68,12 +68,12 @@ struct NameChangeSalutationPicker: View {
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
 
             Menu {
-                ForEach(salutations, id: \.self) { sal in
-                    Button(sal.isEmpty ? "None" : sal) { selectedSalutation = sal }
+                ForEach(self.salutations, id: \.self) { sal in
+                    Button(sal.isEmpty ? "None" : sal) { self.selectedSalutation = sal }
                 }
             } label: {
                 HStack {
-                    Text(selectedSalutation.isEmpty ? "Select" : selectedSalutation)
+                    Text(self.selectedSalutation.isEmpty ? "Select" : self.selectedSalutation)
                         .foregroundColor(AppTheme.fontColor)
                     Spacer()
                     Image(systemName: "chevron.down")
@@ -102,19 +102,19 @@ struct PendingNameChangeCard: View {
                     .font(ResponsiveDesign.headlineFont())
                     .fontWeight(.semibold)
                 Spacer()
-                KYCRequestStatusBadge(status: request.status.displayName, color: .orange)
+                KYCRequestStatusBadge(status: self.request.status.displayName, color: .orange)
             }
 
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
-                Text("New Name: \(request.newFullName)")
-                Text("Reason: \(request.reason.displayName)")
-                Text("Submitted: \(request.submittedAt.formatted(date: .abbreviated, time: .shortened))")
+                Text("New Name: \(self.request.newFullName)")
+                Text("Reason: \(self.request.reason.displayName)")
+                Text("Submitted: \(self.request.submittedAt.formatted(date: .abbreviated, time: .shortened))")
             }
             .font(ResponsiveDesign.bodyFont())
             .foregroundColor(AppTheme.fontColor.opacity(0.8))
 
-            if request.canCancel {
-                Button(action: onCancel) {
+            if self.request.canCancel {
+                Button(action: self.onCancel) {
                     Text("Cancel Request")
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(AppTheme.accentRed)

@@ -61,7 +61,7 @@ final class InvestmentCreationService: InvestmentCreationServiceProtocol {
         deferCashDeductions: Bool
     ) async throws -> (InvestmentBatch, [Investment], [String]) {
         // Step 1: Validate input
-        try validateInvestmentInput(
+        try self.validateInvestmentInput(
             amountPerInvestment: amountPerInvestment,
             numberOfInvestments: numberOfInvestments,
             specialization: specialization,
@@ -92,7 +92,7 @@ final class InvestmentCreationService: InvestmentCreationServiceProtocol {
 
         // Step 4: Lokale Kontoauszugs-Buchungen — bei Backend-Sync erst nach erfolgreichem Parse-Save (siehe InvestmentService).
         if !deferCashDeductions {
-            await cashDeductionProcessor.processCashDeductions(
+            await self.cashDeductionProcessor.processCashDeductions(
                 investor: investor,
                 batch: batch,
                 investments: investments
@@ -115,7 +115,7 @@ final class InvestmentCreationService: InvestmentCreationServiceProtocol {
         batch: InvestmentBatch,
         investments: [Investment]
     ) async {
-        await cashDeductionProcessor.processCashDeductions(
+        await self.cashDeductionProcessor.processCashDeductions(
             investor: investor,
             batch: batch,
             investments: investments
@@ -144,8 +144,8 @@ final class InvestmentCreationService: InvestmentCreationServiceProtocol {
         }
 
         // Validate the investment using existing validation
-        let minSlot = configurationService.minimumInvestmentAmount
-        let maxSlot = configurationService.maximumInvestmentAmount
+        let minSlot = self.configurationService.minimumInvestmentAmount
+        let maxSlot = self.configurationService.maximumInvestmentAmount
         if let error = Investment.validateInvestment(
             investor: investor,
             trader: trader,
@@ -181,7 +181,7 @@ final class InvestmentCreationService: InvestmentCreationServiceProtocol {
         // Note: App service charge applies ONLY to investors (not traders)
         if let investorCashBalanceService = investorCashBalanceService {
             let totalInvestmentAmount = amountPerInvestment * Double(numberOfInvestments)
-            let chargeRate = configurationService.effectiveAppServiceChargeRate(
+            let chargeRate = self.configurationService.effectiveAppServiceChargeRate(
                 for: investor.accountType.rawValue
             )
             let appServiceCharge = totalInvestmentAmount * chargeRate
@@ -215,7 +215,7 @@ final class InvestmentCreationService: InvestmentCreationServiceProtocol {
 
         // Calculate batch totals
         let totalAmount = amountPerInvestment * Double(numberOfInvestments)
-        let chargeRate = configurationService.effectiveAppServiceChargeRate(
+        let chargeRate = self.configurationService.effectiveAppServiceChargeRate(
             for: investor.accountType.rawValue
         )
         let appServiceCharge = totalAmount * chargeRate
@@ -271,8 +271,8 @@ final class InvestmentCreationService: InvestmentCreationServiceProtocol {
             amountPerInvestment: amountPerInvestment,
             numberOfInvestments: numberOfInvestments,
             specialization: specialization,
-            minimumInvestmentPerSlot: configurationService.minimumInvestmentAmount,
-            maximumInvestmentPerSlot: configurationService.maximumInvestmentAmount
+            minimumInvestmentPerSlot: self.configurationService.minimumInvestmentAmount,
+            maximumInvestmentPerSlot: self.configurationService.maximumInvestmentAmount
         )
 
         // Add all investments to repository
@@ -281,7 +281,9 @@ final class InvestmentCreationService: InvestmentCreationServiceProtocol {
         print("   📊 Total investments after append: \(repository.investments.count)")
 
         for (index, investment) in investments.enumerated() {
-            print("      [\(index + 1)] Investment \(investment.id): sequenceNumber=\(investment.sequenceNumber ?? 0), amount=€\(investment.amount.formatted(.currency(code: "EUR"))), status=\(investment.reservationStatus.rawValue)")
+            print(
+                "      [\(index + 1)] Investment \(investment.id): sequenceNumber=\(investment.sequenceNumber ?? 0), amount=€\(investment.amount.formatted(.currency(code: "EUR"))), status=\(investment.reservationStatus.rawValue)"
+            )
         }
 
         return investments
@@ -299,7 +301,7 @@ final class InvestmentCreationService: InvestmentCreationServiceProtocol {
         repository: any InvestmentRepositoryProtocol
     ) async -> [String] {
         // Create investment pools (one per investment)
-        let createdPoolIds = createInvestmentPools(
+        let createdPoolIds = self.createInvestmentPools(
             investments: investments,
             trader: trader,
             repository: repository
@@ -311,7 +313,7 @@ final class InvestmentCreationService: InvestmentCreationServiceProtocol {
             await investmentDocumentBridge.generateInvestmentDocument(for: batch, investments: investments)
         } else {
             // Fallback to direct call if service not available
-            await generateInvestmentDocument(for: batch, investments: investments)
+            await self.generateInvestmentDocument(for: batch, investments: investments)
         }
         return createdPoolIds
     }
@@ -348,7 +350,9 @@ final class InvestmentCreationService: InvestmentCreationServiceProtocol {
             )
             repository.investmentPools.append(newPool)
             createdPoolIds.append(newPool.id)
-            print("✅ InvestmentCreationService: Created pool for investment \(investment.id), investmentNumber=\(nextInvestmentNumber) (trader-specific)")
+            print(
+                "✅ InvestmentCreationService: Created pool for investment \(investment.id), investmentNumber=\(nextInvestmentNumber) (trader-specific)"
+            )
 
             // Note: The investment's poolNumber (1, 2, 3...) is for batch display only.
             // The actual trader-specific investment number is stored in the pool.
@@ -362,7 +366,7 @@ final class InvestmentCreationService: InvestmentCreationServiceProtocol {
     /// Generates investment document and notification (fallback implementation)
     private func generateInvestmentDocument(for batch: InvestmentBatch, investments: [Investment]) async {
         // CRITICAL: Use proper document number generation for accounting compliance
-        let documentNumber = transactionIdService.generateInvestorDocumentNumber()
+        let documentNumber = self.transactionIdService.generateInvestorDocumentNumber()
         print("📄 InvestmentCreationService: Investment Document Generated: \(documentNumber) for Batch #\(batch.id)")
 
         // Create document for the Batch with industry-standard naming
@@ -374,7 +378,7 @@ final class InvestmentCreationService: InvestmentCreationServiceProtocol {
             type: .investorCollectionBill,
             status: .verified,
             fileURL: "investment://\(documentNumber).pdf",
-            size: 1024 * 60, // Mock 60KB PDF size
+            size: 1_024 * 60, // Mock 60KB PDF size
             uploadedAt: Date(),
             documentNumber: documentNumber
         )

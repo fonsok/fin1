@@ -1,5 +1,5 @@
-import SwiftUI
 import Foundation
+import SwiftUI
 
 // MARK: - Display Data Builder Protocol
 
@@ -36,17 +36,17 @@ final class TradeStatementDisplayDataBuilder: TradeStatementDisplayDataBuilderPr
         sellInvoices: [Invoice]
     ) -> TradeStatementDisplayData {
 
-        let buyTransaction = buildBuyTransactionData(
+        let buyTransaction = self.buildBuyTransactionData(
             trade: trade,
             buyInvoice: buyInvoice
         )
 
-        let sellTransactions = buildSellTransactionData(
+        let sellTransactions = self.buildSellTransactionData(
             trade: trade,
             sellInvoices: sellInvoices
         )
 
-        let calculationBreakdown = buildCalculationBreakdown(
+        let calculationBreakdown = self.buildCalculationBreakdown(
             buyInvoice: buyInvoice,
             sellInvoices: sellInvoices
         )
@@ -67,7 +67,7 @@ final class TradeStatementDisplayDataBuilder: TradeStatementDisplayDataBuilderPr
             sellInvoices: sellInvoices
         )
 
-        let securityIdentifier = securityIdentifierFromInvoices(buyInvoice: buyInvoice, sellInvoices: sellInvoices)
+        let securityIdentifier = self.securityIdentifierFromInvoices(buyInvoice: buyInvoice, sellInvoices: sellInvoices)
 
         return TradeStatementDisplayData(
             depotNumber: "104801", // In a real app, this would come from user profile
@@ -91,7 +91,7 @@ final class TradeStatementDisplayDataBuilder: TradeStatementDisplayDataBuilderPr
     private func buildCalculationBreakdown(buyInvoice: Invoice?, sellInvoices: [Invoice]) -> CalculationBreakdownData {
         // Calculate individual sell amounts (excluding tax items) - guarded
         let sellAmounts = sellInvoices.map { sellInvoice in
-            let sellItems = calculationGuardService.guardInvoiceFiltering(
+            let sellItems = self.calculationGuardService.guardInvoiceFiltering(
                 invoice: sellInvoice,
                 calculationType: .profitCalculation
             )
@@ -104,7 +104,7 @@ final class TradeStatementDisplayDataBuilder: TradeStatementDisplayDataBuilderPr
         // Calculate buy amount (excluding tax items) - guarded
         let buyAmount: Double
         if let buyInvoice = buyInvoice {
-            let buyItems = calculationGuardService.guardInvoiceFiltering(
+            let buyItems = self.calculationGuardService.guardInvoiceFiltering(
                 invoice: buyInvoice,
                 calculationType: .profitCalculation
             )
@@ -118,7 +118,7 @@ final class TradeStatementDisplayDataBuilder: TradeStatementDisplayDataBuilderPr
         let preTaxProfit = totalSellAmount - abs(buyAmount)
 
         // Validate that this matches the guarded calculation
-        let guardedPreTaxProfit = calculationGuardService.guardProfitCalculation(
+        let guardedPreTaxProfit = self.calculationGuardService.guardProfitCalculation(
             buyInvoice: buyInvoice,
             sellInvoices: sellInvoices
         )
@@ -149,8 +149,8 @@ final class TradeStatementDisplayDataBuilder: TradeStatementDisplayDataBuilderPr
     private func buildBuyTransactionData(trade: TradeOverviewItem, buyInvoice: Invoice?) -> BuyTransactionData? {
         guard let invoice = buyInvoice else { return nil }
 
-        let transactionDetails = extractTransactionDetails(from: invoice)
-        let dates = formatTransactionDates(from: invoice)
+        let transactionDetails = self.extractTransactionDetails(from: invoice)
+        let dates = self.formatTransactionDates(from: invoice)
 
         // Calculate individual fees using the same logic as Trade Details
         let securitiesItems = invoice.items.filter { $0.itemType == .securities }
@@ -190,8 +190,8 @@ final class TradeStatementDisplayDataBuilder: TradeStatementDisplayDataBuilderPr
 
     private func buildSellTransactionData(trade: TradeOverviewItem, sellInvoices: [Invoice]) -> [SellTransactionData] {
         return sellInvoices.enumerated().map { index, invoice in
-            let transactionDetails = extractTransactionDetails(from: invoice)
-            let dates = formatTransactionDates(from: invoice)
+            let transactionDetails = self.extractTransactionDetails(from: invoice)
+            let dates = self.formatTransactionDates(from: invoice)
             let profitLoss = calculateProfitLossForSell(invoice: invoice, trade: trade)
             let profitLossColor = profitLoss >= 0 ? "fin1AccentGreen" : "fin1AccentRed"
 
@@ -239,10 +239,10 @@ final class TradeStatementDisplayDataBuilder: TradeStatementDisplayDataBuilderPr
         let securityItems = invoice.items.filter { $0.itemType == .securities }
         let securityItem = securityItems.first
 
-        let orderVolume = formatOrderVolume(from: securityItem)
-        let price = formatPrice(from: securityItem)
-        let marketValue = formatMarketValue(from: securityItem)
-        let commission = calculateCommission(from: invoice)
+        let orderVolume = self.formatOrderVolume(from: securityItem)
+        let price = self.formatPrice(from: securityItem)
+        let marketValue = self.formatMarketValue(from: securityItem)
+        let commission = self.calculateCommission(from: invoice)
 
         return TradeStatementTransactionDetails(
             orderVolume: orderVolume,
@@ -324,7 +324,7 @@ extension TradeStatementDisplayDataBuilder {
         trade: TradeOverviewItem
     ) -> TaxSummaryData {
         // Calculate pre-tax profit (Ergebnis vor Steuern)
-        let preTaxProfit = calculationGuardService.guardProfitCalculation(
+        let preTaxProfit = self.calculationGuardService.guardProfitCalculation(
             buyInvoice: buyInvoice,
             sellInvoices: sellInvoices
         )
@@ -338,7 +338,7 @@ extension TradeStatementDisplayDataBuilder {
             netResult = preTaxProfit
         } else {
             // Calculate taxes only if there's a positive pre-tax profit
-            totalTax = calculationGuardService.guardTaxCalculation(profit: preTaxProfit)
+            totalTax = self.calculationGuardService.guardTaxCalculation(profit: preTaxProfit)
             netResult = preTaxProfit - totalTax
         }
 
@@ -367,7 +367,7 @@ extension TradeStatementDisplayDataBuilder {
 
     private func buildTaxItems(buyInvoice: Invoice?, sellInvoices: [Invoice]) -> [TaxItem] {
         // Calculate pre-tax profit (Ergebnis vor Steuern)
-        let preTaxProfit = calculationGuardService.guardProfitCalculation(
+        let preTaxProfit = self.calculationGuardService.guardProfitCalculation(
             buyInvoice: buyInvoice,
             sellInvoices: sellInvoices
         )

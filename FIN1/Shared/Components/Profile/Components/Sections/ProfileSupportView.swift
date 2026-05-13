@@ -22,7 +22,7 @@ struct ProfileSupportView: View {
                     subtitle: "FAQs and support articles",
                     icon: "questionmark.circle.fill",
                     color: AppTheme.accentLightBlue,
-                    action: onHelpCenter
+                    action: self.onHelpCenter
                 )
 
                 SettingsRow(
@@ -30,7 +30,7 @@ struct ProfileSupportView: View {
                     subtitle: "Get in touch with our team",
                     icon: "message.fill",
                     color: AppTheme.accentGreen,
-                    action: onContactSupport
+                    action: self.onContactSupport
                 )
 
                 SettingsRow(
@@ -38,7 +38,7 @@ struct ProfileSupportView: View {
                     subtitle: "Read our terms and conditions",
                     icon: "doc.text.fill",
                     color: AppTheme.accentOrange,
-                    action: onTermsOfService
+                    action: self.onTermsOfService
                 )
 
                 SettingsRow(
@@ -46,7 +46,7 @@ struct ProfileSupportView: View {
                     subtitle: "Learn about data protection",
                     icon: "hand.raised.slash.fill",
                     color: AppTheme.accentRed,
-                    action: onPrivacyPolicy
+                    action: self.onPrivacyPolicy
                 )
 
                 SettingsRow(
@@ -54,7 +54,7 @@ struct ProfileSupportView: View {
                     subtitle: "Legal disclosure (Impressum)",
                     icon: "building.2.fill",
                     color: AppTheme.accentLightBlue,
-                    action: onImprint
+                    action: self.onImprint
                 )
             }
         }

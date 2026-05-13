@@ -13,13 +13,13 @@ struct PriceAlertDetailView: View {
             Form {
                 // Symbol Section
                 Section("Symbol") {
-                    Text(alert.symbol)
+                    Text(self.alert.symbol)
                         .font(ResponsiveDesign.bodyFont())
                 }
                 
                 // Alert Type Section
                 Section("Alert Type") {
-                    Text(alertTypeDescription)
+                    Text(self.alertTypeDescription)
                         .font(ResponsiveDesign.bodyFont())
                 }
                 
@@ -41,11 +41,11 @@ struct PriceAlertDetailView: View {
                     HStack {
                         Text("Status")
                         Spacer()
-                        Text(alert.status.rawValue.capitalized)
-                            .foregroundColor(statusColor)
+                        Text(self.alert.status.rawValue.capitalized)
+                            .foregroundColor(self.statusColor)
                     }
                     
-                    if alert.isEnabled {
+                    if self.alert.isEnabled {
                         Text("Enabled")
                             .foregroundColor(AppTheme.accentGreen)
                     } else {
@@ -59,7 +59,7 @@ struct PriceAlertDetailView: View {
                     HStack {
                         Text("Created")
                         Spacer()
-                        Text(alert.createdAt, style: .date)
+                        Text(self.alert.createdAt, style: .date)
                             .foregroundColor(AppTheme.secondaryText)
                     }
                     
@@ -93,7 +93,7 @@ struct PriceAlertDetailView: View {
                 // Actions Section
                 Section {
                     Button(role: .destructive, action: {
-                        showDeleteConfirmation = true
+                        self.showDeleteConfirmation = true
                     }) {
                         HStack {
                             Spacer()
@@ -108,16 +108,16 @@ struct PriceAlertDetailView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") {
-                        dismiss()
+                        self.dismiss()
                     }
                 }
             }
-            .alert("Delete Alert", isPresented: $showDeleteConfirmation) {
+            .alert("Delete Alert", isPresented: self.$showDeleteConfirmation) {
                 Button("Cancel", role: .cancel) { }
                 Button("Delete", role: .destructive) {
                     Task {
-                        try? await priceAlertService?.deleteAlert(alert.id)
-                        dismiss()
+                        try? await self.priceAlertService?.deleteAlert(self.alert.id)
+                        self.dismiss()
                     }
                 }
             } message: {
@@ -127,7 +127,7 @@ struct PriceAlertDetailView: View {
     }
     
     private var alertTypeDescription: String {
-        switch alert.alertType {
+        switch self.alert.alertType {
         case .above:
             return "Alert when price goes above threshold"
         case .below:
@@ -138,7 +138,7 @@ struct PriceAlertDetailView: View {
     }
     
     private var statusColor: Color {
-        switch alert.status {
+        switch self.alert.status {
         case .active:
             return AppTheme.accentGreen
         case .triggered:

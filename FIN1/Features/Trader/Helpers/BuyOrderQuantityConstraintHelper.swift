@@ -29,19 +29,19 @@ struct BuyOrderQuantityConstraintHelper {
             return (rawValue, nil)
         }
 
-        return (nil, constraintMessage(for: denomination))
+        return (nil, self.constraintMessage(for: denomination))
     }
 
     // MARK: - Constraint Messages
 
     private func constraintMessage(for denomination: Int) -> String {
-        let ratio = formattedSubscriptionRatio
+        let ratio = self.formattedSubscriptionRatio
         return "Zeichnungsverhältnis \(ratio) → Eingaben nur in \(denomination)-Schritten."
     }
 
     private var formattedSubscriptionRatio: String {
         let formatter = NumberFormatter.localizedDecimalFormatter
-        return formatter.string(from: NSNumber(value: searchResult.subscriptionRatio)) ?? "0"
+        return formatter.string(from: NSNumber(value: self.searchResult.subscriptionRatio)) ?? "0"
     }
 
     // MARK: - Denomination Helpers
@@ -50,11 +50,11 @@ struct BuyOrderQuantityConstraintHelper {
         if let explicitDenomination = searchResult.denomination, explicitDenomination > 1 {
             return explicitDenomination
         }
-        return subscriptionRatioDenomination
+        return self.subscriptionRatioDenomination
     }
 
     private var subscriptionRatioDenomination: Int? {
-        guard searchResult.subscriptionRatio > 0 else {
+        guard self.searchResult.subscriptionRatio > 0 else {
             return nil
         }
 

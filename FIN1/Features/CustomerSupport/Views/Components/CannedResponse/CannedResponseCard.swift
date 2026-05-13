@@ -9,7 +9,7 @@ struct CannedResponseCard: View {
     @State private var isExpanded = false
 
     private var previewContent: String {
-        let filled = response.fillPlaceholders(placeholderValues)
+        let filled = self.response.fillPlaceholders(self.placeholderValues)
         if filled.count > 100 {
             return String(filled.prefix(100)) + "..."
         }
@@ -17,14 +17,14 @@ struct CannedResponseCard: View {
     }
 
     var body: some View {
-        Button(action: onSelect) {
+        Button(action: self.onSelect) {
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
                 HStack {
-                    Image(systemName: response.category.icon)
+                    Image(systemName: self.response.category.icon)
                         .foregroundColor(AppTheme.accentLightBlue)
                         .font(ResponsiveDesign.captionFont())
 
-                    Text(response.title)
+                    Text(self.response.title)
                         .font(ResponsiveDesign.bodyFont())
                         .fontWeight(.medium)
                         .foregroundColor(AppTheme.fontColor)
@@ -42,14 +42,14 @@ struct CannedResponseCard: View {
                     }
                 }
 
-                Text(isExpanded ? response.fillPlaceholders(placeholderValues) : previewContent)
+                Text(self.isExpanded ? self.response.fillPlaceholders(self.placeholderValues) : self.previewContent)
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
-                    .lineLimit(isExpanded ? nil : 3)
+                    .lineLimit(self.isExpanded ? nil : 3)
                     .multilineTextAlignment(.leading)
 
-                if !response.placeholders.isEmpty {
-                    let missingPlaceholders = response.placeholders.filter { placeholderValues[$0] == nil }
+                if !self.response.placeholders.isEmpty {
+                    let missingPlaceholders = self.response.placeholders.filter { self.placeholderValues[$0] == nil }
                     if !missingPlaceholders.isEmpty {
                         HStack(spacing: ResponsiveDesign.spacing(4)) {
                             Image(systemName: "exclamationmark.triangle.fill")
@@ -65,13 +65,13 @@ struct CannedResponseCard: View {
                     Spacer()
                     Button {
                         withAnimation(.easeInOut(duration: 0.2)) {
-                            isExpanded.toggle()
+                            self.isExpanded.toggle()
                         }
                     } label: {
                         HStack(spacing: ResponsiveDesign.spacing(4)) {
-                            Text(isExpanded ? "Weniger" : "Mehr anzeigen")
+                            Text(self.isExpanded ? "Weniger" : "Mehr anzeigen")
                                 .font(ResponsiveDesign.captionFont())
-                            Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                            Image(systemName: self.isExpanded ? "chevron.up" : "chevron.down")
                                 .font(ResponsiveDesign.captionFont())
                         }
                         .foregroundColor(AppTheme.accentLightBlue)

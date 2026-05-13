@@ -6,15 +6,15 @@ struct WalletTransactionRow: View {
 
     var body: some View {
         HStack(spacing: ResponsiveDesign.spacing(4)) {
-            Image(systemName: transaction.type.icon)
+            Image(systemName: self.transaction.type.icon)
                 .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize()))
-                .foregroundColor(colorForType(transaction.type))
+                .foregroundColor(self.colorForType(self.transaction.type))
                 .frame(width: ResponsiveDesign.spacing(8), height: ResponsiveDesign.spacing(8))
-                .background(colorForType(transaction.type).opacity(0.1))
+                .background(self.colorForType(self.transaction.type).opacity(0.1))
                 .cornerRadius(ResponsiveDesign.spacing(3))
 
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(2)) {
-                Text(transaction.type.displayName)
+                Text(self.transaction.type.displayName)
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.fontColor)
 
@@ -24,17 +24,17 @@ struct WalletTransactionRow: View {
                         .foregroundColor(AppTheme.secondaryText)
                 }
 
-                Text(transaction.timestamp.formatted(date: .abbreviated, time: .shortened))
+                Text(self.transaction.timestamp.formatted(date: .abbreviated, time: .shortened))
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.secondaryText)
             }
 
             Spacer()
 
-            Text(transaction.formattedSignedAmount)
+            Text(self.transaction.formattedSignedAmount)
                 .font(ResponsiveDesign.bodyFont())
                 .fontWeight(.semibold)
-                .foregroundColor(transaction.isPositive ? AppTheme.accentGreen : AppTheme.accentRed)
+                .foregroundColor(self.transaction.isPositive ? AppTheme.accentGreen : AppTheme.accentRed)
         }
         .padding(ResponsiveDesign.spacing(4))
         .background(AppTheme.cardBackground)

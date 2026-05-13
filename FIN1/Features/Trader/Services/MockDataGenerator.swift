@@ -15,9 +15,9 @@ class MockDataGenerator: MockDataGeneratorProtocol {
 
         // Generate results based on filter type
         if filters.category == "Aktie" {
-            return generateStockResults(for: filters)
+            return self.generateStockResults(for: filters)
         } else {
-            return generateOptionsResults(for: filters)
+            return self.generateOptionsResults(for: filters)
         }
     }
 
@@ -32,19 +32,19 @@ class MockDataGenerator: MockDataGeneratorProtocol {
         switch underlyingAsset {
         case "DAX", "MDAX", "Dow Jones", "S&P 500", "NASDAQ 100", "Euro Stoxx 50", "FTSE 100", "CAC 40", "SMI":
             // Index prices (higher values)
-            price = Double((rng % 4000000) + 1000000) / 100.0 // 10.000,00 - 50.000,00
+            price = Double((rng % 4_000_000) + 1_000_000) / 100.0 // 10.000,00 - 50.000,00
         case "Apple", "Microsoft", "Tesla":
             // Stock prices (medium values)
-            price = Double((rng % 20000) + 10000) / 100.0 // 100.00 - 300.00
+            price = Double((rng % 20_000) + 10_000) / 100.0 // 100.00 - 300.00
         case "BMW":
             // BMW stock price
-            price = Double((rng % 5000) + 5000) / 100.0 // 50.00 - 100.00
+            price = Double((rng % 5_000) + 5_000) / 100.0 // 50.00 - 100.00
         case "Gold", "Silber":
             // Commodity prices
-            price = Double((rng % 10000) + 10000) / 100.0 // 100.00 - 200.00
+            price = Double((rng % 10_000) + 10_000) / 100.0 // 100.00 - 200.00
         case "USD/JPY", "EUR/USD", "GBP/USD":
             // Currency prices
-            price = Double((rng % 5000) + 10000) / 100.0 // 100.00 - 150.00
+            price = Double((rng % 5_000) + 10_000) / 100.0 // 100.00 - 150.00
         default:
             price = 150.00
         }
@@ -72,7 +72,7 @@ class MockDataGenerator: MockDataGeneratorProtocol {
         let allStocks = [
             ("Apple", "Apple Inc.", "865985", "US0378331005"),
             ("BMW", "BMW AG", "519000", "DE0005190003"),
-           // ("DAX", "DAX Index", "846900", "DE0008469008"),
+            // ("DAX", "DAX Index", "846900", "DE0008469008"),
             ("Tesla", "Tesla Inc.", "881160", "US88160R1014"),
             ("Microsoft", "Microsoft Corp.", "594918", "US5949181045"),
             ("Google", "Alphabet Inc.", "02079K", "US02079K3059")
@@ -95,7 +95,7 @@ class MockDataGenerator: MockDataGeneratorProtocol {
             let seed = symbol.hash
             var random = seed
 
-            let price = deterministicRandom(in: 50...500, seed: &random)
+            let price = self.deterministicRandom(in: 50...500, seed: &random)
 
             return SearchResult(
                 valuationDate: "31.12.2025",
@@ -164,7 +164,7 @@ class MockDataGenerator: MockDataGeneratorProtocol {
 
         // Generate different options for the selected criteria
         for index in 1...resultCount {
-            let wkn = generateWKN(emittent: selectedIssuer, index: index)
+            let wkn = self.generateWKN(emittent: selectedIssuer, index: index)
             let isin = "DE000\(wkn)"
 
             // Generate realistic prices based on underlying asset
@@ -172,48 +172,53 @@ class MockDataGenerator: MockDataGeneratorProtocol {
             let basePrice = MarketPriceService.getMarketPrice(for: underlyingAsset)
 
             // Generate different strike prices for sorting with proper formatting
-            let strike = generateStrikePrice(for: underlyingAsset, basePrice: basePrice, index: index, strikePriceGap: filters.strikePriceGap)
+            let strike = self.generateStrikePrice(
+                for: underlyingAsset,
+                basePrice: basePrice,
+                index: index,
+                strikePriceGap: filters.strikePriceGap
+            )
 
             // Generate briefkurs based on strike price gap relationship
-            let briefkurs = generateBriefkurs(for: underlyingAsset, basePrice: basePrice, strike: strike, index: index)
+            let briefkurs = self.generateBriefkurs(for: underlyingAsset, basePrice: basePrice, strike: strike, index: index)
 
             // Generate different valuation dates for sorting (spread across 2025-2026)
-            let valuationDate = generateValuationDate(for: index)
+            let valuationDate = self.generateValuationDate(for: index)
 
-        print("🔍 DEBUG: MockDataGenerator - Creating SearchResult with underlyingAsset: '\(underlyingAsset)'")
+            print("🔍 DEBUG: MockDataGenerator - Creating SearchResult with underlyingAsset: '\(underlyingAsset)'")
 
-        // CRITICAL: Validate that we're using the correct filter values
-        assert(!underlyingAsset.isEmpty, "Underlying asset should not be empty - this would break the basiswert filter")
-        assert(underlyingAsset == filters.underlyingAsset || (filters.underlyingAsset.isEmpty && underlyingAsset == "DAX"),
-               "Underlying asset should match the selected basiswert or be DAX fallback")
-        assert(!optionDirection.isEmpty, "Option direction should not be empty - this would break the direction filter")
-        assert(optionDirection == "Call" || optionDirection == "Put",
-               "Option direction should be Call or Put - this would break the direction filter")
-        assert(!category.isEmpty, "Category should not be empty - this would break the category filter")
+            // CRITICAL: Validate that we're using the correct filter values
+            assert(!underlyingAsset.isEmpty, "Underlying asset should not be empty - this would break the basiswert filter")
+            assert(underlyingAsset == filters.underlyingAsset || (filters.underlyingAsset.isEmpty && underlyingAsset == "DAX"),
+                   "Underlying asset should match the selected basiswert or be DAX fallback")
+            assert(!optionDirection.isEmpty, "Option direction should not be empty - this would break the direction filter")
+            assert(optionDirection == "Call" || optionDirection == "Put",
+                   "Option direction should be Call or Put - this would break the direction filter")
+            assert(!category.isEmpty, "Category should not be empty - this would break the category filter")
 
-        // Set subscription ratio based on category
-        // Warrants typically have 0.01 or 0.1 subscription ratio
-        let subscriptionRatio: Double
-        if category.lowercased() == "warrant" || category.lowercased().contains("warrant") {
-            // Use 0.01 for most warrants, sometimes 0.1 (based on index for variation)
-            subscriptionRatio = (index % 3 == 0) ? 0.1 : 0.01
-        } else {
-            // Default to 1.0 for other securities
-            subscriptionRatio = 1.0
-        }
+            // Set subscription ratio based on category
+            // Warrants typically have 0.01 or 0.1 subscription ratio
+            let subscriptionRatio: Double
+            if category.lowercased() == "warrant" || category.lowercased().contains("warrant") {
+                // Use 0.01 for most warrants, sometimes 0.1 (based on index for variation)
+                subscriptionRatio = (index % 3 == 0) ? 0.1 : 0.01
+            } else {
+                // Default to 1.0 for other securities
+                subscriptionRatio = 1.0
+            }
 
-        let searchResult = SearchResult(
-            valuationDate: valuationDate,
-            wkn: wkn,
-            strike: strike,
-            askPrice: briefkurs,
-            direction: optionDirection,        // CRITICAL: Use filtered direction
-            category: category,                // CRITICAL: Use filtered category
-            underlyingType: "Index",
-            isin: isin,
-            underlyingAsset: underlyingAsset,  // CRITICAL: Use filtered underlying asset
-            subscriptionRatio: subscriptionRatio
-        )
+            let searchResult = SearchResult(
+                valuationDate: valuationDate,
+                wkn: wkn,
+                strike: strike,
+                askPrice: briefkurs,
+                direction: optionDirection,        // CRITICAL: Use filtered direction
+                category: category,                // CRITICAL: Use filtered category
+                underlyingType: "Index",
+                isin: isin,
+                underlyingAsset: underlyingAsset,  // CRITICAL: Use filtered underlying asset
+                subscriptionRatio: subscriptionRatio
+            )
 
             print("🔍 DEBUG: Created SearchResult - WKN: \(searchResult.wkn)")
             print("🔍 DEBUG: Created SearchResult - direction: \(searchResult.direction ?? "nil")")
@@ -230,15 +235,15 @@ class MockDataGenerator: MockDataGeneratorProtocol {
         let seed = "\(emittent)\(index)".hash
         var random = seed
         let randomSuffix = String((0..<4).map { _ in
-            random = random &* 1103515245 &+ 12345  // Linear congruential generator
+            random = random &* 1_103_515_245 &+ 12_345  // Linear congruential generator
             return letters[letters.index(letters.startIndex, offsetBy: abs(random) % letters.count)]
         })
         return "\(emittent)\(index)\(randomSuffix)"
     }
 
     private func deterministicRandom(in range: ClosedRange<Double>, seed: inout Int) -> Double {
-        seed = seed &* 1103515245 &+ 12345
-        let normalized = Double(abs(seed) % 1000) / 1000.0
+        seed = seed &* 1_103_515_245 &+ 12_345
+        let normalized = Double(abs(seed) % 1_000) / 1_000.0
         return range.lowerBound + (range.upperBound - range.lowerBound) * normalized
     }
 
@@ -320,7 +325,7 @@ class MockDataGenerator: MockDataGeneratorProtocol {
         let briefkursValue: Double
         if underlyingAsset.contains("DAX") || underlyingAsset.contains("Index") {
             // For index securities (warrants), use proper financial calculation
-            briefkursValue = calculateWarrantPrice(
+            briefkursValue = self.calculateWarrantPrice(
                 underlyingPrice: basePrice,
                 strikePrice: strikePrice,
                 conversionRatio: 0.01, // DAX warrants typically use 0.01
@@ -328,7 +333,7 @@ class MockDataGenerator: MockDataGeneratorProtocol {
             )
         } else {
             // For stock securities (warrants), use proper financial calculation with different conversion ratio
-            briefkursValue = calculateWarrantPrice(
+            briefkursValue = self.calculateWarrantPrice(
                 underlyingPrice: basePrice,
                 strikePrice: strikePrice,
                 conversionRatio: 0.1, // Stock warrants typically use 0.1 (like BMW example)
@@ -348,7 +353,7 @@ class MockDataGenerator: MockDataGeneratorProtocol {
         let intrinsicValue = max(0, strikePriceGap * conversionRatio)
 
         // Step 3: Calculate Time Value (varies based on moneyness and time to expiry)
-        let timeValue = calculateTimeValue(
+        let timeValue = self.calculateTimeValue(
             underlyingPrice: underlyingPrice,
             strikePrice: strikePrice,
             intrinsicValue: intrinsicValue,
@@ -363,7 +368,13 @@ class MockDataGenerator: MockDataGeneratorProtocol {
         return max(0.01, warrantPrice)
     }
 
-    private func calculateTimeValue(underlyingPrice: Double, strikePrice: Double, intrinsicValue: Double, conversionRatio: Double, index: Int) -> Double {
+    private func calculateTimeValue(
+        underlyingPrice: Double,
+        strikePrice: Double,
+        intrinsicValue: Double,
+        conversionRatio: Double,
+        index: Int
+    ) -> Double {
         // Calculate moneyness (how far in/out of the money)
         let moneyness = (underlyingPrice - strikePrice) / underlyingPrice
 

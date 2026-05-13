@@ -6,7 +6,7 @@ struct TaxBreakdownTable: View {
 
     var body: some View {
         VStack(spacing: ResponsiveDesign.spacing(0)) {
-            if breakdown.profitBeforeTaxes <= 0 {
+            if self.breakdown.profitBeforeTaxes <= 0 {
                 // If profit before taxes is ≤ 0, show only the total tax burden (which will be 0)
                 HStack {
                     Text("Gesamtsteuerlast")
@@ -52,14 +52,14 @@ struct TaxBreakdownTable: View {
                 Divider()
 
                 // Calculate taxes once and reuse
-                let capitalGainsTax = InvoiceTaxCalculator.calculateCapitalGainsTax(for: breakdown.profitBeforeTaxes)
+                let capitalGainsTax = InvoiceTaxCalculator.calculateCapitalGainsTax(for: self.breakdown.profitBeforeTaxes)
                 let solidaritySurcharge = InvoiceTaxCalculator.calculateSolidaritySurcharge(for: capitalGainsTax)
                 let churchTax = InvoiceTaxCalculator.calculateChurchTax(for: capitalGainsTax)
 
                 // Capital Gains Tax
                 TaxRow(
                     name: "Abgeltungs-\nsteuer",
-                    base: breakdown.profitBeforeTaxes,
+                    base: self.breakdown.profitBeforeTaxes,
                     rate: "25%",
                     amount: capitalGainsTax
                 )
@@ -91,7 +91,7 @@ struct TaxBreakdownTable: View {
                     Spacer()
                     Text("")
                     Spacer()
-                    Text(breakdown.totalTaxes.formatted(.currency(code: "EUR")))
+                    Text(self.breakdown.totalTaxes.formatted(.currency(code: "EUR")))
                         .font(ResponsiveDesign.bodyFont())
                         .fontWeight(.bold)
                         .foregroundColor(AppTheme.accentRed)

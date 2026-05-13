@@ -26,7 +26,7 @@ struct SupportTicket: Identifiable, Codable {
 
     /// Check if ticket can be reopened (within 7-day grace period)
     var canReopen: Bool {
-        guard status == .closed || status == .resolved else { return false }
+        guard self.status == .closed || self.status == .resolved else { return false }
         guard let closedAt = closedAt else { return false }
         let daysSinceClosed = Calendar.current.dateComponents([.day], from: closedAt, to: Date()).day ?? 0
         return daysSinceClosed <= 7
@@ -34,14 +34,14 @@ struct SupportTicket: Identifiable, Codable {
 
     /// Days remaining to reopen
     var daysUntilReopenExpires: Int? {
-        guard canReopen, let closedAt = closedAt else { return nil }
+        guard self.canReopen, let closedAt = closedAt else { return nil }
         let daysSinceClosed = Calendar.current.dateComponents([.day], from: closedAt, to: Date()).day ?? 0
         return max(0, 7 - daysSinceClosed)
     }
 
     /// Check if ticket should be auto-archived (30 days after closure)
     var shouldAutoArchive: Bool {
-        guard status == .closed, archivedAt == nil else { return false }
+        guard self.status == .closed, self.archivedAt == nil else { return false }
         guard let closedAt = closedAt else { return false }
         let daysSinceClosed = Calendar.current.dateComponents([.day], from: closedAt, to: Date()).day ?? 0
         return daysSinceClosed >= 30

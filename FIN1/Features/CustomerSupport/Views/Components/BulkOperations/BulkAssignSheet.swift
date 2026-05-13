@@ -12,15 +12,15 @@ struct BulkAssignSheet: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: ResponsiveDesign.spacing(16)) {
-                Text("\(selectedCount) Tickets zuweisen an:")
+                Text("\(self.selectedCount) Tickets zuweisen an:")
                     .font(ResponsiveDesign.headlineFont())
                     .foregroundColor(AppTheme.fontColor)
 
                 ScrollView {
                     LazyVStack(spacing: ResponsiveDesign.spacing(8)) {
-                        ForEach(agents.filter { $0.canAcceptTickets }) { agent in
+                        ForEach(self.agents.filter { $0.canAcceptTickets }) { agent in
                             Button {
-                                selectedAgentId = agent.id
+                                self.selectedAgentId = agent.id
                             } label: {
                                 HStack {
                                     VStack(alignment: .leading) {
@@ -35,11 +35,15 @@ struct BulkAssignSheet: View {
 
                                     Spacer()
 
-                                    Image(systemName: selectedAgentId == agent.id ? "checkmark.circle.fill" : "circle")
-                                        .foregroundColor(selectedAgentId == agent.id ? AppTheme.accentLightBlue : AppTheme.fontColor.opacity(0.3))
+                                    Image(systemName: self.selectedAgentId == agent.id ? "checkmark.circle.fill" : "circle")
+                                        .foregroundColor(
+                                            self.selectedAgentId == agent.id ? AppTheme.accentLightBlue : AppTheme.fontColor.opacity(0.3)
+                                        )
                                 }
                                 .padding()
-                                .background(selectedAgentId == agent.id ? AppTheme.accentLightBlue.opacity(0.1) : AppTheme.sectionBackground)
+                                .background(
+                                    self.selectedAgentId == agent.id ? AppTheme.accentLightBlue.opacity(0.1) : AppTheme.sectionBackground
+                                )
                                 .cornerRadius(ResponsiveDesign.spacing(10))
                             }
                             .buttonStyle(PlainButtonStyle())
@@ -53,15 +57,15 @@ struct BulkAssignSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Abbrechen") { dismiss() }
+                    Button("Abbrechen") { self.dismiss() }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Zuweisen") {
                         if let agentId = selectedAgentId {
-                            onAssign(agentId)
+                            self.onAssign(agentId)
                         }
                     }
-                    .disabled(selectedAgentId == nil)
+                    .disabled(self.selectedAgentId == nil)
                 }
             }
         }

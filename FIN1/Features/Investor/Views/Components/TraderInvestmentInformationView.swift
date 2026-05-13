@@ -14,7 +14,7 @@ struct TraderInvestmentInformationView: View {
                 .foregroundColor(AppTheme.fontColor)
 
             // For now, show empty state since MockTrader doesn't have investment pools
-            emptyInvestmentsView
+            self.emptyInvestmentsView
         }
         .responsivePadding()
         .background(AppTheme.systemSecondaryBackground)

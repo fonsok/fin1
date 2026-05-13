@@ -44,7 +44,9 @@ struct TraderMatchingHelper {
                 return matchedId
             }
 
-            print("   ⚠️ TraderMatchingHelper: No MockTrader found for username/name '\(username)'/'\(displayName)' in \(traderDataService.traders.count) traders")
+            print(
+                "   ⚠️ TraderMatchingHelper: No MockTrader found for username/name '\(username)'/'\(displayName)' in \(traderDataService.traders.count) traders"
+            )
             print("   📋 Available trader usernames: \(traderDataService.traders.map { $0.username })")
         } else {
             print("   ⚠️ TraderMatchingHelper: traderDataService is nil - cannot lookup by username")

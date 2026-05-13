@@ -107,23 +107,23 @@ struct NewOrder: Identifiable, Codable {
 
     // MARK: - Computed Properties
     var isActive: Bool {
-        status == .submitted || status == .executed
+        self.status == .submitted || self.status == .executed
     }
 
     var isCompleted: Bool {
-        status == .completed
+        self.status == .completed
     }
 
     var statusCode: Int {
-        status.code
+        self.status.code
     }
 
     var statusDisplayName: String {
-        status.displayName
+        self.status.displayName
     }
 
     var statusColor: Color {
-        status.color
+        self.status.color
     }
 
     // MARK: - Initializers

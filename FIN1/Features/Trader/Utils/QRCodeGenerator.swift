@@ -1,7 +1,7 @@
-import Foundation
-import UIKit
-import SwiftUI
 import CoreImage.CIFilterBuiltins
+import Foundation
+import SwiftUI
+import UIKit
 
 // MARK: - QR Code Generator
 /// Generates QR codes for invoice information
@@ -37,7 +37,7 @@ final class QRCodeGenerator {
         print("🔧 DEBUG: Generating QR code for string length: \(string.count)")
 
         // Check if data is too large for QR code (QR codes have practical limits)
-        let maxQRDataLength = 2953 // Maximum for version 40 with M error correction
+        let maxQRDataLength = 2_953 // Maximum for version 40 with M error correction
         let processedString: String
         if string.count > maxQRDataLength {
             print("⚠️ DEBUG: QR data too large (\(string.count) chars), truncating to \(maxQRDataLength)")
@@ -154,8 +154,8 @@ final class QRCodeGenerator {
     ///   - size: The size of the QR code image (default: 200x200)
     /// - Returns: A UIImage containing the QR code, or nil if generation fails
     static func generateInvoiceQRCode(for invoice: Invoice, size: CGSize = CGSize(width: 200, height: 200)) -> UIImage? {
-        let qrData = generateInvoiceQRData(for: invoice)
-        return generateQRCode(from: qrData, size: size)
+        let qrData = self.generateInvoiceQRData(for: invoice)
+        return self.generateQRCode(from: qrData, size: size)
     }
 
     /// Generates QR code data for a collection bill (trade statement)
@@ -166,16 +166,16 @@ final class QRCodeGenerator {
     static func generateCollectionBillQRData(for trade: TradeOverviewItem, displayProperties: TradeStatementDisplayProperties) -> String {
         var qrData: [String: String] = [:]
 
-        addBasicTradeInfo(to: &qrData, trade: trade)
-        addDepotInfo(to: &qrData, displayProperties: displayProperties)
-        addTransactionFlags(to: &qrData, displayProperties: displayProperties)
-        addBuyTransactionInfo(to: &qrData, displayProperties: displayProperties)
-        addSellTransactionInfo(to: &qrData, displayProperties: displayProperties)
-        addSummaryInfo(to: &qrData, displayProperties: displayProperties)
-        addFinancialInfo(to: &qrData, trade: trade)
-        addLegalInfo(to: &qrData, displayProperties: displayProperties)
+        self.addBasicTradeInfo(to: &qrData, trade: trade)
+        self.addDepotInfo(to: &qrData, displayProperties: displayProperties)
+        self.addTransactionFlags(to: &qrData, displayProperties: displayProperties)
+        self.addBuyTransactionInfo(to: &qrData, displayProperties: displayProperties)
+        self.addSellTransactionInfo(to: &qrData, displayProperties: displayProperties)
+        self.addSummaryInfo(to: &qrData, displayProperties: displayProperties)
+        self.addFinancialInfo(to: &qrData, trade: trade)
+        self.addLegalInfo(to: &qrData, displayProperties: displayProperties)
 
-        return serializeQRData(qrData, trade: trade, displayProperties: displayProperties)
+        return self.serializeQRData(qrData, trade: trade, displayProperties: displayProperties)
     }
 
     // MARK: - Private Helper Methods
@@ -282,7 +282,11 @@ final class QRCodeGenerator {
     }
 
     /// Serializes QR data to JSON string with fallback
-    private static func serializeQRData(_ qrData: [String: String], trade: TradeOverviewItem, displayProperties: TradeStatementDisplayProperties) -> String {
+    private static func serializeQRData(
+        _ qrData: [String: String],
+        trade: TradeOverviewItem,
+        displayProperties: TradeStatementDisplayProperties
+    ) -> String {
         do {
             // Use compact JSON (no pretty printing) to reduce size
             let jsonData = try JSONSerialization.data(withJSONObject: qrData, options: [])
@@ -290,16 +294,16 @@ final class QRCodeGenerator {
             print("🔧 DEBUG: Generated Collection Bill QR data length: \(jsonString.count) characters")
 
             // If still too large, use compact fallback
-            if jsonString.count > 2000 {
+            if jsonString.count > 2_000 {
                 print("⚠️ DEBUG: JSON still too large, using compact fallback")
-                return createCompactFallback(trade: trade, displayProperties: displayProperties)
+                return self.createCompactFallback(trade: trade, displayProperties: displayProperties)
             }
 
             return jsonString
         } catch {
             print("❌ DEBUG: Failed to serialize Collection Bill QR data to JSON: \(error.localizedDescription)")
             // Fallback to simple string format
-            return createCompactFallback(trade: trade, displayProperties: displayProperties)
+            return self.createCompactFallback(trade: trade, displayProperties: displayProperties)
         }
     }
 
@@ -314,9 +318,13 @@ final class QRCodeGenerator {
     ///   - displayProperties: The display properties containing all trade statement information
     ///   - size: The size of the QR code image (default: 200x200)
     /// - Returns: A UIImage containing the QR code, or nil if generation fails
-    static func generateCollectionBillQRCode(for trade: TradeOverviewItem, displayProperties: TradeStatementDisplayProperties, size: CGSize = CGSize(width: 200, height: 200)) -> UIImage? {
-        let qrData = generateCollectionBillQRData(for: trade, displayProperties: displayProperties)
-        return generateQRCode(from: qrData, size: size)
+    static func generateCollectionBillQRCode(
+        for trade: TradeOverviewItem,
+        displayProperties: TradeStatementDisplayProperties,
+        size: CGSize = CGSize(width: 200, height: 200)
+    ) -> UIImage? {
+        let qrData = self.generateCollectionBillQRData(for: trade, displayProperties: displayProperties)
+        return self.generateQRCode(from: qrData, size: size)
     }
 
     /// Generates QR code data for a credit note (Document)
@@ -356,8 +364,8 @@ final class QRCodeGenerator {
 
     /// Generates a QR code image for a credit note
     static func generateCreditNoteQRCode(for document: Document, size: CGSize = CGSize(width: 200, height: 200)) -> UIImage? {
-        let qrData = generateCreditNoteQRData(for: document)
-        return generateQRCode(from: qrData, size: size)
+        let qrData = self.generateCreditNoteQRData(for: document)
+        return self.generateQRCode(from: qrData, size: size)
     }
 
     /// Generates QR code data for an investor collection bill
@@ -391,9 +399,13 @@ final class QRCodeGenerator {
     }
 
     /// Generates a QR code image for an investor collection bill
-    static func generateInvestorCollectionBillQRCode(for investment: Investment, documentNumber: String, size: CGSize = CGSize(width: 200, height: 200)) -> UIImage? {
-        let qrData = generateInvestorCollectionBillQRData(for: investment, documentNumber: documentNumber)
-        return generateQRCode(from: qrData, size: size)
+    static func generateInvestorCollectionBillQRCode(
+        for investment: Investment,
+        documentNumber: String,
+        size: CGSize = CGSize(width: 200, height: 200)
+    ) -> UIImage? {
+        let qrData = self.generateInvestorCollectionBillQRData(for: investment, documentNumber: documentNumber)
+        return self.generateQRCode(from: qrData, size: size)
     }
 }
 

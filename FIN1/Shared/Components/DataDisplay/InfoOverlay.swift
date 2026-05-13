@@ -7,7 +7,7 @@ struct InfoOverlay: View {
     let isVisible: Bool
 
     var body: some View {
-        if isVisible {
+        if self.isVisible {
             ZStack {
                 // Semi-transparent background
                 Color.black.opacity(0.5)
@@ -21,7 +21,7 @@ struct InfoOverlay: View {
                         .foregroundColor(AppTheme.accentLightBlue)
 
                     // Message
-                    Text(message)
+                    Text(self.message)
                         .font(ResponsiveDesign.headlineFont())
                         .foregroundColor(AppTheme.fontColor)
                         .multilineTextAlignment(.center)
@@ -34,7 +34,7 @@ struct InfoOverlay: View {
                 .padding(.horizontal, ResponsiveDesign.spacing(32))
             }
             .transition(.opacity.combined(with: .scale))
-            .animation(.easeInOut(duration: 0.3), value: isVisible)
+            .animation(.easeInOut(duration: 0.3), value: self.isVisible)
         }
     }
 }

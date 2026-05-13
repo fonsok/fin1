@@ -64,7 +64,7 @@ struct Invoice: Identifiable, Codable, Hashable, Sendable {
         self.totalTax = items
             .filter { $0.itemType == .tax }
             .reduce(0) { $0 + $1.totalAmount }
-        self.totalAmount = subtotal
+        self.totalAmount = self.subtotal
 
         self.createdAt = Date()
         self.paidAt = nil
@@ -83,24 +83,24 @@ struct Invoice: Identifiable, Codable, Hashable, Sendable {
     }
 
     var formattedTotalAmount: String {
-        totalAmount.formattedAsLocalizedCurrency()
+        self.totalAmount.formattedAsLocalizedCurrency()
     }
 
     var formattedSubtotal: String {
-        subtotal.formattedAsLocalizedCurrency()
+        self.subtotal.formattedAsLocalizedCurrency()
     }
 
     var formattedTaxAmount: String {
-        totalTax.formattedAsLocalizedCurrency()
+        self.totalTax.formattedAsLocalizedCurrency()
     }
 
     var isPaid: Bool {
-        status == .paid
+        self.status == .paid
     }
 
     var isOverdue: Bool {
         guard let dueDate = dueDate else { return false }
-        return Date() > dueDate && !isPaid
+        return Date() > dueDate && !self.isPaid
     }
 
     var daysUntilDue: Int? {

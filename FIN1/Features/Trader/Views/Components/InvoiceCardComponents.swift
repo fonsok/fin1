@@ -6,7 +6,7 @@ struct OrderSelectionCard: View {
     let onTap: () -> Void
 
     var body: some View {
-        Button(action: onTap, label: {
+        Button(action: self.onTap, label: {
             HStack(spacing: ResponsiveDesign.spacing(12)) {
                 Image(systemName: "chart.line.uptrend.xyaxis")
                     .font(ResponsiveDesign.titleFont())
@@ -18,15 +18,15 @@ struct OrderSelectionCard: View {
                     )
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(order.symbol)
+                    Text(self.order.symbol)
                         .font(ResponsiveDesign.headlineFont())
                         .foregroundColor(.primary)
 
-                    Text(order.description)
+                    Text(self.order.description)
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(.secondary)
 
-                    Text("\(order.quantity.formattedAsLocalizedInteger()) shares @ \(order.price.formattedAsLocalizedCurrency())")
+                    Text("\(self.order.quantity.formattedAsLocalizedInteger()) shares @ \(self.order.price.formattedAsLocalizedCurrency())")
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(.secondary)
                 }
@@ -54,14 +54,14 @@ struct CustomerInfoCard: View {
     let onTap: () -> Void
 
     var body: some View {
-        Button(action: onTap, label: {
+        Button(action: self.onTap, label: {
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Image(systemName: "person.circle")
                         .font(ResponsiveDesign.titleFont())
                         .foregroundColor(.accentColor)
 
-                    Text(customerInfo.name)
+                    Text(self.customerInfo.name)
                         .font(ResponsiveDesign.headlineFont())
                         .foregroundColor(.primary)
 
@@ -72,18 +72,18 @@ struct CustomerInfoCard: View {
                         .foregroundColor(.secondary)
                 }
 
-                Text(customerInfo.fullAddress)
+                Text(self.customerInfo.fullAddress)
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(.secondary)
 
                 HStack {
-                    Text("Kunde: \(customerInfo.customerNumber)")
+                    Text("Kunde: \(self.customerInfo.customerNumber)")
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(.secondary)
 
                     Spacer()
 
-                    Text("Depot: \(customerInfo.depotNumber)")
+                    Text("Depot: \(self.customerInfo.depotNumber)")
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(.secondary)
                 }

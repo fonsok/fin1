@@ -12,7 +12,7 @@ final class UncheckedDocumentServiceBridge: @unchecked Sendable {
     }
 
     func uploadDocument(_ document: Document) async throws {
-        try await documentService.uploadDocument(document)
+        try await self.documentService.uploadDocument(document)
     }
 }
 
@@ -24,6 +24,6 @@ final class UncheckedInvestmentDocumentServiceBridge: @unchecked Sendable {
     }
 
     func generateInvestmentDocument(for batch: InvestmentBatch, investments: [Investment]) async {
-        await service.generateInvestmentDocument(for: batch, investments: investments)
+        await self.service.generateInvestmentDocument(for: batch, investments: investments)
     }
 }

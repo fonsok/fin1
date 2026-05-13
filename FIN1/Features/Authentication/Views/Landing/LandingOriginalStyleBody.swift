@@ -24,7 +24,7 @@ struct LandingOriginalStyleBody: View {
 
                     VStack(spacing: ResponsiveDesign.spacing(16)) {
                         HStack(spacing: ResponsiveDesign.spacing(12)) {
-                            Button(action: { showSignUp = true }, label: {
+                            Button(action: { self.showSignUp = true }, label: {
                                 Text(LandingConstants.getStartedButtonText)
                                     .font(ResponsiveDesign.headlineFont())
                                     .foregroundColor(AppTheme.screenBackground)
@@ -34,7 +34,7 @@ struct LandingOriginalStyleBody: View {
                                     .cornerRadius(ResponsiveDesign.spacing(12))
                             })
 
-                            Button(action: { showLogin = true }, label: {
+                            Button(action: { self.showLogin = true }, label: {
                                 Text(LandingConstants.signInButtonText)
                                     .font(ResponsiveDesign.headlineFont())
                                     .foregroundColor(AppTheme.accentLightBlue)
@@ -49,9 +49,9 @@ struct LandingOriginalStyleBody: View {
                         }
 
                         #if DEBUG
-                        Button(action: { viewModel.showDebugButtons.toggle() }, label: {
+                        Button(action: { self.viewModel.showDebugButtons.toggle() }, label: {
                             HStack {
-                                Image(systemName: viewModel.showDebugButtons ? "chevron.up" : "chevron.down")
+                                Image(systemName: self.viewModel.showDebugButtons ? "chevron.up" : "chevron.down")
                                     .font(ResponsiveDesign.captionFont())
                                 Text("Debug")
                                     .font(ResponsiveDesign.captionFont())
@@ -65,9 +65,9 @@ struct LandingOriginalStyleBody: View {
                         })
                         .accessibilityIdentifier("DebugToggleButton")
 
-                        if viewModel.showDebugButtons {
+                        if self.viewModel.showDebugButtons {
                             VStack(spacing: ResponsiveDesign.spacing(8)) {
-                                LandingDebugButtonsView(viewModel: viewModel)
+                                LandingDebugButtonsView(viewModel: self.viewModel)
                             }
                         }
                         #endif
@@ -80,7 +80,9 @@ struct LandingOriginalStyleBody: View {
                             .foregroundColor(AppTheme.accentLightBlue)
 
                         Text(AppBrand.appName)
-                            .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2.4, weight: .bold, design: .rounded))
+                            .font(
+                                ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2.4, weight: .bold, design: .rounded)
+                            )
                             .foregroundColor(AppTheme.fontColor)
 
                         Text(LandingConstants.appSubtitleText)
@@ -107,17 +109,16 @@ struct LandingOriginalStyleBody: View {
                     LandingPlatformAdvantagesView(style: .original)
                     LandingFAQView(style: .original)
                     LandingLegalLinksSection(
-                        showLegalTerms: $showLegalTerms,
-                        showLegalPrivacy: $showLegalPrivacy,
-                        showLegalImprint: $showLegalImprint,
+                        showLegalTerms: self.$showLegalTerms,
+                        showLegalPrivacy: self.$showLegalPrivacy,
+                        showLegalImprint: self.$showLegalImprint,
                         style: .original
                     )
 
                     Spacer().frame(height: 24)
-                    LandingDesignStyleToggleView(designStyle: $viewModel.designStyle)
+                    LandingDesignStyleToggleView(designStyle: self.$viewModel.designStyle)
                 }
             }
         }
-        
     }
 }

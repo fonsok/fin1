@@ -6,7 +6,7 @@ struct DerivativeCategoryMapper {
 
     static func mapCategory(_ category: String) -> String {
         let lowercasedCategory = category.lowercased()
-        return categoryMappings[lowercasedCategory] ?? category.capitalized
+        return self.categoryMappings[lowercasedCategory] ?? category.capitalized
     }
 
     // MARK: - Category Mappings

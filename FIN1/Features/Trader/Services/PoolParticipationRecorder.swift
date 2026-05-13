@@ -32,7 +32,7 @@ struct PoolParticipationRecorder {
         poolTradeParticipationService: any PoolTradeParticipationServiceProtocol
     ) async {
         // Warn if any investment still has a local UUID (not synced to Parse)
-        let unsynced = activatedInvestments.filter { isLocalUUID($0.id) }
+        let unsynced = activatedInvestments.filter { self.isLocalUUID($0.id) }
         if !unsynced.isEmpty {
             print("⚠️ PoolParticipationRecorder: \(unsynced.count) investments still have local UUIDs - Parse sync may not have completed")
         }
@@ -42,7 +42,7 @@ struct PoolParticipationRecorder {
         }
 
         // Collect pool entries
-        let poolEntries = collectPoolEntries(from: activatedInvestments)
+        let poolEntries = self.collectPoolEntries(from: activatedInvestments)
         print("🔍 PoolParticipationRecorder: Starting with \(poolEntries.count) entries")
 
         // Calculate securities values
@@ -60,7 +60,7 @@ struct PoolParticipationRecorder {
         let totalTradeValue = traderSecuritiesValue + totalInvestmentSecuritiesValue
 
         // Log summary
-        logParticipationSummary(
+        self.logParticipationSummary(
             poolEntries: poolEntries,
             totalPoolsCapital: totalPoolsCapital,
             totalOrderSecuritiesValue: totalOrderSecuritiesValue,
@@ -70,7 +70,7 @@ struct PoolParticipationRecorder {
         )
 
         // Allocate and record participations
-        await allocateAndRecord(
+        await self.allocateAndRecord(
             poolEntries: poolEntries,
             totalPoolsCapital: totalPoolsCapital,
             totalInvestmentSecuritiesValue: totalInvestmentSecuritiesValue,
@@ -143,7 +143,9 @@ struct PoolParticipationRecorder {
 
                 print("      📊 Investment \(entry.investment.id):")
                 print("         💵 Capital: €\(String(format: "%.2f", entry.capitalAmount))")
-                print("         📊 Capital proportion: \(String(format: "%.4f", capitalProportion)) (\(String(format: "%.2f", capitalProportion * 100))%)")
+                print(
+                    "         📊 Capital proportion: \(String(format: "%.4f", capitalProportion)) (\(String(format: "%.2f", capitalProportion * 100))%)"
+                )
                 print("         💵 Securities value: €\(String(format: "%.2f", investmentSecuritiesValue))")
 
                 totalAllocatedSecuritiesValue += investmentSecuritiesValue

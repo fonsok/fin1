@@ -85,7 +85,7 @@ struct PDFTextAttributesImproved {
         return [
             .font: PDFStylingImproved.titleFont,
             .foregroundColor: PDFStylingImproved.primaryColor, // Use brand color
-            .paragraphStyle: createParagraphStyle(alignment: .left, lineSpacing: 6.0)
+            .paragraphStyle: self.createParagraphStyle(alignment: .left, lineSpacing: 6.0)
         ]
     }
 
@@ -93,7 +93,7 @@ struct PDFTextAttributesImproved {
         return [
             .font: PDFStylingImproved.headerFont,
             .foregroundColor: PDFStylingImproved.primaryTextColor,
-            .paragraphStyle: createParagraphStyle(alignment: .left, lineSpacing: 4.0)
+            .paragraphStyle: self.createParagraphStyle(alignment: .left, lineSpacing: 4.0)
         ]
     }
 
@@ -101,7 +101,7 @@ struct PDFTextAttributesImproved {
         return [
             .font: PDFStylingImproved.subheaderFont,
             .foregroundColor: PDFStylingImproved.secondaryTextColor,
-            .paragraphStyle: createParagraphStyle(alignment: .left, lineSpacing: 3.0)
+            .paragraphStyle: self.createParagraphStyle(alignment: .left, lineSpacing: 3.0)
         ]
     }
 
@@ -109,7 +109,7 @@ struct PDFTextAttributesImproved {
         return [
             .font: PDFStylingImproved.bodyFont,
             .foregroundColor: PDFStylingImproved.primaryTextColor,
-            .paragraphStyle: createParagraphStyle(alignment: .left, lineSpacing: PDFStylingImproved.lineSpacing)
+            .paragraphStyle: self.createParagraphStyle(alignment: .left, lineSpacing: PDFStylingImproved.lineSpacing)
         ]
     }
 
@@ -117,7 +117,7 @@ struct PDFTextAttributesImproved {
         return [
             .font: PDFStylingImproved.bodyFont,
             .foregroundColor: PDFStylingImproved.secondaryTextColor,
-            .paragraphStyle: createParagraphStyle(alignment: .left, lineSpacing: PDFStylingImproved.lineSpacing)
+            .paragraphStyle: self.createParagraphStyle(alignment: .left, lineSpacing: PDFStylingImproved.lineSpacing)
         ]
     }
 
@@ -125,7 +125,7 @@ struct PDFTextAttributesImproved {
         return [
             .font: PDFStylingImproved.tableHeaderFont,
             .foregroundColor: PDFStylingImproved.tableHeaderTextColor,
-            .paragraphStyle: createParagraphStyle(alignment: .left, lineSpacing: 0)
+            .paragraphStyle: self.createParagraphStyle(alignment: .left, lineSpacing: 0)
         ]
     }
 
@@ -133,7 +133,7 @@ struct PDFTextAttributesImproved {
         return [
             .font: PDFStylingImproved.tableFont,
             .foregroundColor: PDFStylingImproved.primaryTextColor,
-            .paragraphStyle: createParagraphStyle(alignment: .left, lineSpacing: 0)
+            .paragraphStyle: self.createParagraphStyle(alignment: .left, lineSpacing: 0)
         ]
     }
 
@@ -141,7 +141,7 @@ struct PDFTextAttributesImproved {
         return [
             .font: PDFStylingImproved.smallFont,
             .foregroundColor: PDFStylingImproved.tertiaryTextColor,
-            .paragraphStyle: createParagraphStyle(alignment: .left, lineSpacing: 2.0)
+            .paragraphStyle: self.createParagraphStyle(alignment: .left, lineSpacing: 2.0)
         ]
     }
 
@@ -149,7 +149,7 @@ struct PDFTextAttributesImproved {
         return [
             .font: PDFStylingImproved.subheaderFont,
             .foregroundColor: PDFStylingImproved.primaryTextColor,
-            .paragraphStyle: createParagraphStyle(alignment: .right, lineSpacing: 0)
+            .paragraphStyle: self.createParagraphStyle(alignment: .right, lineSpacing: 0)
         ]
     }
 

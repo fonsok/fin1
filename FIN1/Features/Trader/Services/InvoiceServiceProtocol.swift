@@ -1,6 +1,6 @@
+import Combine
 import Foundation
 import SwiftUI
-import Combine
 
 // MARK: - Invoice Service Protocol
 /// Defines the contract for invoice operations and PDF generation

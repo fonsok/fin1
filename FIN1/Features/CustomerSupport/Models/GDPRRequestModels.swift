@@ -30,25 +30,25 @@ struct GDPRRequest: Identifiable, Codable {
 
     /// DSGVO Art. 12(3): 30 days deadline, extendable by 60 days
     var isOverdue: Bool {
-        let effectiveDeadline = extendedDeadlineAt ?? deadlineAt
-        return Date() > effectiveDeadline && !status.isFinal
+        let effectiveDeadline = self.extendedDeadlineAt ?? self.deadlineAt
+        return Date() > effectiveDeadline && !self.status.isFinal
     }
 
     /// Days remaining until deadline
     var daysRemaining: Int {
-        let effectiveDeadline = extendedDeadlineAt ?? deadlineAt
+        let effectiveDeadline = self.extendedDeadlineAt ?? self.deadlineAt
         let days = Calendar.current.dateComponents([.day], from: Date(), to: effectiveDeadline).day ?? 0
         return max(0, days)
     }
 
     /// Whether this request can still be extended
     var canExtendDeadline: Bool {
-        extendedDeadlineAt == nil && !status.isFinal
+        self.extendedDeadlineAt == nil && !self.status.isFinal
     }
 
     /// Whether this request requires 4-Augen approval
     var requiresApproval: Bool {
-        requestType == .erasure || requestType == .restriction
+        self.requestType == .erasure || self.requestType == .restriction
     }
 
     init(

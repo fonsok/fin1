@@ -41,13 +41,13 @@ struct AccountStatementEntriesTable<TopContent: View>: View {
                     topContent
                 }
 
-                tableHeader
+                self.tableHeader
 
-                ForEach(Array(entries.enumerated()), id: \.element.id) { index, entry in
-                    tableRow(entry)
-                    if index < entries.count - 1 {
+                ForEach(Array(self.entries.enumerated()), id: \.element.id) { index, entry in
+                    self.tableRow(entry)
+                    if index < self.entries.count - 1 {
                         Divider()
-                            .background(dividerColor)
+                            .background(self.dividerColor)
                     }
                 }
             }
@@ -64,10 +64,10 @@ struct AccountStatementEntriesTable<TopContent: View>: View {
 
     private var tableHeader: some View {
         HStack(spacing: AccountStatementTableLayout.columnSpacing) {
-            stackedHeaderColumn(title: "Posting", subtitle: "date")
+            self.stackedHeaderColumn(title: "Posting", subtitle: "date")
                 .frame(width: AccountStatementTableLayout.postingDateColumnWidth, alignment: .leading)
 
-            stackedHeaderColumn(title: "Value", subtitle: "date")
+            self.stackedHeaderColumn(title: "Value", subtitle: "date")
                 .frame(width: AccountStatementTableLayout.valueDateColumnWidth, alignment: .leading)
 
             Text("Description")
@@ -92,8 +92,8 @@ struct AccountStatementEntriesTable<TopContent: View>: View {
 
     private func tableRow(_ entry: AccountStatementEntry) -> some View {
         HStack(spacing: AccountStatementTableLayout.columnSpacing) {
-            postingDateColumn(for: entry)
-            valueDateColumn(for: entry)
+            self.postingDateColumn(for: entry)
+            self.valueDateColumn(for: entry)
 
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(2)) {
                 Text(entry.descriptionTitle)
@@ -107,7 +107,7 @@ struct AccountStatementEntriesTable<TopContent: View>: View {
                         .multilineTextAlignment(.leading)
                 }
 
-                if showDocumentReferenceLinks,
+                if self.showDocumentReferenceLinks,
                    entry.hasDocumentReference,
                    let docNo = entry.resolvedReferenceDocumentNumber,
                    !docNo.isEmpty {
@@ -120,14 +120,14 @@ struct AccountStatementEntriesTable<TopContent: View>: View {
             }
             .frame(width: AccountStatementTableLayout.descriptionColumnWidth, alignment: .leading)
 
-            Text(withdrawalText(for: entry))
+            Text(self.withdrawalText(for: entry))
                 .frame(width: AccountStatementTableLayout.amountColumnWidth, alignment: .trailing)
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.accentRed)
 
             HStack(spacing: ResponsiveDesign.spacing(4)) {
                 Spacer()
-                Text(depositText(for: entry))
+                Text(self.depositText(for: entry))
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.accentGreen)
 
@@ -146,12 +146,12 @@ struct AccountStatementEntriesTable<TopContent: View>: View {
             }
             .frame(width: AccountStatementTableLayout.amountColumnWidth, alignment: .trailing)
 
-            Text(balanceText(for: entry))
+            Text(self.balanceText(for: entry))
                 .frame(width: AccountStatementTableLayout.amountColumnWidth, alignment: .trailing)
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor)
 
-            if showDocumentReferenceLinks, entry.hasDocumentReference {
+            if self.showDocumentReferenceLinks, entry.hasDocumentReference {
                 Image(systemName: "chevron.right")
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.6))
@@ -161,23 +161,23 @@ struct AccountStatementEntriesTable<TopContent: View>: View {
         .padding(.vertical, ResponsiveDesign.spacing(6))
         .contentShape(Rectangle())
         .onTapGesture {
-            guard showDocumentReferenceLinks, entry.hasDocumentReference else { return }
-            onEntryTap?(entry)
+            guard self.showDocumentReferenceLinks, entry.hasDocumentReference else { return }
+            self.onEntryTap?(entry)
         }
     }
 
     private func postingDateColumn(for entry: AccountStatementEntry) -> some View {
-        dateColumnView(
-            topLine: formattedDayMonth(entry.postingDate),
-            bottomLine: formattedYear(entry.postingDate)
+        self.dateColumnView(
+            topLine: self.formattedDayMonth(entry.postingDate),
+            bottomLine: self.formattedYear(entry.postingDate)
         )
         .frame(width: AccountStatementTableLayout.postingDateColumnWidth, alignment: .leading)
     }
 
     private func valueDateColumn(for entry: AccountStatementEntry) -> some View {
-        dateColumnView(
-            topLine: formattedDayMonth(entry.valueDateOrPosting),
-            bottomLine: formattedYear(entry.valueDateOrPosting)
+        self.dateColumnView(
+            topLine: self.formattedDayMonth(entry.valueDateOrPosting),
+            bottomLine: self.formattedYear(entry.valueDateOrPosting)
         )
         .frame(width: AccountStatementTableLayout.valueDateColumnWidth, alignment: .leading)
     }
@@ -242,11 +242,11 @@ enum AccountStatementTableLayout {
     static var columnSpacing: CGFloat { ResponsiveDesign.spacing(12) }
     static var totalTableWidth: CGFloat {
         postingDateColumnWidth
-        + valueDateColumnWidth
-        + descriptionColumnWidth
-        + (amountColumnWidth * 3)
-        + (columnSpacing * 5)
-        + (tableHorizontalPadding * 2)
+            + valueDateColumnWidth
+            + descriptionColumnWidth
+            + (amountColumnWidth * 3)
+            + (columnSpacing * 5)
+            + (tableHorizontalPadding * 2)
     }
 
     static let dayMonthFormatter: DateFormatter = {
@@ -276,14 +276,14 @@ struct ProfitDistributionInfoIcon: View {
 
     var body: some View {
         Button(action: {
-            showCalculation.toggle()
+            self.showCalculation.toggle()
         }) {
             Image(systemName: "info.circle")
                 .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.spacing(12)))
                 .foregroundColor(.blue.opacity(0.7))
         }
         .buttonStyle(PlainButtonStyle())
-        .popover(isPresented: $showCalculation, arrowEdge: .top) {
+        .popover(isPresented: self.$showCalculation, arrowEdge: .top) {
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
                 Text("Calculation Breakdown")
                     .font(ResponsiveDesign.bodyFont())
@@ -294,22 +294,22 @@ struct ProfitDistributionInfoIcon: View {
                     .background(Color.white.opacity(0.2))
 
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
-                    calculationRow(
+                    self.calculationRow(
                         label: "Principal Return",
-                        amount: principalReturn
+                        amount: self.principalReturn
                     )
-                    calculationRow(
+                    self.calculationRow(
                         label: "Gross Profit",
-                        amount: grossProfit
+                        amount: self.grossProfit
                     )
 
                     Divider()
                         .background(Color.white.opacity(0.2))
                         .padding(.vertical, ResponsiveDesign.spacing(2))
 
-                    calculationRow(
+                    self.calculationRow(
                         label: "Total Amount",
-                        amount: totalAmount,
+                        amount: self.totalAmount,
                         isTotal: true
                     )
                 }

@@ -1,6 +1,6 @@
-import Foundation
 import Combine
 @testable import FIN1
+import Foundation
 
 final class MockPoolTradeParticipationService: PoolTradeParticipationServiceProtocol, @unchecked Sendable {
     @Published var participations: [PoolTradeParticipation] = []
@@ -24,20 +24,20 @@ final class MockPoolTradeParticipationService: PoolTradeParticipationServiceProt
             totalTradeValue: totalTradeValue
         )
         await MainActor.run {
-            participations.append(participation)
+            self.participations.append(participation)
         }
     }
 
     func getParticipations(forTradeId tradeId: String) -> [PoolTradeParticipation] {
-        participations.filter { $0.tradeId == tradeId }
+        self.participations.filter { $0.tradeId == tradeId }
     }
 
     func getParticipations(forInvestmentId investmentId: String) -> [PoolTradeParticipation] {
-        participations.filter { $0.investmentId == investmentId }
+        self.participations.filter { $0.investmentId == investmentId }
     }
 
     func getParticipations(forPoolReservationId poolReservationId: String) -> [PoolTradeParticipation] {
-        participations.filter { $0.poolReservationId == poolReservationId }
+        self.participations.filter { $0.poolReservationId == poolReservationId }
     }
 
     func distributeTradeProfit(tradeId: String, totalProfit: Double) async -> Double {
@@ -46,11 +46,11 @@ final class MockPoolTradeParticipationService: PoolTradeParticipationServiceProt
     }
 
     func getAccumulatedProfit(for investmentId: String) -> Double {
-        getParticipations(forInvestmentId: investmentId).compactMap { $0.profitShare }.reduce(0.0, +)
+        self.getParticipations(forInvestmentId: investmentId).compactMap { $0.profitShare }.reduce(0.0, +)
     }
 
     func getAccumulatedProfit(forPoolReservationId poolReservationId: String) -> Double {
-        getParticipations(forPoolReservationId: poolReservationId).compactMap { $0.profitShare }.reduce(0.0, +)
+        self.getParticipations(forPoolReservationId: poolReservationId).compactMap { $0.profitShare }.reduce(0.0, +)
     }
 
     func getAccumulatedProfit(forInvestmentReservationId investmentReservationId: String) -> Double {

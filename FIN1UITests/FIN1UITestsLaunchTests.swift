@@ -16,6 +16,4 @@ final class FIN1UITestsLaunchTests: XCTestCase {
     override func setUpWithError() throws {
         continueAfterFailure = false
     }
-
-
 }

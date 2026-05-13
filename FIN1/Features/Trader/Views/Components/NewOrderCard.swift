@@ -10,86 +10,89 @@ struct NewOrderCard: View {
 
     var body: some View {
         CardContainer(
-            position: position,
+            position: self.position,
             onPapersheetTapped: {
-                openIssuerProductInfo(for: order)
+                self.openIssuerProductInfo(for: self.order)
             }
         ) {
             VStack(spacing: ResponsiveDesign.spacing(8)) {
                 // Order tiles with Strike Price included
-                TileGrid(tiles: orderTiles, columns: 2)
+                TileGrid(tiles: self.orderTiles, columns: 2)
 
                 // STORNO button (full width)
                 Button(action: {
-                    if order.statusCode < 3 {
+                    if self.order.statusCode < 3 {
                         Task {
-                            try? await services.unifiedOrderService.cancelOrder(order.id)
+                            try? await self.services.unifiedOrderService.cancelOrder(self.order.id)
                         }
                     }
                 }, label: {
                     HStack {
-                        Text("\(order.type.displayName.uppercased())")
+                        Text("\(self.order.type.displayName.uppercased())")
                             .font(ResponsiveDesign.bodyFont())
                             .fontWeight(.thin)
-                            .foregroundColor(AppTheme.fontColor.opacity(order.statusCode < 3 ? 0.75 : 0.2))
+                            .foregroundColor(AppTheme.fontColor.opacity(self.order.statusCode < 3 ? 0.75 : 0.2))
 
                         Spacer()
 
                         Text("STORNO")
                             .font(ResponsiveDesign.bodyFont())
                             .fontWeight(.regular)
-                            .foregroundColor(AppTheme.fontColor.opacity(order.statusCode < 3 ? 0.85 : 0.2))
+                            .foregroundColor(AppTheme.fontColor.opacity(self.order.statusCode < 3 ? 0.85 : 0.2))
                     }
                     .padding(ResponsiveDesign.spacing(8))
                     .frame(maxWidth: .infinity, minHeight: 50, alignment: .leading)
-                    .background(order.statusCode < 3 ? AppTheme.accentRed.opacity(0.6) : AppTheme.accentRed.opacity(0.2))
+                    .background(self.order.statusCode < 3 ? AppTheme.accentRed.opacity(0.6) : AppTheme.accentRed.opacity(0.2))
                     .cornerRadius(ResponsiveDesign.spacing(4))
                 })
                 .buttonStyle(PlainButtonStyle())
-                .disabled(order.statusCode >= 3)
+                .disabled(self.order.statusCode >= 3)
             }
         }
-        .alert("Order Status Info", isPresented: $showStatusInfo) {
+        .alert("Order Status Info", isPresented: self.$showStatusInfo) {
             Button("OK") { }
         } message: {
-            Text(statusInfoMessage)
+            Text(self.statusInfoMessage)
         }
-        .alert("Orderzusatz Info", isPresented: $showOrderInstructionInfo) {
+        .alert("Orderzusatz Info", isPresented: self.$showOrderInstructionInfo) {
             Button("OK") { }
         } message: {
-            Text(orderInstructionInfoMessage)
+            Text(self.orderInstructionInfoMessage)
         }
     }
 
     private var orderTiles: [TileData] {
         [
             // Row 1: Orderart and WKN
-            TileData(title: "Orderart", value: order.type.displayName.uppercased()),
-            TileData(title: "WKN", value: order.wkn ?? order.symbol),
+            TileData(title: "Orderart", value: self.order.type.displayName.uppercased()),
+            TileData(title: "WKN", value: self.order.wkn ?? self.order.symbol),
 
             // Row 2: Basiswert and Richtung
-            TileData(title: "Basiswert", value: order.underlyingAsset ?? "N/A"),
-            TileData(title: "Richtung", value: order.optionDirection ?? "N/A"),
+            TileData(title: "Basiswert", value: self.order.underlyingAsset ?? "N/A"),
+            TileData(title: "Richtung", value: self.order.optionDirection ?? "N/A"),
 
             // Row 3: Strike Price and Quantity
-            TileData(title: "Strike Price", value: formatStrikePrice(order.strike, order.underlyingAsset)),
-            TileData(title: "Stückzahl", value: order.quantity.formattedAsLocalizedNumber()),
+            TileData(title: "Strike Price", value: self.formatStrikePrice(self.order.strike, self.order.underlyingAsset)),
+            TileData(title: "Stückzahl", value: self.order.quantity.formattedAsLocalizedNumber()),
 
             // Row 4: Purchase Price/Current Price and Orderzusatz
-            TileData(title: order.type == .sell ? "Geld-Kurs (Bid)" : "Kauf-Kurs", value: order.price.formattedAsLocalizedCurrency()),
+            TileData(
+                title: self.order.type == .sell ? "Geld-Kurs (Bid)" : "Kauf-Kurs",
+                value: self.order.price.formattedAsLocalizedCurrency()
+            ),
             TileData(
                 title: "Orderzusatz",
-                value: getOrderInstruction(),
+                value: self.getOrderInstruction(),
                 showInfoIcon: true,
-                onInfoTapped: { showOrderInstructionInfo = true }
+                onInfoTapped: { self.showOrderInstructionInfo = true }
             ),
 
             // Row 5: Order-Status (centered)
             TileData(
                 title: "Status",
-                value: "\(order.statusCode)",
+                value: "\(self.order.statusCode)",
                 showInfoIcon: true,
-                onInfoTapped: { showStatusInfo = true }
+                onInfoTapped: { self.showStatusInfo = true }
             )
         ]
     }
@@ -124,7 +127,7 @@ struct NewOrderCard: View {
     }
 
     private var statusInfoMessage: String {
-        switch order.status {
+        switch self.order.status {
         case .submitted:
             return "Status 1: übermittelt\nIhre Order wurde erfolgreich übermittelt und wird bearbeitet."
         case .suspended:
@@ -143,9 +146,9 @@ struct NewOrderCard: View {
     private var orderInstructionInfoMessage: String {
         return """
         Orderzusatz erklärt:
-
+        
         • Market: Die Order wird zum bestmöglichen Preis ausgeführt, der am Markt verfügbar ist.
-
+        
         • limit: Die Order wird nur zu einem bestimmten Preis oder besser ausgeführt. Der angegebene Preis ist der maximale Preis, den Sie zu zahlen bereit sind.
         """
     }

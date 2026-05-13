@@ -34,7 +34,7 @@ struct TemplateCategoryDTO: Codable, Identifiable {
     let sortOrder: Int
 
     var templateCategory: TemplateCategory? {
-        TemplateCategory(rawValue: key)
+        TemplateCategory(rawValue: self.key)
     }
 }
 
@@ -60,14 +60,14 @@ struct BackendResponseTemplate: Codable {
         let category = TemplateCategory(rawValue: self.category) ?? .general
 
         return ResponseTemplate(
-            id: id,
-            title: title,
+            id: self.id,
+            title: self.title,
             category: category,
-            subject: subject,
-            body: body,
+            subject: self.subject,
+            body: self.body,
             availableForRoles: [], // Not needed locally since we already filtered by role
-            placeholders: placeholders,
-            isEmail: isEmail
+            placeholders: self.placeholders,
+            isEmail: self.isEmail
         )
     }
 }
@@ -93,12 +93,12 @@ struct BackendEmailTemplate: Codable {
         }
 
         return EmailTemplate(
-            id: id,
+            id: self.id,
             type: templateType,
-            subject: subject,
-            bodyTemplate: bodyTemplate,
-            isActive: isActive,
-            lastModified: parseDate(updatedAt) ?? Date()
+            subject: self.subject,
+            bodyTemplate: self.bodyTemplate,
+            isActive: self.isActive,
+            lastModified: self.parseDate(self.updatedAt) ?? Date()
         )
     }
 
@@ -159,7 +159,7 @@ final class TemplateAPIService: TemplateAPIServiceProtocol, @unchecked Sendable 
         // Build parameters
         var params: [String: Any] = [
             "role": role.roleKey,
-            "language": preferredLanguage
+            "language": self.preferredLanguage
         ]
 
         if let category = category {
@@ -176,7 +176,7 @@ final class TemplateAPIService: TemplateAPIServiceProtocol, @unchecked Sendable 
         let templates = backendTemplates.map { $0.toResponseTemplate() }
 
         // Cache the results
-        cache.setTemplates(templates, forKey: cacheKey)
+        self.cache.setTemplates(templates, forKey: cacheKey)
 
         return templates
     }
@@ -205,7 +205,7 @@ final class TemplateAPIService: TemplateAPIServiceProtocol, @unchecked Sendable 
         let templates = backendTemplates.compactMap { $0.toEmailTemplate() }
 
         // Cache the results
-        cache.setEmailTemplates(templates, forKey: cacheKey)
+        self.cache.setEmailTemplates(templates, forKey: cacheKey)
 
         return templates
     }
@@ -231,7 +231,7 @@ final class TemplateAPIService: TemplateAPIServiceProtocol, @unchecked Sendable 
         )
 
         // Cache the results
-        cache.setCategories(categories, forKey: cacheKey)
+        self.cache.setCategories(categories, forKey: cacheKey)
 
         return categories
     }
@@ -248,7 +248,7 @@ final class TemplateAPIService: TemplateAPIServiceProtocol, @unchecked Sendable 
         }
 
         // Fire and forget - don't block on analytics
-        let client: any ParseAPIClientProtocol = apiClient
+        let client: any ParseAPIClientProtocol = self.apiClient
         let paramsCopy = params
         Task.detached(priority: .utility) {
             do {
@@ -266,7 +266,7 @@ final class TemplateAPIService: TemplateAPIServiceProtocol, @unchecked Sendable 
     // MARK: - Cache Management
 
     func clearCache() {
-        cache.clearAll()
+        self.cache.clearAll()
     }
 }
 
@@ -294,72 +294,72 @@ final class TemplateCache: @unchecked Sendable {
     // MARK: - Response Templates
 
     func getTemplates(forKey key: String) -> [ResponseTemplate]? {
-        lock.lock()
+        self.lock.lock()
         defer { lock.unlock() }
 
         guard let cached = templateCache[key], !cached.isExpired else {
-            templateCache.removeValue(forKey: key)
+            self.templateCache.removeValue(forKey: key)
             return nil
         }
         return cached.value
     }
 
     func setTemplates(_ templates: [ResponseTemplate], forKey key: String, ttl: TimeInterval? = nil) {
-        lock.lock()
+        self.lock.lock()
         defer { lock.unlock() }
 
-        templateCache[key] = CachedItem(value: templates, ttl: ttl ?? defaultTTL)
+        self.templateCache[key] = CachedItem(value: templates, ttl: ttl ?? self.defaultTTL)
     }
 
     // MARK: - Email Templates
 
     func getEmailTemplates(forKey key: String) -> [EmailTemplate]? {
-        lock.lock()
+        self.lock.lock()
         defer { lock.unlock() }
 
         guard let cached = emailTemplateCache[key], !cached.isExpired else {
-            emailTemplateCache.removeValue(forKey: key)
+            self.emailTemplateCache.removeValue(forKey: key)
             return nil
         }
         return cached.value
     }
 
     func setEmailTemplates(_ templates: [EmailTemplate], forKey key: String, ttl: TimeInterval? = nil) {
-        lock.lock()
+        self.lock.lock()
         defer { lock.unlock() }
 
-        emailTemplateCache[key] = CachedItem(value: templates, ttl: ttl ?? defaultTTL)
+        self.emailTemplateCache[key] = CachedItem(value: templates, ttl: ttl ?? self.defaultTTL)
     }
 
     // MARK: - Categories
 
     func getCategories(forKey key: String) -> [TemplateCategoryDTO]? {
-        lock.lock()
+        self.lock.lock()
         defer { lock.unlock() }
 
         guard let cached = categoryCache[key], !cached.isExpired else {
-            categoryCache.removeValue(forKey: key)
+            self.categoryCache.removeValue(forKey: key)
             return nil
         }
         return cached.value
     }
 
     func setCategories(_ categories: [TemplateCategoryDTO], forKey key: String, ttl: TimeInterval? = nil) {
-        lock.lock()
+        self.lock.lock()
         defer { lock.unlock() }
 
-        categoryCache[key] = CachedItem(value: categories, ttl: ttl ?? defaultTTL)
+        self.categoryCache[key] = CachedItem(value: categories, ttl: ttl ?? self.defaultTTL)
     }
 
     // MARK: - Clear
 
     func clearAll() {
-        lock.lock()
+        self.lock.lock()
         defer { lock.unlock() }
 
-        templateCache.removeAll()
-        emailTemplateCache.removeAll()
-        categoryCache.removeAll()
+        self.templateCache.removeAll()
+        self.emailTemplateCache.removeAll()
+        self.categoryCache.removeAll()
     }
 }
 
@@ -375,7 +375,7 @@ private struct CachedItem<T> {
     }
 
     var isExpired: Bool {
-        Date() > expiresAt
+        Date() > self.expiresAt
     }
 }
 
@@ -406,7 +406,7 @@ extension TemplateAPIService {
         category: TemplateCategory? = nil
     ) async -> [ResponseTemplate] {
         do {
-            return try await fetchResponseTemplates(for: role, category: category, forceRefresh: false)
+            return try await self.fetchResponseTemplates(for: role, category: category, forceRefresh: false)
         } catch {
             print("⚠️ Backend templates unavailable, using static fallback: \(error.localizedDescription)")
             // Fallback to static templates
@@ -421,7 +421,7 @@ extension TemplateAPIService {
     /// Fetches email templates with fallback to static templates if backend fails
     func fetchEmailTemplatesWithFallback() async -> [EmailTemplate] {
         do {
-            return try await fetchEmailTemplates(forceRefresh: false)
+            return try await self.fetchEmailTemplates(forceRefresh: false)
         } catch {
             print("⚠️ Backend email templates unavailable, using static fallback: \(error.localizedDescription)")
             return EmailTemplate.defaults

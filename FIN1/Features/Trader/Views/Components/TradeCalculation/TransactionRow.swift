@@ -12,16 +12,16 @@ struct TransactionRow: View {
 
     var body: some View {
         HStack {
-            Text(label ?? transaction.type.displayName)
+            Text(self.label ?? self.transaction.type.displayName)
                 .tradeCalculationBoldStyle()
             Spacer()
-            Text(String(format: "%.0f", transaction.quantity))
+            Text(String(format: "%.0f", self.transaction.quantity))
                 .tradeCalculationValueStyle()
             Spacer()
-            Text(transaction.price.formatted(.number.precision(.fractionLength(2))))
+            Text(self.transaction.price.formatted(.number.precision(.fractionLength(2))))
                 .tradeCalculationValueStyle()
             Spacer()
-            Text(transaction.amount.formatted(.currency(code: "EUR")))
+            Text(self.transaction.amount.formatted(.currency(code: "EUR")))
                 .tradeCalculationValueStyle()
         }
         .padding(.vertical, ResponsiveDesign.spacing(4))

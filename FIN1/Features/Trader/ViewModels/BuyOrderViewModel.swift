@@ -1,11 +1,11 @@
-import Foundation
 import Combine
+import Foundation
 
 @MainActor
 final class BuyOrderViewModel: ObservableObject, LimitOrderMonitor {
     // MARK: - Published Properties
     @Published var searchResult: SearchResult
-    @Published var quantity: Double = 1000
+    @Published var quantity: Double = 1_000
     @Published var quantityText: String = "1.000"
     @Published var orderMode: OrderMode = .market
     @Published var limit: String = ""
@@ -23,8 +23,8 @@ final class BuyOrderViewModel: ObservableObject, LimitOrderMonitor {
 
     // MARK: - Price Validity
     var priceValidityProgress: Double {
-        get { priceValidityTimerManager.priceValidityProgress }
-        set { priceValidityTimerManager.priceValidityProgress = newValue }
+        get { self.priceValidityTimerManager.priceValidityProgress }
+        set { self.priceValidityTimerManager.priceValidityProgress = newValue }
     }
     private let priceValidityTimerManager: PriceValidityTimerManager
     let quantityInputManager: QuantityInputManager
@@ -32,15 +32,15 @@ final class BuyOrderViewModel: ObservableObject, LimitOrderMonitor {
     private let limitOrderMonitoringService: any LimitOrderMonitoringServiceProtocol
 
     var currentPriceValue: Double {
-        Double(searchResult.askPrice.replacingOccurrences(of: ",", with: ".")) ?? 0.0
+        Double(self.searchResult.askPrice.replacingOccurrences(of: ",", with: ".")) ?? 0.0
     }
-    var exceedsMaximum: Bool { quantityInputManager.exceedsMaximum }
-    var hasInsufficientFunds: Bool { showInsufficientFundsWarning }
+    var exceedsMaximum: Bool { self.quantityInputManager.exceedsMaximum }
+    var hasInsufficientFunds: Bool { self.showInsufficientFundsWarning }
     var insufficientFundsMessage: String {
         guard let currentUser = userService.currentUser else { return "Please log in to check your balance." }
-        let currentBalance = cashBalanceService.currentBalance
-        let estimatedBalance = cashBalanceService.estimatedBalanceAfterPurchase(amount: estimatedCost)
-        let minimumReserve = configurationService.getMinimumCashReserve(for: currentUser.id)
+        let currentBalance = self.cashBalanceService.currentBalance
+        let estimatedBalance = self.cashBalanceService.estimatedBalanceAfterPurchase(amount: self.estimatedCost)
+        let minimumReserve = self.configurationService.getMinimumCashReserve(for: currentUser.id)
         let shortfall = minimumReserve - estimatedBalance
         return "Insufficient funds. Current balance: €\(currentBalance.formatted(.currency(code: "EUR"))), Estimated after purchase: €\(estimatedBalance.formatted(.currency(code: "EUR"))). Need €\(shortfall.formatted(.currency(code: "EUR"))) more to maintain minimum reserve of €\(minimumReserve.formatted(.currency(code: "EUR")))."
     }
@@ -67,7 +67,7 @@ final class BuyOrderViewModel: ObservableObject, LimitOrderMonitor {
 
     // Helpers (extracted for file size reduction; internal for extensions)
     var quantityConstraintHelper: BuyOrderQuantityConstraintHelper {
-        BuyOrderQuantityConstraintHelper(searchResult: searchResult)
+        BuyOrderQuantityConstraintHelper(searchResult: self.searchResult)
     }
 
     // Maximum allowed quantity
@@ -75,23 +75,23 @@ final class BuyOrderViewModel: ObservableObject, LimitOrderMonitor {
 
     // MARK: - Computed Properties
     var limitPrice: Double? {
-        guard orderMode == .limit, !limit.isEmpty, validator.validateLimitPrice(limit) else {
+        guard self.orderMode == .limit, !self.limit.isEmpty, self.validator.validateLimitPrice(self.limit) else {
             return nil
         }
-        return Double(limit.replacingOccurrences(of: ",", with: "."))
+        return Double(self.limit.replacingOccurrences(of: ",", with: "."))
     }
 
     var canPlaceOrder: Bool {
-        return validator.validateOrderPlacement(
-            quantity: quantity,
-            orderMode: orderMode,
-            limit: limit,
-            priceValidityProgress: priceValidityProgress,
-            estimatedCost: estimatedCost,
-            userService: userService,
-            cashBalanceService: cashBalanceService,
-            configurationService: configurationService,
-            maxQuantity: maxQuantity
+        return self.validator.validateOrderPlacement(
+            quantity: self.quantity,
+            orderMode: self.orderMode,
+            limit: self.limit,
+            priceValidityProgress: self.priceValidityProgress,
+            estimatedCost: self.estimatedCost,
+            userService: self.userService,
+            cashBalanceService: self.cashBalanceService,
+            configurationService: self.configurationService,
+            maxQuantity: self.maxQuantity
         )
     }
 
@@ -150,27 +150,27 @@ final class BuyOrderViewModel: ObservableObject, LimitOrderMonitor {
             investmentService: investmentService,
             traderDataService: traderDataService
         )
-        self.quantityInputManager = QuantityInputManager(initialQuantity: 1000)
+        self.quantityInputManager = QuantityInputManager(initialQuantity: 1_000)
         self.priceValidityTimerManager = PriceValidityTimerManager()
 
         // Forward price validity progress changes
-        priceValidityTimerManager.$priceValidityProgress
+        self.priceValidityTimerManager.$priceValidityProgress
             .sink { [weak self] _ in
                 self?.objectWillChange.send()
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
 
         // Initialize the limit order monitor through service
         self.limitOrderMonitor = limitOrderMonitoringService.createBuyOrderMonitor(for: self)
 
         setupBindings()
-        reloadPrice()
+        self.reloadPrice()
 
         #if DEBUG
         if ProcessInfo.processInfo.arguments.contains("--ui-test-prefill-limit-order") {
-            quantityText = "100"
-            orderMode = .limit
-            limit = "1,00"
+            self.quantityText = "100"
+            self.orderMode = .limit
+            self.limit = "1,00"
         }
         #endif
 
@@ -186,87 +186,86 @@ final class BuyOrderViewModel: ObservableObject, LimitOrderMonitor {
     func reloadPrice() {
         // Simulate price update by a small random amount (+/- 1%)
         if let currentPrice = Double(searchResult.askPrice.replacingOccurrences(of: ",", with: ".")) {
-            var updatedResult = searchResult
+            var updatedResult = self.searchResult
             updatedResult.askPrice = String(format: "%.2f", currentPrice * Double.random(in: 0.99...1.01))
                 .replacingOccurrences(of: ".", with: ",")
-            searchResult = updatedResult
+            self.searchResult = updatedResult
         }
-        startPriceValidityTimer()
-        if orderMode == .limit, let price = limitPrice, price > 0, !isMonitoringLimitOrder {
-            startLimitOrderMonitoring()
+        self.startPriceValidityTimer()
+        if self.orderMode == .limit, let price = limitPrice, price > 0, !isMonitoringLimitOrder {
+            self.startLimitOrderMonitoring()
         }
     }
 
     func startPriceValidityTimer() {
-        priceValidityTimerManager.startTimer()
+        self.priceValidityTimerManager.startTimer()
     }
 
     func placeOrder() async {
-        if case .transmitting = orderStatus {
+        if case .transmitting = self.orderStatus {
             print("🔍 DEBUG: placeOrder ignored - already transmitting")
             return
         }
-        orderStatus = .transmitting
+        self.orderStatus = .transmitting
 
         // Calculate investment order if not already calculated
-        if investmentOrderCalculation == nil {
+        if self.investmentOrderCalculation == nil {
             await calculateInvestmentOrder()
         }
 
         do {
             let result = try await placementService.placeOrder(
-                searchResult: searchResult,
-                quantity: Int(quantity),
-                orderMode: orderMode,
-                limit: limit,
-                priceValidityProgress: priceValidityProgress,
-                investmentOrderCalculation: investmentOrderCalculation,
-                traderService: traderService
+                searchResult: self.searchResult,
+                quantity: Int(self.quantity),
+                orderMode: self.orderMode,
+                limit: self.limit,
+                priceValidityProgress: self.priceValidityProgress,
+                investmentOrderCalculation: self.investmentOrderCalculation,
+                traderService: self.traderService
             )
 
             if result.success {
                 // Order was successfully created and will appear in ongoing transactions
                 // The status progression will happen automatically via the timer
                 // Set status to idle to dismiss the view immediately
-                orderStatus = .idle
+                self.orderStatus = .idle
                 // Trigger navigation to depot view for successful order placement
-                shouldShowDepotView = true
+                self.shouldShowDepotView = true
             } else if let error = result.error {
-                orderStatus = .failed(error)
+                self.orderStatus = .failed(error)
             } else {
-                orderStatus = .failed(.unknown("Unbekannter Fehler bei der Orderplatzierung."))
+                self.orderStatus = .failed(.unknown("Unbekannter Fehler bei der Orderplatzierung."))
             }
         } catch is CancellationError {
             // If task gets cancelled (e.g. view lifecycle), avoid leaving UI in transmitting state.
-            orderStatus = .idle
+            self.orderStatus = .idle
         } catch let appError as AppError {
             orderStatus = .failed(appError)
         } catch {
-            orderStatus = .failed(error.toAppError())
+            self.orderStatus = .failed(error.toAppError())
         }
     }
 
     func resetOrderStatus() {
-        orderStatus = .idle
+        self.orderStatus = .idle
     }
 
     // MARK: - Automatic Limit Order Monitoring
 
     func startLimitOrderMonitoring() {
-        limitOrderMonitor?.startLimitOrderMonitoring()
+        self.limitOrderMonitor?.startLimitOrderMonitoring()
     }
 
     func stopLimitOrderMonitoring() {
-        limitOrderMonitor?.stopLimitOrderMonitoring()
+        self.limitOrderMonitor?.stopLimitOrderMonitoring()
     }
 
     // MARK: - Limit Price Management
 
     /// Called when the user changes the limit price input
     func onLimitPriceChanged() {
-        if isMonitoringLimitOrder {
-            stopLimitOrderMonitoring()
+        if self.isMonitoringLimitOrder {
+            self.stopLimitOrderMonitoring()
         }
     }
-
 }

@@ -1,5 +1,5 @@
-import XCTest
 @testable import FIN1
+import XCTest
 
 // MARK: - Investment API Service Tests
 
@@ -10,13 +10,13 @@ final class InvestmentAPIServiceTests: XCTestCase {
 
     override func setUp() {
         super.setUp()
-        mockAPIClient = MockParseAPIClient()
-        sut = InvestmentAPIService(apiClient: mockAPIClient)
+        self.mockAPIClient = MockParseAPIClient()
+        self.sut = InvestmentAPIService(apiClient: self.mockAPIClient)
     }
 
     override func tearDown() {
-        sut = nil
-        mockAPIClient = nil
+        self.sut = nil
+        self.mockAPIClient = nil
         super.tearDown()
     }
 
@@ -24,15 +24,15 @@ final class InvestmentAPIServiceTests: XCTestCase {
 
     func testSaveInvestment_Success() async throws {
         // Given
-        let investment = createSampleInvestment()
-        mockAPIClient.mockObjectId = "server-investment-id-123"
+        let investment = self.createSampleInvestment()
+        self.mockAPIClient.mockObjectId = "server-investment-id-123"
 
         // When
         let savedInvestment = try await sut.saveInvestment(investment)
 
         // Then
-        XCTAssertTrue(mockAPIClient.createObjectCalled)
-        XCTAssertEqual(mockAPIClient.lastClassName, "Investment")
+        XCTAssertTrue(self.mockAPIClient.createObjectCalled)
+        XCTAssertEqual(self.mockAPIClient.lastClassName, "Investment")
         XCTAssertEqual(savedInvestment.id, "server-investment-id-123")
         XCTAssertEqual(savedInvestment.investorId, investment.investorId)
         XCTAssertEqual(savedInvestment.amount, investment.amount)
@@ -40,8 +40,8 @@ final class InvestmentAPIServiceTests: XCTestCase {
 
     func testSaveInvestment_PreservesAllFields() async throws {
         // Given
-        let investment = createSampleInvestment()
-        mockAPIClient.mockObjectId = "server-investment-id-456"
+        let investment = self.createSampleInvestment()
+        self.mockAPIClient.mockObjectId = "server-investment-id-456"
 
         // When
         let savedInvestment = try await sut.saveInvestment(investment)
@@ -56,13 +56,13 @@ final class InvestmentAPIServiceTests: XCTestCase {
 
     func testSaveInvestment_NetworkError() async {
         // Given
-        let investment = createSampleInvestment()
-        mockAPIClient.shouldThrowError = true
-        mockAPIClient.errorToThrow = NetworkError.noConnection
+        let investment = self.createSampleInvestment()
+        self.mockAPIClient.shouldThrowError = true
+        self.mockAPIClient.errorToThrow = NetworkError.noConnection
 
         // When/Then
         do {
-            _ = try await sut.saveInvestment(investment)
+            _ = try await self.sut.saveInvestment(investment)
             XCTFail("Expected error to be thrown")
         } catch {
             XCTAssertTrue(error is NetworkError)
@@ -73,15 +73,15 @@ final class InvestmentAPIServiceTests: XCTestCase {
 
     func testUpdateInvestment_Success() async throws {
         // Given
-        let investment = createSampleInvestment(id: "existing-investment-id")
+        let investment = self.createSampleInvestment(id: "existing-investment-id")
 
         // When
         let updatedInvestment = try await sut.updateInvestment(investment)
 
         // Then
-        XCTAssertTrue(mockAPIClient.updateObjectCalled)
-        XCTAssertEqual(mockAPIClient.lastClassName, "Investment")
-        XCTAssertEqual(mockAPIClient.lastObjectId, "existing-investment-id")
+        XCTAssertTrue(self.mockAPIClient.updateObjectCalled)
+        XCTAssertEqual(self.mockAPIClient.lastClassName, "Investment")
+        XCTAssertEqual(self.mockAPIClient.lastObjectId, "existing-investment-id")
         XCTAssertEqual(updatedInvestment.id, investment.id)
     }
 
@@ -95,27 +95,27 @@ final class InvestmentAPIServiceTests: XCTestCase {
             createMockInvestmentResponse(objectId: "inv-2"),
             createMockInvestmentResponse(objectId: "inv-3")
         ]
-        mockAPIClient.mockFetchResults = mockResponses
+        self.mockAPIClient.mockFetchResults = mockResponses
 
         // When
         let investments = try await sut.fetchInvestments(for: investorId)
 
         // Then
-        XCTAssertTrue(mockAPIClient.fetchObjectsCalled)
-        XCTAssertEqual(mockAPIClient.lastClassName, "Investment")
+        XCTAssertTrue(self.mockAPIClient.fetchObjectsCalled)
+        XCTAssertEqual(self.mockAPIClient.lastClassName, "Investment")
         XCTAssertEqual(investments.count, 3)
     }
 
     func testFetchInvestments_EmptyResult() async throws {
         // Given
         let investorId = "investor-no-investments"
-        mockAPIClient.mockFetchResults = [ParseInvestment]()
+        self.mockAPIClient.mockFetchResults = [ParseInvestment]()
 
         // When
         let investments = try await sut.fetchInvestments(for: investorId)
 
         // Then
-        XCTAssertTrue(mockAPIClient.fetchObjectsCalled)
+        XCTAssertTrue(self.mockAPIClient.fetchObjectsCalled)
         XCTAssertTrue(investments.isEmpty)
     }
 
@@ -123,15 +123,15 @@ final class InvestmentAPIServiceTests: XCTestCase {
 
     func testCreatePoolParticipation_Success() async throws {
         // Given
-        let participation = createSamplePoolParticipation()
-        mockAPIClient.mockObjectId = "server-participation-id-789"
+        let participation = self.createSamplePoolParticipation()
+        self.mockAPIClient.mockObjectId = "server-participation-id-789"
 
         // When
         let savedParticipation = try await sut.createPoolParticipation(participation)
 
         // Then
-        XCTAssertTrue(mockAPIClient.callFunctionCalled)
-        XCTAssertEqual(mockAPIClient.lastFunctionName, "recordPoolTradeParticipation")
+        XCTAssertTrue(self.mockAPIClient.callFunctionCalled)
+        XCTAssertEqual(self.mockAPIClient.lastFunctionName, "recordPoolTradeParticipation")
         XCTAssertEqual(savedParticipation.id, "server-participation-id-789")
         XCTAssertEqual(savedParticipation.tradeId, participation.tradeId)
         XCTAssertEqual(savedParticipation.investmentId, participation.investmentId)
@@ -139,14 +139,14 @@ final class InvestmentAPIServiceTests: XCTestCase {
 
     func testUpdatePoolParticipation_Success() async throws {
         // Given
-        let participation = createSamplePoolParticipation(id: "existing-participation-id")
+        let participation = self.createSamplePoolParticipation(id: "existing-participation-id")
 
         // When
         let updatedParticipation = try await sut.updatePoolParticipation(participation)
 
         // Then
-        XCTAssertTrue(mockAPIClient.callFunctionCalled)
-        XCTAssertEqual(mockAPIClient.lastFunctionName, "updatePoolTradeParticipation")
+        XCTAssertTrue(self.mockAPIClient.callFunctionCalled)
+        XCTAssertEqual(self.mockAPIClient.lastFunctionName, "updatePoolTradeParticipation")
         XCTAssertEqual(updatedParticipation.id, participation.id)
     }
 
@@ -160,8 +160,8 @@ final class InvestmentAPIServiceTests: XCTestCase {
             investorName: "Max Mustermann",
             traderId: "trader-456",
             traderName: "Top Trader",
-            amount: 10000.0,
-            currentValue: 10500.0,
+            amount: 10_000.0,
+            currentValue: 10_500.0,
             date: Date(),
             status: .active,
             performance: 5.0,
@@ -182,8 +182,8 @@ final class InvestmentAPIServiceTests: XCTestCase {
             investmentId: "investment-456",
             poolReservationId: "pool-789",
             poolNumber: 1,
-            allocatedAmount: 5000.0,
-            totalTradeValue: 50000.0,
+            allocatedAmount: 5_000.0,
+            totalTradeValue: 50_000.0,
             ownershipPercentage: 0.1,
             profitShare: nil
         )
@@ -196,8 +196,8 @@ final class InvestmentAPIServiceTests: XCTestCase {
             investorName: "Max Mustermann",
             traderId: "trader-456",
             traderName: "Top Trader",
-            amount: 10000.0,
-            currentValue: 10500.0,
+            amount: 10_000.0,
+            currentValue: 10_500.0,
             status: "active",
             performance: 5.0,
             numberOfTrades: 3,

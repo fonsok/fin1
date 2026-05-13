@@ -131,43 +131,43 @@ private struct ParseDocumentResponse: Decodable {
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
-        objectId = try c.decode(String.self, forKey: .objectId)
-        name = try c.decodeIfPresent(String.self, forKey: .name) ?? "Document"
-        type = try c.decodeIfPresent(String.self, forKey: .type) ?? DocumentType.other.rawValue
-        status = try c.decodeIfPresent(String.self, forKey: .status) ?? DocumentStatus.verified.rawValue
-        fileURL = try c.decodeIfPresent(String.self, forKey: .fileURL) ?? ""
-        size = c.decodeLossyInt64(forKey: .size) ?? 0
-        uploadedAt = try c.decodeIfPresent(String.self, forKey: .uploadedAt) ?? Date().ISO8601Format()
-        updatedAt = try c.decodeIfPresent(String.self, forKey: .updatedAt) ?? uploadedAt
-        verifiedAt = try c.decodeIfPresent(String.self, forKey: .verifiedAt)
-        expiresAt = try c.decodeIfPresent(String.self, forKey: .expiresAt)
-        readAt = try c.decodeIfPresent(String.self, forKey: .readAt)
-        downloadedAt = try c.decodeIfPresent(String.self, forKey: .downloadedAt)
-        userId = c.decodeParseStringOrPointerObjectId(forKey: .userId) ?? ""
-        tradeId = c.decodeParseStringOrPointerObjectId(forKey: .tradeId)
-        investmentId = c.decodeParseStringOrPointerObjectId(forKey: .investmentId)
-        statementYear = c.decodeLossyInt(forKey: .statementYear)
-        statementMonth = c.decodeLossyInt(forKey: .statementMonth)
-        statementRole = try c.decodeIfPresent(String.self, forKey: .statementRole)
-        documentNumber = try c.decodeIfPresent(String.self, forKey: .documentNumber)
-        accountingDocumentNumber = try c.decodeIfPresent(String.self, forKey: .accountingDocumentNumber)
-        traderCommissionRateSnapshot = c.decodeLossyDouble(forKey: .traderCommissionRateSnapshot)
-        accountingSummaryText = try c.decodeIfPresent(String.self, forKey: .accountingSummaryText)
+        self.objectId = try c.decode(String.self, forKey: .objectId)
+        self.name = try c.decodeIfPresent(String.self, forKey: .name) ?? "Document"
+        self.type = try c.decodeIfPresent(String.self, forKey: .type) ?? DocumentType.other.rawValue
+        self.status = try c.decodeIfPresent(String.self, forKey: .status) ?? DocumentStatus.verified.rawValue
+        self.fileURL = try c.decodeIfPresent(String.self, forKey: .fileURL) ?? ""
+        self.size = c.decodeLossyInt64(forKey: .size) ?? 0
+        self.uploadedAt = try c.decodeIfPresent(String.self, forKey: .uploadedAt) ?? Date().ISO8601Format()
+        self.updatedAt = try c.decodeIfPresent(String.self, forKey: .updatedAt) ?? self.uploadedAt
+        self.verifiedAt = try c.decodeIfPresent(String.self, forKey: .verifiedAt)
+        self.expiresAt = try c.decodeIfPresent(String.self, forKey: .expiresAt)
+        self.readAt = try c.decodeIfPresent(String.self, forKey: .readAt)
+        self.downloadedAt = try c.decodeIfPresent(String.self, forKey: .downloadedAt)
+        self.userId = c.decodeParseStringOrPointerObjectId(forKey: .userId) ?? ""
+        self.tradeId = c.decodeParseStringOrPointerObjectId(forKey: .tradeId)
+        self.investmentId = c.decodeParseStringOrPointerObjectId(forKey: .investmentId)
+        self.statementYear = c.decodeLossyInt(forKey: .statementYear)
+        self.statementMonth = c.decodeLossyInt(forKey: .statementMonth)
+        self.statementRole = try c.decodeIfPresent(String.self, forKey: .statementRole)
+        self.documentNumber = try c.decodeIfPresent(String.self, forKey: .documentNumber)
+        self.accountingDocumentNumber = try c.decodeIfPresent(String.self, forKey: .accountingDocumentNumber)
+        self.traderCommissionRateSnapshot = c.decodeLossyDouble(forKey: .traderCommissionRateSnapshot)
+        self.accountingSummaryText = try c.decodeIfPresent(String.self, forKey: .accountingSummaryText)
     }
 
     func toDocument() -> Document {
         let dateFormatter = ISO8601DateFormatter()
         dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
 
-        let uploadedDate = dateFormatter.date(from: uploadedAt) ?? Date()
-        let verifiedDate = verifiedAt.flatMap { dateFormatter.date(from: $0) }
-        let expiresDate = expiresAt.flatMap { dateFormatter.date(from: $0) }
-        let readDate = readAt.flatMap { dateFormatter.date(from: $0) }
-        let downloadedDate = downloadedAt.flatMap { dateFormatter.date(from: $0) }
+        let uploadedDate = dateFormatter.date(from: self.uploadedAt) ?? Date()
+        let verifiedDate = self.verifiedAt.flatMap { dateFormatter.date(from: $0) }
+        let expiresDate = self.expiresAt.flatMap { dateFormatter.date(from: $0) }
+        let readDate = self.readAt.flatMap { dateFormatter.date(from: $0) }
+        let downloadedDate = self.downloadedAt.flatMap { dateFormatter.date(from: $0) }
 
         let documentType = DocumentType(rawValue: type) ?? .other
         let documentStatus = DocumentStatus(rawValue: status) ?? .pending
-        let role = statementRole.flatMap { UserRole(rawValue: $0) }
+        let role = self.statementRole.flatMap { UserRole(rawValue: $0) }
 
         var document = Document(
             id: objectId,
@@ -186,9 +186,9 @@ private struct ParseDocumentResponse: Decodable {
             statementYear: statementYear,
             statementMonth: statementMonth,
             statementRole: role,
-            documentNumber: documentNumber ?? accountingDocumentNumber,
-            traderCommissionRateSnapshot: traderCommissionRateSnapshot,
-            accountingSummaryText: accountingSummaryText
+            documentNumber: documentNumber ?? self.accountingDocumentNumber,
+            traderCommissionRateSnapshot: self.traderCommissionRateSnapshot,
+            accountingSummaryText: self.accountingSummaryText
         )
         // Set var properties after initialization
         document.readAt = readDate
@@ -263,7 +263,7 @@ final class DocumentAPIService: DocumentAPIServiceProtocol {
 
         let input = ParseDocumentInput.from(document: document)
         let response = try await apiClient.createObject(
-            className: className,
+            className: self.className,
             object: input
         )
 
@@ -303,7 +303,7 @@ final class DocumentAPIService: DocumentAPIServiceProtocol {
 
         let input = ParseDocumentInput.from(document: document)
         let response = try await apiClient.updateObject(
-            className: className,
+            className: self.className,
             objectId: document.id,
             object: input
         )
@@ -320,7 +320,7 @@ final class DocumentAPIService: DocumentAPIServiceProtocol {
         print("📡 DocumentAPIService: Fetching documents for user: \(userId)")
 
         let responses: [ParseDocumentResponse] = try await apiClient.fetchObjects(
-            className: className,
+            className: self.className,
             query: ["userId": userId],
             include: nil,
             orderBy: "-uploadedAt",
@@ -334,7 +334,7 @@ final class DocumentAPIService: DocumentAPIServiceProtocol {
     func fetchDocument(by objectId: String) async throws -> Document {
         print("📡 DocumentAPIService: Fetching single document \(objectId)")
         let response: ParseDocumentResponse = try await apiClient.fetchObject(
-            className: className,
+            className: self.className,
             objectId: objectId,
             include: nil
         )
@@ -346,8 +346,8 @@ final class DocumentAPIService: DocumentAPIServiceProtocol {
     func deleteDocument(_ documentId: String) async throws {
         print("📡 DocumentAPIService: Deleting document: \(documentId)")
 
-        try await apiClient.deleteObject(
-            className: className,
+        try await self.apiClient.deleteObject(
+            className: self.className,
             objectId: documentId
         )
 

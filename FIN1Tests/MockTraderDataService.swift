@@ -1,6 +1,6 @@
-import Foundation
 import Combine
 @testable import FIN1
+import Foundation
 
 // MARK: - Mock Trader Data Service
 final class MockTraderDataService: TraderDataServiceProtocol, @unchecked Sendable {
@@ -17,9 +17,9 @@ final class MockTraderDataService: TraderDataServiceProtocol, @unchecked Sendabl
 
     // MARK: - Trader Data Management
     func loadTraderData() {
-        isLoading = true
+        self.isLoading = true
         // Use app's mockTraders if available; otherwise construct a minimal set
-        allTraders = mockTraders.isEmpty ? [
+        self.allTraders = mockTraders.isEmpty ? [
             MockTrader(
                 name: "Test Trader 1",
                 username: "trader1",
@@ -30,7 +30,7 @@ final class MockTraderDataService: TraderDataServiceProtocol, @unchecked Sendabl
                 totalTrades: 100,
                 winRate: 75.0,
                 averageReturn: 8.2,
-                totalReturn: 15000.0,
+                totalReturn: 15_000.0,
                 riskLevel: .medium,
                 recentTrades: [],
                 lastNTrades: 10,
@@ -50,7 +50,7 @@ final class MockTraderDataService: TraderDataServiceProtocol, @unchecked Sendabl
                 totalTrades: 50,
                 winRate: 60.0,
                 averageReturn: 4.1,
-                totalReturn: 5000.0,
+                totalReturn: 5_000.0,
                 riskLevel: .low,
                 recentTrades: [],
                 lastNTrades: 10,
@@ -61,45 +61,45 @@ final class MockTraderDataService: TraderDataServiceProtocol, @unchecked Sendabl
                 sharpeRatio: 1.2
             )
         ] : mockTraders
-        traders = allTraders
-        isLoading = false
-        performSearch()
+        self.traders = self.allTraders
+        self.isLoading = false
+        self.performSearch()
     }
 
     func refreshTraderData() {
-        loadTraderData()
+        self.loadTraderData()
     }
 
     func addTrader(_ trader: MockTrader) {
-        if !allTraders.contains(where: { $0.id == trader.id }) {
-            allTraders.append(trader)
-            traders = allTraders
-            performSearch()
+        if !self.allTraders.contains(where: { $0.id == trader.id }) {
+            self.allTraders.append(trader)
+            self.traders = self.allTraders
+            self.performSearch()
         }
     }
 
     func updateTrader(_ trader: MockTrader) {
         if let idx = allTraders.firstIndex(where: { $0.id == trader.id }) {
-            allTraders[idx] = trader
-            traders = allTraders
-            performSearch()
+            self.allTraders[idx] = trader
+            self.traders = self.allTraders
+            self.performSearch()
         }
     }
 
     func removeTrader(_ trader: MockTrader) {
-        allTraders.removeAll { $0.id == trader.id }
-        traders = allTraders
-        performSearch()
+        self.allTraders.removeAll { $0.id == trader.id }
+        self.traders = self.allTraders
+        self.performSearch()
     }
 
     // MARK: - Search and Filtering
     func performSearch() {
-        var filtered = allTraders
-        if !searchText.isEmpty {
+        var filtered = self.allTraders
+        if !self.searchText.isEmpty {
             filtered = filtered.filter { trader in
-                trader.name.localizedCaseInsensitiveContains(searchText) ||
-                trader.specialization.localizedCaseInsensitiveContains(searchText) ||
-                trader.username.localizedCaseInsensitiveContains(searchText)
+                trader.name.localizedCaseInsensitiveContains(self.searchText) ||
+                    trader.specialization.localizedCaseInsensitiveContains(self.searchText) ||
+                    trader.username.localizedCaseInsensitiveContains(self.searchText)
             }
         }
         if let riskClass = selectedRiskClass {
@@ -115,7 +115,7 @@ final class MockTraderDataService: TraderDataServiceProtocol, @unchecked Sendabl
         if let spec = selectedSpecialization {
             filtered = filtered.filter { $0.specialization == spec }
         }
-        switch selectedSortOption {
+        switch self.selectedSortOption {
         case .name:
             filtered = filtered.sorted { $0.name < $1.name }
         case .performance:
@@ -130,35 +130,35 @@ final class MockTraderDataService: TraderDataServiceProtocol, @unchecked Sendabl
         case .minimumInvestment:
             break
         }
-        filteredTraders = filtered
+        self.filteredTraders = filtered
     }
 
     func filterByRiskClass(_ riskClass: RiskClass?) {
-        selectedRiskClass = riskClass
-        performSearch()
+        self.selectedRiskClass = riskClass
+        self.performSearch()
     }
 
     func filterBySpecialization(_ specialization: String?) {
-        selectedSpecialization = specialization
-        performSearch()
+        self.selectedSpecialization = specialization
+        self.performSearch()
     }
 
     func sortBy(_ option: TraderSortOption) {
-        selectedSortOption = option
-        performSearch()
+        self.selectedSortOption = option
+        self.performSearch()
     }
 
     func resetFilters() {
-        searchText = ""
-        selectedRiskClass = nil
-        selectedSpecialization = nil
-        selectedSortOption = .name
-        performSearch()
+        self.searchText = ""
+        self.selectedRiskClass = nil
+        self.selectedSpecialization = nil
+        self.selectedSortOption = .name
+        self.performSearch()
     }
 
     // MARK: - Trader Queries
     func getTrader(by id: String) -> MockTrader? {
-        return allTraders.first { $0.id.uuidString == id }
+        return self.allTraders.first { $0.id.uuidString == id }
     }
 
     func getTradersByRiskClass(_ riskClass: RiskClass) -> [MockTrader] {
@@ -169,14 +169,14 @@ final class MockTraderDataService: TraderDataServiceProtocol, @unchecked Sendabl
             case .high: return .riskClass6
             }
         }
-        return allTraders.filter { score($0.riskLevel) == riskClass }
+        return self.allTraders.filter { score($0.riskLevel) == riskClass }
     }
 
     func getTradersBySpecialization(_ specialization: String) -> [MockTrader] {
-        return allTraders.filter { $0.specialization == specialization }
+        return self.allTraders.filter { $0.specialization == specialization }
     }
 
     func getTopPerformers(limit: Int) -> [MockTrader] {
-        return allTraders.sorted { $0.performance > $1.performance }.prefix(limit).map { $0 }
+        return self.allTraders.sorted { $0.performance > $1.performance }.prefix(limit).map { $0 }
     }
 }

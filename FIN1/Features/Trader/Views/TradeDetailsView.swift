@@ -59,9 +59,9 @@ struct TradeDetailsRow: View {
 
     var body: some View {
         HStack {
-            Text(label).tradeDetailsLabelStyle()
+            Text(self.label).tradeDetailsLabelStyle()
             Spacer()
-            Text(value).tradeDetailsValueStyle()
+            Text(self.value).tradeDetailsValueStyle()
         }
         .padding(.vertical, ResponsiveDesign.spacing(8))
     }
@@ -74,9 +74,9 @@ struct TradeDetailsColoredRow: View {
 
     var body: some View {
         HStack {
-            Text(label).tradeDetailsLabelStyle()
+            Text(self.label).tradeDetailsLabelStyle()
             Spacer()
-            Text(value).tradeDetailsColoredValueStyle(color: valueColor)
+            Text(self.value).tradeDetailsColoredValueStyle(color: self.valueColor)
         }
         .padding(.vertical, ResponsiveDesign.spacing(8))
     }
@@ -88,8 +88,8 @@ struct TradeDetailsSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
-            Text(title).tradeDetailsSectionHeaderStyle()
-            content()
+            Text(self.title).tradeDetailsSectionHeaderStyle()
+            self.content()
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, ResponsiveDesign.spacing(16))
@@ -101,7 +101,7 @@ struct TradeDetailsCard: View {
 
     var body: some View {
         VStack(spacing: ResponsiveDesign.spacing(0)) {
-            content()
+            self.content()
         }
         .padding(.horizontal, ResponsiveDesign.spacing(16))
         .background(AppTheme.sectionBackground)
@@ -128,7 +128,7 @@ struct TradeDetailsView: View {
                             HStack {
                                 Text("Trade Nr.").tradeDetailsLabelStyle()
                                 Spacer()
-                                Text(viewModel.tradeNumberText)
+                                Text(self.viewModel.tradeNumberText)
                                     .font(ResponsiveDesign.bodyFont())
                                     .fontWeight(.semibold)
                                     .foregroundColor(AppTheme.fontColor)
@@ -140,13 +140,17 @@ struct TradeDetailsView: View {
                                 Text("Profit").tradeDetailsLabelStyle()
                                 Spacer()
                                 VStack(alignment: .trailing, spacing: 2) {
-                                    Text(viewModel.gvCurrencyText)
-                                        .tradeDetailsColoredValueStyle(color: viewModel.trade.profitLoss >= 0 ? AppTheme.accentGreen : AppTheme.accentRed)
+                                    Text(self.viewModel.gvCurrencyText)
+                                        .tradeDetailsColoredValueStyle(
+                                            color: self.viewModel.trade.profitLoss >= 0 ? AppTheme.accentGreen : AppTheme.accentRed
+                                        )
                                     HStack(spacing: ResponsiveDesign.spacing(4)) {
-                                        Text(viewModel.roiCalculationLabel)
+                                        Text(self.viewModel.roiCalculationLabel)
                                             .tradeDetailsDescriptionStyle()
-                                        Text(viewModel.gvPercentText)
-                                            .tradeDetailsColoredCaptionStyle(color: viewModel.trade.profitLoss >= 0 ? AppTheme.accentGreen : AppTheme.accentRed)
+                                        Text(self.viewModel.gvPercentText)
+                                            .tradeDetailsColoredCaptionStyle(
+                                                color: self.viewModel.trade.profitLoss >= 0 ? AppTheme.accentGreen : AppTheme.accentRed
+                                            )
                                     }
                                 }
                             }
@@ -173,9 +177,9 @@ struct TradeDetailsView: View {
                     AnyView(
                         VStack(spacing: ResponsiveDesign.spacing(12)) {
                             // Buy Invoice Button
-                            if viewModel.buyInvoice != nil {
+                            if self.viewModel.buyInvoice != nil {
                                 Button(action: {
-                                    viewModel.showBuyInvoice = true
+                                    self.viewModel.showBuyInvoice = true
                                 }) {
                                     HStack {
                                         Image(systemName: "doc.text")
@@ -193,15 +197,15 @@ struct TradeDetailsView: View {
                             }
 
                             // Individual Sell Invoice Buttons
-                            ForEach(Array(viewModel.sellInvoices.enumerated()), id: \.element.id) { index, sellInvoice in
+                            ForEach(Array(self.viewModel.sellInvoices.enumerated()), id: \.element.id) { index, sellInvoice in
                                 Button(action: {
-                                    viewModel.selectedSellInvoice = sellInvoice
-                                    viewModel.showSellInvoice = true
+                                    self.viewModel.selectedSellInvoice = sellInvoice
+                                    self.viewModel.showSellInvoice = true
                                 }) {
                                     HStack {
                                         Image(systemName: "doc.text")
                                             .foregroundColor(Color(red: 0.96, green: 0.96, blue: 0.96)) // #f5f5f5
-                                        Text(viewModel.sellInvoices.count == 1 ? "Rechnung Verkauf" : "Rechnung Verkauf \(index + 1)")
+                                        Text(self.viewModel.sellInvoices.count == 1 ? "Rechnung Verkauf" : "Rechnung Verkauf \(index + 1)")
                                             .tradeDetailsButtonTextStyle()
                                     }
                                     .frame(maxWidth: .infinity)
@@ -215,7 +219,7 @@ struct TradeDetailsView: View {
 
                             // Collection Bill Button
                             Button(action: {
-                                viewModel.showCollectionBill = true
+                                self.viewModel.showCollectionBill = true
                             }) {
                                 HStack {
                                     Image(systemName: "magnifyingglass")
@@ -232,9 +236,9 @@ struct TradeDetailsView: View {
                             .buttonStyle(PlainButtonStyle())
 
                             // Credit Note Button
-                            if viewModel.creditNoteInvoice != nil {
+                            if self.viewModel.creditNoteInvoice != nil {
                                 Button(action: {
-                                    viewModel.showCreditNote = true
+                                    self.viewModel.showCreditNote = true
                                 }) {
                                     HStack {
                                         Image(systemName: "doc.text")
@@ -260,24 +264,24 @@ struct TradeDetailsView: View {
         .navigationTitle("Trade Details")
         .navigationBarTitleDisplayMode(.inline)
         .task {
-            viewModel.attach(invoiceService: services.invoiceService, tradeService: services.tradeLifecycleService)
+            self.viewModel.attach(invoiceService: self.services.invoiceService, tradeService: self.services.tradeLifecycleService)
         }
-        .sheet(isPresented: $viewModel.showCollectionBill) {
-            TradeNavigationHelper.collectionBillSheet(for: viewModel.trade)
+        .sheet(isPresented: self.$viewModel.showCollectionBill) {
+            TradeNavigationHelper.collectionBillSheet(for: self.viewModel.trade)
         }
-        .sheet(isPresented: $viewModel.showBuyInvoice) {
+        .sheet(isPresented: self.$viewModel.showBuyInvoice) {
             if let buyInvoice = viewModel.buyInvoice {
-                TradeNavigationHelper.invoiceSheet(for: buyInvoice, appServices: services)
+                TradeNavigationHelper.invoiceSheet(for: buyInvoice, appServices: self.services)
             }
         }
-        .sheet(isPresented: $viewModel.showSellInvoice) {
+        .sheet(isPresented: self.$viewModel.showSellInvoice) {
             if let sellInvoice = viewModel.selectedSellInvoice {
-                TradeNavigationHelper.invoiceSheet(for: sellInvoice, appServices: services)
+                TradeNavigationHelper.invoiceSheet(for: sellInvoice, appServices: self.services)
             }
         }
-        .sheet(isPresented: $viewModel.showCreditNote) {
+        .sheet(isPresented: self.$viewModel.showCreditNote) {
             if let creditNote = viewModel.creditNoteInvoice {
-                TradeNavigationHelper.invoiceSheet(for: creditNote, appServices: services)
+                TradeNavigationHelper.invoiceSheet(for: creditNote, appServices: self.services)
             }
         }
     }
@@ -288,7 +292,7 @@ struct TradeDetailsView: View {
     NavigationStack {
         TradeDetailsView(viewModel: TradeDetailsViewModel(trade: TradeOverviewItem(
             tradeId: "test-id",
-            tradeNumber: 12345,
+            tradeNumber: 12_345,
             startDate: Date(),
             endDate: Date(),
             profitLoss: 150.0,

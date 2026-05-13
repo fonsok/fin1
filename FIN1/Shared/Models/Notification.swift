@@ -105,14 +105,14 @@ struct AppNotification: Identifiable, Codable {
     var timeAgo: String {
         let formatter = RelativeDateTimeFormatter()
         formatter.unitsStyle = .abbreviated
-        return formatter.localizedString(for: createdAt, relativeTo: Date())
+        return formatter.localizedString(for: self.createdAt, relativeTo: Date())
     }
 
     var formattedDate: String {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
-        return formatter.string(from: createdAt)
+        return formatter.string(from: self.createdAt)
     }
 }
 

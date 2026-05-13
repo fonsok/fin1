@@ -1,5 +1,5 @@
-import SwiftUI
 import Combine
+import SwiftUI
 
 // MARK: - Trades Overview Filtering View Model
 
@@ -21,15 +21,15 @@ final class TradesOverviewFilteringViewModel: ObservableObject {
     /// - Parameter period: Time period to filter by
     func filterTrades(by period: TradeTimePeriod) async {
         // Filter ongoing trades (always show all ongoing trades regardless of time period)
-        self.filteredOngoingTrades = ongoingTrades
+        self.filteredOngoingTrades = self.ongoingTrades
 
         // Filter completed trades by time period
         // When "Alle" is selected, show all trades without date filtering
         if period == .allTime {
-            self.filteredCompletedTrades = completedTrades
+            self.filteredCompletedTrades = self.completedTrades
         } else {
-            let cutoffDate = getCutoffDate(for: period)
-            self.filteredCompletedTrades = completedTrades.filter { $0.endDate >= cutoffDate }
+            let cutoffDate = self.getCutoffDate(for: period)
+            self.filteredCompletedTrades = self.completedTrades.filter { $0.endDate >= cutoffDate }
         }
     }
 
@@ -46,7 +46,7 @@ final class TradesOverviewFilteringViewModel: ObservableObject {
         case .lastYear:
             return calendar.date(byAdding: .year, value: -1, to: Date()) ?? Date()
         case .allTime:
-            return Calendar.current.date(from: DateComponents(year: 2000, month: 1, day: 1)) ?? Date()
+            return Calendar.current.date(from: DateComponents(year: 2_000, month: 1, day: 1)) ?? Date()
         }
     }
 }

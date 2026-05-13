@@ -16,30 +16,30 @@ struct ConfigurationInputSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
             HStack {
-                Text(title)
+                Text(self.title)
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(.primary)
 
                 Spacer()
 
-                Text(currentValue)
+                Text(self.currentValue)
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(.secondary)
             }
 
-            Text(description)
+            Text(self.description)
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(.secondary)
 
             HStack {
-                TextField("Enter amount", value: inputValue, format: .currency(code: "EUR"))
+                TextField("Enter amount", value: self.inputValue, format: .currency(code: "EUR"))
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .keyboardType(.decimalPad)
 
                 Button("Update") {
-                    updateAction()
+                    self.updateAction()
                 }
-                .disabled(!isValid)
+                .disabled(!self.isValid)
                 .buttonStyle(.borderedProminent)
             }
 
@@ -66,13 +66,13 @@ struct MinimumCashReserveSection: View {
         ConfigurationInputSection(
             title: "Minimum Cash Reserve",
             description: "Minimum amount users must maintain in their account after purchases",
-            currentValue: viewModel.currentMinimumCashReserveText,
-            inputValue: $viewModel.minimumCashReserveInput,
-            isValid: viewModel.isValidMinimumCashReserve,
-            errorMessage: viewModel.minimumCashReserveError
+            currentValue: self.viewModel.currentMinimumCashReserveText,
+            inputValue: self.$viewModel.minimumCashReserveInput,
+            isValid: self.viewModel.isValidMinimumCashReserve,
+            errorMessage: self.viewModel.minimumCashReserveError
         ) {
             Task {
-                await viewModel.updateMinimumCashReserve()
+                await self.viewModel.updateMinimumCashReserve()
             }
         }
     }
@@ -86,14 +86,14 @@ struct InitialAccountBalanceSection: View {
         ConfigurationInputSection(
             title: "Initial Account Balance",
             description: "Startguthaben für neue Benutzerkonten",
-            currentValue: viewModel.currentInitialAccountBalanceText,
-            inputValue: $viewModel.initialAccountBalanceInput,
-            isValid: viewModel.isValidInitialAccountBalance,
-            errorMessage: viewModel.initialAccountBalanceError,
-            successMessage: viewModel.initialAccountBalanceSuccess
+            currentValue: self.viewModel.currentInitialAccountBalanceText,
+            inputValue: self.$viewModel.initialAccountBalanceInput,
+            isValid: self.viewModel.isValidInitialAccountBalance,
+            errorMessage: self.viewModel.initialAccountBalanceError,
+            successMessage: self.viewModel.initialAccountBalanceSuccess
         ) {
             Task {
-                await viewModel.updateInitialAccountBalance()
+                await self.viewModel.updateInitialAccountBalance()
             }
         }
     }
@@ -112,7 +112,7 @@ struct TraderCommissionRateSection: View {
 
                 Spacer()
 
-                Text(viewModel.currentTraderCommissionRateText)
+                Text(self.viewModel.currentTraderCommissionRateText)
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(.secondary)
             }
@@ -122,21 +122,21 @@ struct TraderCommissionRateSection: View {
                 .foregroundColor(.secondary)
 
             HStack {
-                TextField("Enter rate (0.0-1.0)", value: $viewModel.traderCommissionRateInput, format: .number)
+                TextField("Enter rate (0.0-1.0)", value: self.$viewModel.traderCommissionRateInput, format: .number)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .keyboardType(.decimalPad)
 
-                Text("(\((viewModel.traderCommissionRateInput * 100).formatted(.number.precision(.fractionLength(0...2))))%)")
+                Text("(\((self.viewModel.traderCommissionRateInput * 100).formatted(.number.precision(.fractionLength(0...2))))%)")
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(.secondary)
                     .frame(minWidth: 50)
 
                 Button("Update") {
                     Task {
-                        await viewModel.updateTraderCommissionRate()
+                        await self.viewModel.updateTraderCommissionRate()
                     }
                 }
-                .disabled(!viewModel.isValidTraderCommissionRate)
+                .disabled(!self.viewModel.isValidTraderCommissionRate)
                 .buttonStyle(.borderedProminent)
             }
 
@@ -161,7 +161,7 @@ struct ShowCommissionBreakdownInCreditNoteSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
-            Toggle(isOn: $viewModel.showCommissionBreakdownInCreditNoteInput) {
+            Toggle(isOn: self.$viewModel.showCommissionBreakdownInCreditNoteInput) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Commission-Breakdown in Gutschrift anzeigen")
                         .font(ResponsiveDesign.bodyFont())
@@ -171,9 +171,9 @@ struct ShowCommissionBreakdownInCreditNoteSection: View {
                         .foregroundColor(.secondary)
                 }
             }
-            .onChange(of: viewModel.showCommissionBreakdownInCreditNoteInput) { _, _ in
+            .onChange(of: self.viewModel.showCommissionBreakdownInCreditNoteInput) { _, _ in
                 Task {
-                    await viewModel.updateShowCommissionBreakdownInCreditNote()
+                    await self.viewModel.updateShowCommissionBreakdownInCreditNote()
                 }
             }
         }
@@ -186,7 +186,7 @@ struct ShowDocumentReferenceLinksInAccountStatementSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
-            Toggle(isOn: $viewModel.showDocumentReferenceLinksInAccountStatementInput) {
+            Toggle(isOn: self.$viewModel.showDocumentReferenceLinksInAccountStatementInput) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Beleg-Links im Kontoauszug anzeigen")
                         .font(ResponsiveDesign.bodyFont())
@@ -196,9 +196,9 @@ struct ShowDocumentReferenceLinksInAccountStatementSection: View {
                         .foregroundColor(.secondary)
                 }
             }
-            .onChange(of: viewModel.showDocumentReferenceLinksInAccountStatementInput) { _, _ in
+            .onChange(of: self.viewModel.showDocumentReferenceLinksInAccountStatementInput) { _, _ in
                 Task {
-                    await viewModel.updateShowDocumentReferenceLinksInAccountStatement()
+                    await self.viewModel.updateShowDocumentReferenceLinksInAccountStatement()
                 }
             }
         }
@@ -220,22 +220,22 @@ struct UserMinimumCashReserveSection: View {
                 .foregroundColor(.secondary)
 
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
-                TextField("User ID", text: $viewModel.userMinimumCashReserveUserId)
+                TextField("User ID", text: self.$viewModel.userMinimumCashReserveUserId)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .autocapitalization(.none)
                     .disableAutocorrection(true)
 
                 HStack {
-                    TextField("Enter amount", value: $viewModel.userMinimumCashReserveInput, format: .currency(code: "EUR"))
+                    TextField("Enter amount", value: self.$viewModel.userMinimumCashReserveInput, format: .currency(code: "EUR"))
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .keyboardType(.decimalPad)
 
                     Button("Update") {
                         Task {
-                            await viewModel.updateUserMinimumCashReserve()
+                            await self.viewModel.updateUserMinimumCashReserve()
                         }
                     }
-                    .disabled(!viewModel.isValidUserMinimumCashReserve)
+                    .disabled(!self.viewModel.isValidUserMinimumCashReserve)
                     .buttonStyle(.borderedProminent)
                 }
             }
@@ -246,8 +246,8 @@ struct UserMinimumCashReserveSection: View {
                     .foregroundColor(.red)
             }
 
-            if !viewModel.userMinimumCashReserveUserId.isEmpty {
-                let currentValue = viewModel.currentUserMinimumCashReserveText(for: viewModel.userMinimumCashReserveUserId) ?? "-"
+            if !self.viewModel.userMinimumCashReserveUserId.isEmpty {
+                let currentValue = self.viewModel.currentUserMinimumCashReserveText(for: self.viewModel.userMinimumCashReserveUserId) ?? "-"
                 Text("Current value for user: \(currentValue)")
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(.secondary)
@@ -272,7 +272,7 @@ struct ResetToDefaultsSection: View {
 
             Button("Reset to Defaults") {
                 Task {
-                    await viewModel.resetToDefaults()
+                    await self.viewModel.resetToDefaults()
                 }
             }
             .buttonStyle(.bordered)
@@ -291,7 +291,7 @@ struct PendingApprovalsSection: View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
             HStack {
                 Image(systemName: "checkmark.seal.fill")
-                    .foregroundColor(viewModel.pendingCount > 0 ? .orange : .green)
+                    .foregroundColor(self.viewModel.pendingCount > 0 ? .orange : .green)
 
                 Text("4-Eyes Approvals")
                     .font(ResponsiveDesign.bodyFont())
@@ -300,11 +300,11 @@ struct PendingApprovalsSection: View {
 
                 Spacer()
 
-                if viewModel.isLoading {
+                if self.viewModel.isLoading {
                     ProgressView()
                         .scaleEffect(0.8)
-                } else if viewModel.pendingCount > 0 {
-                    Text("\(viewModel.pendingCount) pending")
+                } else if self.viewModel.pendingCount > 0 {
+                    Text("\(self.viewModel.pendingCount) pending")
                         .font(ResponsiveDesign.captionFont())
                         .fontWeight(.bold)
                         .foregroundColor(.white)
@@ -327,14 +327,14 @@ struct PendingApprovalsSection: View {
                 PendingConfigurationChangesView()
             } label: {
                 HStack {
-                    Text(viewModel.pendingCount > 0 ? "Review Pending Changes" : "View Approval History")
+                    Text(self.viewModel.pendingCount > 0 ? "Review Pending Changes" : "View Approval History")
                         .font(ResponsiveDesign.bodyFont())
                     Spacer()
                     Image(systemName: "chevron.right")
                         .foregroundColor(.secondary)
                 }
                 .padding()
-                .background(viewModel.pendingCount > 0 ? Color.orange.opacity(0.1) : Color(.secondarySystemBackground))
+                .background(self.viewModel.pendingCount > 0 ? Color.orange.opacity(0.1) : Color(.secondarySystemBackground))
                 .cornerRadius(ResponsiveDesign.spacing(8))
             }
             .buttonStyle(.plain)
@@ -343,8 +343,8 @@ struct PendingApprovalsSection: View {
         .background(Color(.secondarySystemBackground))
         .cornerRadius(ResponsiveDesign.spacing(12))
         .task {
-            viewModel.configure(with: appServices.configurationService)
-            await viewModel.loadPendingCount()
+            self.viewModel.configure(with: self.appServices.configurationService)
+            await self.viewModel.loadPendingCount()
         }
     }
 }

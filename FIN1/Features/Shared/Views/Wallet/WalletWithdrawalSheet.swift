@@ -34,7 +34,7 @@ struct WalletWithdrawalSheet: View {
                                 .font(ResponsiveDesign.captionFont())
                                 .foregroundColor(AppTheme.secondaryText)
 
-                            Text(viewModel.formattedBalance)
+                            Text(self.viewModel.formattedBalance)
                                 .font(ResponsiveDesign.titleFont())
                                 .fontWeight(.bold)
                                 .foregroundColor(AppTheme.fontColor)
@@ -56,25 +56,27 @@ struct WalletWithdrawalSheet: View {
                                 GridItem(.flexible()),
                                 GridItem(.flexible())
                             ], spacing: ResponsiveDesign.spacing(3)) {
-                                ForEach([50.0, 100.0, 500.0, 1000.0], id: \.self) { amount in
+                                ForEach([50.0, 100.0, 500.0, 1_000.0], id: \.self) { amount in
                                     Button {
                                         let maxAmount = min(amount, viewModel.currentBalance)
-                                        viewModel.withdrawalAmount = String(format: "%.2f", maxAmount)
+                                        self.viewModel.withdrawalAmount = String(format: "%.2f", maxAmount)
                                     } label: {
                                         Text(amount.formatted(.currency(code: "EUR").precision(.fractionLength(0))))
                                             .font(ResponsiveDesign.captionFont())
                                             .fontWeight(.medium)
-                                            .foregroundColor(viewModel.withdrawalAmount == String(format: "%.2f", amount) ? .white : AppTheme.fontColor)
+                                            .foregroundColor(
+                                                self.viewModel.withdrawalAmount == String(format: "%.2f", amount) ? .white : AppTheme.fontColor
+                                            )
                                             .frame(maxWidth: .infinity)
                                             .padding(.vertical, ResponsiveDesign.spacing(2))
                                             .background(
-                                                viewModel.withdrawalAmount == String(format: "%.2f", amount)
-                                                ? AppTheme.accentLightBlue : AppTheme.cardBackground
+                                                self.viewModel.withdrawalAmount == String(format: "%.2f", amount)
+                                                    ? AppTheme.accentLightBlue : AppTheme.cardBackground
                                             )
                                             .cornerRadius(ResponsiveDesign.spacing(2))
                                     }
-                                    .disabled(amount > viewModel.currentBalance)
-                                    .opacity(amount > viewModel.currentBalance ? 0.5 : 1.0)
+                                    .disabled(amount > self.viewModel.currentBalance)
+                                    .opacity(amount > self.viewModel.currentBalance ? 0.5 : 1.0)
                                 }
                             }
                         }
@@ -90,7 +92,7 @@ struct WalletWithdrawalSheet: View {
                                     .font(ResponsiveDesign.bodyFont())
                                     .foregroundColor(AppTheme.secondaryText)
 
-                                TextField("0,00", text: $viewModel.withdrawalAmount)
+                                TextField("0,00", text: self.$viewModel.withdrawalAmount)
                                     .keyboardType(.decimalPad)
                                     .font(ResponsiveDesign.titleFont())
                                     .foregroundColor(AppTheme.fontColor)
@@ -126,11 +128,11 @@ struct WalletWithdrawalSheet: View {
 
                         Button {
                             Task {
-                                await viewModel.withdraw()
+                                await self.viewModel.withdraw()
                             }
                         } label: {
                             HStack {
-                                if viewModel.isLoading {
+                                if self.viewModel.isLoading {
                                     ProgressView()
                                         .progressViewStyle(CircularProgressViewStyle(tint: .white))
                                 } else {
@@ -143,12 +145,12 @@ struct WalletWithdrawalSheet: View {
                             .frame(maxWidth: .infinity)
                             .padding(ResponsiveDesign.spacing(4))
                             .background(
-                                (viewModel.isLoading || viewModel.withdrawalAmount.isEmpty)
-                                ? AppTheme.secondaryText : AppTheme.accentRed
+                                (self.viewModel.isLoading || self.viewModel.withdrawalAmount.isEmpty)
+                                    ? AppTheme.secondaryText : AppTheme.accentRed
                             )
                             .cornerRadius(ResponsiveDesign.spacing(3))
                         }
-                        .disabled(viewModel.isLoading || viewModel.withdrawalAmount.isEmpty)
+                        .disabled(self.viewModel.isLoading || self.viewModel.withdrawalAmount.isEmpty)
                         .padding(.horizontal, ResponsiveDesign.horizontalPadding())
 
                         VStack(spacing: ResponsiveDesign.spacing(2)) {
@@ -180,7 +182,7 @@ struct WalletWithdrawalSheet: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Abbrechen") {
-                        onDismiss()
+                        self.onDismiss()
                     }
                 }
             }

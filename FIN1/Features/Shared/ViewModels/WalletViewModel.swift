@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 import OSLog
 
 // MARK: - Wallet ViewModel
@@ -56,7 +56,7 @@ final class WalletViewModel: ObservableObject {
         self.settlementAPIService = settlementAPIService
         self.parseLiveQueryClient = parseLiveQueryClient
 
-        setupObservers()
+        self.setupObservers()
     }
 
     // MARK: - Setup
@@ -69,7 +69,7 @@ final class WalletViewModel: ObservableObject {
                 .sink { [weak self] balance in
                     self?.updateBalance(balance)
                 }
-                .store(in: &cancellables)
+                .store(in: &self.cancellables)
         }
 
         // Observe Parse Live Query updates for Wallet Transactions
@@ -92,7 +92,7 @@ final class WalletViewModel: ObservableObject {
                     await self.loadWalletData()
                 }
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
     }
 
     // MARK: - Intent Methods
@@ -101,13 +101,13 @@ final class WalletViewModel: ObservableObject {
     /// Kontoansicht ist immer sichtbar; dieser Flag steuert nur, ob
     /// Ein-/Auszahlungsaktionen freigeschaltet sind.
     var accountActionsEnabled: Bool {
-        configurationService.walletFeatureEnabled
+        self.configurationService.walletFeatureEnabled
     }
 
     func loadWalletData() async {
         await MainActor.run {
-            isLoading = true
-            errorMessage = nil
+            self.isLoading = true
+            self.errorMessage = nil
         }
 
         defer {
@@ -125,14 +125,14 @@ final class WalletViewModel: ObservableObject {
 
         // Update balance
         await MainActor.run {
-            updateBalance(balance)
+            self.updateBalance(balance)
         }
 
         // Load transaction history (handles errors internally)
-        await loadTransactionHistory()
+        await self.loadTransactionHistory()
 
         // Subscribe to Live Query updates for Wallet Transactions
-        await subscribeToLiveUpdates()
+        await self.subscribeToLiveUpdates()
     }
 
     // MARK: - Live Query Integration
@@ -149,7 +149,7 @@ final class WalletViewModel: ObservableObject {
         }
 
         // Subscribe to WalletTransaction updates for current user
-        liveQuerySubscription = liveQueryClient.subscribe(
+        self.liveQuerySubscription = liveQueryClient.subscribe(
             className: "WalletTransaction",
             query: ["userId": userId],
             onUpdate: { [weak self] (parseTransaction: ParseWalletTransaction) in
@@ -174,7 +174,7 @@ final class WalletViewModel: ObservableObject {
 
     private func getUserSpecificBalance() async -> Double {
         guard let currentUser = userService.currentUser else {
-            return cashBalanceService.currentBalance
+            return self.cashBalanceService.currentBalance
         }
 
         switch currentUser.role {
@@ -184,14 +184,14 @@ final class WalletViewModel: ObservableObject {
                 let snapshot = await InvestorAccountStatementBuilder.buildSnapshotWithWallet(
                     for: currentUser,
                     investorCashBalanceService: investorService,
-                    paymentService: paymentService,
-                    settlementAPIService: settlementAPIService,
-                    configurationService: configurationService
+                    paymentService: self.paymentService,
+                    settlementAPIService: self.settlementAPIService,
+                    configurationService: self.configurationService
                 )
                 return snapshot.closingBalance
             }
             // Fallback to global cash balance service
-            return cashBalanceService.currentBalance
+            return self.cashBalanceService.currentBalance
 
         case .trader:
             // For traders, calculate balance from account statement snapshot (including wallet)
@@ -199,47 +199,47 @@ final class WalletViewModel: ObservableObject {
                 let snapshot = await TraderAccountStatementBuilder.buildSnapshotWithWallet(
                     for: currentUser,
                     invoiceService: invoiceService,
-                    configurationService: configurationService,
-                    paymentService: paymentService,
-                    settlementAPIService: settlementAPIService
+                    configurationService: self.configurationService,
+                    paymentService: self.paymentService,
+                    settlementAPIService: self.settlementAPIService
                 )
                 return snapshot.closingBalance
             }
-            return cashBalanceService.currentBalance
+            return self.cashBalanceService.currentBalance
 
         default:
-            return cashBalanceService.currentBalance
+            return self.cashBalanceService.currentBalance
         }
     }
 
     func refresh() async {
-        await loadWalletData()
+        await self.loadWalletData()
     }
 
     func deposit() async {
-        guard accountActionsEnabled else {
-            errorMessage = "Ein-/Auszahlungen sind derzeit deaktiviert. Kontostand und Historie bleiben verfügbar."
+        guard self.accountActionsEnabled else {
+            self.errorMessage = "Ein-/Auszahlungen sind derzeit deaktiviert. Kontostand und Historie bleiben verfügbar."
             return
         }
 
         guard let amount = parseAmount(depositAmount) else {
-            errorMessage = "Bitte geben Sie einen gültigen Betrag ein."
+            self.errorMessage = "Bitte geben Sie einen gültigen Betrag ein."
             return
         }
 
         // Validate amount against limits
         if amount < CalculationConstants.PaymentLimits.minimumDeposit {
-            errorMessage = "Der Mindestbetrag für Einzahlungen beträgt \(CalculationConstants.PaymentLimits.minimumDeposit.formatted(.currency(code: "EUR")))."
+            self.errorMessage = "Der Mindestbetrag für Einzahlungen beträgt \(CalculationConstants.PaymentLimits.minimumDeposit.formatted(.currency(code: "EUR")))."
             return
         }
 
         if amount > CalculationConstants.PaymentLimits.maximumDeposit {
-            errorMessage = "Der Maximalbetrag für Einzahlungen beträgt \(CalculationConstants.PaymentLimits.maximumDeposit.formatted(.currency(code: "EUR")))."
+            self.errorMessage = "Der Maximalbetrag für Einzahlungen beträgt \(CalculationConstants.PaymentLimits.maximumDeposit.formatted(.currency(code: "EUR")))."
             return
         }
 
-        isLoading = true
-        errorMessage = nil
+        self.isLoading = true
+        self.errorMessage = nil
 
         defer {
             isLoading = false
@@ -249,66 +249,66 @@ final class WalletViewModel: ObservableObject {
             let transaction = try await paymentService.deposit(amount: amount)
 
             // Clear input and close sheet
-            depositAmount = ""
-            showDepositSheet = false
+            self.depositAmount = ""
+            self.showDepositSheet = false
 
             // Show success message
-            successMessage = "Einzahlung von \(amount.formatted(.currency(code: "EUR"))) erfolgreich!"
-            showSuccessMessage = true
+            self.successMessage = "Einzahlung von \(amount.formatted(.currency(code: "EUR"))) erfolgreich!"
+            self.showSuccessMessage = true
 
             // Hide success message after 3 seconds
             Task {
                 try? await Task.sleep(nanoseconds: 3_000_000_000)
                 await MainActor.run {
-                    showSuccessMessage = false
+                    self.showSuccessMessage = false
                 }
             }
 
             // Reload data
-            await loadWalletData()
+            await self.loadWalletData()
 
-            logger.info("✅ Deposit successful: \(transaction.id)")
+            self.logger.info("✅ Deposit successful: \(transaction.id)")
         } catch {
-            errorMessage = error.localizedDescription
-            logger.error("Deposit failed: \(error.localizedDescription)")
+            self.errorMessage = error.localizedDescription
+            self.logger.error("Deposit failed: \(error.localizedDescription)")
         }
     }
 
     func withdraw() async {
-        guard accountActionsEnabled else {
-            errorMessage = "Ein-/Auszahlungen sind derzeit deaktiviert. Kontostand und Historie bleiben verfügbar."
+        guard self.accountActionsEnabled else {
+            self.errorMessage = "Ein-/Auszahlungen sind derzeit deaktiviert. Kontostand und Historie bleiben verfügbar."
             return
         }
 
         guard let amount = parseAmount(withdrawalAmount) else {
-            errorMessage = "Bitte geben Sie einen gültigen Betrag ein."
+            self.errorMessage = "Bitte geben Sie einen gültigen Betrag ein."
             return
         }
 
         // Validate amount against limits
         if amount < CalculationConstants.PaymentLimits.minimumWithdrawal {
-            errorMessage = "Der Mindestbetrag für Auszahlungen beträgt \(CalculationConstants.PaymentLimits.minimumWithdrawal.formatted(.currency(code: "EUR")))."
+            self.errorMessage = "Der Mindestbetrag für Auszahlungen beträgt \(CalculationConstants.PaymentLimits.minimumWithdrawal.formatted(.currency(code: "EUR")))."
             return
         }
 
         if amount > CalculationConstants.PaymentLimits.maximumWithdrawal {
-            errorMessage = "Der Maximalbetrag für Auszahlungen beträgt \(CalculationConstants.PaymentLimits.maximumWithdrawal.formatted(.currency(code: "EUR")))."
+            self.errorMessage = "Der Maximalbetrag für Auszahlungen beträgt \(CalculationConstants.PaymentLimits.maximumWithdrawal.formatted(.currency(code: "EUR")))."
             return
         }
 
         // Check if withdrawal is allowed
         do {
-            guard try await paymentService.canWithdraw(amount: amount) else {
-                errorMessage = "Unzureichendes Guthaben für diese Auszahlung."
+            guard try await self.paymentService.canWithdraw(amount: amount) else {
+                self.errorMessage = "Unzureichendes Guthaben für diese Auszahlung."
                 return
             }
         } catch {
-            errorMessage = "Fehler bei der Überprüfung: \(error.localizedDescription)"
+            self.errorMessage = "Fehler bei der Überprüfung: \(error.localizedDescription)"
             return
         }
 
-        isLoading = true
-        errorMessage = nil
+        self.isLoading = true
+        self.errorMessage = nil
 
         defer {
             isLoading = false
@@ -318,49 +318,49 @@ final class WalletViewModel: ObservableObject {
             let transaction = try await paymentService.withdraw(amount: amount)
 
             // Clear input and close sheet
-            withdrawalAmount = ""
-            showWithdrawalSheet = false
+            self.withdrawalAmount = ""
+            self.showWithdrawalSheet = false
 
             // Show success message
-            successMessage = "Auszahlung von \(amount.formatted(.currency(code: "EUR"))) erfolgreich!"
-            showSuccessMessage = true
+            self.successMessage = "Auszahlung von \(amount.formatted(.currency(code: "EUR"))) erfolgreich!"
+            self.showSuccessMessage = true
 
             // Hide success message after 3 seconds
             Task {
                 try? await Task.sleep(nanoseconds: 3_000_000_000)
                 await MainActor.run {
-                    showSuccessMessage = false
+                    self.showSuccessMessage = false
                 }
             }
 
             // Reload data
-            await loadWalletData()
+            await self.loadWalletData()
 
-            logger.info("✅ Withdrawal successful: \(transaction.id)")
+            self.logger.info("✅ Withdrawal successful: \(transaction.id)")
         } catch {
-            errorMessage = error.localizedDescription
-            logger.error("Withdrawal failed: \(error.localizedDescription)")
+            self.errorMessage = error.localizedDescription
+            self.logger.error("Withdrawal failed: \(error.localizedDescription)")
         }
     }
 
     // MARK: - Private Methods
 
     private func updateBalance(_ balance: Double) {
-        currentBalance = balance
-        formattedBalance = balance.formatted(.currency(code: "EUR"))
+        self.currentBalance = balance
+        self.formattedBalance = balance.formatted(.currency(code: "EUR"))
     }
 
     private func loadTransactionHistory() async {
         do {
             let history = try await paymentService.getTransactionHistory(limit: 50, offset: 0)
             await MainActor.run {
-                transactions = history
+                self.transactions = history
             }
         } catch {
-            logger.error("Failed to load transaction history: \(error.localizedDescription)")
+            self.logger.error("Failed to load transaction history: \(error.localizedDescription)")
             // Don't show error to user, just log it
             await MainActor.run {
-                transactions = []
+                self.transactions = []
             }
         }
     }

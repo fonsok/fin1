@@ -1,5 +1,5 @@
-import SwiftUI
 import Combine
+import SwiftUI
 
 struct MarketDataRow: View {
     let underlyingAsset: String
@@ -8,7 +8,7 @@ struct MarketDataRow: View {
     @State private var cancellables = Set<AnyCancellable>()
 
     var body: some View {
-        let displayData = marketData ?? getStaticMarketData(for: underlyingAsset)
+        let displayData = self.marketData ?? self.getStaticMarketData(for: self.underlyingAsset)
 
         HStack(spacing: ResponsiveDesign.spacing(0)) {
             Text(displayData.price)
@@ -45,8 +45,8 @@ struct MarketDataRow: View {
         }
         .padding(.leading, ResponsiveDesign.spacing(12))
         .onAppear {
-            setupMarketDataObserver()
-            loadMarketData()
+            self.setupMarketDataObserver()
+            self.loadMarketData()
         }
     }
     
@@ -64,20 +64,20 @@ struct MarketDataRow: View {
                 // Update market data
                 if let marketDataService = services.marketDataService,
                    let updatedData = marketDataService.getMarketData(for: symbol) {
-                    marketData = updatedData
+                    self.marketData = updatedData
                 }
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
     }
     
     private func loadMarketData() {
         // Try to get live market data first
         if let marketDataService = services.marketDataService,
            let liveData = marketDataService.getMarketData(for: underlyingAsset) {
-            marketData = liveData
+            self.marketData = liveData
         } else {
             // Fallback to static data
-            marketData = getStaticMarketData(for: underlyingAsset)
+            self.marketData = self.getStaticMarketData(for: self.underlyingAsset)
         }
     }
 

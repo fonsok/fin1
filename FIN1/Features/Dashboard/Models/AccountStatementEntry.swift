@@ -79,12 +79,12 @@ struct AccountStatementEntry: Identifiable, Hashable {
     // MARK: - Computed Properties
 
     var signedAmount: Double {
-        amount * direction.multiplier
+        self.amount * self.direction.multiplier
     }
 
-    var postingDate: Date { occurredAt }
+    var postingDate: Date { self.occurredAt }
 
-    var valueDateOrPosting: Date { valueDate ?? occurredAt }
+    var valueDateOrPosting: Date { self.valueDate ?? self.occurredAt }
 
     var hasDocumentReference: Bool {
         let hasDirectId = !(referenceDocumentId ?? "").isEmpty

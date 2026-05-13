@@ -10,15 +10,15 @@ protocol FAQContentServiceProtocol {
 
 extension FAQContentServiceProtocol {
     func fetchFAQsForHelpCenter() async throws -> [FAQContentItem] {
-        try await fetchFAQsForHelpCenter(userRole: nil)
+        try await self.fetchFAQsForHelpCenter(userRole: nil)
     }
 
     func fetchFAQCategories(location: String) async throws -> [FAQCategoryContent] {
-        try await fetchFAQCategories(location: location, userRole: nil)
+        try await self.fetchFAQCategories(location: location, userRole: nil)
     }
 
     func clearCache() async {
-        await clearCache(location: nil, userRole: nil)
+        await self.clearCache(location: nil, userRole: nil)
     }
 }
 
@@ -111,11 +111,11 @@ final class FAQContentService: FAQContentServiceProtocol {
     }
 
     func fetchFAQsForHelpCenter(userRole: String? = nil) async throws -> [FAQContentItem] {
-        try await fetchFAQsFilteredByLocation(location: "help_center", userRole: userRole)
+        try await self.fetchFAQsFilteredByLocation(location: "help_center", userRole: userRole)
     }
 
     func fetchFAQsForLanding() async throws -> [FAQContentItem] {
-        try await fetchFAQsFilteredByLocation(location: "landing", userRole: nil)
+        try await self.fetchFAQsFilteredByLocation(location: "landing", userRole: nil)
     }
 
     // MARK: - Internals
@@ -141,8 +141,8 @@ final class FAQContentService: FAQContentServiceProtocol {
             guard let categoryId = faq.categoryId, allowedCategoryIds.contains(categoryId) else { return nil }
 
             let id = (faq.faqId?.trimmingCharacters(in: .whitespacesAndNewlines)).flatMap { $0.isEmpty ? nil : $0 } ?? faq.objectId
-            let question = replacePlaceholders(in: faq.question ?? "")
-            let answer = replacePlaceholders(in: faq.answer ?? "")
+            let question = self.replacePlaceholders(in: faq.question ?? "")
+            let answer = self.replacePlaceholders(in: faq.answer ?? "")
             if question.isEmpty || answer.isEmpty { return nil }
 
             let item = FAQContentItem(
@@ -170,18 +170,18 @@ final class FAQContentService: FAQContentServiceProtocol {
     private func replacePlaceholders(in text: String) -> String {
         guard !text.isEmpty else { return text }
 
-        let appServiceChargeRate = configurationService?.appServiceChargeRate
+        let appServiceChargeRate = self.configurationService?.appServiceChargeRate
             ?? CalculationConstants.ServiceCharges.appServiceChargeRate
-        let traderCommissionRate = configurationService?.effectiveCommissionRate
+        let traderCommissionRate = self.configurationService?.effectiveCommissionRate
             ?? CalculationConstants.FeeRates.traderCommissionRate
 
         let replacements: [String: String] = [
             "APP_NAME": AppBrand.appName,
             "LEGAL_PLATFORM_NAME": LegalIdentity.platformName,
-            "APP_SERVICE_CHARGE_RATE": formatPercentDE(appServiceChargeRate),
-            "PLATFORM_SERVICE_CHARGE_RATE": formatPercentDE(appServiceChargeRate),
-            "PLATFORM_FEE_RATE": formatPercentDE(appServiceChargeRate),
-            "TRADER_COMMISSION_RATE": formatPercentDE(traderCommissionRate)
+            "APP_SERVICE_CHARGE_RATE": self.formatPercentDE(appServiceChargeRate),
+            "PLATFORM_SERVICE_CHARGE_RATE": self.formatPercentDE(appServiceChargeRate),
+            "PLATFORM_FEE_RATE": self.formatPercentDE(appServiceChargeRate),
+            "TRADER_COMMISSION_RATE": self.formatPercentDE(traderCommissionRate)
         ]
 
         let pattern = #"\{\{([A-Z0-9_]+)\}\}|\{\(([A-Z0-9_]+)\)\}"#
@@ -228,21 +228,21 @@ final class FAQContentService: FAQContentServiceProtocol {
 
     private func categoriesCacheKey(location: String, userRole: String?) -> String {
         let suffix = userRole ?? "all"
-        return "FIN1.faq.categories.v3.\(location).\(suffix).\(financialCacheSignature)"
+        return "FIN1.faq.categories.v3.\(location).\(suffix).\(self.financialCacheSignature)"
     }
 
     private func faqsCacheKey(location: String, userRole: String?) -> String {
         let suffix = userRole ?? "all"
-        return "FIN1.faq.faqs.v3.\(location).\(suffix).\(financialCacheSignature)"
+        return "FIN1.faq.faqs.v3.\(location).\(suffix).\(self.financialCacheSignature)"
     }
 
     /// Tie FAQ cache keys to financial fee configuration so percentage text updates
     /// are reflected immediately after admin approvals instead of serving stale hydrated FAQ strings.
     private var financialCacheSignature: String {
-        let appRate = configurationService?.appServiceChargeRate
+        let appRate = self.configurationService?.appServiceChargeRate
             ?? CalculationConstants.ServiceCharges.appServiceChargeRate
-        let traderRate = configurationService?.effectiveCommissionRate ?? 0.0
-        return "app\(normalizedRateFragment(appRate))-trader\(normalizedRateFragment(traderRate))"
+        let traderRate = self.configurationService?.effectiveCommissionRate ?? 0.0
+        return "app\(self.normalizedRateFragment(appRate))-trader\(self.normalizedRateFragment(traderRate))"
     }
 
     private func normalizedRateFragment(_ value: Double) -> String {
@@ -251,19 +251,19 @@ final class FAQContentService: FAQContentServiceProtocol {
     }
 
     private func isFresh(_ date: Date) -> Bool {
-        Date().timeIntervalSince(date) < cacheTTL
+        Date().timeIntervalSince(date) < self.cacheTTL
     }
 
     func clearCache(location: String? = nil, userRole: String? = nil) async {
         let locations = location.map { [$0] } ?? ["landing", "help_center", "csr"]
         for loc in locations {
-            userDefaults.removeObject(forKey: categoriesCacheKey(location: loc, userRole: userRole))
-            userDefaults.removeObject(forKey: faqsCacheKey(location: loc, userRole: userRole))
+            self.userDefaults.removeObject(forKey: self.categoriesCacheKey(location: loc, userRole: userRole))
+            self.userDefaults.removeObject(forKey: self.faqsCacheKey(location: loc, userRole: userRole))
         }
     }
 
     private func fetchRawCategories(location: String, userRole: String? = nil, forceRefresh: Bool = false) async throws -> [ParseFAQCategory] {
-        let key = categoriesCacheKey(location: location, userRole: userRole)
+        let key = self.categoriesCacheKey(location: location, userRole: userRole)
         if !forceRefresh,
            let data = userDefaults.data(forKey: key),
            let cached = try? JSONDecoder().decode(CachedCategories.self, from: data),
@@ -284,13 +284,13 @@ final class FAQContentService: FAQContentServiceProtocol {
 
         let cached = CachedCategories(categories: res.categories, cachedAt: Date())
         if let data = try? JSONEncoder().encode(cached) {
-            userDefaults.set(data, forKey: key)
+            self.userDefaults.set(data, forKey: key)
         }
         return res.categories
     }
 
     private func fetchRawFAQs(location: String, userRole: String? = nil, forceRefresh: Bool = false) async throws -> [ParseFAQ] {
-        let key = faqsCacheKey(location: location, userRole: userRole)
+        let key = self.faqsCacheKey(location: location, userRole: userRole)
         if !forceRefresh,
            let data = userDefaults.data(forKey: key),
            let cached = try? JSONDecoder().decode(CachedFAQs.self, from: data),
@@ -314,7 +314,7 @@ final class FAQContentService: FAQContentServiceProtocol {
 
         let cached = CachedFAQs(faqs: res.faqs, cachedAt: Date())
         if let data = try? JSONEncoder().encode(cached) {
-            userDefaults.set(data, forKey: key)
+            self.userDefaults.set(data, forKey: key)
         }
         return res.faqs
     }
@@ -349,11 +349,11 @@ final class FAQContentService: FAQContentServiceProtocol {
     }
 
     func fetchFAQsForLandingFresh() async throws -> [FAQContentItem] {
-        try await fetchFAQsFilteredByLocationFresh(location: "landing", userRole: nil)
+        try await self.fetchFAQsFilteredByLocationFresh(location: "landing", userRole: nil)
     }
 
     func fetchFAQsForHelpCenterFresh(userRole: String? = nil) async throws -> [FAQContentItem] {
-        try await fetchFAQsFilteredByLocationFresh(location: "help_center", userRole: userRole)
+        try await self.fetchFAQsFilteredByLocationFresh(location: "help_center", userRole: userRole)
     }
 
     private func fetchFAQsFilteredByLocationFresh(location: String, userRole: String? = nil) async throws -> [FAQContentItem] {
@@ -374,8 +374,8 @@ final class FAQContentService: FAQContentServiceProtocol {
             guard let categoryId = faq.categoryId, allowedCategoryIds.contains(categoryId) else { return nil }
 
             let id = (faq.faqId?.trimmingCharacters(in: .whitespacesAndNewlines)).flatMap { $0.isEmpty ? nil : $0 } ?? faq.objectId
-            let question = replacePlaceholders(in: faq.question ?? "")
-            let answer = replacePlaceholders(in: faq.answer ?? "")
+            let question = self.replacePlaceholders(in: faq.question ?? "")
+            let answer = self.replacePlaceholders(in: faq.answer ?? "")
             if question.isEmpty || answer.isEmpty { return nil }
 
             let item = FAQContentItem(

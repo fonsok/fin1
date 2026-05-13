@@ -78,8 +78,8 @@ struct InvestmentsReservedSectionView: View {
 
                 Spacer()
 
-                if !reservedInvestmentRows.isEmpty {
-                    Text("Σ \(totalReservedAmount.formattedAsLocalizedCurrency())")
+                if !self.reservedInvestmentRows.isEmpty {
+                    Text("Σ \(self.totalReservedAmount.formattedAsLocalizedCurrency())")
                         .font(ResponsiveDesign.headlineFont())
                         .foregroundColor(AppTheme.secondaryText)
                 }
@@ -91,15 +91,15 @@ struct InvestmentsReservedSectionView: View {
                 .foregroundColor(AppTheme.secondaryText)
                 .padding(.horizontal, ResponsiveDesign.horizontalPadding())
 
-            if !reservedInvestmentRows.isEmpty {
-                ForEach(sortedTraderNames, id: \.self) { traderName in
-                    let traderInvestments = groupedInvestments[traderName] ?? []
+            if !self.reservedInvestmentRows.isEmpty {
+                ForEach(self.sortedTraderNames, id: \.self) { traderName in
+                    let traderInvestments = self.groupedInvestments[traderName] ?? []
                     if let firstInvestment = traderInvestments.first {
                         let traderUsername = InvestmentsTraderDisplay.usernameLine(
-                            traderDataService: traderDataService,
+                            traderDataService: self.traderDataService,
                             firstRow: firstInvestment
                         )
-                        traderGroupHeader(username: traderUsername, count: traderInvestments.count)
+                        self.traderGroupHeader(username: traderUsername, count: traderInvestments.count)
                             .padding(.top, ResponsiveDesign.spacing(4))
 
                         VStack(spacing: ResponsiveDesign.spacing(0)) {
@@ -112,12 +112,12 @@ struct InvestmentsReservedSectionView: View {
 
                             OpenInvestmentsTable(
                                 pools: traderInvestments,
-                                columnWidths: $columnWidths,
+                                columnWidths: self.$columnWidths,
                                 totalAmount: traderTotalAmount,
                                 totalProfit: traderTotalProfit,
                                 totalReturn: traderTotalReturn,
-                                onDeleteInvestment: onDeleteInvestment,
-                                onShowStatusInfo: onShowStatusInfo
+                                onDeleteInvestment: self.onDeleteInvestment,
+                                onShowStatusInfo: self.onShowStatusInfo
                             )
                         }
                         .background(AppTheme.sectionBackground)
@@ -172,12 +172,12 @@ struct InvestmentsActiveSectionView: View {
                 .foregroundColor(AppTheme.secondaryText)
                 .padding(.horizontal, ResponsiveDesign.horizontalPadding())
 
-            if !activeInvestmentRows.isEmpty {
-                ForEach(sortedTraderNames, id: \.self) { traderName in
-                    let traderInvestments = groupedInvestments[traderName] ?? []
+            if !self.activeInvestmentRows.isEmpty {
+                ForEach(self.sortedTraderNames, id: \.self) { traderName in
+                    let traderInvestments = self.groupedInvestments[traderName] ?? []
                     if let firstInvestment = traderInvestments.first {
                         let traderUsername = InvestmentsTraderDisplay.usernameLine(
-                            traderDataService: traderDataService,
+                            traderDataService: self.traderDataService,
                             firstRow: firstInvestment
                         )
                         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(2)) {
@@ -203,12 +203,12 @@ struct InvestmentsActiveSectionView: View {
 
                             OpenInvestmentsTable(
                                 pools: traderInvestments,
-                                columnWidths: $columnWidths,
+                                columnWidths: self.$columnWidths,
                                 totalAmount: traderTotalAmount,
                                 totalProfit: traderTotalProfit,
                                 totalReturn: traderTotalReturn,
-                                onDeleteInvestment: onDeleteInvestment,
-                                onShowStatusInfo: onShowStatusInfo
+                                onDeleteInvestment: self.onDeleteInvestment,
+                                onShowStatusInfo: self.onShowStatusInfo
                             )
                         }
                         .background(AppTheme.sectionBackground)
@@ -248,22 +248,22 @@ struct InvestmentsCompletedSectionView: View {
                 .padding(.horizontal, ResponsiveDesign.horizontalPadding())
 
             InvestmentsTimePeriodHeaderView(
-                selectedTimePeriod: $selectedTimePeriod,
-                onTimePeriodChanged: onTimePeriodChanged
+                selectedTimePeriod: self.$selectedTimePeriod,
+                onTimePeriodChanged: self.onTimePeriodChanged
             )
 
-            if !completedInvestmentsByTimePeriod.isEmpty {
+            if !self.completedInvestmentsByTimePeriod.isEmpty {
                 CompletedInvestmentsTable(
-                    investments: completedInvestmentsByTimePeriod,
-                    investmentDocRefs: completedInvestmentDocRefs,
-                    traderUsernames: completedTraderUsernames,
-                    tradeNumbers: completedTradeNumbers,
-                    investmentSummaries: completedInvestmentSummaries,
-                    canonicalSummaries: completedCanonicalSummaries,
-                    onShowDetails: onShowDetails
+                    investments: self.completedInvestmentsByTimePeriod,
+                    investmentDocRefs: self.completedInvestmentDocRefs,
+                    traderUsernames: self.completedTraderUsernames,
+                    tradeNumbers: self.completedTradeNumbers,
+                    investmentSummaries: self.completedInvestmentSummaries,
+                    canonicalSummaries: self.completedCanonicalSummaries,
+                    onShowDetails: self.onShowDetails
                 )
             } else {
-                emptyState
+                self.emptyState
             }
         }
         .padding(.top, ResponsiveDesign.spacing(4))
@@ -271,7 +271,7 @@ struct InvestmentsCompletedSectionView: View {
 
     private var emptyState: some View {
         VStack(spacing: ResponsiveDesign.spacing(8)) {
-            if allCompletedCount == 0 {
+            if self.allCompletedCount == 0 {
                 VStack(spacing: ResponsiveDesign.spacing(4)) {
                     Image(systemName: "tray")
                         .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2))
@@ -292,7 +292,7 @@ struct InvestmentsCompletedSectionView: View {
                         .font(ResponsiveDesign.headlineFont())
                         .foregroundColor(AppTheme.secondaryText)
 
-                    Text("Total completed: \(allCompletedCount)")
+                    Text("Total completed: \(self.allCompletedCount)")
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(AppTheme.tertiaryText)
 

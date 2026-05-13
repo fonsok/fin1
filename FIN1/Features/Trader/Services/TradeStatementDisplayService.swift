@@ -1,5 +1,5 @@
-import SwiftUI
 import Foundation
+import SwiftUI
 
 // MARK: - Display Service Protocol
 
@@ -110,28 +110,28 @@ final class TradeStatementDisplayService: TradeStatementDisplayServiceProtocol {
             hasSellTransaction: !sellTransactions.isEmpty,
 
             // Buy transaction properties
-            buyTransactionNumber: getBuyTransactionNumber(buyTransaction, trade: trade),
-            buyOrderVolume: getBuyOrderVolume(buyTransaction),
-            buyExecutedVolume: getBuyExecutedVolume(buyTransaction),
-            buyPrice: getBuyPrice(buyTransaction),
-            buyExchangeRate: getBuyExchangeRate(buyTransaction),
-            buyConversionFactor: getBuyConversionFactor(buyTransaction),
-            buyCustodyType: getBuyCustodyType(buyTransaction),
-            buyDepository: getBuyDepository(buyTransaction),
-            buyDepositoryCountry: getBuyDepositoryCountry(buyTransaction),
-            buyProfitLoss: getBuyProfitLoss(buyTransaction),
-            buyProfitLossColor: getBuyProfitLossColor(buyTransaction),
-            buyValueDate: getBuyValueDate(buyTransaction),
-            buyTradingVenue: getBuyTradingVenue(buyTransaction),
-            buyClosingDate: getBuyClosingDate(buyTransaction),
-            buyMarketValue: getBuyMarketValue(buyTransaction),
-            buyCommission: getBuyCommission(buyTransaction),
-            buyOwnExpenses: getBuyOwnExpenses(buyTransaction),
-            buyExternalExpenses: getBuyExternalExpenses(buyTransaction),
-            buyAssessmentBasis: getBuyAssessmentBasis(buyTransaction),
-            buyWithheldTax: getBuyWithheldTax(buyTransaction),
-            buyFinalAmount: getBuyFinalAmount(buyTransaction),
-            buyFinalAmountColor: getBuyFinalAmountColor(buyTransaction),
+            buyTransactionNumber: self.getBuyTransactionNumber(buyTransaction, trade: trade),
+            buyOrderVolume: self.getBuyOrderVolume(buyTransaction),
+            buyExecutedVolume: self.getBuyExecutedVolume(buyTransaction),
+            buyPrice: self.getBuyPrice(buyTransaction),
+            buyExchangeRate: self.getBuyExchangeRate(buyTransaction),
+            buyConversionFactor: self.getBuyConversionFactor(buyTransaction),
+            buyCustodyType: self.getBuyCustodyType(buyTransaction),
+            buyDepository: self.getBuyDepository(buyTransaction),
+            buyDepositoryCountry: self.getBuyDepositoryCountry(buyTransaction),
+            buyProfitLoss: self.getBuyProfitLoss(buyTransaction),
+            buyProfitLossColor: self.getBuyProfitLossColor(buyTransaction),
+            buyValueDate: self.getBuyValueDate(buyTransaction),
+            buyTradingVenue: self.getBuyTradingVenue(buyTransaction),
+            buyClosingDate: self.getBuyClosingDate(buyTransaction),
+            buyMarketValue: self.getBuyMarketValue(buyTransaction),
+            buyCommission: self.getBuyCommission(buyTransaction),
+            buyOwnExpenses: self.getBuyOwnExpenses(buyTransaction),
+            buyExternalExpenses: self.getBuyExternalExpenses(buyTransaction),
+            buyAssessmentBasis: self.getBuyAssessmentBasis(buyTransaction),
+            buyWithheldTax: self.getBuyWithheldTax(buyTransaction),
+            buyFinalAmount: self.getBuyFinalAmount(buyTransaction),
+            buyFinalAmountColor: self.getBuyFinalAmountColor(buyTransaction),
 
             // Sell transaction properties (legacy - first sell order)
             sellTransactionNumber: firstSellTransaction?.transactionNumber ?? "\(trade.tradeNumber)/2",
@@ -144,7 +144,9 @@ final class TradeStatementDisplayService: TradeStatementDisplayServiceProtocol {
             sellDepository: firstSellTransaction?.depository ?? "Clearstream Nat.",
             sellDepositoryCountry: firstSellTransaction?.depositoryCountry ?? "Deutschland",
             sellProfitLoss: firstSellTransaction?.profitLoss ?? trade.profitLoss.formatted(.currency(code: "EUR")),
-            sellProfitLossColor: colorFromString(firstSellTransaction?.profitLossColor ?? (trade.profitLoss >= 0 ? "fin1AccentGreen" : "fin1AccentRed")),
+            sellProfitLossColor: self.colorFromString(
+                firstSellTransaction?.profitLossColor ?? (trade.profitLoss >= 0 ? "fin1AccentGreen" : "fin1AccentRed")
+            ),
             sellValueDate: firstSellTransaction?.valueDate ?? "",
             sellTradingVenue: firstSellTransaction?.tradingVenue ?? TradeStatementPlaceholders.tradingVenue,
             sellClosingDate: firstSellTransaction?.closingDate ?? "",
@@ -155,19 +157,19 @@ final class TradeStatementDisplayService: TradeStatementDisplayServiceProtocol {
             sellAssessmentBasis: firstSellTransaction?.assessmentBasis ?? "0,00 EUR",
             sellWithheldTax: firstSellTransaction?.withheldTax ?? "0,00 EUR",
             sellFinalAmount: firstSellTransaction?.finalAmount ?? "53,53 EUR",
-            sellFinalAmountColor: colorFromString(firstSellTransaction?.finalAmountColor ?? "fin1AccentGreen"),
+            sellFinalAmountColor: self.colorFromString(firstSellTransaction?.finalAmountColor ?? "fin1AccentGreen"),
 
             // Summary properties
             totalAssessmentBasis: displayData.taxSummary.assessmentBasis,
             totalTaxAmount: displayData.taxSummary.totalTax,
             netResult: displayData.taxSummary.netResult,
-            netResultColor: colorFromString(displayData.taxSummary.netResultColor),
+            netResultColor: self.colorFromString(displayData.taxSummary.netResultColor),
 
             // Items
             calculationBreakdown: displayData.calculationBreakdown,
             feeItems: displayData.fees,
             taxItems: displayData.taxes,
-            sellOrderData: buildSellOrderData(from: displayData.sellInvoices, trade: trade)
+            sellOrderData: self.buildSellOrderData(from: displayData.sellInvoices, trade: trade)
         )
     }
 
@@ -231,7 +233,7 @@ final class TradeStatementDisplayService: TradeStatementDisplayServiceProtocol {
     }
 
     private func getBuyProfitLossColor(_ buyTransaction: BuyTransactionData?) -> Color {
-        return colorFromString(buyTransaction?.profitLossColor ?? "fin1FontColor")
+        return self.colorFromString(buyTransaction?.profitLossColor ?? "fin1FontColor")
     }
 
     private func getBuyValueDate(_ buyTransaction: BuyTransactionData?) -> String {
@@ -275,7 +277,7 @@ final class TradeStatementDisplayService: TradeStatementDisplayServiceProtocol {
     }
 
     private func getBuyFinalAmountColor(_ buyTransaction: BuyTransactionData?) -> Color {
-        return colorFromString(buyTransaction?.finalAmountColor ?? "fin1AccentRed")
+        return self.colorFromString(buyTransaction?.finalAmountColor ?? "fin1AccentRed")
     }
 
     // MARK: - Sell Order Data Builder

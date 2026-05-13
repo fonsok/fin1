@@ -6,35 +6,35 @@ struct DataCell: View {
     let row: TableRowData
 
     var body: some View {
-        if column.id == "trader" {
+        if self.column.id == "trader" {
             // Special handling for trader name (clickable)
             Button(action: {
-                row.onTap?()
+                self.row.onTap?()
             }) {
-                Text(row.cells[column.id] ?? "")
-                    .font(tableDataFont)
+                Text(self.row.cells[self.column.id] ?? "")
+                    .font(self.tableDataFont)
                     .fontWeight(.regular)
                     .foregroundColor(AppTheme.accentLightBlue)
-                    .frame(maxWidth: .infinity, alignment: column.alignment)
+                    .frame(maxWidth: .infinity, alignment: self.column.alignment)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
                     .contentShape(Rectangle())
             }
             .buttonStyle(PlainButtonStyle())
         } else {
-            Text(row.cells[column.id] ?? "")
-                .font(tableDataFont)
-                .fontWeight((column.id == "return" || column.id == "returnLastTrade") ? .medium : .regular)
-                .foregroundColor(cellColor)
-                .frame(maxWidth: .infinity, alignment: column.alignment)
+            Text(self.row.cells[self.column.id] ?? "")
+                .font(self.tableDataFont)
+                .fontWeight((self.column.id == "return" || self.column.id == "returnLastTrade") ? .medium : .regular)
+                .foregroundColor(self.cellColor)
+                .frame(maxWidth: .infinity, alignment: self.column.alignment)
                 .minimumScaleFactor(0.8)
                 .lineLimit(nil)
         }
     }
 
     private var cellColor: Color {
-        if column.id == "return" || column.id == "returnLastTrade" {
-            return (row.isPositive ?? true) ? AppTheme.accentGreen : AppTheme.accentRed
+        if self.column.id == "return" || self.column.id == "returnLastTrade" {
+            return (self.row.isPositive ?? true) ? AppTheme.accentGreen : AppTheme.accentRed
         }
         return AppTheme.fontColor.opacity(0.8)
     }
@@ -56,12 +56,12 @@ struct TableRowCell: View {
     let row: TableRowData
 
     var body: some View {
-        DataCell(column: column, row: row)
-            .frame(width: columnWidth, alignment: column.alignment)
+        DataCell(column: self.column, row: self.row)
+            .frame(width: self.columnWidth, alignment: self.column.alignment)
     }
 
     private var columnWidth: CGFloat? {
-        switch column.width {
+        switch self.column.width {
         case .flexible:
             return nil
         case .fixed(let width):
@@ -77,13 +77,13 @@ struct TableRowView: View {
 
     var body: some View {
         Button(action: {
-            row.onTap?()
+            self.row.onTap?()
         }) {
             HStack(spacing: ResponsiveDesign.spacing(0)) {
-                ForEach(columns, id: \.id) { column in
+                ForEach(self.columns, id: \.id) { column in
                     TableRowCell(
                         column: column,
-                        row: row
+                        row: self.row
                     )
                 }
             }

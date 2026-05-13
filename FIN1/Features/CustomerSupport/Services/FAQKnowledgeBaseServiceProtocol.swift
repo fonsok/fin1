@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - FAQ Knowledge Base Service Protocol
 /// Defines the contract for FAQ knowledge base operations

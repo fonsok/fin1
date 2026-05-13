@@ -6,12 +6,12 @@ struct RoundingDifferencesAdminView: View {
     var body: some View {
         List {
             Section(header: Text("Unreconciled")) {
-                if viewModel.unreconciledDifferences.isEmpty {
+                if self.viewModel.unreconciledDifferences.isEmpty {
                     Text("No rounding differences")
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(AppTheme.fontColor.opacity(0.7))
                 } else {
-                    ForEach(viewModel.unreconciledDifferences) { item in
+                    ForEach(self.viewModel.unreconciledDifferences) { item in
                         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
                             Text(item.transactionType.rawValue.replacingOccurrences(of: "_", with: " "))
                                 .font(ResponsiveDesign.headlineFont())
@@ -37,8 +37,8 @@ struct RoundingDifferencesAdminView: View {
                 HStack {
                     Text("Total Balance")
                     Spacer()
-                    Text(viewModel.totalRoundingBalance, format: .currency(code: "EUR"))
-                        .foregroundColor(viewModel.totalRoundingBalance >= 0 ? AppTheme.accentGreen : AppTheme.accentRed)
+                    Text(self.viewModel.totalRoundingBalance, format: .currency(code: "EUR"))
+                        .foregroundColor(self.viewModel.totalRoundingBalance >= 0 ? AppTheme.accentGreen : AppTheme.accentRed)
                 }
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor)
@@ -48,12 +48,12 @@ struct RoundingDifferencesAdminView: View {
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button("Reconcile All") {
-                    Task { await viewModel.reconcileAll() }
+                    Task { await self.viewModel.reconcileAll() }
                 }
-                .disabled(viewModel.unreconciledDifferences.isEmpty)
+                .disabled(self.viewModel.unreconciledDifferences.isEmpty)
             }
         }
-        .task { await viewModel.load() }
+        .task { await self.viewModel.load() }
         .background(AppTheme.screenBackground)
     }
 }

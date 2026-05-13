@@ -10,7 +10,7 @@ struct RiskClassificationNoteStep: View {
 
     // Ensure the view is reactive to finalRiskClass changes
     private var currentRiskClass: RiskClass {
-        return signUpData.finalRiskClass
+        return self.signUpData.finalRiskClass
     }
 
     var body: some View {
@@ -25,7 +25,7 @@ struct RiskClassificationNoteStep: View {
             }
 
             // Main content based on risk class
-            if currentRiskClass == .riskClass7 {
+            if self.currentRiskClass == .riskClass7 {
                 // Risk Class 7 - User can proceed
                 VStack(spacing: ResponsiveDesign.spacing(20)) {
                     HStack {
@@ -34,7 +34,7 @@ struct RiskClassificationNoteStep: View {
                             .font(ResponsiveDesign.titleFont())
 
                         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
-                            Text("Ihre Risikoklasse beträgt \(currentRiskClass.shortName).")
+                            Text("Ihre Risikoklasse beträgt \(self.currentRiskClass.shortName).")
                                 .font(ResponsiveDesign.headlineFont())
                                 .foregroundColor(AppTheme.fontColor)
 
@@ -63,14 +63,16 @@ struct RiskClassificationNoteStep: View {
                             .font(ResponsiveDesign.titleFont())
 
                         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
-                            Text("Ihre Risikoklasse beträgt \(currentRiskClass.shortName).")
+                            Text("Ihre Risikoklasse beträgt \(self.currentRiskClass.shortName).")
                                 .font(ResponsiveDesign.headlineFont())
                                 .foregroundColor(AppTheme.fontColor)
 
-                            Text("Für Ihr Risikoprofil empfeh-\nlen wir Ihnen eine klassische Vermögensverwaltung oder  Investmentfond/Vermögensverwaltung XYZ")
-                                .font(ResponsiveDesign.bodyFont())
-                                .foregroundColor(AppTheme.fontColor.opacity(0.8))
-                                .multilineTextAlignment(.leading)
+                            Text(
+                                "Für Ihr Risikoprofil empfeh-\nlen wir Ihnen eine klassische Vermögensverwaltung oder  Investmentfond/Vermögensverwaltung XYZ"
+                            )
+                            .font(ResponsiveDesign.bodyFont())
+                            .foregroundColor(AppTheme.fontColor.opacity(0.8))
+                            .multilineTextAlignment(.leading)
                         }
 
                         Spacer()
@@ -83,40 +85,41 @@ struct RiskClassificationNoteStep: View {
                             .stroke(AppTheme.accentOrange.opacity(0.3), lineWidth: 1)
                     )
 
-                // Additional information for risk classes 4, 5, or 6
-                if [.riskClass4, .riskClass5, .riskClass6].contains(currentRiskClass) {
-                    VStack(spacing: ResponsiveDesign.spacing(12)) {
-                        HStack {
-                            Image(systemName: "info.circle.fill")
-                                .foregroundColor(AppTheme.accentLightBlue)
-                                .font(ResponsiveDesign.headlineFont())
+                    // Additional information for risk classes 4, 5, or 6
+                    if [.riskClass4, .riskClass5, .riskClass6].contains(self.currentRiskClass) {
+                        VStack(spacing: ResponsiveDesign.spacing(12)) {
+                            HStack {
+                                Image(systemName: "info.circle.fill")
+                                    .foregroundColor(AppTheme.accentLightBlue)
+                                    .font(ResponsiveDesign.headlineFont())
 
-                            VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
-                                Text("Wenn Sie sich trotzdem für unseren risikoreichen Vermögensaufbau entscheiden (Verlustrisiko bis zu 100 %), brauchen Sie Risikoklasse 7.")
+                                VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
+                                    Text(
+                                        "Wenn Sie sich trotzdem für unseren risikoreichen Vermögensaufbau entscheiden (Verlustrisiko bis zu 100 %), brauchen Sie Risikoklasse 7."
+                                    )
                                     .font(ResponsiveDesign.bodyFont())
                                     .foregroundColor(AppTheme.fontColor.opacity(0.8))
                                     .multilineTextAlignment(.leading)
+                                }
+
+                                Spacer()
                             }
 
-                            Spacer()
+                            Button("Hier können Sie Ihre Risikoklasse ändern.") {
+                                self.showRiskClassSelection = true
+                            }
+                            .foregroundColor(AppTheme.accentLightBlue)
+                            .font(ResponsiveDesign.bodyFont())
+                            .underline()
                         }
-
-                        Button("Hier können Sie Ihre Risikoklasse ändern.") {
-                            showRiskClassSelection = true
-                        }
-                        .foregroundColor(AppTheme.accentLightBlue)
-                        .font(ResponsiveDesign.bodyFont())
-                        .underline()
+                        .padding()
+                        .background(AppTheme.accentLightBlue.opacity(0.1))
+                        .cornerRadius(ResponsiveDesign.spacing(12))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(12))
+                                .stroke(AppTheme.accentLightBlue.opacity(0.3), lineWidth: 1)
+                        )
                     }
-                    .padding()
-                    .background(AppTheme.accentLightBlue.opacity(0.1))
-                    .cornerRadius(ResponsiveDesign.spacing(12))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(12))
-                            .stroke(AppTheme.accentLightBlue.opacity(0.3), lineWidth: 1)
-                    )
-                }
-
                 }
 
                 // Risk class indicator
@@ -128,12 +131,12 @@ struct RiskClassificationNoteStep: View {
                     HStack(spacing: ResponsiveDesign.spacing(4)) {
                         ForEach(1...7, id: \.self) { index in
                             Circle()
-                                .fill(index <= currentRiskClass.rawValue ? currentRiskClass.color : Color.gray.opacity(0.3))
+                                .fill(index <= self.currentRiskClass.rawValue ? self.currentRiskClass.color : Color.gray.opacity(0.3))
                                 .frame(width: 12, height: 12)
                         }
                     }
 
-                    Text(currentRiskClass.displayName)
+                    Text(self.currentRiskClass.displayName)
                         .font(ResponsiveDesign.bodyFont())
                         .fontWeight(.medium)
                         .foregroundColor(AppTheme.fontColor)
@@ -147,10 +150,10 @@ struct RiskClassificationNoteStep: View {
 
             // Action buttons based on risk class
             VStack(spacing: ResponsiveDesign.spacing(16)) {
-                if currentRiskClass == .riskClass7 {
+                if self.currentRiskClass == .riskClass7 {
                     // Risk Class 7 - Complete Registration button
                     Button("Complete Registration") {
-                        coordinator.goToStep(.riskClass7Confirmation)
+                        self.coordinator.goToStep(.riskClass7Confirmation)
                     }
                     .font(ResponsiveDesign.headlineFont())
                     .foregroundColor(AppTheme.fontColor)
@@ -162,7 +165,7 @@ struct RiskClassificationNoteStep: View {
                     // Risk Classes 1-6 - Back to Startpage button
                     Button("Back to Startpage") {
                         // Request dismissal via the coordinator to return to LandingView
-                        coordinator.requestDismissal()
+                        self.coordinator.requestDismissal()
                     }
                     .font(ResponsiveDesign.headlineFont())
                     .foregroundColor(AppTheme.fontColor)
@@ -174,16 +177,16 @@ struct RiskClassificationNoteStep: View {
             }
         }
         .padding(.horizontal, ResponsiveDesign.lightBlueAreaHorizontalPadding())
-        .sheet(isPresented: $showRiskClassSelection) {
+        .sheet(isPresented: self.$showRiskClassSelection) {
             RiskClassSelectionView(
                 selectedRiskClass: Binding(
-                    get: { signUpData.userSelectedRiskClass },
-                    set: { signUpData.userSelectedRiskClass = $0 }
+                    get: { self.signUpData.userSelectedRiskClass },
+                    set: { self.signUpData.userSelectedRiskClass = $0 }
                 ),
-                calculatedRiskClass: signUpData.calculatedRiskClass,
+                calculatedRiskClass: self.signUpData.calculatedRiskClass,
                 onRiskClass7Confirmed: {
                     // Navigate to Risk Class 7 confirmation page when Risk Class 7 is confirmed
-                    coordinator.goToStep(.riskClass7Confirmation)
+                    self.coordinator.goToStep(.riskClass7Confirmation)
                 }
             )
         }

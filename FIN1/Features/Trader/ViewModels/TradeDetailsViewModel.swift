@@ -1,5 +1,5 @@
-import SwiftUI
 import Combine
+import SwiftUI
 
 // MARK: - Trade Details View Model
 
@@ -25,12 +25,12 @@ final class TradeDetailsViewModel: ObservableObject {
     @Published var calculationBreakdown: TradeCalculationService.TransactionBreakdown?
 
     // Derived display fields for the details table
-    var tradeNumberText: String { "\(trade.tradeNumber)" }
+    var tradeNumberText: String { "\(self.trade.tradeNumber)" }
     var gvCurrencyText: String {
-        trade.profitLoss.formatted(.currency(code: "EUR"))
+        self.trade.profitLoss.formatted(.currency(code: "EUR"))
     }
     var gvPercentText: String {
-        trade.returnPercentage.formattedAsROIPercentage() + " "
+        self.trade.returnPercentage.formattedAsROIPercentage() + " "
     }
 
     // MARK: - ROI Calculation Components
@@ -38,53 +38,53 @@ final class TradeDetailsViewModel: ObservableObject {
     /// Numerator for ROI calculation (profit/loss amount)
     var roiNumerator: Double {
         // Use netCashFlow if invoices are loaded, otherwise use trade.profitLoss
-        if buyInvoice != nil || !sellInvoices.isEmpty {
-            return netCashFlow
+        if self.buyInvoice != nil || !self.sellInvoices.isEmpty {
+            return self.netCashFlow
         }
-        return trade.profitLoss
+        return self.trade.profitLoss
     }
 
     /// Denominator for ROI calculation (investment cost)
     var roiDenominator: Double {
         // Use actual buy amount from invoices if available
-        if buyInvoice != nil || !sellInvoices.isEmpty {
-            return abs(buyOrderCashFlow)
+        if self.buyInvoice != nil || !self.sellInvoices.isEmpty {
+            return abs(self.buyOrderCashFlow)
         }
         // Otherwise, calculate from percentage: Investment = Profit / (ROI / 100)
         // ROI is stored as percentage (e.g., 99 for 99%), so we divide by 100
-        guard trade.returnPercentage != 0 else { return 0 }
-        return abs(trade.profitLoss / (trade.returnPercentage / 100))
+        guard self.trade.returnPercentage != 0 else { return 0 }
+        return abs(self.trade.profitLoss / (self.trade.returnPercentage / 100))
     }
 
     /// Formatted ROI numerator (profit/loss)
     var formattedRoiNumerator: String {
-        roiNumerator.formatted(.currency(code: "EUR"))
+        self.roiNumerator.formatted(.currency(code: "EUR"))
     }
 
     /// Formatted ROI denominator (investment cost)
     var formattedRoiDenominator: String {
-        roiDenominator.formatted(.currency(code: "EUR"))
+        self.roiDenominator.formatted(.currency(code: "EUR"))
     }
 
     /// ROI calculation label showing "ROI (Profit: value1 / Investment: value2)"
     var roiCalculationLabel: String {
-        "ROI (Profit: \(formattedRoiNumerator) / Investment: \(formattedRoiDenominator))"
+        "ROI (Profit: \(self.formattedRoiNumerator) / Investment: \(self.formattedRoiDenominator))"
     }
 
     var provisionText: String {
-        trade.commission == 0 ? "-" : trade.commission.formatted(.currency(code: "EUR"))
+        self.trade.commission == 0 ? "-" : self.trade.commission.formatted(.currency(code: "EUR"))
     }
 
     var startDateText: String {
-        trade.startDate.formatted(date: .abbreviated, time: .omitted)
+        self.trade.startDate.formatted(date: .abbreviated, time: .omitted)
     }
 
     var endDateText: String {
-        trade.endDate.formatted(date: .abbreviated, time: .omitted)
+        self.trade.endDate.formatted(date: .abbreviated, time: .omitted)
     }
 
     var statusText: String {
-        trade.statusText
+        self.trade.statusText
     }
 
     // Invoices related
@@ -93,21 +93,21 @@ final class TradeDetailsViewModel: ObservableObject {
     @Published var creditNoteInvoice: Invoice?
 
     var feesAmount: Double {
-        let allInvoices = [buyInvoice].compactMap { $0 } + sellInvoices
+        let allInvoices = [buyInvoice].compactMap { $0 } + self.sellInvoices
         return allInvoices.reduce(0) { $0 + $1.feesTotal }
     }
 
     var taxesAmount: Double {
-        let allInvoices = [buyInvoice].compactMap { $0 } + sellInvoices
+        let allInvoices = [buyInvoice].compactMap { $0 } + self.sellInvoices
         return allInvoices.reduce(0) { $0 + $1.taxTotal }
     }
 
-    var feesText: String { feesAmount == 0 ? "-" : feesAmount.formatted(.currency(code: "EUR")) }
-    var taxesText: String { taxesAmount == 0 ? "-" : taxesAmount.formatted(.currency(code: "EUR")) }
+    var feesText: String { self.feesAmount == 0 ? "-" : self.feesAmount.formatted(.currency(code: "EUR")) }
+    var taxesText: String { self.taxesAmount == 0 ? "-" : self.taxesAmount.formatted(.currency(code: "EUR")) }
 
     // Grouped fee and tax items with summed amounts
     var groupedFeeItems: [(type: InvoiceItemType, amount: Double)] {
-        let allInvoices = [buyInvoice].compactMap { $0 } + sellInvoices
+        let allInvoices = [buyInvoice].compactMap { $0 } + self.sellInvoices
         let items = allInvoices.flatMap { invoice in invoice.items }
         let feeItems = items.filter { item in
             item.itemType == .orderFee || item.itemType == .exchangeFee || item.itemType == .foreignCosts
@@ -122,7 +122,7 @@ final class TradeDetailsViewModel: ObservableObject {
     }
 
     var groupedTaxItems: [(type: InvoiceItemType, amount: Double)] {
-        let allInvoices = [buyInvoice].compactMap { $0 } + sellInvoices
+        let allInvoices = [buyInvoice].compactMap { $0 } + self.sellInvoices
         let taxItems = allInvoices.allTaxItems
 
         // Group by item type and sum amounts
@@ -138,42 +138,42 @@ final class TradeDetailsViewModel: ObservableObject {
     /// Calculates the capital gains tax (Kapitalertragsteuer) at 25%
     var capitalGainsTax: Double {
         // Use the actual cash flow profit (from invoices) for consistent tax calculations
-        let grossProfit = netCashFlow
+        let grossProfit = self.netCashFlow
         return InvoiceTaxCalculator.calculateCapitalGainsTax(for: grossProfit)
     }
 
     /// Calculates the solidarity surcharge at 5.5% of capital gains tax
     var solidaritySurcharge: Double {
-        return InvoiceTaxCalculator.calculateSolidaritySurcharge(for: capitalGainsTax)
+        return InvoiceTaxCalculator.calculateSolidaritySurcharge(for: self.capitalGainsTax)
     }
 
     /// Calculates the church tax (Kirchensteuer) at 8% of capital gains tax
     var churchTax: Double {
-        return InvoiceTaxCalculator.calculateChurchTax(for: capitalGainsTax)
+        return InvoiceTaxCalculator.calculateChurchTax(for: self.capitalGainsTax)
     }
 
     /// Total tax amount
     var totalTaxAmount: Double {
         // Use the actual cash flow profit (from invoices) for consistent tax calculations
-        let grossProfit = netCashFlow
-        return calculationGuardService.guardTaxCalculation(profit: grossProfit)
+        let grossProfit = self.netCashFlow
+        return self.calculationGuardService.guardTaxCalculation(profit: grossProfit)
     }
 
     /// Formatted tax amounts
     var formattedCapitalGainsTax: String {
-        capitalGainsTax.formatted(.currency(code: "EUR"))
+        self.capitalGainsTax.formatted(.currency(code: "EUR"))
     }
 
     var formattedSolidaritySurcharge: String {
-        solidaritySurcharge.formatted(.currency(code: "EUR"))
+        self.solidaritySurcharge.formatted(.currency(code: "EUR"))
     }
 
     var formattedChurchTax: String {
-        churchTax.formatted(.currency(code: "EUR"))
+        self.churchTax.formatted(.currency(code: "EUR"))
     }
 
     var formattedTotalTaxAmount: String {
-        totalTaxAmount.formatted(.currency(code: "EUR"))
+        self.totalTaxAmount.formatted(.currency(code: "EUR"))
     }
 
     // MARK: - Net Profit/Loss Calculation
@@ -182,25 +182,25 @@ final class TradeDetailsViewModel: ObservableObject {
     var netCreditAmount: Double {
         // Use the actual cash flow profit (from invoices) instead of trade.profitLoss
         // This ensures fees are properly included in the calculation
-        let grossProfit = netCashFlow
+        let grossProfit = self.netCashFlow
         return InvoiceTaxCalculator.calculateNetAmountAfterTaxes(for: grossProfit)
     }
 
     /// Formatted net profit/loss amount
     var formattedNetCreditAmount: String {
-        netCreditAmount.formatted(.currency(code: "EUR"))
+        self.netCreditAmount.formatted(.currency(code: "EUR"))
     }
 
     /// Label for net profit/loss based on amount
     var netProfitLossLabel: String {
-        return netCreditAmount >= 0 ? "Gewinn (netto)" : "Verlust (netto)"
+        return self.netCreditAmount >= 0 ? "Gewinn (netto)" : "Verlust (netto)"
     }
 
     // MARK: - Cash Flow Calculations
 
     /// Calculates the total amount spent on buy orders (negative cash flow)
     var buyOrderCashFlow: Double {
-        let allInvoices = [buyInvoice].compactMap { $0 } + sellInvoices
+        let allInvoices = [buyInvoice].compactMap { $0 } + self.sellInvoices
         let buyInvoices = allInvoices.filter { $0.transactionType == .buy }
         return -buyInvoices.reduce(0) { $0 + $1.nonTaxTotal } // Negative because money goes out
     }
@@ -214,20 +214,20 @@ final class TradeDetailsViewModel: ObservableObject {
 
     /// Net cash flow from the trade (before taxes)
     var netCashFlow: Double {
-        return buyOrderCashFlow + sellOrderCashFlow
+        return self.buyOrderCashFlow + self.sellOrderCashFlow
     }
 
     /// Formatted cash flow amounts
     var formattedBuyOrderCashFlow: String {
-        buyOrderCashFlow.formatted(.currency(code: "EUR"))
+        self.buyOrderCashFlow.formatted(.currency(code: "EUR"))
     }
 
     var formattedSellOrderCashFlow: String {
-        sellOrderCashFlow.formatted(.currency(code: "EUR"))
+        self.sellOrderCashFlow.formatted(.currency(code: "EUR"))
     }
 
     var formattedNetCashFlow: String {
-        netCashFlow.formatted(.currency(code: "EUR"))
+        self.netCashFlow.formatted(.currency(code: "EUR"))
     }
 
     // MARK: - Initialization
@@ -240,11 +240,11 @@ final class TradeDetailsViewModel: ObservableObject {
     // MARK: - Service Attachment
 
     func attach(invoiceService: any InvoiceServiceProtocol, tradeService: any TradeLifecycleServiceProtocol) {
-        print("📌 TradeDetailsViewModel.attach - Trade #\(trade.tradeNumber)")
+        print("📌 TradeDetailsViewModel.attach - Trade #\(self.trade.tradeNumber)")
         self.invoiceService = invoiceService
         self.tradeService = tradeService
-        loadFullTrade()
-        loadInvoices()
+        self.loadFullTrade()
+        self.loadInvoices()
     }
 
     // MARK: - Private Methods
@@ -276,14 +276,16 @@ final class TradeDetailsViewModel: ObservableObject {
         let allInvoices = service.getInvoicesForTrade(tradeId)
 
         // Separate buy and sell invoices
-        buyInvoice = allInvoices.first { $0.transactionType == .buy }
-        sellInvoices = allInvoices.filter { $0.transactionType == .sell }
-        creditNoteInvoice = allInvoices.first { $0.type == .creditNote }
+        self.buyInvoice = allInvoices.first { $0.transactionType == .buy }
+        self.sellInvoices = allInvoices.filter { $0.transactionType == .sell }
+        self.creditNoteInvoice = allInvoices.first { $0.type == .creditNote }
 
-        print("📄 Loaded \(allInvoices.count) invoices: \(buyInvoice != nil ? "1 buy" : "0 buy"), \(sellInvoices.count) sell, \(creditNoteInvoice != nil ? "1 credit" : "0 credit")")
+        print(
+            "📄 Loaded \(allInvoices.count) invoices: \(self.buyInvoice != nil ? "1 buy" : "0 buy"), \(self.sellInvoices.count) sell, \(self.creditNoteInvoice != nil ? "1 credit" : "0 credit")"
+        )
 
         // Calculate detailed breakdown
-        calculateDetailedBreakdown()
+        self.calculateDetailedBreakdown()
     }
 
     private func calculateDetailedBreakdown() {
@@ -292,12 +294,12 @@ final class TradeDetailsViewModel: ObservableObject {
             return
         }
 
-        calculationBreakdown = calculationService.calculateTradeBreakdown(
+        self.calculationBreakdown = self.calculationService.calculateTradeBreakdown(
             for: fullTrade,
-            buyInvoice: buyInvoice,
-            sellInvoices: sellInvoices
+            buyInvoice: self.buyInvoice,
+            sellInvoices: self.sellInvoices
         )
 
-        print("🧮 Calculated detailed breakdown for trade #\(trade.tradeNumber)")
+        print("🧮 Calculated detailed breakdown for trade #\(self.trade.tradeNumber)")
     }
 }

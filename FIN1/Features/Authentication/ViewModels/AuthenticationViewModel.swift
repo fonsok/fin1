@@ -1,6 +1,6 @@
-import SwiftUI
 import Foundation
 import LocalAuthentication
+import SwiftUI
 
 @MainActor
 final class AuthenticationViewModel: ObservableObject {
@@ -20,7 +20,7 @@ final class AuthenticationViewModel: ObservableObject {
 
     init(userService: any UserServiceProtocol) {
         self.userService = userService
-        setupObservers()
+        self.setupObservers()
     }
 
     deinit {
@@ -31,23 +31,23 @@ final class AuthenticationViewModel: ObservableObject {
     // MARK: - Authentication State
 
     var isLoggedIn: Bool {
-        userService.isAuthenticated
+        self.userService.isAuthenticated
     }
 
     var userDisplayName: String {
-        currentUser?.displayName ?? "Guest"
+        self.currentUser?.displayName ?? "Guest"
     }
 
     var userRole: UserRole? {
-        currentUser?.role
+        self.currentUser?.role
     }
 
     var isInvestor: Bool {
-        currentUser?.role == .investor
+        self.currentUser?.role == .investor
     }
 
     var isTrader: Bool {
-        currentUser?.role == .trader
+        self.currentUser?.role == .trader
     }
 
     // MARK: - Setup and Observers
@@ -93,8 +93,8 @@ final class AuthenticationViewModel: ObservableObject {
     // MARK: - Authentication Methods
 
     func signIn(email: String, password: String) {
-        isLoading = true
-        errorMessage = nil
+        self.isLoading = true
+        self.errorMessage = nil
 
         // Simulate API call
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
@@ -103,18 +103,18 @@ final class AuthenticationViewModel: ObservableObject {
     }
 
     func performLogin() {
-        let validation = AuthenticationValidation.validateLoginForm(email: email, password: password)
+        let validation = AuthenticationValidation.validateLoginForm(email: self.email, password: self.password)
 
         guard validation.isValid else {
-            showError(AppError.validationError(validation.errorMessage ?? "Invalid input"))
+            self.showError(AppError.validationError(validation.errorMessage ?? "Invalid input"))
             return
         }
 
         // Set loading state
-        isLoading = true
+        self.isLoading = true
 
         // Use regular email format to avoid triggering test user path
-        let loginEmail = email.contains("@") ? email : email + "@example.com"
+        let loginEmail = self.email.contains("@") ? self.email : self.email + "@example.com"
 
         Task { [weak self] in
             do {
@@ -134,7 +134,7 @@ final class AuthenticationViewModel: ObservableObject {
 
     func performBiometricLogin() {
         AuthenticationCoordinator.performBiometricLogin(
-            userService: userService,
+            userService: self.userService,
             onSuccess: { [weak self] in
                 self?.loginSuccessful = true
                 self?.isLoading = false
@@ -150,15 +150,15 @@ final class AuthenticationViewModel: ObservableObject {
         let validation = AuthenticationValidation.validateSignUpForm(userData: userData)
 
         guard validation.isValid else {
-            showError(AppError.validationError(validation.errorMessage ?? "Invalid input"))
+            self.showError(AppError.validationError(validation.errorMessage ?? "Invalid input"))
             return
         }
 
-        isLoading = true
+        self.isLoading = true
 
         AuthenticationCoordinator.performSignUp(
             userData: userData,
-            userService: userService,
+            userService: self.userService,
             onSuccess: { [weak self] in
                 self?.currentUser = self?.userService.currentUser
                 self?.isAuthenticated = self?.userService.isAuthenticated ?? false
@@ -186,7 +186,7 @@ final class AuthenticationViewModel: ObservableObject {
         AuthenticationCoordinator.performSignIn(
             email: email,
             password: password,
-            userService: userService,
+            userService: self.userService,
             onSuccess: { [weak self] in
                 self?.currentUser = self?.userService.currentUser
                 self?.isAuthenticated = self?.userService.isAuthenticated ?? false
@@ -202,8 +202,8 @@ final class AuthenticationViewModel: ObservableObject {
     // MARK: - Notification Handlers
 
     private func handleUserSignIn() {
-        self.currentUser = userService.currentUser
-        self.isAuthenticated = userService.isAuthenticated
+        self.currentUser = self.userService.currentUser
+        self.isAuthenticated = self.userService.isAuthenticated
     }
 
     private func handleUserSignOut() {
@@ -212,35 +212,35 @@ final class AuthenticationViewModel: ObservableObject {
     }
 
     private func handleUserDataUpdate() {
-        self.currentUser = userService.currentUser
+        self.currentUser = self.userService.currentUser
     }
 
     // MARK: - Error Handling
 
     func clearError() {
-        errorMessage = nil
-        showError = false
+        self.errorMessage = nil
+        self.showError = false
     }
 
     func showError(_ message: String) {
-        errorMessage = message
-        showError = true
+        self.errorMessage = message
+        self.showError = true
     }
 
     func showError(_ error: AppError) {
-        errorMessage = error.errorDescription ?? "An error occurred"
-        showError = true
+        self.errorMessage = error.errorDescription ?? "An error occurred"
+        self.showError = true
 
         // Track error with user context
         let context = ErrorContext(
             screen: "Authentication",
             action: "user_action",
             userId: currentUser?.id,
-            userRole: currentUser?.role.displayName,
+            userRole: self.currentUser?.role.displayName,
             additionalData: [
-                "is_authenticated": isAuthenticated,
-                "email_provided": !email.isEmpty,
-                "password_provided": !password.isEmpty
+                "is_authenticated": self.isAuthenticated,
+                "email_provided": !self.email.isEmpty,
+                "password_provided": !self.password.isEmpty
             ]
         )
         TelemetryService.shared.trackAppError(error, context: context)

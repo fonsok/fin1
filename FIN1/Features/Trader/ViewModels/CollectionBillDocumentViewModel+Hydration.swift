@@ -10,7 +10,7 @@ extension CollectionBillDocumentViewModel {
     /// Align notification/deep-link payloads with the same enrichment path as account-statement `referencedDocument` (id, then Belegnummer in local store).
     func mergeCanonicalCollectionBillPayload(_ payload: Document) -> Document {
         let byId = documentService.getDocument(by: payload.id) ?? payload
-        if documentHasResolvableIds(byId) { return byId }
+        if self.documentHasResolvableIds(byId) { return byId }
 
         let acc = (byId.accountingDocumentNumber ?? payload.accountingDocumentNumber)?
             .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
@@ -46,8 +46,8 @@ extension CollectionBillDocumentViewModel {
     }
 
     func preloadInvoicesAndInvestmentsForCollectionBill() async {
-        let docType = routingDocument.type
-        let userIds = collectionBillPreloadUserIds()
+        let docType = self.routingDocument.type
+        let userIds = self.collectionBillPreloadUserIds()
         for uid in userIds {
             do {
                 try await invoiceService.loadInvoices(for: uid)
@@ -73,44 +73,44 @@ extension CollectionBillDocumentViewModel {
         }
 
         print("""
-            🔎 CollectionBillDocumentView — \(label)
-              payload.id=\(payload.id) merged.id=\(merged.id)
-              payload.name=\(payload.name)
-              merged.userId=\(merged.userId)
-              merged.tradeId=\(tradeId) merged.investmentId=\(invId)
-              merged.accountingDocumentNumber=\(acc)
-              documentService.documents.count=\(documentService.documents.count)
-              invoices.count=\(invoiceService.invoices.count)
-              getInvoicesForTrade(\(tradeId)): count=\(tradeHits.count)
-            \(tradeInvoiceLines.isEmpty ? "      (no trade invoices)" : tradeInvoiceLines.joined(separator: "\n"))
-            """)
+        🔎 CollectionBillDocumentView — \(label)
+          payload.id=\(payload.id) merged.id=\(merged.id)
+          payload.name=\(payload.name)
+          merged.userId=\(merged.userId)
+          merged.tradeId=\(tradeId) merged.investmentId=\(invId)
+          merged.accountingDocumentNumber=\(acc)
+          documentService.documents.count=\(documentService.documents.count)
+          invoices.count=\(invoiceService.invoices.count)
+          getInvoicesForTrade(\(tradeId)): count=\(tradeHits.count)
+        \(tradeInvoiceLines.isEmpty ? "      (no trade invoices)" : tradeInvoiceLines.joined(separator: "\n"))
+        """)
     }
 
     func loadTargetFromDocument() async {
         resolvedFullTrade = nil
-        canonicalDocument = mergeCanonicalCollectionBillPayload(document)
-        logCollectionBillHydration(label: "after mergeCanonical", payload: document, merged: routingDocument)
+        canonicalDocument = self.mergeCanonicalCollectionBillPayload(document)
+        self.logCollectionBillHydration(label: "after mergeCanonical", payload: document, merged: self.routingDocument)
 
-        await preloadInvoicesAndInvestmentsForCollectionBill()
+        await self.preloadInvoicesAndInvestmentsForCollectionBill()
 
         let invoiceCountAfter = invoiceService.invoices.count
-        logCollectionBillHydration(
+        self.logCollectionBillHydration(
             label: "after preload (invoices.count=\(invoiceCountAfter))",
             payload: document,
-            merged: routingDocument
+            merged: self.routingDocument
         )
 
-        print("🔍 CollectionBillDocumentViewModel: Loading target from document '\(routingDocument.name)'")
+        print("🔍 CollectionBillDocumentViewModel: Loading target from document '\(self.routingDocument.name)'")
 
         var resolved = false
 
-        switch routingDocument.type {
+        switch self.routingDocument.type {
         case .traderCollectionBill:
             resolved = await resolveTradeTarget()
         case .investorCollectionBill:
             resolved = await resolveInvestmentTarget()
             if !resolved {
-                await generateInvestorPreviewFallback()
+                await self.generateInvestorPreviewFallback()
                 return
             }
         default:
@@ -118,7 +118,7 @@ extension CollectionBillDocumentViewModel {
         }
 
         if !resolved {
-            print("❌ CollectionBillDocumentViewModel: Failed to resolve document target for '\(routingDocument.name)'")
+            print("❌ CollectionBillDocumentViewModel: Failed to resolve document target for '\(self.routingDocument.name)'")
             errorMessage = "Could not extract trade or investment information from document metadata"
             fallbackToDocumentViewer = true
             isLoading = false
@@ -126,7 +126,7 @@ extension CollectionBillDocumentViewModel {
     }
 
     func generateInvestorPreviewFallback() async {
-        let doc = routingDocument
+        let doc = self.routingDocument
         print("ℹ️ CollectionBillDocumentViewModel: Generating investor preview fallback for '\(doc.name)'")
         let previewImage = InvestorCollectionBillPDFGenerator.generatePreviewImage(for: doc)
         let pdfData = InvestorCollectionBillPDFGenerator.generatePDFData(for: doc)

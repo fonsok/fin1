@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Investment Pool Lifecycle Service
 /// Tracks investment pools, advances reservation/status state, and runs fair round-robin allocation.
@@ -24,9 +24,9 @@ final class InvestmentPoolLifecycleService: InvestmentPoolLifecycleServiceProtoc
     func stop() { /* noop */ }
 
     func reset() {
-        investmentPools.removeAll()
-        allocationQueues.removeAll()
-        investorAllocationQueues.removeAll()
+        self.investmentPools.removeAll()
+        self.allocationQueues.removeAll()
+        self.investorAllocationQueues.removeAll()
     }
 
     // MARK: - Investment Reservation Creation (Deprecated - kept for compatibility)
@@ -62,8 +62,8 @@ final class InvestmentPoolLifecycleService: InvestmentPoolLifecycleServiceProtoc
         // Find all active investments for this trader with reserved status
         let traderInvestments = investments.filter {
             $0.traderId == traderId &&
-            $0.status == .active &&
-            $0.reservationStatus == .reserved
+                $0.status == .active &&
+                $0.reservationStatus == .reserved
         }
         .sorted(by: { $0.createdAt < $1.createdAt }) // Oldest first for fairness
 
@@ -79,8 +79,8 @@ final class InvestmentPoolLifecycleService: InvestmentPoolLifecycleServiceProtoc
         // Find all active investments for this trader with active reservation status
         let traderInvestments = investments.filter {
             $0.traderId == traderId &&
-            $0.status == .active &&
-            ($0.reservationStatus == .active || $0.reservationStatus == .executing || $0.reservationStatus == .closed)
+                $0.status == .active &&
+                ($0.reservationStatus == .active || $0.reservationStatus == .executing || $0.reservationStatus == .closed)
         }
         .sorted(by: { $0.createdAt < $1.createdAt }) // Oldest first
 
@@ -156,16 +156,16 @@ final class InvestmentPoolLifecycleService: InvestmentPoolLifecycleServiceProtoc
     /// Select next eligible investment for a trader using fair round-robin allocation
     func selectNextInvestmentForTrader(_ traderId: String, in investments: [Investment]) -> Investment? {
         // Build or refresh queue if missing/empty
-        if allocationQueues[traderId] == nil || allocationQueues[traderId]?.isEmpty == true {
+        if self.allocationQueues[traderId] == nil || self.allocationQueues[traderId]?.isEmpty == true {
             let orderedIds = investments
                 .filter {
                     $0.traderId == traderId &&
-                    $0.status == .active &&
-                    $0.reservationStatus == .reserved
+                        $0.status == .active &&
+                        $0.reservationStatus == .reserved
                 }
                 .sorted(by: { $0.createdAt < $1.createdAt })
                 .map { $0.id }
-            allocationQueues[traderId] = orderedIds
+            self.allocationQueues[traderId] = orderedIds
         }
 
         guard var queue = allocationQueues[traderId], !queue.isEmpty else {
@@ -182,14 +182,14 @@ final class InvestmentPoolLifecycleService: InvestmentPoolLifecycleServiceProtoc
                inv.reservationStatus == .reserved {
                 // Rotate candidate to end for round-robin fairness
                 queue.append(candidateId)
-                allocationQueues[traderId] = queue
+                self.allocationQueues[traderId] = queue
                 return inv
             }
             // Skip depleted/invalid candidate; do not re-append
         }
 
         // Cleanup any invalid entries
-        allocationQueues[traderId] = queue.filter { id in
+        self.allocationQueues[traderId] = queue.filter { id in
             if let inv = investments.first(where: { $0.id == id }) {
                 return inv.status == .active && inv.reservationStatus == .reserved
             }
@@ -205,17 +205,17 @@ final class InvestmentPoolLifecycleService: InvestmentPoolLifecycleServiceProtoc
         let queueKey = "\(traderId):\(investorId)"
 
         // Build or refresh queue if missing/empty
-        if investorAllocationQueues[queueKey] == nil || investorAllocationQueues[queueKey]?.isEmpty == true {
+        if self.investorAllocationQueues[queueKey] == nil || self.investorAllocationQueues[queueKey]?.isEmpty == true {
             let orderedIds = investments
                 .filter {
                     $0.investorId == investorId &&
-                    $0.traderId == traderId &&
-                    $0.status == .active &&
-                    $0.reservationStatus == .reserved
+                        $0.traderId == traderId &&
+                        $0.status == .active &&
+                        $0.reservationStatus == .reserved
                 }
                 .sorted(by: { $0.createdAt < $1.createdAt })
                 .map { $0.id }
-            investorAllocationQueues[queueKey] = orderedIds
+            self.investorAllocationQueues[queueKey] = orderedIds
         }
 
         guard var queue = investorAllocationQueues[queueKey], !queue.isEmpty else {
@@ -234,19 +234,19 @@ final class InvestmentPoolLifecycleService: InvestmentPoolLifecycleServiceProtoc
                inv.reservationStatus == .reserved {
                 // Rotate candidate to end for round-robin fairness
                 queue.append(candidateId)
-                investorAllocationQueues[queueKey] = queue
+                self.investorAllocationQueues[queueKey] = queue
                 return inv
             }
             // Skip depleted/invalid candidate; do not re-append
         }
 
         // Cleanup any invalid entries
-        investorAllocationQueues[queueKey] = queue.filter { id in
+        self.investorAllocationQueues[queueKey] = queue.filter { id in
             if let inv = investments.first(where: { $0.id == id }) {
                 return inv.investorId == investorId &&
-                       inv.traderId == traderId &&
-                       inv.status == .active &&
-                       inv.reservationStatus == .reserved
+                    inv.traderId == traderId &&
+                    inv.status == .active &&
+                    inv.reservationStatus == .reserved
             }
             return false
         }
@@ -257,7 +257,7 @@ final class InvestmentPoolLifecycleService: InvestmentPoolLifecycleServiceProtoc
 
     /// Gets all investment pools for a specific trader
     func getInvestmentPools(forTrader traderId: String) -> [InvestmentPool] {
-        return investmentPools.filter { $0.traderId == traderId }
+        return self.investmentPools.filter { $0.traderId == traderId }
     }
 
     /// Groups investments by sequence number for a specific trader

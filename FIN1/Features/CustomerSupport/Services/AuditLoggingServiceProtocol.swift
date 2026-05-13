@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Audit Logging Service Protocol
 /// Defines the contract for auditable action logging

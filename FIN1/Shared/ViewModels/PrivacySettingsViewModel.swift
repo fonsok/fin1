@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Privacy Settings ViewModel
 /// ViewModel for managing user privacy settings and data control preferences
@@ -42,7 +42,7 @@ final class PrivacySettingsViewModel: ObservableObject {
 
     init(userService: any UserServiceProtocol) {
         self.userService = userService
-        loadSettings()
+        self.loadSettings()
     }
 
     // MARK: - Public Methods
@@ -63,27 +63,27 @@ final class PrivacySettingsViewModel: ObservableObject {
         )
 
         if let data = try? JSONEncoder().encode(settings) {
-            UserDefaults.standard.set(data, forKey: userDefaultsKey)
+            UserDefaults.standard.set(data, forKey: self.userDefaultsKey)
         }
     }
 
     /// Resets all privacy settings to default values
     func resetToDefaults() {
-        analyticsEnabled = true
-        crashReportingEnabled = true
-        usageDataSharingEnabled = false
-        personalizedAdsEnabled = false
-        profileVisibleToTraders = true
-        investmentHistoryVisible = false
-        performanceMetricsVisible = true
-        marketingEmailsEnabled = false
-        thirdPartyDataSharingEnabled = false
-        newsletterSubscribed = true
+        self.analyticsEnabled = true
+        self.crashReportingEnabled = true
+        self.usageDataSharingEnabled = false
+        self.personalizedAdsEnabled = false
+        self.profileVisibleToTraders = true
+        self.investmentHistoryVisible = false
+        self.performanceMetricsVisible = true
+        self.marketingEmailsEnabled = false
+        self.thirdPartyDataSharingEnabled = false
+        self.newsletterSubscribed = true
     }
 
     /// Requests data export (GDPR Article 20 - Right to data portability)
     func requestDataExport() {
-        isExportingData = true
+        self.isExportingData = true
         Task { @MainActor [weak self] in
             // Simulate export process
             try? await Task.sleep(nanoseconds: 2_000_000_000)
@@ -95,7 +95,7 @@ final class PrivacySettingsViewModel: ObservableObject {
 
     /// Requests account data deletion (GDPR Article 17 - Right to erasure)
     func requestDataDeletion() {
-        isDeletingData = true
+        self.isDeletingData = true
         Task { @MainActor [weak self] in
             // Simulate deletion request
             try? await Task.sleep(nanoseconds: 2_000_000_000)
@@ -113,15 +113,15 @@ final class PrivacySettingsViewModel: ObservableObject {
             return
         }
 
-        analyticsEnabled = settings.analyticsEnabled
-        crashReportingEnabled = settings.crashReportingEnabled
-        usageDataSharingEnabled = settings.usageDataSharingEnabled
-        personalizedAdsEnabled = settings.personalizedAdsEnabled
-        profileVisibleToTraders = settings.profileVisibleToTraders
-        investmentHistoryVisible = settings.investmentHistoryVisible
-        performanceMetricsVisible = settings.performanceMetricsVisible
-        marketingEmailsEnabled = settings.marketingEmailsEnabled
-        thirdPartyDataSharingEnabled = settings.thirdPartyDataSharingEnabled
-        newsletterSubscribed = settings.newsletterSubscribed
+        self.analyticsEnabled = settings.analyticsEnabled
+        self.crashReportingEnabled = settings.crashReportingEnabled
+        self.usageDataSharingEnabled = settings.usageDataSharingEnabled
+        self.personalizedAdsEnabled = settings.personalizedAdsEnabled
+        self.profileVisibleToTraders = settings.profileVisibleToTraders
+        self.investmentHistoryVisible = settings.investmentHistoryVisible
+        self.performanceMetricsVisible = settings.performanceMetricsVisible
+        self.marketingEmailsEnabled = settings.marketingEmailsEnabled
+        self.thirdPartyDataSharingEnabled = settings.thirdPartyDataSharingEnabled
+        self.newsletterSubscribed = settings.newsletterSubscribed
     }
 }

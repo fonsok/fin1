@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Trading Notification Service Protocol
 /// Defines the contract for trading notifications and confirmations

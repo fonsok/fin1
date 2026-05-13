@@ -32,16 +32,16 @@ struct MirrorBasisDriftHealthSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
-            headerRow
-            contentBody
+            self.headerRow
+            self.contentBody
         }
         .padding()
         .background(AppTheme.sectionBackground)
         .cornerRadius(ResponsiveDesign.spacing(12))
         .task {
-            if !didInitialLoad {
-                didInitialLoad = true
-                await viewModel.load()
+            if !self.didInitialLoad {
+                self.didInitialLoad = true
+                await self.viewModel.load()
             }
         }
     }
@@ -55,12 +55,12 @@ struct MirrorBasisDriftHealthSection: View {
 
             Spacer()
 
-            statusPill
+            self.statusPill
 
             Button {
-                Task { await viewModel.load() }
+                Task { await self.viewModel.load() }
             } label: {
-                if viewModel.isLoading {
+                if self.viewModel.isLoading {
                     ProgressView().scaleEffect(0.7)
                 } else {
                     Image(systemName: "arrow.clockwise")
@@ -68,34 +68,34 @@ struct MirrorBasisDriftHealthSection: View {
                         .foregroundColor(AppTheme.accentLightBlue)
                 }
             }
-            .disabled(viewModel.isLoading)
+            .disabled(self.viewModel.isLoading)
             .accessibilityLabel("Reload drift status")
         }
     }
 
     private var statusPill: some View {
-        Text(viewModel.overall.uppercased())
+        Text(self.viewModel.overall.uppercased())
             .font(ResponsiveDesign.captionFont())
             .fontWeight(.bold)
             .padding(.horizontal, ResponsiveDesign.spacing(8))
             .padding(.vertical, ResponsiveDesign.spacing(3))
-            .background(viewModel.badgeColor.opacity(0.15))
-            .foregroundColor(viewModel.badgeColor)
+            .background(self.viewModel.badgeColor.opacity(0.15))
+            .foregroundColor(self.viewModel.badgeColor)
             .clipShape(Capsule())
             .overlay(
-                Capsule().stroke(viewModel.badgeColor.opacity(0.4), lineWidth: 1)
+                Capsule().stroke(self.viewModel.badgeColor.opacity(0.4), lineWidth: 1)
             )
     }
 
     @ViewBuilder
     private var contentBody: some View {
-        switch viewModel.state {
-        case .idle where viewModel.status == nil, .loading where viewModel.status == nil:
-            loadingPlaceholder
-        case .failed(let message) where viewModel.status == nil:
-            failurePlaceholder(message)
+        switch self.viewModel.state {
+        case .idle where self.viewModel.status == nil, .loading where self.viewModel.status == nil:
+            self.loadingPlaceholder
+        case .failed(let message) where self.viewModel.status == nil:
+            self.failurePlaceholder(message)
         default:
-            loadedBody
+            self.loadedBody
         }
     }
 
@@ -129,14 +129,14 @@ struct MirrorBasisDriftHealthSection: View {
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(AppTheme.fontColor.opacity(0.7))
                 } else {
-                    summaryLine(status: status)
+                    self.summaryLine(status: status)
                     if let reason = status.reason {
                         Text(reason)
                             .font(ResponsiveDesign.captionFont())
-                            .foregroundColor(viewModel.badgeColor)
+                            .foregroundColor(self.viewModel.badgeColor)
                     }
                     if let samples = status.driftSamples, !samples.isEmpty {
-                        driftSamplesBody(samples)
+                        self.driftSamplesBody(samples)
                     }
                 }
             }
@@ -147,7 +147,7 @@ struct MirrorBasisDriftHealthSection: View {
         let checked = status.checkedDocuments ?? 0
         let drifted = status.driftedDocuments ?? 0
         return VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(2)) {
-            Text("Letzter Lauf: \(viewModel.runAtDisplay)")
+            Text("Letzter Lauf: \(self.viewModel.runAtDisplay)")
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
             Text("Geprüft: \(checked) · Abweichung: \(drifted)")
@@ -167,7 +167,7 @@ struct MirrorBasisDriftHealthSection: View {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .foregroundColor(AppTheme.accentOrange)
                         .font(ResponsiveDesign.captionFont())
-                    Text(driftSampleLabel(sample))
+                    Text(self.driftSampleLabel(sample))
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(AppTheme.fontColor)
                         .lineLimit(2)

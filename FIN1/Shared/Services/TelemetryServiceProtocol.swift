@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Telemetry Service Protocol
 protocol TelemetryServiceProtocol: AnyObject {
@@ -39,7 +39,7 @@ final class TelemetryService: TelemetryServiceProtocol, ServiceLifecycle, @unche
     // MARK: - ServiceLifecycle
     func start() { /* e.g., establish session, flush pending queue */ }
     func stop() { /* e.g., flush and suspend */ }
-    func reset() { clearUser() }
+    func reset() { self.clearUser() }
 
     // MARK: - Telemetry
     func trackEvent(name: String, properties: [String: Any]?) {

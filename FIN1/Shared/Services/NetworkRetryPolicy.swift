@@ -17,8 +17,8 @@ struct NetworkRetryPolicy {
     /// - Parameter attempt: The retry attempt number (0-based)
     /// - Returns: Delay in seconds before next retry
     static func delay(for attempt: Int) -> TimeInterval {
-        let exponentialDelay = baseDelay * pow(2.0, Double(attempt))
-        return min(exponentialDelay, maxDelay)
+        let exponentialDelay = self.baseDelay * pow(2.0, Double(attempt))
+        return min(exponentialDelay, self.maxDelay)
     }
 
     /// Determines if a request should be retried based on the error and attempt number
@@ -28,7 +28,7 @@ struct NetworkRetryPolicy {
     /// - Returns: `true` if request should be retried, `false` otherwise
     static func shouldRetry(error: Error, attempt: Int) -> Bool {
         // Don't retry if max attempts reached
-        guard attempt < maxRetries else {
+        guard attempt < self.maxRetries else {
             return false
         }
 
@@ -37,7 +37,7 @@ struct NetworkRetryPolicy {
         if let error = error as? NetworkError {
             networkError = error
         } else if let error = error as? URLError {
-            networkError = mapURLError(error)
+            networkError = self.mapURLError(error)
         } else {
             // Unknown error - don't retry
             return false

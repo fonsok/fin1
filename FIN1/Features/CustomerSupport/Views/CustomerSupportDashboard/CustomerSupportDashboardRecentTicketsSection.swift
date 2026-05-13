@@ -5,10 +5,10 @@ struct CustomerSupportDashboardRecentTicketsSection: View {
     @ObservedObject var viewModel: CustomerSupportDashboardViewModel
 
     private var activeTickets: [SupportTicket] {
-        viewModel.supportTickets.filter { ticket in
+        self.viewModel.supportTickets.filter { ticket in
             ticket.status != .resolved &&
-            ticket.status != .closed &&
-            ticket.status != .archived
+                ticket.status != .closed &&
+                ticket.status != .archived
         }
     }
 
@@ -22,13 +22,13 @@ struct CustomerSupportDashboardRecentTicketsSection: View {
 
                 Spacer()
 
-                if viewModel.isLoading {
+                if self.viewModel.isLoading {
                     ProgressView()
                         .scaleEffect(0.8)
                 }
             }
 
-            if activeTickets.isEmpty {
+            if self.activeTickets.isEmpty {
                 VStack(spacing: ResponsiveDesign.spacing(8)) {
                     Image(systemName: "checkmark.circle.fill")
                         .font(ResponsiveDesign.largeTitleFont())
@@ -46,14 +46,14 @@ struct CustomerSupportDashboardRecentTicketsSection: View {
                 .padding(.vertical, ResponsiveDesign.spacing(20))
             } else {
                 VStack(spacing: ResponsiveDesign.spacing(8)) {
-                    ForEach(activeTickets.prefix(5)) { ticket in
+                    ForEach(self.activeTickets.prefix(5)) { ticket in
                         TicketRow(ticket: ticket) {
-                            viewModel.selectTicket(ticket)
+                            self.viewModel.selectTicket(ticket)
                         }
                     }
 
-                    if activeTickets.count > 5 {
-                        Text("+ \(activeTickets.count - 5) weitere aktive Tickets")
+                    if self.activeTickets.count > 5 {
+                        Text("+ \(self.activeTickets.count - 5) weitere aktive Tickets")
                             .font(ResponsiveDesign.captionFont())
                             .foregroundColor(AppTheme.accentLightBlue)
                             .frame(maxWidth: .infinity)

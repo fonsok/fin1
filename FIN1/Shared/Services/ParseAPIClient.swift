@@ -81,7 +81,7 @@ final class ParseAPIClient: ParseAPIClientProtocol, @unchecked Sendable {
 
     /// Resets the circuit breaker to closed state (used after health check recovery)
     func resetCircuitBreaker() async {
-        await circuitBreaker.reset()
+        await self.circuitBreaker.reset()
         #if DEBUG
         print("🔄 ParseAPIClient: Circuit breaker reset to closed state")
         #endif
@@ -107,7 +107,7 @@ final class ParseAPIClient: ParseAPIClientProtocol, @unchecked Sendable {
         let box = UncheckedAsyncOperationBox {
             try await self.executeRetryLogic(operation: operation)
         }
-        return try await circuitBreaker.execute {
+        return try await self.circuitBreaker.execute {
             try await box.run()
         }.value
     }
@@ -133,7 +133,9 @@ final class ParseAPIClient: ParseAPIClientProtocol, @unchecked Sendable {
 
                 // Log retry attempt (only in debug builds)
                 #if DEBUG
-                print("⚠️ ParseAPIClient: Retry attempt \(attempt + 1)/\(NetworkRetryPolicy.maxRetries + 1) after \(String(format: "%.2f", delay))s - Error: \(error.localizedDescription)")
+                print(
+                    "⚠️ ParseAPIClient: Retry attempt \(attempt + 1)/\(NetworkRetryPolicy.maxRetries + 1) after \(String(format: "%.2f", delay))s - Error: \(error.localizedDescription)"
+                )
                 #endif
 
                 // Wait before retrying
@@ -187,7 +189,7 @@ final class ParseAPIClient: ParseAPIClientProtocol, @unchecked Sendable {
     }
 
     func addHeaders(to request: inout URLRequest) {
-        request.setValue(applicationId, forHTTPHeaderField: "X-Parse-Application-Id")
+        request.setValue(self.applicationId, forHTTPHeaderField: "X-Parse-Application-Id")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
         if let sessionToken = sessionToken {
@@ -271,7 +273,7 @@ final class ParseAPIClient: ParseAPIClientProtocol, @unchecked Sendable {
 
 extension ParseAPIClient: SessionStateProviding {
     var hasAuthenticatedSession: Bool {
-        sessionToken != nil
+        self.sessionToken != nil
     }
 }
 

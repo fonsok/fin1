@@ -21,7 +21,7 @@ struct LandingTypewriterStyleBody: View {
 
                     VStack(spacing: ResponsiveDesign.spacing(16)) {
                         HStack(spacing: ResponsiveDesign.spacing(20)) {
-                            Button(action: { showSignUp = true }, label: {
+                            Button(action: { self.showSignUp = true }, label: {
                                 Text(LandingConstants.getStartedButtonText)
                                     .font(ResponsiveDesign.monospacedFont(size: 16, weight: .regular))
                                     .foregroundColor(Color("InputText"))
@@ -29,7 +29,7 @@ struct LandingTypewriterStyleBody: View {
                             })
                             .buttonStyle(PlainButtonStyle())
 
-                            Button(action: { showLogin = true }, label: {
+                            Button(action: { self.showLogin = true }, label: {
                                 Text(LandingConstants.signInButtonText)
                                     .font(ResponsiveDesign.monospacedFont(size: 16, weight: .regular))
                                     .foregroundColor(Color("InputText"))
@@ -39,7 +39,7 @@ struct LandingTypewriterStyleBody: View {
                         }
 
                         #if DEBUG
-                        LandingDebugSectionView(viewModel: viewModel)
+                        LandingDebugSectionView(viewModel: self.viewModel)
                         #endif
                     }
                     .padding(.horizontal, ResponsiveDesign.horizontalPadding())
@@ -73,14 +73,14 @@ struct LandingTypewriterStyleBody: View {
                     LandingPlatformAdvantagesView(style: .typewriter)
                     LandingFAQView(style: .typewriter)
                     LandingLegalLinksSection(
-                        showLegalTerms: $showLegalTerms,
-                        showLegalPrivacy: $showLegalPrivacy,
-                        showLegalImprint: $showLegalImprint,
+                        showLegalTerms: self.$showLegalTerms,
+                        showLegalPrivacy: self.$showLegalPrivacy,
+                        showLegalImprint: self.$showLegalImprint,
                         style: .typewriter
                     )
 
                     Spacer().frame(height: ResponsiveDesign.spacing(6))
-                    LandingDesignStyleToggleView(designStyle: $viewModel.designStyle)
+                    LandingDesignStyleToggleView(designStyle: self.$viewModel.designStyle)
                 }
             }
         }

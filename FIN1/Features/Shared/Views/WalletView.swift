@@ -12,12 +12,12 @@ struct WalletView: View {
             AppTheme.screenBackground
                 .ignoresSafeArea()
 
-            if viewModel.isLoading && viewModel.currentBalance == 0.0 && viewModel.transactions.isEmpty {
-                loadingView
+            if self.viewModel.isLoading && self.viewModel.currentBalance == 0.0 && self.viewModel.transactions.isEmpty {
+                self.loadingView
             } else if let error = viewModel.errorMessage {
-                errorView(error: error)
+                self.errorView(error: error)
             } else {
-                contentView
+                self.contentView
             }
         }
         .navigationTitle("Konto")
@@ -26,40 +26,43 @@ struct WalletView: View {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button {
                     Task {
-                        await viewModel.refresh()
+                        await self.viewModel.refresh()
                     }
                 } label: {
                     Image(systemName: "arrow.clockwise")
                         .foregroundColor(AppTheme.accentLightBlue)
-                        .rotationEffect(.degrees(viewModel.isLoading ? 360 : 0))
-                        .animation(viewModel.isLoading ? .linear(duration: 1).repeatForever(autoreverses: false) : .default, value: viewModel.isLoading)
+                        .rotationEffect(.degrees(self.viewModel.isLoading ? 360 : 0))
+                        .animation(
+                            self.viewModel.isLoading ? .linear(duration: 1).repeatForever(autoreverses: false) : .default,
+                            value: self.viewModel.isLoading
+                        )
                 }
             }
         }
-        .sheet(isPresented: $viewModel.showDepositSheet) {
-            WalletDepositSheet(viewModel: viewModel) {
-                viewModel.showDepositSheet = false
+        .sheet(isPresented: self.$viewModel.showDepositSheet) {
+            WalletDepositSheet(viewModel: self.viewModel) {
+                self.viewModel.showDepositSheet = false
             }
             .presentationDetents([.large])
             .presentationDragIndicator(.visible)
         }
-        .sheet(isPresented: $viewModel.showWithdrawalSheet) {
-            WalletWithdrawalSheet(viewModel: viewModel) {
-                viewModel.showWithdrawalSheet = false
+        .sheet(isPresented: self.$viewModel.showWithdrawalSheet) {
+            WalletWithdrawalSheet(viewModel: self.viewModel) {
+                self.viewModel.showWithdrawalSheet = false
             }
             .presentationDetents([.large])
             .presentationDragIndicator(.visible)
         }
-        .sheet(isPresented: $showTransactionHistory) {
-            TransactionHistoryView(viewModel: viewModel)
+        .sheet(isPresented: self.$showTransactionHistory) {
+            TransactionHistoryView(viewModel: self.viewModel)
         }
-        .alert("Erfolg", isPresented: $viewModel.showSuccessMessage) {
+        .alert("Erfolg", isPresented: self.$viewModel.showSuccessMessage) {
             Button("OK", role: .cancel) { }
         } message: {
-            Text(viewModel.successMessage)
+            Text(self.viewModel.successMessage)
         }
         .task {
-            await viewModel.loadWalletData()
+            await self.viewModel.loadWalletData()
         }
     }
 
@@ -94,7 +97,7 @@ struct WalletView: View {
                 .padding(.horizontal, ResponsiveDesign.horizontalPadding())
             Button {
                 Task {
-                    await viewModel.loadWalletData()
+                    await self.viewModel.loadWalletData()
                 }
             } label: {
                 Text("Erneut versuchen")
@@ -113,23 +116,23 @@ struct WalletView: View {
     private var contentView: some View {
         ScrollView {
             VStack(spacing: ResponsiveDesign.spacing(6)) {
-                WalletBalanceCard(formattedBalance: viewModel.formattedBalance)
+                WalletBalanceCard(formattedBalance: self.viewModel.formattedBalance)
                     .transition(.opacity.combined(with: .scale(scale: 0.95)))
 
                 WalletQuickActionsSection(
-                    actionsEnabled: viewModel.accountActionsEnabled,
+                    actionsEnabled: self.viewModel.accountActionsEnabled,
                     onDeposit: {
-                        guard viewModel.accountActionsEnabled else { return }
-                        viewModel.showDepositSheet = true
+                        guard self.viewModel.accountActionsEnabled else { return }
+                        self.viewModel.showDepositSheet = true
                     },
                     onWithdrawal: {
-                        guard viewModel.accountActionsEnabled else { return }
-                        viewModel.showWithdrawalSheet = true
+                        guard self.viewModel.accountActionsEnabled else { return }
+                        self.viewModel.showWithdrawalSheet = true
                     }
                 )
                 .transition(.opacity.combined(with: .move(edge: .top)))
 
-                if !viewModel.accountActionsEnabled {
+                if !self.viewModel.accountActionsEnabled {
                     Text("Ein-/Auszahlungsaktionen sind derzeit deaktiviert. Kontostand und Historie bleiben jederzeit sichtbar.")
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(AppTheme.secondaryText)
@@ -138,8 +141,8 @@ struct WalletView: View {
                 }
 
                 WalletRecentTransactionsSection(
-                    transactions: viewModel.transactions,
-                    onShowAll: { showTransactionHistory = true }
+                    transactions: self.viewModel.transactions,
+                    onShowAll: { self.showTransactionHistory = true }
                 )
                 .transition(.opacity.combined(with: .move(edge: .bottom)))
             }
@@ -147,8 +150,8 @@ struct WalletView: View {
             .padding(.top, ResponsiveDesign.spacing(8))
         }
         .refreshable {
-            await viewModel.refresh()
+            await self.viewModel.refresh()
         }
-        .animation(.easeInOut(duration: 0.3), value: viewModel.transactions.count)
+        .animation(.easeInOut(duration: 0.3), value: self.viewModel.transactions.count)
     }
 }

@@ -5,8 +5,8 @@
 //  Created by ra on 17.08.25.
 //
 
-import SwiftUI
 import Combine
+import SwiftUI
 
 // MARK: - App Entry Point
 @main
@@ -26,28 +26,28 @@ struct FIN1App: App {
 
     var body: some Scene {
         WindowGroup {
-            rootView
-                .environment(\.appServices, services)
+            self.rootView
+                .environment(\.appServices, self.services)
                 .background(AppTheme.screenBackground)
                 .preferredColorScheme(.dark) // Force dark mode to match our color scheme
-                .onChange(of: scenePhase) { _, newPhase in
+                .onChange(of: self.scenePhase) { _, newPhase in
                     Task { @MainActor in
-                        await handleScenePhaseChange(newPhase)
+                        await self.handleScenePhaseChange(newPhase)
                     }
                 }
                 .onReceive(NotificationCenter.default.publisher(for: .userDidSignIn)) { _ in
                     Task { @MainActor in
-                        await refreshUserScopedData()
+                        await self.refreshUserScopedData()
                     }
                 }
                 .onReceive(NotificationCenter.default.publisher(for: .userDataDidUpdate)) { _ in
                     Task { @MainActor in
-                        await refreshUserScopedData()
+                        await self.refreshUserScopedData()
                     }
                 }
                 .onReceive(NotificationCenter.default.publisher(for: .fin1NetworkReachableAgain)) { _ in
                     Task { @MainActor in
-                        if services.userService.currentUser != nil {
+                        if self.services.userService.currentUser != nil {
                             await OfflineOperationQueue.shared.processQueue()
                         }
                     }
@@ -59,10 +59,10 @@ struct FIN1App: App {
     private var rootView: some View {
         #if DEBUG
         if ProcessInfo.processInfo.arguments.contains("--ui-test-entry-limit-buy-order") {
-            UITestLimitButtonsEntryView(services: services, mode: .buy)
+            UITestLimitButtonsEntryView(services: self.services, mode: .buy)
                 .environmentObject(TabRouter())
         } else if ProcessInfo.processInfo.arguments.contains("--ui-test-entry-limit-sell-order") {
-            UITestLimitButtonsEntryView(services: services, mode: .sell)
+            UITestLimitButtonsEntryView(services: self.services, mode: .sell)
                 .environmentObject(TabRouter())
         } else {
             AuthenticationView()
@@ -78,9 +78,9 @@ struct FIN1App: App {
     private func handleScenePhaseChange(_ newPhase: ScenePhase) async {
         switch newPhase {
         case .active:
-            await handleAppBecameActive()
+            await self.handleAppBecameActive()
         case .background:
-            await handleAppEnteredBackground()
+            await self.handleAppEnteredBackground()
         case .inactive:
             break
         @unknown default:
@@ -91,17 +91,17 @@ struct FIN1App: App {
     @MainActor
     private func handleAppBecameActive() async {
         // Track launch performance
-        let launchTime = Date().timeIntervalSince(launchStartTime)
+        let launchTime = Date().timeIntervalSince(self.launchStartTime)
         print("🚀 App launch time: \(String(format: "%.3f", launchTime)) seconds")
 
         // Start services with optimized lifecycle
-        await lifecycleCoordinator.startServices()
+        await self.lifecycleCoordinator.startServices()
 
         // Log Parse Server configuration for debugging
         print("🔗 Parse Server Configuration:")
-        print("   URL: \(services.configurationService.parseServerURL ?? "nil")")
-        print("   Live Query URL: \(services.configurationService.parseLiveQueryURL ?? "nil")")
-        print("   Application ID: \(services.configurationService.parseApplicationId ?? "nil")")
+        print("   URL: \(self.services.configurationService.parseServerURL ?? "nil")")
+        print("   Live Query URL: \(self.services.configurationService.parseLiveQueryURL ?? "nil")")
+        print("   Application ID: \(self.services.configurationService.parseApplicationId ?? "nil")")
 
         // Process offline operation queue when app becomes active
         Task {
@@ -127,17 +127,17 @@ struct FIN1App: App {
             print("⚠️ Parse Live Query Client not available")
         }
 
-        await refreshUserScopedData()
+        await self.refreshUserScopedData()
 
         // Monthly statements: non-blocking so activation can finish (telemetry, SLA, etc.) promptly.
-        MonthlyStatementPrefetch.schedule(services: services)
+        MonthlyStatementPrefetch.schedule(services: self.services)
 
         // Track app activation with launch time
-        services.telemetryService.trackEvent(name: "app_active", properties: ["launch_time_seconds": launchTime])
+        self.services.telemetryService.trackEvent(name: "app_active", properties: ["launch_time_seconds": launchTime])
 
         // Start SLA monitoring service (uses configured interval)
         Task {
-            await services.slaMonitoringService.startMonitoring(interval: nil)
+            await self.services.slaMonitoringService.startMonitoring(interval: nil)
         }
     }
 
@@ -149,13 +149,13 @@ struct FIN1App: App {
 
     @MainActor
     private func refreshUserScopedData() async {
-        guard lifecycleCoordinator.criticalServicesReady else { return }
+        guard self.lifecycleCoordinator.criticalServicesReady else { return }
         guard let currentUser = services.userService.currentUser else { return }
 
-        async let loadNotifications: Void = services.notificationService.loadNotifications(for: currentUser)
-        async let loadDocuments: Void = services.documentService.loadDocuments(for: currentUser)
-        async let loadInvoices: Void = { _ = try? await services.invoiceService.loadInvoices(for: currentUser.id) }()
-        async let generateInvoices: Void = preloadInvoicesForCompletedTrades(using: services)
+        async let loadNotifications: Void = self.services.notificationService.loadNotifications(for: currentUser)
+        async let loadDocuments: Void = self.services.documentService.loadDocuments(for: currentUser)
+        async let loadInvoices: Void = { _ = try? await self.services.invoiceService.loadInvoices(for: currentUser.id) }()
+        async let generateInvoices: Void = self.preloadInvoicesForCompletedTrades(using: self.services)
         await loadNotifications
         await loadDocuments
         await loadInvoices
@@ -165,19 +165,19 @@ struct FIN1App: App {
     @MainActor
     private func handleAppEnteredBackground() async {
         // Sync pending data to backend before going to background
-        await syncPendingDataToBackend()
+        await self.syncPendingDataToBackend()
 
         // Stop SLA monitoring to save battery
-        services.slaMonitoringService.stopMonitoring()
+        self.services.slaMonitoringService.stopMonitoring()
 
         // Disconnect Parse Live Query to save battery
-        services.parseLiveQueryClient?.disconnect()
+        self.services.parseLiveQueryClient?.disconnect()
 
         // Optimize memory usage before stopping services
-        lifecycleCoordinator.optimizeMemoryUsage()
+        self.lifecycleCoordinator.optimizeMemoryUsage()
 
         // Stop non-critical services to save battery
-        await lifecycleCoordinator.stopServices()
+        await self.lifecycleCoordinator.stopServices()
     }
 
     /// Syncs any pending local data to the backend before app goes to background
@@ -191,16 +191,16 @@ struct FIN1App: App {
         }
 
         // Sequential: avoids Swift 6 task-group + nested @MainActor isolation checker issues.
-        await services.investmentService.syncToBackend()
-        await services.orderManagementService.syncToBackend()
-        await services.paymentService.syncToBackend()
-        await services.documentService.syncToBackend()
-        await services.userService.syncToBackend()
-        await services.securitiesWatchlistService.syncToBackend()
-        await services.notificationService.syncPushTokensToBackend(for: currentUser.id)
-        await services.watchlistService.syncToBackend()
-        await services.invoiceService.syncToBackend()
-        await services.customerSupportService.syncToBackend()
+        await self.services.investmentService.syncToBackend()
+        await self.services.orderManagementService.syncToBackend()
+        await self.services.paymentService.syncToBackend()
+        await self.services.documentService.syncToBackend()
+        await self.services.userService.syncToBackend()
+        await self.services.securitiesWatchlistService.syncToBackend()
+        await self.services.notificationService.syncPushTokensToBackend(for: currentUser.id)
+        await self.services.watchlistService.syncToBackend()
+        await self.services.invoiceService.syncToBackend()
+        await self.services.customerSupportService.syncToBackend()
         if let filterSyncService = services.filterSyncService {
             await filterSyncService.syncToBackend()
         }
@@ -210,7 +210,6 @@ struct FIN1App: App {
 
         print("✅ Background sync completed")
     }
-
 }
 
 // MARK: - Monthly statement prefetch (non-blocking)
@@ -222,8 +221,8 @@ private enum MonthlyStatementPrefetch {
     /// Runs statement generation on the main actor without awaiting it from `handleAppBecameActive`.
     /// Skips if a run is already in progress; re-reads the current user when the task starts.
     static func schedule(services: AppServices) {
-        guard inFlight == nil else { return }
-        inFlight = Task { @MainActor in
+        guard self.inFlight == nil else { return }
+        self.inFlight = Task { @MainActor in
             defer { MonthlyStatementPrefetch.inFlight = nil }
             guard let user = services.userService.currentUser else { return }
             await MonthlyAccountStatementGenerator.ensureMonthlyStatements(for: user, services: services)

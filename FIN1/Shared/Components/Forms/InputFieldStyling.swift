@@ -78,12 +78,12 @@ struct LabelView: View {
 
     var body: some View {
         HStack {
-            Text(label)
+            Text(self.label)
                 .font(ResponsiveDesign.bodyFont())
                 .fontWeight(.medium)
                 .foregroundColor(AppTheme.fontColor)
 
-            if isRequired {
+            if self.isRequired {
                 Text("*")
                     .foregroundColor(AppTheme.accentRed)
             }
@@ -115,7 +115,7 @@ struct InputFieldBackground: ViewModifier {
         content
             .padding(ResponsiveDesign.spacing(16))
             .background(AppTheme.inputFieldBackground)
-            .cornerRadius(cornerRadius ?? (ResponsiveDesign.isCompactDevice() ? 10 : 12))
+            .cornerRadius(self.cornerRadius ?? (ResponsiveDesign.isCompactDevice() ? 10 : 12))
     }
 }
 
@@ -137,8 +137,8 @@ struct InputFieldIcon: View {
     }
 
     var body: some View {
-        Image(systemName: iconName)
-            .foregroundColor(color)
+        Image(systemName: self.iconName)
+            .foregroundColor(self.color)
             .frame(width: ResponsiveDesign.iconSize())
     }
 }

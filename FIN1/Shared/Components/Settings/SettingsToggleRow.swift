@@ -12,20 +12,20 @@ struct SettingsToggleRow: View {
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
-                Text(title)
+                Text(self.title)
                     .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.medium)
                     .foregroundColor(AppTheme.fontColor)
 
-                Text(subtitle)
+                Text(self.subtitle)
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
             }
 
             Spacer()
 
-            Toggle("", isOn: $isEnabled)
-                .toggleStyle(SwitchToggleStyle(tint: tintColor))
+            Toggle("", isOn: self.$isEnabled)
+                .toggleStyle(SwitchToggleStyle(tint: self.tintColor))
         }
     }
 }

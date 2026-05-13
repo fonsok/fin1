@@ -14,16 +14,16 @@ struct AdminSummaryReportView: View {
         ScrollView {
             VStack(spacing: ResponsiveDesign.spacing(16)) {
                 // Filters Section
-                filtersSection
+                self.filtersSection
 
                 // Summary Cards
-                summaryCardsSection
+                self.summaryCardsSection
 
                 // Investments Section
-                investmentsSection
+                self.investmentsSection
 
                 // Trades Section
-                tradesSection
+                self.tradesSection
             }
             .padding()
         }
@@ -33,7 +33,7 @@ struct AdminSummaryReportView: View {
         .toolbar {
             ToolbarItemGroup(placement: .navigationBarTrailing) {
                 Button {
-                    viewModel.refresh()
+                    self.viewModel.refresh()
                 } label: {
                     Image(systemName: "arrow.clockwise")
                 }
@@ -41,7 +41,7 @@ struct AdminSummaryReportView: View {
             }
         }
         .task {
-            viewModel.load()
+            self.viewModel.load()
         }
     }
 
@@ -54,14 +54,14 @@ struct AdminSummaryReportView: View {
                 .fontWeight(.semibold)
                 .foregroundColor(AppTheme.fontColor)
 
-            Picker("Date Range", selection: $viewModel.selectedDateRange) {
+            Picker("Date Range", selection: self.$viewModel.selectedDateRange) {
                 ForEach(DateRangeFilter.allCases) { range in
                     Text(range.displayName).tag(range)
                 }
             }
             .pickerStyle(.menu)
-            .onChange(of: viewModel.selectedDateRange) { _, _ in
-                viewModel.refresh()
+            .onChange(of: self.viewModel.selectedDateRange) { _, _ in
+                self.viewModel.refresh()
             }
         }
         .padding()
@@ -82,58 +82,58 @@ struct AdminSummaryReportView: View {
             LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 2), spacing: ResponsiveDesign.spacing(12)) {
                 SummaryCard(
                     title: "Total Investments",
-                    value: "\(viewModel.summary.totalInvestments)",
+                    value: "\(self.viewModel.summary.totalInvestments)",
                     icon: "chart.bar.fill",
                     color: AppTheme.accentGreen
                 )
 
                 SummaryCard(
                     title: "Total Trades",
-                    value: "\(viewModel.summary.totalTrades)",
+                    value: "\(self.viewModel.summary.totalTrades)",
                     icon: "arrow.triangle.2.circlepath",
                     color: AppTheme.accentLightBlue
                 )
 
                 SummaryCard(
                     title: "Total Invested",
-                    value: viewModel.summary.totalInvestedAmount.formattedAsLocalizedCurrency(),
+                    value: self.viewModel.summary.totalInvestedAmount.formattedAsLocalizedCurrency(),
                     icon: "eurosign.circle.fill",
                     color: AppTheme.accentOrange
                 )
 
                 SummaryCard(
                     title: "Total Current Value",
-                    value: viewModel.summary.totalCurrentValue.formattedAsLocalizedCurrency(),
+                    value: self.viewModel.summary.totalCurrentValue.formattedAsLocalizedCurrency(),
                     icon: "chart.line.uptrend.xyaxis",
                     color: AppTheme.accentGreen
                 )
 
                 SummaryCard(
                     title: "Total Gross Profit (€)",
-                    value: viewModel.summary.totalGrossProfit.formattedAsLocalizedCurrency(),
+                    value: self.viewModel.summary.totalGrossProfit.formattedAsLocalizedCurrency(),
                     icon: "arrow.up.circle.fill",
-                    color: viewModel.summary.totalGrossProfit >= 0 ? AppTheme.accentGreen : AppTheme.accentRed
+                    color: self.viewModel.summary.totalGrossProfit >= 0 ? AppTheme.accentGreen : AppTheme.accentRed
                 )
 
                 SummaryCard(
                     title: "Total Commission",
-                    value: viewModel.summary.totalCommission.formattedAsLocalizedCurrency(),
+                    value: self.viewModel.summary.totalCommission.formattedAsLocalizedCurrency(),
                     icon: "percent",
                     color: AppTheme.accentOrange
                 )
 
                 SummaryCard(
                     title: "Total Trade Volume",
-                    value: viewModel.summary.totalTradeVolume.formattedAsLocalizedCurrency(),
+                    value: self.viewModel.summary.totalTradeVolume.formattedAsLocalizedCurrency(),
                     icon: "arrow.left.arrow.right.circle.fill",
                     color: AppTheme.accentLightBlue
                 )
 
                 SummaryCard(
                     title: "Total Trade Profit",
-                    value: viewModel.summary.totalTradeProfit.formattedAsLocalizedCurrency(),
+                    value: self.viewModel.summary.totalTradeProfit.formattedAsLocalizedCurrency(),
                     icon: "chart.pie.fill",
-                    color: viewModel.summary.totalTradeProfit >= 0 ? AppTheme.accentGreen : AppTheme.accentRed
+                    color: self.viewModel.summary.totalTradeProfit >= 0 ? AppTheme.accentGreen : AppTheme.accentRed
                 )
             }
         }
@@ -151,14 +151,14 @@ struct AdminSummaryReportView: View {
                 .fontWeight(.semibold)
                 .foregroundColor(AppTheme.fontColor)
 
-            if viewModel.summary.investments.isEmpty {
+            if self.viewModel.summary.investments.isEmpty {
                 Text("No completed investments found for the selected filters.")
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
                     .padding()
             } else {
                 LazyVStack(spacing: ResponsiveDesign.spacing(8)) {
-                    ForEach(viewModel.summary.investments) { investment in
+                    ForEach(self.viewModel.summary.investments) { investment in
                         InvestmentSummaryRow(investment: investment)
                     }
                 }
@@ -178,14 +178,14 @@ struct AdminSummaryReportView: View {
                 .fontWeight(.semibold)
                 .foregroundColor(AppTheme.fontColor)
 
-            if viewModel.summary.trades.isEmpty {
+            if self.viewModel.summary.trades.isEmpty {
                 Text("No completed trades found for the selected filters.")
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
                     .padding()
             } else {
                 LazyVStack(spacing: ResponsiveDesign.spacing(8)) {
-                    ForEach(viewModel.summary.trades) { trade in
+                    ForEach(self.viewModel.summary.trades) { trade in
                         TradeSummaryRow(trade: trade)
                     }
                 }
@@ -208,18 +208,18 @@ struct SummaryCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
             HStack {
-                Image(systemName: icon)
+                Image(systemName: self.icon)
                     .font(ResponsiveDesign.headlineFont())
-                    .foregroundColor(color)
+                    .foregroundColor(self.color)
                 Spacer()
             }
 
-            Text(value)
+            Text(self.value)
                 .font(ResponsiveDesign.headlineFont())
                 .fontWeight(.bold)
                 .foregroundColor(AppTheme.fontColor)
 
-            Text(title)
+            Text(self.title)
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
         }
@@ -238,35 +238,35 @@ struct InvestmentSummaryRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
             HStack {
-                Text("Investment #\(investment.investmentNumber)")
+                Text("Investment #\(self.investment.investmentNumber)")
                     .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.semibold)
                     .foregroundColor(AppTheme.fontColor)
 
                 Spacer()
 
-                Text(investment.completedAt.formatted(date: .abbreviated, time: .omitted))
+                Text(self.investment.completedAt.formatted(date: .abbreviated, time: .omitted))
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
             }
 
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
-                SummaryInfoRow(label: "Investor", value: investment.investorName)
-                SummaryInfoRow(label: "Trader", value: investment.traderName)
-                SummaryInfoRow(label: "Amount", value: investment.amount.formattedAsLocalizedCurrency())
-                SummaryInfoRow(label: "Current Value", value: investment.currentValue.formattedAsLocalizedCurrency())
+                SummaryInfoRow(label: "Investor", value: self.investment.investorName)
+                SummaryInfoRow(label: "Trader", value: self.investment.traderName)
+                SummaryInfoRow(label: "Amount", value: self.investment.amount.formattedAsLocalizedCurrency())
+                SummaryInfoRow(label: "Current Value", value: self.investment.currentValue.formattedAsLocalizedCurrency())
                 SummaryInfoRow(
                     label: "Gross Profit (€)",
-                    value: investment.grossProfit.formattedAsLocalizedCurrency(),
-                    valueColor: investment.grossProfit >= 0 ? AppTheme.accentGreen : AppTheme.accentRed
+                    value: self.investment.grossProfit.formattedAsLocalizedCurrency(),
+                    valueColor: self.investment.grossProfit >= 0 ? AppTheme.accentGreen : AppTheme.accentRed
                 )
                 SummaryInfoRow(
                     label: "Return (%)",
-                    value: investment.returnPercentage.map { String(format: "%.2f%%", $0) } ?? "pending"
+                    value: self.investment.returnPercentage.map { String(format: "%.2f%%", $0) } ?? "pending"
                 )
-                SummaryInfoRow(label: "Commission", value: investment.commission.formattedAsLocalizedCurrency())
-                if !investment.tradeNumbers.isEmpty {
-                    SummaryInfoRow(label: "Trade Numbers", value: investment.tradeNumbersText)
+                SummaryInfoRow(label: "Commission", value: self.investment.commission.formattedAsLocalizedCurrency())
+                if !self.investment.tradeNumbers.isEmpty {
+                    SummaryInfoRow(label: "Trade Numbers", value: self.investment.tradeNumbersText)
                 }
             }
         }
@@ -284,28 +284,28 @@ struct TradeSummaryRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
             HStack {
-                Text("Trade #\(trade.tradeNumberText)")
+                Text("Trade #\(self.trade.tradeNumberText)")
                     .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.semibold)
                     .foregroundColor(AppTheme.fontColor)
 
                 Spacer()
 
-                Text(trade.completedAt.formatted(date: .abbreviated, time: .omitted))
+                Text(self.trade.completedAt.formatted(date: .abbreviated, time: .omitted))
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
             }
 
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
-                SummaryInfoRow(label: "Symbol", value: trade.symbol)
-                SummaryInfoRow(label: "Buy Amount", value: trade.buyAmount.formattedAsLocalizedCurrency())
-                SummaryInfoRow(label: "Sell Amount", value: trade.sellAmount.formattedAsLocalizedCurrency())
+                SummaryInfoRow(label: "Symbol", value: self.trade.symbol)
+                SummaryInfoRow(label: "Buy Amount", value: self.trade.buyAmount.formattedAsLocalizedCurrency())
+                SummaryInfoRow(label: "Sell Amount", value: self.trade.sellAmount.formattedAsLocalizedCurrency())
                 SummaryInfoRow(
                     label: "Profit",
-                    value: trade.profit.formattedAsLocalizedCurrency(),
-                    valueColor: trade.profit >= 0 ? AppTheme.accentGreen : AppTheme.accentRed
+                    value: self.trade.profit.formattedAsLocalizedCurrency(),
+                    valueColor: self.trade.profit >= 0 ? AppTheme.accentGreen : AppTheme.accentRed
                 )
-                SummaryInfoRow(label: "Investors", value: "\(trade.investorCount)")
+                SummaryInfoRow(label: "Investors", value: "\(self.trade.investorCount)")
             }
         }
         .padding()
@@ -323,14 +323,14 @@ struct SummaryInfoRow: View {
 
     var body: some View {
         HStack {
-            Text(label)
+            Text(self.label)
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
             Spacer()
-            Text(value)
+            Text(self.value)
                 .font(ResponsiveDesign.captionFont())
                 .fontWeight(.medium)
-                .foregroundColor(valueColor)
+                .foregroundColor(self.valueColor)
         }
     }
 }

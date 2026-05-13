@@ -36,27 +36,27 @@ final class DocumentSearchViewModel: ObservableObject {
     }
 
     func toggleType(_ type: DocumentType) {
-        if filters.types.contains(type) {
-            filters.types.removeAll { $0 == type }
+        if self.filters.types.contains(type) {
+            self.filters.types.removeAll { $0 == type }
         } else {
-            filters.types.append(type)
+            self.filters.types.append(type)
         }
-        scheduleDebouncedSearch()
+        self.scheduleDebouncedSearch()
     }
 
     func clearAllFilters() {
-        filters = DocumentSearchFilters()
-        scheduleDebouncedSearch(immediate: true)
+        self.filters = DocumentSearchFilters()
+        self.scheduleDebouncedSearch(immediate: true)
     }
 
     /// Triggers a fresh page-1 search (debounced for free-text fields).
     func scheduleDebouncedSearch(immediate: Bool = false) {
-        debounceTask?.cancel()
+        self.debounceTask?.cancel()
         if immediate {
             Task { await self.search(reset: true) }
             return
         }
-        debounceTask = Task { @MainActor [weak self] in
+        self.debounceTask = Task { @MainActor [weak self] in
             try? await Task.sleep(nanoseconds: 350_000_000)
             guard !Task.isCancelled else { return }
             await self?.search(reset: true)
@@ -64,48 +64,48 @@ final class DocumentSearchViewModel: ObservableObject {
     }
 
     func loadMoreIfNeeded(currentItem: Document) async {
-        guard hasMore, !isLoadingMore else { return }
+        guard self.hasMore, !self.isLoadingMore else { return }
         guard let last = items.last, last.id == currentItem.id else { return }
-        await search(reset: false)
+        await self.search(reset: false)
     }
 
     func refresh() async {
-        await search(reset: true)
+        await self.search(reset: true)
     }
 
     private func search(reset: Bool) async {
         let searchId = UUID()
-        inFlightSearchId = searchId
+        self.inFlightSearchId = searchId
 
         if reset {
-            isLoading = true
-            currentPage = DocumentSearchPage(limit: currentPage.limit, skip: 0)
+            self.isLoading = true
+            self.currentPage = DocumentSearchPage(limit: self.currentPage.limit, skip: 0)
         } else {
-            isLoadingMore = true
-            currentPage.skip += currentPage.limit
+            self.isLoadingMore = true
+            self.currentPage.skip += self.currentPage.limit
         }
-        errorMessage = nil
+        self.errorMessage = nil
 
         defer {
             if reset { isLoading = false } else { isLoadingMore = false }
         }
 
         do {
-            let result = try await searchService.searchDocuments(filters, page: currentPage)
-            guard inFlightSearchId == searchId else { return }
+            let result = try await searchService.searchDocuments(self.filters, page: self.currentPage)
+            guard self.inFlightSearchId == searchId else { return }
             if reset {
-                items = result.items
+                self.items = result.items
             } else {
                 let known = Set(items.map(\.id))
-                items.append(contentsOf: result.items.filter { !known.contains($0.id) })
+                self.items.append(contentsOf: result.items.filter { !known.contains($0.id) })
             }
-            hasMore = result.hasMore
+            self.hasMore = result.hasMore
         } catch {
-            guard inFlightSearchId == searchId else { return }
+            guard self.inFlightSearchId == searchId else { return }
             if !reset {
-                currentPage.skip = max(0, currentPage.skip - currentPage.limit)
+                self.currentPage.skip = max(0, self.currentPage.skip - self.currentPage.limit)
             }
-            errorMessage = error.localizedDescription
+            self.errorMessage = error.localizedDescription
         }
     }
 }

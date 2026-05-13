@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Notification Names
 extension Notification.Name {
@@ -23,10 +23,10 @@ final class TraderService: TraderServiceProtocol {
 
     // Publishers for observation (MVVM-friendly)
     var activeOrdersPublisher: AnyPublisher<[Order], Never> {
-        $activeOrders.eraseToAnyPublisher()
+        self.$activeOrders.eraseToAnyPublisher()
     }
     var completedTradesPublisher: AnyPublisher<[Trade], Never> {
-        $completedTrades.eraseToAnyPublisher()
+        self.$completedTrades.eraseToAnyPublisher()
     }
 
     // MARK: - Coordinator
@@ -37,53 +37,53 @@ final class TraderService: TraderServiceProtocol {
 
     init(tradingCoordinator: any TradingCoordinatorProtocol) {
         self.tradingCoordinator = tradingCoordinator
-        setupCoordinatorObservers()
+        self.setupCoordinatorObservers()
     }
 
     // MARK: - Trading Data Management
 
     func loadAllTradingData() async throws {
-        try await tradingCoordinator.loadAllTradingData()
+        try await self.tradingCoordinator.loadAllTradingData()
     }
 
     func refreshTradingData() async throws {
-        try await tradingCoordinator.refreshTradingData()
+        try await self.tradingCoordinator.refreshTradingData()
     }
 
     func loadActiveOrders() async throws {
-        try await tradingCoordinator.loadAllTradingData()
+        try await self.tradingCoordinator.loadAllTradingData()
     }
 
     func loadCompletedTrades() async throws {
-        try await tradingCoordinator.loadAllTradingData()
+        try await self.tradingCoordinator.loadAllTradingData()
     }
 
     func loadOrders() async throws {
-        try await tradingCoordinator.loadAllTradingData()
+        try await self.tradingCoordinator.loadAllTradingData()
     }
 
     // MARK: - Trade Management
 
     func createNewTrade(buyOrder: OrderBuy) async throws -> Trade {
-        return try await tradingCoordinator.createNewTrade(buyOrder: buyOrder)
+        return try await self.tradingCoordinator.createNewTrade(buyOrder: buyOrder)
     }
 
     func addSellOrderToTrade(_ tradeId: String, sellOrder: OrderSell) async throws {
-        try await tradingCoordinator.addSellOrderToTrade(tradeId, sellOrder: sellOrder)
+        try await self.tradingCoordinator.addSellOrderToTrade(tradeId, sellOrder: sellOrder)
     }
 
     func cancelTrade(_ tradeId: String) async throws {
-        try await tradingCoordinator.cancelTrade(tradeId)
+        try await self.tradingCoordinator.cancelTrade(tradeId)
     }
 
     func completeTrade(_ tradeId: String) async throws {
-        try await tradingCoordinator.completeTrade(tradeId)
+        try await self.tradingCoordinator.completeTrade(tradeId)
     }
 
     // MARK: - Order Management
 
     func placeBuyOrder(_ orderRequest: BuyOrderRequest) async throws -> OrderBuy {
-        return try await tradingCoordinator.placeBuyOrder(
+        return try await self.tradingCoordinator.placeBuyOrder(
             symbol: orderRequest.symbol,
             quantity: orderRequest.quantity,
             price: orderRequest.price,
@@ -99,77 +99,77 @@ final class TraderService: TraderServiceProtocol {
     }
 
     func placeSellOrder(symbol: String, quantity: Int, price: Double) async throws -> OrderSell {
-        return try await tradingCoordinator.placeSellOrder(symbol: symbol, quantity: quantity, price: price)
+        return try await self.tradingCoordinator.placeSellOrder(symbol: symbol, quantity: quantity, price: price)
     }
 
     func submitOrder(_ order: OrderSell) async throws {
-        try await tradingCoordinator.submitOrder(order)
+        try await self.tradingCoordinator.submitOrder(order)
     }
 
     func cancelOrder(_ orderId: String) async throws {
-        try await tradingCoordinator.cancelOrder(orderId)
+        try await self.tradingCoordinator.cancelOrder(orderId)
     }
 
     func updateOrderStatus(_ orderId: String, status: String) async throws {
-        try await tradingCoordinator.updateOrderStatus(orderId, status: status)
+        try await self.tradingCoordinator.updateOrderStatus(orderId, status: status)
     }
 
     // MARK: - Watchlist Management
 
     func addToWatchlist(_ searchResult: SearchResult) async throws {
-        try await tradingCoordinator.addToWatchlist(searchResult)
+        try await self.tradingCoordinator.addToWatchlist(searchResult)
     }
 
     func removeFromWatchlist(_ wkn: String) async throws {
-        try await tradingCoordinator.removeFromWatchlist(wkn)
+        try await self.tradingCoordinator.removeFromWatchlist(wkn)
     }
 
     func clearWatchlist() async throws {
-        try await tradingCoordinator.clearWatchlist()
+        try await self.tradingCoordinator.clearWatchlist()
     }
 
     func isInWatchlist(_ wkn: String) -> Bool {
-        return tradingCoordinator.isInWatchlist(wkn)
+        return self.tradingCoordinator.isInWatchlist(wkn)
     }
 
     // MARK: - Statistics
 
     func calculateTotalVolume() -> Double {
-        return tradingCoordinator.calculateTotalVolume()
+        return self.tradingCoordinator.calculateTotalVolume()
     }
 
     func calculateDailyPnL() -> Double {
-        return tradingCoordinator.calculateDailyPnL()
+        return self.tradingCoordinator.calculateDailyPnL()
     }
 
     // MARK: - Private Methods
 
     private func setupCoordinatorObservers() {
         // Observe coordinator state changes and forward to facade properties
-        tradingCoordinator.activeOrdersPublisher
+        self.tradingCoordinator.activeOrdersPublisher
             .receive(on: DispatchQueue.main)
             .assign(to: \.activeOrders, on: self)
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
 
-        tradingCoordinator.completedTradesPublisher
+        self.tradingCoordinator.completedTradesPublisher
             .receive(on: DispatchQueue.main)
             .assign(to: \.completedTrades, on: self)
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
 
-        tradingCoordinator.watchlistPublisher
+        self.tradingCoordinator.watchlistPublisher
             .receive(on: DispatchQueue.main)
             .assign(to: \.watchlist, on: self)
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
 
-        tradingCoordinator.isLoadingPublisher
+        self.tradingCoordinator.isLoadingPublisher
             .receive(on: DispatchQueue.main)
             .assign(to: \.isLoading, on: self)
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
 
-        tradingCoordinator.errorMessagePublisher
+        self.tradingCoordinator.errorMessagePublisher
             .receive(on: DispatchQueue.main)
             .assign(to: \.errorMessage, on: self)
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
     }
 }
 

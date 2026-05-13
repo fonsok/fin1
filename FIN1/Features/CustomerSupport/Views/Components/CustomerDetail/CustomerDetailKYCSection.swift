@@ -17,13 +17,13 @@ struct CustomerDetailKYCSection: View {
 
                 Spacer()
 
-                CSStatusBadge(text: kyc.overallStatus.displayName, color: kycStatusColor(kyc.overallStatus))
+                CSStatusBadge(text: self.kyc.overallStatus.displayName, color: self.kycStatusColor(self.kyc.overallStatus))
             }
 
             VStack(spacing: ResponsiveDesign.spacing(8)) {
-                KYCStatusRow(title: "E-Mail verifiziert", isComplete: kyc.emailVerified)
-                KYCStatusRow(title: "Identität verifiziert", isComplete: kyc.identityVerified)
-                KYCStatusRow(title: "Adresse verifiziert", isComplete: kyc.addressVerified)
+                KYCStatusRow(title: "E-Mail verifiziert", isComplete: self.kyc.emailVerified)
+                KYCStatusRow(title: "Identität verifiziert", isComplete: self.kyc.identityVerified)
+                KYCStatusRow(title: "Adresse verifiziert", isComplete: self.kyc.addressVerified)
             }
         }
         .padding()

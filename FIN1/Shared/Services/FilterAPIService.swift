@@ -109,7 +109,7 @@ struct ParseFilterResponse: Codable, Sendable {
     let updatedAt: String?
 
     func toSecuritiesFilter() throws -> SecuritiesFilterCombination {
-        guard filterContext == FilterContext.securitiesSearch.rawValue else {
+        guard self.filterContext == FilterContext.securitiesSearch.rawValue else {
             throw FilterAPIServiceError.invalidContext
         }
 
@@ -126,28 +126,28 @@ struct ParseFilterResponse: Codable, Sendable {
             underlyingAsset: underlyingAsset,
             direction: direction,
             strikePriceGap: filterCriteria["strikePriceGap"]?.stringValue,
-            remainingTerm: filterCriteria["remainingTerm"]?.stringValue,
-            issuer: filterCriteria["issuer"]?.stringValue,
-            omega: filterCriteria["omega"]?.stringValue
+            remainingTerm: self.filterCriteria["remainingTerm"]?.stringValue,
+            issuer: self.filterCriteria["issuer"]?.stringValue,
+            omega: self.filterCriteria["omega"]?.stringValue
         )
 
         // Note: id and createdAt are set in init, but we need to preserve objectId
         // We'll use objectId as a reference, but keep UUID for local identification
         return SecuritiesFilterCombination(
-            name: name,
+            name: self.name,
             filters: searchFilters,
-            isDefault: isDefault
+            isDefault: self.isDefault
         )
     }
 
     func toTraderFilter() throws -> FilterCombination {
-        guard filterContext == FilterContext.traderDiscovery.rawValue else {
+        guard self.filterContext == FilterContext.traderDiscovery.rawValue else {
             throw FilterAPIServiceError.invalidContext
         }
 
         // Decode IndividualFilterCriteria array from dictionary
         var filters: [IndividualFilterCriteria] = []
-        for (key, value) in filterCriteria {
+        for (key, value) in self.filterCriteria {
             if let stringValue = value.stringValue,
                let filterType = IndividualFilterCriteria.FilterType(rawValue: key),
                let option = FilterSuccessRateOption(rawValue: stringValue) {
@@ -156,9 +156,9 @@ struct ParseFilterResponse: Codable, Sendable {
         }
 
         return FilterCombination(
-            name: name,
+            name: self.name,
             filters: filters,
-            isDefault: isDefault
+            isDefault: self.isDefault
         )
     }
 }
@@ -197,7 +197,7 @@ final class FilterAPIService: FilterAPIServiceProtocol, @unchecked Sendable {
     func saveSecuritiesFilter(_ filter: SecuritiesFilterCombination, userId: String) async throws -> SecuritiesFilterCombination {
         let input = ParseFilterInput.from(securitiesFilter: filter, userId: userId)
         let _: ParseResponse = try await apiClient.createObject(
-            className: className,
+            className: self.className,
             object: input
         )
 
@@ -210,7 +210,7 @@ final class FilterAPIService: FilterAPIServiceProtocol, @unchecked Sendable {
         // We'll need to fetch first to find the objectId, or store it separately
         // For now, treat update as create (idempotent by name+context)
         // TODO: Store objectId in filter model or use a mapping for proper update
-        return try await saveSecuritiesFilter(filter, userId: userId)
+        return try await self.saveSecuritiesFilter(filter, userId: userId)
     }
 
     func fetchSecuritiesFilters(for userId: String) async throws -> [SecuritiesFilterCombination] {
@@ -220,7 +220,7 @@ final class FilterAPIService: FilterAPIServiceProtocol, @unchecked Sendable {
         ]
 
         let responses: [ParseFilterResponse] = try await apiClient.fetchObjects(
-            className: className,
+            className: self.className,
             query: query,
             include: nil,
             orderBy: nil,
@@ -237,7 +237,7 @@ final class FilterAPIService: FilterAPIServiceProtocol, @unchecked Sendable {
     func saveTraderFilter(_ filter: FilterCombination, userId: String) async throws -> FilterCombination {
         let input = ParseFilterInput.from(traderFilter: filter, userId: userId)
         let _: ParseResponse = try await apiClient.createObject(
-            className: className,
+            className: self.className,
             object: input
         )
 
@@ -246,7 +246,7 @@ final class FilterAPIService: FilterAPIServiceProtocol, @unchecked Sendable {
 
     func updateTraderFilter(_ filter: FilterCombination, userId: String) async throws -> FilterCombination {
         // Similar to securities filter - treat as create for now
-        return try await saveTraderFilter(filter, userId: userId)
+        return try await self.saveTraderFilter(filter, userId: userId)
     }
 
     func fetchTraderFilters(for userId: String) async throws -> [FilterCombination] {
@@ -256,7 +256,7 @@ final class FilterAPIService: FilterAPIServiceProtocol, @unchecked Sendable {
         ]
 
         let responses: [ParseFilterResponse] = try await apiClient.fetchObjects(
-            className: className,
+            className: self.className,
             query: query,
             include: nil,
             orderBy: nil,
@@ -279,7 +279,7 @@ final class FilterAPIService: FilterAPIServiceProtocol, @unchecked Sendable {
         ]
 
         let responses: [ParseFilterResponse] = try await apiClient.fetchObjects(
-            className: className,
+            className: self.className,
             query: query,
             include: nil,
             orderBy: nil,
@@ -290,8 +290,7 @@ final class FilterAPIService: FilterAPIServiceProtocol, @unchecked Sendable {
         // Note: This is inefficient - ideally we'd store objectId in the filter model
         // For now, we'll delete all matching filters (should be unique by name+context)
         for response in responses {
-            try? await apiClient.deleteObject(className: className, objectId: response.objectId)
+            try? await self.apiClient.deleteObject(className: self.className, objectId: response.objectId)
         }
     }
-
 }

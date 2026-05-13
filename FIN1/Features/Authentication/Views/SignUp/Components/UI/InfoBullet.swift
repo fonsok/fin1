@@ -13,10 +13,10 @@ struct InfoBullet: View {
         HStack(alignment: .top, spacing: 8) {
             Text("•")
                 .font(ResponsiveDesign.headlineFont())
-                .foregroundColor(color)
+                .foregroundColor(self.color)
                 .fontWeight(.bold)
             
-            Text(text)
+            Text(self.text)
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.8))
                 .multilineTextAlignment(.leading)

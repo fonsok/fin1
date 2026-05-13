@@ -18,15 +18,15 @@ final class SavedFiltersManager: ObservableObject {
     ) {
         self.filterAPIService = filterAPIService
         self.userService = userService
-        loadSavedFilters()
+        self.loadSavedFilters()
         // Purge any previously persisted default combinations
-        let hadDefaults = savedFilters.contains { $0.isDefault }
+        let hadDefaults = self.savedFilters.contains { $0.isDefault }
         if hadDefaults {
-            savedFilters.removeAll { $0.isDefault }
-            saveFilters()
+            self.savedFilters.removeAll { $0.isDefault }
+            self.saveFilters()
         }
         // Do not seed defaults anymore
-        createDefaultFilters()
+        self.createDefaultFilters()
     }
 
     /// Configure backend dependencies (called after initialization)
@@ -44,7 +44,7 @@ final class SavedFiltersManager: ObservableObject {
         // Fallback to local storage
         if let data = userDefaults.data(forKey: savedFiltersKey),
            let decoded = try? JSONDecoder().decode([FilterCombination].self, from: data) {
-            savedFilters = decoded
+            self.savedFilters = decoded
         }
     }
 
@@ -59,8 +59,8 @@ final class SavedFiltersManager: ObservableObject {
             // Merge backend filters with local (avoid duplicates by name)
             let existingNames = Set(savedFilters.map { $0.name })
             let newFilters = backendFilters.filter { !existingNames.contains($0.name) }
-            savedFilters.append(contentsOf: newFilters)
-            saveFilters()
+            self.savedFilters.append(contentsOf: newFilters)
+            self.saveFilters()
         } catch {
             print("⚠️ Failed to load trader filters from backend: \(error.localizedDescription)")
         }
@@ -68,7 +68,7 @@ final class SavedFiltersManager: ObservableObject {
 
     private func saveFilters() {
         if let encoded = try? JSONEncoder().encode(savedFilters) {
-            userDefaults.set(encoded, forKey: savedFiltersKey)
+            self.userDefaults.set(encoded, forKey: self.savedFiltersKey)
         }
     }
 
@@ -77,8 +77,8 @@ final class SavedFiltersManager: ObservableObject {
     }
 
     func addFilter(_ filter: FilterCombination) {
-        savedFilters.append(filter)
-        saveFilters()
+        self.savedFilters.append(filter)
+        self.saveFilters()
 
         // Sync to backend (write-through pattern)
         if let apiService = filterAPIService,
@@ -96,8 +96,8 @@ final class SavedFiltersManager: ObservableObject {
 
     func removeFilter(_ filter: FilterCombination) {
         // Allow deletion of default filters - they will be recreated on next app launch
-        savedFilters.removeAll { $0.id == filter.id }
-        saveFilters()
+        self.savedFilters.removeAll { $0.id == filter.id }
+        self.saveFilters()
 
         // Sync deletion to backend (write-through pattern)
         if let apiService = filterAPIService,
@@ -115,8 +115,8 @@ final class SavedFiltersManager: ObservableObject {
 
     func updateFilter(_ filter: FilterCombination) {
         if let index = savedFilters.firstIndex(where: { $0.id == filter.id }) {
-            savedFilters[index] = filter
-            saveFilters()
+            self.savedFilters[index] = filter
+            self.saveFilters()
 
             // Sync update to backend (write-through pattern)
             if let apiService = filterAPIService,
@@ -145,7 +145,7 @@ final class SavedFiltersManager: ObservableObject {
         print("📤 Syncing trader filters to backend...")
 
         // Sync all current filters
-        let filtersToSync = savedFilters
+        let filtersToSync = self.savedFilters
 
         for filter in filtersToSync {
             do {

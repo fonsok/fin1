@@ -10,19 +10,19 @@ struct SecurityToggleRow: View {
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
-                Text(title)
+                Text(self.title)
                     .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.medium)
                     .foregroundColor(AppTheme.fontColor)
 
-                Text(subtitle)
+                Text(self.subtitle)
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
             }
 
             Spacer()
 
-            Toggle("", isOn: $isEnabled)
+            Toggle("", isOn: self.$isEnabled)
                 .toggleStyle(SwitchToggleStyle(tint: AppTheme.accentLightBlue))
         }
     }
@@ -36,26 +36,26 @@ struct TwoFactorMethodRow: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
+        Button(action: self.action) {
             HStack {
-                Image(systemName: method.iconName)
+                Image(systemName: self.method.iconName)
                     .font(ResponsiveDesign.bodyFont())
-                    .foregroundColor(isSelected ? AppTheme.accentLightBlue : AppTheme.fontColor.opacity(0.5))
+                    .foregroundColor(self.isSelected ? AppTheme.accentLightBlue : AppTheme.fontColor.opacity(0.5))
                     .frame(width: 24)
 
-                Text(method.rawValue)
+                Text(self.method.rawValue)
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.fontColor)
 
                 Spacer()
 
-                if isSelected {
+                if self.isSelected {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundColor(AppTheme.accentLightBlue)
                 }
             }
             .padding(ResponsiveDesign.spacing(12))
-            .background(isSelected ? AppTheme.accentLightBlue.opacity(0.1) : AppTheme.systemTertiaryBackground)
+            .background(self.isSelected ? AppTheme.accentLightBlue.opacity(0.1) : AppTheme.systemTertiaryBackground)
             .cornerRadius(ResponsiveDesign.spacing(8))
         }
     }
@@ -68,18 +68,18 @@ struct SecurityEventRow: View {
 
     var body: some View {
         HStack(spacing: ResponsiveDesign.spacing(12)) {
-            Image(systemName: event.type.iconName)
+            Image(systemName: self.event.type.iconName)
                 .font(ResponsiveDesign.bodyFont())
-                .foregroundColor(eventColor)
+                .foregroundColor(self.eventColor)
                 .frame(width: 24)
 
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(2)) {
-                Text(event.description)
+                Text(self.event.description)
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.fontColor)
 
                 HStack {
-                    Text(event.timestamp, style: .relative)
+                    Text(self.event.timestamp, style: .relative)
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(AppTheme.fontColor.opacity(0.6))
 
@@ -101,7 +101,7 @@ struct SecurityEventRow: View {
     }
 
     private var eventColor: Color {
-        switch event.type.color {
+        switch self.event.type.color {
         case "green": return AppTheme.accentGreen
         case "orange": return AppTheme.accentOrange
         case "blue": return AppTheme.accentLightBlue

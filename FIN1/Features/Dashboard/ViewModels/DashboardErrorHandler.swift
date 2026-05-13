@@ -1,5 +1,5 @@
-import SwiftUI
 import Foundation
+import SwiftUI
 
 // MARK: - Dashboard Error Handler
 /// Centralized error handling for dashboard operations
@@ -16,8 +16,8 @@ final class DashboardErrorHandler: ObservableObject {
     // MARK: - Error Management
 
     func handleError(_ error: AppError, context: String, userId: String?, userRole: String?) {
-        errorMessage = error.errorDescription ?? "An error occurred"
-        showError = true
+        self.errorMessage = error.errorDescription ?? "An error occurred"
+        self.showError = true
 
         // Track error with context
         let errorContext = ErrorContext(
@@ -31,23 +31,23 @@ final class DashboardErrorHandler: ObservableObject {
             ]
         )
 
-        telemetryService.trackAppError(error, context: errorContext)
+        self.telemetryService.trackAppError(error, context: errorContext)
     }
 
     func clearError() {
-        errorMessage = nil
-        showError = false
+        self.errorMessage = nil
+        self.showError = false
     }
 
     // MARK: - Convenience Methods
 
     func handleDataLoadingError(_ error: Error, userId: String?, userRole: String?) {
         let appError = error.toAppError()
-        handleError(appError, context: "data_loading", userId: userId, userRole: userRole)
+        self.handleError(appError, context: "data_loading", userId: userId, userRole: userRole)
     }
 
     func handleUserRefreshError(_ error: Error, userId: String?, userRole: String?) {
         let appError = error.toAppError()
-        handleError(appError, context: "user_refresh", userId: userId, userRole: userRole)
+        self.handleError(appError, context: "user_refresh", userId: userId, userRole: userRole)
     }
 }

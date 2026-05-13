@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 /// Service for tracking and managing pool-trade participation
 /// Tracks which investment pools are involved in which trades for profit distribution

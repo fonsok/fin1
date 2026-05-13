@@ -31,10 +31,10 @@ struct ExperienceStep: View {
                     .multilineTextAlignment(.center)
                 
                 // Part 1 Title
-              /*  Text("Part 1")
-                    .font(ResponsiveDesign.headlineFont())
-                    .foregroundColor(AppTheme.fontColor)
-                    .frame(maxWidth: .infinity, alignment: .leading) */
+                /*  Text("Part 1")
+                 .font(ResponsiveDesign.headlineFont())
+                 .foregroundColor(AppTheme.fontColor)
+                 .frame(maxWidth: .infinity, alignment: .leading) */
                 
                 Text("Experience with various financial products")
                     .font(ResponsiveDesign.headlineFont())
@@ -46,7 +46,7 @@ struct ExperienceStep: View {
                     .foregroundColor(AppTheme.fontColor.opacity(0.8))
                     .frame(maxWidth: .infinity, alignment: .leading)
                 
-                                // Section A: Stocks
+                // Section A: Stocks
                 VStack(alignment: .leading, spacing: 16) {
                     Text("a) Stocks")
                         .font(ResponsiveDesign.headlineFont())
@@ -55,19 +55,19 @@ struct ExperienceStep: View {
 
                     CustomPicker(
                         title: "How many of these types of investments did you make last year?",
-                        selection: $stocksTransactionsCount
+                        selection: self.$stocksTransactionsCount
                     )
 
                     CustomPicker(
                         title: "How much did you invest?",
-                        selection: $stocksInvestmentAmount
+                        selection: self.$stocksInvestmentAmount
                     )
                 }
                 .padding()
                 .background(AppTheme.sectionBackground)
                 .cornerRadius(ResponsiveDesign.spacing(16))
                 
-                                // Section B: Investment funds, ETFs
+                // Section B: Investment funds, ETFs
                 VStack(alignment: .leading, spacing: 16) {
                     Text("b) Investment funds, ETFs")
                         .font(ResponsiveDesign.headlineFont())
@@ -76,19 +76,19 @@ struct ExperienceStep: View {
 
                     CustomPicker(
                         title: "How many of these types of investments did you make last year?",
-                        selection: $etfsTransactionsCount
+                        selection: self.$etfsTransactionsCount
                     )
 
                     CustomPicker(
                         title: "How much did you invest?",
-                        selection: $etfsInvestmentAmount
+                        selection: self.$etfsInvestmentAmount
                     )
                 }
                 .padding()
                 .background(AppTheme.sectionBackground)
                 .cornerRadius(ResponsiveDesign.spacing(16))
                 
-                                // Section C: Certificates and derivatives
+                // Section C: Certificates and derivatives
                 VStack(alignment: .leading, spacing: 16) {
                     Text("c) Certificates and derivatives")
                         .font(ResponsiveDesign.headlineFont())
@@ -97,24 +97,24 @@ struct ExperienceStep: View {
 
                     CustomPicker(
                         title: "How many of these types of investments did you make last year?",
-                        selection: $derivativesTransactionsCount
+                        selection: self.$derivativesTransactionsCount
                     )
 
                     CustomPicker(
                         title: "How much did you invest?",
-                        selection: $derivativesInvestmentAmount
+                        selection: self.$derivativesInvestmentAmount
                     )
 
                     CustomPicker(
                         title: "How long did you generally hold your positions?",
-                        selection: $derivativesHoldingPeriod
+                        selection: self.$derivativesHoldingPeriod
                     )
                 }
                 .padding()
                 .background(AppTheme.sectionBackground)
                 .cornerRadius(ResponsiveDesign.spacing(16))
                 
-                                // Section D: Other assets
+                // Section D: Other assets
                 VStack(alignment: .leading, spacing: 16) {
                     Text("d) Have you invested in the following assets?")
                         .font(ResponsiveDesign.headlineFont())
@@ -125,12 +125,12 @@ struct ExperienceStep: View {
                         OtherAssetsOption(
                             title: "Real estate",
                             isSelected: Binding(
-                                get: { otherAssets["Real estate"] ?? false },
+                                get: { self.otherAssets["Real estate"] ?? false },
                                 set: { newValue in
-                                    otherAssets["Real estate"] = newValue
+                                    self.otherAssets["Real estate"] = newValue
                                     // If this is selected, uncheck "No"
                                     if newValue {
-                                        otherAssets["No"] = false
+                                        self.otherAssets["No"] = false
                                     }
                                 }
                             )
@@ -139,12 +139,12 @@ struct ExperienceStep: View {
                         OtherAssetsOption(
                             title: "Gold, silver",
                             isSelected: Binding(
-                                get: { otherAssets["Gold, silver"] ?? false },
+                                get: { self.otherAssets["Gold, silver"] ?? false },
                                 set: { newValue in
-                                    otherAssets["Gold, silver"] = newValue
+                                    self.otherAssets["Gold, silver"] = newValue
                                     // If this is selected, uncheck "No"
                                     if newValue {
-                                        otherAssets["No"] = false
+                                        self.otherAssets["No"] = false
                                     }
                                 }
                             )
@@ -153,13 +153,13 @@ struct ExperienceStep: View {
                         OtherAssetsOption(
                             title: "No",
                             isSelected: Binding(
-                                get: { otherAssets["No"] ?? false },
+                                get: { self.otherAssets["No"] ?? false },
                                 set: { newValue in
-                                    otherAssets["No"] = newValue
+                                    self.otherAssets["No"] = newValue
                                     // If "No" is selected, uncheck all others
                                     if newValue {
-                                        otherAssets["Real estate"] = false
-                                        otherAssets["Gold, silver"] = false
+                                        self.otherAssets["Real estate"] = false
+                                        self.otherAssets["Gold, silver"] = false
                                     }
                                 }
                             )

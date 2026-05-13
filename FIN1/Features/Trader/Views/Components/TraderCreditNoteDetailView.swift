@@ -1,5 +1,5 @@
-import SwiftUI
 import Foundation
+import SwiftUI
 
 // MARK: - Trader Credit Note Detail View
 
@@ -33,21 +33,21 @@ struct TraderCreditNoteDetailView: View {
             VStack(spacing: ResponsiveDesign.spacing(24)) {
                 // Document Header (einheitliches Layout für alle Dokumente)
                 DocumentHeaderLayoutView(
-                    accountHolderName: viewModel.accountHolderName,
-                    accountHolderAddress: document.invoiceData?.customerInfo.address,
-                    accountHolderCity: document.invoiceData != nil ? "\(document.invoiceData!.customerInfo.postalCode) \(document.invoiceData!.customerInfo.city)" : nil,
-                    documentDate: document.uploadedAt
+                    accountHolderName: self.viewModel.accountHolderName,
+                    accountHolderAddress: self.document.invoiceData?.customerInfo.address,
+                    accountHolderCity: self.document.invoiceData != nil ? "\(self.document.invoiceData!.customerInfo.postalCode) \(self.document.invoiceData!.customerInfo.city)" : nil,
+                    documentDate: self.document.uploadedAt
                 ) {
-                    CreditNoteQRCodeView(document: document)
+                    CreditNoteQRCodeView(document: self.document)
                 }
 
-                headerSection
-                tradeInfoSection
-                if showCommissionBreakdown {
-                    commissionBreakdownSection
+                self.headerSection
+                self.tradeInfoSection
+                if self.showCommissionBreakdown {
+                    self.commissionBreakdownSection
                 }
-                notesSections
-                footerSection
+                self.notesSections
+                self.footerSection
             }
             .padding(.horizontal, ResponsiveDesign.horizontalPadding())
             .padding(.vertical, ResponsiveDesign.spacing(20))
@@ -59,14 +59,14 @@ struct TraderCreditNoteDetailView: View {
         .toolbarBackground(DocumentDesignSystem.documentBackground, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button("Done") { dismiss() }
+                Button("Done") { self.dismiss() }
                     .foregroundColor(DocumentDesignSystem.textColor)
                     .fontWeight(.medium)
             }
         }
         .task {
-            viewModel.configure(with: appServices, document: document)
-            await viewModel.loadBreakdown()
+            self.viewModel.configure(with: self.appServices, document: self.document)
+            await self.viewModel.loadBreakdown()
         }
         .task {
             let provider = LegalSnippetProvider(termsContentService: appServices.termsContentService)
@@ -87,8 +87,8 @@ struct TraderCreditNoteDetailView: View {
                 placeholders: [:]
             )
             let (tax, legal) = await (taxTask, legalTask)
-            taxNoteSnippet = tax
-            legalNoteSnippet = legal
+            self.taxNoteSnippet = tax
+            self.legalNoteSnippet = legal
         }
     }
 
@@ -141,7 +141,7 @@ struct TraderCreditNoteDetailView: View {
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(DocumentDesignSystem.textColorSecondary)
                     Spacer()
-                    Text("\(formatDate(dates.entry)) - \(formatDate(dates.exit))")
+                    Text("\(self.formatDate(dates.entry)) - \(self.formatDate(dates.exit))")
                         .font(ResponsiveDesign.bodyFont())
                         .fontWeight(.medium)
                         .foregroundColor(DocumentDesignSystem.textColor)
@@ -157,12 +157,12 @@ struct TraderCreditNoteDetailView: View {
                     .foregroundColor(DocumentDesignSystem.textColorSecondary)
                 Spacer()
                 VStack(alignment: .trailing, spacing: 2) {
-                    Text(viewModel.tradeGrossProfit.formatted(.currency(code: "EUR")))
+                    Text(self.viewModel.tradeGrossProfit.formatted(.currency(code: "EUR")))
                         .font(ResponsiveDesign.bodyFont())
                         .fontWeight(.semibold)
                         .foregroundColor(DocumentDesignSystem.textColor)
-                    if viewModel.tradeROI != 0 {
-                        Text("+\(String(format: "%.2f", viewModel.tradeROI))%")
+                    if self.viewModel.tradeROI != 0 {
+                        Text("+\(String(format: "%.2f", self.viewModel.tradeROI))%")
                             .font(ResponsiveDesign.captionFont())
                             .foregroundColor(DocumentDesignSystem.textColorSecondary)
                     }
@@ -171,11 +171,11 @@ struct TraderCreditNoteDetailView: View {
 
             // Total Commission Row
             HStack {
-                Text("Commission (\(viewModel.formattedCommissionPercentage)):")
+                Text("Commission (\(self.viewModel.formattedCommissionPercentage)):")
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(DocumentDesignSystem.textColorSecondary)
                 Spacer()
-                Text(viewModel.totalCommission.formatted(.currency(code: "EUR")))
+                Text(self.viewModel.totalCommission.formatted(.currency(code: "EUR")))
                     .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.bold)
                     .foregroundColor(DocumentDesignSystem.textColor)
@@ -195,17 +195,17 @@ struct TraderCreditNoteDetailView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.bottom, ResponsiveDesign.spacing(12))
 
-            if viewModel.isLoading {
+            if self.viewModel.isLoading {
                 ProgressView().padding()
             } else if let error = viewModel.errorMessage {
-                errorView(message: error)
-            } else if viewModel.breakdownItems.isEmpty {
-                emptyStateView
+                self.errorView(message: error)
+            } else if self.viewModel.breakdownItems.isEmpty {
+                self.emptyStateView
             } else {
                 CreditNoteCommissionTableView(
-                    items: viewModel.breakdownItems,
-                    totalCommission: viewModel.totalCommission,
-                    commissionRateFormatted: viewModel.formattedCommissionRate
+                    items: self.viewModel.breakdownItems,
+                    totalCommission: self.viewModel.totalCommission,
+                    commissionRateFormatted: self.viewModel.formattedCommissionRate
                 )
             }
         }
@@ -251,7 +251,7 @@ struct TraderCreditNoteDetailView: View {
                 .multilineTextAlignment(.center)
 
             Button(action: {
-                Task { await viewModel.loadBreakdown() }
+                Task { await self.viewModel.loadBreakdown() }
             }, label: {
                 Text("Retry")
                     .font(ResponsiveDesign.bodyFont())
@@ -275,9 +275,9 @@ struct TraderCreditNoteDetailView: View {
 
     private var notesSections: some View {
         DocumentNotesSection(
-            accountNumber: viewModel.accountNumber,
-            taxNote: taxNoteSnippet,
-            legalNote: legalNoteSnippet
+            accountNumber: self.viewModel.accountNumber,
+            taxNote: self.taxNoteSnippet,
+            legalNote: self.legalNoteSnippet
         )
     }
 
@@ -285,12 +285,14 @@ struct TraderCreditNoteDetailView: View {
 
     private var footerSection: some View {
         VStack(spacing: ResponsiveDesign.spacing(8)) {
-            Text("Commission is calculated as \(viewModel.formattedCommissionPercentage) of each investor's gross profit from this trade.")
-                .font(ResponsiveDesign.captionFont())
-                .foregroundColor(DocumentDesignSystem.textColorTertiary)
-                .multilineTextAlignment(.center)
+            Text(
+                "Commission is calculated as \(self.viewModel.formattedCommissionPercentage) of each investor's gross profit from this trade."
+            )
+            .font(ResponsiveDesign.captionFont())
+            .foregroundColor(DocumentDesignSystem.textColorTertiary)
+            .multilineTextAlignment(.center)
 
-            Text("Document generated on \(formatDate(document.uploadedAt))")
+            Text("Document generated on \(self.formatDate(self.document.uploadedAt))")
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(DocumentDesignSystem.textColorTertiary)
         }

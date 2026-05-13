@@ -33,7 +33,7 @@ let mockPositions = [
         quantity: 25,
         averagePrice: 170.50,
         currentPrice: 175.43,
-        marketValue: 4386,
+        marketValue: 4_386,
         pnl: 123,
         pnlPercent: 2.9,
         priceChange: 4.93
@@ -44,7 +44,7 @@ let mockPositions = [
         quantity: 10,
         averagePrice: 235.00,
         currentPrice: 242.54,
-        marketValue: 2425,
+        marketValue: 2_425,
         pnl: 75,
         pnlPercent: 3.2,
         priceChange: 7.54
@@ -55,7 +55,7 @@ let mockPositions = [
         quantity: 15,
         averagePrice: 135.00,
         currentPrice: 138.21,
-        marketValue: 2073,
+        marketValue: 2_073,
         pnl: 48,
         pnlPercent: 2.4,
         priceChange: 3.21
@@ -66,22 +66,22 @@ let mockDepotHistory = [
     MockDepotHistory(
         action: "Buy Order Executed",
         details: "AAPL - 25 shares @ $170.50",
-        amount: -4263,
+        amount: -4_263,
         icon: "arrow.down.circle.fill",
-        date: Date().addingTimeInterval(-86400 * 3)
+        date: Date().addingTimeInterval(-86_400 * 3)
     ),
     MockDepotHistory(
         action: "Sell Order Executed",
         details: "MSFT - 20 shares @ $320.50",
-        amount: 6410,
+        amount: 6_410,
         icon: "arrow.up.circle.fill",
-        date: Date().addingTimeInterval(-86400 * 5)
+        date: Date().addingTimeInterval(-86_400 * 5)
     ),
     MockDepotHistory(
         action: "Dividend Received",
         details: "AAPL - Quarterly dividend",
         amount: 125,
         icon: "dollarsign.circle.fill",
-        date: Date().addingTimeInterval(-86400 * 7)
+        date: Date().addingTimeInterval(-86_400 * 7)
     )
 ]

@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Trading Statistics Service Protocol
 /// Defines the contract for trading statistics calculations and management

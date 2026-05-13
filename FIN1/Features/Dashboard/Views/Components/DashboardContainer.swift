@@ -7,8 +7,8 @@ struct DashboardContainer: View {
     @EnvironmentObject var tabRouter: TabRouter
 
     var body: some View {
-        DashboardContainerContent(services: services)
-            .environmentObject(tabRouter)
+        DashboardContainerContent(services: self.services)
+            .environmentObject(self.tabRouter)
     }
 }
 
@@ -24,7 +24,7 @@ private struct DashboardContainerContent: View {
     @State private var riskWarningText: String = ""
 
     private var defaultRiskWarningText: String {
-        "Note: never expose more than \(Int(maximumRiskExposurePercent)) % of your assets to risk."
+        "Note: never expose more than \(Int(self.maximumRiskExposurePercent)) % of your assets to risk."
     }
 
     init(services: AppServices) {
@@ -38,7 +38,7 @@ private struct DashboardContainerContent: View {
     }
 
     var body: some View {
-        NavigationStack(path: $navigationPath) {
+        NavigationStack(path: self.$navigationPath) {
             ZStack {
                 AppTheme.screenBackground
                     .ignoresSafeArea()
@@ -49,7 +49,7 @@ private struct DashboardContainerContent: View {
                         DashboardWelcomeHeader()
 
                         // Risk Warning Message (value from configuration)
-                        Text(riskWarningText.isEmpty ? defaultRiskWarningText : riskWarningText)
+                        Text(self.riskWarningText.isEmpty ? self.defaultRiskWarningText : self.riskWarningText)
                             .font(ResponsiveDesign.captionFont())
                             .foregroundColor(AppTheme.secondaryText)
                             .multilineTextAlignment(.center)
@@ -57,21 +57,21 @@ private struct DashboardContainerContent: View {
                             .padding(.bottom, ResponsiveDesign.spacing(8))
 
                         // Quick Stats
-                        DashboardStatsSection(navigationPath: $navigationPath, appServices: services)
-                            .environmentObject(tabRouter)
+                        DashboardStatsSection(navigationPath: self.$navigationPath, appServices: self.services)
+                            .environmentObject(self.tabRouter)
                             .padding(.bottom, ResponsiveDesign.spacing(12))
 
                         // New Investment button (for investors only, outside Quick Actions)
-                        if viewModel.isInvestor {
+                        if self.viewModel.isInvestor {
                             NewInvestmentButton()
-                                .environmentObject(tabRouter)
+                                .environmentObject(self.tabRouter)
                         }
 
                         // Quick Actions
-                        DashboardQuickActionsSection(navigateToDiscovery: $viewModel.selectedTab)
+                        DashboardQuickActionsSection(navigateToDiscovery: self.$viewModel.selectedTab)
 
                         // Role-specific content
-                        roleSpecificContent
+                        self.roleSpecificContent
                     }
                     .padding(.horizontal, ResponsiveDesign.horizontalPadding())
                     .padding(.top, ResponsiveDesign.spacing(8))
@@ -81,17 +81,17 @@ private struct DashboardContainerContent: View {
             .navigationDestination(for: DashboardRoute.self) { route in
                 switch route {
                 case .accountStatement:
-                    AccountStatementView(services: services)
+                    AccountStatementView(services: self.services)
                 case .wallet:
-                    WalletViewWrapper(services: services)
+                    WalletViewWrapper(services: self.services)
                 }
             }
         }
-        .onChange(of: viewModel.selectedTab) { _, newValue in
+        .onChange(of: self.viewModel.selectedTab) { _, newValue in
             print("🔄 Navigation selection changed to: \(newValue ?? "nil")")
         }
         .onAppear {
-            maximumRiskExposurePercent = services.configurationService.maximumRiskExposurePercent
+            self.maximumRiskExposurePercent = self.services.configurationService.maximumRiskExposurePercent
             Task {
                 let provider = LegalSnippetProvider(termsContentService: services.termsContentService)
                 let language: TermsOfServiceDataProvider.Language = .german
@@ -99,21 +99,21 @@ private struct DashboardContainerContent: View {
                     for: .dashboardRiskNote,
                     language: language,
                     documentType: .terms,
-                    defaultText: defaultRiskWarningText,
+                    defaultText: self.defaultRiskWarningText,
                     placeholders: [
-                        "MAX_RISK_PERCENT": String(Int(maximumRiskExposurePercent))
+                        "MAX_RISK_PERCENT": String(Int(self.maximumRiskExposurePercent))
                     ]
                 )
                 await MainActor.run {
-                    riskWarningText = text
+                    self.riskWarningText = text
                 }
             }
             Task {
-                await viewModel.loadDashboardDataAsync()
+                await self.viewModel.loadDashboardDataAsync()
             }
         }
-        .onReceive(services.configurationService.configurationChanged) { _ in
-            maximumRiskExposurePercent = services.configurationService.maximumRiskExposurePercent
+        .onReceive(self.services.configurationService.configurationChanged) { _ in
+            self.maximumRiskExposurePercent = self.services.configurationService.maximumRiskExposurePercent
         }
     }
 
@@ -121,9 +121,9 @@ private struct DashboardContainerContent: View {
 
     @ViewBuilder
     private var roleSpecificContent: some View {
-        if viewModel.isInvestor {
+        if self.viewModel.isInvestor {
             DashboardTraderOverview()
-        } else if viewModel.isTrader {
+        } else if self.viewModel.isTrader {
             // Trader-specific content can be added here
             EmptyView()
         } else {

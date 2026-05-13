@@ -14,9 +14,9 @@ struct KYCStatusListView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: ResponsiveDesign.spacing(16)) {
-                    headerSection
-                    filterSection
-                    customersList
+                    self.headerSection
+                    self.filterSection
+                    self.customersList
                 }
                 .padding()
             }
@@ -26,13 +26,13 @@ struct KYCStatusListView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Schließen") {
-                        viewModel.closeKYCStatusList()
-                        dismiss()
+                        self.viewModel.closeKYCStatusList()
+                        self.dismiss()
                     }
                 }
             }
             .task {
-                await viewModel.loadKYCStatusList()
+                await self.viewModel.loadKYCStatusList()
             }
         }
     }
@@ -64,17 +64,17 @@ struct KYCStatusListView: View {
             HStack(spacing: ResponsiveDesign.spacing(16)) {
                 StatisticCard(
                     title: "Gesamt",
-                    value: "\(filteredCustomers.count)",
+                    value: "\(self.filteredCustomers.count)",
                     color: AppTheme.accentLightBlue
                 )
                 StatisticCard(
                     title: "Vollständig",
-                    value: "\(completedCount)",
+                    value: "\(self.completedCount)",
                     color: AppTheme.accentGreen
                 )
                 StatisticCard(
                     title: "Ausstehend",
-                    value: "\(pendingCount)",
+                    value: "\(self.pendingCount)",
                     color: AppTheme.accentOrange
                 )
             }
@@ -98,10 +98,10 @@ struct KYCStatusListView: View {
                     ForEach(KYCStatusFilter.allCases, id: \.self) { filter in
                         FilterButton(
                             title: filter.displayName,
-                            isSelected: filterOption == filter,
+                            isSelected: self.filterOption == filter,
                             color: filter.color
                         ) {
-                            filterOption = filter
+                            self.filterOption = filter
                         }
                     }
                 }
@@ -116,16 +116,16 @@ struct KYCStatusListView: View {
 
     private var customersList: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
-            Text("Kunden (\(filteredCustomers.count))")
+            Text("Kunden (\(self.filteredCustomers.count))")
                 .font(ResponsiveDesign.headlineFont())
                 .fontWeight(.semibold)
                 .foregroundColor(AppTheme.fontColor)
 
-            if viewModel.isLoading {
+            if self.viewModel.isLoading {
                 ProgressView()
                     .frame(maxWidth: .infinity)
                     .padding()
-            } else if filteredCustomers.isEmpty {
+            } else if self.filteredCustomers.isEmpty {
                 VStack(spacing: ResponsiveDesign.spacing(8)) {
                     Image(systemName: "person.crop.circle.badge.questionmark")
                         .font(ResponsiveDesign.largeTitleFont())
@@ -139,12 +139,12 @@ struct KYCStatusListView: View {
                 .padding(.vertical, ResponsiveDesign.spacing(20))
             } else {
                 VStack(spacing: ResponsiveDesign.spacing(8)) {
-                    ForEach(filteredCustomers) { customer in
+                    ForEach(self.filteredCustomers) { customer in
                         KYCStatusCustomerRow(customer: customer) {
                             Task {
-                                await viewModel.selectCustomer(customer)
-                                viewModel.closeKYCStatusList()
-                                dismiss()
+                                await self.viewModel.selectCustomer(customer)
+                                self.viewModel.closeKYCStatusList()
+                                self.dismiss()
                             }
                         }
                     }
@@ -159,22 +159,22 @@ struct KYCStatusListView: View {
     // MARK: - Computed Properties
 
     private var filteredCustomers: [CustomerSearchResult] {
-        switch filterOption {
+        switch self.filterOption {
         case .all:
-            return viewModel.kycStatusList
+            return self.viewModel.kycStatusList
         case .completed:
-            return viewModel.kycStatusList.filter { $0.isKYCCompleted }
+            return self.viewModel.kycStatusList.filter { $0.isKYCCompleted }
         case .pending:
-            return viewModel.kycStatusList.filter { !$0.isKYCCompleted }
+            return self.viewModel.kycStatusList.filter { !$0.isKYCCompleted }
         }
     }
 
     private var completedCount: Int {
-        viewModel.kycStatusList.filter { $0.isKYCCompleted }.count
+        self.viewModel.kycStatusList.filter { $0.isKYCCompleted }.count
     }
 
     private var pendingCount: Int {
-        viewModel.kycStatusList.filter { !$0.isKYCCompleted }.count
+        self.viewModel.kycStatusList.filter { !$0.isKYCCompleted }.count
     }
 }
 
@@ -211,12 +211,12 @@ struct StatisticCard: View {
 
     var body: some View {
         VStack(spacing: ResponsiveDesign.spacing(4)) {
-            Text(value)
+            Text(self.value)
                 .font(ResponsiveDesign.titleFont())
                 .fontWeight(.bold)
-                .foregroundColor(color)
+                .foregroundColor(self.color)
 
-            Text(title)
+            Text(self.title)
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
         }
@@ -234,14 +234,14 @@ struct FilterButton: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
-            Text(title)
+        Button(action: self.action) {
+            Text(self.title)
                 .font(ResponsiveDesign.captionFont())
                 .fontWeight(.medium)
-                .foregroundColor(isSelected ? AppTheme.screenBackground : color)
+                .foregroundColor(self.isSelected ? AppTheme.screenBackground : self.color)
                 .padding(.horizontal, ResponsiveDesign.spacing(12))
                 .padding(.vertical, ResponsiveDesign.spacing(8))
-                .background(isSelected ? color : color.opacity(0.1))
+                .background(self.isSelected ? self.color : self.color.opacity(0.1))
                 .cornerRadius(ResponsiveDesign.spacing(8))
         }
     }
@@ -252,35 +252,35 @@ struct KYCStatusCustomerRow: View {
     let onSelect: () -> Void
 
     var body: some View {
-        Button(action: onSelect) {
+        Button(action: self.onSelect) {
             HStack(spacing: ResponsiveDesign.spacing(12)) {
                 Circle()
                     .fill(AppTheme.accentLightBlue.opacity(0.2))
                     .frame(width: 44, height: 44)
                     .overlay(
-                        Text(customer.fullName.prefix(2).uppercased())
+                        Text(self.customer.fullName.prefix(2).uppercased())
                             .font(ResponsiveDesign.captionFont())
                             .fontWeight(.bold)
                             .foregroundColor(AppTheme.accentLightBlue)
                     )
 
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
-                    Text(customer.fullName)
+                    Text(self.customer.fullName)
                         .font(ResponsiveDesign.bodyFont())
                         .fontWeight(.medium)
                         .foregroundColor(AppTheme.fontColor)
 
-                    Text(customer.email)
+                    Text(self.customer.email)
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(AppTheme.fontColor.opacity(0.7))
 
                     HStack(spacing: ResponsiveDesign.spacing(8)) {
                         CSStatusBadge(
-                            text: customer.isKYCCompleted ? "KYC Vollständig" : "KYC Ausstehend",
-                            color: customer.isKYCCompleted ? AppTheme.accentGreen : AppTheme.accentOrange
+                            text: self.customer.isKYCCompleted ? "KYC Vollständig" : "KYC Ausstehend",
+                            color: self.customer.isKYCCompleted ? AppTheme.accentGreen : AppTheme.accentOrange
                         )
                         CSStatusBadge(
-                            text: customer.role.capitalized,
+                            text: self.customer.role.capitalized,
                             color: AppTheme.accentLightBlue
                         )
                     }

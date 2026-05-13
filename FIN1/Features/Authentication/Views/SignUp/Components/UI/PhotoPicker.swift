@@ -1,5 +1,5 @@
-import SwiftUI
 import PhotosUI
+import SwiftUI
 import UIKit
 
 // MARK: - Photo Picker Helper
@@ -40,10 +40,10 @@ struct CameraPicker: UIViewControllerRepresentable {
         picker.allowsEditing = false
 
         // Test mode handling
-        if appServices.testModeService.isTestModeEnabled {
+        if self.appServices.testModeService.isTestModeEnabled {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                selectedImage = (appServices.testModeService as? TestModeService)?.samplePassportImage
-                dismiss()
+                self.selectedImage = (self.appServices.testModeService as? TestModeService)?.samplePassportImage
+                self.dismiss()
             }
         }
 
@@ -63,15 +63,18 @@ struct CameraPicker: UIViewControllerRepresentable {
             self.parent = parent
         }
 
-        func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
+        func imagePickerController(
+            _ picker: UIImagePickerController,
+            didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]
+        ) {
             if let image = info[.originalImage] as? UIImage {
-                parent.selectedImage = image
+                self.parent.selectedImage = image
             }
-            parent.dismiss()
+            self.parent.dismiss()
         }
 
         func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
-            parent.dismiss()
+            self.parent.dismiss()
         }
     }
 }

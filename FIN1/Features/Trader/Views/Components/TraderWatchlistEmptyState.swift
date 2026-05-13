@@ -25,7 +25,7 @@ struct TraderWatchlistEmptyState: View {
             }
 
             Button(action: {
-                showSecuritiesSearch = true
+                self.showSecuritiesSearch = true
             }, label: {
                 Text("Discover Securities")
                     .font(ResponsiveDesign.headlineFont())
@@ -37,8 +37,8 @@ struct TraderWatchlistEmptyState: View {
             })
         }
         .padding(.top, ResponsiveDesign.spacing(60))
-        .sheet(isPresented: $showSecuritiesSearch) {
-            SecuritiesSearchView(services: services)
+        .sheet(isPresented: self.$showSecuritiesSearch) {
+            SecuritiesSearchView(services: self.services)
         }
     }
 }

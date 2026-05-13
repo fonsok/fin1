@@ -1,6 +1,6 @@
-import XCTest
 import Combine
 @testable import FIN1
+import XCTest
 
 @MainActor
 final class InvestorDiscoveryViewModelTests: XCTestCase {
@@ -10,9 +10,9 @@ final class InvestorDiscoveryViewModelTests: XCTestCase {
         private(set) var clearCalls = 0
         private(set) var setCalls = 0
 
-        func getAppliedFilterID() -> String? { appliedId }
-        func setAppliedFilterID(_ filterID: String) { appliedId = filterID; setCalls += 1 }
-        func clearAppliedFilterID() { appliedId = nil; clearCalls += 1 }
+        func getAppliedFilterID() -> String? { self.appliedId }
+        func setAppliedFilterID(_ filterID: String) { self.appliedId = filterID; self.setCalls += 1 }
+        func clearAppliedFilterID() { self.appliedId = nil; self.clearCalls += 1 }
     }
 
     /// Aligned with `TraderDataService`: `@Published` for `ObservableObject`, `@unchecked Sendable` for the protocol.
@@ -31,18 +31,18 @@ final class InvestorDiscoveryViewModelTests: XCTestCase {
         // MARK: - Protocol stubs (not used by VM)
         func loadTraderData() {}
         func refreshTraderData() {}
-        func addTrader(_ trader: MockTrader) { traders.append(trader) }
+        func addTrader(_ trader: MockTrader) { self.traders.append(trader) }
         func updateTrader(_ trader: MockTrader) {}
-        func removeTrader(_ trader: MockTrader) { traders.removeAll { $0.id == trader.id } }
+        func removeTrader(_ trader: MockTrader) { self.traders.removeAll { $0.id == trader.id } }
         func performSearch() {}
         func filterByRiskClass(_ riskClass: RiskClass?) {}
         func filterBySpecialization(_ specialization: String?) {}
         func sortBy(_ option: TraderSortOption) {}
         func resetFilters() {}
-        func getTrader(by id: String) -> MockTrader? { traders.first { $0.id.uuidString == id } }
-        func getTradersByRiskClass(_ riskClass: RiskClass) -> [MockTrader] { traders }
-        func getTradersBySpecialization(_ specialization: String) -> [MockTrader] { traders }
-        func getTopPerformers(limit: Int) -> [MockTrader] { Array(traders.prefix(limit)) }
+        func getTrader(by id: String) -> MockTrader? { self.traders.first { $0.id.uuidString == id } }
+        func getTradersByRiskClass(_ riskClass: RiskClass) -> [MockTrader] { self.traders }
+        func getTradersBySpecialization(_ specialization: String) -> [MockTrader] { self.traders }
+        func getTopPerformers(limit: Int) -> [MockTrader] { Array(self.traders.prefix(limit)) }
     }
 
     // MARK: - Helpers
@@ -71,7 +71,7 @@ final class InvestorDiscoveryViewModelTests: XCTestCase {
 
     // MARK: - Tests
     func test_loadTraders_populatesFromService() {
-        let t1 = makeTrader(username: "alice")
+        let t1 = self.makeTrader(username: "alice")
         let service = MockTraderService(traders: [t1])
         let persistence = MockPersistence()
         let vm = InvestorDiscoveryViewModel(traderDataService: service, filterPersistence: persistence)
@@ -83,7 +83,7 @@ final class InvestorDiscoveryViewModelTests: XCTestCase {
     }
 
     func test_handleSearchChange_debounceUpdatesQuery_andClearsAppliedFilterWhenNonEmpty() {
-        let t1 = makeTrader(username: "alice")
+        let t1 = self.makeTrader(username: "alice")
         let service = MockTraderService(traders: [t1])
         let persistence = MockPersistence()
         let vm = InvestorDiscoveryViewModel(traderDataService: service, filterPersistence: persistence)
@@ -129,8 +129,8 @@ final class InvestorDiscoveryViewModelTests: XCTestCase {
     }
 
     func test_filteredTraders_respectsSearchQuery() {
-        let a = makeTrader(username: "alice", name: "Alice", specialization: "Tech")
-        let b = makeTrader(username: "bob", name: "Bob", specialization: "Crypto")
+        let a = self.makeTrader(username: "alice", name: "Alice", specialization: "Tech")
+        let b = self.makeTrader(username: "bob", name: "Bob", specialization: "Crypto")
         let service = MockTraderService(traders: [a, b])
         let vm = InvestorDiscoveryViewModel(traderDataService: service, filterPersistence: MockPersistence())
         vm.loadTraders()

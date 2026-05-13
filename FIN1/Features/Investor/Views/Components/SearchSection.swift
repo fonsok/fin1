@@ -19,8 +19,8 @@ struct SearchSection: View {
                 // Tappable search icon
                 Button(action: {
                     // Trigger immediate search when magnifying glass is tapped
-                    debounceTask?.cancel()
-                    onSearchChange(searchText)
+                    self.debounceTask?.cancel()
+                    self.onSearchChange(self.searchText)
                 }) {
                     Image(systemName: "magnifyingglass")
                         .foregroundColor(AppTheme.accentLightBlue)
@@ -28,7 +28,7 @@ struct SearchSection: View {
                 }
                 .buttonStyle(PlainButtonStyle())
 
-                TextField("Enter trader username", text: $searchText)
+                TextField("Enter trader username", text: self.$searchText)
                     .font(ResponsiveDesign.headlineFont())
                     .fontWeight(.regular)
                     .foregroundColor(AppTheme.inputFieldText)
@@ -38,21 +38,21 @@ struct SearchSection: View {
                     .submitLabel(.search)
                     .onSubmit {
                         // Trigger immediate search when user presses return/done on keyboard
-                        debounceTask?.cancel()
-                        onSearchChange(searchText)
+                        self.debounceTask?.cancel()
+                        self.onSearchChange(self.searchText)
                     }
-                    .onChange(of: searchText) { _, newValue in
+                    .onChange(of: self.searchText) { _, newValue in
                         // Debounce search with longer delay to avoid multiple updates per frame
                         // Cancel previous task to prevent accumulation
-                        debounceTask?.cancel()
+                        self.debounceTask?.cancel()
 
                         // Create new debounce task only if we have input
                         guard !newValue.isEmpty else {
-                            onSearchChange("")
+                            self.onSearchChange("")
                             return
                         }
 
-                        debounceTask = Task {
+                        self.debounceTask = Task {
                             // Use longer delay to prevent multiple updates per frame
                             try? await Task.sleep(nanoseconds: 800_000_000) // 800ms delay
 
@@ -61,13 +61,13 @@ struct SearchSection: View {
 
                             // Ensure we're still working with the same search text
                             await MainActor.run {
-                                onSearchChange(newValue)
+                                self.onSearchChange(newValue)
                             }
                         }
                     }
 
-                if !searchText.isEmpty {
-                    Button(action: onClearSearch, label: {
+                if !self.searchText.isEmpty {
+                    Button(action: self.onClearSearch, label: {
                         Image(systemName: "xmark.circle.fill")
                             .foregroundColor(AppTheme.inputFieldPlaceholder)
                             .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 0.8))
@@ -79,26 +79,26 @@ struct SearchSection: View {
             .background(AppTheme.inputFieldBackground)
             .overlay(
                 RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(12))
-                    .stroke(searchText.count >= 10 ? AppTheme.accentRed.opacity(0.5) : Color.clear, lineWidth: 1)
+                    .stroke(self.searchText.count >= 10 ? AppTheme.accentRed.opacity(0.5) : Color.clear, lineWidth: 1)
             )
             .cornerRadius(ResponsiveDesign.spacing(12))
             .opacity(0.7)
 
             // Character counter
-          /*  HStack {
-                Text("Max 10 chars: A-Z, a-z, 0-9")
-                    .font(ResponsiveDesign.captionFont())
-                    .foregroundColor(AppTheme.fontColor.opacity(0.6))
+            /*  HStack {
+                 Text("Max 10 chars: A-Z, a-z, 0-9")
+                     .font(ResponsiveDesign.captionFont())
+                     .foregroundColor(AppTheme.fontColor.opacity(0.6))
 
-                Spacer()
+                 Spacer()
 
-                Text("\(searchText.count)/10")
-                    .font(ResponsiveDesign.captionFont())
-                    .foregroundColor(searchText.count >= 10 ? AppTheme.accentRed : AppTheme.fontColor.opacity(0.6))
-            }   */
+                 Text("\(searchText.count)/10")
+                     .font(ResponsiveDesign.captionFont())
+                     .foregroundColor(searchText.count >= 10 ? AppTheme.accentRed : AppTheme.fontColor.opacity(0.6))
+             }   */
 
             // Validation message for invalid characters
-            if !searchText.isEmpty && !searchText.allSatisfy({ $0.isLetter || $0.isNumber }) {
+            if !self.searchText.isEmpty && !self.searchText.allSatisfy({ $0.isLetter || $0.isNumber }) {
                 Text("Username can only contain letters and numbers")
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.accentRed)
@@ -106,7 +106,7 @@ struct SearchSection: View {
         }
         .onDisappear {
             // Cancel any pending debounce task when view disappears
-            debounceTask?.cancel()
+            self.debounceTask?.cancel()
         }
     }
 }

@@ -18,11 +18,11 @@ struct CustomerDetailInvestmentsSection: View {
                 Menu {
                     ForEach(InvestmentTimePeriod.allCases, id: \.self) { period in
                         Button {
-                            viewModel.selectedInvestmentTimePeriod = period
+                            self.viewModel.selectedInvestmentTimePeriod = period
                         } label: {
                             HStack {
                                 Text(period.displayName)
-                                if viewModel.selectedInvestmentTimePeriod == period {
+                                if self.viewModel.selectedInvestmentTimePeriod == period {
                                     Image(systemName: "checkmark")
                                 }
                             }
@@ -30,7 +30,7 @@ struct CustomerDetailInvestmentsSection: View {
                     }
                 } label: {
                     HStack(spacing: ResponsiveDesign.spacing(4)) {
-                        Text(viewModel.selectedInvestmentTimePeriod.displayName)
+                        Text(self.viewModel.selectedInvestmentTimePeriod.displayName)
                             .font(ResponsiveDesign.captionFont())
                             .foregroundColor(AppTheme.accentLightBlue)
 
@@ -45,14 +45,14 @@ struct CustomerDetailInvestmentsSection: View {
                 }
             }
 
-            let openInvestments = viewModel.filteredInvestmentsByTimePeriod.filter { investment in
+            let openInvestments = self.viewModel.filteredInvestmentsByTimePeriod.filter { investment in
                 investment.status.lowercased() == "active" || investment.status.lowercased() == "submitted"
             }
-            let completedInvestments = viewModel.filteredInvestmentsByTimePeriod.filter { investment in
+            let completedInvestments = self.viewModel.filteredInvestmentsByTimePeriod.filter { investment in
                 investment.status.lowercased() == "completed" || investment.status.lowercased() == "cancelled"
             }
 
-            if viewModel.filteredInvestmentsByTimePeriod.isEmpty {
+            if self.viewModel.filteredInvestmentsByTimePeriod.isEmpty {
                 Text("Keine Investments vorhanden")
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
@@ -68,7 +68,7 @@ struct CustomerDetailInvestmentsSection: View {
 
                     ForEach(openInvestments) { investment in
                         InvestmentSummaryCard(investment: investment) {
-                            onSelectInvestment(investment)
+                            self.onSelectInvestment(investment)
                         }
                     }
                 }
@@ -87,12 +87,12 @@ struct CustomerDetailInvestmentsSection: View {
 
                     ForEach(completedInvestments) { investment in
                         InvestmentSummaryCard(investment: investment) {
-                            onSelectInvestment(investment)
+                            self.onSelectInvestment(investment)
                         }
                     }
                 }
 
-                if openInvestments.isEmpty && completedInvestments.isEmpty && !viewModel.filteredInvestmentsByTimePeriod.isEmpty {
+                if openInvestments.isEmpty && completedInvestments.isEmpty && !self.viewModel.filteredInvestmentsByTimePeriod.isEmpty {
                     Text("Keine Investments im ausgewählten Zeitraum")
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(AppTheme.fontColor.opacity(0.7))

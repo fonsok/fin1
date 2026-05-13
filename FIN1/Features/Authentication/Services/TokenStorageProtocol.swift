@@ -114,35 +114,35 @@ final class KeychainTokenStorage: TokenStorageProtocol {
         expiresAt: Date
     ) async throws {
         // Store access token
-        try saveToKeychain(key: Keys.accessToken, value: accessToken)
+        try self.saveToKeychain(key: Keys.accessToken, value: accessToken)
 
         // Store refresh token if provided
         if let refreshToken = refreshToken {
-            try saveToKeychain(key: Keys.refreshToken, value: refreshToken)
+            try self.saveToKeychain(key: Keys.refreshToken, value: refreshToken)
         }
 
         // Store ID token if provided
         if let idToken = idToken {
-            try saveToKeychain(key: Keys.idToken, value: idToken)
+            try self.saveToKeychain(key: Keys.idToken, value: idToken)
         }
 
         // Store expiration date
         let expiresAtString = ISO8601DateFormatter().string(from: expiresAt)
-        try saveToKeychain(key: Keys.expiresAt, value: expiresAtString)
+        try self.saveToKeychain(key: Keys.expiresAt, value: expiresAtString)
 
-        logger.info("🔐 Tokens stored securely in Keychain")
+        self.logger.info("🔐 Tokens stored securely in Keychain")
     }
 
     func getAccessToken() async throws -> String? {
-        try loadFromKeychain(key: Keys.accessToken)
+        try self.loadFromKeychain(key: Keys.accessToken)
     }
 
     func getRefreshToken() async throws -> String? {
-        try loadFromKeychain(key: Keys.refreshToken)
+        try self.loadFromKeychain(key: Keys.refreshToken)
     }
 
     func getIdToken() async throws -> String? {
-        try loadFromKeychain(key: Keys.idToken)
+        try self.loadFromKeychain(key: Keys.idToken)
     }
 
     func getExpirationDate() async throws -> Date? {
@@ -169,11 +169,11 @@ final class KeychainTokenStorage: TokenStorageProtocol {
     }
 
     func clear() async throws {
-        try deleteFromKeychain(key: Keys.accessToken)
-        try deleteFromKeychain(key: Keys.refreshToken)
-        try deleteFromKeychain(key: Keys.idToken)
-        try deleteFromKeychain(key: Keys.expiresAt)
-        logger.info("🔐 All tokens cleared from Keychain")
+        try self.deleteFromKeychain(key: Keys.accessToken)
+        try self.deleteFromKeychain(key: Keys.refreshToken)
+        try self.deleteFromKeychain(key: Keys.idToken)
+        try self.deleteFromKeychain(key: Keys.expiresAt)
+        self.logger.info("🔐 All tokens cleared from Keychain")
     }
 
     // MARK: - Keychain Helpers
@@ -184,11 +184,11 @@ final class KeychainTokenStorage: TokenStorageProtocol {
         }
 
         // Delete existing item first
-        try? deleteFromKeychain(key: key)
+        try? self.deleteFromKeychain(key: key)
 
         var query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: serviceName,
+            kSecAttrService as String: self.serviceName,
             kSecAttrAccount as String: key,
             kSecValueData as String: data,
             kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly
@@ -208,7 +208,7 @@ final class KeychainTokenStorage: TokenStorageProtocol {
     private func loadFromKeychain(key: String) throws -> String? {
         var query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: serviceName,
+            kSecAttrService as String: self.serviceName,
             kSecAttrAccount as String: key,
             kSecReturnData as String: true,
             kSecMatchLimit as String: kSecMatchLimitOne
@@ -238,7 +238,7 @@ final class KeychainTokenStorage: TokenStorageProtocol {
     private func deleteFromKeychain(key: String) throws {
         var query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: serviceName,
+            kSecAttrService as String: self.serviceName,
             kSecAttrAccount as String: key
         ]
 
@@ -276,10 +276,10 @@ final class InMemoryTokenStorage: TokenStorageProtocol {
         self.expiresAt = expiresAt
     }
 
-    func getAccessToken() async throws -> String? { accessToken }
-    func getRefreshToken() async throws -> String? { refreshToken }
-    func getIdToken() async throws -> String? { idToken }
-    func getExpirationDate() async throws -> Date? { expiresAt }
+    func getAccessToken() async throws -> String? { self.accessToken }
+    func getRefreshToken() async throws -> String? { self.refreshToken }
+    func getIdToken() async throws -> String? { self.idToken }
+    func getExpirationDate() async throws -> Date? { self.expiresAt }
 
     var hasValidTokens: Bool {
         get async {
@@ -290,10 +290,10 @@ final class InMemoryTokenStorage: TokenStorageProtocol {
     }
 
     func clear() async throws {
-        accessToken = nil
-        refreshToken = nil
-        idToken = nil
-        expiresAt = nil
+        self.accessToken = nil
+        self.refreshToken = nil
+        self.idToken = nil
+        self.expiresAt = nil
     }
 }
 #endif

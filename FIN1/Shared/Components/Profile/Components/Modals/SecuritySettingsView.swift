@@ -22,38 +22,38 @@ struct SecuritySettingsView: View {
 
                 ScrollView {
                     VStack(spacing: ResponsiveDesign.spacing(24)) {
-                        headerSection
-                        biometricSection
-                        twoFactorSection
-                        passwordSection
-                        sessionSecuritySection
-                        securityActivitySection
-                        quickActionsSection
+                        self.headerSection
+                        self.biometricSection
+                        self.twoFactorSection
+                        self.passwordSection
+                        self.sessionSecuritySection
+                        self.securityActivitySection
+                        self.quickActionsSection
                     }
                     .padding(.horizontal, ResponsiveDesign.spacing(16))
                     .padding(.bottom, ResponsiveDesign.spacing(16))
                 }
             }
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar { toolbarContent }
-            .sheet(isPresented: $viewModel.showPasswordChange) {
-                PasswordChangeSheet(viewModel: viewModel)
+            .toolbar { self.toolbarContent }
+            .sheet(isPresented: self.$viewModel.showPasswordChange) {
+                PasswordChangeSheet(viewModel: self.viewModel)
             }
-            .sheet(isPresented: $viewModel.showTwoFactorSetup) {
-                TwoFactorSetupSheet(viewModel: viewModel)
+            .sheet(isPresented: self.$viewModel.showTwoFactorSetup) {
+                TwoFactorSetupSheet(viewModel: self.viewModel)
             }
-            .sheet(isPresented: $viewModel.showSecurityActivityLog) {
-                SecurityActivityLogSheet(events: viewModel.recentSecurityEvents)
+            .sheet(isPresented: self.$viewModel.showSecurityActivityLog) {
+                SecurityActivityLogSheet(events: self.viewModel.recentSecurityEvents)
             }
-            .alert("Terminate Sessions", isPresented: $viewModel.showActiveSessionsAlert) {
+            .alert("Terminate Sessions", isPresented: self.$viewModel.showActiveSessionsAlert) {
                 Button("Cancel", role: .cancel) {}
                 Button("Terminate All", role: .destructive) {
-                    viewModel.terminateAllSessions()
+                    self.viewModel.terminateAllSessions()
                 }
             } message: {
                 Text("This will sign out all other devices. You will remain signed in on this device.")
             }
-            .alert("Password Changed", isPresented: $viewModel.showPasswordChangeSuccess) {
+            .alert("Password Changed", isPresented: self.$viewModel.showPasswordChangeSuccess) {
                 Button("OK") {}
             } message: {
                 Text("Your password has been updated successfully.")
@@ -66,13 +66,13 @@ struct SecuritySettingsView: View {
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
         ToolbarItem(placement: .navigationBarLeading) {
-            Button("Cancel") { dismiss() }
+            Button("Cancel") { self.dismiss() }
                 .foregroundColor(AppTheme.fontColor)
         }
         ToolbarItem(placement: .navigationBarTrailing) {
             Button("Save") {
-                viewModel.saveSettings()
-                dismiss()
+                self.viewModel.saveSettings()
+                self.dismiss()
             }
             .foregroundColor(AppTheme.accentLightBlue)
             .fontWeight(.semibold)
@@ -103,13 +103,17 @@ struct SecuritySettingsView: View {
     // MARK: - Biometric Section
 
     private var biometricSection: some View {
-        securitySection(title: "Biometric Authentication", icon: viewModel.biometricType.iconName, color: AppTheme.accentGreen) {
+        self.securitySection(title: "Biometric Authentication", icon: self.viewModel.biometricType.iconName, color: AppTheme.accentGreen) {
             VStack(spacing: ResponsiveDesign.spacing(16)) {
-                if viewModel.isBiometricAvailable {
-                    biometricToggle
-                    SecurityToggleRow(title: "Require Password on Launch", subtitle: "Always require password when opening the app", isEnabled: $viewModel.requirePasswordOnLaunch)
+                if self.viewModel.isBiometricAvailable {
+                    self.biometricToggle
+                    SecurityToggleRow(
+                        title: "Require Password on Launch",
+                        subtitle: "Always require password when opening the app",
+                        isEnabled: self.$viewModel.requirePasswordOnLaunch
+                    )
                 } else {
-                    biometricUnavailableMessage
+                    self.biometricUnavailableMessage
                 }
             }
         }
@@ -118,18 +122,18 @@ struct SecuritySettingsView: View {
     private var biometricToggle: some View {
         HStack {
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
-                Text(viewModel.biometricType.rawValue)
+                Text(self.viewModel.biometricType.rawValue)
                     .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.medium)
                     .foregroundColor(AppTheme.fontColor)
-                Text("Use \(viewModel.biometricType.rawValue) to unlock the app quickly")
+                Text("Use \(self.viewModel.biometricType.rawValue) to unlock the app quickly")
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
             }
             Spacer()
             Toggle("", isOn: Binding(
-                get: { viewModel.biometricAuthEnabled },
-                set: { $0 ? viewModel.enableBiometricAuth() : viewModel.disableBiometricAuth() }
+                get: { self.viewModel.biometricAuthEnabled },
+                set: { $0 ? self.viewModel.enableBiometricAuth() : self.viewModel.disableBiometricAuth() }
             ))
             .toggleStyle(SwitchToggleStyle(tint: AppTheme.accentGreen))
         }
@@ -148,12 +152,16 @@ struct SecuritySettingsView: View {
     // MARK: - Two-Factor Section
 
     private var twoFactorSection: some View {
-        securitySection(title: "Two-Factor Authentication", icon: "shield.checkered", color: AppTheme.accentLightBlue) {
+        self.securitySection(title: "Two-Factor Authentication", icon: "shield.checkered", color: AppTheme.accentLightBlue) {
             VStack(spacing: ResponsiveDesign.spacing(16)) {
-                SecurityToggleRow(title: "Enable 2FA", subtitle: "Add an extra layer of security to your account", isEnabled: $viewModel.twoFactorEnabled)
-                if viewModel.twoFactorEnabled {
-                    twoFactorMethodPicker
-                    configure2FAButton
+                SecurityToggleRow(
+                    title: "Enable 2FA",
+                    subtitle: "Add an extra layer of security to your account",
+                    isEnabled: self.$viewModel.twoFactorEnabled
+                )
+                if self.viewModel.twoFactorEnabled {
+                    self.twoFactorMethodPicker
+                    self.configure2FAButton
                 }
             }
         }
@@ -165,15 +173,15 @@ struct SecuritySettingsView: View {
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
             ForEach(TwoFactorMethod.allCases, id: \.self) { method in
-                TwoFactorMethodRow(method: method, isSelected: viewModel.twoFactorMethod == method) {
-                    viewModel.twoFactorMethod = method
+                TwoFactorMethodRow(method: method, isSelected: self.viewModel.twoFactorMethod == method) {
+                    self.viewModel.twoFactorMethod = method
                 }
             }
         }
     }
 
     private var configure2FAButton: some View {
-        Button(action: { viewModel.showTwoFactorSetup = true }) {
+        Button(action: { self.viewModel.showTwoFactorSetup = true }) {
             HStack {
                 Image(systemName: "gear").font(ResponsiveDesign.bodyFont())
                 Text("Configure 2FA").font(ResponsiveDesign.bodyFont()).fontWeight(.medium)
@@ -190,16 +198,16 @@ struct SecuritySettingsView: View {
     // MARK: - Password Section
 
     private var passwordSection: some View {
-        securitySection(title: "Password", icon: "key.fill", color: AppTheme.accentOrange) {
+        self.securitySection(title: "Password", icon: "key.fill", color: AppTheme.accentOrange) {
             VStack(spacing: ResponsiveDesign.spacing(12)) {
-                changePasswordButton
-                autoLockPicker
+                self.changePasswordButton
+                self.autoLockPicker
             }
         }
     }
 
     private var changePasswordButton: some View {
-        Button(action: { viewModel.showPasswordChange = true }) {
+        Button(action: { self.viewModel.showPasswordChange = true }) {
             HStack {
                 Image(systemName: "key.fill").font(ResponsiveDesign.bodyFont())
                 Text("Change Password").font(ResponsiveDesign.bodyFont()).fontWeight(.medium)
@@ -218,7 +226,7 @@ struct SecuritySettingsView: View {
             Text("Auto-Lock")
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
-            Picker("Auto-Lock Timeout", selection: $viewModel.autoLockTimeout) {
+            Picker("Auto-Lock Timeout", selection: self.$viewModel.autoLockTimeout) {
                 ForEach(AutoLockTimeout.allCases, id: \.self) { Text($0.rawValue).tag($0) }
             }
             .pickerStyle(.menu)
@@ -229,17 +237,25 @@ struct SecuritySettingsView: View {
     // MARK: - Session Security Section
 
     private var sessionSecuritySection: some View {
-        securitySection(title: "Session Security", icon: "desktopcomputer", color: AppTheme.accentRed) {
+        self.securitySection(title: "Session Security", icon: "desktopcomputer", color: AppTheme.accentRed) {
             VStack(spacing: ResponsiveDesign.spacing(16)) {
-                SecurityToggleRow(title: "Login Alerts", subtitle: "Get notified when your account is accessed", isEnabled: $viewModel.loginAlertsEnabled)
-                SecurityToggleRow(title: "Remember This Device", subtitle: "Skip 2FA on trusted devices", isEnabled: $viewModel.rememberDevice)
-                signOutAllButton
+                SecurityToggleRow(
+                    title: "Login Alerts",
+                    subtitle: "Get notified when your account is accessed",
+                    isEnabled: self.$viewModel.loginAlertsEnabled
+                )
+                SecurityToggleRow(
+                    title: "Remember This Device",
+                    subtitle: "Skip 2FA on trusted devices",
+                    isEnabled: self.$viewModel.rememberDevice
+                )
+                self.signOutAllButton
             }
         }
     }
 
     private var signOutAllButton: some View {
-        Button(action: { viewModel.showActiveSessionsAlert = true }) {
+        Button(action: { self.viewModel.showActiveSessionsAlert = true }) {
             HStack {
                 Image(systemName: "xmark.circle.fill").font(ResponsiveDesign.bodyFont())
                 Text("Sign Out All Other Devices").font(ResponsiveDesign.bodyFont()).fontWeight(.medium)
@@ -256,10 +272,10 @@ struct SecuritySettingsView: View {
     // MARK: - Security Activity Section
 
     private var securityActivitySection: some View {
-        securitySection(title: "Recent Security Activity", icon: "clock.fill", color: AppTheme.accentLightBlue) {
+        self.securitySection(title: "Recent Security Activity", icon: "clock.fill", color: AppTheme.accentLightBlue) {
             VStack(spacing: ResponsiveDesign.spacing(12)) {
-                ForEach(viewModel.recentSecurityEvents.prefix(3)) { SecurityEventRow(event: $0) }
-                Button(action: { viewModel.showSecurityActivityLog = true }) {
+                ForEach(self.viewModel.recentSecurityEvents.prefix(3)) { SecurityEventRow(event: $0) }
+                Button(action: { self.viewModel.showSecurityActivityLog = true }) {
                     Text("View All Activity")
                         .font(ResponsiveDesign.bodyFont())
                         .fontWeight(.medium)
@@ -272,7 +288,7 @@ struct SecuritySettingsView: View {
     // MARK: - Quick Actions Section
 
     private var quickActionsSection: some View {
-        Button(action: { viewModel.resetToDefaults() }) {
+        Button(action: { self.viewModel.resetToDefaults() }) {
             HStack {
                 Image(systemName: "arrow.clockwise").font(ResponsiveDesign.bodyFont())
                 Text("Reset to Defaults").font(ResponsiveDesign.bodyFont()).fontWeight(.medium)

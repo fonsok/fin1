@@ -1,5 +1,5 @@
-import SwiftUI
 import Foundation
+import SwiftUI
 
 // MARK: - Commission Breakdown Sheet
 
@@ -20,15 +20,15 @@ struct CommissionBreakdownSheet: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: ResponsiveDesign.spacing(0)) {
-                if viewModel.isLoading {
+                if self.viewModel.isLoading {
                     ProgressView()
                         .padding()
-                } else if viewModel.breakdownItems.isEmpty {
-                    emptyStateView
+                } else if self.viewModel.breakdownItems.isEmpty {
+                    self.emptyStateView
                 } else if let errorMessage = viewModel.errorMessage {
-                    errorStateView(message: errorMessage)
+                    self.errorStateView(message: errorMessage)
                 } else {
-                    breakdownContentView
+                    self.breakdownContentView
                 }
             }
             .background(AppTheme.sectionBackground)
@@ -37,13 +37,13 @@ struct CommissionBreakdownSheet: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") {
-                        dismiss()
+                        self.dismiss()
                     }
                 }
             }
         }
         .task {
-            await viewModel.loadBreakdown()
+            await self.viewModel.loadBreakdown()
         }
     }
 
@@ -76,7 +76,7 @@ struct CommissionBreakdownSheet: View {
                 .multilineTextAlignment(.center)
             Button("Erneut versuchen") {
                 Task {
-                    await viewModel.loadBreakdown()
+                    await self.viewModel.loadBreakdown()
                 }
             }
             .buttonStyle(.borderedProminent)
@@ -99,7 +99,7 @@ struct CommissionBreakdownSheet: View {
                         .fontWeight(.semibold)
                         .frame(width: 110, alignment: .trailing)
 
-                    Text("× \(viewModel.formattedCommissionRate)")
+                    Text("× \(self.viewModel.formattedCommissionRate)")
                         .font(ResponsiveDesign.bodyFont())
                         .fontWeight(.semibold)
                         .frame(width: 50, alignment: .center)
@@ -114,7 +114,7 @@ struct CommissionBreakdownSheet: View {
                 .background(AppTheme.inputFieldBackground)
 
                 // Table rows
-                ForEach(viewModel.breakdownItems) { item in
+                ForEach(self.viewModel.breakdownItems) { item in
                     HStack(spacing: ResponsiveDesign.spacing(12)) {
                         Text(item.investorName)
                             .font(ResponsiveDesign.bodyFont())
@@ -152,7 +152,7 @@ struct CommissionBreakdownSheet: View {
                     Spacer()
                         .frame(width: 50)
 
-                    Text(viewModel.totalCommission.formatted(.currency(code: "EUR")))
+                    Text(self.viewModel.totalCommission.formatted(.currency(code: "EUR")))
                         .font(ResponsiveDesign.bodyFont())
                         .fontWeight(.bold)
                         .frame(width: 90, alignment: .trailing)

@@ -11,13 +11,13 @@ struct AddressDisplayView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             
             VStack(alignment: .leading, spacing: 8) {
-                Text(address.streetAndNumber)
+                Text(self.address.streetAndNumber)
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.inputFieldText)
-                Text("\(address.postalCode) \(address.city)")
+                Text("\(self.address.postalCode) \(self.address.city)")
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.inputFieldText)
-                Text(address.country)
+                Text(self.address.country)
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.inputFieldText)
             }

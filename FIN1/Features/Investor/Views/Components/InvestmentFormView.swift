@@ -34,25 +34,25 @@ struct InvestmentFormView: View {
                     .foregroundColor(AppTheme.fontColor)
 
                 Text(
-                    "Höchstens \(viewModel.configurationService.maximumInvestmentAmount.formattedAsLocalizedCurrency()) gesamt (ganzzahlig). "
-                        + "Aufteilung auf mehrere Anlagepositionen; je Position mindestens \(viewModel.configurationService.minimumInvestmentAmount.formattedAsLocalizedCurrency())."
+                    "Höchstens \(self.viewModel.configurationService.maximumInvestmentAmount.formattedAsLocalizedCurrency()) gesamt (ganzzahlig). "
+                        + "Aufteilung auf mehrere Anlagepositionen; je Position mindestens \(self.viewModel.configurationService.minimumInvestmentAmount.formattedAsLocalizedCurrency())."
                 )
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.secondaryText)
 
                 HStack {
-                    TextField("nur ganzzahliger Betrag", text: $viewModel.displayAmount)
+                    TextField("nur ganzzahliger Betrag", text: self.$viewModel.displayAmount)
                         .keyboardType(.numberPad)
                         .font(ResponsiveDesign.headlineFont())
                         .foregroundColor(AppTheme.inputFieldText)
                         .padding()
                         .background(AppTheme.inputFieldBackground)
                         .cornerRadius(ResponsiveDesign.spacing(12))
-                        .onChange(of: viewModel.displayAmount) { _, newValue in
-                            viewModel.formatAndValidateInput(newValue)
+                        .onChange(of: self.viewModel.displayAmount) { _, newValue in
+                            self.viewModel.formatAndValidateInput(newValue)
                         }
                         .onAppear {
-                            viewModel.updateDisplayFromAmount()
+                            self.viewModel.updateDisplayFromAmount()
                         }
                         .accessibilityIdentifier("InvestmentAmountField")
 
@@ -62,11 +62,13 @@ struct InvestmentFormView: View {
                 }
 
                 // App Service Charge Info
-                if viewModel.hasValidAmount {
+                if self.viewModel.hasValidAmount {
                     VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
-                        Text("An app service charge of \(viewModel.configurationService.appServiceChargePercentage) applies: \(viewModel.formattedAppServiceCharge)")
-                            .font(ResponsiveDesign.captionFont())
-                            .foregroundColor(AppTheme.secondaryText)
+                        Text(
+                            "An app service charge of \(self.viewModel.configurationService.appServiceChargePercentage) applies: \(self.viewModel.formattedAppServiceCharge)"
+                        )
+                        .font(ResponsiveDesign.captionFont())
+                        .foregroundColor(AppTheme.secondaryText)
 
                         Text("This charge will be deducted from your account immediately.")
                             .font(ResponsiveDesign.captionFont())
@@ -74,10 +76,12 @@ struct InvestmentFormView: View {
                     }
                     .padding(.top, ResponsiveDesign.spacing(4))
                 } else {
-                    Text("An app service charge of \(viewModel.configurationService.appServiceChargePercentage) applies and will be deducted from your account immediately.")
-                        .font(ResponsiveDesign.captionFont())
-                        .foregroundColor(AppTheme.secondaryText)
-                        .padding(.top, ResponsiveDesign.spacing(4))
+                    Text(
+                        "An app service charge of \(self.viewModel.configurationService.appServiceChargePercentage) applies and will be deducted from your account immediately."
+                    )
+                    .font(ResponsiveDesign.captionFont())
+                    .foregroundColor(AppTheme.secondaryText)
+                    .padding(.top, ResponsiveDesign.spacing(4))
                 }
             }
 
@@ -104,31 +108,30 @@ struct InvestmentFormView: View {
                         .foregroundColor(AppTheme.secondaryText)
 
                     Slider(value: Binding(
-                        get: { Double(numberOfInvestments) },
-                        set: { numberOfInvestments = Int($0) }
+                        get: { Double(self.numberOfInvestments) },
+                        set: { self.numberOfInvestments = Int($0) }
                     ), in: 1...10, step: 1)
-                    .accentColor(AppTheme.accentGreen)
-                    .accessibilityIdentifier("InvestmentCountSlider")
+                        .accentColor(AppTheme.accentGreen)
+                        .accessibilityIdentifier("InvestmentCountSlider")
 
                     Text("10")
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(AppTheme.secondaryText)
                 }
 
-                Text("\(numberOfInvestments) investment\(numberOfInvestments == 1 ? "" : "s")")
+                Text("\(self.numberOfInvestments) investment\(self.numberOfInvestments == 1 ? "" : "s")")
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.accentGreen)
                     .fontWeight(.medium)
             }
         }
-        .onChange(of: investmentAmount) { _, _ in
-            viewModel.updateDisplayFromAmount()
+        .onChange(of: self.investmentAmount) { _, _ in
+            self.viewModel.updateDisplayFromAmount()
         }
         .padding()
         .background(AppTheme.sectionBackground)
         .cornerRadius(ResponsiveDesign.spacing(16))
     }
-
 }
 
 // MARK: - Preview

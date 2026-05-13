@@ -26,7 +26,7 @@ struct InvestmentCompletionChecker {
             specificInvestmentIds: nil // Check all investments
         )
 
-        updateRepository(repository: repository, with: updatedInvestments)
+        self.updateRepository(repository: repository, with: updatedInvestments)
 
         if !updatedInvestments.isEmpty {
             print("   📡 Updated \(updatedInvestments.count) investments in repository")
@@ -57,7 +57,7 @@ struct InvestmentCompletionChecker {
             specificInvestmentIds: investmentIds
         )
 
-        updateRepository(repository: repository, with: updatedInvestments)
+        self.updateRepository(repository: repository, with: updatedInvestments)
 
         if !updatedInvestments.isEmpty {
             print("   📡 Updated \(updatedInvestments.count) investments in repository (specific check)")
@@ -84,7 +84,7 @@ struct InvestmentCompletionChecker {
             in: repository.investments
         )
 
-        updateRepository(repository: repository, with: updatedInvestments)
+        self.updateRepository(repository: repository, with: updatedInvestments)
 
         if !updatedInvestments.isEmpty {
             print("   📡 Updated \(updatedInvestments.count) investment profits in repository")

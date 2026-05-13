@@ -118,31 +118,31 @@ struct Transaction: Identifiable, Codable, Hashable, Sendable {
     // MARK: - Computed Properties
 
     var formattedAmount: String {
-        amount.formatted(.currency(code: currency))
+        self.amount.formatted(.currency(code: self.currency))
     }
 
     var signedAmount: Double {
-        switch type {
+        switch self.type {
         case .deposit, .profitDistribution, .tradeSell:
-            return amount
+            return self.amount
         case .withdrawal, .tradeBuy, .commission:
-            return -amount
+            return -self.amount
         case .adjustment, .other:
-            return amount // Can be positive or negative based on metadata
+            return self.amount // Can be positive or negative based on metadata
         }
     }
 
     var formattedSignedAmount: String {
-        let signed = signedAmount
+        let signed = self.signedAmount
         if signed >= 0 {
-            return "+\(signed.formatted(.currency(code: currency)))"
+            return "+\(signed.formatted(.currency(code: self.currency)))"
         } else {
-            return signed.formatted(.currency(code: currency))
+            return signed.formatted(.currency(code: self.currency))
         }
     }
 
     var isPositive: Bool {
-        signedAmount >= 0
+        self.signedAmount >= 0
     }
 }
 

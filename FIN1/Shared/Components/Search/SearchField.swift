@@ -9,7 +9,7 @@ struct SearchField: View {
     var body: some View {
         HStack(alignment: .center) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(value.isEmpty ? label : value)
+                Text(self.value.isEmpty ? self.label : self.value)
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.inputFieldText)
 
@@ -22,7 +22,7 @@ struct SearchField: View {
 
             Spacer()
 
-            if onTap != nil {
+            if self.onTap != nil {
                 Image(systemName: "chevron.up.chevron.down")
                     .foregroundColor(AppTheme.inputFieldText)
             }
@@ -32,7 +32,7 @@ struct SearchField: View {
         .background(AppTheme.inputFieldBackground)
         .cornerRadius(ResponsiveDesign.spacing(8))
         .onTapGesture {
-            onTap?()
+            self.onTap?()
         }
     }
 }

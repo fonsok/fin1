@@ -30,7 +30,7 @@ extension InvestmentsViewModel {
 
     /// Returns completed/partial investments filtered by time period.
     var completedInvestmentsByTimePeriod: [Investment] {
-        let allCompleted = completedInvestments
+        let allCompleted = self.completedInvestments
         let cutoffDate = selectedTimePeriod.cutoffDate()
 
         return allCompleted.filter { investment in
@@ -45,7 +45,7 @@ extension InvestmentsViewModel {
     var completedInvestmentDocRefs: [String: (docNumber: String?, invoiceNumber: String?)] {
         let userId = userService.currentUser?.id ?? ""
         var refs: [String: (docNumber: String?, invoiceNumber: String?)] = [:]
-        for inv in completedInvestmentsByTimePeriod {
+        for inv in self.completedInvestmentsByTimePeriod {
             let docs = documentService.getDocumentsForInvestment(inv.id)
             let docNumber = docs.first { $0.type == .investorCollectionBill }?.accountingDocumentNumber
             let batchId = inv.batchId ?? ""
@@ -60,12 +60,12 @@ extension InvestmentsViewModel {
     /// Returns completed/partial investments filtered by year (partials have no completedAt -> included).
     /// Deprecated: Use completedInvestmentsByTimePeriod instead.
     var completedInvestmentsByYear: [Investment] {
-        completedInvestmentsByTimePeriod
+        self.completedInvestmentsByTimePeriod
     }
 
     /// Available years for filtering completed investments.
     var availableYears: [Int] {
-        let years = completedInvestments.compactMap { investment -> Int? in
+        let years = self.completedInvestments.compactMap { investment -> Int? in
             guard let completedAt = investment.completedAt else { return nil }
             return Calendar.current.component(.year, from: completedAt)
         }

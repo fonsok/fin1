@@ -33,11 +33,11 @@ struct OrderSell: Identifiable, Codable, Sendable {
     // MARK: - Computed Properties
 
     var isActive: Bool {
-        status == .submitted || status == .executed
+        self.status == .submitted || self.status == .executed
     }
 
     var isCompleted: Bool {
-        status == .confirmed
+        self.status == .confirmed
     }
 }
 

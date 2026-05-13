@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Simplified Buy Order ViewModel
 /// Clean, simple ViewModel for buy orders using the simplified architecture
@@ -16,7 +16,7 @@ enum NewBuyOrderStatus: Equatable {
 @MainActor
 final class NewBuyOrderViewModel: ObservableObject {
     @Published var searchResult: SearchResult
-    @Published var quantity: Double = 1000
+    @Published var quantity: Double = 1_000
     @Published var quantityText: String = "1.000"
     @Published var orderMode: OrderMode = .market
     @Published var limit: String = ""
@@ -30,82 +30,82 @@ final class NewBuyOrderViewModel: ObservableObject {
     init(searchResult: SearchResult, orderService: any NewOrderServiceProtocol) {
         self.searchResult = searchResult
         self.orderService = orderService
-        updateEstimatedCost()
+        self.updateEstimatedCost()
     }
 
     // MARK: - Computed Properties
     var currentPriceValue: Double {
-        let normalizedString = searchResult.askPrice.replacingOccurrences(of: ",", with: ".")
+        let normalizedString = self.searchResult.askPrice.replacingOccurrences(of: ",", with: ".")
         return Double(normalizedString) ?? 0.0
     }
 
     var executedPrice: Double {
-        switch orderMode {
+        switch self.orderMode {
         case .market:
-            return currentPriceValue
+            return self.currentPriceValue
         case .limit:
-            let normalizedLimit = limit.replacingOccurrences(of: ",", with: ".")
-            return Double(normalizedLimit) ?? currentPriceValue
+            let normalizedLimit = self.limit.replacingOccurrences(of: ",", with: ".")
+            return Double(normalizedLimit) ?? self.currentPriceValue
         }
     }
 
     var finalCost: Double {
-        return quantity * executedPrice
+        return self.quantity * self.executedPrice
     }
 
     // MARK: - Actions
     func placeOrder() async {
-        orderStatus = .transmitting
+        self.orderStatus = .transmitting
 
         do {
             let orderRequest = NewBuyOrderRequest(
                 symbol: searchResult.wkn,
-                quantity: Int(quantity),
-                price: executedPrice,
-                optionDirection: searchResult.direction,
-                description: searchResult.underlyingAsset,
-                orderInstruction: orderMode.rawValue,
-                limitPrice: orderMode == .limit ? Double(limit.replacingOccurrences(of: ",", with: ".")) : nil,
-                strike: Double(searchResult.strike.replacingOccurrences(of: ",", with: "."))
+                quantity: Int(self.quantity),
+                price: self.executedPrice,
+                optionDirection: self.searchResult.direction,
+                description: self.searchResult.underlyingAsset,
+                orderInstruction: self.orderMode.rawValue,
+                limitPrice: self.orderMode == .limit ? Double(self.limit.replacingOccurrences(of: ",", with: ".")) : nil,
+                strike: Double(self.searchResult.strike.replacingOccurrences(of: ",", with: "."))
             )
 
-            _ = try await orderService.placeBuyOrder(orderRequest)
+            _ = try await self.orderService.placeBuyOrder(orderRequest)
 
-            orderStatus = .orderPlaced(executedPrice: executedPrice, finalCost: finalCost)
-            shouldShowDepotView = true
+            self.orderStatus = .orderPlaced(executedPrice: self.executedPrice, finalCost: self.finalCost)
+            self.shouldShowDepotView = true
 
         } catch {
-            orderStatus = .failed(error as? AppError ?? AppError.unknown("Unknown error occurred"))
+            self.orderStatus = .failed(error as? AppError ?? AppError.unknown("Unknown error occurred"))
         }
     }
 
     func updateQuantity(_ newValue: Double) {
-        quantity = newValue
-        quantityText = newValue.formattedAsLocalizedNumber()
-        updateEstimatedCost()
+        self.quantity = newValue
+        self.quantityText = newValue.formattedAsLocalizedNumber()
+        self.updateEstimatedCost()
     }
 
     func updateQuantityText(_ newText: String) {
-        quantityText = newText
+        self.quantityText = newText
         let normalizedText = newText.replacingOccurrences(of: ",", with: ".")
         if let newValue = Double(normalizedText) {
-            quantity = newValue
-            updateEstimatedCost()
+            self.quantity = newValue
+            self.updateEstimatedCost()
         }
     }
 
     func updateOrderMode(_ mode: OrderMode) {
-        orderMode = mode
-        updateEstimatedCost()
+        self.orderMode = mode
+        self.updateEstimatedCost()
     }
 
     func updateLimit(_ newLimit: String) {
-        limit = newLimit
-        updateEstimatedCost()
+        self.limit = newLimit
+        self.updateEstimatedCost()
     }
 
     // MARK: - Private Methods
     private func updateEstimatedCost() {
-        estimatedCost = quantity * executedPrice
+        self.estimatedCost = self.quantity * self.executedPrice
     }
 }

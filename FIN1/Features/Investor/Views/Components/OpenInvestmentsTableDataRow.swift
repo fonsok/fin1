@@ -9,50 +9,54 @@ struct OpenInvestmentsTableDataRow: View {
 
     var body: some View {
         HStack(spacing: OpenInvestmentsTableLayout.columnSpacing) {
-            Text(pool.uniqueDisplayLabel)
+            Text(self.pool.uniqueDisplayLabel)
                 .font(ResponsiveDesign.bodyFont())
-                .foregroundColor(forMeasurement ? nil : AppTheme.fontColor)
-                .modifier(cellFrame("pool", .leading))
+                .foregroundColor(self.forMeasurement ? nil : AppTheme.fontColor)
+                .modifier(self.cellFrame("pool", .leading))
 
-            statusCell
-                .modifier(cellFrame("status", pool.isDeletable ? .center : .leading))
+            self.statusCell
+                .modifier(self.cellFrame("status", self.pool.isDeletable ? .center : .leading))
                 .contentShape(Rectangle())
 
-            Text(pool.amount.formattedAsLocalizedCurrency())
+            Text(self.pool.amount.formattedAsLocalizedCurrency())
                 .font(ResponsiveDesign.bodyFont())
-                .foregroundColor(forMeasurement ? nil : AppTheme.fontColor)
-                .modifier(cellFrame("amount", .trailing))
+                .foregroundColor(self.forMeasurement ? nil : AppTheme.fontColor)
+                .modifier(self.cellFrame("amount", .trailing))
 
-            profitCell
-                .modifier(cellFrame("profit", .trailing))
+            self.profitCell
+                .modifier(self.cellFrame("profit", .trailing))
 
-            returnCell
-                .modifier(cellFrame("return", .trailing))
+            self.returnCell
+                .modifier(self.cellFrame("return", .trailing))
 
-            InvestmentDocRefView(verrechnungNumber: pool.docNumber, rechnungNumber: pool.invoiceNumber)
-                .modifier(cellFrame("docRef", .leading))
+            InvestmentDocRefView(verrechnungNumber: self.pool.docNumber, rechnungNumber: self.pool.invoiceNumber)
+                .modifier(self.cellFrame("docRef", .leading))
         }
         .frame(minHeight: 44)
         .padding(.horizontal, OpenInvestmentsTableLayout.cellHorizontalPadding)
         .padding(.vertical, OpenInvestmentsTableLayout.cellVerticalPadding)
-        .background(forMeasurement ? Color.clear : (isEven ? AppTheme.screenBackground.opacity(0.3) : AppTheme.screenBackground.opacity(0.1)))
+        .background(
+            self.forMeasurement ? Color.clear : (
+                self.isEven ? AppTheme.screenBackground.opacity(0.3) : AppTheme.screenBackground.opacity(0.1)
+            )
+        )
     }
 
     @ViewBuilder
     private var statusCell: some View {
         HStack(spacing: ResponsiveDesign.spacing(2)) {
-            if pool.isDeletable {
-                if !pool.statusDisplayText.isEmpty {
-                    Text(pool.statusDisplayText)
+            if self.pool.isDeletable {
+                if !self.pool.statusDisplayText.isEmpty {
+                    Text(self.pool.statusDisplayText)
                         .font(ResponsiveDesign.bodyFont())
-                        .foregroundColor(forMeasurement ? nil : AppTheme.fontColor)
+                        .foregroundColor(self.forMeasurement ? nil : AppTheme.fontColor)
                 }
 
-                if forMeasurement {
+                if self.forMeasurement {
                     Image(systemName: "trash")
                         .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 0.8))
                 } else {
-                    Button(action: { onDeleteInvestment(pool) }) {
+                    Button(action: { self.onDeleteInvestment(self.pool) }) {
                         Image(systemName: "trash")
                             .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 0.8))
                             .foregroundColor(AppTheme.fontColor.opacity(0.7))
@@ -62,9 +66,9 @@ struct OpenInvestmentsTableDataRow: View {
                     .buttonStyle(PlainButtonStyle())
                 }
             } else {
-                Text(pool.statusDisplayText)
+                Text(self.pool.statusDisplayText)
                     .font(ResponsiveDesign.bodyFont())
-                    .foregroundColor(forMeasurement ? nil : pool.status.displayColor)
+                    .foregroundColor(self.forMeasurement ? nil : self.pool.status.displayColor)
             }
         }
     }
@@ -74,9 +78,9 @@ struct OpenInvestmentsTableDataRow: View {
         if let profit = pool.profit {
             Text(profit.formattedAsLocalizedCurrency())
                 .font(ResponsiveDesign.bodyFont())
-                .foregroundColor(forMeasurement ? nil : (profit >= 0 ? AppTheme.accentGreen : AppTheme.accentRed))
+                .foregroundColor(self.forMeasurement ? nil : (profit >= 0 ? AppTheme.accentGreen : AppTheme.accentRed))
         } else {
-            let placeholder = pool.status == .completed ? 0.0.formattedAsLocalizedCurrency() : ""
+            let placeholder = self.pool.status == .completed ? 0.0.formattedAsLocalizedCurrency() : ""
             Text(placeholder).font(ResponsiveDesign.bodyFont())
         }
     }
@@ -86,9 +90,9 @@ struct OpenInvestmentsTableDataRow: View {
         if let returnPercentage = pool.returnPercentage {
             Text("\(String(format: "%.0f", returnPercentage))%")
                 .font(ResponsiveDesign.bodyFont())
-                .foregroundColor(forMeasurement ? nil : (returnPercentage >= 0 ? AppTheme.accentGreen : AppTheme.accentRed))
+                .foregroundColor(self.forMeasurement ? nil : (returnPercentage >= 0 ? AppTheme.accentGreen : AppTheme.accentRed))
         } else {
-            let placeholder = pool.status == .completed ? "0%" : ""
+            let placeholder = self.pool.status == .completed ? "0%" : ""
             Text(placeholder).font(ResponsiveDesign.bodyFont())
         }
     }
@@ -96,8 +100,8 @@ struct OpenInvestmentsTableDataRow: View {
     private func cellFrame(_ key: String, _ alignment: Alignment) -> some ViewModifier {
         OpenInvestmentsHeaderCellModifier(
             columnKey: key,
-            columnWidths: columnWidths,
-            forMeasurement: forMeasurement,
+            columnWidths: self.columnWidths,
+            forMeasurement: self.forMeasurement,
             alignment: alignment
         )
     }

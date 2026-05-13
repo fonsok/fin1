@@ -106,8 +106,10 @@ jobs:
           brew update
           brew install swiftlint swiftformat danger/tap/danger-swift || true
 
+      # Lint Swift sources only (avoid scanning local build trees; matches clean CI checkout).
       - name: SwiftFormat
-        run: swiftformat . --lint
+        run: |
+          swiftformat FIN1 FIN1Tests FIN1UITests FIN1InvestorTests FIN1CoreRegressionTests --lint
 
       # Non-strict: custom rules and many stock rules are warnings; `swiftlint lint` exits 0 unless
       # there are error-severity violations. Use `swiftlint --strict` locally when clearing the backlog.

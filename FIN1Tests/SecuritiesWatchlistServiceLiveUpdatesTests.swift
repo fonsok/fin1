@@ -1,6 +1,6 @@
-import XCTest
 import Combine
 @testable import FIN1
+import XCTest
 
 // MARK: - SecuritiesWatchlistService Live Updates Tests
 @MainActor
@@ -12,20 +12,20 @@ final class SecuritiesWatchlistServiceLiveUpdatesTests: XCTestCase {
 
     override func setUp() {
         super.setUp()
-        cancellables = Set<AnyCancellable>()
-        mockLiveQueryClient = MockParseLiveQueryClient()
-        mockMarketDataService = MockMarketDataService()
-        watchlistService = SecuritiesWatchlistService(
-            parseLiveQueryClient: mockLiveQueryClient,
-            marketDataService: mockMarketDataService
+        self.cancellables = Set<AnyCancellable>()
+        self.mockLiveQueryClient = MockParseLiveQueryClient()
+        self.mockMarketDataService = MockMarketDataService()
+        self.watchlistService = SecuritiesWatchlistService(
+            parseLiveQueryClient: self.mockLiveQueryClient,
+            marketDataService: self.mockMarketDataService
         )
     }
 
     override func tearDown() {
-        cancellables.removeAll()
-        watchlistService = nil
-        mockLiveQueryClient = nil
-        mockMarketDataService = nil
+        self.cancellables.removeAll()
+        self.watchlistService = nil
+        self.mockLiveQueryClient = nil
+        self.mockMarketDataService = nil
         super.tearDown()
     }
 
@@ -57,15 +57,15 @@ final class SecuritiesWatchlistServiceLiveUpdatesTests: XCTestCase {
         )
 
         try await watchlistService.addToWatchlist(searchResult1)
-        try await watchlistService.addToWatchlist(searchResult2)
+        try await self.watchlistService.addToWatchlist(searchResult2)
 
         var subscribedSymbols: [String] = []
-        mockMarketDataService.subscribeToMarketDataHandler = { symbols in
+        self.mockMarketDataService.subscribeToMarketDataHandler = { symbols in
             subscribedSymbols = symbols
         }
 
         // When: Starting the service
-        watchlistService.start()
+        self.watchlistService.start()
 
         // Wait for async operations
         let expectation = XCTestExpectation(description: "Subscribed to market data")
@@ -94,7 +94,7 @@ final class SecuritiesWatchlistServiceLiveUpdatesTests: XCTestCase {
             underlyingAsset: "DAX"
         )
         try await watchlistService.addToWatchlist(searchResult)
-        watchlistService.start()
+        self.watchlistService.start()
 
         let expectation = XCTestExpectation(description: "Notification posted")
         var receivedSymbol: String?
@@ -105,7 +105,7 @@ final class SecuritiesWatchlistServiceLiveUpdatesTests: XCTestCase {
                 receivedSymbol = notification.userInfo?["symbol"] as? String
                 expectation.fulfill()
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
 
         // When: Market data is updated
         NotificationCenter.default.post(
@@ -124,11 +124,11 @@ final class SecuritiesWatchlistServiceLiveUpdatesTests: XCTestCase {
     func testAddToWatchlist_SubscribesToMarketData() async {
         // Given: Empty watchlist
         var subscribedSymbols: [String] = []
-        mockMarketDataService.subscribeToMarketDataHandler = { symbols in
+        self.mockMarketDataService.subscribeToMarketDataHandler = { symbols in
             subscribedSymbols.append(contentsOf: symbols)
         }
 
-        watchlistService.start()
+        self.watchlistService.start()
 
         // When: Adding a security to watchlist
         let searchResult = SearchResult(
@@ -171,14 +171,14 @@ final class SecuritiesWatchlistServiceLiveUpdatesTests: XCTestCase {
             underlyingAsset: "DAX"
         )
         try await watchlistService.addToWatchlist(searchResult)
-        watchlistService.start()
+        self.watchlistService.start()
 
         // When: Removing from watchlist
-        try? await watchlistService.removeFromWatchlist("WKN001")
+        try? await self.watchlistService.removeFromWatchlist("WKN001")
 
         // Then: Watchlist should be empty
-        XCTAssertFalse(watchlistService.isInWatchlist("WKN001"))
-        XCTAssertTrue(watchlistService.watchlist.isEmpty || !watchlistService.watchlist.contains { $0.wkn == "WKN001" })
+        XCTAssertFalse(self.watchlistService.isInWatchlist("WKN001"))
+        XCTAssertTrue(self.watchlistService.watchlist.isEmpty || !self.watchlistService.watchlist.contains { $0.wkn == "WKN001" })
     }
 
     // MARK: - Notification Observer Tests
@@ -197,7 +197,7 @@ final class SecuritiesWatchlistServiceLiveUpdatesTests: XCTestCase {
             underlyingAsset: "DAX"
         )
         try await watchlistService.addToWatchlist(searchResult)
-        watchlistService.start()
+        self.watchlistService.start()
 
         let expectation = XCTestExpectation(description: "Watchlist updated")
         var notificationReceived = false
@@ -208,7 +208,7 @@ final class SecuritiesWatchlistServiceLiveUpdatesTests: XCTestCase {
                 notificationReceived = true
                 expectation.fulfill()
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
 
         // When: Market data is updated
         NotificationCenter.default.post(
@@ -234,9 +234,9 @@ final class MockParseLiveQueryClient: ParseLiveQueryClientProtocol {
         onDelete: ((String) -> Void)?,
         onError: ((Error) -> Void)?
     ) -> LiveQuerySubscription {
-        subscriptionCounter += 1
+        self.subscriptionCounter += 1
         return LiveQuerySubscription(
-            id: "mock-\(subscriptionCounter)",
+            id: "mock-\(self.subscriptionCounter)",
             className: className,
             query: query
         )
@@ -256,18 +256,18 @@ final class MockMarketDataService: MarketDataServiceProtocol {
     var unsubscribeFromMarketDataHandler: (() -> Void)?
 
     func getMarketData(for symbol: String) -> MarketData? {
-        return getMarketDataHandler?(symbol) ?? MarketPriceService.getMarketData(for: symbol)
+        return self.getMarketDataHandler?(symbol) ?? MarketPriceService.getMarketData(for: symbol)
     }
 
     func getMarketPrice(for symbol: String) -> Double? {
-        return getMarketPriceHandler?(symbol) ?? MarketPriceService.getMarketPrice(for: symbol)
+        return self.getMarketPriceHandler?(symbol) ?? MarketPriceService.getMarketPrice(for: symbol)
     }
 
     func subscribeToMarketData(symbols: [String]) async {
-        await subscribeToMarketDataHandler?(symbols)
+        await self.subscribeToMarketDataHandler?(symbols)
     }
 
     func unsubscribeFromMarketData() {
-        unsubscribeFromMarketDataHandler?()
+        self.unsubscribeFromMarketDataHandler?()
     }
 }

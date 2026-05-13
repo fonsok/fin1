@@ -22,7 +22,7 @@ struct SavedFiltersSection: View {
                 Spacer()
 
                 Button("View All") {
-                    onViewAll()
+                    self.onViewAll()
                 }
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.accentLightBlue)
@@ -33,18 +33,18 @@ struct SavedFiltersSection: View {
                 GridItem(.flexible(), spacing: ResponsiveDesign.spacing(8)),
                 GridItem(.flexible(), spacing: ResponsiveDesign.spacing(8))
             ], spacing: ResponsiveDesign.spacing(8)) {
-                ForEach(savedFilters) { savedFilter in
+                ForEach(self.savedFilters) { savedFilter in
                     SavedFilterChip(
                         savedFilter: savedFilter,
-                        onApply: { onApplyFilter(savedFilter) },
-                        onDelete: { onDeleteFilter(savedFilter) },
-                        isCurrentlyApplied: currentlyAppliedFilterID == savedFilter.id.uuidString
+                        onApply: { self.onApplyFilter(savedFilter) },
+                        onDelete: { self.onDeleteFilter(savedFilter) },
+                        isCurrentlyApplied: self.currentlyAppliedFilterID == savedFilter.id.uuidString
                     )
                 }
 
                 // Only show "Save" button if there are active filters and no saved filter is currently applied
-                if !activeFilters.isEmpty && currentlyAppliedFilterID == nil {
-                    Button(action: onCreateNew, label: {
+                if !self.activeFilters.isEmpty && self.currentlyAppliedFilterID == nil {
+                    Button(action: self.onCreateNew, label: {
                         VStack(spacing: ResponsiveDesign.spacing(4)) {
                             Image(systemName: "plus")
                                 .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 0.8))
@@ -79,24 +79,24 @@ struct SavedFilterChip: View {
 
     var body: some View {
         HStack(alignment: .center, spacing: 0) {
-            Button(action: onApply, label: {
+            Button(action: self.onApply, label: {
                 HStack(alignment: .top, spacing: ResponsiveDesign.spacing(4)) {
                     VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
-                        Text(savedFilter.name)
+                        Text(self.savedFilter.name)
                             .font(ResponsiveDesign.bodyFont())
                             .fontWeight(.medium)
-                            .foregroundColor(isCurrentlyApplied ? .white : AppTheme.inputFieldText)
+                            .foregroundColor(self.isCurrentlyApplied ? .white : AppTheme.inputFieldText)
                             .fixedSize(horizontal: false, vertical: true)
                             .multilineTextAlignment(.leading)
 
-                        Text("\(savedFilter.filters.count) filters")
+                        Text("\(self.savedFilter.filters.count) filters")
                             .font(ResponsiveDesign.bodyFont())
-                            .foregroundColor(isCurrentlyApplied ? .white : AppTheme.inputFieldText)
+                            .foregroundColor(self.isCurrentlyApplied ? .white : AppTheme.inputFieldText)
                             .lineLimit(1)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
 
-                    if isCurrentlyApplied {
+                    if self.isCurrentlyApplied {
                         Image(systemName: "checkmark.circle.fill")
                             .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 0.7))
                             .foregroundColor(AppTheme.accentGreen)
@@ -105,17 +105,17 @@ struct SavedFilterChip: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, ResponsiveDesign.spacing(12))
                 .padding(.vertical, ResponsiveDesign.spacing(8))
-                .background(isCurrentlyApplied ? AppTheme.accentGreen.opacity(0.1) : AppTheme.inputFieldBackground)
+                .background(self.isCurrentlyApplied ? AppTheme.accentGreen.opacity(0.1) : AppTheme.inputFieldBackground)
                 .overlay(
                     RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(8))
-                        .stroke(isCurrentlyApplied ? AppTheme.accentGreen : AppTheme.accentLightBlue, lineWidth: 1)
+                        .stroke(self.isCurrentlyApplied ? AppTheme.accentGreen : AppTheme.accentLightBlue, lineWidth: 1)
                 )
                 .cornerRadius(ResponsiveDesign.spacing(8))
             })
             .buttonStyle(PlainButtonStyle())
 
             // Delete button (X) positioned at center-right
-            Button(action: { showDeleteConfirmation = true }, label: {
+            Button(action: { self.showDeleteConfirmation = true }, label: {
                 Image(systemName: "xmark")
                     .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 0.7))
                     .foregroundColor(AppTheme.accentRed.opacity(0.8))
@@ -124,13 +124,13 @@ struct SavedFilterChip: View {
             .padding(.leading, ResponsiveDesign.spacing(4))
         }
         .opacity(0.7)
-        .alert("Delete Filter Combination", isPresented: $showDeleteConfirmation) {
+        .alert("Delete Filter Combination", isPresented: self.$showDeleteConfirmation) {
             Button("Cancel", role: .cancel) { }
             Button("Delete", role: .destructive) {
-                onDelete()
+                self.onDelete()
             }
         } message: {
-            Text("Are you sure you want to delete \"\(savedFilter.name)\"? This action cannot be undone.")
+            Text("Are you sure you want to delete \"\(self.savedFilter.name)\"? This action cannot be undone.")
         }
     }
 }

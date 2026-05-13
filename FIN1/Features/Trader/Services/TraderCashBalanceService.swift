@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Trader Cash Balance Service Protocol
 
@@ -62,13 +62,13 @@ final class TraderCashBalanceService: TraderCashBalanceServiceProtocol, Observab
         self.parseLiveQueryClient = parseLiveQueryClient
         self.userService = userService
         self.initialTraderBalance = configurationService.initialAccountBalance
-        setupLiveQuerySubscription()
-        observeConfigChanges()
+        self.setupLiveQuerySubscription()
+        self.observeConfigChanges()
     }
 
     /// Re-sync initialTraderBalance when the config service loads server values
     private func observeConfigChanges() {
-        configurationService.configurationChanged
+        self.configurationService.configurationChanged
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 guard let self else { return }
@@ -81,38 +81,38 @@ final class TraderCashBalanceService: TraderCashBalanceServiceProtocol, Observab
                     NotificationCenter.default.post(name: .traderBalanceDidChange, object: nil)
                 }
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
     }
 
     // MARK: - ServiceLifecycle
 
     func start() async {
-        print("💰 TraderCashBalanceService started with initial balance: €\(initialTraderBalance.formatted(.currency(code: "EUR")))")
+        print("💰 TraderCashBalanceService started with initial balance: €\(self.initialTraderBalance.formatted(.currency(code: "EUR")))")
 
         // Subscribe to Live Query updates for current trader
-        await subscribeToLiveUpdates()
+        await self.subscribeToLiveUpdates()
     }
 
     func stop() async {
         // Unsubscribe from all Live Query subscriptions
-        for (traderId, subscription) in liveQuerySubscriptions {
-            parseLiveQueryClient?.unsubscribe(subscription)
+        for (traderId, subscription) in self.liveQuerySubscriptions {
+            self.parseLiveQueryClient?.unsubscribe(subscription)
             print("💰 TraderCashBalanceService: Unsubscribed from Live Query for trader \(traderId)")
         }
-        liveQuerySubscriptions.removeAll()
+        self.liveQuerySubscriptions.removeAll()
         print("💰 TraderCashBalanceService stopped")
     }
 
     func reset() async {
         // Unsubscribe from all Live Query subscriptions
-        for (_, subscription) in liveQuerySubscriptions {
-            parseLiveQueryClient?.unsubscribe(subscription)
+        for (_, subscription) in self.liveQuerySubscriptions {
+            self.parseLiveQueryClient?.unsubscribe(subscription)
         }
-        liveQuerySubscriptions.removeAll()
+        self.liveQuerySubscriptions.removeAll()
 
         await MainActor.run {
-            balances.removeAll()
-            commissionRecords.removeAll()
+            self.balances.removeAll()
+            self.commissionRecords.removeAll()
         }
         print("💰 TraderCashBalanceService reset - all balances and commission records cleared")
     }
@@ -139,7 +139,9 @@ final class TraderCashBalanceService: TraderCashBalanceServiceProtocol, Observab
                 Task { @MainActor in
                     if self.balances.keys.contains(userId) {
                         self.balances[userId] = balanceAfter
-                        print("💰 TraderCashBalanceService: Balance updated via Live Query for trader \(userId): €\(balanceAfter.formatted(.currency(code: "EUR")))")
+                        print(
+                            "💰 TraderCashBalanceService: Balance updated via Live Query for trader \(userId): €\(balanceAfter.formatted(.currency(code: "EUR")))"
+                        )
 
                         // Post notification to update UI
                         // Note: Using walletTransactionCompleted as trader balance changes are typically from wallet transactions
@@ -154,7 +156,7 @@ final class TraderCashBalanceService: TraderCashBalanceServiceProtocol, Observab
                     }
                 }
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
 
         NotificationCenter.default.publisher(for: .traderCashBalanceLiveQueryUpdate)
             .receive(on: DispatchQueue.main)
@@ -166,7 +168,9 @@ final class TraderCashBalanceService: TraderCashBalanceServiceProtocol, Observab
                     return
                 }
                 self.balances[traderId] = balanceAfter
-                print("💰 TraderCashBalanceService: Balance updated via Live Query for trader \(traderId): €\(balanceAfter.formatted(.currency(code: "EUR")))")
+                print(
+                    "💰 TraderCashBalanceService: Balance updated via Live Query for trader \(traderId): €\(balanceAfter.formatted(.currency(code: "EUR")))"
+                )
                 NotificationCenter.default.post(
                     name: .walletTransactionCompleted,
                     object: nil,
@@ -176,7 +180,7 @@ final class TraderCashBalanceService: TraderCashBalanceServiceProtocol, Observab
                     ]
                 )
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
     }
 
     private func subscribeToLiveUpdates() async {
@@ -187,7 +191,7 @@ final class TraderCashBalanceService: TraderCashBalanceServiceProtocol, Observab
         // Subscribe to WalletTransaction updates for current trader (if logged in as trader)
         if let currentUserId = userService?.currentUser?.id,
            userService?.currentUser?.role == .trader {
-            await subscribeToLiveUpdates(for: currentUserId, liveQueryClient: liveQueryClient)
+            await self.subscribeToLiveUpdates(for: currentUserId, liveQueryClient: liveQueryClient)
         }
     }
 
@@ -202,7 +206,7 @@ final class TraderCashBalanceService: TraderCashBalanceServiceProtocol, Observab
             liveQueryClient.unsubscribe(existingSubscription)
         }
 
-        await subscribeToLiveUpdates(for: traderId, liveQueryClient: liveQueryClient)
+        await self.subscribeToLiveUpdates(for: traderId, liveQueryClient: liveQueryClient)
     }
 
     private func subscribeToLiveUpdates(for traderId: String, liveQueryClient: any ParseLiveQueryClientProtocol) async {
@@ -228,23 +232,25 @@ final class TraderCashBalanceService: TraderCashBalanceServiceProtocol, Observab
                 }
             },
             onError: { error in
-                print("⚠️ Live Query error for WalletTransaction in TraderCashBalanceService (trader \(traderId)): \(error.localizedDescription)")
+                print(
+                    "⚠️ Live Query error for WalletTransaction in TraderCashBalanceService (trader \(traderId)): \(error.localizedDescription)"
+                )
             }
         )
-        liveQuerySubscriptions[traderId] = subscription
+        self.liveQuerySubscriptions[traderId] = subscription
         print("💰 TraderCashBalanceService: Subscribed to Live Query for trader \(traderId)")
     }
 
     // MARK: - Public Methods
 
     func getBalance(for traderId: String) -> Double {
-        return queue.sync {
-            return balances[traderId] ?? initialTraderBalance
+        return self.queue.sync {
+            return self.balances[traderId] ?? self.initialTraderBalance
         }
     }
 
     func getFormattedBalance(for traderId: String) -> String {
-        let balance = getBalance(for: traderId)
+        let balance = self.getBalance(for: traderId)
         return balance.formatted(.currency(code: "EUR"))
     }
 
@@ -255,15 +261,15 @@ final class TraderCashBalanceService: TraderCashBalanceServiceProtocol, Observab
         }
 
         await MainActor.run {
-            let currentBalance = balances[traderId] ?? initialTraderBalance
+            let currentBalance = self.balances[traderId] ?? self.initialTraderBalance
             let newBalance = currentBalance + commissionAmount
-            balances[traderId] = newBalance
+            self.balances[traderId] = newBalance
 
             // Track commission record
-            if commissionRecords[traderId] == nil {
-                commissionRecords[traderId] = []
+            if self.commissionRecords[traderId] == nil {
+                self.commissionRecords[traderId] = []
             }
-            commissionRecords[traderId]?.append(commissionAmount)
+            self.commissionRecords[traderId]?.append(commissionAmount)
 
             // Post notification to update UI
             NotificationCenter.default.post(
@@ -273,7 +279,7 @@ final class TraderCashBalanceService: TraderCashBalanceServiceProtocol, Observab
             )
         }
 
-        let newBalance = getBalance(for: traderId)
+        let newBalance = self.getBalance(for: traderId)
         print("💰 TraderCashBalanceService: Commission payment processed")
         print("   👤 Trader ID: \(traderId)")
         print("   📊 Trade ID: \(tradeId)")
@@ -282,8 +288,8 @@ final class TraderCashBalanceService: TraderCashBalanceServiceProtocol, Observab
     }
 
     func getTotalCommissionEarned(traderId: String) -> Double {
-        return queue.sync {
-            return commissionRecords[traderId]?.reduce(0.0, +) ?? 0.0
+        return self.queue.sync {
+            return self.commissionRecords[traderId]?.reduce(0.0, +) ?? 0.0
         }
     }
 }

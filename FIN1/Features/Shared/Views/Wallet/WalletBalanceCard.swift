@@ -10,7 +10,7 @@ struct WalletBalanceCard: View {
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.secondaryText)
 
-            Text(formattedBalance)
+            Text(self.formattedBalance)
                 .font(ResponsiveDesign.largeTitleFont())
                 .fontWeight(.bold)
                 .foregroundColor(AppTheme.fontColor)

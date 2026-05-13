@@ -95,7 +95,7 @@ final class ProfitDistributionService: ProfitDistributionServiceProtocol, @unche
 
         // --- Fallback: local calculation (backend unreachable or not yet settled) ---
         print("ℹ️ ProfitDistributionService: Backend settlement not available — using local calculation")
-        return await distributeLocalFallback(trade: trade, grossProfit: grossProfit)
+        return await self.distributeLocalFallback(trade: trade, grossProfit: grossProfit)
     }
 
     /// Local fallback: calculates commission and distributes profit entirely on-device.
@@ -110,7 +110,7 @@ final class ProfitDistributionService: ProfitDistributionServiceProtocol, @unche
         let netProfit: Double
 
         if !participations.isEmpty {
-            let commissionRate = configurationService.effectiveCommissionRate
+            let commissionRate = self.configurationService.effectiveCommissionRate
             let participationsByInvestment = Dictionary(grouping: participations) { $0.investmentId }
             let allInvestments = investmentService.investments
 
@@ -138,7 +138,7 @@ final class ProfitDistributionService: ProfitDistributionServiceProtocol, @unche
         }
 
         if totalCommission > 0 && !participations.isEmpty {
-            await accumulateCommissionsForInvestors(trade: trade, totalCommission: totalCommission, grossProfit: grossProfit)
+            await self.accumulateCommissionsForInvestors(trade: trade, totalCommission: totalCommission, grossProfit: grossProfit)
             if let traderCashBalanceService {
                 await traderCashBalanceService.processCommissionPayment(
                     traderId: trade.traderId, commissionAmount: totalCommission, tradeId: trade.id
@@ -178,7 +178,7 @@ final class ProfitDistributionService: ProfitDistributionServiceProtocol, @unche
         }
 
         // Get trader ID
-        let traderId = findTraderIdForMatching() ?? trade.traderId
+        let traderId = self.findTraderIdForMatching() ?? trade.traderId
 
         // Group participations by investment to get unique investors
         let participationsByInvestment = Dictionary(grouping: participations) { $0.investmentId }
@@ -186,7 +186,7 @@ final class ProfitDistributionService: ProfitDistributionServiceProtocol, @unche
         // Get all investments to find investor IDs
         let allInvestments = investmentService.investments
 
-        let commissionRate = configurationService.effectiveCommissionRate
+        let commissionRate = self.configurationService.effectiveCommissionRate
 
         // Accumulate commission for each investor using centralized services
         for (investmentId, _) in participationsByInvestment {
@@ -205,7 +205,7 @@ final class ProfitDistributionService: ProfitDistributionServiceProtocol, @unche
                         for: investmentId,
                         tradeId: trade.id
                     )
-                    investorCommissionShare = try await commissionCalculationService.calculateCommissionForInvestor(
+                    investorCommissionShare = try await self.commissionCalculationService.calculateCommissionForInvestor(
                         investmentId: investmentId,
                         tradeId: trade.id,
                         commissionRate: commissionRate
@@ -235,7 +235,9 @@ final class ProfitDistributionService: ProfitDistributionServiceProtocol, @unche
             print("   💰 Commission (centralized): €\(String(format: "%.2f", investorCommissionShare))")
         }
 
-        print("✅ ProfitDistributionService: Accumulated total commission of €\(String(format: "%.2f", totalCommission)) for trade #\(trade.tradeNumber)")
+        print(
+            "✅ ProfitDistributionService: Accumulated total commission of €\(String(format: "%.2f", totalCommission)) for trade #\(trade.tradeNumber)"
+        )
     }
 
     /// Finds the trader ID to use for investment matching
@@ -301,7 +303,7 @@ private final class UncheckedCommissionAccumulationBridge: @unchecked Sendable {
         commissionAmount: Double,
         grossProfit: Double
     ) async {
-        await service.recordCommission(
+        await self.service.recordCommission(
             investorId: investorId,
             traderId: traderId,
             tradeId: tradeId,

@@ -1,6 +1,6 @@
 import Foundation
-import UIKit
 import PDFKit
+import UIKit
 
 // MARK: - Improved PDF Core Generator
 /// Professional PDF generator with improved styling and layout
@@ -31,7 +31,7 @@ struct PDFCoreGeneratorImproved {
             cgContext.setShouldSmoothFonts(true)
             cgContext.interpolationQuality = .high
 
-            drawInvoice(in: cgContext, invoice: invoice, pageRect: pageRect)
+            self.drawInvoice(in: cgContext, invoice: invoice, pageRect: pageRect)
         }
 
         print("🔧 DEBUG: PDFCoreGeneratorImproved.generatePDF - PDF rendering completed, data size: \(data.count) bytes")
@@ -40,7 +40,7 @@ struct PDFCoreGeneratorImproved {
 
     /// Generates a preview image of the PDF
     static func generatePreview(from invoice: Invoice) -> UIImage? {
-        let pdfData = generatePDF(from: invoice)
+        let pdfData = self.generatePDF(from: invoice)
 
         guard let document = PDFDocument(data: pdfData),
               let page = document.page(at: 0) else {

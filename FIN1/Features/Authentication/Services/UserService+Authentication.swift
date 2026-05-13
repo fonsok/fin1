@@ -65,7 +65,7 @@ extension UserService {
         let testUser = UserFactory.createUser(from: email, password: password)
         #endif
 
-        let token = generateFallbackSessionToken(for: testUser)
+        let token = self.generateFallbackSessionToken(for: testUser)
 
         await MainActor.run { [weak self] in
             self?.currentUser = testUser

@@ -12,10 +12,10 @@ extension SignUpData {
     // MARK: - Password Validation
     var isPasswordValid: Bool {
         password.count >= 8 &&
-        password.range(of: "[A-Z]", options: .regularExpression) != nil &&
-        password.range(of: "[a-z]", options: .regularExpression) != nil &&
-        password.range(of: "[0-9]", options: .regularExpression) != nil &&
-        password.range(of: "[!@#$%^&*(),.?\":{}|<>]", options: .regularExpression) != nil
+            password.range(of: "[A-Z]", options: .regularExpression) != nil &&
+            password.range(of: "[a-z]", options: .regularExpression) != nil &&
+            password.range(of: "[0-9]", options: .regularExpression) != nil &&
+            password.range(of: "[!@#$%^&*(),.?\":{}|<>]", options: .regularExpression) != nil
     }
 
     var isPasswordConfirmed: Bool {
@@ -37,18 +37,18 @@ extension SignUpData {
     // MARK: - Personal Information Validation
     var isPersonalInfoValid: Bool {
         !firstName.isEmpty &&
-        !lastName.isEmpty &&
-        !streetAndNumber.isEmpty &&
-        !postalCode.isEmpty &&
-        !city.isEmpty &&
-        !state.isEmpty &&
-        !country.isEmpty
+            !lastName.isEmpty &&
+            !streetAndNumber.isEmpty &&
+            !postalCode.isEmpty &&
+            !city.isEmpty &&
+            !state.isEmpty &&
+            !country.isEmpty
     }
 
     // MARK: - Tax Information Validation
     var isTaxInfoValid: Bool {
         !taxNumber.isEmpty &&
-        !nationality.isEmpty
+            !nationality.isEmpty
     }
 
     // MARK: - Identification Validation
@@ -66,39 +66,39 @@ extension SignUpData {
     // MARK: - Financial Information Validation
     var isFinancialInfoValid: Bool {
         !income.isEmpty &&
-        !incomeSources.isEmpty &&
-        incomeSources.values.contains(true) // At least one income source selected
+            !incomeSources.isEmpty &&
+            incomeSources.values.contains(true) // At least one income source selected
     }
 
     // MARK: - Investment Experience Validation
     var isInvestmentExperienceValid: Bool {
         // At least one type of investment experience should be provided
         return stocksTransactionsCount != .none ||
-               etfsTransactionsCount != .none ||
-               derivativesTransactionsCount != .none ||
-               otherAssets.values.contains(true)
+            etfsTransactionsCount != .none ||
+            derivativesTransactionsCount != .none ||
+            otherAssets.values.contains(true)
     }
 
     // MARK: - Legal Declarations Validation
     var areLegalDeclarationsValid: Bool {
         acceptedTerms &&
-        acceptedPrivacyPolicy &&
-        moneyLaunderingDeclaration &&
-        insiderTradingOptions.values.contains(true) // At least one option selected
+            acceptedPrivacyPolicy &&
+            moneyLaunderingDeclaration &&
+            insiderTradingOptions.values.contains(true) // At least one option selected
     }
 
     // MARK: - Overall Form Validation
     var isFormValid: Bool {
-        isEmailValid &&
-        isUsernameValid &&
-        isPasswordValid &&
-        isPasswordConfirmed &&
-        isPhoneNumberValid &&
-        isPersonalInfoValid &&
-        isTaxInfoValid &&
-        isFinancialInfoValid &&
-        isInvestmentExperienceValid &&
-        areLegalDeclarationsValid
+        self.isEmailValid &&
+            self.isUsernameValid &&
+            self.isPasswordValid &&
+            self.isPasswordConfirmed &&
+            self.isPhoneNumberValid &&
+            self.isPersonalInfoValid &&
+            self.isTaxInfoValid &&
+            self.isFinancialInfoValid &&
+            self.isInvestmentExperienceValid &&
+            self.areLegalDeclarationsValid
     }
 
     // MARK: - Step-Specific Validation
@@ -107,7 +107,7 @@ extension SignUpData {
         case .welcome:
             return true // Always valid
         case .contact:
-            return isEmailValid && isUsernameValid && isPasswordValid && isPasswordConfirmed && isPhoneNumberValid
+            return self.isEmailValid && self.isUsernameValid && self.isPasswordValid && self.isPasswordConfirmed && self.isPhoneNumberValid
         case .accountCreated:
             return true
         case .emailVerification:
@@ -115,13 +115,13 @@ extension SignUpData {
         case .phoneVerification:
             return true
         case .personalInfo:
-            return isPersonalInfoValid
+            return self.isPersonalInfoValid
         case .citizenshipTax:
-            return isTaxInfoValid
+            return self.isTaxInfoValid
         case .identificationType:
             return true // Selection step
         case .identificationUploadFront, .identificationUploadBack:
-            return isIdentificationValid
+            return self.isIdentificationValid
         case .postidentConfirmation:
             return true // Postident process
         case .identificationConfirm:
@@ -131,9 +131,9 @@ extension SignUpData {
         case .addressConfirmSuccess:
             return true // Success step
         case .financial:
-            return isFinancialInfoValid
+            return self.isFinancialInfoValid
         case .experience:
-            return isInvestmentExperienceValid
+            return self.isInvestmentExperienceValid
         case .desiredReturn:
             return true // Selection step
         case .nonInsiderDeclaration:
@@ -143,7 +143,7 @@ extension SignUpData {
         case .terms:
             return acceptedTerms && acceptedPrivacyPolicy
         case .summary:
-            return isFormValid
+            return self.isFormValid
         case .riskClassificationNote:
             return true // Information step
         case .riskClass7Confirmation:

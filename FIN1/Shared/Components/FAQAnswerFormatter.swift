@@ -12,13 +12,13 @@ struct FAQAnswerFormatter: View {
     }
 
     var body: some View {
-        let lines = answer.components(separatedBy: "\n")
+        let lines = self.answer.components(separatedBy: "\n")
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
             ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
                 if line.trimmingCharacters(in: .whitespaces).hasPrefix("•") {
                     // Bullet point line
                     HStack(alignment: .top, spacing: ResponsiveDesign.spacing(10)) {
-                        if style == .typewriter {
+                        if self.style == .typewriter {
                             Text("-")
                                 .font(ResponsiveDesign.monospacedFont(size: 16, weight: .regular))
                                 .foregroundColor(Color("InputText"))
@@ -31,7 +31,7 @@ struct FAQAnswerFormatter: View {
                         }
 
                         Group {
-                            if style == .typewriter {
+                            if self.style == .typewriter {
                                 Text(line.trimmingCharacters(in: .whitespaces).dropFirst().trimmingCharacters(in: .whitespaces))
                                     .font(ResponsiveDesign.monospacedFont(size: 16, weight: .regular))
                                     .foregroundColor(Color("InputText"))
@@ -44,7 +44,7 @@ struct FAQAnswerFormatter: View {
                 } else if !line.trimmingCharacters(in: .whitespaces).isEmpty {
                     // Regular paragraph line
                     Group {
-                        if style == .typewriter {
+                        if self.style == .typewriter {
                             Text(line.trimmingCharacters(in: .whitespaces))
                                 .font(ResponsiveDesign.monospacedFont(size: 16, weight: .regular))
                                 .foregroundColor(Color("InputText"))

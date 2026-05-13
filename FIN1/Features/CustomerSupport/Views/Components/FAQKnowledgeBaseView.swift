@@ -29,8 +29,8 @@ struct FAQKnowledgeBaseView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: ResponsiveDesign.spacing(16)) {
-                    FAQSearchSection(viewModel: viewModel)
-                    contentSection
+                    FAQSearchSection(viewModel: self.viewModel)
+                    self.contentSection
                 }
                 .padding(.horizontal, ResponsiveDesign.horizontalPadding())
                 .padding(.top, ResponsiveDesign.spacing(8))
@@ -41,32 +41,32 @@ struct FAQKnowledgeBaseView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Schließen") {
-                        dismiss()
+                        self.dismiss()
                     }
                 }
 
-                if isCSRMode {
+                if self.isCSRMode {
                     ToolbarItem(placement: .navigationBarTrailing) {
                         Menu {
                             Button {
-                                viewModel.startCreateArticle()
+                                self.viewModel.startCreateArticle()
                             } label: {
                                 Label("Neuer Artikel", systemImage: "plus.circle")
                             }
 
                             Button {
-                                Task { await viewModel.loadStatistics() }
+                                Task { await self.viewModel.loadStatistics() }
                             } label: {
                                 Label("Statistiken", systemImage: "chart.bar")
                             }
 
                             Divider()
 
-                            Toggle(isOn: $viewModel.showUnpublished) {
+                            Toggle(isOn: self.$viewModel.showUnpublished) {
                                 Label("Entwürfe anzeigen", systemImage: "doc.badge.ellipsis")
                             }
 
-                            Toggle(isOn: $viewModel.showArchived) {
+                            Toggle(isOn: self.$viewModel.showArchived) {
                                 Label("Archiviert anzeigen", systemImage: "archivebox")
                             }
                         } label: {
@@ -75,36 +75,36 @@ struct FAQKnowledgeBaseView: View {
                     }
                 }
             }
-            .task { await viewModel.load() }
-            .refreshable { await viewModel.refresh() }
-            .alert("Fehler", isPresented: $viewModel.showError) {
-                Button("OK") { viewModel.clearError() }
+            .task { await self.viewModel.load() }
+            .refreshable { await self.viewModel.refresh() }
+            .alert("Fehler", isPresented: self.$viewModel.showError) {
+                Button("OK") { self.viewModel.clearError() }
             } message: {
-                Text(viewModel.errorMessage ?? "Ein Fehler ist aufgetreten")
+                Text(self.viewModel.errorMessage ?? "Ein Fehler ist aufgetreten")
             }
-            .alert("Erfolg", isPresented: $viewModel.showSuccess) {
-                Button("OK") { viewModel.clearSuccess() }
+            .alert("Erfolg", isPresented: self.$viewModel.showSuccess) {
+                Button("OK") { self.viewModel.clearSuccess() }
             } message: {
-                Text(viewModel.successMessage ?? "")
+                Text(self.viewModel.successMessage ?? "")
             }
-            .sheet(isPresented: $viewModel.showArticleDetail) {
+            .sheet(isPresented: self.$viewModel.showArticleDetail) {
                 if let article = viewModel.selectedArticle {
                     FAQArticleDetailView(
                         article: article,
-                        viewModel: viewModel,
-                        isCSRMode: isCSRMode,
-                        userId: userId
+                        viewModel: self.viewModel,
+                        isCSRMode: self.isCSRMode,
+                        userId: self.userId
                     )
                 }
             }
-            .sheet(isPresented: $viewModel.showCreateArticleSheet) {
-                FAQArticleEditorSheet(viewModel: viewModel, isEditing: false)
+            .sheet(isPresented: self.$viewModel.showCreateArticleSheet) {
+                FAQArticleEditorSheet(viewModel: self.viewModel, isEditing: false)
             }
-            .sheet(isPresented: $viewModel.showEditArticleSheet) {
-                FAQArticleEditorSheet(viewModel: viewModel, isEditing: true)
+            .sheet(isPresented: self.$viewModel.showEditArticleSheet) {
+                FAQArticleEditorSheet(viewModel: self.viewModel, isEditing: true)
             }
-            .sheet(isPresented: $viewModel.showStatistics) {
-                FAQStatisticsSheet(viewModel: viewModel)
+            .sheet(isPresented: self.$viewModel.showStatistics) {
+                FAQStatisticsSheet(viewModel: self.viewModel)
             }
         }
     }
@@ -113,17 +113,17 @@ struct FAQKnowledgeBaseView: View {
 
     @ViewBuilder
     private var contentSection: some View {
-        if viewModel.isSearchActive {
-            FAQSearchResultsSection(viewModel: viewModel)
+        if self.viewModel.isSearchActive {
+            FAQSearchResultsSection(viewModel: self.viewModel)
         } else {
             VStack(spacing: ResponsiveDesign.spacing(16)) {
-                if isCSRMode {
-                    FAQStatisticsPreviewSection(viewModel: viewModel)
+                if self.isCSRMode {
+                    FAQStatisticsPreviewSection(viewModel: self.viewModel)
                 }
-                FAQCategoriesSection(viewModel: viewModel)
-                FAQPopularArticlesSection(viewModel: viewModel, isCSRMode: isCSRMode)
-                if isCSRMode && !viewModel.articlesNeedingReview.isEmpty {
-                    FAQArticlesNeedingReviewSection(viewModel: viewModel)
+                FAQCategoriesSection(viewModel: self.viewModel)
+                FAQPopularArticlesSection(viewModel: self.viewModel, isCSRMode: self.isCSRMode)
+                if self.isCSRMode && !self.viewModel.articlesNeedingReview.isEmpty {
+                    FAQArticlesNeedingReviewSection(viewModel: self.viewModel)
                 }
             }
         }

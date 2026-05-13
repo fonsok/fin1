@@ -1,6 +1,6 @@
-import SwiftUI
 import Combine
 import Foundation
+import SwiftUI
 
 // MARK: - Trade Statement View Model
 /// Handles data and calculations for the collective billing statement
@@ -30,7 +30,7 @@ final class TradeStatementViewModel: ObservableObject {
     // Computed display properties
     var displayProperties: TradeStatementDisplayProperties? {
         guard let displayData = displayData else { return nil }
-        return displayService.getDisplayProperties(from: displayData, trade: trade)
+        return self.displayService.getDisplayProperties(from: displayData, trade: self.trade)
     }
 
     // PDF generation state
@@ -78,16 +78,16 @@ final class TradeStatementViewModel: ObservableObject {
     ) {
         self.invoiceService = invoiceService
         self.tradeService = tradeService
-        loadFullTrade(prefetched: prefetchedFullTrade)
-        loadInvoices()
-        updateDisplayData()
+        self.loadFullTrade(prefetched: prefetchedFullTrade)
+        self.loadInvoices()
+        self.updateDisplayData()
     }
 
     // MARK: - Public Methods
 
     /// Forces a refresh of all display data (useful when calculation logic changes)
     func refreshDisplayData() {
-        updateDisplayData()
+        self.updateDisplayData()
     }
 
     // MARK: - Private Methods
@@ -95,8 +95,8 @@ final class TradeStatementViewModel: ObservableObject {
     private func loadFullTrade(prefetched: Trade? = nil) {
         guard let service = tradeService, let tradeId = trade.tradeId else {
             print("❌ TradeStatementViewModel: No trade service or trade ID")
-            print("   - tradeService: \(tradeService != nil ? "✅" : "❌")")
-            print("   - tradeId: \(trade.tradeId ?? "NIL")")
+            print("   - tradeService: \(self.tradeService != nil ? "✅" : "❌")")
+            print("   - tradeId: \(self.trade.tradeId ?? "NIL")")
             return
         }
 
@@ -120,27 +120,29 @@ final class TradeStatementViewModel: ObservableObject {
     private func loadInvoices() {
         guard let service = invoiceService, let tradeId = trade.tradeId else {
             print("❌ TradeStatementViewModel: No invoice service or trade ID")
-            print("   - invoiceService: \(invoiceService != nil ? "✅" : "❌")")
-            print("   - tradeId: \(trade.tradeId ?? "NIL")")
+            print("   - invoiceService: \(self.invoiceService != nil ? "✅" : "❌")")
+            print("   - tradeId: \(self.trade.tradeId ?? "NIL")")
             return
         }
 
         let allInvoices = service.invoices.filter { $0.tradeId == tradeId }
-        buyInvoice = allInvoices.first { $0.transactionType == .buy }
-        sellInvoices = allInvoices.filter { $0.transactionType == .sell }
+        self.buyInvoice = allInvoices.first { $0.transactionType == .buy }
+        self.sellInvoices = allInvoices.filter { $0.transactionType == .sell }
 
-        print("📄 TradeStatementViewModel: Loaded \(allInvoices.count) invoices: \(buyInvoice != nil ? "1 buy" : "0 buy"), \(sellInvoices.count) sell")
+        print(
+            "📄 TradeStatementViewModel: Loaded \(allInvoices.count) invoices: \(self.buyInvoice != nil ? "1 buy" : "0 buy"), \(self.sellInvoices.count) sell"
+        )
 
         // Update display data when invoices are loaded
-        updateDisplayData()
+        self.updateDisplayData()
     }
 
     private func updateDisplayData() {
-        displayData = displayDataBuilder.buildDisplayData(
-            trade: trade,
-            fullTrade: fullTrade,
-            buyInvoice: buyInvoice,
-            sellInvoices: sellInvoices
+        self.displayData = self.displayDataBuilder.buildDisplayData(
+            trade: self.trade,
+            fullTrade: self.fullTrade,
+            buyInvoice: self.buyInvoice,
+            sellInvoices: self.sellInvoices
         )
     }
 
@@ -149,8 +151,8 @@ final class TradeStatementViewModel: ObservableObject {
     /// Generates a PDF for the trade statement
     func generatePDF() {
         guard let displayData = displayData else {
-            errorMessage = "No display data available for PDF generation"
-            showError = true
+            self.errorMessage = "No display data available for PDF generation"
+            self.showError = true
             return
         }
 
@@ -159,7 +161,7 @@ final class TradeStatementViewModel: ObservableObject {
             self.pdfGenerationProgress = 0.0
 
             do {
-                print("🔧 TradeStatementViewModel: Starting PDF generation for Trade #\(trade.tradeNumber)")
+                print("🔧 TradeStatementViewModel: Starting PDF generation for Trade #\(self.trade.tradeNumber)")
 
                 // Simulate progress updates
                 for progress in stride(from: 0.0, through: 1.0, by: 0.1) {
@@ -167,7 +169,7 @@ final class TradeStatementViewModel: ObservableObject {
                     try await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
                 }
 
-                let pdfData = try await pdfService.generatePDF(for: displayData, trade: trade)
+                let pdfData = try await pdfService.generatePDF(for: displayData, trade: self.trade)
                 print("🔧 TradeStatementViewModel: PDF generated successfully, size: \(pdfData.count) bytes")
 
                 // Save PDF to Documents folder for sharing
@@ -193,15 +195,15 @@ final class TradeStatementViewModel: ObservableObject {
     /// Generates a PDF preview for the trade statement
     func generatePDFPreview() {
         guard let displayData = displayData else {
-            errorMessage = "No display data available for PDF preview"
-            showError = true
+            self.errorMessage = "No display data available for PDF preview"
+            self.showError = true
             return
         }
 
         Task { @MainActor in
             do {
-                print("🔧 TradeStatementViewModel: Generating PDF preview for Trade #\(trade.tradeNumber)")
-                let image = try await pdfService.generatePreview(for: displayData, trade: trade)
+                print("🔧 TradeStatementViewModel: Generating PDF preview for Trade #\(self.trade.tradeNumber)")
+                let image = try await pdfService.generatePreview(for: displayData, trade: self.trade)
 
                 self.pdfPreviewImage = image
                 print("🔧 TradeStatementViewModel: PDF preview generated successfully")
@@ -217,18 +219,18 @@ final class TradeStatementViewModel: ObservableObject {
     /// Shares the generated PDF
     func sharePDF() {
         // This would integrate with the system share sheet
-        print("🔧 TradeStatementViewModel: Sharing PDF for Trade #\(trade.tradeNumber)")
+        print("🔧 TradeStatementViewModel: Sharing PDF for Trade #\(self.trade.tradeNumber)")
     }
 
     /// Downloads PDF via browser
     func downloadPDFViaBrowser() {
         // This would open the PDF in a browser for download
-        print("🔧 TradeStatementViewModel: Downloading PDF via browser for Trade #\(trade.tradeNumber)")
+        print("🔧 TradeStatementViewModel: Downloading PDF via browser for Trade #\(self.trade.tradeNumber)")
     }
 
     /// Clears any error state
     func clearError() {
-        showError = false
-        errorMessage = nil
+        self.showError = false
+        self.errorMessage = nil
     }
 }

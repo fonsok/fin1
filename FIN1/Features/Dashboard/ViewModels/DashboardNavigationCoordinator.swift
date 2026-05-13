@@ -1,5 +1,5 @@
-import SwiftUI
 import Foundation
+import SwiftUI
 
 // MARK: - Dashboard Navigation Coordinator
 /// Handles navigation state and routing for the dashboard
@@ -9,16 +9,16 @@ final class DashboardNavigationCoordinator: ObservableObject {
     // MARK: - Navigation Actions
 
     func navigateToTraderDiscovery() {
-        selectedTab = "traderDiscovery"
+        self.selectedTab = "traderDiscovery"
     }
 
     func clearNavigationSelection() {
-        selectedTab = nil
+        self.selectedTab = nil
     }
 
     // MARK: - Navigation State
 
     var isNavigatingToDiscovery: Bool {
-        selectedTab == "traderDiscovery"
+        self.selectedTab == "traderDiscovery"
     }
 }

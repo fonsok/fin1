@@ -1,6 +1,6 @@
+import Combine
 import Foundation
 import SwiftUI
-import Combine
 
 @MainActor
 final class TraderDepotViewModel: ObservableObject {
@@ -23,7 +23,7 @@ final class TraderDepotViewModel: ObservableObject {
     // MARK: - Current Trader ID
     /// Returns the current trader's ID from the user service
     private var currentTraderId: String? {
-        userService?.currentUser?.id
+        self.userService?.currentUser?.id
     }
 
     init(
@@ -44,8 +44,8 @@ final class TraderDepotViewModel: ObservableObject {
         print("🔍 DEBUG: TraderDepotViewModel init - initial activeOrders count: \(traderService.activeOrders.count)")
         // Ensure service is running for test simulation
         (self.traderService as? ServiceLifecycle)?.start()
-        loadData()
-        bindService()
+        self.loadData()
+        self.bindService()
         Task { [weak self] in
             try? await self?.traderService.loadAllTradingData()
             await self?.subscribeToLiveUpdates()
@@ -95,7 +95,7 @@ final class TraderDepotViewModel: ObservableObject {
                 print("⚠️ Live Query error for Order: \(error.localizedDescription)")
             }
         )
-        liveQuerySubscriptions.append(orderSubscription)
+        self.liveQuerySubscriptions.append(orderSubscription)
         
         // Subscribe to Trade updates for current trader
         let tradeSubscription = liveQueryClient.subscribe(
@@ -119,11 +119,11 @@ final class TraderDepotViewModel: ObservableObject {
                 print("⚠️ Live Query error for Trade: \(error.localizedDescription)")
             }
         )
-        liveQuerySubscriptions.append(tradeSubscription)
+        self.liveQuerySubscriptions.append(tradeSubscription)
     }
 
     private func bindService() {
-        traderService.activeOrdersPublisher
+        self.traderService.activeOrdersPublisher
             .receive(on: DispatchQueue.main)
             .sink { [weak self] (orders: [Order]) in
                 guard let self else { return }
@@ -134,7 +134,7 @@ final class TraderDepotViewModel: ObservableObject {
                 // Refresh holdings to account for any executed/confirmed orders
                 self.refreshHoldingsFromOngoingOrders()
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
 
         // Listen for completed sell orders
         NotificationCenter.default.publisher(for: .sellOrderCompleted)
@@ -148,11 +148,11 @@ final class TraderDepotViewModel: ObservableObject {
                     self?.refreshHoldingsFromOngoingOrders()
                 }
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
 
         // For now, we'll create holdings from completed orders directly
         // In a real app, this would come from a completed orders service
-        traderService.completedTradesPublisher
+        self.traderService.completedTradesPublisher
             .receive(on: DispatchQueue.main)
             .sink { [weak self] trades in
                 guard let self else { return }
@@ -168,7 +168,7 @@ final class TraderDepotViewModel: ObservableObject {
                 }
                 self.updateFilteredHoldings()
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
     }
 
     func loadData() {
@@ -176,11 +176,11 @@ final class TraderDepotViewModel: ObservableObject {
         self.depotNumber = mockDepotNumber
 
         // Initial snapshot - filter by current trader ID
-        self.ongoingOrders = filterOrdersByCurrentTrader(traderService.activeOrders)
+        self.ongoingOrders = self.filterOrdersByCurrentTrader(self.traderService.activeOrders)
         var pos = 1
         // Architecture: Convert completed Orders to DepotHolding (holdings)
         // This represents the final state after buy orders are completed
-        let filteredTrades = filterTradesByCurrentTrader(traderService.completedTrades)
+        let filteredTrades = self.filterTradesByCurrentTrader(self.traderService.completedTrades)
         self.allHoldings = filteredTrades.map { trade in
             defer { pos += 1 }
             return self.createHoldingFromTrade(trade, position: pos)
@@ -211,35 +211,35 @@ final class TraderDepotViewModel: ObservableObject {
     /// Creates a DepotHolding from a trade, accounting for partial sales
     /// Uses centralized HoldingsConversionService as SINGLE SOURCE OF TRUTH
     private func createHoldingFromTrade(_ trade: Trade, position: Int) -> DepotHolding {
-        return holdingsConversionService.createHolding(
+        return self.holdingsConversionService.createHolding(
             from: trade,
             position: position,
-            ongoingOrders: ongoingOrders
+            ongoingOrders: self.ongoingOrders
         )
     }
 
     private func updateFilteredHoldings() {
         // Filter holdings based on partial sales status
         // Only show holdings that are not fully sold
-        self.holdings = allHoldings.filter { holding in
+        self.holdings = self.allHoldings.filter { holding in
             // Show holdings that still have remaining quantity available for selling
             return holding.remainingQuantity > 0
         }
 
-        print("🔍 DEBUG: updateFilteredHoldings - allHoldings: \(allHoldings.count), filtered holdings: \(holdings.count)")
-        recalculateDepotValue()
+        print("🔍 DEBUG: updateFilteredHoldings - allHoldings: \(self.allHoldings.count), filtered holdings: \(self.holdings.count)")
+        self.recalculateDepotValue()
     }
 
     // MARK: - Public Methods for External Updates
 
     func addCompletedSellOrder(_ order: Order) {
         // Add completed sell order to prevent holdings from reappearing
-        completedSellOrders.append(order)
+        self.completedSellOrders.append(order)
 
         // Force refresh of holdings to get updated trade data
-        refreshHoldingsFromOngoingOrders()
+        self.refreshHoldingsFromOngoingOrders()
 
-        print("🔍 DEBUG: Added completed sell order \(order.id) to completedSellOrders. Total: \(completedSellOrders.count)")
+        print("🔍 DEBUG: Added completed sell order \(order.id) to completedSellOrders. Total: \(self.completedSellOrders.count)")
         print("🔍 DEBUG: Order details - Symbol: \(order.symbol), Quantity: \(order.quantity), Status: \(order.status)")
     }
 
@@ -247,36 +247,36 @@ final class TraderDepotViewModel: ObservableObject {
     func updateHoldingForPartialSale(holdingId: String, soldQuantity: Int) {
         // Find the holding and update it with the partial sale
         if let index = allHoldings.firstIndex(where: { $0.id.uuidString == holdingId }) {
-            allHoldings[index] = allHoldings[index].withPartialSale(soldQuantity: soldQuantity)
-            updateFilteredHoldings()
+            self.allHoldings[index] = self.allHoldings[index].withPartialSale(soldQuantity: soldQuantity)
+            self.updateFilteredHoldings()
             print("🔍 DEBUG: Updated holding \(holdingId) with partial sale of \(soldQuantity) units")
         }
     }
 
     /// Refreshes holdings data from the trader service
     func refreshHoldings() {
-        loadData()
+        self.loadData()
     }
 
     /// Refreshes holdings to account for executed/confirmed ongoing orders
     private func refreshHoldingsFromOngoingOrders() {
         // Recreate all holdings with updated ongoing orders - filter by current trader
         var pos = 1
-        let filteredTrades = filterTradesByCurrentTrader(traderService.completedTrades)
+        let filteredTrades = self.filterTradesByCurrentTrader(self.traderService.completedTrades)
         print("🔍 DEBUG: refreshHoldingsFromOngoingOrders - completedTrades count: \(filteredTrades.count) (filtered for current trader)")
         self.allHoldings = filteredTrades.map { trade in
             defer { pos += 1 }
             return self.createHoldingFromTrade(trade, position: pos)
         }
         self.updateFilteredHoldings()
-        print("🔍 DEBUG: Refreshed holdings from ongoing orders - total holdings: \(allHoldings.count)")
+        print("🔍 DEBUG: Refreshed holdings from ongoing orders - total holdings: \(self.allHoldings.count)")
     }
 
     /// Recalculates the depot's total value (Gesamtwert) based on current holdings.
     private func recalculateDepotValue() {
-        let total = holdings.reduce(0.0) { partial, holding in
+        let total = self.holdings.reduce(0.0) { partial, holding in
             partial + (Double(holding.remainingQuantity) * holding.currentPrice)
         }
-        depotValue = total
+        self.depotValue = total
     }
 }

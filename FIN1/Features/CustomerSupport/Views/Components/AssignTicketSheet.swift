@@ -17,35 +17,35 @@ struct AssignTicketSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: ResponsiveDesign.spacing(16)) {
-                    ticketInfoSection
-                    agentsSection
+                    self.ticketInfoSection
+                    self.agentsSection
                 }
                 .padding()
             }
             .background(AppTheme.screenBackground.ignoresSafeArea())
-            .navigationTitle(ticket.assignedTo != nil ? "Ticket neu zuweisen" : "Ticket zuweisen")
+            .navigationTitle(self.ticket.assignedTo != nil ? "Ticket neu zuweisen" : "Ticket zuweisen")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Abbrechen") { dismiss() }
+                    Button("Abbrechen") { self.dismiss() }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Zuweisen") {
-                        Task { await assignTicket() }
+                        Task { await self.assignTicket() }
                     }
-                    .disabled(selectedAgentId == nil || isSubmitting)
+                    .disabled(self.selectedAgentId == nil || self.isSubmitting)
                 }
             }
             .task {
-                await loadAgents()
+                await self.loadAgents()
             }
-            .alert("Fehler", isPresented: $viewModel.showError) {
-                Button("OK") { viewModel.clearError() }
+            .alert("Fehler", isPresented: self.$viewModel.showError) {
+                Button("OK") { self.viewModel.clearError() }
             } message: {
-                Text(viewModel.errorMessage ?? "Ein Fehler ist aufgetreten")
+                Text(self.viewModel.errorMessage ?? "Ein Fehler ist aufgetreten")
             }
             .overlay {
-                if isSubmitting {
+                if self.isSubmitting {
                     Color.black.opacity(0.3)
                         .ignoresSafeArea()
                         .overlay {
@@ -66,19 +66,19 @@ struct AssignTicketSheet: View {
             HStack {
                 Image(systemName: "ticket.fill")
                     .foregroundColor(AppTheme.accentLightBlue)
-                Text(ticket.ticketNumber)
+                Text(self.ticket.ticketNumber)
                     .font(ResponsiveDesign.headlineFont())
                     .fontWeight(.semibold)
                     .foregroundColor(AppTheme.fontColor)
             }
 
-            Text(ticket.subject)
+            Text(self.ticket.subject)
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
 
             HStack(spacing: ResponsiveDesign.spacing(8)) {
-                CSStatusBadge(text: ticket.priority.displayName, color: priorityColor)
-                CSStatusBadge(text: ticket.status.displayName, color: statusColor)
+                CSStatusBadge(text: self.ticket.priority.displayName, color: self.priorityColor)
+                CSStatusBadge(text: self.ticket.status.displayName, color: self.statusColor)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -96,14 +96,14 @@ struct AssignTicketSheet: View {
                 .fontWeight(.semibold)
                 .foregroundColor(AppTheme.fontColor)
 
-            if isLoading {
+            if self.isLoading {
                 HStack {
                     Spacer()
                     ProgressView()
                     Spacer()
                 }
                 .padding()
-            } else if availableAgents.isEmpty {
+            } else if self.availableAgents.isEmpty {
                 VStack(spacing: ResponsiveDesign.spacing(8)) {
                     Image(systemName: "person.crop.circle.badge.xmark")
                         .font(ResponsiveDesign.largeTitleFont())
@@ -116,13 +116,13 @@ struct AssignTicketSheet: View {
                 .padding()
             } else {
                 VStack(spacing: ResponsiveDesign.spacing(8)) {
-                    ForEach(availableAgents) { agent in
+                    ForEach(self.availableAgents) { agent in
                         AgentRow(
                             agent: agent,
-                            isSelected: selectedAgentId == agent.id,
-                            isCurrentAssignee: ticket.assignedTo == agent.id
+                            isSelected: self.selectedAgentId == agent.id,
+                            isCurrentAssignee: self.ticket.assignedTo == agent.id
                         ) {
-                            selectedAgentId = agent.id
+                            self.selectedAgentId = agent.id
                         }
                     }
                 }
@@ -136,7 +136,7 @@ struct AssignTicketSheet: View {
     // MARK: - Helpers
 
     private var priorityColor: Color {
-        switch ticket.priority {
+        switch self.ticket.priority {
         case .low: return AppTheme.accentGreen
         case .medium: return AppTheme.accentLightBlue
         case .high: return AppTheme.accentOrange
@@ -145,7 +145,7 @@ struct AssignTicketSheet: View {
     }
 
     private var statusColor: Color {
-        switch ticket.status {
+        switch self.ticket.status {
         case .open, .inProgress: return AppTheme.accentLightBlue
         case .waitingForCustomer: return AppTheme.accentOrange
         case .escalated: return AppTheme.accentRed
@@ -155,13 +155,13 @@ struct AssignTicketSheet: View {
     }
 
     private func loadAgents() async {
-        isLoading = true
+        self.isLoading = true
         defer { isLoading = false }
-        availableAgents = await viewModel.getAvailableAgents()
+        self.availableAgents = await self.viewModel.getAvailableAgents()
 
         // Pre-select current assignee if exists
         if let currentAssignee = ticket.assignedTo {
-            selectedAgentId = currentAssignee
+            self.selectedAgentId = currentAssignee
         }
     }
 
@@ -170,22 +170,22 @@ struct AssignTicketSheet: View {
         guard let agentId = selectedAgentId else { return }
 
         // Don't reassign to same agent
-        if ticket.assignedTo == agentId {
-            dismiss()
+        if self.ticket.assignedTo == agentId {
+            self.dismiss()
             return
         }
 
-        isSubmitting = true
+        self.isSubmitting = true
 
-        await viewModel.assignTicket(ticketId: ticket.id, to: agentId)
+        await self.viewModel.assignTicket(ticketId: self.ticket.id, to: agentId)
 
         // Reset submitting state
-        isSubmitting = false
+        self.isSubmitting = false
 
         // Dismiss if no error occurred
-        if !viewModel.showError {
-            viewModel.showAssignTicketSheet = false
-            dismiss()
+        if !self.viewModel.showError {
+            self.viewModel.showAssignTicketSheet = false
+            self.dismiss()
         }
     }
 }
@@ -199,29 +199,29 @@ struct AgentRow: View {
     let onTap: () -> Void
 
     var body: some View {
-        Button(action: onTap) {
+        Button(action: self.onTap) {
             HStack(spacing: ResponsiveDesign.spacing(12)) {
                 // Avatar
                 ZStack {
                     Circle()
-                        .fill(isSelected ? AppTheme.accentLightBlue : AppTheme.screenBackground)
+                        .fill(self.isSelected ? AppTheme.accentLightBlue : AppTheme.screenBackground)
                         .frame(width: 44, height: 44)
 
-                    Text(agent.name.prefix(2).uppercased())
+                    Text(self.agent.name.prefix(2).uppercased())
                         .font(ResponsiveDesign.bodyFont())
                         .fontWeight(.semibold)
-                        .foregroundColor(isSelected ? .white : AppTheme.fontColor)
+                        .foregroundColor(self.isSelected ? .white : AppTheme.fontColor)
                 }
 
                 // Agent info
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
                     HStack {
-                        Text(agent.name)
+                        Text(self.agent.name)
                             .font(ResponsiveDesign.bodyFont())
                             .fontWeight(.medium)
                             .foregroundColor(AppTheme.fontColor)
 
-                        if isCurrentAssignee {
+                        if self.isCurrentAssignee {
                             Text("(aktuell)")
                                 .font(ResponsiveDesign.captionFont())
                                 .foregroundColor(AppTheme.accentGreen)
@@ -229,15 +229,15 @@ struct AgentRow: View {
                     }
 
                     // Specializations
-                    Text(agent.specializations.joined(separator: ", "))
+                    Text(self.agent.specializations.joined(separator: ", "))
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(AppTheme.fontColor.opacity(0.7))
                         .lineLimit(1)
 
                     // Workload indicator
                     HStack(spacing: ResponsiveDesign.spacing(4)) {
-                        WorkloadIndicator(percentage: agent.workloadPercentage)
-                        Text("\(agent.currentTicketCount)/\(CSRAgent.maxTickets) Tickets")
+                        WorkloadIndicator(percentage: self.agent.workloadPercentage)
+                        Text("\(self.agent.currentTicketCount)/\(CSRAgent.maxTickets) Tickets")
                             .font(ResponsiveDesign.captionFont())
                             .foregroundColor(AppTheme.fontColor.opacity(0.6))
                     }
@@ -247,7 +247,7 @@ struct AgentRow: View {
 
                 // Languages
                 VStack(alignment: .trailing, spacing: ResponsiveDesign.spacing(2)) {
-                    ForEach(agent.languages.prefix(2), id: \.self) { lang in
+                    ForEach(self.agent.languages.prefix(2), id: \.self) { lang in
                         Text(lang)
                             .font(ResponsiveDesign.captionFont())
                             .foregroundColor(AppTheme.fontColor.opacity(0.5))
@@ -255,17 +255,17 @@ struct AgentRow: View {
                 }
 
                 // Selection indicator
-                if isSelected {
+                if self.isSelected {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundColor(AppTheme.accentLightBlue)
                 }
             }
             .padding()
-            .background(isSelected ? AppTheme.accentLightBlue.opacity(0.1) : AppTheme.screenBackground)
+            .background(self.isSelected ? AppTheme.accentLightBlue.opacity(0.1) : AppTheme.screenBackground)
             .cornerRadius(ResponsiveDesign.spacing(10))
             .overlay(
                 RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(10))
-                    .stroke(isSelected ? AppTheme.accentLightBlue : Color.clear, lineWidth: 2)
+                    .stroke(self.isSelected ? AppTheme.accentLightBlue : Color.clear, lineWidth: 2)
             )
         }
         .buttonStyle(PlainButtonStyle())
@@ -278,8 +278,8 @@ struct WorkloadIndicator: View {
     let percentage: Double
 
     private var color: Color {
-        if percentage < 50 { return AppTheme.accentGreen }
-        if percentage < 80 { return AppTheme.accentOrange }
+        if self.percentage < 50 { return AppTheme.accentGreen }
+        if self.percentage < 80 { return AppTheme.accentOrange }
         return AppTheme.accentRed
     }
 
@@ -291,8 +291,8 @@ struct WorkloadIndicator: View {
                     .frame(height: 4)
 
                 RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(2))
-                    .fill(color)
-                    .frame(width: geo.size.width * min(percentage / 100, 1.0), height: 4)
+                    .fill(self.color)
+                    .frame(width: geo.size.width * min(self.percentage / 100, 1.0), height: 4)
             }
         }
         .frame(width: 40, height: 4)

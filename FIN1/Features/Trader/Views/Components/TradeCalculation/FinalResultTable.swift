@@ -10,10 +10,10 @@ struct FinalResultTable: View {
                 Text("Ergebnis nach Steuern und Gebühren")
                     .tradeCalculationBoldStyle()
                 Spacer()
-                Text(breakdown.netResult.formatted(.currency(code: "EUR")))
+                Text(self.breakdown.netResult.formatted(.currency(code: "EUR")))
                     .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.bold)
-                    .foregroundColor(breakdown.netResult >= 0 ? AppTheme.accentGreen : AppTheme.accentRed)
+                    .foregroundColor(self.breakdown.netResult >= 0 ? AppTheme.accentGreen : AppTheme.accentRed)
             }
             .padding(.vertical, ResponsiveDesign.spacing(12))
             .padding(.horizontal, ResponsiveDesign.spacing(12))

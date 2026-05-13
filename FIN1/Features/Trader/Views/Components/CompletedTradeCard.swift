@@ -14,12 +14,12 @@ struct CompletedTradeCard: View {
                     .foregroundColor(AppTheme.accentGreen)
 
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
-                    Text("\(trade.symbol) - Trade")
+                    Text("\(self.trade.symbol) - Trade")
                         .font(ResponsiveDesign.headlineFont())
                         .fontWeight(.bold)
                         .foregroundColor(AppTheme.fontColor)
 
-                    Text("Completed \(trade.completedDate.formatted(date: .abbreviated, time: .omitted))")
+                    Text("Completed \(self.trade.completedDate.formatted(date: .abbreviated, time: .omitted))")
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(AppTheme.secondaryText)
                 }
@@ -28,10 +28,12 @@ struct CompletedTradeCard: View {
 
                 // Final P&L
                 VStack(alignment: .trailing, spacing: ResponsiveDesign.spacing(4)) {
-                    Text(trade.finalPnl > 0 ? "+$\(String(format: "%.0f", trade.finalPnl))" : "-$\(String(format: "%.0f", abs(trade.finalPnl)))")
-                        .font(ResponsiveDesign.headlineFont())
-                        .fontWeight(.bold)
-                        .foregroundColor(trade.finalPnl > 0 ? AppTheme.accentGreen : AppTheme.accentRed)
+                    Text(
+                        self.trade.finalPnl > 0 ? "+$\(String(format: "%.0f", self.trade.finalPnl))" : "-$\(String(format: "%.0f", abs(self.trade.finalPnl)))"
+                    )
+                    .font(ResponsiveDesign.headlineFont())
+                    .fontWeight(.bold)
+                    .foregroundColor(self.trade.finalPnl > 0 ? AppTheme.accentGreen : AppTheme.accentRed)
 
                     Text("Final P&L")
                         .font(ResponsiveDesign.captionFont())
@@ -43,17 +45,17 @@ struct CompletedTradeCard: View {
             HStack(spacing: ResponsiveDesign.spacing(20)) {
                 TradeDetailItem(
                     title: "Entry Price",
-                    value: "$\(String(format: "%.2f", trade.entryPrice))"
+                    value: "$\(String(format: "%.2f", self.trade.entryPrice))"
                 )
 
                 TradeDetailItem(
                     title: "Exit Price",
-                    value: "$\(String(format: "%.2f", trade.exitPrice))"
+                    value: "$\(String(format: "%.2f", self.trade.exitPrice))"
                 )
 
                 TradeDetailItem(
                     title: "Quantity",
-                    value: "\(trade.quantity)"
+                    value: "\(self.trade.quantity)"
                 )
             }
 
@@ -61,8 +63,8 @@ struct CompletedTradeCard: View {
             HStack(spacing: ResponsiveDesign.spacing(20)) {
                 TradeDetailItem(
                     title: "Return %",
-                    value: trade.roi.formattedAsROIPercentage(),
-                    isPositive: trade.roi > 0
+                    value: self.trade.roi.formattedAsROIPercentage(),
+                    isPositive: self.trade.roi > 0
                 )
 
                 TradeDetailItem(
@@ -72,7 +74,7 @@ struct CompletedTradeCard: View {
 
                 TradeDetailItem(
                     title: "Volume",
-                    value: "$\(String(format: "%.0f", trade.buyOrder.totalAmount))"
+                    value: "$\(String(format: "%.0f", self.trade.buyOrder.totalAmount))"
                 )
             }
         }

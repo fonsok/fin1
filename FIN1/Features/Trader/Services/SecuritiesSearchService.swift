@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Search Service Protocol
 @MainActor
@@ -38,9 +38,9 @@ final class SecuritiesSearchService: SecuritiesSearchServiceProtocol {
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
 
-    var searchResultsPublisher: AnyPublisher<[SearchResult], Never> { $searchResults.eraseToAnyPublisher() }
-    var isLoadingPublisher: AnyPublisher<Bool, Never> { $isLoading.eraseToAnyPublisher() }
-    var errorMessagePublisher: AnyPublisher<String?, Never> { $errorMessage.eraseToAnyPublisher() }
+    var searchResultsPublisher: AnyPublisher<[SearchResult], Never> { self.$searchResults.eraseToAnyPublisher() }
+    var isLoadingPublisher: AnyPublisher<Bool, Never> { self.$isLoading.eraseToAnyPublisher() }
+    var errorMessagePublisher: AnyPublisher<String?, Never> { self.$errorMessage.eraseToAnyPublisher() }
 
     nonisolated(unsafe) private let mockDataGenerator: any MockDataGeneratorProtocol
 
@@ -60,25 +60,25 @@ final class SecuritiesSearchService: SecuritiesSearchServiceProtocol {
         print("🔍 DEBUG: filters.direction = \(filters.direction)")
         print("🔍 DEBUG: filters.direction.rawValue = \(filters.direction.rawValue)")
 
-        isLoading = true
-        errorMessage = nil
+        self.isLoading = true
+        self.errorMessage = nil
         // Clear previous results to prevent showing stale data
-        searchResults = []
+        self.searchResults = []
 
         do {
             // Validate filters
-            try validateFilters(filters)
+            try self.validateFilters(filters)
 
             // Generate search results based on filters
             let results = try await generateSearchResults(for: filters)
             print("🔍 DEBUG: Generated \(results.count) results")
 
             // Apply additional filtering
-            let filteredResults = applyAdditionalFilters(to: results, filters: filters)
+            let filteredResults = self.applyAdditionalFilters(to: results, filters: filters)
             print("🔍 DEBUG: After filtering: \(filteredResults.count) results")
 
             // Apply sorting: first by Bewertungstag (earliest first), then by Strike Price (lowest first)
-            let sortedResults = sortSearchResults(filteredResults)
+            let sortedResults = self.sortSearchResults(filteredResults)
             print("🔍 DEBUG: After sorting: \(sortedResults.count) results")
 
             // Update results
@@ -88,15 +88,15 @@ final class SecuritiesSearchService: SecuritiesSearchServiceProtocol {
                 print("🔍 DEBUG: First result Bewertungstag: \(firstResult.valuationDate)")
                 print("🔍 DEBUG: First result Strike Price: \(firstResult.strike)")
             }
-            searchResults = sortedResults
+            self.searchResults = sortedResults
 
         } catch {
             let appError = error.toAppError()
-            errorMessage = appError.errorDescription ?? "An error occurred"
-            searchResults = []
+            self.errorMessage = appError.errorDescription ?? "An error occurred"
+            self.searchResults = []
         }
 
-        isLoading = false
+        self.isLoading = false
     }
 
     // MARK: - Private Methods
@@ -113,7 +113,7 @@ final class SecuritiesSearchService: SecuritiesSearchServiceProtocol {
 
     private func generateSearchResults(for filters: SearchFilters) async throws -> [SearchResult] {
         // Use mock data generator to create results
-        return try await mockDataGenerator.generateSearchResults(for: filters)
+        return try await self.mockDataGenerator.generateSearchResults(for: filters)
     }
 
     private func applyAdditionalFilters(to results: [SearchResult], filters: SearchFilters) -> [SearchResult] {
@@ -163,16 +163,16 @@ final class SecuritiesSearchService: SecuritiesSearchServiceProtocol {
     private func sortSearchResults(_ results: [SearchResult]) -> [SearchResult] {
         return results.sorted { first, second in
             // Primary sort: By Bewertungstag (valuation date) - earliest first
-            let firstDate = parseValuationDate(first.valuationDate)
-            let secondDate = parseValuationDate(second.valuationDate)
+            let firstDate = self.parseValuationDate(first.valuationDate)
+            let secondDate = self.parseValuationDate(second.valuationDate)
 
             if firstDate != secondDate {
                 return firstDate < secondDate
             }
 
             // Secondary sort: By Strike Price - lowest first
-            let firstStrike = parseStrikePrice(first.strike)
-            let secondStrike = parseStrikePrice(second.strike)
+            let firstStrike = self.parseStrikePrice(first.strike)
+            let secondStrike = self.parseStrikePrice(second.strike)
 
             return firstStrike < secondStrike
         }

@@ -1,5 +1,5 @@
-import SwiftUI
 import Foundation
+import SwiftUI
 
 // MARK: - Landing ViewModel
 /// Handles business logic for the landing page, including debug login functionality
@@ -76,7 +76,7 @@ final class LandingViewModel: ObservableObject {
     func signInAsCSRWithRole(_ role: CSRRole) async {
         #if DEBUG
         let email = "csr-\(role.rawValue.lowercased().replacingOccurrences(of: " ", with: "-"))@test.com"
-        await performDebugLogin(email: email, role: role.displayName)
+        await self.performDebugLogin(email: email, role: role.displayName)
         #endif
     }
 
@@ -87,24 +87,24 @@ final class LandingViewModel: ObservableObject {
     ///   - email: Email address for the test user
     ///   - role: Role name for logging purposes
     private func performDebugLogin(email: String, role: String) async {
-        isLoading = true
-        errorMessage = nil
-        showError = false
+        self.isLoading = true
+        self.errorMessage = nil
+        self.showError = false
 
         print("🔐 Attempting to sign in as \(role) with email: \(email)")
 
         do {
             // Must satisfy Parse Server password policy (uppercase/lowercase/digit/special)
-            try await userService.signIn(email: email, password: TestConstants.password)
+            try await self.userService.signIn(email: email, password: TestConstants.password)
             print("✅ \(role) sign-in successful")
-            isLoading = false
+            self.isLoading = false
         } catch {
             let appError = error.toAppError()
             let errorMsg = "\(role) sign-in failed: \(appError.errorDescription ?? "An error occurred")"
             print("❌ \(errorMsg)")
-            errorMessage = errorMsg
-            showError = true
-            isLoading = false
+            self.errorMessage = errorMsg
+            self.showError = true
+            self.isLoading = false
         }
     }
 }

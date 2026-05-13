@@ -50,16 +50,16 @@ final class BankContraLedgerViewModel: ObservableObject {
     @Published private(set) var totalsByAccount: [BankContraAccount: Double] = [:]
 
     @Published var selectedAccount: BankContraAccount? {
-        didSet { applyFilters() }
+        didSet { self.applyFilters() }
     }
     @Published var investorFilter: String = "" {
-        didSet { applyFilters() }
+        didSet { self.applyFilters() }
     }
     @Published var startDate: Date? {
-        didSet { applyFilters() }
+        didSet { self.applyFilters() }
     }
     @Published var endDate: Date? {
-        didSet { applyFilters() }
+        didSet { self.applyFilters() }
     }
 
     private let postingService: any BankContraAccountPostingServiceProtocol
@@ -71,41 +71,41 @@ final class BankContraLedgerViewModel: ObservableObject {
         self.dateFormatter = DateFormatter()
         self.dateFormatter.dateStyle = .medium
         self.dateFormatter.timeStyle = .short
-        load()
+        self.load()
     }
 
     func load() {
-        let fetched = postingService.getAllPostings().sorted { $0.createdAt > $1.createdAt }
-        allPostings = fetched
-        applyFilters()
+        let fetched = self.postingService.getAllPostings().sorted { $0.createdAt > $1.createdAt }
+        self.allPostings = fetched
+        self.applyFilters()
     }
 
     func refresh() {
-        load()
+        self.load()
     }
 
     func clearFilters() {
-        selectedAccount = nil
-        investorFilter = ""
-        startDate = nil
-        endDate = nil
-        applyFilters()
+        self.selectedAccount = nil
+        self.investorFilter = ""
+        self.startDate = nil
+        self.endDate = nil
+        self.applyFilters()
     }
 
     func copyCSVToPasteboard() {
         #if os(iOS)
-        UIPasteboard.general.string = generateCSV()
+        UIPasteboard.general.string = self.generateCSV()
         #endif
     }
 
     // MARK: - Private Helpers
 
     private func applyFilters() {
-        let filtered = allPostings.filter { posting in
-            let matchesAccount = selectedAccount.map { $0 == posting.account } ?? true
+        let filtered = self.allPostings.filter { posting in
+            let matchesAccount = self.selectedAccount.map { $0 == posting.account } ?? true
             let matchesInvestor: Bool = {
-                guard !investorFilter.isEmpty else { return true }
-                return posting.investorId.localizedCaseInsensitiveContains(investorFilter)
+                guard !self.investorFilter.isEmpty else { return true }
+                return posting.investorId.localizedCaseInsensitiveContains(self.investorFilter)
             }()
             let matchesStart: Bool = {
                 guard let startDate else { return true }
@@ -118,8 +118,8 @@ final class BankContraLedgerViewModel: ObservableObject {
             return matchesAccount && matchesInvestor && matchesStart && matchesEnd
         }
 
-        entries = filtered.map { BankContraPostingDisplay(posting: $0, formatter: dateFormatter) }
-        totalsByAccount = Dictionary(grouping: filtered, by: { $0.account })
+        self.entries = filtered.map { BankContraPostingDisplay(posting: $0, formatter: self.dateFormatter) }
+        self.totalsByAccount = Dictionary(grouping: filtered, by: { $0.account })
             .mapValues { postings in
                 postings.reduce(0) { partial, posting in
                     let signed = posting.side == .credit ? posting.amount : -posting.amount
@@ -143,7 +143,7 @@ final class BankContraLedgerViewModel: ObservableObject {
         ].joined(separator: ",")
         rows.append(header)
 
-        for entry in entries {
+        for entry in self.entries {
             let fields: [String] = [
                 entry.createdAtText,
                 entry.accountName,

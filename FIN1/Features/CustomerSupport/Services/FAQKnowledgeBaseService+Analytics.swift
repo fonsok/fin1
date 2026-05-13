@@ -25,7 +25,7 @@ extension FAQKnowledgeBaseService {
         articles[index].usedInTicketCount += 1
         articlesSubject.send(articles)
 
-        try await linkTicketToArticle(ticketId: ticketId, articleId: articleId)
+        try await self.linkTicketToArticle(ticketId: ticketId, articleId: articleId)
 
         logger.info("📊 FAQ article used in ticket: \(articleTitle)")
     }

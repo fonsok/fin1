@@ -12,17 +12,17 @@ struct OpenInvestmentsTableTotalRow: View {
             Text("Total")
                 .font(ResponsiveDesign.bodyFont())
                 .fontWeight(.semibold)
-                .foregroundColor(forMeasurement ? nil : AppTheme.fontColor)
-                .modifier(cellFrame("pool", .leading))
+                .foregroundColor(self.forMeasurement ? nil : AppTheme.fontColor)
+                .modifier(self.cellFrame("pool", .leading))
 
             Text("")
-                .modifier(cellFrame("status", .leading))
+                .modifier(self.cellFrame("status", .leading))
 
-            Text(totalAmount.formattedAsLocalizedCurrency())
+            Text(self.totalAmount.formattedAsLocalizedCurrency())
                 .font(ResponsiveDesign.bodyFont())
                 .fontWeight(.semibold)
-                .foregroundColor(forMeasurement ? nil : AppTheme.fontColor)
-                .modifier(cellFrame("amount", .trailing))
+                .foregroundColor(self.forMeasurement ? nil : AppTheme.fontColor)
+                .modifier(self.cellFrame("amount", .trailing))
 
             Group {
                 if let profit = totalProfit {
@@ -30,12 +30,12 @@ struct OpenInvestmentsTableTotalRow: View {
                         .font(ResponsiveDesign.bodyFont())
                         .fontWeight(.semibold)
                 } else {
-                    Text("not yet\(forMeasurement ? "\n" : " ")available")
+                    Text("not yet\(self.forMeasurement ? "\n" : " ")available")
                         .font(ResponsiveDesign.bodyFont())
                 }
             }
-            .foregroundColor(forMeasurement ? nil : AppTheme.fontColor.opacity(totalProfit == nil ? 0.7 : 1))
-            .modifier(cellFrame("profit", .trailing))
+            .foregroundColor(self.forMeasurement ? nil : AppTheme.fontColor.opacity(self.totalProfit == nil ? 0.7 : 1))
+            .modifier(self.cellFrame("profit", .trailing))
 
             Group {
                 if let returnPercentage = totalReturn {
@@ -43,31 +43,31 @@ struct OpenInvestmentsTableTotalRow: View {
                         .font(ResponsiveDesign.bodyFont())
                         .fontWeight(.semibold)
                 } else {
-                    Text("not yet\(forMeasurement ? "\n" : " ")available")
+                    Text("not yet\(self.forMeasurement ? "\n" : " ")available")
                         .font(ResponsiveDesign.bodyFont())
                 }
             }
             .foregroundColor(
-                forMeasurement
+                self.forMeasurement
                     ? nil
-                    : (totalReturn.map { $0 >= 0 ? AppTheme.accentGreen : AppTheme.accentRed } ?? AppTheme.fontColor.opacity(0.7))
+                    : (self.totalReturn.map { $0 >= 0 ? AppTheme.accentGreen : AppTheme.accentRed } ?? AppTheme.fontColor.opacity(0.7))
             )
-            .modifier(cellFrame("return", .trailing))
+            .modifier(self.cellFrame("return", .trailing))
 
             Text("")
-                .modifier(cellFrame("docRef", .leading))
+                .modifier(self.cellFrame("docRef", .leading))
         }
         .frame(minHeight: 44)
         .padding(.horizontal, OpenInvestmentsTableLayout.cellHorizontalPadding)
         .padding(.vertical, OpenInvestmentsTableLayout.cellVerticalPadding)
-        .background(forMeasurement ? Color.clear : AppTheme.screenBackground.opacity(0.2))
+        .background(self.forMeasurement ? Color.clear : AppTheme.screenBackground.opacity(0.2))
     }
 
     private func cellFrame(_ key: String, _ alignment: Alignment) -> some ViewModifier {
         OpenInvestmentsHeaderCellModifier(
             columnKey: key,
-            columnWidths: columnWidths,
-            forMeasurement: forMeasurement,
+            columnWidths: self.columnWidths,
+            forMeasurement: self.forMeasurement,
             alignment: alignment
         )
     }

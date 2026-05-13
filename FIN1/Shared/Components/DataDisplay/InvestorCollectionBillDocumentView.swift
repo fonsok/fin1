@@ -9,11 +9,11 @@ struct InvestorCollectionBillDocumentView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: ResponsiveDesign.spacing(20)) {
-                PDFPreviewSection
+                self.PDFPreviewSection
 
-                documentDetailsSection
+                self.documentDetailsSection
 
-                actionButtons
+                self.actionButtons
             }
             .padding(ResponsiveDesign.spacing(16))
         }
@@ -27,7 +27,7 @@ struct InvestorCollectionBillDocumentView: View {
                 .fontWeight(.medium)
                 .foregroundColor(AppTheme.fontColor)
 
-            PDFPreviewView(image: previewImage)
+            PDFPreviewView(image: self.previewImage)
                 .frame(maxWidth: .infinity)
                 .clipShape(RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(12)))
         }
@@ -35,11 +35,11 @@ struct InvestorCollectionBillDocumentView: View {
 
     private var documentDetailsSection: some View {
         VStack(spacing: ResponsiveDesign.spacing(12)) {
-            DocumentDetailRow(title: "Document", value: document.type.displayName)
-            DocumentDetailRow(title: "File Name", value: document.name)
-            DocumentDetailRow(title: "Status", value: document.status.displayName, valueColor: document.status.statusRowForeground)
-            DocumentDetailRow(title: "File Size", value: document.fileSize)
-            DocumentDetailRow(title: "Uploaded", value: document.uploadedAt.formatted(date: .abbreviated, time: .shortened))
+            DocumentDetailRow(title: "Document", value: self.document.type.displayName)
+            DocumentDetailRow(title: "File Name", value: self.document.name)
+            DocumentDetailRow(title: "Status", value: self.document.status.displayName, valueColor: self.document.status.statusRowForeground)
+            DocumentDetailRow(title: "File Size", value: self.document.fileSize)
+            DocumentDetailRow(title: "Uploaded", value: self.document.uploadedAt.formatted(date: .abbreviated, time: .shortened))
         }
         .padding(ResponsiveDesign.spacing(16))
         .background(AppTheme.sectionBackground)
@@ -48,7 +48,7 @@ struct InvestorCollectionBillDocumentView: View {
 
     private var actionButtons: some View {
         VStack(spacing: ResponsiveDesign.spacing(12)) {
-            Button(action: downloadPDF, label: {
+            Button(action: self.downloadPDF, label: {
                 HStack {
                     Image(systemName: "arrow.down.circle")
                     Text("Download Document")
@@ -57,16 +57,16 @@ struct InvestorCollectionBillDocumentView: View {
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
                 .padding(ResponsiveDesign.spacing(16))
-                .background(pdfData == nil ? Color.gray : AppTheme.accentLightBlue)
+                .background(self.pdfData == nil ? Color.gray : AppTheme.accentLightBlue)
                 .cornerRadius(ResponsiveDesign.spacing(12))
             })
-            .disabled(pdfData == nil)
+            .disabled(self.pdfData == nil)
         }
     }
 
     private func downloadPDF() {
         guard let pdfData else { return }
-        let sanitizedName = document.name.replacingOccurrences(of: ".pdf", with: "")
+        let sanitizedName = self.document.name.replacingOccurrences(of: ".pdf", with: "")
         PDFDownloadService.downloadPDFViaBrowser(pdfData, fileName: sanitizedName)
     }
 }

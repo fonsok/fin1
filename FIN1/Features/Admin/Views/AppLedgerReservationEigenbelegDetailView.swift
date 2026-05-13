@@ -15,7 +15,7 @@ struct AppLedgerDocumentDetailView: View {
     var body: some View {
         Group {
             if let document {
-                DocumentNavigationHelper.navigationDestination(for: document, appServices: services)
+                DocumentNavigationHelper.navigationDestination(for: document, appServices: self.services)
             } else if let loadError {
                 Text(loadError)
                     .font(ResponsiveDesign.bodyFont())
@@ -27,23 +27,23 @@ struct AppLedgerDocumentDetailView: View {
         }
         .navigationBarTitleDisplayMode(.inline)
         .task {
-            await loadIfNeeded()
+            await self.loadIfNeeded()
         }
     }
 
     @MainActor
     private func loadIfNeeded() async {
-        guard document == nil, loadError == nil else { return }
+        guard self.document == nil, self.loadError == nil else { return }
 
         if let cached = services.documentService.getDocument(by: documentObjectId) {
-            document = cached
+            self.document = cached
             return
         }
 
         if let parseAPIClient = services.parseAPIClient {
             let admin = DocumentSearchAPIService(parseAPIClient: parseAPIClient)
             do {
-                document = try await admin.loadFullDocument(objectId: documentObjectId)
+                self.document = try await admin.loadFullDocument(objectId: self.documentObjectId)
                 return
             } catch {
                 // Admin-Pfad fehlgeschlagen — versuche User-Sicht (eigene Belege)
@@ -51,9 +51,9 @@ struct AppLedgerDocumentDetailView: View {
         }
 
         do {
-            document = try await services.documentService.resolveDocumentForDeepLink(objectId: documentObjectId)
+            self.document = try await self.services.documentService.resolveDocumentForDeepLink(objectId: self.documentObjectId)
         } catch {
-            loadError = error.localizedDescription
+            self.loadError = error.localizedDescription
         }
     }
 }

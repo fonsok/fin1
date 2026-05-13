@@ -1,6 +1,6 @@
-import Foundation
 import Combine
 @testable import FIN1
+import Foundation
 
 // MARK: - Mock Telemetry Service
 class MockTelemetryService: TelemetryServiceProtocol {
@@ -10,31 +10,31 @@ class MockTelemetryService: TelemetryServiceProtocol {
     var userInfo: (id: String?, role: String?) = (nil, nil)
 
     func trackEvent(name: String, properties: [String: Any]?) {
-        trackedEvents.append((name, properties ?? [:]))
+        self.trackedEvents.append((name, properties ?? [:]))
     }
 
     func trackError(_ error: Error, metadata: [String: Any]?) {
-        trackedErrors.append((error, metadata ?? [:]))
+        self.trackedErrors.append((error, metadata ?? [:]))
     }
 
     func trackAppError(_ error: AppError, context: ErrorContext?) {
-        trackedAppErrors.append((error, context ?? ErrorContext(screen: "Unknown")))
+        self.trackedAppErrors.append((error, context ?? ErrorContext(screen: "Unknown")))
     }
 
     func setUser(id: String?, role: String?) {
-        userInfo = (id, role)
+        self.userInfo = (id, role)
     }
 
     func clearUser() {
-        userInfo = (nil, nil)
+        self.userInfo = (nil, nil)
     }
 
     func start() {}
     func stop() {}
     func reset() {
-        trackedEvents.removeAll()
-        trackedErrors.removeAll()
-        trackedAppErrors.removeAll()
-        userInfo = (nil, nil)
+        self.trackedEvents.removeAll()
+        self.trackedErrors.removeAll()
+        self.trackedAppErrors.removeAll()
+        self.userInfo = (nil, nil)
     }
 }

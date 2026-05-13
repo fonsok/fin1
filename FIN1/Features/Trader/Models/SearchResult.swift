@@ -27,7 +27,20 @@ struct SearchResult: Identifiable, Equatable, Sendable {
     var minimumOrderAmount: Double?
 
     // Initialize with WKN as ID for consistent identification
-    init(valuationDate: String, wkn: String, strike: String, askPrice: String, direction: String? = nil, category: String? = nil, underlyingType: String? = nil, isin: String, underlyingAsset: String? = nil, denomination: Int? = nil, subscriptionRatio: Double = 1.0, minimumOrderAmount: Double? = nil) {
+    init(
+        valuationDate: String,
+        wkn: String,
+        strike: String,
+        askPrice: String,
+        direction: String? = nil,
+        category: String? = nil,
+        underlyingType: String? = nil,
+        isin: String,
+        underlyingAsset: String? = nil,
+        denomination: Int? = nil,
+        subscriptionRatio: Double = 1.0,
+        minimumOrderAmount: Double? = nil
+    ) {
         self.id = wkn
         self.valuationDate = valuationDate
         self.wkn = wkn
@@ -104,21 +117,21 @@ struct SearchResult: Identifiable, Equatable, Sendable {
     /// Gets the effective denomination for this security
     /// Returns the denomination if set, otherwise returns 1 (no restriction)
     var effectiveDenomination: Int {
-        return denomination ?? 1
+        return self.denomination ?? 1
     }
 
     /// Converts units to shares based on subscription ratio
     /// - Parameter units: Number of units
     /// - Returns: Number of shares (rounded down)
     func unitsToShares(_ units: Int) -> Int {
-        guard subscriptionRatio > 0 else { return units }
-        return Int(Double(units) / subscriptionRatio)
+        guard self.subscriptionRatio > 0 else { return units }
+        return Int(Double(units) / self.subscriptionRatio)
     }
 
     /// Converts shares to units based on subscription ratio
     /// - Parameter shares: Number of shares
     /// - Returns: Number of units
     func sharesToUnits(_ shares: Int) -> Int {
-        return Int(Double(shares) * subscriptionRatio)
+        return Int(Double(shares) * self.subscriptionRatio)
     }
 }

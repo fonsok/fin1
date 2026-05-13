@@ -20,7 +20,7 @@ struct ProfileSettingsView: View {
                     subtitle: "Control your data and privacy",
                     icon: "hand.raised.fill",
                     color: AppTheme.accentGreen,
-                    action: onPrivacy
+                    action: self.onPrivacy
                 )
 
                 SettingsRow(
@@ -28,7 +28,7 @@ struct ProfileSettingsView: View {
                     subtitle: "Password, 2FA, and security",
                     icon: "lock.shield.fill",
                     color: AppTheme.accentRed,
-                    action: onSecurity
+                    action: self.onSecurity
                 )
 
                 SettingsRow(
@@ -36,7 +36,7 @@ struct ProfileSettingsView: View {
                     subtitle: "Theme and display settings",
                     icon: "paintbrush.fill",
                     color: AppTheme.accentLightBlue,
-                    action: onAppearance
+                    action: self.onAppearance
                 )
             }
         }
@@ -51,20 +51,20 @@ struct SettingsRow: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: action, label: {
+        Button(action: self.action, label: {
             HStack(spacing: ResponsiveDesign.spacing(12)) {
-                Image(systemName: icon)
+                Image(systemName: self.icon)
                     .font(ResponsiveDesign.headlineFont())
-                    .foregroundColor(color)
+                    .foregroundColor(self.color)
                     .frame(width: 24)
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(title)
+                    Text(self.title)
                         .font(ResponsiveDesign.bodyFont())
                         .fontWeight(.medium)
                         .foregroundColor(AppTheme.fontColor)
 
-                    Text(subtitle)
+                    Text(self.subtitle)
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(AppTheme.fontColor.opacity(0.7))
                 }

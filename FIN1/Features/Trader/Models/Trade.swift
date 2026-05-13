@@ -63,7 +63,21 @@ struct Trade: Identifiable, Codable, Sendable {
         case id, tradeNumber, traderId, symbol, description, buyOrder, sellOrder, sellOrders, status, createdAt, completedAt, updatedAt, calculatedProfit
     }
 
-    init(id: String, tradeNumber: Int, traderId: String, symbol: String, description: String, buyOrder: OrderBuy, sellOrder: OrderSell?, sellOrders: [OrderSell], status: TradeStatus, createdAt: Date, completedAt: Date?, updatedAt: Date, calculatedProfit: Double? = nil) {
+    init(
+        id: String,
+        tradeNumber: Int,
+        traderId: String,
+        symbol: String,
+        description: String,
+        buyOrder: OrderBuy,
+        sellOrder: OrderSell?,
+        sellOrders: [OrderSell],
+        status: TradeStatus,
+        createdAt: Date,
+        completedAt: Date?,
+        updatedAt: Date,
+        calculatedProfit: Double? = nil
+    ) {
         self.id = id
         self.tradeNumber = tradeNumber
         self.traderId = traderId
@@ -81,63 +95,63 @@ struct Trade: Identifiable, Codable, Sendable {
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        id = try container.decode(String.self, forKey: .id)
-        tradeNumber = try container.decodeIfPresent(Int.self, forKey: .tradeNumber) ?? 0 // Default to 0 for backward compatibility
-        traderId = try container.decode(String.self, forKey: .traderId)
-        symbol = try container.decode(String.self, forKey: .symbol)
-        description = try container.decode(String.self, forKey: .description)
-        buyOrder = try container.decode(OrderBuy.self, forKey: .buyOrder)
-        sellOrder = try container.decodeIfPresent(OrderSell.self, forKey: .sellOrder)
-        sellOrders = try container.decodeIfPresent([OrderSell].self, forKey: .sellOrders) ?? [] // Default to empty array for backward compatibility
-        status = try container.decode(TradeStatus.self, forKey: .status)
-        createdAt = try container.decode(Date.self, forKey: .createdAt)
-        completedAt = try container.decodeIfPresent(Date.self, forKey: .completedAt)
-        updatedAt = try container.decode(Date.self, forKey: .updatedAt)
-        calculatedProfit = try container.decodeIfPresent(Double.self, forKey: .calculatedProfit)
+        self.id = try container.decode(String.self, forKey: .id)
+        self.tradeNumber = try container.decodeIfPresent(Int.self, forKey: .tradeNumber) ?? 0 // Default to 0 for backward compatibility
+        self.traderId = try container.decode(String.self, forKey: .traderId)
+        self.symbol = try container.decode(String.self, forKey: .symbol)
+        self.description = try container.decode(String.self, forKey: .description)
+        self.buyOrder = try container.decode(OrderBuy.self, forKey: .buyOrder)
+        self.sellOrder = try container.decodeIfPresent(OrderSell.self, forKey: .sellOrder)
+        self.sellOrders = try container.decodeIfPresent([OrderSell].self, forKey: .sellOrders) ?? [] // Default to empty array for backward compatibility
+        self.status = try container.decode(TradeStatus.self, forKey: .status)
+        self.createdAt = try container.decode(Date.self, forKey: .createdAt)
+        self.completedAt = try container.decodeIfPresent(Date.self, forKey: .completedAt)
+        self.updatedAt = try container.decode(Date.self, forKey: .updatedAt)
+        self.calculatedProfit = try container.decodeIfPresent(Double.self, forKey: .calculatedProfit)
     }
 
     // Options-specific fields (derived from buyOrder)
-    var optionDirection: String? { buyOrder.optionDirection }
-    var underlyingAsset: String? { buyOrder.underlyingAsset }
-    var wkn: String? { buyOrder.wkn }
+    var optionDirection: String? { self.buyOrder.optionDirection }
+    var underlyingAsset: String? { self.buyOrder.underlyingAsset }
+    var wkn: String? { self.buyOrder.wkn }
 
     // User-friendly trade number display
     var formattedTradeNumber: String {
-        return String(format: "%03d", tradeNumber)
+        return String(format: "%03d", self.tradeNumber)
     }
 
     // Calculated properties
     var isActive: Bool {
         // Trade is active if it has remaining quantity (not fully sold)
         // Use !isFullySold for consistency to avoid floating point issues
-        return !isFullySold
+        return !self.isFullySold
     }
 
     var isCompleted: Bool {
         // Trade is completed only when all securities are sold (remainingQuantity ≈ 0)
         // and the relevant sell order is completed
         // Use isFullySold to avoid floating point precision issues with == 0
-        return isFullySold && hasCompletedSellOrders
+        return self.isFullySold && self.hasCompletedSellOrders
     }
 
     private var hasCompletedSellOrders: Bool {
         // Check if we have any sell orders and they are completed
-        let hasSellOrders = !sellOrders.isEmpty || sellOrder != nil
+        let hasSellOrders = !self.sellOrders.isEmpty || self.sellOrder != nil
         guard hasSellOrders else { return false }
 
         // Check if all sell orders are completed
-        let allSellOrdersCompleted = sellOrders.allSatisfy { $0.status == .confirmed || $0.status == .completed }
-        let legacySellOrderCompleted = sellOrder?.status == .confirmed || sellOrder?.status == .completed
+        let allSellOrdersCompleted = self.sellOrders.allSatisfy { $0.status == .confirmed || $0.status == .completed }
+        let legacySellOrderCompleted = self.sellOrder?.status == .confirmed || self.sellOrder?.status == .completed
 
-        return allSellOrdersCompleted && (sellOrder == nil || legacySellOrderCompleted)
+        return allSellOrdersCompleted && (self.sellOrder == nil || legacySellOrderCompleted)
     }
 
     var totalQuantity: Double {
-        buyOrder.quantity
+        self.buyOrder.quantity
     }
 
     var entryPrice: Double {
-        buyOrder.price
+        self.buyOrder.price
     }
 
     var exitPrice: Double? {
@@ -145,24 +159,24 @@ struct Trade: Identifiable, Codable, Sendable {
         if let latestSellOrder = sellOrders.last {
             return latestSellOrder.price
         }
-        return sellOrder?.price
+        return self.sellOrder?.price
     }
 
     // MARK: - Partial Sales Support
     var totalSoldQuantity: Double {
-        return sellOrders.reduce(0) { $0 + $1.quantity }
+        return self.sellOrders.reduce(0) { $0 + $1.quantity }
     }
 
     var remainingQuantity: Double {
-        return buyOrder.quantity - totalSoldQuantity
+        return self.buyOrder.quantity - self.totalSoldQuantity
     }
 
     var isPartiallySold: Bool {
-        return totalSoldQuantity > 0 && totalSoldQuantity < buyOrder.quantity
+        return self.totalSoldQuantity > 0 && self.totalSoldQuantity < self.buyOrder.quantity
     }
 
     var isFullySold: Bool {
-        return totalSoldQuantity >= buyOrder.quantity
+        return self.totalSoldQuantity >= self.buyOrder.quantity
     }
 
     var currentPnL: Double? {
@@ -172,7 +186,7 @@ struct Trade: Identifiable, Codable, Sendable {
         }
 
         // Fallback to calculation for backward compatibility
-        let executedSellOrders = sellOrders.filter { $0.status == .confirmed || $0.status == .completed }
+        let executedSellOrders = self.sellOrders.filter { $0.status == .confirmed || $0.status == .completed }
         guard !executedSellOrders.isEmpty else { return nil }
 
         // Use centralized profit calculation service to avoid DRY violations
@@ -180,8 +194,8 @@ struct Trade: Identifiable, Codable, Sendable {
     }
 
     var finalPnL: Double? {
-        guard isCompleted else { return nil }
-        return currentPnL
+        guard self.isCompleted else { return nil }
+        return self.currentPnL
     }
 
     // MARK: - Display Properties (Single Source of Truth)
@@ -207,7 +221,7 @@ struct Trade: Identifiable, Codable, Sendable {
     /// **SINGLE SOURCE OF TRUTH for ROI display**
     /// Use this property everywhere ROI needs to be displayed to ensure consistency.
     var displayROI: Double {
-        return roi ?? 0.0
+        return self.roi ?? 0.0
     }
 
     /// Return percentage (ROI) for this trade
@@ -221,7 +235,7 @@ struct Trade: Identifiable, Codable, Sendable {
         // Both trader return percentage and investor return percentage use the same calculation source
 
         // Calculate total buy cost including fees (accounting principle: what was actually invested)
-        let buySecuritiesValue = buyOrder.price * totalSoldQuantity
+        let buySecuritiesValue = self.buyOrder.price * self.totalSoldQuantity
         let buyFees = FeeCalculationService.calculateTotalFees(for: buySecuritiesValue)
         let totalBuyCost = buySecuritiesValue + buyFees
 
@@ -234,18 +248,18 @@ struct Trade: Identifiable, Codable, Sendable {
 
     var duration: TimeInterval? {
         guard let completedAt = completedAt else { return nil }
-        return completedAt.timeIntervalSince(buyOrder.createdAt)
+        return completedAt.timeIntervalSince(self.buyOrder.createdAt)
     }
 
     // Computed status based on order statuses and remaining quantity
     var computedStatus: TradeStatus {
         // Check for cancellation
-        if buyOrder.status == .cancelled {
+        if self.buyOrder.status == .cancelled {
             return .cancelled
         }
 
         // Check if any sell orders are cancelled
-        if sellOrders.contains(where: { $0.status == .cancelled }) {
+        if self.sellOrders.contains(where: { $0.status == .cancelled }) {
             return .cancelled
         }
 
@@ -255,11 +269,11 @@ struct Trade: Identifiable, Codable, Sendable {
         }
 
         // Trade lifecycle based on remaining quantity
-        if buyOrder.status == .completed {
+        if self.buyOrder.status == .completed {
             // Check if all securities are sold (use isFullySold to avoid floating point issues)
-            if isFullySold {
+            if self.isFullySold {
                 // All securities sold - check if sell orders are completed
-                if hasCompletedSellOrders {
+                if self.hasCompletedSellOrders {
                     return .completed
                 } else {
                     return .active // Sell orders exist but not completed yet
@@ -288,7 +302,7 @@ struct TradeResult: Identifiable, Codable, Sendable {
     let createdAt: Date
 
     var isProfitable: Bool {
-        netProfitLoss > 0
+        self.netProfitLoss > 0
     }
 }
 

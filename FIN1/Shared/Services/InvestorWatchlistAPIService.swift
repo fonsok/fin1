@@ -64,26 +64,26 @@ struct ParseInvestorWatchlistResponse: Codable, Sendable {
 
     func toWatchlistTraderData() throws -> WatchlistTraderData {
         let dateFormatter = ISO8601DateFormatter()
-        let addedDate = dateFormatter.date(from: addedAt) ?? Date()
+        let addedDate = dateFormatter.date(from: self.addedAt) ?? Date()
 
         // Note: We need to reconstruct WatchlistTraderData from minimal backend data
         // Some fields might need to be fetched from TraderDataService
         // For now, we'll use defaults for missing fields
         return WatchlistTraderData(
-            id: traderId,
-            name: traderName,
+            id: self.traderId,
+            name: self.traderName,
             image: "", // Will need to be fetched separately
             performance: 0.0, // Will need to be fetched separately
-            riskClass: RiskClass(rawValue: traderRiskClass ?? 1) ?? .riskClass1,
+            riskClass: RiskClass(rawValue: self.traderRiskClass ?? 1) ?? .riskClass1,
             totalInvestors: 0, // Will need to be fetched separately
-            minimumInvestment: targetInvestmentAmount ?? 0.0,
+            minimumInvestment: self.targetInvestmentAmount ?? 0.0,
             description: "", // Will need to be fetched separately
-            tradingStrategy: traderSpecialization ?? "", // Using specialization as strategy
+            tradingStrategy: self.traderSpecialization ?? "", // Using specialization as strategy
             experience: "", // Will need to be fetched separately
             dateAdded: addedDate,
             lastUpdated: addedDate,
             isActive: true,
-            notificationsEnabled: notifyOnNewTrade || notifyOnPerformanceChange
+            notificationsEnabled: self.notifyOnNewTrade || self.notifyOnPerformanceChange
         )
     }
 }
@@ -101,7 +101,7 @@ final class InvestorWatchlistAPIService: InvestorWatchlistAPIServiceProtocol {
     func saveWatchlistItem(_ trader: WatchlistTraderData, investorId: String) async throws -> WatchlistTraderData {
         let input = ParseInvestorWatchlistInput.from(trader: trader, investorId: investorId)
         let _: ParseResponse = try await apiClient.createObject(
-            className: className,
+            className: self.className,
             object: input
         )
 
@@ -117,7 +117,7 @@ final class InvestorWatchlistAPIService: InvestorWatchlistAPIServiceProtocol {
         ]
 
         let responses: [ParseInvestorWatchlistResponse] = try await apiClient.fetchObjects(
-            className: className,
+            className: self.className,
             query: query,
             include: nil,
             orderBy: nil,
@@ -126,7 +126,7 @@ final class InvestorWatchlistAPIService: InvestorWatchlistAPIServiceProtocol {
 
         // Delete all matching items (should be unique)
         for response in responses {
-            try await apiClient.deleteObject(className: className, objectId: response.objectId)
+            try await self.apiClient.deleteObject(className: self.className, objectId: response.objectId)
         }
     }
 
@@ -136,7 +136,7 @@ final class InvestorWatchlistAPIService: InvestorWatchlistAPIServiceProtocol {
         ]
 
         let responses: [ParseInvestorWatchlistResponse] = try await apiClient.fetchObjects(
-            className: className,
+            className: self.className,
             query: query,
             include: nil,
             orderBy: nil,
@@ -147,7 +147,6 @@ final class InvestorWatchlistAPIService: InvestorWatchlistAPIServiceProtocol {
             try? response.toWatchlistTraderData()
         }
     }
-
 }
 
 // MARK: - Investor Watchlist API Service Error

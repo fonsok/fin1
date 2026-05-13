@@ -7,7 +7,7 @@ struct OngoingTradesSection: View {
     let ongoingTrades: [TradeOverviewItem]
 
     var body: some View {
-        if ongoingTrades.isEmpty {
+        if self.ongoingTrades.isEmpty {
             VStack(spacing: ResponsiveDesign.spacing(16)) {
                 Image(systemName: "clock")
                     .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2.4))
@@ -31,7 +31,7 @@ struct OngoingTradesSection: View {
                     .foregroundColor(AppTheme.accentOrange)
 
                 LazyVStack(spacing: ResponsiveDesign.spacing(12)) {
-                    ForEach(ongoingTrades) { trade in
+                    ForEach(self.ongoingTrades) { trade in
                         OngoingTradeCard(trade: trade)
                     }
                 }
@@ -59,12 +59,12 @@ struct CompletedTradesSection: View {
 
             // Header with filter and customization (moved inside this section)
             TradesOverviewHeaderView(
-                selectedTimePeriod: $selectedTimePeriod,
-                showCustomizeDetails: $showCustomizeDetails,
-                onTimePeriodChanged: onTimePeriodChanged
+                selectedTimePeriod: self.$selectedTimePeriod,
+                showCustomizeDetails: self.$showCustomizeDetails,
+                onTimePeriodChanged: self.onTimePeriodChanged
             )
 
-            if completedTrades.isEmpty {
+            if self.completedTrades.isEmpty {
                 VStack(spacing: ResponsiveDesign.spacing(16)) {
                     Image(systemName: "chart.line.uptrend.xyaxis")
                         .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2.4))
@@ -83,7 +83,12 @@ struct CompletedTradesSection: View {
                 .frame(maxWidth: .infinity)
             } else {
                 if let columnWidths = columnWidths {
-                    TradesTable(trades: tableRows, columnWidths: columnWidths, commissionPercentage: commissionPercentage, services: services)
+                    TradesTable(
+                        trades: self.tableRows,
+                        columnWidths: columnWidths,
+                        commissionPercentage: self.commissionPercentage,
+                        services: self.services
+                    )
                 }
             }
         }
@@ -98,13 +103,13 @@ struct OngoingTradeCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
             HStack {
-                Text("Trade #\(trade.tradeNumber)")
+                Text("Trade #\(self.trade.tradeNumber)")
                     .font(ResponsiveDesign.headlineFont())
                     .foregroundColor(AppTheme.fontColor)
 
                 Spacer()
 
-                Text(trade.statusText)
+                Text(self.trade.statusText)
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.accentOrange)
                     .padding(.horizontal, ResponsiveDesign.spacing(8))
@@ -120,8 +125,7 @@ struct OngoingTradeCard: View {
         .background(AppTheme.sectionBackground)
         .cornerRadius(ResponsiveDesign.spacing(12))
         .onTapGesture {
-            trade.onDetailsTapped()
+            self.trade.onDetailsTapped()
         }
     }
-
 }

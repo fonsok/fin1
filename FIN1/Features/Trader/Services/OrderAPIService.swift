@@ -165,34 +165,34 @@ struct ParseOrderResponse: Codable, Sendable {
         let dateFormatter = ISO8601DateFormatter()
         dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
 
-        let createdDate = dateFormatter.date(from: createdAt) ?? Date()
-        let updatedDate = dateFormatter.date(from: updatedAt) ?? Date()
-        let executedDate = executedAt.flatMap { dateFormatter.date(from: $0) }
-        let confirmedDate = confirmedAt.flatMap { dateFormatter.date(from: $0) }
+        let createdDate = dateFormatter.date(from: self.createdAt) ?? Date()
+        let updatedDate = dateFormatter.date(from: self.updatedAt) ?? Date()
+        let executedDate = self.executedAt.flatMap { dateFormatter.date(from: $0) }
+        let confirmedDate = self.confirmedAt.flatMap { dateFormatter.date(from: $0) }
         let orderStatus = OrderBuyStatus(rawValue: status) ?? .submitted
 
         return OrderBuy(
-            id: objectId,
-            traderId: traderId,
-            symbol: symbol,
-            description: description,
-            quantity: quantity,
-            price: price,
-            totalAmount: totalAmount,
+            id: self.objectId,
+            traderId: self.traderId,
+            symbol: self.symbol,
+            description: self.description,
+            quantity: self.quantity,
+            price: self.price,
+            totalAmount: self.totalAmount,
             status: orderStatus,
             createdAt: createdDate,
             executedAt: executedDate,
             confirmedAt: confirmedDate,
             updatedAt: updatedDate,
-            optionDirection: optionDirection,
-            underlyingAsset: underlyingAsset,
-            wkn: wkn,
-            category: category,
-            strike: strike,
-            orderInstruction: orderInstruction,
-            limitPrice: limitPrice,
-            subscriptionRatio: subscriptionRatio,
-            denomination: denomination
+            optionDirection: self.optionDirection,
+            underlyingAsset: self.underlyingAsset,
+            wkn: self.wkn,
+            category: self.category,
+            strike: self.strike,
+            orderInstruction: self.orderInstruction,
+            limitPrice: self.limitPrice,
+            subscriptionRatio: self.subscriptionRatio,
+            denomination: self.denomination
         )
     }
 
@@ -200,33 +200,33 @@ struct ParseOrderResponse: Codable, Sendable {
         let dateFormatter = ISO8601DateFormatter()
         dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
 
-        let createdDate = dateFormatter.date(from: createdAt) ?? Date()
-        let updatedDate = dateFormatter.date(from: updatedAt) ?? Date()
-        let executedDate = executedAt.flatMap { dateFormatter.date(from: $0) }
-        let confirmedDate = confirmedAt.flatMap { dateFormatter.date(from: $0) }
+        let createdDate = dateFormatter.date(from: self.createdAt) ?? Date()
+        let updatedDate = dateFormatter.date(from: self.updatedAt) ?? Date()
+        let executedDate = self.executedAt.flatMap { dateFormatter.date(from: $0) }
+        let confirmedDate = self.confirmedAt.flatMap { dateFormatter.date(from: $0) }
         let orderStatus = OrderSellStatus(rawValue: status) ?? .submitted
 
         return OrderSell(
-            id: objectId,
-            traderId: traderId,
-            symbol: symbol,
-            description: description,
-            quantity: quantity,
-            price: price,
-            totalAmount: totalAmount,
+            id: self.objectId,
+            traderId: self.traderId,
+            symbol: self.symbol,
+            description: self.description,
+            quantity: self.quantity,
+            price: self.price,
+            totalAmount: self.totalAmount,
             status: orderStatus,
             createdAt: createdDate,
             executedAt: executedDate,
             confirmedAt: confirmedDate,
             updatedAt: updatedDate,
-            optionDirection: optionDirection,
-            underlyingAsset: underlyingAsset,
-            wkn: wkn,
-            category: category,
-            strike: strike,
-            orderInstruction: orderInstruction,
-            limitPrice: limitPrice,
-            originalHoldingId: originalHoldingId
+            optionDirection: self.optionDirection,
+            underlyingAsset: self.underlyingAsset,
+            wkn: self.wkn,
+            category: self.category,
+            strike: self.strike,
+            orderInstruction: self.orderInstruction,
+            limitPrice: self.limitPrice,
+            originalHoldingId: self.originalHoldingId
         )
     }
 
@@ -234,36 +234,36 @@ struct ParseOrderResponse: Codable, Sendable {
         let dateFormatter = ISO8601DateFormatter()
         dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
 
-        let createdDate = dateFormatter.date(from: createdAt) ?? Date()
-        let updatedDate = dateFormatter.date(from: updatedAt) ?? Date()
-        let executedDate = executedAt.flatMap { dateFormatter.date(from: $0) }
-        let confirmedDate = confirmedAt.flatMap { dateFormatter.date(from: $0) }
-        let orderType: OrderType = type == "buy" ? .buy : .sell
+        let createdDate = dateFormatter.date(from: self.createdAt) ?? Date()
+        let updatedDate = dateFormatter.date(from: self.updatedAt) ?? Date()
+        let executedDate = self.executedAt.flatMap { dateFormatter.date(from: $0) }
+        let confirmedDate = self.confirmedAt.flatMap { dateFormatter.date(from: $0) }
+        let orderType: OrderType = self.type == "buy" ? .buy : .sell
 
         return Order(
-            id: objectId,
-            traderId: traderId,
-            symbol: symbol,
-            description: description,
+            id: self.objectId,
+            traderId: self.traderId,
+            symbol: self.symbol,
+            description: self.description,
             type: orderType,
-            quantity: quantity,
-            price: price,
-            totalAmount: totalAmount,
+            quantity: self.quantity,
+            price: self.price,
+            totalAmount: self.totalAmount,
             createdAt: createdDate,
             executedAt: executedDate,
             confirmedAt: confirmedDate,
             updatedAt: updatedDate,
-            optionDirection: optionDirection,
-            underlyingAsset: underlyingAsset,
-            wkn: wkn,
-            category: category,
-            strike: strike,
-            orderInstruction: orderInstruction,
-            limitPrice: limitPrice,
-            subscriptionRatio: subscriptionRatio,
-            denomination: denomination,
-            originalHoldingId: originalHoldingId,
-            status: status
+            optionDirection: self.optionDirection,
+            underlyingAsset: self.underlyingAsset,
+            wkn: self.wkn,
+            category: self.category,
+            strike: self.strike,
+            orderInstruction: self.orderInstruction,
+            limitPrice: self.limitPrice,
+            subscriptionRatio: self.subscriptionRatio,
+            denomination: self.denomination,
+            originalHoldingId: self.originalHoldingId,
+            status: self.status
         )
     }
 }
@@ -286,7 +286,7 @@ final class OrderAPIService: OrderAPIServiceProtocol {
 
         let input = ParseOrderInput.from(buyOrder: order)
         let response = try await apiClient.createObject(
-            className: className,
+            className: self.className,
             object: input
         )
 
@@ -325,7 +325,7 @@ final class OrderAPIService: OrderAPIServiceProtocol {
 
         let input = ParseOrderInput.from(sellOrder: order)
         let response = try await apiClient.createObject(
-            className: className,
+            className: self.className,
             object: input
         )
 
@@ -363,7 +363,7 @@ final class OrderAPIService: OrderAPIServiceProtocol {
 
         let input = ParseOrderInput.from(order: order)
         let response = try await apiClient.updateObject(
-            className: className,
+            className: self.className,
             objectId: order.id,
             object: input
         )
@@ -380,7 +380,7 @@ final class OrderAPIService: OrderAPIServiceProtocol {
         print("📡 OrderAPIService: Fetching orders for trader: \(traderId)")
 
         let responses: [ParseOrderResponse] = try await apiClient.fetchObjects(
-            className: className,
+            className: self.className,
             query: ["traderId": traderId],
             include: nil,
             orderBy: "-createdAt",
@@ -413,8 +413,8 @@ final class OrderAPIService: OrderAPIServiceProtocol {
             let status: String
         }
 
-        _ = try await apiClient.updateObject(
-            className: className,
+        _ = try await self.apiClient.updateObject(
+            className: self.className,
             objectId: orderId,
             object: CancelInput(status: "cancelled")
         )

@@ -19,15 +19,15 @@ struct FAQPopularArticlesSection: View {
                     .foregroundColor(AppTheme.fontColor)
             }
 
-            if viewModel.popularArticles.isEmpty {
+            if self.viewModel.popularArticles.isEmpty {
                 Text("Noch keine beliebten Artikel")
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
                     .padding()
             } else {
-                ForEach(viewModel.popularArticles) { article in
-                    FAQArticleRow(article: article, isCSRMode: isCSRMode) {
-                        viewModel.selectArticle(article)
+                ForEach(self.viewModel.popularArticles) { article in
+                    FAQArticleRow(article: article, isCSRMode: self.isCSRMode) {
+                        self.viewModel.selectArticle(article)
                     }
                 }
             }

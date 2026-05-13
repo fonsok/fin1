@@ -38,57 +38,60 @@ struct AppConfiguration: Codable {
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
-        minimumCashReserve = try c.decode(Double.self, forKey: .minimumCashReserve)
-        initialAccountBalance = try c.decode(Double.self, forKey: .initialAccountBalance)
-        poolBalanceDistributionStrategy = try c.decode(PoolBalanceDistributionStrategy.self, forKey: .poolBalanceDistributionStrategy)
-        poolBalanceDistributionThreshold = try c.decode(Double.self, forKey: .poolBalanceDistributionThreshold)
-        traderCommissionRate = try c.decodeIfPresent(Double.self, forKey: .traderCommissionRate)
-        appServiceChargeRate = try c.decodeIfPresent(Double.self, forKey: .appServiceChargeRate)
+        self.minimumCashReserve = try c.decode(Double.self, forKey: .minimumCashReserve)
+        self.initialAccountBalance = try c.decode(Double.self, forKey: .initialAccountBalance)
+        self.poolBalanceDistributionStrategy = try c.decode(PoolBalanceDistributionStrategy.self, forKey: .poolBalanceDistributionStrategy)
+        self.poolBalanceDistributionThreshold = try c.decode(Double.self, forKey: .poolBalanceDistributionThreshold)
+        self.traderCommissionRate = try c.decodeIfPresent(Double.self, forKey: .traderCommissionRate)
+        self.appServiceChargeRate = try c.decodeIfPresent(Double.self, forKey: .appServiceChargeRate)
             ?? c.decodeIfPresent(Double.self, forKey: .platformServiceChargeRate)
-        appServiceChargeRateCompanies = try c.decodeIfPresent(Double.self, forKey: .appServiceChargeRateCompanies)
+        self.appServiceChargeRateCompanies = try c.decodeIfPresent(Double.self, forKey: .appServiceChargeRateCompanies)
             ?? c.decodeIfPresent(Double.self, forKey: .platformServiceChargeRateCompanies)
-            ?? appServiceChargeRate
-        showCommissionBreakdownInCreditNote = try c.decodeIfPresent(Bool.self, forKey: .showCommissionBreakdownInCreditNote)
-        showDocumentReferenceLinksInAccountStatement = try c.decodeIfPresent(Bool.self, forKey: .showDocumentReferenceLinksInAccountStatement)
-        maximumRiskExposurePercent = try c.decodeIfPresent(Double.self, forKey: .maximumRiskExposurePercent)
-        walletFeatureEnabled = try c.decodeIfPresent(Bool.self, forKey: .walletFeatureEnabled)
-        serviceChargeInvoiceFromBackend = try c.decodeIfPresent(Bool.self, forKey: .serviceChargeInvoiceFromBackend)
-        serviceChargeLegacyClientFallbackEnabled = try c.decodeIfPresent(Bool.self, forKey: .serviceChargeLegacyClientFallbackEnabled)
-        dailyTransactionLimit = try c.decodeIfPresent(Double.self, forKey: .dailyTransactionLimit)
-        weeklyTransactionLimit = try c.decodeIfPresent(Double.self, forKey: .weeklyTransactionLimit)
-        monthlyTransactionLimit = try c.decodeIfPresent(Double.self, forKey: .monthlyTransactionLimit)
-        minInvestment = try c.decodeIfPresent(Double.self, forKey: .minInvestment)
-        maxInvestment = try c.decodeIfPresent(Double.self, forKey: .maxInvestment)
-        userMinimumCashReserves = try c.decode([String: Double].self, forKey: .userMinimumCashReserves)
-        slaMonitoringInterval = try c.decode(TimeInterval.self, forKey: .slaMonitoringInterval)
-        lastUpdated = try c.decode(Date.self, forKey: .lastUpdated)
-        updatedBy = try c.decode(String.self, forKey: .updatedBy)
+            ?? self.appServiceChargeRate
+        self.showCommissionBreakdownInCreditNote = try c.decodeIfPresent(Bool.self, forKey: .showCommissionBreakdownInCreditNote)
+        self.showDocumentReferenceLinksInAccountStatement = try c.decodeIfPresent(
+            Bool.self,
+            forKey: .showDocumentReferenceLinksInAccountStatement
+        )
+        self.maximumRiskExposurePercent = try c.decodeIfPresent(Double.self, forKey: .maximumRiskExposurePercent)
+        self.walletFeatureEnabled = try c.decodeIfPresent(Bool.self, forKey: .walletFeatureEnabled)
+        self.serviceChargeInvoiceFromBackend = try c.decodeIfPresent(Bool.self, forKey: .serviceChargeInvoiceFromBackend)
+        self.serviceChargeLegacyClientFallbackEnabled = try c.decodeIfPresent(Bool.self, forKey: .serviceChargeLegacyClientFallbackEnabled)
+        self.dailyTransactionLimit = try c.decodeIfPresent(Double.self, forKey: .dailyTransactionLimit)
+        self.weeklyTransactionLimit = try c.decodeIfPresent(Double.self, forKey: .weeklyTransactionLimit)
+        self.monthlyTransactionLimit = try c.decodeIfPresent(Double.self, forKey: .monthlyTransactionLimit)
+        self.minInvestment = try c.decodeIfPresent(Double.self, forKey: .minInvestment)
+        self.maxInvestment = try c.decodeIfPresent(Double.self, forKey: .maxInvestment)
+        self.userMinimumCashReserves = try c.decode([String: Double].self, forKey: .userMinimumCashReserves)
+        self.slaMonitoringInterval = try c.decode(TimeInterval.self, forKey: .slaMonitoringInterval)
+        self.lastUpdated = try c.decode(Date.self, forKey: .lastUpdated)
+        self.updatedBy = try c.decode(String.self, forKey: .updatedBy)
     }
 
     func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
-        try c.encode(minimumCashReserve, forKey: .minimumCashReserve)
-        try c.encode(initialAccountBalance, forKey: .initialAccountBalance)
-        try c.encode(poolBalanceDistributionStrategy, forKey: .poolBalanceDistributionStrategy)
-        try c.encode(poolBalanceDistributionThreshold, forKey: .poolBalanceDistributionThreshold)
-        try c.encodeIfPresent(traderCommissionRate, forKey: .traderCommissionRate)
-        try c.encodeIfPresent(appServiceChargeRate, forKey: .appServiceChargeRate)
-        try c.encodeIfPresent(appServiceChargeRateCompanies, forKey: .appServiceChargeRateCompanies)
-        try c.encodeIfPresent(showCommissionBreakdownInCreditNote, forKey: .showCommissionBreakdownInCreditNote)
-        try c.encodeIfPresent(showDocumentReferenceLinksInAccountStatement, forKey: .showDocumentReferenceLinksInAccountStatement)
-        try c.encodeIfPresent(maximumRiskExposurePercent, forKey: .maximumRiskExposurePercent)
-        try c.encodeIfPresent(walletFeatureEnabled, forKey: .walletFeatureEnabled)
-        try c.encodeIfPresent(serviceChargeInvoiceFromBackend, forKey: .serviceChargeInvoiceFromBackend)
-        try c.encodeIfPresent(serviceChargeLegacyClientFallbackEnabled, forKey: .serviceChargeLegacyClientFallbackEnabled)
-        try c.encodeIfPresent(dailyTransactionLimit, forKey: .dailyTransactionLimit)
-        try c.encodeIfPresent(weeklyTransactionLimit, forKey: .weeklyTransactionLimit)
-        try c.encodeIfPresent(monthlyTransactionLimit, forKey: .monthlyTransactionLimit)
-        try c.encodeIfPresent(minInvestment, forKey: .minInvestment)
-        try c.encodeIfPresent(maxInvestment, forKey: .maxInvestment)
-        try c.encode(userMinimumCashReserves, forKey: .userMinimumCashReserves)
-        try c.encode(slaMonitoringInterval, forKey: .slaMonitoringInterval)
-        try c.encode(lastUpdated, forKey: .lastUpdated)
-        try c.encode(updatedBy, forKey: .updatedBy)
+        try c.encode(self.minimumCashReserve, forKey: .minimumCashReserve)
+        try c.encode(self.initialAccountBalance, forKey: .initialAccountBalance)
+        try c.encode(self.poolBalanceDistributionStrategy, forKey: .poolBalanceDistributionStrategy)
+        try c.encode(self.poolBalanceDistributionThreshold, forKey: .poolBalanceDistributionThreshold)
+        try c.encodeIfPresent(self.traderCommissionRate, forKey: .traderCommissionRate)
+        try c.encodeIfPresent(self.appServiceChargeRate, forKey: .appServiceChargeRate)
+        try c.encodeIfPresent(self.appServiceChargeRateCompanies, forKey: .appServiceChargeRateCompanies)
+        try c.encodeIfPresent(self.showCommissionBreakdownInCreditNote, forKey: .showCommissionBreakdownInCreditNote)
+        try c.encodeIfPresent(self.showDocumentReferenceLinksInAccountStatement, forKey: .showDocumentReferenceLinksInAccountStatement)
+        try c.encodeIfPresent(self.maximumRiskExposurePercent, forKey: .maximumRiskExposurePercent)
+        try c.encodeIfPresent(self.walletFeatureEnabled, forKey: .walletFeatureEnabled)
+        try c.encodeIfPresent(self.serviceChargeInvoiceFromBackend, forKey: .serviceChargeInvoiceFromBackend)
+        try c.encodeIfPresent(self.serviceChargeLegacyClientFallbackEnabled, forKey: .serviceChargeLegacyClientFallbackEnabled)
+        try c.encodeIfPresent(self.dailyTransactionLimit, forKey: .dailyTransactionLimit)
+        try c.encodeIfPresent(self.weeklyTransactionLimit, forKey: .weeklyTransactionLimit)
+        try c.encodeIfPresent(self.monthlyTransactionLimit, forKey: .monthlyTransactionLimit)
+        try c.encodeIfPresent(self.minInvestment, forKey: .minInvestment)
+        try c.encodeIfPresent(self.maxInvestment, forKey: .maxInvestment)
+        try c.encode(self.userMinimumCashReserves, forKey: .userMinimumCashReserves)
+        try c.encode(self.slaMonitoringInterval, forKey: .slaMonitoringInterval)
+        try c.encode(self.lastUpdated, forKey: .lastUpdated)
+        try c.encode(self.updatedBy, forKey: .updatedBy)
     }
 
     init(
@@ -163,19 +166,19 @@ struct AppConfiguration: Codable {
         updatedBy: "system"
     )
 
-    var effectiveTraderCommissionRate: Double { traderCommissionRate ?? CalculationConstants.FeeRates.traderCommissionRate }
-    var effectiveAppServiceChargeRate: Double { appServiceChargeRate ?? CalculationConstants.ServiceCharges.appServiceChargeRate }
-    var effectiveAppServiceChargeRateCompanies: Double { appServiceChargeRateCompanies ?? effectiveAppServiceChargeRate }
-    var effectiveMaximumRiskExposurePercent: Double { maximumRiskExposurePercent ?? 2.0 }
-    var effectiveShowDocumentReferenceLinksInAccountStatement: Bool { showDocumentReferenceLinksInAccountStatement ?? true }
-    var effectiveWalletFeatureEnabled: Bool { walletFeatureEnabled ?? false }
-    var effectiveServiceChargeInvoiceFromBackend: Bool { serviceChargeInvoiceFromBackend ?? false }
-    var effectiveServiceChargeLegacyClientFallbackEnabled: Bool { serviceChargeLegacyClientFallbackEnabled ?? true }
-    var effectiveDailyTransactionLimit: Double { dailyTransactionLimit ?? CalculationConstants.TransactionLimits.baseDailyLimit }
-    var effectiveWeeklyTransactionLimit: Double { weeklyTransactionLimit ?? CalculationConstants.TransactionLimits.baseWeeklyLimit }
-    var effectiveMonthlyTransactionLimit: Double { monthlyTransactionLimit ?? CalculationConstants.TransactionLimits.baseMonthlyLimit }
-    var effectiveMinimumInvestment: Double { minInvestment ?? CalculationConstants.Investment.fallbackMinimumInvestmentAmount }
-    var effectiveMaximumInvestment: Double { maxInvestment ?? CalculationConstants.Investment.fallbackMaximumInvestmentAmount }
+    var effectiveTraderCommissionRate: Double { self.traderCommissionRate ?? CalculationConstants.FeeRates.traderCommissionRate }
+    var effectiveAppServiceChargeRate: Double { self.appServiceChargeRate ?? CalculationConstants.ServiceCharges.appServiceChargeRate }
+    var effectiveAppServiceChargeRateCompanies: Double { self.appServiceChargeRateCompanies ?? self.effectiveAppServiceChargeRate }
+    var effectiveMaximumRiskExposurePercent: Double { self.maximumRiskExposurePercent ?? 2.0 }
+    var effectiveShowDocumentReferenceLinksInAccountStatement: Bool { self.showDocumentReferenceLinksInAccountStatement ?? true }
+    var effectiveWalletFeatureEnabled: Bool { self.walletFeatureEnabled ?? false }
+    var effectiveServiceChargeInvoiceFromBackend: Bool { self.serviceChargeInvoiceFromBackend ?? false }
+    var effectiveServiceChargeLegacyClientFallbackEnabled: Bool { self.serviceChargeLegacyClientFallbackEnabled ?? true }
+    var effectiveDailyTransactionLimit: Double { self.dailyTransactionLimit ?? CalculationConstants.TransactionLimits.baseDailyLimit }
+    var effectiveWeeklyTransactionLimit: Double { self.weeklyTransactionLimit ?? CalculationConstants.TransactionLimits.baseWeeklyLimit }
+    var effectiveMonthlyTransactionLimit: Double { self.monthlyTransactionLimit ?? CalculationConstants.TransactionLimits.baseMonthlyLimit }
+    var effectiveMinimumInvestment: Double { self.minInvestment ?? CalculationConstants.Investment.fallbackMinimumInvestmentAmount }
+    var effectiveMaximumInvestment: Double { self.maxInvestment ?? CalculationConstants.Investment.fallbackMaximumInvestmentAmount }
 }
 
 enum ConfigurationError: Error, LocalizedError {

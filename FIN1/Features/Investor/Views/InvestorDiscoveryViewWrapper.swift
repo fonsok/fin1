@@ -16,14 +16,14 @@ struct InvestorDiscoveryViewWrapper: View {
     }
 
     var body: some View {
-        InvestorDiscoveryView(viewModel: viewModel, savedFiltersManager: savedFiltersManager)
+        InvestorDiscoveryView(viewModel: self.viewModel, savedFiltersManager: self.savedFiltersManager)
             .task {
-                viewModel.reconfigure(with: services)
-                viewModel.loadTraders()
+                self.viewModel.reconfigure(with: self.services)
+                self.viewModel.loadTraders()
 
                 // Register manager with FilterSyncService
                 if let filterSyncService = services.filterSyncService as? FilterSyncService {
-                    filterSyncService.registerTraderFiltersManager(savedFiltersManager)
+                    filterSyncService.registerTraderFiltersManager(self.savedFiltersManager)
                 }
             }
     }

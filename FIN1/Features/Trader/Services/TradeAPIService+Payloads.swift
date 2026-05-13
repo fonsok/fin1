@@ -11,14 +11,14 @@ extension TradeAPIService {
             "symbol": trade.symbol,
             "description": trade.description,
             "status": trade.status.rawValue,
-            "buyOrder": makeBuyOrderPayload(from: trade.buyOrder)
+            "buyOrder": self.makeBuyOrderPayload(from: trade.buyOrder)
         ]
 
         if includeObjectId { payload["objectId"] = trade.id }
         if let calculatedProfit = trade.calculatedProfit { payload["calculatedProfit"] = calculatedProfit }
         if let completedAt = trade.completedAt { payload["completedAt"] = dateFormatter.string(from: completedAt) }
-        if let sellOrder = trade.sellOrder { payload["sellOrder"] = makeSellOrderPayload(from: sellOrder) }
-        if !trade.sellOrders.isEmpty { payload["sellOrders"] = trade.sellOrders.map { makeSellOrderPayload(from: $0) } }
+        if let sellOrder = trade.sellOrder { payload["sellOrder"] = self.makeSellOrderPayload(from: sellOrder) }
+        if !trade.sellOrders.isEmpty { payload["sellOrders"] = trade.sellOrders.map { self.makeSellOrderPayload(from: $0) } }
         return payload
     }
 

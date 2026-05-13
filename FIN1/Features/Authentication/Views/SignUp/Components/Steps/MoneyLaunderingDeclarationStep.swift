@@ -24,10 +24,10 @@ struct MoneyLaunderingDeclarationStep: View {
                         .fontWeight(.medium)
                         .foregroundColor(AppTheme.fontColor)
 
-                    Button(action: { moneyLaunderingDeclaration.toggle() }, label: {
+                    Button(action: { self.moneyLaunderingDeclaration.toggle() }, label: {
                         HStack {
                             InteractiveElement(
-                                isSelected: moneyLaunderingDeclaration,
+                                isSelected: self.moneyLaunderingDeclaration,
                                 type: .checkbox
                             )
 
@@ -56,10 +56,10 @@ struct MoneyLaunderingDeclarationStep: View {
 
                     VStack(spacing: ResponsiveDesign.spacing(8)) {
                         // Private Assets Radio Button
-                        Button(action: { assetType = .privateAssets }, label: {
+                        Button(action: { self.assetType = .privateAssets }, label: {
                             HStack {
                                 InteractiveElement(
-                                    isSelected: assetType == .privateAssets,
+                                    isSelected: self.assetType == .privateAssets,
                                     type: .radioButton
                                 )
 
@@ -74,12 +74,12 @@ struct MoneyLaunderingDeclarationStep: View {
 
                         // Business Assets Radio Button
                         Button(action: {
-                            assetType = .businessAssets
-                            showBusinessAssetsNotification = true
+                            self.assetType = .businessAssets
+                            self.showBusinessAssetsNotification = true
                         }) {
                             HStack {
                                 InteractiveElement(
-                                    isSelected: assetType == .businessAssets,
+                                    isSelected: self.assetType == .businessAssets,
                                     type: .radioButton
                                 )
 
@@ -109,9 +109,9 @@ struct MoneyLaunderingDeclarationStep: View {
             .background(AppTheme.inputFieldBackground)
             .cornerRadius(ResponsiveDesign.spacing(12))
         }
-        .alert("Only Privatvermögen allowed", isPresented: $showBusinessAssetsNotification) {
+        .alert("Only Privatvermögen allowed", isPresented: self.$showBusinessAssetsNotification) {
             Button("OK") {
-                showBusinessAssetsNotification = false
+                self.showBusinessAssetsNotification = false
             }
         } message: {
             Text("Business assets are not currently supported. Please select 'Privatvermögen' to continue.")

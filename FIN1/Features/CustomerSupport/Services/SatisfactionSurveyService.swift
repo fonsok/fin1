@@ -42,23 +42,23 @@ final class SatisfactionSurveyService: SatisfactionSurveyServiceProtocol, @unche
             completedAt: nil
         )
 
-        surveyRequests.append(request)
+        self.surveyRequests.append(request)
 
         // Send notification to customer using the resolved user ID
-        sendSurveyNotification(request: request, userId: userId)
+        self.sendSurveyNotification(request: request, userId: userId)
 
-        logger.info("📋 Survey request created for ticket \(ticket.ticketNumber), userId: \(userId)")
+        self.logger.info("📋 Survey request created for ticket \(ticket.ticketNumber), userId: \(userId)")
         return request
     }
 
     func getPendingSurveyRequests(userId: String) async throws -> [SurveyRequest] {
-        surveyRequests.filter {
+        self.surveyRequests.filter {
             $0.userId == userId && !$0.isCompleted && !$0.isExpired
         }
     }
 
     func getSurveyRequest(id: String) async throws -> SurveyRequest? {
-        surveyRequests.first { $0.id == id }
+        self.surveyRequests.first { $0.id == id }
     }
 
     // MARK: - Survey Submission
@@ -79,7 +79,7 @@ final class SatisfactionSurveyService: SatisfactionSurveyServiceProtocol, @unche
             throw SurveyServiceError.surveyRequestNotFound
         }
 
-        let request = surveyRequests[requestIndex]
+        let request = self.surveyRequests[requestIndex]
 
         guard !request.isCompleted else {
             throw SurveyServiceError.surveyAlreadySubmitted
@@ -105,13 +105,13 @@ final class SatisfactionSurveyService: SatisfactionSurveyServiceProtocol, @unche
             submittedAt: Date()
         )
 
-        surveys.append(survey)
+        self.surveys.append(survey)
 
         // Mark request as completed
-        surveyRequests[requestIndex].isCompleted = true
-        surveyRequests[requestIndex].completedAt = Date()
+        self.surveyRequests[requestIndex].isCompleted = true
+        self.surveyRequests[requestIndex].completedAt = Date()
 
-        logger.info("⭐ Survey submitted for ticket \(request.ticketNumber): \(rating)/5 stars")
+        self.logger.info("⭐ Survey submitted for ticket \(request.ticketNumber): \(rating)/5 stars")
 
         return survey
     }
@@ -119,25 +119,25 @@ final class SatisfactionSurveyService: SatisfactionSurveyServiceProtocol, @unche
     // MARK: - Survey Retrieval
 
     func getSurveys(ticketId: String) async throws -> [SatisfactionSurvey] {
-        surveys.filter { $0.ticketId == ticketId }
+        self.surveys.filter { $0.ticketId == ticketId }
     }
 
     func getCustomerSurveys(userId: String) async throws -> [SatisfactionSurvey] {
-        surveys.filter { $0.userId == userId }
+        self.surveys.filter { $0.userId == userId }
     }
 
     func getAgentSurveys(agentId: String) async throws -> [SatisfactionSurvey] {
-        surveys.filter { $0.agentId == agentId }
+        self.surveys.filter { $0.agentId == agentId }
     }
 
     func getSurveys(from startDate: Date, to endDate: Date) async throws -> [SatisfactionSurvey] {
-        surveys.filter { $0.submittedAt >= startDate && $0.submittedAt <= endDate }
+        self.surveys.filter { $0.submittedAt >= startDate && $0.submittedAt <= endDate }
     }
 
     // MARK: - Private Methods
 
     private func sendSurveyNotification(request: SurveyRequest, userId: String) {
-        notificationService.createNotification(
+        self.notificationService.createNotification(
             title: "Wie war unser Support?",
             message: "Bitte bewerten Sie unseren Service für Ticket \(request.ticketNumber)",
             type: .system,
@@ -145,7 +145,7 @@ final class SatisfactionSurveyService: SatisfactionSurveyServiceProtocol, @unche
             for: userId,  // Use the resolved user ID, not customerId
             metadata: ["surveyRequestId": request.id, "ticketNumber": request.ticketNumber]
         )
-        logger.info("🔔 Survey notification sent to user \(userId) for ticket \(request.ticketNumber)")
+        self.logger.info("🔔 Survey notification sent to user \(userId) for ticket \(request.ticketNumber)")
     }
 }
 

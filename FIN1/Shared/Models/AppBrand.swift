@@ -12,13 +12,13 @@ enum AppBrand {
     static var appName: String {
         if let displayName = (Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String)?
             .trimmingCharacters(in: .whitespacesAndNewlines),
-           !displayName.isEmpty {
+            !displayName.isEmpty {
             return displayName
         }
 
         if let bundleName = (Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String)?
             .trimmingCharacters(in: .whitespacesAndNewlines),
-           !bundleName.isEmpty {
+            !bundleName.isEmpty {
             return bundleName
         }
 

@@ -16,17 +16,17 @@ struct FAQSearchResultsSection: View {
 
                 Spacer()
 
-                Text("\(viewModel.searchResults.count) Treffer")
+                Text("\(self.viewModel.searchResults.count) Treffer")
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
             }
 
-            if viewModel.searchResults.isEmpty && !viewModel.isSearching {
-                emptySearchResultView
+            if self.viewModel.searchResults.isEmpty && !self.viewModel.isSearching {
+                self.emptySearchResultView
             } else {
-                ForEach(viewModel.searchResults) { result in
+                ForEach(self.viewModel.searchResults) { result in
                     FAQSearchResultRow(result: result) {
-                        viewModel.selectArticle(result.article)
+                        self.viewModel.selectArticle(result.article)
                     }
                 }
             }

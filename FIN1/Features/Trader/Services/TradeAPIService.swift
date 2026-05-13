@@ -39,7 +39,7 @@ final class TradeAPIService: TradeAPIServiceProtocol, @unchecked Sendable {
         print("📡 TradeAPIService: Fetching trades for trader \(traderId)")
         let response: TradeHistoryFunctionResponse = try await apiClient.callFunction(
             "getTradeHistory",
-            parameters: ["limit": 1000, "skip": 0]
+            parameters: ["limit": 1_000, "skip": 0]
         )
         let parseTrades = response.trades
 

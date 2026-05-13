@@ -12,9 +12,9 @@ struct FAQStatisticsSheet: View {
             ScrollView {
                 VStack(spacing: ResponsiveDesign.spacing(16)) {
                     if let stats = viewModel.statistics {
-                        overviewSection(stats)
-                        categoriesSection(stats)
-                        topArticlesSection(stats)
+                        self.overviewSection(stats)
+                        self.categoriesSection(stats)
+                        self.topArticlesSection(stats)
                     } else {
                         ProgressView()
                             .padding()
@@ -29,7 +29,7 @@ struct FAQStatisticsSheet: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Fertig") {
-                        dismiss()
+                        self.dismiss()
                     }
                 }
             }
@@ -45,16 +45,36 @@ struct FAQStatisticsSheet: View {
 
             LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 2), spacing: ResponsiveDesign.spacing(12)) {
                 FAQStatBox(title: "Gesamt", value: "\(stats.totalArticles)", icon: "doc.text.fill", color: AppTheme.accentLightBlue)
-                FAQStatBox(title: "Veröffentlicht", value: "\(stats.publishedArticles)", icon: "checkmark.circle.fill", color: AppTheme.accentGreen)
-                FAQStatBox(title: "Archiviert", value: "\(stats.archivedArticles)", icon: "archivebox.fill", color: AppTheme.fontColor.opacity(0.6))
-                FAQStatBox(title: "Überprüfen", value: "\(stats.articlesNeedingReview)", icon: "exclamationmark.triangle.fill", color: AppTheme.accentRed)
+                FAQStatBox(
+                    title: "Veröffentlicht",
+                    value: "\(stats.publishedArticles)",
+                    icon: "checkmark.circle.fill",
+                    color: AppTheme.accentGreen
+                )
+                FAQStatBox(
+                    title: "Archiviert",
+                    value: "\(stats.archivedArticles)",
+                    icon: "archivebox.fill",
+                    color: AppTheme.fontColor.opacity(0.6)
+                )
+                FAQStatBox(
+                    title: "Überprüfen",
+                    value: "\(stats.articlesNeedingReview)",
+                    icon: "exclamationmark.triangle.fill",
+                    color: AppTheme.accentRed
+                )
             }
 
             Divider()
 
             LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 2), spacing: ResponsiveDesign.spacing(12)) {
                 FAQStatBox(title: "Aufrufe", value: "\(stats.totalViews)", icon: "eye.fill", color: Color.purple)
-                FAQStatBox(title: "Hilfreich", value: "\(stats.overallHelpfulnessPercentage)%", icon: "hand.thumbsup.fill", color: AppTheme.accentOrange)
+                FAQStatBox(
+                    title: "Hilfreich",
+                    value: "\(stats.overallHelpfulnessPercentage)%",
+                    icon: "hand.thumbsup.fill",
+                    color: AppTheme.accentOrange
+                )
                 FAQStatBox(title: "Positiv", value: "\(stats.totalHelpfulVotes)", icon: "plus.circle.fill", color: AppTheme.accentGreen)
                 FAQStatBox(title: "Negativ", value: "\(stats.totalNotHelpfulVotes)", icon: "minus.circle.fill", color: AppTheme.accentRed)
             }
@@ -109,7 +129,7 @@ struct FAQStatisticsSheet: View {
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
             } else {
-                ForEach(viewModel.popularArticles) { article in
+                ForEach(self.viewModel.popularArticles) { article in
                     HStack {
                         Text(article.title)
                             .font(ResponsiveDesign.bodyFont())
@@ -146,16 +166,16 @@ struct FAQStatBox: View {
 
     var body: some View {
         VStack(spacing: ResponsiveDesign.spacing(8)) {
-            Image(systemName: icon)
+            Image(systemName: self.icon)
                 .font(ResponsiveDesign.headlineFont())
-                .foregroundColor(color)
+                .foregroundColor(self.color)
 
-            Text(value)
+            Text(self.value)
                 .font(ResponsiveDesign.titleFont())
                 .fontWeight(.bold)
                 .foregroundColor(AppTheme.inputText)
 
-            Text(title)
+            Text(self.title)
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.inputText)
         }

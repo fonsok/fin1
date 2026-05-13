@@ -49,7 +49,7 @@ struct RiskClassSelectionView: View {
                                         .font(ResponsiveDesign.headlineFont())
                                         .foregroundColor(AppTheme.fontColor)
 
-                                    Text(calculatedRiskClass.displayName)
+                                    Text(self.calculatedRiskClass.displayName)
                                         .font(ResponsiveDesign.bodyFont())
                                         .foregroundColor(AppTheme.fontColor.opacity(0.8))
                                 }
@@ -60,7 +60,11 @@ struct RiskClassSelectionView: View {
                                 HStack(spacing: ResponsiveDesign.spacing(4)) {
                                     ForEach(1...7, id: \.self) { index in
                                         Circle()
-                                            .fill(index <= calculatedRiskClass.rawValue ? calculatedRiskClass.color : Color.gray.opacity(0.3))
+                                            .fill(
+                                                index <= self.calculatedRiskClass.rawValue ? self.calculatedRiskClass.color : Color.gray.opacity(
+                                                    0.3
+                                                )
+                                            )
                                             .frame(width: 8, height: 8)
                                     }
                                 }
@@ -86,7 +90,7 @@ struct RiskClassSelectionView: View {
                                 Spacer()
 
                                 Button("Info") {
-                                    showRiskClassInfo = true
+                                    self.showRiskClassInfo = true
                                 }
                                 .foregroundColor(AppTheme.accentLightBlue)
                                 .font(ResponsiveDesign.captionFont())
@@ -102,13 +106,13 @@ struct RiskClassSelectionView: View {
                                 ForEach(RiskClass.allCases, id: \.rawValue) { riskClass in
                                     RiskClassOptionRow(
                                         riskClass: riskClass,
-                                        isSelected: tempSelectedRiskClass == riskClass,
+                                        isSelected: self.tempSelectedRiskClass == riskClass,
                                         onSelect: { selectedClass in
                                             if selectedClass == .riskClass7 {
-                                                tempSelectedRiskClass = selectedClass
-                                                showRiskClass7Warning = true
+                                                self.tempSelectedRiskClass = selectedClass
+                                                self.showRiskClass7Warning = true
                                             } else {
-                                                tempSelectedRiskClass = selectedClass
+                                                self.tempSelectedRiskClass = selectedClass
                                             }
                                         }
                                     )
@@ -116,9 +120,9 @@ struct RiskClassSelectionView: View {
                             }
 
                             // Clear Selection Button
-                            if tempSelectedRiskClass != nil {
+                            if self.tempSelectedRiskClass != nil {
                                 Button("Automatische Berechnung verwenden") {
-                                    tempSelectedRiskClass = nil
+                                    self.tempSelectedRiskClass = nil
                                 }
                                 .foregroundColor(AppTheme.accentLightBlue)
                                 .font(ResponsiveDesign.bodyFont())
@@ -134,38 +138,40 @@ struct RiskClassSelectionView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Abbrechen") {
-                        dismiss()
+                        self.dismiss()
                     }
                     .foregroundColor(AppTheme.accentLightBlue)
                 }
 
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Bestätigen") {
-                        selectedRiskClass = tempSelectedRiskClass
-                        dismiss()
+                        self.selectedRiskClass = self.tempSelectedRiskClass
+                        self.dismiss()
 
                         // If Risk Class 7 was confirmed, trigger navigation to Summary
-                        if tempSelectedRiskClass == .riskClass7 {
-                            onRiskClass7Confirmed?()
+                        if self.tempSelectedRiskClass == .riskClass7 {
+                            self.onRiskClass7Confirmed?()
                         }
                     }
                     .foregroundColor(AppTheme.accentLightBlue)
-                    .disabled(tempSelectedRiskClass == nil && selectedRiskClass == nil)
+                    .disabled(self.tempSelectedRiskClass == nil && self.selectedRiskClass == nil)
                 }
             }
         }
-        .sheet(isPresented: $showRiskClassInfo) {
+        .sheet(isPresented: self.$showRiskClassInfo) {
             RiskClassInfoView()
         }
-        .alert("Hochrisiko-Warnung", isPresented: $showRiskClass7Warning) {
+        .alert("Hochrisiko-Warnung", isPresented: self.$showRiskClass7Warning) {
             Button("Abbrechen") {
-                tempSelectedRiskClass = nil
+                self.tempSelectedRiskClass = nil
             }
             Button("Bestätigen") {
                 // Keep the selection
             }
         } message: {
-            Text("Risikoklasse 7 ist nur für erfahrene Investoren geeignet. Es besteht das Risiko des Totalverlusts Ihres Kapitals. Sind Sie sicher, dass Sie diese Risikoklasse wählen möchten?")
+            Text(
+                "Risikoklasse 7 ist nur für erfahrene Investoren geeignet. Es besteht das Risiko des Totalverlusts Ihres Kapitals. Sind Sie sicher, dass Sie diese Risikoklasse wählen möchten?"
+            )
         }
     }
 }
@@ -177,18 +183,18 @@ struct RiskClassOptionRow: View {
 
     var body: some View {
         Button(action: {
-            onSelect(riskClass)
+            self.onSelect(self.riskClass)
         }) {
             HStack {
                 // Selection indicator
-                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .foregroundColor(isSelected ? AppTheme.accentLightBlue : .gray)
+                Image(systemName: self.isSelected ? "checkmark.circle.fill" : "circle")
+                    .foregroundColor(self.isSelected ? AppTheme.accentLightBlue : .gray)
                     .font(ResponsiveDesign.headlineFont())
 
                 // Risk class info
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
                     HStack {
-                        Text(riskClass.displayName)
+                        Text(self.riskClass.displayName)
                             .font(ResponsiveDesign.bodyFont())
                             .fontWeight(.medium)
                             .foregroundColor(AppTheme.fontColor)
@@ -199,13 +205,13 @@ struct RiskClassOptionRow: View {
                         HStack(spacing: ResponsiveDesign.spacing(2)) {
                             ForEach(1...7, id: \.self) { index in
                                 Circle()
-                                    .fill(index <= riskClass.rawValue ? riskClass.color : Color.gray.opacity(0.3))
+                                    .fill(index <= self.riskClass.rawValue ? self.riskClass.color : Color.gray.opacity(0.3))
                                     .frame(width: 6, height: 6)
                             }
                         }
                     }
 
-                    Text(riskClass.description)
+                    Text(self.riskClass.description)
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(AppTheme.fontColor.opacity(0.7))
                         .multilineTextAlignment(.leading)
@@ -215,11 +221,11 @@ struct RiskClassOptionRow: View {
                 Spacer()
             }
             .padding()
-            .background(isSelected ? AppTheme.accentLightBlue.opacity(0.1) : AppTheme.sectionBackground)
+            .background(self.isSelected ? AppTheme.accentLightBlue.opacity(0.1) : AppTheme.sectionBackground)
             .cornerRadius(ResponsiveDesign.spacing(8))
             .overlay(
                 RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(8))
-                    .stroke(isSelected ? AppTheme.accentLightBlue : Color.clear, lineWidth: 2)
+                    .stroke(self.isSelected ? AppTheme.accentLightBlue : Color.clear, lineWidth: 2)
             )
         }
         .buttonStyle(PlainButtonStyle())

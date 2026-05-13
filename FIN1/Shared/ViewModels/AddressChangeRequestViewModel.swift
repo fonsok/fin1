@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 import SwiftUI
 
 // MARK: - Address Change Request ViewModel
@@ -39,23 +39,23 @@ final class AddressChangeRequestViewModel: ObservableObject {
     // MARK: - Computed Properties - Current Address
 
     var currentStreetAndNumber: String {
-        userService?.currentUser?.streetAndNumber ?? ""
+        self.userService?.currentUser?.streetAndNumber ?? ""
     }
 
     var currentPostalCode: String {
-        userService?.currentUser?.postalCode ?? ""
+        self.userService?.currentUser?.postalCode ?? ""
     }
 
     var currentCity: String {
-        userService?.currentUser?.city ?? ""
+        self.userService?.currentUser?.city ?? ""
     }
 
     var currentState: String {
-        userService?.currentUser?.state ?? ""
+        self.userService?.currentUser?.state ?? ""
     }
 
     var currentCountry: String {
-        userService?.currentUser?.country ?? ""
+        self.userService?.currentUser?.country ?? ""
     }
 
     var currentFormattedAddress: String {
@@ -66,29 +66,29 @@ final class AddressChangeRequestViewModel: ObservableObject {
     // MARK: - Computed Properties - Validation
 
     var isFormValid: Bool {
-        hasValidNewAddress &&
-        hasUploadedDocument &&
-        userDeclaration &&
-        hasAddressChanged
+        self.hasValidNewAddress &&
+            self.hasUploadedDocument &&
+            self.userDeclaration &&
+            self.hasAddressChanged
     }
 
     var hasValidNewAddress: Bool {
-        !newStreetAndNumber.trimmingCharacters(in: .whitespaces).isEmpty &&
-        !newPostalCode.trimmingCharacters(in: .whitespaces).isEmpty &&
-        !newCity.trimmingCharacters(in: .whitespaces).isEmpty &&
-        !newCountry.trimmingCharacters(in: .whitespaces).isEmpty
+        !self.newStreetAndNumber.trimmingCharacters(in: .whitespaces).isEmpty &&
+            !self.newPostalCode.trimmingCharacters(in: .whitespaces).isEmpty &&
+            !self.newCity.trimmingCharacters(in: .whitespaces).isEmpty &&
+            !self.newCountry.trimmingCharacters(in: .whitespaces).isEmpty
     }
 
     var hasUploadedDocument: Bool {
-        selectedDocument != nil
+        self.selectedDocument != nil
     }
 
     var hasAddressChanged: Bool {
-        newStreetAndNumber != currentStreetAndNumber ||
-        newPostalCode != currentPostalCode ||
-        newCity != currentCity ||
-        newState != currentState ||
-        newCountry != currentCountry
+        self.newStreetAndNumber != self.currentStreetAndNumber ||
+            self.newPostalCode != self.currentPostalCode ||
+            self.newCity != self.currentCity ||
+            self.newState != self.currentState ||
+            self.newCountry != self.currentCountry
     }
 
     var newFormattedAddress: String {
@@ -106,7 +106,7 @@ final class AddressChangeRequestViewModel: ObservableObject {
     }
 
     var hasPendingRequest: Bool {
-        pendingRequest != nil
+        self.pendingRequest != nil
     }
 
     // MARK: - Initialization
@@ -123,36 +123,36 @@ final class AddressChangeRequestViewModel: ObservableObject {
     ) {
         self.addressChangeService = addressChangeService
         self.userService = userService
-        prefillCurrentAddress()
+        self.prefillCurrentAddress()
     }
 
     /// Configure with app services from environment
     func configure(with services: AppServices) {
-        guard addressChangeService == nil else { return }
+        guard self.addressChangeService == nil else { return }
         self.addressChangeService = services.addressChangeService
         self.userService = services.userService
-        prefillCurrentAddress()
+        self.prefillCurrentAddress()
     }
 
     // MARK: - Private Methods
 
     private func prefillCurrentAddress() {
         // Pre-fill with current address as starting point
-        newStreetAndNumber = currentStreetAndNumber
-        newPostalCode = currentPostalCode
-        newCity = currentCity
-        newState = currentState
-        newCountry = currentCountry
+        self.newStreetAndNumber = self.currentStreetAndNumber
+        self.newPostalCode = self.currentPostalCode
+        self.newCity = self.currentCity
+        self.newState = self.currentState
+        self.newCountry = self.currentCountry
     }
 
     // MARK: - Public Methods
 
     /// Resets form to current address values
     func resetForm() {
-        prefillCurrentAddress()
-        selectedDocument = nil
-        userDeclaration = false
-        errorMessage = nil
+        self.prefillCurrentAddress()
+        self.selectedDocument = nil
+        self.userDeclaration = false
+        self.errorMessage = nil
     }
 
     /// Submits the address change request for compliance review
@@ -160,17 +160,17 @@ final class AddressChangeRequestViewModel: ObservableObject {
     func submitRequest() async {
         guard let service = addressChangeService,
               let user = userService?.currentUser else {
-            errorMessage = "User not found. Please log in again."
+            self.errorMessage = "User not found. Please log in again."
             return
         }
 
-        guard isFormValid else {
-            errorMessage = "Please complete all required fields and upload a verification document."
+        guard self.isFormValid else {
+            self.errorMessage = "Please complete all required fields and upload a verification document."
             return
         }
 
-        isLoading = true
-        errorMessage = nil
+        self.isLoading = true
+        self.errorMessage = nil
 
         let currentAddress = AddressComponents(
             streetAndNumber: currentStreetAndNumber,
@@ -182,10 +182,10 @@ final class AddressChangeRequestViewModel: ObservableObject {
 
         let newAddress = AddressComponents(
             streetAndNumber: newStreetAndNumber.trimmingCharacters(in: .whitespaces),
-            postalCode: newPostalCode.trimmingCharacters(in: .whitespaces),
-            city: newCity.trimmingCharacters(in: .whitespaces),
-            state: newState.trimmingCharacters(in: .whitespaces),
-            country: newCountry.trimmingCharacters(in: .whitespaces)
+            postalCode: self.newPostalCode.trimmingCharacters(in: .whitespaces),
+            city: self.newCity.trimmingCharacters(in: .whitespaces),
+            state: self.newState.trimmingCharacters(in: .whitespaces),
+            country: self.newCountry.trimmingCharacters(in: .whitespaces)
         )
 
         do {
@@ -197,18 +197,18 @@ final class AddressChangeRequestViewModel: ObservableObject {
                 currentAddress: currentAddress,
                 newAddress: newAddress,
                 documentURL: documentURL,
-                documentType: selectedDocumentType,
-                userDeclaration: userDeclaration
+                documentType: self.selectedDocumentType,
+                userDeclaration: self.userDeclaration
             )
 
-            isLoading = false
-            showSuccessAlert = true
+            self.isLoading = false
+            self.showSuccessAlert = true
         } catch {
-            isLoading = false
+            self.isLoading = false
             if let appError = error as? AppError {
-                errorMessage = appError.localizedDescription
+                self.errorMessage = appError.localizedDescription
             } else {
-                errorMessage = error.localizedDescription
+                self.errorMessage = error.localizedDescription
             }
         }
     }
@@ -218,22 +218,22 @@ final class AddressChangeRequestViewModel: ObservableObject {
     func cancelPendingRequest() async {
         guard let service = addressChangeService,
               let request = pendingRequest else {
-            errorMessage = "No pending request to cancel."
+            self.errorMessage = "No pending request to cancel."
             return
         }
 
-        isLoading = true
-        errorMessage = nil
+        self.isLoading = true
+        self.errorMessage = nil
 
         do {
             try await service.cancelRequest(request.id)
-            isLoading = false
+            self.isLoading = false
         } catch {
-            isLoading = false
+            self.isLoading = false
             if let appError = error as? AppError {
-                errorMessage = appError.localizedDescription
+                self.errorMessage = appError.localizedDescription
             } else {
-                errorMessage = error.localizedDescription
+                self.errorMessage = error.localizedDescription
             }
         }
     }
@@ -244,12 +244,12 @@ final class AddressChangeRequestViewModel: ObservableObject {
         guard let service = addressChangeService,
               let userId = userService?.currentUser?.id else { return }
 
-        isLoading = true
+        self.isLoading = true
         do {
             try await service.fetchRequests(for: userId)
-            isLoading = false
+            self.isLoading = false
         } catch {
-            isLoading = false
+            self.isLoading = false
             // Silently fail for refresh
         }
     }

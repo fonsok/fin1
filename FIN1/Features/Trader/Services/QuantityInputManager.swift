@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Quantity Input Manager Protocol
 protocol QuantityInputManagerProtocol {
@@ -16,14 +16,14 @@ protocol QuantityInputManagerProtocol {
 /// Manages quantity input processing, validation, and formatting
 @MainActor
 final class QuantityInputManager: ObservableObject {
-    @Published var quantity: Double = 1000
+    @Published var quantity: Double = 1_000
     @Published var quantityText: String = "1.000"
     @Published var showMaxValueWarning: Bool = false
 
     private let maxQuantity: Int = 10_000_000
     private var cancellables = Set<AnyCancellable>()
 
-    init(initialQuantity: Double = 1000) {
+    init(initialQuantity: Double = 1_000) {
         self.quantity = initialQuantity
         self.quantityText = Int(initialQuantity).formattedAsLocalizedInteger()
     }
@@ -36,18 +36,18 @@ final class QuantityInputManager: ObservableObject {
         let value = Double(cleanText) ?? 0.0
 
         // Validate and correct if exceeds maximum
-        if value > Double(maxQuantity) {
-            handleMaxValueExceeded()
+        if value > Double(self.maxQuantity) {
+            self.handleMaxValueExceeded()
             return value // Return the actual entered value to show the warning
         } else {
-            hideMaxValueWarning()
+            self.hideMaxValueWarning()
         }
 
         return value
     }
 
     func setupQuantityTextBinding() -> AnyCancellable {
-        $quantityText
+        self.$quantityText
             .debounce(for: .milliseconds(300), scheduler: RunLoop.main)
             .map { [weak self] text in
                 guard let self = self else { return 0.0 }
@@ -56,7 +56,7 @@ final class QuantityInputManager: ObservableObject {
             .sink { [weak self] value in
                 self?.quantity = value
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
 
         // Return a cancellable that can be used to cancel all subscriptions
         return AnyCancellable {
@@ -65,7 +65,7 @@ final class QuantityInputManager: ObservableObject {
     }
 
     func setupQuantityBinding() -> AnyCancellable {
-        $quantity
+        self.$quantity
             .map { value in
                 let formatter = NumberFormatter.localizedIntegerFormatter
                 return formatter.string(from: NSNumber(value: value)) ?? "\(Int(value))"
@@ -73,7 +73,7 @@ final class QuantityInputManager: ObservableObject {
             .sink { [weak self] value in
                 self?.quantityText = value
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
 
         return AnyCancellable {
             // This will be handled by the cancellables set
@@ -81,25 +81,25 @@ final class QuantityInputManager: ObservableObject {
     }
 
     var exceedsMaximum: Bool {
-        return quantity > Double(maxQuantity)
+        return self.quantity > Double(self.maxQuantity)
     }
 
     func cleanup() {
-        cancellables.removeAll()
+        self.cancellables.removeAll()
     }
 
     // MARK: - Private Methods
 
     private func handleMaxValueExceeded() {
-        showMaxValueWarning = true
+        self.showMaxValueWarning = true
         Task {
             try? await Task.sleep(nanoseconds: 1_500_000_000)
-            quantityText = maxQuantity.formattedAsLocalizedInteger()
-            showMaxValueWarning = false
+            self.quantityText = self.maxQuantity.formattedAsLocalizedInteger()
+            self.showMaxValueWarning = false
         }
     }
 
     private func hideMaxValueWarning() {
-        showMaxValueWarning = false
+        self.showMaxValueWarning = false
     }
 }

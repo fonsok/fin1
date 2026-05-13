@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Securities Watchlist Service Implementation
 /// Handles securities watchlist operations and management
@@ -26,8 +26,8 @@ final class SecuritiesWatchlistService: SecuritiesWatchlistServiceProtocol, Serv
         self.marketDataService = marketDataService
         self.userService = userService
         self.watchlistAPIService = watchlistAPIService
-        loadMockData()
-        setupMarketDataObserver()
+        self.loadMockData()
+        self.setupMarketDataObserver()
     }
 
     /// Configure the API service for backend synchronization
@@ -37,14 +37,14 @@ final class SecuritiesWatchlistService: SecuritiesWatchlistServiceProtocol, Serv
 
     /// Returns the current user's ID
     private var currentUserId: String? {
-        userService?.currentUser?.id
+        self.userService?.currentUser?.id
     }
 
     // MARK: - ServiceLifecycle
     func start() {
         Task {
-            try? await loadWatchlist()
-            await subscribeToMarketDataUpdates()
+            try? await self.loadWatchlist()
+            await self.subscribeToMarketDataUpdates()
         }
     }
 
@@ -53,16 +53,16 @@ final class SecuritiesWatchlistService: SecuritiesWatchlistServiceProtocol, Serv
     }
 
     func reset() {
-        watchlist.removeAll()
-        errorMessage = nil
+        self.watchlist.removeAll()
+        self.errorMessage = nil
     }
 
     // MARK: - Watchlist Data Management
 
     func loadWatchlist() async throws {
         await MainActor.run {
-            isLoading = true
-            errorMessage = nil
+            self.isLoading = true
+            self.errorMessage = nil
         }
 
         // Try to fetch from backend first
@@ -84,22 +84,22 @@ final class SecuritiesWatchlistService: SecuritiesWatchlistServiceProtocol, Serv
         try await Task.sleep(nanoseconds: 300_000_000) // 0.3 seconds
 
         await MainActor.run {
-            loadWatchlistSync()
-            isLoading = false
+            self.loadWatchlistSync()
+            self.isLoading = false
         }
     }
 
     func refreshWatchlist() async throws {
         await MainActor.run {
-            isLoading = true
-            errorMessage = nil
+            self.isLoading = true
+            self.errorMessage = nil
         }
 
         try await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
 
         await MainActor.run {
-            loadWatchlistSync()
-            isLoading = false
+            self.loadWatchlistSync()
+            self.isLoading = false
         }
     }
 
@@ -108,8 +108,8 @@ final class SecuritiesWatchlistService: SecuritiesWatchlistServiceProtocol, Serv
     func addToWatchlist(_ searchResult: SearchResult) async throws {
         await MainActor.run {
             // Check if already in watchlist
-            if !watchlist.contains(where: { $0.wkn == searchResult.wkn }) {
-                watchlist.append(searchResult)
+            if !self.watchlist.contains(where: { $0.wkn == searchResult.wkn }) {
+                self.watchlist.append(searchResult)
 
                 // Show notification
                 NotificationCenter.default.post(
@@ -137,7 +137,7 @@ final class SecuritiesWatchlistService: SecuritiesWatchlistServiceProtocol, Serv
 
     func removeFromWatchlist(_ wkn: String) async throws {
         await MainActor.run {
-            watchlist.removeAll { $0.wkn == wkn }
+            self.watchlist.removeAll { $0.wkn == wkn }
             print("❌ Removed from watchlist: \(wkn)")
         }
 
@@ -157,7 +157,7 @@ final class SecuritiesWatchlistService: SecuritiesWatchlistServiceProtocol, Serv
 
     func clearWatchlist() async throws {
         await MainActor.run {
-            watchlist.removeAll()
+            self.watchlist.removeAll()
             print("🗑️ Cleared watchlist")
         }
 
@@ -180,7 +180,7 @@ final class SecuritiesWatchlistService: SecuritiesWatchlistServiceProtocol, Serv
     }
 
     func isInWatchlist(_ wkn: String) -> Bool {
-        return watchlist.contains { $0.wkn == wkn }
+        return self.watchlist.contains { $0.wkn == wkn }
     }
 
     // MARK: - Backend Synchronization
@@ -195,7 +195,7 @@ final class SecuritiesWatchlistService: SecuritiesWatchlistServiceProtocol, Serv
         print("📤 Syncing watchlist to backend...")
 
         // Sync all current watchlist items
-        let itemsToSync = await MainActor.run { watchlist }
+        let itemsToSync = await MainActor.run { self.watchlist }
 
         for item in itemsToSync {
             do {
@@ -211,7 +211,7 @@ final class SecuritiesWatchlistService: SecuritiesWatchlistServiceProtocol, Serv
     // MARK: - Private Methods
 
     private func loadMockData() {
-        loadWatchlistSync()
+        self.loadWatchlistSync()
     }
 
     private func loadWatchlistSync() {
@@ -239,18 +239,18 @@ final class SecuritiesWatchlistService: SecuritiesWatchlistServiceProtocol, Serv
                     self.updateWatchlistMarketData(symbol: symbol)
                 }
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
     }
 
     private func subscribeToMarketDataUpdates() async {
         // Get all unique underlying assets from watchlist
-        let symbols = watchlist.compactMap { $0.underlyingAsset }
+        let symbols = self.watchlist.compactMap { $0.underlyingAsset }
             .removingDuplicates()
 
         guard !symbols.isEmpty else { return }
 
         // Subscribe to market data updates for watchlist symbols
-        await marketDataService?.subscribeToMarketData(symbols: symbols)
+        await self.marketDataService?.subscribeToMarketData(symbols: symbols)
     }
 
     private func updateWatchlistMarketData(symbol: String) {

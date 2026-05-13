@@ -44,13 +44,13 @@ struct DocumentDesignSystem {
     static func sectionBackground(for index: Int) -> Color {
         switch index % 4 {
         case 0:
-            return sectionBackground1
+            return self.sectionBackground1
         case 1:
-            return sectionBackground2
+            return self.sectionBackground2
         case 2:
-            return sectionBackground3
+            return self.sectionBackground3
         default:
-            return sectionBackground4
+            return self.sectionBackground4
         }
     }
 
@@ -60,15 +60,15 @@ struct DocumentDesignSystem {
     static func sectionBackground(level: Int) -> Color {
         switch level {
         case 1:
-            return sectionBackground1
+            return self.sectionBackground1
         case 2:
-            return sectionBackground2
+            return self.sectionBackground2
         case 3:
-            return sectionBackground3
+            return self.sectionBackground3
         case 4:
-            return sectionBackground4
+            return self.sectionBackground4
         default:
-            return sectionBackground1
+            return self.sectionBackground1
         }
     }
 }

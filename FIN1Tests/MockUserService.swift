@@ -1,6 +1,6 @@
-import Foundation
 import Combine
 @testable import FIN1
+import Foundation
 
 // MARK: - Mock User Service
 final class MockUserService: UserServiceProtocol, @unchecked Sendable {
@@ -16,15 +16,15 @@ final class MockUserService: UserServiceProtocol, @unchecked Sendable {
         return "r:\(encoded)"
     }
 
-    var userDisplayName: String { currentUser?.displayName ?? "Guest" }
-    var userRole: UserRole? { currentUser?.role }
-    var isInvestor: Bool { currentUser?.role == .investor }
-    var isTrader: Bool { currentUser?.role == .trader }
+    var userDisplayName: String { self.currentUser?.displayName ?? "Guest" }
+    var userRole: UserRole? { self.currentUser?.role }
+    var isInvestor: Bool { self.currentUser?.role == .investor }
+    var isTrader: Bool { self.currentUser?.role == .trader }
 
     // MARK: - Impersonation State
     private var _originalAdminUser: User?
-    var originalAdminUser: User? { _originalAdminUser }
-    var isImpersonating: Bool { _originalAdminUser != nil }
+    var originalAdminUser: User? { self._originalAdminUser }
+    var isImpersonating: Bool { self._originalAdminUser != nil }
 
     // MARK: - Behavior Closures (Simplified Approach)
     /// Closure to handle signIn - defaults to creating test user
@@ -44,7 +44,7 @@ final class MockUserService: UserServiceProtocol, @unchecked Sendable {
             try await handler(email, password)
         } else {
             // Default: create test user based on email
-            isLoading = true
+            self.isLoading = true
 
             // Create test user based on email
             let user = User(
@@ -70,7 +70,7 @@ final class MockUserService: UserServiceProtocol, @unchecked Sendable {
                 role: email.contains("trader") ? .trader : .investor,
                 csrRole: nil,
                 employmentStatus: .employed,
-                income: 50000,
+                income: 50_000,
                 incomeRange: .middle,
                 riskTolerance: 3,
                 address: "123 Test St",
@@ -112,9 +112,9 @@ final class MockUserService: UserServiceProtocol, @unchecked Sendable {
                 updatedAt: Date()
             )
 
-            currentUser = user
-            isAuthenticated = true
-            isLoading = false
+            self.currentUser = user
+            self.isAuthenticated = true
+            self.isLoading = false
         }
     }
 
@@ -123,17 +123,17 @@ final class MockUserService: UserServiceProtocol, @unchecked Sendable {
             try await handler(userData)
         } else {
             // Default: set user
-            isLoading = true
-            currentUser = userData
-            isAuthenticated = true
-            isLoading = false
+            self.isLoading = true
+            self.currentUser = userData
+            self.isAuthenticated = true
+            self.isLoading = false
         }
     }
 
     func signOut() async {
-        currentUser = nil
-        isAuthenticated = false
-        _originalAdminUser = nil
+        self.currentUser = nil
+        self.isAuthenticated = false
+        self._originalAdminUser = nil
     }
 
     func updateProfile(_ user: User) async throws {
@@ -141,7 +141,7 @@ final class MockUserService: UserServiceProtocol, @unchecked Sendable {
             try await handler(user)
         } else {
             // Default: update user
-            currentUser = user
+            self.currentUser = user
         }
     }
 
@@ -217,13 +217,13 @@ final class MockUserService: UserServiceProtocol, @unchecked Sendable {
             createdAt: user.createdAt,
             updatedAt: Date()
         )
-        currentUser = updatedUser
+        self.currentUser = updatedUser
     }
 
     func impersonateUser(userId: String, customerNumber: String, email: String, fullName: String, role: UserRole) async {
         // Store original admin user if not already stored
-        if _originalAdminUser == nil, let currentUser = currentUser, currentUser.role == .admin {
-            _originalAdminUser = currentUser
+        if self._originalAdminUser == nil, let currentUser = currentUser, currentUser.role == .admin {
+            self._originalAdminUser = currentUser
         }
 
         // Parse full name into first and last name
@@ -302,21 +302,21 @@ final class MockUserService: UserServiceProtocol, @unchecked Sendable {
 
     func stopImpersonating() async {
         guard let originalUser = _originalAdminUser else { return }
-        currentUser = originalUser
-        _originalAdminUser = nil
+        self.currentUser = originalUser
+        self._originalAdminUser = nil
     }
 
     func start() {}
     func stop() {}
     func reset() {
-        currentUser = nil
-        isAuthenticated = false
-        isLoading = false
-        _originalAdminUser = nil
+        self.currentUser = nil
+        self.isAuthenticated = false
+        self.isLoading = false
+        self._originalAdminUser = nil
         // Reset all handlers
-        signInHandler = nil
-        signUpHandler = nil
-        updateProfileHandler = nil
-        refreshUserDataHandler = nil
+        self.signInHandler = nil
+        self.signUpHandler = nil
+        self.updateProfileHandler = nil
+        self.refreshUserDataHandler = nil
     }
 }

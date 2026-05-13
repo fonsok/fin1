@@ -1,5 +1,5 @@
-import SwiftUI
 import Combine
+import SwiftUI
 
 // MARK: - Invoice List View
 /// Displays a list of invoices with filtering and search capabilities
@@ -11,22 +11,24 @@ struct InvoiceListView: View {
     @State private var showingCreateInvoice = false
 
     init(invoiceService: any InvoiceServiceProtocol, notificationService: any NotificationServiceProtocol) {
-        self._viewModel = StateObject(wrappedValue: InvoiceViewModel(invoiceService: invoiceService, notificationService: notificationService))
+        self._viewModel = StateObject(
+            wrappedValue: InvoiceViewModel(invoiceService: invoiceService, notificationService: notificationService)
+        )
     }
 
     var body: some View {
         NavigationStack {
             VStack(spacing: ResponsiveDesign.spacing(0)) {
                 // Search and Filter Bar
-                searchAndFilterBar
+                self.searchAndFilterBar
 
                 // Invoice List
-                if viewModel.isLoading {
-                    loadingView
-                } else if filteredInvoices.isEmpty {
-                    emptyStateView
+                if self.viewModel.isLoading {
+                    self.loadingView
+                } else if self.filteredInvoices.isEmpty {
+                    self.emptyStateView
                 } else {
-                    invoiceList
+                    self.invoiceList
                 }
             }
             .navigationTitle("Rechnungen")
@@ -34,29 +36,29 @@ struct InvoiceListView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Neu") {
-                        showingCreateInvoice = true
+                        self.showingCreateInvoice = true
                     }
                     .buttonStyle(.borderedProminent)
                 }
             }
-            .sheet(isPresented: $showingCreateInvoice) {
-                CreateInvoiceView(invoiceService: services.invoiceService, notificationService: services.notificationService)
+            .sheet(isPresented: self.$showingCreateInvoice) {
+                CreateInvoiceView(invoiceService: self.services.invoiceService, notificationService: self.services.notificationService)
             }
-            .alert("Fehler", isPresented: $viewModel.showError) {
+            .alert("Fehler", isPresented: self.$viewModel.showError) {
                 Button("OK") {
-                    viewModel.clearError()
+                    self.viewModel.clearError()
                 }
             } message: {
-                Text(viewModel.errorMessage ?? "Ein unbekannter Fehler ist aufgetreten.")
+                Text(self.viewModel.errorMessage ?? "Ein unbekannter Fehler ist aufgetreten.")
             }
         }
         .onAppear {
-            let currentUserId = Self.invoiceLookupKey(for: services.userService.currentUser)
-            viewModel.loadInvoices(for: currentUserId)
+            let currentUserId = Self.invoiceLookupKey(for: self.services.userService.currentUser)
+            self.viewModel.loadInvoices(for: currentUserId)
         }
         .onReceive(NotificationCenter.default.publisher(for: .invoiceDidChange)) { _ in
-            let currentUserId = Self.invoiceLookupKey(for: services.userService.currentUser)
-            viewModel.refreshInvoices(for: currentUserId)
+            let currentUserId = Self.invoiceLookupKey(for: self.services.userService.currentUser)
+            self.viewModel.refreshInvoices(for: currentUserId)
         }
     }
 
@@ -69,7 +71,7 @@ struct InvoiceListView: View {
                 Image(systemName: "magnifyingglass")
                     .foregroundColor(.gray)
 
-                TextField("Rechnungen durchsuchen...", text: $searchText)
+                TextField("Rechnungen durchsuchen...", text: self.$searchText)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
             }
 
@@ -78,17 +80,17 @@ struct InvoiceListView: View {
                 HStack(spacing: ResponsiveDesign.spacing(12)) {
                     InvoiceFilterChip(
                         title: "Alle",
-                        isSelected: selectedFilter == nil
+                        isSelected: self.selectedFilter == nil
                     ) {
-                        selectedFilter = nil
+                        self.selectedFilter = nil
                     }
 
                     ForEach(InvoiceType.allCases, id: \.self) { type in
                         InvoiceFilterChip(
                             title: type.displayName,
-                            isSelected: selectedFilter == type
+                            isSelected: self.selectedFilter == type
                         ) {
-                            selectedFilter = type
+                            self.selectedFilter = type
                         }
                     }
                 }
@@ -103,18 +105,18 @@ struct InvoiceListView: View {
 
     private var invoiceList: some View {
         List {
-            ForEach(filteredInvoices) { invoice in
-                InvoiceRowView(invoice: invoice, viewModel: viewModel) {
+            ForEach(self.filteredInvoices) { invoice in
+                InvoiceRowView(invoice: invoice, viewModel: self.viewModel) {
                     // Handle invoice selection
-                    viewModel.selectedInvoice = invoice
+                    self.viewModel.selectedInvoice = invoice
                 }
                 .swipeActions(edge: .trailing) {
                     Button("Löschen", role: .destructive) {
-                        viewModel.deleteInvoice(invoice)
+                        self.viewModel.deleteInvoice(invoice)
                     }
 
                     Button("PDF") {
-                        viewModel.generatePDF(for: invoice)
+                        self.viewModel.generatePDF(for: invoice)
                     }
                     .tint(.blue)
                 }
@@ -154,7 +156,7 @@ struct InvoiceListView: View {
                 .padding(.horizontal)
 
             Button("Rechnung erstellen") {
-                showingCreateInvoice = true
+                self.showingCreateInvoice = true
             }
             .buttonStyle(.borderedProminent)
         }
@@ -164,7 +166,7 @@ struct InvoiceListView: View {
     // MARK: - Computed Properties
 
     private var filteredInvoices: [Invoice] {
-        viewModel.filteredInvoices(searchQuery: searchText, filterType: selectedFilter)
+        self.viewModel.filteredInvoices(searchQuery: self.searchText, filterType: self.selectedFilter)
     }
 
     private static func invoiceLookupKey(for user: User?) -> String {
@@ -181,17 +183,17 @@ struct InvoiceFilterChip: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: action, label: {
-            Text(title)
+        Button(action: self.action, label: {
+            Text(self.title)
                 .font(ResponsiveDesign.captionFont())
                 .fontWeight(.medium)
                 .padding(.horizontal, ResponsiveDesign.spacing(16))
                 .padding(.vertical, ResponsiveDesign.spacing(8))
                 .background(
                     RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(20))
-                        .fill(isSelected ? Color.accentColor : Color(.systemGray5))
+                        .fill(self.isSelected ? Color.accentColor : Color(.systemGray5))
                 )
-                .foregroundColor(isSelected ? .white : .primary)
+                .foregroundColor(self.isSelected ? .white : .primary)
         })
         .buttonStyle(PlainButtonStyle())
     }
@@ -205,29 +207,29 @@ struct InvoiceRowView: View {
     let onTap: () -> Void
 
     var body: some View {
-        Button(action: onTap, label: {
+        Button(action: self.onTap, label: {
             HStack(spacing: ResponsiveDesign.spacing(12)) {
                 // Invoice Icon
-                Image(systemName: invoice.type.icon)
+                Image(systemName: self.invoice.type.icon)
                     .font(ResponsiveDesign.headlineFont())
-                    .foregroundColor(invoice.type == .securitiesSettlement ? .blue : .orange)
+                    .foregroundColor(self.invoice.type == .securitiesSettlement ? .blue : .orange)
                     .frame(width: 40, height: 40)
                     .background(
                         Circle()
-                            .fill(invoice.type == .securitiesSettlement ? Color.blue.opacity(0.1) : Color.orange.opacity(0.1))
+                            .fill(self.invoice.type == .securitiesSettlement ? Color.blue.opacity(0.1) : Color.orange.opacity(0.1))
                     )
 
                 // Invoice Details
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(viewModel.formattedInvoiceNumber(for: invoice))
+                    Text(self.viewModel.formattedInvoiceNumber(for: self.invoice))
                         .font(ResponsiveDesign.headlineFont())
                         .foregroundColor(.primary)
 
-                    Text(invoice.customerInfo.name)
+                    Text(self.invoice.customerInfo.name)
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(.secondary)
 
-                    Text(invoice.type.displayName)
+                    Text(self.invoice.type.displayName)
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(.secondary)
                 }
@@ -236,12 +238,12 @@ struct InvoiceRowView: View {
 
                 // Amount and Status
                 VStack(alignment: .trailing, spacing: 4) {
-                    Text(viewModel.formattedTotalAmount(for: invoice))
+                    Text(self.viewModel.formattedTotalAmount(for: self.invoice))
                         .font(ResponsiveDesign.headlineFont())
                         .fontWeight(.semibold)
                         .foregroundColor(.primary)
 
-                    InvoiceStatusBadge(status: invoice.status)
+                    InvoiceStatusBadge(status: self.invoice.status)
                 }
             }
             .padding(.vertical, ResponsiveDesign.spacing(8))
@@ -256,16 +258,16 @@ struct InvoiceStatusBadge: View {
     let status: InvoiceStatus
 
     var body: some View {
-        Text(status.displayName)
+        Text(self.status.displayName)
             .font(ResponsiveDesign.captionFont())
             .fontWeight(.medium)
             .padding(.horizontal, ResponsiveDesign.spacing(8))
             .padding(.vertical, ResponsiveDesign.spacing(4))
             .background(
                 RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(8))
-                    .fill(status.color.opacity(0.2))
+                    .fill(self.status.color.opacity(0.2))
             )
-            .foregroundColor(status.color)
+            .foregroundColor(self.status.color)
     }
 }
 

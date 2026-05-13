@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 // MARK: - Order Status Simulation Service Implementation
 /// Handles order status progression simulation and timer management
@@ -20,21 +20,21 @@ final class OrderStatusSimulationService: OrderStatusSimulationServiceProtocol {
     // MARK: - Order Status Simulation
 
     func stopOrderStatusProgression(_ orderId: String) {
-        orderStatusTasks[orderId]?.cancel()
-        orderStatusTasks.removeValue(forKey: orderId)
+        self.orderStatusTasks[orderId]?.cancel()
+        self.orderStatusTasks.removeValue(forKey: orderId)
     }
 
     func stopAllOrderStatusProgressions() {
-        orderStatusTasks.values.forEach { $0.cancel() }
-        orderStatusTasks.removeAll()
+        self.orderStatusTasks.values.forEach { $0.cancel() }
+        self.orderStatusTasks.removeAll()
     }
 
     // MARK: - Order Status Management
 
     func startOrderStatusProgression(_ orderId: String, onStatusUpdate: @escaping (String, Order) -> Void) {
-        orderStatusTasks[orderId]?.cancel()
+        self.orderStatusTasks[orderId]?.cancel()
 
-        orderStatusTasks[orderId] = Task { [weak self] in
+        self.orderStatusTasks[orderId] = Task { [weak self] in
             guard let self else { return }
             while !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: OrderStatusConfig.progressionIntervalNanoseconds)
@@ -51,22 +51,24 @@ final class OrderStatusSimulationService: OrderStatusSimulationServiceProtocol {
     func advanceOrderStatus(_ orderId: String, onStatusUpdate: @escaping (String, Order) -> Void) async {
         // Get the current order from OrderManagementService
         #if DEBUG
-        print("🔍 DEBUG: advanceOrderStatus - looking for order \(orderId) in activeOrders (count: \(orderManagementService.activeOrders.count))")
-        for order in orderManagementService.activeOrders {
+        print(
+            "🔍 DEBUG: advanceOrderStatus - looking for order \(orderId) in activeOrders (count: \(self.orderManagementService.activeOrders.count))"
+        )
+        for order in self.orderManagementService.activeOrders {
             print("🔍 DEBUG: activeOrders - order \(order.id) type: \(order.type) status: '\(order.status)'")
         }
         #endif
 
         guard let index = orderManagementService.activeOrders.firstIndex(where: { $0.id == orderId }) else {
             // Order not found, stop task
-            stopOrderStatusProgression(orderId)
+            self.stopOrderStatusProgression(orderId)
             #if DEBUG
             print("🔍 DEBUG: advanceOrderStatus - order \(orderId) not found in activeOrders, stopping task")
             #endif
             return
         }
 
-        let order = orderManagementService.activeOrders[index]
+        let order = self.orderManagementService.activeOrders[index]
         let currentStatus = order.status
         let nextStatus: String
 
@@ -86,14 +88,14 @@ final class OrderStatusSimulationService: OrderStatusSimulationServiceProtocol {
             nextStatus = "completed"
         case "completed", "5":
             // Order is completed (final status), stop task
-            stopOrderStatusProgression(orderId)
+            self.stopOrderStatusProgression(orderId)
             #if DEBUG
             print("🔍 DEBUG: advanceOrderStatus - order \(orderId) completed, stopping task")
             #endif
             return
         default:
             // Unknown status, stop task
-            stopOrderStatusProgression(orderId)
+            self.stopOrderStatusProgression(orderId)
             #if DEBUG
             print("🔍 DEBUG: advanceOrderStatus - order \(orderId) unknown status \(currentStatus), stopping task")
             #endif
@@ -102,7 +104,7 @@ final class OrderStatusSimulationService: OrderStatusSimulationServiceProtocol {
 
         // Update order status through OrderManagementService
         do {
-            try await orderManagementService.updateOrderStatus(orderId, status: nextStatus)
+            try await self.orderManagementService.updateOrderStatus(orderId, status: nextStatus)
         } catch {
             #if DEBUG
             print("🔍 DEBUG: advanceOrderStatus — updateOrderStatus failed: \(error.localizedDescription)")
@@ -136,6 +138,6 @@ final class OrderStatusSimulationService: OrderStatusSimulationServiceProtocol {
     }
 
     private func cleanupTask(for orderId: String) {
-        orderStatusTasks[orderId] = nil
+        self.orderStatusTasks[orderId] = nil
     }
 }
