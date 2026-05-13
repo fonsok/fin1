@@ -1,7 +1,7 @@
 .PHONY: format lint build test testplan
 
 # Default: iPhone 16 + OS typical on current Xcode. Mirror CI exactly:
-#   make IOS_SIM_DEST='platform=iOS Simulator,name=iPhone 16,OS=18.5' test
+#   make IOS_SIM_DEST='platform=iOS Simulator,name=iPhone 16,OS=18.6' test
 IOS_SIM_DEST ?= platform=iOS Simulator,name=iPhone 16,OS=18.6
 
 format:

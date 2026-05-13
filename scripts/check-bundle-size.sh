@@ -9,7 +9,7 @@ set -e
 CONFIGURATION="${1:-Release}"
 SCHEME="FIN1"
 PROJECT="FIN1.xcodeproj"
-DESTINATION="platform=iOS Simulator,name=iPhone 16,OS=18.5"
+DESTINATION="platform=iOS Simulator,name=iPhone 16,OS=18.6"
 
 # Size thresholds (in MB)
 WARNING_THRESHOLD=50   # Warn if bundle exceeds 50MB

@@ -48,13 +48,13 @@ jobs:
                    -scheme FIN1 \
                    -sdk iphonesimulator \
                    -configuration Debug \
-                   -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.5' \
+                   -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.6' \
                    build
 
     # Match main CI: full `xcodebuild test` runs all scheme testables (incl. UITests) and is slow/flaky.
     - name: Run Tests (unit — FIN1Tests only)
       env:
-        IOS_TEST_DESTINATION: 'platform=iOS Simulator,name=iPhone 16,OS=18.5'
+        IOS_TEST_DESTINATION: 'platform=iOS Simulator,name=iPhone 16,OS=18.6'
         IOS_TEST_TARGETS: 'FIN1Tests'
       run: |
         set -euo pipefail
