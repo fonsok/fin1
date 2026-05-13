@@ -16,7 +16,7 @@ This directory contains persistent rules automatically applied to Cursor AI conv
 - **`dry-constants.md`** - DRY principles and constants management
 - **`trader-documents.md`** - Trader invoices & collection bill: Emittent (issuer) vs Handelsplatz (trading venue), WKN→Emittent mapping, placeholders (applies to Trader/Invoice/TradeStatement files)
 - **`swiftlint.md`** - SwiftLint configuration and code quality enforcement
-- **`ci-cd.md`** - Local development & code quality requirements (CI workflows are reference only); **Parse Cloud** (`configHelper/index.js`, Shadow-Guard); **FIN1-Server Deploy** nach Cloud-Code/Admin-Portal-Änderungen
+- **`ci-cd.md`** - Local development & code quality (CI as reference); **Parse Cloud** (`configHelper/index.js`, Shadow-Guard); **FIN1-Server Deploy**; **PR vor Merge (Policy C)** — kleine PRs, keine `main`-History umschreiben (Details: `Documentation/ENGINEERING_GUIDE.md` → PR Guardrails); **Repo hygiene:** kein Commit von `admin-portal/dist/` oder gebündeltem `admin/` (Skript `scripts/check-no-tracked-admin-spa-artifacts.sh` in CI)
 - **`responsive-design.md`** - Responsive design system compliance
 
 ### Backend (Parse Cloud Code)

@@ -24,6 +24,7 @@
   - All `*ViewModel.swift` changes should have/adjust unit tests.
   - Role-based navigation logic must be covered.
   - Lifecycle/telemetry changes should be validated if behavior changes.
+- **Documented test gaps (non-goals for default CI):** Full E2E against a live Parse host, manual accounting sign-off (IFRS/GOB), and full UI graph coverage are **not** implied by green `ci.yml`. When you touch ledgers, settlements, or compliance flows, extend **Jest** (`backend/parse-server`) and/or **focused `FIN1Tests`** and call out residual risk in the PR.
 - Local commands:
   - Build & test (simulator):
     - `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild -project FIN1.xcodeproj -scheme FIN1 -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 15 Pro' test`
@@ -55,13 +56,25 @@
   - Blocks nested test folders (`FIN1/FIN1Tests/`)
   - Flags `.shared` usage in non-root files
   - Warns if ViewModels changed without tests
-- **Policy C — kleine PRs (Review-Phase):** Sobald wieder regelmäßig reviewed wird, größere Themen **in mehrere kleine PRs** splitten (z. B. nur Parse Cloud, nur iOS-Admin, nur CI/Workflows), statt breiter „alles in einem“-Änderungen. Ziel: schnellere Reviews, klarere Rollbacks, weniger Merge-Konflikte.
+- **Policy C — kleine PRs (Review-Phase):** Sobald wieder regelmäßig reviewed wird, größere Themen **in mehrere kleine PRs** splitten (z. B. nur Parse Cloud, nur iOS-Admin, nur CI/Workflows), statt breiter „alles in einem“-Änderungen. Ziel: schnellere Reviews, klarere Rollbacks, weniger Merge-Konflikte. Die einmalige, breite CI-/Xcode-/Simulator-Stabilisierung auf `main` bleibt der **Ausnahmefall** nach dem ersten Grünwerden; im Regelbetrieb wieder kleine PRs.
+- **PR vor Merge (Kurzcheckliste):**
+  1. **Thema:** Ein PR = ein klar abgegrenztes Paket (Parse Cloud · iOS · CI/Workflows · admin-portal · Doku) — keine fachlich unzusammenhängenden Mix-PRs.
+  2. **Qualität:** Für die berührten Bereiche die passenden Checks grün (iOS: Build/Tests wie in CI; Cloud: `npm test` unter `backend/parse-server`; Portal: `npm run lint`, `npm run test:run`, `npm run build` unter `admin-portal/`).
+  3. **Beschreibung:** Zweck, Risiko/Rollback, ggf. Deploy-Hinweis (Parse-Cloud-Skript, `admin-portal/deploy.sh`), wenn Server-Artefakte betroffen sind.
+  4. **Merge:** CI grün; Konflikte im Feature-Branch lösen — **kein** Force-Push / History-Rewrite auf `main`.
+  5. **Git-Historie:** Bereits auf `origin/main` liegende Bündelungen **nicht** nachträglich per Squash/Rebase umschreiben. Für absichtlich als **zwei Commits** auf `main` gelassene Fixes (Bezug: `cfc62b0`, `c78a7af`): das bleibt der sinnvolle Call; Squash dort ist obsolet, sobald sie im Remote stehen — künftige Arbeit wieder in kleinen PRs führen.
 
 #### CI (GitHub Actions ready)
 - Workflow: `.github/workflows/ci.yml` includes:
+  - **Job `parse-smoke-local-mock`:** among other checks, **`scripts/check-no-tracked-admin-spa-artifacts.sh`** — fails if `admin-portal/dist/` or bundle files under repo-root `admin/` are **tracked** (builds belong on the server / CI artifact only; see `.gitignore` `/admin/`).
   - **Job `admin-portal`** (Ubuntu, Node 20): `npm ci` → **`npm run lint`** (ESLint 9 Flat Config) → **`npm run test:run`** (Vitest) → **`npm run build`** unter `admin-portal/`.
   - **Job `build-test-lint`** (macOS): SwiftFormat (lint mode), SwiftLint (strict), Xcode build & tests on iOS Simulator (iPhone 15 Pro), Danger on PRs.
 - If using a different environment, mirror these steps in your CI to keep guardrails.
+
+#### Deploy — Happy-Path Lesepfad (Index)
+- Ziele/Hosts/IPs: **`Documentation/OPERATIONAL_DEPLOY_HOSTS.md`**
+- Pflichtablauf nach Cloud/Admin-Änderungen: **`.cursor/rules/ci-cd.md`** → Abschnitt **FIN1-Server Deploy**
+- Admin-UI Build + `rsync`: **`admin-portal/deploy.sh`** (Ziel `~/fin1-server/admin/`)
 
 #### How to Add a New ViewModel
 - Create under `Features/<Feature>/ViewModels/`.

@@ -3,6 +3,10 @@
 **Zielgruppe:** Entwicklung, Agenten, Betrieb  
 **Ergänzt:** [`NETZWERK_KONFIGURATION.md`](../NETZWERK_KONFIGURATION.md) (Ports, URLs, Fritzbox)
 
+## Einstieg (Happy-Path)
+
+Kurzüberblick inkl. CI- und PR-Guardrails: [`ENGINEERING_GUIDE.md`](ENGINEERING_GUIDE.md) → Abschnitte **CI** und **Deploy — Happy-Path Lesepfad**.
+
 ## Physische Realität
 
 | Begriff | Bedeutung |

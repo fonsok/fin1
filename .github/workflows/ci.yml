@@ -19,6 +19,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: No tracked admin SPA build trees
+        run: |
+          chmod +x scripts/check-no-tracked-admin-spa-artifacts.sh
+          ./scripts/check-no-tracked-admin-spa-artifacts.sh
+
       - name: Parse Cloud — no configHelper.js shadow file
         run: |
           chmod +x scripts/check-parse-cloud-config-helper-shadow.sh

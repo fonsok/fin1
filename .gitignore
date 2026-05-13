@@ -177,11 +177,9 @@ scripts/.env.server
 *.local.json
 *.local.yml
 
-# Admin SPA — production build output only (Policy A: CI / `npm run build`, not committed)
-# Nginx bind-mount: ./admin → /var/www/admin (see admin/README.md).
-/admin/assets/
-/admin/index.html
-/admin/fin1-logo.svg
+# Admin SPA — production bundle at repo root (CI / npm build; deploy via admin-portal/deploy.sh → server admin/).
+# Entire tree ignored so hashed assets are never committed by mistake.
+/admin/
 admin-portal/dist/
 
 # Local git bundles / transport artifacts (not application source)

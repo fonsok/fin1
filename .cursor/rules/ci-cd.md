@@ -113,6 +113,22 @@ All code changes must:
 
 **Never commit code that doesn't build successfully.**
 
+## PR before merge (Policy C)
+
+Short checklist for merge-ready work (humans + agents). Full German wording: **PR Guardrails** / **Policy C** in `Documentation/ENGINEERING_GUIDE.md`.
+
+1. **Scope:** One PR = one coherent theme (Parse Cloud vs iOS vs CI/workflows vs admin-portal vs documentation).
+2. **Quality:** Run checks that match the diff (iOS build/tests per `ci.yml`; Parse Cloud: `npm test` under `backend/parse-server`; admin-portal: `npm run lint`, `npm run test:run`, `npm run build`).
+3. **Description:** State purpose, rollback note, and deploy impact (`./scripts/deploy-parse-cloud-to-fin1-server.sh`, `admin-portal/deploy.sh`) when server artifacts change.
+4. **Merge hygiene:** Green CI; resolve conflicts on the feature branch; do not rewrite `main` / `origin/main` history.
+5. **Routine:** Large stabilization waves on `main` are an **exception** after first green; default back to small PRs.
+
+**Squash vs two commits:** Do not retroactively squash work already on `origin/main`. Intentionally kept two-commit pairs on shared `main` remain valid; re-applying that debate to old SHAs adds risk, not clarity.
+
+## Repo hygiene (admin bundles)
+
+Do not commit **`admin-portal/dist/`** or repo-root **`admin/`** hashed bundles. CI runs **`scripts/check-no-tracked-admin-spa-artifacts.sh`** (see `.github/workflows/ci.yml`, job `parse-smoke-local-mock`). Deploy built assets with **`admin-portal/deploy.sh`** / server sync only.
+
 ## Failure Prevention
 
 When making code changes:
