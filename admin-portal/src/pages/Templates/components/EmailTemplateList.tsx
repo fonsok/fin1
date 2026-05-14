@@ -23,9 +23,13 @@ export function EmailTemplateList({ templates, onRefresh }: EmailTemplateListPro
   if (templates.length === 0) {
     return (
       <Card className="p-12 text-center">
-        <div className="text-gray-400 text-5xl mb-4">✉️</div>
-        <h3 className="text-lg font-medium text-gray-900">Keine E-Mail Vorlagen gefunden</h3>
-        <p className="text-gray-500 mt-2">E-Mail Vorlagen werden vom System verwaltet.</p>
+        <div className={clsx('text-5xl mb-4', isDark ? 'text-slate-500' : 'text-gray-400')}>✉️</div>
+        <h3 className={clsx('text-lg font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>
+          Keine E-Mail Vorlagen gefunden
+        </h3>
+        <p className={clsx('mt-2', isDark ? 'text-slate-400' : 'text-gray-500')}>
+          E-Mail Vorlagen werden vom System verwaltet.
+        </p>
       </Card>
     );
   }
@@ -39,8 +43,17 @@ export function EmailTemplateList({ templates, onRefresh }: EmailTemplateListPro
               <div className="flex items-center gap-2">
                 <span className="text-2xl">{template.icon || '✉️'}</span>
                 <div>
-                  <h3 className="font-medium text-gray-900">{template.displayName}</h3>
-                  <span className="text-xs text-gray-500 font-mono">{template.type}</span>
+                  <h3 className={clsx('font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                    {template.displayName}
+                  </h3>
+                  <span
+                    className={clsx(
+                      'text-xs font-mono',
+                      isDark ? 'text-slate-400' : 'text-gray-500',
+                    )}
+                  >
+                    {template.type}
+                  </span>
                 </div>
               </div>
               <Badge variant={template.isActive ? 'success' : 'neutral'}>
@@ -48,11 +61,18 @@ export function EmailTemplateList({ templates, onRefresh }: EmailTemplateListPro
               </Badge>
             </div>
 
-              <div className={clsx('text-sm mb-3', isDark ? 'text-slate-200' : 'text-gray-600')}>
-                <div className={clsx('font-medium mb-1', isDark ? 'text-slate-100' : 'text-gray-700')}>Betreff:</div>
-                <div className={clsx('p-2 rounded text-sm', isDark ? 'bg-slate-900 border border-slate-600 text-slate-100' : 'bg-gray-50')}>
-                  {template.subject}
-                </div>
+            <div className={clsx('text-sm mb-3', isDark ? 'text-slate-200' : 'text-gray-600')}>
+              <div className={clsx('font-medium mb-1', isDark ? 'text-slate-100' : 'text-gray-700')}>Betreff:</div>
+              <div
+                className={clsx(
+                  'p-2 rounded text-sm',
+                  isDark
+                    ? 'bg-slate-900 border border-slate-600 text-slate-100'
+                    : 'bg-gray-50 text-gray-900',
+                )}
+              >
+                {template.subject}
+              </div>
             </div>
 
             <div className={clsx('text-sm mb-3', isDark ? 'text-slate-200' : 'text-gray-600')}>
@@ -63,7 +83,9 @@ export function EmailTemplateList({ templates, onRefresh }: EmailTemplateListPro
                     key={p}
                     className={clsx(
                       'text-xs px-2 py-0.5 rounded font-mono',
-                      isDark ? 'bg-slate-900 border border-slate-600 text-slate-100' : 'bg-blue-50 text-blue-600'
+                      isDark
+                        ? 'bg-sky-950/40 border border-sky-800 text-sky-200'
+                        : 'bg-blue-50 text-blue-600',
                     )}
                   >
                     {p}
@@ -72,8 +94,13 @@ export function EmailTemplateList({ templates, onRefresh }: EmailTemplateListPro
               </div>
             </div>
 
-            <div className="flex justify-between items-center pt-3 border-t border-gray-100">
-              <span className="text-xs text-gray-400">
+            <div
+              className={clsx(
+                'flex justify-between items-center pt-3 border-t',
+                isDark ? 'border-slate-600' : 'border-gray-100',
+              )}
+            >
+              <span className={clsx('text-xs', isDark ? 'text-slate-500' : 'text-gray-400')}>
                 v{template.version}
                 {template.updatedAt && ` • ${new Date(template.updatedAt).toLocaleDateString('de-DE')}`}
               </span>

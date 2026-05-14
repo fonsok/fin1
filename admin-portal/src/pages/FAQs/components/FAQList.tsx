@@ -32,9 +32,11 @@ export function FAQList({ faqs, categories, onEdit, onDelete }: FAQListProps) {
   if (faqs.length === 0) {
     return (
       <Card className="p-12 text-center">
-        <div className="text-gray-400 text-5xl mb-4">❓</div>
-        <h3 className="text-lg font-medium text-gray-900">Keine FAQs gefunden</h3>
-        <p className="text-gray-500 mt-2">
+        <div className={clsx('text-5xl mb-4', isDark ? 'text-slate-500' : 'text-gray-400')}>❓</div>
+        <h3 className={clsx('text-lg font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>
+          Keine FAQs gefunden
+        </h3>
+        <p className={clsx('mt-2', isDark ? 'text-slate-400' : 'text-gray-500')}>
           Erstellen Sie eine neue FAQ oder ändern Sie die Filterkriterien.
         </p>
       </Card>
@@ -49,7 +51,7 @@ export function FAQList({ faqs, categories, onEdit, onDelete }: FAQListProps) {
             {/* Content */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
-                <h3 className="font-medium text-gray-900">{faq.question}</h3>
+                <h3 className={clsx('font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>{faq.question}</h3>
                 {faq.isPublished && (
                   <Badge variant="info" className="text-xs">
                     Veröffentlicht
@@ -67,7 +69,12 @@ export function FAQList({ faqs, categories, onEdit, onDelete }: FAQListProps) {
                 )}
               </div>
 
-              <div className="flex items-center gap-3 text-sm text-gray-500 mb-2">
+              <div
+                className={clsx(
+                  'flex items-center gap-3 text-sm mb-2',
+                  isDark ? 'text-slate-400' : 'text-gray-500',
+                )}
+              >
                 <span>{getCategoryLabels(faq)}</span>
                 <span>•</span>
                 <span>Sortierung: {faq.sortOrder}</span>

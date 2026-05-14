@@ -235,6 +235,17 @@ export function TemplatesPage() {
     }
   }
 
+  const filterInputClass = clsx(
+    'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-fin1-primary focus:border-transparent',
+    isDark
+      ? 'bg-slate-900/70 border-slate-600 text-slate-100 placeholder:text-slate-400'
+      : 'bg-white border-gray-300 text-gray-900 placeholder:text-gray-400',
+  );
+  const filterSelectClass = clsx(
+    'px-4 py-2 border rounded-lg focus:ring-2 focus:ring-fin1-primary focus:border-transparent',
+    isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+  );
+
   // Render
   if (loading) {
     return (
@@ -249,8 +260,10 @@ export function TemplatesPage() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">CSR Templates</h1>
-          <p className="text-gray-500">Textbausteine und E-Mail-Vorlagen verwalten</p>
+          <h1 className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>CSR Templates</h1>
+          <p className={clsx(isDark ? 'text-slate-400' : 'text-gray-500')}>
+            Textbausteine und E-Mail-Vorlagen verwalten
+          </p>
         </div>
         <TemplatesHeaderActions
           activeTab={activeTab}
@@ -267,9 +280,16 @@ export function TemplatesPage() {
 
       {/* Error */}
       {error && (
-        <div className="bg-red-50 text-red-600 p-4 rounded-lg">
+        <div
+          className={clsx(
+            'p-4 rounded-lg border',
+            isDark
+              ? 'bg-red-950/40 border-red-800 text-red-200'
+              : 'bg-red-50 border-red-100 text-red-600',
+          )}
+        >
           {error}
-          <button className="ml-4 underline" onClick={loadData}>
+          <button type="button" className="ml-4 underline" onClick={loadData}>
             Erneut versuchen
           </button>
         </div>
@@ -295,13 +315,13 @@ export function TemplatesPage() {
                   placeholder="Suchen..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-fin1-primary focus:border-transparent"
+                  className={filterInputClass}
                 />
               </div>
               <select
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-fin1-primary focus:border-transparent"
+                className={filterSelectClass}
               >
                 <option value="">Alle Kategorien</option>
                 {uniqueCategories.map((cat) => (

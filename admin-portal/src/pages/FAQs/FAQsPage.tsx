@@ -298,6 +298,17 @@ export function FAQsPage() {
     input.click();
   }
 
+  const filterInputClass = clsx(
+    'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-fin1-primary focus:border-transparent',
+    isDark
+      ? 'bg-slate-900/70 border-slate-600 text-slate-100 placeholder:text-slate-400'
+      : 'bg-white border-gray-300 text-gray-900 placeholder:text-gray-400',
+  );
+  const filterSelectClass = clsx(
+    'px-4 py-2 border rounded-lg focus:ring-2 focus:ring-fin1-primary focus:border-transparent',
+    isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+  );
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -312,8 +323,10 @@ export function FAQsPage() {
 
       <div className="flex justify-between items-center flex-wrap gap-2">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Hilfe & Anleitung</h1>
-          <p className="text-gray-500">Häufig gestellte Fragen verwalten</p>
+          <h1 className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+            Hilfe & Anleitung
+          </h1>
+          <p className={clsx(isDark ? 'text-slate-400' : 'text-gray-500')}>Häufig gestellte Fragen verwalten</p>
         </div>
         <div className="flex gap-2">
           <Button
@@ -336,7 +349,14 @@ export function FAQsPage() {
       </div>
 
       {error && (
-        <div className="bg-red-50 text-red-600 p-4 rounded-lg">
+        <div
+          className={clsx(
+            'p-4 rounded-lg border',
+            isDark
+              ? 'bg-red-950/40 border-red-800 text-red-200'
+              : 'bg-red-50 border-red-100 text-red-600',
+          )}
+        >
           {error}
           <button type="button" className="ml-4 underline" onClick={() => void loadData()}>
             Erneut versuchen
@@ -346,16 +366,22 @@ export function FAQsPage() {
 
       <div className="grid grid-cols-3 gap-4">
         <Card className="p-4">
-          <div className="text-sm text-gray-500">Gesamt Einträge</div>
-          <div className="text-2xl font-bold text-gray-900">{formatNumber(stats.totalAll)}</div>
+          <div className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>Gesamt Einträge</div>
+          <div className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+            {formatNumber(stats.totalAll)}
+          </div>
         </Card>
         <Card className="p-4">
-          <div className="text-sm text-gray-500">Veröffentlicht</div>
-          <div className="text-2xl font-bold text-gray-900">{formatNumber(stats.publishedAll)}</div>
+          <div className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>Veröffentlicht</div>
+          <div className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+            {formatNumber(stats.publishedAll)}
+          </div>
         </Card>
         <Card className="p-4">
-          <div className="text-sm text-gray-500">Kategorien</div>
-          <div className="text-2xl font-bold text-gray-900">{formatNumber(adminVisibleCategories.length)}</div>
+          <div className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>Kategorien</div>
+          <div className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+            {formatNumber(adminVisibleCategories.length)}
+          </div>
         </Card>
       </div>
 
@@ -367,13 +393,13 @@ export function FAQsPage() {
               placeholder="Suchen..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-fin1-primary focus:border-transparent"
+              className={filterInputClass}
             />
           </div>
           <select
             value={locationFilter}
             onChange={(e) => setLocationFilter(e.target.value as LocationFilter)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-fin1-primary focus:border-transparent"
+            className={filterSelectClass}
           >
             <option value="all">Alle Kontexte</option>
             <option value="landing">Landing Page</option>
@@ -384,7 +410,7 @@ export function FAQsPage() {
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-fin1-primary focus:border-transparent"
+            className={filterSelectClass}
           >
             <option value="">Alle Kategorien</option>
             {(() => {

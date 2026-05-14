@@ -295,14 +295,29 @@ export function TermsPage() {
 
   return (
     <div className="space-y-6">
-      <Card className="p-4 border-blue-200 bg-blue-50">
+      <Card
+        className={clsx(
+          'p-4 border',
+          isDark
+            ? 'border-blue-800 bg-blue-950/40'
+            : 'border-blue-200 bg-blue-50',
+        )}
+      >
         <div className="space-y-1">
-          <h2 className="text-lg font-semibold text-blue-900">Legal Branding</h2>
-          <p className="text-sm text-blue-800">
+          <h2 className={clsx('text-lg font-semibold', isDark ? 'text-blue-200' : 'text-blue-900')}>
+            Legal Branding
+          </h2>
+          <p className={clsx('text-sm', isDark ? 'text-blue-100/90' : 'text-blue-800')}>
             Der kanonische <strong>App Name</strong> wird zentral unter <strong>Konfiguration</strong> gepflegt
             (4-Augen-Workflow) und in Rechtstexten als Platzhalter verwendet.
           </p>
-          <Link to="/configuration" className="inline-flex text-sm font-medium text-blue-700 hover:text-blue-900">
+          <Link
+            to="/configuration"
+            className={clsx(
+              'inline-flex text-sm font-medium',
+              isDark ? 'text-blue-300 hover:text-blue-100' : 'text-blue-700 hover:text-blue-900',
+            )}
+          >
             Zu Konfiguration wechseln
           </Link>
         </div>
@@ -315,8 +330,12 @@ export function TermsPage() {
 
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">AGB & Rechtstexte</h1>
-          <p className="text-gray-500">Terms of Service, Datenschutz und Impressum versioniert verwalten</p>
+          <h1 className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+            AGB & Rechtstexte
+          </h1>
+          <p className={clsx(isDark ? 'text-slate-400' : 'text-gray-500')}>
+            Terms of Service, Datenschutz und Impressum versioniert verwalten
+          </p>
         </div>
         <TermsHeaderActions
           importing={importing}
@@ -333,24 +352,33 @@ export function TermsPage() {
       </div>
 
       {error && (
-        <div className="bg-red-50 text-red-600 p-4 rounded-lg">
+        <div
+          className={clsx(
+            'p-4 rounded-lg border',
+            isDark
+              ? 'bg-red-950/40 border-red-800 text-red-200'
+              : 'bg-red-50 border-red-100 text-red-600',
+          )}
+        >
           {error}
-          <button type="button" className="ml-4 underline" onClick={loadList}>Erneut versuchen</button>
+          <button type="button" className="ml-4 underline" onClick={loadList}>
+            Erneut versuchen
+          </button>
         </div>
       )}
 
       <div className="grid grid-cols-3 gap-4">
         <Card className="p-4">
-          <div className="text-sm text-gray-500">Versionen (gefiltert)</div>
-          <div className="text-2xl font-bold text-gray-900">{items.length}</div>
+          <div className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>Versionen (gefiltert)</div>
+          <div className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>{items.length}</div>
         </Card>
         <Card className="p-4">
-          <div className="text-sm text-gray-500">Aktive</div>
-          <div className="text-2xl font-bold text-gray-900">{activeCount}</div>
+          <div className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>Aktive</div>
+          <div className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>{activeCount}</div>
         </Card>
         <Card className="p-4">
-          <div className="text-sm text-gray-500">Dokumenttyp</div>
-          <div className="text-2xl font-bold text-gray-900">
+          <div className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>Dokumenttyp</div>
+          <div className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>
             {documentTypeFilter === 'all' ? 'Alle' : (DOCUMENT_TYPE_LABELS[documentTypeFilter] ?? documentTypeFilter)}
           </div>
         </Card>

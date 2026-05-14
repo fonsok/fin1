@@ -209,13 +209,13 @@ export function TermsList({
   if (items.length === 0) {
     return (
       <Card className="p-12 text-center">
-        <div className="text-gray-400 text-5xl mb-4">📄</div>
-        <h3 className="text-lg font-medium text-gray-900">
+        <div className={clsx('text-5xl mb-4', isDark ? 'text-slate-500' : 'text-gray-400')}>📄</div>
+        <h3 className={clsx('text-lg font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>
           {documentTypeFilter && documentTypeFilter !== 'all'
             ? `Keine ${DOCUMENT_TYPE_LABELS[documentTypeFilter] ?? documentTypeFilter}-Versionen gefunden`
             : 'Keine Rechtstexte gefunden'}
         </h3>
-        <p className="text-gray-500 mt-2">
+        <p className={clsx('mt-2', isDark ? 'text-slate-400' : 'text-gray-500')}>
           Legen Sie eine neue Version an (z. B. per "+ Neue Version (leer)" oder aus einer bestehenden
           Version klonen).
         </p>
@@ -230,17 +230,24 @@ export function TermsList({
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
-                <span className="font-medium text-gray-900">
+                <span className={clsx('font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>
                   {DOCUMENT_TYPE_LABELS[item.documentType] ?? item.documentType} · v{item.version}
                 </span>
-                <span className="text-sm text-gray-500">{item.language.toUpperCase()}</span>
+                <span className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                  {item.language.toUpperCase()}
+                </span>
                 {item.isActive && (
                   <Badge variant="info" className="text-xs">
                     Aktiv
                   </Badge>
                 )}
               </div>
-              <div className="flex items-center gap-3 text-sm text-gray-500 flex-wrap">
+              <div
+                className={clsx(
+                  'flex items-center gap-3 text-sm flex-wrap',
+                  isDark ? 'text-slate-400' : 'text-gray-500',
+                )}
+              >
                 <span>
                   Gültig ab:{' '}
                   {item.effectiveDate
@@ -313,7 +320,12 @@ export function TermsList({
             const result = changesResult[item.objectId];
             const loadingChanges = loadingChangesId === item.objectId;
             return (
-              <div className="mt-4 pt-4 border-t border-gray-200 space-y-3">
+              <div
+                className={clsx(
+                  'mt-4 pt-4 border-t space-y-3',
+                  isDark ? 'border-slate-600' : 'border-gray-200',
+                )}
+              >
                 <div
                   className={clsx(
                     'rounded-md border px-3 py-2 text-sm',

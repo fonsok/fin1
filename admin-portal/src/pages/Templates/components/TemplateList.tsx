@@ -85,9 +85,11 @@ export function TemplateList({ templates, categories, onEdit, onDelete }: Templa
   if (templates.length === 0) {
     return (
       <Card className="p-12 text-center">
-        <div className="text-gray-400 text-5xl mb-4">📝</div>
-        <h3 className="text-lg font-medium text-gray-900">Keine Templates gefunden</h3>
-        <p className="text-gray-500 mt-2">
+        <div className={clsx('text-5xl mb-4', isDark ? 'text-slate-500' : 'text-gray-400')}>📝</div>
+        <h3 className={clsx('text-lg font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>
+          Keine Templates gefunden
+        </h3>
+        <p className={clsx('mt-2', isDark ? 'text-slate-400' : 'text-gray-500')}>
           Erstellen Sie ein neues Template oder ändern Sie die Filterkriterien.
         </p>
       </Card>
@@ -166,7 +168,7 @@ export function TemplateList({ templates, categories, onEdit, onDelete }: Templa
                     </span>
                   ))}
                   {template.placeholders.length > 4 && (
-                    <span className="text-xs text-gray-400">
+                    <span className={clsx('text-xs', isDark ? 'text-slate-500' : 'text-gray-400')}>
                       +{template.placeholders.length - 4} mehr
                     </span>
                   )}
