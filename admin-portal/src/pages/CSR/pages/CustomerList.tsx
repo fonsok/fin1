@@ -47,7 +47,7 @@ export function CustomerListPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Kunden</h1>
+        <h1 className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>Kunden</h1>
         <Button onClick={() => navigate('/csr/tickets/new')}>
           Neues Ticket
         </Button>
@@ -60,7 +60,12 @@ export function CustomerListPage() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Kunde suchen (Name, E-Mail, ID)..."
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary"
+            className={clsx(
+              'w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary',
+              isDark
+                ? 'bg-slate-900/70 border-slate-600 text-slate-100 placeholder:text-slate-400'
+                : 'bg-white border-gray-300 text-gray-900',
+            )}
           />
         </div>
 
@@ -175,13 +180,13 @@ export function CustomerListPage() {
         )}
 
         {customers && customers.length === 0 && searchQuery.length >= 2 && (
-          <div className="text-center py-8 text-gray-500">
+          <div className={clsx('text-center py-8', isDark ? 'text-slate-400' : 'text-gray-500')}>
             Keine Kunden gefunden
           </div>
         )}
 
         {!searchQuery && (
-          <div className="text-center py-8 text-gray-500">
+          <div className={clsx('text-center py-8', isDark ? 'text-slate-400' : 'text-gray-500')}>
             Geben Sie mindestens 2 Zeichen ein, um zu suchen
           </div>
         )}

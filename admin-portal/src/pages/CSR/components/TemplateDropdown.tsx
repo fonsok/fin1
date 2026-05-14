@@ -1,4 +1,6 @@
 import { useMemo } from 'react';
+import clsx from 'clsx';
+import { useTheme } from '../../../context/ThemeContext';
 import { getCategoryIcon } from '../templates';
 import { sortByTitleDe } from '../../Templates/utils/templateDisplayOrder';
 
@@ -44,6 +46,8 @@ export function TemplateDropdown<T extends BaseTemplate>({
   showBodyPreview = false,
   widthClass = 'w-72',
 }: TemplateDropdownProps<T>): JSX.Element {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const sortedTemplates = useMemo(() => sortByTitleDe(templates), [templates]);
 
   const handleSelect = (template: T): void => {
@@ -53,24 +57,36 @@ export function TemplateDropdown<T extends BaseTemplate>({
 
   return (
     <div
-      className={`absolute right-0 mt-1 ${widthClass} bg-white border border-gray-200 rounded-lg shadow-lg z-20 max-h-64 overflow-auto`}
+      className={clsx(
+        `absolute right-0 mt-1 ${widthClass} rounded-lg shadow-lg z-20 max-h-64 overflow-auto border`,
+        isDark ? 'bg-slate-900 border-slate-600' : 'bg-white border-gray-200',
+      )}
     >
       {/* Header */}
-      <div className="p-2 border-b border-gray-100 bg-gray-50 sticky top-0">
-        <span className="text-xs font-medium text-gray-500">{title}</span>
+      <div
+        className={clsx(
+          'p-2 border-b sticky top-0',
+          isDark ? 'border-slate-700 bg-slate-800/95' : 'border-gray-100 bg-gray-50',
+        )}
+      >
+        <span className={clsx('text-xs font-medium', isDark ? 'text-slate-300' : 'text-gray-500')}>{title}</span>
       </div>
 
       {/* Loading State */}
       {isLoading && (
-        <div className="p-4 text-center text-sm text-gray-500">Lade Vorlagen...</div>
+        <div className={clsx('p-4 text-center text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>
+          Lade Vorlagen...
+        </div>
       )}
 
       {/* Error State */}
-      {error && <div className="p-4 text-center text-sm text-red-500">{error}</div>}
+      {error && (
+        <div className={clsx('p-4 text-center text-sm', isDark ? 'text-red-300' : 'text-red-500')}>{error}</div>
+      )}
 
       {/* Empty State */}
       {!isLoading && !error && sortedTemplates.length === 0 && (
-        <div className="p-4 text-center text-sm text-gray-500">
+        <div className={clsx('p-4 text-center text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>
           Keine Vorlagen verfügbar.
         </div>
       )}
@@ -81,16 +97,23 @@ export function TemplateDropdown<T extends BaseTemplate>({
           key={template.id}
           type="button"
           onClick={() => handleSelect(template)}
-          className="w-full px-3 py-2 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0 transition-colors"
+          className={clsx(
+            'w-full px-3 py-2 text-left border-b last:border-b-0 transition-colors',
+            isDark
+              ? 'border-slate-700 hover:bg-slate-800/80'
+              : 'border-gray-100 hover:bg-gray-50',
+          )}
         >
           {showBodyPreview ? (
             // Description template with body preview
             <div className="flex items-start gap-2">
               <span className="text-lg flex-shrink-0">{getCategoryIcon(template.category)}</span>
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-sm text-gray-900">{template.title}</p>
+                <p className={clsx('font-medium text-sm', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                  {template.title}
+                </p>
                 {template.body && (
-                  <p className="text-xs text-gray-500 truncate mt-0.5">
+                  <p className={clsx('text-xs truncate mt-0.5', isDark ? 'text-slate-400' : 'text-gray-500')}>
                     {template.body.slice(0, 80)}...
                   </p>
                 )}
@@ -100,7 +123,9 @@ export function TemplateDropdown<T extends BaseTemplate>({
             // Subject template - compact view
             <div className="flex items-center gap-2">
               <span className="text-base">{getCategoryIcon(template.category)}</span>
-              <span className="font-medium text-sm text-gray-900">{template.title}</span>
+              <span className={clsx('font-medium text-sm', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                {template.title}
+              </span>
             </div>
           )}
         </button>

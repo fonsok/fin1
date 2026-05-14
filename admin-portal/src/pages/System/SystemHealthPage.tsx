@@ -240,8 +240,8 @@ export function SystemHealthPage() {
       <Card>
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold">System-Status</h2>
-            <p className="text-sm text-gray-500 mt-1">
+            <h2 className={clsx('text-lg font-semibold', isDark ? 'text-slate-100' : 'text-gray-900')}>System-Status</h2>
+            <p className={clsx('text-sm mt-1', isDark ? 'text-slate-400' : 'text-gray-500')}>
               Übersicht aller Services und Datenbanken
             </p>
           </div>
@@ -274,7 +274,7 @@ export function SystemHealthPage() {
             )}
           </div>
           <div>
-            <h3 className="text-xl font-semibold">
+            <h3 className={clsx('text-xl font-semibold', isDark ? 'text-slate-100' : 'text-gray-900')}>
               {health.overall === 'healthy' ? 'Alle Systeme betriebsbereit' :
                health.overall === 'degraded' ? 'Einige Systeme beeinträchtigt' :
                health.overall === 'unknown' ? 'Systemstatus konnte nicht geladen werden' :
@@ -296,19 +296,19 @@ export function SystemHealthPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <div className="text-center">
-            <p className="text-sm text-gray-500">Uptime</p>
+            <p className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>Uptime</p>
             <p className="text-2xl font-bold text-fin1-primary mt-1">{formatUptime(health.uptime)}</p>
           </div>
         </Card>
         <Card>
           <div className="text-center">
-            <p className="text-sm text-gray-500">Version</p>
+            <p className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>Version</p>
             <p className="text-2xl font-bold text-fin1-primary mt-1">v{health.version}</p>
           </div>
         </Card>
         <Card>
           <div className="text-center">
-            <p className="text-sm text-gray-500">Services</p>
+            <p className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>Services</p>
             <p className="text-2xl font-bold text-fin1-primary mt-1">
               {health.services.filter(s => s.status === 'healthy').length}/{health.services.length}
             </p>
@@ -316,7 +316,7 @@ export function SystemHealthPage() {
         </Card>
         <Card>
           <div className="text-center">
-            <p className="text-sm text-gray-500">Node.js</p>
+            <p className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>Node.js</p>
             <p className="text-2xl font-bold text-fin1-primary mt-1">{health.nodeVersion || '-'}</p>
           </div>
         </Card>
@@ -362,12 +362,22 @@ export function SystemHealthPage() {
       />
 
       {/* Info */}
-      <Card className="bg-slate-600/80 border-slate-500">
+      <Card
+        className={clsx(
+          'border',
+          isDark ? 'bg-slate-800/90 border-slate-600' : 'bg-slate-100 border-slate-200',
+        )}
+      >
         <div className="flex gap-3">
-          <svg className="w-5 h-5 text-gray-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg
+            className={clsx('w-5 h-5 flex-shrink-0 mt-0.5', isDark ? 'text-slate-400' : 'text-slate-500')}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <div className="text-sm text-gray-600">
+          <div className={clsx('text-sm', isDark ? 'text-slate-200' : 'text-slate-700')}>
             <p>Die Statusabfrage erfolgt automatisch alle 30 Sekunden.</p>
             <p className="mt-1">Server-Zeit: {formatDateTime(health.serverTime)}</p>
           </div>

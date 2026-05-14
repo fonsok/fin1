@@ -16,6 +16,23 @@ import { getSupportTickets, assignTicket, respondToTicket, getAvailableAgents } 
 export function BulkOperationsPage() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+  const bulkPanel = clsx(
+    'space-y-4 p-4 rounded-lg border',
+    isDark ? 'bg-slate-900/50 border-slate-600' : 'bg-gray-50 border-gray-200',
+  );
+  const bulkControl = clsx(
+    'w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary',
+    isDark
+      ? 'bg-slate-900/70 border-slate-600 text-slate-100 placeholder:text-slate-400'
+      : 'bg-white border-gray-300 text-gray-900',
+  );
+  const bulkTextarea = clsx(
+    'w-full h-32 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary',
+    isDark
+      ? 'bg-slate-900/70 border-slate-600 text-slate-100 placeholder:text-slate-400'
+      : 'bg-white border-gray-300 text-gray-900',
+  );
+  const fieldLabel = clsx('block text-sm font-medium mb-2', isDark ? 'text-slate-200' : 'text-gray-700');
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [selectedTickets, setSelectedTickets] = useState<Set<string>>(new Set());
@@ -163,14 +180,16 @@ export function BulkOperationsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Massenbearbeitung</h1>
+        <h1 className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>Massenbearbeitung</h1>
         <Badge variant="info">{selectedTickets.size} ausgewählt</Badge>
       </div>
 
       {/* Bulk Actions */}
       {selectedTickets.size > 0 && (
         <Card>
-          <h2 className="text-lg font-semibold mb-4">Massenaktionen</h2>
+          <h2 className={clsx('text-lg font-semibold mb-4', isDark ? 'text-slate-100' : 'text-gray-900')}>
+            Massenaktionen
+          </h2>
           <div className="flex flex-wrap gap-2 mb-4">
             <Button
               variant={bulkAction === 'assign' ? 'primary' : 'secondary'}
@@ -187,13 +206,13 @@ export function BulkOperationsPage() {
           </div>
 
           {bulkAction === 'assign' && (
-            <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
+            <div className={bulkPanel}>
               <div>
-                <label className="block text-sm font-medium mb-2">Agent auswählen</label>
+                <label className={fieldLabel}>Agent auswählen</label>
                 <select
                   value={selectedAgentId}
                   onChange={(e) => setSelectedAgentId(e.target.value)}
-                  className="w-full px-4 py-2 border rounded-lg"
+                  className={bulkControl}
                 >
                   <option value="">Agent auswählen...</option>
                   {agents?.map((agent) => (
@@ -210,17 +229,17 @@ export function BulkOperationsPage() {
           )}
 
           {bulkAction === 'respond' && (
-            <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
+            <div className={bulkPanel}>
               <div>
-                <label className="block text-sm font-medium mb-2">Antwort</label>
+                <label className={fieldLabel}>Antwort</label>
                 <textarea
                   value={bulkResponse}
                   onChange={(e) => setBulkResponse(e.target.value)}
-                  className="w-full h-32 px-4 py-2 border rounded-lg"
+                  className={bulkTextarea}
                   placeholder="Ihre Antwort..."
                 />
               </div>
-              <label className="flex items-center gap-2">
+              <label className={clsx('flex items-center gap-2', isDark ? 'text-slate-200' : 'text-gray-800')}>
                 <input
                   type="checkbox"
                   checked={isInternal}
@@ -239,7 +258,9 @@ export function BulkOperationsPage() {
       {/* Ticket List */}
       <Card padding="none">
         <div className="flex items-center justify-between p-6 pb-4">
-          <h2 className="text-lg font-semibold">Aktive Tickets</h2>
+          <h2 className={clsx('text-lg font-semibold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+            Aktive Tickets
+          </h2>
           <Button variant="secondary" size="sm" onClick={selectAll}>
             {selectedTickets.size === activeTickets.length && activeTickets.length > 0
               ? 'Alle abwählen'
@@ -252,7 +273,9 @@ export function BulkOperationsPage() {
             <div className="animate-spin w-8 h-8 border-4 border-fin1-primary border-t-transparent rounded-full mx-auto"></div>
           </div>
         ) : activeTickets.length === 0 ? (
-          <div className="text-center py-8 px-6 text-gray-500">Keine aktiven Tickets</div>
+          <div className={clsx('text-center py-8 px-6', isDark ? 'text-slate-400' : 'text-gray-500')}>
+            Keine aktiven Tickets
+          </div>
         ) : (
           <>
             <div

@@ -43,6 +43,7 @@ export function DisplayParametersCard({
   isSuccess,
 }: DisplayParametersCardProps) {
   if (displayParams.length === 0) return null;
+  const muted = isDark ? 'text-slate-400' : 'text-gray-500';
   const allowedFromRaw = String(config.serviceChargeLegacyDisableAllowedFrom ?? '2999-12-31');
   const now = new Date();
   const isoToday = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
@@ -58,7 +59,7 @@ export function DisplayParametersCard({
         Anzeige
       </h3>
 
-      <div className="divide-y divide-gray-100">
+      <div className={clsx('divide-y', isDark ? 'divide-slate-700' : 'divide-gray-100')}>
         {displayParams.map(([key, def], index: number) => {
           const value = config[key];
           const isEditing = editingParam === key;
@@ -86,7 +87,7 @@ export function DisplayParametersCard({
                       <Badge variant="info" size="sm">Änderung ausstehend</Badge>
                     )}
                   </div>
-                  <p className="text-sm text-gray-500 mt-1">{def.description}</p>
+                  <p className={clsx('text-sm mt-1', muted)}>{def.description}</p>
                   {isLegacyToggle && legacyActive && (
                     <p className={clsx(
                       'mt-2 text-xs',
@@ -101,7 +102,7 @@ export function DisplayParametersCard({
                   {isEditing ? (
                     <div className="mt-3 space-y-3">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-500">Aktuell:</span>
+                        <span className={clsx('text-sm', muted)}>Aktuell:</span>
                         <span className="font-medium">{formatValue(key, value)}</span>
                       </div>
                       {def.type === 'boolean' ? (
@@ -111,7 +112,10 @@ export function DisplayParametersCard({
                               type="checkbox"
                               checked={editValue === 'true' || editValue === '1'}
                               onChange={(e) => onEditValueChange(e.target.checked ? 'true' : 'false')}
-                              className="rounded border-gray-300"
+                              className={clsx(
+                                'rounded border',
+                                isDark ? 'border-slate-500 bg-slate-900' : 'border-gray-300',
+                              )}
                             />
                             <span className="text-sm">{editValue === 'true' || editValue === '1' ? 'Aktiv' : 'Deaktiviert'}</span>
                           </label>
@@ -126,7 +130,7 @@ export function DisplayParametersCard({
                             className="w-32"
                           />
                           {def.type === 'percent_display' && (
-                            <span className="text-sm text-gray-500">
+                            <span className={clsx('text-sm', muted)}>
                               ({parseFloat(editValue || '0').toFixed(0)} %)
                             </span>
                           )}

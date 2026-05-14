@@ -11,10 +11,20 @@ import {
   getCustomerKYCStatus,
   getSupportTickets,
 } from '../api';
+import clsx from 'clsx';
+import { useTheme } from '../../../context/ThemeContext';
+import {
+  listRowStripeClasses,
+  tableBodyDivideClasses,
+  tableHeaderCellTextClasses,
+  tableTheadSurfaceClasses,
+} from '../../../utils/tableStriping';
 
 export function CustomerDetailPage() {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
   const { data: customer, isLoading: customerLoading } = useQuery({
     queryKey: ['customer', userId],
@@ -108,7 +118,7 @@ export function CustomerDetailPage() {
     return (
       <Card>
         <div className="text-center py-8">
-          <p className="text-gray-500">Kunde nicht gefunden</p>
+          <p className={clsx(isDark ? 'text-slate-400' : 'text-gray-500')}>Kunde nicht gefunden</p>
           <Button onClick={() => navigate('/csr/customers')} className="mt-4">
             Zurück zur Liste
           </Button>
@@ -123,12 +133,13 @@ export function CustomerDetailPage() {
       <div className="flex items-center justify-between">
         <div>
           <button
+            type="button"
             onClick={() => navigate('/csr/customers')}
             className="text-fin1-primary hover:underline mb-2"
           >
             ← Zurück zur Liste
           </button>
-          <h1 className="text-2xl font-bold">
+          <h1 className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>
             {customer.fullName || `${customer.firstName} ${customer.lastName}` || customer.email}
           </h1>
           <div className="flex gap-2 mt-2">
@@ -156,17 +167,21 @@ export function CustomerDetailPage() {
       </div>
 
       {/* Tabs */}
-      <div className="border-b">
+      <div className={clsx('border-b', isDark ? 'border-slate-600' : 'border-gray-200')}>
         <nav className="flex gap-4">
           {availableTabs.map((tab) => (
             <button
               key={tab.id}
+              type="button"
               onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-2 border-b-2 font-medium ${
+              className={clsx(
+                'px-4 py-2 border-b-2 font-medium',
                 activeTab === tab.id
                   ? 'border-fin1-primary text-fin1-primary'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
+                  : isDark
+                    ? 'border-transparent text-slate-400 hover:text-slate-200'
+                    : 'border-transparent text-gray-500 hover:text-gray-700',
+              )}
             >
               {tab.label}
             </button>
@@ -178,28 +193,36 @@ export function CustomerDetailPage() {
       {activeTab === 'overview' && (
         <div className="space-y-6">
           <Card>
-            <h2 className="text-lg font-semibold mb-4">Kundendaten</h2>
+            <h2 className={clsx('text-lg font-semibold mb-4', isDark ? 'text-slate-100' : 'text-gray-900')}>
+              Kundendaten
+            </h2>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <div className="text-sm text-gray-500">E-Mail</div>
-                <div className="font-medium">{customer.email}</div>
+                <div className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>E-Mail</div>
+                <div className={clsx('font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>{customer.email}</div>
               </div>
               <div>
-                <div className="text-sm text-gray-500">Kundennummer</div>
-                <div className="font-medium">{customer.customerNumber}</div>
+                <div className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>Kundennummer</div>
+                <div className={clsx('font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                  {customer.customerNumber}
+                </div>
               </div>
               <div>
-                <div className="text-sm text-gray-500">Rolle</div>
-                <div className="font-medium">{customer.role}</div>
+                <div className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>Rolle</div>
+                <div className={clsx('font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>{customer.role}</div>
               </div>
               <div>
-                <div className="text-sm text-gray-500">Registriert</div>
-                <div className="font-medium">{formatDateTime(customer.createdAt)}</div>
+                <div className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>Registriert</div>
+                <div className={clsx('font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                  {formatDateTime(customer.createdAt)}
+                </div>
               </div>
               {customer.lastLoginAt && (
                 <div>
-                  <div className="text-sm text-gray-500">Letzter Login</div>
-                  <div className="font-medium">{formatDateTime(customer.lastLoginAt)}</div>
+                  <div className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>Letzter Login</div>
+                  <div className={clsx('font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                    {formatDateTime(customer.lastLoginAt)}
+                  </div>
                 </div>
               )}
             </div>
@@ -207,22 +230,28 @@ export function CustomerDetailPage() {
 
           {kycStatus && (
             <Card>
-              <h2 className="text-lg font-semibold mb-4">KYC-Status</h2>
+              <h2 className={clsx('text-lg font-semibold mb-4', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                KYC-Status
+              </h2>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span>Status</span>
+                  <span className={isDark ? 'text-slate-300' : 'text-gray-700'}>Status</span>
                   <Badge variant={kycStatus.status === 'verified' ? 'success' : 'warning'}>
                     {kycStatus.status}
                   </Badge>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span>Level</span>
-                  <span className="font-medium">{kycStatus.level}</span>
+                  <span className={isDark ? 'text-slate-300' : 'text-gray-700'}>Level</span>
+                  <span className={clsx('font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                    {kycStatus.level}
+                  </span>
                 </div>
                 {kycStatus.verifiedAt && (
                   <div className="flex items-center justify-between">
-                    <span>Verifiziert am</span>
-                    <span className="font-medium">{formatDateTime(kycStatus.verifiedAt)}</span>
+                    <span className={isDark ? 'text-slate-300' : 'text-gray-700'}>Verifiziert am</span>
+                    <span className={clsx('font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                      {formatDateTime(kycStatus.verifiedAt)}
+                    </span>
                   </div>
                 )}
               </div>
@@ -234,36 +263,74 @@ export function CustomerDetailPage() {
       {/* Investments Tab */}
       {activeTab === 'investments' && (
         <Card>
-          <h2 className="text-lg font-semibold mb-4">Investments</h2>
+          <h2 className={clsx('text-lg font-semibold mb-4', isDark ? 'text-slate-100' : 'text-gray-900')}>
+            Investments
+          </h2>
           {investments && investments.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-50">
+                <thead className={tableTheadSurfaceClasses(isDark)}>
                   <tr>
-                    <th className="px-4 py-2 text-left">Trader</th>
-                    <th className="px-4 py-2 text-left">Betrag</th>
-                    <th className="px-4 py-2 text-left">Status</th>
-                    <th className="px-4 py-2 text-left">Datum</th>
+                    <th
+                      className={clsx(
+                        'px-4 py-2 text-left text-xs font-medium uppercase',
+                        tableHeaderCellTextClasses(isDark),
+                      )}
+                    >
+                      Trader
+                    </th>
+                    <th
+                      className={clsx(
+                        'px-4 py-2 text-left text-xs font-medium uppercase',
+                        tableHeaderCellTextClasses(isDark),
+                      )}
+                    >
+                      Betrag
+                    </th>
+                    <th
+                      className={clsx(
+                        'px-4 py-2 text-left text-xs font-medium uppercase',
+                        tableHeaderCellTextClasses(isDark),
+                      )}
+                    >
+                      Status
+                    </th>
+                    <th
+                      className={clsx(
+                        'px-4 py-2 text-left text-xs font-medium uppercase',
+                        tableHeaderCellTextClasses(isDark),
+                      )}
+                    >
+                      Datum
+                    </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y">
-                  {investments.map((inv) => (
-                    <tr key={inv.objectId}>
-                      <td className="px-4 py-2">{inv.traderName}</td>
-                      <td className="px-4 py-2">{inv.amount.toFixed(2)} €</td>
+                <tbody className={tableBodyDivideClasses(isDark)}>
+                  {investments.map((inv, index) => (
+                    <tr key={inv.objectId} className={listRowStripeClasses(isDark, index)}>
+                      <td className={clsx('px-4 py-2', isDark ? 'text-slate-200' : 'text-gray-900')}>
+                        {inv.traderName}
+                      </td>
+                      <td className={clsx('px-4 py-2', isDark ? 'text-slate-200' : 'text-gray-900')}>
+                        {inv.amount.toFixed(2)} €
+                      </td>
                       <td className="px-4 py-2">
                         <Badge variant={inv.status === 'active' ? 'success' : 'neutral'}>
                           {inv.status}
                         </Badge>
                       </td>
-                      <td className="px-4 py-2">{formatDateTime(inv.investedAt)}</td>
+                      <td className={clsx('px-4 py-2', isDark ? 'text-slate-400' : 'text-gray-600')}>
+                        {formatDateTime(inv.investedAt)}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           ) : (
-            <p className="text-gray-500 text-center py-4">Keine Investments gefunden</p>
+            <p className={clsx('text-center py-4', isDark ? 'text-slate-400' : 'text-gray-500')}>
+              Keine Investments gefunden
+            </p>
           )}
         </Card>
       )}
@@ -271,38 +338,83 @@ export function CustomerDetailPage() {
       {/* Trades Tab */}
       {activeTab === 'trades' && (
         <Card>
-          <h2 className="text-lg font-semibold mb-4">Trades</h2>
+          <h2 className={clsx('text-lg font-semibold mb-4', isDark ? 'text-slate-100' : 'text-gray-900')}>Trades</h2>
           {trades && trades.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-50">
+                <thead className={tableTheadSurfaceClasses(isDark)}>
                   <tr>
-                    <th className="px-4 py-2 text-left">Trader</th>
-                    <th className="px-4 py-2 text-left">Typ</th>
-                    <th className="px-4 py-2 text-left">Betrag</th>
-                    <th className="px-4 py-2 text-left">Status</th>
-                    <th className="px-4 py-2 text-left">Datum</th>
+                    <th
+                      className={clsx(
+                        'px-4 py-2 text-left text-xs font-medium uppercase',
+                        tableHeaderCellTextClasses(isDark),
+                      )}
+                    >
+                      Trader
+                    </th>
+                    <th
+                      className={clsx(
+                        'px-4 py-2 text-left text-xs font-medium uppercase',
+                        tableHeaderCellTextClasses(isDark),
+                      )}
+                    >
+                      Typ
+                    </th>
+                    <th
+                      className={clsx(
+                        'px-4 py-2 text-left text-xs font-medium uppercase',
+                        tableHeaderCellTextClasses(isDark),
+                      )}
+                    >
+                      Betrag
+                    </th>
+                    <th
+                      className={clsx(
+                        'px-4 py-2 text-left text-xs font-medium uppercase',
+                        tableHeaderCellTextClasses(isDark),
+                      )}
+                    >
+                      Status
+                    </th>
+                    <th
+                      className={clsx(
+                        'px-4 py-2 text-left text-xs font-medium uppercase',
+                        tableHeaderCellTextClasses(isDark),
+                      )}
+                    >
+                      Datum
+                    </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y">
-                  {trades.map((trade) => (
-                    <tr key={trade.objectId}>
-                      <td className="px-4 py-2">{trade.traderName}</td>
-                      <td className="px-4 py-2">{trade.tradeType}</td>
-                      <td className="px-4 py-2">{trade.amount.toFixed(2)} €</td>
+                <tbody className={tableBodyDivideClasses(isDark)}>
+                  {trades.map((trade, index) => (
+                    <tr key={trade.objectId} className={listRowStripeClasses(isDark, index)}>
+                      <td className={clsx('px-4 py-2', isDark ? 'text-slate-200' : 'text-gray-900')}>
+                        {trade.traderName}
+                      </td>
+                      <td className={clsx('px-4 py-2', isDark ? 'text-slate-200' : 'text-gray-900')}>
+                        {trade.tradeType}
+                      </td>
+                      <td className={clsx('px-4 py-2', isDark ? 'text-slate-200' : 'text-gray-900')}>
+                        {trade.amount.toFixed(2)} €
+                      </td>
                       <td className="px-4 py-2">
                         <Badge variant={trade.status === 'completed' ? 'success' : 'neutral'}>
                           {trade.status}
                         </Badge>
                       </td>
-                      <td className="px-4 py-2">{formatDateTime(trade.executedAt)}</td>
+                      <td className={clsx('px-4 py-2', isDark ? 'text-slate-400' : 'text-gray-600')}>
+                        {formatDateTime(trade.executedAt)}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           ) : (
-            <p className="text-gray-500 text-center py-4">Keine Trades gefunden</p>
+            <p className={clsx('text-center py-4', isDark ? 'text-slate-400' : 'text-gray-500')}>
+              Keine Trades gefunden
+            </p>
           )}
         </Card>
       )}
@@ -310,29 +422,42 @@ export function CustomerDetailPage() {
       {/* Documents Tab */}
       {activeTab === 'documents' && (
         <Card>
-          <h2 className="text-lg font-semibold mb-4">Dokumente</h2>
+          <h2 className={clsx('text-lg font-semibold mb-4', isDark ? 'text-slate-100' : 'text-gray-900')}>
+            Dokumente
+          </h2>
           {documents && documents.length > 0 ? (
             <div className="space-y-2">
               {documents.map((doc) => (
                 <div
                   key={doc.objectId}
-                  className="flex items-center justify-between p-3 border rounded-lg"
+                  className={clsx(
+                    'flex items-center justify-between p-3 border rounded-lg',
+                    isDark ? 'border-slate-600' : 'border-gray-200',
+                  )}
                 >
                   <div>
-                    <div className="font-medium">{doc.fileName}</div>
-                    <div className="text-sm text-gray-500">{doc.documentType}</div>
+                    <div className={clsx('font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                      {doc.fileName}
+                    </div>
+                    <div className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                      {doc.documentType}
+                    </div>
                   </div>
                   <div className="flex items-center gap-4">
                     <Badge variant={doc.status === 'verified' ? 'success' : 'neutral'}>
                       {doc.status}
                     </Badge>
-                    <span className="text-sm text-gray-500">{formatDateTime(doc.uploadedAt)}</span>
+                    <span className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                      {formatDateTime(doc.uploadedAt)}
+                    </span>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-gray-500 text-center py-4">Keine Dokumente gefunden</p>
+            <p className={clsx('text-center py-4', isDark ? 'text-slate-400' : 'text-gray-500')}>
+              Keine Dokumente gefunden
+            </p>
           )}
         </Card>
       )}
@@ -340,20 +465,35 @@ export function CustomerDetailPage() {
       {/* Tickets Tab */}
       {activeTab === 'tickets' && (
         <Card>
-          <h2 className="text-lg font-semibold mb-4">Tickets</h2>
+          <h2 className={clsx('text-lg font-semibold mb-4', isDark ? 'text-slate-100' : 'text-gray-900')}>Tickets</h2>
           {tickets && tickets.length > 0 ? (
             <div className="space-y-2">
               {tickets.map((ticket) => (
                 <div
                   key={ticket.objectId}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      navigate(`/csr/tickets/${ticket.objectId}`);
+                    }
+                  }}
                   onClick={() => navigate(`/csr/tickets/${ticket.objectId}`)}
-                  className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
+                  className={clsx(
+                    'flex items-center justify-between p-3 border rounded-lg cursor-pointer',
+                    isDark
+                      ? 'border-slate-600 hover:bg-slate-800/60'
+                      : 'border-gray-200 hover:bg-gray-50',
+                  )}
                 >
                   <div>
-                    <div className="font-medium">
+                    <div className={clsx('font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>
                       #{ticket.ticketNumber || ticket.objectId.slice(0, 8)} - {ticket.subject}
                     </div>
-                    <div className="text-sm text-gray-500">{ticket.category}</div>
+                    <div className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                      {ticket.category}
+                    </div>
                   </div>
                   <Badge variant={getStatusVariant(ticket.status)}>
                     {ticket.status}
@@ -362,7 +502,9 @@ export function CustomerDetailPage() {
               ))}
             </div>
           ) : (
-            <p className="text-gray-500 text-center py-4">Keine Tickets gefunden</p>
+            <p className={clsx('text-center py-4', isDark ? 'text-slate-400' : 'text-gray-500')}>
+              Keine Tickets gefunden
+            </p>
           )}
         </Card>
       )}

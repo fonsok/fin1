@@ -74,6 +74,12 @@ export function FinancialParametersCard({
     ? financialParams.filter(([key]) => showTaxDetailSection || !taxDetailKeys.has(key))
     : financialParams;
 
+  const muted = isDark ? 'text-slate-400' : 'text-gray-500';
+  const selectControlClass = clsx(
+    'w-72 rounded-md border px-3 py-2 text-sm',
+    isDark ? 'border-slate-600 bg-slate-900/70 text-slate-100' : 'border-gray-300 bg-white text-gray-900',
+  );
+
   return (
     <Card>
       <h3 className="text-md font-semibold mb-4 flex items-center gap-2">
@@ -83,7 +89,7 @@ export function FinancialParametersCard({
         {title}
       </h3>
 
-      <div className="divide-y divide-gray-100">
+      <div className={clsx('divide-y', isDark ? 'divide-slate-700' : 'divide-gray-100')}>
         {visibleParams.map(([key, def], index: number) => {
           const value = config[key];
           const isEditing = editingParam === key;
@@ -109,12 +115,12 @@ export function FinancialParametersCard({
                       <Badge variant="info" size="sm">Änderung ausstehend</Badge>
                     )}
                   </div>
-                  <p className="text-sm text-gray-500 mt-1">{def.description}</p>
+                  <p className={clsx('text-sm mt-1', muted)}>{def.description}</p>
 
                   {isEditing && !showInlineTaxModeSelector ? (
                     <div className="mt-3 space-y-3">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-500">Aktuell:</span>
+                        <span className={clsx('text-sm', muted)}>Aktuell:</span>
                         <span className="font-medium">{formatValue(key, value)}</span>
                       </div>
                       <div className="flex items-center gap-2">
@@ -122,7 +128,7 @@ export function FinancialParametersCard({
                           <select
                             value={editValue}
                             onChange={(e) => onEditValueChange(e.target.value, key)}
-                            className="w-72 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
+                            className={selectControlClass}
                           >
                             <option value="platform_withholds">{appWithholdsLabel}</option>
                             <option value="customer_self_reports">Kunde führt selbst ab</option>
@@ -131,7 +137,7 @@ export function FinancialParametersCard({
                           <select
                             value={normalizeWalletActionMode(editValue)}
                             onChange={(e) => onEditValueChange(e.target.value, key)}
-                            className="w-72 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
+                            className={selectControlClass}
                           >
                             <option value="disabled">Deaktiviert</option>
                             <option value="deposit_only">Nur Einzahlungen</option>
@@ -148,12 +154,12 @@ export function FinancialParametersCard({
                               className={def.type === 'string' && key !== 'taxCollectionMode' ? 'w-full max-w-md' : 'w-32'}
                             />
                             {def.type === 'percentage' && (
-                              <span className="text-sm text-gray-500">
+                              <span className={clsx('text-sm', muted)}>
                                 ({(parseFloat(editValue) * 100).toFixed(0)} %)
                               </span>
                             )}
                             {def.type === 'percent_display' && (
-                              <span className="text-sm text-gray-500">
+                              <span className={clsx('text-sm', muted)}>
                                 ({parseFloat(editValue || '0').toFixed(0)} %)
                               </span>
                             )}
@@ -210,7 +216,7 @@ export function FinancialParametersCard({
                             onEditValueChange(e.target.value, key);
                           }}
                           disabled={hasPendingChange}
-                          className="w-72 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
+                          className={selectControlClass}
                         >
                           <option value="customer_self_reports">Kunde führt selbst ab</option>
                           <option value="platform_withholds">{appWithholdsLabel}</option>
@@ -293,7 +299,7 @@ export function FinancialParametersCard({
                   <span className="font-medium">Kirchensteuer</span>
                   <Badge variant="info" size="sm">Automatisch</Badge>
                 </div>
-                <p className="text-sm text-gray-500 mt-1">
+                <p className={clsx('text-sm mt-1', muted)}>
                   Wird automatisch je Nutzerprofil ermittelt: nur bei ev./kath. Konfession; 8 % in Bayern/Baden-Württemberg,
                   sonst 9 % (auf Abgeltungsteuer).
                 </p>

@@ -34,7 +34,9 @@ export function FinanceConsistencySmokeCard({
       : (isDark ? 'border-amber-700 bg-amber-950/20' : 'border-yellow-200 bg-yellow-50'))}>
       <div className="flex items-start justify-between gap-4 flex-col md:flex-row">
         <div>
-          <h3 className="text-md font-semibold">Finance Consistency Smoke</h3>
+          <h3 className={clsx('text-md font-semibold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+            Finance Consistency Smoke
+          </h3>
           <p className={clsx('text-sm mt-1', isDark ? 'text-slate-300' : 'text-gray-700')}>
             Kompakter End-to-End Smoke fuer Ledger/Konten/Buchungen/User-Fuzzy/Belegkette.
           </p>
@@ -49,22 +51,44 @@ export function FinanceConsistencySmokeCard({
 
       <div className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-3">
         <div className={clsx('rounded-md border p-3', isDark ? 'border-slate-700 bg-slate-900/40' : 'border-gray-200 bg-white')}>
-          <p className="text-xs text-gray-500">Issues</p>
-          <p className={clsx('text-lg font-semibold', (financeSmoke.issues?.length || 0) === 0 ? 'text-green-500' : 'text-yellow-500')}>
+          <p className={clsx('text-xs', isDark ? 'text-slate-400' : 'text-gray-500')}>Issues</p>
+          <p
+            className={clsx(
+              'text-lg font-semibold',
+              (financeSmoke.issues?.length || 0) === 0
+                ? isDark
+                  ? 'text-emerald-400'
+                  : 'text-green-500'
+                : isDark
+                  ? 'text-amber-400'
+                  : 'text-yellow-500',
+            )}
+          >
             {financeSmoke.issues?.length || 0}
           </p>
         </div>
         <div className={clsx('rounded-md border p-3', isDark ? 'border-slate-700 bg-slate-900/40' : 'border-gray-200 bg-white')}>
-          <p className="text-xs text-gray-500">Settlement Trades</p>
-          <p className="text-lg font-semibold">{financeSmoke.settlementConsistency?.checkedTrades ?? 0}</p>
+          <p className={clsx('text-xs', isDark ? 'text-slate-400' : 'text-gray-500')}>Settlement Trades</p>
+          <p className={clsx('text-lg font-semibold', isDark ? 'text-slate-100' : 'text-gray-900')}>{financeSmoke.settlementConsistency?.checkedTrades ?? 0}</p>
         </div>
         <div className={clsx('rounded-md border p-3', isDark ? 'border-slate-700 bg-slate-900/40' : 'border-gray-200 bg-white')}>
-          <p className="text-xs text-gray-500">Ledger Fuzzy Matches</p>
-          <p className="text-lg font-semibold">{financeSmoke.ledgerFuzzySmoke?.matches ?? 0}</p>
+          <p className={clsx('text-xs', isDark ? 'text-slate-400' : 'text-gray-500')}>Ledger Fuzzy Matches</p>
+          <p className={clsx('text-lg font-semibold', isDark ? 'text-slate-100' : 'text-gray-900')}>{financeSmoke.ledgerFuzzySmoke?.matches ?? 0}</p>
         </div>
         <div className={clsx('rounded-md border p-3', isDark ? 'border-slate-700 bg-slate-900/40' : 'border-gray-200 bg-white')}>
-          <p className="text-xs text-gray-500">Missing Beleg-Refs</p>
-          <p className={clsx('text-lg font-semibold', (financeSmoke.referenceCoverage?.missingReferenceDocumentId || 0) === 0 ? 'text-green-500' : 'text-red-500')}>
+          <p className={clsx('text-xs', isDark ? 'text-slate-400' : 'text-gray-500')}>Missing Beleg-Refs</p>
+          <p
+            className={clsx(
+              'text-lg font-semibold',
+              (financeSmoke.referenceCoverage?.missingReferenceDocumentId || 0) === 0
+                ? isDark
+                  ? 'text-emerald-400'
+                  : 'text-green-500'
+                : isDark
+                  ? 'text-red-400'
+                  : 'text-red-500',
+            )}
+          >
             {financeSmoke.referenceCoverage?.missingReferenceDocumentId ?? 0}
           </p>
         </div>

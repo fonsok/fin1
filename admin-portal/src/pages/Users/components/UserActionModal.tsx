@@ -43,7 +43,10 @@ export function UserActionModal({
         <textarea
           value={actionReason}
           onChange={(e) => onChangeReason(e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary mb-4"
+          className={clsx(
+            'w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary mb-4',
+            isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'border-gray-300 bg-white text-gray-900',
+          )}
           rows={3}
           placeholder="Grund für diese Aktion..."
           required

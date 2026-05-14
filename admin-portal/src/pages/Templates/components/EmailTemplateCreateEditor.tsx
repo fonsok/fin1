@@ -185,7 +185,10 @@ export function EmailTemplateCreateEditor({ onSave, onClose }: EmailTemplateCrea
               type="checkbox"
               checked={isActive}
               onChange={(e) => setIsActive(e.target.checked)}
-              className="rounded border-gray-300"
+              className={clsx(
+                'rounded border',
+                isDark ? 'border-slate-500 bg-slate-900' : 'border-gray-300',
+              )}
             />
             <span className={clsx('text-sm', isDark ? 'text-slate-200' : 'text-gray-700')}>Aktiv</span>
           </label>
