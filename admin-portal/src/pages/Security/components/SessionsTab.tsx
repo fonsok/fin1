@@ -10,6 +10,7 @@ import {
 } from '../../../utils/tableStriping';
 import type { ActiveSession } from '../types';
 
+import { adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 interface SessionsTabProps {
   sessions: ActiveSession[];
   onTerminate: (sessionId: string) => void;
@@ -29,7 +30,7 @@ export function SessionsTab({
 }: SessionsTabProps): JSX.Element {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
-  const thClass = clsx('px-4 py-3 text-xs font-medium uppercase', isDark ? 'text-slate-400' : 'text-gray-500');
+  const thClass = clsx('px-4 py-3 text-xs font-medium uppercase', adminMuted(isDark));
 
   return (
     <Card>
@@ -55,19 +56,19 @@ export function SessionsTab({
           <tbody className={tableBodyDivideClasses(isDark)}>
             {sessions.map((session, index) => (
               <tr key={session.objectId} className={listRowStripeClasses(isDark, index)}>
-                <td className={clsx('px-4 py-3 font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                <td className={clsx('px-4 py-3 font-medium', adminPrimary(isDark))}>
                   {session.email}
                 </td>
-                <td className={clsx('px-4 py-3 font-mono text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                <td className={clsx('px-4 py-3 font-mono text-sm', adminMuted(isDark))}>
                   {session.ipAddress}
                 </td>
-                <td className={clsx('px-4 py-3', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                <td className={clsx('px-4 py-3', adminMuted(isDark))}>
                   {session.device}
                 </td>
-                <td className={clsx('px-4 py-3', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                <td className={clsx('px-4 py-3', adminMuted(isDark))}>
                   {formatDateTime(session.createdAt)}
                 </td>
-                <td className={clsx('px-4 py-3', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                <td className={clsx('px-4 py-3', adminMuted(isDark))}>
                   {formatDateTime(session.lastActivity)}
                 </td>
                 <td className="px-4 py-3">

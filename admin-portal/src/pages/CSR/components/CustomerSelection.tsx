@@ -8,6 +8,7 @@ import type { CustomerSearchResult } from '../types';
 // ============================================================================
 // Components for selecting and displaying customers in ticket creation.
 
+import { adminCaption, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 interface SelectedCustomerCardProps {
   customer: CustomerSearchResult;
   onClear: () => void;
@@ -50,15 +51,15 @@ export function SelectedCustomerCard({
           </span>
         </div>
         <div>
-          <p className={clsx('font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>
+          <p className={clsx('font-medium', adminPrimary(isDark))}>
             {customer.fullName || customer.firstName || customer.email}
           </p>
-          <p className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>{customer.email}</p>
+          <p className={clsx('text-sm', adminMuted(isDark))}>{customer.email}</p>
           <div className="flex items-center gap-2 mt-1">
             <Badge variant={getKYCBadgeVariant(customer.kycStatus)} size="sm">
               KYC: {getKYCLabel(customer.kycStatus)}
             </Badge>
-            <span className={clsx('text-xs', isDark ? 'text-slate-500' : 'text-gray-400')}>
+            <span className={clsx('text-xs', adminCaption(isDark))}>
               Nr.: {customer.customerNumber || '—'} · User: {customer.objectId}
             </span>
           </div>
@@ -124,7 +125,7 @@ export function CustomerSearchInput({
           )}
         >
           {isSearching ? (
-            <div className={clsx('p-4 text-center', isDark ? 'text-slate-400' : 'text-gray-500')}>
+            <div className={clsx('p-4 text-center', adminMuted(isDark))}>
               <div className="animate-spin w-5 h-5 border-2 border-fin1-primary border-t-transparent rounded-full mx-auto mb-2"></div>
               Suche...
             </div>
@@ -143,10 +144,10 @@ export function CustomerSearchInput({
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <p className={clsx('font-medium truncate', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                    <p className={clsx('font-medium truncate', adminPrimary(isDark))}>
                       {customer.fullName || customer.firstName || customer.email}
                     </p>
-                    <p className={clsx('text-sm truncate', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                    <p className={clsx('text-sm truncate', adminMuted(isDark))}>
                       {customer.email}
                     </p>
                   </div>
@@ -157,14 +158,14 @@ export function CustomerSearchInput({
               </button>
             ))
           ) : (
-            <div className={clsx('p-4 text-center', isDark ? 'text-slate-400' : 'text-gray-500')}>
+            <div className={clsx('p-4 text-center', adminMuted(isDark))}>
               Keine Kunden gefunden
             </div>
           )}
         </div>
       )}
 
-      <p className={clsx('text-sm mt-2', isDark ? 'text-slate-400' : 'text-gray-500')}>
+      <p className={clsx('text-sm mt-2', adminMuted(isDark))}>
         Mindestens 2 Zeichen eingeben, um zu suchen
       </p>
     </div>

@@ -21,6 +21,7 @@ import { TemplatesPage } from '../pages/Templates';
 import { FAQsPage } from '../pages/FAQs';
 
 // Protected Layout for CSR - wraps all protected routes
+import { adminMuted } from '../utils/adminThemeClasses';
 function CSRProtectedLayout() {
   const { isAuthenticated, isLoading, user } = useAuth();
   const { theme } = useTheme();
@@ -36,7 +37,7 @@ function CSRProtectedLayout() {
       >
         <div className="text-center">
           <div className="animate-spin w-12 h-12 border-4 border-fin1-primary border-t-transparent rounded-full mx-auto"></div>
-          <p className={clsx('mt-4', isDark ? 'text-slate-400' : 'text-gray-500')}>Laden...</p>
+          <p className={clsx('mt-4', adminMuted(isDark))}>Laden...</p>
         </div>
       </div>
     );

@@ -6,6 +6,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import { listRowStripeClasses } from '../../../utils/tableStriping';
 import type { AccountStatementData, AccountStatementEntryItem } from '../../../api/admin';
 
+import { adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 interface Props {
   data: AccountStatementData;
   userRole: string;
@@ -88,7 +89,7 @@ export function AccountStatementCard({ data, userRole }: Props) {
               <tbody className={clsx(isDark ? 'divide-y divide-slate-700' : 'divide-y divide-gray-100')}>
                 {/* Opening balance row */}
                 <tr className={clsx(isDark ? 'bg-slate-900/40' : 'bg-gray-50')}>
-                  <td className={clsx('px-3 py-2', isDark ? 'text-slate-400' : 'text-gray-500')} colSpan={5}>
+                  <td className={clsx('px-3 py-2', adminMuted(isDark))} colSpan={5}>
                     <span className="italic">Anfangssaldo</span>
                   </td>
                   <td className={clsx('px-3 py-2 text-right font-medium tabular-nums', isDark ? 'text-slate-200' : 'text-gray-900')}>
@@ -115,7 +116,7 @@ export function AccountStatementCard({ data, userRole }: Props) {
           )}
         </>
       ) : (
-        <p className={clsx('text-sm py-4', isDark ? 'text-slate-400' : 'text-gray-500')}>
+        <p className={clsx('text-sm py-4', adminMuted(isDark))}>
           Keine Kontoauszugseinträge vorhanden.
         </p>
       )}
@@ -137,7 +138,7 @@ function StatementRow({ entry, idx, isDark }: { entry: AccountStatementEntryItem
       <td className={clsx('px-3 py-2', isDark ? 'text-slate-200' : 'text-gray-800')}>
         <div>{entry.description}</div>
         {entry.tradeNumber != null && (
-          <div className={clsx('text-xs', isDark ? 'text-slate-400' : 'text-gray-500')}>
+          <div className={clsx('text-xs', adminMuted(isDark))}>
             Trade #{entry.tradeNumber}
           </div>
         )}
@@ -153,10 +154,10 @@ function StatementRow({ entry, idx, isDark }: { entry: AccountStatementEntryItem
       <td className={clsx('px-3 py-2 text-right tabular-nums font-medium', !isDebit ? amountColor : (isDark ? 'text-slate-500' : 'text-gray-300'))}>
         {!isDebit ? formatCurrency(entry.amount) : '\u2014'}
       </td>
-      <td className={clsx('px-3 py-2 text-right tabular-nums font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>
+      <td className={clsx('px-3 py-2 text-right tabular-nums font-medium', adminPrimary(isDark))}>
         {formatCurrency(entry.balanceAfter)}
       </td>
-      <td className={clsx('px-3 py-2 text-xs font-mono', isDark ? 'text-slate-400' : 'text-gray-500')}>
+      <td className={clsx('px-3 py-2 text-xs font-mono', adminMuted(isDark))}>
         {entry.referenceDocumentId || '\u2014'}
       </td>
     </tr>
@@ -187,8 +188,8 @@ function SummaryBox({ label, value, isDark, color, highlight }: {
 
   return (
     <div className={clsx('text-center p-3 rounded-lg', bgClasses)}>
-      <p className={clsx('text-xs mb-1', isDark ? 'text-slate-400' : 'text-gray-500')}>{label}</p>
-      <p className={clsx('text-lg font-bold tabular-nums', color ? colorClasses[color] : (isDark ? 'text-slate-100' : 'text-gray-900'))}>
+      <p className={clsx('text-xs mb-1', adminMuted(isDark))}>{label}</p>
+      <p className={clsx('text-lg font-bold tabular-nums', color ? colorClasses[color] : (adminPrimary(isDark)))}>
         {value}
       </p>
     </div>

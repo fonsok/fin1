@@ -8,6 +8,7 @@ import { EmailTemplateEditor } from './EmailTemplateEditor';
 import type { EmailTemplate } from '../types';
 import { sortByDisplayNameDe } from '../utils/templateDisplayOrder';
 
+import { adminCaption, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 interface EmailTemplateListProps {
   templates: EmailTemplate[];
   onRefresh: () => void;
@@ -23,11 +24,11 @@ export function EmailTemplateList({ templates, onRefresh }: EmailTemplateListPro
   if (templates.length === 0) {
     return (
       <Card className="p-12 text-center">
-        <div className={clsx('text-5xl mb-4', isDark ? 'text-slate-500' : 'text-gray-400')}>✉️</div>
-        <h3 className={clsx('text-lg font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>
+        <div className={clsx('text-5xl mb-4', adminCaption(isDark))}>✉️</div>
+        <h3 className={clsx('text-lg font-medium', adminPrimary(isDark))}>
           Keine E-Mail Vorlagen gefunden
         </h3>
-        <p className={clsx('mt-2', isDark ? 'text-slate-400' : 'text-gray-500')}>
+        <p className={clsx('mt-2', adminMuted(isDark))}>
           E-Mail Vorlagen werden vom System verwaltet.
         </p>
       </Card>
@@ -43,13 +44,13 @@ export function EmailTemplateList({ templates, onRefresh }: EmailTemplateListPro
               <div className="flex items-center gap-2">
                 <span className="text-2xl">{template.icon || '✉️'}</span>
                 <div>
-                  <h3 className={clsx('font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                  <h3 className={clsx('font-medium', adminPrimary(isDark))}>
                     {template.displayName}
                   </h3>
                   <span
                     className={clsx(
                       'text-xs font-mono',
-                      isDark ? 'text-slate-400' : 'text-gray-500',
+                      adminMuted(isDark),
                     )}
                   >
                     {template.type}
@@ -100,7 +101,7 @@ export function EmailTemplateList({ templates, onRefresh }: EmailTemplateListPro
                 isDark ? 'border-slate-600' : 'border-gray-100',
               )}
             >
-              <span className={clsx('text-xs', isDark ? 'text-slate-500' : 'text-gray-400')}>
+              <span className={clsx('text-xs', adminCaption(isDark))}>
                 v{template.version}
                 {template.updatedAt && ` • ${new Date(template.updatedAt).toLocaleDateString('de-DE')}`}
               </span>

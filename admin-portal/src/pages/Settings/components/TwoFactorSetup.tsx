@@ -6,6 +6,7 @@ import { Card, Button, Input } from '../../../components/ui';
 import { useTheme } from '../../../context/ThemeContext';
 import type { TwoFactorSetupResponse, TwoFactorEnableResponse } from '../types';
 
+import { adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 interface TwoFactorSetupProps {
   onComplete: () => void;
 }
@@ -59,7 +60,7 @@ export function TwoFactorSetup({ onComplete }: TwoFactorSetupProps): JSX.Element
     alert('Backup-Codes in Zwischenablage kopiert');
   };
 
-  const titleClass = clsx('text-xl font-semibold mb-2', isDark ? 'text-slate-100' : 'text-gray-900');
+  const titleClass = clsx('text-xl font-semibold mb-2', adminPrimary(isDark));
   const bodyMuted = clsx(isDark ? 'text-slate-300' : 'text-gray-600');
   const infoBox = clsx(
     'rounded-lg p-4 mb-6 text-left',
@@ -126,7 +127,7 @@ export function TwoFactorSetup({ onComplete }: TwoFactorSetupProps): JSX.Element
                   isDark ? 'bg-slate-900/70 border border-slate-600' : 'bg-gray-100',
                 )}
               >
-                <p className={clsx('text-sm mb-2', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                <p className={clsx('text-sm mb-2', adminMuted(isDark))}>
                   QR-Code nicht verfügbar. Manueller Schlüssel:
                 </p>
                 <code
@@ -142,7 +143,7 @@ export function TwoFactorSetup({ onComplete }: TwoFactorSetupProps): JSX.Element
 
             <details className="text-left mb-4">
               <summary
-                className={clsx('text-sm cursor-pointer', isDark ? 'text-slate-400' : 'text-gray-500')}
+                className={clsx('text-sm cursor-pointer', adminMuted(isDark))}
               >
                 Manuelle Eingabe (falls QR-Scan nicht möglich)
               </summary>
@@ -152,11 +153,11 @@ export function TwoFactorSetup({ onComplete }: TwoFactorSetupProps): JSX.Element
                   isDark ? 'bg-slate-900/50 border border-slate-600' : 'bg-gray-50',
                 )}
               >
-                <p className={clsx('text-xs mb-1', isDark ? 'text-slate-400' : 'text-gray-500')}>Geheimschlüssel:</p>
+                <p className={clsx('text-xs mb-1', adminMuted(isDark))}>Geheimschlüssel:</p>
                 <code className={clsx('text-sm font-mono break-all', isDark ? 'text-slate-200' : 'text-gray-900')}>
                   {setupData.secret}
                 </code>
-                <p className={clsx('text-xs mt-2 mb-1', isDark ? 'text-slate-400' : 'text-gray-500')}>Konto:</p>
+                <p className={clsx('text-xs mt-2 mb-1', adminMuted(isDark))}>Konto:</p>
                 <code className={clsx('text-sm', isDark ? 'text-slate-200' : 'text-gray-900')}>FIN1 Admin</code>
               </div>
             </details>

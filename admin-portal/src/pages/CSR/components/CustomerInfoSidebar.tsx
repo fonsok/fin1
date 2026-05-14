@@ -9,6 +9,7 @@ import type { CustomerSearchResult } from '../types';
 // Sidebar component displaying customer information and recent tickets
 // in the ticket creation page.
 
+import { adminCaption, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 interface CustomerInfoSidebarProps {
   selectedCustomer: CustomerSearchResult | null;
   customerProfile?: { fullName?: string } | null;
@@ -40,7 +41,7 @@ export function CustomerInfoSidebar({
             )}
           >
             <svg
-              className={clsx('w-8 h-8', isDark ? 'text-slate-500' : 'text-gray-400')}
+              className={clsx('w-8 h-8', adminCaption(isDark))}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -53,10 +54,10 @@ export function CustomerInfoSidebar({
               />
             </svg>
           </div>
-          <h3 className={clsx('font-medium mb-1', isDark ? 'text-slate-100' : 'text-gray-900')}>
+          <h3 className={clsx('font-medium mb-1', adminPrimary(isDark))}>
             Kein Kunde ausgewählt
           </h3>
-          <p className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>
+          <p className={clsx('text-sm', adminMuted(isDark))}>
             Wählen Sie zuerst einen Kunden aus, um das Ticket zu erstellen
           </p>
         </div>
@@ -68,26 +69,26 @@ export function CustomerInfoSidebar({
     <div className="space-y-6">
       {/* Customer Profile Preview */}
       <Card>
-        <h3 className={clsx('font-semibold mb-4', isDark ? 'text-slate-100' : 'text-gray-900')}>
+        <h3 className={clsx('font-semibold mb-4', adminPrimary(isDark))}>
           Kundeninformationen
         </h3>
         <div className="space-y-3">
           <div>
-            <p className={clsx('text-xs uppercase tracking-wide', isDark ? 'text-slate-400' : 'text-gray-500')}>
+            <p className={clsx('text-xs uppercase tracking-wide', adminMuted(isDark))}>
               Kunde
             </p>
-            <p className={clsx('font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>
+            <p className={clsx('font-medium', adminPrimary(isDark))}>
               {customerProfile?.fullName || selectedCustomer.email}
             </p>
           </div>
           <div>
-            <p className={clsx('text-xs uppercase tracking-wide', isDark ? 'text-slate-400' : 'text-gray-500')}>
+            <p className={clsx('text-xs uppercase tracking-wide', adminMuted(isDark))}>
               E-Mail
             </p>
             <p className={clsx('text-sm', isDark ? 'text-slate-200' : 'text-gray-900')}>{selectedCustomer.email}</p>
           </div>
           <div>
-            <p className={clsx('text-xs uppercase tracking-wide', isDark ? 'text-slate-400' : 'text-gray-500')}>
+            <p className={clsx('text-xs uppercase tracking-wide', adminMuted(isDark))}>
               Kunden-ID
             </p>
             <p className={clsx('text-sm font-mono', isDark ? 'text-slate-200' : 'text-gray-900')}>
@@ -95,7 +96,7 @@ export function CustomerInfoSidebar({
             </p>
           </div>
           <div>
-            <p className={clsx('text-xs uppercase tracking-wide', isDark ? 'text-slate-400' : 'text-gray-500')}>
+            <p className={clsx('text-xs uppercase tracking-wide', adminMuted(isDark))}>
               KYC-Status
             </p>
             <Badge variant={getKYCBadgeVariant(selectedCustomer.kycStatus)}>
@@ -103,7 +104,7 @@ export function CustomerInfoSidebar({
             </Badge>
           </div>
           <div>
-            <p className={clsx('text-xs uppercase tracking-wide', isDark ? 'text-slate-400' : 'text-gray-500')}>
+            <p className={clsx('text-xs uppercase tracking-wide', adminMuted(isDark))}>
               Konto-Status
             </p>
             <Badge variant={selectedCustomer.status === 'active' ? 'success' : 'neutral'}>
@@ -125,10 +126,10 @@ export function CustomerInfoSidebar({
 
       {/* Recent Tickets */}
       <Card>
-        <h3 className={clsx('font-semibold mb-4', isDark ? 'text-slate-100' : 'text-gray-900')}>
+        <h3 className={clsx('font-semibold mb-4', adminPrimary(isDark))}>
           Letzte Tickets
           {recentTickets && recentTickets.length > 0 && (
-            <span className={clsx('ml-2 text-sm font-normal', isDark ? 'text-slate-400' : 'text-gray-500')}>
+            <span className={clsx('ml-2 text-sm font-normal', adminMuted(isDark))}>
               ({recentTickets.length})
             </span>
           )}
@@ -147,7 +148,7 @@ export function CustomerInfoSidebar({
                     : 'bg-gray-50 hover:bg-gray-100',
                 )}
               >
-                <p className={clsx('font-medium text-sm truncate', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                <p className={clsx('font-medium text-sm truncate', adminPrimary(isDark))}>
                   {ticket.subject}
                 </p>
                 <div className="flex items-center gap-2 mt-1">
@@ -159,7 +160,7 @@ export function CustomerInfoSidebar({
                   >
                     {ticket.status}
                   </Badge>
-                  <span className={clsx('text-xs', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                  <span className={clsx('text-xs', adminMuted(isDark))}>
                     {new Date(ticket.createdAt).toLocaleDateString('de-DE')}
                   </span>
                 </div>
@@ -167,7 +168,7 @@ export function CustomerInfoSidebar({
             ))}
           </div>
         ) : (
-          <p className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>Keine vorherigen Tickets</p>
+          <p className={clsx('text-sm', adminMuted(isDark))}>Keine vorherigen Tickets</p>
         )}
       </Card>
     </div>

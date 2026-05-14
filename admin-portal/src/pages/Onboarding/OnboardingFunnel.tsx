@@ -11,6 +11,7 @@ import {
 } from '../../utils/tableStriping';
 import clsx from 'clsx';
 
+import { adminCaption, adminMuted, adminPrimary } from '../../utils/adminThemeClasses';
 interface FunnelStep {
   step: string;
   count: number;
@@ -66,8 +67,8 @@ export function OnboardingFunnelPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>Onboarding-Funnel</h1>
-          <p className={clsx('mt-1', isDark ? 'text-slate-400' : 'text-gray-500')}>
+          <h1 className={clsx('text-2xl font-bold', adminPrimary(isDark))}>Onboarding-Funnel</h1>
+          <p className={clsx('mt-1', adminMuted(isDark))}>
             Registrierungsfortschritt und Abbruchraten
           </p>
         </div>
@@ -128,7 +129,7 @@ export function OnboardingFunnelPage() {
           {/* Funnel Visualization */}
           <Card>
             <div className="p-5">
-              <h2 className={clsx('text-lg font-semibold mb-4', isDark ? 'text-slate-100' : 'text-gray-900')}>
+              <h2 className={clsx('text-lg font-semibold mb-4', adminPrimary(isDark))}>
                 Funnel nach Schritt
               </h2>
               <div className="space-y-3">
@@ -185,10 +186,10 @@ export function OnboardingFunnelPage() {
           {data.stuckUsers.length > 0 && (
             <Card>
               <div className="p-5">
-                <h2 className={clsx('text-lg font-semibold mb-1', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                <h2 className={clsx('text-lg font-semibold mb-1', adminPrimary(isDark))}>
                   Feststeckende Benutzer
                 </h2>
-                <p className={clsx('text-sm mb-4', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                <p className={clsx('text-sm mb-4', adminMuted(isDark))}>
                   Keine Aktivität seit &gt;24h, Onboarding nicht abgeschlossen
                 </p>
                 <div className="overflow-x-auto">
@@ -226,10 +227,10 @@ export function OnboardingFunnelPage() {
                               <Badge variant="warning">Nein</Badge>
                             )}
                           </td>
-                          <td className={clsx('py-3 px-4', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                          <td className={clsx('py-3 px-4', adminMuted(isDark))}>
                             {formatRelative(u.lastActivity)}
                           </td>
-                          <td className={clsx('py-3 px-4', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                          <td className={clsx('py-3 px-4', adminMuted(isDark))}>
                             {formatRelative(u.createdAt)}
                           </td>
                         </tr>
@@ -265,12 +266,12 @@ function SummaryCard({ title, value, subtitle, color }: {
   return (
     <Card>
       <div className="p-5">
-        <p className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>{title}</p>
-        <p className={clsx('text-2xl font-bold mt-1', valueTone[color] ?? (isDark ? 'text-slate-100' : 'text-gray-900'))}>
+        <p className={clsx('text-sm', adminMuted(isDark))}>{title}</p>
+        <p className={clsx('text-2xl font-bold mt-1', valueTone[color] ?? (adminPrimary(isDark)))}>
           {value}
         </p>
         {subtitle && (
-          <p className={clsx('text-xs mt-1', isDark ? 'text-slate-500' : 'text-gray-400')}>{subtitle}</p>
+          <p className={clsx('text-xs mt-1', adminCaption(isDark))}>{subtitle}</p>
         )}
       </div>
     </Card>

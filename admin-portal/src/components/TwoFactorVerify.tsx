@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { Button, Card } from './ui';
 
+import { adminCaption, adminMuted, adminPrimary } from '../utils/adminThemeClasses';
 type TwoFactorMode = 'totp' | 'backup';
 
 export function TwoFactorVerify() {
@@ -142,10 +143,10 @@ export function TwoFactorVerify() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
               </svg>
             </div>
-            <h2 className={clsx('text-lg font-semibold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+            <h2 className={clsx('text-lg font-semibold', adminPrimary(isDark))}>
               {mode === 'totp' ? 'Code eingeben' : 'Backup-Code eingeben'}
             </h2>
-            <p className={clsx('text-sm mt-1', isDark ? 'text-slate-400' : 'text-gray-500')}>
+            <p className={clsx('text-sm mt-1', adminMuted(isDark))}>
               {mode === 'totp'
                 ? 'Öffnen Sie Ihre Authenticator-App und geben Sie den 6-stelligen Code ein.'
                 : 'Geben Sie einen Ihrer 8-stelligen Einmal-Backup-Codes ein (Großbuchstaben und Ziffern).'}
@@ -243,7 +244,7 @@ export function TwoFactorVerify() {
           </form>
 
           {user && (
-            <p className={clsx('text-xs text-center mt-6', isDark ? 'text-slate-500' : 'text-gray-400')}>
+            <p className={clsx('text-xs text-center mt-6', adminCaption(isDark))}>
               Angemeldet als {user.email}
             </p>
           )}

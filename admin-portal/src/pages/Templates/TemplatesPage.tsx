@@ -32,6 +32,7 @@ import type {
   UpdateTemplateRequest,
 } from './types';
 
+import { adminMuted, adminPrimary } from '../../utils/adminThemeClasses';
 type TabType = 'response' | 'email' | 'stats';
 
 export function TemplatesPage() {
@@ -260,8 +261,8 @@ export function TemplatesPage() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>CSR Templates</h1>
-          <p className={clsx(isDark ? 'text-slate-400' : 'text-gray-500')}>
+          <h1 className={clsx('text-2xl font-bold', adminPrimary(isDark))}>CSR Templates</h1>
+          <p className={clsx(adminMuted(isDark))}>
             Textbausteine und E-Mail-Vorlagen verwalten
           </p>
         </div>
@@ -366,7 +367,7 @@ export function TemplatesPage() {
                   <option value={50}>50 / Seite</option>
                   <option value={100}>100 / Seite</option>
                 </select>
-                <p className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                <p className={clsx('text-sm', adminMuted(isDark))}>
                   {formatNumber(responseTotal)} Treffer nach Filter · bis zu {formatNumber(templates.length)} aus
                   Server ({formatNumber(responsePageSize)} pro Seite, lokal)
                 </p>
@@ -418,7 +419,7 @@ export function TemplatesPage() {
                 <option value={50}>50 / Seite</option>
                 <option value={100}>100 / Seite</option>
               </select>
-              <p className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>
+              <p className={clsx('text-sm', adminMuted(isDark))}>
                 {formatNumber(emailTotal)} Treffer nach Filter · bis zu {formatNumber(emailTemplates.length)} aus Server
                 ({formatNumber(emailPageSize)} pro Seite, lokal)
               </p>

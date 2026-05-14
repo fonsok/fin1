@@ -15,6 +15,7 @@ import {
   tableTheadSurfaceClasses,
 } from '../../utils/tableStriping';
 
+import { adminMuted, adminPrimary } from '../../utils/adminThemeClasses';
 export function ComplianceEventsPage() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -167,7 +168,7 @@ export function ComplianceEventsPage() {
         {isLoading ? (
           <div className="p-8 text-center">
             <div className="animate-spin w-8 h-8 border-4 border-fin1-primary border-t-transparent rounded-full mx-auto"></div>
-            <p className={clsx('mt-4', isDark ? 'text-slate-400' : 'text-gray-500')}>Laden...</p>
+            <p className={clsx('mt-4', adminMuted(isDark))}>Laden...</p>
           </div>
         ) : error ? (
           <div className="p-8 text-center">
@@ -183,7 +184,7 @@ export function ComplianceEventsPage() {
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
             </svg>
-            <p className={clsx(isDark ? 'text-slate-400' : 'text-gray-500')}>Keine Compliance-Events gefunden</p>
+            <p className={clsx(adminMuted(isDark))}>Keine Compliance-Events gefunden</p>
           </div>
         ) : (
           <>
@@ -282,7 +283,7 @@ export function ComplianceEventsPage() {
       {selectedEvent && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <Card className="w-full max-w-lg">
-            <h3 className={clsx('text-lg font-semibold mb-4', isDark ? 'text-slate-100' : 'text-gray-900')}>
+            <h3 className={clsx('text-lg font-semibold mb-4', adminPrimary(isDark))}>
               Event prüfen
             </h3>
 

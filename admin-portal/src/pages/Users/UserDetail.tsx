@@ -15,6 +15,7 @@ import { AccountStatementCard } from './components/AccountStatementCard';
 import { UserActionModal } from './components/UserActionModal';
 import { DetailRow, StatBox } from './components/UserShared';
 
+import { adminPrimary } from '../../utils/adminThemeClasses';
 export function UserDetailPage() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -165,7 +166,7 @@ export function UserDetailPage() {
               </span>
             </div>
             <div>
-              <h2 className={clsx('text-xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+              <h2 className={clsx('text-xl font-bold', adminPrimary(isDark))}>
                 {user.firstName && user.lastName
                   ? `${user.firstName} ${user.lastName}`
                   : user.username || user.email}
@@ -290,11 +291,11 @@ export function UserDetailPage() {
           </p>
           <p className={clsx('text-sm', isDark ? 'text-slate-300' : 'text-gray-600')}>
             Aktueller Modus für diesen Nutzer:{' '}
-            <span className={clsx('font-semibold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+            <span className={clsx('font-semibold', adminPrimary(isDark))}>
               {walletControls?.effectiveMode ?? 'deposit_and_withdrawal'}
             </span>
             {' '}| Nutzer-Override:{' '}
-            <span className={clsx('font-semibold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+            <span className={clsx('font-semibold', adminPrimary(isDark))}>
               {walletControls?.userOverrideMode ?? 'kein Override'}
             </span>
           </p>
@@ -417,7 +418,7 @@ export function UserDetailPage() {
               <div key={index} className={clsx('flex items-center gap-4 p-3 rounded-lg', isDark ? 'bg-slate-900/70 border border-slate-700' : 'bg-gray-50')}>
                 <div className="w-2 h-2 bg-fin1-primary rounded-full" />
                 <div className="flex-1">
-                  <p className={clsx('text-sm font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>{activity.description || activity.action}</p>
+                  <p className={clsx('text-sm font-medium', adminPrimary(isDark))}>{activity.description || activity.action}</p>
                   <p className={clsx('text-xs', isDark ? 'text-slate-300' : 'text-gray-500')}>{formatDateTime(activity.createdAt)}</p>
                 </div>
               </div>

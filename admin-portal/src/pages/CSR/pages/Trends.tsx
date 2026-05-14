@@ -7,6 +7,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import { getSupportTickets } from '../api';
 import type { SupportTicket } from '../types';
 
+import { adminCaption, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 interface SupportTrend {
   id: string;
   type: 'volumeSpike' | 'recurringIssue' | 'longResolutionTime' | 'highEscalationRate' | 'negativeCSAT' | 'reopenedTickets';
@@ -222,7 +223,7 @@ export function TrendsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+        <h1 className={clsx('text-2xl font-bold', adminPrimary(isDark))}>
           Trends & Muster
         </h1>
         <Badge variant="info">{trends.length} Trends erkannt</Badge>
@@ -244,8 +245,8 @@ export function TrendsPage() {
                 d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
-            <p className={clsx(isDark ? 'text-slate-400' : 'text-gray-500')}>Keine Trends erkannt</p>
-            <p className={clsx('text-sm mt-2', isDark ? 'text-slate-500' : 'text-gray-400')}>
+            <p className={clsx(adminMuted(isDark))}>Keine Trends erkannt</p>
+            <p className={clsx('text-sm mt-2', adminCaption(isDark))}>
               Alle Metriken sind im normalen Bereich
             </p>
           </div>
@@ -313,7 +314,7 @@ export function TrendsPage() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setSelectedTrend(null)}>
           <Card className="w-full max-w-2xl m-4" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h2 className={clsx('text-xl font-semibold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+              <h2 className={clsx('text-xl font-semibold', adminPrimary(isDark))}>
                 {selectedTrend.title}
               </h2>
               <button

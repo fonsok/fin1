@@ -13,6 +13,7 @@ import {
 } from '../../../utils/tableStriping';
 import { getTicketMetrics, getAgentMetrics, getAvailableAgents } from '../api';
 
+import { adminPrimary } from '../../../utils/adminThemeClasses';
 export function AnalyticsPage() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -73,7 +74,7 @@ export function AnalyticsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+        <h1 className={clsx('text-2xl font-bold', adminPrimary(isDark))}>
           Analytics Dashboard
         </h1>
         <div className="flex gap-2">
@@ -128,7 +129,7 @@ export function AnalyticsPage() {
 
       {/* Agent Performance */}
       <Card>
-        <h2 className={clsx('text-lg font-semibold mb-4', isDark ? 'text-slate-100' : 'text-gray-900')}>
+        <h2 className={clsx('text-lg font-semibold mb-4', adminPrimary(isDark))}>
           Agent-Performance
         </h2>
         <div className="mb-4">

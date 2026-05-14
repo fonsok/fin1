@@ -25,6 +25,7 @@ import type { TermsContentListItem, TermsContentFull, TermsSection } from './typ
 import { DOCUMENT_TYPE_LABELS } from './types';
 import { getConfiguration } from '../../api/admin/configuration';
 
+import { adminMuted, adminPrimary } from '../../utils/adminThemeClasses';
 type DocumentTypeFilter = 'all' | 'terms' | 'privacy' | 'imprint';
 type LanguageFilter = 'all' | 'de' | 'en';
 type ListViewFilter = 'all' | 'active_only' | 'last_10' | 'last_20';
@@ -330,10 +331,10 @@ export function TermsPage() {
 
       <div className="flex justify-between items-center">
         <div>
-          <h1 className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+          <h1 className={clsx('text-2xl font-bold', adminPrimary(isDark))}>
             AGB & Rechtstexte
           </h1>
-          <p className={clsx(isDark ? 'text-slate-400' : 'text-gray-500')}>
+          <p className={clsx(adminMuted(isDark))}>
             Terms of Service, Datenschutz und Impressum versioniert verwalten
           </p>
         </div>
@@ -369,16 +370,16 @@ export function TermsPage() {
 
       <div className="grid grid-cols-3 gap-4">
         <Card className="p-4">
-          <div className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>Versionen (gefiltert)</div>
-          <div className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>{items.length}</div>
+          <div className={clsx('text-sm', adminMuted(isDark))}>Versionen (gefiltert)</div>
+          <div className={clsx('text-2xl font-bold', adminPrimary(isDark))}>{items.length}</div>
         </Card>
         <Card className="p-4">
-          <div className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>Aktive</div>
-          <div className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>{activeCount}</div>
+          <div className={clsx('text-sm', adminMuted(isDark))}>Aktive</div>
+          <div className={clsx('text-2xl font-bold', adminPrimary(isDark))}>{activeCount}</div>
         </Card>
         <Card className="p-4">
-          <div className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>Dokumenttyp</div>
-          <div className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+          <div className={clsx('text-sm', adminMuted(isDark))}>Dokumenttyp</div>
+          <div className={clsx('text-2xl font-bold', adminPrimary(isDark))}>
             {documentTypeFilter === 'all' ? 'Alle' : (DOCUMENT_TYPE_LABELS[documentTypeFilter] ?? documentTypeFilter)}
           </div>
         </Card>

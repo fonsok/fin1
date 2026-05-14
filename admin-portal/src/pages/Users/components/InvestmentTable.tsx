@@ -4,6 +4,7 @@ import { formatCurrency, getStatusDisplay } from '../../../utils/format';
 import { listRowStripeClasses } from '../../../utils/tableStriping';
 import type { InvestmentItem } from '../../../api/admin';
 
+import { adminPrimary } from '../../../utils/adminThemeClasses';
 interface Props {
   title: string;
   items: InvestmentItem[];
@@ -53,7 +54,7 @@ export function InvestmentTable({ title, items, isDark }: Props) {
                   <td className={clsx('px-3 py-2.5 font-mono', isDark ? 'text-slate-200' : 'text-gray-800')}>
                     {inv.tradeNumber != null ? String(inv.tradeNumber).padStart(3, '0') : '\u2014'}
                   </td>
-                  <td className={clsx('px-3 py-2.5 text-right tabular-nums', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                  <td className={clsx('px-3 py-2.5 text-right tabular-nums', adminPrimary(isDark))}>
                     {formatCurrency(inv.amount)}
                   </td>
                   <td className={clsx('px-3 py-2.5 text-right tabular-nums font-medium', profitColor)}>

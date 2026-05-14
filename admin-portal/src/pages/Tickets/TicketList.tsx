@@ -17,6 +17,7 @@ import {
   tableTheadSurfaceClasses,
 } from '../../utils/tableStriping';
 
+import { adminMuted } from '../../utils/adminThemeClasses';
 export function TicketListPage() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -164,12 +165,12 @@ export function TicketListPage() {
         {isLoading ? (
           <div className="p-8 text-center">
             <div className="animate-spin w-8 h-8 border-4 border-fin1-primary border-t-transparent rounded-full mx-auto"></div>
-            <p className={clsx('mt-4', isDark ? 'text-slate-400' : 'text-gray-500')}>Laden...</p>
+            <p className={clsx('mt-4', adminMuted(isDark))}>Laden...</p>
           </div>
         ) : error ? (
           <div className="p-8 text-center">
             <p className={clsx(isDark ? 'text-red-400' : 'text-red-500')}>Fehler beim Laden der Tickets</p>
-            <p className={clsx('text-sm mt-2', isDark ? 'text-slate-400' : 'text-gray-500')}>
+            <p className={clsx('text-sm mt-2', adminMuted(isDark))}>
               {error instanceof Error ? error.message : 'Unbekannter Fehler'}
             </p>
           </div>
@@ -183,7 +184,7 @@ export function TicketListPage() {
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
             </svg>
-            <p className={clsx(isDark ? 'text-slate-400' : 'text-gray-500')}>Keine Tickets gefunden</p>
+            <p className={clsx(adminMuted(isDark))}>Keine Tickets gefunden</p>
           </div>
         ) : (
           <>

@@ -13,6 +13,7 @@ import {
   tableTheadSurfaceClasses,
 } from '../../utils/tableStriping';
 
+import { adminCaption, adminMuted, adminPrimary } from '../../utils/adminThemeClasses';
 interface InvestmentSummary {
   investmentId: string;
   investmentNumber: string;
@@ -109,11 +110,11 @@ export function SummaryReportPage(): JSX.Element {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>Summary Report</h1>
-          <p className={clsx('mt-1', isDark ? 'text-slate-400' : 'text-gray-500')}>
+          <h1 className={clsx('text-2xl font-bold', adminPrimary(isDark))}>Summary Report</h1>
+          <p className={clsx('mt-1', adminMuted(isDark))}>
             Aggregierte Übersicht aller Investments und Trades
             {data?.generatedAt && (
-              <span className={clsx('ml-2 text-xs', isDark ? 'text-slate-500' : 'text-gray-400')}>
+              <span className={clsx('ml-2 text-xs', adminCaption(isDark))}>
                 ({formatDateTime(data.generatedAt)})
               </span>
             )}
@@ -175,7 +176,7 @@ export function SummaryReportPage(): JSX.Element {
       {/* Tab Content */}
       {isLoading ? (
         <Card>
-          <div className={clsx('p-8 text-center', isDark ? 'text-slate-400' : 'text-gray-500')}>
+          <div className={clsx('p-8 text-center', adminMuted(isDark))}>
             Daten werden geladen...
           </div>
         </Card>
@@ -197,7 +198,7 @@ function KPICard({ label, value, sub, color }: { label: string; value: string; s
   return (
     <Card>
       <div className="text-center">
-        <p className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>{label}</p>
+        <p className={clsx('text-sm', adminMuted(isDark))}>{label}</p>
         <p
           className={clsx(
             'text-2xl font-bold mt-1',
@@ -207,7 +208,7 @@ function KPICard({ label, value, sub, color }: { label: string; value: string; s
           {value}
         </p>
         {sub && (
-          <p className={clsx('text-xs mt-1', isDark ? 'text-slate-500' : 'text-gray-400')}>{sub}</p>
+          <p className={clsx('text-xs mt-1', adminCaption(isDark))}>{sub}</p>
         )}
       </div>
     </Card>
@@ -217,7 +218,7 @@ function KPICard({ label, value, sub, color }: { label: string; value: string; s
 function OverviewTab({ summary, commissionRate }: { summary: SummaryData; commissionRate: number }) {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
-  const sectionTitle = clsx('text-md font-semibold mb-4', isDark ? 'text-slate-100' : 'text-gray-900');
+  const sectionTitle = clsx('text-md font-semibold mb-4', adminPrimary(isDark));
 
   const investmentRows = [
     { label: 'Anzahl Investments', value: formatNumber(summary.totalInvestments) },
@@ -274,7 +275,7 @@ function InfoRow({ label, value, index }: { label: string; value: string; index:
       )}
     >
       <span className={clsx('text-sm', isDark ? 'text-slate-300' : 'text-gray-600')}>{label}</span>
-      <span className={clsx('text-sm font-medium text-right', isDark ? 'text-slate-100' : 'text-gray-900')}>{value}</span>
+      <span className={clsx('text-sm font-medium text-right', adminPrimary(isDark))}>{value}</span>
     </div>
   );
 }
@@ -343,7 +344,7 @@ function InvestmentsTab({
   if (isLoading && !data) {
     return (
       <Card>
-        <div className={clsx('p-8 text-center', isDark ? 'text-slate-400' : 'text-gray-500')}>
+        <div className={clsx('p-8 text-center', adminMuted(isDark))}>
           Investments werden geladen...
         </div>
       </Card>
@@ -353,7 +354,7 @@ function InvestmentsTab({
   if (total === 0) {
     return (
       <Card>
-        <div className={clsx('p-8 text-center', isDark ? 'text-slate-400' : 'text-gray-500')}>
+        <div className={clsx('p-8 text-center', adminMuted(isDark))}>
           Keine Investments gefunden
         </div>
       </Card>
@@ -378,7 +379,7 @@ function InvestmentsTab({
           <option value={50}>50 / Seite</option>
           <option value={100}>100 / Seite</option>
         </select>
-        <p className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>
+        <p className={clsx('text-sm', adminMuted(isDark))}>
           {isFetching ? 'Aktualisiere…' : `${formatNumber(total)} Investments gesamt (serverseitig)`}
         </p>
       </div>
@@ -450,7 +451,7 @@ function InvestmentsTab({
                 <td className="px-4 py-3">
                   <StatusBadge status={inv.status} />
                 </td>
-                <td className={clsx('px-4 py-3 text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                <td className={clsx('px-4 py-3 text-sm', adminMuted(isDark))}>
                   {formatDateTime(inv.createdAt)}
                 </td>
               </tr>
@@ -518,7 +519,7 @@ function TradesTab({
   if (isLoading && !data) {
     return (
       <Card>
-        <div className={clsx('p-8 text-center', isDark ? 'text-slate-400' : 'text-gray-500')}>
+        <div className={clsx('p-8 text-center', adminMuted(isDark))}>
           Trades werden geladen...
         </div>
       </Card>
@@ -528,7 +529,7 @@ function TradesTab({
   if (total === 0) {
     return (
       <Card>
-        <div className={clsx('p-8 text-center', isDark ? 'text-slate-400' : 'text-gray-500')}>
+        <div className={clsx('p-8 text-center', adminMuted(isDark))}>
           Keine Trades gefunden
         </div>
       </Card>
@@ -553,7 +554,7 @@ function TradesTab({
           <option value={50}>50 / Seite</option>
           <option value={100}>100 / Seite</option>
         </select>
-        <p className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>
+        <p className={clsx('text-sm', adminMuted(isDark))}>
           {isFetching ? 'Aktualisiere…' : `${formatNumber(total)} Trades gesamt (serverseitig)`}
         </p>
       </div>
@@ -591,7 +592,7 @@ function TradesTab({
                 <td className={clsx('px-4 py-3 text-sm font-mono', isDark ? 'text-slate-200' : 'text-gray-900')}>
                   {String(trade.tradeNumber).padStart(3, '0')}
                 </td>
-                <td className={clsx('px-4 py-3 text-sm font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                <td className={clsx('px-4 py-3 text-sm font-medium', adminPrimary(isDark))}>
                   {trade.symbol}
                 </td>
                 <td className={clsx('px-4 py-3 text-sm text-right', isDark ? 'text-slate-200' : 'text-gray-900')}>
@@ -620,7 +621,7 @@ function TradesTab({
                 <td className="px-4 py-3">
                   <StatusBadge status={trade.status} />
                 </td>
-                <td className={clsx('px-4 py-3 text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                <td className={clsx('px-4 py-3 text-sm', adminMuted(isDark))}>
                   {formatDateTime(trade.createdAt)}
                 </td>
               </tr>

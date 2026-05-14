@@ -10,6 +10,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { listRowStripeClasses, tableBodyDivideClasses, tableBodyCellMutedClasses, tableHeaderCellTextClasses, tableTheadSurfaceClasses } from '../../utils/tableStriping';
 import { useDebounce } from '../../hooks/useDebounce';
 
+import { adminMuted, adminPrimary } from '../../utils/adminThemeClasses';
 export function UserListPage() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -110,7 +111,7 @@ export function UserListPage() {
         {isLoading ? (
           <div className="p-8 text-center">
             <div className="animate-spin w-8 h-8 border-4 border-fin1-primary border-t-transparent rounded-full mx-auto"></div>
-            <p className={clsx('mt-4', isDark ? 'text-slate-400' : 'text-gray-500')}>Laden...</p>
+            <p className={clsx('mt-4', adminMuted(isDark))}>Laden...</p>
           </div>
         ) : error ? (
           <div className="p-8 text-center">
@@ -126,7 +127,7 @@ export function UserListPage() {
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
-            <p className={clsx(isDark ? 'text-slate-400' : 'text-gray-500')}>Keine Benutzer gefunden</p>
+            <p className={clsx(adminMuted(isDark))}>Keine Benutzer gefunden</p>
           </div>
         ) : (
           <>
@@ -184,7 +185,7 @@ export function UserListPage() {
                             </span>
                           </div>
                           <div className="ml-4">
-                            <p className={clsx('text-sm font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                            <p className={clsx('text-sm font-medium', adminPrimary(isDark))}>
                               {user.firstName && user.lastName
                                 ? `${user.firstName} ${user.lastName}`
                                 : user.username || 'Unbekannt'}
@@ -194,12 +195,12 @@ export function UserListPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={clsx('text-sm font-mono', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                        <span className={clsx('text-sm font-mono', adminPrimary(isDark))}>
                           {user.customerNumber || '-'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={clsx('text-sm', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                        <span className={clsx('text-sm', adminPrimary(isDark))}>
                           {getRoleDisplay(user.role)}
                         </span>
                       </td>

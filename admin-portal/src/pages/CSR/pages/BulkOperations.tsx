@@ -13,6 +13,7 @@ import {
 } from '../../../utils/tableStriping';
 import { getSupportTickets, assignTicket, respondToTicket, getAvailableAgents } from '../api';
 
+import { adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 export function BulkOperationsPage() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -180,14 +181,14 @@ export function BulkOperationsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>Massenbearbeitung</h1>
+        <h1 className={clsx('text-2xl font-bold', adminPrimary(isDark))}>Massenbearbeitung</h1>
         <Badge variant="info">{selectedTickets.size} ausgewählt</Badge>
       </div>
 
       {/* Bulk Actions */}
       {selectedTickets.size > 0 && (
         <Card>
-          <h2 className={clsx('text-lg font-semibold mb-4', isDark ? 'text-slate-100' : 'text-gray-900')}>
+          <h2 className={clsx('text-lg font-semibold mb-4', adminPrimary(isDark))}>
             Massenaktionen
           </h2>
           <div className="flex flex-wrap gap-2 mb-4">
@@ -258,7 +259,7 @@ export function BulkOperationsPage() {
       {/* Ticket List */}
       <Card padding="none">
         <div className="flex items-center justify-between p-6 pb-4">
-          <h2 className={clsx('text-lg font-semibold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+          <h2 className={clsx('text-lg font-semibold', adminPrimary(isDark))}>
             Aktive Tickets
           </h2>
           <Button variant="secondary" size="sm" onClick={selectAll}>
@@ -273,7 +274,7 @@ export function BulkOperationsPage() {
             <div className="animate-spin w-8 h-8 border-4 border-fin1-primary border-t-transparent rounded-full mx-auto"></div>
           </div>
         ) : activeTickets.length === 0 ? (
-          <div className={clsx('text-center py-8 px-6', isDark ? 'text-slate-400' : 'text-gray-500')}>
+          <div className={clsx('text-center py-8 px-6', adminMuted(isDark))}>
             Keine aktiven Tickets
           </div>
         ) : (
@@ -299,7 +300,7 @@ export function BulkOperationsPage() {
                 <option value={50}>50 / Seite</option>
                 <option value={100}>100 / Seite</option>
               </select>
-              <p className={clsx('text-sm text-right', isDark ? 'text-slate-400' : 'text-gray-500')}>
+              <p className={clsx('text-sm text-right', adminMuted(isDark))}>
                 {formatNumber(listTotal)} Treffer nach Filter · bis zu {formatNumber(serverTicketTotal)} aus Server (
                 {formatNumber(pageSize)} pro Seite, lokal)
               </p>
@@ -397,7 +398,7 @@ export function BulkOperationsPage() {
                           </button>
                         </td>
                         <td className="px-6 py-4">
-                          <p className={clsx('text-sm', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                          <p className={clsx('text-sm', adminPrimary(isDark))}>
                             {ticket.subject}
                           </p>
                         </td>
@@ -412,7 +413,7 @@ export function BulkOperationsPage() {
                         <td
                           className={clsx(
                             'px-6 py-4 whitespace-nowrap text-sm',
-                            isDark ? 'text-slate-400' : 'text-gray-500',
+                            adminMuted(isDark),
                           )}
                         >
                           {ticket.userEmail || ticket.userId}
@@ -420,7 +421,7 @@ export function BulkOperationsPage() {
                         <td
                           className={clsx(
                             'px-6 py-4 whitespace-nowrap text-sm',
-                            isDark ? 'text-slate-400' : 'text-gray-500',
+                            adminMuted(isDark),
                           )}
                         >
                           {formatDateTime(ticket.createdAt)}

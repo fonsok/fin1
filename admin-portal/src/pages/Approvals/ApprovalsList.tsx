@@ -12,6 +12,7 @@ import { WithdrawRequestModal } from './components/WithdrawRequestModal';
 import { ApprovalsEmptyState } from './components/ApprovalsEmptyState';
 import { ApprovalsRequestTable } from './components/ApprovalsRequestTable';
 
+import { adminCaption, adminMuted, adminPrimary } from '../../utils/adminThemeClasses';
 interface ApprovalRequest {
   objectId: string;
   requestType: string;
@@ -121,15 +122,15 @@ function RequestDetails({ request }: { request: ApprovalRequest }) {
     const paramName = request.metadata.parameterName as string;
     return (
       <div className="text-sm space-y-1">
-        <p className={clsx('font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>
+        <p className={clsx('font-medium', adminPrimary(isDark))}>
           {getParamDisplayName(paramName)}
         </p>
         <div className="flex items-center gap-2">
-          <span className={clsx(isDark ? 'text-slate-400' : 'text-gray-500')}>
+          <span className={clsx(adminMuted(isDark))}>
             {formatConfigValue(paramName, request.metadata.oldValue)}
           </span>
           <svg
-            className={clsx('w-4 h-4 flex-shrink-0', isDark ? 'text-slate-500' : 'text-gray-400')}
+            className={clsx('w-4 h-4 flex-shrink-0', adminCaption(isDark))}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -141,7 +142,7 @@ function RequestDetails({ request }: { request: ApprovalRequest }) {
           </span>
         </div>
         {typeof request.metadata.reason === 'string' && request.metadata.reason && (
-          <p className={clsx('text-xs truncate max-w-xs', isDark ? 'text-slate-400' : 'text-gray-500')}>
+          <p className={clsx('text-xs truncate max-w-xs', adminMuted(isDark))}>
             Grund: {request.metadata.reason}
           </p>
         )}
@@ -152,15 +153,15 @@ function RequestDetails({ request }: { request: ApprovalRequest }) {
   if (request.requestType === 'user_wallet_action_mode_change' && request.metadata) {
     return (
       <div className="text-sm space-y-1">
-        <p className={clsx('font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>
+        <p className={clsx('font-medium', adminPrimary(isDark))}>
           Nutzer: {String(request.metadata.targetUserEmail || request.metadata.targetUserId || '-')}
         </p>
         <div className="flex items-center gap-2">
-          <span className={clsx(isDark ? 'text-slate-400' : 'text-gray-500')}>
+          <span className={clsx(adminMuted(isDark))}>
             {String(request.metadata.oldMode ?? 'kein Override')}
           </span>
           <svg
-            className={clsx('w-4 h-4 flex-shrink-0', isDark ? 'text-slate-500' : 'text-gray-400')}
+            className={clsx('w-4 h-4 flex-shrink-0', adminCaption(isDark))}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -170,7 +171,7 @@ function RequestDetails({ request }: { request: ApprovalRequest }) {
           <span className="font-semibold text-fin1-primary">{String(request.metadata.newMode ?? '-')}</span>
         </div>
         {typeof request.metadata.reason === 'string' && request.metadata.reason && (
-          <p className={clsx('text-xs truncate max-w-xs', isDark ? 'text-slate-400' : 'text-gray-500')}>
+          <p className={clsx('text-xs truncate max-w-xs', adminMuted(isDark))}>
             Grund: {request.metadata.reason}
           </p>
         )}
@@ -315,10 +316,10 @@ export function ApprovalsListPage() {
       <Card>
         <div className="flex items-center justify-between">
           <div>
-            <h2 className={clsx('text-lg font-semibold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+            <h2 className={clsx('text-lg font-semibold', adminPrimary(isDark))}>
               4-Augen-Prinzip — Anträge & Freigaben
             </h2>
-            <p className={clsx('text-sm mt-1', isDark ? 'text-slate-400' : 'text-gray-500')}>
+            <p className={clsx('text-sm mt-1', adminMuted(isDark))}>
               Übersicht aller Änderungsanträge mit 4-Augen-Freigabe
             </p>
           </div>
@@ -392,7 +393,7 @@ export function ApprovalsListPage() {
         <Card>
           <div className="p-8 text-center">
             <div className="animate-spin w-8 h-8 border-4 border-fin1-primary border-t-transparent rounded-full mx-auto"></div>
-            <p className={clsx('mt-4', isDark ? 'text-slate-400' : 'text-gray-500')}>Laden...</p>
+            <p className={clsx('mt-4', adminMuted(isDark))}>Laden...</p>
           </div>
         </Card>
       ) : error ? (

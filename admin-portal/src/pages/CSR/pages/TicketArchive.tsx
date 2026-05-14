@@ -15,6 +15,7 @@ import {
 } from '../../../utils/tableStriping';
 import { getSupportTickets } from '../api';
 
+import { adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 export function TicketArchivePage() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -89,7 +90,7 @@ export function TicketArchivePage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>Ticket-Archiv</h1>
+        <h1 className={clsx('text-2xl font-bold', adminPrimary(isDark))}>Ticket-Archiv</h1>
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value as 'resolved' | 'closed' | 'all')}
@@ -108,11 +109,11 @@ export function TicketArchivePage() {
         {isLoading ? (
           <div className="text-center py-8">
             <div className="animate-spin w-8 h-8 border-4 border-fin1-primary border-t-transparent rounded-full mx-auto"></div>
-            <p className={clsx('mt-4 text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>Laden...</p>
+            <p className={clsx('mt-4 text-sm', adminMuted(isDark))}>Laden...</p>
           </div>
         ) : archivedTickets.length === 0 ? (
           <div className="text-center py-8">
-            <p className={clsx(isDark ? 'text-slate-400' : 'text-gray-500')}>Keine archivierten Tickets gefunden</p>
+            <p className={clsx(adminMuted(isDark))}>Keine archivierten Tickets gefunden</p>
           </div>
         ) : (
           <>
@@ -137,7 +138,7 @@ export function TicketArchivePage() {
                 <option value={50}>50 / Seite</option>
                 <option value={100}>100 / Seite</option>
               </select>
-              <p className={clsx('text-sm text-right', isDark ? 'text-slate-400' : 'text-gray-500')}>
+              <p className={clsx('text-sm text-right', adminMuted(isDark))}>
                 {formatNumber(archiveTotal)} Treffer nach Filter · bis zu {formatNumber(serverTicketTotal)} aus Server (
                 {formatNumber(pageSize)} pro Seite, lokal)
               </p>

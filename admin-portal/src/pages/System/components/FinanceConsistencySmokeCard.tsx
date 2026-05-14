@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { Badge, Card } from '../../../components/ui';
 import { formatDateTime } from '../../../utils/format';
 
+import { adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 type HealthStatus = 'healthy' | 'degraded' | 'down' | 'unknown';
 
 export type FinanceConsistencySmokeStatus = {
@@ -34,7 +35,7 @@ export function FinanceConsistencySmokeCard({
       : (isDark ? 'border-amber-700 bg-amber-950/20' : 'border-yellow-200 bg-yellow-50'))}>
       <div className="flex items-start justify-between gap-4 flex-col md:flex-row">
         <div>
-          <h3 className={clsx('text-md font-semibold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+          <h3 className={clsx('text-md font-semibold', adminPrimary(isDark))}>
             Finance Consistency Smoke
           </h3>
           <p className={clsx('text-sm mt-1', isDark ? 'text-slate-300' : 'text-gray-700')}>
@@ -51,7 +52,7 @@ export function FinanceConsistencySmokeCard({
 
       <div className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-3">
         <div className={clsx('rounded-md border p-3', isDark ? 'border-slate-700 bg-slate-900/40' : 'border-gray-200 bg-white')}>
-          <p className={clsx('text-xs', isDark ? 'text-slate-400' : 'text-gray-500')}>Issues</p>
+          <p className={clsx('text-xs', adminMuted(isDark))}>Issues</p>
           <p
             className={clsx(
               'text-lg font-semibold',
@@ -68,15 +69,15 @@ export function FinanceConsistencySmokeCard({
           </p>
         </div>
         <div className={clsx('rounded-md border p-3', isDark ? 'border-slate-700 bg-slate-900/40' : 'border-gray-200 bg-white')}>
-          <p className={clsx('text-xs', isDark ? 'text-slate-400' : 'text-gray-500')}>Settlement Trades</p>
-          <p className={clsx('text-lg font-semibold', isDark ? 'text-slate-100' : 'text-gray-900')}>{financeSmoke.settlementConsistency?.checkedTrades ?? 0}</p>
+          <p className={clsx('text-xs', adminMuted(isDark))}>Settlement Trades</p>
+          <p className={clsx('text-lg font-semibold', adminPrimary(isDark))}>{financeSmoke.settlementConsistency?.checkedTrades ?? 0}</p>
         </div>
         <div className={clsx('rounded-md border p-3', isDark ? 'border-slate-700 bg-slate-900/40' : 'border-gray-200 bg-white')}>
-          <p className={clsx('text-xs', isDark ? 'text-slate-400' : 'text-gray-500')}>Ledger Fuzzy Matches</p>
-          <p className={clsx('text-lg font-semibold', isDark ? 'text-slate-100' : 'text-gray-900')}>{financeSmoke.ledgerFuzzySmoke?.matches ?? 0}</p>
+          <p className={clsx('text-xs', adminMuted(isDark))}>Ledger Fuzzy Matches</p>
+          <p className={clsx('text-lg font-semibold', adminPrimary(isDark))}>{financeSmoke.ledgerFuzzySmoke?.matches ?? 0}</p>
         </div>
         <div className={clsx('rounded-md border p-3', isDark ? 'border-slate-700 bg-slate-900/40' : 'border-gray-200 bg-white')}>
-          <p className={clsx('text-xs', isDark ? 'text-slate-400' : 'text-gray-500')}>Missing Beleg-Refs</p>
+          <p className={clsx('text-xs', adminMuted(isDark))}>Missing Beleg-Refs</p>
           <p
             className={clsx(
               'text-lg font-semibold',

@@ -14,6 +14,7 @@ import {
 import { useAppLedgerPage } from './appLedger/hooks/useAppLedgerPage';
 import type { DateRangePreset } from './appLedger/types';
 
+import { adminCaption, adminMuted, adminPrimary } from '../../utils/adminThemeClasses';
 function resolveCounterAccountLabel(
   account: string,
   transactionType: string,
@@ -135,15 +136,15 @@ export function AppLedgerPage(): JSX.Element {
     purpleValueClass,
   } = getOverviewClasses(isDark);
 
-  const pageTitle = clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900');
-  const leadMuted = clsx('mt-1', isDark ? 'text-slate-400' : 'text-gray-500');
-  const captionMuted = clsx('text-xs text-right max-w-md', isDark ? 'text-slate-400' : 'text-gray-500');
+  const pageTitle = clsx('text-2xl font-bold', adminPrimary(isDark));
+  const leadMuted = clsx('mt-1', adminMuted(isDark));
+  const captionMuted = clsx('text-xs text-right max-w-md', adminMuted(isDark));
   const groupHeading = clsx('text-lg font-semibold mb-3', isDark ? 'text-slate-200' : 'text-gray-700');
-  const sectionH2 = clsx('text-lg font-semibold', isDark ? 'text-slate-100' : 'text-gray-900');
-  const bodyMutedSm = clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500');
+  const sectionH2 = clsx('text-lg font-semibold', adminPrimary(isDark));
+  const bodyMutedSm = clsx('text-sm', adminMuted(isDark));
   const spanStrongSm = clsx('text-sm font-medium', isDark ? 'text-slate-200' : 'text-gray-700');
   const formLabel = clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-200' : 'text-gray-700');
-  const formLabelXs = clsx('block text-xs mb-1', isDark ? 'text-slate-400' : 'text-gray-500');
+  const formLabelXs = clsx('block text-xs mb-1', adminMuted(isDark));
   const controlSm = clsx(
     'w-full border rounded-lg px-3 py-2 text-sm',
     isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
@@ -157,15 +158,15 @@ export function AppLedgerPage(): JSX.Element {
     'max-h-48 overflow-auto border rounded-lg text-xs font-mono',
     isDark ? 'border-slate-600 bg-slate-900/30' : 'border-gray-200 bg-white',
   );
-  const noteXs = clsx('text-xs', isDark ? 'text-slate-400' : 'text-gray-500');
+  const noteXs = clsx('text-xs', adminMuted(isDark));
   const noteXs600 = clsx('text-xs', isDark ? 'text-slate-400' : 'text-gray-600');
-  const accountExt = clsx('font-semibold text-[0.8rem]', isDark ? 'text-slate-100' : 'text-gray-900');
+  const accountExt = clsx('font-semibold text-[0.8rem]', adminPrimary(isDark));
   const accountCodeMono = clsx('text-[0.7rem] font-mono', isDark ? 'text-slate-300' : 'text-gray-600');
-  const accountName = clsx('text-[0.8rem] font-medium leading-tight', isDark ? 'text-slate-100' : 'text-gray-900');
+  const accountName = clsx('text-[0.8rem] font-medium leading-tight', adminPrimary(isDark));
   const accountChart = clsx('text-[0.7rem]', isDark ? 'text-slate-400' : 'text-gray-600');
-  const legLabel = clsx('text-[0.7rem]', isDark ? 'text-slate-400' : 'text-gray-500');
-  const emptyMini = clsx('text-[0.7rem]', isDark ? 'text-slate-500' : 'text-gray-400');
-  const emptyState = clsx('p-8 text-center', isDark ? 'text-slate-400' : 'text-gray-500');
+  const legLabel = clsx('text-[0.7rem]', adminMuted(isDark));
+  const emptyMini = clsx('text-[0.7rem]', adminCaption(isDark));
+  const emptyState = clsx('p-8 text-center', adminMuted(isDark));
 
   return (
     <div className="space-y-6">
@@ -661,13 +662,13 @@ export function AppLedgerPage(): JSX.Element {
                     onSort={onLedgerSort}
                     className={clsx(
                       'px-4 py-3 text-xs font-medium uppercase',
-                      isDark ? 'text-slate-400' : 'text-gray-500',
+                      adminMuted(isDark),
                     )}
                   />
                   <th
                     className={clsx(
                       'px-4 py-3 text-left text-xs font-medium uppercase',
-                      isDark ? 'text-slate-400' : 'text-gray-500',
+                      adminMuted(isDark),
                     )}
                   >
                     Konto
@@ -675,7 +676,7 @@ export function AppLedgerPage(): JSX.Element {
                   <th
                     className={clsx(
                       'px-4 py-3 text-left text-xs font-medium uppercase',
-                      isDark ? 'text-slate-400' : 'text-gray-500',
+                      adminMuted(isDark),
                     )}
                   >
                     Extern (SKR)
@@ -683,7 +684,7 @@ export function AppLedgerPage(): JSX.Element {
                   <th
                     className={clsx(
                       'px-4 py-3 text-center text-xs font-medium uppercase',
-                      isDark ? 'text-slate-400' : 'text-gray-500',
+                      adminMuted(isDark),
                     )}
                   >
                     Seite
@@ -697,13 +698,13 @@ export function AppLedgerPage(): JSX.Element {
                     align="right"
                     className={clsx(
                       'px-4 py-3 text-xs font-medium uppercase',
-                      isDark ? 'text-slate-400' : 'text-gray-500',
+                      adminMuted(isDark),
                     )}
                   />
                   <th
                     className={clsx(
                       'px-4 py-3 text-left text-xs font-medium uppercase',
-                      isDark ? 'text-slate-400' : 'text-gray-500',
+                      adminMuted(isDark),
                     )}
                   >
                     User
@@ -711,7 +712,7 @@ export function AppLedgerPage(): JSX.Element {
                   <th
                     className={clsx(
                       'px-4 py-3 text-left text-xs font-medium uppercase',
-                      isDark ? 'text-slate-400' : 'text-gray-500',
+                      adminMuted(isDark),
                     )}
                   >
                     Typ
@@ -719,7 +720,7 @@ export function AppLedgerPage(): JSX.Element {
                   <th
                     className={clsx(
                       'px-4 py-3 text-left text-xs font-medium uppercase',
-                      isDark ? 'text-slate-400' : 'text-gray-500',
+                      adminMuted(isDark),
                     )}
                   >
                     Beleg/Referenz
@@ -727,7 +728,7 @@ export function AppLedgerPage(): JSX.Element {
                   <th
                     className={clsx(
                       'px-4 py-3 text-left text-xs font-medium uppercase',
-                      isDark ? 'text-slate-400' : 'text-gray-500',
+                      adminMuted(isDark),
                     )}
                   >
                     Gegenkonto
@@ -735,7 +736,7 @@ export function AppLedgerPage(): JSX.Element {
                   <th
                     className={clsx(
                       'px-4 py-3 text-left text-xs font-medium uppercase',
-                      isDark ? 'text-slate-400' : 'text-gray-500',
+                      adminMuted(isDark),
                     )}
                   >
                     Beschreibung
@@ -745,7 +746,7 @@ export function AppLedgerPage(): JSX.Element {
               <tbody className={tableBodyDivideClasses(isDark)}>
                 {entries.map((e, index) => (
                   <tr key={e.id} className={listRowStripeClasses(isDark, index)}>
-                    <td className={clsx('px-4 py-3 text-sm whitespace-nowrap', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                    <td className={clsx('px-4 py-3 text-sm whitespace-nowrap', adminMuted(isDark))}>
                       {formatDateTime(e.createdAt)}
                     </td>
                     <td
@@ -758,7 +759,7 @@ export function AppLedgerPage(): JSX.Element {
                     </td>
                     <td className={clsx('px-4 py-3 text-sm whitespace-nowrap', isDark ? 'text-slate-300' : 'text-gray-700')}>
                       <div>{e.externalAccountNumberSnapshot || '-'}</div>
-                      <div className={clsx('text-xs', isDark ? 'text-slate-500' : 'text-gray-400')}>
+                      <div className={clsx('text-xs', adminCaption(isDark))}>
                         {e.chartCodeSnapshot || '-'} {e.vatKeySnapshot ? `• VAT ${e.vatKeySnapshot}` : ''}
                       </div>
                     </td>
@@ -783,23 +784,23 @@ export function AppLedgerPage(): JSX.Element {
                     </td>
                     <td className={clsx('px-4 py-3 text-sm whitespace-nowrap', isDark ? 'text-slate-200' : 'text-gray-700')}>
                       <div>{e.metadata?.userCustomerNumber || '-'}</div>
-                      <div className={clsx('text-xs', isDark ? 'text-slate-500' : 'text-gray-400')}>
+                      <div className={clsx('text-xs', adminCaption(isDark))}>
                         {e.metadata?.userDisplayName || '-'}
                       </div>
                       {e.metadata?.userUsername && (
-                        <div className={clsx('text-xs', isDark ? 'text-slate-500' : 'text-gray-400')}>
+                        <div className={clsx('text-xs', adminCaption(isDark))}>
                           Username: {e.metadata.userUsername}
                         </div>
                       )}
-                      <div className={clsx('text-xs font-mono', isDark ? 'text-slate-500' : 'text-gray-400')}>
+                      <div className={clsx('text-xs font-mono', adminCaption(isDark))}>
                         Technische ID: {e.userId || '-'}
                       </div>
                       {e.metadata?.userIdRaw && e.metadata.userIdRaw !== e.userId && (
-                        <div className={clsx('text-xs font-mono', isDark ? 'text-slate-500' : 'text-gray-400')}>
+                        <div className={clsx('text-xs font-mono', adminCaption(isDark))}>
                           Alias: {e.metadata.userIdRaw}
                         </div>
                       )}
-                      <div className={clsx('text-xs', isDark ? 'text-slate-500' : 'text-gray-400')}>
+                      <div className={clsx('text-xs', adminCaption(isDark))}>
                         {e.userRole}
                       </div>
                     </td>
@@ -813,7 +814,7 @@ export function AppLedgerPage(): JSX.Element {
                         {resolveAuditReferenceLabel(e.referenceId, e.metadata?.businessReference)}
                       </div>
                       {e.referenceType ? (
-                        <div className={clsx('text-xs', isDark ? 'text-slate-500' : 'text-gray-400')}>
+                        <div className={clsx('text-xs', adminCaption(isDark))}>
                           Referenz-Typ: {e.referenceType}
                         </div>
                       ) : null}
@@ -865,7 +866,7 @@ export function AppLedgerPage(): JSX.Element {
                     <td
                       className={clsx(
                         'px-4 py-3 text-sm whitespace-nowrap',
-                        isDark ? 'text-slate-400' : 'text-gray-500',
+                        adminMuted(isDark),
                       )}
                     >
                       {e.description}

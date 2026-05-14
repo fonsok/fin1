@@ -6,6 +6,7 @@ import { formatDateTime } from '../../../utils/format';
 import { listRowStripeClasses, tableBodyDivideClasses, tableTheadSurfaceClasses } from '../../../utils/tableStriping';
 import type { FailedLogin } from '../types';
 
+import { adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 interface LoginsTabProps {
   failedLogins: FailedLogin[];
   sortBy: string;
@@ -16,7 +17,7 @@ interface LoginsTabProps {
 export function LoginsTab({ failedLogins, sortBy, sortOrder, onSort }: LoginsTabProps): JSX.Element {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
-  const thClass = clsx('px-4 py-3 text-xs font-medium uppercase', isDark ? 'text-slate-400' : 'text-gray-500');
+  const thClass = clsx('px-4 py-3 text-xs font-medium uppercase', adminMuted(isDark));
 
   return (
     <Card>
@@ -41,19 +42,19 @@ export function LoginsTab({ failedLogins, sortBy, sortOrder, onSort }: LoginsTab
           <tbody className={tableBodyDivideClasses(isDark)}>
             {failedLogins.map((login, index) => (
               <tr key={login.objectId} className={listRowStripeClasses(isDark, index)}>
-                <td className={clsx('px-4 py-3 font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                <td className={clsx('px-4 py-3 font-medium', adminPrimary(isDark))}>
                   {login.email}
                 </td>
-                <td className={clsx('px-4 py-3 font-mono text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                <td className={clsx('px-4 py-3 font-mono text-sm', adminMuted(isDark))}>
                   {login.ipAddress}
                 </td>
-                <td className={clsx('px-4 py-3 text-sm truncate max-w-[200px]', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                <td className={clsx('px-4 py-3 text-sm truncate max-w-[200px]', adminMuted(isDark))}>
                   {login.userAgent}
                 </td>
-                <td className={clsx('px-4 py-3', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                <td className={clsx('px-4 py-3', adminMuted(isDark))}>
                   {login.reason}
                 </td>
-                <td className={clsx('px-4 py-3', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                <td className={clsx('px-4 py-3', adminMuted(isDark))}>
                   {formatDateTime(login.timestamp)}
                 </td>
               </tr>

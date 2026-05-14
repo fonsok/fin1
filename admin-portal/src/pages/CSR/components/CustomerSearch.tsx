@@ -6,6 +6,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import { searchCustomers } from '../api';
 import type { CustomerSearchResult } from '../types';
 
+import { adminCaption, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 interface CustomerSearchProps {
   onSelectCustomer: (customer: CustomerSearchResult) => void;
 }
@@ -29,7 +30,7 @@ export function CustomerSearch({ onSelectCustomer }: CustomerSearchProps) {
 
   return (
     <Card>
-      <h2 className={clsx('text-lg font-semibold mb-4', isDark ? 'text-slate-100' : 'text-gray-900')}>
+      <h2 className={clsx('text-lg font-semibold mb-4', adminPrimary(isDark))}>
         Kundensuche
       </h2>
       <div className="space-y-4">
@@ -94,12 +95,12 @@ export function CustomerSearch({ onSelectCustomer }: CustomerSearchProps) {
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className={clsx('font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                    <div className={clsx('font-medium', adminPrimary(isDark))}>
                       {customer.fullName || `${customer.firstName} ${customer.lastName}` || customer.email}
                     </div>
-                    <div className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>{customer.email}</div>
+                    <div className={clsx('text-sm', adminMuted(isDark))}>{customer.email}</div>
                     {customer.customerNumber && (
-                      <div className={clsx('text-xs', isDark ? 'text-slate-500' : 'text-gray-400')}>
+                      <div className={clsx('text-xs', adminCaption(isDark))}>
                         Nr.: {customer.customerNumber}
                       </div>
                     )}
@@ -122,7 +123,7 @@ export function CustomerSearch({ onSelectCustomer }: CustomerSearchProps) {
                       </span>
                     )}
                     <svg
-                      className={clsx('w-5 h-5', isDark ? 'text-slate-500' : 'text-gray-400')}
+                      className={clsx('w-5 h-5', adminCaption(isDark))}
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -142,7 +143,7 @@ export function CustomerSearch({ onSelectCustomer }: CustomerSearchProps) {
         )}
 
         {results && results.length === 0 && searchQuery.length >= 2 && !isLoading && (
-          <div className={clsx('text-center py-4', isDark ? 'text-slate-400' : 'text-gray-500')}>
+          <div className={clsx('text-center py-4', adminMuted(isDark))}>
             Keine Kunden gefunden
           </div>
         )}

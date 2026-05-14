@@ -28,6 +28,7 @@ import type { CustomerSearchResult } from '../types';
 // - Category and priority selection
 // - Customer info sidebar with recent tickets
 
+import { adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 export function CreateTicketPage(): JSX.Element {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -209,10 +210,10 @@ export function CreateTicketPage(): JSX.Element {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+          <h1 className={clsx('text-2xl font-bold', adminPrimary(isDark))}>
             Neues Ticket erstellen
           </h1>
-          <p className={clsx('mt-1', isDark ? 'text-slate-400' : 'text-gray-500')}>
+          <p className={clsx('mt-1', adminMuted(isDark))}>
             Support-Anfrage für einen Kunden erfassen
           </p>
         </div>
@@ -226,7 +227,7 @@ export function CreateTicketPage(): JSX.Element {
         <div className="lg:col-span-2 space-y-6">
           {/* Customer Selection */}
           <Card>
-            <h2 className={clsx('text-lg font-semibold mb-4', isDark ? 'text-slate-100' : 'text-gray-900')}>
+            <h2 className={clsx('text-lg font-semibold mb-4', adminPrimary(isDark))}>
               Kunde auswählen <span className="text-red-500">*</span>
             </h2>
 
@@ -257,7 +258,7 @@ export function CreateTicketPage(): JSX.Element {
 
           {/* Ticket Details */}
           <Card>
-            <h2 className={clsx('text-lg font-semibold mb-4', isDark ? 'text-slate-100' : 'text-gray-900')}>
+            <h2 className={clsx('text-lg font-semibold mb-4', adminPrimary(isDark))}>
               Ticket-Details
             </h2>
 

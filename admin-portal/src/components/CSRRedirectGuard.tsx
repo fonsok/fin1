@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 
+import { adminMuted } from '../utils/adminThemeClasses';
 /**
  * Guard component that redirects CSR users away from admin routes
  * This ensures CSR users NEVER see the admin layout
@@ -41,7 +42,7 @@ export function CSRRedirectGuard({ children }: { children: React.ReactNode }) {
         >
           <div className="text-center">
             <div className="animate-spin w-12 h-12 border-4 border-fin1-primary border-t-transparent rounded-full mx-auto"></div>
-            <p className={clsx('mt-4', isDark ? 'text-slate-400' : 'text-gray-500')}>
+            <p className={clsx('mt-4', adminMuted(isDark))}>
               Weiterleitung zum CSR-Portal...
             </p>
           </div>

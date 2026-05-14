@@ -14,6 +14,7 @@ import {
 import type { SupportTicket } from '../types';
 import { useNavigate } from 'react-router-dom';
 
+import { adminCaption, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 interface RecentTicketsProps {
   tickets: SupportTicket[];
   /** Alle vom Endpoint geladenen Tickets (für „aus Server“-Hinweis) */
@@ -93,7 +94,7 @@ export function RecentTickets({ tickets, serverTicketTotal, isLoading }: RecentT
       <Card>
         <div className="text-center py-8">
           <div className="animate-spin w-8 h-8 border-4 border-fin1-primary border-t-transparent rounded-full mx-auto"></div>
-          <p className={clsx('mt-4', isDark ? 'text-slate-400' : 'text-gray-500')}>Laden...</p>
+          <p className={clsx('mt-4', adminMuted(isDark))}>Laden...</p>
         </div>
       </Card>
     );
@@ -116,8 +117,8 @@ export function RecentTickets({ tickets, serverTicketTotal, isLoading }: RecentT
               d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
             />
           </svg>
-          <p className={clsx(isDark ? 'text-slate-400' : 'text-gray-500')}>Keine aktiven Tickets</p>
-          <p className={clsx('text-sm mt-2', isDark ? 'text-slate-500' : 'text-gray-400')}>Alle Tickets wurden bearbeitet</p>
+          <p className={clsx(adminMuted(isDark))}>Keine aktiven Tickets</p>
+          <p className={clsx('text-sm mt-2', adminCaption(isDark))}>Alle Tickets wurden bearbeitet</p>
         </div>
       </Card>
     );
@@ -131,7 +132,7 @@ export function RecentTickets({ tickets, serverTicketTotal, isLoading }: RecentT
           isDark ? 'border-slate-600' : 'border-gray-200',
         )}
       >
-        <h2 className={clsx('text-lg font-semibold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+        <h2 className={clsx('text-lg font-semibold', adminPrimary(isDark))}>
           Aktuelle Tickets
         </h2>
         <button
@@ -167,7 +168,7 @@ export function RecentTickets({ tickets, serverTicketTotal, isLoading }: RecentT
           <option value={50}>50 / Seite</option>
           <option value={100}>100 / Seite</option>
         </select>
-        <p className={clsx('text-sm text-right', isDark ? 'text-slate-400' : 'text-gray-500')}>
+        <p className={clsx('text-sm text-right', adminMuted(isDark))}>
           {formatNumber(listTotal)} Treffer nach Filter · bis zu {formatNumber(serverTicketTotal)} aus Server (
           {formatNumber(pageSize)} pro Seite, lokal)
         </p>

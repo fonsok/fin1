@@ -5,6 +5,7 @@ import { cloudFunction } from '../../../api/admin';
 import { Button, Card } from '../../../components/ui';
 import { useTheme } from '../../../context/ThemeContext';
 
+import { adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 interface CorrectionModalProps {
   onClose: () => void;
 }
@@ -94,10 +95,10 @@ export function CorrectionModal({ onClose }: CorrectionModalProps): JSX.Element 
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <Card className="max-w-md w-full max-h-[90vh] overflow-y-auto shadow-xl" padding="none">
         <div className={clsx('p-6 border-b', isDark ? 'border-slate-600' : 'border-gray-100')}>
-          <h2 className={clsx('text-xl font-semibold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+          <h2 className={clsx('text-xl font-semibold', adminPrimary(isDark))}>
             Neue Korrekturbuchung
           </h2>
-          <p className={clsx('text-sm mt-1', isDark ? 'text-slate-400' : 'text-gray-500')}>
+          <p className={clsx('text-sm mt-1', adminMuted(isDark))}>
             Erfordert 4-Augen-Freigabe durch einen zweiten Admin
           </p>
         </div>

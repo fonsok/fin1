@@ -7,6 +7,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import { formatDateTime } from '../../../utils/format';
 import clsx from 'clsx';
 
+import { adminCaption, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 const STEP_LABELS: Record<string, { label: string; icon: string }> = {
   legal_entity: { label: 'Rechtsform & Handelsregister', icon: '🏛️' },
   registered_address: { label: 'Anschrift', icon: '📍' },
@@ -79,11 +80,11 @@ export function KYBDetailModal({ userId, onClose, onReview }: KYBDetailModalProp
       <Card className="w-full max-w-3xl my-8">
         <div className="flex items-start justify-between mb-6">
           <div>
-            <h2 className={clsx('text-xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+            <h2 className={clsx('text-xl font-bold', adminPrimary(isDark))}>
               KYB-Einreichung
             </h2>
             {data && (
-              <p className={clsx('text-sm mt-1', isDark ? 'text-slate-400' : 'text-gray-500')}>
+              <p className={clsx('text-sm mt-1', adminMuted(isDark))}>
                 {data.user.customerNumber} &middot; {data.user.email}
               </p>
             )}
@@ -194,7 +195,7 @@ export function KYBDetailModal({ userId, onClose, onReview }: KYBDetailModalProp
               >
                 {canReset && !showResetForm && (
                   <div className="flex justify-between items-center">
-                    <p className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                    <p className={clsx('text-sm', adminMuted(isDark))}>
                       Zur Überarbeitung freigeben, damit der Nutzer erneut einreichen kann.
                     </p>
                     <Button variant="warning" onClick={() => setShowResetForm(true)}>
@@ -249,8 +250,8 @@ export function KYBDetailModal({ userId, onClose, onReview }: KYBDetailModalProp
 function InfoRow({ label, value, isDark }: { label: string; value: React.ReactNode; isDark: boolean }) {
   return (
     <div>
-      <span className={clsx('text-xs', isDark ? 'text-slate-400' : 'text-gray-500')}>{label}</span>
-      <div className={clsx('font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>
+      <span className={clsx('text-xs', adminMuted(isDark))}>{label}</span>
+      <div className={clsx('font-medium', adminPrimary(isDark))}>
         {typeof value === 'string' ? value : value}
       </div>
     </div>
@@ -288,7 +289,7 @@ function StepAccordion({
           <span className={clsx('font-medium text-sm', isDark ? 'text-slate-100' : 'text-gray-800')}>
             {stepMeta.label}
           </span>
-          <span className={clsx('text-xs', isDark ? 'text-slate-500' : 'text-gray-400')}>
+          <span className={clsx('text-xs', adminCaption(isDark))}>
             {formatDateTime(entry.completedAt)}
           </span>
         </div>
@@ -322,7 +323,7 @@ function renderStepData(_step: string, data: Record<string, unknown>, isDark: bo
 
   if (fields.length === 0) {
     return (
-      <p className={clsx('text-sm italic', isDark ? 'text-slate-500' : 'text-gray-400')}>
+      <p className={clsx('text-sm italic', adminCaption(isDark))}>
         Keine Daten vorhanden
       </p>
     );
@@ -344,7 +345,7 @@ function renderStepData(_step: string, data: Record<string, unknown>, isDark: bo
               {typeof item === 'object' && item !== null
                 ? Object.entries(item).map(([k, v]) => (
                     <div key={k} className="flex gap-2">
-                      <span className={clsx(isDark ? 'text-slate-400' : 'text-gray-500')}>
+                      <span className={clsx(adminMuted(isDark))}>
                         {formatFieldName(k)}:
                       </span>
                       <span className={clsx('font-medium', isDark ? 'text-slate-200' : 'text-gray-800')}>
@@ -372,7 +373,7 @@ function renderStepData(_step: string, data: Record<string, unknown>, isDark: bo
 
 function DataLabel({ label, isDark }: { label: string; isDark: boolean }) {
   return (
-    <span className={clsx('text-xs min-w-[140px]', isDark ? 'text-slate-400' : 'text-gray-500')}>
+    <span className={clsx('text-xs min-w-[140px]', adminMuted(isDark))}>
       {label}:
     </span>
   );

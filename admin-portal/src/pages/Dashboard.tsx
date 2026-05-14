@@ -8,7 +8,7 @@ import { useTheme } from '../context/ThemeContext';
 import { getAdminDashboard } from '../api/admin';
 import { Card, Badge } from '../components/ui';
 import { formatNumber } from '../utils/format';
-import { adminMuted } from '../utils/adminThemeClasses';
+import { adminMuted, adminPrimary } from '../utils/adminThemeClasses';
 
 export function DashboardPage() {
   const { user } = useAuth();
@@ -107,7 +107,7 @@ export function DashboardPage() {
         {perms.canViewTickets && user?.role !== 'admin' && (
           <Card>
             <div className="flex items-center justify-between mb-4">
-              <h3 className={clsx('text-lg font-semibold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+              <h3 className={clsx('text-lg font-semibold', adminPrimary(isDark))}>
                 Offene Tickets
               </h3>
               <Badge variant="warning">{stats?.tickets?.open || 0}</Badge>
@@ -134,7 +134,7 @@ export function DashboardPage() {
         {perms.canViewCompliance && (
           <Card>
             <div className="flex items-center justify-between mb-4">
-              <h3 className={clsx('text-lg font-semibold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+              <h3 className={clsx('text-lg font-semibold', adminPrimary(isDark))}>
                 Compliance-Reviews
               </h3>
               <Badge variant="warning">{stats?.compliance?.pendingReviews || 0}</Badge>
@@ -161,7 +161,7 @@ export function DashboardPage() {
         {perms.canApprove4Eyes && (
           <Card>
             <div className="flex items-center justify-between mb-4">
-              <h3 className={clsx('text-lg font-semibold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+              <h3 className={clsx('text-lg font-semibold', adminPrimary(isDark))}>
                 4-Augen-Freigaben
               </h3>
               <Badge variant="info">{stats?.compliance?.pendingApprovals || 0}</Badge>
@@ -186,7 +186,7 @@ export function DashboardPage() {
 
         {/* Quick Actions */}
         <Card>
-          <h3 className={clsx('text-lg font-semibold mb-4', isDark ? 'text-slate-100' : 'text-gray-900')}>
+          <h3 className={clsx('text-lg font-semibold mb-4', adminPrimary(isDark))}>
             Schnellzugriff
           </h3>
           <div className="grid grid-cols-2 gap-3">
@@ -247,7 +247,7 @@ function StatCard({
         <div className={clsx('p-3 rounded-lg', colors[color])}>{icon}</div>
         <div>
           <p className={clsx('text-sm', adminMuted(isDark))}>{title}</p>
-          <p className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+          <p className={clsx('text-2xl font-bold', adminPrimary(isDark))}>
             {value}
           </p>
         </div>

@@ -6,6 +6,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import { updateEmailTemplate, renderEmailTemplate } from '../api';
 import type { EmailTemplate } from '../types';
 
+import { adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 interface EmailTemplateEditorProps {
   template: EmailTemplate;
   onSave: () => void;
@@ -74,10 +75,10 @@ export function EmailTemplateEditor({ template, onSave, onClose }: EmailTemplate
           <div className="flex items-center gap-3">
             <span className="text-3xl">{template.icon || '✉️'}</span>
             <div>
-              <h2 className={clsx('text-xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+              <h2 className={clsx('text-xl font-bold', adminPrimary(isDark))}>
                 {template.displayName}
               </h2>
-              <span className={clsx('text-sm font-mono', isDark ? 'text-slate-400' : 'text-gray-500')}>
+              <span className={clsx('text-sm font-mono', adminMuted(isDark))}>
                 {template.type}
               </span>
             </div>
@@ -102,7 +103,7 @@ export function EmailTemplateEditor({ template, onSave, onClose }: EmailTemplate
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Editor */}
             <div className="space-y-4">
-              <h3 className={clsx('font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>
+              <h3 className={clsx('font-medium', adminPrimary(isDark))}>
                 Vorlage bearbeiten
               </h3>
 
@@ -171,7 +172,7 @@ export function EmailTemplateEditor({ template, onSave, onClose }: EmailTemplate
             {/* Preview */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className={clsx('font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                <h3 className={clsx('font-medium', adminPrimary(isDark))}>
                   Vorschau
                 </h3>
                 <Button variant="secondary" size="sm" onClick={() => setShowPreview(!showPreview)}>
@@ -195,7 +196,7 @@ export function EmailTemplateEditor({ template, onSave, onClose }: EmailTemplate
                       const key = p.replace(/\{\{|\}\}/g, '');
                       return (
                         <div key={p} className="flex items-center gap-2">
-                          <span className={clsx('text-xs font-mono w-32 truncate', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                          <span className={clsx('text-xs font-mono w-32 truncate', adminMuted(isDark))}>
                             {p}
                           </span>
                           <input

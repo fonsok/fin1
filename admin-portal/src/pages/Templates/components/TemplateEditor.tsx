@@ -6,6 +6,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import type { ResponseTemplate, TemplateCategory, CreateTemplateRequest, UpdateTemplateRequest } from '../types';
 import { TEMPLATE_CATEGORIES, CSR_ROLES } from '../types';
 
+import { adminCaption, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 interface TemplateEditorProps {
   template: ResponseTemplate | null;
   categories: TemplateCategory[];
@@ -77,7 +78,7 @@ export function TemplateEditor({ template, categories, onSave, onClose }: Templa
         <form onSubmit={handleSubmit}>
           {/* Header */}
           <div className={clsx('p-6 border-b', isDark ? 'border-slate-600' : 'border-gray-200')}>
-            <h2 className={clsx('text-xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+            <h2 className={clsx('text-xl font-bold', adminPrimary(isDark))}>
               {isEdit ? 'Template bearbeiten' : 'Neues Template'}
             </h2>
           </div>
@@ -186,7 +187,7 @@ export function TemplateEditor({ template, categories, onSave, onClose }: Templa
                 Shortcut (optional)
               </label>
               <div className="flex items-center gap-2">
-                <span className={clsx(isDark ? 'text-slate-500' : 'text-gray-400')}>/</span>
+                <span className={clsx(adminCaption(isDark))}>/</span>
                 <input
                   type="text"
                   value={shortcut}
@@ -195,7 +196,7 @@ export function TemplateEditor({ template, categories, onSave, onClose }: Templa
                   className={clsx(fieldClass, 'flex-1 font-mono')}
                 />
               </div>
-              <p className={clsx('text-xs mt-1', isDark ? 'text-slate-400' : 'text-gray-500')}>
+              <p className={clsx('text-xs mt-1', adminMuted(isDark))}>
                 Schnellzugriff mit /shortcut im Chat
               </p>
             </div>
@@ -213,7 +214,7 @@ export function TemplateEditor({ template, categories, onSave, onClose }: Templa
                 className={clsx(fieldClass, 'font-mono text-sm')}
                 required
               />
-              <p className={clsx('text-xs mt-1', isDark ? 'text-slate-400' : 'text-gray-500')}>
+              <p className={clsx('text-xs mt-1', adminMuted(isDark))}>
                 Platzhalter wie {'{{KUNDENNAME}}'} werden automatisch erkannt
               </p>
             </div>
@@ -276,7 +277,7 @@ export function TemplateEditor({ template, categories, onSave, onClose }: Templa
                   </label>
                 ))}
               </div>
-              <p className={clsx('text-xs mt-1', isDark ? 'text-slate-400' : 'text-gray-500')}>
+              <p className={clsx('text-xs mt-1', adminMuted(isDark))}>
                 Leer = für alle Rollen verfügbar
               </p>
             </div>

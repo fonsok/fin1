@@ -14,6 +14,7 @@ import {
 } from '../../../utils/tableStriping';
 import { getSupportTickets, assignTicket, getAvailableAgents } from '../api';
 
+import { adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 export function TicketQueuePage() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -90,7 +91,7 @@ export function TicketQueuePage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen gap-3">
         <div className="animate-spin w-8 h-8 border-4 border-fin1-primary border-t-transparent rounded-full"></div>
-        <p className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>Laden...</p>
+        <p className={clsx('text-sm', adminMuted(isDark))}>Laden...</p>
       </div>
     );
   }
@@ -98,7 +99,7 @@ export function TicketQueuePage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>Ticket-Warteschlange</h1>
+        <h1 className={clsx('text-2xl font-bold', adminPrimary(isDark))}>Ticket-Warteschlange</h1>
         <Badge variant="warning">{unassignedTickets.length} unzugewiesen</Badge>
       </div>
 
@@ -118,7 +119,7 @@ export function TicketQueuePage() {
                 d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
-            <p className={clsx(isDark ? 'text-slate-400' : 'text-gray-500')}>Keine unzugewiesenen Tickets</p>
+            <p className={clsx(adminMuted(isDark))}>Keine unzugewiesenen Tickets</p>
           </div>
         ) : (
           <>
@@ -143,7 +144,7 @@ export function TicketQueuePage() {
               <option value={50}>50 / Seite</option>
               <option value={100}>100 / Seite</option>
             </select>
-            <p className={clsx('text-sm text-right', isDark ? 'text-slate-400' : 'text-gray-500')}>
+            <p className={clsx('text-sm text-right', adminMuted(isDark))}>
               {formatNumber(queueTotal)} Treffer nach Filter · bis zu {formatNumber(serverTicketTotal)} aus Server (
               {formatNumber(pageSize)} pro Seite, lokal)
             </p>

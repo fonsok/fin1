@@ -18,6 +18,7 @@ import { DevMaintenanceCard } from './components/DevMaintenanceCard';
 import { SystemServicesCard } from './components/SystemServicesCard';
 import { SystemDatabasesCard } from './components/SystemDatabasesCard';
 
+import { adminMuted, adminPrimary } from '../../utils/adminThemeClasses';
 function StatusBadge({ status }: { status: ServiceStatus['status'] }) {
   const variants: Record<ServiceStatus['status'], 'success' | 'warning' | 'danger' | 'neutral'> = {
     healthy: 'success',
@@ -240,8 +241,8 @@ export function SystemHealthPage() {
       <Card>
         <div className="flex items-center justify-between">
           <div>
-            <h2 className={clsx('text-lg font-semibold', isDark ? 'text-slate-100' : 'text-gray-900')}>System-Status</h2>
-            <p className={clsx('text-sm mt-1', isDark ? 'text-slate-400' : 'text-gray-500')}>
+            <h2 className={clsx('text-lg font-semibold', adminPrimary(isDark))}>System-Status</h2>
+            <p className={clsx('text-sm mt-1', adminMuted(isDark))}>
               Übersicht aller Services und Datenbanken
             </p>
           </div>
@@ -274,7 +275,7 @@ export function SystemHealthPage() {
             )}
           </div>
           <div>
-            <h3 className={clsx('text-xl font-semibold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+            <h3 className={clsx('text-xl font-semibold', adminPrimary(isDark))}>
               {health.overall === 'healthy' ? 'Alle Systeme betriebsbereit' :
                health.overall === 'degraded' ? 'Einige Systeme beeinträchtigt' :
                health.overall === 'unknown' ? 'Systemstatus konnte nicht geladen werden' :
@@ -296,19 +297,19 @@ export function SystemHealthPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <div className="text-center">
-            <p className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>Uptime</p>
+            <p className={clsx('text-sm', adminMuted(isDark))}>Uptime</p>
             <p className="text-2xl font-bold text-fin1-primary mt-1">{formatUptime(health.uptime)}</p>
           </div>
         </Card>
         <Card>
           <div className="text-center">
-            <p className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>Version</p>
+            <p className={clsx('text-sm', adminMuted(isDark))}>Version</p>
             <p className="text-2xl font-bold text-fin1-primary mt-1">v{health.version}</p>
           </div>
         </Card>
         <Card>
           <div className="text-center">
-            <p className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>Services</p>
+            <p className={clsx('text-sm', adminMuted(isDark))}>Services</p>
             <p className="text-2xl font-bold text-fin1-primary mt-1">
               {health.services.filter(s => s.status === 'healthy').length}/{health.services.length}
             </p>
@@ -316,7 +317,7 @@ export function SystemHealthPage() {
         </Card>
         <Card>
           <div className="text-center">
-            <p className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>Node.js</p>
+            <p className={clsx('text-sm', adminMuted(isDark))}>Node.js</p>
             <p className="text-2xl font-bold text-fin1-primary mt-1">{health.nodeVersion || '-'}</p>
           </div>
         </Card>

@@ -21,6 +21,7 @@ import {
   tableTheadSurfaceClasses,
 } from '../../utils/tableStriping';
 
+import { adminMuted, adminPrimary } from '../../utils/adminThemeClasses';
 const DOCUMENT_TYPE_OPTIONS: { value: string; label: string }[] = [
   { value: 'invoice', label: 'Rechnung' },
   { value: 'investorCollectionBill', label: 'Investor Collection Bill' },
@@ -187,13 +188,13 @@ export function DocumentSearchPage(): JSX.Element {
     });
   };
 
-  const detailLabel = clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500');
+  const detailLabel = clsx('text-sm', adminMuted(isDark));
   const detailValue = clsx('text-sm', isDark ? 'text-slate-200' : 'text-gray-800');
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>Beleg-Suche</h1>
+        <h1 className={clsx('text-2xl font-bold', adminPrimary(isDark))}>Beleg-Suche</h1>
         <p className={clsx('mt-1 text-sm', isDark ? 'text-slate-400' : 'text-gray-600')}>
           Serverseitige Suche über <code className="text-xs">searchDocuments</code> (Filter Pflicht). Aus dem
           App-Ledger: „Beleg ansehen“ lädt den Beleg per objectId oder exakter Belegnummer (
@@ -205,7 +206,7 @@ export function DocumentSearchPage(): JSX.Element {
       {(detailId || detailLookupNumber) && (
         <Card className="p-4 space-y-3">
           <div className="flex justify-between items-center">
-            <h2 className={clsx('text-lg font-semibold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+            <h2 className={clsx('text-lg font-semibold', adminPrimary(isDark))}>
               Beleg-Details
             </h2>
             <Button variant="secondary" size="sm" onClick={closeDocumentDetail}>

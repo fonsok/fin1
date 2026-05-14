@@ -6,6 +6,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import { listRowStripeClasses } from '../../../utils/tableStriping';
 import type { TradeItem, TradeInvestor } from '../../../api/admin';
 
+import { adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 export function UserTradeCard({ trade }: { trade: TradeItem }) {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -41,10 +42,10 @@ export function UserTradeCard({ trade }: { trade: TradeItem }) {
         <div className="flex items-center gap-4 min-w-0">
           <span className="font-mono font-bold text-fin1-primary shrink-0">#{trade.tradeNumber}</span>
           <div className="min-w-0">
-            <p className={clsx('font-medium font-mono text-sm', isDark ? 'text-slate-100' : 'text-gray-900')}>
+            <p className={clsx('font-medium font-mono text-sm', adminPrimary(isDark))}>
               {trade.symbol}
             </p>
-            <p className={clsx('text-sm truncate', isDark ? 'text-slate-400' : 'text-gray-500')}>
+            <p className={clsx('text-sm truncate', adminMuted(isDark))}>
               {trade.description}
             </p>
           </div>
@@ -65,7 +66,7 @@ export function UserTradeCard({ trade }: { trade: TradeItem }) {
             >
               {formatCurrency(trade.netProfit || trade.grossProfit || 0)}
             </p>
-            <p className={clsx('text-xs', isDark ? 'text-slate-400' : 'text-gray-500')}>Netto-Gewinn</p>
+            <p className={clsx('text-xs', adminMuted(isDark))}>Netto-Gewinn</p>
           </div>
           <Badge variant={getStatusVariant(trade.status)}>
             {getStatusDisplay(trade.status)}
@@ -170,10 +171,10 @@ export function UserTradeCard({ trade }: { trade: TradeItem }) {
                 {trade.investors?.map((inv: TradeInvestor, idx: number) => (
                   <tr key={idx} className={listRowStripeClasses(isDark, idx, { hover: false })}>
                     <td className="px-3 py-2">
-                      <p className={clsx('font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                      <p className={clsx('font-medium', adminPrimary(isDark))}>
                         {inv.investorName}
                       </p>
-                      <p className={clsx('text-xs', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                      <p className={clsx('text-xs', adminMuted(isDark))}>
                         {inv.investorEmail}
                       </p>
                     </td>
@@ -183,7 +184,7 @@ export function UserTradeCard({ trade }: { trade: TradeItem }) {
                         : (inv.ownershipPercentage || 0)
                       ).toFixed(1)}%
                     </td>
-                    <td className={clsx('px-3 py-2 text-right', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                    <td className={clsx('px-3 py-2 text-right', adminPrimary(isDark))}>
                       {formatCurrency(inv.investedAmount || 0)}
                     </td>
                     <td

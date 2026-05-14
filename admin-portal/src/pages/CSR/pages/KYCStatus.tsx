@@ -13,6 +13,7 @@ import {
 } from '../../../utils/tableStriping';
 import { searchCustomers, getCustomerKYCStatus } from '../api';
 
+import { adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 const KYC_PAGE_SIZE = 50;
 
 export function KYCStatusPage() {
@@ -122,7 +123,7 @@ export function KYCStatusPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <h1 className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+        <h1 className={clsx('text-2xl font-bold', adminPrimary(isDark))}>
           KYC-Status Übersicht
         </h1>
         <div className="flex gap-2">
@@ -157,7 +158,7 @@ export function KYCStatusPage() {
       ) : filteredCustomers.length === 0 ? (
         <Card>
           <div className="text-center py-8">
-            <p className={clsx(isDark ? 'text-slate-400' : 'text-gray-500')}>
+            <p className={clsx(adminMuted(isDark))}>
               {searchQuery.length < 2
                 ? 'Geben Sie mindestens 2 Zeichen ein, um zu suchen'
                 : 'Keine Kunden gefunden'}
@@ -229,7 +230,7 @@ export function KYCStatusPage() {
                         <td
                           className={clsx(
                             'px-6 py-4 text-sm',
-                            isDark ? 'text-slate-100' : 'text-gray-900',
+                            adminPrimary(isDark),
                           )}
                         >
                           {customer.fullName || `${customer.firstName} ${customer.lastName}` || '-'}
@@ -251,7 +252,7 @@ export function KYCStatusPage() {
                         <td
                           className={clsx(
                             'px-6 py-4 text-sm',
-                            isDark ? 'text-slate-400' : 'text-gray-500',
+                            adminMuted(isDark),
                           )}
                         >
                           {kyc?.verifiedAt ? formatDateTime(kyc.verifiedAt) : '-'}
@@ -288,10 +289,10 @@ export function KYCStatusPage() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
             <div className="text-center">
-              <div className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+              <div className={clsx('text-2xl font-bold', adminPrimary(isDark))}>
                 {customers.length}
               </div>
-              <div className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>Gesamt Kunden</div>
+              <div className={clsx('text-sm', adminMuted(isDark))}>Gesamt Kunden</div>
             </div>
           </Card>
           <Card>
@@ -299,7 +300,7 @@ export function KYCStatusPage() {
               <div className={clsx('text-2xl font-bold', isDark ? 'text-emerald-400' : 'text-green-600')}>
                 {kycStatuses?.filter(s => s.status?.status === 'verified').length || 0}
               </div>
-              <div className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>Verifiziert</div>
+              <div className={clsx('text-sm', adminMuted(isDark))}>Verifiziert</div>
             </div>
           </Card>
           <Card>
@@ -307,7 +308,7 @@ export function KYCStatusPage() {
               <div className={clsx('text-2xl font-bold', isDark ? 'text-orange-400' : 'text-orange-600')}>
                 {kycStatuses?.filter(s => s.status?.status === 'pending' || !s.status).length || 0}
               </div>
-              <div className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>Ausstehend</div>
+              <div className={clsx('text-sm', adminMuted(isDark))}>Ausstehend</div>
             </div>
           </Card>
           <Card>
@@ -315,7 +316,7 @@ export function KYCStatusPage() {
               <div className={clsx('text-2xl font-bold', isDark ? 'text-red-400' : 'text-red-600')}>
                 {kycStatuses?.filter(s => s.status?.status === 'rejected').length || 0}
               </div>
-              <div className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>Abgelehnt</div>
+              <div className={clsx('text-sm', adminMuted(isDark))}>Abgelehnt</div>
             </div>
           </Card>
         </div>

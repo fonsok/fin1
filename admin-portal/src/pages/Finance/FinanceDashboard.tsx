@@ -11,6 +11,7 @@ import { CorrectionModal } from './components/CorrectionModal';
 import { mockStats, mockRoundingDiffs, mockCorrections } from './mockData';
 import type { FinancialStats, RoundingDifference, CorrectionRequest } from './types';
 
+import { adminMuted, adminPrimary } from '../../utils/adminThemeClasses';
 export function FinanceDashboardPage(): JSX.Element {
   const [showCorrectionModal, setShowCorrectionModal] = useState(false);
   const { theme } = useTheme();
@@ -63,8 +64,8 @@ export function FinanceDashboardPage(): JSX.Element {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>Finanzen</h1>
-          <p className={clsx('mt-1', isDark ? 'text-slate-400' : 'text-gray-500')}>
+          <h1 className={clsx('text-2xl font-bold', adminPrimary(isDark))}>Finanzen</h1>
+          <p className={clsx('mt-1', adminMuted(isDark))}>
             Finanzübersicht, Korrekturen und Rundungsdifferenzen
           </p>
         </div>
@@ -172,7 +173,7 @@ function RoundingDiffsList(props: {
   return (
     <Card>
       <div className={clsx('p-4', borderB)}>
-        <h2 className={clsx('text-lg font-semibold', isDark ? 'text-slate-100' : 'text-gray-900')}>{title}</h2>
+        <h2 className={clsx('text-lg font-semibold', adminPrimary(isDark))}>{title}</h2>
       </div>
       <div className={divideY}>
         {differences.length === 0 ? (
@@ -184,8 +185,8 @@ function RoundingDiffsList(props: {
               className={clsx('p-4 flex items-center justify-between', listRowStripeClasses(isDark, index))}
             >
               <div>
-                <p className={clsx('font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>{diff.transactionId}</p>
-                <p className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                <p className={clsx('font-medium', adminPrimary(isDark))}>{diff.transactionId}</p>
+                <p className={clsx('text-sm', adminMuted(isDark))}>
                   {formatDateTime(diff.createdAt)}
                 </p>
               </div>
@@ -255,7 +256,7 @@ function CorrectionsList(props: {
   return (
     <Card>
       <div className={clsx('p-4', borderB)}>
-        <h2 className={clsx('text-lg font-semibold', isDark ? 'text-slate-100' : 'text-gray-900')}>{title}</h2>
+        <h2 className={clsx('text-lg font-semibold', adminPrimary(isDark))}>{title}</h2>
       </div>
       <div className={divideY}>
         {corrections.length === 0 ? (
@@ -264,14 +265,14 @@ function CorrectionsList(props: {
           corrections.map((corr, index) => (
             <div key={corr.objectId} className={clsx('p-4', listRowStripeClasses(isDark, index))}>
               <div className="flex items-center justify-between mb-2">
-                <span className={clsx('font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                <span className={clsx('font-medium', adminPrimary(isDark))}>
                   {getTypeLabel(corr.type)}
                 </span>
                 <Badge variant={getStatusBadge(corr.status)}>{getStatusLabel(corr.status)}</Badge>
               </div>
               <p className={clsx('text-sm mb-1', isDark ? 'text-slate-300' : 'text-gray-600')}>{corr.reason}</p>
               <div className={clsx('flex items-center justify-between text-sm')}>
-                <span className={clsx(isDark ? 'text-slate-400' : 'text-gray-500')}>{formatDateTime(corr.createdAt)}</span>
+                <span className={clsx(adminMuted(isDark))}>{formatDateTime(corr.createdAt)}</span>
                 <span className="font-semibold text-fin1-primary">{formatCurrency(corr.amount)}</span>
               </div>
             </div>

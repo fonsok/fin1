@@ -4,6 +4,7 @@ import { Button } from '../../../components/ui/Button';
 import { useTheme } from '../../../context/ThemeContext';
 import { createEmailTemplate } from '../api';
 
+import { adminPrimary } from '../../../utils/adminThemeClasses';
 interface EmailTemplateCreateEditorProps {
   onSave: () => void;
   onClose: () => void;
@@ -68,7 +69,7 @@ export function EmailTemplateCreateEditor({ onSave, onClose }: EmailTemplateCrea
         )}
       >
         <div className={clsx('p-6 border-b flex-shrink-0', isDark ? 'border-slate-700' : 'border-gray-200')}>
-          <h2 className={clsx('text-xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+          <h2 className={clsx('text-xl font-bold', adminPrimary(isDark))}>
             Neue E-Mail Vorlage
           </h2>
           <p className={clsx('text-sm mt-1', isDark ? 'text-slate-300' : 'text-gray-500')}>

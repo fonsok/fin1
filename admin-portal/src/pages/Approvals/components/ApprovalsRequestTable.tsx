@@ -9,6 +9,7 @@ import {
   tableTheadSurfaceClasses,
 } from '../../../utils/tableStriping';
 
+import { adminCaption, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 interface ApprovalRequestLike {
   objectId: string;
   requestType: string;
@@ -112,22 +113,22 @@ export function ApprovalsRequestTable({
                   <span
                     className={clsx(
                       'text-sm font-medium',
-                      isDark ? 'text-slate-100' : 'text-gray-900',
+                      adminPrimary(isDark),
                     )}
                   >
                     {getRequestTypeLabel(request.requestType)}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <p className={clsx('text-sm', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                  <p className={clsx('text-sm', adminPrimary(isDark))}>
                     {request.requesterEmail || requesterIdString(request)}
                     {isOwn && (
-                      <span className={clsx('ml-1 text-xs', isDark ? 'text-slate-500' : 'text-gray-400')}>
+                      <span className={clsx('ml-1 text-xs', adminCaption(isDark))}>
                         (Sie)
                       </span>
                     )}
                   </p>
-                  <p className={clsx('text-xs', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                  <p className={clsx('text-xs', adminMuted(isDark))}>
                     {request.requesterRole}
                   </p>
                 </td>
@@ -135,10 +136,10 @@ export function ApprovalsRequestTable({
                   {renderRequestDetails(request)}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <p className={clsx('text-sm', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                  <p className={clsx('text-sm', adminPrimary(isDark))}>
                     {formatDateTime(request.createdAt)}
                   </p>
-                  <p className={clsx('text-xs', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                  <p className={clsx('text-xs', adminMuted(isDark))}>
                     {formatRelative(request.createdAt)}
                   </p>
                 </td>
@@ -157,7 +158,7 @@ export function ApprovalsRequestTable({
                         <p
                           className={clsx(
                             'text-xs truncate max-w-xs',
-                            isDark ? 'text-slate-400' : 'text-gray-500',
+                            adminMuted(isDark),
                           )}
                         >
                           {request.approverNotes}
@@ -177,7 +178,7 @@ export function ApprovalsRequestTable({
                         </p>
                       )}
                       {request.updatedAt && request.status !== 'pending' && (
-                        <p className={clsx('text-xs', isDark ? 'text-slate-500' : 'text-gray-400')}>
+                        <p className={clsx('text-xs', adminCaption(isDark))}>
                           {formatDateTime(request.updatedAt)}
                         </p>
                       )}

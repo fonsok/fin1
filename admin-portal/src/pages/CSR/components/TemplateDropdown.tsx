@@ -10,6 +10,7 @@ import { sortByTitleDe } from '../../Templates/utils/templateDisplayOrder';
 // Reusable dropdown component for selecting text templates (Textbausteine)
 // in ticket creation forms.
 
+import { adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 interface BaseTemplate {
   id: string;
   title: string;
@@ -74,7 +75,7 @@ export function TemplateDropdown<T extends BaseTemplate>({
 
       {/* Loading State */}
       {isLoading && (
-        <div className={clsx('p-4 text-center text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>
+        <div className={clsx('p-4 text-center text-sm', adminMuted(isDark))}>
           Lade Vorlagen...
         </div>
       )}
@@ -86,7 +87,7 @@ export function TemplateDropdown<T extends BaseTemplate>({
 
       {/* Empty State */}
       {!isLoading && !error && sortedTemplates.length === 0 && (
-        <div className={clsx('p-4 text-center text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>
+        <div className={clsx('p-4 text-center text-sm', adminMuted(isDark))}>
           Keine Vorlagen verfügbar.
         </div>
       )}
@@ -109,11 +110,11 @@ export function TemplateDropdown<T extends BaseTemplate>({
             <div className="flex items-start gap-2">
               <span className="text-lg flex-shrink-0">{getCategoryIcon(template.category)}</span>
               <div className="flex-1 min-w-0">
-                <p className={clsx('font-medium text-sm', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                <p className={clsx('font-medium text-sm', adminPrimary(isDark))}>
                   {template.title}
                 </p>
                 {template.body && (
-                  <p className={clsx('text-xs truncate mt-0.5', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                  <p className={clsx('text-xs truncate mt-0.5', adminMuted(isDark))}>
                     {template.body.slice(0, 80)}...
                   </p>
                 )}
@@ -123,7 +124,7 @@ export function TemplateDropdown<T extends BaseTemplate>({
             // Subject template - compact view
             <div className="flex items-center gap-2">
               <span className="text-base">{getCategoryIcon(template.category)}</span>
-              <span className={clsx('font-medium text-sm', isDark ? 'text-slate-100' : 'text-gray-900')}>
+              <span className={clsx('font-medium text-sm', adminPrimary(isDark))}>
                 {template.title}
               </span>
             </div>

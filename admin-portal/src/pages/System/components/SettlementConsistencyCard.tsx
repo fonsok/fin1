@@ -9,6 +9,7 @@ import {
   tableTheadSurfaceClasses,
 } from '../../../utils/tableStriping';
 
+import { adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 type HealthStatus = 'healthy' | 'degraded' | 'down' | 'unknown';
 
 export type SettlementConsistencyStatus = {
@@ -48,7 +49,7 @@ export function SettlementConsistencyCard({
       : (isDark ? 'border-amber-700 bg-amber-950/20' : 'border-yellow-200 bg-yellow-50'))}>
       <div className="flex items-start justify-between gap-4 flex-col md:flex-row">
         <div>
-          <h3 className={clsx('text-md font-semibold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+          <h3 className={clsx('text-md font-semibold', adminPrimary(isDark))}>
             Settlement Delta/Completion Konsistenz
           </h3>
           <p className={clsx('text-sm mt-1', isDark ? 'text-slate-300' : 'text-gray-700')}>
@@ -65,17 +66,17 @@ export function SettlementConsistencyCard({
 
       <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
         <div className={clsx('rounded-md border p-3', isDark ? 'border-slate-700 bg-slate-900/40' : 'border-gray-200 bg-white')}>
-          <p className={clsx('text-xs', isDark ? 'text-slate-400' : 'text-gray-500')}>Gepruefte Trades</p>
-          <p className={clsx('text-lg font-semibold', isDark ? 'text-slate-100' : 'text-gray-900')}>{settlementConsistency.checkedTrades}</p>
+          <p className={clsx('text-xs', adminMuted(isDark))}>Gepruefte Trades</p>
+          <p className={clsx('text-lg font-semibold', adminPrimary(isDark))}>{settlementConsistency.checkedTrades}</p>
         </div>
         <div className={clsx('rounded-md border p-3', isDark ? 'border-slate-700 bg-slate-900/40' : 'border-gray-200 bg-white')}>
-          <p className={clsx('text-xs', isDark ? 'text-slate-400' : 'text-gray-500')}>Gepruefte Investments</p>
-          <p className={clsx('text-lg font-semibold', isDark ? 'text-slate-100' : 'text-gray-900')}>{settlementConsistency.checkedInvestments}</p>
+          <p className={clsx('text-xs', adminMuted(isDark))}>Gepruefte Investments</p>
+          <p className={clsx('text-lg font-semibold', adminPrimary(isDark))}>{settlementConsistency.checkedInvestments}</p>
         </div>
         <div className={clsx('rounded-md border p-3', settlementConsistency.mismatchCount === 0
           ? (isDark ? 'border-emerald-700 bg-emerald-950/20' : 'border-green-200 bg-green-50')
           : (isDark ? 'border-red-700 bg-red-950/20' : 'border-red-200 bg-red-50'))}>
-          <p className={clsx('text-xs', isDark ? 'text-slate-400' : 'text-gray-500')}>Mismatches</p>
+          <p className={clsx('text-xs', adminMuted(isDark))}>Mismatches</p>
           <p
             className={clsx(
               'text-lg font-semibold',

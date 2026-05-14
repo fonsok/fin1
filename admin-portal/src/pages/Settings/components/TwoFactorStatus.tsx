@@ -6,6 +6,7 @@ import { Card, Button, Badge, Input } from '../../../components/ui';
 import { useTheme } from '../../../context/ThemeContext';
 import { formatDateTime } from '../../../utils/format';
 
+import { adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 interface TwoFactorStatusProps {
   enabled: boolean;
   enabledAt?: string;
@@ -34,10 +35,10 @@ export function TwoFactorStatusCard({
                 <span className="text-xl">🔐</span>
               </div>
               <div>
-                <h3 className={clsx('font-semibold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                <h3 className={clsx('font-semibold', adminPrimary(isDark))}>
                   Zwei-Faktor-Authentifizierung
                 </h3>
-                <p className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                <p className={clsx('text-sm', adminMuted(isDark))}>
                   {enabled ? 'Zusätzlicher Schutz ist aktiv' : 'Nicht aktiviert'}
                 </p>
               </div>
@@ -57,17 +58,17 @@ export function TwoFactorStatusCard({
               >
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <p className={clsx(isDark ? 'text-slate-400' : 'text-gray-500')}>Aktiviert seit</p>
-                    <p className={clsx('font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                    <p className={clsx(adminMuted(isDark))}>Aktiviert seit</p>
+                    <p className={clsx('font-medium', adminPrimary(isDark))}>
                       {enabledAt ? formatDateTime(enabledAt) : '-'}
                     </p>
                   </div>
                   <div>
-                    <p className={clsx(isDark ? 'text-slate-400' : 'text-gray-500')}>Backup-Codes übrig</p>
+                    <p className={clsx(adminMuted(isDark))}>Backup-Codes übrig</p>
                     <p
                       className={clsx(
                         'font-medium',
-                        isDark ? 'text-slate-100' : 'text-gray-900',
+                        adminPrimary(isDark),
                         (backupCodesRemaining || 0) <= 2 && 'text-red-600',
                       )}
                     >
@@ -149,7 +150,7 @@ function DisableModal({ onClose }: { onClose: () => void }): JSX.Element {
           isDark ? 'bg-slate-800 border-slate-600 text-slate-100' : 'bg-white border-gray-100 text-gray-900',
         )}
       >
-        <h2 className={clsx('text-xl font-semibold mb-2', isDark ? 'text-slate-100' : 'text-gray-900')}>
+        <h2 className={clsx('text-xl font-semibold mb-2', adminPrimary(isDark))}>
           2FA deaktivieren
         </h2>
         <p className={clsx('text-sm mb-4', isDark ? 'text-slate-300' : 'text-gray-600')}>
@@ -237,7 +238,7 @@ function RegenerateModal({ onClose }: { onClose: () => void }): JSX.Element {
       >
         {newCodes.length === 0 ? (
           <>
-            <h2 className={clsx('text-xl font-semibold mb-2', isDark ? 'text-slate-100' : 'text-gray-900')}>
+            <h2 className={clsx('text-xl font-semibold mb-2', adminPrimary(isDark))}>
               Neue Backup-Codes generieren
             </h2>
             <p className={clsx('text-sm mb-4', isDark ? 'text-slate-300' : 'text-gray-600')}>
@@ -286,7 +287,7 @@ function RegenerateModal({ onClose }: { onClose: () => void }): JSX.Element {
               >
                 <span className="text-2xl">✅</span>
               </div>
-              <h2 className={clsx('text-xl font-semibold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+              <h2 className={clsx('text-xl font-semibold', adminPrimary(isDark))}>
                 Neue Backup-Codes
               </h2>
             </div>

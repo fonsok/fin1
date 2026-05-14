@@ -6,6 +6,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import { cloudFunction } from '../../../api/parse';
 import type { User } from '../../../context/AuthContext';
 
+import { adminCaption, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 interface PermissionsSectionProps {
   user: User | null;
 }
@@ -190,7 +191,7 @@ export function PermissionsSection({ user }: PermissionsSectionProps) {
             d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
           />
         </svg>
-        <h2 className={clsx('text-lg font-semibold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+        <h2 className={clsx('text-lg font-semibold', adminPrimary(isDark))}>
           Meine Berechtigungen
         </h2>
       </div>
@@ -205,7 +206,7 @@ export function PermissionsSection({ user }: PermissionsSectionProps) {
           >
             <div className="min-w-0">
               <div
-                className={clsx('text-xs mb-1', isDark ? 'text-slate-400' : 'text-gray-500')}
+                className={clsx('text-xs mb-1', adminMuted(isDark))}
               >
                 Aktuelle Rolle
               </div>
@@ -239,7 +240,7 @@ export function PermissionsSection({ user }: PermissionsSectionProps) {
       {isLoading && (
         <div className="flex items-center justify-center py-4">
           <div className="animate-spin w-5 h-5 border-2 border-orange-600 border-t-transparent rounded-full" />
-          <span className={clsx('ml-2 text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>
+          <span className={clsx('ml-2 text-sm', adminMuted(isDark))}>
             Berechtigungen werden geladen...
           </span>
         </div>
@@ -297,7 +298,7 @@ export function PermissionsSection({ user }: PermissionsSectionProps) {
                 >
                   {category.displayName}
                 </h3>
-                <span className={clsx('text-xs', isDark ? 'text-slate-500' : 'text-gray-400')}>
+                <span className={clsx('text-xs', adminCaption(isDark))}>
                   ({category.permissions.length})
                 </span>
               </div>

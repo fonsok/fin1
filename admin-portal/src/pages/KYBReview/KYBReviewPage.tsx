@@ -10,6 +10,7 @@ import { KYBSubmissionTable } from './components/KYBSubmissionTable';
 import { KYBDetailModal } from './components/KYBDetailModal';
 import { KYBDecisionModal } from './components/KYBDecisionModal';
 
+import { adminMuted, adminPrimary } from '../../utils/adminThemeClasses';
 type TabId = 'pending_review' | 'more_info_requested' | 'approved' | 'rejected' | 'all';
 
 const TABS: { id: TabId; label: string; icon: string }[] = [
@@ -79,10 +80,10 @@ export function KYBReviewPage() {
       <Card>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+            <h1 className={clsx('text-2xl font-bold', adminPrimary(isDark))}>
               KYB-Status
             </h1>
-            <p className={clsx('text-sm mt-1', isDark ? 'text-slate-400' : 'text-gray-500')}>
+            <p className={clsx('text-sm mt-1', adminMuted(isDark))}>
               {canReviewKyb
                 ? 'Firmenkonten-Identitätsprüfung verwalten'
                 : 'Übersicht eingereichter Firmen-KYB (Ansicht)'}
@@ -172,7 +173,7 @@ export function KYBReviewPage() {
               <p className={clsx('text-lg font-medium', isDark ? 'text-slate-300' : 'text-gray-700')}>
                 Keine Einreichungen
               </p>
-              <p className={clsx('text-sm mt-1', isDark ? 'text-slate-400' : 'text-gray-500')}>
+              <p className={clsx('text-sm mt-1', adminMuted(isDark))}>
                 {activeTab === 'pending_review'
                   ? 'Derzeit liegen keine ausstehenden Firmen-KYB-Einreichungen vor.'
                   : 'Keine Einreichungen in dieser Kategorie.'}

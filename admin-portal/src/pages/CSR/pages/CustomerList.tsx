@@ -12,6 +12,7 @@ import {
 } from '../../../utils/tableStriping';
 import { searchCustomers } from '../api';
 
+import { adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 const CUSTOMER_PAGE_SIZE = 50;
 
 export function CustomerListPage() {
@@ -47,7 +48,7 @@ export function CustomerListPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>Kunden</h1>
+        <h1 className={clsx('text-2xl font-bold', adminPrimary(isDark))}>Kunden</h1>
         <Button onClick={() => navigate('/csr/tickets/new')}>
           Neues Ticket
         </Button>
@@ -129,7 +130,7 @@ export function CustomerListPage() {
                     <td
                       className={clsx(
                         'px-6 py-4 text-sm',
-                        isDark ? 'text-slate-100' : 'text-gray-900',
+                        adminPrimary(isDark),
                       )}
                     >
                       {customer.fullName || `${customer.firstName} ${customer.lastName}` || '-'}
@@ -180,13 +181,13 @@ export function CustomerListPage() {
         )}
 
         {customers && customers.length === 0 && searchQuery.length >= 2 && (
-          <div className={clsx('text-center py-8', isDark ? 'text-slate-400' : 'text-gray-500')}>
+          <div className={clsx('text-center py-8', adminMuted(isDark))}>
             Keine Kunden gefunden
           </div>
         )}
 
         {!searchQuery && (
-          <div className={clsx('text-center py-8', isDark ? 'text-slate-400' : 'text-gray-500')}>
+          <div className={clsx('text-center py-8', adminMuted(isDark))}>
             Geben Sie mindestens 2 Zeichen ein, um zu suchen
           </div>
         )}

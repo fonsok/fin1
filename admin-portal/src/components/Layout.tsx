@@ -9,6 +9,7 @@ import { getSidebarRoleSubtitle } from '../utils/format';
 import { useTheme } from '../context/ThemeContext';
 import clsx from 'clsx';
 
+import { adminPrimary } from '../utils/adminThemeClasses';
 interface LayoutProps {
   children: React.ReactNode;
 }
@@ -181,7 +182,7 @@ export function Layout({ children }: LayoutProps) {
             <h1
               className={clsx(
                 'text-lg font-semibold',
-                isDark ? 'text-slate-100' : 'text-gray-900',
+                adminPrimary(isDark),
               )}
             >
               {matchNavItemForPath(location.pathname, navItems)?.label || 'Dashboard'}

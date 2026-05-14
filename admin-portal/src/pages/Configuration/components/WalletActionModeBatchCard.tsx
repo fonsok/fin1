@@ -5,6 +5,7 @@ import { Card, Button, Input, Badge } from '../../../components/ui';
 import { useTheme } from '../../../context/ThemeContext';
 import { cloudFunction } from '../../../api/admin';
 
+import { adminMuted } from '../../../utils/adminThemeClasses';
 type WalletMode = 'disabled' | 'deposit_only' | 'withdrawal_only' | 'deposit_and_withdrawal';
 
 const SCOPE_KEYS = [
@@ -112,10 +113,10 @@ export function WalletActionModeBatchCard() {
         </Button>
       </div>
 
-      <p className={clsx('text-sm mb-4', isDark ? 'text-slate-400' : 'text-gray-500')}>
+      <p className={clsx('text-sm mb-4', adminMuted(isDark))}>
         Gewünschte Scopes und Transaktionsarten per Checkbox auswählen.
       </p>
-      <p className={clsx('text-sm mb-4', isDark ? 'text-slate-400' : 'text-gray-500')}>
+      <p className={clsx('text-sm mb-4', adminMuted(isDark))}>
         Funktionsweise: Mit den Checkboxen bei Transaktionsarten steuerst du direkt, was erlaubt ist.
         <br />
         - Einzahlung aktiv: Nutzer dürfen Geld ins Konto einzahlen.

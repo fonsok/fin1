@@ -1,6 +1,7 @@
 import clsx from 'clsx';
 import { useTheme } from '../../../context/ThemeContext';
 
+import { adminCaption } from '../../../utils/adminThemeClasses';
 interface ApprovalsEmptyStateProps {
   icon: 'check-circle' | 'document' | 'archive';
   message: string;
@@ -48,7 +49,7 @@ export function ApprovalsEmptyState({ icon, message, description }: ApprovalsEmp
     <div className="p-8 text-center">
       {icons[icon]}
       <p className={clsx('font-medium', isDark ? 'text-slate-200' : 'text-gray-600')}>{message}</p>
-      <p className={clsx('text-sm mt-1', isDark ? 'text-slate-500' : 'text-gray-400')}>{description}</p>
+      <p className={clsx('text-sm mt-1', adminCaption(isDark))}>{description}</p>
     </div>
   );
 }

@@ -17,6 +17,7 @@ import {
 } from '../../utils/tableStriping';
 import { useDebounce } from '../../hooks/useDebounce';
 
+import { adminMuted } from '../../utils/adminThemeClasses';
 export function AuditLogsPage() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -174,7 +175,7 @@ export function AuditLogsPage() {
         {isLoading ? (
           <div className="p-8 text-center">
             <div className="animate-spin w-8 h-8 border-4 border-fin1-primary border-t-transparent rounded-full mx-auto"></div>
-            <p className={clsx('mt-4', isDark ? 'text-slate-400' : 'text-gray-500')}>Laden...</p>
+            <p className={clsx('mt-4', adminMuted(isDark))}>Laden...</p>
           </div>
         ) : error ? (
           <div className="p-8 text-center">
@@ -190,7 +191,7 @@ export function AuditLogsPage() {
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            <p className={clsx(isDark ? 'text-slate-400' : 'text-gray-500')}>Keine Audit-Logs gefunden</p>
+            <p className={clsx(adminMuted(isDark))}>Keine Audit-Logs gefunden</p>
           </div>
         ) : (
           <>

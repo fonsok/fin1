@@ -2,6 +2,7 @@ import { Card, Button, Badge } from '../../../components/ui';
 import clsx from 'clsx';
 import { useTheme } from '../../../context/ThemeContext';
 
+import { adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 interface ConfigurationHeaderCardProps {
   pendingCount: number;
   onTogglePending: () => void;
@@ -18,10 +19,10 @@ export function ConfigurationHeaderCard({
     <Card>
       <div className="flex items-center justify-between">
         <div>
-          <h2 className={clsx('text-lg font-semibold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+          <h2 className={clsx('text-lg font-semibold', adminPrimary(isDark))}>
             System-Konfiguration
           </h2>
-          <p className={clsx('text-sm mt-1', isDark ? 'text-slate-400' : 'text-gray-500')}>
+          <p className={clsx('text-sm mt-1', adminMuted(isDark))}>
             Kritische Parameter erfordern 4-Augen-Genehmigung
           </p>
         </div>

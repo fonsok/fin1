@@ -5,6 +5,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { getSidebarRoleSubtitle } from '../../utils/format';
 import clsx from 'clsx';
 
+import { adminPrimary } from '../../utils/adminThemeClasses';
 interface CSRLayoutProps {
   children: React.ReactNode;
 }
@@ -196,7 +197,7 @@ export function CSRLayout({ children }: CSRLayoutProps) {
             <h1
               className={clsx(
                 'text-lg font-semibold',
-                isDark ? 'text-slate-100' : 'text-gray-900',
+                adminPrimary(isDark),
               )}
             >
               {navItems.find(item => item.path === location.pathname)?.label || 'Dashboard'}

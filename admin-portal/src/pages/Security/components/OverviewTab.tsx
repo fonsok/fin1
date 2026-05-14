@@ -6,6 +6,7 @@ import { listRowStripeClasses } from '../../../utils/tableStriping';
 import type { FailedLogin, SecurityAlert } from '../types';
 import { getSeverityVariant } from '../utils';
 
+import { adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 interface OverviewTabProps {
   failedLogins: FailedLogin[];
   alerts: SecurityAlert[];
@@ -27,14 +28,14 @@ export function OverviewTab({ failedLogins, alerts }: OverviewTabProps): JSX.Ele
           {failedLogins.slice(0, 5).map((login, index) => (
             <div key={login.objectId} className={clsx('p-3 rounded-lg', listRowStripeClasses(isDark, index))}>
               <div className="flex items-center justify-between gap-2">
-                <span className={clsx('font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                <span className={clsx('font-medium', adminPrimary(isDark))}>
                   {login.email}
                 </span>
-                <span className={clsx('text-sm shrink-0', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                <span className={clsx('text-sm shrink-0', adminMuted(isDark))}>
                   {formatDateTime(login.timestamp)}
                 </span>
               </div>
-              <p className={clsx('text-sm mt-1', isDark ? 'text-slate-400' : 'text-gray-500')}>
+              <p className={clsx('text-sm mt-1', adminMuted(isDark))}>
                 IP: {login.ipAddress} • {login.reason}
               </p>
             </div>
@@ -54,15 +55,15 @@ export function OverviewTab({ failedLogins, alerts }: OverviewTabProps): JSX.Ele
                 <Badge variant={getSeverityVariant(alert.severity)}>
                   {alert.severity.toUpperCase()}
                 </Badge>
-                <span className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                <span className={clsx('text-sm', adminMuted(isDark))}>
                   {formatDateTime(alert.createdAt)}
                 </span>
               </div>
-              <p className={clsx('text-sm', isDark ? 'text-slate-100' : 'text-gray-900')}>{alert.message}</p>
+              <p className={clsx('text-sm', adminPrimary(isDark))}>{alert.message}</p>
             </div>
           ))}
           {alerts.filter((a) => !a.reviewed).length === 0 && (
-            <div className={clsx('p-8 text-center', isDark ? 'text-slate-400' : 'text-gray-500')}>
+            <div className={clsx('p-8 text-center', adminMuted(isDark))}>
               Keine ungeprüften Warnungen
             </div>
           )}

@@ -8,6 +8,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import { tableBodyCellMutedClasses, tableBodyCellPrimaryClasses } from '../../../utils/tableStriping';
 import { getTicket, respondToTicket, assignTicket, escalateTicket, resolveTicket, closeTicket, getAvailableAgents } from '../api';
 
+import { adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 export function TicketDetailPage() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -84,7 +85,7 @@ export function TicketDetailPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen gap-3">
         <div className="animate-spin w-8 h-8 border-4 border-fin1-primary border-t-transparent rounded-full"></div>
-        <p className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>Laden...</p>
+        <p className={clsx('text-sm', adminMuted(isDark))}>Laden...</p>
       </div>
     );
   }
@@ -93,7 +94,7 @@ export function TicketDetailPage() {
     return (
       <Card>
         <div className="text-center py-8">
-          <p className={clsx(isDark ? 'text-slate-400' : 'text-gray-500')}>Ticket nicht gefunden</p>
+          <p className={clsx(adminMuted(isDark))}>Ticket nicht gefunden</p>
           <Button onClick={() => navigate('/csr/tickets')} className="mt-4">
             Zurück zur Liste
           </Button>
@@ -155,7 +156,7 @@ export function TicketDetailPage() {
           >
             ← Zurück zur Liste
           </button>
-          <h1 className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+          <h1 className={clsx('text-2xl font-bold', adminPrimary(isDark))}>
             Ticket #{ticket.ticketNumber || ticket.objectId.slice(0, 8)}
           </h1>
         </div>
@@ -173,7 +174,7 @@ export function TicketDetailPage() {
       <Card>
         <div className="space-y-4">
           <div>
-            <h2 className={clsx('text-lg font-semibold mb-2', isDark ? 'text-slate-100' : 'text-gray-900')}>
+            <h2 className={clsx('text-lg font-semibold mb-2', adminPrimary(isDark))}>
               {ticket.subject}
             </h2>
             <p className={clsx('whitespace-pre-wrap', isDark ? 'text-slate-300' : 'text-gray-600')}>
@@ -210,7 +211,7 @@ export function TicketDetailPage() {
 
       {/* Comments */}
       <Card>
-        <h2 className={clsx('text-lg font-semibold mb-4', isDark ? 'text-slate-100' : 'text-gray-900')}>Kommentare</h2>
+        <h2 className={clsx('text-lg font-semibold mb-4', adminPrimary(isDark))}>Kommentare</h2>
         <div className="space-y-4">
           {ticket.comments?.map((comment) => (
             <div
@@ -251,7 +252,7 @@ export function TicketDetailPage() {
       {/* Actions */}
       {canEdit && (
         <Card>
-          <h2 className={clsx('text-lg font-semibold mb-4', isDark ? 'text-slate-100' : 'text-gray-900')}>Aktionen</h2>
+          <h2 className={clsx('text-lg font-semibold mb-4', adminPrimary(isDark))}>Aktionen</h2>
           <div className="flex flex-wrap gap-2">
             <Button onClick={() => setShowRespondModal(true)}>
               Antworten
@@ -279,7 +280,7 @@ export function TicketDetailPage() {
       {showRespondModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <Card className="w-full max-w-2xl m-4">
-            <h2 className={clsx('text-xl font-semibold mb-4', isDark ? 'text-slate-100' : 'text-gray-900')}>
+            <h2 className={clsx('text-xl font-semibold mb-4', adminPrimary(isDark))}>
               Antwort hinzufügen
             </h2>
             <textarea
@@ -316,7 +317,7 @@ export function TicketDetailPage() {
       {showAssignModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <Card className="w-full max-w-md m-4">
-            <h2 className={clsx('text-xl font-semibold mb-4', isDark ? 'text-slate-100' : 'text-gray-900')}>
+            <h2 className={clsx('text-xl font-semibold mb-4', adminPrimary(isDark))}>
               Ticket zuweisen
             </h2>
             <select
@@ -350,7 +351,7 @@ export function TicketDetailPage() {
       {showEscalateModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <Card className="w-full max-w-md m-4">
-            <h2 className={clsx('text-xl font-semibold mb-4', isDark ? 'text-slate-100' : 'text-gray-900')}>
+            <h2 className={clsx('text-xl font-semibold mb-4', adminPrimary(isDark))}>
               Ticket eskalieren
             </h2>
             <textarea
@@ -378,7 +379,7 @@ export function TicketDetailPage() {
       {showResolveModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <Card className="w-full max-w-md m-4">
-            <h2 className={clsx('text-xl font-semibold mb-4', isDark ? 'text-slate-100' : 'text-gray-900')}>
+            <h2 className={clsx('text-xl font-semibold mb-4', adminPrimary(isDark))}>
               Ticket lösen
             </h2>
             <textarea

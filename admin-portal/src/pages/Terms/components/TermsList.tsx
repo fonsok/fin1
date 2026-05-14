@@ -16,6 +16,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import type { LegalBrandingPreviewValues } from '../utils/hydrateTermsPreview';
 import { hydrateTermsPreviewText } from '../utils/hydrateTermsPreview';
 
+import { adminCaption, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 interface TermsListProps {
   items: TermsContentListItem[];
   documentTypeFilter?: 'all' | 'terms' | 'privacy' | 'imprint';
@@ -209,13 +210,13 @@ export function TermsList({
   if (items.length === 0) {
     return (
       <Card className="p-12 text-center">
-        <div className={clsx('text-5xl mb-4', isDark ? 'text-slate-500' : 'text-gray-400')}>📄</div>
-        <h3 className={clsx('text-lg font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>
+        <div className={clsx('text-5xl mb-4', adminCaption(isDark))}>📄</div>
+        <h3 className={clsx('text-lg font-medium', adminPrimary(isDark))}>
           {documentTypeFilter && documentTypeFilter !== 'all'
             ? `Keine ${DOCUMENT_TYPE_LABELS[documentTypeFilter] ?? documentTypeFilter}-Versionen gefunden`
             : 'Keine Rechtstexte gefunden'}
         </h3>
-        <p className={clsx('mt-2', isDark ? 'text-slate-400' : 'text-gray-500')}>
+        <p className={clsx('mt-2', adminMuted(isDark))}>
           Legen Sie eine neue Version an (z. B. per "+ Neue Version (leer)" oder aus einer bestehenden
           Version klonen).
         </p>
@@ -230,10 +231,10 @@ export function TermsList({
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
-                <span className={clsx('font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                <span className={clsx('font-medium', adminPrimary(isDark))}>
                   {DOCUMENT_TYPE_LABELS[item.documentType] ?? item.documentType} · v{item.version}
                 </span>
-                <span className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                <span className={clsx('text-sm', adminMuted(isDark))}>
                   {item.language.toUpperCase()}
                 </span>
                 {item.isActive && (
@@ -245,7 +246,7 @@ export function TermsList({
               <div
                 className={clsx(
                   'flex items-center gap-3 text-sm flex-wrap',
-                  isDark ? 'text-slate-400' : 'text-gray-500',
+                  adminMuted(isDark),
                 )}
               >
                 <span>
@@ -336,7 +337,7 @@ export function TermsList({
                     Änderungen zur Vorgängerversion
                   </h4>
                   {!hasPrevious ? (
-                    <p className={clsx(isDark ? 'text-slate-400' : 'text-gray-500')}>
+                    <p className={clsx(adminMuted(isDark))}>
                       Keine Vorgängerversion (erste Version).
                     </p>
                   ) : result ? (
@@ -357,12 +358,12 @@ export function TermsList({
                             </span>
                             {c.sectionTitle}
                             {c.sectionId && c.sectionId !== c.sectionTitle && (
-                              <span className={clsx('ml-1', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                              <span className={clsx('ml-1', adminMuted(isDark))}>
                                 ({c.sectionId})
                               </span>
                             )}
                             {c.description && (
-                              <span className={clsx('block text-xs mt-0.5 ml-4', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                              <span className={clsx('block text-xs mt-0.5 ml-4', adminMuted(isDark))}>
                                 {c.description}
                               </span>
                             )}
@@ -410,7 +411,7 @@ export function TermsList({
                       )}
                     />
                     {sectionSearch.trim() && (
-                      <span className={clsx('text-sm whitespace-nowrap', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                      <span className={clsx('text-sm whitespace-nowrap', adminMuted(isDark))}>
                         {filtered.length} / {sections.length}
                       </span>
                     )}
@@ -418,7 +419,7 @@ export function TermsList({
                 </div>
                 <div className="space-y-3 max-h-[60vh] overflow-y-auto">
                   {filtered.length === 0 ? (
-                    <p className={clsx('text-sm py-4', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                    <p className={clsx('text-sm py-4', adminMuted(isDark))}>
                       {sectionSearch.trim()
                         ? 'Kein Abschnitt enthält den Suchbegriff.'
                         : 'Keine Abschnitte.'}

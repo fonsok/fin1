@@ -13,6 +13,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { mockStats, mockFailedLogins, mockSessions, mockAlerts } from './mockData';
 import type { SecurityStats, FailedLogin, ActiveSession, SecurityAlert, TabType } from './types';
 
+import { adminMuted, adminPrimary } from '../../utils/adminThemeClasses';
 const TABS = [
   { id: 'overview' as const, label: 'Übersicht' },
   { id: 'logins' as const, label: 'Login-Historie' },
@@ -162,8 +163,8 @@ export function SecurityDashboardPage(): JSX.Element {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>Sicherheit</h1>
-        <p className={clsx('mt-1', isDark ? 'text-slate-400' : 'text-gray-500')}>
+        <h1 className={clsx('text-2xl font-bold', adminPrimary(isDark))}>Sicherheit</h1>
+        <p className={clsx('mt-1', adminMuted(isDark))}>
           Überwachung von Login-Aktivitäten, Sessions und Sicherheitswarnungen
         </p>
       </div>

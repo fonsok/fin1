@@ -14,6 +14,7 @@ import type {
 import { createFAQCategory } from '../api';
 import { isRetiredFaqCategorySlug } from '../retiredFaqCategories';
 
+import { adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 interface FAQEditorProps {
   faq: FAQ | null;
   categories: FAQCategory[];
@@ -211,7 +212,7 @@ export function FAQEditor({ faq, categories, onSave, onClose }: FAQEditorProps) 
         <form onSubmit={handleSubmit}>
           {/* Header */}
           <div className={clsx('p-6 border-b', isDark ? 'border-slate-600' : 'border-gray-200')}>
-            <h2 className={clsx('text-xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+            <h2 className={clsx('text-xl font-bold', adminPrimary(isDark))}>
               {isEdit ? 'FAQ bearbeiten' : 'Neue FAQ'}
             </h2>
           </div>
@@ -244,7 +245,7 @@ export function FAQEditor({ faq, categories, onSave, onClose }: FAQEditorProps) 
                   placeholder="z.B. inv-1, landing-1"
                   className={fieldClass}
                 />
-                <p className={clsx('text-xs mt-1', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                <p className={clsx('text-xs mt-1', adminMuted(isDark))}>
                   Eindeutige ID für diese FAQ (wird automatisch generiert wenn leer)
                 </p>
               </div>
@@ -303,7 +304,7 @@ export function FAQEditor({ faq, categories, onSave, onClose }: FAQEditorProps) 
                   Hinzufügen
                 </Button>
               </div>
-              <p className={clsx('text-xs mt-1', isDark ? 'text-slate-400' : 'text-gray-500')}>
+              <p className={clsx('text-xs mt-1', adminMuted(isDark))}>
                 Die verfügbaren Kategorien ändern sich je nach gewählten Kontexten. Eine FAQ kann mehreren
                 Kontexten gleichzeitig zugeordnet sein. Eigene Kontext‑Tags können für zukünftige
                 Erweiterungen ergänzt werden.
@@ -390,7 +391,7 @@ export function FAQEditor({ faq, categories, onSave, onClose }: FAQEditorProps) 
                   >
                     {creatingCategory ? 'Kategorie wird angelegt…' : 'Neue Kategorie anlegen'}
                   </Button>
-                  <p className={clsx('text-xs', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                  <p className={clsx('text-xs', adminMuted(isDark))}>
                     Neue Kategorien werden serverseitig in `FAQCategory` angelegt und sind auch für zukünftige
                     App‑Versionen nutzbar.
                   </p>

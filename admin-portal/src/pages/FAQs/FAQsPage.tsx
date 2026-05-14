@@ -27,6 +27,7 @@ import { formatNumber } from '../../utils/format';
 import { FAQDevMaintenanceCard } from './components/FAQDevMaintenanceCard';
 import { isRetiredFaqCategorySlug } from './retiredFaqCategories';
 
+import { adminMuted, adminPrimary } from '../../utils/adminThemeClasses';
 type LocationFilter = 'all' | 'landing' | 'help_center' | 'investor' | 'trader';
 
 const INVESTOR_CATEGORY_SLUGS = [
@@ -323,10 +324,10 @@ export function FAQsPage() {
 
       <div className="flex justify-between items-center flex-wrap gap-2">
         <div>
-          <h1 className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+          <h1 className={clsx('text-2xl font-bold', adminPrimary(isDark))}>
             Hilfe & Anleitung
           </h1>
-          <p className={clsx(isDark ? 'text-slate-400' : 'text-gray-500')}>Häufig gestellte Fragen verwalten</p>
+          <p className={clsx(adminMuted(isDark))}>Häufig gestellte Fragen verwalten</p>
         </div>
         <div className="flex gap-2">
           <Button
@@ -366,20 +367,20 @@ export function FAQsPage() {
 
       <div className="grid grid-cols-3 gap-4">
         <Card className="p-4">
-          <div className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>Gesamt Einträge</div>
-          <div className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+          <div className={clsx('text-sm', adminMuted(isDark))}>Gesamt Einträge</div>
+          <div className={clsx('text-2xl font-bold', adminPrimary(isDark))}>
             {formatNumber(stats.totalAll)}
           </div>
         </Card>
         <Card className="p-4">
-          <div className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>Veröffentlicht</div>
-          <div className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+          <div className={clsx('text-sm', adminMuted(isDark))}>Veröffentlicht</div>
+          <div className={clsx('text-2xl font-bold', adminPrimary(isDark))}>
             {formatNumber(stats.publishedAll)}
           </div>
         </Card>
         <Card className="p-4">
-          <div className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>Kategorien</div>
-          <div className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+          <div className={clsx('text-sm', adminMuted(isDark))}>Kategorien</div>
+          <div className={clsx('text-2xl font-bold', adminPrimary(isDark))}>
             {formatNumber(adminVisibleCategories.length)}
           </div>
         </Card>
@@ -466,7 +467,7 @@ export function FAQsPage() {
             <option value={50}>50 / Seite</option>
             <option value={100}>100 / Seite</option>
           </select>
-          <p className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>
+          <p className={clsx('text-sm', adminMuted(isDark))}>
             {formatNumber(totalFiltered)} Treffer nach Filter · bis zu {formatNumber(stats.totalAll)} aus Server (
             {formatNumber(pageSize)} pro Seite, lokal)
           </p>

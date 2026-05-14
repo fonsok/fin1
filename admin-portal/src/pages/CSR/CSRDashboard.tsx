@@ -15,6 +15,7 @@ import { PermissionsSection } from './components/PermissionsSection';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 
+import { adminMuted, adminPrimary } from '../../utils/adminThemeClasses';
 export function CSRDashboard() {
   const { user } = useAuth();
   const { theme } = useTheme();
@@ -73,10 +74,10 @@ export function CSRDashboard() {
             </svg>
           </div>
           <div>
-            <h1 className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+            <h1 className={clsx('text-2xl font-bold', adminPrimary(isDark))}>
               Kundenservice-Portal
             </h1>
-            <p className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>
+            <p className={clsx('text-sm', adminMuted(isDark))}>
               Kundendaten anzeigen und Support verwalten
             </p>
           </div>
@@ -105,33 +106,33 @@ export function CSRDashboard() {
       {/* Metrics Summary */}
       {metrics && (
         <Card>
-          <h2 className={clsx('text-lg font-semibold mb-4', isDark ? 'text-slate-100' : 'text-gray-900')}>
+          <h2 className={clsx('text-lg font-semibold mb-4', adminPrimary(isDark))}>
             Wochenstatistik
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="text-center">
-              <div className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+              <div className={clsx('text-2xl font-bold', adminPrimary(isDark))}>
                 {metrics.totalTickets}
               </div>
-              <div className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>Gesamt Tickets</div>
+              <div className={clsx('text-sm', adminMuted(isDark))}>Gesamt Tickets</div>
             </div>
             <div className="text-center">
               <div className={clsx('text-2xl font-bold', isDark ? 'text-orange-400' : 'text-orange-600')}>
                 {metrics.openTickets}
               </div>
-              <div className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>Offene Tickets</div>
+              <div className={clsx('text-sm', adminMuted(isDark))}>Offene Tickets</div>
             </div>
             <div className="text-center">
               <div className={clsx('text-2xl font-bold', isDark ? 'text-emerald-400' : 'text-green-600')}>
                 {metrics.resolvedTickets}
               </div>
-              <div className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>Gelöste Tickets</div>
+              <div className={clsx('text-sm', adminMuted(isDark))}>Gelöste Tickets</div>
             </div>
             <div className="text-center">
               <div className={clsx('text-2xl font-bold', isDark ? 'text-sky-400' : 'text-blue-600')}>
                 {Math.round(metrics.averageResolutionTime / 60)}h
               </div>
-              <div className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>Ø Lösungszeit</div>
+              <div className={clsx('text-sm', adminMuted(isDark))}>Ø Lösungszeit</div>
             </div>
           </div>
         </Card>

@@ -7,6 +7,7 @@ import { listRowStripeClasses, tableBodyDivideClasses } from '../../../utils/tab
 import type { KybSubmission } from '../../../api/admin';
 import clsx from 'clsx';
 
+import { adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 const KYB_STATUS_CONFIG: Record<string, { label: string; variant: 'success' | 'warning' | 'danger' | 'info' | 'neutral' }> = {
   pending_review: { label: 'Ausstehend', variant: 'warning' },
   more_info_requested: { label: 'Nachbesserung', variant: 'warning' },
@@ -86,7 +87,7 @@ export function KYBSubmissionTable({
                 <td className={clsx('py-3 pr-4 font-mono text-xs', isDark ? 'text-slate-300' : 'text-gray-700')}>
                   {s.customerNumber}
                 </td>
-                <td className={clsx('py-3 pr-4 font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                <td className={clsx('py-3 pr-4 font-medium', adminPrimary(isDark))}>
                   {displayName}
                 </td>
                 <td className={clsx('py-3 pr-4', isDark ? 'text-slate-300' : 'text-gray-600')}>
@@ -95,7 +96,7 @@ export function KYBSubmissionTable({
                 <td className="py-3 pr-4">
                   <Badge variant={statusCfg.variant}>{statusCfg.label}</Badge>
                 </td>
-                <td className={clsx('py-3 pr-4', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                <td className={clsx('py-3 pr-4', adminMuted(isDark))}>
                   {formatDateTime(s.companyKybCompletedAt)}
                 </td>
                 <td className="py-3 text-right">

@@ -10,6 +10,7 @@ import {
   PORTAL_LOGIN_EMAIL_PLACEHOLDER,
 } from '../constants/portalLogin';
 
+import { adminCaption, adminMuted, adminPrimary } from '../utils/adminThemeClasses';
 function mapLoginErrorMessage(rawMessage: string): string {
   const msg = rawMessage.toLowerCase();
 
@@ -79,10 +80,10 @@ export function LoginPage() {
 
         {/* Login Card */}
         <Card className="shadow-xl">
-          <h2 className={clsx('text-xl font-semibold mb-1', isDark ? 'text-slate-100' : 'text-gray-900')}>
+          <h2 className={clsx('text-xl font-semibold mb-1', adminPrimary(isDark))}>
             Anmelden
           </h2>
-          <p className={clsx('text-sm mb-6', isDark ? 'text-slate-400' : 'text-gray-500')}>
+          <p className={clsx('text-sm mb-6', adminMuted(isDark))}>
             {PORTAL_LOGIN_CARD_INTRO}
           </p>
 
@@ -140,7 +141,7 @@ export function LoginPage() {
 
           <DevPortalLoginReference />
 
-          <p className={clsx('text-xs text-center mt-6', isDark ? 'text-slate-500' : 'text-gray-400')}>
+          <p className={clsx('text-xs text-center mt-6', adminCaption(isDark))}>
             Nur für autorisierte Administratoren
           </p>
         </Card>

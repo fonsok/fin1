@@ -5,6 +5,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import type { TermsContentFull, TermsSection, CreateTermsContentRequest } from '../types';
 import { createTermsContent } from '../api';
 
+import { adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 function filterSectionsBySearch(sections: TermsSection[], query: string): { section: TermsSection; index: number }[] {
   const q = query.trim().toLowerCase();
   if (!q) return sections.map((s, i) => ({ section: s, index: i }));
@@ -140,10 +141,10 @@ export function TermsEditor({ cloneFrom, initialSectionSearch, onSaved, onClose 
       >
         <form onSubmit={handleSubmit}>
           <div className={clsx('p-6 border-b', isDark ? 'border-slate-600' : 'border-gray-200')}>
-            <h2 className={clsx('text-xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+            <h2 className={clsx('text-xl font-bold', adminPrimary(isDark))}>
               {cloneFrom ? 'Neue Version aus Klon' : 'Neue Rechtstext-Version'}
             </h2>
-            <p className={clsx('text-sm mt-1', isDark ? 'text-slate-400' : 'text-gray-500')}>
+            <p className={clsx('text-sm mt-1', adminMuted(isDark))}>
               Platzhalter wie {`{{APP_NAME}}`} / {`{{LEGAL_PLATFORM_NAME}}`} werden serverseitig ersetzt. Version wird zunächst inaktiv angelegt; danach „Als aktiv setzen“ nutzen.
             </p>
           </div>
@@ -227,7 +228,7 @@ export function TermsEditor({ cloneFrom, initialSectionSearch, onSaved, onClose 
                     )}
                   />
                   {sectionSearch.trim() && (
-                    <span className={clsx('text-sm whitespace-nowrap', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                    <span className={clsx('text-sm whitespace-nowrap', adminMuted(isDark))}>
                       {filteredSectionsForDisplay.length} / {sections.length}
                     </span>
                   )}
@@ -238,7 +239,7 @@ export function TermsEditor({ cloneFrom, initialSectionSearch, onSaved, onClose 
               </div>
               <div className={clsx('space-y-4 border rounded-lg p-4 max-h-[40vh] overflow-y-auto', isDark ? 'border-slate-600 bg-slate-900/20' : 'border-gray-200')}>
                 {filteredSectionsForDisplay.length === 0 ? (
-                  <p className={clsx('text-sm py-4', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                  <p className={clsx('text-sm py-4', adminMuted(isDark))}>
                     {sectionSearch.trim()
                       ? 'Kein Abschnitt enthält den Suchbegriff.'
                       : 'Keine Abschnitte.'}

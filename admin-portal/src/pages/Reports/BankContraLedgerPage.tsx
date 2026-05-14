@@ -15,6 +15,7 @@ import {
 } from '../../utils/tableStriping';
 import { formatLedgerAccountDisplayLabel } from './appLedger/constants';
 
+import { adminCaption, adminMuted, adminPrimary } from '../../utils/adminThemeClasses';
 interface ContraPosting {
   id: string;
   account: string;
@@ -91,8 +92,8 @@ export function BankContraLedgerPage(): JSX.Element {
     }
   }
 
-  const pageTitle = clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900');
-  const leadMuted = clsx('mt-1', isDark ? 'text-slate-400' : 'text-gray-500');
+  const pageTitle = clsx('text-2xl font-bold', adminPrimary(isDark));
+  const leadMuted = clsx('mt-1', adminMuted(isDark));
   const formLabel = clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-200' : 'text-gray-700');
   const controlSm = clsx(
     'w-full border rounded-lg px-3 py-2 text-sm',
@@ -100,12 +101,12 @@ export function BankContraLedgerPage(): JSX.Element {
       ? 'bg-slate-900/70 border-slate-600 text-slate-100 placeholder:text-slate-500'
       : 'bg-white border-gray-300 text-gray-900 placeholder:text-gray-400',
   );
-  const accountTitle = clsx('font-medium', isDark ? 'text-slate-100' : 'text-gray-900');
+  const accountTitle = clsx('font-medium', adminPrimary(isDark));
   const accountCode = clsx('text-xs font-mono', tableBodyCellMutedClasses(isDark));
   const legLabel = clsx('text-sm', tableBodyCellMutedClasses(isDark));
-  const emptyMini = clsx('text-sm', isDark ? 'text-slate-500' : 'text-gray-400');
+  const emptyMini = clsx('text-sm', adminCaption(isDark));
   const emptyState = clsx('p-8 text-center', tableBodyCellMutedClasses(isDark));
-  const sectionH2 = clsx('text-lg font-semibold', isDark ? 'text-slate-100' : 'text-gray-900');
+  const sectionH2 = clsx('text-lg font-semibold', adminPrimary(isDark));
   const toolbarBorder = clsx('p-4 border-b flex justify-between items-center', isDark ? 'border-slate-600' : 'border-gray-100');
 
   const exportCSV = () => {
@@ -303,7 +304,7 @@ export function BankContraLedgerPage(): JSX.Element {
                     <td className={clsx('px-4 py-3 text-sm font-mono whitespace-nowrap', tableBodyCellMutedClasses(isDark))}>
                       {p.reference}
                     </td>
-                    <td className={clsx('px-4 py-3 text-sm', isDark ? 'text-slate-500' : 'text-gray-400')}>
+                    <td className={clsx('px-4 py-3 text-sm', adminCaption(isDark))}>
                       {p.metadata?.component === 'net'
                         ? 'Netto-Anteil'
                         : p.metadata?.component === 'vat'

@@ -6,6 +6,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import { formatDateTime } from '../../../utils/format';
 import clsx from 'clsx';
 
+import { adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 interface KYBDecisionModalProps {
   submission: KybSubmission;
   onClose: () => void;
@@ -39,7 +40,7 @@ export function KYBDecisionModal({ submission, onClose, onComplete }: KYBDecisio
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
         <Card className="w-full max-w-md text-center">
           <div className="text-4xl mb-4">{decision === 'approved' ? '✅' : decision === 'more_info_requested' ? '📋' : '❌'}</div>
-          <p className={clsx('text-lg font-semibold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+          <p className={clsx('text-lg font-semibold', adminPrimary(isDark))}>
             {successMessage}
           </p>
         </Card>
@@ -50,7 +51,7 @@ export function KYBDecisionModal({ submission, onClose, onComplete }: KYBDecisio
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <Card className="w-full max-w-lg">
-        <h3 className={clsx('text-lg font-semibold mb-4', isDark ? 'text-slate-100' : 'text-gray-900')}>
+        <h3 className={clsx('text-lg font-semibold mb-4', adminPrimary(isDark))}>
           KYB-Entscheidung
         </h3>
 
@@ -60,25 +61,25 @@ export function KYBDecisionModal({ submission, onClose, onComplete }: KYBDecisio
           isDark ? 'bg-slate-600/50' : 'bg-gray-50',
         )}>
           <div className="flex justify-between text-sm">
-            <span className={clsx(isDark ? 'text-slate-400' : 'text-gray-500')}>Firma:</span>
-            <span className={clsx('font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>
+            <span className={clsx(adminMuted(isDark))}>Firma:</span>
+            <span className={clsx('font-medium', adminPrimary(isDark))}>
               {displayName}
             </span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className={clsx(isDark ? 'text-slate-400' : 'text-gray-500')}>Kunden-ID:</span>
+            <span className={clsx(adminMuted(isDark))}>Kunden-ID:</span>
             <span className="font-mono text-xs">{submission.customerNumber}</span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className={clsx(isDark ? 'text-slate-400' : 'text-gray-500')}>E-Mail:</span>
+            <span className={clsx(adminMuted(isDark))}>E-Mail:</span>
             <span>{submission.email}</span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className={clsx(isDark ? 'text-slate-400' : 'text-gray-500')}>Eingereicht am:</span>
+            <span className={clsx(adminMuted(isDark))}>Eingereicht am:</span>
             <span>{formatDateTime(submission.companyKybCompletedAt)}</span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className={clsx(isDark ? 'text-slate-400' : 'text-gray-500')}>Status:</span>
+            <span className={clsx(adminMuted(isDark))}>Status:</span>
             <Badge variant="warning">Ausstehend</Badge>
           </div>
         </div>

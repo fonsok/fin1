@@ -4,6 +4,7 @@ import { formatDateTime } from '../../../utils/format';
 import { useTheme } from '../../../context/ThemeContext';
 import type { PendingConfigChange, ConfigurationParameter } from '../types';
 
+import { adminCaption, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 interface PendingChangesCardProps {
   requests: PendingConfigChange[];
   parameterDefinitions: Record<string, Omit<ConfigurationParameter, 'value'>>;
@@ -22,7 +23,7 @@ export function PendingChangesCard({
 
   return (
     <Card>
-      <h3 className={clsx('text-md font-semibold mb-4', isDark ? 'text-slate-100' : 'text-gray-900')}>
+      <h3 className={clsx('text-md font-semibold mb-4', adminPrimary(isDark))}>
         Ausstehende Änderungen
       </h3>
       <div className="space-y-3">
@@ -36,7 +37,7 @@ export function PendingChangesCard({
           >
             <div className="flex justify-between items-start">
               <div>
-                <p className={clsx('font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                <p className={clsx('font-medium', adminPrimary(isDark))}>
                   {parameterDefinitions[change.parameterName]?.displayName || change.parameterName}
                 </p>
                 <p className={clsx('text-sm mt-1', isDark ? 'text-slate-300' : 'text-gray-600')}>
@@ -44,10 +45,10 @@ export function PendingChangesCard({
                   {' -> '}
                   {formatValue(change.parameterName, change.newValue)}
                 </p>
-                <p className={clsx('text-sm mt-1', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                <p className={clsx('text-sm mt-1', adminMuted(isDark))}>
                   Grund: {change.reason}
                 </p>
-                <p className={clsx('text-xs mt-2', isDark ? 'text-slate-500' : 'text-gray-400')}>
+                <p className={clsx('text-xs mt-2', adminCaption(isDark))}>
                   Von: {change.requesterEmail} - {formatDateTime(change.createdAt)}
                 </p>
               </div>

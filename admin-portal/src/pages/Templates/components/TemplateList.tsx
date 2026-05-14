@@ -5,6 +5,7 @@ import clsx from 'clsx';
 import { useTheme } from '../../../context/ThemeContext';
 import type { ResponseTemplate, TemplateCategory } from '../types';
 
+import { adminCaption, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 interface TemplateListProps {
   templates: ResponseTemplate[];
   categories: TemplateCategory[];
@@ -87,11 +88,11 @@ export function TemplateList({ templates, categories, onEdit, onDelete }: Templa
   if (templates.length === 0) {
     return (
       <Card className="p-12 text-center">
-        <div className={clsx('text-5xl mb-4', isDark ? 'text-slate-500' : 'text-gray-400')}>📝</div>
-        <h3 className={clsx('text-lg font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>
+        <div className={clsx('text-5xl mb-4', adminCaption(isDark))}>📝</div>
+        <h3 className={clsx('text-lg font-medium', adminPrimary(isDark))}>
           Keine Templates gefunden
         </h3>
-        <p className={clsx('mt-2', isDark ? 'text-slate-400' : 'text-gray-500')}>
+        <p className={clsx('mt-2', adminMuted(isDark))}>
           Erstellen Sie ein neues Template oder ändern Sie die Filterkriterien.
         </p>
       </Card>
@@ -111,7 +112,7 @@ export function TemplateList({ templates, categories, onEdit, onDelete }: Templa
                 <h3
                   className={clsx(
                     'font-medium min-w-0 truncate',
-                    isDark ? 'text-slate-100' : 'text-gray-900',
+                    adminPrimary(isDark),
                   )}
                 >
                   {parsed.cleanTitle}
@@ -139,7 +140,7 @@ export function TemplateList({ templates, categories, onEdit, onDelete }: Templa
               <div
                 className={clsx(
                   'flex flex-wrap items-center gap-x-3 gap-y-1 text-sm mb-2',
-                  isDark ? 'text-slate-400' : 'text-gray-500',
+                  adminMuted(isDark),
                 )}
               >
                 <span>{getCategoryLabel(template.category)}</span>
@@ -170,7 +171,7 @@ export function TemplateList({ templates, categories, onEdit, onDelete }: Templa
                     </span>
                   ))}
                   {template.placeholders.length > 4 && (
-                    <span className={clsx('text-xs', isDark ? 'text-slate-500' : 'text-gray-400')}>
+                    <span className={clsx('text-xs', adminCaption(isDark))}>
                       +{template.placeholders.length - 4} mehr
                     </span>
                   )}

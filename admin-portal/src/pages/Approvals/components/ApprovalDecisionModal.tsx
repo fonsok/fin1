@@ -3,6 +3,7 @@ import { Card, Button } from '../../../components/ui';
 import { useTheme } from '../../../context/ThemeContext';
 import { formatDateTime } from '../../../utils/format';
 
+import { adminCaption, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 interface ApprovalRequestLike {
   objectId: string;
   requestType: string;
@@ -56,19 +57,19 @@ export function ApprovalDecisionModal({
           )}
         >
           <div className="flex justify-between gap-3">
-            <span className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>Typ:</span>
-            <span className={clsx('text-sm font-medium text-right', isDark ? 'text-slate-100' : 'text-gray-900')}>
+            <span className={clsx('text-sm', adminMuted(isDark))}>Typ:</span>
+            <span className={clsx('text-sm font-medium text-right', adminPrimary(isDark))}>
               {getRequestTypeLabel(selectedRequest.requestType)}
             </span>
           </div>
           <div className="flex justify-between gap-3">
-            <span className={clsx('text-sm shrink-0', isDark ? 'text-slate-400' : 'text-gray-500')}>Beantragt von:</span>
+            <span className={clsx('text-sm shrink-0', adminMuted(isDark))}>Beantragt von:</span>
             <span className={clsx('text-sm text-right break-all', isDark ? 'text-slate-200' : 'text-gray-900')}>
               {selectedRequest.requesterEmail || selectedRequest.requesterId}
             </span>
           </div>
           <div className="flex justify-between gap-3">
-            <span className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>Beantragt am:</span>
+            <span className={clsx('text-sm', adminMuted(isDark))}>Beantragt am:</span>
             <span className={clsx('text-sm', isDark ? 'text-slate-200' : 'text-gray-900')}>
               {formatDateTime(selectedRequest.createdAt)}
             </span>
@@ -86,13 +87,13 @@ export function ApprovalDecisionModal({
               </p>
               <div className="flex items-center gap-4 justify-center">
                 <div className="text-center min-w-0 flex-1">
-                  <p className={clsx('text-xs mb-1', isDark ? 'text-slate-400' : 'text-gray-500')}>Aktuell</p>
+                  <p className={clsx('text-xs mb-1', adminMuted(isDark))}>Aktuell</p>
                   <p className={clsx('text-base font-semibold', isDark ? 'text-slate-100' : 'text-gray-800')}>
                     {formatConfigValue(selectedRequest.metadata.parameterName as string, selectedRequest.metadata.oldValue)}
                   </p>
                 </div>
                 <svg
-                  className={clsx('w-6 h-6 flex-shrink-0', isDark ? 'text-slate-500' : 'text-gray-400')}
+                  className={clsx('w-6 h-6 flex-shrink-0', adminCaption(isDark))}
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -100,7 +101,7 @@ export function ApprovalDecisionModal({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                 </svg>
                 <div className="text-center min-w-0 flex-1">
-                  <p className={clsx('text-xs mb-1', isDark ? 'text-slate-400' : 'text-gray-500')}>Neuer Wert</p>
+                  <p className={clsx('text-xs mb-1', adminMuted(isDark))}>Neuer Wert</p>
                   <p className="text-base font-semibold text-fin1-primary">
                     {formatConfigValue(selectedRequest.metadata.parameterName as string, selectedRequest.metadata.newValue)}
                   </p>
@@ -110,7 +111,7 @@ export function ApprovalDecisionModal({
           )}
           {typeof selectedRequest.metadata?.reason === 'string' && selectedRequest.metadata.reason && (
             <div className="mt-2">
-              <span className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>Begründung:</span>
+              <span className={clsx('text-sm', adminMuted(isDark))}>Begründung:</span>
               <p className={clsx('text-sm mt-1', isDark ? 'text-slate-200' : 'text-gray-800')}>{selectedRequest.metadata.reason}</p>
             </div>
           )}

@@ -20,6 +20,7 @@ import {
   tableTheadSurfaceClasses,
 } from '../../../utils/tableStriping';
 
+import { adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 export function CustomerDetailPage() {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
@@ -118,7 +119,7 @@ export function CustomerDetailPage() {
     return (
       <Card>
         <div className="text-center py-8">
-          <p className={clsx(isDark ? 'text-slate-400' : 'text-gray-500')}>Kunde nicht gefunden</p>
+          <p className={clsx(adminMuted(isDark))}>Kunde nicht gefunden</p>
           <Button onClick={() => navigate('/csr/customers')} className="mt-4">
             Zurück zur Liste
           </Button>
@@ -139,7 +140,7 @@ export function CustomerDetailPage() {
           >
             ← Zurück zur Liste
           </button>
-          <h1 className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+          <h1 className={clsx('text-2xl font-bold', adminPrimary(isDark))}>
             {customer.fullName || `${customer.firstName} ${customer.lastName}` || customer.email}
           </h1>
           <div className="flex gap-2 mt-2">
@@ -193,34 +194,34 @@ export function CustomerDetailPage() {
       {activeTab === 'overview' && (
         <div className="space-y-6">
           <Card>
-            <h2 className={clsx('text-lg font-semibold mb-4', isDark ? 'text-slate-100' : 'text-gray-900')}>
+            <h2 className={clsx('text-lg font-semibold mb-4', adminPrimary(isDark))}>
               Kundendaten
             </h2>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <div className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>E-Mail</div>
-                <div className={clsx('font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>{customer.email}</div>
+                <div className={clsx('text-sm', adminMuted(isDark))}>E-Mail</div>
+                <div className={clsx('font-medium', adminPrimary(isDark))}>{customer.email}</div>
               </div>
               <div>
-                <div className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>Kundennummer</div>
-                <div className={clsx('font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                <div className={clsx('text-sm', adminMuted(isDark))}>Kundennummer</div>
+                <div className={clsx('font-medium', adminPrimary(isDark))}>
                   {customer.customerNumber}
                 </div>
               </div>
               <div>
-                <div className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>Rolle</div>
-                <div className={clsx('font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>{customer.role}</div>
+                <div className={clsx('text-sm', adminMuted(isDark))}>Rolle</div>
+                <div className={clsx('font-medium', adminPrimary(isDark))}>{customer.role}</div>
               </div>
               <div>
-                <div className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>Registriert</div>
-                <div className={clsx('font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                <div className={clsx('text-sm', adminMuted(isDark))}>Registriert</div>
+                <div className={clsx('font-medium', adminPrimary(isDark))}>
                   {formatDateTime(customer.createdAt)}
                 </div>
               </div>
               {customer.lastLoginAt && (
                 <div>
-                  <div className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>Letzter Login</div>
-                  <div className={clsx('font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                  <div className={clsx('text-sm', adminMuted(isDark))}>Letzter Login</div>
+                  <div className={clsx('font-medium', adminPrimary(isDark))}>
                     {formatDateTime(customer.lastLoginAt)}
                   </div>
                 </div>
@@ -230,7 +231,7 @@ export function CustomerDetailPage() {
 
           {kycStatus && (
             <Card>
-              <h2 className={clsx('text-lg font-semibold mb-4', isDark ? 'text-slate-100' : 'text-gray-900')}>
+              <h2 className={clsx('text-lg font-semibold mb-4', adminPrimary(isDark))}>
                 KYC-Status
               </h2>
               <div className="space-y-2">
@@ -242,14 +243,14 @@ export function CustomerDetailPage() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className={clsx(isDark ? 'text-slate-300' : 'text-gray-700')}>Level</span>
-                  <span className={clsx('font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                  <span className={clsx('font-medium', adminPrimary(isDark))}>
                     {kycStatus.level}
                   </span>
                 </div>
                 {kycStatus.verifiedAt && (
                   <div className="flex items-center justify-between">
                     <span className={clsx(isDark ? 'text-slate-300' : 'text-gray-700')}>Verifiziert am</span>
-                    <span className={clsx('font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                    <span className={clsx('font-medium', adminPrimary(isDark))}>
                       {formatDateTime(kycStatus.verifiedAt)}
                     </span>
                   </div>
@@ -263,7 +264,7 @@ export function CustomerDetailPage() {
       {/* Investments Tab */}
       {activeTab === 'investments' && (
         <Card>
-          <h2 className={clsx('text-lg font-semibold mb-4', isDark ? 'text-slate-100' : 'text-gray-900')}>
+          <h2 className={clsx('text-lg font-semibold mb-4', adminPrimary(isDark))}>
             Investments
           </h2>
           {investments && investments.length > 0 ? (
@@ -328,7 +329,7 @@ export function CustomerDetailPage() {
               </table>
             </div>
           ) : (
-            <p className={clsx('text-center py-4', isDark ? 'text-slate-400' : 'text-gray-500')}>
+            <p className={clsx('text-center py-4', adminMuted(isDark))}>
               Keine Investments gefunden
             </p>
           )}
@@ -338,7 +339,7 @@ export function CustomerDetailPage() {
       {/* Trades Tab */}
       {activeTab === 'trades' && (
         <Card>
-          <h2 className={clsx('text-lg font-semibold mb-4', isDark ? 'text-slate-100' : 'text-gray-900')}>Trades</h2>
+          <h2 className={clsx('text-lg font-semibold mb-4', adminPrimary(isDark))}>Trades</h2>
           {trades && trades.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full">
@@ -412,7 +413,7 @@ export function CustomerDetailPage() {
               </table>
             </div>
           ) : (
-            <p className={clsx('text-center py-4', isDark ? 'text-slate-400' : 'text-gray-500')}>
+            <p className={clsx('text-center py-4', adminMuted(isDark))}>
               Keine Trades gefunden
             </p>
           )}
@@ -422,7 +423,7 @@ export function CustomerDetailPage() {
       {/* Documents Tab */}
       {activeTab === 'documents' && (
         <Card>
-          <h2 className={clsx('text-lg font-semibold mb-4', isDark ? 'text-slate-100' : 'text-gray-900')}>
+          <h2 className={clsx('text-lg font-semibold mb-4', adminPrimary(isDark))}>
             Dokumente
           </h2>
           {documents && documents.length > 0 ? (
@@ -436,10 +437,10 @@ export function CustomerDetailPage() {
                   )}
                 >
                   <div>
-                    <div className={clsx('font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                    <div className={clsx('font-medium', adminPrimary(isDark))}>
                       {doc.fileName}
                     </div>
-                    <div className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                    <div className={clsx('text-sm', adminMuted(isDark))}>
                       {doc.documentType}
                     </div>
                   </div>
@@ -447,7 +448,7 @@ export function CustomerDetailPage() {
                     <Badge variant={doc.status === 'verified' ? 'success' : 'neutral'}>
                       {doc.status}
                     </Badge>
-                    <span className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                    <span className={clsx('text-sm', adminMuted(isDark))}>
                       {formatDateTime(doc.uploadedAt)}
                     </span>
                   </div>
@@ -455,7 +456,7 @@ export function CustomerDetailPage() {
               ))}
             </div>
           ) : (
-            <p className={clsx('text-center py-4', isDark ? 'text-slate-400' : 'text-gray-500')}>
+            <p className={clsx('text-center py-4', adminMuted(isDark))}>
               Keine Dokumente gefunden
             </p>
           )}
@@ -465,7 +466,7 @@ export function CustomerDetailPage() {
       {/* Tickets Tab */}
       {activeTab === 'tickets' && (
         <Card>
-          <h2 className={clsx('text-lg font-semibold mb-4', isDark ? 'text-slate-100' : 'text-gray-900')}>Tickets</h2>
+          <h2 className={clsx('text-lg font-semibold mb-4', adminPrimary(isDark))}>Tickets</h2>
           {tickets && tickets.length > 0 ? (
             <div className="space-y-2">
               {tickets.map((ticket) => (
@@ -488,10 +489,10 @@ export function CustomerDetailPage() {
                   )}
                 >
                   <div>
-                    <div className={clsx('font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                    <div className={clsx('font-medium', adminPrimary(isDark))}>
                       #{ticket.ticketNumber || ticket.objectId.slice(0, 8)} - {ticket.subject}
                     </div>
-                    <div className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                    <div className={clsx('text-sm', adminMuted(isDark))}>
                       {ticket.category}
                     </div>
                   </div>
@@ -502,7 +503,7 @@ export function CustomerDetailPage() {
               ))}
             </div>
           ) : (
-            <p className={clsx('text-center py-4', isDark ? 'text-slate-400' : 'text-gray-500')}>
+            <p className={clsx('text-center py-4', adminMuted(isDark))}>
               Keine Tickets gefunden
             </p>
           )}

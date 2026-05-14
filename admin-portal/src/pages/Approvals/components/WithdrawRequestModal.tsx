@@ -3,6 +3,7 @@ import { Card, Button } from '../../../components/ui';
 import { useTheme } from '../../../context/ThemeContext';
 import { formatDateTime } from '../../../utils/format';
 
+import { adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 interface ApprovalRequestLike {
   objectId: string;
   requestType: string;
@@ -41,7 +42,7 @@ export function WithdrawRequestModal({
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <Card className="w-full max-w-lg">
-        <h3 className={clsx('text-lg font-semibold mb-4', isDark ? 'text-slate-100' : 'text-gray-900')}>
+        <h3 className={clsx('text-lg font-semibold mb-4', adminPrimary(isDark))}>
           Antrag zurückziehen
         </h3>
 
@@ -52,13 +53,13 @@ export function WithdrawRequestModal({
           )}
         >
           <div className="flex justify-between gap-3">
-            <span className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>Typ:</span>
-            <span className={clsx('text-sm font-medium text-right', isDark ? 'text-slate-100' : 'text-gray-900')}>
+            <span className={clsx('text-sm', adminMuted(isDark))}>Typ:</span>
+            <span className={clsx('text-sm font-medium text-right', adminPrimary(isDark))}>
               {getRequestTypeLabel(withdrawTarget.requestType)}
             </span>
           </div>
           <div className="flex justify-between gap-3">
-            <span className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>Beantragt am:</span>
+            <span className={clsx('text-sm', adminMuted(isDark))}>Beantragt am:</span>
             <span className={clsx('text-sm', isDark ? 'text-slate-200' : 'text-gray-900')}>
               {formatDateTime(withdrawTarget.createdAt)}
             </span>
