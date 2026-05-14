@@ -1,11 +1,86 @@
 'use strict';
 
-const { requirePermission, requireAdminRole } = require('../../utils/permissions');
+const { requireAdminRole } = require('../../utils/permissions');
 
 // ============================================================================
 // CSR PERMISSIONS & ROLES (RBAC)
 // Mirrors iOS: CustomerSupportPermission.swift, CustomerSupportPermissionSet.swift
 // ============================================================================
+
+/** Canonical CSRRole.key values (Parse seed / iOS CSRRole). */
+const CANONICAL_CSR_ROLE_KEYS = new Set(['level1', 'level2', 'fraud', 'compliance', 'techSupport', 'teamlead']);
+
+/**
+ * Maps User.csrSubRole and admin-portal aliases → CSRRole.key used in Parse seed.
+ * createCSRUser / beforeSave infer use snake_case (level_1, tech_support, …).
+ */
+const CSR_SUBROLE_ALIAS_TO_KEY = {
+  level_1: 'level1',
+  level1: 'level1',
+  l1: 'level1',
+  level_2: 'level2',
+  level2: 'level2',
+  l2: 'level2',
+  fraud_analyst: 'fraud',
+  fraudanalyst: 'fraud',
+  fraud: 'fraud',
+  compliance_officer: 'compliance',
+  complianceofficer: 'compliance',
+  compliance: 'compliance',
+  tech_support: 'techSupport',
+  techsupport: 'techSupport',
+  teamlead: 'teamlead',
+};
+
+/** Legacy Mongo init (00_init_admin.js) used CSRRole.name instead of key. */
+const CANONICAL_KEY_TO_LEGACY_NAME = {
+  level1: 'level_1',
+  level2: 'level_2',
+  fraud: 'fraud_analyst',
+  compliance: 'compliance_officer',
+  techSupport: 'tech_support',
+  teamlead: 'teamlead',
+};
+
+function normalizeCSRRoleLookupKey(raw) {
+  if (raw == null) return 'level1';
+  const s = String(raw).trim();
+  if (!s) return 'level1';
+  if (CANONICAL_CSR_ROLE_KEYS.has(s)) return s;
+  const lowered = s.toLowerCase();
+  if (CSR_SUBROLE_ALIAS_TO_KEY[lowered]) return CSR_SUBROLE_ALIAS_TO_KEY[lowered];
+  return s;
+}
+
+/**
+ * Resolve CSRRole by Parse `key`, or legacy `name` (snake_case), or raw key string.
+ */
+async function fetchCSRRoleByKeyFlexible(roleKeyParam) {
+  const canonical = normalizeCSRRoleLookupKey(roleKeyParam);
+
+  const byKey = new Parse.Query('CSRRole');
+  byKey.equalTo('key', canonical);
+  let role = await byKey.first({ useMasterKey: true });
+  if (role) return role;
+
+  const legacyName = CANONICAL_KEY_TO_LEGACY_NAME[canonical];
+  if (legacyName) {
+    const byName = new Parse.Query('CSRRole');
+    byName.equalTo('name', legacyName);
+    role = await byName.first({ useMasterKey: true });
+    if (role) return role;
+  }
+
+  const raw = String(roleKeyParam || '').trim();
+  if (raw && raw !== canonical) {
+    const byRaw = new Parse.Query('CSRRole');
+    byRaw.equalTo('key', raw);
+    role = await byRaw.first({ useMasterKey: true });
+    if (role) return role;
+  }
+
+  return null;
+}
 
 /**
  * Get all CSR permissions
@@ -99,13 +174,14 @@ Parse.Cloud.define('getCSRRolePermissions', async (request) => {
     throw new Parse.Error(Parse.Error.INVALID_QUERY, 'roleKey required');
   }
 
-  // Get the role
-  const roleQuery = new Parse.Query('CSRRole');
-  roleQuery.equalTo('key', roleKey);
-  const role = await roleQuery.first({ useMasterKey: true });
+  const role = await fetchCSRRoleByKeyFlexible(roleKey);
 
   if (!role) {
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `Role '${roleKey}' not found`);
+    const tried = normalizeCSRRoleLookupKey(roleKey);
+    throw new Parse.Error(
+      Parse.Error.OBJECT_NOT_FOUND,
+      `Role '${roleKey}' not found (CSRRole.key/name; normalized: '${tried}'). Seed CSR roles if the collection is empty.`,
+    );
   }
 
   const permissionKeys = role.get('permissions') || [];
@@ -174,10 +250,7 @@ Parse.Cloud.define('checkCSRPermission', async (request) => {
 
   const csrSubRole = user.get('csrSubRole') || 'level1';
 
-  // Get role
-  const roleQuery = new Parse.Query('CSRRole');
-  roleQuery.equalTo('key', csrSubRole);
-  const role = await roleQuery.first({ useMasterKey: true });
+  const role = await fetchCSRRoleByKeyFlexible(csrSubRole);
 
   if (!role) {
     return { hasPermission: false, reason: 'Role not found' };
@@ -222,12 +295,17 @@ Parse.Cloud.define('getCSRAgentsWithRoles', async (request) => {
   const roles = await roleQuery.find({ useMasterKey: true });
   const roleMap = {};
   for (const role of roles) {
-    roleMap[role.get('key')] = role.toJSON();
+    const json = role.toJSON();
+    const k = role.get('key');
+    if (k) roleMap[k] = json;
+    const legacyName = role.get('name');
+    if (legacyName) roleMap[legacyName] = json;
   }
 
   const agents = users.map(user => {
     const csrSubRole = user.get('csrSubRole') || 'level1';
-    const roleInfo = roleMap[csrSubRole] || {};
+    const canonical = normalizeCSRRoleLookupKey(csrSubRole);
+    const roleInfo = roleMap[csrSubRole] || roleMap[canonical] || {};
 
     return {
       objectId: user.id,
@@ -270,10 +348,7 @@ Parse.Cloud.define('updateCSRUserRole', async (request) => {
     );
   }
 
-  // Validate the new role exists
-  const roleQuery = new Parse.Query('CSRRole');
-  roleQuery.equalTo('key', newRole);
-  const role = await roleQuery.first({ useMasterKey: true });
+  const role = await fetchCSRRoleByKeyFlexible(newRole);
 
   if (!role) {
     throw new Parse.Error(Parse.Error.INVALID_QUERY, `Invalid role: ${newRole}`);
