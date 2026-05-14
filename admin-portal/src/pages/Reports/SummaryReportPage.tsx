@@ -84,6 +84,8 @@ function dateParamsForRange(dateRange: 'all' | '30d' | '90d' | '1y'): Record<str
 type TabId = 'overview' | 'investments' | 'trades';
 
 export function SummaryReportPage(): JSX.Element {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [dateRange, setDateRange] = useState<'all' | '30d' | '90d' | '1y'>('all');
 
@@ -107,17 +109,24 @@ export function SummaryReportPage(): JSX.Element {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Summary Report</h1>
-          <p className="text-gray-500 mt-1">
+          <h1 className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>Summary Report</h1>
+          <p className={clsx('mt-1', isDark ? 'text-slate-400' : 'text-gray-500')}>
             Aggregierte Übersicht aller Investments und Trades
-            {data?.generatedAt && <span className="ml-2 text-xs">({formatDateTime(data.generatedAt)})</span>}
+            {data?.generatedAt && (
+              <span className={clsx('ml-2 text-xs', isDark ? 'text-slate-500' : 'text-gray-400')}>
+                ({formatDateTime(data.generatedAt)})
+              </span>
+            )}
           </p>
         </div>
         <div className="flex items-center gap-2">
           <select
             value={dateRange}
             onChange={(e) => setDateRange(e.target.value as typeof dateRange)}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+            className={clsx(
+              'border rounded-lg px-3 py-2 text-sm',
+              isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+            )}
           >
             <option value="all">Alle Zeiten</option>
             <option value="30d">Letzte 30 Tage</option>
@@ -141,17 +150,21 @@ export function SummaryReportPage(): JSX.Element {
       )}
 
       {/* Tabs */}
-      <div className="border-b border-gray-200">
+      <div className={clsx('border-b', isDark ? 'border-slate-600' : 'border-gray-200')}>
         <nav className="flex space-x-4">
           {tabs.map((tab) => (
             <button
               key={tab.id}
+              type="button"
               onClick={() => setActiveTab(tab.id)}
-              className={`py-3 px-4 text-sm font-medium border-b-2 transition-colors ${
+              className={clsx(
+                'py-3 px-4 text-sm font-medium border-b-2 transition-colors',
                 activeTab === tab.id
                   ? 'border-fin1-primary text-fin1-primary'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
+                  : isDark
+                    ? 'border-transparent text-slate-400 hover:text-slate-200'
+                    : 'border-transparent text-gray-500 hover:text-gray-700',
+              )}
             >
               {tab.label}
             </button>
@@ -161,7 +174,11 @@ export function SummaryReportPage(): JSX.Element {
 
       {/* Tab Content */}
       {isLoading ? (
-        <Card><div className="p-8 text-center text-gray-500">Daten werden geladen...</div></Card>
+        <Card>
+          <div className={clsx('p-8 text-center', isDark ? 'text-slate-400' : 'text-gray-500')}>
+            Daten werden geladen...
+          </div>
+        </Card>
       ) : activeTab === 'overview' && summary ? (
         <OverviewTab summary={summary} commissionRate={summary.commissionRate} />
       ) : activeTab === 'investments' ? (
@@ -174,20 +191,34 @@ export function SummaryReportPage(): JSX.Element {
 }
 
 function KPICard({ label, value, sub, color }: { label: string; value: string; sub?: string; color?: string }) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
   return (
     <Card>
       <div className="text-center">
-        <p className="text-sm text-gray-500">{label}</p>
-        <p className={`text-2xl font-bold mt-1 ${color === 'green' ? 'text-green-600' : color === 'red' ? 'text-red-600' : 'text-fin1-primary'}`}>
+        <p className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>{label}</p>
+        <p
+          className={clsx(
+            'text-2xl font-bold mt-1',
+            color === 'green' ? 'text-green-600' : color === 'red' ? 'text-red-600' : 'text-fin1-primary',
+          )}
+        >
           {value}
         </p>
-        {sub && <p className="text-xs text-gray-400 mt-1">{sub}</p>}
+        {sub && (
+          <p className={clsx('text-xs mt-1', isDark ? 'text-slate-500' : 'text-gray-400')}>{sub}</p>
+        )}
       </div>
     </Card>
   );
 }
 
 function OverviewTab({ summary, commissionRate }: { summary: SummaryData; commissionRate: number }) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+  const sectionTitle = clsx('text-md font-semibold mb-4', isDark ? 'text-slate-100' : 'text-gray-900');
+
   const investmentRows = [
     { label: 'Anzahl Investments', value: formatNumber(summary.totalInvestments) },
     { label: 'Investiertes Kapital', value: formatCurrency(summary.totalInvestedAmount) },
@@ -211,7 +242,7 @@ function OverviewTab({ summary, commissionRate }: { summary: SummaryData; commis
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <Card>
-        <h3 className="text-md font-semibold mb-4">Investment-Kennzahlen</h3>
+        <h3 className={sectionTitle}>Investment-Kennzahlen</h3>
         <div className="space-y-1">
           {investmentRows.map((row, index) => (
             <InfoRow key={row.label} label={row.label} value={row.value} index={index} />
@@ -220,7 +251,7 @@ function OverviewTab({ summary, commissionRate }: { summary: SummaryData; commis
       </Card>
 
       <Card>
-        <h3 className="text-md font-semibold mb-4">Trade-Kennzahlen</h3>
+        <h3 className={sectionTitle}>Trade-Kennzahlen</h3>
         <div className="space-y-1">
           {tradeRows.map((row, index) => (
             <InfoRow key={row.label} label={row.label} value={row.value} index={index} />
@@ -312,7 +343,9 @@ function InvestmentsTab({
   if (isLoading && !data) {
     return (
       <Card>
-        <div className="p-8 text-center text-gray-500">Investments werden geladen...</div>
+        <div className={clsx('p-8 text-center', isDark ? 'text-slate-400' : 'text-gray-500')}>
+          Investments werden geladen...
+        </div>
       </Card>
     );
   }
@@ -320,7 +353,9 @@ function InvestmentsTab({
   if (total === 0) {
     return (
       <Card>
-        <div className="p-8 text-center text-gray-500">Keine Investments gefunden</div>
+        <div className={clsx('p-8 text-center', isDark ? 'text-slate-400' : 'text-gray-500')}>
+          Keine Investments gefunden
+        </div>
       </Card>
     );
   }
@@ -483,7 +518,9 @@ function TradesTab({
   if (isLoading && !data) {
     return (
       <Card>
-        <div className="p-8 text-center text-gray-500">Trades werden geladen...</div>
+        <div className={clsx('p-8 text-center', isDark ? 'text-slate-400' : 'text-gray-500')}>
+          Trades werden geladen...
+        </div>
       </Card>
     );
   }
@@ -491,7 +528,9 @@ function TradesTab({
   if (total === 0) {
     return (
       <Card>
-        <div className="p-8 text-center text-gray-500">Keine Trades gefunden</div>
+        <div className={clsx('p-8 text-center', isDark ? 'text-slate-400' : 'text-gray-500')}>
+          Keine Trades gefunden
+        </div>
       </Card>
     );
   }

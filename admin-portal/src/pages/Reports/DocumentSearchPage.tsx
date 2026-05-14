@@ -12,7 +12,14 @@ import {
   type DocumentSearchItem,
 } from '../../api/admin';
 import { formatDateTime } from '../../utils/format';
-import { listRowStripeClasses, tableBodyDivideClasses } from '../../utils/tableStriping';
+import {
+  listRowStripeClasses,
+  tableBodyDivideClasses,
+  tableBodyCellMutedClasses,
+  tableBodyCellPrimaryClasses,
+  tableHeaderCellTextClasses,
+  tableTheadSurfaceClasses,
+} from '../../utils/tableStriping';
 
 const DOCUMENT_TYPE_OPTIONS: { value: string; label: string }[] = [
   { value: 'invoice', label: 'Rechnung' },
@@ -180,6 +187,9 @@ export function DocumentSearchPage(): JSX.Element {
     });
   };
 
+  const detailLabel = clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500');
+  const detailValue = clsx('text-sm', isDark ? 'text-slate-200' : 'text-gray-800');
+
   return (
     <div className="space-y-6">
       <div>
@@ -202,24 +212,28 @@ export function DocumentSearchPage(): JSX.Element {
               Schließen
             </Button>
           </div>
-          {detailLoading && <p className="text-sm text-slate-400">Lade Beleg…</p>}
+          {detailLoading && (
+            <p className={clsx('text-sm', tableBodyCellMutedClasses(isDark))}>Lade Beleg…</p>
+          )}
           {detailError && (
             <p className={clsx('text-sm', isDark ? 'text-red-400' : 'text-red-600')}>
               {detailError instanceof Error ? detailError.message : String(detailError)}
             </p>
           )}
           {detail && (
-            <div className="space-y-2 text-sm">
+            <div className={clsx('space-y-2 text-sm', detailValue)}>
               <p>
-                <span className="text-slate-400">objectId:</span>{' '}
-                <code className="text-xs">{detail.objectId}</code>
+                <span className={detailLabel}>objectId:</span>{' '}
+                <code className={clsx('text-xs', isDark ? 'text-slate-300' : 'text-gray-700')}>{detail.objectId}</code>
               </p>
               <p>
-                <span className="text-slate-400">Name:</span> {detail.name}
+                <span className={detailLabel}>Name:</span> {detail.name}
               </p>
               <p>
-                <span className="text-slate-400">fileURL:</span>{' '}
-                <code className="text-xs break-all">{detail.fileURL}</code>
+                <span className={detailLabel}>fileURL:</span>{' '}
+                <code className={clsx('text-xs break-all', isDark ? 'text-slate-300' : 'text-gray-700')}>
+                  {detail.fileURL}
+                </code>
               </p>
               {detail.accountingSummaryText ? (
                 <pre
@@ -231,7 +245,9 @@ export function DocumentSearchPage(): JSX.Element {
                   {detail.accountingSummaryText}
                 </pre>
               ) : (
-                <p className="text-slate-500 text-xs">Kein accountingSummaryText (z. B. PDF-Beleg).</p>
+                <p className={clsx('text-xs', tableBodyCellMutedClasses(isDark))}>
+                  Kein accountingSummaryText (z. B. PDF-Beleg).
+                </p>
               )}
             </div>
           )}
@@ -325,7 +341,12 @@ export function DocumentSearchPage(): JSX.Element {
       </Card>
 
       {infinite.error && (
-        <Card className="p-4 border-red-500/50 bg-red-500/10 text-red-200 text-sm">
+        <Card
+          className={clsx(
+            'p-4 text-sm border',
+            isDark ? 'border-red-500/50 bg-red-950/40 text-red-200' : 'border-red-200 bg-red-50 text-red-800',
+          )}
+        >
           {(infinite.error as Error).message}
         </Card>
       )}
@@ -339,10 +360,16 @@ export function DocumentSearchPage(): JSX.Element {
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
-              <thead className={isDark ? 'bg-slate-700/80' : 'bg-gray-100'}>
+              <thead className={tableTheadSurfaceClasses(isDark)}>
                 <tr>
                   {['Belegnr.', 'Typ', 'User', 'Investment', 'Trade', 'Datum', 'Größe', 'Aktion'].map((h) => (
-                    <th key={h} className="px-3 py-2 text-left font-semibold whitespace-nowrap">
+                    <th
+                      key={h}
+                      className={clsx(
+                        'px-3 py-2 text-left font-semibold whitespace-nowrap text-xs uppercase tracking-wider',
+                        tableHeaderCellTextClasses(isDark),
+                      )}
+                    >
                       {h}
                     </th>
                   ))}
@@ -351,30 +378,36 @@ export function DocumentSearchPage(): JSX.Element {
               <tbody className={tableBodyDivideClasses(isDark)}>
                 {infinite.isFetching && rows.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-3 py-8 text-center text-slate-400">
+                    <td colSpan={8} className={clsx('px-3 py-8 text-center text-sm', tableBodyCellMutedClasses(isDark))}>
                       Lade…
                     </td>
                   </tr>
                 ) : rows.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-3 py-8 text-center text-slate-500">
+                    <td colSpan={8} className={clsx('px-3 py-8 text-center text-sm', tableBodyCellMutedClasses(isDark))}>
                       Keine Treffer für diese Filter.
                     </td>
                   </tr>
                 ) : (
                   rows.map((r, i) => (
                   <tr key={r.objectId} className={listRowStripeClasses(isDark, i)}>
-                    <td className="px-3 py-2 font-mono text-xs">
+                    <td className={clsx('px-3 py-2 font-mono text-xs', tableBodyCellPrimaryClasses(isDark))}>
                       {r.accountingDocumentNumber || r.documentNumber || '—'}
                     </td>
-                    <td className="px-3 py-2">{r.type}</td>
-                    <td className="px-3 py-2 font-mono text-xs">{r.userId || '—'}</td>
-                    <td className="px-3 py-2 font-mono text-xs">{r.investmentId || '—'}</td>
-                    <td className="px-3 py-2 font-mono text-xs">{r.tradeId || '—'}</td>
-                    <td className="px-3 py-2 whitespace-nowrap">
+                    <td className={clsx('px-3 py-2', tableBodyCellPrimaryClasses(isDark))}>{r.type}</td>
+                    <td className={clsx('px-3 py-2 font-mono text-xs', tableBodyCellMutedClasses(isDark))}>
+                      {r.userId || '—'}
+                    </td>
+                    <td className={clsx('px-3 py-2 font-mono text-xs', tableBodyCellMutedClasses(isDark))}>
+                      {r.investmentId || '—'}
+                    </td>
+                    <td className={clsx('px-3 py-2 font-mono text-xs', tableBodyCellMutedClasses(isDark))}>
+                      {r.tradeId || '—'}
+                    </td>
+                    <td className={clsx('px-3 py-2 whitespace-nowrap', tableBodyCellMutedClasses(isDark))}>
                       {r.uploadedAt ? formatDateTime(new Date(r.uploadedAt)) : '—'}
                     </td>
-                    <td className="px-3 py-2">{formatBytes(r.size)}</td>
+                    <td className={clsx('px-3 py-2', tableBodyCellPrimaryClasses(isDark))}>{formatBytes(r.size)}</td>
                     <td className="px-3 py-2">
                       <Button
                         size="sm"
@@ -394,7 +427,7 @@ export function DocumentSearchPage(): JSX.Element {
             </table>
           </div>
           {infinite.hasNextPage && (
-            <div className="p-4 border-t border-slate-600/30">
+            <div className={clsx('p-4 border-t', isDark ? 'border-slate-600' : 'border-gray-200')}>
               <Button
                 variant="secondary"
                 onClick={() => void infinite.fetchNextPage()}
