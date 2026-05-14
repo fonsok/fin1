@@ -3,7 +3,7 @@ import { Card, Button } from '../../../components/ui';
 import { useTheme } from '../../../context/ThemeContext';
 import { formatDateTime } from '../../../utils/format';
 
-import { adminBodyStrong, adminControlField, adminHeadline, adminLabel, adminMuted, adminPrimary, adminSoft } from '../../../utils/adminThemeClasses';
+import { adminBodyStrong, adminControlField, adminHeadline, adminLabel, adminMuted, adminPrimary, adminSoft, adminSurfaceCodeWell, adminSurfacePanelMuted } from '../../../utils/adminThemeClasses';
 interface ApprovalRequestLike {
   objectId: string;
   requestType: string;
@@ -49,7 +49,7 @@ export function WithdrawRequestModal({
         <div
           className={clsx(
             'space-y-3 mb-4 p-4 rounded-lg',
-            isDark ? 'bg-slate-900/50 border border-slate-600' : 'bg-gray-50',
+            adminSurfacePanelMuted(isDark),
           )}
         >
           <div className="flex justify-between gap-3">
@@ -68,7 +68,7 @@ export function WithdrawRequestModal({
             <div
               className={clsx(
                 'mt-2 p-3 rounded-lg',
-                isDark ? 'bg-slate-950/70 border border-slate-600' : 'bg-white border border-gray-200',
+                adminSurfaceCodeWell(isDark),
               )}
             >
               <p className={clsx('text-sm font-medium mb-1', adminHeadline(isDark))}>

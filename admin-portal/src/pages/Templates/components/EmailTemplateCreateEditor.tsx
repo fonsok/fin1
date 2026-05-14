@@ -4,7 +4,7 @@ import { Button } from '../../../components/ui/Button';
 import { useTheme } from '../../../context/ThemeContext';
 import { createEmailTemplate } from '../api';
 
-import { adminBorderChromeDeep, adminPrimary, adminStatTitle, adminStrong } from '../../../utils/adminThemeClasses';
+import { adminBorderChromeDeep, adminControlFieldSunkenPh400, adminPrimary, adminStatTitle, adminStrong, adminSurfaceModalShell } from '../../../utils/adminThemeClasses';
 interface EmailTemplateCreateEditorProps {
   onSave: () => void;
   onClose: () => void;
@@ -65,7 +65,7 @@ export function EmailTemplateCreateEditor({ onSave, onClose }: EmailTemplateCrea
       <div
         className={clsx(
           'rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col border',
-          isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-gray-200'
+          adminSurfaceModalShell(isDark)
         )}
       >
         <div className={clsx('p-6 border-b flex-shrink-0', adminBorderChromeDeep(isDark))}>
@@ -96,7 +96,7 @@ export function EmailTemplateCreateEditor({ onSave, onClose }: EmailTemplateCrea
                 placeholder="ticket_followup"
                 className={clsx(
                   'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-fin1-primary focus:border-transparent',
-                  isDark ? 'bg-slate-800 border-slate-600 text-slate-100 placeholder:text-slate-400' : 'bg-white border-gray-300 text-gray-900'
+                  adminControlFieldSunkenPh400(isDark)
                 )}
               />
             </div>
@@ -112,7 +112,7 @@ export function EmailTemplateCreateEditor({ onSave, onClose }: EmailTemplateCrea
                 placeholder="Ticket Follow-up"
                 className={clsx(
                   'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-fin1-primary focus:border-transparent',
-                  isDark ? 'bg-slate-800 border-slate-600 text-slate-100 placeholder:text-slate-400' : 'bg-white border-gray-300 text-gray-900'
+                  adminControlFieldSunkenPh400(isDark)
                 )}
               />
             </div>
@@ -129,7 +129,7 @@ export function EmailTemplateCreateEditor({ onSave, onClose }: EmailTemplateCrea
                 onChange={(e) => setSubject(e.target.value)}
                 className={clsx(
                   'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-fin1-primary focus:border-transparent',
-                  isDark ? 'bg-slate-800 border-slate-600 text-slate-100 placeholder:text-slate-400' : 'bg-white border-gray-300 text-gray-900'
+                  adminControlFieldSunkenPh400(isDark)
                 )}
               />
             </div>
@@ -144,7 +144,7 @@ export function EmailTemplateCreateEditor({ onSave, onClose }: EmailTemplateCrea
                 onChange={(e) => setIcon(e.target.value)}
                 className={clsx(
                   'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-fin1-primary focus:border-transparent',
-                  isDark ? 'bg-slate-800 border-slate-600 text-slate-100 placeholder:text-slate-400' : 'bg-white border-gray-300 text-gray-900'
+                  adminControlFieldSunkenPh400(isDark)
                 )}
               />
             </div>
@@ -160,7 +160,7 @@ export function EmailTemplateCreateEditor({ onSave, onClose }: EmailTemplateCrea
               onChange={(e) => setBodyTemplate(e.target.value)}
               className={clsx(
                 'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-fin1-primary focus:border-transparent font-mono text-sm',
-                isDark ? 'bg-slate-800 border-slate-600 text-slate-100 placeholder:text-slate-400' : 'bg-white border-gray-300 text-gray-900'
+                adminControlFieldSunkenPh400(isDark)
               )}
             />
           </div>
@@ -176,7 +176,7 @@ export function EmailTemplateCreateEditor({ onSave, onClose }: EmailTemplateCrea
               placeholder="{{KUNDENNAME}},{{TICKETNUMMER}}"
               className={clsx(
                 'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-fin1-primary focus:border-transparent',
-                isDark ? 'bg-slate-800 border-slate-600 text-slate-100 placeholder:text-slate-400' : 'bg-white border-gray-300 text-gray-900'
+                adminControlFieldSunkenPh400(isDark)
               )}
             />
           </div>

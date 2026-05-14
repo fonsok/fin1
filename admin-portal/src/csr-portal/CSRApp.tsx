@@ -21,7 +21,7 @@ import { TemplatesPage } from '../pages/Templates';
 import { FAQsPage } from '../pages/FAQs';
 
 // Protected Layout for CSR - wraps all protected routes
-import { adminMuted } from '../utils/adminThemeClasses';
+import { adminMuted, adminShellAppBg } from '../utils/adminThemeClasses';
 function CSRProtectedLayout() {
   const { isAuthenticated, isLoading, user } = useAuth();
   const { theme } = useTheme();
@@ -32,7 +32,7 @@ function CSRProtectedLayout() {
       <div
         className={clsx(
           'min-h-screen flex items-center justify-center',
-          isDark ? 'bg-slate-900' : 'bg-gray-50',
+          adminShellAppBg(isDark),
         )}
       >
         <div className="text-center">
@@ -70,7 +70,7 @@ function CSRLoginWrapper() {
       <div
         className={clsx(
           'min-h-screen flex items-center justify-center',
-          isDark ? 'bg-slate-900' : 'bg-gray-50',
+          adminShellAppBg(isDark),
         )}
       >
         <div className="animate-spin w-12 h-12 border-4 border-fin1-primary border-t-transparent rounded-full mx-auto"></div>

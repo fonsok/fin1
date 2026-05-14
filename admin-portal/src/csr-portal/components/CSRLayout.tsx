@@ -5,7 +5,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { getSidebarRoleSubtitle } from '../../utils/format';
 import clsx from 'clsx';
 
-import { adminNavLink, adminPrimary } from '../../utils/adminThemeClasses';
+import { adminNavLink, adminPrimary, adminShellContentBg, adminShellHeaderBar } from '../../utils/adminThemeClasses';
 interface CSRLayoutProps {
   children: React.ReactNode;
 }
@@ -87,7 +87,7 @@ export function CSRLayout({ children }: CSRLayoutProps) {
   ];
 
   return (
-    <div className={clsx('min-h-screen', isDark ? 'bg-slate-800' : 'bg-gray-50')}>
+    <div className={clsx('min-h-screen', adminShellContentBg(isDark))}>
       {/* Sidebar */}
       <aside
         className={clsx(
@@ -171,12 +171,12 @@ export function CSRLayout({ children }: CSRLayoutProps) {
       )}
 
       {/* Main Content */}
-      <div className={clsx('lg:pl-64', isDark ? 'bg-slate-800' : 'bg-gray-50')}>
+      <div className={clsx('lg:pl-64', adminShellContentBg(isDark))}>
         {/* Top Bar */}
         <header
           className={clsx(
             'h-16 border-b flex items-center px-4 lg:px-6 shadow-sm',
-            isDark ? 'bg-slate-700/80 border-slate-600' : 'bg-white border-gray-200',
+            adminShellHeaderBar(isDark),
           )}
         >
           {/* Mobile Menu Button */}
@@ -232,7 +232,7 @@ export function CSRLayout({ children }: CSRLayoutProps) {
           data-content-area={isDark ? 'dark' : undefined}
           className={clsx(
             'p-4 lg:p-6 min-h-[calc(100vh-4rem)]',
-            isDark ? 'bg-slate-800' : 'bg-gray-50',
+            adminShellContentBg(isDark),
           )}
         >
           {children}

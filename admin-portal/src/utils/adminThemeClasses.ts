@@ -252,6 +252,58 @@ export function adminDivideYChart(isDark: boolean): string {
   return clsx('divide-y', isDark ? 'divide-slate-600' : DIVIDE_GRAY_100);
 }
 
+/** Bordered metric / smoke status tiles (system health style). */
+export function adminSurfaceMetricTile(isDark: boolean): string {
+  return isDark ? 'border-slate-700 bg-slate-900/40' : clsx(BORDER_GRAY_200, BG_WHITE);
+}
+
+/** Muted inset panel with visible border (modal sections, 2FA). */
+export function adminSurfacePanelMuted(isDark: boolean): string {
+  return isDark ? 'bg-slate-900/50 border border-slate-600' : clsx('bg-gray-50');
+}
+
+/** Read-only monospace / JSON well (approval & withdraw modals). */
+export function adminSurfaceCodeWell(isDark: boolean): string {
+  return isDark
+    ? 'bg-slate-950/70 border border-slate-600'
+    : clsx(BG_WHITE, 'border', BORDER_GRAY_200);
+}
+
+/** Sticky header strip under nav (admin + CSR layout). */
+export function adminShellHeaderBar(isDark: boolean): string {
+  return isDark ? 'bg-slate-700/80 border-slate-600' : clsx(BG_WHITE, BORDER_GRAY_200);
+}
+
+/** Main column background behind content cards. */
+export function adminShellContentBg(isDark: boolean): string {
+  return isDark ? 'bg-slate-800' : clsx('bg-gray-50');
+}
+
+/** Full-app canvas (root loaders / CSR app shell). */
+export function adminShellAppBg(isDark: boolean): string {
+  return isDark ? 'bg-slate-900' : clsx('bg-gray-50');
+}
+
+/** Modal / card: solid slate-900 shell with deep rim. */
+export function adminSurfaceModalShell(isDark: boolean): string {
+  return isDark ? 'bg-slate-900 border-slate-700' : clsx(BG_WHITE, BORDER_GRAY_200);
+}
+
+/** Raised card on slate (terms editor chrome, terms modal). */
+export function adminSurfaceCardRaised(isDark: boolean): string {
+  return isDark ? 'bg-slate-800 border-slate-600' : clsx(BG_WHITE, BORDER_GRAY_200);
+}
+
+/**
+ * Sunken fields in modal editors (slate-800) with optional placeholders;
+ * light side adds gray placeholder for parity with filters.
+ */
+export function adminControlFieldSunkenPh400(isDark: boolean): string {
+  return isDark
+    ? 'bg-slate-800 border-slate-600 text-slate-100 placeholder:text-slate-400'
+    : clsx('bg-white border-gray-300 text-gray-900 placeholder:text-gray-400');
+}
+
 export function adminTableTheadSurface(isDark: boolean): string {
   return clsx('border-b', isDark ? 'bg-slate-800/50 border-slate-600' : THEAD_SURFACE_LIGHT);
 }

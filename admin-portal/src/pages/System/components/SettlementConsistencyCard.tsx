@@ -9,7 +9,7 @@ import {
   tableTheadSurfaceClasses,
 } from '../../../utils/tableStriping';
 
-import { adminEmphasisSoft, adminLabel, adminMonoHint, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminEmphasisSoft, adminLabel, adminMonoHint, adminMuted, adminPrimary, adminSurfaceMetricTile } from '../../../utils/adminThemeClasses';
 type HealthStatus = 'healthy' | 'degraded' | 'down' | 'unknown';
 
 export type SettlementConsistencyStatus = {
@@ -65,11 +65,11 @@ export function SettlementConsistencyCard({
       </div>
 
       <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div className={clsx('rounded-md border p-3', isDark ? 'border-slate-700 bg-slate-900/40' : 'border-gray-200 bg-white')}>
+        <div className={clsx('rounded-md border p-3', adminSurfaceMetricTile(isDark))}>
           <p className={clsx('text-xs', adminMuted(isDark))}>Gepruefte Trades</p>
           <p className={clsx('text-lg font-semibold', adminPrimary(isDark))}>{settlementConsistency.checkedTrades}</p>
         </div>
-        <div className={clsx('rounded-md border p-3', isDark ? 'border-slate-700 bg-slate-900/40' : 'border-gray-200 bg-white')}>
+        <div className={clsx('rounded-md border p-3', adminSurfaceMetricTile(isDark))}>
           <p className={clsx('text-xs', adminMuted(isDark))}>Gepruefte Investments</p>
           <p className={clsx('text-lg font-semibold', adminPrimary(isDark))}>{settlementConsistency.checkedInvestments}</p>
         </div>

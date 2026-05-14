@@ -5,7 +5,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import type { TermsContentFull, TermsSection, CreateTermsContentRequest } from '../types';
 import { createTermsContent } from '../api';
 
-import { adminBorderChrome, adminControlField, adminLabel, adminMuted, adminPrimary, adminSoft } from '../../../utils/adminThemeClasses';
+import { adminBorderChrome, adminControlField, adminLabel, adminMuted, adminPrimary, adminSoft, adminSurfaceCardRaised } from '../../../utils/adminThemeClasses';
 function filterSectionsBySearch(sections: TermsSection[], query: string): { section: TermsSection; index: number }[] {
   const q = query.trim().toLowerCase();
   if (!q) return sections.map((s, i) => ({ section: s, index: i }));
@@ -136,7 +136,7 @@ export function TermsEditor({ cloneFrom, initialSectionSearch, onSaved, onClose 
       <div
         className={clsx(
           'rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto border',
-          isDark ? 'bg-slate-800 border-slate-600' : 'bg-white border-gray-200',
+          adminSurfaceCardRaised(isDark),
         )}
       >
         <form onSubmit={handleSubmit}>

@@ -6,7 +6,7 @@ import { Card, Button, Input } from '../../../components/ui';
 import { useTheme } from '../../../context/ThemeContext';
 import type { TwoFactorSetupResponse, TwoFactorEnableResponse } from '../types';
 
-import { adminBodyStrong, adminMuted, adminPrimary, adminSoft, adminStrong } from '../../../utils/adminThemeClasses';
+import { adminBodyStrong, adminMuted, adminPrimary, adminSoft, adminStrong, adminSurfacePanelMuted } from '../../../utils/adminThemeClasses';
 interface TwoFactorSetupProps {
   onComplete: () => void;
 }
@@ -64,7 +64,7 @@ export function TwoFactorSetup({ onComplete }: TwoFactorSetupProps): JSX.Element
   const bodyMuted = clsx(adminSoft(isDark));
   const infoBox = clsx(
     'rounded-lg p-4 mb-6 text-left',
-    isDark ? 'bg-slate-900/50 border border-slate-600' : 'bg-gray-50',
+    adminSurfacePanelMuted(isDark),
   );
   const listText = clsx('text-sm space-y-1', adminSoft(isDark));
   const listHeading = clsx('text-sm font-medium mb-2', adminStrong(isDark));
@@ -150,7 +150,7 @@ export function TwoFactorSetup({ onComplete }: TwoFactorSetupProps): JSX.Element
               <div
                 className={clsx(
                   'mt-2 p-3 rounded-lg',
-                  isDark ? 'bg-slate-900/50 border border-slate-600' : 'bg-gray-50',
+                  adminSurfacePanelMuted(isDark),
                 )}
               >
                 <p className={clsx('text-xs mb-1', adminMuted(isDark))}>Geheimschlüssel:</p>

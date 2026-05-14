@@ -3,7 +3,7 @@ import { Card, Button } from '../../../components/ui';
 import { useTheme } from '../../../context/ThemeContext';
 import { formatDateTime } from '../../../utils/format';
 
-import { adminBodyStrong, adminCaption, adminControlField, adminEmphasisSoft, adminHeadline, adminLabel, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminBodyStrong, adminCaption, adminControlField, adminEmphasisSoft, adminHeadline, adminLabel, adminMuted, adminPrimary, adminSurfaceCodeWell, adminSurfacePanelMuted } from '../../../utils/adminThemeClasses';
 interface ApprovalRequestLike {
   objectId: string;
   requestType: string;
@@ -53,7 +53,7 @@ export function ApprovalDecisionModal({
         <div
           className={clsx(
             'space-y-3 mb-4 p-4 rounded-lg',
-            isDark ? 'bg-slate-900/50 border border-slate-600' : 'bg-gray-50',
+            adminSurfacePanelMuted(isDark),
           )}
         >
           <div className="flex justify-between gap-3">
@@ -79,7 +79,7 @@ export function ApprovalDecisionModal({
             <div
               className={clsx(
                 'mt-3 p-3 rounded-lg',
-                isDark ? 'bg-slate-950/70 border border-slate-600' : 'bg-white border border-gray-200',
+                adminSurfaceCodeWell(isDark),
               )}
             >
               <p className={clsx('text-sm font-medium mb-2', adminHeadline(isDark))}>

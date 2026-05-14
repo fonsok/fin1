@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { Badge, Card } from '../../../components/ui';
 import { formatDateTime } from '../../../utils/format';
 
-import { adminLabel, adminMonoHint, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminLabel, adminMonoHint, adminMuted, adminPrimary, adminSurfaceMetricTile } from '../../../utils/adminThemeClasses';
 type HealthStatus = 'healthy' | 'degraded' | 'down' | 'unknown';
 
 export type FinanceConsistencySmokeStatus = {
@@ -51,7 +51,7 @@ export function FinanceConsistencySmokeCard({
       </div>
 
       <div className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-3">
-        <div className={clsx('rounded-md border p-3', isDark ? 'border-slate-700 bg-slate-900/40' : 'border-gray-200 bg-white')}>
+        <div className={clsx('rounded-md border p-3', adminSurfaceMetricTile(isDark))}>
           <p className={clsx('text-xs', adminMuted(isDark))}>Issues</p>
           <p
             className={clsx(
@@ -68,15 +68,15 @@ export function FinanceConsistencySmokeCard({
             {financeSmoke.issues?.length || 0}
           </p>
         </div>
-        <div className={clsx('rounded-md border p-3', isDark ? 'border-slate-700 bg-slate-900/40' : 'border-gray-200 bg-white')}>
+        <div className={clsx('rounded-md border p-3', adminSurfaceMetricTile(isDark))}>
           <p className={clsx('text-xs', adminMuted(isDark))}>Settlement Trades</p>
           <p className={clsx('text-lg font-semibold', adminPrimary(isDark))}>{financeSmoke.settlementConsistency?.checkedTrades ?? 0}</p>
         </div>
-        <div className={clsx('rounded-md border p-3', isDark ? 'border-slate-700 bg-slate-900/40' : 'border-gray-200 bg-white')}>
+        <div className={clsx('rounded-md border p-3', adminSurfaceMetricTile(isDark))}>
           <p className={clsx('text-xs', adminMuted(isDark))}>Ledger Fuzzy Matches</p>
           <p className={clsx('text-lg font-semibold', adminPrimary(isDark))}>{financeSmoke.ledgerFuzzySmoke?.matches ?? 0}</p>
         </div>
-        <div className={clsx('rounded-md border p-3', isDark ? 'border-slate-700 bg-slate-900/40' : 'border-gray-200 bg-white')}>
+        <div className={clsx('rounded-md border p-3', adminSurfaceMetricTile(isDark))}>
           <p className={clsx('text-xs', adminMuted(isDark))}>Missing Beleg-Refs</p>
           <p
             className={clsx(

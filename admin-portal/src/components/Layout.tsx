@@ -9,7 +9,7 @@ import { getSidebarRoleSubtitle } from '../utils/format';
 import { useTheme } from '../context/ThemeContext';
 import clsx from 'clsx';
 
-import { adminNavLink, adminPrimary } from '../utils/adminThemeClasses';
+import { adminNavLink, adminPrimary, adminShellContentBg, adminShellHeaderBar } from '../utils/adminThemeClasses';
 interface LayoutProps {
   children: React.ReactNode;
 }
@@ -43,7 +43,7 @@ export function Layout({ children }: LayoutProps) {
   };
 
   return (
-    <div className={clsx('min-h-screen', isDark ? 'bg-slate-800' : 'bg-gray-50')}>
+    <div className={clsx('min-h-screen', adminShellContentBg(isDark))}>
       {/* Sidebar */}
       <aside
         className={clsx(
@@ -156,12 +156,12 @@ export function Layout({ children }: LayoutProps) {
       )}
 
       {/* Main Content */}
-      <div className={clsx('lg:pl-64', isDark ? 'bg-slate-800' : 'bg-gray-50')}>
+      <div className={clsx('lg:pl-64', adminShellContentBg(isDark))}>
         {/* Top Bar */}
         <header
           className={clsx(
             'h-16 border-b flex items-center px-4 lg:px-6',
-            isDark ? 'bg-slate-700/80 border-slate-600' : 'bg-white border-gray-200',
+            adminShellHeaderBar(isDark),
           )}
         >
           {/* Mobile Menu Button */}
@@ -223,7 +223,7 @@ export function Layout({ children }: LayoutProps) {
           data-content-area={isDark ? 'dark' : undefined}
           className={clsx(
             'p-4 lg:p-6 min-h-[calc(100vh-4rem)]',
-            isDark ? 'bg-slate-800' : 'bg-gray-50',
+            adminShellContentBg(isDark),
           )}
         >
           <AdminFeatureGate navItems={navItems}>{children}</AdminFeatureGate>

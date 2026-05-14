@@ -25,7 +25,7 @@ import { KYBReviewPage } from './pages/KYBReview/KYBReviewPage';
 import { CSRApp } from './csr-portal/CSRApp';
 
 // Protected Route Wrapper for ADMIN routes only
-import { adminMuted } from './utils/adminThemeClasses';
+import { adminMuted, adminShellAppBg } from './utils/adminThemeClasses';
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading, needs2FAVerification, user } = useAuth();
   const { theme } = useTheme();
@@ -36,7 +36,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
       <div
         className={clsx(
           'min-h-screen flex items-center justify-center',
-          isDark ? 'bg-slate-900' : 'bg-gray-50',
+          adminShellAppBg(isDark),
         )}
       >
         <div className="text-center">
@@ -75,7 +75,7 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
       <div
         className={clsx(
           'min-h-screen flex items-center justify-center',
-          isDark ? 'bg-slate-900' : 'bg-gray-50',
+          adminShellAppBg(isDark),
         )}
       >
         <div className="animate-spin w-12 h-12 border-4 border-fin1-primary border-t-transparent rounded-full mx-auto"></div>

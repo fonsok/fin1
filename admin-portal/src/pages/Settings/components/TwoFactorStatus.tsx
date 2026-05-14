@@ -6,7 +6,7 @@ import { Card, Button, Badge, Input } from '../../../components/ui';
 import { useTheme } from '../../../context/ThemeContext';
 import { formatDateTime } from '../../../utils/format';
 
-import { adminMuted, adminPrimary, adminSoft, adminStrong } from '../../../utils/adminThemeClasses';
+import { adminMuted, adminPrimary, adminSoft, adminStrong, adminSurfacePanelMuted } from '../../../utils/adminThemeClasses';
 interface TwoFactorStatusProps {
   enabled: boolean;
   enabledAt?: string;
@@ -53,7 +53,7 @@ export function TwoFactorStatusCard({
               <div
                 className={clsx(
                   'rounded-lg p-4',
-                  isDark ? 'bg-slate-900/50 border border-slate-600' : 'bg-gray-50',
+                  adminSurfacePanelMuted(isDark),
                 )}
               >
                 <div className="grid grid-cols-2 gap-4 text-sm">
