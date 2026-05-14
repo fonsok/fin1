@@ -6,7 +6,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import { listRowStripeClasses } from '../../../utils/tableStriping';
 import type { AccountStatementData, AccountStatementEntryItem } from '../../../api/admin';
 
-import { adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminMuted, adminPrimary, adminSoft } from '../../../utils/adminThemeClasses';
 interface Props {
   data: AccountStatementData;
   userRole: string;
@@ -132,7 +132,7 @@ function StatementRow({ entry, idx, isDark }: { entry: AccountStatementEntryItem
 
   return (
     <tr className={listRowStripeClasses(isDark, idx, { hover: true })}>
-      <td className={clsx('px-3 py-2 whitespace-nowrap text-xs', isDark ? 'text-slate-300' : 'text-gray-600')}>
+      <td className={clsx('px-3 py-2 whitespace-nowrap text-xs', adminSoft(isDark))}>
         {formatDateTime(entry.createdAt)}
       </td>
       <td className={clsx('px-3 py-2', isDark ? 'text-slate-200' : 'text-gray-800')}>

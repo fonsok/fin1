@@ -13,7 +13,7 @@ import {
 } from '../../../utils/tableStriping';
 import { getSupportTickets, assignTicket, respondToTicket, getAvailableAgents } from '../api';
 
-import { adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminMuted, adminPrimary, adminStrong } from '../../../utils/adminThemeClasses';
 export function BulkOperationsPage() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -33,7 +33,7 @@ export function BulkOperationsPage() {
       ? 'bg-slate-900/70 border-slate-600 text-slate-100 placeholder:text-slate-400'
       : 'bg-white border-gray-300 text-gray-900',
   );
-  const fieldLabel = clsx('block text-sm font-medium mb-2', isDark ? 'text-slate-200' : 'text-gray-700');
+  const fieldLabel = clsx('block text-sm font-medium mb-2', adminStrong(isDark));
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [selectedTickets, setSelectedTickets] = useState<Set<string>>(new Set());

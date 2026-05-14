@@ -15,7 +15,7 @@ import { AccountStatementCard } from './components/AccountStatementCard';
 import { UserActionModal } from './components/UserActionModal';
 import { DetailRow, StatBox } from './components/UserShared';
 
-import { adminPrimary } from '../../utils/adminThemeClasses';
+import { adminPrimary, adminSoft, adminStrong } from '../../utils/adminThemeClasses';
 export function UserDetailPage() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -284,12 +284,12 @@ export function UserDetailPage() {
       <Card>
         <CardHeader title="Nutzerbezogene Konto-Aktionssperre (4-Augen)" />
         <div className="space-y-3">
-          <p className={clsx('text-sm', isDark ? 'text-slate-300' : 'text-gray-600')}>
+          <p className={clsx('text-sm', adminSoft(isDark))}>
             Effektiver Modus wird pro Nutzer aus der Schnittmenge berechnet: Global, Rolle (Investor/Trader),
             Account-Typ (Privatperson/Company) und optional Nutzer-Override. Dadurch gilt automatisch:
             Nutzer-Override kann nur weiter einschränken, nie erweitern.
           </p>
-          <p className={clsx('text-sm', isDark ? 'text-slate-300' : 'text-gray-600')}>
+          <p className={clsx('text-sm', adminSoft(isDark))}>
             Aktueller Modus für diesen Nutzer:{' '}
             <span className={clsx('font-semibold', adminPrimary(isDark))}>
               {walletControls?.effectiveMode ?? 'deposit_and_withdrawal'}
@@ -355,7 +355,7 @@ export function UserDetailPage() {
 
           {trades.length > 0 && (
             <>
-              <h4 className={clsx('font-medium mb-3', isDark ? 'text-slate-200' : 'text-gray-700')}>Letzte Trades (mit Investoren)</h4>
+              <h4 className={clsx('font-medium mb-3', adminStrong(isDark))}>Letzte Trades (mit Investoren)</h4>
               <div className="space-y-4">
                 {trades.map((trade) => (
                   <UserTradeCard key={trade.objectId} trade={trade} />

@@ -15,7 +15,7 @@ import { PermissionsSection } from './components/PermissionsSection';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 
-import { adminMuted, adminPrimary } from '../../utils/adminThemeClasses';
+import { adminMuted, adminPrimary, adminSoft } from '../../utils/adminThemeClasses';
 export function CSRDashboard() {
   const { user } = useAuth();
   const { theme } = useTheme();
@@ -83,7 +83,7 @@ export function CSRDashboard() {
           </div>
           <div className="ml-auto flex items-center gap-2">
             <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-            <span className={clsx('text-sm', isDark ? 'text-slate-300' : 'text-gray-600')}>
+            <span className={clsx('text-sm', adminSoft(isDark))}>
               Alle Aktionen werden für Compliance-Zwecke protokolliert
             </span>
           </div>

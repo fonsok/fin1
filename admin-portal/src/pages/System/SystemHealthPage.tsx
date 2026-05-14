@@ -18,7 +18,7 @@ import { DevMaintenanceCard } from './components/DevMaintenanceCard';
 import { SystemServicesCard } from './components/SystemServicesCard';
 import { SystemDatabasesCard } from './components/SystemDatabasesCard';
 
-import { adminMuted, adminPrimary } from '../../utils/adminThemeClasses';
+import { adminMuted, adminPrimary, adminSoft } from '../../utils/adminThemeClasses';
 function StatusBadge({ status }: { status: ServiceStatus['status'] }) {
   const variants: Record<ServiceStatus['status'], 'success' | 'warning' | 'danger' | 'neutral'> = {
     healthy: 'success',
@@ -281,7 +281,7 @@ export function SystemHealthPage() {
                health.overall === 'unknown' ? 'Systemstatus konnte nicht geladen werden' :
                'Systemausfall erkannt'}
             </h3>
-            <p className={clsx('text-sm mt-1', isDark ? 'text-slate-300' : 'text-gray-600')}>
+            <p className={clsx('text-sm mt-1', adminSoft(isDark))}>
               Letzte Prüfung: {formatDateTime(health.serverTime)}
             </p>
             {isError && !data && (

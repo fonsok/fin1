@@ -11,7 +11,7 @@ import {
 } from '../../utils/tableStriping';
 import clsx from 'clsx';
 
-import { adminCaption, adminMuted, adminPrimary } from '../../utils/adminThemeClasses';
+import { adminCaption, adminMuted, adminPrimary, adminSoft } from '../../utils/adminThemeClasses';
 interface FunnelStep {
   step: string;
   count: number;
@@ -142,7 +142,7 @@ export function OnboardingFunnelPage() {
                       <div
                         className={clsx(
                           'w-40 text-sm text-right flex-shrink-0',
-                          isDark ? 'text-slate-300' : 'text-gray-600',
+                          adminSoft(isDark),
                         )}
                       >
                         {STEP_LABELS[step.step] || step.step}

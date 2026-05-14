@@ -21,7 +21,7 @@ import {
   tableTheadSurfaceClasses,
 } from '../../utils/tableStriping';
 
-import { adminMuted, adminPrimary } from '../../utils/adminThemeClasses';
+import { adminLabel, adminMuted, adminPrimary } from '../../utils/adminThemeClasses';
 const DOCUMENT_TYPE_OPTIONS: { value: string; label: string }[] = [
   { value: 'invoice', label: 'Rechnung' },
   { value: 'investorCollectionBill', label: 'Investor Collection Bill' },
@@ -225,14 +225,14 @@ export function DocumentSearchPage(): JSX.Element {
             <div className={clsx('space-y-2 text-sm', detailValue)}>
               <p>
                 <span className={detailLabel}>objectId:</span>{' '}
-                <code className={clsx('text-xs', isDark ? 'text-slate-300' : 'text-gray-700')}>{detail.objectId}</code>
+                <code className={clsx('text-xs', adminLabel(isDark))}>{detail.objectId}</code>
               </p>
               <p>
                 <span className={detailLabel}>Name:</span> {detail.name}
               </p>
               <p>
                 <span className={detailLabel}>fileURL:</span>{' '}
-                <code className={clsx('text-xs break-all', isDark ? 'text-slate-300' : 'text-gray-700')}>
+                <code className={clsx('text-xs break-all', adminLabel(isDark))}>
                   {detail.fileURL}
                 </code>
               </p>

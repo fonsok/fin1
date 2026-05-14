@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import clsx from 'clsx';
 import { useTheme } from '../../context/ThemeContext';
 
+import { adminStrong } from '../../utils/adminThemeClasses';
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
@@ -31,7 +32,7 @@ export function Input({
           htmlFor={inputId}
           className={clsx(
             'block text-sm font-medium mb-1',
-            isDark ? 'text-slate-200' : 'text-gray-700',
+            adminStrong(isDark),
           )}
         >
           {label}

@@ -20,7 +20,7 @@ import {
   tableTheadSurfaceClasses,
 } from '../../../utils/tableStriping';
 
-import { adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminLabel, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 export function CustomerDetailPage() {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
@@ -236,20 +236,20 @@ export function CustomerDetailPage() {
               </h2>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className={clsx(isDark ? 'text-slate-300' : 'text-gray-700')}>Status</span>
+                  <span className={clsx(adminLabel(isDark))}>Status</span>
                   <Badge variant={kycStatus.status === 'verified' ? 'success' : 'warning'}>
                     {kycStatus.status}
                   </Badge>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className={clsx(isDark ? 'text-slate-300' : 'text-gray-700')}>Level</span>
+                  <span className={clsx(adminLabel(isDark))}>Level</span>
                   <span className={clsx('font-medium', adminPrimary(isDark))}>
                     {kycStatus.level}
                   </span>
                 </div>
                 {kycStatus.verifiedAt && (
                   <div className="flex items-center justify-between">
-                    <span className={clsx(isDark ? 'text-slate-300' : 'text-gray-700')}>Verifiziert am</span>
+                    <span className={clsx(adminLabel(isDark))}>Verifiziert am</span>
                     <span className={clsx('font-medium', adminPrimary(isDark))}>
                       {formatDateTime(kycStatus.verifiedAt)}
                     </span>

@@ -7,7 +7,7 @@ import { listRowStripeClasses, tableBodyDivideClasses } from '../../../utils/tab
 import type { KybSubmission } from '../../../api/admin';
 import clsx from 'clsx';
 
-import { adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminLabel, adminMuted, adminPrimary, adminSoft } from '../../../utils/adminThemeClasses';
 const KYB_STATUS_CONFIG: Record<string, { label: string; variant: 'success' | 'warning' | 'danger' | 'info' | 'neutral' }> = {
   pending_review: { label: 'Ausstehend', variant: 'warning' },
   more_info_requested: { label: 'Nachbesserung', variant: 'warning' },
@@ -84,13 +84,13 @@ export function KYBSubmissionTable({
                 className={listRowStripeClasses(isDark, index, { className: 'transition-colors cursor-pointer' })}
                 onClick={() => onViewDetail(s.userId)}
               >
-                <td className={clsx('py-3 pr-4 font-mono text-xs', isDark ? 'text-slate-300' : 'text-gray-700')}>
+                <td className={clsx('py-3 pr-4 font-mono text-xs', adminLabel(isDark))}>
                   {s.customerNumber}
                 </td>
                 <td className={clsx('py-3 pr-4 font-medium', adminPrimary(isDark))}>
                   {displayName}
                 </td>
-                <td className={clsx('py-3 pr-4', isDark ? 'text-slate-300' : 'text-gray-600')}>
+                <td className={clsx('py-3 pr-4', adminSoft(isDark))}>
                   {s.email}
                 </td>
                 <td className="py-3 pr-4">

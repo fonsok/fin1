@@ -2,6 +2,7 @@ import clsx from 'clsx';
 import { Card } from '../../../components/ui/Card';
 import { useTheme } from '../../../context/ThemeContext';
 
+import { adminStrong } from '../../../utils/adminThemeClasses';
 type DocumentTypeFilter = 'all' | 'terms' | 'privacy' | 'imprint';
 type LanguageFilter = 'all' | 'de' | 'en';
 type ListViewFilter = 'all' | 'active_only' | 'last_10' | 'last_20';
@@ -69,7 +70,7 @@ export function TermsFiltersCard({
         <label
           className={clsx(
             'flex items-center gap-2 text-sm',
-            isDark ? 'text-slate-200' : 'text-gray-700',
+            adminStrong(isDark),
           )}
         >
           <input

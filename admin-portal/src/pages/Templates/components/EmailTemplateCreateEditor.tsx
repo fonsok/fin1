@@ -4,7 +4,7 @@ import { Button } from '../../../components/ui/Button';
 import { useTheme } from '../../../context/ThemeContext';
 import { createEmailTemplate } from '../api';
 
-import { adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminPrimary, adminStrong } from '../../../utils/adminThemeClasses';
 interface EmailTemplateCreateEditorProps {
   onSave: () => void;
   onClose: () => void;
@@ -86,7 +86,7 @@ export function EmailTemplateCreateEditor({ onSave, onClose }: EmailTemplateCrea
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-200' : 'text-gray-700')}>
+              <label className={clsx('block text-sm font-medium mb-1', adminStrong(isDark))}>
                 Typ (eindeutig)
               </label>
               <input
@@ -102,7 +102,7 @@ export function EmailTemplateCreateEditor({ onSave, onClose }: EmailTemplateCrea
             </div>
 
             <div>
-              <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-200' : 'text-gray-700')}>
+              <label className={clsx('block text-sm font-medium mb-1', adminStrong(isDark))}>
                 Anzeigename
               </label>
               <input
@@ -120,7 +120,7 @@ export function EmailTemplateCreateEditor({ onSave, onClose }: EmailTemplateCrea
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="md:col-span-2">
-              <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-200' : 'text-gray-700')}>
+              <label className={clsx('block text-sm font-medium mb-1', adminStrong(isDark))}>
                 Betreff
               </label>
               <input
@@ -135,7 +135,7 @@ export function EmailTemplateCreateEditor({ onSave, onClose }: EmailTemplateCrea
             </div>
 
             <div>
-              <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-200' : 'text-gray-700')}>
+              <label className={clsx('block text-sm font-medium mb-1', adminStrong(isDark))}>
                 Icon
               </label>
               <input
@@ -151,7 +151,7 @@ export function EmailTemplateCreateEditor({ onSave, onClose }: EmailTemplateCrea
           </div>
 
           <div>
-            <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-200' : 'text-gray-700')}>
+            <label className={clsx('block text-sm font-medium mb-1', adminStrong(isDark))}>
               Inhalt (Body-Template)
             </label>
             <textarea
@@ -166,7 +166,7 @@ export function EmailTemplateCreateEditor({ onSave, onClose }: EmailTemplateCrea
           </div>
 
           <div>
-            <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-200' : 'text-gray-700')}>
+            <label className={clsx('block text-sm font-medium mb-1', adminStrong(isDark))}>
               Platzhalter (optional, kommasepariert)
             </label>
             <input
@@ -191,7 +191,7 @@ export function EmailTemplateCreateEditor({ onSave, onClose }: EmailTemplateCrea
                 isDark ? 'border-slate-500 bg-slate-900' : 'border-gray-300',
               )}
             />
-            <span className={clsx('text-sm', isDark ? 'text-slate-200' : 'text-gray-700')}>Aktiv</span>
+            <span className={clsx('text-sm', adminStrong(isDark))}>Aktiv</span>
           </label>
         </div>
 

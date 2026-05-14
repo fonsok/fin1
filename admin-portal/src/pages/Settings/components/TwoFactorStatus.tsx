@@ -6,7 +6,7 @@ import { Card, Button, Badge, Input } from '../../../components/ui';
 import { useTheme } from '../../../context/ThemeContext';
 import { formatDateTime } from '../../../utils/format';
 
-import { adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminMuted, adminPrimary, adminSoft, adminStrong } from '../../../utils/adminThemeClasses';
 interface TwoFactorStatusProps {
   enabled: boolean;
   enabledAt?: string;
@@ -102,7 +102,7 @@ export function TwoFactorStatusCard({
             </div>
           ) : (
             <div>
-              <p className={clsx('text-sm mb-4', isDark ? 'text-slate-300' : 'text-gray-600')}>
+              <p className={clsx('text-sm mb-4', adminSoft(isDark))}>
                 Aktivieren Sie 2FA für zusätzlichen Schutz. Bei jedem Login müssen Sie dann
                 einen Code aus Ihrer Authenticator-App eingeben.
               </p>
@@ -153,14 +153,14 @@ function DisableModal({ onClose }: { onClose: () => void }): JSX.Element {
         <h2 className={clsx('text-xl font-semibold mb-2', adminPrimary(isDark))}>
           2FA deaktivieren
         </h2>
-        <p className={clsx('text-sm mb-4', isDark ? 'text-slate-300' : 'text-gray-600')}>
+        <p className={clsx('text-sm mb-4', adminSoft(isDark))}>
           Geben Sie Ihr Passwort und einen aktuellen 2FA-Code ein, um die
           Zwei-Faktor-Authentifizierung zu deaktivieren.
         </p>
 
         <div className="space-y-4">
           <div>
-            <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-200' : 'text-gray-700')}>
+            <label className={clsx('block text-sm font-medium mb-1', adminStrong(isDark))}>
               Passwort
             </label>
             <Input
@@ -171,7 +171,7 @@ function DisableModal({ onClose }: { onClose: () => void }): JSX.Element {
             />
           </div>
           <div>
-            <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-200' : 'text-gray-700')}>
+            <label className={clsx('block text-sm font-medium mb-1', adminStrong(isDark))}>
               2FA-Code
             </label>
             <Input
@@ -241,13 +241,13 @@ function RegenerateModal({ onClose }: { onClose: () => void }): JSX.Element {
             <h2 className={clsx('text-xl font-semibold mb-2', adminPrimary(isDark))}>
               Neue Backup-Codes generieren
             </h2>
-            <p className={clsx('text-sm mb-4', isDark ? 'text-slate-300' : 'text-gray-600')}>
+            <p className={clsx('text-sm mb-4', adminSoft(isDark))}>
               Geben Sie einen aktuellen 2FA-Code ein. Alle bisherigen Backup-Codes werden ungültig.
             </p>
 
             <div className="space-y-4">
               <div>
-                <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-200' : 'text-gray-700')}>
+                <label className={clsx('block text-sm font-medium mb-1', adminStrong(isDark))}>
                   2FA-Code
                 </label>
                 <Input

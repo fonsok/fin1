@@ -16,7 +16,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import type { LegalBrandingPreviewValues } from '../utils/hydrateTermsPreview';
 import { hydrateTermsPreviewText } from '../utils/hydrateTermsPreview';
 
-import { adminCaption, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminCaption, adminMuted, adminPrimary, adminSoft, adminStrong } from '../../../utils/adminThemeClasses';
 interface TermsListProps {
   items: TermsContentListItem[];
   documentTypeFilter?: 'all' | 'terms' | 'privacy' | 'imprint';
@@ -342,13 +342,13 @@ export function TermsList({
                     </p>
                   ) : result ? (
                     <div className="space-y-2">
-                      <p className={clsx(isDark ? 'text-slate-300' : 'text-gray-600')}>
+                      <p className={clsx(adminSoft(isDark))}>
                         Vergleich mit v{result.previousVersion}
                         {result.previousEffectiveDate &&
                           ` (gültig ab ${new Date(result.previousEffectiveDate).toLocaleDateString('de-DE')})`}
                         : {result.changes.length} Änderung(en).
                       </p>
-                      <ul className={clsx('list-disc list-inside space-y-1', isDark ? 'text-slate-200' : 'text-gray-700')}>
+                      <ul className={clsx('list-disc list-inside space-y-1', adminStrong(isDark))}>
                         {result.changes.map((c, i) => (
                           <li key={i}>
                             <span className="font-medium">
@@ -396,7 +396,7 @@ export function TermsList({
                   setzen sie bei Bedarf auf „Als aktiv setzen“.
                 </div>
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                  <h4 className={clsx('text-sm font-semibold', isDark ? 'text-slate-200' : 'text-gray-700')}>
+                  <h4 className={clsx('text-sm font-semibold', adminStrong(isDark))}>
                     Inhalt der Abschnitte
                   </h4>
                   <div className="flex-1 flex items-center gap-2">

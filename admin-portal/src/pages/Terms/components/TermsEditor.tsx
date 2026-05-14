@@ -5,7 +5,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import type { TermsContentFull, TermsSection, CreateTermsContentRequest } from '../types';
 import { createTermsContent } from '../api';
 
-import { adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminLabel, adminMuted, adminPrimary, adminSoft } from '../../../utils/adminThemeClasses';
 function filterSectionsBySearch(sections: TermsSection[], query: string): { section: TermsSection; index: number }[] {
   const q = query.trim().toLowerCase();
   if (!q) return sections.map((s, i) => ({ section: s, index: i }));
@@ -154,7 +154,7 @@ export function TermsEditor({ cloneFrom, initialSectionSearch, onSaved, onClose 
             )}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-300' : 'text-gray-700')}>Version *</label>
+                <label className={clsx('block text-sm font-medium mb-1', adminLabel(isDark))}>Version *</label>
                 <input
                   type="text"
                   value={version}
@@ -168,7 +168,7 @@ export function TermsEditor({ cloneFrom, initialSectionSearch, onSaved, onClose 
                 />
               </div>
               <div>
-                <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-300' : 'text-gray-700')}>Gültig ab *</label>
+                <label className={clsx('block text-sm font-medium mb-1', adminLabel(isDark))}>Gültig ab *</label>
                 <input
                   type="date"
                   value={effectiveDate}
@@ -183,7 +183,7 @@ export function TermsEditor({ cloneFrom, initialSectionSearch, onSaved, onClose 
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-300' : 'text-gray-700')}>Sprache</label>
+                <label className={clsx('block text-sm font-medium mb-1', adminLabel(isDark))}>Sprache</label>
                 <select
                   value={language}
                   onChange={(e) => setLanguage(e.target.value)}
@@ -197,7 +197,7 @@ export function TermsEditor({ cloneFrom, initialSectionSearch, onSaved, onClose 
                 </select>
               </div>
               <div>
-                <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-300' : 'text-gray-700')}>Dokumenttyp</label>
+                <label className={clsx('block text-sm font-medium mb-1', adminLabel(isDark))}>Dokumenttyp</label>
                 <select
                   value={documentType}
                   onChange={(e) => setDocumentType(e.target.value)}
@@ -215,7 +215,7 @@ export function TermsEditor({ cloneFrom, initialSectionSearch, onSaved, onClose 
 
             <div>
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
-                <label className={clsx('block text-sm font-medium', isDark ? 'text-slate-300' : 'text-gray-700')}>Abschnitte *</label>
+                <label className={clsx('block text-sm font-medium', adminLabel(isDark))}>Abschnitte *</label>
                 <div className="flex items-center gap-2 flex-1 sm:max-w-md">
                   <input
                     type="search"
@@ -248,7 +248,7 @@ export function TermsEditor({ cloneFrom, initialSectionSearch, onSaved, onClose 
                   filteredSectionsForDisplay.map(({ section, index }) => (
                     <div key={index} className={clsx('border rounded p-3', isDark ? 'border-slate-700 bg-slate-800/40' : 'border-gray-100 bg-gray-50/50')}>
                       <div className="flex justify-between items-center mb-2">
-                        <span className={clsx('text-sm font-medium', isDark ? 'text-slate-300' : 'text-gray-600')}>Abschnitt {index + 1}</span>
+                        <span className={clsx('text-sm font-medium', adminSoft(isDark))}>Abschnitt {index + 1}</span>
                         <Button
                           type="button"
                           variant="secondary"

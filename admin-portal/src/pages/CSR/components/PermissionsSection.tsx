@@ -6,7 +6,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import { cloudFunction } from '../../../api/parse';
 import type { User } from '../../../context/AuthContext';
 
-import { adminCaption, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminCaption, adminLabel, adminMuted, adminPrimary, adminSoft, adminStrong } from '../../../utils/adminThemeClasses';
 interface PermissionsSectionProps {
   user: User | null;
 }
@@ -294,7 +294,7 @@ export function PermissionsSection({ user }: PermissionsSectionProps) {
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-base">{getCategoryIcon(category.category)}</span>
                 <h3
-                  className={clsx('text-sm font-semibold', isDark ? 'text-slate-200' : 'text-gray-700')}
+                  className={clsx('text-sm font-semibold', adminStrong(isDark))}
                 >
                   {category.displayName}
                 </h3>
@@ -306,7 +306,7 @@ export function PermissionsSection({ user }: PermissionsSectionProps) {
                 {category.permissions.map((perm) => (
                   <li key={perm.key} className="flex items-center text-sm flex-wrap gap-x-1">
                     <span className="w-2 h-2 rounded-full bg-green-500 mr-2 flex-shrink-0" />
-                    <span className={clsx(isDark ? 'text-slate-300' : 'text-gray-700')}>
+                    <span className={clsx(adminLabel(isDark))}>
                       {perm.displayName}
                     </span>
                     {perm.isReadOnly && (
@@ -338,7 +338,7 @@ export function PermissionsSection({ user }: PermissionsSectionProps) {
           ))}
         </div>
       ) : !isLoading ? (
-        <div className={clsx('text-sm', isDark ? 'text-slate-300' : 'text-gray-600')}>
+        <div className={clsx('text-sm', adminSoft(isDark))}>
           <p>
             Als {roleDisplay.name} haben Sie Zugriff auf Kundendaten, Ticket-Management und
             Support-Funktionen entsprechend Ihrer Rolle.

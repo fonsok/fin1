@@ -1,6 +1,7 @@
 import clsx from 'clsx';
 import { Button, Card } from '../../../components/ui';
 
+import { adminStrong } from '../../../utils/adminThemeClasses';
 type ResetScope = 'all' | 'sinceHours' | 'testUsers';
 
 type Props = {
@@ -39,7 +40,7 @@ export function DevMaintenanceCard({
             Gefaehrlich: setzt Testdaten aus Trading/Investments zurueck (Vorlagen bleiben erhalten).
           </p>
           <div className="mt-3 flex flex-col md:flex-row gap-3 md:items-center">
-            <label className={clsx('text-sm', isDark ? 'text-slate-200' : 'text-gray-700')}>
+            <label className={clsx('text-sm', adminStrong(isDark))}>
               Scope
               <select
                 className={clsx(
@@ -57,7 +58,7 @@ export function DevMaintenanceCard({
             </label>
 
             {resetScope === 'sinceHours' && (
-              <label className={clsx('text-sm', isDark ? 'text-slate-200' : 'text-gray-700')}>
+              <label className={clsx('text-sm', adminStrong(isDark))}>
                 Stunden
                 <input
                   type="number"
@@ -73,7 +74,7 @@ export function DevMaintenanceCard({
                 />
               </label>
             )}
-            <label className={clsx('text-sm flex items-center gap-2', isDark ? 'text-slate-200' : 'text-gray-700')}>
+            <label className={clsx('text-sm flex items-center gap-2', adminStrong(isDark))}>
               <input
                 type="checkbox"
                 checked={reseedInitialBalance}

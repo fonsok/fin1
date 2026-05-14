@@ -8,7 +8,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import { tableBodyCellMutedClasses, tableBodyCellPrimaryClasses } from '../../../utils/tableStriping';
 import { getTicket, respondToTicket, assignTicket, escalateTicket, resolveTicket, closeTicket, getAvailableAgents } from '../api';
 
-import { adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminMuted, adminPrimary, adminSoft, adminStrong } from '../../../utils/adminThemeClasses';
 export function TicketDetailPage() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -177,7 +177,7 @@ export function TicketDetailPage() {
             <h2 className={clsx('text-lg font-semibold mb-2', adminPrimary(isDark))}>
               {ticket.subject}
             </h2>
-            <p className={clsx('whitespace-pre-wrap', isDark ? 'text-slate-300' : 'text-gray-600')}>
+            <p className={clsx('whitespace-pre-wrap', adminSoft(isDark))}>
               {ticket.description}
             </p>
           </div>
@@ -238,7 +238,7 @@ export function TicketDetailPage() {
               {comment.isInternal && (
                 <Badge variant="warning" className="mb-2">Intern</Badge>
               )}
-              <p className={clsx('whitespace-pre-wrap', isDark ? 'text-slate-200' : 'text-gray-700')}>
+              <p className={clsx('whitespace-pre-wrap', adminStrong(isDark))}>
                 {comment.content}
               </p>
             </div>

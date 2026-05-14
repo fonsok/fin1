@@ -1,6 +1,7 @@
 import clsx from 'clsx';
 import { Card, Button } from '../../../components/ui';
 
+import { adminSoft, adminStrong } from '../../../utils/adminThemeClasses';
 interface UserActionModalProps {
   showActionModal: 'suspend' | 'reactivate' | 'reset' | null;
   actionReason: string;
@@ -31,13 +32,13 @@ export function UserActionModal({
           {showActionModal === 'reset' && 'Passwort zurücksetzen'}
         </h3>
 
-        <p className={clsx('mb-4', isDark ? 'text-slate-300' : 'text-gray-600')}>
+        <p className={clsx('mb-4', adminSoft(isDark))}>
           {showActionModal === 'suspend' && 'Der Benutzer wird gesperrt und kann sich nicht mehr anmelden.'}
           {showActionModal === 'reactivate' && 'Der Benutzer wird reaktiviert und kann sich wieder anmelden.'}
           {showActionModal === 'reset' && 'Der Benutzer muss beim nächsten Login ein neues Passwort setzen.'}
         </p>
 
-        <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-200' : 'text-gray-700')}>
+        <label className={clsx('block text-sm font-medium mb-1', adminStrong(isDark))}>
           Begründung (wird protokolliert)
         </label>
         <textarea

@@ -6,7 +6,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import { updateEmailTemplate, renderEmailTemplate } from '../api';
 import type { EmailTemplate } from '../types';
 
-import { adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminLabel, adminMuted, adminPrimary, adminStrong } from '../../../utils/adminThemeClasses';
 interface EmailTemplateEditorProps {
   template: EmailTemplate;
   onSave: () => void;
@@ -108,7 +108,7 @@ export function EmailTemplateEditor({ template, onSave, onClose }: EmailTemplate
               </h3>
 
               <div>
-                <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-300' : 'text-gray-700')}>
+                <label className={clsx('block text-sm font-medium mb-1', adminLabel(isDark))}>
                   Status
                 </label>
                 <label className={clsx('flex items-center gap-2 cursor-pointer text-sm', isDark ? 'text-slate-200' : 'text-gray-900')}>
@@ -123,7 +123,7 @@ export function EmailTemplateEditor({ template, onSave, onClose }: EmailTemplate
               </div>
 
               <div>
-                <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-300' : 'text-gray-700')}>
+                <label className={clsx('block text-sm font-medium mb-1', adminLabel(isDark))}>
                   Betreff
                 </label>
                 <input
@@ -135,7 +135,7 @@ export function EmailTemplateEditor({ template, onSave, onClose }: EmailTemplate
               </div>
 
               <div>
-                <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-300' : 'text-gray-700')}>
+                <label className={clsx('block text-sm font-medium mb-1', adminLabel(isDark))}>
                   Inhalt
                 </label>
                 <textarea
@@ -147,7 +147,7 @@ export function EmailTemplateEditor({ template, onSave, onClose }: EmailTemplate
               </div>
 
               <div>
-                <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-300' : 'text-gray-700')}>
+                <label className={clsx('block text-sm font-medium mb-1', adminLabel(isDark))}>
                   Platzhalter
                 </label>
                 <div className="flex flex-wrap gap-1">
@@ -189,7 +189,7 @@ export function EmailTemplateEditor({ template, onSave, onClose }: EmailTemplate
                       isDark ? 'bg-slate-900/50 border-slate-600' : 'bg-gray-50 border-transparent',
                     )}
                   >
-                    <div className={clsx('text-sm font-medium mb-2', isDark ? 'text-slate-200' : 'text-gray-700')}>
+                    <div className={clsx('text-sm font-medium mb-2', adminStrong(isDark))}>
                       Testwerte:
                     </div>
                     {template.availablePlaceholders.map((p) => {

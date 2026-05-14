@@ -3,7 +3,7 @@ import { Card, Button } from '../../../components/ui';
 import { useTheme } from '../../../context/ThemeContext';
 import { formatDateTime } from '../../../utils/format';
 
-import { adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminLabel, adminMuted, adminPrimary, adminSoft } from '../../../utils/adminThemeClasses';
 interface ApprovalRequestLike {
   objectId: string;
   requestType: string;
@@ -74,7 +74,7 @@ export function WithdrawRequestModal({
               <p className={clsx('text-sm font-medium mb-1', isDark ? 'text-slate-100' : 'text-gray-800')}>
                 {getParamDisplayName(withdrawTarget.metadata.parameterName as string)}
               </p>
-              <p className={clsx('text-sm', isDark ? 'text-slate-300' : 'text-gray-600')}>
+              <p className={clsx('text-sm', adminSoft(isDark))}>
                 {formatConfigValue(withdrawTarget.metadata.parameterName as string, withdrawTarget.metadata.oldValue)}
                 {' → '}
                 <span className="font-semibold text-fin1-primary">
@@ -85,11 +85,11 @@ export function WithdrawRequestModal({
           )}
         </div>
 
-        <p className={clsx('text-sm mb-3', isDark ? 'text-slate-300' : 'text-gray-600')}>
+        <p className={clsx('text-sm mb-3', adminSoft(isDark))}>
           Möchten Sie diesen Antrag wirklich zurückziehen? Diese Aktion kann nicht rückgängig gemacht werden.
         </p>
 
-        <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-300' : 'text-gray-700')}>
+        <label className={clsx('block text-sm font-medium mb-1', adminLabel(isDark))}>
           Grund (optional)
         </label>
         <textarea

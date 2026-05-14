@@ -6,7 +6,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import type { ResponseTemplate, TemplateCategory, CreateTemplateRequest, UpdateTemplateRequest } from '../types';
 import { TEMPLATE_CATEGORIES, CSR_ROLES } from '../types';
 
-import { adminCaption, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminCaption, adminLabel, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 interface TemplateEditorProps {
   template: ResponseTemplate | null;
   categories: TemplateCategory[];
@@ -100,7 +100,7 @@ export function TemplateEditor({ template, categories, onSave, onClose }: Templa
 
             {/* Title */}
             <div>
-              <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-300' : 'text-gray-700')}>
+              <label className={clsx('block text-sm font-medium mb-1', adminLabel(isDark))}>
                 Titel *
               </label>
               <input
@@ -116,7 +116,7 @@ export function TemplateEditor({ template, categories, onSave, onClose }: Templa
             {/* Category & Type */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-300' : 'text-gray-700')}>
+                <label className={clsx('block text-sm font-medium mb-1', adminLabel(isDark))}>
                   Kategorie
                 </label>
                 <select
@@ -139,7 +139,7 @@ export function TemplateEditor({ template, categories, onSave, onClose }: Templa
               </div>
 
               <div>
-                <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-300' : 'text-gray-700')}>
+                <label className={clsx('block text-sm font-medium mb-1', adminLabel(isDark))}>
                   Typ
                 </label>
                 <div className="flex gap-4 pt-2">
@@ -168,7 +168,7 @@ export function TemplateEditor({ template, categories, onSave, onClose }: Templa
             {/* Subject (for email) */}
             {isEmail && (
               <div>
-                <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-300' : 'text-gray-700')}>
+                <label className={clsx('block text-sm font-medium mb-1', adminLabel(isDark))}>
                   Betreff
                 </label>
                 <input
@@ -183,7 +183,7 @@ export function TemplateEditor({ template, categories, onSave, onClose }: Templa
 
             {/* Shortcut */}
             <div>
-              <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-300' : 'text-gray-700')}>
+              <label className={clsx('block text-sm font-medium mb-1', adminLabel(isDark))}>
                 Shortcut (optional)
               </label>
               <div className="flex items-center gap-2">
@@ -203,7 +203,7 @@ export function TemplateEditor({ template, categories, onSave, onClose }: Templa
 
             {/* Body */}
             <div>
-              <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-300' : 'text-gray-700')}>
+              <label className={clsx('block text-sm font-medium mb-1', adminLabel(isDark))}>
                 Inhalt *
               </label>
               <textarea
@@ -222,7 +222,7 @@ export function TemplateEditor({ template, categories, onSave, onClose }: Templa
             {/* Placeholders Preview */}
             {extractedPlaceholders.length > 0 && (
               <div>
-                <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-300' : 'text-gray-700')}>
+                <label className={clsx('block text-sm font-medium mb-1', adminLabel(isDark))}>
                   Erkannte Platzhalter
                 </label>
                 <div className="flex flex-wrap gap-2">
@@ -245,7 +245,7 @@ export function TemplateEditor({ template, categories, onSave, onClose }: Templa
 
             {/* Roles */}
             <div>
-              <label className={clsx('block text-sm font-medium mb-2', isDark ? 'text-slate-300' : 'text-gray-700')}>
+              <label className={clsx('block text-sm font-medium mb-2', adminLabel(isDark))}>
                 Verfügbar für Rollen
               </label>
               <div className="flex flex-wrap gap-2">

@@ -4,7 +4,7 @@ import { formatCurrency, getStatusDisplay } from '../../../utils/format';
 import { listRowStripeClasses } from '../../../utils/tableStriping';
 import type { InvestmentItem } from '../../../api/admin';
 
-import { adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminPrimary, adminSoft, adminStrong } from '../../../utils/adminThemeClasses';
 interface Props {
   title: string;
   items: InvestmentItem[];
@@ -18,7 +18,7 @@ function extractShortId(id: string): string {
 export function InvestmentTable({ title, items, isDark }: Props) {
   return (
     <div>
-      <h4 className={clsx('font-medium mb-3', isDark ? 'text-slate-200' : 'text-gray-700')}>
+      <h4 className={clsx('font-medium mb-3', adminStrong(isDark))}>
         {title}
       </h4>
       <div className="overflow-x-auto rounded-lg border border-transparent">
@@ -63,7 +63,7 @@ export function InvestmentTable({ title, items, isDark }: Props) {
                   <td className={clsx('px-3 py-2.5 text-right tabular-nums', profitColor)}>
                     {returnPct !== 0 ? `${returnPct.toFixed(2)}` : '\u2014'}
                   </td>
-                  <td className={clsx('px-3 py-2.5 text-xs', isDark ? 'text-slate-300' : 'text-gray-600')}>
+                  <td className={clsx('px-3 py-2.5 text-xs', adminSoft(isDark))}>
                     {inv.docRef || '\u2014'}
                   </td>
                   <td className="px-3 py-2.5 text-center">

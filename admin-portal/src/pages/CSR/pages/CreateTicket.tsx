@@ -28,7 +28,7 @@ import type { CustomerSearchResult } from '../types';
 // - Category and priority selection
 // - Customer info sidebar with recent tickets
 
-import { adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminLabel, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 export function CreateTicketPage(): JSX.Element {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -267,7 +267,7 @@ export function CreateTicketPage(): JSX.Element {
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label
-                    className={clsx('block text-sm font-medium', isDark ? 'text-slate-300' : 'text-gray-700')}
+                    className={clsx('block text-sm font-medium', adminLabel(isDark))}
                   >
                     Betreff <span className="text-red-500">*</span>
                   </label>
@@ -303,7 +303,7 @@ export function CreateTicketPage(): JSX.Element {
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label
-                    className={clsx('block text-sm font-medium', isDark ? 'text-slate-300' : 'text-gray-700')}
+                    className={clsx('block text-sm font-medium', adminLabel(isDark))}
                   >
                     Beschreibung <span className="text-red-500">*</span>
                   </label>
@@ -342,7 +342,7 @@ export function CreateTicketPage(): JSX.Element {
                   <label
                     className={clsx(
                       'block text-sm font-medium mb-1',
-                      isDark ? 'text-slate-300' : 'text-gray-700',
+                      adminLabel(isDark),
                     )}
                   >
                     Kategorie <span className="text-red-500">*</span>
@@ -370,7 +370,7 @@ export function CreateTicketPage(): JSX.Element {
                   <label
                     className={clsx(
                       'block text-sm font-medium mb-1',
-                      isDark ? 'text-slate-300' : 'text-gray-700',
+                      adminLabel(isDark),
                     )}
                   >
                     Priorität

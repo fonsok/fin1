@@ -10,6 +10,7 @@ const TEXT_GRAY_500 = clsx('text-gray-500');
 const TEXT_GRAY_900 = clsx('text-gray-900');
 const TEXT_GRAY_600 = clsx('text-gray-600');
 const TEXT_GRAY_400 = clsx('text-gray-400');
+const TEXT_GRAY_700 = clsx('text-gray-700');
 
 const BG_GRAY_50_60 = clsx('bg-gray-50/60');
 const HOVER_BG_GRAY_50 = clsx('hover:bg-gray-50');
@@ -37,9 +38,24 @@ export function adminCaption(isDark: boolean): string {
   return isDark ? 'text-slate-500' : TEXT_GRAY_400;
 }
 
-/** Stat / KPI card title row (slightly brighter than body muted in dark mode) */
+/** Stat card title (dark: slate-300, light: gray-500) — distinct from body muted */
 export function adminStatTitle(isDark: boolean): string {
   return isDark ? 'text-slate-300' : TEXT_GRAY_500;
+}
+
+/** Secondary body / table cells (slate-300 / gray-600) */
+export function adminSoft(isDark: boolean): string {
+  return isDark ? 'text-slate-300' : TEXT_GRAY_600;
+}
+
+/** Form labels and UI chrome (slate-300 / gray-700) */
+export function adminLabel(isDark: boolean): string {
+  return isDark ? 'text-slate-300' : TEXT_GRAY_700;
+}
+
+/** Emphasized labels and section titles (slate-200 / gray-700) */
+export function adminStrong(isDark: boolean): string {
+  return isDark ? 'text-slate-200' : TEXT_GRAY_700;
 }
 
 export function adminTableTheadSurface(isDark: boolean): string {

@@ -6,7 +6,7 @@ import { Card, Button, Input } from '../../../components/ui';
 import { useTheme } from '../../../context/ThemeContext';
 import type { TwoFactorSetupResponse, TwoFactorEnableResponse } from '../types';
 
-import { adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminMuted, adminPrimary, adminSoft, adminStrong } from '../../../utils/adminThemeClasses';
 interface TwoFactorSetupProps {
   onComplete: () => void;
 }
@@ -61,13 +61,13 @@ export function TwoFactorSetup({ onComplete }: TwoFactorSetupProps): JSX.Element
   };
 
   const titleClass = clsx('text-xl font-semibold mb-2', adminPrimary(isDark));
-  const bodyMuted = clsx(isDark ? 'text-slate-300' : 'text-gray-600');
+  const bodyMuted = clsx(adminSoft(isDark));
   const infoBox = clsx(
     'rounded-lg p-4 mb-6 text-left',
     isDark ? 'bg-slate-900/50 border border-slate-600' : 'bg-gray-50',
   );
-  const listText = clsx('text-sm space-y-1', isDark ? 'text-slate-300' : 'text-gray-600');
-  const listHeading = clsx('text-sm font-medium mb-2', isDark ? 'text-slate-200' : 'text-gray-700');
+  const listText = clsx('text-sm space-y-1', adminSoft(isDark));
+  const listHeading = clsx('text-sm font-medium mb-2', adminStrong(isDark));
 
   return (
     <Card className="max-w-lg">

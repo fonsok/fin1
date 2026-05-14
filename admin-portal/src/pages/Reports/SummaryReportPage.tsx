@@ -13,7 +13,7 @@ import {
   tableTheadSurfaceClasses,
 } from '../../utils/tableStriping';
 
-import { adminCaption, adminMuted, adminPrimary } from '../../utils/adminThemeClasses';
+import { adminCaption, adminMuted, adminPrimary, adminSoft } from '../../utils/adminThemeClasses';
 interface InvestmentSummary {
   investmentId: string;
   investmentNumber: string;
@@ -274,7 +274,7 @@ function InfoRow({ label, value, index }: { label: string; value: string; index:
         listRowStripeClasses(isDark, index, { hover: false }),
       )}
     >
-      <span className={clsx('text-sm', isDark ? 'text-slate-300' : 'text-gray-600')}>{label}</span>
+      <span className={clsx('text-sm', adminSoft(isDark))}>{label}</span>
       <span className={clsx('text-sm font-medium text-right', adminPrimary(isDark))}>{value}</span>
     </div>
   );

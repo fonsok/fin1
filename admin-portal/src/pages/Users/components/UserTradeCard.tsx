@@ -6,7 +6,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import { listRowStripeClasses } from '../../../utils/tableStriping';
 import type { TradeItem, TradeInvestor } from '../../../api/admin';
 
-import { adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminMuted, adminPrimary, adminSoft, adminStrong } from '../../../utils/adminThemeClasses';
 export function UserTradeCard({ trade }: { trade: TradeItem }) {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -72,7 +72,7 @@ export function UserTradeCard({ trade }: { trade: TradeItem }) {
             {getStatusDisplay(trade.status)}
           </Badge>
           {hasInvestors && (
-            <div className={clsx('flex items-center gap-1', isDark ? 'text-slate-300' : 'text-gray-600')}>
+            <div className={clsx('flex items-center gap-1', adminSoft(isDark))}>
               <span className="text-sm whitespace-nowrap">
                 {trade.investors?.length} Investor{trade.investors?.length !== 1 ? 'en' : ''}
               </span>
@@ -110,7 +110,7 @@ export function UserTradeCard({ trade }: { trade: TradeItem }) {
             isDark ? 'border-slate-600 bg-slate-900/60' : 'border-gray-200 bg-blue-50',
           )}
         >
-          <h5 className={clsx('font-medium text-sm mb-3', isDark ? 'text-slate-200' : 'text-gray-700')}>
+          <h5 className={clsx('font-medium text-sm mb-3', adminStrong(isDark))}>
             Beteiligte Investoren
           </h5>
           <div className="overflow-x-auto rounded-lg border border-transparent">
@@ -201,7 +201,7 @@ export function UserTradeCard({ trade }: { trade: TradeItem }) {
                     >
                       {formatCurrency(inv.profitShare || 0)}
                     </td>
-                    <td className={clsx('px-3 py-2 text-right', isDark ? 'text-slate-300' : 'text-gray-600')}>
+                    <td className={clsx('px-3 py-2 text-right', adminSoft(isDark))}>
                       {formatCurrency(inv.commissionAmount || 0)}
                     </td>
                     <td className="px-3 py-2 text-center">

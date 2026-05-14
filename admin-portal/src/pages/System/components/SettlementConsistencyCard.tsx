@@ -9,7 +9,7 @@ import {
   tableTheadSurfaceClasses,
 } from '../../../utils/tableStriping';
 
-import { adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminLabel, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 type HealthStatus = 'healthy' | 'degraded' | 'down' | 'unknown';
 
 export type SettlementConsistencyStatus = {
@@ -52,7 +52,7 @@ export function SettlementConsistencyCard({
           <h3 className={clsx('text-md font-semibold', adminPrimary(isDark))}>
             Settlement Delta/Completion Konsistenz
           </h3>
-          <p className={clsx('text-sm mt-1', isDark ? 'text-slate-300' : 'text-gray-700')}>
+          <p className={clsx('text-sm mt-1', adminLabel(isDark))}>
             Prueft pro Completed Trade die Invariante: Teil-Sell-Deltas + Completion-Rest entsprechen der erwarteten Endabrechnung.
           </p>
           <p className={clsx('text-xs mt-1', isDark ? 'text-slate-400' : 'text-gray-600')}>

@@ -11,7 +11,7 @@ import { CorrectionModal } from './components/CorrectionModal';
 import { mockStats, mockRoundingDiffs, mockCorrections } from './mockData';
 import type { FinancialStats, RoundingDifference, CorrectionRequest } from './types';
 
-import { adminMuted, adminPrimary } from '../../utils/adminThemeClasses';
+import { adminMuted, adminPrimary, adminSoft } from '../../utils/adminThemeClasses';
 export function FinanceDashboardPage(): JSX.Element {
   const [showCorrectionModal, setShowCorrectionModal] = useState(false);
   const { theme } = useTheme();
@@ -270,7 +270,7 @@ function CorrectionsList(props: {
                 </span>
                 <Badge variant={getStatusBadge(corr.status)}>{getStatusLabel(corr.status)}</Badge>
               </div>
-              <p className={clsx('text-sm mb-1', isDark ? 'text-slate-300' : 'text-gray-600')}>{corr.reason}</p>
+              <p className={clsx('text-sm mb-1', adminSoft(isDark))}>{corr.reason}</p>
               <div className={clsx('flex items-center justify-between text-sm')}>
                 <span className={clsx(adminMuted(isDark))}>{formatDateTime(corr.createdAt)}</span>
                 <span className="font-semibold text-fin1-primary">{formatCurrency(corr.amount)}</span>

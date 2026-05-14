@@ -7,7 +7,7 @@ import { TwoFactorSetup } from './components/TwoFactorSetup';
 import { TwoFactorStatusCard } from './components/TwoFactorStatus';
 import { formatDateTime } from '../../utils/format';
 
-import { adminMuted, adminPrimary } from '../../utils/adminThemeClasses';
+import { adminLabel, adminMuted, adminPrimary } from '../../utils/adminThemeClasses';
 export function SettingsPage(): JSX.Element {
   const { user, refreshUser } = useAuth();
   const { theme } = useTheme();
@@ -82,7 +82,7 @@ export function SettingsPage(): JSX.Element {
               </div>
               <div>
                 <p className={clsx(adminMuted(isDark))}>Session-ID</p>
-                <p className={clsx('font-mono text-xs truncate', isDark ? 'text-slate-300' : 'text-gray-700')}>{getSessionPreview()}</p>
+                <p className={clsx('font-mono text-xs truncate', adminLabel(isDark))}>{getSessionPreview()}</p>
               </div>
             </div>
           </div>

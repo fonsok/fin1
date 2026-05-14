@@ -6,7 +6,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import { formatDateTime } from '../../../utils/format';
 import clsx from 'clsx';
 
-import { adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminLabel, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 interface KYBDecisionModalProps {
   submission: KybSubmission;
   onClose: () => void;
@@ -86,7 +86,7 @@ export function KYBDecisionModal({ submission, onClose, onComplete }: KYBDecisio
 
         {/* Decision toggle */}
         <div className="mb-4">
-          <label className={clsx('block text-sm font-medium mb-2', isDark ? 'text-slate-300' : 'text-gray-700')}>
+          <label className={clsx('block text-sm font-medium mb-2', adminLabel(isDark))}>
             Entscheidung
           </label>
           <div className="flex gap-2">
@@ -137,7 +137,7 @@ export function KYBDecisionModal({ submission, onClose, onComplete }: KYBDecisio
 
         {/* Notes */}
         <div className="mb-5">
-          <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-300' : 'text-gray-700')}>
+          <label className={clsx('block text-sm font-medium mb-1', adminLabel(isDark))}>
             {decision === 'approved'
               ? 'Notizen (optional)'
               : decision === 'more_info_requested'

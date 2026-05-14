@@ -1,6 +1,7 @@
 import clsx from 'clsx';
 import { Button } from './Button';
 
+import { adminLabel } from '../../utils/adminThemeClasses';
 type PaginationBarProps = {
   page: number;
   pageSize: number;
@@ -37,7 +38,7 @@ export function PaginationBar({
         <Button variant="secondary" size="sm" disabled={!canGoPrev} onClick={() => onPageChange(Math.max(0, page - 1))}>
           Zurück
         </Button>
-        <span className={clsx('text-sm px-2', isDark ? 'text-slate-300' : 'text-gray-700')}>
+        <span className={clsx('text-sm px-2', adminLabel(isDark))}>
           Seite {currentPage} / {totalPages}
         </span>
         <Button variant="secondary" size="sm" disabled={!canGoNext} onClick={() => onPageChange(Math.min(totalPages - 1, page + 1))}>

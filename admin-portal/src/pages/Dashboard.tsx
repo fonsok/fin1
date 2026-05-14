@@ -8,7 +8,7 @@ import { useTheme } from '../context/ThemeContext';
 import { getAdminDashboard } from '../api/admin';
 import { Card, Badge } from '../components/ui';
 import { formatNumber } from '../utils/format';
-import { adminMuted, adminPrimary } from '../utils/adminThemeClasses';
+import { adminMuted, adminPrimary, adminStrong } from '../utils/adminThemeClasses';
 
 export function DashboardPage() {
   const { user } = useAuth();
@@ -280,7 +280,7 @@ function QuickAction({
       )}
     >
       <span className="text-fin1-primary">{icon}</span>
-      <span className={clsx('text-sm font-medium', isDark ? 'text-slate-200' : 'text-gray-700')}>
+      <span className={clsx('text-sm font-medium', adminStrong(isDark))}>
         {label}
       </span>
     </Link>

@@ -3,6 +3,7 @@ import { matchNavItemForPath, type NavItem } from '../hooks/usePermissions';
 import clsx from 'clsx';
 import { useTheme } from '../context/ThemeContext';
 
+import { adminSoft } from '../utils/adminThemeClasses';
 export function AdminFeatureGate({
   navItems,
   children,
@@ -28,7 +29,7 @@ export function AdminFeatureGate({
         </div>
         <h2 className="text-xl font-semibold mb-2">Kein Zugriff auf „{gate.label}“</h2>
         <p
-          className={clsx('text-sm mb-6', isDark ? 'text-slate-300' : 'text-gray-600')}
+          className={clsx('text-sm mb-6', adminSoft(isDark))}
         >
           Dieser Bereich ist Teil des Admin-Portals, für Ihr Konto aber nicht freigeschaltet. Wenden Sie sich
           bei Bedarf an einen Administrator mit höheren Rechten.

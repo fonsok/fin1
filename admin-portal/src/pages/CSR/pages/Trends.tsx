@@ -7,7 +7,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import { getSupportTickets } from '../api';
 import type { SupportTicket } from '../types';
 
-import { adminCaption, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminCaption, adminLabel, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 interface SupportTrend {
   id: string;
   type: 'volumeSpike' | 'recurringIssue' | 'longResolutionTime' | 'highEscalationRate' | 'negativeCSAT' | 'reopenedTickets';
@@ -335,13 +335,13 @@ export function TrendsPage() {
                 <h3 className={clsx('font-semibold mb-2', isDark ? 'text-slate-200' : 'text-gray-800')}>
                   Beschreibung
                 </h3>
-                <p className={clsx(isDark ? 'text-slate-300' : 'text-gray-700')}>{selectedTrend.description}</p>
+                <p className={clsx(adminLabel(isDark))}>{selectedTrend.description}</p>
               </div>
               <div>
                 <h3 className={clsx('font-semibold mb-2', isDark ? 'text-slate-200' : 'text-gray-800')}>
                   Empfohlene Maßnahme
                 </h3>
-                <p className={clsx(isDark ? 'text-slate-300' : 'text-gray-700')}>{selectedTrend.suggestedAction}</p>
+                <p className={clsx(adminLabel(isDark))}>{selectedTrend.suggestedAction}</p>
               </div>
               <div>
                 <h3 className={clsx('font-semibold mb-2', isDark ? 'text-slate-200' : 'text-gray-800')}>

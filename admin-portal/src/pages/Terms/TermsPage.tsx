@@ -25,7 +25,7 @@ import type { TermsContentListItem, TermsContentFull, TermsSection } from './typ
 import { DOCUMENT_TYPE_LABELS } from './types';
 import { getConfiguration } from '../../api/admin/configuration';
 
-import { adminMuted, adminPrimary } from '../../utils/adminThemeClasses';
+import { adminMuted, adminPrimary, adminSoft } from '../../utils/adminThemeClasses';
 type DocumentTypeFilter = 'all' | 'terms' | 'privacy' | 'imprint';
 type LanguageFilter = 'all' | 'de' | 'en';
 type ListViewFilter = 'all' | 'active_only' | 'last_10' | 'last_20';
@@ -410,7 +410,7 @@ export function TermsPage() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className={clsx('rounded-xl shadow-xl px-8 py-6 border', isDark ? 'bg-slate-800 border-slate-600' : 'bg-white border-gray-200')}>
             <div className="animate-spin w-8 h-8 border-4 border-fin1-primary border-t-transparent rounded-full mx-auto mb-4" />
-            <p className={clsx(isDark ? 'text-slate-300' : 'text-gray-600')}>Lade Version zum Klonen…</p>
+            <p className={clsx(adminSoft(isDark))}>Lade Version zum Klonen…</p>
           </div>
         </div>
       )}

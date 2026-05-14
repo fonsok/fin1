@@ -5,7 +5,7 @@ import { cloudFunction } from '../../../api/admin';
 import { Button, Card } from '../../../components/ui';
 import { useTheme } from '../../../context/ThemeContext';
 
-import { adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminLabel, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 interface CorrectionModalProps {
   onClose: () => void;
 }
@@ -116,7 +116,7 @@ export function CorrectionModal({ onClose }: CorrectionModalProps): JSX.Element 
             </div>
           )}
           <div>
-            <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-300' : 'text-gray-700')}>
+            <label className={clsx('block text-sm font-medium mb-1', adminLabel(isDark))}>
               Art der Korrektur
             </label>
             <select
@@ -134,7 +134,7 @@ export function CorrectionModal({ onClose }: CorrectionModalProps): JSX.Element 
 
           {selectedType?.targetType !== 'system' && (
             <div>
-              <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-300' : 'text-gray-700')}>
+              <label className={clsx('block text-sm font-medium mb-1', adminLabel(isDark))}>
                 {selectedType?.targetType === 'investment'
                   ? 'Investment-ID'
                   : 'User-ID (Empfänger)'}
@@ -154,7 +154,7 @@ export function CorrectionModal({ onClose }: CorrectionModalProps): JSX.Element 
           )}
 
           <div>
-            <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-300' : 'text-gray-700')}>
+            <label className={clsx('block text-sm font-medium mb-1', adminLabel(isDark))}>
               Betrag (EUR)
             </label>
             <input
@@ -185,7 +185,7 @@ export function CorrectionModal({ onClose }: CorrectionModalProps): JSX.Element 
                 (sonst lehnt der Server ab).
               </p>
               <div>
-                <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-300' : 'text-gray-700')}>
+                <label className={clsx('block text-sm font-medium mb-1', adminLabel(isDark))}>
                   Invoice-ID (Parse objectId)
                 </label>
                 <input
@@ -197,7 +197,7 @@ export function CorrectionModal({ onClose }: CorrectionModalProps): JSX.Element 
                 />
               </div>
               <div>
-                <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-300' : 'text-gray-700')}>
+                <label className={clsx('block text-sm font-medium mb-1', adminLabel(isDark))}>
                   Batch-ID (Investment-Batch)
                 </label>
                 <input
@@ -226,7 +226,7 @@ export function CorrectionModal({ onClose }: CorrectionModalProps): JSX.Element 
           )}
 
           <div>
-            <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-300' : 'text-gray-700')}>
+            <label className={clsx('block text-sm font-medium mb-1', adminLabel(isDark))}>
               Begründung
             </label>
             <textarea

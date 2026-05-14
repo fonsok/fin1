@@ -10,7 +10,7 @@ import { KYBSubmissionTable } from './components/KYBSubmissionTable';
 import { KYBDetailModal } from './components/KYBDetailModal';
 import { KYBDecisionModal } from './components/KYBDecisionModal';
 
-import { adminMuted, adminPrimary } from '../../utils/adminThemeClasses';
+import { adminLabel, adminMuted, adminPrimary } from '../../utils/adminThemeClasses';
 type TabId = 'pending_review' | 'more_info_requested' | 'approved' | 'rejected' | 'all';
 
 const TABS: { id: TabId; label: string; icon: string }[] = [
@@ -170,7 +170,7 @@ export function KYBReviewPage() {
           ) : submissions.length === 0 ? (
             <div className="text-center py-12">
               <div className="text-4xl mb-3">🏢</div>
-              <p className={clsx('text-lg font-medium', isDark ? 'text-slate-300' : 'text-gray-700')}>
+              <p className={clsx('text-lg font-medium', adminLabel(isDark))}>
                 Keine Einreichungen
               </p>
               <p className={clsx('text-sm mt-1', adminMuted(isDark))}>

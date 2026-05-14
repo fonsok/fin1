@@ -9,7 +9,7 @@ import {
   tableTheadSurfaceClasses,
 } from '../../../utils/tableStriping';
 
-import { adminCaption, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminCaption, adminMuted, adminPrimary, adminSoft } from '../../../utils/adminThemeClasses';
 interface ApprovalRequestLike {
   objectId: string;
   requestType: string;
@@ -152,7 +152,7 @@ export function ApprovalsRequestTable({
                   <td className="px-6 py-4">
                     <div className="text-sm">
                       {request.approverEmail && (
-                        <p className={clsx(isDark ? 'text-slate-300' : 'text-gray-600')}>{request.approverEmail}</p>
+                        <p className={clsx(adminSoft(isDark))}>{request.approverEmail}</p>
                       )}
                       {request.approverNotes && (
                         <p

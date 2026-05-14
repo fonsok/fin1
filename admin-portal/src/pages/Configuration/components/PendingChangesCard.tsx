@@ -4,7 +4,7 @@ import { formatDateTime } from '../../../utils/format';
 import { useTheme } from '../../../context/ThemeContext';
 import type { PendingConfigChange, ConfigurationParameter } from '../types';
 
-import { adminCaption, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminCaption, adminMuted, adminPrimary, adminSoft } from '../../../utils/adminThemeClasses';
 interface PendingChangesCardProps {
   requests: PendingConfigChange[];
   parameterDefinitions: Record<string, Omit<ConfigurationParameter, 'value'>>;
@@ -40,7 +40,7 @@ export function PendingChangesCard({
                 <p className={clsx('font-medium', adminPrimary(isDark))}>
                   {parameterDefinitions[change.parameterName]?.displayName || change.parameterName}
                 </p>
-                <p className={clsx('text-sm mt-1', isDark ? 'text-slate-300' : 'text-gray-600')}>
+                <p className={clsx('text-sm mt-1', adminSoft(isDark))}>
                   {formatValue(change.parameterName, change.oldValue)}
                   {' -> '}
                   {formatValue(change.parameterName, change.newValue)}

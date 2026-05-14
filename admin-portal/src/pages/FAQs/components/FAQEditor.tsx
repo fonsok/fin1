@@ -14,7 +14,7 @@ import type {
 import { createFAQCategory } from '../api';
 import { isRetiredFaqCategorySlug } from '../retiredFaqCategories';
 
-import { adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminLabel, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 interface FAQEditorProps {
   faq: FAQ | null;
   categories: FAQCategory[];
@@ -235,7 +235,7 @@ export function FAQEditor({ faq, categories, onSave, onClose }: FAQEditorProps) 
             {/* FAQ ID (only for new FAQs) */}
             {!isEdit && (
               <div>
-                <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-300' : 'text-gray-700')}>
+                <label className={clsx('block text-sm font-medium mb-1', adminLabel(isDark))}>
                   FAQ ID (optional)
                 </label>
                 <input
@@ -253,7 +253,7 @@ export function FAQEditor({ faq, categories, onSave, onClose }: FAQEditorProps) 
 
             {/* Kontext(e) – multiple contexts per FAQ */}
             <div>
-              <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-300' : 'text-gray-700')}>
+              <label className={clsx('block text-sm font-medium mb-1', adminLabel(isDark))}>
                 Kontexte
               </label>
               <div className="grid grid-cols-2 gap-2 text-sm">
@@ -314,7 +314,7 @@ export function FAQEditor({ faq, categories, onSave, onClose }: FAQEditorProps) 
             {/* Category & Sort Order */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-300' : 'text-gray-700')}>
+                <label className={clsx('block text-sm font-medium mb-1', adminLabel(isDark))}>
                   Kategorien *
                 </label>
                 <div
@@ -402,7 +402,7 @@ export function FAQEditor({ faq, categories, onSave, onClose }: FAQEditorProps) 
                 <label
                   className={clsx(
                     'flex items-center gap-1.5 text-sm font-medium mb-1',
-                    isDark ? 'text-slate-300' : 'text-gray-700',
+                    adminLabel(isDark),
                   )}
                 >
                   <span>Sortierung</span>
@@ -427,7 +427,7 @@ export function FAQEditor({ faq, categories, onSave, onClose }: FAQEditorProps) 
 
             {/* Question (DE) */}
             <div>
-              <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-300' : 'text-gray-700')}>
+              <label className={clsx('block text-sm font-medium mb-1', adminLabel(isDark))}>
                 Frage (DE) *
               </label>
               <textarea
@@ -442,7 +442,7 @@ export function FAQEditor({ faq, categories, onSave, onClose }: FAQEditorProps) 
 
             {/* Question (EN optional) */}
             <div>
-              <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-300' : 'text-gray-700')}>
+              <label className={clsx('block text-sm font-medium mb-1', adminLabel(isDark))}>
                 Frage (EN optional)
               </label>
               <textarea
@@ -456,7 +456,7 @@ export function FAQEditor({ faq, categories, onSave, onClose }: FAQEditorProps) 
 
             {/* Answer (DE) */}
             <div>
-              <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-300' : 'text-gray-700')}>
+              <label className={clsx('block text-sm font-medium mb-1', adminLabel(isDark))}>
                 Antwort (DE) *
               </label>
               <textarea
@@ -471,7 +471,7 @@ export function FAQEditor({ faq, categories, onSave, onClose }: FAQEditorProps) 
 
             {/* Answer (EN optional) */}
             <div>
-              <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-300' : 'text-gray-700')}>
+              <label className={clsx('block text-sm font-medium mb-1', adminLabel(isDark))}>
                 Antwort (EN optional)
               </label>
               <textarea

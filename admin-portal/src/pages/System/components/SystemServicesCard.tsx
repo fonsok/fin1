@@ -10,7 +10,7 @@ import {
 } from '../../../utils/tableStriping';
 import type { ServiceStatus } from '../types';
 
-import { adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminMuted, adminPrimary, adminSoft } from '../../../utils/adminThemeClasses';
 type Props = {
   isDark: boolean;
   services: ServiceStatus[];
@@ -46,7 +46,7 @@ export function SystemServicesCard({ isDark, services, renderStatusBadge }: Prop
                   </span>
                 </td>
                 <td className="px-4 py-3">{renderStatusBadge(service.status)}</td>
-                <td className={clsx('px-4 py-3 text-sm', isDark ? 'text-slate-300' : 'text-gray-600')}>
+                <td className={clsx('px-4 py-3 text-sm', adminSoft(isDark))}>
                   {service.responseTime ? `${service.responseTime}ms` : '-'}
                 </td>
                 <td className={clsx('px-4 py-3 text-sm', adminMuted(isDark))}>

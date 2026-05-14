@@ -12,7 +12,7 @@ import { WithdrawRequestModal } from './components/WithdrawRequestModal';
 import { ApprovalsEmptyState } from './components/ApprovalsEmptyState';
 import { ApprovalsRequestTable } from './components/ApprovalsRequestTable';
 
-import { adminCaption, adminMuted, adminPrimary } from '../../utils/adminThemeClasses';
+import { adminCaption, adminLabel, adminMuted, adminPrimary, adminSoft } from '../../utils/adminThemeClasses';
 interface ApprovalRequest {
   objectId: string;
   requestType: string;
@@ -180,7 +180,7 @@ function RequestDetails({ request }: { request: ApprovalRequest }) {
   }
 
   return (
-    <p className={clsx('text-sm truncate max-w-xs', isDark ? 'text-slate-300' : 'text-gray-600')}>
+    <p className={clsx('text-sm truncate max-w-xs', adminSoft(isDark))}>
       {(typeof request.metadata?.reason === 'string' ? request.metadata.reason : null) || '-'}
     </p>
   );
@@ -341,7 +341,7 @@ export function ApprovalsListPage() {
       {/* Type filter */}
       <Card>
         <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-          <label className={clsx('text-sm font-medium', isDark ? 'text-slate-300' : 'text-gray-700')}>
+          <label className={clsx('text-sm font-medium', adminLabel(isDark))}>
             Typ filtern:
           </label>
           <select

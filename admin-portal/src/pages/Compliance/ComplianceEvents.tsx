@@ -15,7 +15,7 @@ import {
   tableTheadSurfaceClasses,
 } from '../../utils/tableStriping';
 
-import { adminMuted, adminPrimary } from '../../utils/adminThemeClasses';
+import { adminMuted, adminPrimary, adminStrong } from '../../utils/adminThemeClasses';
 export function ComplianceEventsPage() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -309,7 +309,7 @@ export function ComplianceEventsPage() {
             </div>
 
             <label
-              className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-200' : 'text-gray-700')}
+              className={clsx('block text-sm font-medium mb-1', adminStrong(isDark))}
             >
               Prüfnotizen
             </label>
