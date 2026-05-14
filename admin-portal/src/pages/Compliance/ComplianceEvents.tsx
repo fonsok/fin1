@@ -9,6 +9,8 @@ import { useTheme } from '../../context/ThemeContext';
 import {
   listRowStripeClasses,
   tableBodyDivideClasses,
+  tableBodyCellMutedClasses,
+  tableBodyCellPrimaryClasses,
   tableHeaderCellTextClasses,
   tableTheadSurfaceClasses,
 } from '../../utils/tableStriping';
@@ -95,6 +97,11 @@ export function ComplianceEventsPage() {
     return labels[type] || type || '-';
   };
 
+  const fieldSurface = clsx(
+    'w-full border rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary',
+    isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100 placeholder:text-slate-500' : 'bg-white border-gray-300 text-gray-900',
+  );
+
   return (
     <div className="space-y-6">
       {/* Filters */}
@@ -160,18 +167,23 @@ export function ComplianceEventsPage() {
         {isLoading ? (
           <div className="p-8 text-center">
             <div className="animate-spin w-8 h-8 border-4 border-fin1-primary border-t-transparent rounded-full mx-auto"></div>
-            <p className="text-gray-500 mt-4">Laden...</p>
+            <p className={clsx('mt-4', isDark ? 'text-slate-400' : 'text-gray-500')}>Laden...</p>
           </div>
         ) : error ? (
           <div className="p-8 text-center">
-            <p className="text-red-500">Fehler beim Laden der Events</p>
+            <p className={clsx(isDark ? 'text-red-400' : 'text-red-500')}>Fehler beim Laden der Events</p>
           </div>
         ) : !data?.events?.length ? (
           <div className="p-8 text-center">
-            <svg className="w-12 h-12 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg
+              className={clsx('w-12 h-12 mx-auto mb-4', isDark ? 'text-slate-600' : 'text-gray-300')}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
             </svg>
-            <p className="text-gray-500">Keine Compliance-Events gefunden</p>
+            <p className={clsx(isDark ? 'text-slate-400' : 'text-gray-500')}>Keine Compliance-Events gefunden</p>
           </div>
         ) : (
           <>
@@ -213,16 +225,16 @@ export function ComplianceEventsPage() {
                 {data.events.map((event, index: number) => (
                   <tr key={event.objectId} className={listRowStripeClasses(isDark, index)}>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm font-medium text-gray-900">
+                      <span className={clsx('text-sm font-medium', tableBodyCellPrimaryClasses(isDark))}>
                         {getEventTypeLabel(event.eventType)}
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <p className={clsx('text-sm truncate max-w-xs', isDark ? 'text-slate-200' : 'text-gray-600')}>
+                      <p className={clsx('text-sm truncate max-w-xs', tableBodyCellPrimaryClasses(isDark))}>
                         {event.description || '-'}
                       </p>
                       {event.userEmail && (
-                        <p className={clsx('text-xs', isDark ? 'text-slate-300' : 'text-gray-400')}>{event.userEmail}</p>
+                        <p className={clsx('text-xs', tableBodyCellMutedClasses(isDark))}>{event.userEmail}</p>
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -235,7 +247,7 @@ export function ComplianceEventsPage() {
                         {event.reviewed ? 'Geprüft' : 'Offen'}
                       </Badge>
                     </td>
-                    <td className={clsx('px-6 py-4 whitespace-nowrap text-sm', isDark ? 'text-slate-200' : 'text-gray-500')}>
+                    <td className={clsx('px-6 py-4 whitespace-nowrap text-sm', tableBodyCellMutedClasses(isDark))}>
                       {formatDateTime(event.occurredAt || event.createdAt)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
@@ -270,32 +282,40 @@ export function ComplianceEventsPage() {
       {selectedEvent && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <Card className="w-full max-w-lg">
-            <h3 className="text-lg font-semibold mb-4">Event prüfen</h3>
+            <h3 className={clsx('text-lg font-semibold mb-4', isDark ? 'text-slate-100' : 'text-gray-900')}>
+              Event prüfen
+            </h3>
 
             <div className="space-y-3 mb-4">
               <div>
-                <span className="text-sm text-gray-500">Typ:</span>
-                <span className="ml-2 text-sm font-medium">{getEventTypeLabel(selectedEvent.eventType)}</span>
+                <span className={clsx('text-sm', tableBodyCellMutedClasses(isDark))}>Typ:</span>
+                <span className={clsx('ml-2 text-sm font-medium', tableBodyCellPrimaryClasses(isDark))}>
+                  {getEventTypeLabel(selectedEvent.eventType)}
+                </span>
               </div>
               <div>
-                <span className="text-sm text-gray-500">Beschreibung:</span>
-                <p className="text-sm mt-1">{selectedEvent.description}</p>
+                <span className={clsx('text-sm', tableBodyCellMutedClasses(isDark))}>Beschreibung:</span>
+                <p className={clsx('text-sm mt-1 whitespace-pre-wrap', tableBodyCellPrimaryClasses(isDark))}>
+                  {selectedEvent.description}
+                </p>
               </div>
               <div>
-                <span className="text-sm text-gray-500">Schweregrad:</span>
+                <span className={clsx('text-sm', tableBodyCellMutedClasses(isDark))}>Schweregrad:</span>
                 <Badge variant={getSeverityVariant(selectedEvent.severity)} className="ml-2">
                   {getSeverityLabel(selectedEvent.severity)}
                 </Badge>
               </div>
             </div>
 
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-200' : 'text-gray-700')}
+            >
               Prüfnotizen
             </label>
             <textarea
               value={reviewNotes}
               onChange={(e) => setReviewNotes(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary mb-4"
+              className={clsx('w-full px-4 py-2 rounded-lg mb-4', fieldSurface)}
               rows={3}
               placeholder="Notizen zur Prüfung..."
             />

@@ -1,15 +1,21 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import clsx from 'clsx';
 import { useAuth } from '../context/AuthContext';
 import { usePermissions } from '../hooks/usePermissions';
+import { useTheme } from '../context/ThemeContext';
 import { getAdminDashboard } from '../api/admin';
 import { Card, Badge } from '../components/ui';
 import { formatNumber } from '../utils/format';
 
+const mutedBody = (isDark: boolean) => (isDark ? 'text-slate-400' : 'text-gray-500');
+
 export function DashboardPage() {
   const { user } = useAuth();
   const perms = usePermissions();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
   const { data: stats, isLoading, error } = useQuery({
     queryKey: ['adminDashboard'],
@@ -34,14 +40,18 @@ export function DashboardPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
             <Card key={i} className="animate-pulse">
-              <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
-              <div className="h-8 bg-gray-200 rounded w-1/3"></div>
+              <div
+                className={clsx('h-4 rounded w-1/2 mb-2', isDark ? 'bg-slate-600' : 'bg-gray-200')}
+              ></div>
+              <div className={clsx('h-8 rounded w-1/3', isDark ? 'bg-slate-600' : 'bg-gray-200')}></div>
             </Card>
           ))}
         </div>
       ) : error ? (
         <Card className="text-center py-8">
-          <p className="text-red-500">Fehler beim Laden der Statistiken</p>
+          <p className={clsx(isDark ? 'text-red-400' : 'text-red-500')}>
+            Fehler beim Laden der Statistiken
+          </p>
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -103,9 +113,9 @@ export function DashboardPage() {
             </div>
             <div className="space-y-3">
               {stats?.tickets?.open === 0 ? (
-                <p className="text-gray-500 text-sm">Keine offenen Tickets</p>
+                <p className={clsx('text-sm', mutedBody(isDark))}>Keine offenen Tickets</p>
               ) : (
-                <p className="text-gray-500 text-sm">
+                <p className={clsx('text-sm', mutedBody(isDark))}>
                   {stats?.tickets?.open} Tickets warten auf Bearbeitung
                 </p>
               )}
@@ -128,9 +138,9 @@ export function DashboardPage() {
             </div>
             <div className="space-y-3">
               {stats?.compliance?.pendingReviews === 0 ? (
-                <p className="text-gray-500 text-sm">Alle Events geprüft</p>
+                <p className={clsx('text-sm', mutedBody(isDark))}>Alle Events geprüft</p>
               ) : (
-                <p className="text-gray-500 text-sm">
+                <p className={clsx('text-sm', mutedBody(isDark))}>
                   {stats?.compliance?.pendingReviews} Events warten auf Review
                 </p>
               )}
@@ -153,9 +163,9 @@ export function DashboardPage() {
             </div>
             <div className="space-y-3">
               {stats?.compliance?.pendingApprovals === 0 ? (
-                <p className="text-gray-500 text-sm">Keine ausstehenden Freigaben</p>
+                <p className={clsx('text-sm', mutedBody(isDark))}>Keine ausstehenden Freigaben</p>
               ) : (
-                <p className="text-gray-500 text-sm">
+                <p className={clsx('text-sm', mutedBody(isDark))}>
                   {stats?.compliance?.pendingApprovals} Anfragen warten auf Freigabe
                 </p>
               )}
@@ -214,20 +224,25 @@ function StatCard({
   icon: React.ReactNode;
   color: 'blue' | 'green' | 'amber' | 'red';
 }) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
   const colors = {
-    blue: 'bg-blue-50 text-blue-600',
-    green: 'bg-green-50 text-green-600',
-    amber: 'bg-amber-50 text-amber-600',
-    red: 'bg-red-50 text-red-600',
+    blue: clsx(isDark ? 'bg-blue-900/40 text-blue-300' : 'bg-blue-50 text-blue-600'),
+    green: clsx(isDark ? 'bg-green-900/40 text-green-300' : 'bg-green-50 text-green-600'),
+    amber: clsx(isDark ? 'bg-amber-900/40 text-amber-300' : 'bg-amber-50 text-amber-600'),
+    red: clsx(isDark ? 'bg-red-900/40 text-red-300' : 'bg-red-50 text-red-600'),
   };
 
   return (
     <Card>
       <div className="flex items-center gap-4">
-        <div className={`p-3 rounded-lg ${colors[color]}`}>{icon}</div>
+        <div className={clsx('p-3 rounded-lg', colors[color])}>{icon}</div>
         <div>
-          <p className="text-sm text-gray-500">{title}</p>
-          <p className="text-2xl font-bold text-gray-900">{value}</p>
+          <p className={clsx('text-sm', mutedBody(isDark))}>{title}</p>
+          <p className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+            {value}
+          </p>
         </div>
       </div>
     </Card>
@@ -244,13 +259,23 @@ function QuickAction({
   icon: React.ReactNode;
   label: string;
 }) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
   return (
     <Link
       to={to}
-      className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:border-fin1-primary hover:bg-fin1-light/50 transition-colors"
+      className={clsx(
+        'flex items-center gap-3 p-3 rounded-lg border transition-colors',
+        isDark
+          ? 'border-slate-600 hover:border-fin1-primary hover:bg-slate-600/40'
+          : 'border-gray-200 hover:border-fin1-primary hover:bg-fin1-light/50',
+      )}
     >
       <span className="text-fin1-primary">{icon}</span>
-      <span className="text-sm font-medium text-gray-700">{label}</span>
+      <span className={clsx('text-sm font-medium', isDark ? 'text-slate-200' : 'text-gray-700')}>
+        {label}
+      </span>
     </Link>
   );
 }
