@@ -1,10 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
+import clsx from 'clsx';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { Button, Card } from './ui';
 
 type TwoFactorMode = 'totp' | 'backup';
 
 export function TwoFactorVerify() {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const { verify2FACode, logout, isLoading, user } = useAuth();
   const [mode, setMode] = useState<TwoFactorMode>('totp');
   const [code, setCode] = useState(['', '', '', '', '', '']);
@@ -98,6 +102,22 @@ export function TwoFactorVerify() {
     await logout();
   };
 
+  const digitInputClass = clsx(
+    'w-12 h-14 text-center text-2xl font-semibold border-2 rounded-lg focus:border-fin1-primary focus:outline-none transition-colors',
+    isDark
+      ? 'bg-slate-900/80 border-slate-500 text-slate-100'
+      : 'border-gray-200 text-gray-900',
+  );
+
+  const backupInputClass = clsx(
+    'w-full h-14 text-center text-xl font-mono font-semibold tracking-widest border-2 rounded-lg focus:border-fin1-primary focus:outline-none transition-colors',
+    isDark
+      ? 'bg-slate-900/80 border-slate-500 text-slate-100 placeholder:text-slate-500'
+      : 'border-gray-200 text-gray-900 placeholder:text-gray-400',
+  );
+
+  const modeInactive = isDark ? 'text-slate-400 hover:text-slate-200' : 'text-gray-500 hover:text-gray-700';
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-fin1-primary to-fin1-secondary flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -120,10 +140,10 @@ export function TwoFactorVerify() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
               </svg>
             </div>
-            <h2 className="text-lg font-semibold text-gray-900">
+            <h2 className={clsx('text-lg font-semibold', isDark ? 'text-slate-100' : 'text-gray-900')}>
               {mode === 'totp' ? 'Code eingeben' : 'Backup-Code eingeben'}
             </h2>
-            <p className="text-gray-500 text-sm mt-1">
+            <p className={clsx('text-sm mt-1', isDark ? 'text-slate-400' : 'text-gray-500')}>
               {mode === 'totp'
                 ? 'Öffnen Sie Ihre Authenticator-App und geben Sie den 6-stelligen Code ein.'
                 : 'Geben Sie einen Ihrer 8-stelligen Einmal-Backup-Codes ein (Großbuchstaben und Ziffern).'}
@@ -133,15 +153,15 @@ export function TwoFactorVerify() {
           <div className="flex justify-center gap-2 mb-4 text-sm">
             <button
               type="button"
-              className={mode === 'totp' ? 'font-semibold text-fin1-primary' : 'text-gray-500 hover:text-gray-700'}
+              className={mode === 'totp' ? 'font-semibold text-fin1-primary' : modeInactive}
               onClick={() => { setMode('totp'); setError(''); }}
             >
               Authenticator (6 Ziffern)
             </button>
-            <span className="text-gray-300">|</span>
+            <span className={isDark ? 'text-slate-500' : 'text-gray-300'}>|</span>
             <button
               type="button"
-              className={mode === 'backup' ? 'font-semibold text-fin1-primary' : 'text-gray-500 hover:text-gray-700'}
+              className={mode === 'backup' ? 'font-semibold text-fin1-primary' : modeInactive}
               onClick={() => { setMode('backup'); setError(''); }}
             >
               Backup-Code (8 Zeichen)
@@ -161,7 +181,7 @@ export function TwoFactorVerify() {
                   value={digit}
                   onChange={(e) => handleChange(index, e.target.value)}
                   onKeyDown={(e) => handleKeyDown(index, e)}
-                  className="w-12 h-14 text-center text-2xl font-semibold border-2 border-gray-200 rounded-lg focus:border-fin1-primary focus:outline-none transition-colors"
+                  className={digitInputClass}
                 />
               ))}
             </div>
@@ -180,7 +200,7 @@ export function TwoFactorVerify() {
                   const v = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
                   setBackupCode(v);
                 }}
-                className="w-full h-14 text-center text-xl font-mono font-semibold tracking-widest border-2 border-gray-200 rounded-lg focus:border-fin1-primary focus:outline-none transition-colors"
+                className={backupInputClass}
                 placeholder="XXXXXXXX"
                 aria-label="Backup-Code"
               />
@@ -188,8 +208,13 @@ export function TwoFactorVerify() {
             )}
 
             {error && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-lg mb-4">
-                <p className="text-sm text-red-600 text-center">{error}</p>
+              <div
+                className={clsx(
+                  'p-3 border rounded-lg mb-4',
+                  isDark ? 'bg-red-950/40 border-red-800' : 'bg-red-50 border-red-200',
+                )}
+              >
+                <p className={clsx('text-sm text-center', isDark ? 'text-red-300' : 'text-red-600')}>{error}</p>
               </div>
             )}
 
@@ -216,7 +241,7 @@ export function TwoFactorVerify() {
           </form>
 
           {user && (
-            <p className="text-xs text-gray-400 text-center mt-6">
+            <p className={clsx('text-xs text-center mt-6', isDark ? 'text-slate-500' : 'text-gray-400')}>
               Angemeldet als {user.email}
             </p>
           )}
