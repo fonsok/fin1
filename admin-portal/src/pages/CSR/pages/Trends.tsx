@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
+import clsx from 'clsx';
 import { Card, Badge, PaginationBar } from '../../../components/ui';
 import { useTheme } from '../../../context/ThemeContext';
 import { getSupportTickets } from '../api';
@@ -160,12 +161,24 @@ export function TrendsPage() {
     }
   }, [page, trendsTotalPages]);
 
-  const getSeverityColor = (severity: string) => {
+  const getSeveritySurface = (severity: string) => {
     switch (severity) {
-      case 'critical': return 'bg-red-100 text-red-800 border-red-300';
-      case 'warning': return 'bg-orange-100 text-orange-800 border-orange-300';
-      case 'info': return 'bg-blue-100 text-blue-800 border-blue-300';
-      default: return 'bg-gray-100 text-gray-800 border-gray-300';
+      case 'critical':
+        return isDark
+          ? 'bg-red-950/45 text-red-100 border-red-800'
+          : 'bg-red-100 text-red-800 border-red-300';
+      case 'warning':
+        return isDark
+          ? 'bg-orange-950/45 text-orange-100 border-orange-800'
+          : 'bg-orange-100 text-orange-800 border-orange-300';
+      case 'info':
+        return isDark
+          ? 'bg-blue-950/45 text-blue-100 border-blue-800'
+          : 'bg-blue-100 text-blue-800 border-blue-300';
+      default:
+        return isDark
+          ? 'bg-slate-800/80 text-slate-200 border-slate-600'
+          : 'bg-gray-100 text-gray-800 border-gray-300';
     }
   };
 
@@ -207,7 +220,9 @@ export function TrendsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Trends & Muster</h1>
+        <h1 className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+          Trends & Muster
+        </h1>
         <Badge variant="info">{trends.length} Trends erkannt</Badge>
       </div>
 
@@ -215,7 +230,7 @@ export function TrendsPage() {
         <Card>
           <div className="text-center py-8">
             <svg
-              className="w-12 h-12 text-gray-300 mx-auto mb-4"
+              className={clsx('w-12 h-12 mx-auto mb-4', isDark ? 'text-slate-600' : 'text-gray-300')}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -227,8 +242,10 @@ export function TrendsPage() {
                 d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
-            <p className="text-gray-500">Keine Trends erkannt</p>
-            <p className="text-sm text-gray-400 mt-2">Alle Metriken sind im normalen Bereich</p>
+            <p className={clsx(isDark ? 'text-slate-400' : 'text-gray-500')}>Keine Trends erkannt</p>
+            <p className={clsx('text-sm mt-2', isDark ? 'text-slate-500' : 'text-gray-400')}>
+              Alle Metriken sind im normalen Bereich
+            </p>
           </div>
         </Card>
       ) : (
@@ -238,11 +255,14 @@ export function TrendsPage() {
               {pagedTrends.map((trend) => (
                 <Card
                   key={trend.id}
-                  className={`border-2 cursor-pointer hover:shadow-lg transition-shadow ${getSeverityColor(trend.severity)}`}
+                  className={clsx(
+                    'border-2 cursor-pointer hover:shadow-lg transition-shadow',
+                    getSeveritySurface(trend.severity),
+                  )}
                   onClick={() => setSelectedTrend(trend)}
                 >
                   <div className="flex items-start gap-4">
-                    <div className={`p-2 rounded-lg ${getSeverityColor(trend.severity)}`}>
+                    <div className={clsx('p-2 rounded-lg border', getSeveritySurface(trend.severity))}>
                       {getTrendIcon(trend.type)}
                     </div>
                     <div className="flex-1">
@@ -260,9 +280,14 @@ export function TrendsPage() {
                           <span>+{Math.round(trend.percentageChange)}%</span>
                         )}
                       </div>
-                      <div className="mt-3 pt-3 border-t">
+                      <div
+                        className={clsx(
+                          'mt-3 pt-3 border-t',
+                          isDark ? 'border-white/10' : 'border-black/10',
+                        )}
+                      >
                         <p className="text-sm font-medium">Empfohlene Maßnahme:</p>
-                        <p className="text-sm">{trend.suggestedAction}</p>
+                        <p className="text-sm opacity-95">{trend.suggestedAction}</p>
                       </div>
                     </div>
                   </div>
@@ -286,10 +311,16 @@ export function TrendsPage() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setSelectedTrend(null)}>
           <Card className="w-full max-w-2xl m-4" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold">{selectedTrend.title}</h2>
+              <h2 className={clsx('text-xl font-semibold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                {selectedTrend.title}
+              </h2>
               <button
+                type="button"
                 onClick={() => setSelectedTrend(null)}
-                className="text-gray-400 hover:text-gray-600"
+                className={clsx(
+                  'rounded p-1',
+                  isDark ? 'text-slate-400 hover:text-slate-200' : 'text-gray-400 hover:text-gray-600',
+                )}
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -298,15 +329,21 @@ export function TrendsPage() {
             </div>
             <div className="space-y-4">
               <div>
-                <h3 className="font-semibold mb-2">Beschreibung</h3>
-                <p>{selectedTrend.description}</p>
+                <h3 className={clsx('font-semibold mb-2', isDark ? 'text-slate-200' : 'text-gray-800')}>
+                  Beschreibung
+                </h3>
+                <p className={clsx(isDark ? 'text-slate-300' : 'text-gray-700')}>{selectedTrend.description}</p>
               </div>
               <div>
-                <h3 className="font-semibold mb-2">Empfohlene Maßnahme</h3>
-                <p>{selectedTrend.suggestedAction}</p>
+                <h3 className={clsx('font-semibold mb-2', isDark ? 'text-slate-200' : 'text-gray-800')}>
+                  Empfohlene Maßnahme
+                </h3>
+                <p className={clsx(isDark ? 'text-slate-300' : 'text-gray-700')}>{selectedTrend.suggestedAction}</p>
               </div>
               <div>
-                <h3 className="font-semibold mb-2">Betroffene Tickets</h3>
+                <h3 className={clsx('font-semibold mb-2', isDark ? 'text-slate-200' : 'text-gray-800')}>
+                  Betroffene Tickets
+                </h3>
                 <div className="space-y-2 max-h-64 overflow-y-auto">
                   {selectedTrend.relatedTicketIds.map((ticketId) => {
                     const ticket = tickets?.find(t => t.objectId === ticketId);
@@ -318,11 +355,27 @@ export function TrendsPage() {
                           navigate(`/csr/tickets/${ticketId}`);
                           setSelectedTrend(null);
                         }}
-                        className="p-2 border rounded hover:bg-gray-50 cursor-pointer"
+                        className={clsx(
+                          'p-2 border rounded cursor-pointer',
+                          isDark
+                            ? 'border-slate-600 hover:bg-slate-700/50'
+                            : 'border-gray-200 hover:bg-gray-50',
+                        )}
                       >
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-mono">#{ticket.ticketNumber || ticketId.slice(0, 8)}</span>
-                          <span className="text-sm">{ticket.subject}</span>
+                        <div className="flex items-center justify-between gap-2">
+                          <span
+                            className={clsx(
+                              'text-sm font-mono shrink-0',
+                              isDark ? 'text-slate-300' : 'text-gray-800',
+                            )}
+                          >
+                            #{ticket.ticketNumber || ticketId.slice(0, 8)}
+                          </span>
+                          <span
+                            className={clsx('text-sm text-right truncate', isDark ? 'text-slate-200' : 'text-gray-900')}
+                          >
+                            {ticket.subject}
+                          </span>
                         </div>
                       </div>
                     );

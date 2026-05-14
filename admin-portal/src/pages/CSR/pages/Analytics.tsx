@@ -6,6 +6,8 @@ import { useTheme } from '../../../context/ThemeContext';
 import {
   listRowStripeClasses,
   tableBodyDivideClasses,
+  tableBodyCellMutedClasses,
+  tableBodyCellPrimaryClasses,
   tableHeaderCellTextClasses,
   tableTheadSurfaceClasses,
 } from '../../../utils/tableStriping';
@@ -71,12 +73,17 @@ export function AnalyticsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Analytics Dashboard</h1>
+        <h1 className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+          Analytics Dashboard
+        </h1>
         <div className="flex gap-2">
           <select
             value={dateRange}
             onChange={(e) => setDateRange(e.target.value as 'week' | 'month' | 'quarter')}
-            className="px-4 py-2 border rounded-lg"
+            className={clsx(
+              'px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary',
+              isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+            )}
           >
             <option value="week">Letzte Woche</option>
             <option value="month">Letzter Monat</option>
@@ -90,20 +97,22 @@ export function AnalyticsPage() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
             <div className="text-center">
-              <div className="text-3xl font-bold text-gray-900">{metrics.totalTickets}</div>
-              <div className="text-sm text-gray-500 mt-1">Gesamt Tickets</div>
+              <div className={clsx('text-3xl font-bold', tableBodyCellPrimaryClasses(isDark))}>
+                {metrics.totalTickets}
+              </div>
+              <div className={clsx('text-sm mt-1', tableBodyCellMutedClasses(isDark))}>Gesamt Tickets</div>
             </div>
           </Card>
           <Card>
             <div className="text-center">
               <div className="text-3xl font-bold text-orange-600">{metrics.openTickets}</div>
-              <div className="text-sm text-gray-500 mt-1">Offene Tickets</div>
+              <div className={clsx('text-sm mt-1', tableBodyCellMutedClasses(isDark))}>Offene Tickets</div>
             </div>
           </Card>
           <Card>
             <div className="text-center">
               <div className="text-3xl font-bold text-green-600">{metrics.resolvedTickets}</div>
-              <div className="text-sm text-gray-500 mt-1">Gelöste Tickets</div>
+              <div className={clsx('text-sm mt-1', tableBodyCellMutedClasses(isDark))}>Gelöste Tickets</div>
             </div>
           </Card>
           <Card>
@@ -111,7 +120,7 @@ export function AnalyticsPage() {
               <div className="text-3xl font-bold text-blue-600">
                 {Math.round(metrics.averageResolutionTime / 60)}h
               </div>
-              <div className="text-sm text-gray-500 mt-1">Ø Lösungszeit</div>
+              <div className={clsx('text-sm mt-1', tableBodyCellMutedClasses(isDark))}>Ø Lösungszeit</div>
             </div>
           </Card>
         </div>
@@ -119,12 +128,17 @@ export function AnalyticsPage() {
 
       {/* Agent Performance */}
       <Card>
-        <h2 className="text-lg font-semibold mb-4">Agent-Performance</h2>
+        <h2 className={clsx('text-lg font-semibold mb-4', isDark ? 'text-slate-100' : 'text-gray-900')}>
+          Agent-Performance
+        </h2>
         <div className="mb-4">
           <select
             value={selectedAgentId}
             onChange={(e) => setSelectedAgentId(e.target.value)}
-            className="px-4 py-2 border rounded-lg"
+            className={clsx(
+              'px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary',
+              isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+            )}
           >
             <option value="">Agent auswählen...</option>
             {agents?.map((agent) => (
@@ -161,18 +175,11 @@ export function AnalyticsPage() {
               <tbody className={tableBodyDivideClasses(isDark)}>
                 {agentPerformanceRows.map((row, index) => (
                   <tr key={row.label} className={listRowStripeClasses(isDark, index)}>
-                    <td
-                      className={clsx(
-                        'px-6 py-4 text-sm',
-                        isDark ? 'text-slate-300' : 'text-gray-600',
-                      )}
-                    >
-                      {row.label}
-                    </td>
+                    <td className={clsx('px-6 py-4 text-sm', tableBodyCellMutedClasses(isDark))}>{row.label}</td>
                     <td
                       className={clsx(
                         'px-6 py-4 text-base font-semibold tabular-nums',
-                        isDark ? 'text-slate-100' : 'text-gray-900',
+                        tableBodyCellPrimaryClasses(isDark),
                       )}
                     >
                       {row.value}
@@ -185,7 +192,9 @@ export function AnalyticsPage() {
         )}
 
         {!selectedAgentId && (
-          <p className="text-gray-500 text-center py-4">Wählen Sie einen Agenten aus, um Details anzuzeigen</p>
+          <p className={clsx('text-center py-4 text-sm', tableBodyCellMutedClasses(isDark))}>
+            Wählen Sie einen Agenten aus, um Details anzuzeigen
+          </p>
         )}
       </Card>
     </div>

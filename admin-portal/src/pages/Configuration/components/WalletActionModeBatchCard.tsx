@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import clsx from 'clsx';
 import { Card, Button, Input, Badge } from '../../../components/ui';
+import { useTheme } from '../../../context/ThemeContext';
 import { cloudFunction } from '../../../api/admin';
 
 type WalletMode = 'disabled' | 'deposit_only' | 'withdrawal_only' | 'deposit_and_withdrawal';
@@ -31,6 +33,8 @@ function toMode(allowDeposit: boolean, allowWithdrawal: boolean): WalletMode {
 }
 
 export function WalletActionModeBatchCard() {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const queryClient = useQueryClient();
   const [isExpanded, setIsExpanded] = useState(false);
   const [selectedScopes, setSelectedScopes] = useState<Record<ScopeKey, boolean>>({
@@ -108,10 +112,10 @@ export function WalletActionModeBatchCard() {
         </Button>
       </div>
 
-      <p className="text-sm text-gray-500 mb-4">
+      <p className={clsx('text-sm mb-4', isDark ? 'text-slate-400' : 'text-gray-500')}>
         Gewünschte Scopes und Transaktionsarten per Checkbox auswählen.
       </p>
-      <p className="text-sm text-gray-500 mb-4">
+      <p className={clsx('text-sm mb-4', isDark ? 'text-slate-400' : 'text-gray-500')}>
         Funktionsweise: Mit den Checkboxen bei Transaktionsarten steuerst du direkt, was erlaubt ist.
         <br />
         - Einzahlung aktiv: Nutzer dürfen Geld ins Konto einzahlen.

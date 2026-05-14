@@ -1,4 +1,6 @@
+import clsx from 'clsx';
 import { Badge } from '../../../components/ui/Badge';
+import { useTheme } from '../../../context/ThemeContext';
 
 interface TemplatesTabsProps {
   activeTab: 'response' | 'email' | 'stats';
@@ -13,15 +15,22 @@ export function TemplatesTabs({
   emailCount,
   onChangeTab,
 }: TemplatesTabsProps) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
+  const inactiveTab = isDark
+    ? 'border-transparent text-slate-400 hover:text-slate-200'
+    : 'border-transparent text-gray-500 hover:text-gray-700';
+
   return (
-    <div className="border-b border-gray-200">
+    <div className={clsx('border-b', isDark ? 'border-slate-600' : 'border-gray-200')}>
       <nav className="flex space-x-8">
         <button
-          className={`py-4 px-1 border-b-2 font-medium text-sm ${
-            activeTab === 'response'
-              ? 'border-fin1-primary text-fin1-primary'
-              : 'border-transparent text-gray-500 hover:text-gray-700'
-          }`}
+          type="button"
+          className={clsx(
+            'py-4 px-1 border-b-2 font-medium text-sm',
+            activeTab === 'response' ? 'border-fin1-primary text-fin1-primary' : inactiveTab,
+          )}
           onClick={() => onChangeTab('response')}
         >
           Textbausteine
@@ -30,11 +39,11 @@ export function TemplatesTabs({
           </Badge>
         </button>
         <button
-          className={`py-4 px-1 border-b-2 font-medium text-sm ${
-            activeTab === 'email'
-              ? 'border-fin1-primary text-fin1-primary'
-              : 'border-transparent text-gray-500 hover:text-gray-700'
-          }`}
+          type="button"
+          className={clsx(
+            'py-4 px-1 border-b-2 font-medium text-sm',
+            activeTab === 'email' ? 'border-fin1-primary text-fin1-primary' : inactiveTab,
+          )}
           onClick={() => onChangeTab('email')}
         >
           E-Mail Vorlagen
@@ -43,11 +52,11 @@ export function TemplatesTabs({
           </Badge>
         </button>
         <button
-          className={`py-4 px-1 border-b-2 font-medium text-sm ${
-            activeTab === 'stats'
-              ? 'border-fin1-primary text-fin1-primary'
-              : 'border-transparent text-gray-500 hover:text-gray-700'
-          }`}
+          type="button"
+          className={clsx(
+            'py-4 px-1 border-b-2 font-medium text-sm',
+            activeTab === 'stats' ? 'border-fin1-primary text-fin1-primary' : inactiveTab,
+          )}
           onClick={() => onChangeTab('stats')}
         >
           Statistiken
