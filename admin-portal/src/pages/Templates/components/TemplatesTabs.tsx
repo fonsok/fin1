@@ -18,9 +18,11 @@ export function TemplatesTabs({
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
-  const inactiveTab = isDark
-    ? 'border-transparent text-slate-400 hover:text-slate-200'
-    : 'border-transparent text-gray-500 hover:text-gray-700';
+  const inactiveTab = clsx(
+    isDark
+      ? 'border-transparent text-slate-400 hover:text-slate-200'
+      : 'border-transparent text-gray-500 hover:text-gray-700',
+  );
 
   return (
     <div className={clsx('border-b', isDark ? 'border-slate-600' : 'border-gray-200')}>

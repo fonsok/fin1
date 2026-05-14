@@ -9,7 +9,7 @@ import { getAdminDashboard } from '../api/admin';
 import { Card, Badge } from '../components/ui';
 import { formatNumber } from '../utils/format';
 
-const mutedBody = (isDark: boolean) => (isDark ? 'text-slate-400' : 'text-gray-500');
+const mutedBody = (isDark: boolean) => clsx(isDark ? 'text-slate-400' : 'text-gray-500');
 
 export function DashboardPage() {
   const { user } = useAuth();

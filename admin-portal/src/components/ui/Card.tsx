@@ -18,10 +18,11 @@ export function Card({ children, className, padding = 'md', ...props }: CardProp
     lg: 'p-8',
   };
 
-  const baseClasses =
+  const baseClasses = clsx(
     theme === 'dark'
       ? 'fin1-card bg-slate-700/90 rounded-xl shadow-sm border border-slate-600 text-slate-100'
-      : 'fin1-card bg-white rounded-xl shadow-sm border border-gray-100 text-gray-900';
+      : 'fin1-card bg-white rounded-xl shadow-sm border border-gray-100 text-gray-900',
+  );
 
   return (
     <div

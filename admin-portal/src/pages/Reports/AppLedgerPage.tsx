@@ -450,7 +450,7 @@ export function AppLedgerPage(): JSX.Element {
           <p className={bodyMutedSm}>
             Stichtagssalden fürs App-Hauptbuch (netDebitMinusCredit pro Konto, wie Abstimmung). Die Abstimmung nutzt
             standardmäßig den letzten Snapshot{' '}
-            <strong className={isDark ? 'text-slate-200' : 'text-gray-800'}>vor</strong> Periodenbeginn, oder einen
+            <strong className={clsx(isDark ? 'text-slate-200' : 'text-gray-800')}>vor</strong> Periodenbeginn, oder einen
             ausgewählten Datensatz.
           </p>
         </div>

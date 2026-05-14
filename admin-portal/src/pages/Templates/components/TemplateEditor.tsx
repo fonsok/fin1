@@ -186,7 +186,7 @@ export function TemplateEditor({ template, categories, onSave, onClose }: Templa
                 Shortcut (optional)
               </label>
               <div className="flex items-center gap-2">
-                <span className={isDark ? 'text-slate-500' : 'text-gray-400'}>/</span>
+                <span className={clsx(isDark ? 'text-slate-500' : 'text-gray-400')}>/</span>
                 <input
                   type="text"
                   value={shortcut}

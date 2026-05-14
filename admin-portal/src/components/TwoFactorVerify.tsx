@@ -116,7 +116,9 @@ export function TwoFactorVerify() {
       : 'border-gray-200 text-gray-900 placeholder:text-gray-400',
   );
 
-  const modeInactive = isDark ? 'text-slate-400 hover:text-slate-200' : 'text-gray-500 hover:text-gray-700';
+  const modeInactive = clsx(
+    isDark ? 'text-slate-400 hover:text-slate-200' : 'text-gray-500 hover:text-gray-700',
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-fin1-primary to-fin1-secondary flex items-center justify-center p-4">
@@ -158,7 +160,7 @@ export function TwoFactorVerify() {
             >
               Authenticator (6 Ziffern)
             </button>
-            <span className={isDark ? 'text-slate-500' : 'text-gray-300'}>|</span>
+            <span className={clsx(isDark ? 'text-slate-500' : 'text-gray-300')}>|</span>
             <button
               type="button"
               className={mode === 'backup' ? 'font-semibold text-fin1-primary' : modeInactive}

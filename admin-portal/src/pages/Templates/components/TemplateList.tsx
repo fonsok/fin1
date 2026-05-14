@@ -57,9 +57,11 @@ export function TemplateList({ templates, categories, onEdit, onDelete }: Templa
         : 'bg-sky-100 text-sky-800 border border-sky-300';
     }
 
-    return isDark
-      ? '!bg-slate-800 !text-slate-100 border border-slate-500/70'
-      : 'bg-gray-100 text-gray-700 border border-gray-300';
+    return clsx(
+      isDark
+        ? '!bg-slate-800 !text-slate-100 border border-slate-500/70'
+        : 'bg-gray-100 text-gray-700 border border-gray-300',
+    );
   };
 
   const getCategoryLabel = (key: string) => {

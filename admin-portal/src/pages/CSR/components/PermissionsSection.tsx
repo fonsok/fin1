@@ -114,7 +114,7 @@ export function PermissionsSection({ user }: PermissionsSectionProps) {
       default:
         return {
           name: 'Customer Service',
-          badgeLight: 'bg-gray-100 text-gray-800',
+          badgeLight: clsx('bg-gray-100 text-gray-800'),
           badgeDark: 'bg-slate-600/40 text-slate-100 border border-slate-500/40',
           key: 'level1',
         };

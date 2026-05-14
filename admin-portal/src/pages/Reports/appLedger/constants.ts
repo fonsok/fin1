@@ -1,3 +1,5 @@
+import clsx from 'clsx';
+
 /** SKR / externes Konto vor Bezeichnung, z. B. „1591 Kundenguthaben – …“. */
 export function formatLedgerAccountDisplayLabel(account: {
   name: string;
@@ -36,8 +38,8 @@ export const GROUP_LABELS: Record<string, string> = {
 
 export function getOverviewClasses(isDark: boolean) {
   return {
-    overviewLabelClass: isDark ? 'text-slate-200' : 'text-gray-600',
-    overviewSubtitleClass: isDark ? 'text-slate-300' : 'text-gray-500',
+    overviewLabelClass: clsx(isDark ? 'text-slate-200' : 'text-gray-600'),
+    overviewSubtitleClass: clsx(isDark ? 'text-slate-300' : 'text-gray-500'),
     greenCardClass: isDark
       ? 'bg-gradient-to-r from-green-900/30 to-green-900/10 border-green-700/50'
       : 'bg-gradient-to-r from-green-50 to-green-100/50 border-green-200',

@@ -23,7 +23,7 @@ export function StatCard({ title, value, subtitle, variant = 'default' }: StatCa
   };
 
   const valueStyles: Record<Variant, string> = {
-    default: isDark ? 'text-slate-100' : 'text-gray-900',
+    default: clsx(isDark ? 'text-slate-100' : 'text-gray-900'),
     success: isDark ? 'text-emerald-400' : 'text-green-700',
     warning: isDark ? 'text-amber-300' : 'text-amber-700',
     error: isDark ? 'text-red-300' : 'text-red-700',

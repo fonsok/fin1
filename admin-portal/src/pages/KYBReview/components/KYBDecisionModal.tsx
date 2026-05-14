@@ -60,25 +60,25 @@ export function KYBDecisionModal({ submission, onClose, onComplete }: KYBDecisio
           isDark ? 'bg-slate-600/50' : 'bg-gray-50',
         )}>
           <div className="flex justify-between text-sm">
-            <span className={isDark ? 'text-slate-400' : 'text-gray-500'}>Firma:</span>
+            <span className={clsx(isDark ? 'text-slate-400' : 'text-gray-500')}>Firma:</span>
             <span className={clsx('font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>
               {displayName}
             </span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className={isDark ? 'text-slate-400' : 'text-gray-500'}>Kunden-ID:</span>
+            <span className={clsx(isDark ? 'text-slate-400' : 'text-gray-500')}>Kunden-ID:</span>
             <span className="font-mono text-xs">{submission.customerNumber}</span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className={isDark ? 'text-slate-400' : 'text-gray-500'}>E-Mail:</span>
+            <span className={clsx(isDark ? 'text-slate-400' : 'text-gray-500')}>E-Mail:</span>
             <span>{submission.email}</span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className={isDark ? 'text-slate-400' : 'text-gray-500'}>Eingereicht am:</span>
+            <span className={clsx(isDark ? 'text-slate-400' : 'text-gray-500')}>Eingereicht am:</span>
             <span>{formatDateTime(submission.companyKybCompletedAt)}</span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className={isDark ? 'text-slate-400' : 'text-gray-500'}>Status:</span>
+            <span className={clsx(isDark ? 'text-slate-400' : 'text-gray-500')}>Status:</span>
             <Badge variant="warning">Ausstehend</Badge>
           </div>
         </div>

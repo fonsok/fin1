@@ -69,17 +69,17 @@ export function StatBox({
   }
 
   const colorClasses = {
-    gray: 'bg-gray-50 text-gray-900',
-    green: 'bg-green-50 text-green-800',
-    blue: 'bg-blue-50 text-blue-800',
-    red: 'bg-red-50 text-red-800',
+    gray: clsx('bg-gray-50 text-gray-900'),
+    green: clsx('bg-green-50 text-green-800'),
+    blue: clsx('bg-blue-50 text-blue-800'),
+    red: clsx('bg-red-50 text-red-800'),
   };
 
   const labelClasses = {
-    gray: 'text-gray-600',
-    green: 'text-green-700',
-    blue: 'text-blue-700',
-    red: 'text-red-700',
+    gray: clsx('text-gray-600'),
+    green: clsx('text-green-700'),
+    blue: clsx('text-blue-700'),
+    red: clsx('text-red-700'),
   };
 
   return (

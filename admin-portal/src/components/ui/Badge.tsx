@@ -22,7 +22,9 @@ export function Badge({
     warning: isDark ? 'bg-amber-600/30 text-amber-100 border border-amber-500/40' : 'bg-amber-100 text-amber-800',
     danger: isDark ? 'bg-red-600/30 text-red-100 border border-red-500/40' : 'bg-red-100 text-red-800',
     info: isDark ? 'bg-blue-600/30 text-blue-100 border border-blue-500/40' : 'bg-blue-100 text-blue-800',
-    neutral: isDark ? 'bg-slate-600/40 text-slate-100 border border-slate-500/40' : 'bg-gray-100 text-gray-800',
+    neutral: isDark
+      ? 'bg-slate-600/40 text-slate-100 border border-slate-500/40'
+      : clsx('bg-gray-100 text-gray-800'),
   };
 
   const sizes = {

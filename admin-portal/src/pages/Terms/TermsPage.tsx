@@ -409,7 +409,7 @@ export function TermsPage() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className={clsx('rounded-xl shadow-xl px-8 py-6 border', isDark ? 'bg-slate-800 border-slate-600' : 'bg-white border-gray-200')}>
             <div className="animate-spin w-8 h-8 border-4 border-fin1-primary border-t-transparent rounded-full mx-auto mb-4" />
-            <p className={isDark ? 'text-slate-300' : 'text-gray-600'}>Lade Version zum Klonen…</p>
+            <p className={clsx(isDark ? 'text-slate-300' : 'text-gray-600')}>Lade Version zum Klonen…</p>
           </div>
         </div>
       )}

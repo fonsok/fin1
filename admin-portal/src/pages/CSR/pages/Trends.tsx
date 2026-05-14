@@ -176,9 +176,11 @@ export function TrendsPage() {
           ? 'bg-blue-950/45 text-blue-100 border-blue-800'
           : 'bg-blue-100 text-blue-800 border-blue-300';
       default:
-        return isDark
-          ? 'bg-slate-800/80 text-slate-200 border-slate-600'
-          : 'bg-gray-100 text-gray-800 border-gray-300';
+        return clsx(
+          isDark
+            ? 'bg-slate-800/80 text-slate-200 border-slate-600'
+            : 'bg-gray-100 text-gray-800 border-gray-300',
+        );
     }
   };
 

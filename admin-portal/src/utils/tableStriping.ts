@@ -38,22 +38,22 @@ export function tableBodyDivideClasses(isDark: boolean): string {
 
 /** Typical `<th>` text color for admin tables. */
 export function tableHeaderCellTextClasses(isDark: boolean): string {
-  return isDark ? 'text-slate-400' : 'text-gray-500';
+  return clsx(isDark ? 'text-slate-400' : 'text-gray-500');
 }
 
 /** Primary text in `<tbody>` cells (titles, names). */
 export function tableBodyCellPrimaryClasses(isDark: boolean): string {
-  return isDark ? 'text-slate-100' : 'text-gray-900';
+  return clsx(isDark ? 'text-slate-100' : 'text-gray-900');
 }
 
 /** Secondary / muted text in `<tbody>` cells (timestamps, hints). */
 export function tableBodyCellMutedClasses(isDark: boolean): string {
-  return isDark ? 'text-slate-400' : 'text-gray-500';
+  return clsx(isDark ? 'text-slate-400' : 'text-gray-500');
 }
 
 /** Monospace hints in table cells (ids). */
 export function tableBodyCellMonoHintClasses(isDark: boolean): string {
-  return isDark ? 'text-slate-400' : 'text-gray-600';
+  return clsx(isDark ? 'text-slate-400' : 'text-gray-600');
 }
 
 export function emptyListPlaceholderClasses(isDark: boolean): string {

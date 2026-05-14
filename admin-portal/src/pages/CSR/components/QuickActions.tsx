@@ -119,7 +119,7 @@ export function QuickActions({ unassignedTicketCount }: QuickActionsProps) {
       title: 'Archiv',
       subtitle: 'Geschlossene Tickets',
       style: {
-        bg: 'bg-gray-100',
+        bg: clsx('bg-gray-100'),
         fg: 'text-neutral-950',
         fgMuted: 'text-neutral-800',
       },

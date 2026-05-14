@@ -151,7 +151,7 @@ export function ApprovalsRequestTable({
                   <td className="px-6 py-4">
                     <div className="text-sm">
                       {request.approverEmail && (
-                        <p className={isDark ? 'text-slate-300' : 'text-gray-600'}>{request.approverEmail}</p>
+                        <p className={clsx(isDark ? 'text-slate-300' : 'text-gray-600')}>{request.approverEmail}</p>
                       )}
                       {request.approverNotes && (
                         <p

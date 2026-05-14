@@ -125,7 +125,7 @@ function RequestDetails({ request }: { request: ApprovalRequest }) {
           {getParamDisplayName(paramName)}
         </p>
         <div className="flex items-center gap-2">
-          <span className={isDark ? 'text-slate-400' : 'text-gray-500'}>
+          <span className={clsx(isDark ? 'text-slate-400' : 'text-gray-500')}>
             {formatConfigValue(paramName, request.metadata.oldValue)}
           </span>
           <svg
@@ -156,7 +156,7 @@ function RequestDetails({ request }: { request: ApprovalRequest }) {
           Nutzer: {String(request.metadata.targetUserEmail || request.metadata.targetUserId || '-')}
         </p>
         <div className="flex items-center gap-2">
-          <span className={isDark ? 'text-slate-400' : 'text-gray-500'}>
+          <span className={clsx(isDark ? 'text-slate-400' : 'text-gray-500')}>
             {String(request.metadata.oldMode ?? 'kein Override')}
           </span>
           <svg

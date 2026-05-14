@@ -43,7 +43,7 @@ export function DisplayParametersCard({
   isSuccess,
 }: DisplayParametersCardProps) {
   if (displayParams.length === 0) return null;
-  const muted = isDark ? 'text-slate-400' : 'text-gray-500';
+  const muted = clsx(isDark ? 'text-slate-400' : 'text-gray-500');
   const allowedFromRaw = String(config.serviceChargeLegacyDisableAllowedFrom ?? '2999-12-31');
   const now = new Date();
   const isoToday = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;

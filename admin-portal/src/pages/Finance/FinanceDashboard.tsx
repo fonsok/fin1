@@ -271,7 +271,7 @@ function CorrectionsList(props: {
               </div>
               <p className={clsx('text-sm mb-1', isDark ? 'text-slate-300' : 'text-gray-600')}>{corr.reason}</p>
               <div className={clsx('flex items-center justify-between text-sm')}>
-                <span className={isDark ? 'text-slate-400' : 'text-gray-500'}>{formatDateTime(corr.createdAt)}</span>
+                <span className={clsx(isDark ? 'text-slate-400' : 'text-gray-500')}>{formatDateTime(corr.createdAt)}</span>
                 <span className="font-semibold text-fin1-primary">{formatCurrency(corr.amount)}</span>
               </div>
             </div>

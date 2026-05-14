@@ -3,6 +3,7 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
+import fin1 from './eslint-plugin-fin1/index.js';
 
 export default tseslint.config(
   { ignores: ['dist/**', 'node_modules/**', 'coverage/**'] },
@@ -16,6 +17,7 @@ export default tseslint.config(
     plugins: {
       'react-hooks': reactHooks,
       'react-refresh': reactRefresh,
+      fin1,
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
@@ -23,6 +25,7 @@ export default tseslint.config(
       'react-hooks/set-state-in-effect': 'off',
       'react-hooks/preserve-manual-memoization': 'off',
       'react-refresh/only-export-components': 'off',
+      'fin1/no-tailwind-gray-outside-clsx': 'error',
     },
   },
   {
@@ -42,6 +45,7 @@ export default tseslint.config(
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-non-null-assertion': 'off',
+      'fin1/no-tailwind-gray-outside-clsx': 'off',
     },
   },
 );

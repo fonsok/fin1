@@ -175,9 +175,15 @@ function SummaryBox({ label, value, isDark, color, highlight }: {
     red: isDark ? 'text-red-400' : 'text-red-600',
     blue: isDark ? 'text-blue-400' : 'text-blue-600',
   };
-  const bgClasses = highlight
-    ? (isDark ? 'bg-blue-950/40 border border-blue-700/50 ring-1 ring-blue-700/30' : 'bg-blue-50 border border-blue-200')
-    : (isDark ? 'bg-slate-900/60 border border-slate-700' : 'bg-gray-50 border border-gray-200');
+  const bgClasses = clsx(
+    highlight
+      ? isDark
+        ? 'bg-blue-950/40 border border-blue-700/50 ring-1 ring-blue-700/30'
+        : 'bg-blue-50 border border-blue-200'
+      : isDark
+        ? 'bg-slate-900/60 border border-slate-700'
+        : 'bg-gray-50 border border-gray-200',
+  );
 
   return (
     <div className={clsx('text-center p-3 rounded-lg', bgClasses)}>

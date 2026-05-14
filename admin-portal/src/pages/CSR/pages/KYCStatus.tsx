@@ -104,7 +104,7 @@ export function KYCStatusPage() {
       case 'rejected':
         return isDark ? 'text-red-400' : 'text-red-600';
       default:
-        return isDark ? 'text-slate-400' : 'text-gray-600';
+        return clsx(isDark ? 'text-slate-400' : 'text-gray-600');
     }
   };
 

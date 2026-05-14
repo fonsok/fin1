@@ -235,20 +235,20 @@ export function CustomerDetailPage() {
               </h2>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className={isDark ? 'text-slate-300' : 'text-gray-700'}>Status</span>
+                  <span className={clsx(isDark ? 'text-slate-300' : 'text-gray-700')}>Status</span>
                   <Badge variant={kycStatus.status === 'verified' ? 'success' : 'warning'}>
                     {kycStatus.status}
                   </Badge>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className={isDark ? 'text-slate-300' : 'text-gray-700'}>Level</span>
+                  <span className={clsx(isDark ? 'text-slate-300' : 'text-gray-700')}>Level</span>
                   <span className={clsx('font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>
                     {kycStatus.level}
                   </span>
                 </div>
                 {kycStatus.verifiedAt && (
                   <div className="flex items-center justify-between">
-                    <span className={isDark ? 'text-slate-300' : 'text-gray-700'}>Verifiziert am</span>
+                    <span className={clsx(isDark ? 'text-slate-300' : 'text-gray-700')}>Verifiziert am</span>
                     <span className={clsx('font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>
                       {formatDateTime(kycStatus.verifiedAt)}
                     </span>

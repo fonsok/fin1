@@ -53,8 +53,8 @@ function UsageStatsContent({ stats }: { stats: TemplateUsageStats }) {
     });
   };
 
-  const muted = isDark ? 'text-slate-400' : 'text-gray-500';
-  const heading = isDark ? 'text-slate-100' : 'text-gray-900';
+  const muted = clsx(isDark ? 'text-slate-400' : 'text-gray-500');
+  const heading = clsx(isDark ? 'text-slate-100' : 'text-gray-900');
   const maxTopUsage = stats.topTemplates[0]?.usageCount ?? 0;
   const daysForAvg = Math.max(1, stats.period.days);
   const avgPerDay = Math.round(stats.totalUsage / daysForAvg);
@@ -238,8 +238,8 @@ export function UsageStats(): JSX.Element {
     staleTime: 30_000,
   });
 
-  const muted = isDark ? 'text-slate-400' : 'text-gray-500';
-  const heading = isDark ? 'text-slate-100' : 'text-gray-900';
+  const muted = clsx(isDark ? 'text-slate-400' : 'text-gray-500');
+  const heading = clsx(isDark ? 'text-slate-100' : 'text-gray-900');
   const chip = (active: boolean) =>
     clsx(
       'px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors',
