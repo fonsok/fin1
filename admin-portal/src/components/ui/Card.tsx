@@ -8,27 +8,25 @@ interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   padding?: 'none' | 'sm' | 'md' | 'lg';
 }
 
+const PADDING_STYLES: Record<NonNullable<CardProps['padding']>, string> = {
+  none: '',
+  sm: 'p-4',
+  md: 'p-6',
+  lg: 'p-8',
+};
+
+const CARD_BASE_LIGHT = clsx(
+  'fin1-card bg-white rounded-xl shadow-sm border border-gray-100 text-gray-900',
+);
+const CARD_BASE_DARK =
+  'fin1-card bg-slate-700/90 rounded-xl shadow-sm border border-slate-600 text-slate-100';
+
 export function Card({ children, className, padding = 'md', ...props }: CardProps) {
   const { theme } = useTheme();
-
-  const paddingStyles = {
-    none: '',
-    sm: 'p-4',
-    md: 'p-6',
-    lg: 'p-8',
-  };
-
-  const baseClasses = clsx(
-    theme === 'dark'
-      ? 'fin1-card bg-slate-700/90 rounded-xl shadow-sm border border-slate-600 text-slate-100'
-      : 'fin1-card bg-white rounded-xl shadow-sm border border-gray-100 text-gray-900',
-  );
+  const baseClasses = theme === 'dark' ? CARD_BASE_DARK : CARD_BASE_LIGHT;
 
   return (
-    <div
-      className={clsx(baseClasses, paddingStyles[padding], className)}
-      {...props}
-    >
+    <div className={clsx(baseClasses, PADDING_STYLES[padding], className)} {...props}>
       {children}
     </div>
   );

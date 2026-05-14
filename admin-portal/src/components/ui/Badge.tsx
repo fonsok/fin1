@@ -9,6 +9,30 @@ interface BadgeProps {
   className?: string;
 }
 
+type VariantKey = NonNullable<BadgeProps['variant']>;
+
+/** Module-scope maps avoid new objects on every Badge render. */
+const BADGE_VARIANTS_LIGHT: Record<VariantKey, string> = {
+  success: 'bg-green-100 text-green-800',
+  warning: 'bg-amber-100 text-amber-800',
+  danger: 'bg-red-100 text-red-800',
+  info: 'bg-blue-100 text-blue-800',
+  neutral: clsx('bg-gray-100 text-gray-800'),
+};
+
+const BADGE_VARIANTS_DARK: Record<VariantKey, string> = {
+  success: 'bg-emerald-600/30 text-emerald-100 border border-emerald-500/40',
+  warning: 'bg-amber-600/30 text-amber-100 border border-amber-500/40',
+  danger: 'bg-red-600/30 text-red-100 border border-red-500/40',
+  info: 'bg-blue-600/30 text-blue-100 border border-blue-500/40',
+  neutral: 'bg-slate-600/40 text-slate-100 border border-slate-500/40',
+};
+
+const BADGE_SIZES: Record<NonNullable<BadgeProps['size']>, string> = {
+  sm: 'px-2 py-0.5 text-xs',
+  md: 'px-2.5 py-1 text-sm',
+};
+
 export function Badge({
   children,
   variant = 'neutral',
@@ -17,28 +41,17 @@ export function Badge({
 }: BadgeProps) {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
-  const variants = {
-    success: isDark ? 'bg-emerald-600/30 text-emerald-100 border border-emerald-500/40' : 'bg-green-100 text-green-800',
-    warning: isDark ? 'bg-amber-600/30 text-amber-100 border border-amber-500/40' : 'bg-amber-100 text-amber-800',
-    danger: isDark ? 'bg-red-600/30 text-red-100 border border-red-500/40' : 'bg-red-100 text-red-800',
-    info: isDark ? 'bg-blue-600/30 text-blue-100 border border-blue-500/40' : 'bg-blue-100 text-blue-800',
-    neutral: isDark
-      ? 'bg-slate-600/40 text-slate-100 border border-slate-500/40'
-      : clsx('bg-gray-100 text-gray-800'),
-  };
-
-  const sizes = {
-    sm: 'px-2 py-0.5 text-xs',
-    md: 'px-2.5 py-1 text-sm',
-  };
+  const variantClasses = isDark ? BADGE_VARIANTS_DARK : BADGE_VARIANTS_LIGHT;
 
   return (
-    <span className={clsx(
-      'inline-flex items-center font-medium rounded-full',
-      variants[variant],
-      sizes[size],
-      className
-    )}>
+    <span
+      className={clsx(
+        'inline-flex items-center font-medium rounded-full',
+        variantClasses[variant],
+        BADGE_SIZES[size],
+        className,
+      )}
+    >
       {children}
     </span>
   );
