@@ -89,14 +89,14 @@ export function OnboardingFunnelPage() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
             <Card key={i} className="animate-pulse">
-              <div className="h-4 bg-gray-200 rounded w-1/2 mb-2" />
-              <div className="h-8 bg-gray-200 rounded w-1/3" />
+              <div className={clsx('h-4 rounded w-1/2 mb-2', isDark ? 'bg-slate-600' : 'bg-gray-200')} />
+              <div className={clsx('h-8 rounded w-1/3', isDark ? 'bg-slate-600' : 'bg-gray-200')} />
             </Card>
           ))}
         </div>
       ) : error ? (
         <Card className="text-center py-8">
-          <p className="text-red-500">Fehler beim Laden der Funnel-Daten</p>
+          <p className={clsx(isDark ? 'text-red-400' : 'text-red-500')}>Fehler beim Laden der Funnel-Daten</p>
         </Card>
       ) : data ? (
         <>
@@ -128,7 +128,9 @@ export function OnboardingFunnelPage() {
           {/* Funnel Visualization */}
           <Card>
             <div className="p-5">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Funnel nach Schritt</h2>
+              <h2 className={clsx('text-lg font-semibold mb-4', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                Funnel nach Schritt
+              </h2>
               <div className="space-y-3">
                 {data.funnel.map((step, idx) => {
                   const maxCount = Math.max(data.summary.totalStarted, 1);
@@ -136,7 +138,12 @@ export function OnboardingFunnelPage() {
                   const isHighDropOff = step.dropOffPercent > 30;
                   return (
                     <div key={step.step} className="flex items-center gap-4">
-                      <div className="w-40 text-sm text-gray-600 text-right flex-shrink-0">
+                      <div
+                        className={clsx(
+                          'w-40 text-sm text-right flex-shrink-0',
+                          isDark ? 'text-slate-300' : 'text-gray-600',
+                        )}
+                      >
                         {STEP_LABELS[step.step] || step.step}
                       </div>
                       <div className="flex-1 relative">
@@ -147,10 +154,24 @@ export function OnboardingFunnelPage() {
                           />
                         </div>
                       </div>
-                      <div className="w-16 text-right text-sm font-semibold text-gray-800 flex-shrink-0">
+                      <div
+                        className={clsx(
+                          'w-16 text-right text-sm font-semibold flex-shrink-0',
+                          isDark ? 'text-slate-100' : 'text-gray-800',
+                        )}
+                      >
                         {step.count}
                       </div>
-                      <div className={`w-16 text-right text-xs flex-shrink-0 ${isHighDropOff ? 'text-red-600 font-semibold' : 'text-gray-400'}`}>
+                      <div
+                        className={clsx(
+                          'w-16 text-right text-xs flex-shrink-0',
+                          isHighDropOff
+                            ? 'text-red-600 font-semibold'
+                            : isDark
+                              ? 'text-slate-500'
+                              : 'text-gray-400',
+                        )}
+                      >
                         {idx > 0 ? `−${step.dropOffPercent}%` : ''}
                       </div>
                     </div>
@@ -231,20 +252,26 @@ function SummaryCard({ title, value, subtitle, color }: {
   subtitle?: string;
   color: string;
 }) {
-  const colorMap: Record<string, string> = {
-    blue: 'bg-blue-50 text-blue-700',
-    green: 'bg-green-50 text-green-700',
-    cyan: 'bg-cyan-50 text-cyan-700',
-    purple: 'bg-purple-50 text-purple-700',
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
+  const valueTone: Record<string, string> = {
+    blue: isDark ? 'text-blue-300' : 'text-blue-700',
+    green: isDark ? 'text-green-300' : 'text-green-700',
+    cyan: isDark ? 'text-cyan-300' : 'text-cyan-700',
+    purple: isDark ? 'text-purple-300' : 'text-purple-700',
   };
+
   return (
     <Card>
       <div className="p-5">
-        <p className="text-sm text-gray-500">{title}</p>
-        <p className={`text-2xl font-bold mt-1 ${colorMap[color]?.split(' ')[1] || 'text-gray-900'}`}>
+        <p className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>{title}</p>
+        <p className={clsx('text-2xl font-bold mt-1', valueTone[color] ?? (isDark ? 'text-slate-100' : 'text-gray-900'))}>
           {value}
         </p>
-        {subtitle && <p className="text-xs text-gray-400 mt-1">{subtitle}</p>}
+        {subtitle && (
+          <p className={clsx('text-xs mt-1', isDark ? 'text-slate-500' : 'text-gray-400')}>{subtitle}</p>
+        )}
       </div>
     </Card>
   );

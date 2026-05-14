@@ -157,7 +157,12 @@ export function KYBDetailModal({ userId, onClose, onReview }: KYBDetailModalProp
 
             {/* Actions */}
             {data.user.companyKybStatus === 'pending_review' && (
-              <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+              <div
+                className={clsx(
+                  'flex justify-end gap-3 pt-4 border-t',
+                  isDark ? 'border-slate-600' : 'border-gray-200',
+                )}
+              >
                 <Button variant="secondary" onClick={onClose}>
                   Schließen
                 </Button>
@@ -181,7 +186,12 @@ export function KYBDetailModal({ userId, onClose, onReview }: KYBDetailModalProp
               </div>
             )}
             {data.user.companyKybStatus !== 'pending_review' && (
-              <div className="flex flex-col gap-3 pt-4 border-t border-gray-200">
+              <div
+                className={clsx(
+                  'flex flex-col gap-3 pt-4 border-t',
+                  isDark ? 'border-slate-600' : 'border-gray-200',
+                )}
+              >
                 {canReset && !showResetForm && (
                   <div className="flex justify-between items-center">
                     <p className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>
