@@ -14,7 +14,7 @@ import {
 } from '../../../utils/tableStriping';
 import { getSupportTickets, assignTicket, getAvailableAgents } from '../api';
 
-import { adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminEmptyIcon, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 export function TicketQueuePage() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -107,7 +107,7 @@ export function TicketQueuePage() {
         {unassignedTickets.length === 0 ? (
           <div className="text-center py-8">
             <svg
-              className={clsx('w-12 h-12 mx-auto mb-4', isDark ? 'text-slate-600' : 'text-gray-300')}
+              className={clsx('w-12 h-12 mx-auto mb-4', adminEmptyIcon(isDark))}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"

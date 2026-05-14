@@ -10,7 +10,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { listRowStripeClasses, tableBodyDivideClasses, tableBodyCellMutedClasses, tableHeaderCellTextClasses, tableTheadSurfaceClasses } from '../../utils/tableStriping';
 import { useDebounce } from '../../hooks/useDebounce';
 
-import { adminMuted, adminPrimary } from '../../utils/adminThemeClasses';
+import { adminEmptyIcon, adminMuted, adminPrimary } from '../../utils/adminThemeClasses';
 export function UserListPage() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -120,7 +120,7 @@ export function UserListPage() {
         ) : !data?.users?.length ? (
           <div className="p-8 text-center">
             <svg
-              className={clsx('w-12 h-12 mx-auto mb-4', isDark ? 'text-slate-600' : 'text-gray-300')}
+              className={clsx('w-12 h-12 mx-auto mb-4', adminEmptyIcon(isDark))}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"

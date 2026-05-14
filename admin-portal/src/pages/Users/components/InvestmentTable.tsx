@@ -4,7 +4,7 @@ import { formatCurrency, getStatusDisplay } from '../../../utils/format';
 import { listRowStripeClasses } from '../../../utils/tableStriping';
 import type { InvestmentItem } from '../../../api/admin';
 
-import { adminPrimary, adminSoft, adminStrong } from '../../../utils/adminThemeClasses';
+import { adminEmphasisSoft, adminMonoHint, adminPrimary, adminSoft, adminStrong } from '../../../utils/adminThemeClasses';
 interface Props {
   title: string;
   items: InvestmentItem[];
@@ -48,10 +48,10 @@ export function InvestmentTable({ title, items, isDark }: Props) {
                   <td className={clsx('px-3 py-2.5 font-mono text-xs', isDark ? 'text-fin1-primary' : 'text-fin1-primary')}>
                     {extractShortId(inv.objectId)}
                   </td>
-                  <td className={clsx('px-3 py-2.5', isDark ? 'text-slate-200' : 'text-gray-800')}>
+                  <td className={clsx('px-3 py-2.5', adminEmphasisSoft(isDark))}>
                     {inv.traderName || inv.traderId}
                   </td>
-                  <td className={clsx('px-3 py-2.5 font-mono', isDark ? 'text-slate-200' : 'text-gray-800')}>
+                  <td className={clsx('px-3 py-2.5 font-mono', adminEmphasisSoft(isDark))}>
                     {inv.tradeNumber != null ? String(inv.tradeNumber).padStart(3, '0') : '\u2014'}
                   </td>
                   <td className={clsx('px-3 py-2.5 text-right tabular-nums', adminPrimary(isDark))}>
@@ -87,7 +87,7 @@ function Th({ children, isDark, align }: { children: React.ReactNode; isDark: bo
       className={clsx(
         'px-3 py-2 text-xs font-medium uppercase tracking-wide whitespace-nowrap',
         align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : 'text-left',
-        isDark ? 'text-slate-400' : 'text-gray-600',
+        adminMonoHint(isDark),
       )}
     >
       {children}

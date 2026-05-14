@@ -12,7 +12,7 @@ import {
 } from '../../../utils/tableStriping';
 import { getTemplateUsageStats, type GetTemplateUsageStatsParams } from '../api';
 import type { TemplateUsageStats } from '../types';
-import { adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminGlyphFaint, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 
 function toInputDateLocal(d: Date): string {
   const y = d.getFullYear();
@@ -105,7 +105,7 @@ function UsageStatsContent({ stats }: { stats: TemplateUsageStats }) {
                 )}
               >
                 <div
-                  className={clsx('text-2xl font-bold w-8 text-center', isDark ? 'text-slate-500' : 'text-gray-300')}
+                  className={clsx('text-2xl font-bold w-8 text-center', adminGlyphFaint(isDark))}
                 >
                   {index + 1}
                 </div>

@@ -21,7 +21,7 @@ import {
   tableTheadSurfaceClasses,
 } from '../../utils/tableStriping';
 
-import { adminLabel, adminMuted, adminPrimary } from '../../utils/adminThemeClasses';
+import { adminEmphasisSoft, adminLabel, adminMonoHint, adminMuted, adminPrimary } from '../../utils/adminThemeClasses';
 const DOCUMENT_TYPE_OPTIONS: { value: string; label: string }[] = [
   { value: 'invoice', label: 'Rechnung' },
   { value: 'investorCollectionBill', label: 'Investor Collection Bill' },
@@ -189,13 +189,13 @@ export function DocumentSearchPage(): JSX.Element {
   };
 
   const detailLabel = clsx('text-sm', adminMuted(isDark));
-  const detailValue = clsx('text-sm', isDark ? 'text-slate-200' : 'text-gray-800');
+  const detailValue = clsx('text-sm', adminEmphasisSoft(isDark));
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className={clsx('text-2xl font-bold', adminPrimary(isDark))}>Beleg-Suche</h1>
-        <p className={clsx('mt-1 text-sm', isDark ? 'text-slate-400' : 'text-gray-600')}>
+        <p className={clsx('mt-1 text-sm', adminMonoHint(isDark))}>
           Serverseitige Suche über <code className="text-xs">searchDocuments</code> (Filter Pflicht). Aus dem
           App-Ledger: „Beleg ansehen“ lädt den Beleg per objectId oder exakter Belegnummer (
           <code className="text-xs">getDocumentByLedgerReference</code>
@@ -299,7 +299,7 @@ export function DocumentSearchPage(): JSX.Element {
         </div>
 
         <div>
-          <p className={clsx('text-sm font-medium mb-2', isDark ? 'text-slate-200' : 'text-gray-800')}>Belegtypen</p>
+          <p className={clsx('text-sm font-medium mb-2', adminEmphasisSoft(isDark))}>Belegtypen</p>
           <div className="flex flex-wrap gap-2">
             {DOCUMENT_TYPE_OPTIONS.map((opt) => {
               const on = draft.types.includes(opt.value);
@@ -355,7 +355,7 @@ export function DocumentSearchPage(): JSX.Element {
       {applied && canSearch && (
         <Card className="p-0 overflow-hidden">
           <div className={clsx('px-4 py-3 border-b', isDark ? 'border-slate-600' : 'border-gray-200')}>
-            <span className={clsx('text-sm font-medium', isDark ? 'text-slate-200' : 'text-gray-800')}>
+            <span className={clsx('text-sm font-medium', adminEmphasisSoft(isDark))}>
               {infinite.isFetching && !infinite.data ? 'Lade…' : `${rows.length} Treffer${infinite.hasNextPage ? ' (weitere verfügbar)' : ''}`}
             </span>
           </div>

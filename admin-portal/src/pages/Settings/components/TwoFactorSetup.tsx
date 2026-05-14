@@ -6,7 +6,7 @@ import { Card, Button, Input } from '../../../components/ui';
 import { useTheme } from '../../../context/ThemeContext';
 import type { TwoFactorSetupResponse, TwoFactorEnableResponse } from '../types';
 
-import { adminMuted, adminPrimary, adminSoft, adminStrong } from '../../../utils/adminThemeClasses';
+import { adminBodyStrong, adminMuted, adminPrimary, adminSoft, adminStrong } from '../../../utils/adminThemeClasses';
 interface TwoFactorSetupProps {
   onComplete: () => void;
 }
@@ -154,11 +154,11 @@ export function TwoFactorSetup({ onComplete }: TwoFactorSetupProps): JSX.Element
                 )}
               >
                 <p className={clsx('text-xs mb-1', adminMuted(isDark))}>Geheimschlüssel:</p>
-                <code className={clsx('text-sm font-mono break-all', isDark ? 'text-slate-200' : 'text-gray-900')}>
+                <code className={clsx('text-sm font-mono break-all', adminBodyStrong(isDark))}>
                   {setupData.secret}
                 </code>
                 <p className={clsx('text-xs mt-2 mb-1', adminMuted(isDark))}>Konto:</p>
-                <code className={clsx('text-sm', isDark ? 'text-slate-200' : 'text-gray-900')}>FIN1 Admin</code>
+                <code className={clsx('text-sm', adminBodyStrong(isDark))}>FIN1 Admin</code>
               </div>
             </details>
 

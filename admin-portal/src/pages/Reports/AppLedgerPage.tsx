@@ -14,7 +14,7 @@ import {
 import { useAppLedgerPage } from './appLedger/hooks/useAppLedgerPage';
 import type { DateRangePreset } from './appLedger/types';
 
-import { adminCaption, adminLabel, adminMuted, adminPrimary, adminSoft, adminStrong } from '../../utils/adminThemeClasses';
+import { adminCaption, adminDualMuted, adminEmphasisSoft, adminHeadline, adminLabel, adminMonoHint, adminMuted, adminPrimary, adminSoft, adminStrong } from '../../utils/adminThemeClasses';
 function resolveCounterAccountLabel(
   account: string,
   transactionType: string,
@@ -159,11 +159,11 @@ export function AppLedgerPage(): JSX.Element {
     isDark ? 'border-slate-600 bg-slate-900/30' : 'border-gray-200 bg-white',
   );
   const noteXs = clsx('text-xs', adminMuted(isDark));
-  const noteXs600 = clsx('text-xs', isDark ? 'text-slate-400' : 'text-gray-600');
+  const noteXs600 = clsx('text-xs', adminMonoHint(isDark));
   const accountExt = clsx('font-semibold text-[0.8rem]', adminPrimary(isDark));
   const accountCodeMono = clsx('text-[0.7rem] font-mono', adminSoft(isDark));
   const accountName = clsx('text-[0.8rem] font-medium leading-tight', adminPrimary(isDark));
-  const accountChart = clsx('text-[0.7rem]', isDark ? 'text-slate-400' : 'text-gray-600');
+  const accountChart = clsx('text-[0.7rem]', adminMonoHint(isDark));
   const legLabel = clsx('text-[0.7rem]', adminMuted(isDark));
   const emptyMini = clsx('text-[0.7rem]', adminCaption(isDark));
   const emptyState = clsx('p-8 text-center', adminMuted(isDark));
@@ -451,7 +451,7 @@ export function AppLedgerPage(): JSX.Element {
           <p className={bodyMutedSm}>
             Stichtagssalden fürs App-Hauptbuch (netDebitMinusCredit pro Konto, wie Abstimmung). Die Abstimmung nutzt
             standardmäßig den letzten Snapshot{' '}
-            <strong className={clsx(isDark ? 'text-slate-200' : 'text-gray-800')}>vor</strong> Periodenbeginn, oder einen
+            <strong className={clsx(adminEmphasisSoft(isDark))}>vor</strong> Periodenbeginn, oder einen
             ausgewählten Datensatz.
           </p>
         </div>
@@ -470,7 +470,7 @@ export function AppLedgerPage(): JSX.Element {
                 <ul className={clsx('divide-y', isDark ? 'divide-slate-600' : 'divide-gray-100')}>
                   {openingSnapshots.map((s) => (
                     <li key={s.objectId} className="px-3 py-2 flex flex-col gap-0.5">
-                      <span className={clsx(isDark ? 'text-slate-100' : 'text-gray-800')}>
+                      <span className={clsx(adminHeadline(isDark))}>
                         {s.label || s.objectId}
                       </span>
                       <span className={noteXs}>
@@ -639,7 +639,7 @@ export function AppLedgerPage(): JSX.Element {
           <div className={emptyState}>
             Keine Buchungen gefunden.
             {!selectedAccount && !userFilter && !typeFilter && (
-              <p className={clsx('mt-2 text-sm', isDark ? 'text-slate-500' : 'text-gray-500')}>
+              <p className={clsx('mt-2 text-sm', adminDualMuted(isDark))}>
                 Gegenbuchungen werden automatisch erzeugt, wenn Gebühren von Nutzern erhoben werden.
               </p>
             )}

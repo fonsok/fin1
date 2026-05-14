@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { Badge, Card } from '../../../components/ui';
 import { formatDateTime } from '../../../utils/format';
 
-import { adminLabel, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminLabel, adminMonoHint, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 type HealthStatus = 'healthy' | 'degraded' | 'down' | 'unknown';
 
 export type FinanceConsistencySmokeStatus = {
@@ -41,7 +41,7 @@ export function FinanceConsistencySmokeCard({
           <p className={clsx('text-sm mt-1', adminLabel(isDark))}>
             Kompakter End-to-End Smoke fuer Ledger/Konten/Buchungen/User-Fuzzy/Belegkette.
           </p>
-          <p className={clsx('text-xs mt-1', isDark ? 'text-slate-400' : 'text-gray-600')}>
+          <p className={clsx('text-xs mt-1', adminMonoHint(isDark))}>
             Letzte Pruefung: {formatDateTime(financeSmoke.checkedAt)}
           </p>
         </div>

@@ -8,7 +8,7 @@ import { EmailTemplateEditor } from './EmailTemplateEditor';
 import type { EmailTemplate } from '../types';
 import { sortByDisplayNameDe } from '../utils/templateDisplayOrder';
 
-import { adminCaption, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminCaption, adminHeadlineAlt, adminMuted, adminPrimary, adminProse } from '../../../utils/adminThemeClasses';
 interface EmailTemplateListProps {
   templates: EmailTemplate[];
   onRefresh: () => void;
@@ -62,8 +62,8 @@ export function EmailTemplateList({ templates, onRefresh }: EmailTemplateListPro
               </Badge>
             </div>
 
-            <div className={clsx('text-sm mb-3', isDark ? 'text-slate-200' : 'text-gray-600')}>
-              <div className={clsx('font-medium mb-1', isDark ? 'text-slate-100' : 'text-gray-700')}>Betreff:</div>
+            <div className={clsx('text-sm mb-3', adminProse(isDark))}>
+              <div className={clsx('font-medium mb-1', adminHeadlineAlt(isDark))}>Betreff:</div>
               <div
                 className={clsx(
                   'p-2 rounded text-sm',
@@ -76,8 +76,8 @@ export function EmailTemplateList({ templates, onRefresh }: EmailTemplateListPro
               </div>
             </div>
 
-            <div className={clsx('text-sm mb-3', isDark ? 'text-slate-200' : 'text-gray-600')}>
-              <div className={clsx('font-medium mb-1', isDark ? 'text-slate-100' : 'text-gray-700')}>Platzhalter:</div>
+            <div className={clsx('text-sm mb-3', adminProse(isDark))}>
+              <div className={clsx('font-medium mb-1', adminHeadlineAlt(isDark))}>Platzhalter:</div>
               <div className="flex flex-wrap gap-1">
                 {template.availablePlaceholders.map((p) => (
                   <span

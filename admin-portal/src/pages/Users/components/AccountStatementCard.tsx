@@ -6,7 +6,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import { listRowStripeClasses } from '../../../utils/tableStriping';
 import type { AccountStatementData, AccountStatementEntryItem } from '../../../api/admin';
 
-import { adminMuted, adminPrimary, adminSoft } from '../../../utils/adminThemeClasses';
+import { adminBodyStrong, adminEmphasisSoft, adminGlyphFaint, adminMonoHint, adminMuted, adminPrimary, adminSoft } from '../../../utils/adminThemeClasses';
 interface Props {
   data: AccountStatementData;
   userRole: string;
@@ -92,7 +92,7 @@ export function AccountStatementCard({ data, userRole }: Props) {
                   <td className={clsx('px-3 py-2', adminMuted(isDark))} colSpan={5}>
                     <span className="italic">Anfangssaldo</span>
                   </td>
-                  <td className={clsx('px-3 py-2 text-right font-medium tabular-nums', isDark ? 'text-slate-200' : 'text-gray-900')}>
+                  <td className={clsx('px-3 py-2 text-right font-medium tabular-nums', adminBodyStrong(isDark))}>
                     {formatCurrency(data.initialBalance)}
                   </td>
                   <td />
@@ -135,7 +135,7 @@ function StatementRow({ entry, idx, isDark }: { entry: AccountStatementEntryItem
       <td className={clsx('px-3 py-2 whitespace-nowrap text-xs', adminSoft(isDark))}>
         {formatDateTime(entry.createdAt)}
       </td>
-      <td className={clsx('px-3 py-2', isDark ? 'text-slate-200' : 'text-gray-800')}>
+      <td className={clsx('px-3 py-2', adminEmphasisSoft(isDark))}>
         <div>{entry.description}</div>
         {entry.tradeNumber != null && (
           <div className={clsx('text-xs', adminMuted(isDark))}>
@@ -148,10 +148,10 @@ function StatementRow({ entry, idx, isDark }: { entry: AccountStatementEntryItem
           {entryLabel(entry.entryType)}
         </Badge>
       </td>
-      <td className={clsx('px-3 py-2 text-right tabular-nums font-medium', isDebit ? amountColor : (isDark ? 'text-slate-500' : 'text-gray-300'))}>
+      <td className={clsx('px-3 py-2 text-right tabular-nums font-medium', isDebit ? amountColor : (adminGlyphFaint(isDark)))}>
         {isDebit ? formatCurrency(Math.abs(entry.amount)) : '\u2014'}
       </td>
-      <td className={clsx('px-3 py-2 text-right tabular-nums font-medium', !isDebit ? amountColor : (isDark ? 'text-slate-500' : 'text-gray-300'))}>
+      <td className={clsx('px-3 py-2 text-right tabular-nums font-medium', !isDebit ? amountColor : (adminGlyphFaint(isDark)))}>
         {!isDebit ? formatCurrency(entry.amount) : '\u2014'}
       </td>
       <td className={clsx('px-3 py-2 text-right tabular-nums font-medium', adminPrimary(isDark))}>
@@ -202,7 +202,7 @@ function Th({ children, isDark, align }: { children: React.ReactNode; isDark: bo
       className={clsx(
         'px-3 py-2 text-xs font-medium uppercase tracking-wide whitespace-nowrap',
         align === 'right' ? 'text-right' : 'text-left',
-        isDark ? 'text-slate-400' : 'text-gray-600',
+        adminMonoHint(isDark),
       )}
     >
       {children}

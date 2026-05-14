@@ -9,7 +9,7 @@ import {
   tableTheadSurfaceClasses,
 } from '../../../utils/tableStriping';
 
-import { adminLabel, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminEmphasisSoft, adminLabel, adminMonoHint, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 type HealthStatus = 'healthy' | 'degraded' | 'down' | 'unknown';
 
 export type SettlementConsistencyStatus = {
@@ -55,7 +55,7 @@ export function SettlementConsistencyCard({
           <p className={clsx('text-sm mt-1', adminLabel(isDark))}>
             Prueft pro Completed Trade die Invariante: Teil-Sell-Deltas + Completion-Rest entsprechen der erwarteten Endabrechnung.
           </p>
-          <p className={clsx('text-xs mt-1', isDark ? 'text-slate-400' : 'text-gray-600')}>
+          <p className={clsx('text-xs mt-1', adminMonoHint(isDark))}>
             Letzte Pruefung: {formatDateTime(settlementConsistency.checkedAt)} · Toleranz: ±{settlementConsistency.epsilon.toFixed(2)}
           </p>
         </div>
@@ -109,8 +109,8 @@ export function SettlementConsistencyCard({
             <tbody className={tableBodyDivideClasses(isDark)}>
               {settlementConsistency.mismatchSamples.slice(0, 8).map((sample, index) => (
                 <tr key={`${sample.tradeId}-${sample.investmentId}`} className={listRowStripeClasses(isDark, index)}>
-                  <td className={clsx('px-3 py-2 text-sm', isDark ? 'text-slate-200' : 'text-gray-800')}>{sample.tradeNumber ? `#${sample.tradeNumber}` : sample.tradeId}</td>
-                  <td className={clsx('px-3 py-2 text-sm', isDark ? 'text-slate-200' : 'text-gray-800')}>{sample.investmentId}</td>
+                  <td className={clsx('px-3 py-2 text-sm', adminEmphasisSoft(isDark))}>{sample.tradeNumber ? `#${sample.tradeNumber}` : sample.tradeId}</td>
+                  <td className={clsx('px-3 py-2 text-sm', adminEmphasisSoft(isDark))}>{sample.investmentId}</td>
                   <td className={clsx('px-3 py-2 text-sm', Math.abs(sample.diff.grossReturn) <= settlementConsistency.epsilon ? '' : 'text-red-500')}>
                     {sample.diff.grossReturn.toFixed(2)}
                   </td>

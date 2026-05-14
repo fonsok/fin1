@@ -14,7 +14,7 @@ import type {
 import { createFAQCategory } from '../api';
 import { isRetiredFaqCategorySlug } from '../retiredFaqCategories';
 
-import { adminLabel, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminBodyStrong, adminLabel, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 interface FAQEditorProps {
   faq: FAQ | null;
   categories: FAQCategory[];
@@ -265,7 +265,7 @@ export function FAQEditor({ faq, categories, onSave, onClose }: FAQEditorProps) 
                 ].map((ctx) => (
                   <label
                     key={ctx.id}
-                    className={clsx('flex items-center cursor-pointer', isDark ? 'text-slate-200' : 'text-gray-900')}
+                    className={clsx('flex items-center cursor-pointer', adminBodyStrong(isDark))}
                   >
                     <input
                       type="checkbox"
@@ -329,7 +329,7 @@ export function FAQEditor({ faq, categories, onSave, onClose }: FAQEditorProps) 
                     return (
                       <label
                         key={id}
-                        className={clsx('flex items-center text-sm cursor-pointer', isDark ? 'text-slate-200' : 'text-gray-900')}
+                        className={clsx('flex items-center text-sm cursor-pointer', adminBodyStrong(isDark))}
                       >
                         <input
                           type="checkbox"
@@ -488,7 +488,7 @@ export function FAQEditor({ faq, categories, onSave, onClose }: FAQEditorProps) 
               <label
                 className={clsx(
                   'flex cursor-pointer items-center gap-1.5 text-sm',
-                  isDark ? 'text-slate-200' : 'text-gray-900',
+                  adminBodyStrong(isDark),
                 )}
               >
                 <input
@@ -511,7 +511,7 @@ export function FAQEditor({ faq, categories, onSave, onClose }: FAQEditorProps) 
               <label
                 className={clsx(
                   'flex cursor-pointer items-center gap-1.5 text-sm',
-                  isDark ? 'text-slate-200' : 'text-gray-900',
+                  adminBodyStrong(isDark),
                 )}
               >
                 <input
@@ -534,7 +534,7 @@ export function FAQEditor({ faq, categories, onSave, onClose }: FAQEditorProps) 
               <label
                 className={clsx(
                   'flex cursor-pointer items-center gap-1.5 text-sm',
-                  isDark ? 'text-slate-200' : 'text-gray-900',
+                  adminBodyStrong(isDark),
                 )}
               >
                 <input

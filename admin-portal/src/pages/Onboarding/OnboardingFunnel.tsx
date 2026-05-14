@@ -11,7 +11,7 @@ import {
 } from '../../utils/tableStriping';
 import clsx from 'clsx';
 
-import { adminCaption, adminMuted, adminPrimary, adminSoft } from '../../utils/adminThemeClasses';
+import { adminCaption, adminHeadline, adminMuted, adminPrimary, adminSoft } from '../../utils/adminThemeClasses';
 interface FunnelStep {
   step: string;
   count: number;
@@ -158,7 +158,7 @@ export function OnboardingFunnelPage() {
                       <div
                         className={clsx(
                           'w-16 text-right text-sm font-semibold flex-shrink-0',
-                          isDark ? 'text-slate-100' : 'text-gray-800',
+                          adminHeadline(isDark),
                         )}
                       >
                         {step.count}
@@ -214,7 +214,7 @@ export function OnboardingFunnelPage() {
                     <tbody className={tableBodyDivideClasses(isDark)}>
                       {data.stuckUsers.map((u, index) => (
                         <tr key={u.userId} className={listRowStripeClasses(isDark, index)}>
-                          <td className={clsx('py-3 px-4 font-medium', isDark ? 'text-slate-100' : 'text-gray-800')}>
+                          <td className={clsx('py-3 px-4 font-medium', adminHeadline(isDark))}>
                             {u.email}
                           </td>
                           <td className="py-3 px-4">

@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { Input } from '../../components/ui';
 
+import { adminFootnote } from '../../utils/adminThemeClasses';
 export function CSRLoginPage() {
   const navigate = useNavigate();
   const { login, isLoading } = useAuth();
@@ -99,7 +100,7 @@ export function CSRLoginPage() {
             <p
               className={clsx(
                 'text-center text-sm',
-                isDark ? 'text-slate-600' : 'text-gray-500',
+                adminFootnote(isDark),
               )}
             >
               Nur für autorisierte CSR-Mitarbeiter

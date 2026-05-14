@@ -15,7 +15,7 @@ import {
 } from '../../utils/tableStriping';
 import { formatLedgerAccountDisplayLabel } from './appLedger/constants';
 
-import { adminCaption, adminMuted, adminPrimary, adminStrong } from '../../utils/adminThemeClasses';
+import { adminCaption, adminDualMuted, adminMuted, adminPrimary, adminStrong } from '../../utils/adminThemeClasses';
 interface ContraPosting {
   id: string;
   account: string;
@@ -237,7 +237,7 @@ export function BankContraLedgerPage(): JSX.Element {
           <div className={emptyState}>
             Keine Buchungen gefunden.
             {!selectedAccount && !investorFilter && (
-              <p className={clsx('mt-2 text-sm', isDark ? 'text-slate-500' : 'text-gray-500')}>
+              <p className={clsx('mt-2 text-sm', adminDualMuted(isDark))}>
                 Buchungen werden erzeugt, wenn Investments mit App Service Charge abgerechnet werden.
               </p>
             )}

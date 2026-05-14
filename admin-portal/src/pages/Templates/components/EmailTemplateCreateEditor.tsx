@@ -4,7 +4,7 @@ import { Button } from '../../../components/ui/Button';
 import { useTheme } from '../../../context/ThemeContext';
 import { createEmailTemplate } from '../api';
 
-import { adminPrimary, adminStrong } from '../../../utils/adminThemeClasses';
+import { adminPrimary, adminStatTitle, adminStrong } from '../../../utils/adminThemeClasses';
 interface EmailTemplateCreateEditorProps {
   onSave: () => void;
   onClose: () => void;
@@ -72,7 +72,7 @@ export function EmailTemplateCreateEditor({ onSave, onClose }: EmailTemplateCrea
           <h2 className={clsx('text-xl font-bold', adminPrimary(isDark))}>
             Neue E-Mail Vorlage
           </h2>
-          <p className={clsx('text-sm mt-1', isDark ? 'text-slate-300' : 'text-gray-500')}>
+          <p className={clsx('text-sm mt-1', adminStatTitle(isDark))}>
             Neue Vorlage anlegen und direkt in der Liste verfuegbar machen.
           </p>
         </div>

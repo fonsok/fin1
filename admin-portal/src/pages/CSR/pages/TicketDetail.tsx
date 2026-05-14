@@ -8,7 +8,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import { tableBodyCellMutedClasses, tableBodyCellPrimaryClasses } from '../../../utils/tableStriping';
 import { getTicket, respondToTicket, assignTicket, escalateTicket, resolveTicket, closeTicket, getAvailableAgents } from '../api';
 
-import { adminMuted, adminPrimary, adminSoft, adminStrong } from '../../../utils/adminThemeClasses';
+import { adminEmphasisSoft, adminMuted, adminPrimary, adminSoft, adminStrong } from '../../../utils/adminThemeClasses';
 export function TicketDetailPage() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -289,7 +289,7 @@ export function TicketDetailPage() {
               className={clsx('h-32 p-3 mb-4', fieldSurface)}
               placeholder="Ihre Antwort..."
             />
-            <label className={clsx('flex items-center gap-2 mb-4', isDark ? 'text-slate-200' : 'text-gray-800')}>
+            <label className={clsx('flex items-center gap-2 mb-4', adminEmphasisSoft(isDark))}>
               <input
                 type="checkbox"
                 checked={isInternal}

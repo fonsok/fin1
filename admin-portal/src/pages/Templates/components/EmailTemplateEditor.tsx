@@ -6,7 +6,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import { updateEmailTemplate, renderEmailTemplate } from '../api';
 import type { EmailTemplate } from '../types';
 
-import { adminLabel, adminMuted, adminPrimary, adminStrong } from '../../../utils/adminThemeClasses';
+import { adminBodyStrong, adminLabel, adminMuted, adminPrimary, adminStrong } from '../../../utils/adminThemeClasses';
 interface EmailTemplateEditorProps {
   template: EmailTemplate;
   onSave: () => void;
@@ -111,7 +111,7 @@ export function EmailTemplateEditor({ template, onSave, onClose }: EmailTemplate
                 <label className={clsx('block text-sm font-medium mb-1', adminLabel(isDark))}>
                   Status
                 </label>
-                <label className={clsx('flex items-center gap-2 cursor-pointer text-sm', isDark ? 'text-slate-200' : 'text-gray-900')}>
+                <label className={clsx('flex items-center gap-2 cursor-pointer text-sm', adminBodyStrong(isDark))}>
                   <input
                     type="checkbox"
                     checked={isActive}

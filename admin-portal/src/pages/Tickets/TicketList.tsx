@@ -17,7 +17,7 @@ import {
   tableTheadSurfaceClasses,
 } from '../../utils/tableStriping';
 
-import { adminMuted } from '../../utils/adminThemeClasses';
+import { adminEmptyIcon, adminMonoHint, adminMuted } from '../../utils/adminThemeClasses';
 export function TicketListPage() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -154,7 +154,7 @@ export function TicketListPage() {
       </Card>
 
       {isTicketsReadOnlyOverview && (
-        <p className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-600')}>
+        <p className={clsx('text-sm', adminMonoHint(isDark))}>
           Nur Überblick über offene und laufende Tickets. Erstellung und Bearbeitung erfolgt durch den
           Kundenservice (CSR).
         </p>
@@ -177,7 +177,7 @@ export function TicketListPage() {
         ) : !data?.tickets?.length ? (
           <div className="p-8 text-center">
             <svg
-              className={clsx('w-12 h-12 mx-auto mb-4', isDark ? 'text-slate-600' : 'text-gray-300')}
+              className={clsx('w-12 h-12 mx-auto mb-4', adminEmptyIcon(isDark))}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"

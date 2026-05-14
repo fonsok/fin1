@@ -7,7 +7,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import { formatDateTime } from '../../../utils/format';
 import clsx from 'clsx';
 
-import { adminCaption, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminCaption, adminEmphasisSoft, adminHeadline, adminIconField, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 const STEP_LABELS: Record<string, { label: string; icon: string }> = {
   legal_entity: { label: 'Rechtsform & Handelsregister', icon: '🏛️' },
   registered_address: { label: 'Anschrift', icon: '📍' },
@@ -139,7 +139,7 @@ export function KYBDetailModal({ userId, onClose, onReview }: KYBDetailModalProp
             </div>
 
             {/* Audit Trail Steps */}
-            <h3 className={clsx('text-base font-semibold mt-6', isDark ? 'text-slate-200' : 'text-gray-800')}>
+            <h3 className={clsx('text-base font-semibold mt-6', adminEmphasisSoft(isDark))}>
               Eingereichte Daten
             </h3>
             <div className="space-y-2">
@@ -286,7 +286,7 @@ function StepAccordion({
       >
         <div className="flex items-center gap-2">
           <span>{stepMeta.icon}</span>
-          <span className={clsx('font-medium text-sm', isDark ? 'text-slate-100' : 'text-gray-800')}>
+          <span className={clsx('font-medium text-sm', adminHeadline(isDark))}>
             {stepMeta.label}
           </span>
           <span className={clsx('text-xs', adminCaption(isDark))}>
@@ -297,7 +297,7 @@ function StepAccordion({
           className={clsx(
             'w-4 h-4 transition-transform',
             expanded && 'rotate-180',
-            isDark ? 'text-slate-400' : 'text-gray-400',
+            adminIconField(isDark),
           )}
           fill="none" stroke="currentColor" viewBox="0 0 24 24"
         >
@@ -348,7 +348,7 @@ function renderStepData(_step: string, data: Record<string, unknown>, isDark: bo
                       <span className={clsx(adminMuted(isDark))}>
                         {formatFieldName(k)}:
                       </span>
-                      <span className={clsx('font-medium', isDark ? 'text-slate-200' : 'text-gray-800')}>
+                      <span className={clsx('font-medium', adminEmphasisSoft(isDark))}>
                         {formatValue(v)}
                       </span>
                     </div>
@@ -363,7 +363,7 @@ function renderStepData(_step: string, data: Record<string, unknown>, isDark: bo
     return (
       <div key={key} className="flex items-baseline gap-2 text-sm">
         <DataLabel label={formatFieldName(key)} isDark={isDark} />
-        <span className={clsx('font-medium', isDark ? 'text-slate-200' : 'text-gray-800')}>
+        <span className={clsx('font-medium', adminEmphasisSoft(isDark))}>
           {formatValue(value)}
         </span>
       </div>

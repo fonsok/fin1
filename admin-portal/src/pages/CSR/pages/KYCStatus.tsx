@@ -12,8 +12,7 @@ import {
   tableTheadSurfaceClasses,
 } from '../../../utils/tableStriping';
 import { searchCustomers, getCustomerKYCStatus } from '../api';
-
-import { adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminEmphasisOnLight, adminMonoHint, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 const KYC_PAGE_SIZE = 50;
 
 export function KYCStatusPage() {
@@ -105,7 +104,7 @@ export function KYCStatusPage() {
       case 'rejected':
         return isDark ? 'text-red-400' : 'text-red-600';
       default:
-        return clsx(isDark ? 'text-slate-400' : 'text-gray-600');
+        return adminMonoHint(isDark);
     }
   };
 
@@ -238,7 +237,7 @@ export function KYCStatusPage() {
                         <td
                           className={clsx(
                             'px-6 py-4 text-sm',
-                            isDark ? 'text-slate-300' : 'text-gray-900',
+                            adminEmphasisOnLight(isDark),
                           )}
                         >
                           {customer.email}

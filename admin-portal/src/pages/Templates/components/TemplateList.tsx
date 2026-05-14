@@ -5,7 +5,7 @@ import clsx from 'clsx';
 import { useTheme } from '../../../context/ThemeContext';
 import type { ResponseTemplate, TemplateCategory } from '../types';
 
-import { adminCaption, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminCaption, adminMuted, adminPrimary, adminProse } from '../../../utils/adminThemeClasses';
 interface TemplateListProps {
   templates: ResponseTemplate[];
   categories: TemplateCategory[];
@@ -154,7 +154,7 @@ export function TemplateList({ templates, categories, onEdit, onDelete }: Templa
                 )}
               </div>
 
-              <p className={clsx('text-sm line-clamp-2', isDark ? 'text-slate-200' : 'text-gray-600')}>{template.body}</p>
+              <p className={clsx('text-sm line-clamp-2', adminProse(isDark))}>{template.body}</p>
 
               {/* Placeholders */}
               {template.placeholders.length > 0 && (

@@ -16,7 +16,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import type { LegalBrandingPreviewValues } from '../utils/hydrateTermsPreview';
 import { hydrateTermsPreviewText } from '../utils/hydrateTermsPreview';
 
-import { adminCaption, adminMuted, adminPrimary, adminSoft, adminStrong } from '../../../utils/adminThemeClasses';
+import { adminCaption, adminHeadline, adminHeadlineAlt, adminMuted, adminPrimary, adminSoft, adminStatTitle, adminStrong } from '../../../utils/adminThemeClasses';
 interface TermsListProps {
   items: TermsContentListItem[];
   documentTypeFilter?: 'all' | 'terms' | 'privacy' | 'imprint';
@@ -67,13 +67,13 @@ function SectionBlock({
         <span
           className={clsx(
             'font-medium',
-            isDark ? 'text-slate-100' : 'text-gray-800',
+            adminHeadline(isDark),
           )}
         >
           <span
             className={clsx(
               'font-normal text-xs uppercase tracking-wide mr-1.5',
-              isDark ? 'text-slate-300' : 'text-gray-500',
+              adminStatTitle(isDark),
             )}
           >
             Titel:
@@ -83,7 +83,7 @@ function SectionBlock({
             <span
               className={clsx(
                 'font-normal text-sm ml-2',
-                isDark ? 'text-slate-300' : 'text-gray-500',
+                adminStatTitle(isDark),
               )}
             >
               ({section.id})
@@ -106,7 +106,7 @@ function SectionBlock({
       <div
         className={clsx(
           'text-sm whitespace-pre-wrap break-words max-h-[40vh] overflow-y-auto',
-          isDark ? 'text-slate-100' : 'text-gray-700',
+          adminHeadlineAlt(isDark),
         )}
       >
         {isHydrated && (
@@ -333,7 +333,7 @@ export function TermsList({
                     isDark ? 'bg-slate-800/60 border-slate-600' : 'bg-slate-50 border-slate-200',
                   )}
                 >
-                  <h4 className={clsx('font-semibold mb-1', isDark ? 'text-slate-100' : 'text-gray-800')}>
+                  <h4 className={clsx('font-semibold mb-1', adminHeadline(isDark))}>
                     Änderungen zur Vorgängerversion
                   </h4>
                   {!hasPrevious ? (

@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { Button, Card } from './ui';
 
-import { adminCaption, adminMuted, adminPrimary } from '../utils/adminThemeClasses';
+import { adminCaption, adminGlyphFaint, adminMuted, adminPrimary } from '../utils/adminThemeClasses';
 type TwoFactorMode = 'totp' | 'backup';
 
 export function TwoFactorVerify() {
@@ -161,7 +161,7 @@ export function TwoFactorVerify() {
             >
               Authenticator (6 Ziffern)
             </button>
-            <span className={clsx(isDark ? 'text-slate-500' : 'text-gray-300')}>|</span>
+            <span className={clsx(adminGlyphFaint(isDark))}>|</span>
             <button
               type="button"
               className={mode === 'backup' ? 'font-semibold text-fin1-primary' : modeInactive}

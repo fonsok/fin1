@@ -6,7 +6,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import { listRowStripeClasses } from '../../../utils/tableStriping';
 import type { TradeItem, TradeInvestor } from '../../../api/admin';
 
-import { adminMuted, adminPrimary, adminSoft, adminStrong } from '../../../utils/adminThemeClasses';
+import { adminBodyStrong, adminMonoHint, adminMuted, adminPrimary, adminSoft, adminStrong } from '../../../utils/adminThemeClasses';
 export function UserTradeCard({ trade }: { trade: TradeItem }) {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -120,7 +120,7 @@ export function UserTradeCard({ trade }: { trade: TradeItem }) {
                   <th
                     className={clsx(
                       'px-3 py-2 text-left text-xs font-medium uppercase tracking-wide',
-                      isDark ? 'text-slate-400' : 'text-gray-600',
+                      adminMonoHint(isDark),
                     )}
                   >
                     Investor
@@ -128,7 +128,7 @@ export function UserTradeCard({ trade }: { trade: TradeItem }) {
                   <th
                     className={clsx(
                       'px-3 py-2 text-right text-xs font-medium uppercase tracking-wide',
-                      isDark ? 'text-slate-400' : 'text-gray-600',
+                      adminMonoHint(isDark),
                     )}
                   >
                     Anteil
@@ -136,7 +136,7 @@ export function UserTradeCard({ trade }: { trade: TradeItem }) {
                   <th
                     className={clsx(
                       'px-3 py-2 text-right text-xs font-medium uppercase tracking-wide',
-                      isDark ? 'text-slate-400' : 'text-gray-600',
+                      adminMonoHint(isDark),
                     )}
                   >
                     Investiert
@@ -144,7 +144,7 @@ export function UserTradeCard({ trade }: { trade: TradeItem }) {
                   <th
                     className={clsx(
                       'px-3 py-2 text-right text-xs font-medium uppercase tracking-wide',
-                      isDark ? 'text-slate-400' : 'text-gray-600',
+                      adminMonoHint(isDark),
                     )}
                   >
                     Gewinn-Anteil
@@ -152,7 +152,7 @@ export function UserTradeCard({ trade }: { trade: TradeItem }) {
                   <th
                     className={clsx(
                       'px-3 py-2 text-right text-xs font-medium uppercase tracking-wide',
-                      isDark ? 'text-slate-400' : 'text-gray-600',
+                      adminMonoHint(isDark),
                     )}
                   >
                     Provision
@@ -160,7 +160,7 @@ export function UserTradeCard({ trade }: { trade: TradeItem }) {
                   <th
                     className={clsx(
                       'px-3 py-2 text-center text-xs font-medium uppercase tracking-wide',
-                      isDark ? 'text-slate-400' : 'text-gray-600',
+                      adminMonoHint(isDark),
                     )}
                   >
                     Status
@@ -178,7 +178,7 @@ export function UserTradeCard({ trade }: { trade: TradeItem }) {
                         {inv.investorEmail}
                       </p>
                     </td>
-                    <td className={clsx('px-3 py-2 text-right font-mono', isDark ? 'text-slate-200' : 'text-gray-900')}>
+                    <td className={clsx('px-3 py-2 text-right font-mono', adminBodyStrong(isDark))}>
                       {((inv.ownershipPercentage || 0) <= 1
                         ? (inv.ownershipPercentage || 0) * 100
                         : (inv.ownershipPercentage || 0)

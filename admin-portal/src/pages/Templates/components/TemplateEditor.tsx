@@ -6,7 +6,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import type { ResponseTemplate, TemplateCategory, CreateTemplateRequest, UpdateTemplateRequest } from '../types';
 import { TEMPLATE_CATEGORIES, CSR_ROLES } from '../types';
 
-import { adminCaption, adminLabel, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminBodyStrong, adminCaption, adminLabel, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 interface TemplateEditorProps {
   template: ResponseTemplate | null;
   categories: TemplateCategory[];
@@ -143,7 +143,7 @@ export function TemplateEditor({ template, categories, onSave, onClose }: Templa
                   Typ
                 </label>
                 <div className="flex gap-4 pt-2">
-                  <label className={clsx('flex items-center cursor-pointer', isDark ? 'text-slate-200' : 'text-gray-900')}>
+                  <label className={clsx('flex items-center cursor-pointer', adminBodyStrong(isDark))}>
                     <input
                       type="radio"
                       checked={!isEmail}
@@ -152,7 +152,7 @@ export function TemplateEditor({ template, categories, onSave, onClose }: Templa
                     />
                     Chat Snippet
                   </label>
-                  <label className={clsx('flex items-center cursor-pointer', isDark ? 'text-slate-200' : 'text-gray-900')}>
+                  <label className={clsx('flex items-center cursor-pointer', adminBodyStrong(isDark))}>
                     <input
                       type="radio"
                       checked={isEmail}

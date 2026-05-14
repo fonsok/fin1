@@ -6,7 +6,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import { cloudFunction } from '../../../api/parse';
 import type { User } from '../../../context/AuthContext';
 
-import { adminCaption, adminLabel, adminMuted, adminPrimary, adminSoft, adminStrong } from '../../../utils/adminThemeClasses';
+import { adminCaption, adminDualMuted, adminLabel, adminMuted, adminPrimary, adminSoft, adminStrong } from '../../../utils/adminThemeClasses';
 interface PermissionsSectionProps {
   user: User | null;
 }
@@ -343,7 +343,7 @@ export function PermissionsSection({ user }: PermissionsSectionProps) {
             Als {roleDisplay.name} haben Sie Zugriff auf Kundendaten, Ticket-Management und
             Support-Funktionen entsprechend Ihrer Rolle.
           </p>
-          <p className={clsx('mt-2 text-xs', isDark ? 'text-slate-500' : 'text-gray-500')}>
+          <p className={clsx('mt-2 text-xs', adminDualMuted(isDark))}>
             Alle Aktionen werden für Compliance-Zwecke protokolliert.
           </p>
         </div>

@@ -12,7 +12,7 @@ import {
 } from '../../../utils/tableStriping';
 import { searchCustomers } from '../api';
 
-import { adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminEmphasisOnLight, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 const CUSTOMER_PAGE_SIZE = 50;
 
 export function CustomerListPage() {
@@ -138,7 +138,7 @@ export function CustomerListPage() {
                     <td
                       className={clsx(
                         'px-6 py-4 text-sm',
-                        isDark ? 'text-slate-300' : 'text-gray-900',
+                        adminEmphasisOnLight(isDark),
                       )}
                     >
                       {customer.email}

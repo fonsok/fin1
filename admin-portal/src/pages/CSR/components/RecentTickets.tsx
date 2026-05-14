@@ -14,7 +14,7 @@ import {
 import type { SupportTicket } from '../types';
 import { useNavigate } from 'react-router-dom';
 
-import { adminCaption, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminCaption, adminEmptyIcon, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 interface RecentTicketsProps {
   tickets: SupportTicket[];
   /** Alle vom Endpoint geladenen Tickets (für „aus Server“-Hinweis) */
@@ -105,7 +105,7 @@ export function RecentTickets({ tickets, serverTicketTotal, isLoading }: RecentT
       <Card>
         <div className="text-center py-8">
           <svg
-            className={clsx('w-12 h-12 mx-auto mb-4', isDark ? 'text-slate-600' : 'text-gray-300')}
+            className={clsx('w-12 h-12 mx-auto mb-4', adminEmptyIcon(isDark))}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"

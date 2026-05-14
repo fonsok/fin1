@@ -9,7 +9,7 @@ import type { CustomerSearchResult } from '../types';
 // Sidebar component displaying customer information and recent tickets
 // in the ticket creation page.
 
-import { adminCaption, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminBodyStrong, adminCaption, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 interface CustomerInfoSidebarProps {
   selectedCustomer: CustomerSearchResult | null;
   customerProfile?: { fullName?: string } | null;
@@ -85,13 +85,13 @@ export function CustomerInfoSidebar({
             <p className={clsx('text-xs uppercase tracking-wide', adminMuted(isDark))}>
               E-Mail
             </p>
-            <p className={clsx('text-sm', isDark ? 'text-slate-200' : 'text-gray-900')}>{selectedCustomer.email}</p>
+            <p className={clsx('text-sm', adminBodyStrong(isDark))}>{selectedCustomer.email}</p>
           </div>
           <div>
             <p className={clsx('text-xs uppercase tracking-wide', adminMuted(isDark))}>
               Kunden-ID
             </p>
-            <p className={clsx('text-sm font-mono', isDark ? 'text-slate-200' : 'text-gray-900')}>
+            <p className={clsx('text-sm font-mono', adminBodyStrong(isDark))}>
               {selectedCustomer.customerNumber || '—'}
             </p>
           </div>

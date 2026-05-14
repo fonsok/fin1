@@ -13,7 +13,7 @@ import {
   tableTheadSurfaceClasses,
 } from '../../utils/tableStriping';
 
-import { adminCaption, adminMuted, adminPrimary, adminSoft } from '../../utils/adminThemeClasses';
+import { adminBodyStrong, adminCaption, adminMuted, adminPrimary, adminSoft } from '../../utils/adminThemeClasses';
 interface InvestmentSummary {
   investmentId: string;
   investmentNumber: string;
@@ -416,19 +416,19 @@ function InvestmentsTab({
           <tbody className={tableBodyDivideClasses(isDark)}>
             {items.map((inv, index) => (
               <tr key={inv.investmentId} className={listRowStripeClasses(isDark, index)}>
-                <td className={clsx('px-4 py-3 text-sm font-mono', isDark ? 'text-slate-200' : 'text-gray-900')}>
+                <td className={clsx('px-4 py-3 text-sm font-mono', adminBodyStrong(isDark))}>
                   {inv.investmentNumber}
                 </td>
-                <td className={clsx('px-4 py-3 text-sm', isDark ? 'text-slate-200' : 'text-gray-900')}>
+                <td className={clsx('px-4 py-3 text-sm', adminBodyStrong(isDark))}>
                   {inv.investorName}
                 </td>
-                <td className={clsx('px-4 py-3 text-sm', isDark ? 'text-slate-200' : 'text-gray-900')}>
+                <td className={clsx('px-4 py-3 text-sm', adminBodyStrong(isDark))}>
                   {inv.traderName}
                 </td>
-                <td className={clsx('px-4 py-3 text-sm text-right', isDark ? 'text-slate-200' : 'text-gray-900')}>
+                <td className={clsx('px-4 py-3 text-sm text-right', adminBodyStrong(isDark))}>
                   {formatCurrency(inv.amount)}
                 </td>
-                <td className={clsx('px-4 py-3 text-sm text-right', isDark ? 'text-slate-200' : 'text-gray-900')}>
+                <td className={clsx('px-4 py-3 text-sm text-right', adminBodyStrong(isDark))}>
                   {formatCurrency(inv.currentValue)}
                 </td>
                 <td
@@ -445,7 +445,7 @@ function InvestmentsTab({
                 >
                   {inv.returnPercentage.toFixed(2)}%
                 </td>
-                <td className={clsx('px-4 py-3 text-sm text-right', isDark ? 'text-slate-200' : 'text-gray-900')}>
+                <td className={clsx('px-4 py-3 text-sm text-right', adminBodyStrong(isDark))}>
                   {formatCurrency(inv.commission)}
                 </td>
                 <td className="px-4 py-3">
@@ -589,16 +589,16 @@ function TradesTab({
           <tbody className={tableBodyDivideClasses(isDark)}>
             {items.map((trade, index) => (
               <tr key={trade.tradeId} className={listRowStripeClasses(isDark, index)}>
-                <td className={clsx('px-4 py-3 text-sm font-mono', isDark ? 'text-slate-200' : 'text-gray-900')}>
+                <td className={clsx('px-4 py-3 text-sm font-mono', adminBodyStrong(isDark))}>
                   {String(trade.tradeNumber).padStart(3, '0')}
                 </td>
                 <td className={clsx('px-4 py-3 text-sm font-medium', adminPrimary(isDark))}>
                   {trade.symbol}
                 </td>
-                <td className={clsx('px-4 py-3 text-sm text-right', isDark ? 'text-slate-200' : 'text-gray-900')}>
+                <td className={clsx('px-4 py-3 text-sm text-right', adminBodyStrong(isDark))}>
                   {formatCurrency(trade.buyAmount)}
                 </td>
-                <td className={clsx('px-4 py-3 text-sm text-right', isDark ? 'text-slate-200' : 'text-gray-900')}>
+                <td className={clsx('px-4 py-3 text-sm text-right', adminBodyStrong(isDark))}>
                   {formatCurrency(trade.sellAmount)}
                 </td>
                 <td
@@ -615,7 +615,7 @@ function TradesTab({
                 >
                   {formatCurrency(trade.profit)}
                 </td>
-                <td className={clsx('px-4 py-3 text-sm text-center', isDark ? 'text-slate-200' : 'text-gray-900')}>
+                <td className={clsx('px-4 py-3 text-sm text-center', adminBodyStrong(isDark))}>
                   {trade.investorIds.length}
                 </td>
                 <td className="px-4 py-3">

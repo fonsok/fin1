@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import clsx from 'clsx';
 import { useTheme } from '../../context/ThemeContext';
 
-import { adminStrong } from '../../utils/adminThemeClasses';
+import { adminIconField, adminStrong } from '../../utils/adminThemeClasses';
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
@@ -43,7 +43,7 @@ export function Input({
           <div
             className={clsx(
               'absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none',
-              isDark ? 'text-slate-400' : 'text-gray-400',
+              adminIconField(isDark),
             )}
           >
             {icon}

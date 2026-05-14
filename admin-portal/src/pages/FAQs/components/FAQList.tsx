@@ -5,7 +5,7 @@ import clsx from 'clsx';
 import { useTheme } from '../../../context/ThemeContext';
 import type { FAQ, FAQCategory } from '../types';
 
-import { adminCaption, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminCaption, adminMuted, adminPrimary, adminProse } from '../../../utils/adminThemeClasses';
 interface FAQListProps {
   faqs: FAQ[];
   categories: FAQCategory[];
@@ -87,7 +87,7 @@ export function FAQList({ faqs, categories, onEdit, onDelete }: FAQListProps) {
                 )}
               </div>
 
-              <p className={clsx('text-sm line-clamp-3', isDark ? 'text-slate-200' : 'text-gray-600')}>
+              <p className={clsx('text-sm line-clamp-3', adminProse(isDark))}>
                 {faq.answer}
               </p>
 

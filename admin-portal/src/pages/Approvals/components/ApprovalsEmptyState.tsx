@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import { useTheme } from '../../../context/ThemeContext';
 
-import { adminCaption } from '../../../utils/adminThemeClasses';
+import { adminCaption, adminEmptyIcon, adminProse } from '../../../utils/adminThemeClasses';
 interface ApprovalsEmptyStateProps {
   icon: 'check-circle' | 'document' | 'archive';
   message: string;
@@ -25,7 +25,7 @@ export function ApprovalsEmptyState({ icon, message, description }: ApprovalsEmp
     ),
     'document': (
       <svg
-        className={clsx('w-12 h-12 mx-auto mb-4', isDark ? 'text-slate-600' : 'text-gray-300')}
+        className={clsx('w-12 h-12 mx-auto mb-4', adminEmptyIcon(isDark))}
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -35,7 +35,7 @@ export function ApprovalsEmptyState({ icon, message, description }: ApprovalsEmp
     ),
     'archive': (
       <svg
-        className={clsx('w-12 h-12 mx-auto mb-4', isDark ? 'text-slate-600' : 'text-gray-300')}
+        className={clsx('w-12 h-12 mx-auto mb-4', adminEmptyIcon(isDark))}
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -48,7 +48,7 @@ export function ApprovalsEmptyState({ icon, message, description }: ApprovalsEmp
   return (
     <div className="p-8 text-center">
       {icons[icon]}
-      <p className={clsx('font-medium', isDark ? 'text-slate-200' : 'text-gray-600')}>{message}</p>
+      <p className={clsx('font-medium', adminProse(isDark))}>{message}</p>
       <p className={clsx('text-sm mt-1', adminCaption(isDark))}>{description}</p>
     </div>
   );

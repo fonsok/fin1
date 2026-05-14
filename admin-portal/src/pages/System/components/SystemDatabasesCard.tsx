@@ -2,6 +2,7 @@ import clsx from 'clsx';
 import { Badge, Card } from '../../../components/ui';
 import type { DatabaseStatus } from '../types';
 
+import { adminProse } from '../../../utils/adminThemeClasses';
 type Props = {
   isDark: boolean;
   databases: DatabaseStatus[];
@@ -38,12 +39,12 @@ export function SystemDatabasesCard({ isDark, databases }: Props) {
               </Badge>
             </div>
             {db.version && (
-              <p className={clsx('text-sm mt-2', isDark ? 'text-slate-200' : 'text-gray-600')}>
+              <p className={clsx('text-sm mt-2', adminProse(isDark))}>
                 Version: {db.version}
               </p>
             )}
             {db.collections !== undefined && (
-              <p className={clsx('text-sm', isDark ? 'text-slate-200' : 'text-gray-600')}>
+              <p className={clsx('text-sm', adminProse(isDark))}>
                 Collections: {db.collections}
               </p>
             )}

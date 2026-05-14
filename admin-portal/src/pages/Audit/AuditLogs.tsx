@@ -17,7 +17,7 @@ import {
 } from '../../utils/tableStriping';
 import { useDebounce } from '../../hooks/useDebounce';
 
-import { adminMuted } from '../../utils/adminThemeClasses';
+import { adminEmptyIcon, adminMuted } from '../../utils/adminThemeClasses';
 export function AuditLogsPage() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -184,7 +184,7 @@ export function AuditLogsPage() {
         ) : !data?.logs?.length ? (
           <div className="p-8 text-center">
             <svg
-              className={clsx('w-12 h-12 mx-auto mb-4', isDark ? 'text-slate-600' : 'text-gray-300')}
+              className={clsx('w-12 h-12 mx-auto mb-4', adminEmptyIcon(isDark))}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"

@@ -10,7 +10,7 @@ import { sortByTitleDe } from '../../Templates/utils/templateDisplayOrder';
 // Reusable dropdown component for selecting text templates (Textbausteine)
 // in ticket creation forms.
 
-import { adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminMuted, adminPrimary, adminStatTitle } from '../../../utils/adminThemeClasses';
 interface BaseTemplate {
   id: string;
   title: string;
@@ -70,7 +70,7 @@ export function TemplateDropdown<T extends BaseTemplate>({
           isDark ? 'border-slate-700 bg-slate-800/95' : 'border-gray-100 bg-gray-50',
         )}
       >
-        <span className={clsx('text-xs font-medium', isDark ? 'text-slate-300' : 'text-gray-500')}>{title}</span>
+        <span className={clsx('text-xs font-medium', adminStatTitle(isDark))}>{title}</span>
       </div>
 
       {/* Loading State */}

@@ -15,7 +15,7 @@ import { AccountStatementCard } from './components/AccountStatementCard';
 import { UserActionModal } from './components/UserActionModal';
 import { DetailRow, StatBox } from './components/UserShared';
 
-import { adminPrimary, adminSoft, adminStrong } from '../../utils/adminThemeClasses';
+import { adminHeadlineAlt, adminPrimary, adminSoft, adminStatTitle, adminStrong } from '../../utils/adminThemeClasses';
 export function UserDetailPage() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -171,7 +171,7 @@ export function UserDetailPage() {
                   ? `${user.firstName} ${user.lastName}`
                   : user.username || user.email}
               </h2>
-              <p className={clsx(isDark ? 'text-slate-300' : 'text-gray-500')}>{user.email}</p>
+              <p className={clsx(adminStatTitle(isDark))}>{user.email}</p>
               <div className="flex gap-2 mt-2">
                 <Badge variant={getStatusVariant(user.status)}>
                   {getStatusDisplay(user.status)}
@@ -215,7 +215,7 @@ export function UserDetailPage() {
           </div>
         </div>
         {isSelf && (
-          <p className={clsx('text-xs mt-3', isDark ? 'text-slate-300' : 'text-gray-500')}>
+          <p className={clsx('text-xs mt-3', adminStatTitle(isDark))}>
             Eigene Sperrung ist aus Sicherheitsgründen deaktiviert.
           </p>
         )}
@@ -262,18 +262,18 @@ export function UserDetailPage() {
           <CardHeader title="Kontostand" />
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className={clsx('text-center p-4 rounded-lg', isDark ? 'bg-emerald-950/30 border border-emerald-700' : 'bg-green-50')}>
-              <p className={clsx('text-sm', isDark ? 'text-slate-300' : 'text-gray-500')}>Aktueller Saldo</p>
+              <p className={clsx('text-sm', adminStatTitle(isDark))}>Aktueller Saldo</p>
               <p className={clsx('text-2xl font-bold', isDark ? 'text-emerald-400' : 'text-green-600')}>
                 {formatCurrency(wallet.balance)}
               </p>
             </div>
             <div className={clsx('text-center p-4 rounded-lg', isDark ? 'bg-slate-900/60 border border-slate-700' : 'bg-gray-50')}>
-              <p className={clsx('text-sm', isDark ? 'text-slate-300' : 'text-gray-500')}>Währung</p>
-              <p className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-700')}>{wallet.currency}</p>
+              <p className={clsx('text-sm', adminStatTitle(isDark))}>Währung</p>
+              <p className={clsx('text-2xl font-bold', adminHeadlineAlt(isDark))}>{wallet.currency}</p>
             </div>
             <div className={clsx('text-center p-4 rounded-lg', isDark ? 'bg-slate-900/60 border border-slate-700' : 'bg-gray-50')}>
-              <p className={clsx('text-sm', isDark ? 'text-slate-300' : 'text-gray-500')}>Letzte Aktualisierung</p>
-              <p className={clsx('text-lg font-medium', isDark ? 'text-slate-100' : 'text-gray-700')}>
+              <p className={clsx('text-sm', adminStatTitle(isDark))}>Letzte Aktualisierung</p>
+              <p className={clsx('text-lg font-medium', adminHeadlineAlt(isDark))}>
                 {wallet.lastUpdated ? formatDateTime(wallet.lastUpdated) : '-'}
               </p>
             </div>
@@ -419,7 +419,7 @@ export function UserDetailPage() {
                 <div className="w-2 h-2 bg-fin1-primary rounded-full" />
                 <div className="flex-1">
                   <p className={clsx('text-sm font-medium', adminPrimary(isDark))}>{activity.description || activity.action}</p>
-                  <p className={clsx('text-xs', isDark ? 'text-slate-300' : 'text-gray-500')}>{formatDateTime(activity.createdAt)}</p>
+                  <p className={clsx('text-xs', adminStatTitle(isDark))}>{formatDateTime(activity.createdAt)}</p>
                 </div>
               </div>
             ))}

@@ -3,7 +3,7 @@ import { Card, Button } from '../../../components/ui';
 import { useTheme } from '../../../context/ThemeContext';
 import { formatDateTime } from '../../../utils/format';
 
-import { adminCaption, adminLabel, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminBodyStrong, adminCaption, adminEmphasisSoft, adminHeadline, adminLabel, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 interface ApprovalRequestLike {
   objectId: string;
   requestType: string;
@@ -64,13 +64,13 @@ export function ApprovalDecisionModal({
           </div>
           <div className="flex justify-between gap-3">
             <span className={clsx('text-sm shrink-0', adminMuted(isDark))}>Beantragt von:</span>
-            <span className={clsx('text-sm text-right break-all', isDark ? 'text-slate-200' : 'text-gray-900')}>
+            <span className={clsx('text-sm text-right break-all', adminBodyStrong(isDark))}>
               {selectedRequest.requesterEmail || selectedRequest.requesterId}
             </span>
           </div>
           <div className="flex justify-between gap-3">
             <span className={clsx('text-sm', adminMuted(isDark))}>Beantragt am:</span>
-            <span className={clsx('text-sm', isDark ? 'text-slate-200' : 'text-gray-900')}>
+            <span className={clsx('text-sm', adminBodyStrong(isDark))}>
               {formatDateTime(selectedRequest.createdAt)}
             </span>
           </div>
@@ -82,13 +82,13 @@ export function ApprovalDecisionModal({
                 isDark ? 'bg-slate-950/70 border border-slate-600' : 'bg-white border border-gray-200',
               )}
             >
-              <p className={clsx('text-sm font-medium mb-2', isDark ? 'text-slate-100' : 'text-gray-800')}>
+              <p className={clsx('text-sm font-medium mb-2', adminHeadline(isDark))}>
                 {getParamDisplayName(selectedRequest.metadata.parameterName as string)}
               </p>
               <div className="flex items-center gap-4 justify-center">
                 <div className="text-center min-w-0 flex-1">
                   <p className={clsx('text-xs mb-1', adminMuted(isDark))}>Aktuell</p>
-                  <p className={clsx('text-base font-semibold', isDark ? 'text-slate-100' : 'text-gray-800')}>
+                  <p className={clsx('text-base font-semibold', adminHeadline(isDark))}>
                     {formatConfigValue(selectedRequest.metadata.parameterName as string, selectedRequest.metadata.oldValue)}
                   </p>
                 </div>
@@ -112,7 +112,7 @@ export function ApprovalDecisionModal({
           {typeof selectedRequest.metadata?.reason === 'string' && selectedRequest.metadata.reason && (
             <div className="mt-2">
               <span className={clsx('text-sm', adminMuted(isDark))}>Begründung:</span>
-              <p className={clsx('text-sm mt-1', isDark ? 'text-slate-200' : 'text-gray-800')}>{selectedRequest.metadata.reason}</p>
+              <p className={clsx('text-sm mt-1', adminEmphasisSoft(isDark))}>{selectedRequest.metadata.reason}</p>
             </div>
           )}
         </div>

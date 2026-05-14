@@ -13,7 +13,7 @@ import {
 } from '../../../utils/tableStriping';
 import { getSupportTickets, assignTicket, respondToTicket, getAvailableAgents } from '../api';
 
-import { adminMuted, adminPrimary, adminStrong } from '../../../utils/adminThemeClasses';
+import { adminEmphasisSoft, adminMuted, adminPrimary, adminStrong } from '../../../utils/adminThemeClasses';
 export function BulkOperationsPage() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -240,7 +240,7 @@ export function BulkOperationsPage() {
                   placeholder="Ihre Antwort..."
                 />
               </div>
-              <label className={clsx('flex items-center gap-2', isDark ? 'text-slate-200' : 'text-gray-800')}>
+              <label className={clsx('flex items-center gap-2', adminEmphasisSoft(isDark))}>
                 <input
                   type="checkbox"
                   checked={isInternal}

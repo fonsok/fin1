@@ -7,7 +7,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import { getSupportTickets } from '../api';
 import type { SupportTicket } from '../types';
 
-import { adminCaption, adminLabel, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminBodyStrong, adminCaption, adminEmphasisSoft, adminEmptyIcon, adminLabel, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 interface SupportTrend {
   id: string;
   type: 'volumeSpike' | 'recurringIssue' | 'longResolutionTime' | 'highEscalationRate' | 'negativeCSAT' | 'reopenedTickets';
@@ -233,7 +233,7 @@ export function TrendsPage() {
         <Card>
           <div className="text-center py-8">
             <svg
-              className={clsx('w-12 h-12 mx-auto mb-4', isDark ? 'text-slate-600' : 'text-gray-300')}
+              className={clsx('w-12 h-12 mx-auto mb-4', adminEmptyIcon(isDark))}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -332,19 +332,19 @@ export function TrendsPage() {
             </div>
             <div className="space-y-4">
               <div>
-                <h3 className={clsx('font-semibold mb-2', isDark ? 'text-slate-200' : 'text-gray-800')}>
+                <h3 className={clsx('font-semibold mb-2', adminEmphasisSoft(isDark))}>
                   Beschreibung
                 </h3>
                 <p className={clsx(adminLabel(isDark))}>{selectedTrend.description}</p>
               </div>
               <div>
-                <h3 className={clsx('font-semibold mb-2', isDark ? 'text-slate-200' : 'text-gray-800')}>
+                <h3 className={clsx('font-semibold mb-2', adminEmphasisSoft(isDark))}>
                   Empfohlene Maßnahme
                 </h3>
                 <p className={clsx(adminLabel(isDark))}>{selectedTrend.suggestedAction}</p>
               </div>
               <div>
-                <h3 className={clsx('font-semibold mb-2', isDark ? 'text-slate-200' : 'text-gray-800')}>
+                <h3 className={clsx('font-semibold mb-2', adminEmphasisSoft(isDark))}>
                   Betroffene Tickets
                 </h3>
                 <div className="space-y-2 max-h-64 overflow-y-auto">
@@ -375,7 +375,7 @@ export function TrendsPage() {
                             #{ticket.ticketNumber || ticketId.slice(0, 8)}
                           </span>
                           <span
-                            className={clsx('text-sm text-right truncate', isDark ? 'text-slate-200' : 'text-gray-900')}
+                            className={clsx('text-sm text-right truncate', adminBodyStrong(isDark))}
                           >
                             {ticket.subject}
                           </span>

@@ -20,7 +20,7 @@ import {
   tableTheadSurfaceClasses,
 } from '../../../utils/tableStriping';
 
-import { adminLabel, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminBodyStrong, adminLabel, adminMonoHint, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 export function CustomerDetailPage() {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
@@ -309,10 +309,10 @@ export function CustomerDetailPage() {
                 <tbody className={tableBodyDivideClasses(isDark)}>
                   {investments.map((inv, index) => (
                     <tr key={inv.objectId} className={listRowStripeClasses(isDark, index)}>
-                      <td className={clsx('px-4 py-2', isDark ? 'text-slate-200' : 'text-gray-900')}>
+                      <td className={clsx('px-4 py-2', adminBodyStrong(isDark))}>
                         {inv.traderName}
                       </td>
-                      <td className={clsx('px-4 py-2', isDark ? 'text-slate-200' : 'text-gray-900')}>
+                      <td className={clsx('px-4 py-2', adminBodyStrong(isDark))}>
                         {inv.amount.toFixed(2)} €
                       </td>
                       <td className="px-4 py-2">
@@ -320,7 +320,7 @@ export function CustomerDetailPage() {
                           {inv.status}
                         </Badge>
                       </td>
-                      <td className={clsx('px-4 py-2', isDark ? 'text-slate-400' : 'text-gray-600')}>
+                      <td className={clsx('px-4 py-2', adminMonoHint(isDark))}>
                         {formatDateTime(inv.investedAt)}
                       </td>
                     </tr>
@@ -390,13 +390,13 @@ export function CustomerDetailPage() {
                 <tbody className={tableBodyDivideClasses(isDark)}>
                   {trades.map((trade, index) => (
                     <tr key={trade.objectId} className={listRowStripeClasses(isDark, index)}>
-                      <td className={clsx('px-4 py-2', isDark ? 'text-slate-200' : 'text-gray-900')}>
+                      <td className={clsx('px-4 py-2', adminBodyStrong(isDark))}>
                         {trade.traderName}
                       </td>
-                      <td className={clsx('px-4 py-2', isDark ? 'text-slate-200' : 'text-gray-900')}>
+                      <td className={clsx('px-4 py-2', adminBodyStrong(isDark))}>
                         {trade.tradeType}
                       </td>
-                      <td className={clsx('px-4 py-2', isDark ? 'text-slate-200' : 'text-gray-900')}>
+                      <td className={clsx('px-4 py-2', adminBodyStrong(isDark))}>
                         {trade.amount.toFixed(2)} €
                       </td>
                       <td className="px-4 py-2">
@@ -404,7 +404,7 @@ export function CustomerDetailPage() {
                           {trade.status}
                         </Badge>
                       </td>
-                      <td className={clsx('px-4 py-2', isDark ? 'text-slate-400' : 'text-gray-600')}>
+                      <td className={clsx('px-4 py-2', adminMonoHint(isDark))}>
                         {formatDateTime(trade.executedAt)}
                       </td>
                     </tr>

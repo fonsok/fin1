@@ -3,7 +3,7 @@ import { Card, Button } from '../../../components/ui';
 import { useTheme } from '../../../context/ThemeContext';
 import { formatDateTime } from '../../../utils/format';
 
-import { adminLabel, adminMuted, adminPrimary, adminSoft } from '../../../utils/adminThemeClasses';
+import { adminBodyStrong, adminHeadline, adminLabel, adminMuted, adminPrimary, adminSoft } from '../../../utils/adminThemeClasses';
 interface ApprovalRequestLike {
   objectId: string;
   requestType: string;
@@ -60,7 +60,7 @@ export function WithdrawRequestModal({
           </div>
           <div className="flex justify-between gap-3">
             <span className={clsx('text-sm', adminMuted(isDark))}>Beantragt am:</span>
-            <span className={clsx('text-sm', isDark ? 'text-slate-200' : 'text-gray-900')}>
+            <span className={clsx('text-sm', adminBodyStrong(isDark))}>
               {formatDateTime(withdrawTarget.createdAt)}
             </span>
           </div>
@@ -71,7 +71,7 @@ export function WithdrawRequestModal({
                 isDark ? 'bg-slate-950/70 border border-slate-600' : 'bg-white border border-gray-200',
               )}
             >
-              <p className={clsx('text-sm font-medium mb-1', isDark ? 'text-slate-100' : 'text-gray-800')}>
+              <p className={clsx('text-sm font-medium mb-1', adminHeadline(isDark))}>
                 {getParamDisplayName(withdrawTarget.metadata.parameterName as string)}
               </p>
               <p className={clsx('text-sm', adminSoft(isDark))}>
