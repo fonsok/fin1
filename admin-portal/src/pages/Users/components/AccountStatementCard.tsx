@@ -6,7 +6,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import { listRowStripeClasses } from '../../../utils/tableStriping';
 import type { AccountStatementData, AccountStatementEntryItem } from '../../../api/admin';
 
-import { adminBodyStrong, adminEmphasisSoft, adminGlyphFaint, adminMonoHint, adminMuted, adminPrimary, adminSoft } from '../../../utils/adminThemeClasses';
+import { adminBodyStrong, adminEmphasisSoft, adminGlyphFaint, adminMonoHint, adminMuted, adminPrimary, adminSoft, adminTableBodyDivide } from '../../../utils/adminThemeClasses';
 interface Props {
   data: AccountStatementData;
   userRole: string;
@@ -86,7 +86,7 @@ export function AccountStatementCard({ data, userRole }: Props) {
                   <Th isDark={isDark} align="left">Beleg</Th>
                 </tr>
               </thead>
-              <tbody className={clsx(isDark ? 'divide-y divide-slate-700' : 'divide-y divide-gray-100')}>
+              <tbody className={adminTableBodyDivide(isDark)}>
                 {/* Opening balance row */}
                 <tr className={clsx(isDark ? 'bg-slate-900/40' : 'bg-gray-50')}>
                   <td className={clsx('px-3 py-2', adminMuted(isDark))} colSpan={5}>

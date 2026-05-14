@@ -14,7 +14,7 @@ import {
 import type { SupportTicket } from '../types';
 import { useNavigate } from 'react-router-dom';
 
-import { adminCaption, adminControlField, adminEmptyIcon, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminBorderChrome, adminCaption, adminControlField, adminEmptyIcon, adminMuted, adminPrimary, adminSurfaceWell } from '../../../utils/adminThemeClasses';
 interface RecentTicketsProps {
   tickets: SupportTicket[];
   /** Alle vom Endpoint geladenen Tickets (für „aus Server“-Hinweis) */
@@ -129,7 +129,7 @@ export function RecentTickets({ tickets, serverTicketTotal, isLoading }: RecentT
       <div
         className={clsx(
           'flex flex-wrap items-center justify-between gap-4 p-6 border-b',
-          isDark ? 'border-slate-600' : 'border-gray-200',
+          adminBorderChrome(isDark),
         )}
       >
         <h2 className={clsx('text-lg font-semibold', adminPrimary(isDark))}>
@@ -150,7 +150,7 @@ export function RecentTickets({ tickets, serverTicketTotal, isLoading }: RecentT
       <div
         className={clsx(
           'flex flex-wrap items-center gap-3 justify-between border-b px-3 py-2',
-          isDark ? 'border-slate-600 bg-slate-900/40' : 'border-gray-200 bg-gray-50',
+          adminSurfaceWell(isDark),
         )}
       >
         <select

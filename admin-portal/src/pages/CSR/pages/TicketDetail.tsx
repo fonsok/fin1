@@ -8,7 +8,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import { tableBodyCellMutedClasses, tableBodyCellPrimaryClasses } from '../../../utils/tableStriping';
 import { getTicket, respondToTicket, assignTicket, escalateTicket, resolveTicket, closeTicket, getAvailableAgents } from '../api';
 
-import { adminControlFieldPh500, adminEmphasisSoft, adminMuted, adminPrimary, adminSoft, adminStrong } from '../../../utils/adminThemeClasses';
+import { adminBorderChromeDeep, adminControlFieldPh500, adminEmphasisSoft, adminMuted, adminPrimary, adminSoft, adminStrong } from '../../../utils/adminThemeClasses';
 export function TicketDetailPage() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -182,7 +182,7 @@ export function TicketDetailPage() {
             </p>
           </div>
 
-          <div className={clsx('grid grid-cols-2 gap-4 pt-4 border-t', isDark ? 'border-slate-700' : 'border-gray-200')}>
+          <div className={clsx('grid grid-cols-2 gap-4 pt-4 border-t', adminBorderChromeDeep(isDark))}>
             <div>
               <div className={clsx('text-sm', tableBodyCellMutedClasses(isDark))}>Kunde</div>
               <div className={clsx('font-medium', tableBodyCellPrimaryClasses(isDark))}>

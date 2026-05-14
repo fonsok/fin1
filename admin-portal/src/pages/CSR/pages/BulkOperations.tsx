@@ -13,7 +13,7 @@ import {
 } from '../../../utils/tableStriping';
 import { getSupportTickets, assignTicket, respondToTicket, getAvailableAgents } from '../api';
 
-import { adminControlField, adminControlFieldPh400, adminEmphasisSoft, adminMuted, adminPrimary, adminStrong } from '../../../utils/adminThemeClasses';
+import { adminControlField, adminControlFieldPh400, adminEmphasisSoft, adminMuted, adminPrimary, adminStrong, adminSurfaceWell } from '../../../utils/adminThemeClasses';
 export function BulkOperationsPage() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -278,7 +278,7 @@ export function BulkOperationsPage() {
             <div
               className={clsx(
                 'flex flex-wrap items-center gap-3 justify-between border-b px-3 py-2 mx-0',
-                isDark ? 'border-slate-600 bg-slate-900/40' : 'border-gray-200 bg-gray-50',
+                adminSurfaceWell(isDark),
               )}
             >
               <select

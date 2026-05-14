@@ -14,7 +14,7 @@ import {
 import { useAppLedgerPage } from './appLedger/hooks/useAppLedgerPage';
 import type { DateRangePreset } from './appLedger/types';
 
-import { adminCaption, adminControlField, adminDualMuted, adminEmphasisSoft, adminHeadline, adminLabel, adminMonoHint, adminMuted, adminPrimary, adminSoft, adminStrong } from '../../utils/adminThemeClasses';
+import { adminBorderChromeSoft, adminCaption, adminControlField, adminDivideYChart, adminDualMuted, adminEmphasisSoft, adminHeadline, adminLabel, adminMonoHint, adminMuted, adminPrimary, adminSoft, adminStrong, adminSurfaceInset } from '../../utils/adminThemeClasses';
 function resolveCounterAccountLabel(
   account: string,
   transactionType: string,
@@ -153,10 +153,10 @@ export function AppLedgerPage(): JSX.Element {
     'w-full border rounded-lg px-3 py-2 text-xs font-mono',
     adminControlField(isDark),
   );
-  const cardHeaderBorder = clsx('p-4 border-b space-y-1', isDark ? 'border-slate-600' : 'border-gray-100');
+  const cardHeaderBorder = clsx('p-4 border-b space-y-1', adminBorderChromeSoft(isDark));
   const snapshotScrollBox = clsx(
     'max-h-48 overflow-auto border rounded-lg text-xs font-mono',
-    isDark ? 'border-slate-600 bg-slate-900/30' : 'border-gray-200 bg-white',
+    adminSurfaceInset(isDark),
   );
   const noteXs = clsx('text-xs', adminMuted(isDark));
   const noteXs600 = clsx('text-xs', adminMonoHint(isDark));
@@ -467,7 +467,7 @@ export function AppLedgerPage(): JSX.Element {
               {openingSnapshots.length === 0 ? (
                 <div className={clsx('p-3', noteXs)}>Keine Einträge (oder Klasse noch nicht angelegt).</div>
               ) : (
-                <ul className={clsx('divide-y', isDark ? 'divide-slate-600' : 'divide-gray-100')}>
+                <ul className={adminDivideYChart(isDark)}>
                   {openingSnapshots.map((s) => (
                     <li key={s.objectId} className="px-3 py-2 flex flex-col gap-0.5">
                       <span className={clsx(adminHeadline(isDark))}>
@@ -552,7 +552,7 @@ export function AppLedgerPage(): JSX.Element {
         <div
           className={clsx(
             'px-4 pb-3 border-t flex flex-col sm:flex-row gap-3 sm:items-end',
-            isDark ? 'border-slate-600' : 'border-gray-100',
+            adminBorderChromeSoft(isDark),
           )}
         >
           <div className="flex-1 min-w-[12rem]">
@@ -575,7 +575,7 @@ export function AppLedgerPage(): JSX.Element {
           <div
             className={clsx(
               'px-4 pb-4 border-t space-y-3',
-              isDark ? 'border-slate-600' : 'border-gray-100',
+              adminBorderChromeSoft(isDark),
             )}
           >
             <p className={clsx('pt-3', noteXs)}>
@@ -627,7 +627,7 @@ export function AppLedgerPage(): JSX.Element {
         <div
           className={clsx(
             'p-4 border-b flex justify-between items-center',
-            isDark ? 'border-slate-600' : 'border-gray-100',
+            adminBorderChromeSoft(isDark),
           )}
         >
           <h2 className={sectionH2}>Buchungen ({totalCount})</h2>

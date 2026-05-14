@@ -16,7 +16,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import type { LegalBrandingPreviewValues } from '../utils/hydrateTermsPreview';
 import { hydrateTermsPreviewText } from '../utils/hydrateTermsPreview';
 
-import { adminCaption, adminHeadline, adminHeadlineAlt, adminMuted, adminPrimary, adminSoft, adminStatTitle, adminStrong } from '../../../utils/adminThemeClasses';
+import { adminBorderChrome, adminCaption, adminHeadline, adminHeadlineAlt, adminMuted, adminPrimary, adminSoft, adminStatTitle, adminStrong } from '../../../utils/adminThemeClasses';
 interface TermsListProps {
   items: TermsContentListItem[];
   documentTypeFilter?: 'all' | 'terms' | 'privacy' | 'imprint';
@@ -324,7 +324,7 @@ export function TermsList({
               <div
                 className={clsx(
                   'mt-4 pt-4 border-t space-y-3',
-                  isDark ? 'border-slate-600' : 'border-gray-200',
+                  adminBorderChrome(isDark),
                 )}
               >
                 <div

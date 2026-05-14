@@ -6,7 +6,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import type { ResponseTemplate, TemplateCategory, CreateTemplateRequest, UpdateTemplateRequest } from '../types';
 import { TEMPLATE_CATEGORIES, CSR_ROLES } from '../types';
 
-import { adminBodyStrong, adminCaption, adminLabel, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminBodyStrong, adminBorderChrome, adminCaption, adminLabel, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 interface TemplateEditorProps {
   template: ResponseTemplate | null;
   categories: TemplateCategory[];
@@ -77,7 +77,7 @@ export function TemplateEditor({ template, categories, onSave, onClose }: Templa
       <Card className="max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-xl" padding="none">
         <form onSubmit={handleSubmit}>
           {/* Header */}
-          <div className={clsx('p-6 border-b', isDark ? 'border-slate-600' : 'border-gray-200')}>
+          <div className={clsx('p-6 border-b', adminBorderChrome(isDark))}>
             <h2 className={clsx('text-xl font-bold', adminPrimary(isDark))}>
               {isEdit ? 'Template bearbeiten' : 'Neues Template'}
             </h2>
@@ -284,7 +284,7 @@ export function TemplateEditor({ template, categories, onSave, onClose }: Templa
           </div>
 
           {/* Footer */}
-          <div className={clsx('p-6 border-t flex justify-end gap-3', isDark ? 'border-slate-600' : 'border-gray-200')}>
+          <div className={clsx('p-6 border-t flex justify-end gap-3', adminBorderChrome(isDark))}>
             <Button type="button" variant="secondary" onClick={onClose} disabled={saving}>
               Abbrechen
             </Button>

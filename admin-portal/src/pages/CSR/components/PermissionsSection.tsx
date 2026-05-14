@@ -6,19 +6,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import { cloudFunction } from '../../../api/parse';
 import type { User } from '../../../context/AuthContext';
 
-import {
-  adminCaption,
-  adminComplianceFootnoteBorder,
-  adminDualMuted,
-  adminLabel,
-  adminMonoNeutralHint,
-  adminMuted,
-  adminPrimary,
-  adminRoleTitle,
-  adminSectionDividerSoft,
-  adminSoft,
-  adminStrong,
-} from '../../../utils/adminThemeClasses';
+import { adminBorderChromeSoft, adminCaption, adminComplianceFootnoteBorder, adminDualMuted, adminLabel, adminMonoNeutralHint, adminMuted, adminPrimary, adminRoleTitle, adminSectionDividerSoft, adminSoft, adminStrong } from '../../../utils/adminThemeClasses';
 interface PermissionsSectionProps {
   user: User | null;
 }
@@ -301,7 +289,7 @@ export function PermissionsSection({ user }: PermissionsSectionProps) {
           {sortedPermissionCategories.map((category) => (
             <div
               key={category.category}
-              className={clsx('border-b pb-3 last:border-0', isDark ? 'border-slate-600' : 'border-gray-100')}
+              className={clsx('border-b pb-3 last:border-0', adminBorderChromeSoft(isDark))}
             >
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-base">{getCategoryIcon(category.category)}</span>

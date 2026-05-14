@@ -6,7 +6,7 @@ import { listRowStripeClasses } from '../../../utils/tableStriping';
 import type { FailedLogin, SecurityAlert } from '../types';
 import { getSeverityVariant } from '../utils';
 
-import { adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminBorderChromeSoft, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 interface OverviewTabProps {
   failedLogins: FailedLogin[];
   alerts: SecurityAlert[];
@@ -21,7 +21,7 @@ export function OverviewTab({ failedLogins, alerts }: OverviewTabProps): JSX.Ele
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Recent Failed Logins */}
       <Card>
-        <div className={clsx('p-4 border-b', isDark ? 'border-slate-600' : 'border-gray-100')}>
+        <div className={clsx('p-4 border-b', adminBorderChromeSoft(isDark))}>
           <h2 className="text-lg font-semibold">Letzte fehlgeschlagene Logins</h2>
         </div>
         <div className="p-2 space-y-1">
@@ -45,7 +45,7 @@ export function OverviewTab({ failedLogins, alerts }: OverviewTabProps): JSX.Ele
 
       {/* Security Alerts */}
       <Card>
-        <div className={clsx('p-4 border-b', isDark ? 'border-slate-600' : 'border-gray-100')}>
+        <div className={clsx('p-4 border-b', adminBorderChromeSoft(isDark))}>
           <h2 className="text-lg font-semibold">Aktuelle Warnungen</h2>
         </div>
         <div className="p-2 space-y-1">

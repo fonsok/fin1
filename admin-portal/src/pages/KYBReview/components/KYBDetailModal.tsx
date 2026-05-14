@@ -7,7 +7,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import { formatDateTime } from '../../../utils/format';
 import clsx from 'clsx';
 
-import { adminCaption, adminEmphasisSoft, adminHeadline, adminIconField, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminBorderChrome, adminBorderChromeSoft, adminCaption, adminEmphasisSoft, adminHeadline, adminIconField, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 const STEP_LABELS: Record<string, { label: string; icon: string }> = {
   legal_entity: { label: 'Rechtsform & Handelsregister', icon: '🏛️' },
   registered_address: { label: 'Anschrift', icon: '📍' },
@@ -161,7 +161,7 @@ export function KYBDetailModal({ userId, onClose, onReview }: KYBDetailModalProp
               <div
                 className={clsx(
                   'flex justify-end gap-3 pt-4 border-t',
-                  isDark ? 'border-slate-600' : 'border-gray-200',
+                  adminBorderChrome(isDark),
                 )}
               >
                 <Button variant="secondary" onClick={onClose}>
@@ -190,7 +190,7 @@ export function KYBDetailModal({ userId, onClose, onReview }: KYBDetailModalProp
               <div
                 className={clsx(
                   'flex flex-col gap-3 pt-4 border-t',
-                  isDark ? 'border-slate-600' : 'border-gray-200',
+                  adminBorderChrome(isDark),
                 )}
               >
                 {canReset && !showResetForm && (
@@ -307,7 +307,7 @@ function StepAccordion({
       {expanded && displayData && (
         <div className={clsx(
           'px-4 pb-4 border-t',
-          isDark ? 'border-slate-600' : 'border-gray-100',
+          adminBorderChromeSoft(isDark),
         )}>
           <div className="mt-3 space-y-2">
             {renderStepData(entry.step, displayData, isDark)}

@@ -4,7 +4,7 @@ import { formatCurrency, getStatusDisplay } from '../../../utils/format';
 import { listRowStripeClasses } from '../../../utils/tableStriping';
 import type { InvestmentItem } from '../../../api/admin';
 
-import { adminEmphasisSoft, adminMonoHint, adminPrimary, adminSoft, adminStrong } from '../../../utils/adminThemeClasses';
+import { adminEmphasisSoft, adminMonoHint, adminPrimary, adminSoft, adminStrong, adminTableBodyDivide } from '../../../utils/adminThemeClasses';
 interface Props {
   title: string;
   items: InvestmentItem[];
@@ -35,7 +35,7 @@ export function InvestmentTable({ title, items, isDark }: Props) {
               <Th isDark={isDark} align="center">Status</Th>
             </tr>
           </thead>
-          <tbody className={clsx(isDark ? 'divide-y divide-slate-700' : 'divide-y divide-gray-100')}>
+          <tbody className={adminTableBodyDivide(isDark)}>
             {items.map((inv, idx) => {
               const profit = inv.profit || 0;
               const returnPct = inv.profitPercentage ?? 0;

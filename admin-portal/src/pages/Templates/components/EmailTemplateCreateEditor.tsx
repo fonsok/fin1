@@ -4,7 +4,7 @@ import { Button } from '../../../components/ui/Button';
 import { useTheme } from '../../../context/ThemeContext';
 import { createEmailTemplate } from '../api';
 
-import { adminPrimary, adminStatTitle, adminStrong } from '../../../utils/adminThemeClasses';
+import { adminBorderChromeDeep, adminPrimary, adminStatTitle, adminStrong } from '../../../utils/adminThemeClasses';
 interface EmailTemplateCreateEditorProps {
   onSave: () => void;
   onClose: () => void;
@@ -68,7 +68,7 @@ export function EmailTemplateCreateEditor({ onSave, onClose }: EmailTemplateCrea
           isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-gray-200'
         )}
       >
-        <div className={clsx('p-6 border-b flex-shrink-0', isDark ? 'border-slate-700' : 'border-gray-200')}>
+        <div className={clsx('p-6 border-b flex-shrink-0', adminBorderChromeDeep(isDark))}>
           <h2 className={clsx('text-xl font-bold', adminPrimary(isDark))}>
             Neue E-Mail Vorlage
           </h2>
@@ -195,7 +195,7 @@ export function EmailTemplateCreateEditor({ onSave, onClose }: EmailTemplateCrea
           </label>
         </div>
 
-        <div className={clsx('p-6 border-t flex justify-end gap-3 flex-shrink-0', isDark ? 'border-slate-700' : 'border-gray-200')}>
+        <div className={clsx('p-6 border-t flex justify-end gap-3 flex-shrink-0', adminBorderChromeDeep(isDark))}>
           <Button variant="secondary" onClick={onClose} disabled={saving}>
             Abbrechen
           </Button>

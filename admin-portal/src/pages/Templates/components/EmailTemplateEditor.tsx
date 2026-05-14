@@ -6,7 +6,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import { updateEmailTemplate, renderEmailTemplate } from '../api';
 import type { EmailTemplate } from '../types';
 
-import { adminBodyStrong, adminLabel, adminMuted, adminPrimary, adminStrong } from '../../../utils/adminThemeClasses';
+import { adminBodyStrong, adminBorderChrome, adminLabel, adminMuted, adminPrimary, adminStrong } from '../../../utils/adminThemeClasses';
 interface EmailTemplateEditorProps {
   template: EmailTemplate;
   onSave: () => void;
@@ -71,7 +71,7 @@ export function EmailTemplateEditor({ template, onSave, onClose }: EmailTemplate
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <Card className="max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-xl" padding="none">
         {/* Header */}
-        <div className={clsx('p-6 border-b flex-shrink-0', isDark ? 'border-slate-600' : 'border-gray-200')}>
+        <div className={clsx('p-6 border-b flex-shrink-0', adminBorderChrome(isDark))}>
           <div className="flex items-center gap-3">
             <span className="text-3xl">{template.icon || '✉️'}</span>
             <div>
@@ -221,7 +221,7 @@ export function EmailTemplateEditor({ template, onSave, onClose }: EmailTemplate
                     <div
                       className={clsx(
                         'rounded-lg overflow-hidden border',
-                        isDark ? 'border-slate-600' : 'border-gray-200',
+                        adminBorderChrome(isDark),
                       )}
                     >
                       <div
@@ -246,7 +246,7 @@ export function EmailTemplateEditor({ template, onSave, onClose }: EmailTemplate
         </div>
 
         {/* Footer */}
-        <div className={clsx('p-6 border-t flex justify-end gap-3 flex-shrink-0', isDark ? 'border-slate-600' : 'border-gray-200')}>
+        <div className={clsx('p-6 border-t flex justify-end gap-3 flex-shrink-0', adminBorderChrome(isDark))}>
           <Button variant="secondary" onClick={onClose} disabled={saving}>
             Abbrechen
           </Button>

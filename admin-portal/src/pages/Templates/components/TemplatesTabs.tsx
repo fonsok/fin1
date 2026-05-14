@@ -2,6 +2,7 @@ import clsx from 'clsx';
 import { Badge } from '../../../components/ui/Badge';
 import { useTheme } from '../../../context/ThemeContext';
 
+import { adminBorderChrome } from '../../../utils/adminThemeClasses';
 interface TemplatesTabsProps {
   activeTab: 'response' | 'email' | 'stats';
   responseCount: number;
@@ -25,7 +26,7 @@ export function TemplatesTabs({
   );
 
   return (
-    <div className={clsx('border-b', isDark ? 'border-slate-600' : 'border-gray-200')}>
+    <div className={clsx('border-b', adminBorderChrome(isDark))}>
       <nav className="flex space-x-8">
         <button
           type="button"

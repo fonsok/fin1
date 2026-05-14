@@ -5,7 +5,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import type { TermsContentFull, TermsSection, CreateTermsContentRequest } from '../types';
 import { createTermsContent } from '../api';
 
-import { adminControlField, adminLabel, adminMuted, adminPrimary, adminSoft } from '../../../utils/adminThemeClasses';
+import { adminBorderChrome, adminControlField, adminLabel, adminMuted, adminPrimary, adminSoft } from '../../../utils/adminThemeClasses';
 function filterSectionsBySearch(sections: TermsSection[], query: string): { section: TermsSection; index: number }[] {
   const q = query.trim().toLowerCase();
   if (!q) return sections.map((s, i) => ({ section: s, index: i }));
@@ -140,7 +140,7 @@ export function TermsEditor({ cloneFrom, initialSectionSearch, onSaved, onClose 
         )}
       >
         <form onSubmit={handleSubmit}>
-          <div className={clsx('p-6 border-b', isDark ? 'border-slate-600' : 'border-gray-200')}>
+          <div className={clsx('p-6 border-b', adminBorderChrome(isDark))}>
             <h2 className={clsx('text-xl font-bold', adminPrimary(isDark))}>
               {cloneFrom ? 'Neue Version aus Klon' : 'Neue Rechtstext-Version'}
             </h2>
@@ -295,7 +295,7 @@ export function TermsEditor({ cloneFrom, initialSectionSearch, onSaved, onClose 
               </div>
             </div>
           </div>
-          <div className={clsx('p-6 border-t flex justify-end gap-3', isDark ? 'border-slate-600' : 'border-gray-200')}>
+          <div className={clsx('p-6 border-t flex justify-end gap-3', adminBorderChrome(isDark))}>
             <Button type="button" variant="secondary" onClick={onClose} disabled={saving}>
               Abbrechen
             </Button>

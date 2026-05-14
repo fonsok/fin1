@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import { Button } from './Button';
 
-import { adminLabel, adminStatTitle } from '../../utils/adminThemeClasses';
+import { adminBorderChromeDeep, adminLabel, adminStatTitle } from '../../utils/adminThemeClasses';
 type PaginationBarProps = {
   page: number;
   pageSize: number;
@@ -27,7 +27,7 @@ export function PaginationBar({
   const to = Math.min((page + 1) * pageSize, total);
 
   return (
-    <div className={clsx('px-6 py-4 border-t flex items-center justify-between', isDark ? 'border-slate-700' : 'border-gray-200')}>
+    <div className={clsx('px-6 py-4 border-t flex items-center justify-between', adminBorderChromeDeep(isDark))}>
       <p className={clsx('text-sm', adminStatTitle(isDark))}>
         Zeige {from} bis {to} von {total} {itemLabel}
       </p>

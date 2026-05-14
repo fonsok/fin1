@@ -11,7 +11,7 @@ import { CorrectionModal } from './components/CorrectionModal';
 import { mockStats, mockRoundingDiffs, mockCorrections } from './mockData';
 import type { FinancialStats, RoundingDifference, CorrectionRequest } from './types';
 
-import { adminMuted, adminPrimary, adminSoft } from '../../utils/adminThemeClasses';
+import { adminBorderChromeSoft, adminMuted, adminPrimary, adminSoft } from '../../utils/adminThemeClasses';
 export function FinanceDashboardPage(): JSX.Element {
   const [showCorrectionModal, setShowCorrectionModal] = useState(false);
   const { theme } = useTheme();
@@ -166,8 +166,8 @@ function RoundingDiffsList(props: {
   emptyMessage?: string;
 }): JSX.Element {
   const { isDark, title, differences, emptyMessage } = props;
-  const borderB = clsx('border-b', isDark ? 'border-slate-600' : 'border-gray-100');
-  const borderT = clsx('border-t', isDark ? 'border-slate-600' : 'border-gray-100');
+  const borderB = clsx('border-b', adminBorderChromeSoft(isDark));
+  const borderT = clsx('border-t', adminBorderChromeSoft(isDark));
   const divideY = tableBodyDivideClasses(isDark);
 
   return (
@@ -249,8 +249,8 @@ function CorrectionsList(props: {
     return type;
   };
 
-  const borderB = clsx('border-b', isDark ? 'border-slate-600' : 'border-gray-100');
-  const borderT = clsx('border-t', isDark ? 'border-slate-600' : 'border-gray-100');
+  const borderB = clsx('border-b', adminBorderChromeSoft(isDark));
+  const borderT = clsx('border-t', adminBorderChromeSoft(isDark));
   const divideY = tableBodyDivideClasses(isDark);
 
   return (

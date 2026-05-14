@@ -5,7 +5,7 @@ import { cloudFunction } from '../../../api/admin';
 import { Button, Card } from '../../../components/ui';
 import { useTheme } from '../../../context/ThemeContext';
 
-import { adminLabel, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminBorderChromeSoft, adminLabel, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 interface CorrectionModalProps {
   onClose: () => void;
 }
@@ -94,7 +94,7 @@ export function CorrectionModal({ onClose }: CorrectionModalProps): JSX.Element 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <Card className="max-w-md w-full max-h-[90vh] overflow-y-auto shadow-xl" padding="none">
-        <div className={clsx('p-6 border-b', isDark ? 'border-slate-600' : 'border-gray-100')}>
+        <div className={clsx('p-6 border-b', adminBorderChromeSoft(isDark))}>
           <h2 className={clsx('text-xl font-semibold', adminPrimary(isDark))}>
             Neue Korrekturbuchung
           </h2>

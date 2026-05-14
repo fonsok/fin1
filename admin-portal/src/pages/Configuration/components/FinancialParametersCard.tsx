@@ -3,7 +3,7 @@ import { Card, Button, Input, Badge } from '../../../components/ui';
 import { listRowStripeClasses } from '../../../utils/tableStriping';
 import type { ConfigurationParameter, PendingConfigChange } from '../types';
 import { getAppWithholdsLabel } from '../../../constants/branding';
-import { adminControlField, adminMuted } from '../../../utils/adminThemeClasses';
+import { adminControlField, adminMuted, adminTableBodyDivide } from '../../../utils/adminThemeClasses';
 
 interface FinancialParametersCardProps {
   financialParams: [string, Omit<ConfigurationParameter, 'value'>][];
@@ -90,7 +90,7 @@ export function FinancialParametersCard({
         {title}
       </h3>
 
-      <div className={clsx('divide-y', isDark ? 'divide-slate-700' : 'divide-gray-100')}>
+      <div className={adminTableBodyDivide(isDark)}>
         {visibleParams.map(([key, def], index: number) => {
           const value = config[key];
           const isEditing = editingParam === key;

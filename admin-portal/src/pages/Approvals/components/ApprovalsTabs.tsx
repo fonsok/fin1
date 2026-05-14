@@ -1,6 +1,7 @@
 import clsx from 'clsx';
 import { useTheme } from '../../../context/ThemeContext';
 
+import { adminBorderChrome } from '../../../utils/adminThemeClasses';
 interface TabItem<T extends string> {
   id: T;
   label: string;
@@ -33,7 +34,7 @@ export function ApprovalsTabs<T extends string>({
     <div
       className={clsx(
         'flex border-b overflow-x-auto',
-        isDark ? 'border-slate-600' : 'border-gray-200',
+        adminBorderChrome(isDark),
       )}
     >
       {tabs.map((tab) => (

@@ -20,7 +20,7 @@ import {
   tableTheadSurfaceClasses,
 } from '../../../utils/tableStriping';
 
-import { adminBodyStrong, adminLabel, adminMonoHint, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminBodyStrong, adminBorderChrome, adminLabel, adminMonoHint, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 export function CustomerDetailPage() {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
@@ -168,7 +168,7 @@ export function CustomerDetailPage() {
       </div>
 
       {/* Tabs */}
-      <div className={clsx('border-b', isDark ? 'border-slate-600' : 'border-gray-200')}>
+      <div className={clsx('border-b', adminBorderChrome(isDark))}>
         <nav className="flex gap-4">
           {availableTabs.map((tab) => (
             <button
@@ -433,7 +433,7 @@ export function CustomerDetailPage() {
                   key={doc.objectId}
                   className={clsx(
                     'flex items-center justify-between p-3 border rounded-lg',
-                    isDark ? 'border-slate-600' : 'border-gray-200',
+                    adminBorderChrome(isDark),
                   )}
                 >
                   <div>

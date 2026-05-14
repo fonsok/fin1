@@ -10,7 +10,7 @@ import { KYBSubmissionTable } from './components/KYBSubmissionTable';
 import { KYBDetailModal } from './components/KYBDetailModal';
 import { KYBDecisionModal } from './components/KYBDecisionModal';
 
-import { adminControlField, adminLabel, adminMuted, adminPrimary } from '../../utils/adminThemeClasses';
+import { adminBorderChrome, adminControlField, adminLabel, adminMuted, adminPrimary } from '../../utils/adminThemeClasses';
 type TabId = 'pending_review' | 'more_info_requested' | 'approved' | 'rejected' | 'all';
 
 const TABS: { id: TabId; label: string; icon: string }[] = [
@@ -106,7 +106,7 @@ export function KYBReviewPage() {
       <Card padding="none">
         <div className={clsx(
           'flex border-b overflow-x-auto',
-          isDark ? 'border-slate-600' : 'border-gray-200',
+          adminBorderChrome(isDark),
         )}>
           {TABS.map((tab) => (
             <button

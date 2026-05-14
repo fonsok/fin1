@@ -6,6 +6,7 @@ import { formatDateTime } from '../../../utils/format';
 import { listRowStripeClasses } from '../../../utils/tableStriping';
 import type { SecurityAlert } from '../types';
 import { getSeverityVariant } from '../utils';
+import { adminBorderChrome } from '../../../utils/adminThemeClasses';
 
 interface AlertsTabProps {
   alerts: SecurityAlert[];
@@ -25,7 +26,7 @@ export function AlertsTab({ alerts, sortBy, sortOrder, onSort, isDark }: AlertsT
       <div
         className={clsx(
           'flex flex-wrap items-center gap-2 px-3 py-2 border-b',
-          dark ? 'border-slate-600' : 'border-gray-200',
+          adminBorderChrome(dark),
         )}
       >
         <span className={clsx('text-xs font-medium uppercase', dark ? 'text-slate-400' : 'text-gray-500')}>

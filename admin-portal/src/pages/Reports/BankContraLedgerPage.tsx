@@ -15,7 +15,7 @@ import {
 } from '../../utils/tableStriping';
 import { formatLedgerAccountDisplayLabel } from './appLedger/constants';
 
-import { adminCaption, adminControlFieldPh500, adminDualMuted, adminMuted, adminPrimary, adminStrong } from '../../utils/adminThemeClasses';
+import { adminBorderChromeSoft, adminCaption, adminControlFieldPh500, adminDualMuted, adminMuted, adminPrimary, adminStrong } from '../../utils/adminThemeClasses';
 interface ContraPosting {
   id: string;
   account: string;
@@ -105,7 +105,7 @@ export function BankContraLedgerPage(): JSX.Element {
   const emptyMini = clsx('text-sm', adminCaption(isDark));
   const emptyState = clsx('p-8 text-center', tableBodyCellMutedClasses(isDark));
   const sectionH2 = clsx('text-lg font-semibold', adminPrimary(isDark));
-  const toolbarBorder = clsx('p-4 border-b flex justify-between items-center', isDark ? 'border-slate-600' : 'border-gray-100');
+  const toolbarBorder = clsx('p-4 border-b flex justify-between items-center', adminBorderChromeSoft(isDark));
 
   const exportCSV = () => {
     if (filteredPostings.length === 0) return;

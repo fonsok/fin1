@@ -18,6 +18,10 @@ const BG_GRAY_50_60 = clsx('bg-gray-50/60');
 const HOVER_BG_GRAY_50 = clsx('hover:bg-gray-50');
 const THEAD_SURFACE_LIGHT = clsx('bg-gray-50 border-gray-200');
 const DIVIDE_GRAY_100 = clsx('divide-gray-100');
+const BORDER_GRAY_100 = clsx('border-gray-100');
+const BORDER_GRAY_200 = clsx('border-gray-200');
+const BG_GRAY_50 = clsx('bg-gray-50');
+const BG_WHITE = clsx('bg-white');
 const EMPTY_STATE_LIGHT = clsx('text-gray-500 bg-gray-50/60');
 
 /** Muted body / table header / secondary labels */
@@ -213,6 +217,39 @@ export function adminControlFieldPh500(isDark: boolean): string {
   return isDark
     ? 'bg-slate-900/70 border-slate-600 text-slate-100 placeholder:text-slate-500'
     : clsx(CONTROL_FIELD_LIGHT, 'placeholder:text-gray-400');
+}
+
+/** Default card / modal / header border color (slate-600 / gray-200). */
+export function adminBorderChrome(isDark: boolean): string {
+  return isDark ? 'border-slate-600' : BORDER_GRAY_200;
+}
+
+/** Dense lists: slate-600 / gray-100 border color. */
+export function adminBorderChromeSoft(isDark: boolean): string {
+  return isDark ? 'border-slate-600' : BORDER_GRAY_100;
+}
+
+/** Stronger rail (slate-700 / gray-200) — pagers, footers, split panels. */
+export function adminBorderChromeDeep(isDark: boolean): string {
+  return isDark ? 'border-slate-700' : BORDER_GRAY_200;
+}
+
+/** Filter / pager strip (inset dark panel vs light gray well). */
+export function adminSurfaceWell(isDark: boolean): string {
+  return isDark ? 'border-slate-600 bg-slate-900/40' : clsx(BORDER_GRAY_200, BG_GRAY_50);
+}
+
+/** Inset summary row on slate index pages (e.g. ledger card chrome). */
+export function adminSurfaceInset(isDark: boolean): string {
+  return isDark ? 'border-slate-600 bg-slate-900/30' : clsx(BORDER_GRAY_200, BG_WHITE);
+}
+
+/**
+ * Vertical dividers between rows where dark uses slate-600 rails
+ * (e.g. App Ledger posting list).
+ */
+export function adminDivideYChart(isDark: boolean): string {
+  return clsx('divide-y', isDark ? 'divide-slate-600' : DIVIDE_GRAY_100);
 }
 
 export function adminTableTheadSurface(isDark: boolean): string {

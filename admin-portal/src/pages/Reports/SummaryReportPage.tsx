@@ -13,7 +13,7 @@ import {
   tableTheadSurfaceClasses,
 } from '../../utils/tableStriping';
 
-import { adminBodyStrong, adminCaption, adminControlField, adminMuted, adminPrimary, adminSoft } from '../../utils/adminThemeClasses';
+import { adminBodyStrong, adminBorderChrome, adminBorderChromeSoft, adminCaption, adminControlField, adminMuted, adminPrimary, adminSoft } from '../../utils/adminThemeClasses';
 interface InvestmentSummary {
   investmentId: string;
   investmentNumber: string;
@@ -151,7 +151,7 @@ export function SummaryReportPage(): JSX.Element {
       )}
 
       {/* Tabs */}
-      <div className={clsx('border-b', isDark ? 'border-slate-600' : 'border-gray-200')}>
+      <div className={clsx('border-b', adminBorderChrome(isDark))}>
         <nav className="flex space-x-4">
           {tabs.map((tab) => (
             <button
@@ -363,7 +363,7 @@ function InvestmentsTab({
 
   return (
     <Card>
-      <div className={clsx('p-3 border-b flex flex-wrap items-center gap-3 justify-between', isDark ? 'border-slate-600' : 'border-gray-100')}>
+      <div className={clsx('p-3 border-b flex flex-wrap items-center gap-3 justify-between', adminBorderChromeSoft(isDark))}>
         <select
           value={pageSize}
           onChange={(e) => {
@@ -538,7 +538,7 @@ function TradesTab({
 
   return (
     <Card>
-      <div className={clsx('p-3 border-b flex flex-wrap items-center gap-3 justify-between', isDark ? 'border-slate-600' : 'border-gray-100')}>
+      <div className={clsx('p-3 border-b flex flex-wrap items-center gap-3 justify-between', adminBorderChromeSoft(isDark))}>
         <select
           value={pageSize}
           onChange={(e) => {

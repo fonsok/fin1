@@ -2,7 +2,7 @@ import clsx from 'clsx';
 import { Card, Button, Input, Badge } from '../../../components/ui';
 import { listRowStripeClasses } from '../../../utils/tableStriping';
 import type { ConfigurationParameter, PendingConfigChange } from '../types';
-import { adminMuted } from '../../../utils/adminThemeClasses';
+import { adminMuted, adminTableBodyDivide } from '../../../utils/adminThemeClasses';
 
 interface DisplayParametersCardProps {
   displayParams: [string, Omit<ConfigurationParameter, 'value'>][];
@@ -60,7 +60,7 @@ export function DisplayParametersCard({
         Anzeige
       </h3>
 
-      <div className={clsx('divide-y', isDark ? 'divide-slate-700' : 'divide-gray-100')}>
+      <div className={adminTableBodyDivide(isDark)}>
         {displayParams.map(([key, def], index: number) => {
           const value = config[key];
           const isEditing = editingParam === key;

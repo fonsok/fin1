@@ -13,7 +13,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { mockStats, mockFailedLogins, mockSessions, mockAlerts } from './mockData';
 import type { SecurityStats, FailedLogin, ActiveSession, SecurityAlert, TabType } from './types';
 
-import { adminControlField, adminMuted, adminPrimary } from '../../utils/adminThemeClasses';
+import { adminBorderChrome, adminControlField, adminMuted, adminPrimary } from '../../utils/adminThemeClasses';
 const TABS = [
   { id: 'overview' as const, label: 'Übersicht' },
   { id: 'logins' as const, label: 'Login-Historie' },
@@ -204,7 +204,7 @@ export function SecurityDashboardPage(): JSX.Element {
       </div>
 
       {/* Tabs */}
-      <div className={clsx('border-b', isDark ? 'border-slate-600' : 'border-gray-200')}>
+      <div className={clsx('border-b', adminBorderChrome(isDark))}>
         <nav className="flex gap-4">
           {TABS.map((tab) => (
             <button

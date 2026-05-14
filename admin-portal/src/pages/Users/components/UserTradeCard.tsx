@@ -6,7 +6,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import { listRowStripeClasses } from '../../../utils/tableStriping';
 import type { TradeItem, TradeInvestor } from '../../../api/admin';
 
-import { adminBodyStrong, adminMonoHint, adminMuted, adminPrimary, adminSoft, adminStrong } from '../../../utils/adminThemeClasses';
+import { adminBodyStrong, adminBorderChrome, adminMonoHint, adminMuted, adminPrimary, adminSoft, adminStrong } from '../../../utils/adminThemeClasses';
 export function UserTradeCard({ trade }: { trade: TradeItem }) {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -17,7 +17,7 @@ export function UserTradeCard({ trade }: { trade: TradeItem }) {
     <div
       className={clsx(
         'border rounded-lg overflow-hidden',
-        isDark ? 'border-slate-600' : 'border-gray-200',
+        adminBorderChrome(isDark),
       )}
     >
       <div

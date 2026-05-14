@@ -27,7 +27,7 @@ import { formatNumber } from '../../utils/format';
 import { FAQDevMaintenanceCard } from './components/FAQDevMaintenanceCard';
 import { isRetiredFaqCategorySlug } from './retiredFaqCategories';
 
-import { adminControlField, adminControlFieldPh400, adminMuted, adminPrimary } from '../../utils/adminThemeClasses';
+import { adminControlField, adminControlFieldPh400, adminMuted, adminPrimary, adminSurfaceWell } from '../../utils/adminThemeClasses';
 type LocationFilter = 'all' | 'landing' | 'help_center' | 'investor' | 'trader';
 
 const INVESTOR_CATEGORY_SLUGS = [
@@ -447,7 +447,7 @@ export function FAQsPage() {
         <div
           className={clsx(
             'flex flex-wrap items-center gap-3 justify-between rounded-lg border px-3 py-2',
-            isDark ? 'border-slate-600 bg-slate-900/40' : 'border-gray-200 bg-gray-50',
+            adminSurfaceWell(isDark),
           )}
         >
           <select

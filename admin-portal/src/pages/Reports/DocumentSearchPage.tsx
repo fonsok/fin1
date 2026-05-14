@@ -21,7 +21,7 @@ import {
   tableTheadSurfaceClasses,
 } from '../../utils/tableStriping';
 
-import { adminEmphasisSoft, adminLabel, adminMonoHint, adminMuted, adminPrimary } from '../../utils/adminThemeClasses';
+import { adminBorderChrome, adminEmphasisSoft, adminLabel, adminMonoHint, adminMuted, adminPrimary } from '../../utils/adminThemeClasses';
 const DOCUMENT_TYPE_OPTIONS: { value: string; label: string }[] = [
   { value: 'invoice', label: 'Rechnung' },
   { value: 'investorCollectionBill', label: 'Investor Collection Bill' },
@@ -354,7 +354,7 @@ export function DocumentSearchPage(): JSX.Element {
 
       {applied && canSearch && (
         <Card className="p-0 overflow-hidden">
-          <div className={clsx('px-4 py-3 border-b', isDark ? 'border-slate-600' : 'border-gray-200')}>
+          <div className={clsx('px-4 py-3 border-b', adminBorderChrome(isDark))}>
             <span className={clsx('text-sm font-medium', adminEmphasisSoft(isDark))}>
               {infinite.isFetching && !infinite.data ? 'Lade…' : `${rows.length} Treffer${infinite.hasNextPage ? ' (weitere verfügbar)' : ''}`}
             </span>
@@ -428,7 +428,7 @@ export function DocumentSearchPage(): JSX.Element {
             </table>
           </div>
           {infinite.hasNextPage && (
-            <div className={clsx('p-4 border-t', isDark ? 'border-slate-600' : 'border-gray-200')}>
+            <div className={clsx('p-4 border-t', adminBorderChrome(isDark))}>
               <Button
                 variant="secondary"
                 onClick={() => void infinite.fetchNextPage()}

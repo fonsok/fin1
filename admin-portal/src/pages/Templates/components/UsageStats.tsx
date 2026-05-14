@@ -12,7 +12,7 @@ import {
 } from '../../../utils/tableStriping';
 import { getTemplateUsageStats, type GetTemplateUsageStatsParams } from '../api';
 import type { TemplateUsageStats } from '../types';
-import { adminControlField, adminGlyphFaint, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminBorderChrome, adminControlField, adminGlyphFaint, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 
 function toInputDateLocal(d: Date): string {
   const y = d.getFullYear();
@@ -93,7 +93,7 @@ function UsageStatsContent({ stats }: { stats: TemplateUsageStats }) {
           <div
             className={clsx(
               'rounded-lg overflow-hidden border',
-              isDark ? 'border-slate-600' : 'border-gray-200',
+              adminBorderChrome(isDark),
             )}
           >
             {stats.topTemplates.map((template, index) => (

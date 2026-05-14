@@ -8,7 +8,7 @@ import { EmailTemplateEditor } from './EmailTemplateEditor';
 import type { EmailTemplate } from '../types';
 import { sortByDisplayNameDe } from '../utils/templateDisplayOrder';
 
-import { adminCaption, adminHeadlineAlt, adminMuted, adminPrimary, adminProse } from '../../../utils/adminThemeClasses';
+import { adminBorderChromeSoft, adminCaption, adminHeadlineAlt, adminMuted, adminPrimary, adminProse } from '../../../utils/adminThemeClasses';
 interface EmailTemplateListProps {
   templates: EmailTemplate[];
   onRefresh: () => void;
@@ -98,7 +98,7 @@ export function EmailTemplateList({ templates, onRefresh }: EmailTemplateListPro
             <div
               className={clsx(
                 'flex justify-between items-center pt-3 border-t',
-                isDark ? 'border-slate-600' : 'border-gray-100',
+                adminBorderChromeSoft(isDark),
               )}
             >
               <span className={clsx('text-xs', adminCaption(isDark))}>
