@@ -30,7 +30,9 @@ Die CSR-User wurden mit folgenden E-Mail-Adressen erstellt:
 - **Tech@fin1.de** - Tech Support
 - **Lead@fin1.de** - Team Lead
 
-**Passwörter:** werden bei `createCSRUser` gesetzt; historisch gab es unterschiedliche Konventionen auf verschiedenen Umgebungen. Keine festen Werte in dieser Datei — bei unbekanntem Passwort zurücksetzen (`createCSRUser` / Master-Key, siehe `WEB_PANEL_LOGIN_CREDENTIALS.md`).
+**Passwörter (allgemein):** werden bei `createCSRUser` gesetzt; je nach Umgebung unterschiedlich. Bei unbekanntem Stand: zurücksetzen (`createCSRUser` mit Master-Key / `forcePasswordReset`, siehe `WEB_PANEL_LOGIN_CREDENTIALS.md`).
+
+**Interne Dev-/iobox-Historie:** Für die CSR-Konten **`L1@fin1.de` … `Lead@fin1.de`** (und ggf. Kleinbuchstaben-Varianten `l1@fin1.de` …) war auf FIN1-**Entwicklungs**-Hosts zeitweise **für alle dieselbe** Zugangsphrase gesetzt: **`Test123!`** — nur zur lokalen/LAN-Entwicklung gedacht, **nicht** für Staging/Produktion und **ungültig**, sobald jemand die Passwörter geändert hat. Dann wie oben neu setzen.
 
 ## Nach der Anmeldung
 

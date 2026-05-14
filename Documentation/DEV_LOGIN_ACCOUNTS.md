@@ -32,7 +32,7 @@ Gleiche Login-URL wie das Admin-Portal; nach Login Weiterleitung zum CSR-Bereich
 | `L1@fin1.de` … `Lead@fin1.de` (Schreibweise mit Großbuchstaben) | Typisch mit neueren Skripten angelegt. |
 | `l1@fin1.de` … `lead@fin1.de` (Kleinbuchstaben) | Ältere Anlage möglich. |
 
-Passwörter: beim Anlegen mit `createCSRUser` gesetzt; historisch zwei „Stile“ auf Servern möglich — **keine** festen Werte hier; bei Unsicherheit User per Master-Key neu setzen oder Funktion erneut aufrufen (siehe `WEB_PANEL_LOGIN_CREDENTIALS.md`).
+Passwörter: beim Anlegen mit `createCSRUser` gesetzt; historisch zwei „Stile“ auf Servern möglich — **keine** festen Werte in dieser zentralen Übersicht, außer dem **CSR-Dev-Hinweis** in `admin-portal/CSR_LOGIN_ANLEITUNG.md` (dort: früheres gemeinsames Testpasswort auf internen Dev-Hosts, falls noch unverändert).
 
 *(Parse normalisiert E-Mails in der Regel case-insensitive; bei Problemen beide Schreibweisen testen.)*
 
