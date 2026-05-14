@@ -12,7 +12,7 @@ import {
 } from '../../../utils/tableStriping';
 import { searchCustomers } from '../api';
 
-import { adminEmphasisOnLight, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminControlFieldPh400, adminEmphasisOnLight, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 const CUSTOMER_PAGE_SIZE = 50;
 
 export function CustomerListPage() {
@@ -63,9 +63,7 @@ export function CustomerListPage() {
             placeholder="Kunde suchen (Name, E-Mail, ID)..."
             className={clsx(
               'w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary',
-              isDark
-                ? 'bg-slate-900/70 border-slate-600 text-slate-100 placeholder:text-slate-400'
-                : 'bg-white border-gray-300 text-gray-900',
+              adminControlFieldPh400(isDark),
             )}
           />
         </div>

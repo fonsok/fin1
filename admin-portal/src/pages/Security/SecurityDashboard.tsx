@@ -13,7 +13,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { mockStats, mockFailedLogins, mockSessions, mockAlerts } from './mockData';
 import type { SecurityStats, FailedLogin, ActiveSession, SecurityAlert, TabType } from './types';
 
-import { adminMuted, adminPrimary } from '../../utils/adminThemeClasses';
+import { adminControlField, adminMuted, adminPrimary } from '../../utils/adminThemeClasses';
 const TABS = [
   { id: 'overview' as const, label: 'Übersicht' },
   { id: 'logins' as const, label: 'Login-Historie' },
@@ -237,7 +237,7 @@ export function SecurityDashboardPage(): JSX.Element {
               onChange={(e) => { setLoginsPageSize(Number(e.target.value)); setLoginsPage(0); }}
               className={clsx(
                 'px-3 py-1.5 text-sm border rounded-lg',
-                isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+                adminControlField(isDark),
               )}
             >
               <option value={50}>50 / Seite</option>
@@ -269,7 +269,7 @@ export function SecurityDashboardPage(): JSX.Element {
               onChange={(e) => { setSessionsPageSize(Number(e.target.value)); setSessionsPage(0); }}
               className={clsx(
                 'px-3 py-1.5 text-sm border rounded-lg',
-                isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+                adminControlField(isDark),
               )}
             >
               <option value={50}>50 / Seite</option>
@@ -303,7 +303,7 @@ export function SecurityDashboardPage(): JSX.Element {
               onChange={(e) => { setAlertsPageSize(Number(e.target.value)); setAlertsPage(0); }}
               className={clsx(
                 'px-3 py-1.5 text-sm border rounded-lg',
-                isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+                adminControlField(isDark),
               )}
             >
               <option value={50}>50 / Seite</option>

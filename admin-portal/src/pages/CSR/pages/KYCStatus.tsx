@@ -12,7 +12,7 @@ import {
   tableTheadSurfaceClasses,
 } from '../../../utils/tableStriping';
 import { searchCustomers, getCustomerKYCStatus } from '../api';
-import { adminEmphasisOnLight, adminMonoHint, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminControlField, adminControlFieldPh400, adminEmphasisOnLight, adminMonoHint, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 const KYC_PAGE_SIZE = 50;
 
 export function KYCStatusPage() {
@@ -110,13 +110,11 @@ export function KYCStatusPage() {
 
   const filterInputClass = clsx(
     'px-4 py-2 border rounded-lg focus:ring-2 focus:ring-fin1-primary focus:border-transparent',
-    isDark
-      ? 'bg-slate-900/70 border-slate-600 text-slate-100 placeholder:text-slate-400'
-      : 'bg-white border-gray-300 text-gray-900 placeholder:text-gray-400',
+    adminControlFieldPh400(isDark),
   );
   const filterSelectClass = clsx(
     'px-4 py-2 border rounded-lg focus:ring-2 focus:ring-fin1-primary focus:border-transparent',
-    isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+    adminControlField(isDark),
   );
 
   return (

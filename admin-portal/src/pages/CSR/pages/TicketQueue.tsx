@@ -14,7 +14,7 @@ import {
 } from '../../../utils/tableStriping';
 import { getSupportTickets, assignTicket, getAvailableAgents } from '../api';
 
-import { adminEmptyIcon, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminControlField, adminEmptyIcon, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 export function TicketQueuePage() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -137,7 +137,7 @@ export function TicketQueuePage() {
               }}
               className={clsx(
                 'border rounded-lg px-3 py-2 text-sm',
-                isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+                adminControlField(isDark),
               )}
             >
               <option value={25}>25 / Seite</option>
@@ -252,7 +252,7 @@ export function TicketQueuePage() {
                           }}
                           className={clsx(
                             'text-sm border rounded px-2 py-1',
-                            isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+                            adminControlField(isDark),
                           )}
                           disabled={assignMutation.isPending}
                         >

@@ -15,7 +15,7 @@ import { AccountStatementCard } from './components/AccountStatementCard';
 import { UserActionModal } from './components/UserActionModal';
 import { DetailRow, StatBox } from './components/UserShared';
 
-import { adminBackLink, adminHeadlineAlt, adminPrimary, adminPrimaryBrand, adminSoft, adminStatTitle, adminStrong } from '../../utils/adminThemeClasses';
+import { adminBackLink, adminControlField, adminHeadlineAlt, adminPrimary, adminPrimaryBrand, adminSoft, adminStatTitle, adminStrong } from '../../utils/adminThemeClasses';
 export function UserDetailPage() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -305,7 +305,7 @@ export function UserDetailPage() {
               onChange={(e) => setWalletMode(e.target.value as 'disabled' | 'deposit_only' | 'withdrawal_only' | 'deposit_and_withdrawal')}
               className={clsx(
                 'px-3 py-2 border rounded-lg',
-                isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+                adminControlField(isDark),
               )}
             >
               <option value="disabled">Deaktiviert (beides gesperrt)</option>
@@ -319,7 +319,7 @@ export function UserDetailPage() {
               placeholder="Begründung (Pflicht)"
               className={clsx(
                 'px-3 py-2 border rounded-lg md:col-span-2',
-                isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+                adminControlField(isDark),
               )}
             />
           </div>

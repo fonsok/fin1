@@ -11,7 +11,7 @@ import {
 } from '../../utils/tableStriping';
 import clsx from 'clsx';
 
-import { adminCaption, adminHeadline, adminMuted, adminPrimary, adminSoft } from '../../utils/adminThemeClasses';
+import { adminCaption, adminControlField, adminHeadline, adminMuted, adminPrimary, adminSoft } from '../../utils/adminThemeClasses';
 interface FunnelStep {
   step: string;
   count: number;
@@ -77,7 +77,7 @@ export function OnboardingFunnelPage() {
           onChange={(e) => setDays(Number(e.target.value))}
           className={clsx(
             'px-3 py-2 border rounded-lg text-sm',
-            isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+            adminControlField(isDark),
           )}
         >
           <option value={7}>Letzte 7 Tage</option>

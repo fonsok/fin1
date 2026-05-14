@@ -17,7 +17,7 @@ import {
   tableTheadSurfaceClasses,
 } from '../../utils/tableStriping';
 
-import { adminEmptyIcon, adminMonoHint, adminMuted } from '../../utils/adminThemeClasses';
+import { adminControlField, adminEmptyIcon, adminMonoHint, adminMuted } from '../../utils/adminThemeClasses';
 export function TicketListPage() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -103,7 +103,7 @@ export function TicketListPage() {
             }}
             className={clsx(
               'px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary',
-              isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+              adminControlField(isDark),
             )}
           >
             <option value="">Alle Status</option>
@@ -122,7 +122,7 @@ export function TicketListPage() {
             }}
             className={clsx(
               'px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary',
-              isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+              adminControlField(isDark),
             )}
           >
             <option value="">Alle Prioritäten</option>
@@ -143,7 +143,7 @@ export function TicketListPage() {
             }}
             className={clsx(
               'px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary',
-              isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+              adminControlField(isDark),
             )}
           >
             <option value={50}>50 / Seite</option>

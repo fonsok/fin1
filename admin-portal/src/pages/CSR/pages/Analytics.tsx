@@ -13,7 +13,7 @@ import {
 } from '../../../utils/tableStriping';
 import { getTicketMetrics, getAgentMetrics, getAvailableAgents } from '../api';
 
-import { adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminControlField, adminPrimary } from '../../../utils/adminThemeClasses';
 export function AnalyticsPage() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -83,7 +83,7 @@ export function AnalyticsPage() {
             onChange={(e) => setDateRange(e.target.value as 'week' | 'month' | 'quarter')}
             className={clsx(
               'px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary',
-              isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+              adminControlField(isDark),
             )}
           >
             <option value="week">Letzte Woche</option>
@@ -138,7 +138,7 @@ export function AnalyticsPage() {
             onChange={(e) => setSelectedAgentId(e.target.value)}
             className={clsx(
               'px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary',
-              isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+              adminControlField(isDark),
             )}
           >
             <option value="">Agent auswählen...</option>

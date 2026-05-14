@@ -14,7 +14,7 @@ import {
 import type { SupportTicket } from '../types';
 import { useNavigate } from 'react-router-dom';
 
-import { adminCaption, adminEmptyIcon, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminCaption, adminControlField, adminEmptyIcon, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 interface RecentTicketsProps {
   tickets: SupportTicket[];
   /** Alle vom Endpoint geladenen Tickets (für „aus Server“-Hinweis) */
@@ -161,7 +161,7 @@ export function RecentTickets({ tickets, serverTicketTotal, isLoading }: RecentT
           }}
           className={clsx(
             'border rounded-lg px-3 py-2 text-sm',
-            isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+            adminControlField(isDark),
           )}
         >
           <option value={25}>25 / Seite</option>

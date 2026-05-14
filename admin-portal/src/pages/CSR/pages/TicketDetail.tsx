@@ -8,7 +8,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import { tableBodyCellMutedClasses, tableBodyCellPrimaryClasses } from '../../../utils/tableStriping';
 import { getTicket, respondToTicket, assignTicket, escalateTicket, resolveTicket, closeTicket, getAvailableAgents } from '../api';
 
-import { adminEmphasisSoft, adminMuted, adminPrimary, adminSoft, adminStrong } from '../../../utils/adminThemeClasses';
+import { adminControlFieldPh500, adminEmphasisSoft, adminMuted, adminPrimary, adminSoft, adminStrong } from '../../../utils/adminThemeClasses';
 export function TicketDetailPage() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -138,7 +138,7 @@ export function TicketDetailPage() {
 
   const fieldSurface = clsx(
     'w-full border rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary',
-    isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100 placeholder:text-slate-500' : 'bg-white border-gray-300 text-gray-900',
+    adminControlFieldPh500(isDark),
   );
 
   return (

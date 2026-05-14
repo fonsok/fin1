@@ -6,7 +6,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import { searchCustomers } from '../api';
 import type { CustomerSearchResult } from '../types';
 
-import { adminCaption, adminMuted, adminPrimary, adminSearchGlyphInteractive } from '../../../utils/adminThemeClasses';
+import { adminCaption, adminControlFieldPh400, adminMuted, adminPrimary, adminSearchGlyphInteractive } from '../../../utils/adminThemeClasses';
 interface CustomerSearchProps {
   onSelectCustomer: (customer: CustomerSearchResult) => void;
 }
@@ -44,9 +44,7 @@ export function CustomerSearch({ onSelectCustomer }: CustomerSearchProps) {
               placeholder="Name, E-Mail oder Kundennummer..."
               className={clsx(
                 'w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary',
-                isDark
-                  ? 'bg-slate-900/70 border-slate-600 text-slate-100 placeholder:text-slate-400'
-                  : 'bg-white border-gray-300 text-gray-900',
+                adminControlFieldPh400(isDark),
               )}
             />
             {searchQuery && (

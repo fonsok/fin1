@@ -27,7 +27,7 @@ import { formatNumber } from '../../utils/format';
 import { FAQDevMaintenanceCard } from './components/FAQDevMaintenanceCard';
 import { isRetiredFaqCategorySlug } from './retiredFaqCategories';
 
-import { adminMuted, adminPrimary } from '../../utils/adminThemeClasses';
+import { adminControlField, adminControlFieldPh400, adminMuted, adminPrimary } from '../../utils/adminThemeClasses';
 type LocationFilter = 'all' | 'landing' | 'help_center' | 'investor' | 'trader';
 
 const INVESTOR_CATEGORY_SLUGS = [
@@ -301,13 +301,11 @@ export function FAQsPage() {
 
   const filterInputClass = clsx(
     'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-fin1-primary focus:border-transparent',
-    isDark
-      ? 'bg-slate-900/70 border-slate-600 text-slate-100 placeholder:text-slate-400'
-      : 'bg-white border-gray-300 text-gray-900 placeholder:text-gray-400',
+    adminControlFieldPh400(isDark),
   );
   const filterSelectClass = clsx(
     'px-4 py-2 border rounded-lg focus:ring-2 focus:ring-fin1-primary focus:border-transparent',
-    isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+    adminControlField(isDark),
   );
 
   if (loading) {
@@ -460,7 +458,7 @@ export function FAQsPage() {
             }}
             className={clsx(
               'border rounded-lg px-3 py-2 text-sm',
-              isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+              adminControlField(isDark),
             )}
           >
             <option value={25}>25 / Seite</option>

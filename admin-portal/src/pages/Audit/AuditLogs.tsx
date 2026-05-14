@@ -17,7 +17,7 @@ import {
 } from '../../utils/tableStriping';
 import { useDebounce } from '../../hooks/useDebounce';
 
-import { adminEmptyIcon, adminMuted } from '../../utils/adminThemeClasses';
+import { adminControlField, adminEmptyIcon, adminMuted } from '../../utils/adminThemeClasses';
 export function AuditLogsPage() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -120,7 +120,7 @@ export function AuditLogsPage() {
             }}
             className={clsx(
               'px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary',
-              isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+              adminControlField(isDark),
             )}
           >
             <option value="">Alle Typen</option>
@@ -156,7 +156,7 @@ export function AuditLogsPage() {
             }}
             className={clsx(
               'px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary',
-              isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+              adminControlField(isDark),
             )}
           >
             <option value={100}>100 / Seite</option>

@@ -32,7 +32,7 @@ import type {
   UpdateTemplateRequest,
 } from './types';
 
-import { adminMuted, adminPrimary } from '../../utils/adminThemeClasses';
+import { adminControlField, adminControlFieldPh400, adminMuted, adminPrimary } from '../../utils/adminThemeClasses';
 type TabType = 'response' | 'email' | 'stats';
 
 export function TemplatesPage() {
@@ -238,13 +238,11 @@ export function TemplatesPage() {
 
   const filterInputClass = clsx(
     'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-fin1-primary focus:border-transparent',
-    isDark
-      ? 'bg-slate-900/70 border-slate-600 text-slate-100 placeholder:text-slate-400'
-      : 'bg-white border-gray-300 text-gray-900 placeholder:text-gray-400',
+    adminControlFieldPh400(isDark),
   );
   const filterSelectClass = clsx(
     'px-4 py-2 border rounded-lg focus:ring-2 focus:ring-fin1-primary focus:border-transparent',
-    isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+    adminControlField(isDark),
   );
 
   // Render
@@ -358,9 +356,7 @@ export function TemplatesPage() {
                   }}
                   className={clsx(
                     'border rounded-lg px-3 py-2 text-sm',
-                    isDark
-                      ? 'bg-slate-900/70 border-slate-600 text-slate-100'
-                      : 'bg-white border-gray-300 text-gray-900',
+                    adminControlField(isDark),
                   )}
                 >
                   <option value={25}>25 / Seite</option>
@@ -410,9 +406,7 @@ export function TemplatesPage() {
                 }}
                 className={clsx(
                   'border rounded-lg px-3 py-2 text-sm',
-                  isDark
-                    ? 'bg-slate-900/70 border-slate-600 text-slate-100'
-                    : 'bg-white border-gray-300 text-gray-900',
+                  adminControlField(isDark),
                 )}
               >
                 <option value={25}>25 / Seite</option>

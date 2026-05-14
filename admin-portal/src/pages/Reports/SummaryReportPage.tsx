@@ -13,7 +13,7 @@ import {
   tableTheadSurfaceClasses,
 } from '../../utils/tableStriping';
 
-import { adminBodyStrong, adminCaption, adminMuted, adminPrimary, adminSoft } from '../../utils/adminThemeClasses';
+import { adminBodyStrong, adminCaption, adminControlField, adminMuted, adminPrimary, adminSoft } from '../../utils/adminThemeClasses';
 interface InvestmentSummary {
   investmentId: string;
   investmentNumber: string;
@@ -126,7 +126,7 @@ export function SummaryReportPage(): JSX.Element {
             onChange={(e) => setDateRange(e.target.value as typeof dateRange)}
             className={clsx(
               'border rounded-lg px-3 py-2 text-sm',
-              isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+              adminControlField(isDark),
             )}
           >
             <option value="all">Alle Zeiten</option>
@@ -372,7 +372,7 @@ function InvestmentsTab({
           }}
           className={clsx(
             'border rounded-lg px-3 py-2 text-sm',
-            isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+            adminControlField(isDark),
           )}
         >
           <option value={25}>25 / Seite</option>
@@ -547,7 +547,7 @@ function TradesTab({
           }}
           className={clsx(
             'border rounded-lg px-3 py-2 text-sm',
-            isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+            adminControlField(isDark),
           )}
         >
           <option value={25}>25 / Seite</option>

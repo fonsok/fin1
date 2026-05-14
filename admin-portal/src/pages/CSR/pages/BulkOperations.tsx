@@ -13,7 +13,7 @@ import {
 } from '../../../utils/tableStriping';
 import { getSupportTickets, assignTicket, respondToTicket, getAvailableAgents } from '../api';
 
-import { adminEmphasisSoft, adminMuted, adminPrimary, adminStrong } from '../../../utils/adminThemeClasses';
+import { adminControlField, adminControlFieldPh400, adminEmphasisSoft, adminMuted, adminPrimary, adminStrong } from '../../../utils/adminThemeClasses';
 export function BulkOperationsPage() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -23,15 +23,11 @@ export function BulkOperationsPage() {
   );
   const bulkControl = clsx(
     'w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary',
-    isDark
-      ? 'bg-slate-900/70 border-slate-600 text-slate-100 placeholder:text-slate-400'
-      : 'bg-white border-gray-300 text-gray-900',
+    adminControlFieldPh400(isDark),
   );
   const bulkTextarea = clsx(
     'w-full h-32 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary',
-    isDark
-      ? 'bg-slate-900/70 border-slate-600 text-slate-100 placeholder:text-slate-400'
-      : 'bg-white border-gray-300 text-gray-900',
+    adminControlFieldPh400(isDark),
   );
   const fieldLabel = clsx('block text-sm font-medium mb-2', adminStrong(isDark));
   const navigate = useNavigate();
@@ -293,7 +289,7 @@ export function BulkOperationsPage() {
                 }}
                 className={clsx(
                   'border rounded-lg px-3 py-2 text-sm',
-                  isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+                  adminControlField(isDark),
                 )}
               >
                 <option value={25}>25 / Seite</option>

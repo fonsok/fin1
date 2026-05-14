@@ -2,7 +2,7 @@ import clsx from 'clsx';
 import { Card } from '../../../components/ui/Card';
 import { useTheme } from '../../../context/ThemeContext';
 
-import { adminStrong } from '../../../utils/adminThemeClasses';
+import { adminControlField, adminStrong } from '../../../utils/adminThemeClasses';
 type DocumentTypeFilter = 'all' | 'terms' | 'privacy' | 'imprint';
 type LanguageFilter = 'all' | 'de' | 'en';
 type ListViewFilter = 'all' | 'active_only' | 'last_10' | 'last_20';
@@ -32,7 +32,7 @@ export function TermsFiltersCard({
   const isDark = theme === 'dark';
   const selectClass = clsx(
     'terms-select px-4 py-2 border rounded-lg focus:ring-2 focus:ring-fin1-primary focus:border-transparent',
-    isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+    adminControlField(isDark),
   );
 
   return (

@@ -187,6 +187,34 @@ export function adminPrimaryBrand(isDark: boolean): string {
   return isDark ? 'text-slate-100' : 'text-fin1-primary';
 }
 
+/** Light form control surface (wrapped once for eslint gray rule) */
+const CONTROL_FIELD_LIGHT = clsx('bg-white border-gray-300 text-gray-900');
+
+/**
+ * Text inputs, selects, textareas: default admin field surface (no placeholder utilities).
+ * Dark: translucent slate; light: white card field.
+ */
+export function adminControlField(isDark: boolean): string {
+  return isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : CONTROL_FIELD_LIGHT;
+}
+
+/** Same as adminControlField plus placeholder (slate-400 / gray-400). */
+export function adminControlFieldPh400(isDark: boolean): string {
+  return isDark
+    ? 'bg-slate-900/70 border-slate-600 text-slate-100 placeholder:text-slate-400'
+    : clsx(CONTROL_FIELD_LIGHT, 'placeholder:text-gray-400');
+}
+
+/**
+ * Dark placeholder slate-500; light placeholder gray-400
+ * (matches mixed filter rows, e.g. Bank Contra ledger).
+ */
+export function adminControlFieldPh500(isDark: boolean): string {
+  return isDark
+    ? 'bg-slate-900/70 border-slate-600 text-slate-100 placeholder:text-slate-500'
+    : clsx(CONTROL_FIELD_LIGHT, 'placeholder:text-gray-400');
+}
+
 export function adminTableTheadSurface(isDark: boolean): string {
   return clsx('border-b', isDark ? 'bg-slate-800/50 border-slate-600' : THEAD_SURFACE_LIGHT);
 }

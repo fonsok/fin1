@@ -14,7 +14,7 @@ import {
 import { useAppLedgerPage } from './appLedger/hooks/useAppLedgerPage';
 import type { DateRangePreset } from './appLedger/types';
 
-import { adminCaption, adminDualMuted, adminEmphasisSoft, adminHeadline, adminLabel, adminMonoHint, adminMuted, adminPrimary, adminSoft, adminStrong } from '../../utils/adminThemeClasses';
+import { adminCaption, adminControlField, adminDualMuted, adminEmphasisSoft, adminHeadline, adminLabel, adminMonoHint, adminMuted, adminPrimary, adminSoft, adminStrong } from '../../utils/adminThemeClasses';
 function resolveCounterAccountLabel(
   account: string,
   transactionType: string,
@@ -147,11 +147,11 @@ export function AppLedgerPage(): JSX.Element {
   const formLabelXs = clsx('block text-xs mb-1', adminMuted(isDark));
   const controlSm = clsx(
     'w-full border rounded-lg px-3 py-2 text-sm',
-    isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+    adminControlField(isDark),
   );
   const controlMono = clsx(
     'w-full border rounded-lg px-3 py-2 text-xs font-mono',
-    isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+    adminControlField(isDark),
   );
   const cardHeaderBorder = clsx('p-4 border-b space-y-1', isDark ? 'border-slate-600' : 'border-gray-100');
   const snapshotScrollBox = clsx(

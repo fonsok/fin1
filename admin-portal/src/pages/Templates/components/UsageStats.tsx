@@ -12,7 +12,7 @@ import {
 } from '../../../utils/tableStriping';
 import { getTemplateUsageStats, type GetTemplateUsageStatsParams } from '../api';
 import type { TemplateUsageStats } from '../types';
-import { adminGlyphFaint, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminControlField, adminGlyphFaint, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 
 function toInputDateLocal(d: Date): string {
   const y = d.getFullYear();
@@ -252,7 +252,7 @@ export function UsageStats(): JSX.Element {
     );
   const inputCls = clsx(
     'px-3 py-2 rounded-lg border text-sm',
-    isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+    adminControlField(isDark),
   );
 
   return (

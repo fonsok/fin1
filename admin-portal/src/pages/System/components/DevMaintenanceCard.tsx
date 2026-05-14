@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import { Button, Card } from '../../../components/ui';
 
-import { adminStrong } from '../../../utils/adminThemeClasses';
+import { adminControlField, adminStrong } from '../../../utils/adminThemeClasses';
 type ResetScope = 'all' | 'sinceHours' | 'testUsers';
 
 type Props = {
@@ -45,7 +45,7 @@ export function DevMaintenanceCard({
               <select
                 className={clsx(
                   'ml-2 px-3 py-2 rounded-md border text-sm',
-                  isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+                  adminControlField(isDark),
                 )}
                 value={resetScope}
                 onChange={(event) => onResetScopeChange(event.target.value as ResetScope)}
@@ -66,7 +66,7 @@ export function DevMaintenanceCard({
                   step={1}
                   className={clsx(
                     'ml-2 w-24 px-3 py-2 rounded-md border text-sm',
-                    isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+                    adminControlField(isDark),
                   )}
                   value={resetSinceHours}
                   onChange={(event) => onResetSinceHoursChange(Number(event.target.value || 24))}

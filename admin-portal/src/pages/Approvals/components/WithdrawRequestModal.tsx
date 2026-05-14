@@ -3,7 +3,7 @@ import { Card, Button } from '../../../components/ui';
 import { useTheme } from '../../../context/ThemeContext';
 import { formatDateTime } from '../../../utils/format';
 
-import { adminBodyStrong, adminHeadline, adminLabel, adminMuted, adminPrimary, adminSoft } from '../../../utils/adminThemeClasses';
+import { adminBodyStrong, adminControlField, adminHeadline, adminLabel, adminMuted, adminPrimary, adminSoft } from '../../../utils/adminThemeClasses';
 interface ApprovalRequestLike {
   objectId: string;
   requestType: string;
@@ -97,7 +97,7 @@ export function WithdrawRequestModal({
           onChange={(e) => onChangeNotes(e.target.value)}
           className={clsx(
             'w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary mb-4',
-            isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'border-gray-300 bg-white text-gray-900',
+            adminControlField(isDark),
           )}
           rows={2}
           placeholder="Grund für das Zurückziehen..."

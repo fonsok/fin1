@@ -15,7 +15,7 @@ import {
 } from '../../utils/tableStriping';
 import { formatLedgerAccountDisplayLabel } from './appLedger/constants';
 
-import { adminCaption, adminDualMuted, adminMuted, adminPrimary, adminStrong } from '../../utils/adminThemeClasses';
+import { adminCaption, adminControlFieldPh500, adminDualMuted, adminMuted, adminPrimary, adminStrong } from '../../utils/adminThemeClasses';
 interface ContraPosting {
   id: string;
   account: string;
@@ -97,9 +97,7 @@ export function BankContraLedgerPage(): JSX.Element {
   const formLabel = clsx('block text-sm font-medium mb-1', adminStrong(isDark));
   const controlSm = clsx(
     'w-full border rounded-lg px-3 py-2 text-sm',
-    isDark
-      ? 'bg-slate-900/70 border-slate-600 text-slate-100 placeholder:text-slate-500'
-      : 'bg-white border-gray-300 text-gray-900 placeholder:text-gray-400',
+    adminControlFieldPh500(isDark),
   );
   const accountTitle = clsx('font-medium', adminPrimary(isDark));
   const accountCode = clsx('text-xs font-mono', tableBodyCellMutedClasses(isDark));

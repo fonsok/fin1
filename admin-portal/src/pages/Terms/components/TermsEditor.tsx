@@ -5,7 +5,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import type { TermsContentFull, TermsSection, CreateTermsContentRequest } from '../types';
 import { createTermsContent } from '../api';
 
-import { adminLabel, adminMuted, adminPrimary, adminSoft } from '../../../utils/adminThemeClasses';
+import { adminControlField, adminLabel, adminMuted, adminPrimary, adminSoft } from '../../../utils/adminThemeClasses';
 function filterSectionsBySearch(sections: TermsSection[], query: string): { section: TermsSection; index: number }[] {
   const q = query.trim().toLowerCase();
   if (!q) return sections.map((s, i) => ({ section: s, index: i }));
@@ -162,7 +162,7 @@ export function TermsEditor({ cloneFrom, initialSectionSearch, onSaved, onClose 
                   placeholder="z.B. 1.1"
                   className={clsx(
                     'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-fin1-primary focus:border-transparent',
-                    isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+                    adminControlField(isDark),
                   )}
                   required
                 />
@@ -175,7 +175,7 @@ export function TermsEditor({ cloneFrom, initialSectionSearch, onSaved, onClose 
                   onChange={(e) => setEffectiveDate(e.target.value)}
                   className={clsx(
                     'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-fin1-primary focus:border-transparent',
-                    isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+                    adminControlField(isDark),
                   )}
                   required
                 />
@@ -189,7 +189,7 @@ export function TermsEditor({ cloneFrom, initialSectionSearch, onSaved, onClose 
                   onChange={(e) => setLanguage(e.target.value)}
                   className={clsx(
                     'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-fin1-primary focus:border-transparent',
-                    isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+                    adminControlField(isDark),
                   )}
                 >
                   <option value="de">Deutsch</option>
@@ -203,7 +203,7 @@ export function TermsEditor({ cloneFrom, initialSectionSearch, onSaved, onClose 
                   onChange={(e) => setDocumentType(e.target.value)}
                   className={clsx(
                     'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-fin1-primary focus:border-transparent',
-                    isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+                    adminControlField(isDark),
                   )}
                 >
                   {DOCUMENT_TYPES.map((opt) => (
@@ -224,7 +224,7 @@ export function TermsEditor({ cloneFrom, initialSectionSearch, onSaved, onClose 
                     onChange={(e) => setSectionSearch(e.target.value)}
                     className={clsx(
                       'flex-1 min-w-0 rounded-md border px-3 py-1.5 text-sm focus:border-fin1-primary focus:ring-1 focus:ring-fin1-primary',
-                      isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+                      adminControlField(isDark),
                     )}
                   />
                   {sectionSearch.trim() && (
@@ -265,14 +265,14 @@ export function TermsEditor({ cloneFrom, initialSectionSearch, onSaved, onClose 
                           value={section.id}
                           onChange={(e) => updateSection(index, 'id', e.target.value)}
                           placeholder="ID (z.B. intro)"
-                          className={clsx('px-3 py-1.5 border rounded text-sm', isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900')}
+                          className={clsx('px-3 py-1.5 border rounded text-sm', adminControlField(isDark))}
                         />
                         <input
                           type="text"
                           value={section.icon}
                           onChange={(e) => updateSection(index, 'icon', e.target.value)}
                           placeholder="Icon (z.B. document-text)"
-                          className={clsx('px-3 py-1.5 border rounded text-sm', isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900')}
+                          className={clsx('px-3 py-1.5 border rounded text-sm', adminControlField(isDark))}
                         />
                       </div>
                       <input
@@ -280,14 +280,14 @@ export function TermsEditor({ cloneFrom, initialSectionSearch, onSaved, onClose 
                         value={section.title}
                         onChange={(e) => updateSection(index, 'title', e.target.value)}
                         placeholder="Titel des Abschnitts"
-                        className={clsx('w-full px-3 py-2 border rounded text-sm mb-2', isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900')}
+                        className={clsx('w-full px-3 py-2 border rounded text-sm mb-2', adminControlField(isDark))}
                       />
                       <textarea
                         value={section.content}
                         onChange={(e) => updateSection(index, 'content', e.target.value)}
                         placeholder="Inhalt (Markdown/Text; Platzhalter z.B. {{APP_NAME}}, {{LEGAL_PLATFORM_NAME}})"
                         rows={4}
-                        className={clsx('w-full px-3 py-2 border rounded text-sm', isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900')}
+                        className={clsx('w-full px-3 py-2 border rounded text-sm', adminControlField(isDark))}
                       />
                     </div>
                   ))

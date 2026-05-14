@@ -10,7 +10,7 @@ import { KYBSubmissionTable } from './components/KYBSubmissionTable';
 import { KYBDetailModal } from './components/KYBDetailModal';
 import { KYBDecisionModal } from './components/KYBDecisionModal';
 
-import { adminLabel, adminMuted, adminPrimary } from '../../utils/adminThemeClasses';
+import { adminControlField, adminLabel, adminMuted, adminPrimary } from '../../utils/adminThemeClasses';
 type TabId = 'pending_review' | 'more_info_requested' | 'approved' | 'rejected' | 'all';
 
 const TABS: { id: TabId; label: string; icon: string }[] = [
@@ -143,7 +143,7 @@ export function KYBReviewPage() {
               }}
               className={clsx(
                 'px-3 py-1.5 text-sm border rounded-lg',
-                isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+                adminControlField(isDark),
               )}
             >
               <option value={50}>50 / Seite</option>
