@@ -6,7 +6,19 @@ import { useTheme } from '../../../context/ThemeContext';
 import { cloudFunction } from '../../../api/parse';
 import type { User } from '../../../context/AuthContext';
 
-import { adminCaption, adminDualMuted, adminLabel, adminMuted, adminPrimary, adminSoft, adminStrong } from '../../../utils/adminThemeClasses';
+import {
+  adminCaption,
+  adminComplianceFootnoteBorder,
+  adminDualMuted,
+  adminLabel,
+  adminMonoNeutralHint,
+  adminMuted,
+  adminPrimary,
+  adminRoleTitle,
+  adminSectionDividerSoft,
+  adminSoft,
+  adminStrong,
+} from '../../../utils/adminThemeClasses';
 interface PermissionsSectionProps {
   user: User | null;
 }
@@ -213,13 +225,13 @@ export function PermissionsSection({ user }: PermissionsSectionProps) {
               <div
                 className={clsx(
                   'font-semibold',
-                  isDark ? 'text-slate-100' : 'text-neutral-950',
+                  adminRoleTitle(isDark),
                 )}
               >
                 {roleDisplay.name}
               </div>
               <div
-                className={clsx('text-xs mt-1 font-mono', isDark ? 'text-slate-500' : 'text-neutral-600')}
+                className={clsx('text-xs mt-1 font-mono', adminMonoNeutralHint(isDark))}
               >
                 csrSubRole: {user.csrSubRole || 'nicht gesetzt'} → key: {roleDisplay.key}
               </div>
@@ -267,7 +279,7 @@ export function PermissionsSection({ user }: PermissionsSectionProps) {
           <div
             className={clsx(
               'text-sm pb-2 border-b',
-              isDark ? 'text-slate-300 border-slate-600' : 'text-gray-600 border-gray-200',
+              adminSectionDividerSoft(isDark),
             )}
           >
             <span className="font-medium">{rolePermissions.permissionCount}</span> Berechtigungen aktiv
@@ -354,7 +366,7 @@ export function PermissionsSection({ user }: PermissionsSectionProps) {
         <p
           className={clsx(
             'mt-4 text-xs border-t pt-3',
-            isDark ? 'text-slate-500 border-slate-600' : 'text-gray-500 border-gray-200',
+            adminComplianceFootnoteBorder(isDark),
           )}
         >
           Alle Aktionen werden für Compliance-Zwecke protokolliert.

@@ -4,7 +4,13 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { Button, Card } from './ui';
 
-import { adminCaption, adminGlyphFaint, adminMuted, adminPrimary } from '../utils/adminThemeClasses';
+import {
+  adminCaption,
+  adminGlyphFaint,
+  adminInteractiveCaption,
+  adminMuted,
+  adminPrimary,
+} from '../utils/adminThemeClasses';
 type TwoFactorMode = 'totp' | 'backup';
 
 export function TwoFactorVerify() {
@@ -117,9 +123,7 @@ export function TwoFactorVerify() {
       : 'border-gray-200 text-gray-900 placeholder:text-gray-400',
   );
 
-  const modeInactive = clsx(
-    isDark ? 'text-slate-400 hover:text-slate-200' : 'text-gray-500 hover:text-gray-700',
-  );
+  const modeInactive = adminInteractiveCaption(isDark);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-fin1-primary to-fin1-secondary flex items-center justify-center p-4">

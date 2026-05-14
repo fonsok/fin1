@@ -7,7 +7,7 @@ import { listRowStripeClasses, tableBodyDivideClasses } from '../../../utils/tab
 import type { KybSubmission } from '../../../api/admin';
 import clsx from 'clsx';
 
-import { adminLabel, adminMuted, adminPrimary, adminSoft } from '../../../utils/adminThemeClasses';
+import { adminLabel, adminMuted, adminPrimary, adminSoft, adminTheadMutedBorder } from '../../../utils/adminThemeClasses';
 const KYB_STATUS_CONFIG: Record<string, { label: string; variant: 'success' | 'warning' | 'danger' | 'info' | 'neutral' }> = {
   pending_review: { label: 'Ausstehend', variant: 'warning' },
   more_info_requested: { label: 'Nachbesserung', variant: 'warning' },
@@ -47,7 +47,7 @@ export function KYBSubmissionTable({
         <thead>
           <tr className={clsx(
             'text-left',
-            isDark ? 'text-slate-400 border-b border-slate-600' : 'text-gray-500 border-b border-gray-200',
+            adminTheadMutedBorder(isDark),
           )}>
             <th className="pb-3 pr-4 font-medium">Kunden-ID</th>
             <SortableTh

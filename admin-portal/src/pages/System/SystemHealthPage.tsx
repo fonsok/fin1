@@ -18,7 +18,7 @@ import { DevMaintenanceCard } from './components/DevMaintenanceCard';
 import { SystemServicesCard } from './components/SystemServicesCard';
 import { SystemDatabasesCard } from './components/SystemDatabasesCard';
 
-import { adminMuted, adminPrimary, adminSoft } from '../../utils/adminThemeClasses';
+import { adminMuted, adminPrimary, adminSlateInfoBody, adminSlateUnknown, adminSoft } from '../../utils/adminThemeClasses';
 function StatusBadge({ status }: { status: ServiceStatus['status'] }) {
   const variants: Record<ServiceStatus['status'], 'success' | 'warning' | 'danger' | 'neutral'> = {
     healthy: 'success',
@@ -125,7 +125,7 @@ export function SystemHealthPage() {
     healthy: 'text-green-500',
     degraded: 'text-yellow-500',
     down: 'text-red-500',
-    unknown: isDark ? 'text-slate-400' : 'text-slate-500',
+    unknown: adminSlateUnknown(isDark),
   }[health.overall];
 
   const overallStatusBg = {
@@ -371,14 +371,14 @@ export function SystemHealthPage() {
       >
         <div className="flex gap-3">
           <svg
-            className={clsx('w-5 h-5 flex-shrink-0 mt-0.5', isDark ? 'text-slate-400' : 'text-slate-500')}
+            className={clsx('w-5 h-5 flex-shrink-0 mt-0.5', adminSlateUnknown(isDark))}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
           >
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <div className={clsx('text-sm', isDark ? 'text-slate-200' : 'text-slate-700')}>
+          <div className={clsx('text-sm', adminSlateInfoBody(isDark))}>
             <p>Die Statusabfrage erfolgt automatisch alle 30 Sekunden.</p>
             <p className="mt-1">Server-Zeit: {formatDateTime(health.serverTime)}</p>
           </div>

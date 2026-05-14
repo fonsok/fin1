@@ -10,7 +10,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { listRowStripeClasses, tableBodyDivideClasses, tableBodyCellMutedClasses, tableHeaderCellTextClasses, tableTheadSurfaceClasses } from '../../utils/tableStriping';
 import { useDebounce } from '../../hooks/useDebounce';
 
-import { adminEmptyIcon, adminMuted, adminPrimary } from '../../utils/adminThemeClasses';
+import { adminEmptyIcon, adminMuted, adminPrimary, adminPrimaryBrand } from '../../utils/adminThemeClasses';
 export function UserListPage() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -180,7 +180,7 @@ export function UserListPage() {
                               isDark ? 'bg-slate-800 border border-slate-600' : 'bg-fin1-light'
                             )}
                           >
-                            <span className={clsx('font-medium', isDark ? 'text-slate-100' : 'text-fin1-primary')}>
+                            <span className={clsx('font-medium', adminPrimaryBrand(isDark))}>
                               {user.firstName?.[0] || user.email?.[0]?.toUpperCase() || '?'}
                             </span>
                           </div>

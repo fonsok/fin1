@@ -6,7 +6,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import { searchCustomers } from '../api';
 import type { CustomerSearchResult } from '../types';
 
-import { adminCaption, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminCaption, adminMuted, adminPrimary, adminSearchGlyphInteractive } from '../../../utils/adminThemeClasses';
 interface CustomerSearchProps {
   onSelectCustomer: (customer: CustomerSearchResult) => void;
 }
@@ -55,7 +55,7 @@ export function CustomerSearch({ onSelectCustomer }: CustomerSearchProps) {
                 onClick={() => setSearchQuery('')}
                 className={clsx(
                   'absolute right-3 top-1/2 -translate-y-1/2',
-                  isDark ? 'text-slate-500 hover:text-slate-300' : 'text-gray-400 hover:text-gray-600',
+                  adminSearchGlyphInteractive(isDark),
                 )}
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

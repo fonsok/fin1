@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import clsx from 'clsx';
 import { useTheme } from '../../context/ThemeContext';
 
-import { adminIconField, adminStrong } from '../../utils/adminThemeClasses';
+import { adminIconField, adminInteractiveIcon, adminStrong } from '../../utils/adminThemeClasses';
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
@@ -71,7 +71,7 @@ export function Input({
             onClick={() => setShowPassword(!showPassword)}
             className={clsx(
               'absolute inset-y-0 right-0 pr-3 flex items-center transition-colors',
-              isDark ? 'text-slate-400 hover:text-slate-200' : 'text-gray-400 hover:text-gray-600',
+              adminInteractiveIcon(isDark),
             )}
             aria-label={showPassword ? 'Passwort verbergen' : 'Passwort anzeigen'}
           >

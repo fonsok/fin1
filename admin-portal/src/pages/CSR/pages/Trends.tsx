@@ -7,7 +7,17 @@ import { useTheme } from '../../../context/ThemeContext';
 import { getSupportTickets } from '../api';
 import type { SupportTicket } from '../types';
 
-import { adminBodyStrong, adminCaption, adminEmphasisSoft, adminEmptyIcon, adminLabel, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import {
+  adminBodyStrong,
+  adminCaption,
+  adminEmphasisSoft,
+  adminEmptyIcon,
+  adminInteractiveIcon,
+  adminLabel,
+  adminMonoTicketId,
+  adminMuted,
+  adminPrimary,
+} from '../../../utils/adminThemeClasses';
 interface SupportTrend {
   id: string;
   type: 'volumeSpike' | 'recurringIssue' | 'longResolutionTime' | 'highEscalationRate' | 'negativeCSAT' | 'reopenedTickets';
@@ -322,7 +332,7 @@ export function TrendsPage() {
                 onClick={() => setSelectedTrend(null)}
                 className={clsx(
                   'rounded p-1',
-                  isDark ? 'text-slate-400 hover:text-slate-200' : 'text-gray-400 hover:text-gray-600',
+                  adminInteractiveIcon(isDark),
                 )}
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -369,7 +379,7 @@ export function TrendsPage() {
                           <span
                             className={clsx(
                               'text-sm font-mono shrink-0',
-                              isDark ? 'text-slate-300' : 'text-gray-800',
+                              adminMonoTicketId(isDark),
                             )}
                           >
                             #{ticket.ticketNumber || ticketId.slice(0, 8)}

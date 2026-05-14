@@ -9,7 +9,7 @@ import { getSidebarRoleSubtitle } from '../utils/format';
 import { useTheme } from '../context/ThemeContext';
 import clsx from 'clsx';
 
-import { adminPrimary } from '../utils/adminThemeClasses';
+import { adminNavLink, adminPrimary } from '../utils/adminThemeClasses';
 interface LayoutProps {
   children: React.ReactNode;
 }
@@ -169,7 +169,7 @@ export function Layout({ children }: LayoutProps) {
             onClick={() => setSidebarOpen(true)}
             className={clsx(
               'lg:hidden p-2 -ml-2',
-              isDark ? 'text-slate-300 hover:text-white' : 'text-gray-600 hover:text-gray-900',
+              adminNavLink(isDark),
             )}
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

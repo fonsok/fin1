@@ -15,7 +15,7 @@ import { AccountStatementCard } from './components/AccountStatementCard';
 import { UserActionModal } from './components/UserActionModal';
 import { DetailRow, StatBox } from './components/UserShared';
 
-import { adminHeadlineAlt, adminPrimary, adminSoft, adminStatTitle, adminStrong } from '../../utils/adminThemeClasses';
+import { adminBackLink, adminHeadlineAlt, adminPrimary, adminPrimaryBrand, adminSoft, adminStatTitle, adminStrong } from '../../utils/adminThemeClasses';
 export function UserDetailPage() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -125,7 +125,7 @@ export function UserDetailPage() {
       {/* Back Button */}
       <button
         onClick={() => navigate('/users')}
-        className={clsx('flex items-center gap-2', isDark ? 'text-slate-300 hover:text-slate-100' : 'text-gray-600 hover:text-gray-900')}
+        className={clsx('flex items-center gap-2', adminBackLink(isDark))}
       >
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -161,7 +161,7 @@ export function UserDetailPage() {
                 isDark ? 'bg-slate-800 border border-slate-600' : 'bg-fin1-light'
               )}
             >
-              <span className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-fin1-primary')}>
+              <span className={clsx('text-2xl font-bold', adminPrimaryBrand(isDark))}>
                 {user.firstName?.[0] || user.email?.[0]?.toUpperCase() || '?'}
               </span>
             </div>

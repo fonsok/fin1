@@ -115,6 +115,78 @@ export function adminFootnote(isDark: boolean): string {
   return isDark ? 'text-slate-600' : TEXT_GRAY_500;
 }
 
+/** Muted control / icon button (slate-400→200 hover / gray-400→600) */
+export function adminInteractiveIcon(isDark: boolean): string {
+  return isDark ? 'text-slate-400 hover:text-slate-200' : clsx('text-gray-400 hover:text-gray-600');
+}
+
+/** Muted link on light footers (slate-400→200 / gray-500→700) */
+export function adminInteractiveCaption(isDark: boolean): string {
+  return isDark ? 'text-slate-400 hover:text-slate-200' : clsx('text-gray-500 hover:text-gray-700');
+}
+
+/** Top nav / shell links (slate-300→white / gray-600→900) */
+export function adminNavLink(isDark: boolean): string {
+  return isDark ? 'text-slate-300 hover:text-white' : clsx('text-gray-600 hover:text-gray-900');
+}
+
+/** Inline back / secondary link (slate-300→100 / gray-600→900) */
+export function adminBackLink(isDark: boolean): string {
+  return isDark ? 'text-slate-300 hover:text-slate-100' : clsx('text-gray-600 hover:text-gray-900');
+}
+
+/** Search affordance glyph (slate-500→300 / gray-400→600) */
+export function adminSearchGlyphInteractive(isDark: boolean): string {
+  return isDark ? 'text-slate-500 hover:text-slate-300' : clsx('text-gray-400 hover:text-gray-600');
+}
+
+/** Mono ticket id on list rows (slate-300 / gray-800) */
+export function adminMonoTicketId(isDark: boolean): string {
+  return isDark ? 'text-slate-300' : TEXT_GRAY_800;
+}
+
+/** Unknown / idle status using slate only (400 dark / 500 light) */
+export function adminSlateUnknown(isDark: boolean): string {
+  return isDark ? 'text-slate-400' : 'text-slate-500';
+}
+
+/** Info card on slate-tinted panel (slate-200 / slate-700) */
+export function adminSlateInfoBody(isDark: boolean): string {
+  return isDark ? 'text-slate-200' : 'text-slate-700';
+}
+
+/** Table thead row: muted text + bottom border */
+export function adminTheadMutedBorder(isDark: boolean): string {
+  return isDark
+    ? 'text-slate-400 border-b border-slate-600'
+    : clsx(TEXT_GRAY_500, 'border-b border-gray-200');
+}
+
+/** Section divider line under heading (soft text + border color) */
+export function adminSectionDividerSoft(isDark: boolean): string {
+  return isDark ? 'text-slate-300 border-slate-600' : clsx(TEXT_GRAY_600, 'border-gray-200');
+}
+
+/** Fine print with top border (dual-muted text + border) */
+export function adminComplianceFootnoteBorder(isDark: boolean): string {
+  return isDark ? 'text-slate-500 border-slate-600' : clsx(TEXT_GRAY_500, 'border-gray-200');
+}
+
+/** Strong role title on neutral light (slate-100 / neutral-950) */
+export function adminRoleTitle(isDark: boolean): string {
+  return isDark ? 'text-slate-100' : 'text-neutral-950';
+}
+
+/** Mono metadata on neutral light (slate-500 / neutral-600) */
+export function adminMonoNeutralHint(isDark: boolean): string {
+  return isDark ? 'text-slate-500' : 'text-neutral-600';
+}
+
+/** Primary heading on light uses brand color (slate-100 / fin1-primary) */
+export function adminPrimaryBrand(isDark: boolean): string {
+  return isDark ? 'text-slate-100' : 'text-fin1-primary';
+}
+
 export function adminTableTheadSurface(isDark: boolean): string {
   return clsx('border-b', isDark ? 'bg-slate-800/50 border-slate-600' : THEAD_SURFACE_LIGHT);
 }
