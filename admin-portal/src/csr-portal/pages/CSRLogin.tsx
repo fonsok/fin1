@@ -1,11 +1,15 @@
 import { useState } from 'react';
+import clsx from 'clsx';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import { Input } from '../../components/ui';
 
 export function CSRLoginPage() {
   const navigate = useNavigate();
   const { login, isLoading } = useAuth();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -86,8 +90,18 @@ export function CSRLoginPage() {
             </button>
           </form>
 
-          <div className="mt-6 pt-6 border-t border-gray-200">
-            <p className="text-center text-sm text-gray-500">
+          <div
+            className={clsx(
+              'mt-6 pt-6 border-t',
+              isDark ? 'border-slate-200' : 'border-gray-200',
+            )}
+          >
+            <p
+              className={clsx(
+                'text-center text-sm',
+                isDark ? 'text-slate-600' : 'text-gray-500',
+              )}
+            >
               Nur für autorisierte CSR-Mitarbeiter
             </p>
           </div>

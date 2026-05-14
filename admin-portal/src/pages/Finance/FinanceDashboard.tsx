@@ -92,21 +92,39 @@ export function FinanceDashboardPage(): JSX.Element {
 
       {/* Alerts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="p-4 bg-slate-600/80 border-amber-500/50">
+        <Card
+          className={clsx(
+            'p-4 border',
+            isDark ? 'bg-slate-800/90 border-amber-500/50' : 'bg-amber-50 border-amber-200',
+          )}
+        >
           <div className="flex items-center gap-3">
             <span className="text-2xl">⚠️</span>
             <div>
-              <p className="font-semibold text-amber-200">{stats?.pendingCorrections ?? 0} ausstehende Korrekturen</p>
-              <p className="text-sm text-amber-300">Erfordern 4-Augen-Freigabe</p>
+              <p className={clsx('font-semibold', isDark ? 'text-amber-200' : 'text-amber-900')}>
+                {stats?.pendingCorrections ?? 0} ausstehende Korrekturen
+              </p>
+              <p className={clsx('text-sm', isDark ? 'text-amber-300' : 'text-amber-800')}>
+                Erfordern 4-Augen-Freigabe
+              </p>
             </div>
           </div>
         </Card>
-        <Card className="p-4 bg-slate-600/80 border-blue-500/50">
+        <Card
+          className={clsx(
+            'p-4 border',
+            isDark ? 'bg-slate-800/90 border-blue-500/50' : 'bg-sky-50 border-sky-200',
+          )}
+        >
           <div className="flex items-center gap-3">
             <span className="text-2xl">🔢</span>
             <div>
-              <p className="font-semibold text-blue-200">{stats?.openRoundingDiffs ?? 0} offene Rundungsdifferenzen</p>
-              <p className="text-sm text-blue-300">Müssen geprüft werden</p>
+              <p className={clsx('font-semibold', isDark ? 'text-blue-200' : 'text-sky-900')}>
+                {stats?.openRoundingDiffs ?? 0} offene Rundungsdifferenzen
+              </p>
+              <p className={clsx('text-sm', isDark ? 'text-blue-300' : 'text-sky-800')}>
+                Müssen geprüft werden
+              </p>
             </div>
           </div>
         </Card>

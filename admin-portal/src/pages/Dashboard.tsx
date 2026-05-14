@@ -108,7 +108,9 @@ export function DashboardPage() {
         {perms.canViewTickets && user?.role !== 'admin' && (
           <Card>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Offene Tickets</h3>
+              <h3 className={clsx('text-lg font-semibold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                Offene Tickets
+              </h3>
               <Badge variant="warning">{stats?.tickets?.open || 0}</Badge>
             </div>
             <div className="space-y-3">
@@ -133,7 +135,9 @@ export function DashboardPage() {
         {perms.canViewCompliance && (
           <Card>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Compliance-Reviews</h3>
+              <h3 className={clsx('text-lg font-semibold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                Compliance-Reviews
+              </h3>
               <Badge variant="warning">{stats?.compliance?.pendingReviews || 0}</Badge>
             </div>
             <div className="space-y-3">
@@ -158,7 +162,9 @@ export function DashboardPage() {
         {perms.canApprove4Eyes && (
           <Card>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">4-Augen-Freigaben</h3>
+              <h3 className={clsx('text-lg font-semibold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                4-Augen-Freigaben
+              </h3>
               <Badge variant="info">{stats?.compliance?.pendingApprovals || 0}</Badge>
             </div>
             <div className="space-y-3">
@@ -181,7 +187,9 @@ export function DashboardPage() {
 
         {/* Quick Actions */}
         <Card>
-          <h3 className="text-lg font-semibold mb-4">Schnellzugriff</h3>
+          <h3 className={clsx('text-lg font-semibold mb-4', isDark ? 'text-slate-100' : 'text-gray-900')}>
+            Schnellzugriff
+          </h3>
           <div className="grid grid-cols-2 gap-3">
             {perms.canViewUsers && (
               <QuickAction

@@ -75,9 +75,16 @@ export function StatBox({
     red: 'bg-red-50 text-red-800',
   };
 
+  const labelClasses = {
+    gray: 'text-gray-600',
+    green: 'text-green-700',
+    blue: 'text-blue-700',
+    red: 'text-red-700',
+  };
+
   return (
     <div className={clsx('text-center p-3 rounded-lg', colorClasses[color])}>
-      <p className="text-xs text-gray-600">{label}</p>
+      <p className={clsx('text-xs', labelClasses[color])}>{label}</p>
       <p className="text-lg font-bold mt-0.5">{value}</p>
     </div>
   );
