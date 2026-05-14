@@ -11,6 +11,8 @@ import { useAuth } from '../../context/AuthContext';
 import {
   listRowStripeClasses,
   tableBodyDivideClasses,
+  tableBodyCellMutedClasses,
+  tableBodyCellPrimaryClasses,
   tableHeaderCellTextClasses,
   tableTheadSurfaceClasses,
 } from '../../utils/tableStriping';
@@ -162,21 +164,26 @@ export function TicketListPage() {
         {isLoading ? (
           <div className="p-8 text-center">
             <div className="animate-spin w-8 h-8 border-4 border-fin1-primary border-t-transparent rounded-full mx-auto"></div>
-            <p className="text-gray-500 mt-4">Laden...</p>
+            <p className={clsx('mt-4', isDark ? 'text-slate-400' : 'text-gray-500')}>Laden...</p>
           </div>
         ) : error ? (
           <div className="p-8 text-center">
-            <p className="text-red-500">Fehler beim Laden der Tickets</p>
-            <p className="text-gray-400 text-sm mt-2">
+            <p className={clsx(isDark ? 'text-red-400' : 'text-red-500')}>Fehler beim Laden der Tickets</p>
+            <p className={clsx('text-sm mt-2', isDark ? 'text-slate-400' : 'text-gray-500')}>
               {error instanceof Error ? error.message : 'Unbekannter Fehler'}
             </p>
           </div>
         ) : !data?.tickets?.length ? (
           <div className="p-8 text-center">
-            <svg className="w-12 h-12 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg
+              className={clsx('w-12 h-12 mx-auto mb-4', isDark ? 'text-slate-600' : 'text-gray-300')}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
             </svg>
-            <p className="text-gray-500">Keine Tickets gefunden</p>
+            <p className={clsx(isDark ? 'text-slate-400' : 'text-gray-500')}>Keine Tickets gefunden</p>
           </div>
         ) : (
           <>
@@ -226,16 +233,16 @@ export function TicketListPage() {
                       }
                     >
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm font-mono text-fin1-primary">
+                        <span className={clsx('text-sm font-mono', isDark ? 'text-sky-400' : 'text-fin1-primary')}>
                           #{ticket.ticketNumber || ticket.objectId.slice(0, 8)}
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <p className={clsx('text-sm truncate max-w-xs', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                        <p className={clsx('text-sm truncate max-w-xs', tableBodyCellPrimaryClasses(isDark))}>
                           {ticket.subject || 'Kein Betreff'}
                         </p>
                         {ticket.userEmail && (
-                          <p className={clsx('text-xs', isDark ? 'text-slate-400' : 'text-gray-500')}>{ticket.userEmail}</p>
+                          <p className={clsx('text-xs', tableBodyCellMutedClasses(isDark))}>{ticket.userEmail}</p>
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -248,10 +255,10 @@ export function TicketListPage() {
                           {getPriorityLabel(ticket.priority)}
                         </Badge>
                       </td>
-                      <td className={clsx('px-6 py-4 whitespace-nowrap text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                      <td className={clsx('px-6 py-4 whitespace-nowrap text-sm', tableBodyCellMutedClasses(isDark))}>
                         {ticket.assignedToName || ticket.assignedTo || '-'}
                       </td>
-                      <td className={clsx('px-6 py-4 whitespace-nowrap text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                      <td className={clsx('px-6 py-4 whitespace-nowrap text-sm', tableBodyCellMutedClasses(isDark))}>
                         {formatDateTime(ticket.createdAt)}
                       </td>
                     </tr>

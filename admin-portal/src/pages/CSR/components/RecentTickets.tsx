@@ -6,6 +6,8 @@ import { formatDateTime, formatNumber } from '../../../utils/format';
 import {
   listRowStripeClasses,
   tableBodyDivideClasses,
+  tableBodyCellMutedClasses,
+  tableBodyCellPrimaryClasses,
   tableHeaderCellTextClasses,
   tableTheadSurfaceClasses,
 } from '../../../utils/tableStriping';
@@ -91,7 +93,7 @@ export function RecentTickets({ tickets, serverTicketTotal, isLoading }: RecentT
       <Card>
         <div className="text-center py-8">
           <div className="animate-spin w-8 h-8 border-4 border-fin1-primary border-t-transparent rounded-full mx-auto"></div>
-          <p className="text-gray-500 mt-4">Laden...</p>
+          <p className={clsx('mt-4', isDark ? 'text-slate-400' : 'text-gray-500')}>Laden...</p>
         </div>
       </Card>
     );
@@ -102,7 +104,7 @@ export function RecentTickets({ tickets, serverTicketTotal, isLoading }: RecentT
       <Card>
         <div className="text-center py-8">
           <svg
-            className="w-12 h-12 text-gray-300 mx-auto mb-4"
+            className={clsx('w-12 h-12 mx-auto mb-4', isDark ? 'text-slate-600' : 'text-gray-300')}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -114,8 +116,8 @@ export function RecentTickets({ tickets, serverTicketTotal, isLoading }: RecentT
               d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
             />
           </svg>
-          <p className="text-gray-500">Keine aktiven Tickets</p>
-          <p className="text-sm text-gray-400 mt-2">Alle Tickets wurden bearbeitet</p>
+          <p className={clsx(isDark ? 'text-slate-400' : 'text-gray-500')}>Keine aktiven Tickets</p>
+          <p className={clsx('text-sm mt-2', isDark ? 'text-slate-500' : 'text-gray-400')}>Alle Tickets wurden bearbeitet</p>
         </div>
       </Card>
     );
@@ -135,7 +137,10 @@ export function RecentTickets({ tickets, serverTicketTotal, isLoading }: RecentT
         <button
           type="button"
           onClick={() => navigate('/csr/tickets')}
-          className="text-sm text-fin1-primary hover:underline"
+          className={clsx(
+            'text-sm hover:underline',
+            isDark ? 'text-sky-400 hover:text-sky-300' : 'text-fin1-primary',
+          )}
         >
           Alle anzeigen
         </button>
@@ -230,12 +235,12 @@ export function RecentTickets({ tickets, serverTicketTotal, isLoading }: RecentT
                 className={listRowStripeClasses(isDark, index, { className: 'cursor-pointer' })}
               >
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="text-sm font-mono text-fin1-primary">
+                  <span className={clsx('text-sm font-mono', isDark ? 'text-sky-400' : 'text-fin1-primary')}>
                     #{ticket.ticketNumber || ticket.objectId.slice(0, 8)}
                   </span>
                 </td>
                 <td className="px-6 py-4">
-                  <p className={clsx('text-sm', isDark ? 'text-slate-100' : 'text-gray-900')}>{ticket.subject}</p>
+                  <p className={clsx('text-sm', tableBodyCellPrimaryClasses(isDark))}>{ticket.subject}</p>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <Badge variant={getStatusVariant(ticket.status)}>
@@ -247,20 +252,10 @@ export function RecentTickets({ tickets, serverTicketTotal, isLoading }: RecentT
                     {getPriorityLabel(ticket.priority)}
                   </Badge>
                 </td>
-                <td
-                  className={clsx(
-                    'px-6 py-4 whitespace-nowrap text-sm',
-                    isDark ? 'text-slate-400' : 'text-gray-500',
-                  )}
-                >
+                <td className={clsx('px-6 py-4 whitespace-nowrap text-sm', tableBodyCellMutedClasses(isDark))}>
                   {ticket.userEmail || ticket.userId}
                 </td>
-                <td
-                  className={clsx(
-                    'px-6 py-4 whitespace-nowrap text-sm',
-                    isDark ? 'text-slate-400' : 'text-gray-500',
-                  )}
-                >
+                <td className={clsx('px-6 py-4 whitespace-nowrap text-sm', tableBodyCellMutedClasses(isDark))}>
                   {formatDateTime(ticket.createdAt)}
                 </td>
               </tr>

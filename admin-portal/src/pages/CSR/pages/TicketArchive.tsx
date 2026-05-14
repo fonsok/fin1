@@ -8,6 +8,8 @@ import { formatDateTime, formatNumber } from '../../../utils/format';
 import {
   listRowStripeClasses,
   tableBodyDivideClasses,
+  tableBodyCellMutedClasses,
+  tableBodyCellPrimaryClasses,
   tableHeaderCellTextClasses,
   tableTheadSurfaceClasses,
 } from '../../../utils/tableStriping';
@@ -87,11 +89,14 @@ export function TicketArchivePage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Ticket-Archiv</h1>
+        <h1 className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>Ticket-Archiv</h1>
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value as 'resolved' | 'closed' | 'all')}
-          className="px-4 py-2 border rounded-lg"
+          className={clsx(
+            'px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary',
+            isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+          )}
         >
           <option value="all">Alle</option>
           <option value="resolved">Gelöst</option>
@@ -103,10 +108,11 @@ export function TicketArchivePage() {
         {isLoading ? (
           <div className="text-center py-8">
             <div className="animate-spin w-8 h-8 border-4 border-fin1-primary border-t-transparent rounded-full mx-auto"></div>
+            <p className={clsx('mt-4 text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>Laden...</p>
           </div>
         ) : archivedTickets.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-gray-500">Keine archivierten Tickets gefunden</p>
+            <p className={clsx(isDark ? 'text-slate-400' : 'text-gray-500')}>Keine archivierten Tickets gefunden</p>
           </div>
         ) : (
           <>
@@ -198,12 +204,12 @@ export function TicketArchivePage() {
                       className={listRowStripeClasses(isDark, index, { className: 'cursor-pointer' })}
                     >
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm font-mono text-fin1-primary">
+                        <span className={clsx('text-sm font-mono', isDark ? 'text-sky-400' : 'text-fin1-primary')}>
                           #{ticket.ticketNumber || ticket.objectId.slice(0, 8)}
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <p className={clsx('text-sm', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                        <p className={clsx('text-sm', tableBodyCellPrimaryClasses(isDark))}>
                           {ticket.subject}
                         </p>
                       </td>
@@ -217,20 +223,10 @@ export function TicketArchivePage() {
                           {getPriorityLabel(ticket.priority)}
                         </Badge>
                       </td>
-                      <td
-                        className={clsx(
-                          'px-6 py-4 whitespace-nowrap text-sm',
-                          isDark ? 'text-slate-400' : 'text-gray-500',
-                        )}
-                      >
+                      <td className={clsx('px-6 py-4 whitespace-nowrap text-sm', tableBodyCellMutedClasses(isDark))}>
                         {ticket.userEmail || ticket.userId}
                       </td>
-                      <td
-                        className={clsx(
-                          'px-6 py-4 whitespace-nowrap text-sm',
-                          isDark ? 'text-slate-400' : 'text-gray-500',
-                        )}
-                      >
+                      <td className={clsx('px-6 py-4 whitespace-nowrap text-sm', tableBodyCellMutedClasses(isDark))}>
                         {ticket.closedAt
                           ? formatDateTime(ticket.closedAt)
                           : ticket.resolvedAt

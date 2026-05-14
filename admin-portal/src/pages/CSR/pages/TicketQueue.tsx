@@ -8,6 +8,7 @@ import { formatDateTime, formatNumber } from '../../../utils/format';
 import {
   listRowStripeClasses,
   tableBodyDivideClasses,
+  tableBodyCellMutedClasses,
   tableHeaderCellTextClasses,
   tableTheadSurfaceClasses,
 } from '../../../utils/tableStriping';
@@ -87,8 +88,9 @@ export function TicketQueuePage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex flex-col items-center justify-center min-h-screen gap-3">
         <div className="animate-spin w-8 h-8 border-4 border-fin1-primary border-t-transparent rounded-full"></div>
+        <p className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>Laden...</p>
       </div>
     );
   }
@@ -96,7 +98,7 @@ export function TicketQueuePage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Ticket-Warteschlange</h1>
+        <h1 className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>Ticket-Warteschlange</h1>
         <Badge variant="warning">{unassignedTickets.length} unzugewiesen</Badge>
       </div>
 
@@ -104,7 +106,7 @@ export function TicketQueuePage() {
         {unassignedTickets.length === 0 ? (
           <div className="text-center py-8">
             <svg
-              className="w-12 h-12 text-gray-300 mx-auto mb-4"
+              className={clsx('w-12 h-12 mx-auto mb-4', isDark ? 'text-slate-600' : 'text-gray-300')}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -116,7 +118,7 @@ export function TicketQueuePage() {
                 d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
-            <p className="text-gray-500">Keine unzugewiesenen Tickets</p>
+            <p className={clsx(isDark ? 'text-slate-400' : 'text-gray-500')}>Keine unzugewiesenen Tickets</p>
           </div>
         ) : (
           <>
@@ -204,16 +206,19 @@ export function TicketQueuePage() {
                 {pagedQueueTickets.map((ticket, index) => (
                   <tr key={ticket.objectId} className={listRowStripeClasses(isDark, index)}>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm font-mono text-fin1-primary">
+                      <span className={clsx('text-sm font-mono', isDark ? 'text-sky-400' : 'text-fin1-primary')}>
                         #{ticket.ticketNumber || ticket.objectId.slice(0, 8)}
                       </span>
                     </td>
                     <td className="px-6 py-4">
                       <button
+                        type="button"
                         onClick={() => navigate(`/csr/tickets/${ticket.objectId}`)}
                         className={clsx(
-                          'text-sm hover:text-fin1-primary hover:underline',
-                          isDark ? 'text-slate-100' : 'text-gray-900',
+                          'text-sm hover:underline',
+                          isDark
+                            ? 'text-slate-100 hover:text-sky-300'
+                            : 'text-gray-900 hover:text-fin1-primary',
                         )}
                       >
                         {ticket.subject}
@@ -224,20 +229,10 @@ export function TicketQueuePage() {
                         {getPriorityLabel(ticket.priority)}
                       </Badge>
                     </td>
-                    <td
-                      className={clsx(
-                        'px-6 py-4 whitespace-nowrap text-sm',
-                        isDark ? 'text-slate-400' : 'text-gray-500',
-                      )}
-                    >
+                    <td className={clsx('px-6 py-4 whitespace-nowrap text-sm', tableBodyCellMutedClasses(isDark))}>
                       {ticket.userEmail || ticket.userId}
                     </td>
-                    <td
-                      className={clsx(
-                        'px-6 py-4 whitespace-nowrap text-sm',
-                        isDark ? 'text-slate-400' : 'text-gray-500',
-                      )}
-                    >
+                    <td className={clsx('px-6 py-4 whitespace-nowrap text-sm', tableBodyCellMutedClasses(isDark))}>
                       {formatDateTime(ticket.createdAt)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -254,7 +249,10 @@ export function TicketQueuePage() {
                               });
                             }
                           }}
-                          className="text-sm border rounded px-2 py-1"
+                          className={clsx(
+                            'text-sm border rounded px-2 py-1',
+                            isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+                          )}
                           disabled={assignMutation.isPending}
                         >
                           <option value="">Zuweisen...</option>
