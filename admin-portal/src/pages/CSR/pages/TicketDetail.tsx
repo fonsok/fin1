@@ -1,11 +1,16 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import clsx from 'clsx';
 import { Card, Button, Badge, getStatusVariant } from '../../../components/ui';
 import { formatDateTime } from '../../../utils/format';
+import { useTheme } from '../../../context/ThemeContext';
+import { tableBodyCellMutedClasses, tableBodyCellPrimaryClasses } from '../../../utils/tableStriping';
 import { getTicket, respondToTicket, assignTicket, escalateTicket, resolveTicket, closeTicket, getAvailableAgents } from '../api';
 
 export function TicketDetailPage() {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const { ticketId } = useParams<{ ticketId: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -77,8 +82,9 @@ export function TicketDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex flex-col items-center justify-center min-h-screen gap-3">
         <div className="animate-spin w-8 h-8 border-4 border-fin1-primary border-t-transparent rounded-full"></div>
+        <p className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>Laden...</p>
       </div>
     );
   }
@@ -87,7 +93,7 @@ export function TicketDetailPage() {
     return (
       <Card>
         <div className="text-center py-8">
-          <p className="text-gray-500">Ticket nicht gefunden</p>
+          <p className={clsx(isDark ? 'text-slate-400' : 'text-gray-500')}>Ticket nicht gefunden</p>
           <Button onClick={() => navigate('/csr/tickets')} className="mt-4">
             Zurück zur Liste
           </Button>
@@ -129,18 +135,27 @@ export function TicketDetailPage() {
 
   const canEdit = ticket.status !== 'closed' && ticket.status !== 'archived';
 
+  const fieldSurface = clsx(
+    'w-full border rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary',
+    isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100 placeholder:text-slate-500' : 'bg-white border-gray-300 text-gray-900',
+  );
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <button
+            type="button"
             onClick={() => navigate('/csr/tickets')}
-            className="text-fin1-primary hover:underline mb-2"
+            className={clsx(
+              'mb-2 hover:underline',
+              isDark ? 'text-sky-400 hover:text-sky-300' : 'text-fin1-primary',
+            )}
           >
             ← Zurück zur Liste
           </button>
-          <h1 className="text-2xl font-bold">
+          <h1 className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>
             Ticket #{ticket.ticketNumber || ticket.objectId.slice(0, 8)}
           </h1>
         </div>
@@ -158,26 +173,36 @@ export function TicketDetailPage() {
       <Card>
         <div className="space-y-4">
           <div>
-            <h2 className="text-lg font-semibold mb-2">{ticket.subject}</h2>
-            <p className="text-gray-600 whitespace-pre-wrap">{ticket.description}</p>
+            <h2 className={clsx('text-lg font-semibold mb-2', isDark ? 'text-slate-100' : 'text-gray-900')}>
+              {ticket.subject}
+            </h2>
+            <p className={clsx('whitespace-pre-wrap', isDark ? 'text-slate-300' : 'text-gray-600')}>
+              {ticket.description}
+            </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+          <div className={clsx('grid grid-cols-2 gap-4 pt-4 border-t', isDark ? 'border-slate-700' : 'border-gray-200')}>
             <div>
-              <div className="text-sm text-gray-500">Kunde</div>
-              <div className="font-medium">{ticket.userEmail || ticket.userId}</div>
+              <div className={clsx('text-sm', tableBodyCellMutedClasses(isDark))}>Kunde</div>
+              <div className={clsx('font-medium', tableBodyCellPrimaryClasses(isDark))}>
+                {ticket.userEmail || ticket.userId}
+              </div>
             </div>
             <div>
-              <div className="text-sm text-gray-500">Kategorie</div>
-              <div className="font-medium">{ticket.category}</div>
+              <div className={clsx('text-sm', tableBodyCellMutedClasses(isDark))}>Kategorie</div>
+              <div className={clsx('font-medium', tableBodyCellPrimaryClasses(isDark))}>{ticket.category}</div>
             </div>
             <div>
-              <div className="text-sm text-gray-500">Erstellt</div>
-              <div className="font-medium">{formatDateTime(ticket.createdAt)}</div>
+              <div className={clsx('text-sm', tableBodyCellMutedClasses(isDark))}>Erstellt</div>
+              <div className={clsx('font-medium', tableBodyCellPrimaryClasses(isDark))}>
+                {formatDateTime(ticket.createdAt)}
+              </div>
             </div>
             <div>
-              <div className="text-sm text-gray-500">Zugewiesen</div>
-              <div className="font-medium">{ticket.assignedToName || ticket.assignedTo || 'Nicht zugewiesen'}</div>
+              <div className={clsx('text-sm', tableBodyCellMutedClasses(isDark))}>Zugewiesen</div>
+              <div className={clsx('font-medium', tableBodyCellPrimaryClasses(isDark))}>
+                {ticket.assignedToName || ticket.assignedTo || 'Nicht zugewiesen'}
+              </div>
             </div>
           </div>
         </div>
@@ -185,27 +210,40 @@ export function TicketDetailPage() {
 
       {/* Comments */}
       <Card>
-        <h2 className="text-lg font-semibold mb-4">Kommentare</h2>
+        <h2 className={clsx('text-lg font-semibold mb-4', isDark ? 'text-slate-100' : 'text-gray-900')}>Kommentare</h2>
         <div className="space-y-4">
           {ticket.comments?.map((comment) => (
             <div
               key={comment.objectId}
-              className={`p-4 rounded-lg ${
-                comment.isInternal ? 'bg-yellow-50 border border-yellow-200' : 'bg-gray-50'
-              }`}
+              className={clsx(
+                'p-4 rounded-lg border',
+                comment.isInternal
+                  ? isDark
+                    ? 'bg-amber-950/35 border-amber-800/80'
+                    : 'bg-yellow-50 border-yellow-200'
+                  : isDark
+                    ? 'bg-slate-800/60 border-slate-600'
+                    : 'bg-gray-50 border-gray-200',
+              )}
             >
               <div className="flex items-center justify-between mb-2">
-                <div className="font-medium">{comment.createdByName || comment.createdBy}</div>
-                <div className="text-sm text-gray-500">{formatDateTime(comment.createdAt)}</div>
+                <div className={clsx('font-medium', tableBodyCellPrimaryClasses(isDark))}>
+                  {comment.createdByName || comment.createdBy}
+                </div>
+                <div className={clsx('text-sm', tableBodyCellMutedClasses(isDark))}>
+                  {formatDateTime(comment.createdAt)}
+                </div>
               </div>
               {comment.isInternal && (
                 <Badge variant="warning" className="mb-2">Intern</Badge>
               )}
-              <p className="text-gray-700 whitespace-pre-wrap">{comment.content}</p>
+              <p className={clsx('whitespace-pre-wrap', isDark ? 'text-slate-200' : 'text-gray-700')}>
+                {comment.content}
+              </p>
             </div>
           ))}
           {(!ticket.comments || ticket.comments.length === 0) && (
-            <p className="text-gray-500 text-center py-4">Keine Kommentare</p>
+            <p className={clsx('text-center py-4', tableBodyCellMutedClasses(isDark))}>Keine Kommentare</p>
           )}
         </div>
       </Card>
@@ -213,7 +251,7 @@ export function TicketDetailPage() {
       {/* Actions */}
       {canEdit && (
         <Card>
-          <h2 className="text-lg font-semibold mb-4">Aktionen</h2>
+          <h2 className={clsx('text-lg font-semibold mb-4', isDark ? 'text-slate-100' : 'text-gray-900')}>Aktionen</h2>
           <div className="flex flex-wrap gap-2">
             <Button onClick={() => setShowRespondModal(true)}>
               Antworten
@@ -241,18 +279,21 @@ export function TicketDetailPage() {
       {showRespondModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <Card className="w-full max-w-2xl m-4">
-            <h2 className="text-xl font-semibold mb-4">Antwort hinzufügen</h2>
+            <h2 className={clsx('text-xl font-semibold mb-4', isDark ? 'text-slate-100' : 'text-gray-900')}>
+              Antwort hinzufügen
+            </h2>
             <textarea
               value={responseText}
               onChange={(e) => setResponseText(e.target.value)}
-              className="w-full h-32 p-3 border rounded-lg mb-4"
+              className={clsx('h-32 p-3 mb-4', fieldSurface)}
               placeholder="Ihre Antwort..."
             />
-            <label className="flex items-center gap-2 mb-4">
+            <label className={clsx('flex items-center gap-2 mb-4', isDark ? 'text-slate-200' : 'text-gray-800')}>
               <input
                 type="checkbox"
                 checked={isInternal}
                 onChange={(e) => setIsInternal(e.target.checked)}
+                className="rounded"
               />
               <span>Interner Kommentar (nicht für Kunde sichtbar)</span>
             </label>
@@ -275,11 +316,13 @@ export function TicketDetailPage() {
       {showAssignModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <Card className="w-full max-w-md m-4">
-            <h2 className="text-xl font-semibold mb-4">Ticket zuweisen</h2>
+            <h2 className={clsx('text-xl font-semibold mb-4', isDark ? 'text-slate-100' : 'text-gray-900')}>
+              Ticket zuweisen
+            </h2>
             <select
               value={selectedAgentId}
               onChange={(e) => setSelectedAgentId(e.target.value)}
-              className="w-full p-3 border rounded-lg mb-4"
+              className={clsx('p-3 mb-4', fieldSurface)}
             >
               <option value="">Agent auswählen...</option>
               {agents?.map((agent) => (
@@ -307,11 +350,13 @@ export function TicketDetailPage() {
       {showEscalateModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <Card className="w-full max-w-md m-4">
-            <h2 className="text-xl font-semibold mb-4">Ticket eskalieren</h2>
+            <h2 className={clsx('text-xl font-semibold mb-4', isDark ? 'text-slate-100' : 'text-gray-900')}>
+              Ticket eskalieren
+            </h2>
             <textarea
               value={escalationReason}
               onChange={(e) => setEscalationReason(e.target.value)}
-              className="w-full h-32 p-3 border rounded-lg mb-4"
+              className={clsx('h-32 p-3 mb-4', fieldSurface)}
               placeholder="Grund für Eskalation..."
             />
             <div className="flex gap-2 justify-end">
@@ -333,11 +378,13 @@ export function TicketDetailPage() {
       {showResolveModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <Card className="w-full max-w-md m-4">
-            <h2 className="text-xl font-semibold mb-4">Ticket lösen</h2>
+            <h2 className={clsx('text-xl font-semibold mb-4', isDark ? 'text-slate-100' : 'text-gray-900')}>
+              Ticket lösen
+            </h2>
             <textarea
               value={resolutionNote}
               onChange={(e) => setResolutionNote(e.target.value)}
-              className="w-full h-32 p-3 border rounded-lg mb-4"
+              className={clsx('h-32 p-3 mb-4', fieldSurface)}
               placeholder="Lösungsbeschreibung..."
             />
             <div className="flex gap-2 justify-end">
