@@ -7,7 +7,7 @@ import { Card, Input, Button, Badge, PaginationBar, getStatusVariant } from '../
 import { SortableTh, nextSortState, type SortOrder } from '../../components/table/SortableTh';
 import { formatDateTime, getRoleDisplay, getStatusDisplay } from '../../utils/format';
 import { useTheme } from '../../context/ThemeContext';
-import { listRowStripeClasses, tableBodyDivideClasses } from '../../utils/tableStriping';
+import { listRowStripeClasses, tableBodyDivideClasses, tableBodyCellMutedClasses, tableHeaderCellTextClasses, tableTheadSurfaceClasses } from '../../utils/tableStriping';
 import { useDebounce } from '../../hooks/useDebounce';
 
 export function UserListPage() {
@@ -110,25 +110,30 @@ export function UserListPage() {
         {isLoading ? (
           <div className="p-8 text-center">
             <div className="animate-spin w-8 h-8 border-4 border-fin1-primary border-t-transparent rounded-full mx-auto"></div>
-            <p className="text-gray-500 mt-4">Laden...</p>
+            <p className={clsx('mt-4', isDark ? 'text-slate-400' : 'text-gray-500')}>Laden...</p>
           </div>
         ) : error ? (
           <div className="p-8 text-center">
-            <p className="text-red-500">Fehler beim Laden der Benutzer</p>
+            <p className={clsx(isDark ? 'text-red-400' : 'text-red-500')}>Fehler beim Laden der Benutzer</p>
           </div>
         ) : !data?.users?.length ? (
           <div className="p-8 text-center">
-            <svg className="w-12 h-12 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg
+              className={clsx('w-12 h-12 mx-auto mb-4', isDark ? 'text-slate-600' : 'text-gray-300')}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
-            <p className="text-gray-500">Keine Benutzer gefunden</p>
+            <p className={clsx(isDark ? 'text-slate-400' : 'text-gray-500')}>Keine Benutzer gefunden</p>
           </div>
         ) : (
           <>
             {/* Table */}
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className={clsx(isDark ? 'bg-slate-900/70 border-b border-slate-700' : 'bg-gray-50 border-b border-gray-200')}>
+                <thead className={tableTheadSurfaceClasses(isDark)}>
                   <tr>
                     <SortableTh
                       label="Benutzer"
@@ -136,18 +141,18 @@ export function UserListPage() {
                       sortBy={sortBy}
                       sortOrder={sortOrder}
                       onSort={onSort}
-                      className="px-6 py-3 text-gray-500"
+                      className={clsx('px-6 py-3', tableHeaderCellTextClasses(isDark))}
                     />
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className={clsx('px-6 py-3 text-left text-xs font-medium uppercase tracking-wider', tableHeaderCellTextClasses(isDark))}>
                       Kunden-ID
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className={clsx('px-6 py-3 text-left text-xs font-medium uppercase tracking-wider', tableHeaderCellTextClasses(isDark))}>
                       Rolle
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className={clsx('px-6 py-3 text-left text-xs font-medium uppercase tracking-wider', tableHeaderCellTextClasses(isDark))}>
                       Status
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className={clsx('px-6 py-3 text-left text-xs font-medium uppercase tracking-wider', tableHeaderCellTextClasses(isDark))}>
                       KYC
                     </th>
                     <SortableTh
@@ -156,9 +161,9 @@ export function UserListPage() {
                       sortBy={sortBy}
                       sortOrder={sortOrder}
                       onSort={onSort}
-                      className="px-6 py-3 text-gray-500"
+                      className={clsx('px-6 py-3', tableHeaderCellTextClasses(isDark))}
                     />
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className={clsx('px-6 py-3 text-right text-xs font-medium uppercase tracking-wider', tableHeaderCellTextClasses(isDark))}>
                       Aktionen
                     </th>
                   </tr>
@@ -184,7 +189,7 @@ export function UserListPage() {
                                 ? `${user.firstName} ${user.lastName}`
                                 : user.username || 'Unbekannt'}
                             </p>
-                            <p className={clsx('text-sm', isDark ? 'text-slate-300' : 'text-gray-500')}>{user.email}</p>
+                            <p className={clsx('text-sm', tableBodyCellMutedClasses(isDark))}>{user.email}</p>
                           </div>
                         </div>
                       </td>
@@ -208,13 +213,16 @@ export function UserListPage() {
                           {getStatusDisplay(user.kycStatus)}
                         </Badge>
                       </td>
-                      <td className={clsx('px-6 py-4 whitespace-nowrap text-sm', isDark ? 'text-slate-300' : 'text-gray-500')}>
+                      <td className={clsx('px-6 py-4 whitespace-nowrap text-sm', tableBodyCellMutedClasses(isDark))}>
                         {formatDateTime(user.createdAt)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
                         <Link
                           to={`/users/${user.objectId}`}
-                          className="text-fin1-primary hover:text-fin1-secondary font-medium"
+                          className={clsx(
+                            'font-medium',
+                            isDark ? 'text-sky-400 hover:text-sky-300' : 'text-fin1-primary hover:text-fin1-secondary',
+                          )}
                         >
                           Details →
                         </Link>
