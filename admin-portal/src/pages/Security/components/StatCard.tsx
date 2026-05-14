@@ -1,6 +1,7 @@
 import clsx from 'clsx';
 import { Card } from '../../../components/ui';
 import { useTheme } from '../../../context/ThemeContext';
+import { adminCaption, adminStatTitle } from '../../../utils/adminThemeClasses';
 
 type Variant = 'default' | 'success' | 'warning' | 'error';
 
@@ -47,9 +48,9 @@ export function StatCard({ title, value, subtitle, variant = 'default' }: StatCa
 
   return (
     <Card className={clsx('p-4', surface[variant])}>
-      <p className={clsx('text-sm font-medium', isDark ? 'text-slate-300' : 'text-gray-500')}>{title}</p>
+      <p className={clsx('text-sm font-medium', adminStatTitle(isDark))}>{title}</p>
       <p className={clsx('text-2xl font-bold mt-1', valueTone[variant])}>{value}</p>
-      <p className={clsx('text-xs mt-1', isDark ? 'text-slate-400' : 'text-gray-400')}>{subtitle}</p>
+      <p className={clsx('text-xs mt-1', adminCaption(isDark))}>{subtitle}</p>
     </Card>
   );
 }

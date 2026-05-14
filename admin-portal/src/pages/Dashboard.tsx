@@ -8,8 +8,7 @@ import { useTheme } from '../context/ThemeContext';
 import { getAdminDashboard } from '../api/admin';
 import { Card, Badge } from '../components/ui';
 import { formatNumber } from '../utils/format';
-
-const mutedBody = (isDark: boolean) => clsx(isDark ? 'text-slate-400' : 'text-gray-500');
+import { adminMuted } from '../utils/adminThemeClasses';
 
 export function DashboardPage() {
   const { user } = useAuth();
@@ -115,9 +114,9 @@ export function DashboardPage() {
             </div>
             <div className="space-y-3">
               {stats?.tickets?.open === 0 ? (
-                <p className={clsx('text-sm', mutedBody(isDark))}>Keine offenen Tickets</p>
+                <p className={clsx('text-sm', adminMuted(isDark))}>Keine offenen Tickets</p>
               ) : (
-                <p className={clsx('text-sm', mutedBody(isDark))}>
+                <p className={clsx('text-sm', adminMuted(isDark))}>
                   {stats?.tickets?.open} Tickets warten auf Bearbeitung
                 </p>
               )}
@@ -142,9 +141,9 @@ export function DashboardPage() {
             </div>
             <div className="space-y-3">
               {stats?.compliance?.pendingReviews === 0 ? (
-                <p className={clsx('text-sm', mutedBody(isDark))}>Alle Events geprüft</p>
+                <p className={clsx('text-sm', adminMuted(isDark))}>Alle Events geprüft</p>
               ) : (
-                <p className={clsx('text-sm', mutedBody(isDark))}>
+                <p className={clsx('text-sm', adminMuted(isDark))}>
                   {stats?.compliance?.pendingReviews} Events warten auf Review
                 </p>
               )}
@@ -169,9 +168,9 @@ export function DashboardPage() {
             </div>
             <div className="space-y-3">
               {stats?.compliance?.pendingApprovals === 0 ? (
-                <p className={clsx('text-sm', mutedBody(isDark))}>Keine ausstehenden Freigaben</p>
+                <p className={clsx('text-sm', adminMuted(isDark))}>Keine ausstehenden Freigaben</p>
               ) : (
-                <p className={clsx('text-sm', mutedBody(isDark))}>
+                <p className={clsx('text-sm', adminMuted(isDark))}>
                   {stats?.compliance?.pendingApprovals} Anfragen warten auf Freigabe
                 </p>
               )}
@@ -247,7 +246,7 @@ function StatCard({
       <div className="flex items-center gap-4">
         <div className={clsx('p-3 rounded-lg', colors[color])}>{icon}</div>
         <div>
-          <p className={clsx('text-sm', mutedBody(isDark))}>{title}</p>
+          <p className={clsx('text-sm', adminMuted(isDark))}>{title}</p>
           <p className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>
             {value}
           </p>

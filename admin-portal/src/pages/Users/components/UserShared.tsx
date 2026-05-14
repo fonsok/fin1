@@ -1,5 +1,6 @@
 import clsx from 'clsx';
 import { useTheme } from '../../../context/ThemeContext';
+import { adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 
 type StatColor = 'gray' | 'green' | 'blue' | 'red';
 
@@ -45,11 +46,11 @@ export function DetailRow({
 
   return (
     <div className="flex justify-between gap-4">
-      <dt className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>{label}</dt>
+      <dt className={clsx('text-sm', adminMuted(isDark))}>{label}</dt>
       <dd
         className={clsx(
           'text-sm text-right',
-          isDark ? 'text-slate-100' : 'text-gray-900',
+          adminPrimary(isDark),
           mono && 'font-mono',
         )}
       >

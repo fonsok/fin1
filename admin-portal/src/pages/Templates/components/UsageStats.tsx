@@ -12,6 +12,7 @@ import {
 } from '../../../utils/tableStriping';
 import { getTemplateUsageStats, type GetTemplateUsageStatsParams } from '../api';
 import type { TemplateUsageStats } from '../types';
+import { adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 
 function toInputDateLocal(d: Date): string {
   const y = d.getFullYear();
@@ -53,8 +54,8 @@ function UsageStatsContent({ stats }: { stats: TemplateUsageStats }) {
     });
   };
 
-  const muted = clsx(isDark ? 'text-slate-400' : 'text-gray-500');
-  const heading = clsx(isDark ? 'text-slate-100' : 'text-gray-900');
+  const muted = adminMuted(isDark);
+  const heading = adminPrimary(isDark);
   const maxTopUsage = stats.topTemplates[0]?.usageCount ?? 0;
   const daysForAvg = Math.max(1, stats.period.days);
   const avgPerDay = Math.round(stats.totalUsage / daysForAvg);
@@ -238,8 +239,8 @@ export function UsageStats(): JSX.Element {
     staleTime: 30_000,
   });
 
-  const muted = clsx(isDark ? 'text-slate-400' : 'text-gray-500');
-  const heading = clsx(isDark ? 'text-slate-100' : 'text-gray-900');
+  const muted = adminMuted(isDark);
+  const heading = adminPrimary(isDark);
   const chip = (active: boolean) =>
     clsx(
       'px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors',

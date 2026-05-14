@@ -1,6 +1,7 @@
 import clsx from 'clsx';
 import { Card } from '../../../components/ui';
 import { useTheme } from '../../../context/ThemeContext';
+import { adminCaption, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 
 interface StatCardProps {
   title: string;
@@ -18,9 +19,9 @@ export function StatCard({ title, value, subtitle, icon, trend }: StatCardProps)
     <Card className="p-6">
       <div className="flex items-start justify-between">
         <div>
-          <p className={clsx('text-sm font-medium', isDark ? 'text-slate-400' : 'text-gray-500')}>{title}</p>
-          <p className={clsx('text-2xl font-bold mt-1', isDark ? 'text-slate-100' : 'text-gray-900')}>{value}</p>
-          <p className={clsx('text-sm mt-1', isDark ? 'text-slate-500' : 'text-gray-400')}>{subtitle}</p>
+          <p className={clsx('text-sm font-medium', adminMuted(isDark))}>{title}</p>
+          <p className={clsx('text-2xl font-bold mt-1', adminPrimary(isDark))}>{value}</p>
+          <p className={clsx('text-sm mt-1', adminCaption(isDark))}>{subtitle}</p>
         </div>
         <div className="flex flex-col items-end">
           <span className="text-2xl">{icon}</span>

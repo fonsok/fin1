@@ -3,6 +3,7 @@ import { Card, Button, Input, Badge } from '../../../components/ui';
 import { listRowStripeClasses } from '../../../utils/tableStriping';
 import type { ConfigurationParameter, PendingConfigChange } from '../types';
 import { getAppWithholdsLabel } from '../../../constants/branding';
+import { adminMuted } from '../../../utils/adminThemeClasses';
 
 interface FinancialParametersCardProps {
   financialParams: [string, Omit<ConfigurationParameter, 'value'>][];
@@ -74,7 +75,7 @@ export function FinancialParametersCard({
     ? financialParams.filter(([key]) => showTaxDetailSection || !taxDetailKeys.has(key))
     : financialParams;
 
-  const muted = clsx(isDark ? 'text-slate-400' : 'text-gray-500');
+  const muted = adminMuted(isDark);
   const selectControlClass = clsx(
     'w-72 rounded-md border px-3 py-2 text-sm',
     isDark ? 'border-slate-600 bg-slate-900/70 text-slate-100' : 'border-gray-300 bg-white text-gray-900',

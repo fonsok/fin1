@@ -1,6 +1,7 @@
 import React from 'react';
 import clsx from 'clsx';
 import { useTheme } from '../../context/ThemeContext';
+import { adminMuted, adminPrimary } from '../../utils/adminThemeClasses';
 
 interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
@@ -48,7 +49,7 @@ export function CardHeader({ title, subtitle, action }: CardHeaderProps) {
         <h3
           className={clsx(
             'text-lg font-semibold',
-            isDark ? 'text-slate-100' : 'text-gray-900',
+            adminPrimary(isDark),
           )}
         >
           {title}
@@ -57,7 +58,7 @@ export function CardHeader({ title, subtitle, action }: CardHeaderProps) {
           <p
             className={clsx(
               'text-sm mt-0.5',
-              isDark ? 'text-slate-400' : 'text-gray-500',
+              adminMuted(isDark),
             )}
           >
             {subtitle}
