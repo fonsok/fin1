@@ -109,23 +109,38 @@ export function ApprovalsRequestTable({
             return (
               <tr key={request.objectId} className={listRowStripeClasses(isDark, index)}>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="text-sm font-medium text-gray-900">
+                  <span
+                    className={clsx(
+                      'text-sm font-medium',
+                      isDark ? 'text-slate-100' : 'text-gray-900',
+                    )}
+                  >
                     {getRequestTypeLabel(request.requestType)}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <p className="text-sm text-gray-900">
+                  <p className={clsx('text-sm', isDark ? 'text-slate-100' : 'text-gray-900')}>
                     {request.requesterEmail || requesterIdString(request)}
-                    {isOwn && <span className="ml-1 text-xs text-gray-400">(Sie)</span>}
+                    {isOwn && (
+                      <span className={clsx('ml-1 text-xs', isDark ? 'text-slate-500' : 'text-gray-400')}>
+                        (Sie)
+                      </span>
+                    )}
                   </p>
-                  <p className="text-xs text-gray-500">{request.requesterRole}</p>
+                  <p className={clsx('text-xs', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                    {request.requesterRole}
+                  </p>
                 </td>
                 <td className="px-6 py-4">
                   {renderRequestDetails(request)}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <p className="text-sm text-gray-900">{formatDateTime(request.createdAt)}</p>
-                  <p className="text-xs text-gray-500">{formatRelative(request.createdAt)}</p>
+                  <p className={clsx('text-sm', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                    {formatDateTime(request.createdAt)}
+                  </p>
+                  <p className={clsx('text-xs', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                    {formatRelative(request.createdAt)}
+                  </p>
                 </td>
                 {showStatus && (
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -135,12 +150,36 @@ export function ApprovalsRequestTable({
                 {showDecision && (
                   <td className="px-6 py-4">
                     <div className="text-sm">
-                      {request.approverEmail && <p className="text-gray-600">{request.approverEmail}</p>}
-                      {request.approverNotes && <p className="text-xs text-gray-500 truncate max-w-xs">{request.approverNotes}</p>}
-                      {request.rejectionReason && <p className="text-xs text-red-600 truncate max-w-xs">{request.rejectionReason}</p>}
-                      {request.withdrawnReason && <p className="text-xs text-blue-600 truncate max-w-xs">{request.withdrawnReason}</p>}
+                      {request.approverEmail && (
+                        <p className={isDark ? 'text-slate-300' : 'text-gray-600'}>{request.approverEmail}</p>
+                      )}
+                      {request.approverNotes && (
+                        <p
+                          className={clsx(
+                            'text-xs truncate max-w-xs',
+                            isDark ? 'text-slate-400' : 'text-gray-500',
+                          )}
+                        >
+                          {request.approverNotes}
+                        </p>
+                      )}
+                      {request.rejectionReason && (
+                        <p className="text-xs text-red-600 truncate max-w-xs">{request.rejectionReason}</p>
+                      )}
+                      {request.withdrawnReason && (
+                        <p
+                          className={clsx(
+                            'text-xs truncate max-w-xs',
+                            isDark ? 'text-sky-300' : 'text-blue-600',
+                          )}
+                        >
+                          {request.withdrawnReason}
+                        </p>
+                      )}
                       {request.updatedAt && request.status !== 'pending' && (
-                        <p className="text-xs text-gray-400">{formatDateTime(request.updatedAt)}</p>
+                        <p className={clsx('text-xs', isDark ? 'text-slate-500' : 'text-gray-400')}>
+                          {formatDateTime(request.updatedAt)}
+                        </p>
                       )}
                     </div>
                   </td>

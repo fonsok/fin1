@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import clsx from 'clsx';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Card } from '../../components/ui';
@@ -12,9 +13,12 @@ import { QuickActions } from './components/QuickActions';
 import { RecentTickets } from './components/RecentTickets';
 import { PermissionsSection } from './components/PermissionsSection';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 
 export function CSRDashboard() {
   const { user } = useAuth();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const navigate = useNavigate();
 
   const handleSelectCustomer = (customer: CustomerSearchResult) => {
@@ -69,12 +73,16 @@ export function CSRDashboard() {
             </svg>
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Kundenservice-Portal</h1>
-            <p className="text-sm text-gray-500">Kundendaten anzeigen und Support verwalten</p>
+            <h1 className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+              Kundenservice-Portal
+            </h1>
+            <p className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>
+              Kundendaten anzeigen und Support verwalten
+            </p>
           </div>
           <div className="ml-auto flex items-center gap-2">
             <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-            <span className="text-sm text-gray-600">
+            <span className={clsx('text-sm', isDark ? 'text-slate-300' : 'text-gray-600')}>
               Alle Aktionen werden für Compliance-Zwecke protokolliert
             </span>
           </div>
@@ -97,25 +105,33 @@ export function CSRDashboard() {
       {/* Metrics Summary */}
       {metrics && (
         <Card>
-          <h2 className="text-lg font-semibold mb-4">Wochenstatistik</h2>
+          <h2 className={clsx('text-lg font-semibold mb-4', isDark ? 'text-slate-100' : 'text-gray-900')}>
+            Wochenstatistik
+          </h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-gray-900">{metrics.totalTickets}</div>
-              <div className="text-sm text-gray-500">Gesamt Tickets</div>
+              <div className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                {metrics.totalTickets}
+              </div>
+              <div className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>Gesamt Tickets</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-orange-600">{metrics.openTickets}</div>
-              <div className="text-sm text-gray-500">Offene Tickets</div>
+              <div className={clsx('text-2xl font-bold', isDark ? 'text-orange-400' : 'text-orange-600')}>
+                {metrics.openTickets}
+              </div>
+              <div className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>Offene Tickets</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">{metrics.resolvedTickets}</div>
-              <div className="text-sm text-gray-500">Gelöste Tickets</div>
+              <div className={clsx('text-2xl font-bold', isDark ? 'text-emerald-400' : 'text-green-600')}>
+                {metrics.resolvedTickets}
+              </div>
+              <div className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>Gelöste Tickets</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">
+              <div className={clsx('text-2xl font-bold', isDark ? 'text-sky-400' : 'text-blue-600')}>
                 {Math.round(metrics.averageResolutionTime / 60)}h
               </div>
-              <div className="text-sm text-gray-500">Ø Lösungszeit</div>
+              <div className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>Ø Lösungszeit</div>
             </div>
           </div>
         </Card>

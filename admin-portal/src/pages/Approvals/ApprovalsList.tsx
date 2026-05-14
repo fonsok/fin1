@@ -113,18 +113,27 @@ function getRequestTypeLabel(type: string): string {
 }
 
 function RequestDetails({ request }: { request: ApprovalRequest }) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const isConfigChange = request.requestType === 'configuration_change' || request.requestType === 'config_change';
 
   if (isConfigChange && request.metadata) {
     const paramName = request.metadata.parameterName as string;
     return (
       <div className="text-sm space-y-1">
-        <p className="font-medium text-gray-900">{getParamDisplayName(paramName)}</p>
+        <p className={clsx('font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>
+          {getParamDisplayName(paramName)}
+        </p>
         <div className="flex items-center gap-2">
-          <span className="text-gray-500">
+          <span className={isDark ? 'text-slate-400' : 'text-gray-500'}>
             {formatConfigValue(paramName, request.metadata.oldValue)}
           </span>
-          <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg
+            className={clsx('w-4 h-4 flex-shrink-0', isDark ? 'text-slate-500' : 'text-gray-400')}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
           </svg>
           <span className="font-semibold text-fin1-primary">
@@ -132,7 +141,9 @@ function RequestDetails({ request }: { request: ApprovalRequest }) {
           </span>
         </div>
         {typeof request.metadata.reason === 'string' && request.metadata.reason && (
-          <p className="text-gray-500 text-xs truncate max-w-xs">Grund: {request.metadata.reason}</p>
+          <p className={clsx('text-xs truncate max-w-xs', isDark ? 'text-slate-400' : 'text-gray-500')}>
+            Grund: {request.metadata.reason}
+          </p>
         )}
       </div>
     );
@@ -141,25 +152,34 @@ function RequestDetails({ request }: { request: ApprovalRequest }) {
   if (request.requestType === 'user_wallet_action_mode_change' && request.metadata) {
     return (
       <div className="text-sm space-y-1">
-        <p className="font-medium text-gray-900">
+        <p className={clsx('font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>
           Nutzer: {String(request.metadata.targetUserEmail || request.metadata.targetUserId || '-')}
         </p>
         <div className="flex items-center gap-2">
-          <span className="text-gray-500">{String(request.metadata.oldMode ?? 'kein Override')}</span>
-          <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <span className={isDark ? 'text-slate-400' : 'text-gray-500'}>
+            {String(request.metadata.oldMode ?? 'kein Override')}
+          </span>
+          <svg
+            className={clsx('w-4 h-4 flex-shrink-0', isDark ? 'text-slate-500' : 'text-gray-400')}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
           </svg>
           <span className="font-semibold text-fin1-primary">{String(request.metadata.newMode ?? '-')}</span>
         </div>
         {typeof request.metadata.reason === 'string' && request.metadata.reason && (
-          <p className="text-gray-500 text-xs truncate max-w-xs">Grund: {request.metadata.reason}</p>
+          <p className={clsx('text-xs truncate max-w-xs', isDark ? 'text-slate-400' : 'text-gray-500')}>
+            Grund: {request.metadata.reason}
+          </p>
         )}
       </div>
     );
   }
 
   return (
-    <p className="text-sm text-gray-600 truncate max-w-xs">
+    <p className={clsx('text-sm truncate max-w-xs', isDark ? 'text-slate-300' : 'text-gray-600')}>
       {(typeof request.metadata?.reason === 'string' ? request.metadata.reason : null) || '-'}
     </p>
   );
@@ -295,8 +315,10 @@ export function ApprovalsListPage() {
       <Card>
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold">4-Augen-Prinzip — Anträge & Freigaben</h2>
-            <p className="text-sm text-gray-500 mt-1">
+            <h2 className={clsx('text-lg font-semibold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+              4-Augen-Prinzip — Anträge & Freigaben
+            </h2>
+            <p className={clsx('text-sm mt-1', isDark ? 'text-slate-400' : 'text-gray-500')}>
               Übersicht aller Änderungsanträge mit 4-Augen-Freigabe
             </p>
           </div>
@@ -370,13 +392,13 @@ export function ApprovalsListPage() {
         <Card>
           <div className="p-8 text-center">
             <div className="animate-spin w-8 h-8 border-4 border-fin1-primary border-t-transparent rounded-full mx-auto"></div>
-            <p className="text-gray-500 mt-4">Laden...</p>
+            <p className={clsx('mt-4', isDark ? 'text-slate-400' : 'text-gray-500')}>Laden...</p>
           </div>
         </Card>
       ) : error ? (
         <Card>
           <div className="p-8 text-center">
-            <p className="text-red-500">Fehler beim Laden der Anfragen</p>
+            <p className={clsx(isDark ? 'text-red-300' : 'text-red-500')}>Fehler beim Laden der Anfragen</p>
             <Button variant="secondary" className="mt-4" onClick={() => refetch()}>
               Erneut versuchen
             </Button>

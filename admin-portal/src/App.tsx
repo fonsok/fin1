@@ -1,5 +1,7 @@
+import clsx from 'clsx';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
+import { useTheme } from './context/ThemeContext';
 import { Layout } from './components/Layout';
 import { CSRRedirectGuard } from './components/CSRRedirectGuard';
 import { LoginPage } from './pages/Login';
@@ -25,13 +27,20 @@ import { CSRApp } from './csr-portal/CSRApp';
 // Protected Route Wrapper for ADMIN routes only
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading, needs2FAVerification, user } = useAuth();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div
+        className={clsx(
+          'min-h-screen flex items-center justify-center',
+          isDark ? 'bg-slate-900' : 'bg-gray-50',
+        )}
+      >
         <div className="text-center">
           <div className="animate-spin w-12 h-12 border-4 border-fin1-primary border-t-transparent rounded-full mx-auto"></div>
-          <p className="mt-4 text-gray-500">Laden...</p>
+          <p className={clsx('mt-4', isDark ? 'text-slate-400' : 'text-gray-500')}>Laden...</p>
         </div>
       </div>
     );
@@ -57,10 +66,17 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 // Public Route Wrapper (redirects to dashboard if already authenticated)
 function PublicRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading, user } = useAuth();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div
+        className={clsx(
+          'min-h-screen flex items-center justify-center',
+          isDark ? 'bg-slate-900' : 'bg-gray-50',
+        )}
+      >
         <div className="animate-spin w-12 h-12 border-4 border-fin1-primary border-t-transparent rounded-full mx-auto"></div>
       </div>
     );

@@ -108,24 +108,37 @@ export function KYCStatusPage() {
     }
   };
 
+  const filterInputClass = clsx(
+    'px-4 py-2 border rounded-lg focus:ring-2 focus:ring-fin1-primary focus:border-transparent',
+    isDark
+      ? 'bg-slate-900/70 border-slate-600 text-slate-100 placeholder:text-slate-400'
+      : 'bg-white border-gray-300 text-gray-900 placeholder:text-gray-400',
+  );
+  const filterSelectClass = clsx(
+    'px-4 py-2 border rounded-lg focus:ring-2 focus:ring-fin1-primary focus:border-transparent',
+    isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+  );
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">KYC-Status Übersicht</h1>
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <h1 className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+          KYC-Status Übersicht
+        </h1>
         <div className="flex gap-2">
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Kunde suchen..."
-            className="px-4 py-2 border rounded-lg"
+            className={filterInputClass}
           />
           <select
             value={statusFilter}
             onChange={(e) =>
               setStatusFilter(e.target.value as 'all' | 'verified' | 'pending' | 'rejected')
             }
-            className="px-4 py-2 border rounded-lg"
+            className={filterSelectClass}
           >
             <option value="all">Alle Status</option>
             <option value="verified">Verifiziert</option>
@@ -144,7 +157,7 @@ export function KYCStatusPage() {
       ) : filteredCustomers.length === 0 ? (
         <Card>
           <div className="text-center py-8">
-            <p className="text-gray-500">
+            <p className={clsx(isDark ? 'text-slate-400' : 'text-gray-500')}>
               {searchQuery.length < 2
                 ? 'Geben Sie mindestens 2 Zeichen ein, um zu suchen'
                 : 'Keine Kunden gefunden'}
@@ -275,32 +288,34 @@ export function KYCStatusPage() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
             <div className="text-center">
-              <div className="text-2xl font-bold text-gray-900">{customers.length}</div>
-              <div className="text-sm text-gray-500">Gesamt Kunden</div>
+              <div className={clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                {customers.length}
+              </div>
+              <div className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>Gesamt Kunden</div>
             </div>
           </Card>
           <Card>
             <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">
+              <div className={clsx('text-2xl font-bold', isDark ? 'text-emerald-400' : 'text-green-600')}>
                 {kycStatuses?.filter(s => s.status?.status === 'verified').length || 0}
               </div>
-              <div className="text-sm text-gray-500">Verifiziert</div>
+              <div className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>Verifiziert</div>
             </div>
           </Card>
           <Card>
             <div className="text-center">
-              <div className="text-2xl font-bold text-orange-600">
+              <div className={clsx('text-2xl font-bold', isDark ? 'text-orange-400' : 'text-orange-600')}>
                 {kycStatuses?.filter(s => s.status?.status === 'pending' || !s.status).length || 0}
               </div>
-              <div className="text-sm text-gray-500">Ausstehend</div>
+              <div className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>Ausstehend</div>
             </div>
           </Card>
           <Card>
             <div className="text-center">
-              <div className="text-2xl font-bold text-red-600">
+              <div className={clsx('text-2xl font-bold', isDark ? 'text-red-400' : 'text-red-600')}>
                 {kycStatuses?.filter(s => s.status?.status === 'rejected').length || 0}
               </div>
-              <div className="text-sm text-gray-500">Abgelehnt</div>
+              <div className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>Abgelehnt</div>
             </div>
           </Card>
         </div>

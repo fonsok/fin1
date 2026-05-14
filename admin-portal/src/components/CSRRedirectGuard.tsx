@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
+import clsx from 'clsx';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 
 /**
  * Guard component that redirects CSR users away from admin routes
@@ -8,6 +10,8 @@ import { useAuth } from '../context/AuthContext';
  */
 export function CSRRedirectGuard({ children }: { children: React.ReactNode }) {
   const { user, isAuthenticated } = useAuth();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -29,10 +33,17 @@ export function CSRRedirectGuard({ children }: { children: React.ReactNode }) {
     if (!path.startsWith('/csr') && path !== '/csr/login') {
       // Return loading state while redirecting
       return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div
+          className={clsx(
+            'min-h-screen flex items-center justify-center',
+            isDark ? 'bg-slate-900' : 'bg-gray-50',
+          )}
+        >
           <div className="text-center">
             <div className="animate-spin w-12 h-12 border-4 border-fin1-primary border-t-transparent rounded-full mx-auto"></div>
-            <p className="mt-4 text-gray-500">Weiterleitung zum CSR-Portal...</p>
+            <p className={clsx('mt-4', isDark ? 'text-slate-400' : 'text-gray-500')}>
+              Weiterleitung zum CSR-Portal...
+            </p>
           </div>
         </div>
       );
