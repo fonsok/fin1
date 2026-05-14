@@ -135,13 +135,45 @@ export function AppLedgerPage(): JSX.Element {
     purpleValueClass,
   } = getOverviewClasses(isDark);
 
+  const pageTitle = clsx('text-2xl font-bold', isDark ? 'text-slate-100' : 'text-gray-900');
+  const leadMuted = clsx('mt-1', isDark ? 'text-slate-400' : 'text-gray-500');
+  const captionMuted = clsx('text-xs text-right max-w-md', isDark ? 'text-slate-400' : 'text-gray-500');
+  const groupHeading = clsx('text-lg font-semibold mb-3', isDark ? 'text-slate-200' : 'text-gray-700');
+  const sectionH2 = clsx('text-lg font-semibold', isDark ? 'text-slate-100' : 'text-gray-900');
+  const bodyMutedSm = clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500');
+  const spanStrongSm = clsx('text-sm font-medium', isDark ? 'text-slate-200' : 'text-gray-700');
+  const formLabel = clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-200' : 'text-gray-700');
+  const formLabelXs = clsx('block text-xs mb-1', isDark ? 'text-slate-400' : 'text-gray-500');
+  const controlSm = clsx(
+    'w-full border rounded-lg px-3 py-2 text-sm',
+    isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+  );
+  const controlMono = clsx(
+    'w-full border rounded-lg px-3 py-2 text-xs font-mono',
+    isDark ? 'bg-slate-900/70 border-slate-600 text-slate-100' : 'bg-white border-gray-300 text-gray-900',
+  );
+  const cardHeaderBorder = clsx('p-4 border-b space-y-1', isDark ? 'border-slate-600' : 'border-gray-100');
+  const snapshotScrollBox = clsx(
+    'max-h-48 overflow-auto border rounded-lg text-xs font-mono',
+    isDark ? 'border-slate-600 bg-slate-900/30' : 'border-gray-200 bg-white',
+  );
+  const noteXs = clsx('text-xs', isDark ? 'text-slate-400' : 'text-gray-500');
+  const noteXs600 = clsx('text-xs', isDark ? 'text-slate-400' : 'text-gray-600');
+  const accountExt = clsx('font-semibold text-[0.8rem]', isDark ? 'text-slate-100' : 'text-gray-900');
+  const accountCodeMono = clsx('text-[0.7rem] font-mono', isDark ? 'text-slate-300' : 'text-gray-600');
+  const accountName = clsx('text-[0.8rem] font-medium leading-tight', isDark ? 'text-slate-100' : 'text-gray-900');
+  const accountChart = clsx('text-[0.7rem]', isDark ? 'text-slate-400' : 'text-gray-600');
+  const legLabel = clsx('text-[0.7rem]', isDark ? 'text-slate-400' : 'text-gray-500');
+  const emptyMini = clsx('text-[0.7rem]', isDark ? 'text-slate-500' : 'text-gray-400');
+  const emptyState = clsx('p-8 text-center', isDark ? 'text-slate-400' : 'text-gray-500');
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">App Ledger</h1>
-          <p className="text-gray-500 mt-1">
+          <h1 className={pageTitle}>App Ledger</h1>
+          <p className={leadMuted}>
             Eigenkonten der App – Gegenbuchungen zu allen Gebühren (doppelte Buchführung).
             Unten: Konten-Karten und Filter (inkl. Bank Clearing – Service Charge NET/VAT).
           </p>
@@ -178,7 +210,7 @@ export function AppLedgerPage(): JSX.Element {
               {isLoading ? 'Laden...' : 'Aktualisieren'}
             </Button>
           </div>
-          <p className="text-xs text-gray-500 text-right max-w-md">
+          <p className={captionMuted}>
             Prüferpaket: nutzt den Datumsfilter der Tabelle unten; ein ZIP (Unterordner mit Datenwörterbuch, CSVs und
             Meta-JSON) — Kompression im Browser, schlankes Server-JSON.
           </p>
@@ -231,12 +263,14 @@ export function AppLedgerPage(): JSX.Element {
       {/* Account Cards by Group */}
       {accounts.length === 0 && !isLoading ? (
         <Card>
-          <p className="text-gray-500 text-sm">Keine Konten geladen. Bitte „Aktualisieren“ klicken oder Berechtigung prüfen.</p>
+          <p className={clsx('text-sm', bodyMutedSm)}>
+            Keine Konten geladen. Bitte „Aktualisieren“ klicken oder Berechtigung prüfen.
+          </p>
         </Card>
       ) : null}
       {Object.entries(groupedAccounts).map(([group, groupAccounts]) => (
         <div key={group}>
-          <h2 className="text-lg font-semibold text-gray-700 mb-3">
+          <h2 className={groupHeading}>
             {GROUP_LABELS[group] || group}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -250,32 +284,32 @@ export function AppLedgerPage(): JSX.Element {
                     onClick={() => setSelectedAccount(isSelected ? '' : acc.code)}
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <span className="font-semibold text-[0.8rem] text-gray-100">
+                      <span className={accountExt}>
                         {acc.externalAccountNumber || '-'}
                       </span>
-                      <span className="text-[0.7rem] font-mono text-gray-300">{acc.code}</span>
+                      <span className={accountCodeMono}>{acc.code}</span>
                     </div>
                     <div className="mb-2">
-                      <div className="text-[0.8rem] font-medium text-gray-100 leading-tight">{acc.name}</div>
-                      <div className="text-[0.7rem] text-gray-300">{acc.chartCode || '-'}</div>
+                      <div className={accountName}>{acc.name}</div>
+                      <div className={accountChart}>{acc.chartCode || '-'}</div>
                     </div>
                     {t ? (
                       <div className="grid grid-cols-3 gap-2 text-[0.7rem]">
                         <div>
-                          <p className="text-gray-500">Haben</p>
+                          <p className={legLabel}>Haben</p>
                           <p className="font-medium text-green-600 text-[0.7rem]">{formatCurrency(t.credit)}</p>
                         </div>
                         <div>
-                          <p className="text-gray-500">Soll</p>
+                          <p className={legLabel}>Soll</p>
                           <p className="font-medium text-red-600 text-[0.7rem]">{formatCurrency(t.debit)}</p>
                         </div>
                         <div>
-                          <p className="text-gray-500">Saldo</p>
+                          <p className={legLabel}>Saldo</p>
                           <p className="font-bold text-fin1-primary text-[0.7rem]">{formatCurrency(t.net)}</p>
                         </div>
                       </div>
                     ) : (
-                      <p className="text-[0.7rem] text-gray-400">Keine Buchungen</p>
+                      <p className={emptyMini}>Keine Buchungen</p>
                     )}
                   </button>
                 </Card>
@@ -289,14 +323,14 @@ export function AppLedgerPage(): JSX.Element {
       <Card>
         <div className="flex flex-col sm:flex-row gap-4 items-end">
           <div className="flex-1">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Konto</label>
+            <label className={formLabel}>Konto</label>
             <select
               value={selectedAccount}
               onChange={(e) => {
                 setSelectedAccount(e.target.value);
                 setPage(0);
               }}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              className={controlSm}
             >
               <option value="">Alle Konten</option>
               {accounts.map((a) => (
@@ -307,24 +341,24 @@ export function AppLedgerPage(): JSX.Element {
             </select>
           </div>
           <div className="flex-1">
-            <label className="block text-sm font-medium text-gray-700 mb-1">User-ID</label>
+            <label className={formLabel}>User-ID</label>
             <input
               type="text"
               value={userFilter}
               onChange={(e) => setUserFilter(e.target.value)}
               placeholder="User-ID filtern..."
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              className={controlSm}
             />
           </div>
           <div className="flex-1">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Transaktionstyp</label>
+            <label className={formLabel}>Transaktionstyp</label>
             <select
               value={typeFilter}
               onChange={(e) => {
                 setTypeFilter(e.target.value);
                 setPage(0);
               }}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              className={controlSm}
             >
               <option value="">Alle Typen</option>
               {Object.entries(TRANSACTION_TYPE_LABELS).map(([key, label]) => (
@@ -335,7 +369,7 @@ export function AppLedgerPage(): JSX.Element {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Zeitraum</label>
+            <label className={formLabel}>Zeitraum</label>
             <select
               value={datePreset}
               onChange={(e) => {
@@ -347,7 +381,7 @@ export function AppLedgerPage(): JSX.Element {
                 }
                 setPage(0);
               }}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              className={controlSm}
             >
               <option value="all">Alle</option>
               <option value="thisMonth">Aktueller Monat</option>
@@ -360,7 +394,7 @@ export function AppLedgerPage(): JSX.Element {
           {datePreset === 'custom' && (
             <>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Von</label>
+                <label className={formLabel}>Von</label>
                 <input
                   type="date"
                   value={dateFromInput}
@@ -368,11 +402,11 @@ export function AppLedgerPage(): JSX.Element {
                     setDateFromInput(e.target.value);
                     setPage(0);
                   }}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  className={controlSm}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Bis</label>
+                <label className={formLabel}>Bis</label>
                 <input
                   type="date"
                   value={dateToInput}
@@ -380,20 +414,20 @@ export function AppLedgerPage(): JSX.Element {
                     setDateToInput(e.target.value);
                     setPage(0);
                   }}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  className={controlSm}
                 />
               </div>
             </>
           )}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Seite</label>
+            <label className={formLabel}>Seite</label>
             <select
               value={pageSize}
               onChange={(e) => {
                 setPageSize(Number(e.target.value));
                 setPage(0);
               }}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              className={controlSm}
             >
               <option value={50}>50 / Seite</option>
               <option value={100}>100 / Seite</option>
@@ -411,30 +445,34 @@ export function AppLedgerPage(): JSX.Element {
       </Card>
 
       <Card>
-        <div className="p-4 border-b border-gray-100 space-y-1">
-          <h2 className="text-lg font-semibold text-gray-900">Eröffnungssalden (Snapshot)</h2>
-          <p className="text-sm text-gray-500">
+        <div className={cardHeaderBorder}>
+          <h2 className={sectionH2}>Eröffnungssalden (Snapshot)</h2>
+          <p className={bodyMutedSm}>
             Stichtagssalden fürs App-Hauptbuch (netDebitMinusCredit pro Konto, wie Abstimmung). Die Abstimmung nutzt
-            standardmäßig den letzten Snapshot <strong>vor</strong> Periodenbeginn, oder einen ausgewählten Datensatz.
+            standardmäßig den letzten Snapshot{' '}
+            <strong className={isDark ? 'text-slate-200' : 'text-gray-800'}>vor</strong> Periodenbeginn, oder einen
+            ausgewählten Datensatz.
           </p>
         </div>
         <div className="p-4 grid gap-4 lg:grid-cols-2">
           <div className="space-y-3">
             <div className="flex flex-wrap items-center gap-2 justify-between">
-              <span className="text-sm font-medium text-gray-700">Gespeicherte Snapshots</span>
+              <span className={spanStrongSm}>Gespeicherte Snapshots</span>
               <Button variant="ghost" type="button" onClick={() => void refreshOpeningSnapshots()}>
                 {openingSnapshotsLoading ? 'Lade…' : 'Aktualisieren'}
               </Button>
             </div>
-            <div className="max-h-48 overflow-auto border border-gray-200 rounded-lg text-xs font-mono">
+            <div className={snapshotScrollBox}>
               {openingSnapshots.length === 0 ? (
-                <div className="p-3 text-gray-500">Keine Einträge (oder Klasse noch nicht angelegt).</div>
+                <div className={clsx('p-3', noteXs)}>Keine Einträge (oder Klasse noch nicht angelegt).</div>
               ) : (
-                <ul className="divide-y divide-gray-100">
+                <ul className={clsx('divide-y', isDark ? 'divide-slate-600' : 'divide-gray-100')}>
                   {openingSnapshots.map((s) => (
                     <li key={s.objectId} className="px-3 py-2 flex flex-col gap-0.5">
-                      <span className="text-gray-800">{s.label || s.objectId}</span>
-                      <span className="text-gray-500">
+                      <span className={clsx(isDark ? 'text-slate-100' : 'text-gray-800')}>
+                        {s.label || s.objectId}
+                      </span>
+                      <span className={noteXs}>
                         {String(s.effectiveDate).slice(0, 10)} · {s.objectId}
                       </span>
                     </li>
@@ -444,35 +482,35 @@ export function AppLedgerPage(): JSX.Element {
             </div>
           </div>
           <div className="space-y-3">
-            <span className="text-sm font-medium text-gray-700">Neuen Snapshot speichern</span>
+            <span className={spanStrongSm}>Neuen Snapshot speichern</span>
             <div className="grid gap-2 sm:grid-cols-2">
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Stichtag</label>
+                <label className={formLabelXs}>Stichtag</label>
                 <input
                   type="date"
                   value={snapshotEffectiveDate}
                   onChange={(e) => setSnapshotEffectiveDate(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  className={controlSm}
                 />
               </div>
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Bezeichnung</label>
+                <label className={formLabelXs}>Bezeichnung</label>
                 <input
                   type="text"
                   value={snapshotLabel}
                   onChange={(e) => setSnapshotLabel(e.target.value)}
                   placeholder="z. B. Jahresende 2025"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  className={controlSm}
                 />
               </div>
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">balances (JSON)</label>
+              <label className={formLabelXs}>balances (JSON)</label>
               <textarea
                 value={snapshotBalancesJson}
                 onChange={(e) => setSnapshotBalancesJson(e.target.value)}
                 rows={8}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-xs font-mono"
+                className={controlMono}
                 spellCheck={false}
               />
             </div>
@@ -491,8 +529,8 @@ export function AppLedgerPage(): JSX.Element {
       <Card>
         <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">Abstimmung (Zeitraum)</h2>
-            <p className="text-sm text-gray-500 mt-1">
+            <h2 className={sectionH2}>Abstimmung (Zeitraum)</h2>
+            <p className={clsx('mt-1', bodyMutedSm)}>
               Aggregiert Personenkonto, App-Hauptbuch und Bank-Contra für den gleichen Datumsfilter wie oben (nur Lesen,
               serverseitig begrenzt). Vertieft: Eröffnung + definierte Konten-Paare (tradeCash, wallet in/out).
             </p>
@@ -517,11 +555,11 @@ export function AppLedgerPage(): JSX.Element {
           )}
         >
           <div className="flex-1 min-w-[12rem]">
-            <label className="block text-xs text-gray-500 mb-1">Eröffnung für Abstimmung</label>
+            <label className={formLabelXs}>Eröffnung für Abstimmung</label>
             <select
               value={reconciliationOpeningSnapshotId}
               onChange={(e) => setReconciliationOpeningSnapshotId(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"
+              className={controlSm}
             >
               <option value="">Automatisch: letzter Snapshot vor Periodenbeginn</option>
               {openingSnapshots.map((s) => (
@@ -539,13 +577,13 @@ export function AppLedgerPage(): JSX.Element {
               isDark ? 'border-slate-600' : 'border-gray-100',
             )}
           >
-            <p className="text-xs text-gray-500 pt-3">
+            <p className={clsx('pt-3', noteXs)}>
               Zeilen: AccountStatement {reconciliationResult.rowCounts.accountStatement} · AppLedger{' '}
               {reconciliationResult.rowCounts.appLedgerEntry} · BankContra{' '}
               {reconciliationResult.rowCounts.bankContraPosting}
               {reconciliationResult.truncation.any ? ' · Hinweis: maxRows erreicht (unvollständig)' : ''}
             </p>
-            <p className="text-xs text-gray-600">
+            <p className={noteXs600}>
               Eröffnung:{' '}
               <span className="font-mono">
                 {reconciliationResult.parameters.openingSelection === 'latestBeforePeriod' && !reconciliationResult.openingSnapshot
@@ -561,7 +599,7 @@ export function AppLedgerPage(): JSX.Element {
                 {reconciliationResult.reconciliationDeep.pairResults.length}
               </span>
             </p>
-            <p className="text-xs text-gray-600">
+            <p className={noteXs600}>
               Personenkonto Σ Betrag (Zeitraum):{' '}
               <span className="font-mono">{reconciliationResult.accountStatement.sumAmount.toFixed(2)} €</span>
             </p>
@@ -591,16 +629,16 @@ export function AppLedgerPage(): JSX.Element {
             isDark ? 'border-slate-600' : 'border-gray-100',
           )}
         >
-          <h2 className="text-lg font-semibold">Buchungen ({totalCount})</h2>
+          <h2 className={sectionH2}>Buchungen ({totalCount})</h2>
         </div>
 
         {isLoading ? (
-          <div className="p-8 text-center text-gray-500">Daten werden geladen...</div>
+          <div className={emptyState}>Daten werden geladen...</div>
         ) : entries.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
+          <div className={emptyState}>
             Keine Buchungen gefunden.
             {!selectedAccount && !userFilter && !typeFilter && (
-              <p className="mt-2 text-sm">
+              <p className={clsx('mt-2 text-sm', isDark ? 'text-slate-500' : 'text-gray-500')}>
                 Gegenbuchungen werden automatisch erzeugt, wenn Gebühren von Nutzern erhoben werden.
               </p>
             )}

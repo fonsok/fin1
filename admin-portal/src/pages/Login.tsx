@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import clsx from 'clsx';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { Button, Input, Card } from '../components/ui';
 import { TwoFactorVerify } from '../components/TwoFactorVerify';
 import { DevPortalLoginReference } from '../components/DevPortalLoginReference';
@@ -27,6 +29,8 @@ function mapLoginErrorMessage(rawMessage: string): string {
 }
 
 export function LoginPage() {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const { login, isLoading, needs2FAVerification, user, isAuthenticated } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -75,8 +79,12 @@ export function LoginPage() {
 
         {/* Login Card */}
         <Card className="shadow-xl">
-          <h2 className="text-xl font-semibold text-gray-900 mb-1">Anmelden</h2>
-          <p className="text-gray-500 text-sm mb-6">{PORTAL_LOGIN_CARD_INTRO}</p>
+          <h2 className={clsx('text-xl font-semibold mb-1', isDark ? 'text-slate-100' : 'text-gray-900')}>
+            Anmelden
+          </h2>
+          <p className={clsx('text-sm mb-6', isDark ? 'text-slate-400' : 'text-gray-500')}>
+            {PORTAL_LOGIN_CARD_INTRO}
+          </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
@@ -110,8 +118,13 @@ export function LoginPage() {
             />
 
             {error && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-sm text-red-600">{error}</p>
+              <div
+                className={clsx(
+                  'p-3 border rounded-lg',
+                  isDark ? 'bg-red-950/40 border-red-800' : 'bg-red-50 border-red-200',
+                )}
+              >
+                <p className={clsx('text-sm', isDark ? 'text-red-300' : 'text-red-600')}>{error}</p>
               </div>
             )}
 
@@ -127,7 +140,7 @@ export function LoginPage() {
 
           <DevPortalLoginReference />
 
-          <p className="text-xs text-gray-400 text-center mt-6">
+          <p className={clsx('text-xs text-center mt-6', isDark ? 'text-slate-500' : 'text-gray-400')}>
             Nur für autorisierte Administratoren
           </p>
         </Card>
