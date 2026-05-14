@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
+import clsx from 'clsx';
 import { cloudFunction } from '../../../api/admin';
 import { Card, Button, Input } from '../../../components/ui';
+import { useTheme } from '../../../context/ThemeContext';
 import type { TwoFactorSetupResponse, TwoFactorEnableResponse } from '../types';
 
 interface TwoFactorSetupProps {
@@ -11,6 +13,8 @@ interface TwoFactorSetupProps {
 type Step = 'start' | 'scan' | 'verify' | 'backup';
 
 export function TwoFactorSetup({ onComplete }: TwoFactorSetupProps): JSX.Element {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const [step, setStep] = useState<Step>('start');
   const [setupData, setSetupData] = useState<TwoFactorSetupResponse | null>(null);
   const [backupCodes, setBackupCodes] = useState<string[]>([]);
@@ -55,6 +59,15 @@ export function TwoFactorSetup({ onComplete }: TwoFactorSetupProps): JSX.Element
     alert('Backup-Codes in Zwischenablage kopiert');
   };
 
+  const titleClass = clsx('text-xl font-semibold mb-2', isDark ? 'text-slate-100' : 'text-gray-900');
+  const bodyMuted = clsx(isDark ? 'text-slate-300' : 'text-gray-600');
+  const infoBox = clsx(
+    'rounded-lg p-4 mb-6 text-left',
+    isDark ? 'bg-slate-900/50 border border-slate-600' : 'bg-gray-50',
+  );
+  const listText = clsx('text-sm space-y-1', isDark ? 'text-slate-300' : 'text-gray-600');
+  const listHeading = clsx('text-sm font-medium mb-2', isDark ? 'text-slate-200' : 'text-gray-700');
+
   return (
     <Card className="max-w-lg">
       <div className="p-6">
@@ -64,14 +77,14 @@ export function TwoFactorSetup({ onComplete }: TwoFactorSetupProps): JSX.Element
             <div className="w-16 h-16 bg-fin1-light rounded-full flex items-center justify-center mx-auto mb-4">
               <span className="text-3xl">🔐</span>
             </div>
-            <h2 className="text-xl font-semibold mb-2">2FA aktivieren</h2>
-            <p className="text-gray-600 mb-6">
+            <h2 className={titleClass}>2FA aktivieren</h2>
+            <p className={clsx('mb-6', bodyMuted)}>
               Schützen Sie Ihr Konto mit Zwei-Faktor-Authentifizierung. Sie benötigen eine
               Authenticator-App auf Ihrem Smartphone.
             </p>
-            <div className="bg-gray-50 rounded-lg p-4 mb-6 text-left">
-              <p className="text-sm font-medium text-gray-700 mb-2">Kompatible Apps:</p>
-              <ul className="text-sm text-gray-600 space-y-1">
+            <div className={infoBox}>
+              <p className={listHeading}>Kompatible Apps:</p>
+              <ul className={listText}>
                 <li>• <strong>Authy</strong> (iOS, Android)</li>
                 <li>• <strong>1Password</strong> (alle Plattformen)</li>
                 <li>• <strong>Bitwarden</strong> (alle Plattformen)</li>
@@ -80,7 +93,9 @@ export function TwoFactorSetup({ onComplete }: TwoFactorSetupProps): JSX.Element
                 <li>• Jede TOTP-kompatible App</li>
               </ul>
             </div>
-            {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+            {error && (
+              <p className={clsx('text-sm mb-4', isDark ? 'text-red-400' : 'text-red-500')}>{error}</p>
+            )}
             <Button onClick={() => setupMutation.mutate()} disabled={setupMutation.isPending} className="w-full">
               {setupMutation.isPending ? 'Wird vorbereitet...' : 'Setup starten'}
             </Button>
@@ -90,33 +105,59 @@ export function TwoFactorSetup({ onComplete }: TwoFactorSetupProps): JSX.Element
         {/* Step 2: Scan QR Code */}
         {step === 'scan' && setupData && (
           <div className="text-center">
-            <h2 className="text-xl font-semibold mb-2">QR-Code scannen</h2>
-            <p className="text-gray-600 mb-4">
+            <h2 className={titleClass}>QR-Code scannen</h2>
+            <p className={clsx('mb-4', bodyMuted)}>
               Scannen Sie diesen QR-Code mit Ihrer Authenticator-App.
             </p>
 
             {setupData.qrCodeUrl ? (
-              <div className="bg-white p-4 rounded-lg border border-gray-200 inline-block mb-4">
+              <div
+                className={clsx(
+                  'p-4 rounded-lg border inline-block mb-4',
+                  isDark ? 'bg-white border-slate-500' : 'bg-white border-gray-200',
+                )}
+              >
                 <img src={setupData.qrCodeUrl} alt="2FA QR Code" className="w-48 h-48" />
               </div>
             ) : (
-              <div className="bg-gray-100 p-4 rounded-lg mb-4">
-                <p className="text-sm text-gray-500 mb-2">QR-Code nicht verfügbar. Manueller Schlüssel:</p>
-                <code className="bg-gray-200 px-2 py-1 rounded text-sm font-mono break-all">
+              <div
+                className={clsx(
+                  'p-4 rounded-lg mb-4',
+                  isDark ? 'bg-slate-900/70 border border-slate-600' : 'bg-gray-100',
+                )}
+              >
+                <p className={clsx('text-sm mb-2', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                  QR-Code nicht verfügbar. Manueller Schlüssel:
+                </p>
+                <code
+                  className={clsx(
+                    'px-2 py-1 rounded text-sm font-mono break-all',
+                    isDark ? 'bg-slate-950 text-slate-100' : 'bg-gray-200 text-gray-900',
+                  )}
+                >
                   {setupData.secret}
                 </code>
               </div>
             )}
 
             <details className="text-left mb-4">
-              <summary className="text-sm text-gray-500 cursor-pointer">
+              <summary
+                className={clsx('text-sm cursor-pointer', isDark ? 'text-slate-400' : 'text-gray-500')}
+              >
                 Manuelle Eingabe (falls QR-Scan nicht möglich)
               </summary>
-              <div className="mt-2 p-3 bg-gray-50 rounded-lg">
-                <p className="text-xs text-gray-500 mb-1">Geheimschlüssel:</p>
-                <code className="text-sm font-mono break-all">{setupData.secret}</code>
-                <p className="text-xs text-gray-500 mt-2 mb-1">Konto:</p>
-                <code className="text-sm">FIN1 Admin</code>
+              <div
+                className={clsx(
+                  'mt-2 p-3 rounded-lg',
+                  isDark ? 'bg-slate-900/50 border border-slate-600' : 'bg-gray-50',
+                )}
+              >
+                <p className={clsx('text-xs mb-1', isDark ? 'text-slate-400' : 'text-gray-500')}>Geheimschlüssel:</p>
+                <code className={clsx('text-sm font-mono break-all', isDark ? 'text-slate-200' : 'text-gray-900')}>
+                  {setupData.secret}
+                </code>
+                <p className={clsx('text-xs mt-2 mb-1', isDark ? 'text-slate-400' : 'text-gray-500')}>Konto:</p>
+                <code className={clsx('text-sm', isDark ? 'text-slate-200' : 'text-gray-900')}>FIN1 Admin</code>
               </div>
             </details>
 
@@ -129,8 +170,8 @@ export function TwoFactorSetup({ onComplete }: TwoFactorSetupProps): JSX.Element
         {/* Step 3: Verify Code */}
         {step === 'verify' && (
           <div className="text-center">
-            <h2 className="text-xl font-semibold mb-2">Code verifizieren</h2>
-            <p className="text-gray-600 mb-6">
+            <h2 className={titleClass}>Code verifizieren</h2>
+            <p className={clsx('mb-6', bodyMuted)}>
               Geben Sie den 6-stelligen Code aus Ihrer Authenticator-App ein.
             </p>
 
@@ -146,7 +187,9 @@ export function TwoFactorSetup({ onComplete }: TwoFactorSetupProps): JSX.Element
               autoFocus
             />
 
-            {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+            {error && (
+              <p className={clsx('text-sm mb-4', isDark ? 'text-red-400' : 'text-red-500')}>{error}</p>
+            )}
 
             <div className="flex gap-3">
               <Button variant="ghost" onClick={() => setStep('scan')}>
@@ -167,23 +210,39 @@ export function TwoFactorSetup({ onComplete }: TwoFactorSetupProps): JSX.Element
         {step === 'backup' && (
           <div>
             <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div
+                className={clsx(
+                  'w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4',
+                  isDark ? 'bg-green-900/50' : 'bg-green-100',
+                )}
+              >
                 <span className="text-3xl">✅</span>
               </div>
-              <h2 className="text-xl font-semibold mb-2">2FA aktiviert!</h2>
-              <p className="text-gray-600">
+              <h2 className={titleClass}>2FA aktiviert!</h2>
+              <p className={bodyMuted}>
                 Speichern Sie diese Backup-Codes an einem sicheren Ort. Sie benötigen sie,
                 falls Sie keinen Zugriff auf Ihre Authenticator-App haben.
               </p>
             </div>
 
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
-              <p className="text-amber-800 text-sm font-medium mb-2">
+            <div
+              className={clsx(
+                'rounded-lg border p-4 mb-4',
+                isDark ? 'bg-amber-950/40 border-amber-800' : 'bg-amber-50 border-amber-200',
+              )}
+            >
+              <p className={clsx('text-sm font-medium mb-2', isDark ? 'text-amber-200' : 'text-amber-800')}>
                 ⚠️ Diese Codes werden nur einmal angezeigt!
               </p>
               <div className="grid grid-cols-2 gap-2">
                 {backupCodes.map((code, i) => (
-                  <code key={i} className="bg-white px-3 py-2 rounded border text-center font-mono text-sm">
+                  <code
+                    key={i}
+                    className={clsx(
+                      'px-3 py-2 rounded border text-center font-mono text-sm',
+                      isDark ? 'bg-slate-900 border-slate-600 text-slate-100' : 'bg-white border-gray-200 text-gray-900',
+                    )}
+                  >
                     {code}
                   </code>
                 ))}

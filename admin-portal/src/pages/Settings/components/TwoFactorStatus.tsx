@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import clsx from 'clsx';
 import { cloudFunction } from '../../../api/admin';
 import { Card, Button, Badge, Input } from '../../../components/ui';
+import { useTheme } from '../../../context/ThemeContext';
 import { formatDateTime } from '../../../utils/format';
 
 interface TwoFactorStatusProps {
@@ -17,6 +19,8 @@ export function TwoFactorStatusCard({
   backupCodesRemaining,
   onSetupClick,
 }: TwoFactorStatusProps): JSX.Element {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const [showDisableModal, setShowDisableModal] = useState(false);
   const [showRegenerateModal, setShowRegenerateModal] = useState(false);
 
@@ -30,8 +34,10 @@ export function TwoFactorStatusCard({
                 <span className="text-xl">🔐</span>
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900">Zwei-Faktor-Authentifizierung</h3>
-                <p className="text-sm text-gray-500">
+                <h3 className={clsx('font-semibold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                  Zwei-Faktor-Authentifizierung
+                </h3>
+                <p className={clsx('text-sm', isDark ? 'text-slate-400' : 'text-gray-500')}>
                   {enabled ? 'Zusätzlicher Schutz ist aktiv' : 'Nicht aktiviert'}
                 </p>
               </div>
@@ -43,15 +49,28 @@ export function TwoFactorStatusCard({
 
           {enabled ? (
             <div className="space-y-4">
-              <div className="bg-gray-50 rounded-lg p-4">
+              <div
+                className={clsx(
+                  'rounded-lg p-4',
+                  isDark ? 'bg-slate-900/50 border border-slate-600' : 'bg-gray-50',
+                )}
+              >
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <p className="text-gray-500">Aktiviert seit</p>
-                    <p className="font-medium">{enabledAt ? formatDateTime(enabledAt) : '-'}</p>
+                    <p className={clsx(isDark ? 'text-slate-400' : 'text-gray-500')}>Aktiviert seit</p>
+                    <p className={clsx('font-medium', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                      {enabledAt ? formatDateTime(enabledAt) : '-'}
+                    </p>
                   </div>
                   <div>
-                    <p className="text-gray-500">Backup-Codes übrig</p>
-                    <p className={`font-medium ${(backupCodesRemaining || 0) <= 2 ? 'text-red-600' : ''}`}>
+                    <p className={clsx(isDark ? 'text-slate-400' : 'text-gray-500')}>Backup-Codes übrig</p>
+                    <p
+                      className={clsx(
+                        'font-medium',
+                        isDark ? 'text-slate-100' : 'text-gray-900',
+                        (backupCodesRemaining || 0) <= 2 && 'text-red-600',
+                      )}
+                    >
                       {backupCodesRemaining ?? '-'} von 8
                     </p>
                   </div>
@@ -59,8 +78,13 @@ export function TwoFactorStatusCard({
               </div>
 
               {(backupCodesRemaining || 0) <= 2 && (
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-                  <p className="text-amber-800 text-sm">
+                <div
+                  className={clsx(
+                    'rounded-lg border p-3',
+                    isDark ? 'bg-amber-950/40 border-amber-800' : 'bg-amber-50 border-amber-200',
+                  )}
+                >
+                  <p className={clsx('text-sm', isDark ? 'text-amber-200' : 'text-amber-800')}>
                     ⚠️ Sie haben nur noch wenige Backup-Codes. Generieren Sie neue, bevor alle aufgebraucht sind.
                   </p>
                 </div>
@@ -77,7 +101,7 @@ export function TwoFactorStatusCard({
             </div>
           ) : (
             <div>
-              <p className="text-gray-600 text-sm mb-4">
+              <p className={clsx('text-sm mb-4', isDark ? 'text-slate-300' : 'text-gray-600')}>
                 Aktivieren Sie 2FA für zusätzlichen Schutz. Bei jedem Login müssen Sie dann
                 einen Code aus Ihrer Authenticator-App eingeben.
               </p>
@@ -99,6 +123,8 @@ export function TwoFactorStatusCard({
 }
 
 function DisableModal({ onClose }: { onClose: () => void }): JSX.Element {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const [code, setCode] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -117,16 +143,25 @@ function DisableModal({ onClose }: { onClose: () => void }): JSX.Element {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
-        <h2 className="text-xl font-semibold mb-2">2FA deaktivieren</h2>
-        <p className="text-gray-600 text-sm mb-4">
+      <div
+        className={clsx(
+          'rounded-xl shadow-xl max-w-md w-full mx-4 p-6 border',
+          isDark ? 'bg-slate-800 border-slate-600 text-slate-100' : 'bg-white border-gray-100 text-gray-900',
+        )}
+      >
+        <h2 className={clsx('text-xl font-semibold mb-2', isDark ? 'text-slate-100' : 'text-gray-900')}>
+          2FA deaktivieren
+        </h2>
+        <p className={clsx('text-sm mb-4', isDark ? 'text-slate-300' : 'text-gray-600')}>
           Geben Sie Ihr Passwort und einen aktuellen 2FA-Code ein, um die
           Zwei-Faktor-Authentifizierung zu deaktivieren.
         </p>
 
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Passwort</label>
+            <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-200' : 'text-gray-700')}>
+              Passwort
+            </label>
             <Input
               type="password"
               value={password}
@@ -135,7 +170,9 @@ function DisableModal({ onClose }: { onClose: () => void }): JSX.Element {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">2FA-Code</label>
+            <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-200' : 'text-gray-700')}>
+              2FA-Code
+            </label>
             <Input
               type="text"
               inputMode="numeric"
@@ -147,7 +184,7 @@ function DisableModal({ onClose }: { onClose: () => void }): JSX.Element {
             />
           </div>
 
-          {error && <p className="text-red-500 text-sm">{error}</p>}
+          {error && <p className={clsx('text-sm', isDark ? 'text-red-400' : 'text-red-500')}>{error}</p>}
 
           <div className="flex gap-3 pt-2">
             <Button variant="ghost" onClick={onClose}>Abbrechen</Button>
@@ -167,6 +204,8 @@ function DisableModal({ onClose }: { onClose: () => void }): JSX.Element {
 }
 
 function RegenerateModal({ onClose }: { onClose: () => void }): JSX.Element {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const [code, setCode] = useState('');
   const [newCodes, setNewCodes] = useState<string[]>([]);
   const [error, setError] = useState('');
@@ -190,17 +229,26 @@ function RegenerateModal({ onClose }: { onClose: () => void }): JSX.Element {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
+      <div
+        className={clsx(
+          'rounded-xl shadow-xl max-w-md w-full mx-4 p-6 border',
+          isDark ? 'bg-slate-800 border-slate-600 text-slate-100' : 'bg-white border-gray-100 text-gray-900',
+        )}
+      >
         {newCodes.length === 0 ? (
           <>
-            <h2 className="text-xl font-semibold mb-2">Neue Backup-Codes generieren</h2>
-            <p className="text-gray-600 text-sm mb-4">
+            <h2 className={clsx('text-xl font-semibold mb-2', isDark ? 'text-slate-100' : 'text-gray-900')}>
+              Neue Backup-Codes generieren
+            </h2>
+            <p className={clsx('text-sm mb-4', isDark ? 'text-slate-300' : 'text-gray-600')}>
               Geben Sie einen aktuellen 2FA-Code ein. Alle bisherigen Backup-Codes werden ungültig.
             </p>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">2FA-Code</label>
+                <label className={clsx('block text-sm font-medium mb-1', isDark ? 'text-slate-200' : 'text-gray-700')}>
+                  2FA-Code
+                </label>
                 <Input
                   type="text"
                   inputMode="numeric"
@@ -213,7 +261,7 @@ function RegenerateModal({ onClose }: { onClose: () => void }): JSX.Element {
                 />
               </div>
 
-              {error && <p className="text-red-500 text-sm">{error}</p>}
+              {error && <p className={clsx('text-sm', isDark ? 'text-red-400' : 'text-red-500')}>{error}</p>}
 
               <div className="flex gap-3 pt-2">
                 <Button variant="ghost" onClick={onClose}>Abbrechen</Button>
@@ -230,19 +278,37 @@ function RegenerateModal({ onClose }: { onClose: () => void }): JSX.Element {
         ) : (
           <>
             <div className="text-center mb-4">
-              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+              <div
+                className={clsx(
+                  'w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3',
+                  isDark ? 'bg-green-900/50' : 'bg-green-100',
+                )}
+              >
                 <span className="text-2xl">✅</span>
               </div>
-              <h2 className="text-xl font-semibold">Neue Backup-Codes</h2>
+              <h2 className={clsx('text-xl font-semibold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+                Neue Backup-Codes
+              </h2>
             </div>
 
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
-              <p className="text-amber-800 text-sm font-medium mb-2">
+            <div
+              className={clsx(
+                'rounded-lg border p-4 mb-4',
+                isDark ? 'bg-amber-950/40 border-amber-800' : 'bg-amber-50 border-amber-200',
+              )}
+            >
+              <p className={clsx('text-sm font-medium mb-2', isDark ? 'text-amber-200' : 'text-amber-800')}>
                 ⚠️ Diese Codes werden nur einmal angezeigt!
               </p>
               <div className="grid grid-cols-2 gap-2">
                 {newCodes.map((c, i) => (
-                  <code key={i} className="bg-white px-3 py-2 rounded border text-center font-mono text-sm">
+                  <code
+                    key={i}
+                    className={clsx(
+                      'px-3 py-2 rounded border text-center font-mono text-sm',
+                      isDark ? 'bg-slate-900 border-slate-600 text-slate-100' : 'bg-white border-gray-200 text-gray-900',
+                    )}
+                  >
                     {c}
                   </code>
                 ))}
