@@ -119,7 +119,7 @@ Short checklist for merge-ready work (humans + agents). Full German wording: **P
 
 1. **Scope:** One PR = one coherent theme (Parse Cloud vs iOS vs CI/workflows vs admin-portal vs documentation).
 2. **Quality:** Run checks that match the diff (iOS build/tests per `ci.yml`; Parse Cloud: `npm test` under `backend/parse-server`; admin-portal: `npm run lint`, `npm run test:run`, `npm run build`).
-3. **Description:** State purpose, rollback note, and deploy impact (`./scripts/deploy-parse-cloud-to-fin1-server.sh`, `admin-portal/deploy.sh`) when server artifacts change.
+3. **Description:** State purpose, rollback note, and deploy impact (`./scripts/deploy-parse-cloud-to-fin1-server.sh`, `./admin-portal/deploy.sh`) when server artifacts change. For **admin-portal** source changes, assume **deploy is required** (see FIN1-Server Deploy below).
 4. **Merge hygiene:** Green CI; resolve conflicts on the feature branch; do not rewrite `main` / `origin/main` history.
 5. **Routine:** Large stabilization waves on `main` are an **exception** after first green; default back to small PRs.
 
@@ -142,16 +142,18 @@ When making code changes:
 
 ## FIN1-Server Deploy (Pflicht nach relevanten Änderungen)
 
-**Wann:** Nach Änderungen an **`backend/parse-server/cloud/`** (Cloud Code, `main.js`, `utils/`), **`admin-portal/`** (gebündeltes Admin-UI), oder wenn der Nutzer ausdrücklich Deploy wünscht.
+**Wann:** Nach Änderungen an **`backend/parse-server/cloud/`** (Cloud Code, `main.js`, `utils/`). Nach **jeder** Änderung am **`admin-portal/`**-Quellbaum (inkl. ESLint-Regeln, Refactors ohne sichtbare UI-Änderung): **immer** `./admin-portal/deploy.sh` ausführen — nicht nur auf ausdrückliche Nutzeranfrage. Zusätzlich bei ausdrücklichem Deploy-Wunsch für andere Bereiche.
+
+**Hinweis (Team-Policy):** Admin-Portal-Deploy nach Portal-Arbeit ist **standardmäßig Pflicht**, damit der LAN-Host (`~/fin1-server/admin/`) dem committed Stand entspricht.
 
 **Kanone (ein physischer LAN-Server, zwei IPs):** Host `iobox` hat **WLAN `192.168.178.24`** und **Ethernet `192.168.178.20`**. **Parse/HTTPS-URLs** in Doku/Clients: **`.24`**. Beide IPs sind **derselbe Docker-Stack** — vgl. `Documentation/OPERATIONAL_DEPLOY_HOSTS.md` und `NETZWERK_KONFIGURATION.md`.
 
 **Konfiguration:** `scripts/.env.server` (Vorlage `scripts/.env.server.example`): `FIN1_SERVER_IP` (Admin-`rsync`), optional `FIN1_PARSE_CLOUD_SSH_HOST` (Cloud-Deploy; Standard **`.24`** wenn unset). Schnellcheck: `./scripts/show-fin1-deploy-targets.sh`.
 
-**Agent-Verhalten:** Immer **anschließend** ausführen (nicht nur „kann der Nutzer tun“), sofern Netzwerk/SSH zum Zielhost möglich ist:
+**Agent-Verhalten:** Immer **anschließend** ausführen (nicht nur „kann der Nutzer tun“), sofern Netzwerk/SSH zum Zielhost möglich ist. **Admin-Portal:** Nach jedem Commit/Push, der `admin-portal/` betrifft, **`./admin-portal/deploy.sh`** vom Repo-Root ausführen (baut, rsync’t, nginx-Refresh) — auch bei rein internen Änderungen.
 
-1. **Admin-Portal** (Build + rsync + Verifikation):
-   - `cd admin-portal && ./deploy.sh`
+1. **Admin-Portal** (Build + rsync + Verifikation) — **nach jeder `admin-portal/`-Änderung:**
+   - `./admin-portal/deploy.sh` (vom Repo-Root; alternativ `cd admin-portal && ./deploy.sh`)
    - Ziel `~/fin1-server/admin/`; Host aus `FIN1_SERVER_IP` in `scripts/.env.server` (Default `.24`), siehe `admin-portal/deploy.sh`.
 
 2. **Parse Cloud Code** (ohne `--delete` auf `utils/` versehentlich falsche Dateien zu überschreiben):
