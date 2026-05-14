@@ -9,6 +9,9 @@ import { useTheme } from '../../context/ThemeContext';
 import {
   listRowStripeClasses,
   tableBodyDivideClasses,
+  tableBodyCellMonoHintClasses,
+  tableBodyCellMutedClasses,
+  tableBodyCellPrimaryClasses,
   tableHeaderCellTextClasses,
   tableTheadSurfaceClasses,
 } from '../../utils/tableStriping';
@@ -171,18 +174,23 @@ export function AuditLogsPage() {
         {isLoading ? (
           <div className="p-8 text-center">
             <div className="animate-spin w-8 h-8 border-4 border-fin1-primary border-t-transparent rounded-full mx-auto"></div>
-            <p className="text-gray-500 mt-4">Laden...</p>
+            <p className={clsx('mt-4', isDark ? 'text-slate-400' : 'text-gray-500')}>Laden...</p>
           </div>
         ) : error ? (
           <div className="p-8 text-center">
-            <p className="text-red-500">Fehler beim Laden der Logs</p>
+            <p className={clsx(isDark ? 'text-red-400' : 'text-red-500')}>Fehler beim Laden der Logs</p>
           </div>
         ) : !data?.logs?.length ? (
           <div className="p-8 text-center">
-            <svg className="w-12 h-12 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg
+              className={clsx('w-12 h-12 mx-auto mb-4', isDark ? 'text-slate-600' : 'text-gray-300')}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            <p className="text-gray-500">Keine Audit-Logs gefunden</p>
+            <p className={clsx(isDark ? 'text-slate-400' : 'text-gray-500')}>Keine Audit-Logs gefunden</p>
           </div>
         ) : (
           <>
@@ -215,7 +223,7 @@ export function AuditLogsPage() {
                 <tbody className={tableBodyDivideClasses(isDark)}>
                   {data.logs.map((log, index: number) => (
                     <tr key={log.objectId} className={listRowStripeClasses(isDark, index)}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className={clsx('px-6 py-4 whitespace-nowrap text-sm', tableBodyCellMutedClasses(isDark))}>
                         {formatDateTime(log.createdAt)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -224,24 +232,24 @@ export function AuditLogsPage() {
                         </Badge>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm text-gray-900">
+                        <span className={clsx('text-sm', tableBodyCellPrimaryClasses(isDark))}>
                           {getActionLabel(log.action)}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <p className="text-sm text-gray-900">
+                        <p className={clsx('text-sm', tableBodyCellPrimaryClasses(isDark))}>
                           {log.userEmail || log.userId || '-'}
                         </p>
                         {log.userRole && (
-                          <p className="text-xs text-gray-500">{log.userRole}</p>
+                          <p className={clsx('text-xs', tableBodyCellMutedClasses(isDark))}>{log.userRole}</p>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className={clsx('px-6 py-4 whitespace-nowrap text-sm', tableBodyCellMutedClasses(isDark))}>
                         {log.resourceType ? (
                           <span>
                             {log.resourceType}
                             {log.resourceId && (
-                              <span className="font-mono text-xs ml-1">
+                              <span className={clsx('font-mono text-xs ml-1', tableBodyCellMonoHintClasses(isDark))}>
                                 ({log.resourceId.slice(0, 8)}...)
                               </span>
                             )}

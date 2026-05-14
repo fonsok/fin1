@@ -106,7 +106,7 @@ export function UserDetailPage() {
   if (error || !user) {
     return (
       <Card className="text-center py-8">
-        <p className="text-red-500">Benutzer nicht gefunden</p>
+        <p className={clsx(isDark ? 'text-red-400' : 'text-red-500')}>Benutzer nicht gefunden</p>
         <Button variant="secondary" className="mt-4" onClick={() => navigate('/users')}>
           Zurück zur Liste
         </Button>
@@ -290,9 +290,13 @@ export function UserDetailPage() {
           </p>
           <p className={clsx('text-sm', isDark ? 'text-slate-300' : 'text-gray-600')}>
             Aktueller Modus für diesen Nutzer:{' '}
-            <span className="font-semibold">{walletControls?.effectiveMode ?? 'deposit_and_withdrawal'}</span>
+            <span className={clsx('font-semibold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+              {walletControls?.effectiveMode ?? 'deposit_and_withdrawal'}
+            </span>
             {' '}| Nutzer-Override:{' '}
-            <span className="font-semibold">{walletControls?.userOverrideMode ?? 'kein Override'}</span>
+            <span className={clsx('font-semibold', isDark ? 'text-slate-100' : 'text-gray-900')}>
+              {walletControls?.userOverrideMode ?? 'kein Override'}
+            </span>
           </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <select
@@ -327,10 +331,10 @@ export function UserDetailPage() {
               Sperrung via 4-Augen beantragen
             </Button>
             {walletModeMutation.isSuccess && (
-              <span className="text-sm text-green-600">Antrag erstellt.</span>
+              <span className={clsx('text-sm', isDark ? 'text-emerald-400' : 'text-green-600')}>Antrag erstellt.</span>
             )}
             {walletModeMutation.isError && (
-              <span className="text-sm text-red-500">Antrag konnte nicht erstellt werden.</span>
+              <span className={clsx('text-sm', isDark ? 'text-red-400' : 'text-red-500')}>Antrag konnte nicht erstellt werden.</span>
             )}
           </div>
         </div>
