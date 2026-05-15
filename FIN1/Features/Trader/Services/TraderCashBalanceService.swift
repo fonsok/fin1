@@ -293,10 +293,3 @@ final class TraderCashBalanceService: TraderCashBalanceServiceProtocol, Observab
         }
     }
 }
-
-// MARK: - Notification Names
-
-extension Notification.Name {
-    static let traderBalanceDidChange = Notification.Name("traderBalanceDidChange")
-    static let traderCashBalanceLiveQueryUpdate = Notification.Name("traderCashBalanceLiveQueryUpdate")
-}

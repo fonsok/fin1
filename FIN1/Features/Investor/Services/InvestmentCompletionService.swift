@@ -7,16 +7,18 @@ import Foundation
 final class InvestmentCompletionService: InvestmentCompletionServiceProtocol {
 
     // MARK: - Dependencies
-    private let poolTradeParticipationService: (any PoolTradeParticipationServiceProtocol)?
-    private let telemetryService: (any TelemetryServiceProtocol)?
-    private let investorCashBalanceService: (any InvestorCashBalanceServiceProtocol)?
-    private let tradeLifecycleService: (any TradeLifecycleServiceProtocol)?
-    private let invoiceService: (any InvoiceServiceProtocol)?
-    private let transactionIdService: (any TransactionIdServiceProtocol)?
-    private let userService: (any UserServiceProtocol)?
-    private let documentService: (any DocumentServiceProtocol)?
-    private let configurationService: any ConfigurationServiceProtocol
-    private let settlementAPIService: (any SettlementAPIServiceProtocol)?
+    // internal: InvestmentCompletionService+Helpers accesses these from a separate file
+
+    let poolTradeParticipationService: (any PoolTradeParticipationServiceProtocol)?
+    let telemetryService: (any TelemetryServiceProtocol)?
+    let investorCashBalanceService: (any InvestorCashBalanceServiceProtocol)?
+    let tradeLifecycleService: (any TradeLifecycleServiceProtocol)?
+    let invoiceService: (any InvoiceServiceProtocol)?
+    let transactionIdService: (any TransactionIdServiceProtocol)?
+    let userService: (any UserServiceProtocol)?
+    let documentService: (any DocumentServiceProtocol)?
+    let configurationService: any ConfigurationServiceProtocol
+    let settlementAPIService: (any SettlementAPIServiceProtocol)?
 
     // MARK: - Initialization
     init(
@@ -114,191 +116,5 @@ final class InvestmentCompletionService: InvestmentCompletionServiceProtocol {
             configurationService: self.configurationService,
             settlementAPIService: self.settlementAPIService
         )
-    }
-
-    // MARK: - Private Helpers
-
-    private func filterInvestmentsToCheck(
-        _ investments: [Investment],
-        specificInvestmentIds: [String]?
-    ) -> [Investment] {
-        if let specificIds = specificInvestmentIds {
-            let filtered = investments.filter { specificIds.contains($0.id) }
-            print("🔍 InvestmentCompletionService: Checking \(filtered.count) specific investments (out of \(investments.count) total)")
-            return filtered
-        } else {
-            print("🔍 InvestmentCompletionService: Checking \(investments.count) investments")
-            return investments
-        }
-    }
-
-    private func checkAndMarkCompletion(for investment: Investment) -> Investment? {
-        print("   🔍 Investment \(investment.id): checking reservation status")
-        print("      Reservation Status: \(investment.reservationStatus.rawValue)")
-
-        guard investment.reservationStatus == .completed else {
-            return nil
-        }
-
-        // Verify investment participated in trades
-        guard self.verifyTradeParticipation(for: investment) else {
-            print("   ⚠️ Investment \(investment.id): pool status is completed but has no trade participations - skipping")
-            return nil
-        }
-
-        // Calculate profits
-        let (accumulatedProfit, calculatedReturn) = self.calculateProfits(for: investment)
-
-        let updatedInvestment = investment.markAsCompleted(
-            calculatedProfit: accumulatedProfit,
-            calculatedReturn: calculatedReturn
-        )
-
-        self.logCompletionDetails(
-            original: investment,
-            updated: updatedInvestment,
-            accumulatedProfit: accumulatedProfit,
-            calculatedReturn: calculatedReturn
-        )
-
-        self.telemetryService?.trackEvent(name: "investment_status_updated", properties: [
-            "investment_id": investment.id,
-            "new_status": updatedInvestment.status.rawValue,
-            "accumulated_profit": accumulatedProfit
-        ])
-
-        return updatedInvestment
-    }
-
-    private func verifyTradeParticipation(for investment: Investment) -> Bool {
-        guard let poolTradeParticipationService = poolTradeParticipationService else {
-            return true // Fallback: assume valid
-        }
-
-        let participations = poolTradeParticipationService.getParticipations(forInvestmentId: investment.id)
-        print("   📊 Investment \(investment.id): has \(participations.count) trade participations")
-        return !participations.isEmpty
-    }
-
-    private func calculateProfits(for investment: Investment) -> (profit: Double, return: Double) {
-        guard let poolTradeParticipationService = poolTradeParticipationService else {
-            // Fallback calculation
-            let baseReturnRate = 0.05
-            return (investment.amount * baseReturnRate, baseReturnRate)
-        }
-
-        let accumulatedProfit = poolTradeParticipationService.getAccumulatedProfit(for: investment.id)
-        let participations = poolTradeParticipationService.getParticipations(forInvestmentId: investment.id)
-
-        // Use trade's ROI directly - same for trader and all investors
-        // This ensures consistency: if trade returns 100%, all participants see 100%
-        let calculatedReturn: Double
-        if let tradeLifecycleService = tradeLifecycleService,
-           let tradeROI = InvestmentProfitCalculator.getTradeROI(
-               for: participations,
-               tradeLifecycleService: tradeLifecycleService
-           ) {
-            // Trade ROI is already in percent format (e.g., 42.04)
-            calculatedReturn = tradeROI
-        } else {
-            // Keep persisted value if trade ROI is temporarily unavailable.
-            // This avoids introducing a second competing formula.
-            calculatedReturn = investment.performance
-        }
-
-        print("💰 InvestmentCompletionService: Profit calculation")
-        print("   📊 Accumulated profit (net): €\(String(format: "%.2f", accumulatedProfit))")
-        print("   📊 Investment capital: €\(String(format: "%.2f", investment.amount))")
-        print("   📈 Return (trade-led): \(String(format: "%.2f", calculatedReturn))%")
-
-        return (accumulatedProfit, calculatedReturn)
-    }
-
-    private func updateProfitForInvestment(
-        _ investment: Investment,
-        poolTradeParticipationService: any PoolTradeParticipationServiceProtocol
-    ) -> Investment? {
-        let accumulatedProfit = poolTradeParticipationService.getAccumulatedProfit(for: investment.id)
-        let newCurrentValue = investment.amount + accumulatedProfit
-
-        let participations = poolTradeParticipationService.getParticipations(forInvestmentId: investment.id)
-
-        // Use trade's ROI directly - same for trader and all investors
-        // This ensures consistency: if trade returns 100%, all participants see 100%
-        let returnPercentage: Double
-        if let tradeLifecycleService = tradeLifecycleService,
-           let tradeROI = InvestmentProfitCalculator.getTradeROI(
-               for: participations,
-               tradeLifecycleService: tradeLifecycleService
-           ) {
-            // Trade ROI is already in percent format (e.g., 42.04)
-            returnPercentage = tradeROI
-        } else {
-            // Keep persisted value if trade ROI is temporarily unavailable.
-            // This avoids introducing a second competing formula.
-            returnPercentage = investment.performance
-        }
-
-        // Only update if values have changed
-        guard abs(investment.currentValue - newCurrentValue) > 0.01 ||
-            abs(investment.performance - returnPercentage) > 0.01 else {
-            return nil
-        }
-
-        let updatedInvestment = Investment(
-            id: investment.id,
-            investmentNumber: investment.investmentNumber,
-            batchId: investment.batchId,
-            investorId: investment.investorId,
-            investorName: investment.investorName,
-            traderId: investment.traderId,
-            traderName: investment.traderName,
-            amount: investment.amount,
-            currentValue: newCurrentValue,
-            date: investment.date,
-            status: investment.status,
-            performance: returnPercentage,
-            numberOfTrades: investment.numberOfTrades,
-            sequenceNumber: investment.sequenceNumber,
-            createdAt: investment.createdAt,
-            updatedAt: Date(),
-            completedAt: investment.completedAt,
-            specialization: investment.specialization,
-            reservationStatus: investment.reservationStatus,
-            partialSellCount: investment.partialSellCount,
-            realizedSellQuantity: investment.realizedSellQuantity,
-            realizedSellAmount: investment.realizedSellAmount,
-            lastPartialSellAt: investment.lastPartialSellAt,
-            tradeSellVolumeProgress: investment.tradeSellVolumeProgress
-        )
-
-        print("💰 InvestmentCompletionService: Updated investment \(investment.id) with profit")
-        print("   📊 Accumulated profit: €\(String(format: "%.2f", accumulatedProfit))")
-        print("   💵 New currentValue: €\(String(format: "%.2f", newCurrentValue))")
-        print("   📈 New performance: \(String(format: "%.2f", returnPercentage))%")
-
-        return updatedInvestment
-    }
-
-    private func logCompletionDetails(
-        original: Investment,
-        updated: Investment,
-        accumulatedProfit: Double,
-        calculatedReturn: Double
-    ) {
-        print("✅ InvestmentCompletionService: Investment \(original.id) marked as completed")
-        print("   📊 Investment status: \(original.status.rawValue) -> \(updated.status.rawValue)")
-        print("   📊 Investment completedAt: \(updated.completedAt?.description ?? "nil")")
-        print("   💰 Calculated profit: €\(String(format: "%.2f", accumulatedProfit))")
-        print("   📈 Calculated return: \(String(format: "%.2f", calculatedReturn))%")
-        print("   💵 New currentValue: €\(String(format: "%.2f", updated.currentValue))")
-    }
-
-    private func logCompletionResults(updatedInvestments: [Investment]) {
-        if !updatedInvestments.isEmpty {
-            print("   📡 InvestmentCompletionService: Updated \(updatedInvestments.count) investments")
-        } else {
-            print("   ℹ️ No investments needed to be marked as completed")
-        }
     }
 }
