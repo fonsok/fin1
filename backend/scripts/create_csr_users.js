@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 
 /**
- * Script to create CSR users for admin portal access
- * Usage: node create_csr_users.js
+ * CSR portal users — passwords live in CSR_USERS below (dev SSOT for CSR secrets in-repo).
+ * E-mails must match admin-portal/src/constants/portalLogin.ts → PORTAL_DEV_CSR_ACCOUNTS.
+ * Overview: Documentation/DEV_PORTAL_LOGIN_SSOT.md
  */
 
 const https = require('https');

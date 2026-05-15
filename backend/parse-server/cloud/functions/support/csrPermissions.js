@@ -1,14 +1,18 @@
 'use strict';
 
 const { requireAdminRole } = require('../../utils/permissions');
+const {
+  CANONICAL_CSR_ROLE_KEYS,
+  CSR_ROLE_DEFINITIONS,
+  getCSRPermissionDefinitionMap,
+  resolveCsrRoleDefinitionByKey,
+} = require('./csrRoleStaticSets');
 
 // ============================================================================
 // CSR PERMISSIONS & ROLES (RBAC)
 // Mirrors iOS: CustomerSupportPermission.swift, CustomerSupportPermissionSet.swift
+// Static role/permission sets: ./csrRoleStaticSets.js (single source with seed)
 // ============================================================================
-
-/** Canonical CSRRole.key values (Parse seed / iOS CSRRole). */
-const CANONICAL_CSR_ROLE_KEYS = new Set(['level1', 'level2', 'fraud', 'compliance', 'techSupport', 'teamlead']);
 
 /**
  * Maps User.csrSubRole and admin-portal aliases → CSRRole.key used in Parse seed.
@@ -29,7 +33,10 @@ const CSR_SUBROLE_ALIAS_TO_KEY = {
   compliance: 'compliance',
   tech_support: 'techSupport',
   techsupport: 'techSupport',
+  tech: 'techSupport',
   teamlead: 'teamlead',
+  team_lead: 'teamlead',
+  lead: 'teamlead',
 };
 
 /** Legacy Mongo init (00_init_admin.js) used CSRRole.name instead of key. */
@@ -162,6 +169,61 @@ Parse.Cloud.define('getCSRRoles', async (request) => {
 });
 
 /**
+ * Group CSR permission keys for API response. Uses Parse CSRPermission rows when present,
+ * otherwise static catalog (csrRoleStaticSets.js) so UI stays accurate if DB roles are missing.
+ */
+function groupCSRPermissionKeysForResponse(permissionKeys, permissionsFromQuery) {
+  const defMap = getCSRPermissionDefinitionMap();
+  const categoryOrder = ['viewing', 'modification', 'support', 'compliance', 'fraud', 'administration'];
+  const byKey = new Map();
+  for (const perm of permissionsFromQuery) {
+    byKey.set(perm.get('key'), perm);
+  }
+
+  const grouped = {};
+  for (const key of permissionKeys) {
+    const parseRow = byKey.get(key);
+    const def = defMap.get(key);
+    let category;
+    let displayName;
+    let isReadOnly;
+    let requiresApproval;
+    if (parseRow) {
+      category = parseRow.get('category');
+      displayName = parseRow.get('displayName');
+      isReadOnly = parseRow.get('isReadOnly');
+      requiresApproval = parseRow.get('requiresApproval');
+    } else if (def) {
+      category = def.category;
+      displayName = def.displayName;
+      isReadOnly = def.isReadOnly;
+      requiresApproval = def.requiresApproval;
+    } else {
+      category = 'administration';
+      displayName = key;
+      isReadOnly = false;
+      requiresApproval = false;
+    }
+    if (!grouped[category]) {
+      grouped[category] = {
+        category,
+        displayName: getCategoryDisplayName(category),
+        icon: getCategoryIcon(category),
+        permissions: [],
+      };
+    }
+    grouped[category].permissions.push({
+      key,
+      displayName,
+      isReadOnly,
+      requiresApproval,
+    });
+  }
+
+  return categoryOrder.filter((cat) => grouped[cat]).map((cat) => grouped[cat]);
+}
+
+/**
  * Get permissions for a specific CSR role
  */
 Parse.Cloud.define('getCSRRolePermissions', async (request) => {
@@ -174,64 +236,143 @@ Parse.Cloud.define('getCSRRolePermissions', async (request) => {
     throw new Parse.Error(Parse.Error.INVALID_QUERY, 'roleKey required');
   }
 
+  const tried = normalizeCSRRoleLookupKey(roleKey);
   const role = await fetchCSRRoleByKeyFlexible(roleKey);
+  const staticForRole = resolveCsrRoleDefinitionByKey(tried);
 
-  if (!role) {
-    const tried = normalizeCSRRoleLookupKey(roleKey);
-    throw new Parse.Error(
-      Parse.Error.OBJECT_NOT_FOUND,
-      `Role '${roleKey}' not found (CSRRole.key/name; normalized: '${tried}'). Seed CSR roles if the collection is empty.`,
-    );
-  }
+  let permissionKeys;
+  let rolePayload;
+  /** @type {{ source: 'parse_role' | 'static_definition_fallback', detail?: string }} */
+  let resolution = { source: 'parse_role' };
 
-  const permissionKeys = role.get('permissions') || [];
-
-  // Get full permission details
-  const permQuery = new Parse.Query('CSRPermission');
-  permQuery.containedIn('key', permissionKeys);
-  permQuery.equalTo('isActive', true);
-  const permissions = await permQuery.find({ useMasterKey: true });
-
-  // Group by category
-  const grouped = {};
-  const categoryOrder = ['viewing', 'modification', 'support', 'compliance', 'fraud', 'administration'];
-
-  for (const perm of permissions) {
-    const category = perm.get('category');
-    if (!grouped[category]) {
-      grouped[category] = {
-        category,
-        displayName: getCategoryDisplayName(category),
-        icon: getCategoryIcon(category),
-        permissions: []
-      };
-    }
-    grouped[category].permissions.push({
-      key: perm.get('key'),
-      displayName: perm.get('displayName'),
-      isReadOnly: perm.get('isReadOnly'),
-      requiresApproval: perm.get('requiresApproval')
-    });
-  }
-
-  const result = categoryOrder
-    .filter(cat => grouped[cat])
-    .map(cat => grouped[cat]);
-
-  return {
-    role: {
+  if (role) {
+    permissionKeys = role.get('permissions') || [];
+    rolePayload = {
       key: role.get('key'),
       displayName: role.get('displayName'),
       shortName: role.get('shortName'),
       icon: role.get('icon'),
       color: role.get('color'),
       canApprove: role.get('canApprove'),
-      description: role.get('description')
-    },
+      description: role.get('description'),
+    };
+    // CSRRole-Datensatz ohne permissions[] (z. B. alte Mongo-Init): kanonische Liste aus App-Definition
+    if (!permissionKeys.length && staticForRole && staticForRole.permissions.length) {
+      permissionKeys = staticForRole.permissions;
+      const parseRoleLabel =
+        role.get('key') || role.get('name') || tried || 'unbekannt';
+      resolution = {
+        source: 'static_definition_fallback',
+        detail:
+          `CSRRole '${parseRoleLabel}' in Parse hat keine oder leere permissions[] (key fehlt ggf. — Legacy-Mongo-Init). ` +
+          'Die angezeigte Berechtigungsliste entspricht der kanonischen App-Definition (iOS/Seed). ' +
+          'Bitte syncCSRRolesFromCanonical ausführen (empfohlen), oder CSRRole.permissions in Parse setzen, ' +
+          'oder seedCSRPermissions / forceReseedCSRPermissions.',
+      };
+    }
+  } else {
+    if (!staticForRole) {
+      const valid = CSR_ROLE_DEFINITIONS.map((r) => `${r.key} (${r.shortName}: ${r.displayName})`).join('; ');
+      throw new Parse.Error(
+        Parse.Error.OBJECT_NOT_FOUND,
+        `Unbekannte CSR-Rolle: Eingabe='${roleKey}', normalisiert='${tried}'. ` +
+          `Erwartete CSRRole.key / csrSubRole-Alias → key: ${valid}.`,
+      );
+    }
+    permissionKeys = staticForRole.permissions;
+    rolePayload = {
+      key: staticForRole.key,
+      displayName: staticForRole.displayName,
+      shortName: staticForRole.shortName,
+      icon: staticForRole.icon,
+      color: staticForRole.color,
+      canApprove: staticForRole.canApprove,
+      description: staticForRole.description,
+    };
+    resolution = {
+      source: 'static_definition_fallback',
+      detail:
+        `Kein passender CSRRole-Datensatz in Parse für key/name='${tried}' (Anfrage: '${roleKey}'). ` +
+        'Berechtigungen werden aus der kanonischen App-Definition angezeigt. ' +
+        'Bitte syncCSRRolesFromCanonical oder seedCSRPermissions ausführen, damit Parse mit der App synchron bleibt.',
+    };
+  }
+
+  const permQuery = new Parse.Query('CSRPermission');
+  permQuery.containedIn('key', permissionKeys);
+  permQuery.equalTo('isActive', true);
+  const permissions = await permQuery.find({ useMasterKey: true });
+
+  const result = groupCSRPermissionKeysForResponse(permissionKeys, permissions);
+
+  return {
+    role: rolePayload,
     permissionCount: permissionKeys.length,
-    permissions: result
+    permissions: result,
+    resolution,
   };
 });
+
+/**
+ * Upsert CSRRole rows from csrRoleStaticSets (key, permissions[], UI fields).
+ * Fixes legacy Mongo init rows (name only, empty permissions) without deleting CSRPermission.
+ * Idempotent; safe to run repeatedly. Master key or admin session.
+ */
+async function upsertCSRRolesFromCanonicalCore(request) {
+  if (!request.master) {
+    requireAdminRole(request);
+  }
+
+  const Role = Parse.Object.extend('CSRRole');
+  let updated = 0;
+  let created = 0;
+
+  for (const roleData of CSR_ROLE_DEFINITIONS) {
+    const legacyName = CANONICAL_KEY_TO_LEGACY_NAME[roleData.key] || roleData.key;
+    let role = await fetchCSRRoleByKeyFlexible(roleData.key);
+    if (role) {
+      role.set('key', roleData.key);
+      role.set('name', legacyName);
+      role.set('displayName', roleData.displayName);
+      role.set('shortName', roleData.shortName);
+      role.set('icon', roleData.icon);
+      role.set('color', roleData.color);
+      role.set('permissions', roleData.permissions);
+      role.set('canApprove', roleData.canApprove);
+      role.set('description', roleData.description);
+      role.set('sortOrder', roleData.sortOrder);
+      role.set('isActive', true);
+      await role.save(null, { useMasterKey: true });
+      updated += 1;
+    } else {
+      const r = new Role();
+      r.set('key', roleData.key);
+      r.set('name', legacyName);
+      r.set('displayName', roleData.displayName);
+      r.set('shortName', roleData.shortName);
+      r.set('icon', roleData.icon);
+      r.set('color', roleData.color);
+      r.set('permissions', roleData.permissions);
+      r.set('canApprove', roleData.canApprove);
+      r.set('description', roleData.description);
+      r.set('sortOrder', roleData.sortOrder);
+      r.set('isActive', true);
+      await r.save(null, { useMasterKey: true });
+      created += 1;
+    }
+  }
+
+  return {
+    success: true,
+    message: `CSRRole upsert: ${updated} updated, ${created} created (canonical keys + permissions[])`,
+    updated,
+    created,
+  };
+}
+
+Parse.Cloud.define('upsertCSRRolesFromCanonical', upsertCSRRolesFromCanonicalCore);
+/** @deprecated Use upsertCSRRolesFromCanonical. Legacy alias for scripts/docs. */
+Parse.Cloud.define('syncCSRRolesFromCanonical', upsertCSRRolesFromCanonicalCore);
 
 /**
  * Check if a user has a specific CSR permission
@@ -251,12 +392,17 @@ Parse.Cloud.define('checkCSRPermission', async (request) => {
   const csrSubRole = user.get('csrSubRole') || 'level1';
 
   const role = await fetchCSRRoleByKeyFlexible(csrSubRole);
+  const canonical = normalizeCSRRoleLookupKey(csrSubRole);
+  const staticDef = resolveCsrRoleDefinitionByKey(canonical);
 
-  if (!role) {
+  if (!role && !staticDef) {
     return { hasPermission: false, reason: 'Role not found' };
   }
 
-  const permissions = role.get('permissions') || [];
+  let permissions = role ? role.get('permissions') || [] : staticDef.permissions;
+  if (role && (!permissions || !permissions.length) && staticDef && staticDef.permissions.length) {
+    permissions = staticDef.permissions;
+  }
   const hasPermission = permissions.includes(permissionKey);
 
   // Get permission details for approval info
@@ -267,6 +413,9 @@ Parse.Cloud.define('checkCSRPermission', async (request) => {
     const perm = await permQuery.first({ useMasterKey: true });
     if (perm) {
       requiresApproval = perm.get('requiresApproval');
+    } else {
+      const def = getCSRPermissionDefinitionMap().get(permissionKey);
+      if (def) requiresApproval = def.requiresApproval;
     }
   }
 
@@ -274,7 +423,7 @@ Parse.Cloud.define('checkCSRPermission', async (request) => {
     hasPermission,
     requiresApproval,
     userRole: csrSubRole,
-    canApprove: role.get('canApprove')
+    canApprove: role ? role.get('canApprove') : staticDef.canApprove,
   };
 });
 
@@ -306,6 +455,10 @@ Parse.Cloud.define('getCSRAgentsWithRoles', async (request) => {
     const csrSubRole = user.get('csrSubRole') || 'level1';
     const canonical = normalizeCSRRoleLookupKey(csrSubRole);
     const roleInfo = roleMap[csrSubRole] || roleMap[canonical] || {};
+    const staticDef = resolveCsrRoleDefinitionByKey(canonical);
+    const permList = (roleInfo.permissions && roleInfo.permissions.length)
+      ? roleInfo.permissions
+      : (staticDef ? staticDef.permissions : []);
 
     return {
       objectId: user.id,
@@ -314,11 +467,11 @@ Parse.Cloud.define('getCSRAgentsWithRoles', async (request) => {
       lastName: user.get('lastName'),
       status: user.get('status') || 'active',
       csrSubRole,
-      roleDisplayName: roleInfo.displayName || csrSubRole,
-      roleIcon: roleInfo.icon,
-      roleColor: roleInfo.color,
-      canApprove: roleInfo.canApprove || false,
-      permissionCount: (roleInfo.permissions || []).length
+      roleDisplayName: roleInfo.displayName || (staticDef && staticDef.displayName) || csrSubRole,
+      roleIcon: roleInfo.icon || (staticDef && staticDef.icon),
+      roleColor: roleInfo.color || (staticDef && staticDef.color),
+      canApprove: roleInfo.canApprove || (staticDef && staticDef.canApprove) || false,
+      permissionCount: permList.length
     };
   });
 

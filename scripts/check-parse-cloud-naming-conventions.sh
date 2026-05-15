@@ -47,6 +47,7 @@ legacy_cloud_function_allowlist = frozenset({
     "devResetTradingTestData",
     "devResetLegalDocumentsBaseline",
     "devResetFAQsBaseline",
+    "syncCSRRolesFromCanonical",
 })
 
 # Dateinamen mit zulässigem „backup“-Substring (fachlicher Name, kein Temp-File).

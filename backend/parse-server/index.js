@@ -103,8 +103,8 @@ const parseServerConfig = {
     resetTokenValidityDuration: 24 * 60 * 60 * 1000, // 24 hours
   },
   accountLockout: {
-    duration: 5,
-    threshold: 3,
+    duration: Number(process.env.PARSE_ACCOUNT_LOCKOUT_DURATION_MINUTES || 5),
+    threshold: Number(process.env.PARSE_ACCOUNT_LOCKOUT_THRESHOLD || 3),
     // After password reset via token flow, clear failed-login / lockout fields (Parse built-in).
     unlockOnPasswordReset: true,
   },
