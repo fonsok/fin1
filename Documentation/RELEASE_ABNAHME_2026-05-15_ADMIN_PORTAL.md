@@ -6,7 +6,7 @@ Stabilization v1 — **§5 Release-Quickcheck** nach Chip-SSOT, Compliance/Audit
 
 - Checkliste: `Documentation/STABILIZATION_V1_CHECKLIST.md` §5
 - Vorherige Abnahme: `Documentation/RELEASE_ABNAHME_2026-03-19_ADMIN_PORTAL.md`
-- Git `main` (Stand Abnahme-Start): `b2650e4`
+- Git `main` zum Abnahme-Start der Checkliste: `b2650e4`; **aktueller Deploy** gebaut aus `main` `@c1f90ba` (Chip slate + Docs; iOS-File-Size-CI ist rein repo-seitig)
 
 ---
 
@@ -20,7 +20,7 @@ Stabilization v1 — **§5 Release-Quickcheck** nach Chip-SSOT, Compliance/Audit
 | Parse Cloud shadow `configHelper.js` | ✅ OK |
 | Parse Cloud naming conventions | ✅ OK (keine geänderten Cloud-Dateien im Diff) |
 
-**CI:** `admin-portal`-Job ✅ nach `b2650e4`. iOS `build-test-lint` → **Check File Sizes** via `check-file-sizes.sh --mode baseline` (Layer 1, commit pending).
+**CI:** `admin-portal`-Job ✅ inkl. ESLint slate (`b2650e4`). **iOS** `build-test-lint` → **Check File Sizes** mit `./scripts/check-file-sizes.sh --mode baseline` (Layer 1, auf `main` ab `13bf19c`).
 
 ---
 
@@ -28,9 +28,9 @@ Stabilization v1 — **§5 Release-Quickcheck** nach Chip-SSOT, Compliance/Audit
 
 | Artefakt | Stand |
 |----------|--------|
-| Admin SPA auf `192.168.178.20` | `index-BFEnjOl6.js` (Deploy nach `04ad700`) |
-| Enthält | Chip-SSOT, Audit/Compliance-Typ-Chips, §3 QuickActions/Statement/Security |
-| Nach `b2650e4` | Nur ESLint slate-Tokens — optional `./admin-portal/deploy.sh` |
+| Admin SPA auf `192.168.178.20` | `index-f899-fZR.js` + `index-CF4kClKH.css` (Deploy `./admin-portal/deploy.sh`, 2026-05-15; `nginx` danach recreated) |
+| Gebaut gegen | Repo `main` `@c1f90ba` lokal (`npm run build`) |
+| Enthält | Chip-SSOT, Audit-/Compliance-Typ-Chips, §3 QuickActions/Kontoauszug/Security, ESLint `slate-*` Chip-Tokens |
 
 **Browser:** Hard Refresh (Cmd+Shift+R) vor manuellen Tests.
 
