@@ -1,5 +1,7 @@
 # CSR Portal - Anmeldung
 
+**Dev-SSOT (E-Mails + Passwort-Quellen):** `Documentation/DEV_PORTAL_LOGIN_SSOT.md`
+
 ## Anmelde-URLs
 
 CSR-Mitarbeiter können sich auf **zwei Wegen** anmelden:
@@ -30,9 +32,15 @@ Die CSR-User wurden mit folgenden E-Mail-Adressen erstellt:
 - **Tech@fin1.de** - Tech Support
 - **Lead@fin1.de** - Team Lead
 
-**Passwörter (allgemein):** werden bei `createCSRUser` gesetzt; je nach Umgebung unterschiedlich. Bei unbekanntem Stand: zurücksetzen (`createCSRUser` mit Master-Key / `forcePasswordReset`, siehe `WEB_PANEL_LOGIN_CREDENTIALS.md`).
+**Passwörter (Dev-SSOT, keine Klartext-Werte in dieser Datei):**
 
-**Interne Dev-/iobox-Historie:** Für die CSR-Konten **`L1@fin1.de` … `Lead@fin1.de`** (und ggf. Kleinbuchstaben-Varianten `l1@fin1.de` …) war auf FIN1-**Entwicklungs**-Hosts zeitweise **für alle dieselbe** Zugangsphrase gesetzt: **`Test123!`** — nur zur lokalen/LAN-Entwicklung gedacht, **nicht** für Staging/Produktion und **ungültig**, sobald jemand die Passwörter geändert hat. Dann wie oben neu setzen.
+| Was | Wo im Repo |
+|-----|------------|
+| CSR-E-Mails (UI + Skript) | `admin-portal/src/constants/portalLogin.ts` → `PORTAL_DEV_CSR_ACCOUNTS` |
+| CSR-Passwörter beim Anlegen | `backend/scripts/create_csr_users.js` → `CSR_USERS` |
+| Übersicht & Ablauf | `Documentation/DEV_PORTAL_LOGIN_SSOT.md` |
+
+Bei unbekanntem Stand: `node backend/scripts/create_csr_users.js` gegen eure Parse-URL (Master Key im Skript-Kopf) oder `createCSRUser` mit `forcePasswordReset` — siehe `WEB_PANEL_LOGIN_CREDENTIALS.md`. **Kleinbuchstaben-Varianten** (`l1@fin1.de` …) sind auf älteren Hosts möglich; Parse behandelt E-Mails in der Regel case-insensitive.
 
 ## Nach der Anmeldung
 

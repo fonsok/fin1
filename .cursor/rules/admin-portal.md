@@ -22,6 +22,7 @@ Architecture and coding standards for the FIN1 Admin Web Portal (`admin-portal/`
 ### Portal login (Admin + Finance Admin)
 
 - **One URL, one flow:** `Login.tsx` + `AuthContext` — technical admin (`admin`) and Finance Admin (`business_admin`) use the **same** page and the same `login()` path; CSR uses the same entry then redirects to `/csr`.
+- **Theme (dark/light):** Auth shells (`Login.tsx`, `csr-portal/pages/CSRLogin.tsx`, `TwoFactorVerify.tsx`) must use the theme-aware **`Card`** from `components/ui` for the main form panel — not a hardcoded `bg-white` wrapper. `Input` reads `ThemeContext` and pairs light labels with dark fields in dark mode; a white card breaks contrast.
 - **Copy & dev reference:** `src/constants/portalLogin.ts` and `src/components/DevPortalLoginReference.tsx` (Vite `import.meta.env.DEV` only). Keeps Finance Admin visibility aligned with `scripts/create-business-admin.sh` without branching auth logic.
 - **Dev accounts (no plaintext passwords in docs):** `Documentation/DEV_LOGIN_ACCOUNTS.md` — e-mails/roles and pointers to `TestUserConstants.swift`, `create-business-admin.sh` (`BA_PASSWORD` or `scripts/.env.server`), and `WEB_PANEL_LOGIN_CREDENTIALS.md`.
 

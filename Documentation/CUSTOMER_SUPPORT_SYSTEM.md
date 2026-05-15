@@ -631,13 +631,16 @@ Alle Vorlagen unterstützen dynamische Platzhalter:
 | `CSRPermission` | 36 Berechtigungen mit Metadaten (category, requiresApproval, etc.) |
 | `CSRRole` | 6 Rollen mit Berechtigungs-Arrays und UI-Properties |
 
-**Backend Cloud Functions** (`backend/parse-server/cloud/functions/support.js`):
+**Backend Cloud Functions** (CSR-RBAC-Implementierung: `backend/parse-server/cloud/functions/support/csrPermissions.js`; Registrierung u. a. über Loader `functions/support.js`):
+
 - `getCSRPermissions` – Alle Berechtigungen abrufen (gruppiert nach Kategorie)
 - `getCSRRoles` – Alle Rollen mit Berechtigungen abrufen
 - `getCSRRolePermissions` – Berechtigungen einer spezifischen Rolle
 - `checkCSRPermission` – Prüfen ob User eine bestimmte Berechtigung hat
 - `getCSRAgentsWithRoles` – CSR-Agenten mit Rollen-Info
 - `updateCSRUserRole` – CSR-Sub-Rolle eines Benutzers ändern
+
+**Hinweis (Rollen-Lookup):** Die genannten Funktionen lösen `CSRRole` primär per Feld **`key`** (z. B. Werte aus `csrSubRole` / `createCSRUser`, typisch Snake_case wie `level_1`). Für ältere Daten, in denen eine Rolle nur unter **`name`** existiert, gibt es einen **Legacy-Fallback** — vermeidet Fehler wie „Role not found“, wenn UI oder User noch den alten Stil nutzen.
 
 **Seed-Skript:** `backend/scripts/seed-csr-permissions.js`
 

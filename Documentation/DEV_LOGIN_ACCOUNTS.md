@@ -1,5 +1,7 @@
 # Dev-Login-Übersicht (Rollen & Quellen)
 
+**Kanonische Dev-Matrix (E-Mails + wo Passwörter liegen):** `Documentation/DEV_PORTAL_LOGIN_SSOT.md`
+
 **Gültigkeit:** Entwicklung und interne Testumgebungen.
 **Keine Klartext-Passwörter in dieser Markdown-Doku:** Zugangsdaten gehören in Secret-Store, `.env` (gitignored) oder in die im Repo genannten **Quell-Dateien** — nicht in kopierfertiger Form in die Dokumentation.
 

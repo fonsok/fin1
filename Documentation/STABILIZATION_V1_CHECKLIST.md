@@ -22,6 +22,8 @@ Kurzcheckliste nach den umfangreichen DEV-/UI-Änderungen.
 
 ## 3) UI-Kontrast-Risiken zentral testen
 
+**Stand Code (2026-05):** Globale Dark-Mode-Overrides in `admin-portal/src/index.css` (Badges, Metrik-Akzente, Platzhalter-Chips, KYB-Entscheidungsflächen, graue Wells); CSR-Analytics nutzt `adminMetric*` aus `adminThemeClasses.ts`; KYB-Entscheidungsbuttons mit explizitem `isDark`-Zweig. **Manuell** weiterhin kurz prüfen (Browser, Theme-Umschalter):
+
 - Smoke-Test-Liste für Dark Mode:
   - Benutzerliste / Benutzerdetails (inkl. Kontoauszug, rollenabhängige KPIs — siehe `FIN1_APP_DOCS/10_ADMIN_PORTAL_REQUIREMENTS.md`, Abschnitt Benutzer-Detailseite)
   - Tickets / Compliance / Audit Logs / Konfiguration
