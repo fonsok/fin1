@@ -133,6 +133,93 @@ main[data-content-area="dark"] .fin1-card tbody tr:hover {
   background-color: #1d4ed8; /* blue-700 */
   color: #e0f2fe;            /* sky-100 */
 }
+.fin1-theme-dark .bg-green-100.text-green-800 {
+  background-color: #047857; /* emerald-700 */
+  color: #d1fae5;
+}
+.fin1-theme-dark .bg-amber-100.text-amber-800,
+.fin1-theme-dark .bg-yellow-100.text-yellow-800 {
+  background-color: #b45309; /* amber-700 */
+  color: #fef3c7;
+}
+.fin1-theme-dark .bg-red-100.text-red-800,
+.fin1-theme-dark .bg-rose-100.text-rose-800 {
+  background-color: #b91c1c;
+  color: #fee2e2;
+}
+.fin1-theme-dark .bg-gray-100.text-gray-800,
+.fin1-theme-dark .bg-gray-100.text-gray-600,
+.fin1-theme-dark .bg-gray-100.text-gray-700 {
+  background-color: #334155; /* slate-700 */
+  color: #f1f5f9;
+}
+.fin1-theme-dark .bg-purple-100.text-purple-800 {
+  background-color: #6d28d9;
+  color: #ede9fe;
+}
+.fin1-theme-dark .bg-indigo-100.text-indigo-800 {
+  background-color: #4338ca;
+  color: #e0e7ff;
+}
+.fin1-theme-dark .bg-orange-100.text-orange-800 {
+  background-color: #c2410c;
+  color: #ffedd5;
+}
+.fin1-theme-dark .bg-cyan-100.text-cyan-800,
+.fin1-theme-dark .bg-sky-100.text-sky-800 {
+  background-color: #0369a1;
+  color: #e0f2fe;
+}
+.fin1-theme-dark .bg-emerald-100.text-emerald-800 {
+  background-color: #047857;
+  color: #d1fae5;
+}
+
+/* Placeholder chips & light metric accents without isDark branch */
+.fin1-theme-dark .bg-blue-50.text-blue-600 {
+  background-color: rgba(12, 74, 110, 0.45);
+  color: #bae6fd;
+  border-color: #0369a1;
+}
+.fin1-theme-dark .text-orange-600 {
+  color: #fdba74;
+}
+.fin1-theme-dark .text-green-600 {
+  color: #4ade80;
+}
+.fin1-theme-dark .text-blue-600 {
+  color: #93c5fd;
+}
+.fin1-theme-dark .text-red-600 {
+  color: #fca5a5;
+}
+
+/* KYB decision tiles: selected light palette on dark canvas */
+.fin1-theme-dark .bg-emerald-50.text-emerald-700 {
+  background-color: rgba(6, 78, 59, 0.45);
+  color: #6ee7b7;
+  border-color: #059669;
+}
+.fin1-theme-dark .bg-amber-50.text-amber-700 {
+  background-color: rgba(120, 53, 15, 0.45);
+  color: #fcd34d;
+  border-color: #d97706;
+}
+.fin1-theme-dark .bg-red-50.text-red-700 {
+  background-color: rgba(127, 29, 29, 0.45);
+  color: #fca5a5;
+  border-color: #dc2626;
+}
+
+/* Inset wells on dark content */
+.fin1-theme-dark .bg-gray-50,
+.fin1-theme-dark .bg-gray-50\/50,
+.fin1-theme-dark .bg-gray-50\/60 {
+  background-color: rgba(15, 23, 42, 0.55) !important;
+}
+.fin1-theme-dark .bg-gray-50.text-gray-900 {
+  color: #f1f5f9 !important;
+}
 /* Dark theme form controls: dark background + light text for readability */
 main[data-content-area="dark"] input:not([type="checkbox"]):not([type="radio"]),
 main[data-content-area="dark"] textarea,
@@ -190,6 +277,11 @@ main[data-content-area="dark"] table tbody tr {
 main[data-content-area="dark"] table tbody tr:hover {
   background: rgba(51, 65, 85, 0.45) !important; /* slate-700/45 */
 }
+/* Ticket + generic chips: do not inherit table body text color */
+main[data-content-area="dark"] table [data-ticket-chip],
+main[data-content-area="dark"] table .inline-flex.rounded-full {
+  color: unset;
+}
 
 /* Scrollbar styling */
 ::-webkit-scrollbar {
@@ -207,4 +299,16 @@ main[data-content-area="dark"] table tbody tr:hover {
 
 ::-webkit-scrollbar-thumb:hover {
   @apply bg-gray-400;
+}
+
+.fin1-theme-dark ::-webkit-scrollbar-track {
+  background-color: #1e293b;
+}
+
+.fin1-theme-dark ::-webkit-scrollbar-thumb {
+  background-color: #475569;
+}
+
+.fin1-theme-dark ::-webkit-scrollbar-thumb:hover {
+  background-color: #64748b;
 }

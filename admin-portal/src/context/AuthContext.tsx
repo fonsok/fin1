@@ -1,5 +1,13 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import { login as parseLogin, logout as parseLogout, verify2FA, validateSession, cloudFunction } from '../api/parse';
+import {
+  login as parseLogin,
+  logout as parseLogout,
+  verify2FA,
+  validateSession,
+  cloudFunction,
+  resolvePortalRole,
+  parseUserHasTwoFactorEnabled,
+} from '../api/parse';
 
 // ============================================================================
 // Types
@@ -42,8 +50,14 @@ interface AuthState {
   needs2FAVerification: boolean;
 }
 
+/** Result of `login()` so callers can branch before React state flushes (2FA, CSR redirect). */
+export interface PortalLoginResult {
+  user: AuthUser;
+  needs2FAVerification: boolean;
+}
+
 interface AuthContextType extends AuthState {
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<PortalLoginResult>;
   verify2FACode: (code: string) => Promise<void>;
   logout: () => Promise<void>;
   hasPermission: (permission: string) => boolean;
@@ -89,7 +103,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         if (parseUser) {
-          const role = parseUser.role as string;
+          const role = resolvePortalRole(parseUser);
 
           if (!ADMIN_ROLES.includes(role)) {
             // Not an admin user - log out
@@ -109,13 +123,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             objectId: parseUser.objectId,
             email: parseUser.email,
             username: parseUser.username,
-            role: role,
+            role,
             firstName: parseUser.firstName,
             lastName: parseUser.lastName,
             csrSubRole: parseUser.csrSubRole,
             csrRole: parseUser.csrRole,
             requires2FA: ELEVATED_ROLES.includes(role),
-            has2FAEnabled: parseUser.twoFactorEnabled || false,
+            has2FAEnabled: parseUserHasTwoFactorEnabled(parseUser),
           };
 
           // Check if 2FA verification is needed (CSR users skip 2FA)
@@ -182,14 +196,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // Login function
-  const login = useCallback(async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string): Promise<PortalLoginResult> => {
     const opVersion = ++authOpVersionRef.current;
     const canApply = () => authOpVersionRef.current === opVersion;
     setState(prev => ({ ...prev, isLoading: true }));
 
     try {
       const parseUser = await parseLogin(email, password);
-      const role = parseUser.role as string;
+      const role = resolvePortalRole(parseUser);
 
       // Check if user has admin role
       if (!ADMIN_ROLES.includes(role)) {
@@ -201,19 +215,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         objectId: parseUser.objectId,
         email: parseUser.email,
         username: parseUser.username,
-        role: role,
+        role,
         firstName: parseUser.firstName,
         lastName: parseUser.lastName,
         csrSubRole: parseUser.csrSubRole, // CSR-spezifische Rolle (level1, level2, fraud, etc.)
         csrRole: parseUser.csrRole,
         requires2FA: ELEVATED_ROLES.includes(role),
-        has2FAEnabled: parseUser.twoFactorEnabled || false,
+        has2FAEnabled: parseUserHasTwoFactorEnabled(parseUser),
       };
 
       // Check if 2FA is required (skip for CSR users)
       const isCSRUser = role === 'customer_service';
       if (!isCSRUser && user.requires2FA && user.has2FAEnabled) {
-        if (!canApply()) return;
+        if (!canApply()) return { user, needs2FAVerification: true };
         setState({
           user,
           permissions: null,
@@ -221,11 +235,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           isAuthenticated: false,
           needs2FAVerification: true,
         });
+        return { user, needs2FAVerification: true };
       } else {
         // No 2FA required or CSR user
         try {
           const permissions = await cloudFunction<Permissions>('getMyPermissions');
-          if (!canApply()) return;
+          if (!canApply()) return { user, needs2FAVerification: false };
           setState({
             user,
             permissions,
@@ -233,9 +248,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             isAuthenticated: true,
             needs2FAVerification: false,
           });
+          return { user, needs2FAVerification: false };
         } catch (error) {
           console.error('Failed to get permissions:', error);
-          if (!canApply()) return;
+          if (!canApply()) return { user, needs2FAVerification: false };
           setState({
             user,
             permissions: { role: user.role, permissions: [], isFullAdmin: role === 'admin', isElevated: ELEVATED_ROLES.includes(role), roleDescription: user.role },
@@ -243,10 +259,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             isAuthenticated: true,
             needs2FAVerification: false,
           });
+          return { user, needs2FAVerification: false };
         }
       }
     } catch (error) {
-      if (!canApply()) return;
+      if (!canApply()) throw error;
       setState(prev => ({ ...prev, isLoading: false }));
       throw error;
     }
@@ -321,12 +338,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const parseUser = await validateSession();
       if (parseUser && state.user) {
+        const resolved = resolvePortalRole(parseUser);
         const updatedUser: AuthUser = {
           ...state.user,
+          role: resolved || state.user.role,
           twoFactorEnabled: parseUser.twoFactorEnabled || false,
           twoFactorEnabledAt: parseUser.twoFactorEnabledAt,
           twoFactorBackupCodesCount: parseUser.twoFactorBackupCodes?.length,
-          has2FAEnabled: parseUser.twoFactorEnabled || false,
+          has2FAEnabled: parseUserHasTwoFactorEnabled(parseUser),
           csrSubRole: parseUser.csrSubRole ?? state.user.csrSubRole,
           csrRole: parseUser.csrRole ?? state.user.csrRole,
         };

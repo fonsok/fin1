@@ -37,6 +37,11 @@ interface RolePermissionsResponse {
   };
   permissionCount: number;
   permissions: PermissionCategory[];
+  /** Quelle der Rollendefinition: Parse CSRRole oder statischer Fallback (iOS/Seed-parität). */
+  resolution?: {
+    source: 'parse_role' | 'static_definition_fallback';
+    detail?: string;
+  };
 }
 
 const PERMISSION_SORT_LOCALE = 'de';
@@ -99,6 +104,7 @@ export function PermissionsSection({ user }: PermissionsSectionProps) {
         };
       case 'tech_support':
       case 'techSupport':
+      case 'tech':
         return {
           name: 'Tech Support',
           badgeLight: 'bg-yellow-100 text-yellow-800',
@@ -106,6 +112,8 @@ export function PermissionsSection({ user }: PermissionsSectionProps) {
           key: 'techSupport',
         };
       case 'teamlead':
+      case 'team_lead':
+      case 'lead':
         return {
           name: 'Team Lead',
           badgeLight: 'bg-indigo-100 text-indigo-800',
@@ -221,7 +229,8 @@ export function PermissionsSection({ user }: PermissionsSectionProps) {
               <div
                 className={clsx('text-xs mt-1 font-mono', adminMonoNeutralHint(isDark))}
               >
-                csrSubRole: {user.csrSubRole || 'nicht gesetzt'} → key: {roleDisplay.key}
+                csrSubRole: {user.csrSubRole || 'nicht gesetzt'} → CSRRole.key: {roleDisplay.key}
+                {' '}(Kurz: L1, L2, Fraud, Compliance, Tech, Lead)
               </div>
             </div>
             <span
@@ -260,6 +269,21 @@ export function PermissionsSection({ user }: PermissionsSectionProps) {
         </div>
       )}
 
+      {rolePermissions?.resolution?.source === 'static_definition_fallback' && rolePermissions.resolution.detail && (
+        <div
+          className={clsx(
+            'text-sm p-3 rounded-lg border mb-3',
+            isDark
+              ? 'text-amber-100 bg-amber-950/40 border-amber-800/50'
+              : 'text-amber-900 bg-amber-50 border-amber-200',
+          )}
+          role="status"
+        >
+          <span className="font-medium">Hinweis (Parse): </span>
+          {rolePermissions.resolution.detail}
+        </div>
+      )}
+
       {/* Permissions List */}
       {rolePermissions && rolePermissions.permissions && rolePermissions.permissions.length > 0 ? (
         <div className="space-y-4">
@@ -270,6 +294,8 @@ export function PermissionsSection({ user }: PermissionsSectionProps) {
               adminSectionDividerSoft(isDark),
             )}
           >
+            <span className="font-medium">{rolePermissions.role.shortName}</span>
+            {' · '}
             <span className="font-medium">{rolePermissions.permissionCount}</span> Berechtigungen aktiv
             {rolePermissions.role.canApprove && (
               <span

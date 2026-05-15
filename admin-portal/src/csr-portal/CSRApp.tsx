@@ -78,8 +78,11 @@ function CSRLoginWrapper() {
     );
   }
 
-  if (isAuthenticated && user?.role === 'customer_service') {
-    return <Navigate to="/csr" replace />;
+  if (isAuthenticated && user) {
+    if (user.role === 'customer_service') {
+      return <Navigate to="/csr" replace />;
+    }
+    return <Navigate to="/" replace />;
   }
 
   return <CSRLoginPage />;

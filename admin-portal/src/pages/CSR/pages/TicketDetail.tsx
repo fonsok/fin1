@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { Card, Button, Badge, getStatusVariant } from '../../../components/ui';
+import { Card, Button, Badge, TicketPriorityBadge, TicketStatusBadge } from '../../../components/ui';
 import { formatDateTime } from '../../../utils/format';
 import { useTheme } from '../../../context/ThemeContext';
 import { tableBodyCellMutedClasses, tableBodyCellPrimaryClasses } from '../../../utils/tableStriping';
@@ -103,16 +103,6 @@ export function TicketDetailPage() {
     );
   }
 
-  const getPriorityVariant = (priority: string): 'success' | 'warning' | 'danger' | 'info' | 'neutral' => {
-    switch (priority?.toLowerCase()) {
-      case 'urgent': return 'danger';
-      case 'high': return 'danger';
-      case 'medium': return 'warning';
-      case 'low': return 'info';
-      default: return 'neutral';
-    }
-  };
-
   const getPriorityLabel = (priority: string): string => {
     switch (priority?.toLowerCase()) {
       case 'urgent': return 'Dringend';
@@ -161,12 +151,12 @@ export function TicketDetailPage() {
           </h1>
         </div>
         <div className="flex gap-2">
-          <Badge variant={getStatusVariant(ticket.status)}>
+          <TicketStatusBadge status={ticket.status}>
             {getTicketStatusLabel(ticket.status)}
-          </Badge>
-          <Badge variant={getPriorityVariant(ticket.priority)}>
+          </TicketStatusBadge>
+          <TicketPriorityBadge priority={ticket.priority}>
             {getPriorityLabel(ticket.priority)}
-          </Badge>
+          </TicketPriorityBadge>
         </div>
       </div>
 

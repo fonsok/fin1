@@ -105,17 +105,57 @@ export interface ParseSessionUser {
   objectId: string;
   email: string;
   username: string;
-  role: string;
+  /** May be absent on some `/login` responses; use `login()` which hydrates via `/users/me` when needed. */
+  role?: string;
   firstName?: string;
   lastName?: string;
   csrSubRole?: string;
   csrRole?: string;
+  /** Legacy / alternate field name seen on some backends */
+  userRole?: string;
   twoFactorEnabled?: boolean;
   twoFactorEnabledAt?: string;
   twoFactorBackupCodes?: unknown[];
 }
 
 export type ParseLoginResult = ParseSessionUser & { sessionToken: string };
+
+/** Legacy `_User.role` strings → canonical FIN1 portal roles (see VALID_USER_ROLES / userTriggerConstants). */
+const LEGACY_PORTAL_USER_ROLE: Record<string, string> = {
+  compliance_officer: 'compliance',
+  security_admin: 'security_officer',
+};
+
+/** Normalize Parse `_User.role` for portal checks (admin + CSR share one login URL). */
+export function normalizePortalRole(raw: unknown): string {
+  if (raw == null) return '';
+  let s = String(raw).trim().toLowerCase();
+  if (!s) return '';
+  s = s.replace(/-/g, '_');
+  if (s === 'customerservice') return 'customer_service';
+  if (LEGACY_PORTAL_USER_ROLE[s]) return LEGACY_PORTAL_USER_ROLE[s];
+  return s;
+}
+
+function rawRoleFromSessionUser(u: ParseSessionUser | ParseLoginResult): unknown {
+  const rec = u as unknown as Record<string, unknown>;
+  return u.role ?? u.userRole ?? rec.user_role ?? rec.UserRole;
+}
+
+/** Effective portal role from a Parse session/login payload. */
+export function resolvePortalRole(u: ParseSessionUser | ParseLoginResult): string {
+  return normalizePortalRole(rawRoleFromSessionUser(u));
+}
+
+/** True if portal must collect a 2FA step (Parse `twoFactorEnabled` or completed enrollment markers). */
+export function parseUserHasTwoFactorEnabled(u: ParseSessionUser | ParseLoginResult | null | undefined): boolean {
+  if (!u) return false;
+  if (u.twoFactorEnabled === true) return true;
+  const rec = u as unknown as Record<string, unknown>;
+  if (rec.twoFactorEnabled === 'true' || rec.two_factor_enabled === true) return true;
+  if (u.twoFactorEnabledAt != null && u.twoFactorEnabled !== false) return true;
+  return false;
+}
 
 /**
  * Store session
@@ -174,8 +214,19 @@ export async function login(email: string, password: string): Promise<ParseLogin
     password,
   });
 
-  storeSession(result.sessionToken, result);
-  return result;
+  let merged: ParseLoginResult = result;
+  const raw = rawRoleFromSessionUser(result);
+  if (!raw || !String(raw).trim()) {
+    try {
+      const me = await parseRequest<ParseSessionUser>('GET', '/users/me', undefined, result.sessionToken);
+      merged = { ...result, ...me, sessionToken: result.sessionToken };
+    } catch (e) {
+      console.warn('[parse login] role missing on /login and /users/me failed:', e);
+    }
+  }
+
+  storeSession(merged.sessionToken, merged);
+  return merged;
 }
 
 /**

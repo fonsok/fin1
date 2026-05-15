@@ -154,6 +154,30 @@ export function adminSlateUnknown(isDark: boolean): string {
   return isDark ? 'text-slate-400' : 'text-slate-500';
 }
 
+/** KPI / metric accent numbers (CSR Analytics, dashboards). */
+export function adminMetricOrange(isDark: boolean): string {
+  return isDark ? 'text-orange-300' : 'text-orange-600';
+}
+
+export function adminMetricGreen(isDark: boolean): string {
+  return isDark ? 'text-emerald-400' : 'text-green-600';
+}
+
+export function adminMetricBlue(isDark: boolean): string {
+  return isDark ? 'text-sky-300' : 'text-blue-600';
+}
+
+export function adminMetricRed(isDark: boolean): string {
+  return isDark ? 'text-red-400' : 'text-red-600';
+}
+
+/** Placeholder / chip on template lists (sky-tinted dark, blue light). */
+export function adminPlaceholderChip(isDark: boolean): string {
+  return isDark
+    ? 'bg-sky-950/40 border border-sky-800 text-sky-200'
+    : clsx('bg-blue-50 text-blue-600');
+}
+
 /** Info card on slate-tinted panel (slate-200 / slate-700) */
 export function adminSlateInfoBody(isDark: boolean): string {
   return isDark ? 'text-slate-200' : 'text-slate-700';

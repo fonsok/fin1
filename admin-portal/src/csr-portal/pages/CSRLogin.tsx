@@ -1,31 +1,43 @@
 import { useState } from 'react';
 import clsx from 'clsx';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
-import { Input } from '../../components/ui';
+import { Card, Input } from '../../components/ui';
+import { TwoFactorVerify } from '../../components/TwoFactorVerify';
+import { loginFailureRawMessage, mapLoginErrorMessage } from '../../utils/loginErrors';
 
-import { adminFootnote } from '../../utils/adminThemeClasses';
+import { adminBorderChrome, adminMuted } from '../../utils/adminThemeClasses';
+
 export function CSRLoginPage() {
   const navigate = useNavigate();
-  const { login, isLoading } = useAuth();
+  const { login, isLoading, needs2FAVerification } = useAuth();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
+  if (needs2FAVerification) {
+    return <TwoFactorVerify />;
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
     try {
-      await login(email, password);
-      // Check if user is CSR after login
-      // Navigation will be handled by CSRProtectedRoute
-      navigate('/csr');
+      const { user, needs2FAVerification: pending2fa } = await login(email, password);
+      if (pending2fa) {
+        return;
+      }
+      if (user.role === 'customer_service') {
+        navigate('/csr', { replace: true });
+      } else {
+        navigate('/', { replace: true });
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Anmeldung fehlgeschlagen');
+      setError(mapLoginErrorMessage(loginFailureRawMessage(err)));
     }
   };
 
@@ -43,11 +55,23 @@ export function CSRLoginPage() {
           <p className="text-white/80">Kundenservice-Anmeldung</p>
         </div>
 
-        {/* Login Form */}
-        <div className="bg-white rounded-2xl shadow-2xl p-8">
+        {/* Login Form — theme-aware Card so Input labels/fields match (same as Admin Login) */}
+        <Card className="shadow-2xl rounded-2xl" padding="lg">
+          <p className={clsx('text-sm mb-4', adminMuted(isDark))}>
+            Compliance und andere Admin-Rollen mit 2FA: bitte{' '}
+            <Link to="/login" className="underline font-medium text-fin1-primary">
+              Admin-Anmeldung
+            </Link>{' '}
+            nutzen.
+          </p>
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
+              <div
+                className={clsx(
+                  'px-4 py-3 rounded-lg text-sm border',
+                  isDark ? 'bg-red-950/40 border-red-800 text-red-300' : 'bg-red-50 border-red-200 text-red-600',
+                )}
+              >
                 {error}
               </div>
             )}
@@ -91,22 +115,12 @@ export function CSRLoginPage() {
             </button>
           </form>
 
-          <div
-            className={clsx(
-              'mt-6 pt-6 border-t',
-              isDark ? 'border-slate-200' : 'border-gray-200',
-            )}
-          >
-            <p
-              className={clsx(
-                'text-center text-sm',
-                adminFootnote(isDark),
-              )}
-            >
+          <div className={clsx('mt-6 pt-6 border-t', adminBorderChrome(isDark))}>
+            <p className={clsx('text-center text-sm', adminMuted(isDark))}>
               Nur für autorisierte CSR-Mitarbeiter
             </p>
           </div>
-        </div>
+        </Card>
       </div>
     </div>
   );

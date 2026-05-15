@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useNavigate, useLocation } from 'react-router-dom';
 import clsx from 'clsx';
 import { getTickets } from '../../api/admin';
-import { Card, Button, Badge, PaginationBar, getStatusVariant } from '../../components/ui';
+import { Card, Button, PaginationBar, TicketPriorityBadge, TicketStatusBadge } from '../../components/ui';
 import { SortableTh, nextSortState, type SortOrder } from '../../components/table/SortableTh';
 import { formatDateTime } from '../../utils/format';
 import { useTheme } from '../../context/ThemeContext';
@@ -58,16 +58,6 @@ export function TicketListPage() {
     },
     [sortBy, sortOrder],
   );
-
-  const getPriorityVariant = (priority: string): 'success' | 'warning' | 'danger' | 'info' | 'neutral' => {
-    switch (priority?.toLowerCase()) {
-      case 'urgent': return 'danger';
-      case 'high': return 'danger';
-      case 'medium': return 'warning';
-      case 'low': return 'info';
-      default: return 'neutral';
-    }
-  };
 
   const getPriorityLabel = (priority: string): string => {
     switch (priority?.toLowerCase()) {
@@ -247,14 +237,14 @@ export function TicketListPage() {
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <Badge variant={getStatusVariant(ticket.status)}>
+                        <TicketStatusBadge status={ticket.status}>
                           {getTicketStatusLabel(ticket.status)}
-                        </Badge>
+                        </TicketStatusBadge>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <Badge variant={getPriorityVariant(ticket.priority)}>
+                        <TicketPriorityBadge priority={ticket.priority}>
                           {getPriorityLabel(ticket.priority)}
-                        </Badge>
+                        </TicketPriorityBadge>
                       </td>
                       <td className={clsx('px-6 py-4 whitespace-nowrap text-sm', tableBodyCellMutedClasses(isDark))}>
                         {ticket.assignedToName || ticket.assignedTo || '-'}

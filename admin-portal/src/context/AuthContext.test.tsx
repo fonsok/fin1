@@ -2,14 +2,18 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { AuthProvider, useAuth } from './AuthContext';
 
-// Mock API functions
-vi.mock('../api/parse', () => ({
-  login: vi.fn(),
-  logout: vi.fn(),
-  verify2FA: vi.fn(),
-  validateSession: vi.fn(),
-  cloudFunction: vi.fn(),
-}));
+// Mock API functions — keep real helpers (resolvePortalRole, normalizePortalRole) from parse.ts
+vi.mock('../api/parse', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../api/parse')>();
+  return {
+    ...actual,
+    login: vi.fn(),
+    logout: vi.fn(),
+    verify2FA: vi.fn(),
+    validateSession: vi.fn(),
+    cloudFunction: vi.fn(),
+  };
+});
 
 import * as parseApi from '../api/parse';
 

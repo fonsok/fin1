@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
-import { Card, Button, Badge, PaginationBar } from '../../../components/ui';
+import { Card, Button, Badge, PaginationBar, TicketPriorityBadge } from '../../../components/ui';
 import { useTheme } from '../../../context/ThemeContext';
 import { formatDateTime, formatNumber } from '../../../utils/format';
 import {
@@ -66,16 +66,6 @@ export function TicketQueuePage() {
       setPage(Math.max(0, queueTotalPages - 1));
     }
   }, [page, queueTotalPages]);
-
-  const getPriorityVariant = (priority: string): 'success' | 'warning' | 'danger' | 'info' | 'neutral' => {
-    switch (priority?.toLowerCase()) {
-      case 'urgent': return 'danger';
-      case 'high': return 'danger';
-      case 'medium': return 'warning';
-      case 'low': return 'info';
-      default: return 'neutral';
-    }
-  };
 
   const getPriorityLabel = (priority: string): string => {
     switch (priority?.toLowerCase()) {
@@ -226,9 +216,9 @@ export function TicketQueuePage() {
                       </button>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <Badge variant={getPriorityVariant(ticket.priority)}>
+                      <TicketPriorityBadge priority={ticket.priority}>
                         {getPriorityLabel(ticket.priority)}
-                      </Badge>
+                      </TicketPriorityBadge>
                     </td>
                     <td className={clsx('px-6 py-4 whitespace-nowrap text-sm', tableBodyCellMutedClasses(isDark))}>
                       {ticket.userEmail || ticket.userId}

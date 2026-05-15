@@ -8,7 +8,15 @@ import { EmailTemplateEditor } from './EmailTemplateEditor';
 import type { EmailTemplate } from '../types';
 import { sortByDisplayNameDe } from '../utils/templateDisplayOrder';
 
-import { adminBorderChromeSoft, adminCaption, adminHeadlineAlt, adminMuted, adminPrimary, adminProse } from '../../../utils/adminThemeClasses';
+import {
+  adminBorderChromeSoft,
+  adminCaption,
+  adminHeadlineAlt,
+  adminMuted,
+  adminPlaceholderChip,
+  adminPrimary,
+  adminProse,
+} from '../../../utils/adminThemeClasses';
 interface EmailTemplateListProps {
   templates: EmailTemplate[];
   onRefresh: () => void;
@@ -82,12 +90,7 @@ export function EmailTemplateList({ templates, onRefresh }: EmailTemplateListPro
                 {template.availablePlaceholders.map((p) => (
                   <span
                     key={p}
-                    className={clsx(
-                      'text-xs px-2 py-0.5 rounded font-mono',
-                      isDark
-                        ? 'bg-sky-950/40 border border-sky-800 text-sky-200'
-                        : 'bg-blue-50 text-blue-600',
-                    )}
+                    className={clsx('text-xs px-2 py-0.5 rounded font-mono', adminPlaceholderChip(isDark))}
                   >
                     {p}
                   </span>

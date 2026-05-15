@@ -2,7 +2,14 @@ import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
-import { Card, Button, Badge, PaginationBar, getStatusVariant } from '../../../components/ui';
+import {
+  Card,
+  Button,
+  Badge,
+  PaginationBar,
+  TicketPriorityBadge,
+  TicketStatusBadge,
+} from '../../../components/ui';
 import { useTheme } from '../../../context/ThemeContext';
 import { formatDateTime, formatNumber } from '../../../utils/format';
 import {
@@ -141,21 +148,6 @@ export function BulkOperationsPage() {
         response: bulkResponse,
         isInternal,
       });
-    }
-  };
-
-  const getPriorityVariant = (priority: string): 'success' | 'warning' | 'danger' | 'info' | 'neutral' => {
-    switch (priority?.toLowerCase()) {
-      case 'urgent':
-        return 'danger';
-      case 'high':
-        return 'danger';
-      case 'medium':
-        return 'warning';
-      case 'low':
-        return 'info';
-      default:
-        return 'neutral';
     }
   };
 
@@ -399,12 +391,12 @@ export function BulkOperationsPage() {
                           </p>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <Badge variant={getStatusVariant(ticket.status)}>{ticket.status}</Badge>
+                          <TicketStatusBadge status={ticket.status}>{ticket.status}</TicketStatusBadge>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <Badge variant={getPriorityVariant(ticket.priority)}>
+                          <TicketPriorityBadge priority={ticket.priority}>
                             {getPriorityLabel(ticket.priority)}
-                          </Badge>
+                          </TicketPriorityBadge>
                         </td>
                         <td
                           className={clsx(

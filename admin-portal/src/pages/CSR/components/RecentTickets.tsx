@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import clsx from 'clsx';
-import { Card, Badge, PaginationBar, getStatusVariant } from '../../../components/ui';
+import { Card, PaginationBar, TicketPriorityBadge, TicketStatusBadge } from '../../../components/ui';
 import { useTheme } from '../../../context/ThemeContext';
 import { formatDateTime, formatNumber } from '../../../utils/format';
 import {
@@ -41,21 +41,6 @@ export function RecentTickets({ tickets, serverTicketTotal, isLoading }: RecentT
       setPage(Math.max(0, listTotalPages - 1));
     }
   }, [page, listTotalPages]);
-
-  const getPriorityVariant = (priority: string): 'success' | 'warning' | 'danger' | 'info' | 'neutral' => {
-    switch (priority?.toLowerCase()) {
-      case 'urgent':
-        return 'danger';
-      case 'high':
-        return 'danger';
-      case 'medium':
-        return 'warning';
-      case 'low':
-        return 'info';
-      default:
-        return 'neutral';
-    }
-  };
 
   const getPriorityLabel = (priority: string): string => {
     switch (priority?.toLowerCase()) {
@@ -244,14 +229,14 @@ export function RecentTickets({ tickets, serverTicketTotal, isLoading }: RecentT
                   <p className={clsx('text-sm', tableBodyCellPrimaryClasses(isDark))}>{ticket.subject}</p>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <Badge variant={getStatusVariant(ticket.status)}>
+                  <TicketStatusBadge status={ticket.status}>
                     {getTicketStatusLabel(ticket.status)}
-                  </Badge>
+                  </TicketStatusBadge>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <Badge variant={getPriorityVariant(ticket.priority)}>
+                  <TicketPriorityBadge priority={ticket.priority}>
                     {getPriorityLabel(ticket.priority)}
-                  </Badge>
+                  </TicketPriorityBadge>
                 </td>
                 <td className={clsx('px-6 py-4 whitespace-nowrap text-sm', tableBodyCellMutedClasses(isDark))}>
                   {ticket.userEmail || ticket.userId}

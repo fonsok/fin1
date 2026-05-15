@@ -95,11 +95,12 @@ export function KYBDecisionModal({ submission, onClose, onComplete }: KYBDecisio
               className={clsx(
                 'flex-1 py-2.5 px-3 rounded-lg text-sm font-medium border-2 transition-colors',
                 decision === 'approved'
-                  ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                  ? isDark
+                    ? 'border-emerald-600 bg-emerald-900/30 text-emerald-300'
+                    : 'border-emerald-500 bg-emerald-50 text-emerald-700'
                   : isDark
                     ? 'border-slate-600 text-slate-300 hover:border-slate-500'
                     : 'border-gray-200 text-gray-600 hover:border-gray-300',
-                decision === 'approved' && isDark && 'bg-emerald-900/30 text-emerald-300 border-emerald-600',
               )}
             >
               ✅ Genehmigen
@@ -109,11 +110,12 @@ export function KYBDecisionModal({ submission, onClose, onComplete }: KYBDecisio
               className={clsx(
                 'flex-1 py-2.5 px-3 rounded-lg text-sm font-medium border-2 transition-colors',
                 decision === 'more_info_requested'
-                  ? 'border-amber-500 bg-amber-50 text-amber-700'
+                  ? isDark
+                    ? 'border-amber-600 bg-amber-900/30 text-amber-300'
+                    : 'border-amber-500 bg-amber-50 text-amber-700'
                   : isDark
                     ? 'border-slate-600 text-slate-300 hover:border-slate-500'
                     : 'border-gray-200 text-gray-600 hover:border-gray-300',
-                decision === 'more_info_requested' && isDark && 'bg-amber-900/30 text-amber-300 border-amber-600',
               )}
             >
               📋 Nachbesserung
@@ -123,11 +125,12 @@ export function KYBDecisionModal({ submission, onClose, onComplete }: KYBDecisio
               className={clsx(
                 'flex-1 py-2.5 px-3 rounded-lg text-sm font-medium border-2 transition-colors',
                 decision === 'rejected'
-                  ? 'border-red-500 bg-red-50 text-red-700'
+                  ? isDark
+                    ? 'border-red-600 bg-red-900/30 text-red-300'
+                    : 'border-red-500 bg-red-50 text-red-700'
                   : isDark
                     ? 'border-slate-600 text-slate-300 hover:border-slate-500'
                     : 'border-gray-200 text-gray-600 hover:border-gray-300',
-                decision === 'rejected' && isDark && 'bg-red-900/30 text-red-300 border-red-600',
               )}
             >
               ❌ Ablehnen

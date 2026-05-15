@@ -3,9 +3,22 @@ import { render, screen, waitFor } from '../test/test-utils';
 import userEvent from '@testing-library/user-event';
 import { LoginPage } from './Login';
 import { PORTAL_LOGIN_EMAIL_PLACEHOLDER } from '../constants/portalLogin';
+import type { AuthUser } from '../context/AuthContext';
 
 // Mock AuthContext
 const mockLogin = vi.fn();
+
+const loginOk = (role: string): { user: AuthUser; needs2FAVerification: boolean } => ({
+  user: {
+    objectId: 'u1',
+    email: 'a@test.com',
+    username: 'a@test.com',
+    role,
+    requires2FA: false,
+    has2FAEnabled: false,
+  },
+  needs2FAVerification: false,
+});
 const mockUseAuth = vi.fn();
 
 vi.mock('../context/AuthContext', () => ({
@@ -51,7 +64,7 @@ describe('LoginPage', () => {
   });
 
   it('submits form with credentials', async () => {
-    mockLogin.mockResolvedValueOnce(undefined);
+    mockLogin.mockResolvedValueOnce(loginOk('admin'));
     const user = userEvent.setup();
 
     render(<LoginPage />);
@@ -89,7 +102,7 @@ describe('LoginPage', () => {
     await user.click(screen.getByRole('button', { name: /anmelden/i }));
 
     await waitFor(() => {
-      expect(screen.getByText('Anmeldung fehlgeschlagen')).toBeInTheDocument();
+      expect(screen.getByText('Anmeldung fehlgeschlagen. Bitte erneut versuchen.')).toBeInTheDocument();
     });
   });
 
@@ -104,9 +117,7 @@ describe('LoginPage', () => {
     await user.click(screen.getByRole('button', { name: /anmelden/i }));
 
     await waitFor(() => {
-      expect(
-        screen.getByText('Zu viele Fehlversuche. Konto ist kurzzeitig gesperrt (ca. 5 Minuten).')
-      ).toBeInTheDocument();
+      expect(screen.getByText(/Zu viele Fehlversuche/)).toBeInTheDocument();
     });
   });
 
@@ -126,7 +137,7 @@ describe('LoginPage', () => {
   it('clears error on new submit', async () => {
     mockLogin
       .mockRejectedValueOnce(new Error('First error'))
-      .mockResolvedValueOnce(undefined);
+      .mockResolvedValueOnce(loginOk('admin'));
     const user = userEvent.setup();
 
     render(<LoginPage />);
@@ -137,14 +148,16 @@ describe('LoginPage', () => {
     await user.click(screen.getByRole('button', { name: /anmelden/i }));
 
     await waitFor(() => {
-      expect(screen.getByText('First error')).toBeInTheDocument();
+      expect(screen.getByText('Anmeldung fehlgeschlagen. Bitte erneut versuchen.')).toBeInTheDocument();
     });
 
     // Second submit clears error
     await user.click(screen.getByRole('button', { name: /anmelden/i }));
 
     await waitFor(() => {
-      expect(screen.queryByText('First error')).not.toBeInTheDocument();
+      expect(
+        screen.queryByText('Anmeldung fehlgeschlagen. Bitte erneut versuchen.'),
+      ).not.toBeInTheDocument();
     });
   });
 
@@ -182,13 +195,15 @@ describe('LoginPage', () => {
     expect(screen.getByPlaceholderText('••••••••')).toBeInTheDocument();
   });
 
-  it('in dev, shows quick reference with Finance Admin and Technical Admin', () => {
+  it('in dev, shows quick reference for admins and CSR emails', () => {
     render(<LoginPage />);
 
     expect(screen.getByTestId('dev-login-reference')).toBeInTheDocument();
     expect(screen.getByText('Finance Admin')).toBeInTheDocument();
     expect(screen.getByText('Technischer Admin')).toBeInTheDocument();
-    expect(screen.getByText('finance@fin1.de')).toBeInTheDocument();
-    expect(screen.getByText('admin@fin1.de')).toBeInTheDocument();
+    expect(screen.getByText('Compliance (Portal)')).toBeInTheDocument();
+    expect(screen.getByText('compliance@fin1.de')).toBeInTheDocument();
+    expect(screen.getByText('CSR Level 1')).toBeInTheDocument();
+    expect(screen.getByText('L1@fin1.de')).toBeInTheDocument();
   });
 });

@@ -13,7 +13,13 @@ import {
 } from '../../../utils/tableStriping';
 import { getTicketMetrics, getAgentMetrics, getAvailableAgents } from '../api';
 
-import { adminControlField, adminPrimary } from '../../../utils/adminThemeClasses';
+import {
+  adminControlField,
+  adminMetricBlue,
+  adminMetricGreen,
+  adminMetricOrange,
+  adminPrimary,
+} from '../../../utils/adminThemeClasses';
 export function AnalyticsPage() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -106,19 +112,19 @@ export function AnalyticsPage() {
           </Card>
           <Card>
             <div className="text-center">
-              <div className="text-3xl font-bold text-orange-600">{metrics.openTickets}</div>
+              <div className={clsx('text-3xl font-bold', adminMetricOrange(isDark))}>{metrics.openTickets}</div>
               <div className={clsx('text-sm mt-1', tableBodyCellMutedClasses(isDark))}>Offene Tickets</div>
             </div>
           </Card>
           <Card>
             <div className="text-center">
-              <div className="text-3xl font-bold text-green-600">{metrics.resolvedTickets}</div>
+              <div className={clsx('text-3xl font-bold', adminMetricGreen(isDark))}>{metrics.resolvedTickets}</div>
               <div className={clsx('text-sm mt-1', tableBodyCellMutedClasses(isDark))}>Gelöste Tickets</div>
             </div>
           </Card>
           <Card>
             <div className="text-center">
-              <div className="text-3xl font-bold text-blue-600">
+              <div className={clsx('text-3xl font-bold', adminMetricBlue(isDark))}>
                 {Math.round(metrics.averageResolutionTime / 60)}h
               </div>
               <div className={clsx('text-sm mt-1', tableBodyCellMutedClasses(isDark))}>Ø Lösungszeit</div>

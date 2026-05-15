@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Card, Button, Badge, getStatusVariant } from '../../../components/ui';
+import { Card, Button, Badge, TicketStatusBadge } from '../../../components/ui';
 import { formatDateTime } from '../../../utils/format';
 import {
   getCustomerProfile,
@@ -496,9 +496,9 @@ export function CustomerDetailPage() {
                       {ticket.category}
                     </div>
                   </div>
-                  <Badge variant={getStatusVariant(ticket.status)}>
+                  <TicketStatusBadge status={ticket.status}>
                     {ticket.status}
-                  </Badge>
+                  </TicketStatusBadge>
                 </div>
               ))}
             </div>

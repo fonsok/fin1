@@ -45,12 +45,16 @@ describe('Parse API', () => {
       const mockUser = {
         objectId: 'user123',
         email: 'test@test.com',
-        sessionToken: 'session123'
+        username: 'test@test.com',
+        role: 'admin',
+        sessionToken: 'session123',
       };
 
       vi.mocked(global.fetch).mockResolvedValueOnce(mockParseFetchResponse(mockUser));
 
       const result = await login('test@test.com', 'password123');
+
+      expect(global.fetch).toHaveBeenCalledTimes(1);
 
       expect(global.fetch).toHaveBeenCalledWith(
         '/parse/login',
@@ -69,8 +73,53 @@ describe('Parse API', () => {
       expect(result).toEqual(mockUser);
     });
 
+    it('hydrates role from /users/me when /login omits role', async () => {
+      vi.mocked(global.fetch)
+        .mockResolvedValueOnce(
+          mockParseFetchResponse({
+            objectId: 'user123',
+            email: 'csr@test.com',
+            username: 'csr@test.com',
+            sessionToken: 'session123',
+          }),
+        )
+        .mockResolvedValueOnce(
+          mockParseFetchResponse({
+            objectId: 'user123',
+            email: 'csr@test.com',
+            username: 'csr@test.com',
+            role: 'customer_service',
+            csrSubRole: 'level_2',
+          }),
+        );
+
+      const result = await login('csr@test.com', 'pw');
+
+      expect(global.fetch).toHaveBeenCalledTimes(2);
+      expect(global.fetch).toHaveBeenNthCalledWith(
+        2,
+        '/parse/users/me',
+        expect.objectContaining({
+          method: 'GET',
+          headers: expect.objectContaining({
+            'X-Parse-Session-Token': 'session123',
+          }),
+        }),
+      );
+      expect(result.role).toBe('customer_service');
+      expect(result.csrSubRole).toBe('level_2');
+    });
+
     it('normalizes email to lowercase and trims', async () => {
-      vi.mocked(global.fetch).mockResolvedValueOnce(mockParseFetchResponse({ sessionToken: 'token' }));
+      vi.mocked(global.fetch).mockResolvedValueOnce(
+        mockParseFetchResponse({
+          sessionToken: 'token',
+          objectId: 'o1',
+          email: 'test@test.com',
+          username: 'test@test.com',
+          role: 'admin',
+        }),
+      );
 
       await login('  TEST@Test.COM  ', 'password');
 
@@ -88,7 +137,10 @@ describe('Parse API', () => {
     it('stores session after successful login', async () => {
       const mockUser = {
         objectId: 'user123',
-        sessionToken: 'session123'
+        email: 'test@test.com',
+        username: 'test@test.com',
+        role: 'admin',
+        sessionToken: 'session123',
       };
 
       vi.mocked(global.fetch).mockResolvedValueOnce(mockParseFetchResponse(mockUser));

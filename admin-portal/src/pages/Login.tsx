@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -10,54 +11,31 @@ import {
   PORTAL_LOGIN_EMAIL_PLACEHOLDER,
 } from '../constants/portalLogin';
 
-import { adminCaption, adminMuted, adminPrimary } from '../utils/adminThemeClasses';
-function mapLoginErrorMessage(rawMessage: string): string {
-  const msg = rawMessage.toLowerCase();
-
-  if (msg.includes('locked due to multiple failed login attempts') || msg.includes('account is locked')) {
-    return 'Zu viele Fehlversuche. Konto ist kurzzeitig gesperrt (ca. 5 Minuten).';
-  }
-
-  if (msg.includes('invalid username/password') || msg.includes('invalid credentials')) {
-    return 'E-Mail oder Passwort ist nicht korrekt.';
-  }
-
-  if (msg.includes('failed to fetch') || msg.includes('netzwerk') || msg.includes('network')) {
-    return 'Login aktuell nicht möglich. Bitte später erneut versuchen.';
-  }
-
-  return rawMessage;
-}
-
+import { loginFailureRawMessage, mapLoginErrorMessage } from '../utils/loginErrors';
+import { adminPrimary, adminMuted, adminCaption } from '../utils/adminThemeClasses';
 export function LoginPage() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
-  const { login, isLoading, needs2FAVerification, user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  const { login, isLoading, needs2FAVerification } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-
-  // Redirect CSR users immediately after successful login
-  useEffect(() => {
-    if (isAuthenticated && user?.role === 'customer_service') {
-      // Force immediate redirect to CSR portal
-      window.location.href = '/admin/csr';
-    }
-  }, [isAuthenticated, user?.role]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
     try {
-      await login(email, password);
-      // Navigation will be handled by useEffect
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(mapLoginErrorMessage(err.message));
-      } else {
-        setError('Anmeldung fehlgeschlagen');
+      const { user, needs2FAVerification } = await login(email, password);
+      if (needs2FAVerification) {
+        return;
       }
+      if (user.role === 'customer_service') {
+        navigate('/csr', { replace: true });
+      }
+    } catch (err) {
+      setError(mapLoginErrorMessage(loginFailureRawMessage(err)));
     }
   };
 

@@ -11,6 +11,7 @@ import {
   adminMuted,
   adminPrimary,
 } from '../utils/adminThemeClasses';
+import { loginFailureRawMessage, mapLoginErrorMessage } from '../utils/loginErrors';
 type TwoFactorMode = 'totp' | 'backup';
 
 export function TwoFactorVerify() {
@@ -94,7 +95,7 @@ export function TwoFactorVerify() {
     try {
       await verify2FACode(payload);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ungültiger Code');
+      setError(mapLoginErrorMessage(loginFailureRawMessage(err)));
       if (mode === 'totp') {
         setCode(['', '', '', '', '', '']);
         inputRefs.current[0]?.focus();

@@ -5,6 +5,18 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 
 import { adminMuted, adminShellAppBg } from '../utils/adminThemeClasses';
+
+/** Router pathname is basename-relative (`/csr`); `window.location.pathname` may still be `/admin/csr`. */
+function isCsrPortalPath(path: string, browserPath: string): boolean {
+  return (
+    path === '/csr' ||
+    path.startsWith('/csr/') ||
+    browserPath.endsWith('/csr') ||
+    browserPath.includes('/admin/csr/') ||
+    browserPath.endsWith('/admin/csr')
+  );
+}
+
 /**
  * Guard component that redirects CSR users away from admin routes
  * This ensures CSR users NEVER see the admin layout
@@ -17,22 +29,20 @@ export function CSRRedirectGuard({ children }: { children: React.ReactNode }) {
   const location = useLocation();
 
   useEffect(() => {
-    // If CSR user tries to access admin routes, redirect immediately
     if (isAuthenticated && user?.role === 'customer_service') {
       const path = location.pathname;
-      // Only redirect if NOT already on CSR routes
-      if (!path.startsWith('/csr') && path !== '/csr/login') {
-        console.log('[CSRRedirectGuard] Redirecting CSR user from', path, 'to /csr');
+      const browserPath = typeof window !== 'undefined' ? window.location.pathname : path;
+      if (!isCsrPortalPath(path, browserPath)) {
+        console.log('[CSRRedirectGuard] Redirecting CSR user from', path, browserPath, 'to /csr');
         navigate('/csr', { replace: true });
       }
     }
   }, [isAuthenticated, user?.role, location.pathname, navigate]);
 
-  // Don't render admin content for CSR users
   if (isAuthenticated && user?.role === 'customer_service') {
     const path = location.pathname;
-    if (!path.startsWith('/csr') && path !== '/csr/login') {
-      // Return loading state while redirecting
+    const browserPath = typeof window !== 'undefined' ? window.location.pathname : path;
+    if (!isCsrPortalPath(path, browserPath)) {
       return (
         <div
           className={clsx(
@@ -41,7 +51,7 @@ export function CSRRedirectGuard({ children }: { children: React.ReactNode }) {
           )}
         >
           <div className="text-center">
-            <div className="animate-spin w-12 h-12 border-4 border-fin1-primary border-t-transparent rounded-full mx-auto"></div>
+            <div className="animate-spin w-12 h-12 border-4 border-fin1-primary border-t-transparent rounded-full mx-auto" />
             <p className={clsx('mt-4', adminMuted(isDark))}>
               Weiterleitung zum CSR-Portal...
             </p>

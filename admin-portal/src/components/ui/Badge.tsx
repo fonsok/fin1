@@ -20,12 +20,13 @@ const BADGE_VARIANTS_LIGHT: Record<VariantKey, string> = {
   neutral: clsx('bg-gray-100 text-gray-800'),
 };
 
+/** Translucent chips: bg /20, border /70; !text-* beats table td color inheritance */
 const BADGE_VARIANTS_DARK: Record<VariantKey, string> = {
-  success: 'bg-emerald-600/30 text-emerald-100 border border-emerald-500/40',
-  warning: 'bg-amber-600/30 text-amber-100 border border-amber-500/40',
-  danger: 'bg-red-600/30 text-red-100 border border-red-500/40',
-  info: 'bg-blue-600/30 text-blue-100 border border-blue-500/40',
-  neutral: 'bg-slate-600/40 text-slate-100 border border-slate-500/40',
+  success: 'bg-emerald-500/20 !text-emerald-100 border border-emerald-400/70',
+  warning: 'bg-amber-500/20 !text-amber-100 border border-amber-400/70',
+  danger: 'bg-red-500/20 !text-red-100 border border-red-400/70',
+  info: 'bg-blue-500/20 !text-blue-100 border border-blue-400/70',
+  neutral: 'bg-slate-500/20 !text-slate-200 border border-slate-400/70',
 };
 
 const BADGE_SIZES: Record<NonNullable<BadgeProps['size']>, string> = {
