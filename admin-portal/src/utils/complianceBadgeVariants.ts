@@ -33,8 +33,10 @@ const EVENT_TYPE_CHIP_DARK: Record<string, string> = {
   aml_check_failed: 'bg-red-500/20 text-red-100 border-red-400/70',
   pep_check_positive: 'bg-rose-500/20 text-rose-100 border-rose-400/70',
   sanction_check_positive: 'bg-red-500/20 text-red-100 border-red-400/70',
-  // Orders / trades
+  // Orders / trades (iOS camelCase normalizes here — blue / yellow / green / red quartet)
   order_placed: 'bg-blue-500/20 text-blue-100 border-blue-400/70',
+  order_completed: 'bg-green-500/20 text-green-100 border-green-400/70',
+  risk_check: 'bg-yellow-500/20 text-yellow-100 border-yellow-400/70',
   order_executed: 'bg-indigo-500/20 text-indigo-100 border-indigo-400/70',
   order_cancelled: 'bg-slate-500/20 text-slate-300 border-slate-400/70',
   trade_completed: 'bg-violet-500/20 text-violet-100 border-violet-400/70',
@@ -67,7 +69,7 @@ const EVENT_TYPE_CHIP_DARK: Record<string, string> = {
   consent_given: 'bg-emerald-500/20 text-emerald-100 border-emerald-400/70',
   consent_revoked: 'bg-amber-500/20 text-amber-100 border-amber-400/70',
   // CSR / support (iOS app; not always in Mongo enum)
-  escalation: 'bg-orange-500/20 text-orange-100 border-orange-400/70',
+  escalation: 'bg-red-500/20 text-red-100 border-red-400/70',
 };
 
 const EVENT_TYPE_CHIP_LIGHT: Record<string, string> = {
@@ -81,6 +83,8 @@ const EVENT_TYPE_CHIP_LIGHT: Record<string, string> = {
   pep_check_positive: 'bg-rose-100 text-rose-800 border-rose-400/70',
   sanction_check_positive: 'bg-red-100 text-red-800 border-red-400/70',
   order_placed: 'bg-blue-100 text-blue-800 border-blue-400/70',
+  order_completed: 'bg-green-100 text-green-800 border-green-400/70',
+  risk_check: 'bg-yellow-100 text-yellow-800 border-yellow-400/70',
   order_executed: 'bg-indigo-100 text-indigo-800 border-indigo-400/70',
   order_cancelled: 'bg-slate-100 text-slate-700 border-slate-400/70',
   trade_completed: 'bg-violet-100 text-violet-800 border-violet-400/70',
@@ -106,7 +110,7 @@ const EVENT_TYPE_CHIP_LIGHT: Record<string, string> = {
   data_deleted: 'bg-rose-100 text-rose-800 border-rose-400/70',
   consent_given: 'bg-emerald-100 text-emerald-800 border-emerald-400/70',
   consent_revoked: 'bg-amber-100 text-amber-800 border-amber-400/70',
-  escalation: 'bg-orange-100 text-orange-800 border-orange-400/70',
+  escalation: 'bg-red-100 text-red-800 border-red-400/70',
 };
 
 const SEVERITY_FALLBACK_DARK = 'bg-slate-500/20 text-slate-300 border-slate-400/70';
@@ -126,8 +130,18 @@ const EVENT_TYPE_FALLBACK_ACCENTS: ChipAccent[] = [
   'amber',
 ];
 
+/** snake_case (Parse seed) and camelCase (iOS ComplianceEventType rawValue). */
+export function normalizeEventTypeKey(value: string): string {
+  const trimmed = value?.trim() || '';
+  if (!trimmed) return '';
+  return trimmed
+    .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
+    .replace(/-/g, '_')
+    .toLowerCase();
+}
+
 function normalizeKey(value: string): string {
-  return value?.toLowerCase().trim() || '';
+  return normalizeEventTypeKey(value);
 }
 
 function stableAccentForEventType(key: string): ChipAccent {
@@ -164,9 +178,11 @@ export const COMPLIANCE_EVENT_TYPE_LABELS: Record<string, string> = {
   aml_check_failed: 'AML fehlgeschlagen',
   pep_check_positive: 'PEP-Treffer',
   sanction_check_positive: 'Sanktions-Treffer',
-  order_placed: 'Auftrag platziert',
-  order_executed: 'Auftrag ausgeführt',
-  order_cancelled: 'Auftrag storniert',
+  order_placed: 'Order platziert',
+  order_completed: 'Order abgeschlossen',
+  risk_check: 'Risiko-Prüfung',
+  order_executed: 'Order ausgeführt',
+  order_cancelled: 'Order storniert',
   trade_completed: 'Trade abgeschlossen',
   appropriateness_check: 'Angemessenheitsprüfung',
   risk_warning_shown: 'Risikohinweis angezeigt',

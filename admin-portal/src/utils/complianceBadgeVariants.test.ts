@@ -31,12 +31,24 @@ describe('complianceEventTypeChipClasses', () => {
     expect(aml).not.toEqual(large);
   });
 
-  it('maps order_placed and escalation to different hues', () => {
+  it('maps order_placed and escalation to blue vs red', () => {
     const order = complianceEventTypeChipClasses('order_placed', true);
     const escalation = complianceEventTypeChipClasses('escalation', true);
     expect(order).toContain('blue');
-    expect(escalation).toContain('orange');
+    expect(escalation).toContain('red');
     expect(order).not.toEqual(escalation);
+  });
+
+  it('maps iOS camelCase trading quartet to blue yellow green red', () => {
+    const placed = complianceEventTypeChipClasses('orderPlaced', true);
+    const risk = complianceEventTypeChipClasses('riskCheck', true);
+    const completed = complianceEventTypeChipClasses('orderCompleted', true);
+    const escalation = complianceEventTypeChipClasses('escalation', true);
+    expect(placed).toContain('blue');
+    expect(risk).toContain('yellow');
+    expect(completed).toContain('green');
+    expect(escalation).toContain('red');
+    expect(new Set([placed, risk, completed, escalation]).size).toBe(4);
   });
 });
 
