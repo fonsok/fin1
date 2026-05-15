@@ -60,25 +60,30 @@ This document outlines all automated checks and guardrails that protect architec
 ### 3. File Size Limits ✅
 
 **What's Protected:**
-- Swift source files target ≤ 300 lines
-- Functions ≤ 50 lines
+- Swift source files target ≤ 300 lines (new code and non-grandfathered files)
+- Grandfathered large files cannot grow without an explicit baseline update
+- Functions ≤ 50 lines (strict mode only)
 - Large types split into extensions
-- Pragmatic exceptions allowed for static content/data-only files (e.g. legal text constants), but only with explicit rationale in PR
+- Pragmatic exceptions: static legal copy under `FIN1/Shared/Data/*PrivacyPolicy*` and `*TermsOfService*`
 
 **Automated Checks:**
 - ✅ **Pre-commit Hook**: `check-file-sizes.sh` runs before every commit
-- ✅ **CI/CD**: Runs in GitHub Actions
+- ✅ **CI/CD**: `check-file-sizes.sh --mode baseline` in GitHub Actions
 - ✅ **Danger**: Warns on PRs if files exceed configured threshold
 
 **How It Works:**
 ```bash
-# Runs automatically on commit
-./scripts/check-file-sizes.sh
+# CI / default — grandfather existing debt, block growth & new large files
+./scripts/check-file-sizes.sh --mode baseline
 
-# Checks:
-# - All Swift files target ≤ 300 lines
-# - All functions ≤ 50 lines
+# Local strict burn-down — all files ≤ 300 lines (+ function size)
+./scripts/check-file-sizes.sh --mode strict
+
+# After intentional refactors, refresh grandfather list
+./scripts/generate-file-size-baseline.sh
 ```
+
+Baseline data: `scripts/file-size-baseline.json` (files currently >300 lines). New Swift files must stay ≤300 lines. Files in the baseline may not exceed their recorded line count (+5 slack).
 
 ### 4. Bundle Size Monitoring ✅
 

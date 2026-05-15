@@ -35,9 +35,11 @@
   - Warnungen bei Überschreitung von Schwellwerten
   - Dokumentation: `README-Bundle-Size.md`
 
-- **`check-file-sizes.sh`** - Prüft File-Size-Limits
-  - Swift-Dateien ≤ 300 Zeilen (Standard-Guardrail)
-  - Funktionen ≤ 50 Zeilen
+- **`check-file-sizes.sh`** - Prüft File-Size-Limits (ruft `file_size_baseline.py` auf)
+  - **CI:** `--mode baseline` — bestehende große Dateien in `file-size-baseline.json`, kein Wachstum (+5 Zeilen Slack)
+  - **Neue Dateien:** ≤ 300 Zeilen
+  - **Strict (lokal):** `--mode strict` — alle Dateien ≤ 300, Funktionen ≤ 50
+  - **`generate-file-size-baseline.sh`** — Baseline nach Refactor neu erzeugen
 
 - **`check-responsive-design.sh`** - ResponsiveDesign-Compliance-Check
   - Prüft auf feste UI-Werte
@@ -170,7 +172,7 @@
 ./scripts/network/health-check-backend.sh
 
 # Code-Qualität prüfen
-./scripts/check-file-sizes.sh
+./scripts/check-file-sizes.sh --mode baseline
 ./scripts/validate-mvvm-architecture.sh
 
 # Xcode Build-Probleme beheben

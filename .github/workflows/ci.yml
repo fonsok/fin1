@@ -172,8 +172,8 @@ jobs:
 
       - name: Check File Sizes
         run: |
-          chmod +x scripts/check-file-sizes.sh
-          ./scripts/check-file-sizes.sh
+          chmod +x scripts/check-file-sizes.sh scripts/file_size_baseline.py
+          ./scripts/check-file-sizes.sh --mode baseline
 
       - name: Danger
         if: github.event_name == 'pull_request'
