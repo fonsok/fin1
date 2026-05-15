@@ -30,4 +30,20 @@ describe('complianceEventTypeChipClasses', () => {
     expect(large).toContain('violet');
     expect(aml).not.toEqual(large);
   });
+
+  it('maps order_placed and escalation to different hues', () => {
+    const order = complianceEventTypeChipClasses('order_placed', true);
+    const escalation = complianceEventTypeChipClasses('escalation', true);
+    expect(order).toContain('blue');
+    expect(escalation).toContain('orange');
+    expect(order).not.toEqual(escalation);
+  });
+});
+
+describe('complianceSeverityChipClasses info', () => {
+  it('maps info severity to sky (not slate fallback)', () => {
+    const info = complianceSeverityChipClasses('info', true);
+    expect(info).toContain('sky');
+    expect(info).not.toContain('slate-500/20');
+  });
 });
