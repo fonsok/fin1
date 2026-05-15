@@ -34,6 +34,52 @@ Kurzcheckliste nach den umfangreichen DEV-/UI-Änderungen.
   - Badge-Lesbarkeit
   - Eingabefelder (Hintergrund + Text)
 
+### §3 Routenkarte zum manuellen Dark-Mode-Smoke (60–90 Min.)
+
+**So testen**
+
+- Browser: Deploy-Ziel laden (Hard-Refresh: Cmd+Shift+R).
+- Hell/Dunkel: Umschalten über das **Theme-Icon** in **Admin**: `admin-portal/src/components/Layout.tsx` · **CSR**: `csr-portal/components/CSRLayout.tsx` (`toggleTheme`).
+- Für **Konfiguration & Risk-Ansichten** mit Admin-Login; CSR-Bereiche mit CSR-Login (`Documentation/DEV_PORTAL_LOGIN_SSOT.md`).
+
+**Admin (gleiche SPA, Route `App.tsx`)**
+
+| Fokus (Checkliste) | Pfad(s) |
+|--------------------|---------|
+| Dashboard Metriken/KPI | `/` |
+| Benutzerliste / → Detail mit Kontoauszug & KPI | `/users`, `/users/:id` |
+| Tickets (Liste) | `/tickets` |
+| Compliance Events | `/compliance` |
+| Audit Logs | `/audit` |
+| Konfiguration | `/configuration` |
+| Einstellungen (Formulare / 2FA-Bereiche) | `/settings` |
+| System / Logs | `/system` |
+| Onboarding-Funnel | `/onboarding` |
+| Finance | `/finance` |
+| Security Dashboard | `/security` |
+| Freigaben (Approvals) | `/approvals` |
+| KYB Review | `/kyb-review` |
+| Rechtstexte (Accordion, Hell/Dunkel) | `/terms` |
+
+**CSR-Portal**
+
+| Fokus | Pfad |
+|-------|------|
+| Dashboard | `/csr` |
+| Tickets (Liste/Queue/…) | `/csr/tickets`, `/csr/tickets/queue`, ggf. Archiv/New/Bulk nach Bedarf |
+| Kundenliste / Detail | `/csr/customers`, `/csr/customers/:id` |
+| KYC/KYB | `/csr/kyc`, `/csr/kyb` |
+| Analytics/Trends | `/csr/analytics`, `/csr/trends` |
+| Vorlagen („Templates“ / Hilfe-Anleitung) | `/csr/templates`, `/csr/faqs` |
+
+**Pro Route kurz:**
+
+1. Sekundärtexte und Tabellenköpfe noch lesbar?
+2. Badges/Chips (Status, KPI-Bänder) differenzierbar?
+3. Inputs/Selects: Hintergrund und getippter Text klar?
+
+Auffälligkeiten als kleine Änderungen in `admin-portal/` nachziehen (`index.css`, `adminThemeClasses.ts`, betroffene Page/Components).
+
 ## 4) ENV-Änderungen korrekt ausrollen
 
 - `backend/.env` nicht per `source` einlesen (kann shell-inkompatibel sein).
