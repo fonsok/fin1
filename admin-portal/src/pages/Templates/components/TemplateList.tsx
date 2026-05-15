@@ -6,6 +6,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import type { ResponseTemplate, TemplateCategory } from '../types';
 
 import { adminCaption, adminMuted, adminPrimary, adminProse } from '../../../utils/adminThemeClasses';
+import { templateShortcutChipClasses } from '../../../utils/chipVariants';
 interface TemplateListProps {
   templates: ResponseTemplate[];
   categories: TemplateCategory[];
@@ -16,54 +17,6 @@ interface TemplateListProps {
 export function TemplateList({ templates, categories, onEdit, onDelete }: TemplateListProps) {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
-
-  const getShortcutToneClasses = (shortcut: string) => {
-    const key = (shortcut || '').toLowerCase().replace(/^\//, '');
-
-    // Semantic tones for common shortcut intents.
-    // We keep strong contrast in dark mode (light text on saturated backgrounds).
-    if (key.includes('close') || key.includes('resolved') || key.includes('done')) {
-      return isDark
-        ? '!bg-emerald-700 !text-slate-100 border border-emerald-500/60'
-        : 'bg-emerald-100 text-emerald-800 border border-emerald-300';
-    }
-    if (key === 'hi' || key.includes('high') || key.includes('prio1') || key.includes('p1')) {
-      return isDark
-        ? '!bg-amber-700 !text-slate-100 border border-amber-500/60'
-        : 'bg-amber-100 text-amber-800 border border-amber-300';
-    }
-    if (key.includes('med') || key.includes('medium') || key.includes('prio2') || key.includes('p2')) {
-      return isDark
-        ? '!bg-orange-700 !text-slate-100 border border-orange-500/60'
-        : 'bg-orange-100 text-orange-800 border border-orange-300';
-    }
-    if (key.includes('low') || key.includes('lo') || key.includes('prio3') || key.includes('p3')) {
-      return isDark
-        ? '!bg-cyan-700 !text-slate-100 border border-cyan-500/60'
-        : 'bg-cyan-100 text-cyan-800 border border-cyan-300';
-    }
-    if (key.includes('formal') || key.includes('official')) {
-      return isDark
-        ? '!bg-indigo-700 !text-slate-100 border border-indigo-500/60'
-        : 'bg-indigo-100 text-indigo-800 border border-indigo-300';
-    }
-    if (key.includes('urgent') || key.includes('escalate') || key.includes('warn')) {
-      return isDark
-        ? '!bg-rose-700 !text-slate-100 border border-rose-500/60'
-        : 'bg-rose-100 text-rose-800 border border-rose-300';
-    }
-    if (key.includes('friendly') || key.includes('greet')) {
-      return isDark
-        ? '!bg-sky-700 !text-slate-100 border border-sky-500/60'
-        : 'bg-sky-100 text-sky-800 border border-sky-300';
-    }
-
-    return clsx(
-      isDark
-        ? '!bg-slate-800 !text-slate-100 border border-slate-500/70'
-        : 'bg-gray-100 text-gray-700 border border-gray-300',
-    );
-  };
 
   const getCategoryLabel = (key: string) => {
     const cat = categories.find((c) => c.key === key);
@@ -125,7 +78,7 @@ export function TemplateList({ templates, categories, onEdit, onDelete }: Templa
                 <span
                   className={clsx(
                     'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-mono font-medium',
-                    getShortcutToneClasses(parsed.shortcut || 'none')
+                    templateShortcutChipClasses(parsed.shortcut || 'none', isDark)
                   )}
                 >
                   /{parsed.shortcut || 'kein-status'}

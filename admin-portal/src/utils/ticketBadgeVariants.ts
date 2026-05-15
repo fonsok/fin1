@@ -1,8 +1,8 @@
 import clsx from 'clsx';
+import { CHIP_BASE, CHIP_SIZE_SM } from './chipVariants';
 
-/** Shared chip shell — bg ≈ 20 %, border ≈ 70 % (Tailwind /20, /70). */
-export const TICKET_CHIP_BASE =
-  'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border';
+/** Ticket chips share portal shell; column-specific hues below. */
+export const TICKET_CHIP_BASE = clsx(CHIP_BASE, CHIP_SIZE_SM);
 
 /**
  * Status column — own palette (sky / orange / violet / emerald / slate).

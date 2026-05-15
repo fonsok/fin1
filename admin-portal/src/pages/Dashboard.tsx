@@ -9,6 +9,7 @@ import { getAdminDashboard } from '../api/admin';
 import { Card, Badge } from '../components/ui';
 import { formatNumber } from '../utils/format';
 import { adminMuted, adminPrimary, adminStrong } from '../utils/adminThemeClasses';
+import { dashboardIconWellClasses } from '../utils/chipVariants';
 
 export function DashboardPage() {
   const { user } = useAuth();
@@ -234,17 +235,10 @@ function StatCard({
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
-  const colors = {
-    blue: clsx(isDark ? 'bg-blue-900/40 text-blue-300' : 'bg-blue-50 text-blue-600'),
-    green: clsx(isDark ? 'bg-green-900/40 text-green-300' : 'bg-green-50 text-green-600'),
-    amber: clsx(isDark ? 'bg-amber-900/40 text-amber-300' : 'bg-amber-50 text-amber-600'),
-    red: clsx(isDark ? 'bg-red-900/40 text-red-300' : 'bg-red-50 text-red-600'),
-  };
-
   return (
     <Card>
       <div className="flex items-center gap-4">
-        <div className={clsx('p-3 rounded-lg', colors[color])}>{icon}</div>
+        <div className={dashboardIconWellClasses(color, isDark)}>{icon}</div>
         <div>
           <p className={clsx('text-sm', adminMuted(isDark))}>{title}</p>
           <p className={clsx('text-2xl font-bold', adminPrimary(isDark))}>

@@ -18,6 +18,8 @@ import {
   adminMuted,
   adminPrimary,
 } from '../../../utils/adminThemeClasses';
+import { severityIconWellClasses, severityPanelClasses, severityToChipVariant } from '../../../utils/chipVariants';
+
 interface SupportTrend {
   id: string;
   type: 'volumeSpike' | 'recurringIssue' | 'longResolutionTime' | 'highEscalationRate' | 'negativeCSAT' | 'reopenedTickets';
@@ -172,29 +174,6 @@ export function TrendsPage() {
     }
   }, [page, trendsTotalPages]);
 
-  const getSeveritySurface = (severity: string) => {
-    switch (severity) {
-      case 'critical':
-        return isDark
-          ? 'bg-red-950/45 text-red-100 border-red-800'
-          : 'bg-red-100 text-red-800 border-red-300';
-      case 'warning':
-        return isDark
-          ? 'bg-orange-950/45 text-orange-100 border-orange-800'
-          : 'bg-orange-100 text-orange-800 border-orange-300';
-      case 'info':
-        return isDark
-          ? 'bg-blue-950/45 text-blue-100 border-blue-800'
-          : 'bg-blue-100 text-blue-800 border-blue-300';
-      default:
-        return clsx(
-          isDark
-            ? 'bg-slate-800/80 text-slate-200 border-slate-600'
-            : 'bg-gray-100 text-gray-800 border-gray-300',
-        );
-    }
-  };
-
   const getTrendIcon = (type: string) => {
     switch (type) {
       case 'volumeSpike':
@@ -269,19 +248,19 @@ export function TrendsPage() {
                 <Card
                   key={trend.id}
                   className={clsx(
-                    'border-2 cursor-pointer hover:shadow-lg transition-shadow',
-                    getSeveritySurface(trend.severity),
+                    'cursor-pointer hover:shadow-lg transition-shadow',
+                    severityPanelClasses(trend.severity, isDark),
                   )}
                   onClick={() => setSelectedTrend(trend)}
                 >
                   <div className="flex items-start gap-4">
-                    <div className={clsx('p-2 rounded-lg border', getSeveritySurface(trend.severity))}>
+                    <div className={severityIconWellClasses(trend.severity, isDark)}>
                       {getTrendIcon(trend.type)}
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-2">
                         <h3 className="text-lg font-semibold">{trend.title}</h3>
-                        <Badge variant={trend.severity === 'critical' ? 'danger' : trend.severity === 'warning' ? 'warning' : 'info'}>
+                        <Badge variant={severityToChipVariant(trend.severity)}>
                           {trend.severity === 'critical' ? 'Kritisch' : trend.severity === 'warning' ? 'Warnung' : 'Info'}
                         </Badge>
                       </div>

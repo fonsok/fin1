@@ -1,4 +1,5 @@
 import clsx from 'clsx';
+import { chipAccentClasses } from './chipVariants';
 
 /**
  * Central light-mode Tailwind grays wrapped once with `clsx`:
@@ -171,11 +172,9 @@ export function adminMetricRed(isDark: boolean): string {
   return isDark ? 'text-red-400' : 'text-red-600';
 }
 
-/** Placeholder / chip on template lists (sky-tinted dark, blue light). */
+/** Placeholder / chip on template lists — delegates to portal chip SSOT. */
 export function adminPlaceholderChip(isDark: boolean): string {
-  return isDark
-    ? 'bg-sky-950/40 border border-sky-800 text-sky-200'
-    : clsx('bg-blue-50 text-blue-600');
+  return chipAccentClasses('sky', isDark);
 }
 
 /** Info card on slate-tinted panel (slate-200 / slate-700) */

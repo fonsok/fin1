@@ -279,6 +279,7 @@ main[data-content-area="dark"] table tbody tr:hover {
 }
 /* Ticket + generic chips: do not inherit table body text color */
 main[data-content-area="dark"] table [data-ticket-chip],
+main[data-content-area="dark"] table [data-portal-chip],
 main[data-content-area="dark"] table .inline-flex.rounded-full {
   color: unset;
 }

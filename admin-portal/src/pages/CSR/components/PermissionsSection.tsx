@@ -7,6 +7,7 @@ import { cloudFunction } from '../../../api/parse';
 import type { User } from '../../../context/AuthContext';
 
 import { adminBorderChromeSoft, adminCaption, adminComplianceFootnoteBorder, adminDualMuted, adminLabel, adminMonoNeutralHint, adminMuted, adminPrimary, adminRoleTitle, adminSectionDividerSoft, adminSoft, adminStrong } from '../../../utils/adminThemeClasses';
+import { chipVariantClasses, csrRoleAccentClasses } from '../../../utils/chipVariants';
 interface PermissionsSectionProps {
   user: User | null;
 }
@@ -64,75 +65,38 @@ export function PermissionsSection({ user }: PermissionsSectionProps) {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
-  const getCSRRoleDisplay = (
-    csrSubRole?: string
-  ): { name: string; badgeLight: string; badgeDark: string; key: string } => {
+  const getCSRRoleDisplay = (csrSubRole?: string): { name: string; key: string } => {
     switch (csrSubRole) {
       case 'level_1':
       case 'level1':
-        return {
-          name: 'Level 1 Support',
-          badgeLight: 'bg-blue-100 text-blue-800',
-          badgeDark: 'bg-blue-600/30 text-blue-100 border border-blue-500/40',
-          key: 'level1',
-        };
+        return { name: 'Level 1 Support', key: 'level1' };
       case 'level_2':
       case 'level2':
-        return {
-          name: 'Level 2 Support',
-          badgeLight: 'bg-green-100 text-green-800',
-          badgeDark: 'bg-emerald-600/30 text-emerald-100 border border-emerald-500/40',
-          key: 'level2',
-        };
+        return { name: 'Level 2 Support', key: 'level2' };
       case 'fraud_analyst':
       case 'fraudAnalyst':
       case 'fraud':
-        return {
-          name: 'Fraud Analyst',
-          badgeLight: 'bg-red-100 text-red-800',
-          badgeDark: 'bg-red-600/30 text-red-100 border border-red-500/40',
-          key: 'fraud',
-        };
+        return { name: 'Fraud Analyst', key: 'fraud' };
       case 'compliance_officer':
       case 'complianceOfficer':
       case 'compliance':
-        return {
-          name: 'Compliance Officer',
-          badgeLight: 'bg-purple-100 text-purple-800',
-          badgeDark: 'bg-purple-600/30 text-purple-100 border border-purple-500/40',
-          key: 'compliance',
-        };
+        return { name: 'Compliance Officer', key: 'compliance' };
       case 'tech_support':
       case 'techSupport':
       case 'tech':
-        return {
-          name: 'Tech Support',
-          badgeLight: 'bg-yellow-100 text-yellow-800',
-          badgeDark: 'bg-amber-600/30 text-amber-100 border border-amber-500/40',
-          key: 'techSupport',
-        };
+        return { name: 'Tech Support', key: 'techSupport' };
       case 'teamlead':
       case 'team_lead':
       case 'lead':
-        return {
-          name: 'Team Lead',
-          badgeLight: 'bg-indigo-100 text-indigo-800',
-          badgeDark: 'bg-indigo-600/30 text-indigo-100 border border-indigo-500/40',
-          key: 'teamlead',
-        };
+        return { name: 'Team Lead', key: 'teamlead' };
       default:
-        return {
-          name: 'Customer Service',
-          badgeLight: clsx('bg-gray-100 text-gray-800'),
-          badgeDark: 'bg-slate-600/40 text-slate-100 border border-slate-500/40',
-          key: 'level1',
-        };
+        return { name: 'Customer Service', key: 'level1' };
     }
   };
 
   const queryClient = useQueryClient();
   const roleDisplay = getCSRRoleDisplay(user?.csrSubRole);
-  const roleBadgeClass = isDark ? roleDisplay.badgeDark : roleDisplay.badgeLight;
+  const roleBadgeClass = csrRoleAccentClasses(user?.csrSubRole, isDark);
 
   // Invalidate cache when user changes
   useEffect(() => {
@@ -233,12 +197,7 @@ export function PermissionsSection({ user }: PermissionsSectionProps) {
                 {' '}(Kurz: L1, L2, Fraud, Compliance, Tech, Lead)
               </div>
             </div>
-            <span
-              className={clsx(
-                'px-3 py-1 text-xs font-bold rounded flex-shrink-0',
-                roleBadgeClass,
-              )}
-            >
+            <span className={clsx('font-bold flex-shrink-0', roleBadgeClass)}>
               {user.csrSubRole?.toUpperCase() || 'CSR'}
             </span>
           </div>
@@ -298,14 +257,7 @@ export function PermissionsSection({ user }: PermissionsSectionProps) {
             {' · '}
             <span className="font-medium">{rolePermissions.permissionCount}</span> Berechtigungen aktiv
             {rolePermissions.role.canApprove && (
-              <span
-                className={clsx(
-                  'ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium',
-                  isDark
-                    ? 'bg-emerald-600/25 text-emerald-200 border border-emerald-500/35'
-                    : 'bg-green-100 text-green-800',
-                )}
-              >
+              <span className={clsx('ml-2', chipVariantClasses('success', isDark))}>
                 ✓ Kann genehmigen
               </span>
             )}

@@ -2,6 +2,7 @@ import clsx from 'clsx';
 import { useTheme } from '../../../context/ThemeContext';
 
 import { adminBorderChrome } from '../../../utils/adminThemeClasses';
+import { chipVariantClasses } from '../../../utils/chipVariants';
 interface TabItem<T extends string> {
   id: T;
   label: string;
@@ -52,16 +53,12 @@ export function ApprovalsTabs<T extends string>({
           {tab.count > 0 && (
             <span
               className={clsx(
-                'ml-1 px-2 py-0.5 text-xs font-semibold rounded-full',
+                'ml-1 font-semibold',
                 activeTab === tab.id
-                  ? 'bg-fin1-primary text-white'
+                  ? 'bg-fin1-primary text-white border-fin1-primary px-2 py-0.5 text-xs rounded-full'
                   : tab.id === 'pending' && tab.count > 0
-                    ? isDark
-                      ? 'bg-amber-900/50 text-amber-200'
-                      : 'bg-amber-100 text-amber-800'
-                    : isDark
-                      ? 'bg-slate-600 text-slate-200'
-                      : 'bg-gray-100 text-gray-600',
+                    ? chipVariantClasses('warning', isDark)
+                    : chipVariantClasses('neutral', isDark),
               )}
             >
               {tab.count}

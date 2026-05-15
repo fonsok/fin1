@@ -6,7 +6,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import { updateEmailTemplate, renderEmailTemplate } from '../api';
 import type { EmailTemplate } from '../types';
 
-import { adminBodyStrong, adminBorderChrome, adminLabel, adminMuted, adminPrimary, adminStrong } from '../../../utils/adminThemeClasses';
+import { adminBodyStrong, adminBorderChrome, adminLabel, adminMuted, adminPlaceholderChip, adminPrimary, adminStrong } from '../../../utils/adminThemeClasses';
 interface EmailTemplateEditorProps {
   template: EmailTemplate;
   onSave: () => void;
@@ -155,10 +155,9 @@ export function EmailTemplateEditor({ template, onSave, onClose }: EmailTemplate
                     <span
                       key={p}
                       className={clsx(
-                        'text-xs px-2 py-1 rounded font-mono cursor-pointer border',
-                        isDark
-                          ? 'bg-blue-950/50 text-blue-200 border-blue-800/80 hover:bg-blue-950/80'
-                          : 'bg-blue-50 text-blue-600 border-transparent hover:bg-blue-100',
+                        'text-xs font-mono cursor-pointer',
+                        adminPlaceholderChip(isDark),
+                        isDark ? 'hover:bg-sky-500/30' : 'hover:bg-sky-200',
                       )}
                       onClick={() => setBody((b) => b + p)}
                     >

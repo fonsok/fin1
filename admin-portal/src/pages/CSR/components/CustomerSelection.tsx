@@ -9,6 +9,7 @@ import type { CustomerSearchResult } from '../types';
 // Components for selecting and displaying customers in ticket creation.
 
 import { adminCaption, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { chipAccentClasses } from '../../../utils/chipVariants';
 interface SelectedCustomerCardProps {
   customer: CustomerSearchResult;
   onClear: () => void;
@@ -37,16 +38,11 @@ export function SelectedCustomerCard({
       <div className="flex items-center gap-4">
         <div
           className={clsx(
-            'w-12 h-12 rounded-full flex items-center justify-center',
-            isDark ? 'bg-emerald-900/50' : 'bg-green-100',
+            'w-12 h-12 flex items-center justify-center',
+            chipAccentClasses('emerald', isDark),
           )}
         >
-          <span
-            className={clsx(
-              'font-semibold text-lg',
-              isDark ? 'text-emerald-200' : 'text-green-700',
-            )}
-          >
+          <span className="font-semibold text-lg">
             {customer.firstName?.[0] || customer.email[0].toUpperCase()}
           </span>
         </div>

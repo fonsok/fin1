@@ -6,7 +6,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import type { ResponseTemplate, TemplateCategory, CreateTemplateRequest, UpdateTemplateRequest } from '../types';
 import { TEMPLATE_CATEGORIES, CSR_ROLES } from '../types';
 
-import { adminBodyStrong, adminBorderChrome, adminCaption, adminLabel, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
+import { adminBodyStrong, adminBorderChrome, adminCaption, adminLabel, adminMuted, adminPlaceholderChip, adminPrimary } from '../../../utils/adminThemeClasses';
 interface TemplateEditorProps {
   template: ResponseTemplate | null;
   categories: TemplateCategory[];
@@ -227,15 +227,7 @@ export function TemplateEditor({ template, categories, onSave, onClose }: Templa
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {extractedPlaceholders.map((p) => (
-                    <span
-                      key={p}
-                      className={clsx(
-                        'text-sm px-3 py-1 rounded font-mono border',
-                        isDark
-                          ? 'bg-blue-950/50 text-blue-200 border-blue-800/80'
-                          : 'bg-blue-50 text-blue-600 border-transparent',
-                      )}
-                    >
+                    <span key={p} className={clsx('text-sm font-mono', adminPlaceholderChip(isDark))}>
                       {p}
                     </span>
                   ))}

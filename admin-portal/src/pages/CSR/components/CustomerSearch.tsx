@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import clsx from 'clsx';
 import { useQuery } from '@tanstack/react-query';
-import { Card, Button } from '../../../components/ui';
+import { Badge, Card, Button } from '../../../components/ui';
 import { useTheme } from '../../../context/ThemeContext';
 import { searchCustomers } from '../api';
 import type { CustomerSearchResult } from '../types';
@@ -105,20 +105,11 @@ export function CustomerSearch({ onSelectCustomer }: CustomerSearchProps) {
                   </div>
                   <div className="flex items-center gap-2">
                     {customer.status && (
-                      <span
-                        className={clsx(
-                          'px-2 py-1 text-xs rounded',
-                          customer.status === 'active'
-                            ? isDark
-                              ? 'bg-emerald-950/60 text-emerald-300 border border-emerald-800/60'
-                              : 'bg-green-100 text-green-800'
-                            : isDark
-                              ? 'bg-slate-700 text-slate-200 border border-slate-500'
-                              : 'bg-gray-100 text-gray-800',
-                        )}
+                      <Badge
+                        variant={customer.status === 'active' ? 'success' : 'neutral'}
                       >
                         {customer.status}
-                      </span>
+                      </Badge>
                     )}
                     <svg
                       className={clsx('w-5 h-5', adminCaption(isDark))}
