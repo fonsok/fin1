@@ -2,7 +2,18 @@ import { useCallback, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { getComplianceEvents, reviewComplianceEvent, type ComplianceEvent } from '../../api/admin';
-import { Card, Button, Badge, PaginationBar } from '../../components/ui';
+import {
+  Card,
+  Button,
+  Badge,
+  PaginationBar,
+  ComplianceEventTypeBadge,
+  ComplianceSeverityBadge,
+} from '../../components/ui';
+import {
+  getComplianceEventTypeLabel,
+  getComplianceSeverityLabel,
+} from '../../utils/complianceBadgeVariants';
 import { SortableTh, nextSortState, type SortOrder } from '../../components/table/SortableTh';
 import { formatDateTime } from '../../utils/format';
 import { useTheme } from '../../context/ThemeContext';
@@ -63,40 +74,6 @@ export function ComplianceEventsPage() {
       setReviewNotes('');
     },
   });
-
-  const getSeverityVariant = (severity: string): 'success' | 'warning' | 'danger' | 'info' | 'neutral' => {
-    switch (severity?.toLowerCase()) {
-      case 'critical': return 'danger';
-      case 'high': return 'danger';
-      case 'medium': return 'warning';
-      case 'low': return 'info';
-      default: return 'neutral';
-    }
-  };
-
-  const getSeverityLabel = (severity: string): string => {
-    switch (severity?.toLowerCase()) {
-      case 'critical': return 'Kritisch';
-      case 'high': return 'Hoch';
-      case 'medium': return 'Mittel';
-      case 'low': return 'Niedrig';
-      default: return severity || '-';
-    }
-  };
-
-  const getEventTypeLabel = (type: string): string => {
-    const labels: Record<string, string> = {
-      'aml_check_failed': 'AML-Prüfung fehlgeschlagen',
-      'suspicious_activity': 'Verdächtige Aktivität',
-      'large_transaction': 'Große Transaktion',
-      'login_from_new_device': 'Login von neuem Gerät',
-      'failed_login_attempt': 'Fehlgeschlagener Login',
-      'kyc_document_uploaded': 'KYC-Dokument hochgeladen',
-      'account_locked': 'Konto gesperrt',
-      'password_changed': 'Passwort geändert',
-    };
-    return labels[type] || type || '-';
-  };
 
   const fieldSurface = clsx(
     'w-full border rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary',
@@ -226,9 +203,9 @@ export function ComplianceEventsPage() {
                 {data.events.map((event, index: number) => (
                   <tr key={event.objectId} className={listRowStripeClasses(isDark, index)}>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={clsx('text-sm font-medium', tableBodyCellPrimaryClasses(isDark))}>
-                        {getEventTypeLabel(event.eventType)}
-                      </span>
+                      <ComplianceEventTypeBadge eventType={event.eventType}>
+                        {getComplianceEventTypeLabel(event.eventType)}
+                      </ComplianceEventTypeBadge>
                     </td>
                     <td className="px-6 py-4">
                       <p className={clsx('text-sm truncate max-w-xs', tableBodyCellPrimaryClasses(isDark))}>
@@ -239,9 +216,9 @@ export function ComplianceEventsPage() {
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <Badge variant={getSeverityVariant(event.severity)}>
-                        {getSeverityLabel(event.severity)}
-                      </Badge>
+                      <ComplianceSeverityBadge severity={event.severity}>
+                        {getComplianceSeverityLabel(event.severity)}
+                      </ComplianceSeverityBadge>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <Badge variant={event.reviewed ? 'success' : 'warning'}>
@@ -290,9 +267,9 @@ export function ComplianceEventsPage() {
             <div className="space-y-3 mb-4">
               <div>
                 <span className={clsx('text-sm', tableBodyCellMutedClasses(isDark))}>Typ:</span>
-                <span className={clsx('ml-2 text-sm font-medium', tableBodyCellPrimaryClasses(isDark))}>
-                  {getEventTypeLabel(selectedEvent.eventType)}
-                </span>
+                <ComplianceEventTypeBadge eventType={selectedEvent.eventType} className="ml-2">
+                  {getComplianceEventTypeLabel(selectedEvent.eventType)}
+                </ComplianceEventTypeBadge>
               </div>
               <div>
                 <span className={clsx('text-sm', tableBodyCellMutedClasses(isDark))}>Beschreibung:</span>
@@ -302,9 +279,9 @@ export function ComplianceEventsPage() {
               </div>
               <div>
                 <span className={clsx('text-sm', tableBodyCellMutedClasses(isDark))}>Schweregrad:</span>
-                <Badge variant={getSeverityVariant(selectedEvent.severity)} className="ml-2">
-                  {getSeverityLabel(selectedEvent.severity)}
-                </Badge>
+                <ComplianceSeverityBadge severity={selectedEvent.severity} className="ml-2">
+                  {getComplianceSeverityLabel(selectedEvent.severity)}
+                </ComplianceSeverityBadge>
               </div>
             </div>
 
