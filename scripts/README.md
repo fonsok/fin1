@@ -39,7 +39,8 @@
   - **CI:** `--mode baseline` — bestehende große Dateien in `file-size-baseline.json`, kein Wachstum (+5 Zeilen Slack)
   - **Neue Dateien:** ≤ 300 Zeilen
   - **Strict (lokal):** `--mode strict` — alle Dateien ≤ 300, Funktionen ≤ 50
-  - **`generate-file-size-baseline.sh`** — Baseline nach Refactor neu erzeugen
+  - **`generate-file-size-baseline.sh`** — Baseline nach Refactor neu erzeugen (ohne exempt Rechtstexte in `files`)
+  - **Layer 2:** Große Dateien aufteilen → `generate` → Baseline schrumpft schrittweise; lokal `check --mode strict` für vollen Überblick
 
 - **`check-responsive-design.sh`** - ResponsiveDesign-Compliance-Check
   - Prüft auf feste UI-Werte

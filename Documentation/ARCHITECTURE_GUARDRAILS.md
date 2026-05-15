@@ -83,7 +83,9 @@ This document outlines all automated checks and guardrails that protect architec
 ./scripts/generate-file-size-baseline.sh
 ```
 
-Baseline data: `scripts/file-size-baseline.json` (files currently >300 lines). New Swift files must stay ≤300 lines. Files in the baseline may not exceed their recorded line count (+5 slack).
+Baseline data: `scripts/file-size-baseline.json` (files currently >300 lines). New Swift files must stay ≤300 lines. Files in the baseline may not exceed their recorded line count (+5 slack). Static legal copy matching the exempt globs is **not** stored in the baseline JSON (CI still skips line limits for those paths).
+
+**Layer 2 (incremental burn-down):** Split large Swift files (extensions, `+Topic` files, or extracted types in the same feature folder) until each is ≤300 lines, then run `./scripts/generate-file-size-baseline.sh` to refresh the grandfather list. Work down from the largest baseline entries or from “just over 300” for quick wins. Use `./scripts/check-file-sizes.sh --mode strict` locally to see full debt including function-length limits.
 
 ### 4. Bundle Size Monitoring ✅
 

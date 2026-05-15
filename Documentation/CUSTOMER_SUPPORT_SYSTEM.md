@@ -621,7 +621,8 @@ Alle Vorlagen unterstützen dynamische Platzhalter:
 | `CustomerSupportPermissionSet.swift` | Vordefinierte Berechtigungs-Sets pro Rolle |
 | `PermissionCheckResult.swift` | Ergebnis-Struct für Berechtigungsprüfungen |
 | `FraudAMLModels.swift` | AccountSuspension, SARReport, ChargebackRequest, FraudAlert |
-| `FourEyesApprovalModels.swift` | 4-Augen-Workflow mit ApprovalRequest, ApprovalDecision, AuditEntry |
+| `FourEyesApprovalModels.swift` | Kern: `FourEyesApprovalRequest`, Approval-Typ/-Status/Risiko-Enums |
+| `FourEyesApprovalSupportingModels.swift` | `ApprovalDecision`, `ApprovalAuditEntry`, `ApprovalQueueStats` |
 | `GDPRRequestModels.swift` | DSGVO Art. 15/17/20 Anfragen mit RetentionConflicts |
 
 ### Backend (MongoDB Collections)

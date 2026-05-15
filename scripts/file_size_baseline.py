@@ -59,6 +59,8 @@ def load_baseline() -> dict:
 def cmd_generate() -> int:
     grandfathered: dict[str, int] = {}
     for rel in iter_swift_files():
+        if is_exempt(rel):
+            continue
         count = line_count(rel)
         if count > MAX_NEW_FILE_LINES:
             grandfathered[rel] = count
