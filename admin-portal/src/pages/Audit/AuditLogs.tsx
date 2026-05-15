@@ -2,7 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { getAuditLogs } from '../../api/admin';
-import { Card, Button, Badge, Input, PaginationBar } from '../../components/ui';
+import { Card, Button, Input, PaginationBar, AuditLogTypeBadge } from '../../components/ui';
+import { getAuditLogTypeLabel } from '../../utils/auditLogBadgeVariants';
 import { SortableTh, nextSortState, type SortOrder } from '../../components/table/SortableTh';
 import { formatDateTime } from '../../utils/format';
 import { useTheme } from '../../context/ThemeContext';
@@ -60,30 +61,6 @@ export function AuditLogsPage() {
 
   const total = data?.total ?? 0;
 
-  const getLogTypeVariant = (type: string): 'success' | 'warning' | 'danger' | 'info' | 'neutral' => {
-    switch (type?.toLowerCase()) {
-      case 'security': return 'danger';
-      case 'compliance': return 'warning';
-      case 'admin': return 'info';
-      case 'admin_customer_view': return 'info';
-      case 'user': return 'neutral';
-      default: return 'neutral';
-    }
-  };
-
-  const getLogTypeLabel = (type: string): string => {
-    const labels: Record<string, string> = {
-      'security': 'Sicherheit',
-      'compliance': 'Compliance',
-      'admin': 'Admin',
-      'user': 'Benutzer',
-      'system': 'System',
-      'audit': 'Audit',
-      'admin_customer_view': 'Kundensicht (Portal)',
-    };
-    return labels[type?.toLowerCase()] || type || '-';
-  };
-
   const getActionLabel = (action: string): string => {
     const labels: Record<string, string> = {
       'login': 'Anmeldung',
@@ -130,6 +107,11 @@ export function AuditLogsPage() {
             <option value="user">Benutzer</option>
             <option value="system">System</option>
             <option value="admin_customer_view">Kundensicht (Portal)</option>
+            <option value="data_access">Datenzugriff</option>
+            <option value="action">Aktion</option>
+            <option value="configuration">Konfiguration</option>
+            <option value="correction">Korrektur</option>
+            <option value="legal">Rechtliches</option>
           </select>
 
           <div className="flex-1">
@@ -228,9 +210,9 @@ export function AuditLogsPage() {
                         {formatDateTime(log.createdAt)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <Badge variant={getLogTypeVariant(log.logType)}>
-                          {getLogTypeLabel(log.logType)}
-                        </Badge>
+                        <AuditLogTypeBadge logType={log.logType}>
+                          {getAuditLogTypeLabel(log.logType)}
+                        </AuditLogTypeBadge>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={clsx('text-sm', tableBodyCellPrimaryClasses(isDark))}>

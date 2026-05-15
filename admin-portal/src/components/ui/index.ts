@@ -3,4 +3,5 @@ export { Input } from './Input';
 export { Card, CardHeader } from './Card';
 export { Badge, getStatusVariant } from './Badge';
 export { TicketPriorityBadge, TicketStatusBadge } from './TicketBadges';
+export { AuditLogTypeBadge } from './AuditLogBadges';
 export { PaginationBar } from './PaginationBar';
