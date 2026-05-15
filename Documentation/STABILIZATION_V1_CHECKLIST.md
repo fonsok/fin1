@@ -45,6 +45,7 @@ docker compose -f docker-compose.production.yml up -d --force-recreate --no-deps
 
 ## 5) Release-Quickcheck
 
+- **Admin Portal `.20` (2026-05-15):** Abnahme **Go** → `Documentation/RELEASE_ABNAHME_2026-05-15_ADMIN_PORTAL.md` §4
 - `npm run build` (Admin-Portal)
 - Parse Server Cloud Code geladen (Container recreated)
 - UI Hard Refresh im Browser
