@@ -57,5 +57,6 @@ docker compose -f docker-compose.production.yml up -d --force-recreate --no-deps
 
 - Nach erfolgreichem Go/No-Go Test immer ein kurzes Abnahmeprotokoll ablegen und verlinken.
 - Aktuelle Referenz:
+  - `Documentation/RELEASE_ABNAHME_2026-05-15_ADMIN_PORTAL.md` (§5 Quickcheck Chip/Dark-Mode)
   - `Documentation/RELEASE_ABNAHME_2026-03-19_ADMIN_PORTAL.md`
 
