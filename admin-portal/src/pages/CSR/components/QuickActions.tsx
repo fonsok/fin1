@@ -2,25 +2,24 @@ import clsx from 'clsx';
 import type { ReactNode } from 'react';
 import { Card } from '../../../components/ui';
 import { useNavigate } from 'react-router-dom';
+import { useTheme } from '../../../context/ThemeContext';
+import { accentTileClasses, type ChipAccent } from '../../../utils/chipVariants';
+import { adminCaption } from '../../../utils/adminThemeClasses';
 
 interface QuickActionsProps {
   unassignedTicketCount: number;
 }
 
-type ActionStyle = {
-  bg: string;
-  fg: string;
-  fgMuted: string;
-};
-
 export function QuickActions({ unassignedTicketCount }: QuickActionsProps) {
   const navigate = useNavigate();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
   const actions: Array<{
     icon: ReactNode;
     title: string;
     subtitle: string;
-    style: ActionStyle;
+    accent: ChipAccent;
     badge?: string;
     onClick: () => void;
   }> = [
@@ -37,11 +36,7 @@ export function QuickActions({ unassignedTicketCount }: QuickActionsProps) {
       ),
       title: 'Neues Ticket',
       subtitle: 'Support-Anfrage',
-      style: {
-        bg: 'bg-blue-100',
-        fg: 'text-blue-950',
-        fgMuted: 'text-slate-950',
-      },
+      accent: 'blue',
       onClick: () => navigate('/csr/tickets/new'),
     },
     {
@@ -57,11 +52,7 @@ export function QuickActions({ unassignedTicketCount }: QuickActionsProps) {
       ),
       title: 'KYC-Prüfung',
       subtitle: 'Status anzeigen',
-      style: {
-        bg: 'bg-green-100',
-        fg: 'text-green-900',
-        fgMuted: 'text-green-800',
-      },
+      accent: 'emerald',
       onClick: () => navigate('/csr/kyc'),
     },
     {
@@ -77,11 +68,7 @@ export function QuickActions({ unassignedTicketCount }: QuickActionsProps) {
       ),
       title: 'Warteschlange',
       subtitle: 'Ticket-Zuweisung',
-      style: {
-        bg: 'bg-orange-100',
-        fg: 'text-orange-900',
-        fgMuted: 'text-orange-800',
-      },
+      accent: 'orange',
       badge: unassignedTicketCount > 0 ? unassignedTicketCount.toString() : undefined,
       onClick: () => navigate('/csr/tickets/queue'),
     },
@@ -98,11 +85,7 @@ export function QuickActions({ unassignedTicketCount }: QuickActionsProps) {
       ),
       title: 'Analytics',
       subtitle: 'Metriken & Berichte',
-      style: {
-        bg: 'bg-purple-100',
-        fg: 'text-purple-900',
-        fgMuted: 'text-purple-800',
-      },
+      accent: 'purple',
       onClick: () => navigate('/csr/analytics'),
     },
     {
@@ -118,11 +101,7 @@ export function QuickActions({ unassignedTicketCount }: QuickActionsProps) {
       ),
       title: 'Archiv',
       subtitle: 'Geschlossene Tickets',
-      style: {
-        bg: clsx('bg-gray-100'),
-        fg: 'text-neutral-950',
-        fgMuted: 'text-neutral-800',
-      },
+      accent: 'slate',
       onClick: () => navigate('/csr/tickets/archive'),
     },
     {
@@ -138,11 +117,7 @@ export function QuickActions({ unassignedTicketCount }: QuickActionsProps) {
       ),
       title: 'Trends',
       subtitle: 'Muster & Alerts',
-      style: {
-        bg: 'bg-red-100',
-        fg: 'text-red-950',
-        fgMuted: 'text-red-950',
-      },
+      accent: 'red',
       onClick: () => navigate('/csr/trends'),
     },
     {
@@ -158,11 +133,7 @@ export function QuickActions({ unassignedTicketCount }: QuickActionsProps) {
       ),
       title: 'Agent-Performance',
       subtitle: 'Team-Statistiken',
-      style: {
-        bg: 'bg-cyan-100',
-        fg: 'text-cyan-900',
-        fgMuted: 'text-cyan-800',
-      },
+      accent: 'cyan',
       onClick: () => navigate('/csr/analytics'),
     },
     {
@@ -178,11 +149,7 @@ export function QuickActions({ unassignedTicketCount }: QuickActionsProps) {
       ),
       title: 'Massenbearbeitung',
       subtitle: 'Mehrere Tickets',
-      style: {
-        bg: 'bg-indigo-100',
-        fg: 'text-indigo-900',
-        fgMuted: 'text-indigo-800',
-      },
+      accent: 'indigo',
       onClick: () => navigate('/csr/tickets/bulk'),
     },
     {
@@ -198,11 +165,7 @@ export function QuickActions({ unassignedTicketCount }: QuickActionsProps) {
       ),
       title: 'FAQ Wissensdatenbank',
       subtitle: 'Artikel & Lösungen',
-      style: {
-        bg: 'bg-emerald-100',
-        fg: 'text-emerald-900',
-        fgMuted: 'text-emerald-800',
-      },
+      accent: 'violet',
       onClick: () => navigate('/csr/faqs'),
     },
   ];
@@ -217,9 +180,8 @@ export function QuickActions({ unassignedTicketCount }: QuickActionsProps) {
             type="button"
             onClick={action.onClick}
             className={clsx(
-              'p-4 rounded-lg border-2 border-transparent hover:border-fin1-primary transition-all text-left hover:shadow-md',
-              action.style.bg,
-              action.style.fg,
+              'p-4 text-left hover:border-fin1-primary transition-all hover:shadow-md',
+              accentTileClasses(action.accent, isDark),
             )}
           >
             <div className="flex items-center justify-between mb-2">
@@ -232,9 +194,9 @@ export function QuickActions({ unassignedTicketCount }: QuickActionsProps) {
             </div>
             <div>
               <div className="font-semibold text-sm leading-snug">{action.title}</div>
-              <div className={clsx('text-xs mt-0.5 font-medium leading-snug', action.style.fgMuted)}>
+              <p className={clsx('text-xs mt-0.5 font-medium leading-snug', adminCaption(isDark))}>
                 {action.subtitle}
-              </div>
+              </p>
             </div>
           </button>
         ))}

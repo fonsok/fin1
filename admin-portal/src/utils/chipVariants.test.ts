@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  accentTileClasses,
   chipVariantClasses,
   severityToChipVariant,
   templateShortcutChipClasses,
@@ -10,6 +11,16 @@ describe('chipVariantClasses', () => {
     const cls = chipVariantClasses('info', true);
     expect(cls).toContain('/20');
     expect(cls).toContain('/70');
+  });
+});
+
+describe('accentTileClasses', () => {
+  it('uses distinct accents in dark mode', () => {
+    const blue = accentTileClasses('blue', true);
+    const emerald = accentTileClasses('emerald', true);
+    expect(blue).toContain('blue');
+    expect(emerald).toContain('emerald');
+    expect(blue).not.toEqual(emerald);
   });
 });
 

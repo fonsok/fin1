@@ -1,11 +1,10 @@
 import clsx from 'clsx';
-import { Card, Badge } from '../../../components/ui';
+import { Card, ComplianceSeverityBadge } from '../../../components/ui';
+import { getComplianceSeverityLabel } from '../../../utils/complianceBadgeVariants';
 import { useTheme } from '../../../context/ThemeContext';
 import { formatDateTime } from '../../../utils/format';
 import { listRowStripeClasses } from '../../../utils/tableStriping';
 import type { FailedLogin, SecurityAlert } from '../types';
-import { getSeverityVariant } from '../utils';
-
 import { adminBorderChromeSoft, adminMuted, adminPrimary } from '../../../utils/adminThemeClasses';
 interface OverviewTabProps {
   failedLogins: FailedLogin[];
@@ -52,9 +51,9 @@ export function OverviewTab({ failedLogins, alerts }: OverviewTabProps): JSX.Ele
           {unreviewedAlerts.map((alert, index) => (
             <div key={alert.objectId} className={clsx('p-3 rounded-lg', listRowStripeClasses(isDark, index))}>
               <div className="flex items-center gap-2 mb-1 flex-wrap">
-                <Badge variant={getSeverityVariant(alert.severity)}>
-                  {alert.severity.toUpperCase()}
-                </Badge>
+                <ComplianceSeverityBadge severity={alert.severity}>
+                  {getComplianceSeverityLabel(alert.severity)}
+                </ComplianceSeverityBadge>
                 <span className={clsx('text-sm', adminMuted(isDark))}>
                   {formatDateTime(alert.createdAt)}
                 </span>

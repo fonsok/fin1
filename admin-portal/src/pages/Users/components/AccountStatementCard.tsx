@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import clsx from 'clsx';
-import { Card, CardHeader, Badge } from '../../../components/ui';
+import { Card, CardHeader, AccountStatementEntryBadge } from '../../../components/ui';
 import { formatDateTime, formatCurrency } from '../../../utils/format';
 import { useTheme } from '../../../context/ThemeContext';
 import { listRowStripeClasses } from '../../../utils/tableStriping';
@@ -25,17 +25,14 @@ const ENTRY_TYPE_LABELS: Record<string, string> = {
   trade_buy: 'Wertpapierkauf',
   trade_sell: 'Wertpapierverkauf',
   trading_fees: 'Handelsgebühren',
+  app_service_charge: 'App-Servicegebühr',
+  investment_escrow_reserve: 'Kundenguthaben reserviert',
+  investment_escrow_deploy: 'Reserviert → Handel/Pool',
+  investment_escrow_release: 'Reservierung aufgelöst',
 };
 
 function entryLabel(type: string): string {
   return ENTRY_TYPE_LABELS[type] || type;
-}
-
-function entryBadgeVariant(type: string): 'success' | 'danger' | 'warning' | 'neutral' | 'info' {
-  if (type.includes('profit') || type === 'commission_credit' || type === 'deposit' || type === 'investment_return' || type === 'residual_return' || type === 'trade_sell') return 'success';
-  if (type.includes('debit') || type === 'withdrawal' || type === 'trade_buy' || type === 'trading_fees') return 'danger';
-  if (type === 'investment_activate') return 'warning';
-  return 'neutral';
 }
 
 export function AccountStatementCard({ data, userRole }: Props) {
@@ -144,9 +141,9 @@ function StatementRow({ entry, idx, isDark }: { entry: AccountStatementEntryItem
         )}
       </td>
       <td className="px-3 py-2">
-        <Badge variant={entryBadgeVariant(entry.entryType)}>
+        <AccountStatementEntryBadge entryType={entry.entryType}>
           {entryLabel(entry.entryType)}
-        </Badge>
+        </AccountStatementEntryBadge>
       </td>
       <td className={clsx('px-3 py-2 text-right tabular-nums font-medium', isDebit ? amountColor : (adminGlyphFaint(isDark)))}>
         {isDebit ? formatCurrency(Math.abs(entry.amount)) : '\u2014'}

@@ -117,6 +117,14 @@ export function chipAccentClasses(accent: ChipAccent, isDark: boolean): string {
   return clsx(CHIP_BASE, CHIP_SIZE_SM, isDark ? CHIP_ACCENT_DARK[accent] : CHIP_ACCENT_LIGHT[accent]);
 }
 
+/** Larger accent surface (Quick Actions tiles, compact alert panels). */
+export function accentTileClasses(accent: ChipAccent, isDark: boolean): string {
+  return clsx(
+    'rounded-lg border-2 border-transparent',
+    isDark ? CHIP_ACCENT_DARK[accent] : CHIP_ACCENT_LIGHT[accent],
+  );
+}
+
 export function severityToChipVariant(severity: string): ChipVariant {
   switch (severity?.toLowerCase()) {
     case 'critical':

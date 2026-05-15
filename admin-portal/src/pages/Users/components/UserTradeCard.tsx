@@ -107,7 +107,7 @@ export function UserTradeCard({ trade }: { trade: TradeItem }) {
         <div
           className={clsx(
             'border-t p-4',
-            isDark ? 'border-slate-600 bg-slate-900/60' : 'border-gray-200 bg-blue-50',
+            isDark ? 'border-slate-600 bg-sky-950/35' : 'border-gray-200 bg-blue-50',
           )}
         >
           <h5 className={clsx('font-medium text-sm mb-3', adminStrong(isDark))}>
@@ -115,7 +115,7 @@ export function UserTradeCard({ trade }: { trade: TradeItem }) {
           </h5>
           <div className="overflow-x-auto rounded-lg border border-transparent">
             <table className="w-full text-sm">
-              <thead className={clsx(isDark ? 'bg-slate-800/90' : 'bg-blue-100')}>
+              <thead className={clsx(isDark ? 'bg-slate-800/90' : 'bg-sky-100')}>
                 <tr>
                   <th
                     className={clsx(

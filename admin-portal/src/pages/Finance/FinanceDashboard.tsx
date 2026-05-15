@@ -12,6 +12,7 @@ import { mockStats, mockRoundingDiffs, mockCorrections } from './mockData';
 import type { FinancialStats, RoundingDifference, CorrectionRequest } from './types';
 
 import { adminBorderChromeSoft, adminMuted, adminPrimary, adminSoft } from '../../utils/adminThemeClasses';
+import { accentTileClasses } from '../../utils/chipVariants';
 export function FinanceDashboardPage(): JSX.Element {
   const [showCorrectionModal, setShowCorrectionModal] = useState(false);
   const { theme } = useTheme();
@@ -93,12 +94,7 @@ export function FinanceDashboardPage(): JSX.Element {
 
       {/* Alerts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card
-          className={clsx(
-            'p-4 border',
-            isDark ? 'bg-slate-800/90 border-amber-500/50' : 'bg-amber-50 border-amber-200',
-          )}
-        >
+        <Card className={clsx('p-4', accentTileClasses('amber', isDark))}>
           <div className="flex items-center gap-3">
             <span className="text-2xl">⚠️</span>
             <div>
@@ -111,12 +107,7 @@ export function FinanceDashboardPage(): JSX.Element {
             </div>
           </div>
         </Card>
-        <Card
-          className={clsx(
-            'p-4 border',
-            isDark ? 'bg-slate-800/90 border-blue-500/50' : 'bg-sky-50 border-sky-200',
-          )}
-        >
+        <Card className={clsx('p-4', accentTileClasses('sky', isDark))}>
           <div className="flex items-center gap-3">
             <span className="text-2xl">🔢</span>
             <div>

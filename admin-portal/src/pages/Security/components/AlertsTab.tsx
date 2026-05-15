@@ -1,11 +1,11 @@
 import clsx from 'clsx';
-import { Card, Button, Badge } from '../../../components/ui';
+import { Card, Button, Badge, ComplianceSeverityBadge } from '../../../components/ui';
+import { getComplianceSeverityLabel } from '../../../utils/complianceBadgeVariants';
 import { SortChip, type SortOrder } from '../../../components/table/SortableTh';
 import { useTheme } from '../../../context/ThemeContext';
 import { formatDateTime } from '../../../utils/format';
 import { listRowStripeClasses } from '../../../utils/tableStriping';
 import type { SecurityAlert } from '../types';
-import { getSeverityVariant } from '../utils';
 import { adminBorderChrome } from '../../../utils/adminThemeClasses';
 
 interface AlertsTabProps {
@@ -43,7 +43,9 @@ export function AlertsTab({ alerts, sortBy, sortOrder, onSort, isDark }: AlertsT
           >
             <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
               <div className="flex items-center gap-2 flex-wrap">
-                <Badge variant={getSeverityVariant(alert.severity)}>{alert.severity.toUpperCase()}</Badge>
+                <ComplianceSeverityBadge severity={alert.severity}>
+                  {getComplianceSeverityLabel(alert.severity)}
+                </ComplianceSeverityBadge>
                 <span className={clsx('text-sm font-medium', dark ? 'text-slate-200' : 'text-gray-700')}>
                   {alert.type.replace('_', ' ').toUpperCase()}
                 </span>
