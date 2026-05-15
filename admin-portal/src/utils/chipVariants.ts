@@ -29,7 +29,7 @@ const CHIP_LIGHT: Record<ChipVariant, string> = {
   warning: 'bg-amber-100 text-amber-800 border-amber-400/70',
   danger: 'bg-red-100 text-red-800 border-red-400/70',
   info: 'bg-blue-100 text-blue-800 border-blue-400/70',
-  neutral: 'bg-gray-100 text-gray-800 border-gray-400/70',
+  neutral: 'bg-slate-100 text-slate-800 border-slate-400/70',
 };
 
 const CHIP_DARK: Record<ChipVariant, string> = {
@@ -52,7 +52,7 @@ const CHIP_ACCENT_LIGHT: Record<ChipAccent, string> = {
   purple: 'bg-purple-100 text-purple-800 border-purple-400/70',
   rose: 'bg-rose-100 text-rose-800 border-rose-400/70',
   red: 'bg-red-100 text-red-800 border-red-400/70',
-  slate: 'bg-gray-100 text-gray-700 border-gray-400/70',
+  slate: 'bg-slate-100 text-slate-700 border-slate-400/70',
 };
 
 const CHIP_ACCENT_DARK: Record<ChipAccent, string> = {
@@ -84,7 +84,7 @@ const PANEL_ACCENT_LIGHT: Record<ChipVariant, string> = {
   warning: 'bg-orange-50 border-orange-300 text-orange-900',
   danger: 'bg-red-50 border-red-300 text-red-900',
   info: 'bg-blue-50 border-blue-300 text-blue-900',
-  neutral: 'bg-gray-50 border-gray-300 text-gray-900',
+  neutral: 'bg-slate-50 border-slate-300 text-slate-900',
 };
 
 const ICON_WELL_ACCENT_DARK: Record<'blue' | 'green' | 'amber' | 'red', string> = {

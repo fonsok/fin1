@@ -25,7 +25,7 @@ describe('Badge', () => {
 
   it('applies neutral variant by default', () => {
     render(<Badge>Default</Badge>);
-    expect(screen.getByText('Default')).toHaveClass('bg-gray-100', 'text-gray-800');
+    expect(screen.getByText('Default')).toHaveClass('bg-slate-100', 'text-slate-800');
   });
 });
 
