@@ -59,6 +59,7 @@ rsync -avz \
   "$PROJECT_ROOT/scripts/run-mirror-basis-drift-monitor.sh" \
   "$PROJECT_ROOT/scripts/run-paired-order-status-monitor.sh" \
   "$PROJECT_ROOT/scripts/run-return-percentage-contract-monitor.sh" \
+  "$PROJECT_ROOT/scripts/run-return-monitor.sh" \
   "$PROJECT_ROOT/scripts/run-admin-list-search-health-monitor.sh" \
   "$PROJECT_ROOT/scripts/monitor-finance-integrity.js" \
   "$PROJECT_ROOT/scripts/monitor-mirror-basis-drift-contract.js" \

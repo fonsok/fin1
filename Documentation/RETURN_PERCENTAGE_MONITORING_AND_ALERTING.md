@@ -11,6 +11,7 @@ Detect any active investor collection bill without canonical `metadata.returnPer
   - `backend/scripts/monitor-collection-bill-return-percentage.js`
 - **Server cron wrapper (no GitHub required)**:
   - `scripts/run-return-monitor.sh`
+  - reads `MONGO_INITDB_ROOT_PASSWORD` from `/home/io/fin1-server/.env` (stack), with fallback to `backend/.env`
   - optional config file: `/home/io/fin1-server/scripts/monitor.env` (template: `scripts/monitor.env.example`)
   - recommended cron: `10 5 * * * /home/io/fin1-server/scripts/run-return-monitor.sh >> /home/io/fin1-server/logs/return-monitor.log 2>&1`
   - recommended reboot catch-up: `@reboot sleep 120 && /home/io/fin1-server/scripts/run-return-monitor.sh --catchup >> /home/io/fin1-server/logs/return-monitor.log 2>&1`

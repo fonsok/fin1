@@ -40,38 +40,75 @@ fi
 timestamp() { date -u +"%Y-%m-%dT%H:%M:%SZ"; }
 epoch_now() { date -u +%s; }
 
-if [[ ! -f "$BACKEND_DIR/.env" ]]; then
-  echo "[$(timestamp)] ERROR: Missing env file: $BACKEND_DIR/.env"
-  exit 2
-fi
+# iobox: MONGO_INITDB_ROOT_PASSWORD lives in ~/fin1-server/.env (docker-compose stack).
+# SMTP_* may still be in backend/.env — try both files.
+STACK_ENV_FILE="${STACK_ENV_FILE:-$BASE_DIR/.env}"
+BACKEND_ENV_FILE="${BACKEND_ENV_FILE:-$BACKEND_DIR/.env}"
 
-MONGO_PASSWORD="$(python3 - <<'PY'
+read_env_value() {
+  local key="$1"
+  local file="$2"
+  python3 - "$key" "$file" <<'PY'
+import sys
 from pathlib import Path
+
+key, path_str = sys.argv[1], sys.argv[2]
+path = Path(path_str)
+if not path.is_file():
+    sys.exit(0)
 env = {}
-for raw in Path("/home/io/fin1-server/backend/.env").read_text().splitlines():
+for raw in path.read_text().splitlines():
     line = raw.strip()
     if not line or line.startswith("#") or "=" not in line:
         continue
     k, v = line.split("=", 1)
     env[k.strip()] = v
-print(env.get("MONGO_INITDB_ROOT_PASSWORD", ""))
+print(env.get(key, ""))
 PY
-)"
+}
 
-SMTP_SETTINGS="$(python3 - <<'PY'
+first_env_value() {
+  local key="$1"
+  shift
+  local value=""
+  for file in "$@"; do
+    value="$(read_env_value "$key" "$file")"
+    if [[ -n "$value" ]]; then
+      printf '%s' "$value"
+      return 0
+    fi
+  done
+  return 1
+}
+
+MONGO_PASSWORD="$(first_env_value MONGO_INITDB_ROOT_PASSWORD "$STACK_ENV_FILE" "$BACKEND_ENV_FILE" || true)"
+
+SMTP_SETTINGS="$(python3 - "$BACKEND_ENV_FILE" "$STACK_ENV_FILE" <<'PY'
+import sys
 from pathlib import Path
-env = {}
-for raw in Path("/home/io/fin1-server/backend/.env").read_text().splitlines():
-    line = raw.strip()
-    if not line or line.startswith("#") or "=" not in line:
-        continue
-    k, v = line.split("=", 1)
-    env[k.strip()] = v
-print(env.get("SMTP_HOST", ""))
-print(env.get("SMTP_PORT", "587"))
-print(env.get("SMTP_USER", ""))
-print(env.get("SMTP_PASS", ""))
-print(env.get("SMTP_SECURE", "false"))
+
+def load_env(path_str):
+    path = Path(path_str)
+    if not path.is_file():
+        return {}
+    env = {}
+    for raw in path.read_text().splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        k, v = line.split("=", 1)
+        env[k.strip()] = v
+    return env
+
+merged = {}
+for path_str in reversed(sys.argv[1:]):
+    merged.update(load_env(path_str))
+
+print(merged.get("SMTP_HOST", ""))
+print(merged.get("SMTP_PORT", "587"))
+print(merged.get("SMTP_USER", ""))
+print(merged.get("SMTP_PASS", ""))
+print(merged.get("SMTP_SECURE", "false"))
 PY
 )"
 SMTP_HOST="$(printf '%s\n' "$SMTP_SETTINGS" | sed -n '1p')"
@@ -81,7 +118,7 @@ SMTP_PASS="$(printf '%s\n' "$SMTP_SETTINGS" | sed -n '4p')"
 SMTP_SECURE="$(printf '%s\n' "$SMTP_SETTINGS" | sed -n '5p')"
 
 if [[ -z "$MONGO_PASSWORD" ]]; then
-  echo "[$(timestamp)] ERROR: MONGO_INITDB_ROOT_PASSWORD not found in .env"
+  echo "[$(timestamp)] ERROR: MONGO_INITDB_ROOT_PASSWORD not found in $STACK_ENV_FILE or $BACKEND_ENV_FILE"
   exit 2
 fi
 
