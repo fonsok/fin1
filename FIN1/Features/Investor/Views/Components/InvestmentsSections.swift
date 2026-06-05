@@ -6,12 +6,7 @@ private enum InvestmentsTraderDisplay {
         traderDataService: any TraderDataServiceProtocol,
         firstRow: InvestmentRow
     ) -> String {
-        if let trader = traderDataService.getTrader(by: firstRow.investment.traderId) {
-            let trimmed = trader.username.trimmingCharacters(in: .whitespacesAndNewlines)
-            if !trimmed.isEmpty { return trimmed }
-        }
-        let fromInvestment = firstRow.investment.traderName.trimmingCharacters(in: .whitespacesAndNewlines)
-        return fromInvestment.isEmpty ? "—" : fromInvestment
+        firstRow.investment.displayTraderUsername(using: traderDataService)
     }
 }
 
@@ -159,6 +154,7 @@ struct InvestmentsActiveSectionView: View {
     @Binding var columnWidths: [String: CGFloat]
     let onDeleteInvestment: (InvestmentRow) -> Void
     let onShowStatusInfo: () -> Void
+    let onShowAmountInfo: (InvestmentRow) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
@@ -208,7 +204,8 @@ struct InvestmentsActiveSectionView: View {
                                 totalProfit: traderTotalProfit,
                                 totalReturn: traderTotalReturn,
                                 onDeleteInvestment: self.onDeleteInvestment,
-                                onShowStatusInfo: self.onShowStatusInfo
+                                onShowStatusInfo: self.onShowStatusInfo,
+                                onShowAmountInfo: self.onShowAmountInfo
                             )
                         }
                         .background(AppTheme.sectionBackground)
@@ -229,6 +226,7 @@ struct InvestmentsActiveSectionView: View {
 }
 
 struct InvestmentsCompletedSectionView: View {
+    @Environment(\.appServices) private var services
     @Binding var selectedTimePeriod: InvestmentTimePeriod
     let allCompletedCount: Int
     let completedInvestmentsByTimePeriod: [Investment]
@@ -260,6 +258,7 @@ struct InvestmentsCompletedSectionView: View {
                     tradeNumbers: self.completedTradeNumbers,
                     investmentSummaries: self.completedInvestmentSummaries,
                     canonicalSummaries: self.completedCanonicalSummaries,
+                    monetaryServerOnly: self.services.configurationService.investorMonetaryServerOnly,
                     onShowDetails: self.onShowDetails
                 )
             } else {

@@ -1,9 +1,8 @@
 import Foundation
 
 extension TraderAccountStatementBuilder {
-    /// Builds a snapshot using local invoices for trade entries and backend
-    /// `AccountStatement` records for commission entries (authoritative source).
-    /// Falls back to local-only if backend is unavailable.
+    /// Builds a snapshot from the server customer timeline (`source: customer_display`).
+    /// Falls back to local invoices when the backend is unavailable, empty, or not yet on presentation API.
     static func buildSnapshotWithBackendCommissions(
         for user: User?,
         invoiceService: any InvoiceServiceProtocol,
@@ -15,131 +14,208 @@ extension TraderAccountStatementBuilder {
             return TraderAccountStatementSnapshot(entries: [], openingBalance: openingBalance, closingBalance: openingBalance)
         }
 
-        let backendEntries: [BackendAccountEntry]
-        do {
-            let response = try await settlementAPIService.fetchAccountStatement(limit: 200, skip: 0, entryType: nil)
-            backendEntries = response.entries
-        } catch {
+        let fetchResult = await fetchAllBackendEntries(settlementAPIService: settlementAPIService)
+        if fetchResult.entries.isEmpty {
             return buildSnapshot(for: user, invoiceService: invoiceService, configurationService: configurationService)
         }
 
-        let invoices = fetchInvoices(for: user, invoiceService: invoiceService)
-        let regularInvoices = invoices.filter { $0.type != .creditNote }.sorted { $0.createdAt < $1.createdAt }
-
-        struct BackendTradeRef { let docId: String?; let docNumber: String? }
-        var tradeRefByKey: [String: BackendTradeRef] = [:]
-        for entry in backendEntries {
-            guard let tradeId = entry.tradeId else { continue }
-            let side: String
-            switch entry.entryType {
-            case "trade_buy": side = "buy"
-            case "trade_sell": side = "sell"
-            default: continue
-            }
-            tradeRefByKey["\(tradeId)#\(side)"] = BackendTradeRef(
-                docId: entry.referenceDocumentId,
-                docNumber: entry.referenceDocumentNumber
+        if fetchResult.entries.contains(where: { $0.source == "customer_display" }) {
+            return self.buildSnapshotFromCustomerDisplayBackend(
+                entries: fetchResult.entries,
+                openingBalance: openingBalance,
+                timelineTruncated: fetchResult.timelineTruncated
             )
         }
 
-        var runningBalance = openingBalance
-        var entries: [AccountStatementEntry] = []
-        var latestDatePerTrade: [String: Date] = [:]
+        return buildSnapshot(for: user, invoiceService: invoiceService, configurationService: configurationService)
+    }
 
-        for invoice in regularInvoices {
-            guard let transactionType = invoice.transactionType else { continue }
-            let direction: AccountStatementEntry.Direction = transactionType == .sell ? .credit : .debit
-            let amount = invoice.totalAmount
-            runningBalance += direction == .credit ? amount : -amount
+    // MARK: - Backend fetch & mapping
 
-            if let tradeId = invoice.tradeId {
-                let current = latestDatePerTrade[tradeId] ?? .distantPast
-                latestDatePerTrade[tradeId] = max(current, invoice.createdAt)
-            }
+    /// Maps server-built customer timeline rows (`source: customer_display`) without client-side trade merging.
+    private static func buildSnapshotFromCustomerDisplayBackend(
+        entries: [BackendAccountEntry],
+        openingBalance: Double,
+        timelineTruncated: Bool
+    ) -> TraderAccountStatementSnapshot {
+        let sorted = AccountStatementEntry.sortedForChronologicalDisplay(
+            entries.compactMap { self.convertCustomerDisplayBackendEntry($0) }
+        )
+        let closingBalance = sorted.last?.balanceAfter ?? openingBalance
+        return TraderAccountStatementSnapshot(
+            entries: sorted,
+            openingBalance: openingBalance,
+            closingBalance: closingBalance,
+            timelineTruncated: timelineTruncated
+        )
+    }
 
-            let reference = invoice.tradeId ?? invoice.invoiceNumber
-            let subtitle: String? = invoice.tradeNumber.map { String(format: "Trade #%03d", $0) }
+    private static func convertCustomerDisplayBackendEntry(_ entry: BackendAccountEntry) -> AccountStatementEntry? {
+        let occurredAt = entry.createdAtDate ?? Date()
+        let signedAmount = entry.amount
+        let amount = abs(signedAmount)
+        let direction: AccountStatementEntry.Direction = signedAmount >= 0 ? .credit : .debit
 
-            let backendRef: BackendTradeRef? = invoice.tradeId.flatMap {
-                tradeRefByKey["\($0)#\(transactionType.rawValue)"]
-            }
-            let resolvedDocId = backendRef?.docId
-            let resolvedDocNumber = backendRef?.docNumber ?? invoice.invoiceNumber
+        let title: String
+        let category: AccountStatementEntry.Category
+        var metadata: [String: String] = [
+            "source": entry.source ?? "customer_display",
+            "backendEntryType": entry.entryType
+        ]
 
-            var metadata: [String: String] = [
-                "invoiceNumber": invoice.invoiceNumber,
-                "tradeId": invoice.tradeId ?? "",
-                "transactionType": transactionType.rawValue
-            ]
-            if let tradeNumber = invoice.tradeNumber {
-                metadata["tradeNumber"] = String(format: "%03d", tradeNumber)
-            }
-            if let docId = resolvedDocId, !docId.isEmpty {
-                metadata["referenceDocumentId"] = docId
-            }
-            if let docNumber = backendRef?.docNumber, !docNumber.isEmpty {
-                metadata["referenceDocumentNumber"] = docNumber
-            }
-
-            entries.append(AccountStatementEntry(
-                title: transactionType.displayName,
-                subtitle: subtitle,
-                occurredAt: invoice.createdAt,
-                amount: amount,
-                direction: direction,
-                category: .tradeSettlement,
-                reference: reference,
-                referenceDocumentId: resolvedDocId,
-                referenceDocumentNumber: resolvedDocNumber,
-                metadata: metadata,
-                balanceAfter: runningBalance
-            ))
+        if let statementTitle = entry.statementTitle, !statementTitle.isEmpty {
+            metadata["statementTitle"] = statementTitle
+        }
+        if let displayAmountMode = entry.displayAmountMode, !displayAmountMode.isEmpty {
+            metadata["displayAmountMode"] = displayAmountMode
+        }
+        if let transactionType = entry.transactionType, !transactionType.isEmpty {
+            metadata["transactionType"] = transactionType
+        }
+        if let wknOrIsin = entry.wknOrIsin, !wknOrIsin.isEmpty { metadata["wknOrIsin"] = wknOrIsin }
+        if let underlyingAsset = entry.underlyingAsset, !underlyingAsset.isEmpty {
+            metadata["underlyingAsset"] = underlyingAsset
+        }
+        if let securitiesDirection = entry.securitiesDirection, !securitiesDirection.isEmpty {
+            metadata["securitiesDirection"] = securitiesDirection
+        }
+        if let quantity = entry.quantity, !quantity.isEmpty { metadata["quantity"] = quantity }
+        if let strikePrice = entry.strikePrice, !strikePrice.isEmpty { metadata["strikePrice"] = strikePrice }
+        if let issuer = entry.issuer, !issuer.isEmpty { metadata["issuer"] = issuer }
+        if let tradeId = entry.tradeId { metadata["tradeId"] = tradeId }
+        if let tradeNumber = entry.tradeNumber {
+            metadata["tradeNumber"] = String(format: "%03d", tradeNumber)
+        }
+        if let referenceDocumentId = entry.referenceDocumentId, !referenceDocumentId.isEmpty {
+            metadata["referenceDocumentId"] = referenceDocumentId
+        }
+        if let referenceDocumentNumber = entry.referenceDocumentNumber, !referenceDocumentNumber.isEmpty {
+            metadata["referenceDocumentNumber"] = referenceDocumentNumber
         }
 
-        let commissionEntries = backendEntries.filter { $0.entryType == "commission_credit" }
-        if !commissionEntries.isEmpty {
-            for entry in commissionEntries {
-                let amount = abs(entry.amount)
-                runningBalance += amount
-                let tradeLatest = entry.tradeId.flatMap { latestDatePerTrade[$0] }
-                let occurredAt = tradeLatest?.addingTimeInterval(1) ?? Date()
-
-                let subtitle = entry.tradeNumber.map { String(format: "Trade #%03d", $0) } ?? "Trader Commission"
-                var metadata: [String: String] = [
-                    "source": "backend",
-                    "commissionAmount": String(format: "%.2f", amount)
-                ]
-                if let tradeId = entry.tradeId { metadata["tradeId"] = tradeId }
-                if let referenceDocumentId = entry.referenceDocumentId, !referenceDocumentId.isEmpty {
-                    metadata["referenceDocumentId"] = referenceDocumentId
-                }
-                if let referenceDocumentNumber = entry.referenceDocumentNumber, !referenceDocumentNumber.isEmpty {
-                    metadata["referenceDocumentNumber"] = referenceDocumentNumber
-                }
-
-                entries.append(AccountStatementEntry(
-                    title: "Gutschrift Provision",
-                    subtitle: subtitle,
-                    occurredAt: occurredAt,
-                    amount: amount,
-                    direction: .credit,
-                    category: .commission,
-                    reference: entry.objectId,
-                    referenceDocumentId: entry.referenceDocumentId,
-                    referenceDocumentNumber: entry.referenceDocumentNumber,
-                    metadata: metadata,
-                    balanceAfter: runningBalance
-                ))
-            }
-        } else {
-            let creditNotes = invoices.filter { $0.type == .creditNote }.sorted { $0.createdAt < $1.createdAt }
-            for creditNote in creditNotes {
-                let tradeLatest = creditNote.tradeId.flatMap { latestDatePerTrade[$0] }
-                let adjustedDate = max(creditNote.createdAt, tradeLatest?.addingTimeInterval(1) ?? creditNote.createdAt)
-                entries.append(createCommissionEntry(from: creditNote, runningBalance: &runningBalance, adjustedDate: adjustedDate))
-            }
+        switch entry.entryType {
+        case "trade_buy", "trade_sell":
+            title = entry.transactionType.flatMap { TransactionType(rawValue: $0)?.displayName }
+                ?? (entry.entryType == "trade_sell" ? TransactionType.sell.displayName : TransactionType.buy.displayName)
+            category = .tradeSettlement
+        case "commission_credit":
+            title = "Gutschrift Provision"
+            category = .commission
+            metadata["commissionAmount"] = String(format: "%.2f", amount)
+        case "deposit":
+            title = "Einzahlung"
+            category = .walletDeposit
+        case "withdrawal":
+            title = "Auszahlung"
+            category = .walletWithdrawal
+        default:
+            return nil
         }
 
-        return TraderAccountStatementSnapshot(entries: entries, openingBalance: openingBalance, closingBalance: runningBalance)
+        let subtitle = entry.tradeNumber.map { String(format: "Trade #%03d", $0) }
+            ?? entry.description
+
+        return AccountStatementEntry(
+            title: title,
+            subtitle: subtitle,
+            occurredAt: occurredAt,
+            amount: amount,
+            direction: direction,
+            category: category,
+            reference: entry.objectId,
+            referenceDocumentId: entry.referenceDocumentId,
+            referenceDocumentNumber: entry.referenceDocumentNumber,
+            metadata: metadata,
+            balanceAfter: entry.balanceAfter
+        )
+    }
+
+    private struct BackendEntriesFetchResult {
+        let entries: [BackendAccountEntry]
+        let timelineTruncated: Bool
+    }
+
+    /// Same amounts as **Kontoauszug** `commission_credit` rows — fetched with `entryType` filter (not full timeline).
+    static func commissionCreditTotalsByTradeId(
+        settlementAPIService: any SettlementAPIServiceProtocol
+    ) async -> [String: Double] {
+        let entries = await fetchCommissionCreditBackendEntries(settlementAPIService: settlementAPIService)
+        var totals: [String: Double] = [:]
+        for entry in entries {
+            guard let tradeId = entry.tradeId, !tradeId.isEmpty else { continue }
+            totals[tradeId, default: 0] += abs(entry.amount)
+        }
+        return totals
+    }
+
+    /// Paginated `getAccountStatement(entryType: commission_credit)` with full-timeline fallback.
+    private static func fetchCommissionCreditBackendEntries(
+        settlementAPIService: any SettlementAPIServiceProtocol
+    ) async -> [BackendAccountEntry] {
+        let filtered = await fetchCommissionCreditPages(
+            settlementAPIService: settlementAPIService,
+            entryType: "commission_credit"
+        )
+        if !filtered.isEmpty {
+            return filtered
+        }
+        let full = await fetchCommissionCreditPages(
+            settlementAPIService: settlementAPIService,
+            entryType: nil
+        )
+        return full.filter { $0.entryType == "commission_credit" }
+    }
+
+    private static func fetchCommissionCreditPages(
+        settlementAPIService: any SettlementAPIServiceProtocol,
+        entryType: String?
+    ) async -> [BackendAccountEntry] {
+        do {
+            var all: [BackendAccountEntry] = []
+            var skip = 0
+            let pageSize = 200
+            repeat {
+                let response = try await settlementAPIService.fetchAccountStatement(
+                    limit: pageSize,
+                    skip: skip,
+                    entryType: entryType
+                )
+                all.append(contentsOf: response.entries)
+                skip += response.entries.count
+                if !response.hasMore || response.entries.isEmpty { break }
+            } while skip < 1_000
+            return all
+        } catch {
+            return []
+        }
+    }
+
+    private static func fetchAllBackendEntries(
+        settlementAPIService: any SettlementAPIServiceProtocol
+    ) async -> BackendEntriesFetchResult {
+        do {
+            var all: [BackendAccountEntry] = []
+            var timelineTruncated = false
+            var skip = 0
+            let pageSize = 500
+            repeat {
+                let response = try await settlementAPIService.fetchAccountStatement(
+                    limit: pageSize, skip: skip, entryType: nil
+                )
+                if response.timelineTruncated {
+                    timelineTruncated = true
+                }
+                all.append(contentsOf: response.entries)
+                skip += response.entries.count
+                let isCustomerDisplay = response.entries.contains { $0.source == "customer_display" }
+                if isCustomerDisplay, !response.hasMore {
+                    break
+                }
+                if !response.hasMore || response.entries.isEmpty { break }
+            } while skip < 2_000
+            return BackendEntriesFetchResult(entries: all, timelineTruncated: timelineTruncated)
+        } catch {
+            return BackendEntriesFetchResult(entries: [], timelineTruncated: false)
+        }
     }
 }

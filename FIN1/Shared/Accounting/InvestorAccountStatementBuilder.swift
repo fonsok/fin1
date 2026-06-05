@@ -38,12 +38,16 @@ enum InvestorAccountStatementBuilder {
 
         // Try backend entries first; fall back to local ledger
         let investmentEntries: [AccountStatementEntry]
+        let serverOnly = configurationService?.investorMonetaryServerOnly ?? false
         if let settlementService = settlementAPIService {
             investmentEntries = await self.loadBackendEntries(
                 for: user,
                 settlementAPIService: settlementService,
-                investorCashBalanceService: investorCashBalanceService
+                investorCashBalanceService: investorCashBalanceService,
+                monetaryServerOnly: serverOnly
             )
+        } else if serverOnly {
+            investmentEntries = []
         } else {
             investmentEntries = investorCashBalanceService.getTransactions(for: user.id)
         }
@@ -64,7 +68,7 @@ enum InvestorAccountStatementBuilder {
         }
 
         return InvestorAccountStatementSnapshot(
-            entries: recalculatedEntries.sorted { $0.occurredAt > $1.occurredAt },
+            entries: AccountStatementEntry.sortedForChronologicalDisplay(recalculatedEntries),
             openingBalance: openingBalance,
             closingBalance: closingBalance
         )
@@ -78,20 +82,91 @@ enum InvestorAccountStatementBuilder {
     private static func loadBackendEntries(
         for user: User,
         settlementAPIService: any SettlementAPIServiceProtocol,
-        investorCashBalanceService: any InvestorCashBalanceServiceProtocol
+        investorCashBalanceService: any InvestorCashBalanceServiceProtocol,
+        monetaryServerOnly: Bool
     ) async -> [AccountStatementEntry] {
         do {
-            let response = try await settlementAPIService.fetchAccountStatement(
-                limit: 200, skip: 0, entryType: nil
-            )
-            guard !response.entries.isEmpty else {
+            var allBackendEntries: [BackendAccountEntry] = []
+            var skip = 0
+            let pageSize = 200
+            repeat {
+                let response = try await settlementAPIService.fetchAccountStatement(
+                    limit: pageSize, skip: skip, entryType: nil
+                )
+                allBackendEntries.append(contentsOf: response.entries)
+                skip += response.entries.count
+                if !response.hasMore || response.entries.isEmpty { break }
+            } while skip < 2_000
+
+            guard !allBackendEntries.isEmpty else {
+                if monetaryServerOnly {
+                    InvestorCollectionBillLog.warning(InvestorMonetaryMessages.accountStatementUnavailable)
+                    return []
+                }
                 return investorCashBalanceService.getTransactions(for: user.id)
             }
-            return response.entries.compactMap { self.convertBackendEntry($0) }
+            let converted = allBackendEntries.compactMap { self.convertBackendEntry($0) }
+            if Self.backendInvestorTimelineIncludesMergedEscrows(converted) {
+                return converted
+            }
+            return self.mergeMissingLocalEscrowReserves(
+                backend: converted,
+                local: investorCashBalanceService.getTransactions(for: user.id),
+                monetaryServerOnly: monetaryServerOnly
+            )
         } catch {
+            if monetaryServerOnly {
+                InvestorCollectionBillLog.warning(
+                    "InvestorAccountStatementBuilder: \(InvestorMonetaryMessages.accountStatementUnavailable) — \(error.localizedDescription)"
+                )
+                return []
+            }
             print("⚠️ InvestorAccountStatementBuilder: Backend entries unavailable (\(error.localizedDescription)) — using local ledger")
             return investorCashBalanceService.getTransactions(for: user.id)
         }
+    }
+
+    /// When `getAccountStatement` already returns the merged investor timeline (AccountStatement + AVA AppLedger),
+    /// do not merge in local cash-balance lines — they duplicate escrow legs and look like an extra „GoB“ layer.
+    private static func backendInvestorTimelineIncludesMergedEscrows(_ backend: [AccountStatementEntry]) -> Bool {
+        backend.contains { entry in
+            if entry.metadata["source"] == "app_subledger" { return true }
+            let t = entry.metadata["backendEntryType"] ?? ""
+            if t.hasPrefix("investment_escrow_") { return true }
+            return false
+        }
+    }
+
+    /// When the API returns only `AccountStatement` rows (e.g. after first buy) but escrow
+    /// reserves live in `AppLedgerEntry`, keep local reserve lines until the backend merge includes them.
+    private static func mergeMissingLocalEscrowReserves(
+        backend: [AccountStatementEntry],
+        local: [AccountStatementEntry],
+        monetaryServerOnly: Bool
+    ) -> [AccountStatementEntry] {
+        guard !monetaryServerOnly else { return backend }
+
+        let backendReserveInvestmentIds = Set(
+            backend.compactMap { entry -> String? in
+                guard entry.category == .investment, entry.direction == .debit else { return nil }
+                let type = entry.metadata["backendEntryType"] ?? ""
+                if type == "investment_escrow_reserve" || type.isEmpty {
+                    return entry.metadata["investmentId"]
+                }
+                return nil
+            }
+        )
+
+        let supplemental = local.filter { localEntry in
+            guard localEntry.category == .investment,
+                  localEntry.direction == .debit,
+                  let investmentId = localEntry.metadata["investmentId"],
+                  !investmentId.isEmpty else { return false }
+            return !backendReserveInvestmentIds.contains(investmentId)
+        }
+
+        guard !supplemental.isEmpty else { return backend }
+        return backend + supplemental
     }
 
     /// Converts a single `BackendAccountEntry` to a display `AccountStatementEntry`.
@@ -112,9 +187,9 @@ enum InvestorAccountStatementBuilder {
             direction = .credit
             category = .profitDistribution
         case "residual_return":
-            title = "Residual Return"
+            title = "Residual"
             direction = .credit
-            category = .tradeSettlement
+            category = .investment
         case "investment_activate":
             title = "Investment Activated"
             direction = .debit
@@ -135,6 +210,14 @@ enum InvestorAccountStatementBuilder {
             title = "Withdrawal"
             direction = .debit
             category = .walletWithdrawal
+        case "app_service_charge":
+            title = entry.description ?? entry.entryType
+            direction = .debit
+            category = .serviceCharge
+        case let t where t.hasPrefix("investment_escrow_"):
+            title = entry.description ?? entry.entryType
+            direction = entry.amount >= 0 ? .credit : .debit
+            category = .investment
         default:
             title = entry.description ?? entry.entryType
             direction = entry.amount >= 0 ? .credit : .debit
@@ -148,7 +231,7 @@ enum InvestorAccountStatementBuilder {
             subtitle = String(format: "Trade #%03d", tradeNumber)
         }
 
-        var metadata: [String: String] = ["source": "backend"]
+        var metadata: [String: String] = ["source": entry.source ?? "backend", "backendEntryType": entry.entryType]
         if let tradeId = entry.tradeId { metadata["tradeId"] = tradeId }
         if let investmentId = entry.investmentId { metadata["investmentId"] = investmentId }
         if let investmentNumber = entry.investmentNumber, !investmentNumber.isEmpty {
@@ -229,7 +312,7 @@ enum InvestorAccountStatementBuilder {
         entries: [AccountStatementEntry],
         openingBalance: Double
     ) -> [AccountStatementEntry] {
-        let sortedEntries = entries.sorted { $0.occurredAt < $1.occurredAt }
+        let sortedEntries = AccountStatementEntry.sortedForChronologicalDisplay(entries)
         var runningBalance = openingBalance
         var recalculatedEntries: [AccountStatementEntry] = []
 

@@ -46,15 +46,19 @@ enum InvestmentCashDistributor {
 
         let commissionRate = configurationService.effectiveCommissionRate
 
-        // Phase 3: Try backend-authoritative amounts first
+        let serverOnly = configurationService.investorMonetaryServerOnly
         let amounts: DistributionAmounts
         if let backendAmounts = await fetchBackendAmounts(
             investment: investment,
             commissionRate: commissionRate,
             settlementAPIService: settlementAPIService
         ) {
-            print("✅ InvestmentCashDistributor: Using backend-authoritative amounts")
             amounts = backendAmounts
+        } else if serverOnly {
+            InvestorCollectionBillLog.warning(
+                "InvestmentCashDistributor: blocked — \(InvestorMonetaryMessages.cashDistributionBlocked)"
+            )
+            return
         } else {
             amounts = self.calculateDistributionAmounts(
                 investment: investment,
@@ -134,8 +138,8 @@ enum InvestmentCashDistributor {
 
             for entry in investmentEntries {
                 switch entry.entryType {
-                case "sell_proceeds", "profit_distribution":
-                    netSell += entry.amount
+                case "investment_return", "investment_profit", "sell_proceeds", "profit_distribution":
+                    netSell += max(0, entry.amount)
                 case "commission_debit":
                     commission += abs(entry.amount)
                 case "residual_return":
@@ -151,6 +155,21 @@ enum InvestmentCashDistributor {
             // Gross profit = net sell + commission (commission was deducted from gross)
             grossProfit = netSell + commission
 
+            if commission <= 0 || netSell <= 0 {
+                if let fromBills = await Self.fetchAmountsFromCollectionBills(
+                    investmentId: investment.id,
+                    settlementAPIService: api
+                ) {
+                    if commission <= 0, fromBills.commission > 0 {
+                        commission = fromBills.commission
+                    }
+                    if netSell <= 0, fromBills.netSell > 0 {
+                        netSell = fromBills.netSell
+                    }
+                    grossProfit = netSell + commission
+                }
+            }
+
             return DistributionAmounts(
                 netSellAmount: netSell,
                 commissionAmount: commission,
@@ -160,6 +179,28 @@ enum InvestmentCashDistributor {
             )
         } catch {
             print("⚠️ InvestmentCashDistributor: Backend fetch failed — using local fallback: \(error.localizedDescription)")
+            return nil
+        }
+    }
+
+    private static func fetchAmountsFromCollectionBills(
+        investmentId: String,
+        settlementAPIService: any SettlementAPIServiceProtocol
+    ) async -> (commission: Double, netSell: Double)? {
+        do {
+            let response = try await settlementAPIService.fetchInvestorCollectionBills(
+                limit: 100,
+                skip: 0,
+                investmentId: investmentId,
+                tradeId: nil
+            )
+            guard let summary = ServerCalculatedReturnResolver.canonicalSummary(
+                fromCollectionBills: response.collectionBills
+            ) else {
+                return nil
+            }
+            return (commission: summary.commission, netSell: summary.netSellAmount)
+        } catch {
             return nil
         }
     }

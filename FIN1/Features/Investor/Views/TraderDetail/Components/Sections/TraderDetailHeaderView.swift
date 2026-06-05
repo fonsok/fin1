@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct TraderDetailHeaderView: View {
-    let trader: MockTrader
+    let trader: InvestorTrader
 
     var body: some View {
         VStack(spacing: ResponsiveDesign.spacing(20)) {
@@ -74,7 +74,7 @@ struct QuickStatItem: View {
 }
 
 #Preview {
-    TraderDetailHeaderView(trader: mockTraders[0])
+    TraderDetailHeaderView(trader: InvestorTrader(mock: mockTraders[0]))
         .padding()
         .background(AppTheme.screenBackground)
 }

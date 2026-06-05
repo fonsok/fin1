@@ -17,24 +17,30 @@ final class InvestmentSheetViewModel: ObservableObject {
     @Published var showSuccess = false
     @Published var isLoading = false
     @Published var isCommissionConfirmed = false
+    @Published private(set) var poolMirrorCapacity: PoolMirrorCapacityStatus?
+    @Published var poolMirrorAlertSubscribed = false
+    @Published var isUpdatingPoolMirrorAlert = false
+    @Published private(set) var isHydratingTraderIdentity = false
 
     // MARK: - Dependencies
-    private let trader: MockTrader
+    @Published private(set) var trader: InvestorTrader
     private let userService: any UserServiceProtocol
     private let investmentService: any InvestmentServiceProtocol
     private let telemetryService: any TelemetryServiceProtocol
     private let investorCashBalanceService: any InvestorCashBalanceServiceProtocol
     private let configurationService: any ConfigurationServiceProtocol
+    private let parseAPIClient: (any ParseAPIClientProtocol)?
     private let onInvestmentSuccess: (() -> Void)?
 
     // MARK: - Initialization
     init(
-        trader: MockTrader,
+        trader: InvestorTrader,
         userService: any UserServiceProtocol,
         investmentService: any InvestmentServiceProtocol,
         telemetryService: any TelemetryServiceProtocol,
         investorCashBalanceService: any InvestorCashBalanceServiceProtocol,
         configurationService: any ConfigurationServiceProtocol,
+        parseAPIClient: (any ParseAPIClientProtocol)? = nil,
         onInvestmentSuccess: (() -> Void)? = nil
     ) {
         self.trader = trader
@@ -43,6 +49,7 @@ final class InvestmentSheetViewModel: ObservableObject {
         self.telemetryService = telemetryService
         self.investorCashBalanceService = investorCashBalanceService
         self.configurationService = configurationService
+        self.parseAPIClient = parseAPIClient
         self.onInvestmentSuccess = onInvestmentSuccess
     }
 
@@ -122,13 +129,68 @@ final class InvestmentSheetViewModel: ObservableObject {
         let minSlot = self.configurationService.minimumInvestmentAmount
         let maxSlot = self.configurationService.maximumInvestmentAmount
         let withinSlotLimits = total > 0 && perSlot >= minSlot && perSlot <= maxSlot
+        let poolAllows = !(self.poolMirrorCapacity?.blocksInvestment ?? false)
+
         return !self.investmentAmount.isEmpty &&
             total > 0 &&
             withinSlotLimits &&
             self.numberOfInvestments >= 1 &&
             self.numberOfInvestments <= 10 &&
             self.hasSufficientCashBalance &&
-            self.isCommissionConfirmed
+            poolAllows &&
+            self.isCommissionConfirmed &&
+            self.hasTraderIdentityForInvesting &&
+            !self.isHydratingTraderIdentity
+    }
+
+    /// Parse `objectId` bekannt oder mindestens `username` für Server-Auflösung (`resolveTraderParseUser`).
+    var hasTraderIdentityForInvesting: Bool {
+        if self.trader.hasParseUserId { return true }
+        return !self.trader.username.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    /// Blockiert Anlage nur ohne jede Trader-Server-Identität (nicht während Hydration).
+    var traderIdentityBlockedMessage: String? {
+        if self.isHydratingTraderIdentity || self.hasTraderIdentityForInvesting {
+            return nil
+        }
+        return "Trader-Verbindung zum Server fehlt. Bitte kurz warten und erneut versuchen."
+    }
+
+    var isHydratingTraderIdentityMessage: Bool {
+        self.isHydratingTraderIdentity && !self.trader.hasParseUserId
+    }
+
+    /// Pool ≥95 % belegt — Hinweis ohne Betragseingabe.
+    var showPoolMirrorCapacityBlockedProactive: Bool {
+        guard let cap = self.poolMirrorCapacity, cap.capEnabled else { return false }
+        return cap.isPoolNearlyFull
+    }
+
+    /// Nur nach Eingabe, wenn Betrag die Restkapazität sprengt (Pool noch unter 95 %).
+    var showPoolMirrorMaxInvestableOnInput: Bool {
+        guard let cap = self.poolMirrorCapacity, cap.capEnabled else { return false }
+        guard !cap.isPoolNearlyFull else { return false }
+        guard self.totalInvestmentAmount > 0 else { return false }
+        return cap.wouldExceed
+    }
+
+    var poolMirrorCapacityBlockedProactiveMessage: String {
+        "Aktuell ist ein Investment in den nächsten Trade nicht möglich."
+    }
+
+    var poolMirrorMaxInvestableOnInputMessage: String {
+        guard let cap = self.poolMirrorCapacity else { return "" }
+        let maxInvestable = (cap.maxInvestableAmountForNextTrade ?? cap.remainingCapacity ?? 0)
+            .formattedAsLocalizedCurrency()
+        let traderLabel = self.trader.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        return
+            "Für den nächsten Trade von \(traderLabel) ist derzeit nur ein Investment von maximal \(maxInvestable) möglich."
+    }
+
+    var showPoolMirrorCapacityNotifyButton: Bool {
+        guard let cap = self.poolMirrorCapacity, cap.capEnabled else { return false }
+        return cap.isPoolNearlyFull
     }
 
     /// Positive total entered, slot count valid, but amount per slot violates admin min/max (so „Invest“ stays disabled).
@@ -164,9 +226,85 @@ final class InvestmentSheetViewModel: ObservableObject {
     // MARK: - Server-aligned limits (best practices: refresh getConfig before investing)
 
     /// Pulls latest `getConfig` limits/fees, then caps the total amount field to the configured maximum.
-    func prepareForInvestingFlow() async {
+    func prepareForInvestingFlow(traderDataService: (any TraderDataServiceProtocol)? = nil) async {
+        if let traderDataService {
+            await self.hydrateTraderFromDataService(traderDataService)
+        }
         await self.configurationService.refreshConfigurationFromServerIfAvailable()
         self.applyConfiguredMaximumToAmountField()
+        await self.refreshPoolMirrorCapacity()
+    }
+
+    /// Ensures `trader` carries Parse `objectId` before investments / pool-mirror API calls.
+    func hydrateTraderFromDataService(_ traderDataService: (any TraderDataServiceProtocol)?) async {
+        self.isHydratingTraderIdentity = true
+        defer { self.isHydratingTraderIdentity = false }
+
+        if let traderDataService {
+            await traderDataService.refreshTraderCatalog()
+            let usernameKey = self.trader.username.lowercased()
+            if let match = traderDataService.traders.first(where: {
+                $0.username.lowercased() == usernameKey
+            }), match.hasParseUserId {
+                self.trader = match
+                return
+            }
+        }
+
+        guard let client = self.parseAPIClient else { return }
+        let usernameKey = self.trader.username.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !usernameKey.isEmpty else { return }
+
+        do {
+            let map = try await TraderDiscoveryAPIService(apiClient: client).fetchUsernameToParseIdMap()
+            if let parseId = map[usernameKey] {
+                self.trader = self.trader.withParseUserId(parseId)
+                print("✅ InvestmentSheetViewModel: Hydrated trader \(usernameKey) → \(parseId)")
+            } else {
+                print("⚠️ InvestmentSheetViewModel: discoverTraders had no entry for username \(usernameKey)")
+            }
+        } catch {
+            print("⚠️ InvestmentSheetViewModel: direct trader hydration failed: \(error.localizedDescription)")
+        }
+    }
+
+    func refreshPoolMirrorCapacity() async {
+        guard let client = self.parseAPIClient else { return }
+        let api = InvestmentAPIService(apiClient: client)
+        do {
+            let status = try await api.fetchPoolMirrorCapacity(
+                traderId: self.trader.backendTraderId,
+                traderUsername: self.trader.username,
+                traderName: self.trader.name,
+                additionalAmount: self.totalInvestmentAmount
+            )
+            self.poolMirrorCapacity = status
+            self.poolMirrorAlertSubscribed = status.alertSubscribed
+        } catch {
+            print("⚠️ InvestmentSheetViewModel: pool mirror capacity fetch failed: \(error.localizedDescription)")
+        }
+    }
+
+    func togglePoolMirrorCapacityAlert() async {
+        guard let client = self.parseAPIClient else { return }
+        self.isUpdatingPoolMirrorAlert = true
+        let api = InvestmentAPIService(apiClient: client)
+        let next = !self.poolMirrorAlertSubscribed
+        defer { self.isUpdatingPoolMirrorAlert = false }
+        do {
+            try await api.setPoolMirrorCapacityAlert(
+                traderId: self.trader.backendTraderId,
+                traderUsername: self.trader.username,
+                traderName: self.trader.name,
+                enabled: next
+            )
+            self.poolMirrorAlertSubscribed = next
+            await self.refreshPoolMirrorCapacity()
+        } catch {
+            self.showInvestmentError(
+                "Benachrichtigung konnte nicht gespeichert werden. Bitte erneut versuchen."
+            )
+        }
     }
 
     /// Caps `investmentAmount` (whole euros) to `maximumInvestmentAmount` after a config refresh.
@@ -247,7 +385,7 @@ final class InvestmentSheetViewModel: ObservableObject {
                         userId: currentUser.id,
                         userRole: currentUser.role.displayName,
                         additionalData: [
-                            "trader_id": trader.id.uuidString,
+                            "trader_id": trader.backendTraderId,
                             "trader_name": trader.name,
                             "investment_amount": amountPerInvestment,
                             "number_of_investments": numberOfInvestments,
@@ -271,7 +409,7 @@ final class InvestmentSheetViewModel: ObservableObject {
                         userRole: currentUser.role.displayName,
                         additionalData: [
                             "original_error": appError.errorDescription ?? "unknown",
-                            "trader_id": self.trader.id.uuidString,
+                            "trader_id": self.trader.backendTraderId,
                             "investment_amount": amountPerInvestment
                         ]
                     )

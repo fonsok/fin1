@@ -25,6 +25,12 @@ const {
 } = require('./getters');
 const { validateConfigValue, validateInvestmentAmountOrdering } = require('./validateConfigValue');
 
+const {
+  getMaxTraderPartialSells,
+  countTraderPartialSellEvents,
+  assertTraderPartialSellWithinLimit,
+} = require('./traderPartialSellLimits');
+
 module.exports = {
   loadConfig,
   invalidateCache,
@@ -44,4 +50,7 @@ module.exports = {
   DEFAULT_CONFIG,
   CRITICAL_PARAMETERS,
   CACHE_TTL_MS,
+  getMaxTraderPartialSells,
+  countTraderPartialSellEvents,
+  assertTraderPartialSellWithinLimit,
 };

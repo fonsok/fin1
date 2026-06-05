@@ -9,7 +9,7 @@ struct TraderFilterCriteria {
     var minWinRate: Double?
     var minTotalTrades: Double?
     var minExperienceYears: Double?
-    var maxRiskLevel: MockTrader.RiskLevel?
+    var maxRiskLevel: TraderRiskLevel?
     var onlyVerified: Bool?
 
     // Advanced Financial Metrics

@@ -102,25 +102,38 @@ struct InvoiceNumberGenerator {
 // MARK: - Invoice Notes
 struct InvoiceNotes {
 
-    /// Tax note for buy orders
-    static let buyOrderTaxNote = """
-    Steuerlicher Hinweis:
-    Beim Kauf werden keine Steuern abgezogen. Die Besteuerung erfolgt erst beim Verkauf bzw. Gewinnrealisierung gemäß Abgeltungsteuer (dzt. \(
-        CalculationConstants.TaxRates.capitalGainsTaxWithSoli
-    )).
-    
-    Rechtlicher Hinweis:
-    Die Versteuerung erfolgt mit Gewinnrealisierung laut aktueller Regelung (§ 20 EStG).
-    """
+    /// Body text for Abgeltungsteuer on securities invoices (no section heading — `DocumentNotesSection` adds it).
+    static func capitalGainsTaxNoteBody(
+        mode: TaxCollectionMode = .customerSelfReports,
+        side: DocumentTaxNoteTexts.CapitalGainsSide
+    ) -> String {
+        DocumentTaxNoteTexts.capitalGainsBody(mode: mode, side: side)
+    }
 
-    /// Tax note for sell orders
-    static let sellOrderTaxNote = """
-    Steuerlicher Hinweis:
-    Beim Verkauf erfolgt die Besteuerung gemäß Abgeltungsteuer (dzt. \(CalculationConstants.TaxRates.capitalGainsTaxWithSoli)) auf den realisierten Gewinn. Die Steuer wird automatisch von der Bank einbehalten.
-    
-    Rechtlicher Hinweis:
-    Die Versteuerung erfolgt mit Gewinnrealisierung laut aktueller Regelung (§ 20 EStG).
-    """
+    /// Tax note for buy orders (legacy PDF blocks including headings)
+    static func makeBuyOrderTaxNote(mode: TaxCollectionMode = .customerSelfReports) -> String {
+        """
+        Steuerlicher Hinweis:
+        \(self.capitalGainsTaxNoteBody(mode: mode, side: .buy))
+        
+        Rechtlicher Hinweis:
+        Die Versteuerung erfolgt mit Gewinnrealisierung laut aktueller Regelung (§ 20 EStG).
+        """
+    }
+
+    /// Tax note for sell orders (legacy PDF blocks including headings)
+    static func makeSellOrderTaxNote(mode: TaxCollectionMode = .customerSelfReports) -> String {
+        """
+        Steuerlicher Hinweis:
+        \(self.capitalGainsTaxNoteBody(mode: mode, side: .sell))
+        
+        Rechtlicher Hinweis:
+        Die Versteuerung erfolgt mit Gewinnrealisierung laut aktueller Regelung (§ 20 EStG).
+        """
+    }
+
+    static let buyOrderTaxNote = makeBuyOrderTaxNote()
+    static let sellOrderTaxNote = makeSellOrderTaxNote()
 
     /// Legal note for all invoices
     static let legalNote = "Diese Abrechnung erfolgt nach den Bestimmungen des Wertpapierhandelsgesetzes (WpHG) und der Wertpapierhandelsverordnung (WpDVerOV)."

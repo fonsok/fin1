@@ -7,6 +7,8 @@ struct Investment: Identifiable, Codable, Sendable {
     let investorId: String
     let investorName: String // Investor's username for display in trader views
     let traderId: String
+    /// Parse `_User.username` at creation — SSOT for sync fallback and display when `traderId` was still a Mock UUID.
+    let traderUsername: String?
     let traderName: String
     let amount: Double // Capital allocated to this investment (pool)
     let currentValue: Double // Current value including profit
@@ -27,8 +29,22 @@ struct Investment: Identifiable, Codable, Sendable {
     let lastPartialSellAt: Date?
     /// Kumulativ verkaufte Stückzahl / Kaufstück am Trade (0…1), vom Server; identisch für alle Pool-Investoren eines Trades.
     let tradeSellVolumeProgress: Double?
+    /// Nach Aktivierung: gebuchte Kaufseite (Total Buy Cost = Kauf + Kaufgebühren), SSOT mit RSV→TRD / Collection Bill.
+    /// `nil` solange nur reserviert oder ältere Daten ohne Backfill.
+    let poolTradingAmount: Double?
 
     // Computed properties
+    /// Anzeige-Betrag in der offenen Positions-Tabelle: reserviert = Nominal (`amount`); aktiv = gebuchte Gesamtkaufkosten wenn bekannt.
+    var displayAmountForOpenPositions: Double {
+        if self.reservationStatus == .reserved {
+            return self.amount
+        }
+        if let poolTradingAmount, poolTradingAmount > 0.005 {
+            return poolTradingAmount
+        }
+        return self.amount
+    }
+
     var investedAmount: Double {
         self.amount
     }
@@ -41,6 +57,17 @@ struct Investment: Identifiable, Codable, Sendable {
         self.status == .completed
     }
 
+    /// Offene Position (Reserviert oder im Pool aktiv) — nicht abgeschlossen/storniert.
+    /// SSOT für Listen: `reservationStatus` (Parse `status: reserved` mappt lokal auf `.submitted`).
+    var isOpenPosition: Bool {
+        switch self.reservationStatus {
+        case .reserved, .active, .executing, .closed:
+            return true
+        case .completed, .cancelled:
+            return false
+        }
+    }
+
     /// Checks if this investment is completed
     var isInvestmentCompleted: Bool {
         self.reservationStatus == .completed
@@ -49,6 +76,16 @@ struct Investment: Identifiable, Codable, Sendable {
     /// Checks if this investment is active
     var isInvestmentActive: Bool {
         self.reservationStatus == .active || self.reservationStatus == .executing || self.reservationStatus == .closed
+    }
+
+    /// Reserviertes Kapital, noch nicht durch Trader-Kauf aktiviert.
+    var isReservedForPoolActivation: Bool {
+        self.reservationStatus == .reserved
+    }
+
+    /// Trader-Dashboard „Pool active“: Reservierungen oder laufende Pool-Teilnahme.
+    var hasPoolCapitalCommitted: Bool {
+        self.isReservedForPoolActivation || self.isInvestmentActive
     }
 
     /// Trash/delete allowed only while reserved (not yet committed to an ongoing trade path).
@@ -88,6 +125,7 @@ struct Investment: Identifiable, Codable, Sendable {
         investorId: String,
         investorName: String,
         traderId: String,
+        traderUsername: String? = nil,
         traderName: String,
         amount: Double,
         currentValue: Double,
@@ -105,7 +143,8 @@ struct Investment: Identifiable, Codable, Sendable {
         realizedSellQuantity: Double = 0,
         realizedSellAmount: Double = 0,
         lastPartialSellAt: Date? = nil,
-        tradeSellVolumeProgress: Double? = nil
+        tradeSellVolumeProgress: Double? = nil,
+        poolTradingAmount: Double? = nil
     ) {
         self.id = id
         self.investmentNumber = investmentNumber
@@ -113,6 +152,7 @@ struct Investment: Identifiable, Codable, Sendable {
         self.investorId = investorId
         self.investorName = investorName
         self.traderId = traderId
+        self.traderUsername = traderUsername
         self.traderName = traderName
         self.amount = amount
         self.currentValue = currentValue
@@ -131,6 +171,105 @@ struct Investment: Identifiable, Codable, Sendable {
         self.realizedSellAmount = realizedSellAmount
         self.lastPartialSellAt = lastPartialSellAt
         self.tradeSellVolumeProgress = tradeSellVolumeProgress
+        self.poolTradingAmount = poolTradingAmount
+    }
+
+    func withTraderUsername(_ username: String?) -> Investment {
+        let trimmed = username?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let normalized = (trimmed?.isEmpty == false) ? trimmed : nil
+        guard normalized != self.traderUsername else { return self }
+        return Investment(
+            id: self.id,
+            investmentNumber: self.investmentNumber,
+            batchId: self.batchId,
+            investorId: self.investorId,
+            investorName: self.investorName,
+            traderId: self.traderId,
+            traderUsername: normalized,
+            traderName: self.traderName,
+            amount: self.amount,
+            currentValue: self.currentValue,
+            date: self.date,
+            status: self.status,
+            performance: self.performance,
+            numberOfTrades: self.numberOfTrades,
+            sequenceNumber: self.sequenceNumber,
+            createdAt: self.createdAt,
+            updatedAt: self.updatedAt,
+            completedAt: self.completedAt,
+            specialization: self.specialization,
+            reservationStatus: self.reservationStatus,
+            partialSellCount: self.partialSellCount,
+            realizedSellQuantity: self.realizedSellQuantity,
+            realizedSellAmount: self.realizedSellAmount,
+            lastPartialSellAt: self.lastPartialSellAt,
+            tradeSellVolumeProgress: self.tradeSellVolumeProgress,
+            poolTradingAmount: self.poolTradingAmount
+        )
+    }
+
+    func withTraderId(_ newTraderId: String) -> Investment {
+        guard newTraderId != self.traderId else { return self }
+        return Investment(
+            id: self.id,
+            investmentNumber: self.investmentNumber,
+            batchId: self.batchId,
+            investorId: self.investorId,
+            investorName: self.investorName,
+            traderId: newTraderId,
+            traderUsername: self.traderUsername,
+            traderName: self.traderName,
+            amount: self.amount,
+            currentValue: self.currentValue,
+            date: self.date,
+            status: self.status,
+            performance: self.performance,
+            numberOfTrades: self.numberOfTrades,
+            sequenceNumber: self.sequenceNumber,
+            createdAt: self.createdAt,
+            updatedAt: self.updatedAt,
+            completedAt: self.completedAt,
+            specialization: self.specialization,
+            reservationStatus: self.reservationStatus,
+            partialSellCount: self.partialSellCount,
+            realizedSellQuantity: self.realizedSellQuantity,
+            realizedSellAmount: self.realizedSellAmount,
+            lastPartialSellAt: self.lastPartialSellAt,
+            tradeSellVolumeProgress: self.tradeSellVolumeProgress,
+            poolTradingAmount: self.poolTradingAmount
+        )
+    }
+
+    func withInvestorId(_ newInvestorId: String) -> Investment {
+        guard newInvestorId != self.investorId else { return self }
+        return Investment(
+            id: self.id,
+            investmentNumber: self.investmentNumber,
+            batchId: self.batchId,
+            investorId: newInvestorId,
+            investorName: self.investorName,
+            traderId: self.traderId,
+            traderUsername: self.traderUsername,
+            traderName: self.traderName,
+            amount: self.amount,
+            currentValue: self.currentValue,
+            date: self.date,
+            status: self.status,
+            performance: self.performance,
+            numberOfTrades: self.numberOfTrades,
+            sequenceNumber: self.sequenceNumber,
+            createdAt: self.createdAt,
+            updatedAt: self.updatedAt,
+            completedAt: self.completedAt,
+            specialization: self.specialization,
+            reservationStatus: self.reservationStatus,
+            partialSellCount: self.partialSellCount,
+            realizedSellQuantity: self.realizedSellQuantity,
+            realizedSellAmount: self.realizedSellAmount,
+            lastPartialSellAt: self.lastPartialSellAt,
+            tradeSellVolumeProgress: self.tradeSellVolumeProgress,
+            poolTradingAmount: self.poolTradingAmount
+        )
     }
 
     /// Canonical human-readable reference for a split investment.
@@ -183,6 +322,7 @@ struct Investment: Identifiable, Codable, Sendable {
             investorId: self.investorId,
             investorName: self.investorName,
             traderId: self.traderId,
+            traderUsername: self.traderUsername,
             traderName: self.traderName,
             amount: self.amount,
             currentValue: newCurrentValue,
@@ -200,7 +340,8 @@ struct Investment: Identifiable, Codable, Sendable {
             realizedSellQuantity: self.realizedSellQuantity,
             realizedSellAmount: self.realizedSellAmount,
             lastPartialSellAt: self.lastPartialSellAt,
-            tradeSellVolumeProgress: self.tradeSellVolumeProgress
+            tradeSellVolumeProgress: self.tradeSellVolumeProgress,
+            poolTradingAmount: self.poolTradingAmount
         )
     }
 
@@ -213,6 +354,7 @@ struct Investment: Identifiable, Codable, Sendable {
             investorId: self.investorId,
             investorName: self.investorName,
             traderId: self.traderId,
+            traderUsername: self.traderUsername,
             traderName: self.traderName,
             amount: self.amount,
             currentValue: self.amount, // no profit impact
@@ -230,7 +372,8 @@ struct Investment: Identifiable, Codable, Sendable {
             realizedSellQuantity: self.realizedSellQuantity,
             realizedSellAmount: self.realizedSellAmount,
             lastPartialSellAt: self.lastPartialSellAt,
-            tradeSellVolumeProgress: self.tradeSellVolumeProgress
+            tradeSellVolumeProgress: self.tradeSellVolumeProgress,
+            poolTradingAmount: self.poolTradingAmount
         )
     }
 
@@ -243,6 +386,7 @@ struct Investment: Identifiable, Codable, Sendable {
             investorId: self.investorId,
             investorName: self.investorName,
             traderId: self.traderId,
+            traderUsername: self.traderUsername,
             traderName: self.traderName,
             amount: self.amount,
             currentValue: self.currentValue,
@@ -260,7 +404,8 @@ struct Investment: Identifiable, Codable, Sendable {
             realizedSellQuantity: self.realizedSellQuantity,
             realizedSellAmount: self.realizedSellAmount,
             lastPartialSellAt: self.lastPartialSellAt,
-            tradeSellVolumeProgress: self.tradeSellVolumeProgress
+            tradeSellVolumeProgress: self.tradeSellVolumeProgress,
+            poolTradingAmount: self.poolTradingAmount
         )
     }
 
@@ -273,6 +418,7 @@ struct Investment: Identifiable, Codable, Sendable {
             investorId: self.investorId,
             investorName: self.investorName,
             traderId: self.traderId,
+            traderUsername: self.traderUsername,
             traderName: self.traderName,
             amount: self.amount,
             currentValue: self.currentValue,
@@ -290,7 +436,8 @@ struct Investment: Identifiable, Codable, Sendable {
             realizedSellQuantity: self.realizedSellQuantity,
             realizedSellAmount: self.realizedSellAmount,
             lastPartialSellAt: self.lastPartialSellAt,
-            tradeSellVolumeProgress: self.tradeSellVolumeProgress
+            tradeSellVolumeProgress: self.tradeSellVolumeProgress,
+            poolTradingAmount: self.poolTradingAmount
         )
     }
 
@@ -298,7 +445,7 @@ struct Investment: Identifiable, Codable, Sendable {
 
     static func validateInvestment(
         investor: User,
-        trader: MockTrader,
+        trader: InvestorTrader,
         amountPerInvestment: Double,
         numberOfInvestments: Int,
         minimumInvestmentPerSlot: Double,
@@ -335,7 +482,7 @@ struct Investment: Identifiable, Codable, Sendable {
     /// Creates a single investment - each investment is a first-class entity
     static func createInvestment(
         investor: User,
-        trader: MockTrader,
+        trader: InvestorTrader,
         amount: Double,
         batchId: String?,
         sequenceNumber: Int?,
@@ -361,7 +508,8 @@ struct Investment: Identifiable, Codable, Sendable {
             batchId: batchId,
             investorId: investor.id,
             investorName: investor.username,
-            traderId: trader.id.uuidString,
+            traderId: trader.backendTraderId,
+            traderUsername: trader.username.isEmpty ? nil : trader.username,
             traderName: trader.name,
             amount: amount,
             currentValue: amount,
@@ -381,7 +529,7 @@ struct Investment: Identifiable, Codable, Sendable {
     /// Creates multiple investments from a batch
     static func createInvestmentsFromBatch(
         investor: User,
-        trader: MockTrader,
+        trader: InvestorTrader,
         batchId: String,
         amountPerInvestment: Double,
         numberOfInvestments: Int,

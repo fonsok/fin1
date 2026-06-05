@@ -197,6 +197,7 @@ describe('trading collection bill return% contract', () => {
     const handler = cloudFunctions.getInvestorCollectionBills;
     const request = {
       user: {
+        id: 'investor:1',
         get(key) {
           if (key === 'stableId') return 'investor:1';
           return null;
@@ -219,6 +220,7 @@ describe('trading collection bill return% contract', () => {
     const handler = cloudFunctions.getInvestorCollectionBills;
     const request = {
       user: {
+        id: 'investor:1',
         get(key) {
           if (key === 'stableId') return 'investor:1';
           return null;

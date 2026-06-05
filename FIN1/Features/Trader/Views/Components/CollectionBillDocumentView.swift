@@ -51,6 +51,16 @@ struct CollectionBillDocumentView: View {
                 )
             } else if self.viewModel.fallbackToDocumentViewer {
                 DocumentViewer(document: self.displayDocument)
+            } else if self.viewModel.prefersSnapshotBelegDisplay,
+                      let snapshot = viewModel.resolvedBelegSnapshotText,
+                      let trade = viewModel.trade {
+                TraderCollectionBillBelegSnapshotView(
+                    snapshotText: snapshot,
+                    document: self.displayDocument,
+                    trade: trade,
+                    fullTrade: self.viewModel.resolvedFullTrade,
+                    services: self.services
+                )
             } else if let trade = viewModel.trade {
                 CollectionBillViewWrapper(trade: trade, document: self.displayDocument, fullTrade: self.viewModel.resolvedFullTrade)
             } else if let investment = viewModel.investment {

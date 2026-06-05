@@ -4,6 +4,7 @@ import Foundation
 /// Defines the contract for investment query operations
 protocol InvestmentQueryServiceProtocol {
     func getInvestments(for investorId: String, in investments: [Investment]) -> [Investment]
+    func getInvestments(matchingAnyOf investorIds: [String], in investments: [Investment]) -> [Investment]
     func getInvestments(forTrader traderId: String, in investments: [Investment]) -> [Investment]
     func getInvestmentPools(
         forTrader traderId: String,

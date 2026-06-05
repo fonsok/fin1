@@ -106,9 +106,10 @@ final class UnifiedOrderCompletionHandler: @unchecked Sendable {
                     "✅ UnifiedOrderCompletionHandler: Trade #\(finalTrade.tradeNumber) saved to Parse Server with objectId: \(finalTrade.id)"
                 )
             } catch {
-                print("⚠️ UnifiedOrderCompletionHandler: Failed to save trade to Parse Server: \(error)")
-                // Continue with local trade even if server save fails
-                finalTrade = initialTrade
+                print("❌ UnifiedOrderCompletionHandler: Failed to save trade to Parse Server: \(error)")
+                throw AppError.validationError(
+                    "Trade konnte nicht auf dem Server gespeichert werden. Pool-Investments bleiben sonst reserviert. Bitte erneut versuchen oder Support kontaktieren."
+                )
             }
         } else {
             print("⚠️ UnifiedOrderCompletionHandler: No tradeAPIService - trade only saved locally")

@@ -114,6 +114,10 @@ final class TraderService: TraderServiceProtocol {
         try await self.tradingCoordinator.updateOrderStatus(orderId, status: status)
     }
 
+    func registerPairedBuyTraderOrder(_ order: Order, pairExecutionId: String) async {
+        await self.tradingCoordinator.registerPairedBuyTraderOrder(order, pairExecutionId: pairExecutionId)
+    }
+
     // MARK: - Watchlist Management
 
     func addToWatchlist(_ searchResult: SearchResult) async throws {

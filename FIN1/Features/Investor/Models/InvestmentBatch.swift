@@ -57,7 +57,7 @@ struct InvestmentBatch: Identifiable, Codable {
     /// Creates a new investment batch
     static func createBatch(
         investor: User,
-        trader: MockTrader,
+        trader: InvestorTrader,
         totalAmount: Double,
         appServiceCharge: Double,
         specialization: String
@@ -66,7 +66,7 @@ struct InvestmentBatch: Identifiable, Codable {
         return InvestmentBatch(
             id: UUID().uuidString,
             investorId: investor.id,
-            traderId: trader.id.uuidString,
+            traderId: trader.backendTraderId,
             traderName: trader.name,
             specialization: specialization,
             totalAmount: totalAmount,

@@ -6,6 +6,7 @@ struct OpenInvestmentsTableDataRow: View {
     let columnWidths: [String: CGFloat]
     let forMeasurement: Bool
     let onDeleteInvestment: (InvestmentRow) -> Void
+    var onShowAmountInfo: ((InvestmentRow) -> Void)?
 
     var body: some View {
         HStack(spacing: OpenInvestmentsTableLayout.columnSpacing) {
@@ -18,9 +19,7 @@ struct OpenInvestmentsTableDataRow: View {
                 .modifier(self.cellFrame("status", self.pool.isDeletable ? .center : .leading))
                 .contentShape(Rectangle())
 
-            Text(self.pool.amount.formattedAsLocalizedCurrency())
-                .font(ResponsiveDesign.bodyFont())
-                .foregroundColor(self.forMeasurement ? nil : AppTheme.fontColor)
+            self.amountCell
                 .modifier(self.cellFrame("amount", .trailing))
 
             self.profitCell
@@ -40,6 +39,36 @@ struct OpenInvestmentsTableDataRow: View {
                 self.isEven ? AppTheme.screenBackground.opacity(0.3) : AppTheme.screenBackground.opacity(0.1)
             )
         )
+    }
+
+    @ViewBuilder
+    private var amountCell: some View {
+        HStack(spacing: ResponsiveDesign.spacing(4)) {
+            Text(self.pool.amount.formattedAsLocalizedCurrency())
+                .font(ResponsiveDesign.bodyFont())
+                .foregroundColor(self.forMeasurement ? nil : AppTheme.fontColor)
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
+
+            if self.showAmountInfoIcon {
+                if self.forMeasurement {
+                    Image(systemName: "info.circle")
+                        .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 0.7))
+                } else {
+                    Button(action: { self.onShowAmountInfo?(self.pool) }) {
+                        Image(systemName: "info.circle")
+                            .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 0.7))
+                            .foregroundColor(AppTheme.accentLightBlue.opacity(0.7))
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .accessibilityLabel("Wie kommt der Betrag zustande?")
+                }
+            }
+        }
+    }
+
+    private var showAmountInfoIcon: Bool {
+        !self.pool.isDeletable && self.onShowAmountInfo != nil
     }
 
     @ViewBuilder

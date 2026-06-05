@@ -36,9 +36,11 @@ final class TradeStatementDisplayDataBuilder: TradeStatementDisplayDataBuilderPr
         sellInvoices: [Invoice]
     ) -> TradeStatementDisplayData {
 
+        let resolvedBuyInvoice = self.resolveBuyInvoice(buyInvoice: buyInvoice, fullTrade: fullTrade)
+
         let buyTransaction = self.buildBuyTransactionData(
             trade: trade,
-            buyInvoice: buyInvoice
+            buyInvoice: resolvedBuyInvoice
         )
 
         let sellTransactions = self.buildSellTransactionData(
@@ -47,27 +49,31 @@ final class TradeStatementDisplayDataBuilder: TradeStatementDisplayDataBuilderPr
         )
 
         let calculationBreakdown = self.buildCalculationBreakdown(
-            buyInvoice: buyInvoice,
+            buyInvoice: resolvedBuyInvoice,
             sellInvoices: sellInvoices
         )
 
         let taxSummary = buildTaxSummaryData(
-            buyInvoice: buyInvoice,
+            buyInvoice: resolvedBuyInvoice,
             sellInvoices: sellInvoices,
             trade: trade
         )
 
         let fees = buildFeeItems(
-            buyInvoice: buyInvoice,
+            buyInvoice: resolvedBuyInvoice,
             sellInvoices: sellInvoices
         )
 
         let taxes = buildTaxItems(
-            buyInvoice: buyInvoice,
+            buyInvoice: resolvedBuyInvoice,
             sellInvoices: sellInvoices
         )
 
-        let securityIdentifier = self.securityIdentifierFromInvoices(buyInvoice: buyInvoice, sellInvoices: sellInvoices)
+        let securityIdentifier = self.securityIdentifierFromInvoices(
+            buyInvoice: resolvedBuyInvoice,
+            sellInvoices: sellInvoices,
+            fullTrade: fullTrade
+        )
 
         return TradeStatementDisplayData(
             depotNumber: "104801", // In a real app, this would come from user profile
@@ -87,6 +93,29 @@ final class TradeStatementDisplayDataBuilder: TradeStatementDisplayDataBuilderPr
     }
 
     // MARK: - Private Methods
+
+    /// KAUF-Daten: Parse-`buy_invoice` wenn vorhanden, sonst aus `Trade.buyOrder` (Gebühren in einer Abrechnung).
+    private func resolveBuyInvoice(buyInvoice: Invoice?, fullTrade: Trade?) -> Invoice? {
+        if let buyInvoice { return buyInvoice }
+        guard let fullTrade else { return nil }
+        let customerInfo = CustomerInfo(
+            name: "Dr. Hans-Peter Müller",
+            address: "Hauptstraße 42",
+            city: "Frankfurt am Main",
+            postalCode: "60311",
+            taxNumber: "43/123/45678",
+            depotNumber: "DE12345678901234567890",
+            bank: "Deutsche Bank AG",
+            customerNumber: fullTrade.traderId
+        )
+        return Invoice.from(
+            order: fullTrade.buyOrder,
+            customerInfo: customerInfo,
+            transactionIdService: TransactionIdService(),
+            tradeId: fullTrade.id,
+            tradeNumber: fullTrade.tradeNumber
+        )
+    }
 
     private func buildCalculationBreakdown(buyInvoice: Invoice?, sellInvoices: [Invoice]) -> CalculationBreakdownData {
         // Calculate individual sell amounts (excluding tax items) - guarded
@@ -292,12 +321,20 @@ final class TradeStatementDisplayDataBuilder: TradeStatementDisplayDataBuilderPr
     }
 
     /// Builds security identifier line from first available securities description (includes real emittent).
-    private func securityIdentifierFromInvoices(buyInvoice: Invoice?, sellInvoices: [Invoice]) -> String {
+    private func securityIdentifierFromInvoices(
+        buyInvoice: Invoice?,
+        sellInvoices: [Invoice],
+        fullTrade: Trade?
+    ) -> String {
         if let desc = buyInvoice?.items.first(where: { $0.itemType == .securities })?.description, !desc.isEmpty {
             return desc
         }
         if let desc = sellInvoices.first?.items.first(where: { $0.itemType == .securities })?.description, !desc.isEmpty {
             return desc
+        }
+        if let order = fullTrade?.buyOrder {
+            let symbol = order.underlyingAsset ?? order.symbol
+            return "\(symbol) — \(order.wkn ?? order.symbol)"
         }
         return "VONT.FINL PR PUT23 DAX (DE000VU9GG06/VU9GG0)"
     }

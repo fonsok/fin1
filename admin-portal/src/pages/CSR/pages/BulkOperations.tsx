@@ -18,12 +18,59 @@ import {
   tableHeaderCellTextClasses,
   tableTheadSurfaceClasses,
 } from '../../../utils/tableStriping';
-import { getSupportTickets, assignTicket, respondToTicket, getAvailableAgents } from '../api';
+import { assignTicket, respondToTicket, getAvailableAgents, getCustomerProfile } from '../api';
+import { useTicketList } from '../../../hooks/useTicketList';
+import { useAuth } from '../../../context/AuthContext';
+import { getResponseTemplates } from '../../Templates/api';
+import { sortByTitleDe } from '../../Templates/utils/templateDisplayOrder';
+import { TemplateDropdown, TemplateButton } from '../components/TemplateDropdown';
+import {
+  defaultDescriptionTemplates,
+  type TicketDescriptionTemplate,
+} from '../templates';
+import type { Ticket } from '../../../api/admin/types';
+import {
+  buildTicketTemplateContext,
+  buildTicketTemplateContextFromTicket,
+  hydrateTicketTemplateText,
+} from '../utils/hydrateTicketTemplate';
 
 import { adminControlField, adminControlFieldPh400, adminEmphasisSoft, adminMuted, adminPrimary, adminStrong, adminSurfaceWell } from '../../../utils/adminThemeClasses';
+async function loadProfilesByUserId(
+  userIds: string[],
+): Promise<Map<string, Awaited<ReturnType<typeof getCustomerProfile>>>> {
+  const unique = [...new Set(userIds.filter(Boolean))];
+  const entries = await Promise.all(
+    unique.map(async (userId) => {
+      try {
+        const profile = await getCustomerProfile(userId);
+        return [userId, profile] as const;
+      } catch {
+        return [userId, null] as const;
+      }
+    }),
+  );
+  return new Map(entries);
+}
+
+function personalizeBulkResponse(
+  response: string,
+  ticket: Ticket,
+  profile: Awaited<ReturnType<typeof getCustomerProfile>> | null | undefined,
+  agent: { firstName?: string; lastName?: string; email?: string } | null | undefined,
+): string {
+  const ctx = buildTicketTemplateContextFromTicket({
+    ticket,
+    customerProfile: profile ?? null,
+    agent,
+  });
+  return hydrateTicketTemplateText(response, ctx);
+}
+
 export function BulkOperationsPage() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+  const { user: agentUser } = useAuth();
   const bulkPanel = clsx(
     'space-y-4 p-4 rounded-lg border',
     isDark ? 'bg-slate-900/50 border-slate-600' : 'bg-gray-50 border-gray-200',
@@ -44,29 +91,50 @@ export function BulkOperationsPage() {
   const [selectedAgentId, setSelectedAgentId] = useState('');
   const [bulkResponse, setBulkResponse] = useState('');
   const [isInternal, setIsInternal] = useState(false);
+  const [showBulkTemplates, setShowBulkTemplates] = useState(false);
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(25);
 
-  const { data: tickets, isLoading } = useQuery({
-    queryKey: ['csr-tickets-bulk'],
-    queryFn: () => getSupportTickets(),
+  const { data: ticketList, isLoading } = useTicketList({
+    activeOnly: true,
+    limit: 250,
+    sortBy: 'updatedAt',
+    sortOrder: 'desc',
   });
+  const tickets = ticketList?.tickets;
 
   const { data: agents } = useQuery({
     queryKey: ['csr-agents'],
     queryFn: () => getAvailableAgents(),
   });
 
-  const activeTickets = useMemo(
-    () =>
-      (tickets || []).filter(
-        (t) => t.status !== 'resolved' && t.status !== 'closed' && t.status !== 'archived'
-      ),
-    [tickets]
-  );
+  const {
+    data: responseTemplates,
+    error: templatesError,
+    isLoading: templatesLoading,
+  } = useQuery({
+    queryKey: ['response-templates'],
+    queryFn: () => getResponseTemplates('teamlead', true),
+  });
 
-  const serverTicketTotal = (tickets || []).length;
-  const listTotal = activeTickets.length;
+  const descriptionTemplates: TicketDescriptionTemplate[] = useMemo(() => {
+    if (responseTemplates && responseTemplates.length > 0) {
+      return sortByTitleDe(
+        responseTemplates
+          .filter((t) => !!t.body && t.body.length > 0)
+          .map((t) => ({ id: t.id, title: t.title, category: t.category, body: t.body! })),
+      );
+    }
+    return sortByTitleDe(defaultDescriptionTemplates);
+  }, [responseTemplates]);
+
+  const activeTickets = tickets || [];
+  const selectedTicketList = useMemo(
+    () => activeTickets.filter((t) => selectedTickets.has(t.objectId)),
+    [activeTickets, selectedTickets],
+  );
+  const serverTicketTotal = ticketList?.total ?? activeTickets.length;
+  const listTotal = ticketList?.total ?? activeTickets.length;
   const listTotalPages = Math.max(1, Math.ceil(listTotal / pageSize));
   const pagedActiveTickets = useMemo(
     () => activeTickets.slice(page * pageSize, (page + 1) * pageSize),
@@ -84,8 +152,7 @@ export function BulkOperationsPage() {
       await Promise.all(ticketIds.map((id) => assignTicket(id, agentId)));
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['csr-tickets'] });
-      queryClient.invalidateQueries({ queryKey: ['csr-tickets-bulk'] });
+      queryClient.invalidateQueries({ queryKey: ['tickets'] });
       setSelectedTickets(new Set());
       setBulkAction('none');
       setSelectedAgentId('');
@@ -94,23 +161,32 @@ export function BulkOperationsPage() {
 
   const respondMutation = useMutation({
     mutationFn: async ({
-      ticketIds,
+      ticketsToRespond,
       response,
       isInternal: internal,
     }: {
-      ticketIds: string[];
+      ticketsToRespond: Ticket[];
       response: string;
       isInternal: boolean;
     }) => {
-      await Promise.all(ticketIds.map((id) => respondToTicket(id, response, internal)));
+      const profiles = await loadProfilesByUserId(ticketsToRespond.map((t) => t.userId));
+      await Promise.all(
+        ticketsToRespond.map((ticket) =>
+          respondToTicket(
+            ticket.objectId,
+            personalizeBulkResponse(response, ticket, profiles.get(ticket.userId), agentUser),
+            internal,
+          ),
+        ),
+      );
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['csr-tickets'] });
-      queryClient.invalidateQueries({ queryKey: ['csr-tickets-bulk'] });
+      queryClient.invalidateQueries({ queryKey: ['tickets'] });
       setSelectedTickets(new Set());
       setBulkAction('none');
       setBulkResponse('');
       setIsInternal(false);
+      setShowBulkTemplates(false);
     },
   });
 
@@ -141,15 +217,36 @@ export function BulkOperationsPage() {
     }
   };
 
+  const handleBulkTemplateSelect = (template: TicketDescriptionTemplate): void => {
+    if (!template.body) return;
+    const firstTicket = selectedTicketList[0];
+    const agentOnlyContext = buildTicketTemplateContext({ agent: agentUser });
+    const hydratedBody =
+      selectedTicketList.length === 1 && firstTicket
+        ? hydrateTicketTemplateText(
+            template.body,
+            buildTicketTemplateContextFromTicket({ ticket: firstTicket, agent: agentUser }),
+          )
+        : hydrateTicketTemplateText(template.body, agentOnlyContext);
+    setBulkResponse((prev) => (prev.trim() ? `${prev}\n\n${hydratedBody}` : hydratedBody));
+    setShowBulkTemplates(false);
+  };
+
   const handleBulkRespond = () => {
-    if (selectedTickets.size > 0 && bulkResponse.trim()) {
+    if (selectedTicketList.length > 0 && bulkResponse.trim()) {
       respondMutation.mutate({
-        ticketIds: Array.from(selectedTickets),
+        ticketsToRespond: selectedTicketList,
         response: bulkResponse,
         isInternal,
       });
     }
   };
+
+  const bulkRespondUsesPerTicketPlaceholders =
+    selectedTicketList.length > 1 &&
+    /\{\{\s*(KUNDENNAME|CUSTOMER_NAME|customerName|TICKETNUMMER|TICKET_NUMBER|ticketNumber)\s*\}\}/i.test(
+      bulkResponse,
+    );
 
   const getPriorityLabel = (priority: string): string => {
     switch (priority?.toLowerCase()) {
@@ -220,7 +317,30 @@ export function BulkOperationsPage() {
           {bulkAction === 'respond' && (
             <div className={bulkPanel}>
               <div>
-                <label className={fieldLabel}>Antwort</label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className={fieldLabel}>Antwort</label>
+                  <div className="relative">
+                    <TemplateButton onClick={() => setShowBulkTemplates(!showBulkTemplates)} />
+                    {showBulkTemplates && (
+                      <TemplateDropdown
+                        title="Antwort-Vorlagen"
+                        templates={descriptionTemplates}
+                        isLoading={templatesLoading}
+                        error={templatesError ? 'Fehler beim Laden der Vorlagen' : null}
+                        onSelect={handleBulkTemplateSelect}
+                        onClose={() => setShowBulkTemplates(false)}
+                        showBodyPreview
+                        widthClass="w-80"
+                      />
+                    )}
+                  </div>
+                </div>
+                {bulkRespondUsesPerTicketPlaceholders && (
+                  <p className={clsx('text-xs mb-2', adminMuted(isDark))}>
+                    Platzhalter für Kundenname und Ticketnummer werden beim Senden pro Ticket
+                    ersetzt.
+                  </p>
+                )}
                 <textarea
                   value={bulkResponse}
                   onChange={(e) => setBulkResponse(e.target.value)}

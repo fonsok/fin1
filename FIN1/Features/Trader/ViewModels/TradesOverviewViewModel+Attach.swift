@@ -11,6 +11,8 @@ extension TradesOverviewViewModel {
         configurationService: any ConfigurationServiceProtocol,
         poolTradeParticipationService: (any PoolTradeParticipationServiceProtocol)? = nil,
         commissionCalculationService: (any CommissionCalculationServiceProtocol)? = nil,
+        settlementAPIService: (any SettlementAPIServiceProtocol)? = nil,
+        documentService: (any DocumentServiceProtocol)? = nil,
         investorGrossProfitService: (any InvestorGrossProfitServiceProtocol)? = nil,
         userService: (any UserServiceProtocol)? = nil,
         parseLiveQueryClient: (any ParseLiveQueryClientProtocol)? = nil
@@ -21,6 +23,8 @@ extension TradesOverviewViewModel {
         self.statisticsService = statisticsService
         self.invoiceService = invoiceService
         self.configurationService = configurationService
+        self.documentService = documentService
+        self.documentInboxBridge = documentService.map { UncheckedDocumentServiceBridge(documentService: $0) }
         self.userService = userService
         self.parseLiveQueryClient = parseLiveQueryClient
 
@@ -29,7 +33,9 @@ extension TradesOverviewViewModel {
             tradeService: tradeService,
             poolTradeParticipationService: poolTradeParticipationService,
             commissionCalculationService: commissionCalculationService,
-            configurationService: configurationService
+            configurationService: configurationService,
+            settlementAPIService: settlementAPIService,
+            documentService: documentService
         )
 
         orderService.activeOrdersPublisher
@@ -67,6 +73,24 @@ extension TradesOverviewViewModel {
             }
             .store(in: &cancellables)
 
+        NotificationCenter.default.publisher(for: .commissionSettled)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                Task { @MainActor [weak self] in
+                    await self?.rebuildTrades()
+                }
+            }
+            .store(in: &cancellables)
+
+        NotificationCenter.default.publisher(for: .userDocumentInboxShouldRefresh)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                Task { @MainActor [weak self] in
+                    await self?.rebuildTrades()
+                }
+            }
+            .store(in: &cancellables)
+
         NotificationCenter.default.publisher(for: .userDataDidUpdate)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
@@ -88,7 +112,13 @@ extension TradesOverviewViewModel {
             .store(in: &cancellables)
 
         Task { @MainActor [weak self] in
+            await self?.primeTraderDocumentInbox()
             await self?.rebuildTrades()
         }
+    }
+
+    func primeTraderDocumentInbox() async {
+        guard let user = self.userService?.currentUser else { return }
+        await self.documentInboxBridge?.loadDocuments(for: user)
     }
 }

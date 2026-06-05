@@ -4,11 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
 import { Card, Badge, PaginationBar } from '../../../components/ui';
 import { useTheme } from '../../../context/ThemeContext';
-import { getSupportTickets } from '../api';
-import type { SupportTicket } from '../types';
+import { getSupportTrends, type SupportTrend } from '../api';
 
 import {
-  adminBodyStrong,
   adminCaption,
   adminEmphasisSoft,
   adminEmptyIcon,
@@ -20,129 +18,7 @@ import {
 } from '../../../utils/adminThemeClasses';
 import { severityIconWellClasses, severityPanelClasses, severityToChipVariant } from '../../../utils/chipVariants';
 
-interface SupportTrend {
-  id: string;
-  type: 'volumeSpike' | 'recurringIssue' | 'longResolutionTime' | 'highEscalationRate' | 'negativeCSAT' | 'reopenedTickets';
-  title: string;
-  description: string;
-  severity: 'info' | 'warning' | 'critical';
-  ticketCount: number;
-  affectedCustomers: number;
-  percentageChange: number;
-  detectedAt: string;
-  relatedTicketIds: string[];
-  suggestedAction: string;
-}
-
 const TRENDS_PAGE_SIZE = 50;
-
-/** Simple trend detection (can be enhanced with backend API) */
-function detectSupportTrends(tickets: SupportTicket[]): SupportTrend[] {
-  if (!tickets.length) return [];
-
-    const trends: SupportTrend[] = [];
-    const now = new Date();
-    const lastWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const previousWeek = new Date(lastWeek.getTime() - 7 * 24 * 60 * 60 * 1000);
-
-    const currentWeekTickets = tickets.filter(t => new Date(t.createdAt) >= lastWeek);
-    const previousWeekTickets = tickets.filter(
-      t => new Date(t.createdAt) >= previousWeek && new Date(t.createdAt) < lastWeek
-    );
-
-    // 1. Volume Spike Detection
-    if (currentWeekTickets.length > 0 && previousWeekTickets.length > 0) {
-      const percentageChange = ((currentWeekTickets.length - previousWeekTickets.length) / previousWeekTickets.length) * 100;
-      if (percentageChange >= 50) {
-        trends.push({
-          id: 'volume-spike',
-          type: 'volumeSpike',
-          title: `Ticket-Volumen um ${Math.round(percentageChange)}% gestiegen`,
-          description: `${currentWeekTickets.length} Tickets diese Woche (zuvor: ${previousWeekTickets.length})`,
-          severity: percentageChange > 100 ? 'critical' : 'warning',
-          ticketCount: currentWeekTickets.length,
-          affectedCustomers: new Set(currentWeekTickets.map(t => t.userId)).size,
-          percentageChange,
-          detectedAt: new Date().toISOString(),
-          relatedTicketIds: currentWeekTickets.slice(0, 10).map(t => t.objectId),
-          suggestedAction: 'Überprüfen Sie die häufigsten Ticket-Themen und erwägen Sie zusätzliche Ressourcen.',
-        });
-      }
-    }
-
-    // 2. Recurring Issues Detection
-    const categoryCounts: Record<string, number> = {};
-    currentWeekTickets.forEach(ticket => {
-      const category = ticket.category || 'Other';
-      categoryCounts[category] = (categoryCounts[category] || 0) + 1;
-    });
-
-    Object.entries(categoryCounts).forEach(([category, count]) => {
-      if (count >= 5) {
-        const relatedTickets = currentWeekTickets.filter(t => (t.category || 'Other') === category);
-        trends.push({
-          id: `recurring-${category}`,
-          type: 'recurringIssue',
-          title: `${count} Tickets zu "${category}"`,
-          description: 'Wiederkehrendes Problem erkannt. Möglicherweise ist eine technische Lösung erforderlich.',
-          severity: count >= 10 ? 'critical' : 'warning',
-          ticketCount: count,
-          affectedCustomers: new Set(relatedTickets.map(t => t.userId)).size,
-          percentageChange: 0,
-          detectedAt: new Date().toISOString(),
-          relatedTicketIds: relatedTickets.slice(0, 10).map(t => t.objectId),
-          suggestedAction: 'Prüfen Sie ob ein Produktfehler vorliegt oder die Dokumentation verbessert werden kann.',
-        });
-      }
-    });
-
-    // 3. Long Resolution Time Detection
-    const unresolvedTickets = currentWeekTickets.filter(
-      t => t.status !== 'resolved' && t.status !== 'closed'
-    );
-    const oldTickets = unresolvedTickets.filter(t => {
-      const createdAt = new Date(t.createdAt);
-      const hoursOld = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
-      return hoursOld > 48;
-    });
-
-    if (oldTickets.length > 0) {
-      trends.push({
-        id: 'long-resolution',
-        type: 'longResolutionTime',
-        title: `${oldTickets.length} Tickets älter als 48 Stunden`,
-        description: 'Diese Tickets benötigen dringend Aufmerksamkeit.',
-        severity: oldTickets.length >= 10 ? 'critical' : 'warning',
-        ticketCount: oldTickets.length,
-        affectedCustomers: new Set(oldTickets.map(t => t.userId)).size,
-        percentageChange: 0,
-        detectedAt: new Date().toISOString(),
-        relatedTicketIds: oldTickets.slice(0, 10).map(t => t.objectId),
-        suggestedAction: 'Priorisieren Sie diese Tickets und weisen Sie sie erfahrenen Agents zu.',
-      });
-    }
-
-    // 4. High Escalation Rate Detection
-    const escalatedTickets = currentWeekTickets.filter(t => t.priority === 'urgent' || t.priority === 'high');
-    const escalationRate = (escalatedTickets.length / currentWeekTickets.length) * 100;
-    if (escalationRate >= 20 && currentWeekTickets.length > 0) {
-      trends.push({
-        id: 'high-escalation',
-        type: 'highEscalationRate',
-        title: `Hohe Eskalationsrate: ${Math.round(escalationRate)}%`,
-        description: `${escalatedTickets.length} von ${currentWeekTickets.length} Tickets sind eskaliert`,
-        severity: escalationRate >= 30 ? 'critical' : 'warning',
-        ticketCount: escalatedTickets.length,
-        affectedCustomers: new Set(escalatedTickets.map(t => t.userId)).size,
-        percentageChange: escalationRate,
-        detectedAt: new Date().toISOString(),
-        relatedTicketIds: escalatedTickets.slice(0, 10).map(t => t.objectId),
-        suggestedAction: 'Analysieren Sie die Ursachen für die hohe Eskalationsrate.',
-      });
-    }
-
-    return trends;
-}
 
 export function TrendsPage() {
   const { theme } = useTheme();
@@ -151,17 +27,20 @@ export function TrendsPage() {
   const [selectedTrend, setSelectedTrend] = useState<SupportTrend | null>(null);
   const [page, setPage] = useState(0);
 
-  const { data: tickets } = useQuery({
-    queryKey: ['csr-tickets-all'],
-    queryFn: () => getSupportTickets(),
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['support-trends', 2],
+    queryFn: () => getSupportTrends(2),
+    staleTime: 60_000,
   });
 
-  const trends = useMemo(() => detectSupportTrends(tickets ?? []), [tickets]);
+  const trends = data?.trends ?? [];
+  const meta = data?.meta;
+
   const trendsTotal = trends.length;
   const trendsTotalPages = Math.max(1, Math.ceil(trendsTotal / TRENDS_PAGE_SIZE));
   const pagedTrends = useMemo(
     () => trends.slice(page * TRENDS_PAGE_SIZE, (page + 1) * TRENDS_PAGE_SIZE),
-    [trends, page]
+    [trends, page],
   );
 
   useEffect(() => {
@@ -182,24 +61,6 @@ export function TrendsPage() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
           </svg>
         );
-      case 'recurringIssue':
-        return (
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
-        );
-      case 'longResolutionTime':
-        return (
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        );
-      case 'highEscalationRate':
-        return (
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-          </svg>
-        );
       default:
         return (
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -211,14 +72,33 @@ export function TrendsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <h1 className={clsx('text-2xl font-bold', adminPrimary(isDark))}>
           Trends & Muster
         </h1>
-        <Badge variant="info">{trends.length} Trends erkannt</Badge>
+        <div className="flex items-center gap-2">
+          {meta?.truncated && (
+            <Badge variant="warning">Stichprobe (Server-Aggregation)</Badge>
+          )}
+          <Badge variant="info">{trends.length} Trends erkannt</Badge>
+        </div>
       </div>
 
-      {trends.length === 0 ? (
+      {isLoading && (
+        <Card>
+          <p className={clsx('text-center py-8', adminMuted(isDark))}>Trends werden berechnet...</p>
+        </Card>
+      )}
+
+      {error && (
+        <Card>
+          <p className={clsx('text-center py-8 text-red-500')}>
+            {error instanceof Error ? error.message : 'Fehler beim Laden der Trends'}
+          </p>
+        </Card>
+      )}
+
+      {!isLoading && !error && trends.length === 0 ? (
         <Card>
           <div className="text-center py-8">
             <svg
@@ -240,7 +120,9 @@ export function TrendsPage() {
             </p>
           </div>
         </Card>
-      ) : (
+      ) : null}
+
+      {!isLoading && !error && trends.length > 0 ? (
         <Card padding="none">
           <>
             <div className="grid grid-cols-1 gap-4 p-4">
@@ -296,9 +178,8 @@ export function TrendsPage() {
             />
           </>
         </Card>
-      )}
+      ) : null}
 
-      {/* Trend Detail Modal */}
       {selectedTrend && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setSelectedTrend(null)}>
           <Card className="w-full max-w-2xl m-4" onClick={(e) => e.stopPropagation()}>
@@ -309,10 +190,7 @@ export function TrendsPage() {
               <button
                 type="button"
                 onClick={() => setSelectedTrend(null)}
-                className={clsx(
-                  'rounded p-1',
-                  adminInteractiveIcon(isDark),
-                )}
+                className={clsx('rounded p-1', adminInteractiveIcon(isDark))}
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -321,57 +199,36 @@ export function TrendsPage() {
             </div>
             <div className="space-y-4">
               <div>
-                <h3 className={clsx('font-semibold mb-2', adminEmphasisSoft(isDark))}>
-                  Beschreibung
-                </h3>
+                <h3 className={clsx('font-semibold mb-2', adminEmphasisSoft(isDark))}>Beschreibung</h3>
                 <p className={clsx(adminLabel(isDark))}>{selectedTrend.description}</p>
               </div>
               <div>
-                <h3 className={clsx('font-semibold mb-2', adminEmphasisSoft(isDark))}>
-                  Empfohlene Maßnahme
-                </h3>
+                <h3 className={clsx('font-semibold mb-2', adminEmphasisSoft(isDark))}>Empfohlene Maßnahme</h3>
                 <p className={clsx(adminLabel(isDark))}>{selectedTrend.suggestedAction}</p>
               </div>
               <div>
-                <h3 className={clsx('font-semibold mb-2', adminEmphasisSoft(isDark))}>
-                  Betroffene Tickets
-                </h3>
+                <h3 className={clsx('font-semibold mb-2', adminEmphasisSoft(isDark))}>Betroffene Tickets</h3>
                 <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {selectedTrend.relatedTicketIds.map((ticketId) => {
-                    const ticket = tickets?.find(t => t.objectId === ticketId);
-                    if (!ticket) return null;
-                    return (
-                      <div
-                        key={ticketId}
-                        onClick={() => {
-                          navigate(`/csr/tickets/${ticketId}`);
-                          setSelectedTrend(null);
-                        }}
-                        className={clsx(
-                          'p-2 border rounded cursor-pointer',
-                          isDark
-                            ? 'border-slate-600 hover:bg-slate-700/50'
-                            : 'border-gray-200 hover:bg-gray-50',
-                        )}
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <span
-                            className={clsx(
-                              'text-sm font-mono shrink-0',
-                              adminMonoTicketId(isDark),
-                            )}
-                          >
-                            #{ticket.ticketNumber || ticketId.slice(0, 8)}
-                          </span>
-                          <span
-                            className={clsx('text-sm text-right truncate', adminBodyStrong(isDark))}
-                          >
-                            {ticket.subject}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
+                  {selectedTrend.relatedTicketIds.map((ticketId) => (
+                    <button
+                      key={ticketId}
+                      type="button"
+                      onClick={() => {
+                        navigate(`/csr/tickets/${ticketId}`);
+                        setSelectedTrend(null);
+                      }}
+                      className={clsx(
+                        'w-full text-left p-2 border rounded cursor-pointer',
+                        isDark
+                          ? 'border-slate-600 hover:bg-slate-700/50'
+                          : 'border-gray-200 hover:bg-gray-50',
+                      )}
+                    >
+                      <span className={clsx('text-sm font-mono', adminMonoTicketId(isDark))}>
+                        Ticket {ticketId.slice(0, 8)}…
+                      </span>
+                    </button>
+                  ))}
                 </div>
               </div>
             </div>

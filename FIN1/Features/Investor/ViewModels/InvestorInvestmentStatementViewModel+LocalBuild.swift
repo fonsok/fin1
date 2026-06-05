@@ -61,17 +61,9 @@ extension InvestorInvestmentStatementViewModel {
                 )
                 items.append(item)
             } catch {
-                print("❌ InvestorInvestmentStatementViewModel: Failed to build statement item for trade \(trade.tradeNumber): \(error)")
-                let legacyItem = InvestorInvestmentStatementItem.build(
-                    trade: trade,
-                    buyInvoice: buyInvoice,
-                    sellInvoices: sellInvoices,
-                    ownershipPercentage: participation.ownershipPercentage,
-                    investorAllocatedAmount: participation.allocatedAmount,
-                    commissionCalculationService: commissionCalculationService,
-                    commissionRate: effectiveRate
+                InvestorCollectionBillLog.warning(
+                    "Local statement build failed trade \(trade.tradeNumber): \(error.localizedDescription)"
                 )
-                items.append(legacyItem)
             }
         }
 

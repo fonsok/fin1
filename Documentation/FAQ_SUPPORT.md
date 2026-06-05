@@ -366,7 +366,9 @@ FIN1 provides access to:
 
 ### How do I access my documents?
 
-Navigate to **Notifications & Documents** view (accessible from the main navigation) to see all available documents. Documents are organized by type and date.
+Open **Profile → Notifications**, then select the **Documents** filter. You can also open accounting documents (e.g. collection bills, credit notes) from links in your **Account Statement** — the same underlying document opens in both places.
+
+**Investors** see investor collection bills for completed pool trades. **Traders** see trade collection bills and commission credit notes (Gutschrift) when a trade is fully settled and commission applies.
 
 ### How long are documents available?
 
@@ -374,7 +376,9 @@ Documents are available for download for a specified period (typically 7 years f
 
 ### What happens to read notifications?
 
-Notifications are automatically archived after 24 hours of being read. You can access archived notifications from the Archive view.
+**Notifications** (Investments, Trades, System) are automatically archived after 24 hours of being read. You can access them from the Archive view.
+
+The **Documents** filter is different: settlement documents (collection bills, credit notes, and similar accounting PDFs) stay listed there even after you have opened or marked them as read, so you can find them again without digging through the archive. If a document is missing right after a completed trade, close Notifications and open it again — the app reloads documents from the server when the screen opens.
 
 ### How do I download a document?
 

@@ -1,6 +1,23 @@
 'use strict';
 
 const { round2 } = require('./shared');
+const { collectLedgerUserIdCandidates } = require('../../utils/canonicalUserId');
+
+async function resolveLedgerUserKeysForUserId(userId) {
+  const keys = new Set();
+  const trimmed = String(userId || '').trim();
+  if (!trimmed) return [];
+  keys.add(trimmed);
+  try {
+    const user = await new Parse.Query(Parse.User).get(trimmed, { useMasterKey: true });
+    for (const key of collectLedgerUserIdCandidates(user)) {
+      keys.add(key);
+    }
+  } catch (_) {
+    // Keep single id when user row is unavailable (tests / legacy rows).
+  }
+  return Array.from(keys);
+}
 
 async function findExistingStatementEntry({
   userId,
@@ -8,24 +25,96 @@ async function findExistingStatementEntry({
   entryType,
 }) {
   if (!userId || !tradeId || !entryType) return null;
-  return new Parse.Query('AccountStatement')
-    .equalTo('userId', userId)
-    .equalTo('tradeId', tradeId)
-    .equalTo('entryType', entryType)
-    .equalTo('source', 'backend')
-    .first({ useMasterKey: true });
+  const userKeys = await resolveLedgerUserKeysForUserId(userId);
+  const keys = userKeys.length ? userKeys : [userId];
+  const q = new Parse.Query('AccountStatement');
+  if (keys.length === 1) {
+    q.equalTo('userId', keys[0]);
+  } else {
+    q.containedIn('userId', keys);
+  }
+  q.equalTo('tradeId', tradeId);
+  q.equalTo('entryType', entryType);
+  q.equalTo('source', 'backend');
+  q.ascending('createdAt');
+  return q.first({ useMasterKey: true });
+}
+
+/**
+ * Trader Personenkonto cash legs: dedupe by tradeId, businessCaseId, tradeNumber, or pairExecutionId.
+ * Prevents double trade_buy when paired legs created duplicate Trade rows.
+ */
+async function findExistingTraderTradeCashEntry({
+  userId,
+  tradeId,
+  tradeNumber,
+  entryType,
+  businessCaseId,
+  pairExecutionId,
+}) {
+  const direct = await findExistingStatementEntry({ userId, tradeId, entryType });
+  if (direct) return direct;
+
+  const userKeys = await resolveLedgerUserKeysForUserId(userId);
+  const keys = userKeys.length ? userKeys : [userId];
+  const statementForUser = () => {
+    const q = new Parse.Query('AccountStatement');
+    if (keys.length === 1) q.equalTo('userId', keys[0]);
+    else q.containedIn('userId', keys);
+    q.equalTo('entryType', entryType);
+    q.equalTo('source', 'backend');
+    return q;
+  };
+
+  const bc = String(businessCaseId || '').trim();
+  if (bc) {
+    const hit = await statementForUser().equalTo('businessCaseId', bc).first({ useMasterKey: true });
+    if (hit) return hit;
+  }
+
+  if (tradeNumber !== undefined && tradeNumber !== null && tradeNumber !== '') {
+    const hit = await statementForUser()
+      .equalTo('tradeNumber', String(tradeNumber))
+      .first({ useMasterKey: true });
+    if (hit) return hit;
+  }
+
+  const pairId = String(pairExecutionId || '').trim();
+  if (pairId) {
+    const pairedTrades = await new Parse.Query('Trade')
+      .equalTo('pairExecutionId', pairId)
+      .limit(20)
+      .find({ useMasterKey: true });
+    const pairedTradeIds = pairedTrades.map((t) => t.id).filter(Boolean);
+    if (pairedTradeIds.length) {
+      const hit = await statementForUser()
+        .containedIn('tradeId', pairedTradeIds)
+        .first({ useMasterKey: true });
+      if (hit) return hit;
+    }
+  }
+
+  return null;
 }
 
 async function sumStatementAmounts({
   userId,
+  userKeys,
   tradeId,
   investmentId,
   entryType,
   absolute = false,
 }) {
-  if (!userId || !tradeId || !entryType) return 0;
+  const keys = Array.isArray(userKeys) && userKeys.length > 0
+    ? userKeys.filter(Boolean)
+    : (userId ? [userId] : []);
+  if (!keys.length || !tradeId || !entryType) return 0;
   const q = new Parse.Query('AccountStatement');
-  q.equalTo('userId', userId);
+  if (keys.length === 1) {
+    q.equalTo('userId', keys[0]);
+  } else {
+    q.containedIn('userId', keys);
+  }
   q.equalTo('tradeId', tradeId);
   q.equalTo('entryType', entryType);
   q.equalTo('source', 'backend');
@@ -82,7 +171,9 @@ async function prefetchInvestmentsById(participations) {
 }
 
 module.exports = {
+  resolveLedgerUserKeysForUserId,
   findExistingStatementEntry,
+  findExistingTraderTradeCashEntry,
   sumStatementAmounts,
   getStatementSumsByType,
   prefetchInvestmentsById,

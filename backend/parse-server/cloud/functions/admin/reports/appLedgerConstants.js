@@ -5,8 +5,10 @@ const LEDGER_ENTRY_SORT_FIELDS = [
   'amount',
 ];
 
-const LEGACY_TRANSACTION_TYPE_APP_SERVICE_CHARGE_OLD = 'platformServiceCharge';
-const TRANSACTION_TYPE_APP_SERVICE_CHARGE = 'appServiceCharge';
+const {
+  LEGACY_TRANSACTION_TYPE_APP_SERVICE_CHARGE_OLD,
+  TRANSACTION_TYPE_APP_SERVICE_CHARGE,
+} = require('./appLedgerTransactionTypes');
 
 module.exports = {
   LEDGER_ENTRY_SORT_FIELDS,

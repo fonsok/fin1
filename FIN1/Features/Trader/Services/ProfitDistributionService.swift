@@ -93,8 +93,14 @@ final class ProfitDistributionService: ProfitDistributionServiceProtocol, @unche
             }
         }
 
-        // --- Fallback: local calculation (backend unreachable or not yet settled) ---
-        print("ℹ️ ProfitDistributionService: Backend settlement not available — using local calculation")
+        if self.configurationService.investorMonetaryServerOnly {
+            print(
+                "⚠️ ProfitDistributionService: Backend settlement missing and investorMonetaryServerOnly=true — skipping local distribution"
+            )
+            return 0.0
+        }
+
+        print("ℹ️ ProfitDistributionService: Backend settlement not available — using local calculation (dev/preview)")
         return await self.distributeLocalFallback(trade: trade, grossProfit: grossProfit)
     }
 
@@ -240,49 +246,11 @@ final class ProfitDistributionService: ProfitDistributionServiceProtocol, @unche
         )
     }
 
-    /// Finds the trader ID to use for investment matching
-    /// First tries to find MockTrader by username from user's email, then falls back to user ID
     private func findTraderIdForMatching() -> String? {
-        guard let currentUser = userService.currentUser else {
-            print("   ⚠️ No current user - cannot find trader ID")
-            return nil
-        }
-
-        // Extract username from email (e.g., "trader1@test.com" -> "trader1")
-        let username = currentUser.email.components(separatedBy: "@").first ?? ""
-        print("   🔍 Extracted username from email '\(currentUser.email)': '\(username)'")
-
-        // Try to find MockTrader by username
-        if let traderDataService = traderDataService {
-            // 1) Exact username match
-            if let mockTrader = traderDataService.traders.first(where: { $0.username == username }) {
-                let traderId = mockTrader.id.uuidString
-                print("   ✅ Found MockTrader by username '\(username)': ID='\(traderId)'")
-                return traderId
-            }
-            // 2) Try display name match (FirstName LastName) against MockTrader.name
-            let displayName = "\(currentUser.firstName) \(currentUser.lastName)".trimmingCharacters(in: .whitespaces)
-            if let byName = traderDataService.traders.first(where: { $0.name.caseInsensitiveCompare(displayName) == .orderedSame }) {
-                let traderId = byName.id.uuidString
-                print("   ✅ Found MockTrader by display name '\(displayName)': ID='\(traderId)'")
-                return traderId
-            }
-            // 3) Fuzzy contains on name as last resort
-            if let fuzzy = traderDataService.traders.first(where: { $0.name.localizedCaseInsensitiveContains(username) }) {
-                let traderId = fuzzy.id.uuidString
-                print("   ✅ Found MockTrader by fuzzy name contains '\(username)': ID='\(traderId)'")
-                return traderId
-            }
-            print("   ⚠️ No MockTrader found for username/name '\(username)'/'\(displayName)' in \(traderDataService.traders.count) traders")
-            print("   📋 Available trader usernames: \(traderDataService.traders.map { $0.username })")
-        } else {
-            print("   ⚠️ traderDataService is nil - cannot lookup by username")
-        }
-
-        // Fallback to user ID
-        let userId = currentUser.id
-        print("   🔄 Falling back to user ID: '\(userId)'")
-        return userId
+        TraderMatchingHelper.findTraderIdForMatching(
+            currentUser: self.userService.currentUser,
+            traderDataService: self.traderDataService
+        )
     }
 }
 

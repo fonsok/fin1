@@ -37,6 +37,7 @@ require('./functions/trading');
 require('./functions/user');
 require('./functions/admin');
 require('./functions/reports');
+require('./functions/documents');
 require('./functions/legal');
 require('./functions/twoFactor');
 require('./functions/support');
@@ -69,6 +70,7 @@ Parse.Cloud.define('health', async (request) => {
 Parse.Cloud.define('getConfig', async (request) => {
   // Load authoritative financial config from Configuration class (managed via Admin Portal / 4-Eyes)
   const { loadConfig } = require('./utils/configHelper/index.js');
+  const { normalizeTaxCollectionMode } = require('./utils/configHelper/taxCollectionMode');
   const liveConfig = await loadConfig(true);
 
   const financialDefaults = {
@@ -85,6 +87,15 @@ Parse.Cloud.define('getConfig', async (request) => {
   const financial = {
     ...financialDefaults,
     ...(liveConfig.financial || {}),
+    maxTraderPartialSells: Math.min(
+      3,
+      Math.max(
+        0,
+        Math.floor(Number(
+          liveConfig.financial?.maxTraderPartialSells ?? 3,
+        )),
+      ),
+    ),
   };
   {
     const n = Number(financial.initialAccountBalance);
@@ -161,17 +172,39 @@ Parse.Cloud.define('getConfig', async (request) => {
   } else if (typeof display.serviceChargeLegacyDisableAllowedFrom !== 'string') {
     display.serviceChargeLegacyDisableAllowedFrom = '2026-05-15';
   }
+  if (liveConfig.display && typeof liveConfig.display.investorMonetaryServerOnly === 'boolean') {
+    display.investorMonetaryServerOnly = liveConfig.display.investorMonetaryServerOnly;
+  } else if (typeof display.investorMonetaryServerOnly !== 'boolean') {
+    display.investorMonetaryServerOnly = true;
+  }
+  if (liveConfig.display && typeof liveConfig.display.showInvestorPartialSellRealizations === 'boolean') {
+    display.showInvestorPartialSellRealizations = liveConfig.display.showInvestorPartialSellRealizations;
+  } else if (typeof display.showInvestorPartialSellRealizations !== 'boolean') {
+    display.showInvestorPartialSellRealizations = false;
+  }
 
   const defaultLimits = {
     minDeposit: 10.0,
     maxDeposit: 100000.0,
     minInvestment: 20.0,
     maxInvestment: 100000.0,
+    maxPoolMirrorBuyOrderAmount: 0,
     dailyTransactionLimit: 10000.0,
+  };
+
+  const taxConfig = liveConfig?.tax || {};
+  const tax = {
+    taxCollectionMode: normalizeTaxCollectionMode(taxConfig.taxCollectionMode),
+    withholdingTaxRate: Number.isFinite(taxConfig.withholdingTaxRate) ? taxConfig.withholdingTaxRate : 0.25,
+    solidaritySurchargeRate: Number.isFinite(taxConfig.solidaritySurchargeRate)
+      ? taxConfig.solidaritySurchargeRate
+      : 0.055,
+    vatRate: Number.isFinite(taxConfig.vatRate) ? taxConfig.vatRate : 0.19,
   };
 
   return {
     financial,
+    tax,
     features: configData.features || {
       priceAlertsEnabled: true,
       darkModeEnabled: false,
@@ -254,6 +287,7 @@ Parse.Cloud.define('updateConfig', async (request) => {
 const { DEFAULT_CONFIG, loadConfig } = require('./utils/configHelper/index.js');
 const { FINANCIAL_RECONCILIATION_SKIP_KEYS } = require('./utils/configHelper/reconciliationSkips.js');
 const { processDueSettlementRetries } = require('./utils/accountingHelper/retryQueue');
+const { audit } = require('./utils/structuredLogger');
 
 async function reconcileConfigDefaults() {
   try {
@@ -311,6 +345,27 @@ setTimeout(() => {
 }, 5000);
 
 // ============================================================================
+// AUTO-ENSURE: versionierte Schema-Migrationen (Investment/Document GoB-Felder,
+// Audit-Klasse `SchemaMigration`). Verhindert CLP-`addField` bei Client-Saves.
+// ============================================================================
+
+const {
+  ensureGoBInvestmentEscrowSchemaFields,
+} = require('./functions/admin/devHelpers/ensureParseSchemaFields');
+
+setTimeout(() => {
+  ensureGoBInvestmentEscrowSchemaFields()
+    .then((result) => {
+      if (result && result.ok) {
+        console.log('✅ Schema migrations (GoB registry) ok');
+      } else {
+        console.warn('⚠️  Schema migrations partial:', JSON.stringify(result));
+      }
+    })
+    .catch((err) => console.error('Startup schema migrations failed:', err && err.message ? err.message : err));
+}, 6000);
+
+// ============================================================================
 // SETTLEMENT RETRY WORKER (fail-closed recovery loop)
 // ============================================================================
 let settlementRetryWorkerRunning = false;
@@ -320,14 +375,44 @@ setInterval(async () => {
   try {
     const result = await processDueSettlementRetries({ limit: 20 });
     if (Number(result?.processed || 0) > 0) {
-      console.log(`🔁 SettlementRetryWorker processed ${result.processed} job(s)`);
+      audit.info('settlement.retry.worker.tick', {
+        processed: result.processed,
+        message: 'SettlementRetryWorker processed job(s)',
+      });
     }
   } catch (err) {
-    console.error('❌ SettlementRetryWorker failed:', err && err.message ? err.message : err);
+    audit.error('settlement.retry.worker.failure', {
+      error: err && err.message ? err.message : String(err),
+      stack: err && err.stack ? err.stack : undefined,
+      message: 'SettlementRetryWorker failed',
+    });
   } finally {
     settlementRetryWorkerRunning = false;
   }
 }, 60 * 1000);
+
+// ============================================================================
+// SLA AUTO-ESCALATION WORKER (support tickets — aligns with iOS SLAMonitoringService)
+// ============================================================================
+const { processSlaAutoEscalations, getSlaMonitorIntervalMs } = require('./utils/supportSlaMonitor');
+let slaMonitorWorkerRunning = false;
+const slaMonitorIntervalMs = getSlaMonitorIntervalMs();
+console.log(`🔍 SLAMonitorWorker interval: ${slaMonitorIntervalMs / 1000}s (SLA_MONITOR_ENABLED=${process.env.SLA_MONITOR_ENABLED !== '0' ? 'on' : 'off'})`);
+
+setInterval(async () => {
+  if (slaMonitorWorkerRunning) return;
+  slaMonitorWorkerRunning = true;
+  try {
+    const result = await processSlaAutoEscalations({ limit: 150 });
+    if (Number(result?.escalated || 0) > 0) {
+      console.log(`⚠️ SLAMonitorWorker escalated ${result.escalated} ticket(s)`);
+    }
+  } catch (err) {
+    console.error('❌ SLAMonitorWorker failed:', err && err.message ? err.message : err);
+  } finally {
+    slaMonitorWorkerRunning = false;
+  }
+}, slaMonitorIntervalMs);
 
 // ============================================================================
 // LOGGING

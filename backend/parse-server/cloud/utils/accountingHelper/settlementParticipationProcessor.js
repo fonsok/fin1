@@ -5,6 +5,7 @@ const { ensureBusinessCaseIdForTrade } = require('./businessCaseId');
 const { findInvestment } = require('./settlementInvestmentFallback');
 const { trySettleFromExistingBill } = require('./settlementParticipationBackfill');
 const { settleNewParticipation } = require('./settlementParticipationPosting');
+const { mergeInvestorFeeConfig } = require('./feeConfigSnapshot');
 
 async function settleParticipation({
   participation,
@@ -38,6 +39,8 @@ async function settleParticipation({
   const investmentCapital = investment.get('amount') || 0;
   console.log(`  📊 Found investment ${investment.id} for investor ${investorId}, capital=€${investmentCapital}`);
 
+  const feeConfigForInvestor = mergeInvestorFeeConfig(investment, trade, feeConfig);
+
   const existingResult = await trySettleFromExistingBill({
     participation,
     investment,
@@ -45,7 +48,7 @@ async function settleParticipation({
     trade,
     tradeNumber,
     commissionRate,
-    feeConfig,
+    feeConfig: feeConfigForInvestor,
     tradeBuyPrice,
   });
   if (existingResult) return existingResult;
@@ -57,7 +60,7 @@ async function settleParticipation({
     traderId,
     tradeNumber,
     commissionRate,
-    feeConfig,
+    feeConfig: feeConfigForInvestor,
     tradeBuyPrice,
     tradeSellPrice,
     taxConfig,

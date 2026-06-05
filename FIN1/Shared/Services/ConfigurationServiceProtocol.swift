@@ -69,6 +69,16 @@ protocol ConfigurationServiceProtocol: ObservableObject, Sendable {
     /// Maximum capital per investment slot (EUR) from `getConfig` / admin limits.
     var maximumInvestmentAmount: Double { get }
 
+    /// 0 = nur Vollverkauf; 1–3 = max. Teil-Verkäufe pro Trader-Trade (Admin `maxTraderPartialSells`).
+    var maxTraderPartialSells: Int { get }
+    var effectiveMaxTraderPartialSells: Int { get }
+
+    /// Abgeltungsteuer-Abführung (`customer_self_reports` vs `platform_withholds`).
+    var taxCollectionMode: TaxCollectionMode { get }
+
+    /// iOS Investor: Bereich „Teil-Sell-Realisierungen (Active Investment)“ — unabhängig von Trader-Teil-Sells.
+    var showInvestorPartialSellRealizations: Bool { get }
+
     var isAdminMode: Bool { get }
 
     /// Wenn true, wird die Commission-Breakdown-Tabelle in der Trader-Gutschrift angezeigt (Admin-Option).
@@ -91,6 +101,10 @@ protocol ConfigurationServiceProtocol: ObservableObject, Sendable {
     var serviceChargeInvoiceFromBackend: Bool { get }
     /// Stability guard: when `false`, iOS must not use the legacy client fallback write path.
     var serviceChargeLegacyClientFallbackEnabled: Bool { get }
+
+    /// GoB / Phase 1: when `true`, investor monetary amounts and cash distribution use server
+    /// `AccountStatement` and `investorCollectionBill` only — no local fallback calculations.
+    var investorMonetaryServerOnly: Bool { get }
 
     // MARK: - Customer Support Configuration
     var slaMonitoringInterval: TimeInterval { get }

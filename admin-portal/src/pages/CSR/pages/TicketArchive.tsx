@@ -1,5 +1,4 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
 import { Card, PaginationBar, TicketPriorityBadge, TicketStatusBadge } from '../../../components/ui';
@@ -13,7 +12,12 @@ import {
   tableHeaderCellTextClasses,
   tableTheadSurfaceClasses,
 } from '../../../utils/tableStriping';
-import { getSupportTickets } from '../api';
+import { useTicketList } from '../../../hooks/useTicketList';
+import {
+  getTicketDisplayStatus,
+  getTicketPriorityLabel,
+  getTicketStatusLabel,
+} from '../../../utils/ticketLabels';
 
 import { adminControlField, adminMuted, adminPrimary, adminSurfaceWell } from '../../../utils/adminThemeClasses';
 export function TicketArchivePage() {
@@ -24,29 +28,24 @@ export function TicketArchivePage() {
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(25);
 
-  const { data: tickets, isLoading } = useQuery({
-    queryKey: ['csr-tickets-archive', statusFilter],
-    queryFn: () => getSupportTickets(),
-  });
-
-  const archivedTickets = useMemo(
-    () =>
-      (tickets || []).filter((t) => {
-        if (statusFilter === 'all') {
-          return t.status === 'resolved' || t.status === 'closed' || t.status === 'archived';
-        }
-        return t.status === statusFilter;
-      }),
-    [tickets, statusFilter]
+  const listParams = useMemo(
+    () => ({
+      archiveOnly: statusFilter === 'all',
+      status: statusFilter === 'all' ? undefined : statusFilter,
+      limit: pageSize,
+      skip: page * pageSize,
+      sortBy: 'createdAt',
+      sortOrder: 'desc' as const,
+    }),
+    [statusFilter, page, pageSize],
   );
 
-  const serverTicketTotal = (tickets || []).length;
-  const archiveTotal = archivedTickets.length;
+  const { data: ticketList, isLoading } = useTicketList(listParams);
+
+  const pagedArchivedTickets = ticketList?.tickets || [];
+  const serverTicketTotal = ticketList?.total ?? 0;
+  const archiveTotal = ticketList?.total ?? 0;
   const archiveTotalPages = Math.max(1, Math.ceil(archiveTotal / pageSize));
-  const pagedArchivedTickets = useMemo(
-    () => archivedTickets.slice(page * pageSize, (page + 1) * pageSize),
-    [archivedTickets, page, pageSize]
-  );
 
   useEffect(() => {
     setPage(0);
@@ -57,25 +56,6 @@ export function TicketArchivePage() {
       setPage(Math.max(0, archiveTotalPages - 1));
     }
   }, [page, archiveTotalPages]);
-
-  const getPriorityLabel = (priority: string): string => {
-    switch (priority?.toLowerCase()) {
-      case 'urgent': return 'Dringend';
-      case 'high': return 'Hoch';
-      case 'medium': return 'Mittel';
-      case 'low': return 'Niedrig';
-      default: return priority || '-';
-    }
-  };
-
-  const getTicketStatusLabel = (status: string): string => {
-    switch (status?.toLowerCase()) {
-      case 'resolved': return 'Gelöst';
-      case 'closed': return 'Geschlossen';
-      case 'archived': return 'Archiviert';
-      default: return status || '-';
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -101,7 +81,7 @@ export function TicketArchivePage() {
             <div className="animate-spin w-8 h-8 border-4 border-fin1-primary border-t-transparent rounded-full mx-auto"></div>
             <p className={clsx('mt-4 text-sm', adminMuted(isDark))}>Laden...</p>
           </div>
-        ) : archivedTickets.length === 0 ? (
+        ) : archiveTotal === 0 ? (
           <div className="text-center py-8">
             <p className={clsx(adminMuted(isDark))}>Keine archivierten Tickets gefunden</p>
           </div>
@@ -205,13 +185,13 @@ export function TicketArchivePage() {
                         </p>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <TicketStatusBadge status={ticket.status}>
-                          {getTicketStatusLabel(ticket.status)}
+                        <TicketStatusBadge status={getTicketDisplayStatus(ticket)}>
+                          {getTicketStatusLabel(getTicketDisplayStatus(ticket))}
                         </TicketStatusBadge>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <TicketPriorityBadge priority={ticket.priority}>
-                          {getPriorityLabel(ticket.priority)}
+                          {getTicketPriorityLabel(ticket.priority)}
                         </TicketPriorityBadge>
                       </td>
                       <td className={clsx('px-6 py-4 whitespace-nowrap text-sm', tableBodyCellMutedClasses(isDark))}>

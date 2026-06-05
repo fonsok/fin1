@@ -12,12 +12,17 @@ async function buildAppLedgerTotalsAndCounts({
   transactionType,
   dateFrom,
   dateTo,
+  amountMin = null,
+  amountMax = null,
   normalizedUserIdFilter,
+  useMemoryFilterPath = false,
+  memoryTotalCount = null,
 }) {
   let totals = {};
-  let effectiveTotalCount = filtered.length;
+  let effectiveTotalCount = memoryTotalCount ?? filtered.length;
   const userFilterIsFuzzy = normalizedUserIdFilter && !looksLikeParseObjectId(String(userId || '').trim());
-  if (!userFilterIsFuzzy) {
+
+  if (!useMemoryFilterPath && !userFilterIsFuzzy) {
     try {
       const aggregated = await aggregateTotalsAndCount({
         account,
@@ -25,6 +30,8 @@ async function buildAppLedgerTotalsAndCounts({
         transactionType,
         dateFrom,
         dateTo,
+        amountMin,
+        amountMax,
       });
       totals = aggregated.totals || {};
       effectiveTotalCount = aggregated.totalCount || 0;
@@ -32,9 +39,14 @@ async function buildAppLedgerTotalsAndCounts({
       console.warn('aggregateTotalsAndCount fallback to in-memory totals:', err.message);
     }
   }
+
   if (Object.keys(totals).length === 0) {
     totals = totalsByAccountFromEntries(filtered);
-    if (!effectiveTotalCount) effectiveTotalCount = filtered.length;
+    if (useMemoryFilterPath || userFilterIsFuzzy) {
+      effectiveTotalCount = filtered.length;
+    } else if (!effectiveTotalCount) {
+      effectiveTotalCount = filtered.length;
+    }
   }
 
   const totalRevenue = APP_ACCOUNTS

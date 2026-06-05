@@ -157,8 +157,10 @@ final class TraderDepotViewModel: ObservableObject {
             .sink { [weak self] trades in
                 guard let self else { return }
                 // CRITICAL: Filter by current trader ID to ensure trade isolation
-                let filteredTrades = self.filterTradesByCurrentTrader(trades)
-                print("🔍 DEBUG: TraderDepotViewModel received \(trades.count) completed trades, \(filteredTrades.count) for current trader")
+                let filteredTrades = TraderDepotTradeFilter.tradesForDepotDisplay(
+                    self.filterTradesByCurrentTrader(trades)
+                )
+                print("🔍 DEBUG: TraderDepotViewModel received \(trades.count) completed trades, \(filteredTrades.count) for depot display")
                 var positionCounter = 1
                 // Architecture: Convert completed Orders to DepotHolding (holdings)
                 // This represents the final state after buy orders are completed
@@ -180,7 +182,9 @@ final class TraderDepotViewModel: ObservableObject {
         var pos = 1
         // Architecture: Convert completed Orders to DepotHolding (holdings)
         // This represents the final state after buy orders are completed
-        let filteredTrades = self.filterTradesByCurrentTrader(self.traderService.completedTrades)
+        let filteredTrades = TraderDepotTradeFilter.tradesForDepotDisplay(
+            self.filterTradesByCurrentTrader(self.traderService.completedTrades)
+        )
         self.allHoldings = filteredTrades.map { trade in
             defer { pos += 1 }
             return self.createHoldingFromTrade(trade, position: pos)
@@ -262,8 +266,10 @@ final class TraderDepotViewModel: ObservableObject {
     private func refreshHoldingsFromOngoingOrders() {
         // Recreate all holdings with updated ongoing orders - filter by current trader
         var pos = 1
-        let filteredTrades = self.filterTradesByCurrentTrader(self.traderService.completedTrades)
-        print("🔍 DEBUG: refreshHoldingsFromOngoingOrders - completedTrades count: \(filteredTrades.count) (filtered for current trader)")
+        let filteredTrades = TraderDepotTradeFilter.tradesForDepotDisplay(
+            self.filterTradesByCurrentTrader(self.traderService.completedTrades)
+        )
+        print("🔍 DEBUG: refreshHoldingsFromOngoingOrders - depot trades count: \(filteredTrades.count)")
         self.allHoldings = filteredTrades.map { trade in
             defer { pos += 1 }
             return self.createHoldingFromTrade(trade, position: pos)

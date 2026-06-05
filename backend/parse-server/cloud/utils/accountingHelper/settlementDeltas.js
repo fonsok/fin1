@@ -6,17 +6,33 @@ const { ensureBusinessCaseIdForTrade } = require('./businessCaseId');
 const { bookAccountStatementEntry, bookSettlementEntry } = require('./statements');
 const { calculateWithholdingBundle, resolveUserTaxProfile } = require('./taxation');
 const { createCollectionBillDocument, createTradeExecutionDocument } = require('./documents');
+const { ensurePoolMirrorExecutionEigenbelegDocument } = require('./poolMirrorExecutionEigenbelegBook');
 const { resolveDocumentReference } = require('./documentReferenceResolver');
 const {
   getTotalSellAmount,
   getTotalSellQuantity,
   getRepresentativeSellOrder,
 } = require('./settlementTradeMath');
-const { findExistingStatementEntry, prefetchInvestmentsById } = require('./settlementQueries');
+const {
+  findExistingTraderTradeCashEntry,
+  prefetchInvestmentsById,
+  resolveLedgerUserKeysForUserId,
+  sumStatementAmounts,
+} = require('./settlementQueries');
 const { findInvestment } = require('./settlementInvestmentFallback');
 const { bookInvestorTaxEntries } = require('./settlementTaxEntries');
+const { resolveTradeBuyPrice, resolveTradeSellPrice } = require('./shared');
+const {
+  resolvePoolContextForTraderSell,
+  computeInvestorPartialSellDelta,
+} = require('../poolMirrorEconomics');
+const { isMirrorPoolTradeLeg } = require('../../services/poolMirrorActivation/poolActivationPolicy');
 
 async function bookTraderBuyEntryIfMissing(trade) {
+  if (isMirrorPoolTradeLeg(trade)) {
+    return null;
+  }
+
   const traderId = trade.get('traderId');
   const tradeNumber = trade.get('tradeNumber');
   const buyOrder = trade.get('buyOrder') || {};
@@ -26,14 +42,27 @@ async function bookTraderBuyEntryIfMissing(trade) {
     return null;
   }
 
-  const existing = await findExistingStatementEntry({
+  const businessCaseId = await ensureBusinessCaseIdForTrade(trade);
+  const existing = await findExistingTraderTradeCashEntry({
     userId: traderId,
     tradeId: trade.id,
+    tradeNumber,
     entryType: 'trade_buy',
+    businessCaseId,
+    pairExecutionId: trade.get('pairExecutionId'),
   });
-  if (existing) return existing;
-
-  const businessCaseId = await ensureBusinessCaseIdForTrade(trade);
+  if (existing) {
+    try {
+      await ensurePoolMirrorExecutionEigenbelegDocument({
+        traderTrade: trade,
+        traderExecutionDoc: null,
+        executionType: 'buy',
+      });
+    } catch (_) {
+      // Pool eigenbeleg must not block trader booking idempotency
+    }
+    return existing;
+  }
 
   const buyDoc = await createTradeExecutionDocument({
     traderId,
@@ -43,6 +72,15 @@ async function bookTraderBuyEntryIfMissing(trade) {
     order: buyOrder,
     businessCaseId,
   });
+  try {
+    await ensurePoolMirrorExecutionEigenbelegDocument({
+      traderTrade: trade,
+      traderExecutionDoc: buyDoc,
+      executionType: 'buy',
+    });
+  } catch (_) {
+    // Pool eigenbeleg must not block trader booking
+  }
   const buyDocRef = resolveDocumentReference(buyDoc, { context: 'trade_buy_delta' });
 
   return bookSettlementEntry({
@@ -60,13 +98,33 @@ async function bookTraderBuyEntryIfMissing(trade) {
 
 async function bookTraderSellDeltaIfAny({ trade, previousTrade }) {
   if (!trade || !previousTrade) return null;
+  if (isMirrorPoolTradeLeg(trade)) {
+    return null;
+  }
+
   const traderId = trade.get('traderId');
   const tradeNumber = trade.get('tradeNumber');
   const currentSellAmount = getTotalSellAmount(trade);
   const previousSellAmount = getTotalSellAmount(previousTrade);
-  const deltaSellAmount = round2(currentSellAmount - previousSellAmount);
+  let deltaSellAmount = round2(currentSellAmount - previousSellAmount);
 
   if (!traderId || !trade.id || !Number.isFinite(deltaSellAmount) || deltaSellAmount <= 0) {
+    return null;
+  }
+
+  const userKeys = await resolveLedgerUserKeysForUserId(traderId);
+  const bookedSellTotal = await sumStatementAmounts({
+    userKeys,
+    tradeId: trade.id,
+    entryType: 'trade_sell',
+    absolute: true,
+  });
+  const sellRemaining = round2(currentSellAmount - bookedSellTotal);
+  if (sellRemaining <= 0.005) {
+    return null;
+  }
+  deltaSellAmount = round2(Math.min(deltaSellAmount, sellRemaining));
+  if (deltaSellAmount <= 0) {
     return null;
   }
 
@@ -82,6 +140,15 @@ async function bookTraderSellDeltaIfAny({ trade, previousTrade }) {
     order: docOrder,
     businessCaseId,
   });
+  try {
+    await ensurePoolMirrorExecutionEigenbelegDocument({
+      traderTrade: trade,
+      traderExecutionDoc: sellDoc,
+      executionType: 'sell',
+    });
+  } catch (_) {
+    // Pool eigenbeleg must not block trader booking
+  }
   const sellDocRef = resolveDocumentReference(sellDoc, { context: 'trade_sell_delta' });
 
   return bookSettlementEntry({
@@ -99,45 +166,44 @@ async function bookTraderSellDeltaIfAny({ trade, previousTrade }) {
 
 async function bookInvestorPartialRealizationDeltaIfAny({ trade, previousTrade }) {
   if (!trade || !previousTrade) return null;
-  const tradeId = trade.id;
-  if (!tradeId) return null;
 
-  const businessCaseId = await ensureBusinessCaseIdForTrade(trade);
+  const poolCtx = await resolvePoolContextForTraderSell(trade);
+  if (!poolCtx) return null;
 
-  const currentSellAmount = getTotalSellAmount(trade);
-  const previousSellAmount = getTotalSellAmount(previousTrade);
-  const deltaSellAmount = round2(currentSellAmount - previousSellAmount);
-  if (!Number.isFinite(deltaSellAmount) || deltaSellAmount <= 0) return null;
+  const { poolTrade, traderTrade, participations } = poolCtx;
+  const businessCaseId = await ensureBusinessCaseIdForTrade(traderTrade);
 
-  const currentSellQty = getTotalSellQuantity(trade);
+  const currentSellQty = getTotalSellQuantity(traderTrade);
   const previousSellQty = getTotalSellQuantity(previousTrade);
   const deltaSellQty = round2(currentSellQty - previousSellQty);
   if (!Number.isFinite(deltaSellQty) || deltaSellQty <= 0) return null;
 
-  const buyOrder = trade.get('buyOrder') || {};
-  const buyQuantity = Number(trade.get('quantity') || buyOrder.quantity || 0);
+  const buyOrder = traderTrade.get('buyOrder') || {};
+  const buyQuantity = Number(traderTrade.get('quantity') || buyOrder.quantity || 0);
   if (!Number.isFinite(buyQuantity) || buyQuantity <= 0) return null;
 
-  const tradeNumber = trade.get('tradeNumber');
+  const sellFraction = deltaSellQty / buyQuantity;
+  const tradeNumber = poolTrade.get('tradeNumber') || traderTrade.get('tradeNumber');
   const commissionRate = await getTraderCommissionRate();
   const config = await loadConfig();
+  const feeConfig = config.financial || {};
   const taxConfig = config.tax || {};
+  const tradeBuyPrice = resolveTradeBuyPrice(poolTrade);
+  const tradeSellPrice = resolveTradeSellPrice(traderTrade);
 
-  const participations = await new Parse.Query('PoolTradeParticipation')
-    .equalTo('tradeId', tradeId)
-    .equalTo('isSettled', false)
-    .find({ useMasterKey: true });
-  if (!participations.length) return null;
-  const prefetchedInvestments = await prefetchInvestmentsById(participations);
+  const unsettled = participations.filter((p) => !p.get('isSettled'));
+  if (!unsettled.length) return null;
+
+  const prefetchedInvestments = await prefetchInvestmentsById(unsettled);
   const investorTaxProfileCache = new Map();
 
   const results = [];
-  for (const participation of participations) {
+  for (const participation of unsettled) {
     const participationInvestmentId = String(participation.get('investmentId') || '').trim();
     const prefetched = participationInvestmentId
       ? prefetchedInvestments.get(participationInvestmentId)
       : null;
-    const investment = prefetched || await findInvestment(participation.get('investmentId'), participation, trade);
+    const investment = prefetched || await findInvestment(participation.get('investmentId'), participation, poolTrade);
     if (!investment) continue;
 
     const investmentNumber = String(investment.get('investmentNumber') || '').trim();
@@ -151,12 +217,25 @@ async function bookInvestorPartialRealizationDeltaIfAny({ trade, previousTrade }
     const ownershipRatio = rawOwnership > 1 ? rawOwnership / 100 : rawOwnership;
     if (!Number.isFinite(ownershipRatio) || ownershipRatio <= 0) continue;
 
-    const allocatedAmount = Number(participation.get('allocatedAmount') || investment.get('amount') || 0);
-    const investorSellCashDelta = round2(deltaSellAmount * ownershipRatio);
-    const investorCostDelta = round2(allocatedAmount * (deltaSellQty / buyQuantity));
-    const grossProfitDelta = round2(investorSellCashDelta - investorCostDelta);
-    const commissionDelta = grossProfitDelta > 0 ? round2(grossProfitDelta * commissionRate) : 0;
-    const netProfitDelta = round2(grossProfitDelta - commissionDelta);
+    const investmentCapital = Number(investment.get('amount') || investment.get('currentValue') || 0);
+    const legDelta = computeInvestorPartialSellDelta({
+      investmentCapital,
+      tradeBuyPrice,
+      tradeSellPrice,
+      sellFraction,
+      commissionRate,
+      feeConfig,
+    });
+    if (!legDelta) continue;
+
+    const {
+      buyLeg,
+      sellLeg,
+      grossProfit: grossProfitDelta,
+      commission: commissionDelta,
+      netProfit: netProfitDelta,
+      investorSellCashDelta,
+    } = legDelta;
 
     let investorProfile = investorTaxProfileCache.get(investorId);
     if (investorProfile === undefined) {
@@ -174,25 +253,28 @@ async function bookInvestorPartialRealizationDeltaIfAny({ trade, previousTrade }
     const partialBill = await createCollectionBillDocument({
       investorId,
       investmentId: investment.id,
-      trade,
+      trade: poolTrade,
       ownershipPercentage: round2(ownershipRatio * 100),
       grossProfit: grossProfitDelta,
       commission: commissionDelta,
       netProfit: netProfitDelta,
       commissionRate,
-      investmentCapital: investorCostDelta,
-      buyLeg: { amount: investorCostDelta, fees: { totalFees: 0 } },
-      sellLeg: { amount: investorSellCashDelta, fees: { totalFees: 0 } },
+      investmentCapital,
+      buyLeg,
+      sellLeg,
       taxBreakdown,
       businessCaseId,
     });
     const partialBillRef = resolveDocumentReference(partialBill, { context: 'partial_sell_collection_bill' });
 
+    const partialMeta = partialBill.get('metadata') || {};
+    const partialTransfer = round2(partialMeta.transferAmount
+      ?? Math.max(0, Math.abs(investorSellCashDelta) - Math.abs(commissionDelta)));
     await bookAccountStatementEntry({
       userId: investorId,
       entryType: 'investment_return',
-      amount: Math.abs(investorSellCashDelta),
-      tradeId: trade.id,
+      amount: partialTransfer,
+      tradeId: poolTrade.id,
       tradeNumber,
       investmentId: investment.id,
       investmentNumber,
@@ -207,7 +289,7 @@ async function bookInvestorPartialRealizationDeltaIfAny({ trade, previousTrade }
         userRole: 'investor',
         entryType: 'commission_debit',
         amount: -Math.abs(commissionDelta),
-        tradeId: trade.id,
+        tradeId: poolTrade.id,
         tradeNumber,
         investmentId: investment.id,
         investmentNumber,

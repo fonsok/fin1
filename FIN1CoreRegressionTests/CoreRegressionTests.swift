@@ -70,8 +70,10 @@ final class CoreRegressionTests: XCTestCase {
         XCTAssertEqual(statement.buyFeeDetails.map(\.label).prefix(2), ["Ordergebühr", "Handelsplatzgebühr"])
         XCTAssertEqual(statement.sellFeeDetails.map(\.label).prefix(2), ["Ordergebühr Verkauf", "Börsenplatz Verkauf"])
         XCTAssertEqual(statement.buyFees, 7.5, accuracy: 0.0001)
-        XCTAssertEqual(statement.sellFees, 5, accuracy: 0.0001)
-        XCTAssertEqual(statement.grossProfit, -994.5, accuracy: 0.0001)
+        XCTAssertEqual(statement.sellFees, -5, accuracy: 0.0001)
+        XCTAssertEqual(statement.sellFeesDisplayAmount, 5, accuracy: 0.0001)
+        XCTAssertEqual(statement.netSellAmount, statement.sellTotal - statement.sellFeesDisplayAmount, accuracy: 0.0001)
+        XCTAssertEqual(statement.grossProfit, statement.netSellAmount - statement.totalBuyCost, accuracy: 0.0001)
     }
 
     func testInvestmentCompletionMatchesStatementGrossReturn() {
@@ -163,6 +165,9 @@ private final class StubConfigurationService: ObservableObject, ConfigurationSer
     var showCommissionBreakdownInCreditNote: Bool { true }
     var maximumRiskExposurePercent: Double { 2 }
     var walletFeatureEnabled: Bool { false }
+    var investorMonetaryServerOnly: Bool { false }
+    var serviceChargeInvoiceFromBackend: Bool { false }
+    var serviceChargeLegacyClientFallbackEnabled: Bool { true }
     var slaMonitoringInterval: TimeInterval { 300 }
     var parseServerURL: String? { "http://localhost/parse" }
     var parseApplicationId: String? { "test" }

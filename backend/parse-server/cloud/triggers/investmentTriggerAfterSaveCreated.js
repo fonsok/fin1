@@ -8,6 +8,10 @@ const {
   createNotification,
   logComplianceEvent,
 } = require('./investmentTriggerHelpers');
+const {
+  shouldDeferInvestmentCreatedNotifications,
+  recordDeferredSplitNotification,
+} = require('../utils/investmentBatchNotifications');
 
 async function handleInvestmentAfterSaveCreated(investment) {
   const investorId = investment.get('investorId');
@@ -49,6 +53,16 @@ async function handleInvestmentAfterSaveCreated(investment) {
       Parse.Error.INVALID_VALUE,
       'Investment-Betrag ungültig für Reservierung.',
     );
+  }
+
+  const batchId = String(investment.get('batchId') || '').trim();
+  if (batchId && shouldDeferInvestmentCreatedNotifications(investorId, batchId)) {
+    recordDeferredSplitNotification(investorId, batchId, {
+      investmentId: invId,
+      amount,
+      investmentNumber: investment.get('investmentNumber') || '',
+    });
+    return;
   }
 
   try {

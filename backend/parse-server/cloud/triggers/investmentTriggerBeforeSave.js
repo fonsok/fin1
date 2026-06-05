@@ -2,14 +2,63 @@
 
 const { newBusinessCaseId } = require('../utils/accountingHelper/businessCaseId');
 const { generateSequentialNumber, generateInvestorInvestmentNumber } = require('../utils/helpers');
-const { getAppServiceChargeRateForAccountType } = require('../utils/configHelper/index.js');
+const { getAppServiceChargeRateForAccountType, loadConfig } = require('../utils/configHelper/index.js');
 const { round2 } = require('../utils/accountingHelper/shared');
 const { validateInvestmentAmountAgainstLimits } = require('../utils/investmentLimitsValidation');
+const { validatePoolMirrorReservationCapacity } = require('../utils/poolMirrorBuyCap');
+const { isBatchPoolCapValidated } = require('../utils/investmentBatchContext');
 const { assertNoDuplicateInvestmentSplit } = require('./investmentDuplicateGuard');
+const { resolveCanonicalUserId } = require('../utils/canonicalUserId');
+const {
+  runPendingSchemaMigrations,
+} = require('../utils/schemaMigration/schemaMigrationRunner');
+
+/**
+ * GoB: Schema-Migrationen (`SchemaMigration`-Audit) müssen vor Client-Saves mit
+ * neuen Feldern (z. B. `feeConfigSnapshot`) durchlaufen — sonst CLP `addField`.
+ *
+ * Lazy: einmal pro Prozess.
+ */
+let schemaMigrationEnsurePromise = null;
+function ensureSchemaMigrationsOnce() {
+  if (!schemaMigrationEnsurePromise) {
+    schemaMigrationEnsurePromise = runPendingSchemaMigrations({ stopOnError: false })
+      .then((r) => ({ ok: Boolean(r && r.ok), result: r }))
+      .catch((err) => {
+        schemaMigrationEnsurePromise = null;
+        return { ok: false, error: err && err.message ? err.message : String(err) };
+      });
+  }
+  return schemaMigrationEnsurePromise;
+}
 
 Parse.Cloud.beforeSave('Investment', async (request) => {
   const investment = request.object;
   const isNew = !investment.existed();
+
+  const rawInvestorId = String(investment.get('investorId') || '').trim();
+  const rawTraderId = String(investment.get('traderId') || '').trim();
+  if (rawInvestorId || rawTraderId) {
+    const [canonicalInvestorId, canonicalTraderId] = await Promise.all([
+      rawInvestorId ? resolveCanonicalUserId(rawInvestorId) : Promise.resolve(''),
+      rawTraderId ? resolveCanonicalUserId(rawTraderId) : Promise.resolve(''),
+    ]);
+    if (canonicalInvestorId) investment.set('investorId', canonicalInvestorId);
+    if (canonicalTraderId) investment.set('traderId', canonicalTraderId);
+  }
+
+  const statusForReservation = String(investment.get('status') || '').trim();
+  if (!investment.get('reservationStatus') && statusForReservation) {
+    if (statusForReservation === 'reserved') {
+      investment.set('reservationStatus', 'reserved');
+    } else if (statusForReservation === 'active' || statusForReservation === 'executing') {
+      investment.set('reservationStatus', 'active');
+    } else if (statusForReservation === 'completed') {
+      investment.set('reservationStatus', 'completed');
+    } else if (statusForReservation === 'cancelled') {
+      investment.set('reservationStatus', 'cancelled');
+    }
+  }
 
   if (isNew) {
     await assertNoDuplicateInvestmentSplit(investment, Parse);
@@ -34,6 +83,16 @@ Parse.Cloud.beforeSave('Investment', async (request) => {
 
     const investorId = investment.get('investorId');
     const traderId = investment.get('traderId');
+
+    const batchIdForCap = String(investment.get('batchId') || '').trim();
+    const skipPerSplitPoolCap = batchIdForCap
+      && isBatchPoolCapValidated(investorId, batchIdForCap);
+    if (!skipPerSplitPoolCap) {
+      const poolCapCheck = await validatePoolMirrorReservationCapacity(traderId, amount);
+      if (!poolCapCheck.valid) {
+        throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, poolCapCheck.error);
+      }
+    }
     if (investorId === traderId) {
       throw new Parse.Error(Parse.Error.INVALID_VALUE,
         'Investoren können nicht im eigenen Pool investieren.');
@@ -56,7 +115,25 @@ Parse.Cloud.beforeSave('Investment', async (request) => {
     investment.set('initialValue', amount);
     investment.set('currentValue', amount);
 
+    // GoB: Handelsgebühren-Parameter (Order-/Börsen-/Fremdkosten) zum Reservierungszeitpunkt einfrieren,
+    // damit Aktivierung, Collection Bill und Residual mit derselben Basis rechnen wie späteres Settlement.
+    // `ensureSchemaMigrationsOnce` führt versionierte Schema-Migrationen aus (Master-Key),
+    // bevor der Client-Save den CLP-`addField`-Check auslöst.
+    try {
+      const ensure = await ensureSchemaMigrationsOnce();
+      if (ensure && ensure.ok) {
+        const liveCfg = await loadConfig();
+        const fin = liveCfg && liveCfg.financial ? liveCfg.financial : {};
+        investment.set('feeConfigSnapshot', JSON.parse(JSON.stringify(fin)));
+      } else {
+        console.warn('beforeSave Investment: feeConfigSnapshot skipped (schema migrations not ok)');
+      }
+    } catch (err) {
+      console.warn('beforeSave Investment: feeConfigSnapshot skipped:', err.message);
+    }
+
     investment.set('status', 'reserved');
+    investment.set('reservationStatus', 'reserved');
     investment.set('profit', 0);
     investment.set('profitPercentage', 0);
     investment.set('totalCommissionPaid', 0);
@@ -71,6 +148,11 @@ Parse.Cloud.beforeSave('Investment', async (request) => {
       const traderQuery = new Parse.Query(Parse.User);
       const trader = await traderQuery.get(traderId, { useMasterKey: true });
       if (trader) {
+        const existingUsername = String(investment.get('traderUsername') || '').trim();
+        if (!existingUsername) {
+          const un = String(trader.get('username') || '').trim().toLowerCase();
+          if (un) investment.set('traderUsername', un);
+        }
         const profileQuery = new Parse.Query('UserProfile');
         profileQuery.equalTo('userId', traderId);
         const profile = await profileQuery.first({ useMasterKey: true });
@@ -117,4 +199,7 @@ Parse.Cloud.beforeSave('Investment', async (request) => {
       }
     }
   }
+
+  const { buildInvestmentSearchBlob } = require('../utils/adminListSearch');
+  investment.set('adminSearchBlob', buildInvestmentSearchBlob(investment));
 });

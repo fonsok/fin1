@@ -18,6 +18,11 @@ import {
 } from '../../utils/tableStriping';
 
 import { adminControlField, adminEmptyIcon, adminMonoHint, adminMuted } from '../../utils/adminThemeClasses';
+import {
+  getTicketDisplayStatus,
+  getTicketPriorityLabel,
+  getTicketStatusLabel,
+} from '../../utils/ticketLabels';
 export function TicketListPage() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -59,27 +64,6 @@ export function TicketListPage() {
     [sortBy, sortOrder],
   );
 
-  const getPriorityLabel = (priority: string): string => {
-    switch (priority?.toLowerCase()) {
-      case 'urgent': return 'Dringend';
-      case 'high': return 'Hoch';
-      case 'medium': return 'Mittel';
-      case 'low': return 'Niedrig';
-      default: return priority || '-';
-    }
-  };
-
-  const getTicketStatusLabel = (status: string): string => {
-    switch (status?.toLowerCase()) {
-      case 'open': return 'Offen';
-      case 'in_progress': return 'In Bearbeitung';
-      case 'waiting': return 'Wartend';
-      case 'resolved': return 'Gelöst';
-      case 'closed': return 'Geschlossen';
-      default: return status || '-';
-    }
-  };
-
   return (
     <div className="space-y-6">
       {/* Filters */}
@@ -100,6 +84,7 @@ export function TicketListPage() {
             <option value="open">Offen</option>
             <option value="in_progress">In Bearbeitung</option>
             <option value="waiting">Wartend</option>
+            <option value="escalated">Eskaliert</option>
             <option value="resolved">Gelöst</option>
             <option value="closed">Geschlossen</option>
           </select>
@@ -125,6 +110,11 @@ export function TicketListPage() {
           <Button variant="secondary" onClick={() => refetch()}>
             Aktualisieren
           </Button>
+          {isCSRRoute && (
+            <Button variant="secondary" onClick={() => navigate('/csr/tickets/bulk')}>
+              Massenbearbeitung
+            </Button>
+          )}
           <select
             value={pageSize}
             onChange={(e) => {
@@ -237,13 +227,13 @@ export function TicketListPage() {
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <TicketStatusBadge status={ticket.status}>
-                          {getTicketStatusLabel(ticket.status)}
+                        <TicketStatusBadge status={getTicketDisplayStatus(ticket)}>
+                          {getTicketStatusLabel(getTicketDisplayStatus(ticket))}
                         </TicketStatusBadge>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <TicketPriorityBadge priority={ticket.priority}>
-                          {getPriorityLabel(ticket.priority)}
+                          {getTicketPriorityLabel(ticket.priority)}
                         </TicketPriorityBadge>
                       </td>
                       <td className={clsx('px-6 py-4 whitespace-nowrap text-sm', tableBodyCellMutedClasses(isDark))}>

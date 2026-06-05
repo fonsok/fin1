@@ -6,6 +6,7 @@ struct InvestmentsView: View {
     @State private var showDeleteConfirmation = false
     @State private var investmentToDelete: InvestmentRow?
     @State private var showStatusInfo = false
+    @State private var amountInfoRow: InvestmentRow?
     @State private var columnWidths: [String: CGFloat] = [:]
     @State private var selectedCompletedInvestment: Investment?
     @State private var selectedPartialSellInvestment: Investment?
@@ -70,14 +71,11 @@ struct InvestmentsView: View {
                     // Active Investments Section
                     self.activeInvestmentsSection
 
-                    // Separator between sections
-                    InvestmentsSectionSeparatorView()
-
-                    // Active partial sell realizations
-                    self.partialSellRealizationsSection
-
-                    // Separator between sections
-                    InvestmentsSectionSeparatorView()
+                    if self.appServices.configurationService.showInvestorPartialSellRealizations {
+                        InvestmentsSectionSeparatorView()
+                        self.partialSellRealizationsSection
+                        InvestmentsSectionSeparatorView()
+                    }
 
                     // Completed Investments Section
                     self.completedInvestmentsSection
@@ -105,6 +103,9 @@ struct InvestmentsView: View {
         }
         .sheet(item: self.$selectedCompletedInvestment) { investment in
             CompletedInvestmentDetailSheet(investment: investment)
+        }
+        .sheet(item: self.$amountInfoRow) { row in
+            ActiveInvestmentAmountInfoSheet(row: row)
         }
         .sheet(item: self.$selectedPartialSellInvestment) { investment in
             self.partialSellDetailSheet(for: investment)
@@ -198,6 +199,9 @@ struct InvestmentsView: View {
             },
             onShowStatusInfo: {
                 self.showStatusInfo = true
+            },
+            onShowAmountInfo: { row in
+                self.amountInfoRow = row
             }
         )
     }

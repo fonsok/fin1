@@ -8,15 +8,23 @@ struct TradeStatementView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.appServices) private var services
     let showCustomBackButton: Bool
+    let isInvoiceComparisonMode: Bool
 
     // Server-driven Collection Bill texts (with strong local fallback)
     @State private var referenceText: String = TradeStatementReferenceSection.defaultReferenceText
     @State private var legalDisclaimerText: String = TradeStatementDisplayDataBuilder.defaultLegalDisclaimer
     @State private var footerNoteText: String = TradeStatementReferenceSection.defaultFooterNote
+    @State private var taxNoteSnippet: String?
+    @State private var legalNoteSnippet: String?
 
-    init(viewModel: TradeStatementViewModel, showCustomBackButton: Bool = true) {
+    init(
+        viewModel: TradeStatementViewModel,
+        showCustomBackButton: Bool = true,
+        isInvoiceComparisonMode: Bool = false
+    ) {
         self.viewModel = viewModel
         self.showCustomBackButton = showCustomBackButton
+        self.isInvoiceComparisonMode = isInvoiceComparisonMode
     }
 
     var body: some View {
@@ -44,6 +52,9 @@ struct TradeStatementView: View {
 
             ScrollView([.vertical, .horizontal], showsIndicators: true) {
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(16)) {
+                    if self.isInvoiceComparisonMode {
+                        self.invoiceComparisonBanner
+                    }
                     // Document Header (einheitliches Layout für alle Dokumente)
                     if let displayProperties = viewModel.displayProperties {
                         DocumentHeaderLayoutView(
@@ -125,6 +136,14 @@ struct TradeStatementView: View {
                         )
                     }
 
+                    if let displayProperties = viewModel.displayProperties {
+                        DocumentNotesSection(
+                            accountNumber: displayProperties.accountNumber,
+                            taxNote: self.taxNoteSnippet,
+                            legalNote: self.legalNoteSnippet
+                        )
+                    }
+
                     // Reference Information and Legal Disclaimer
                     if let displayProperties = viewModel.displayProperties {
                         TradeStatementReferenceSection(
@@ -157,6 +176,22 @@ struct TradeStatementView: View {
             // Load server-driven snippets for Collection Bill reference texts (if available)
             let provider = LegalSnippetProvider(termsContentService: services.termsContentService)
             let language: TermsOfServiceDataProvider.Language = .german
+            let taxMode = self.services.configurationService.taxCollectionMode
+            let capitalGainsSide: DocumentTaxNoteTexts.CapitalGainsSide =
+                (self.viewModel.displayProperties?.hasSellTransaction == true) ? .sell : .buy
+
+            async let taxTask = provider.loadCapitalGainsTaxNote(
+                mode: taxMode,
+                side: capitalGainsSide,
+                language: language
+            )
+            async let legalNoteTask = provider.text(
+                for: .docLegalNoteWphg,
+                language: language,
+                documentType: .terms,
+                defaultText: DocumentNotesSection.defaultLegalNotePart1 + "\n\n" + DocumentNotesSection.defaultLegalNotePart2,
+                placeholders: [:]
+            )
 
             async let referenceTask = provider.text(
                 for: .docCollectionBillReferenceInfo,
@@ -180,7 +215,9 @@ struct TradeStatementView: View {
                 placeholders: [:]
             )
 
-            let (ref, legal, footer) = await (referenceTask, legalTask, footerTask)
+            let (tax, legalNote, ref, legal, footer) = await (taxTask, legalNoteTask, referenceTask, legalTask, footerTask)
+            self.taxNoteSnippet = tax
+            self.legalNoteSnippet = legalNote
             self.referenceText = ref
             self.legalDisclaimerText = legal
             self.footerNoteText = footer
@@ -266,6 +303,23 @@ struct TradeStatementView: View {
     }
 
     // headerSection removed - name is now shown in DocumentHeaderLayoutView, documentNumber shown separately
+
+    private var invoiceComparisonBanner: some View {
+        HStack(alignment: .top, spacing: ResponsiveDesign.spacing(10)) {
+            Image(systemName: "info.circle")
+                .foregroundColor(AppTheme.accentOrange)
+            Text(
+                "Vergleichsansicht aus der Rechnung. Der maßgebliche GoB-Beleg steht im vorherigen Bildschirm (Server-Snapshot)."
+            )
+            .font(ResponsiveDesign.captionFont())
+            .foregroundColor(DocumentDesignSystem.textColorSecondary)
+            .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(ResponsiveDesign.spacing(12))
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(AppTheme.accentOrange.opacity(0.12))
+        .cornerRadius(ResponsiveDesign.spacing(8))
+    }
 }
 
 // MARK: - Preview
@@ -280,6 +334,7 @@ struct TradeStatementView_Previews: PreviewProvider {
             profitLoss: 1_712.57,
             returnPercentage: 23,
             commission: 45.14,
+            isCommissionPending: false,
             isActive: false,
             statusText: "",
             statusDetail: "",

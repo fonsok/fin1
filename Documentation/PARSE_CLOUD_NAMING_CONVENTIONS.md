@@ -2,6 +2,8 @@
 
 Geltungsbereich: `backend/parse-server/cloud/**`
 
+**Frontend (Admin Portal):** gleiche **Prinzipien** und **identische** `Parse.Cloud.define`-Namen in `cloudFunction(...)` — Oberflächen-Konventionen (PascalCase-Komponenten, camelCase-Hooks): [`ADMIN_PORTAL_NAMING_CONVENTIONS.md`](ADMIN_PORTAL_NAMING_CONVENTIONS.md).
+
 ## Matrix
 
 | Ebene | Regel | Gut | Schlecht |
@@ -32,7 +34,7 @@ Die Prüfung erlaubt nur Namen, die mit einem der **genehmigten Präfix-Verben**
 
 **Vollständige und autoritative Liste:** immer `verb_prefixes` im Shell-Skript — bei neuem Verb dort und in dieser Doku ergänzen.
 
-**Legacy-Ausnahmen** (bewusst ohne Katalog-Präfix, z. B. Kompatibilität oder Dev-only): `legacy_cloud_function_allowlist` im gleichen Skript (z. B. `health`, `traderActivateReservedInvestment`, `devReset*`, `testEmailConfig`).
+**Legacy-Ausnahmen** (bewusst ohne Katalog-Präfix, z. B. Kompatibilität oder Dev-only): `legacy_cloud_function_allowlist` im gleichen Skript (z. B. `health`, `traderActivateReservedInvestment`, `devReset*`, `testEmailConfig`, `syncCSRRolesFromCanonical` — Alias für `upsertCSRRolesFromCanonical`).
 
 ## Design-Prinzipien
 

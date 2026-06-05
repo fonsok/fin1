@@ -28,22 +28,36 @@ extension TraderAccountStatementBuilder {
             )
         }
 
-        let (walletEntries, walletDelta) = await loadWalletEntriesAndDelta(
-            for: user,
-            paymentService: paymentService
-        )
+        let backendCoversWalletMovements = baseSnapshot.entries.contains {
+            $0.category == .walletDeposit || $0.category == .walletWithdrawal
+        }
+
+        let walletEntries: [AccountStatementEntry]
+        let walletDelta: Double
+        if backendCoversWalletMovements {
+            walletEntries = []
+            walletDelta = 0
+        } else {
+            (walletEntries, walletDelta) = await self.loadWalletEntriesAndDelta(
+                for: user,
+                paymentService: paymentService
+            )
+        }
 
         let allEntries = baseSnapshot.entries + walletEntries
         let recalculatedEntries = self.recalculateBalanceAfter(
             entries: allEntries,
             openingBalance: baseSnapshot.openingBalance
         )
-        let combinedClosingBalance = baseSnapshot.closingBalance + walletDelta
+        let combinedClosingBalance = backendCoversWalletMovements
+            ? (recalculatedEntries.last?.balanceAfter ?? baseSnapshot.closingBalance)
+            : baseSnapshot.closingBalance + walletDelta
 
         return TraderAccountStatementSnapshot(
-            entries: recalculatedEntries.sorted { $0.occurredAt > $1.occurredAt },
+            entries: AccountStatementEntry.sortedForChronologicalDisplay(recalculatedEntries),
             openingBalance: baseSnapshot.openingBalance,
-            closingBalance: combinedClosingBalance
+            closingBalance: combinedClosingBalance,
+            timelineTruncated: baseSnapshot.timelineTruncated
         )
     }
 
@@ -61,11 +75,20 @@ extension TraderAccountStatementBuilder {
             let walletTransactions = try await paymentService.getTransactionHistory(limit: 1_000, offset: 0)
             let userWalletTransactions = walletTransactions.filter { $0.userId == userId }
 
-            let walletEntries = userWalletTransactions.map { transaction in
+            let accountOnlyTransactions = userWalletTransactions.filter { transaction in
+                switch transaction.type {
+                case .deposit, .withdrawal:
+                    return true
+                default:
+                    return false
+                }
+            }
+
+            let walletEntries = accountOnlyTransactions.map { transaction in
                 AccountStatementEntry.from(transaction: transaction)
             }
 
-            let walletDelta = userWalletTransactions.reduce(0.0) { total, transaction in
+            let walletDelta = accountOnlyTransactions.reduce(0.0) { total, transaction in
                 switch transaction.type {
                 case .deposit:
                     return total + transaction.amount
@@ -90,7 +113,7 @@ extension TraderAccountStatementBuilder {
         entries: [AccountStatementEntry],
         openingBalance: Double
     ) -> [AccountStatementEntry] {
-        let sortedEntries = entries.sorted { $0.occurredAt < $1.occurredAt }
+        let sortedEntries = AccountStatementEntry.sortedForChronologicalDisplay(entries)
         var runningBalance = openingBalance
         var recalculatedEntries: [AccountStatementEntry] = []
 

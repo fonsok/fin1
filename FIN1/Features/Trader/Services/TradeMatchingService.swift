@@ -5,9 +5,14 @@ import Foundation
 /// Extracted from TraderService to improve maintainability and testability
 final class TradeMatchingService: TradeMatchingServiceProtocol, @unchecked Sendable {
     private let holdingsConversionService: HoldingsConversionServiceProtocol
+    private let configurationService: any ConfigurationServiceProtocol
 
-    init(holdingsConversionService: HoldingsConversionServiceProtocol = HoldingsConversionService.shared) {
+    init(
+        holdingsConversionService: HoldingsConversionServiceProtocol = HoldingsConversionService.shared,
+        configurationService: any ConfigurationServiceProtocol
+    ) {
         self.holdingsConversionService = holdingsConversionService
+        self.configurationService = configurationService
     }
 
     // MARK: - Trade Matching
@@ -55,6 +60,16 @@ final class TradeMatchingService: TradeMatchingServiceProtocol, @unchecked Senda
             return nil
         }
 
+        do {
+            try trade.validatePartialSellAllowed(
+                sellOrder: sellOrder,
+                maxPartialSells: self.configurationService.effectiveMaxTraderPartialSells
+            )
+        } catch {
+            print("❌ DEBUG: Partial sell rejected: \(error.localizedDescription)")
+            return nil
+        }
+
         // Add the partial sell order to the trade
         let updatedTrade = trade.withPartialSellOrder(sellOrder)
 
@@ -71,8 +86,9 @@ final class TradeMatchingService: TradeMatchingServiceProtocol, @unchecked Senda
     // MARK: - Holdings Conversion
 
     func getHoldingsFromTrades(_ trades: [Trade]) -> [DepotHolding] {
+        let depotTrades = TraderDepotTradeFilter.tradesForDepotDisplay(trades)
         var positionCounter = 1
-        return trades.map { trade in
+        return depotTrades.map { trade in
             defer { positionCounter += 1 }
             return DepotHolding.from(completedOrder: trade.buyOrder, position: positionCounter)
         }
@@ -102,10 +118,12 @@ final class TradeMatchingService: TradeMatchingServiceProtocol, @unchecked Senda
 
         print("🔍 DEBUG: matchByOriginalHoldingId - looking for originalHoldingId: \(originalHoldingId)")
 
+        let depotTrades = TraderDepotTradeFilter.tradesForDepotDisplay(trades)
+
         // Create holdings using the same logic as TraderDepotViewModel.createHoldingFromTrade
         // This ensures we account for partial sales when matching
         var positionCounter = 1
-        let holdings = trades.map { trade in
+        let holdings = depotTrades.map { trade in
             defer { positionCounter += 1 }
             return self.createHoldingFromTrade(trade, position: positionCounter)
         }
@@ -114,6 +132,15 @@ final class TradeMatchingService: TradeMatchingServiceProtocol, @unchecked Senda
 
         guard let holding = holdings.first(where: { $0.orderId == originalHoldingId }),
               let buyOrderId = holding.orderId else {
+            // Fallback: match trade id directly (legacy holdings)
+            if let trade = depotTrades.first(where: { $0.id == originalHoldingId || $0.buyOrder.id == originalHoldingId }) {
+                return await self.updateTradeWithSellOrder(
+                    trade: trade,
+                    sellOrder: sellOrder,
+                    tradeLifecycleService: tradeLifecycleService,
+                    matchType: "trade/buyOrder id \(originalHoldingId)"
+                )
+            }
             print("❌ DEBUG: No holding found with originalHoldingId \(originalHoldingId)")
             return nil
         }
@@ -190,6 +217,16 @@ final class TradeMatchingService: TradeMatchingServiceProtocol, @unchecked Senda
         tradeLifecycleService: any TradeLifecycleServiceProtocol,
         matchType: String
     ) async -> Trade? {
+        do {
+            try trade.validatePartialSellAllowed(
+                sellOrder: sellOrder,
+                maxPartialSells: self.configurationService.effectiveMaxTraderPartialSells
+            )
+        } catch {
+            print("❌ DEBUG: Sell rejected: \(error.localizedDescription)")
+            return nil
+        }
+
         let updatedTrade = trade.withPartialSellOrder(sellOrder).updateStatus()
 
         do {

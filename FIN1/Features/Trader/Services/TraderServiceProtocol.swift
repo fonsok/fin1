@@ -77,6 +77,7 @@ protocol TraderServiceProtocol: ObservableObject, Sendable {
     func submitOrder(_ order: OrderSell) async throws
     func cancelOrder(_ orderId: String) async throws
     func updateOrderStatus(_ orderId: String, status: String) async throws
+    func registerPairedBuyTraderOrder(_ order: Order, pairExecutionId: String) async
 
     // MARK: - Watchlist Management
     func addToWatchlist(_ searchResult: SearchResult) async throws

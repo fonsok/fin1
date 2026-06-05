@@ -1,8 +1,9 @@
 import Foundation
 
 // MARK: - Investment Activation Service Implementation
-/// Handles investment activation when buy orders complete
-/// Activates investments and records pool participations
+/// Handles investment activation when buy orders complete (legacy local path only).
+/// **Production SSOT:** Pool mirror activation runs on Parse via `executePairedBuy` → MIRROR_POOL Order leg.
+/// Do not call from paired-buy flows; `OrderLifecycleCoordinator` skips mirror orders for server settlement.
 final class InvestmentActivationService: InvestmentActivationServiceProtocol, @unchecked Sendable {
 
     // MARK: - Dependencies
@@ -32,9 +33,8 @@ final class InvestmentActivationService: InvestmentActivationServiceProtocol, @u
             return []
         }
 
-        // Find trader ID by matching username to MockTrader.
-        // Keep order.traderId as fallback candidate because environments may use
-        // mixed traderId formats (Parse userId / user:email / mock UUID / username).
+        // Resolve trader via InvestorTrader catalog (hydrated Parse id).
+        // Keep order.traderId as fallback when catalog lookup misses.
         let matchedTraderId = TraderMatchingHelper.findTraderIdForMatching(
             currentUser: self.userService.currentUser,
             traderDataService: self.traderDataService
@@ -117,8 +117,7 @@ final class InvestmentActivationService: InvestmentActivationServiceProtocol, @u
         // Filter for reserved investments matching this trader by any known id format.
         var eligibleInvestments = investmentService.investments.filter {
             normalizedCandidates.contains($0.traderId.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()) &&
-                $0.status == .active &&
-                $0.reservationStatus == .reserved
+                $0.isReservedForPoolActivation
         }
 
         // Fallback: if none matched by traderId, try matching by trader display name
@@ -128,8 +127,7 @@ final class InvestmentActivationService: InvestmentActivationServiceProtocol, @u
             )
             let alt = investmentService.investments.filter {
                 $0.traderName.caseInsensitiveCompare(displayName) == .orderedSame &&
-                    $0.status == .active &&
-                    $0.reservationStatus == .reserved
+                    $0.isReservedForPoolActivation
             }
             if !alt.isEmpty {
                 print("   🔄 Fallback match by name '\(displayName)': \(alt.count) eligible investments")

@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct TraderDetailsView: View {
-    let trader: MockTrader
+    let trader: InvestorTrader
     @State private var showInvestSheet = false
     @State private var selectedTab = 0
     @Environment(\.appServices) private var appServices

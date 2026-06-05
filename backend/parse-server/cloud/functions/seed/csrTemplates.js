@@ -248,9 +248,9 @@ Parse.Cloud.define('seedCSREmailTemplates', async (request) => {
       icon: '📩',
       subject: '[{{companyName}}] Ticket {{ticketNumber}} created',
       subjectDe: '[{{companyName}}] Ticket {{ticketNumber}} wurde erstellt',
-      bodyTemplate: 'Hello {{customerName}},\n\nThank you for your inquiry. We have created your support ticket.\n\nTicket: {{ticketNumber}}\nSubject: {{ticketSubject}}\n\nOur support team will get back to you soon.\n\nBest regards,\nYour {{companyName}} Support Team',
-      bodyTemplateDe: 'Guten Tag {{customerName}},\n\nvielen Dank für Ihre Anfrage. Wir haben Ihr Support-Ticket erstellt.\n\nTicket: {{ticketNumber}}\nBetreff: {{ticketSubject}}\n\nUnser Support-Team wird sich schnellstmöglich bei Ihnen melden.\n\nMit freundlichen Grüßen,\nIhr {{companyName}} Support-Team',
-      availablePlaceholders: ['customerName', 'ticketNumber', 'ticketSubject', 'ticketDescription', 'companyName']
+      bodyTemplate: 'Hello {{customerName}},\n\nThank you for your inquiry. We have created your support ticket.\n\nTicket: {{ticketNumber}}\nSubject: {{ticketSubject}}\n\nOur support team will get back to you soon.\n\n{{ticketLink}}\n\nBest regards,\nYour {{companyName}} Support Team',
+      bodyTemplateDe: 'Guten Tag {{customerName}},\n\nvielen Dank für Ihre Anfrage. Wir haben Ihr Support-Ticket erstellt.\n\nTicket: {{ticketNumber}}\nBetreff: {{ticketSubject}}\n\nUnser Support-Team wird sich schnellstmöglich bei Ihnen melden.\n\n{{ticketLink}}\n\nMit freundlichen Grüßen,\nIhr {{companyName}} Support-Team',
+      availablePlaceholders: ['customerName', 'ticketNumber', 'ticketSubject', 'ticketDescription', 'ticketLink', 'companyName']
     },
     {
       type: 'ticket_response',
@@ -258,9 +258,9 @@ Parse.Cloud.define('seedCSREmailTemplates', async (request) => {
       icon: '💬',
       subject: '[{{companyName}}] New response to Ticket {{ticketNumber}}',
       subjectDe: '[{{companyName}}] Neue Antwort auf Ticket {{ticketNumber}}',
-      bodyTemplate: 'Hello {{customerName}},\n\nYou have received a new response to your support ticket.\n\nTicket: {{ticketNumber}}\n\nResponse from {{agentName}}:\n{{responseMessage}}\n\nBest regards,\nYour {{companyName}} Support Team',
-      bodyTemplateDe: 'Guten Tag {{customerName}},\n\nSie haben eine neue Antwort auf Ihr Support-Ticket erhalten.\n\nTicket: {{ticketNumber}}\n\nAntwort von {{agentName}}:\n{{responseMessage}}\n\nMit freundlichen Grüßen,\nIhr {{companyName}} Support-Team',
-      availablePlaceholders: ['customerName', 'ticketNumber', 'ticketSubject', 'agentName', 'responseMessage', 'companyName']
+      bodyTemplate: 'Hello {{customerName}},\n\nYou have received a new response to your support ticket.\n\nTicket: {{ticketNumber}}\nSubject: {{ticketSubject}}\n\nResponse from {{agentName}}:\n{{responseMessage}}\n\n{{ticketLink}}\n\nBest regards,\nYour {{companyName}} Support Team',
+      bodyTemplateDe: 'Guten Tag {{customerName}},\n\nSie haben eine neue Antwort auf Ihr Support-Ticket erhalten.\n\nTicket: {{ticketNumber}}\nBetreff: {{ticketSubject}}\n\nAntwort von {{agentName}}:\n{{responseMessage}}\n\n{{ticketLink}}\n\nMit freundlichen Grüßen,\nIhr {{companyName}} Support-Team',
+      availablePlaceholders: ['customerName', 'ticketNumber', 'ticketSubject', 'agentName', 'responseMessage', 'ticketLink', 'companyName']
     },
     {
       type: 'ticket_resolved',
@@ -268,9 +268,9 @@ Parse.Cloud.define('seedCSREmailTemplates', async (request) => {
       icon: '✅',
       subject: '[{{companyName}}] Ticket {{ticketNumber}} resolved ✓',
       subjectDe: '[{{companyName}}] Ticket {{ticketNumber}} wurde gelöst ✓',
-      bodyTemplate: 'Hello {{customerName}},\n\nYour support ticket has been resolved.\n\nTicket: {{ticketNumber}}\nHandled by: {{agentName}}\n\nResolution:\n{{resolutionSummary}}\n\nIf the problem persists, you can reopen this ticket within 7 days.\n\nBest regards,\nYour {{companyName}} Support Team',
-      bodyTemplateDe: 'Guten Tag {{customerName}},\n\nIhr Support-Ticket wurde gelöst.\n\nTicket: {{ticketNumber}}\nBearbeitet von: {{agentName}}\n\nLösung:\n{{resolutionSummary}}\n\nSollte das Problem weiterhin bestehen, können Sie dieses Ticket innerhalb von 7 Tagen wiedereröffnen.\n\nMit freundlichen Grüßen,\nIhr {{companyName}} Support-Team',
-      availablePlaceholders: ['customerName', 'ticketNumber', 'ticketSubject', 'agentName', 'resolutionSummary', 'companyName']
+      bodyTemplate: 'Hello {{customerName}},\n\nYour support ticket has been resolved.\n\nTicket: {{ticketNumber}}\nSubject: {{ticketSubject}}\nHandled by: {{agentName}}\n\nResolution:\n{{resolutionSummary}}\n\nIf the problem persists, you can reopen this ticket within 7 days.\n\n{{ticketLink}}\n\nBest regards,\nYour {{companyName}} Support Team',
+      bodyTemplateDe: 'Guten Tag {{customerName}},\n\nIhr Support-Ticket wurde gelöst.\n\nTicket: {{ticketNumber}}\nBetreff: {{ticketSubject}}\nBearbeitet von: {{agentName}}\n\nLösung:\n{{resolutionSummary}}\n\nSollte das Problem weiterhin bestehen, können Sie dieses Ticket innerhalb von 7 Tagen wiedereröffnen.\n\n{{ticketLink}}\n\nMit freundlichen Grüßen,\nIhr {{companyName}} Support-Team',
+      availablePlaceholders: ['customerName', 'ticketNumber', 'ticketSubject', 'agentName', 'resolutionSummary', 'ticketLink', 'companyName']
     },
     {
       type: 'survey_request',
@@ -304,6 +304,75 @@ Parse.Cloud.define('seedCSREmailTemplates', async (request) => {
   }
 
   return { success: true, message: `Created ${created} email templates`, created };
+});
+
+const {
+  insertTicketLinkPlaceholder,
+  mergePlaceholderList,
+} = require('../../utils/emailTemplateRenderer');
+
+const TICKET_LINK_TYPES = ['ticket_created', 'ticket_response', 'ticket_resolved'];
+
+/**
+ * Backfill {{ticketLink}} into existing CSREmailTemplate rows (ticket_created/response/resolved).
+ * Use dryRun=true first. Idempotent: skips templates that already contain {{ticketLink}}.
+ */
+Parse.Cloud.define('backfillCSREmailTemplateTicketLink', async (request) => {
+  if (!request.master) {
+    requireAdminRole(request);
+  }
+
+  const { dryRun = true } = request.params || {};
+  const Template = Parse.Object.extend('CSREmailTemplate');
+  const query = new Parse.Query(Template);
+  query.containedIn('type', TICKET_LINK_TYPES);
+  const templates = await query.find({ useMasterKey: true });
+
+  const updates = [];
+
+  for (const tpl of templates) {
+    const type = tpl.get('type');
+    const bodyEn = tpl.get('bodyTemplate');
+    const bodyDe = tpl.get('bodyTemplateDe') || bodyEn;
+    const nextEn = insertTicketLinkPlaceholder(bodyEn);
+    const nextDe = insertTicketLinkPlaceholder(bodyDe);
+    const placeholders = mergePlaceholderList(tpl.get('availablePlaceholders'), ['ticketLink']);
+
+    const changed =
+      nextEn !== bodyEn ||
+      nextDe !== bodyDe ||
+      JSON.stringify(placeholders) !== JSON.stringify(tpl.get('availablePlaceholders') || []);
+
+    if (!changed) continue;
+
+    updates.push({
+      type,
+      objectId: tpl.id,
+      bodyTemplate: nextEn,
+      bodyTemplateDe: nextDe,
+      availablePlaceholders: placeholders,
+    });
+
+    if (!dryRun) {
+      tpl.set('bodyTemplate', nextEn);
+      tpl.set('bodyTemplateDe', nextDe);
+      tpl.set('availablePlaceholders', placeholders);
+      tpl.increment('version');
+      tpl.set('updatedBy', request.user?.id || 'system');
+      await tpl.save(null, { useMasterKey: true });
+    }
+  }
+
+  return {
+    success: true,
+    dryRun: !!dryRun,
+    matched: templates.length,
+    updated: updates.length,
+    updates,
+    message: dryRun
+      ? `Dry run: ${updates.length} template(s) would be updated. Call with dryRun=false to apply.`
+      : `Updated ${updates.length} email template(s) with {{ticketLink}}.`,
+  };
 });
 
 /**

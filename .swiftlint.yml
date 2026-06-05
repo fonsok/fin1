@@ -65,6 +65,15 @@ function_parameter_count:
 # NOTE: These rules use severity: warning. CI runs `swiftlint` without --strict so warnings do not
 # fail the build; use `swiftlint --strict` locally when you want a zero-warning gate.
 custom_rules:
+  no_subscription_ratio_order_cash:
+    name: "No subscription ratio in order cash"
+    regex: 'pricePerSecurity\s*/\s*(Double\()?\s*subscriptionRatio'
+    message: "Order cash must use OrderCashAmount (Stück × Brief-Kurs). See Documentation/ORDER_CASH_AMOUNT_SSOT.md"
+    severity: warning
+    excluded:
+      - FIN1/Shared/Services/OrderCashAmount.swift
+      - FIN1/Features/Trader/Models/SearchResult.swift
+
   no_fixed_fonts:
     name: "No Fixed Fonts"
     regex: "\\.font\\(\\.(title|title2|title3|headline|subheadline|body|caption|caption2|footnote|largeTitle)\\)"

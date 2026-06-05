@@ -8,6 +8,8 @@ import { adminControlField, adminMuted, adminTableBodyDivide } from '../../../ut
 interface FinancialParametersCardProps {
   financialParams: [string, Omit<ConfigurationParameter, 'value'>][];
   title?: string;
+  /** When false, section title is rendered by ConfigurationSectionCollapsible */
+  showHeader?: boolean;
   config: Record<string, number | string | boolean>;
   isDark: boolean;
   editingParam: string | null;
@@ -41,6 +43,7 @@ function normalizeWalletActionMode(value: unknown): 'disabled' | 'deposit_only' 
 export function FinancialParametersCard({
   financialParams,
   title = 'Finanzparameter',
+  showHeader = true,
   config,
   isDark,
   editingParam,
@@ -81,15 +84,7 @@ export function FinancialParametersCard({
     adminControlField(isDark),
   );
 
-  return (
-    <Card>
-      <h3 className="text-md font-semibold mb-4 flex items-center gap-2">
-        <svg className="w-5 h-5 text-fin1-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        {title}
-      </h3>
-
+  const content = (
       <div className={adminTableBodyDivide(isDark)}>
         {visibleParams.map(([key, def], index: number) => {
           const value = config[key];
@@ -102,7 +97,7 @@ export function FinancialParametersCard({
               key={key}
               className={clsx(
                 'py-4 first:pt-0 last:pb-0 rounded-lg px-3 -mx-3',
-                listRowStripeClasses(isDark, index, { hover: false }),
+                listRowStripeClasses(isDark, index, { className: 'transition-colors' }),
               )}
             >
               <div className="flex items-start justify-between">
@@ -291,7 +286,7 @@ export function FinancialParametersCard({
           <div
             className={clsx(
               'py-4 first:pt-0 last:pb-0 rounded-lg px-3 -mx-3',
-              listRowStripeClasses(isDark, visibleParams.length, { hover: false }),
+              listRowStripeClasses(isDark, visibleParams.length, { className: 'transition-colors' }),
             )}
           >
             <div className="flex items-start justify-between">
@@ -309,6 +304,21 @@ export function FinancialParametersCard({
           </div>
         )}
       </div>
+  );
+
+  if (!showHeader) {
+    return content;
+  }
+
+  return (
+    <Card>
+      <h3 className="text-md font-semibold mb-4 flex items-center gap-2">
+        <svg className="w-5 h-5 text-fin1-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        {title}
+      </h3>
+      {content}
     </Card>
   );
 }

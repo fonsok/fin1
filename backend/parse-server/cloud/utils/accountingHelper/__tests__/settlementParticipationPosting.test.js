@@ -17,8 +17,22 @@ jest.mock('../taxation', () => ({
   }),
 }));
 
+const mockCollectionBillMetadata = {
+  transferAmount: 1180,
+  netProfit: 180,
+  residualAmount: 0,
+  poolTradingAmount: 1000,
+  investmentNominal: 1000,
+  totalBuyCost: 1000,
+};
+
 jest.mock('../documents', () => ({
-  createCollectionBillDocument: jest.fn().mockResolvedValue({ id: 'bill-1' }),
+  createCollectionBillDocument: jest.fn().mockImplementation(() => Promise.resolve({
+    id: 'bill-1',
+    get(key) {
+      return key === 'metadata' ? mockCollectionBillMetadata : undefined;
+    },
+  })),
   createWalletReceiptDocument: jest.fn().mockResolvedValue({ id: 'wr-1' }),
 }));
 
@@ -30,6 +44,7 @@ jest.mock('../documentReferenceResolver', () => ({
 }));
 
 jest.mock('../legs', () => ({
+  ...jest.requireActual('../legs'),
   computeInvestorBuyLeg: jest.fn().mockReturnValue(null),
   computeInvestorSellLeg: jest.fn(),
   deriveMirrorTradeBasis: jest.fn().mockReturnValue(null),
@@ -50,6 +65,12 @@ jest.mock('../settlementSupport', () => ({
   formatCurrency: jest.fn((n) => `€${Number(n)}`),
 }));
 
+jest.mock('../investmentEscrow', () => ({
+  bookReserveCapitalTradeSplit: jest.fn().mockResolvedValue(undefined),
+  bookTradeSettlementPayout: jest.fn().mockResolvedValue(undefined),
+  hasEscrowLeg: jest.fn().mockResolvedValue(false),
+}));
+
 const statements = require('../statements');
 const taxation = require('../taxation');
 const documents = require('../documents');
@@ -57,6 +78,7 @@ const legs = require('../legs');
 const settlementQueries = require('../settlementQueries');
 const settlementTaxEntries = require('../settlementTaxEntries');
 const settlementSupport = require('../settlementSupport');
+const investmentEscrow = require('../investmentEscrow');
 const { settleNewParticipation } = require('../settlementParticipationPosting');
 
 class FakeQuery {
@@ -69,11 +91,15 @@ class FakeQuery {
   }
 
   async first() {
+    if (this.className === 'AccountStatement') {
+      return FakeQuery.accountStatementRow;
+    }
     return FakeQuery.activationRow;
   }
 }
 
 FakeQuery.activationRow = null;
+FakeQuery.accountStatementRow = null;
 
 function makeParticipation() {
   const attrs = {};
@@ -146,8 +172,18 @@ const baseArgs = () => ({
 describe('settleNewParticipation', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    Object.assign(mockCollectionBillMetadata, {
+      transferAmount: 1180,
+      netProfit: 180,
+      residualAmount: 0,
+      poolTradingAmount: 1000,
+      investmentNominal: 1000,
+      totalBuyCost: 1000,
+    });
     jest.spyOn(console, 'log').mockImplementation(() => {});
     FakeQuery.activationRow = null;
+    FakeQuery.accountStatementRow = null;
+    investmentEscrow.hasEscrowLeg.mockResolvedValue(false);
     global.Parse = { Query: FakeQuery };
     legs.computeInvestorBuyLeg.mockReturnValue(null);
     legs.deriveMirrorTradeBasis.mockReturnValue(null);
@@ -184,13 +220,24 @@ describe('settleNewParticipation', () => {
     expect(participation.get('profitBasis')).toBe('proportional');
     expect(participation.get('isSettled')).toBe(true);
     expect(participation.save).toHaveBeenCalled();
-    expect(documents.createCollectionBillDocument).toHaveBeenCalled();
+    expect(documents.createCollectionBillDocument).toHaveBeenCalledWith(
+      expect.objectContaining({ allowIdempotentUpsert: true }),
+    );
     expect(statements.bookAccountStatementEntry).toHaveBeenCalledWith(
       expect.objectContaining({
         entryType: 'investment_return',
-        amount: 1200,
+        amount: 1180,
         tradeId: 'trade-post-1',
         investmentId: 'inv-post-1',
+      }),
+    );
+    expect(investmentEscrow.bookTradeSettlementPayout).toHaveBeenCalledWith(
+      expect.objectContaining({
+        investorId: 'inv-user-1',
+        investmentId: 'inv-post-1',
+        tradeId: 'trade-post-1',
+        transferAmount: 1180,
+        netProfit: 180,
       }),
     );
     expect(statements.bookSettlementEntry).toHaveBeenCalledWith(
@@ -204,8 +251,8 @@ describe('settleNewParticipation', () => {
     expect(settlementSupport.createNotification).toHaveBeenCalled();
   });
 
-  test('skips activation wallet path when investment_activate already exists', async () => {
-    FakeQuery.activationRow = { id: 'existing-act' };
+  test('does not book investment_activate (RSV→TRD / pool deploy is AppLedger-only)', async () => {
+    FakeQuery.activationRow = null;
     const participation = makeParticipation();
     const investment = makeInvestment();
     await settleNewParticipation({
@@ -213,11 +260,11 @@ describe('settleNewParticipation', () => {
       participation,
       investment,
     });
-    expect(documents.createWalletReceiptDocument).not.toHaveBeenCalled();
     const activationCalls = statements.bookAccountStatementEntry.mock.calls.filter(
       (c) => c[0].entryType === 'investment_activate',
     );
     expect(activationCalls).toHaveLength(0);
+    expect(documents.createWalletReceiptDocument).not.toHaveBeenCalled();
   });
 
   test('uses mirror basis when deriveMirrorTradeBasis returns a tuple', async () => {
@@ -227,6 +274,7 @@ describe('settleNewParticipation', () => {
       grossProfit: 55,
       commission: 5,
       netProfit: 50,
+      netSellAmount: 60,
     });
     const participation = makeParticipation();
     const investment = makeInvestment();
@@ -241,6 +289,80 @@ describe('settleNewParticipation', () => {
     expect(participation.get('commissionAmount')).toBe(5);
     expect(participation.get('grossReturn')).toBe(50);
     expect(participation.get('profitBasis')).toBe('mirror');
+  });
+
+  test('skips reserveCapitalTradeSplit when already booked at activation', async () => {
+    legs.computeInvestorBuyLeg.mockReturnValue({
+      quantity: 1,
+      amount: 997.69,
+      fees: {},
+      residualAmount: 2.31,
+    });
+    investmentEscrow.hasEscrowLeg.mockResolvedValue(true);
+    FakeQuery.accountStatementRow = { id: 'residual-stmt-existing' };
+    const participation = makeParticipation();
+    const investment = makeInvestment();
+
+    await settleNewParticipation({
+      ...baseArgs(),
+      participation,
+      investment,
+      tradeBuyPrice: 10,
+    });
+
+    expect(investmentEscrow.bookReserveCapitalTradeSplit).not.toHaveBeenCalled();
+    const residualCalls = statements.bookAccountStatementEntry.mock.calls.filter(
+      (c) => c[0].entryType === 'residual_return',
+    );
+    expect(residualCalls).toHaveLength(0);
+  });
+
+  test('books reserveCapitalTradeSplit escrow before investment completed', async () => {
+    Object.assign(mockCollectionBillMetadata, {
+      residualAmount: 2.31,
+      poolTradingAmount: 997.69,
+      totalBuyCost: 997.69,
+    });
+    legs.computeInvestorBuyLeg.mockReturnValue({
+      quantity: 1,
+      amount: 997.69,
+      fees: {},
+      residualAmount: 2.31,
+    });
+    const participation = makeParticipation();
+    const investment = makeInvestment();
+    const saveOrder = [];
+    investment.save = jest.fn(async () => {
+      saveOrder.push('save');
+    });
+    investmentEscrow.bookReserveCapitalTradeSplit.mockImplementation(async () => {
+      saveOrder.push('capitalSplitEscrow');
+    });
+
+    await settleNewParticipation({
+      ...baseArgs(),
+      participation,
+      investment,
+      tradeBuyPrice: 10,
+    });
+
+    expect(investmentEscrow.bookReserveCapitalTradeSplit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        investorId: 'inv-user-1',
+        nominal: 1000,
+        tradingAmount: 997.69,
+        availableAmount: 2.31,
+        investmentId: 'inv-post-1',
+        tradeId: 'trade-post-1',
+      }),
+    );
+    expect(saveOrder.indexOf('capitalSplitEscrow')).toBeLessThan(saveOrder.indexOf('save'));
+    expect(statements.bookAccountStatementEntry).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entryType: 'residual_return',
+        amount: 2.31,
+      }),
+    );
   });
 
   test('books investor tax entries when remaining tax > 0', async () => {

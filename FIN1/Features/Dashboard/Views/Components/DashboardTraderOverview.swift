@@ -48,12 +48,19 @@ struct DashboardTraderOverview: View {
             TraderNavigationHelper.sheetView(for: traderIDItem.id, appServices: self.appServices)
         }
         .onAppear {
-            // Set up trader tap handler
+            self.viewModel.reconfigure(
+                traderDataService: self.appServices.traderDataService,
+                watchlistService: self.appServices.watchlistService
+            )
             self.viewModel.onTraderTap = { username in
-                if let traderID = viewModel.getTraderID(username: username) {
+                if let traderID = self.viewModel.getTraderID(username: username) {
                     self.selectedTraderID = TraderIDItem(id: traderID)
                 }
             }
+        }
+        .task {
+            await self.appServices.traderDataService.refreshTraderCatalog()
+            self.viewModel.updateCachedData()
         }
         .onChange(of: self.appServices.traderDataService.traders.count) { _, _ in
             self.viewModel.updateCachedData()

@@ -8,7 +8,7 @@ final class InvestorWatchlistViewModel: ObservableObject {
     // MARK: - Published Properties
     @Published var isLoading = false
     @Published var errorMessage: String?
-    @Published var watchedTraders: [MockTrader] = []
+    @Published var watchedTraders: [InvestorTrader] = []
 
     // MARK: - Dependencies
     private let watchlistService: any InvestorWatchlistServiceProtocol
@@ -43,31 +43,38 @@ final class InvestorWatchlistViewModel: ObservableObject {
 
     // MARK: - Business Logic Methods
 
-    /// Maps watchlist items to MockTrader objects
-    private func mapWatchlistToTraders() -> [MockTrader] {
-        self.watchlistService.watchlist.map { trader in
-            // Preserve the original ID from WatchlistTraderData
-            let originalID = UUID(uuidString: trader.id) ?? UUID()
-            return MockTrader(
-                id: originalID,
-                name: trader.name,
-                username: trader.name.replacingOccurrences(of: " ", with: "").lowercased(),
-                specialization: trader.tradingStrategy,
+    /// Maps watchlist items to catalog traders (prefer `TraderDataService` hydration).
+    private func mapWatchlistToTraders() -> [InvestorTrader] {
+        self.watchlistService.watchlist.compactMap { item in
+            if let catalog = self.traderDataService.getTrader(by: item.id) {
+                return catalog
+            }
+            let parseId = TraderParseIdentity.isLikelyParseObjectId(item.id) ? item.id : nil
+            let username = item.name.replacingOccurrences(of: " ", with: "").lowercased()
+            return InvestorTrader(
+                catalogId: item.id,
+                parseUserId: parseId,
+                name: item.name,
+                username: username.isEmpty ? item.id : username,
+                specialization: item.tradingStrategy,
                 experienceYears: 0,
                 isVerified: true,
-                performance: trader.performance,
-                totalTrades: 0,
-                winRate: 0,
-                averageReturn: trader.performance,
-                totalReturn: trader.performance,
                 riskLevel: .medium,
-                recentTrades: [],
-                lastNTrades: 0,
-                successfulTradesInLastN: 0,
-                averageReturnLastNTrades: 0,
-                consecutiveWinningTrades: 0,
-                maxDrawdown: 0,
-                sharpeRatio: 0
+                demoMetrics: TraderDemoMetrics(
+                    performance: item.performance,
+                    totalTrades: 0,
+                    winRate: 0,
+                    averageReturn: item.performance,
+                    totalReturn: item.performance,
+                    recentTrades: [],
+                    lastNTrades: 0,
+                    successfulTradesInLastN: 0,
+                    averageReturnLastNTrades: 0,
+                    consecutiveWinningTrades: 0,
+                    maxDrawdown: 0,
+                    sharpeRatio: 0
+                ),
+                isFromMockCatalog: false
             )
         }
     }

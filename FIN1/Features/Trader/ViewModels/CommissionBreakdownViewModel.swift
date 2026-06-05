@@ -50,6 +50,10 @@ final class CommissionBreakdownViewModel: ObservableObject {
             ?? String(format: "%.1f", self.commissionRate).replacingOccurrences(of: ".", with: ",")
     }
 
+    private var monetaryServerOnly: Bool {
+        self.configurationService.investorMonetaryServerOnly
+    }
+
     // MARK: - Initialization
 
     init(
@@ -87,124 +91,86 @@ final class CommissionBreakdownViewModel: ObservableObject {
 
     func loadBreakdown() async {
         self.isLoading = true
+        self.errorMessage = nil
+        self.showError = false
 
-        // Get participations for this trade
         let participations = self.poolTradeParticipationService.getParticipations(forTradeId: self.tradeId)
+        let allInvestments = self.investmentService.investments
 
-        guard !participations.isEmpty else {
-            await self.loadBackendFallbackBreakdown()
+        if participations.isEmpty {
+            await self.loadSettlementAggregateBreakdown()
             self.isLoading = false
             return
         }
 
-        // Get all investments to map investmentId to investorId
-        let allInvestments = self.investmentService.investments
+        let investmentIds = Array(Set(participations.map(\.investmentId)))
 
-        // Group participations by investment to get unique investors
-        let participationsByInvestment = Dictionary(grouping: participations) { $0.investmentId }
-
-        var items: [CommissionBreakdownItem] = []
-        var total: Double = 0.0
-
-        // Use centralized services to get gross profit and calculate commission
-        // This ensures consistency with Collection Bill calculations
-        for (investmentId, _) in participationsByInvestment {
-            guard let investment = allInvestments.first(where: { $0.id == investmentId }) else {
-                continue
-            }
-
-            do {
-                // Use centralized InvestorGrossProfitService to get gross profit
-                let investorGrossProfit = try await investorGrossProfitService.getGrossProfit(
-                    for: investmentId,
-                    tradeId: self.tradeId
-                )
-
-                // Use centralized CommissionCalculationService to calculate commission
-                let investorCommission = try await commissionCalculationService.calculateCommissionForInvestor(
-                    investmentId: investmentId,
-                    tradeId: self.tradeId,
-                    commissionRate: self.commissionRate
-                )
-
-                // Use investor username from investment (set during investment creation)
-                let investorName = investment.investorName
-
-                items.append(CommissionBreakdownItem(
-                    id: investmentId,
-                    investorName: investorName,
-                    grossProfit: investorGrossProfit,
-                    commission: investorCommission
-                ))
-
-                total += investorCommission
-            } catch {
-                let appError = error.toAppError()
-                let errorMsg = "Fehler bei der Berechnung für Investor \(investment.investorId.prefix(8)): \(appError.errorDescription ?? "An error occurred")"
-                print("⚠️ CommissionBreakdownViewModel: \(errorMsg)")
-                self.errorMessage = errorMsg
-                self.showError = true
-                // Continue with other investors even if one fails
-                continue
-            }
+        if let api = settlementAPIService,
+           let serverLines = await TradeInvestorCommissionBreakdownLoader.load(
+               tradeId: tradeId,
+               investmentIds: investmentIds,
+               investments: allInvestments,
+               settlementAPIService: api
+           ) {
+            self.apply(lines: serverLines)
+            self.isLoading = false
+            return
         }
 
-        self.breakdownItems = items
-        self.totalCommission = total
+        if self.monetaryServerOnly {
+            self.breakdownItems = []
+            self.totalCommission = 0
+            self.errorMessage = "Provisionen konnten nicht aus Server-Belegen geladen werden."
+            self.showError = true
+            self.isLoading = false
+            return
+        }
+
+        let localLines = await TradeInvestorCommissionBreakdownLoader.loadLocalEstimate(
+            tradeId: self.tradeId,
+            investmentIds: investmentIds,
+            investments: allInvestments,
+            investorGrossProfitService: self.investorGrossProfitService,
+            commissionCalculationService: self.commissionCalculationService,
+            commissionRate: self.commissionRate
+        )
+        self.apply(lines: localLines)
         self.isLoading = false
     }
 
-    private func loadBackendFallbackBreakdown() async {
+    private func apply(lines: [TradeInvestorCommissionLine]) {
+        self.breakdownItems = lines.map {
+            CommissionBreakdownItem(
+                id: $0.investmentId,
+                investorName: $0.investorName,
+                grossProfit: $0.grossProfit,
+                commission: $0.commission
+            )
+        }
+        self.totalCommission = lines.reduce(0) { $0 + $1.commission }
+    }
+
+    /// Aggregate breakdown when no local participations (settlement commissions only).
+    private func loadSettlementAggregateBreakdown() async {
         guard let settlementAPIService else {
             self.breakdownItems = []
             self.totalCommission = 0
             return
         }
 
-        do {
-            let settlement = try await settlementAPIService.fetchTradeSettlement(tradeId: self.tradeId)
-            let grouped = Dictionary(grouping: settlement.commissions) { $0.investmentId ?? $0.objectId }
-            let allInvestments = self.investmentService.investments
-            var items: [CommissionBreakdownItem] = []
-            var total: Double = 0
-
-            for (key, rows) in grouped {
-                let commission = rows.compactMap { $0.commissionAmount }.reduce(0, +)
-                guard commission > 0 else { continue }
-                let grossProfit = self.commissionRate > 0 ? (commission / self.commissionRate) : 0
-                let knownInvestment = allInvestments.first(where: { $0.id == key })
-                let investorName = knownInvestment?.investorName
-                    ?? self.displayNameFromInvestorId(rows.first?.investorId)
-                    ?? "Investor"
-
-                items.append(CommissionBreakdownItem(
-                    id: key,
-                    investorName: investorName,
-                    grossProfit: grossProfit,
-                    commission: commission
-                ))
-                total += commission
-            }
-
-            self.breakdownItems = items.sorted { $0.investorName < $1.investorName }
-            self.totalCommission = total
-        } catch {
+        guard let resolved = await TradeCommissionSettlementBreakdownResolver.resolve(
+            tradeId: tradeId,
+            creditNoteDocumentId: nil,
+            investments: investmentService.investments,
+            settlementAPIService: settlementAPIService
+        ) else {
             self.breakdownItems = []
             self.totalCommission = 0
             self.errorMessage = "Investor-Aufschlüsselung konnte nicht geladen werden."
             self.showError = true
+            return
         }
-    }
 
-    private func displayNameFromInvestorId(_ investorId: String?) -> String? {
-        guard let investorId, investorId.hasPrefix("user:") else { return nil }
-        let raw = String(investorId.dropFirst("user:".count))
-        let base = raw.split(separator: "@").first.map(String.init) ?? raw
-        return base.replacingOccurrences(of: ".", with: " ")
+        self.apply(lines: resolved.lines)
     }
 }
-
-
-
-
-

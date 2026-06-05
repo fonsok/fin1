@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { getUserDetails, updateUserStatus, forcePasswordReset, requestUserWalletActionModeChange, logAdminCustomerView } from '../../api/admin';
 import type { InvestmentItem, ActivityItem } from '../../api/admin';
+import { InvestorOutcomeHighlightsCard } from './components/InvestorOutcomeHighlightsCard';
 import { usePermissions } from '../../hooks/usePermissions';
 import { useAuth } from '../../context/AuthContext';
 import { Card, CardHeader, Button, Badge, getStatusVariant } from '../../components/ui';
@@ -12,6 +13,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { UserTradeCard } from './components/UserTradeCard';
 import { InvestmentTable } from './components/InvestmentTable';
 import { AccountStatementCard } from './components/AccountStatementCard';
+import { orientInvestorStatementsForAdminPortal } from './utils/orientInvestorStatementsForAdminPortal';
 import { UserActionModal } from './components/UserActionModal';
 import { DetailRow, StatBox } from './components/UserShared';
 
@@ -44,6 +46,10 @@ export function UserDetailPage() {
   const investmentSummary = data?.investmentSummary;
   const investments = data?.investments || [];
   const accountStatement = data?.accountStatement;
+  const accountStatementLedger = data?.accountStatementLedger;
+  const clientFundsBreakdown = data?.clientFundsBreakdown;
+  const investorOutcomeHighlights = data?.investorOutcomeHighlights;
+  const investorCollectionBills = data?.investorCollectionBills;
   const walletControls = data?.walletControls;
   const recentActivity = data?.recentActivity || [];
 
@@ -114,6 +120,12 @@ export function UserDetailPage() {
       </Card>
     );
   }
+
+  const { customerStatement } = orientInvestorStatementsForAdminPortal(
+    user.role,
+    accountStatement,
+    accountStatementLedger,
+  );
 
   const isSelf = currentUser?.objectId === user.objectId;
   const canSuspend = perms.canEditUserStatus && user.status === 'active' && !isSelf;
@@ -262,7 +274,7 @@ export function UserDetailPage() {
           <CardHeader title="Kontostand" />
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className={clsx('text-center p-4 rounded-lg', isDark ? 'bg-emerald-950/30 border border-emerald-700' : 'bg-green-50')}>
-              <p className={clsx('text-sm', adminStatTitle(isDark))}>Aktueller Saldo</p>
+              <p className={clsx('text-sm', adminStatTitle(isDark))}>Wallet-Saldo (App)</p>
               <p className={clsx('text-2xl font-bold', isDark ? 'text-emerald-400' : 'text-green-600')}>
                 {formatCurrency(wallet.balance)}
               </p>
@@ -278,6 +290,25 @@ export function UserDetailPage() {
               </p>
             </div>
           </div>
+          {clientFundsBreakdown && user.role === 'investor' && (
+            <div className={clsx('mt-6 pt-6 border-t', isDark ? 'border-slate-700' : 'border-gray-200')}>
+              <p className={clsx('text-sm font-medium mb-3', adminStrong(isDark))}>
+                Kundenguthaben (App-Ledger CLT-LIAB-*)
+              </p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <StatBox label="Verfügbar (1590)" value={formatCurrency(clientFundsBreakdown.available)} color="green" />
+                <StatBox label="Reserviert (1591)" value={formatCurrency(clientFundsBreakdown.reserved)} color="blue" />
+                <StatBox label="PoolTrade (1592)" value={formatCurrency(clientFundsBreakdown.poolTrade)} />
+                <StatBox label="Summe Teil-Konten" value={formatCurrency(clientFundsBreakdown.totalClientFunds)} />
+              </div>
+              {customerStatement && (
+                <p className={clsx('text-xs mt-3', adminSoft(isDark))}>
+                  Kontoauszug-Saldo (inkl. Anfangssaldo {formatCurrency(clientFundsBreakdown.initialBalance)}):{' '}
+                  <span className="font-medium">{formatCurrency(customerStatement.closingBalance)}</span>
+                </p>
+              )}
+            </div>
+          )}
         </Card>
       )}
 
@@ -404,9 +435,19 @@ export function UserDetailPage() {
         </Card>
       )}
 
+      {user.role === 'investor' && investorOutcomeHighlights && (
+        <InvestorOutcomeHighlightsCard data={investorOutcomeHighlights} isDark={isDark} />
+      )}
+
       {/* Account Statement */}
       {accountStatement && (
-        <AccountStatementCard data={accountStatement} userRole={user.role} />
+        <AccountStatementCard
+          key={user.objectId}
+          data={accountStatement}
+          ledgerData={accountStatementLedger ?? null}
+          userRole={user.role}
+          investorCollectionBills={investorCollectionBills ?? null}
+        />
       )}
 
       {/* Activity Log */}

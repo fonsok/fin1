@@ -6,12 +6,39 @@ extension TradesOverviewViewModel {
         let (activeSnapshot, completedSnapshot) = self.getTradeSnapshots()
         self.hasActiveTrade = self.detectActiveTrade(activeSnapshot, completedSnapshot)
 
+        let traderId = self.currentTraderId ?? ""
+        await self.commissionCalculator.refreshCommissionCache(traderId: traderId)
+
         let (ongoingItems, completedItems) = await processTrades(completedSnapshot)
         self.updateTradeLists(ongoingItems, completedItems)
 
         filteringViewModel.updateTrades(ongoing: ongoingTrades, completed: completedTrades)
-        await filteringViewModel.filterTrades(by: .last30Days)
+        await self.filterTrades(by: self.lastFilteredTimePeriod)
 
+        let tableRows = self.createTableRows(from: filteringViewModel.filteredCompletedTrades)
+        self.columnWidths = ColumnWidthCalculator.calculate(for: tableRows)
+
+        let pendingCommissionTradeIds = completedItems
+            .filter { $0.profitLoss > 0 && $0.commission <= 0 }
+            .compactMap(\.tradeId)
+        self.commissionCalculator.scheduleDeferredCommissionRefreshIfNeeded(
+            traderId: traderId,
+            tradeIds: pendingCommissionTradeIds
+        ) { [weak self] in
+            await self?.rebuildTradesWithoutDeferredScheduler()
+        }
+    }
+
+    /// Rebuild without re-arming the deferred commission refresh (avoids recursive scheduler loops).
+    private func rebuildTradesWithoutDeferredScheduler() async {
+        let (activeSnapshot, completedSnapshot) = self.getTradeSnapshots()
+        self.hasActiveTrade = self.detectActiveTrade(activeSnapshot, completedSnapshot)
+        let traderId = self.currentTraderId ?? ""
+        await self.commissionCalculator.refreshCommissionCache(traderId: traderId)
+        let (ongoingItems, completedItems) = await processTrades(completedSnapshot)
+        self.updateTradeLists(ongoingItems, completedItems)
+        filteringViewModel.updateTrades(ongoing: ongoingTrades, completed: completedTrades)
+        await self.filterTrades(by: self.lastFilteredTimePeriod)
         let tableRows = self.createTableRows(from: filteringViewModel.filteredCompletedTrades)
         self.columnWidths = ColumnWidthCalculator.calculate(for: tableRows)
     }
@@ -24,8 +51,10 @@ extension TradesOverviewViewModel {
 
         let activeSnapshot = (orderService?.activeOrders ?? [])
             .filter { $0.traderId == traderId }
-        let completedSnapshot = (tradeService?.completedTrades ?? [])
-            .filter { $0.traderId == traderId }
+        let completedSnapshot = TraderDepotTradeFilter.tradesForDepotDisplay(
+            (tradeService?.completedTrades ?? [])
+                .filter { $0.traderId == traderId }
+        )
 
         return (activeSnapshot, completedSnapshot)
     }
@@ -57,7 +86,12 @@ extension TradesOverviewViewModel {
         let endDate = trade.completedAt ?? Date()
         let startDate = trade.createdAt
         let totalFees = self.calculateInvoiceBasedFees(for: trade)
-        let commission = await commissionCalculator.calculateCommission(tradeId: trade.id, hasProfit: pnl > 0)
+        let hasProfit = pnl > 0
+        let commission = await commissionCalculator.calculateCommission(tradeId: trade.id, hasProfit: hasProfit)
+        let isCommissionPending = TradesOverviewCommissionAmounts.isCommissionPending(
+            hasProfit: hasProfit,
+            commission: commission
+        )
 
         return TradeOverviewItem(
             tradeId: trade.id,
@@ -67,6 +101,7 @@ extension TradesOverviewViewModel {
             profitLoss: pnl,
             returnPercentage: roi,
             commission: commission,
+            isCommissionPending: isCommissionPending,
             isActive: !trade.isCompleted,
             statusText: trade.status.displayName,
             statusDetail: trade.status.displayName,
@@ -99,7 +134,8 @@ extension TradesOverviewViewModel {
         endDate: Date,
         commission: Double
     ) async {
-        let detailsCommission = await commissionCalculator.calculateCommission(tradeId: trade.id, hasProfit: pnl > 0)
+        let hasProfit = pnl > 0
+        let detailsCommission = await commissionCalculator.calculateCommission(tradeId: trade.id, hasProfit: hasProfit)
         selectedTrade = TradeOverviewItem(
             tradeId: trade.id,
             tradeNumber: trade.tradeNumber,
@@ -108,6 +144,10 @@ extension TradesOverviewViewModel {
             profitLoss: pnl,
             returnPercentage: roi,
             commission: detailsCommission,
+            isCommissionPending: TradesOverviewCommissionAmounts.isCommissionPending(
+                hasProfit: hasProfit,
+                commission: detailsCommission
+            ),
             isActive: !trade.isCompleted,
             statusText: trade.status.displayName,
             statusDetail: trade.status.displayName,
@@ -124,6 +164,7 @@ extension TradesOverviewViewModel {
     }
 
     func filterTrades(by period: TradeTimePeriod) async {
+        self.lastFilteredTimePeriod = period
         isLoading = true
         try? await Task.sleep(nanoseconds: UInt64(0.5 * 1_000_000_000))
         filteringViewModel.updateTrades(ongoing: ongoingTrades, completed: completedTrades)

@@ -107,6 +107,10 @@ final class TradingCoordinator: TradingCoordinatorProtocol {
         try await self.orderLifecycleCoordinator.updateOrderStatus(orderId, status: status)
     }
 
+    func registerPairedBuyTraderOrder(_ order: Order, pairExecutionId: String) async {
+        await self.orderLifecycleCoordinator.registerPairedBuyTraderOrder(order, pairExecutionId: pairExecutionId)
+    }
+
     // MARK: - Trade Management
 
     func createNewTrade(buyOrder: OrderBuy) async throws -> Trade {

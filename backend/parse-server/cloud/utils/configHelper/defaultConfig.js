@@ -25,12 +25,16 @@ const DEFAULT_CONFIG = {
     minimumCashReserve: 20.0,
     /** Cold-start default 0 €; persisted Configuration is admin/seed-owned — see startup reconcile skip in main.js. */
     initialAccountBalance: 0.0,
+    /** 0 = nur Vollverkauf; 1–3 = max. Teil-Verkäufe vor Abschluss (Trader-Leg). */
+    maxTraderPartialSells: 3,
   },
   limits: {
     minDeposit: 10.0,
     maxDeposit: 100000.0,
     minInvestment: 20.0,
     maxInvestment: 100000.0,
+    /** 0 = keine Obergrenze; sonst max. Brutto (EUR) pro Pool-Mirror-Buy-Leg und max. reserviertes Pool-Kapital je Trader. */
+    maxPoolMirrorBuyOrderAmount: 0,
     dailyTransactionLimit: 10000.0,
     weeklyTransactionLimit: 50000.0,
     monthlyTransactionLimit: 200000.0,
@@ -53,6 +57,10 @@ const DEFAULT_CONFIG = {
     serviceChargeLegacyClientFallbackEnabled: true,
     // Earliest date when disabling the legacy fallback is allowed.
     serviceChargeLegacyDisableAllowedFrom: '2026-05-15',
+    // Investor monetary flows: Collection Bill metadata + AccountStatement only (no local € math).
+    investorMonetaryServerOnly: true,
+    /** iOS Investor: Bereich „Teil-Sell-Realisierungen (Active Investment)“ — unabhängig von Trader-Teil-Sells. */
+    showInvestorPartialSellRealizations: false,
   },
   legal: {
     appName: 'FIN1',

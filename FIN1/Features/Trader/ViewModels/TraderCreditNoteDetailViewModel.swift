@@ -34,6 +34,8 @@ final class TraderCreditNoteDetailViewModel: ObservableObject {
     // MARK: - Dependencies
     private var appServices: AppServices?
     private var tradeId: String?
+    private var creditNoteDocumentId: String?
+    private var sourceDocument: Document?
 
     /// Persisted on the credit-note `Invoice` when issued (`traderCommissionRateSnapshot`).
     private var documentCommissionRateSnapshot: Double?
@@ -47,7 +49,9 @@ final class TraderCreditNoteDetailViewModel: ObservableObject {
     /// Configures the ViewModel with services and document (called from task). Berechnet accountHolderName/accountNumber aus document + UserService-Fallback.
     func configure(with services: AppServices, document: Document) {
         self.appServices = services
-        self.tradeId = document.tradeId
+        self.sourceDocument = document
+        self.creditNoteDocumentId = document.id
+        self.tradeId = Self.resolveTradeId(document: document, services: services)
         self.displayRateFromBreakdown = nil
         self.documentCommissionRateSnapshot =
             document.traderCommissionRateSnapshot ?? document.invoiceData?.traderCommissionRateSnapshot
@@ -121,6 +125,10 @@ final class TraderCreditNoteDetailViewModel: ObservableObject {
 
         guard !participations.isEmpty else {
             await self.loadBreakdownFromBackendSettlement(tradeId: tradeId, services: appServices)
+            if self.breakdownItems.isEmpty || self.totalCommission <= 0 {
+                await self.applyInvoiceAndSettlementSummaryFallback(documentCommissionOnly: false)
+            }
+            self.isLoading = false
             return
         }
 
@@ -130,125 +138,138 @@ final class TraderCreditNoteDetailViewModel: ObservableObject {
             self.tradeDates = (trade.createdAt, trade.completedAt ?? Date())
         }
 
-        // Get commission rate
         let rate = self.commissionRate
-
-        // Get all investments
         let allInvestments = appServices.investmentService.investments
+        let investmentIds = Array(Set(participations.map(\.investmentId)))
 
-        // Group participations by investment
-        let participationsByInvestment = Dictionary(grouping: participations) { $0.investmentId }
-
-        var items: [CreditNoteBreakdownItem] = []
-        var totalProfit: Double = 0.0
-        var totalComm: Double = 0.0
-
-        // Calculate commission for each investor
-        for (investmentId, _) in participationsByInvestment {
-            guard let investment = allInvestments.first(where: { $0.id == investmentId }) else {
-                continue
+        if let api = appServices.settlementAPIService,
+           let serverLines = await TradeInvestorCommissionBreakdownLoader.load(
+               tradeId: tradeId,
+               investmentIds: investmentIds,
+               investments: allInvestments,
+               settlementAPIService: api
+           ) {
+            self.applyCreditNoteBreakdown(serverLines, commissionRate: rate)
+            if self.totalCommission <= 0 {
+                await self.applyInvoiceAndSettlementSummaryFallback(documentCommissionOnly: true)
             }
-
-            do {
-                let investorGrossProfit = try await appServices.investorGrossProfitService.getGrossProfit(
-                    for: investmentId,
-                    tradeId: tradeId
-                )
-
-                let investorCommission = try await appServices.commissionCalculationService.calculateCommissionForInvestor(
-                    investmentId: investmentId,
-                    tradeId: tradeId,
-                    commissionRate: rate
-                )
-
-                let investorName = investment.investorName
-                let investmentNumber = investmentId.extractInvestmentNumber()
-
-                items.append(CreditNoteBreakdownItem(
-                    id: investmentId,
-                    investmentNumber: investmentNumber,
-                    investorName: investorName,
-                    grossProfit: investorGrossProfit,
-                    commissionRate: rate,
-                    commission: investorCommission
-                ))
-
-                totalProfit += investorGrossProfit
-                totalComm += investorCommission
-            } catch {
-                print("⚠️ TraderCreditNoteDetailViewModel: Error calculating for investment \(investmentId): \(error)")
-                continue
-            }
+            self.isLoading = false
+            return
         }
 
-        self.breakdownItems = items
-        self.tradeGrossProfit = totalProfit
-        self.totalCommission = totalComm
-        self.displayRateFromBreakdown = Self.impliedCommissionRate(from: items)
+        if appServices.configurationService.investorMonetaryServerOnly {
+            await self.loadBreakdownFromBackendSettlement(tradeId: tradeId, services: appServices)
+            if self.breakdownItems.isEmpty {
+                await self.applyInvoiceAndSettlementSummaryFallback(documentCommissionOnly: true)
+                if self.breakdownItems.isEmpty && self.totalCommission <= 0 {
+                    self.errorMessage = "Gutschrift-Aufschlüsselung konnte nicht aus Server-Belegen geladen werden."
+                }
+            }
+            self.isLoading = false
+            return
+        }
+
+        let localLines = await TradeInvestorCommissionBreakdownLoader.loadLocalEstimate(
+            tradeId: tradeId,
+            investmentIds: investmentIds,
+            investments: allInvestments,
+            investorGrossProfitService: appServices.investorGrossProfitService,
+            commissionCalculationService: appServices.commissionCalculationService,
+            commissionRate: rate
+        )
+        self.applyCreditNoteBreakdown(localLines, commissionRate: rate)
+        if self.breakdownItems.isEmpty {
+            await self.loadBreakdownFromBackendSettlement(tradeId: tradeId, services: appServices)
+        }
+        if self.breakdownItems.isEmpty || self.totalCommission <= 0 {
+            await self.applyInvoiceAndSettlementSummaryFallback(documentCommissionOnly: false)
+        }
         self.isLoading = false
+    }
+
+    private static func resolveTradeId(document: Document, services: AppServices) -> String? {
+        if let tradeId = document.tradeId, !tradeId.isEmpty { return tradeId }
+        if let tradeNumber = document.invoiceData?.tradeNumber,
+           let trade = services.tradingStateStore.completedTrades.first(where: { $0.tradeNumber == tradeNumber }) {
+            return trade.id
+        }
+        return nil
+    }
+
+    private func applyInvoiceAndSettlementSummaryFallback(documentCommissionOnly: Bool) async {
+        guard let services = appServices else { return }
+
+        if let document = sourceDocument,
+           let invoice = services.invoiceService.invoice(matching: document),
+           let gross = TradesOverviewCommissionAmounts.grossCommission(from: invoice) {
+            if self.totalCommission <= 0 { self.totalCommission = gross }
+        }
+
+        guard let tradeId, let api = services.settlementAPIService else { return }
+        if let totals = await TradeCommissionSettlementBreakdownResolver.resolveSummaryTotals(
+            tradeId: tradeId,
+            creditNoteDocumentId: creditNoteDocumentId,
+            settlementAPIService: api
+        ) {
+            if self.totalCommission <= 0 { self.totalCommission = totals.commission }
+            if self.tradeGrossProfit <= 0 { self.tradeGrossProfit = totals.grossProfit }
+        }
+
+        if documentCommissionOnly { return }
+
+        if let resolved = await TradeCommissionSettlementBreakdownResolver.resolve(
+            tradeId: tradeId,
+            creditNoteDocumentId: creditNoteDocumentId,
+            investments: services.investmentService.investments,
+            settlementAPIService: api
+        ) {
+            self.applyCreditNoteBreakdown(resolved.lines, commissionRate: self.commissionRate)
+        }
+    }
+
+    private func applyCreditNoteBreakdown(_ lines: [TradeInvestorCommissionLine], commissionRate: Double) {
+        let items = lines.map { line in
+            CreditNoteBreakdownItem(
+                id: line.investmentId,
+                investmentNumber: line.investmentId.extractInvestmentNumber(),
+                investorName: line.investorName,
+                grossProfit: line.grossProfit,
+                commissionRate: commissionRate,
+                commission: line.commission
+            )
+        }
+        self.breakdownItems = items
+        self.tradeGrossProfit = lines.reduce(0) { $0 + $1.grossProfit }
+        self.totalCommission = lines.reduce(0) { $0 + $1.commission }
+        self.displayRateFromBreakdown = Self.impliedCommissionRate(from: items)
     }
 
     private func loadBreakdownFromBackendSettlement(tradeId: String, services: AppServices) async {
         guard let settlementAPI = services.settlementAPIService else {
             self.breakdownItems = []
-            self.tradeGrossProfit = 0
-            self.totalCommission = 0
-            self.isLoading = false
             return
         }
 
-        do {
-            let settlement = try await settlementAPI.fetchTradeSettlement(tradeId: tradeId)
-            let allInvestments = services.investmentService.investments
-            let grouped = Dictionary(grouping: settlement.commissions) { $0.investmentId ?? $0.objectId }
+        if let trade = services.tradingStateStore.completedTrades.first(where: { $0.id == tradeId }) {
+            self.tradeROI = trade.roi ?? 0.0
+            self.tradeDates = (trade.createdAt, trade.completedAt ?? Date())
+        }
 
-            var items: [CreditNoteBreakdownItem] = []
-            var totalGross: Double = 0
-            var totalComm: Double = 0
-
-            for (investmentId, rows) in grouped {
-                let commission = rows.compactMap { $0.commissionAmount }.reduce(0, +)
-                guard commission > 0 else { continue }
-                let explicitGross = rows.compactMap { $0.investorGrossProfit }.reduce(0, +)
-                let rate = rows.compactMap { $0.commissionRate }.first ?? self.commissionRate
-                let gross = explicitGross > 0 ? explicitGross : (rate > 0 ? commission / rate : 0)
-
-                let investment = allInvestments.first { $0.id == investmentId }
-                let investorName = investment?.investorName
-                    ?? self.displayName(from: rows.first?.investorId)
-                    ?? "Investor"
-                let investmentNumber = investment?.investmentNumber ?? investmentId.extractInvestmentNumber()
-
-                items.append(CreditNoteBreakdownItem(
-                    id: investmentId,
-                    investmentNumber: investmentNumber,
-                    investorName: investorName,
-                    grossProfit: gross,
-                    commissionRate: rate,
-                    commission: commission
-                ))
-                totalGross += gross
-                totalComm += commission
-            }
-
-            self.breakdownItems = items.sorted { $0.investorName < $1.investorName }
-            self.tradeGrossProfit = totalGross
-            self.totalCommission = totalComm
-            self.displayRateFromBreakdown = Self.impliedCommissionRate(from: items)
-            self.isLoading = false
-        } catch {
+        guard let resolved = await TradeCommissionSettlementBreakdownResolver.resolve(
+            tradeId: tradeId,
+            creditNoteDocumentId: creditNoteDocumentId,
+            investments: services.investmentService.investments,
+            settlementAPIService: settlementAPI
+        ) else {
             self.errorMessage = "Gutschrift-Details konnten nicht aus dem Settlement geladen werden."
             self.breakdownItems = []
-            self.tradeGrossProfit = 0
-            self.totalCommission = 0
-            self.isLoading = false
+            return
         }
-    }
 
-    private func displayName(from investorId: String?) -> String? {
-        guard let investorId, investorId.hasPrefix("user:") else { return nil }
-        let raw = String(investorId.dropFirst("user:".count))
-        return raw.split(separator: "@").first.map(String.init)
+        self.errorMessage = nil
+        self.applyCreditNoteBreakdown(resolved.lines, commissionRate: self.commissionRate)
+        if self.tradeGrossProfit <= 0 { self.tradeGrossProfit = resolved.totalGrossProfit }
+        if self.totalCommission <= 0 { self.totalCommission = resolved.totalCommission }
     }
 
     /// Aligns header percentage with per-row amounts (`commission = gross × rate` from `CommissionCalculationService`).

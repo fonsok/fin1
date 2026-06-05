@@ -35,6 +35,7 @@ protocol TradingCoordinatorProtocol: Sendable {
     func submitOrder(_ order: OrderSell) async throws
     func cancelOrder(_ orderId: String) async throws
     func updateOrderStatus(_ orderId: String, status: String) async throws
+    func registerPairedBuyTraderOrder(_ order: Order, pairExecutionId: String) async
 
     // MARK: - Trade Management
     func createNewTrade(buyOrder: OrderBuy) async throws -> Trade

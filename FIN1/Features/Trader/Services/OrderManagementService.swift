@@ -13,6 +13,10 @@ final class OrderManagementService: OrderManagementServiceProtocol, ServiceLifec
     private let transactionIdService: any TransactionIdServiceProtocol
     private let userService: (any UserServiceProtocol)?
     private var orderAPIService: OrderAPIServiceProtocol?
+    /// Parse `tradeId` for sell orders keyed by order id (needed for backend status sync).
+    private var sellOrderTradeIds: [String: String] = [:]
+    /// `pairExecutionId` for paired-buy trader legs (server finalize + paired cancel).
+    private var pairedBuyExecutionIds: [String: String] = [:]
 
     var activeOrdersPublisher: AnyPublisher<[Order], Never> {
         self.$activeOrders
@@ -323,7 +327,7 @@ extension OrderManagementService {
         if let apiService = orderAPIService {
             Task { [apiService, newOrder] in
                 do {
-                    let savedOrder = try await apiService.saveSellOrder(newOrder)
+                    let savedOrder = try await apiService.saveSellOrder(newOrder, tradeId: nil)
                     print("✅ Sell order synced to backend: \(savedOrder.id)")
                 } catch {
                     print("⚠️ Failed to sync sell order to backend: \(error.localizedDescription)")
@@ -335,6 +339,25 @@ extension OrderManagementService {
     }
 
     func updateOrderStatus(_ orderId: String, status: String) async throws {
+        let normalized = status.lowercased()
+        if let pairExecutionId = self.pairedBuyExecutionIds[orderId],
+           let apiService = self.orderAPIService,
+           normalized != "executed",
+           normalized != "suspended" {
+            // `suspended` is UI-only for STORNO window; server catches up in commitPairedBuyExecution.
+            if normalized == "completed" {
+                try await apiService.commitPairedBuyExecution(
+                    pairExecutionId: pairExecutionId,
+                    postDisplayStatus: "completed"
+                )
+            } else {
+                try await apiService.advancePairedOrderStatus(
+                    pairExecutionId: pairExecutionId,
+                    status: normalized
+                )
+            }
+        }
+
         await MainActor.run {
             if let index = activeOrders.firstIndex(where: { $0.id == orderId }) {
                 let order = self.activeOrders[index]
@@ -348,8 +371,8 @@ extension OrderManagementService {
                     price: order.price,
                     totalAmount: order.totalAmount,
                     createdAt: order.createdAt,
-                    executedAt: order.executedAt,
-                    confirmedAt: order.confirmedAt,
+                    executedAt: status == "executed" ? (order.executedAt ?? Date()) : order.executedAt,
+                    confirmedAt: status == "confirmed" ? (order.confirmedAt ?? Date()) : order.confirmedAt,
                     updatedAt: Date(),
                     optionDirection: order.optionDirection,
                     underlyingAsset: order.underlyingAsset,
@@ -359,6 +382,7 @@ extension OrderManagementService {
                     orderInstruction: order.orderInstruction,
                     limitPrice: order.limitPrice,
                     isMirrorPoolOrder: order.isMirrorPoolOrder,
+                    originalHoldingId: order.originalHoldingId,
                     status: status
                 )
                 self.activeOrders[index] = updatedOrder
@@ -367,10 +391,26 @@ extension OrderManagementService {
     }
 
     func cancelOrder(_ orderId: String) async throws {
+        if let apiService = orderAPIService {
+            do {
+                try await apiService.cancelOrder(orderId)
+            } catch {
+                // Paired/server-backed orders must cancel on Parse (mirror leg too).
+                if self.pairedBuyExecutionIds[orderId] != nil {
+                    throw error
+                }
+                print("⚠️ OrderManagementService: Server cancel skipped — \(error.localizedDescription)")
+            }
+        }
+        await self.removeActiveOrder(orderId)
+    }
+
+    func removeActiveOrder(_ orderId: String) async {
         await MainActor.run {
             if let index = activeOrders.firstIndex(where: { $0.id == orderId }) {
                 self.activeOrders.remove(at: index)
             }
+            self.pairedBuyExecutionIds.removeValue(forKey: orderId)
         }
     }
 
@@ -388,6 +428,65 @@ extension OrderManagementService {
             self.activeOrders.append(order)
             print("🔍 DEBUG: OrderManagementService added order \(order.id) to activeOrders. Total count: \(self.activeOrders.count)")
         }
+    }
+
+    func persistSellOrder(_ order: OrderSell, tradeId: String?) async throws -> OrderSell {
+        guard let apiService = orderAPIService else {
+            print("⚠️ OrderManagementService: No API service — sell order stays local only")
+            return order
+        }
+
+        let savedOrder = try await apiService.saveSellOrder(order, tradeId: tradeId)
+        if let tradeId {
+            self.sellOrderTradeIds[savedOrder.id] = tradeId
+        }
+        print("✅ OrderManagementService: Sell order persisted — Parse id \(savedOrder.id), tradeId \(tradeId ?? "nil")")
+        return savedOrder
+    }
+
+    func syncActiveOrderToBackend(_ orderId: String) async {
+        guard let apiService = orderAPIService else { return }
+
+        let orderSnapshot: Order? = await MainActor.run {
+            self.activeOrders.first(where: { $0.id == orderId })
+        }
+        guard let order = orderSnapshot else { return }
+
+        let tradeId = self.sellOrderTradeIds[orderId]
+        do {
+            _ = try await apiService.updateOrder(order, tradeId: tradeId)
+            print("✅ OrderManagementService: Synced order \(orderId) status '\(order.status)' to backend")
+        } catch {
+            print("⚠️ OrderManagementService: Failed to sync order \(orderId): \(error.localizedDescription)")
+        }
+    }
+
+    func registerSellOrderTradeLink(orderId: String, tradeId: String) {
+        self.sellOrderTradeIds[orderId] = tradeId
+    }
+
+    func registerPairedBuyExecutionLink(orderId: String, pairExecutionId: String) {
+        self.pairedBuyExecutionIds[orderId] = pairExecutionId
+    }
+
+    func pairedBuyExecutionId(for orderId: String) -> String? {
+        self.pairedBuyExecutionIds[orderId]
+    }
+
+    @MainActor
+    func reportOrderStatusFailure(_ message: String) {
+        self.errorMessage = message
+    }
+
+    func finalizePairedBuyExecution(for orderId: String) async throws {
+        guard let pairExecutionId = pairedBuyExecutionIds[orderId] else { return }
+        guard let apiService = orderAPIService else {
+            throw AppError.validationError("Backend-Verbindung nicht verfügbar für Paired-Buy-Finalize.")
+        }
+        try await apiService.commitPairedBuyExecution(
+            pairExecutionId: pairExecutionId,
+            postDisplayStatus: nil
+        )
     }
 
     private func loadActiveOrdersSync() {
@@ -412,7 +511,9 @@ extension OrderManagementService {
         }
 
         let ordersToSync = self.activeOrders.filter { order in
-            // Sync orders that are not yet completed or cancelled
+            if self.pairedBuyExecutionIds[order.id] != nil {
+                return false
+            }
             let status = order.status.lowercased()
             return status != "completed" && status != "cancelled"
         }
@@ -426,7 +527,7 @@ extension OrderManagementService {
 
         for order in ordersToSync {
             do {
-                _ = try await apiService.updateOrder(order)
+                _ = try await apiService.updateOrder(order, tradeId: nil)
                 print("✅ Order \(order.id) synced")
             } catch {
                 print("⚠️ Failed to sync order \(order.id): \(error.localizedDescription)")

@@ -14,6 +14,8 @@ final class TradesOverviewViewModel: ObservableObject {
     @Published var selectedTrade: TradeOverviewItem?
     @Published var showTradeDetails: Bool = false
     @Published var hasActiveTrade: Bool = false
+    /// Last period applied in `filterTrades(by:)` — used when refreshing commission without re-filter UI state.
+    var lastFilteredTimePeriod: TradeTimePeriod = .last30Days
 
     // Error handling
     @Published var errorMessage: String?
@@ -34,6 +36,8 @@ final class TradesOverviewViewModel: ObservableObject {
     var statisticsService: (any TradingStatisticsServiceProtocol)?
     var invoiceService: (any InvoiceServiceProtocol)?
     var configurationService: (any ConfigurationServiceProtocol)?
+    var documentService: (any DocumentServiceProtocol)?
+    var documentInboxBridge: UncheckedDocumentServiceBridge?
     var userService: (any UserServiceProtocol)?
     nonisolated(unsafe) var parseLiveQueryClient: (any ParseLiveQueryClientProtocol)?
     nonisolated(unsafe) var liveQuerySubscriptions: [LiveQuerySubscription] = []
@@ -71,6 +75,10 @@ final class TradesOverviewViewModel: ObservableObject {
     }
 
     deinit {
+        let calculator = commissionCalculator
+        Task { @MainActor in
+            calculator.cancelPendingRefresh()
+        }
         let subs = liveQuerySubscriptions
         let client = parseLiveQueryClient
         liveQuerySubscriptions.removeAll()

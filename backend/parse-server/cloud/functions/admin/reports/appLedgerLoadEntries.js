@@ -8,6 +8,10 @@ const {
   LEGACY_TRANSACTION_TYPE_APP_SERVICE_CHARGE_OLD,
 } = require('./appLedgerConstants');
 const { mergeLegacySyntheticEntriesWhenEmpty } = require('./appLedgerLegacySynthesis');
+const {
+  expandLedgerAccountFilter,
+  normalizeClientLiabilityAccount,
+} = require('../../../utils/accountingHelper/clientLiabilityAccounts');
 
 async function fetchRawAppLedgerRows({
   mergeBankContra,
@@ -15,20 +19,32 @@ async function fetchRawAppLedgerRows({
   skip,
   account,
   userId,
+  /** All `_User` / ledger keys to match (from `resolveLedgerUserKeysFromParam`); overrides `userId` Parse-id heuristic. */
+  resolvedUserIdKeys = null,
   transactionType,
   dateFrom,
   dateTo,
+  amountMin = null,
+  amountMax = null,
   requestParams,
   getMappingSnapshotForAccount,
 }) {
   let entries = [];
-  const queryLimit = mergeBankContra ? 2 * (maxResults + skip) : maxResults + skip;
-  const querySkip = 0;
+  const queryLimit = mergeBankContra ? 2 * (maxResults + skip) : maxResults;
+  const querySkip = mergeBankContra ? 0 : skip;
 
   try {
     const query = new Parse.Query('AppLedgerEntry');
-    if (account) query.equalTo('account', account);
-    if (userId && looksLikeParseObjectId(String(userId).trim())) query.equalTo('userId', userId);
+    if (account) {
+      const accountFilter = expandLedgerAccountFilter(account);
+      if (accountFilter.length === 1) query.equalTo('account', accountFilter[0]);
+      else query.containedIn('account', accountFilter);
+    }
+    if (Array.isArray(resolvedUserIdKeys) && resolvedUserIdKeys.length > 0) {
+      query.containedIn('userId', resolvedUserIdKeys);
+    } else if (userId && looksLikeParseObjectId(String(userId).trim())) {
+      query.equalTo('userId', userId);
+    }
     if (transactionType) {
       if (transactionType === TRANSACTION_TYPE_APP_SERVICE_CHARGE) {
         query.containedIn('transactionType', [
@@ -41,6 +57,8 @@ async function fetchRawAppLedgerRows({
     }
     if (dateFrom) query.greaterThanOrEqualTo('createdAt', new Date(dateFrom));
     if (dateTo) query.lessThanOrEqualTo('createdAt', new Date(dateTo));
+    if (amountMin != null) query.greaterThanOrEqualTo('amount', amountMin);
+    if (amountMax != null) query.lessThanOrEqualTo('amount', amountMax);
     applyQuerySort(query, requestParams || {}, {
       allowed: ['createdAt', 'amount'],
       defaultField: 'createdAt',
@@ -51,7 +69,7 @@ async function fetchRawAppLedgerRows({
 
     const results = await query.find({ useMasterKey: true });
     entries = results.map((e) => {
-      const rowAccount = e.get('account');
+      const rowAccount = normalizeClientLiabilityAccount(e.get('account'));
       const metadata = e.get('metadata') || {};
       const mappedSnapshot = getMappingSnapshotForAccount(rowAccount) || {};
       return {

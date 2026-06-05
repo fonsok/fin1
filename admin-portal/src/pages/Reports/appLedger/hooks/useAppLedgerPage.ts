@@ -2,9 +2,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { cloudFunction } from '../../../../api/admin';
 import { nextSortState, type SortOrder } from '../../../../components/table/SortableTh';
+import { useDebounce } from '../../../../hooks/useDebounce';
 import { formatDateTime } from '../../../../utils/format';
-import { TRANSACTION_TYPE_LABELS } from '../constants';
-import type { AccountDef, AccountTotals, AppLedgerEntry, DateRangePreset, LedgerResponse, VATSummary } from '../types';
+import { resolveDateRange } from '../../../../utils/dateRangePreset';
+import { transactionTypeDisplayLabel } from '../constants';
+import type { AccountDef, DateRangePreset, LedgerResponse, VATSummary } from '../types';
 
 /** Response shape of `exportAuditorFinancialCsv` (Parse Cloud). */
 export interface AuditorFinancialExportResult {
@@ -113,42 +115,18 @@ export interface FinancialReconciliationResult {
   };
 }
 
-function toYMD(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-function resolveDateRange(
-  datePreset: DateRangePreset,
-  dateFromInput: string,
-  dateToInput: string,
-): { from?: string; to?: string } {
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-  if (datePreset === 'all') return {};
-  if (datePreset === 'custom') return { from: dateFromInput || undefined, to: dateToInput || undefined };
-  if (datePreset === 'thisMonth') return { from: toYMD(new Date(today.getFullYear(), today.getMonth(), 1)), to: toYMD(today) };
-  if (datePreset === 'lastMonth') {
-    const start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-    const end = new Date(today.getFullYear(), today.getMonth(), 0);
-    return { from: toYMD(start), to: toYMD(end) };
-  }
-  if (datePreset === 'thisYear') return { from: toYMD(new Date(today.getFullYear(), 0, 1)), to: toYMD(today) };
-  if (datePreset === 'last30Days') {
-    const start = new Date(today);
-    start.setDate(start.getDate() - 29);
-    return { from: toYMD(start), to: toYMD(today) };
-  }
-  return {};
-}
-
 /** Safe single path segment for archive / download names (no slashes). */
 function safeExportSegment(raw: string, maxLen: number): string {
   const s = raw.replace(/[/\\?*:|"<>]/g, '_').replace(/\s+/g, '_').slice(0, maxLen);
   return s.length > 0 ? s : 'all';
+}
+
+function parseAmountFilterInput(raw: string): number | undefined {
+  const trimmed = raw.trim();
+  if (!trimmed) return undefined;
+  const n = Number(trimmed.replace(',', '.'));
+  if (!Number.isFinite(n) || n < 0) return undefined;
+  return Math.round(n * 100) / 100;
 }
 
 /**
@@ -158,8 +136,22 @@ function safeExportSegment(raw: string, maxLen: number): string {
 export function useAppLedgerPage() {
   const [selectedAccount, setSelectedAccount] = useState<string>('');
   const [userFilter, setUserFilter] = useState('');
-  const [debouncedUserFilter, setDebouncedUserFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('');
+  const [referenceFilter, setReferenceFilter] = useState('');
+  const [amountMinInput, setAmountMinInput] = useState('');
+  const [amountMaxInput, setAmountMaxInput] = useState('');
+  const debouncedUserFilter = useDebounce(userFilter.trim(), 300);
+  const debouncedReferenceFilter = useDebounce(referenceFilter.trim(), 300);
+  const debouncedAmountMinInput = useDebounce(amountMinInput.trim(), 300);
+  const debouncedAmountMaxInput = useDebounce(amountMaxInput.trim(), 300);
+  const debouncedAmountMin = useMemo(
+    () => parseAmountFilterInput(debouncedAmountMinInput),
+    [debouncedAmountMinInput],
+  );
+  const debouncedAmountMax = useMemo(
+    () => parseAmountFilterInput(debouncedAmountMaxInput),
+    [debouncedAmountMaxInput],
+  );
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(100);
   const [datePreset, setDatePreset] = useState<DateRangePreset>('all');
@@ -182,15 +174,12 @@ export function useAppLedgerPage() {
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setDebouncedUserFilter(userFilter.trim());
-    }, 300);
-    return () => window.clearTimeout(timer);
-  }, [userFilter]);
-
-  useEffect(() => {
     setPage(0);
-  }, [debouncedUserFilter]);
+  }, [debouncedUserFilter, debouncedReferenceFilter, debouncedAmountMin, debouncedAmountMax]);
+
+  const resetPagedFilters = useCallback(() => {
+    setPage(0);
+  }, []);
 
   const refreshOpeningSnapshots = useCallback(async () => {
     setOpeningSnapshotsLoading(true);
@@ -252,11 +241,14 @@ export function useAppLedgerPage() {
     [sortBy, sortOrder],
   );
 
-  const { data, isLoading, refetch } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: [
       'appLedger',
       selectedAccount,
       debouncedUserFilter,
+      debouncedReferenceFilter,
+      debouncedAmountMin,
+      debouncedAmountMax,
       typeFilter,
       page,
       pageSize,
@@ -270,14 +262,17 @@ export function useAppLedgerPage() {
       cloudFunction<LedgerResponse>('getAppLedger', {
         ...(selectedAccount ? { account: selectedAccount } : {}),
         ...(debouncedUserFilter ? { userId: debouncedUserFilter } : {}),
+        ...(debouncedReferenceFilter ? { referenceSearch: debouncedReferenceFilter } : {}),
+        ...(debouncedAmountMin != null ? { amountMin: debouncedAmountMin } : {}),
+        ...(debouncedAmountMax != null ? { amountMax: debouncedAmountMax } : {}),
         ...(typeFilter ? { transactionType: typeFilter } : {}),
         ...(resolvedDateRange.from ? { dateFrom: `${resolvedDateRange.from}T00:00:00.000Z` } : {}),
         ...(resolvedDateRange.to ? { dateTo: `${resolvedDateRange.to}T23:59:59.999Z` } : {}),
         limit: pageSize,
         skip: page * pageSize,
-      sortBy,
-      sortOrder,
-    }),
+        sortBy,
+        sortOrder,
+      }),
     placeholderData: (previousData) => previousData,
     staleTime: 30_000,
   });
@@ -285,72 +280,23 @@ export function useAppLedgerPage() {
   const dataEntries = data?.entries;
   const dataAccounts = data?.accounts;
   const dataTotals = data?.totals;
-  const rawEntries = useMemo(() => dataEntries ?? [], [dataEntries]);
+  const entries = useMemo(() => dataEntries ?? [], [dataEntries]);
   const accounts = useMemo(() => dataAccounts ?? [], [dataAccounts]);
+  const totalCount = data?.totalCount ?? 0;
+  const filterScanTruncated = data?.filterScanTruncated ?? false;
 
-  const entries = useMemo(() => {
-    const hasDateFrom = Boolean(resolvedDateRange.from);
-    const hasDateTo = Boolean(resolvedDateRange.to);
-    const matches = (entry: AppLedgerEntry): boolean => {
-      if (selectedAccount && entry.account !== selectedAccount) return false;
-      if (typeFilter && entry.transactionType !== typeFilter) return false;
-      if (hasDateFrom && new Date(entry.createdAt) < new Date(`${resolvedDateRange.from as string}T00:00:00.000Z`)) return false;
-      if (hasDateTo && new Date(entry.createdAt) > new Date(`${resolvedDateRange.to as string}T23:59:59.999Z`)) return false;
-      return true;
-    };
-    const backendMismatch = rawEntries.some((entry) => !matches(entry));
-    return backendMismatch ? rawEntries.filter(matches) : rawEntries;
-  }, [rawEntries, resolvedDateRange, selectedAccount, typeFilter]);
-
-  const backendFilterMismatch = rawEntries.length !== entries.length;
-  const totalCount = backendFilterMismatch ? entries.length : (data?.totalCount ?? 0);
-
-  const totals = useMemo(() => {
-    if (!backendFilterMismatch && dataTotals) {
-      return dataTotals;
-    }
-
-    const nextTotals: Record<string, AccountTotals> = {};
-    for (const e of entries) {
-      const key = e.account;
-      if (!nextTotals[key]) nextTotals[key] = { credit: 0, debit: 0, net: 0 };
-      if (e.side === 'credit') {
-        nextTotals[key].credit += e.amount;
-        nextTotals[key].net += e.amount;
-      } else {
-        nextTotals[key].debit += e.amount;
-        nextTotals[key].net -= e.amount;
-      }
-    }
-    Object.keys(nextTotals).forEach((key) => {
-      nextTotals[key].credit = Math.round(nextTotals[key].credit * 100) / 100;
-      nextTotals[key].debit = Math.round(nextTotals[key].debit * 100) / 100;
-      nextTotals[key].net = Math.round(nextTotals[key].net * 100) / 100;
-    });
-    return nextTotals;
-  }, [backendFilterMismatch, dataTotals, entries]);
+  const totals = useMemo(() => dataTotals ?? {}, [dataTotals]);
 
   const totalRevenue = useMemo(
-    () => accounts.filter((a) => a.group === 'revenue').reduce((sum, a) => sum + (totals[a.code]?.net ?? 0), 0),
-    [accounts, totals],
+    () => data?.totalRevenue ?? accounts.filter((a) => a.group === 'revenue').reduce((sum, a) => sum + (totals[a.code]?.net ?? 0), 0),
+    [accounts, data?.totalRevenue, totals],
   );
   const totalRefunds = useMemo(
-    () => accounts.filter((a) => a.group === 'expense').reduce((sum, a) => sum + (totals[a.code]?.debit ?? 0), 0),
-    [accounts, totals],
+    () => data?.totalRefunds ?? accounts.filter((a) => a.group === 'expense').reduce((sum, a) => sum + (totals[a.code]?.debit ?? 0), 0),
+    [accounts, data?.totalRefunds, totals],
   );
 
-  const vatSummary: VATSummary | undefined = useMemo(() => {
-    if (!data?.vatSummary) return undefined;
-    const vatCollected = totals['PLT-TAX-VAT']?.credit ?? 0;
-    const vatRemitted = totals['PLT-TAX-VAT']?.debit ?? 0;
-    const inputVATClaimed = totals['PLT-TAX-VST']?.debit ?? 0;
-    return {
-      outputVATCollected: Math.round(vatCollected * 100) / 100,
-      outputVATRemitted: Math.round(vatRemitted * 100) / 100,
-      inputVATClaimed: Math.round(inputVATClaimed * 100) / 100,
-      outstandingVATLiability: Math.round((vatCollected - vatRemitted - inputVATClaimed) * 100) / 100,
-    };
-  }, [data?.vatSummary, totals]);
+  const vatSummary: VATSummary | undefined = useMemo(() => data?.vatSummary, [data?.vatSummary]);
 
   const groupedAccounts = useMemo(
     () =>
@@ -366,6 +312,9 @@ export function useAppLedgerPage() {
   const resetFilters = () => {
     setSelectedAccount('');
     setUserFilter('');
+    setReferenceFilter('');
+    setAmountMinInput('');
+    setAmountMaxInput('');
     setTypeFilter('');
     setDatePreset('all');
     setDateFromInput('');
@@ -520,7 +469,7 @@ export function useAppLedgerPage() {
         e.amount.toFixed(2),
         e.userId,
         e.userRole,
-        TRANSACTION_TYPE_LABELS[e.transactionType] || e.transactionType,
+        transactionTypeDisplayLabel(e.transactionType),
         e.metadata?.businessReference || '',
         e.referenceId,
         e.description,
@@ -540,10 +489,13 @@ export function useAppLedgerPage() {
 
   return {
     isLoading,
+    isError,
+    error: isError ? error : null,
     refetch,
     entries,
     accounts,
     totalCount,
+    filterScanTruncated,
     totals,
     totalRevenue,
     totalRefunds,
@@ -575,6 +527,12 @@ export function useAppLedgerPage() {
     setSelectedAccount,
     userFilter,
     setUserFilter,
+    referenceFilter,
+    setReferenceFilter,
+    amountMinInput,
+    setAmountMinInput,
+    amountMaxInput,
+    setAmountMaxInput,
     typeFilter,
     setTypeFilter,
     page,
@@ -588,6 +546,7 @@ export function useAppLedgerPage() {
     dateToInput,
     setDateToInput,
     resetFilters,
+    resetPagedFilters,
     sortBy,
     sortOrder,
     onLedgerSort,

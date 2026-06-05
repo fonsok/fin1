@@ -278,6 +278,37 @@ describe('getTradeSettlementConsistencyStatus (admin observability)', () => {
     expect(result.mismatchCount).toBe(1);
     expect(result.mismatchSamples[0].diff.commission).not.toBe(0);
   });
+
+  test('stays healthy when investment has profit+commission but return matches transferAmount', async () => {
+    db.investments = [
+      { id: 'inv-1', investorId: 'investor-1', amount: 1000, profit: 457.06, totalCommissionPaid: 114.27 },
+    ];
+    db.accountStatements = [
+      { id: 's1', userId: 'investor-1', tradeId: 'trade-1', investmentId: 'inv-1', entryType: 'investment_return', amount: 1455.82, source: 'backend' },
+      { id: 's2', userId: 'investor-1', tradeId: 'trade-1', investmentId: 'inv-1', entryType: 'commission_debit', amount: -114.27, source: 'backend' },
+    ];
+    db.documents = [
+      {
+        id: 'd1',
+        userId: 'investor-1',
+        tradeId: 'trade-1',
+        investmentId: 'inv-1',
+        type: 'investorCollectionBill',
+        source: 'backend',
+        metadata: {
+          transferAmount: 1455.82,
+          commission: 114.27,
+          netProfit: 457.06,
+          buyLeg: { amount: 990.76 },
+          taxBreakdown: { totalTax: 0 },
+        },
+      },
+    ];
+    const handler = cloudFunctions.getTradeSettlementConsistencyStatus;
+    const result = await handler({ user: adminUser, params: { limit: 10 } });
+    expect(result.overall).toBe('healthy');
+    expect(result.mismatchCount).toBe(0);
+  });
 });
 
 describe('runFinanceConsistencySmoke (admin observability)', () => {

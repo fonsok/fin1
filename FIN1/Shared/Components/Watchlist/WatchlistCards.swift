@@ -163,44 +163,157 @@ struct WatchedSearchResultCard: View {
     }
 }
 
-// MARK: - Watched Trader Card
-struct WatchedTraderCard: View {
-    let trader: MockTrader
+// MARK: - Watched trader cards (`InvestorTrader` SSOT)
+//
+// - `WatchedTraderCard` — compact single-row summary (username + performance).
+// - `InvestorWatchedTraderCard` — investor watchlist: shared header + risk + actions.
+
+// MARK: - Shared chrome
+
+private struct WatchedTraderCardContainer<Content: View>: View {
     let onRemove: () -> Void
+    let primaryTitle: String
+    let secondaryTitle: String
+    @ViewBuilder let content: () -> Content
 
     var body: some View {
-        HStack(spacing: ResponsiveDesign.spacing(16)) {
-            // Trader Info
-            VStack(alignment: .leading, spacing: 4) {
-                Text(self.trader.username)
-                    .font(ResponsiveDesign.headlineFont())
-                    .fontWeight(.semibold)
-                    .foregroundColor(AppTheme.fontColor)
+        VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
+            HStack(alignment: .top, spacing: ResponsiveDesign.spacing(12)) {
+                VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
+                    Text(self.primaryTitle)
+                        .font(ResponsiveDesign.headlineFont())
+                        .fontWeight(.semibold)
+                        .foregroundColor(AppTheme.fontColor)
 
-                Text(self.trader.specialization)
-                    .font(ResponsiveDesign.bodyFont())
-                    .foregroundColor(AppTheme.fontColor.opacity(0.7))
+                    Text(self.secondaryTitle)
+                        .font(ResponsiveDesign.bodyFont())
+                        .foregroundColor(AppTheme.accentLightBlue.opacity(0.9))
+                }
+
+                Spacer(minLength: 0)
+
+                RemoveButton(action: self.onRemove)
             }
 
-            Spacer()
-
-            // Performance Metrics
-            VStack(alignment: .trailing, spacing: 4) {
-                Text("\(self.trader.totalReturn, specifier: "%.1f")%")
-                    .font(ResponsiveDesign.headlineFont())
-                    .fontWeight(.semibold)
-                    .foregroundColor(self.trader.totalReturn >= 0 ? AppTheme.accentGreen : AppTheme.accentRed)
-
-                Text("Win Rate: \(self.trader.winRate, specifier: "%.1f")%")
-                    .font(ResponsiveDesign.captionFont())
-                    .foregroundColor(AppTheme.fontColor.opacity(0.7))
-            }
-
-            // Remove Button
-            RemoveButton(action: self.onRemove)
+            self.content()
         }
         .padding(ResponsiveDesign.spacing(16))
         .background(AppTheme.sectionBackground)
         .cornerRadius(ResponsiveDesign.spacing(12))
+    }
+}
+
+private enum WatchedTraderCardMetrics {
+    static func performanceValue(for trader: InvestorTrader) -> Double {
+        trader.demoMetrics?.performance ?? trader.performance
+    }
+}
+
+// MARK: - Compact row
+
+/// Compact watchlist row: username, specialization, performance %, win rate.
+struct WatchedTraderCard: View {
+    let trader: InvestorTrader
+    let onRemove: () -> Void
+
+    var body: some View {
+        WatchedTraderCardContainer(
+            onRemove: self.onRemove,
+            primaryTitle: self.trader.username,
+            secondaryTitle: self.trader.specialization
+        ) {
+            HStack(spacing: ResponsiveDesign.spacing(16)) {
+                Spacer(minLength: 0)
+
+                VStack(alignment: .trailing, spacing: ResponsiveDesign.spacing(4)) {
+                    let performance = WatchedTraderCardMetrics.performanceValue(for: self.trader)
+                    Text("\(performance, specifier: "%.1f")%")
+                        .font(ResponsiveDesign.headlineFont())
+                        .fontWeight(.semibold)
+                        .foregroundColor(performance >= 0 ? AppTheme.accentGreen : AppTheme.accentRed)
+
+                    Text("Win Rate: \(self.trader.winRate, specifier: "%.1f")%")
+                        .font(ResponsiveDesign.captionFont())
+                        .foregroundColor(AppTheme.fontColor.opacity(0.7))
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Investor watchlist (extends shared container)
+
+/// Investor watchlist card: name, metrics, View Details + Invest.
+struct InvestorWatchedTraderCard: View {
+    let trader: InvestorTrader
+    let onRemove: () -> Void
+    let onViewDetails: () -> Void
+    let onInvest: () -> Void
+
+    var body: some View {
+        WatchedTraderCardContainer(
+            onRemove: self.onRemove,
+            primaryTitle: self.trader.name,
+            secondaryTitle: self.trader.specialization
+        ) {
+            let performance = WatchedTraderCardMetrics.performanceValue(for: self.trader)
+            HStack(spacing: ResponsiveDesign.spacing(20)) {
+                WatchedTraderMetricColumn(
+                    title: "Performance",
+                    value: String(format: "%.1f%%", performance),
+                    valueColor: performance >= 0 ? AppTheme.accentGreen : AppTheme.accentRed
+                )
+
+                WatchedTraderMetricColumn(
+                    title: "Risk Level",
+                    value: self.trader.riskLevel.displayName,
+                    valueColor: self.trader.riskLevel.color
+                )
+
+                Spacer(minLength: 0)
+            }
+
+            HStack(spacing: ResponsiveDesign.spacing(12)) {
+                Button(action: self.onViewDetails) {
+                    Text("View Details")
+                        .font(ResponsiveDesign.bodyFont())
+                        .foregroundColor(AppTheme.accentLightBlue)
+                        .padding(.horizontal, ResponsiveDesign.spacing(16))
+                        .padding(.vertical, ResponsiveDesign.spacing(8))
+                        .background(AppTheme.accentLightBlue.opacity(0.1))
+                        .cornerRadius(ResponsiveDesign.spacing(6))
+                }
+
+                Button(action: self.onInvest) {
+                    Text("Invest")
+                        .font(ResponsiveDesign.bodyFont())
+                        .foregroundColor(AppTheme.fontColor)
+                        .padding(.horizontal, ResponsiveDesign.spacing(16))
+                        .padding(.vertical, ResponsiveDesign.spacing(8))
+                        .background(AppTheme.buttonColor)
+                        .cornerRadius(ResponsiveDesign.spacing(6))
+                }
+
+                Spacer(minLength: 0)
+            }
+        }
+    }
+}
+
+private struct WatchedTraderMetricColumn: View {
+    let title: String
+    let value: String
+    let valueColor: Color
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(2)) {
+            Text(self.title)
+                .font(ResponsiveDesign.captionFont())
+                .foregroundColor(AppTheme.tertiaryText)
+            Text(self.value)
+                .font(ResponsiveDesign.bodyFont())
+                .fontWeight(.semibold)
+                .foregroundColor(self.valueColor)
+        }
     }
 }

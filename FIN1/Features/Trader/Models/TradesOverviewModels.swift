@@ -12,6 +12,8 @@ struct TradeOverviewItem: Identifiable {
     let profitLoss: Double // Net profit (after fees)
     let returnPercentage: Double
     let commission: Double
+    /// True while backend settlement / credit note is still loading (show placeholder, not "-").
+    let isCommissionPending: Bool
     let isActive: Bool
     let statusText: String
     let statusDetail: String

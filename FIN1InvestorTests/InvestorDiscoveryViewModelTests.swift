@@ -17,8 +17,9 @@ final class InvestorDiscoveryViewModelTests: XCTestCase {
 
     /// Aligned with `TraderDataService`: `@Published` for `ObservableObject`, `@unchecked Sendable` for the protocol.
     final class MockTraderService: TraderDataServiceProtocol, @unchecked Sendable {
-        @Published var traders: [MockTrader]
-        @Published var filteredTraders: [MockTrader] = []
+        @Published var traders: [InvestorTrader]
+        var dashboardTraders: [InvestorTrader] { self.traders }
+        @Published var filteredTraders: [InvestorTrader] = []
         @Published var searchText: String = ""
         @Published var selectedRiskClass: RiskClass?
         @Published var selectedSpecialization: String?
@@ -26,23 +27,27 @@ final class InvestorDiscoveryViewModelTests: XCTestCase {
         @Published var isLoading: Bool = false
         @Published var errorMessage: String?
 
-        init(traders: [MockTrader]) { self.traders = traders }
+        init(traders: [MockTrader]) {
+            self.traders = traders.map { InvestorTrader(mock: $0) }
+        }
 
         // MARK: - Protocol stubs (not used by VM)
         func loadTraderData() {}
         func refreshTraderData() {}
-        func addTrader(_ trader: MockTrader) { self.traders.append(trader) }
-        func updateTrader(_ trader: MockTrader) {}
-        func removeTrader(_ trader: MockTrader) { self.traders.removeAll { $0.id == trader.id } }
+        func refreshTraderCatalog() async {}
+        func refreshParseUserIds() async {}
+        func addTrader(_ trader: InvestorTrader) { self.traders.append(trader) }
+        func updateTrader(_ trader: InvestorTrader) {}
+        func removeTrader(_ trader: InvestorTrader) { self.traders.removeAll { $0.id == trader.id } }
         func performSearch() {}
         func filterByRiskClass(_ riskClass: RiskClass?) {}
         func filterBySpecialization(_ specialization: String?) {}
         func sortBy(_ option: TraderSortOption) {}
         func resetFilters() {}
-        func getTrader(by id: String) -> MockTrader? { self.traders.first { $0.id.uuidString == id } }
-        func getTradersByRiskClass(_ riskClass: RiskClass) -> [MockTrader] { self.traders }
-        func getTradersBySpecialization(_ specialization: String) -> [MockTrader] { self.traders }
-        func getTopPerformers(limit: Int) -> [MockTrader] { Array(self.traders.prefix(limit)) }
+        func getTrader(by id: String) -> InvestorTrader? { self.traders.first { $0.id == id } }
+        func getTradersByRiskClass(_ riskClass: RiskClass) -> [InvestorTrader] { self.traders }
+        func getTradersBySpecialization(_ specialization: String) -> [InvestorTrader] { self.traders }
+        func getTopPerformers(limit: Int) -> [InvestorTrader] { Array(self.traders.prefix(limit)) }
     }
 
     // MARK: - Helpers

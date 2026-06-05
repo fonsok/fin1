@@ -7,3 +7,4 @@
 
 require('./tradeTriggerBeforeSave');
 require('./tradeTriggerAfterSave');
+require('./poolTradeParticipationTriggerAfterSave');

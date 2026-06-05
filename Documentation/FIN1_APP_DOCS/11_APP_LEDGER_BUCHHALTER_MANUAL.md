@@ -205,7 +205,7 @@ Kundenguthaben-Konten:
 
 - `CLT-LIAB-AVA` (verfügbar)
 - `CLT-LIAB-RSV` (reserviert)
-- `CLT-LIAB-TRD` (im Handel/Pool)
+- `CLT-LIAB-PTR` (PoolTrade / Stückkauf; früher `CLT-LIAB-TRD`)
 
 ### 11.1 Statusbedeutung
 
@@ -226,9 +226,9 @@ zurückgebucht; dies ist sowohl in der **Cash Balance** als auch im
 |----------|------|-------|-------|
 | Investment angelegt (`reserved`) | `CLT-LIAB-AVA` | `CLT-LIAB-RSV` | verfügbar → reserviert |
 | User löscht/storniert in `reserved` | `CLT-LIAB-RSV` | `CLT-LIAB-AVA` | Reservierung rückgängig + Rückbuchung ins Nutzerkonto (Cash Balance/Account Statement sichtbar) |
-| Statuswechsel `reserved` → `active` | `CLT-LIAB-RSV` | `CLT-LIAB-TRD` | reserviert → im Handel |
-| Statuswechsel `active` → `completed` | `CLT-LIAB-TRD` | `CLT-LIAB-AVA` | Handelsbindung auflösen |
-| Statuswechsel `active` → `cancelled` | `CLT-LIAB-TRD` | `CLT-LIAB-AVA` | Abbruch nach Aktivierung |
+| Statuswechsel `reserved` → `active` | `CLT-LIAB-RSV` | `CLT-LIAB-PTR` | reserviert → PoolTrade |
+| Statuswechsel `active` → `completed` | `CLT-LIAB-PTR` | `CLT-LIAB-AVA` | PoolTrade-Bindung auflösen |
+| Statuswechsel `active` → `cancelled` | `CLT-LIAB-PTR` | `CLT-LIAB-AVA` | Abbruch nach Aktivierung |
 | Sonderfall `reserved` → `completed` | `CLT-LIAB-RSV` | `CLT-LIAB-AVA` | Abschluss ohne Aktivierungspfad |
 
 ### 11.3 Externes Kontenmapping (SKR03/SKR04)

@@ -146,6 +146,44 @@ extension AccountStatementEntry {
             valueDate: transaction.timestamp
         )
     }
+
+    /// Bank-style order: oldest first, newest last (Gutschrift after trade settlement).
+    static func sortedForChronologicalDisplay(_ entries: [AccountStatementEntry]) -> [AccountStatementEntry] {
+        entries.sorted { lhs, rhs in
+            if lhs.occurredAt != rhs.occurredAt {
+                return lhs.occurredAt < rhs.occurredAt
+            }
+            return self.chronologicalDisplayRank(lhs) < self.chronologicalDisplayRank(rhs)
+        }
+    }
+
+    private static func chronologicalDisplayRank(_ entry: AccountStatementEntry) -> Int {
+        let backendType = entry.metadata["backendEntryType"] ?? ""
+        switch backendType {
+        case "deposit", "withdrawal": return 5
+        case "trade_buy": return 10
+        case "investment_activate": return 15
+        case let type where type.hasPrefix("investment_escrow_"): return 20
+        case "trade_sell": return 30
+        case "trading_fees": return 40
+        case "investment_return", "investment_profit": return 50
+        case "commission_debit": return 60
+        case "commission_credit": return 70
+        case "residual_return": return 80
+        default:
+            break
+        }
+
+        switch entry.category {
+        case .walletDeposit, .walletWithdrawal: return 5
+        case .tradeSettlement: return 25
+        case .investment: return 45
+        case .profitDistribution: return 50
+        case .commission: return entry.direction == .credit ? 70 : 60
+        case .serviceCharge: return 55
+        default: return 50
+        }
+    }
 }
 
 // Transaction.TransactionStatus.displayName is already defined in Transaction.swift

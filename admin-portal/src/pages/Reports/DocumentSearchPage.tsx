@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { Card, Button, Input } from '../../components/ui';
@@ -21,13 +21,15 @@ import {
   tableTheadSurfaceClasses,
 } from '../../utils/tableStriping';
 
-import { adminBorderChrome, adminEmphasisSoft, adminLabel, adminMonoHint, adminMuted, adminPrimary } from '../../utils/adminThemeClasses';
+import { DocumentBelegDetailPanel } from './DocumentBelegDetailPanel';
+import { adminBorderChrome, adminEmphasisSoft, adminMonoHint, adminPrimary } from '../../utils/adminThemeClasses';
 const DOCUMENT_TYPE_OPTIONS: { value: string; label: string }[] = [
   { value: 'invoice', label: 'Rechnung' },
   { value: 'investorCollectionBill', label: 'Investor Collection Bill' },
   { value: 'traderCollectionBill', label: 'Trader Collection Bill' },
   { value: 'traderCreditNote', label: 'Gutschrift' },
   { value: 'investmentReservationEigenbeleg', label: 'Eigenbeleg (Reservierung)' },
+  { value: 'poolMirrorExecutionEigenbeleg', label: 'Eigenbeleg (Pool-Mirror)' },
   { value: 'monthlyAccountStatement', label: 'Monatskontoauszug' },
   { value: 'financial', label: 'Financial' },
   { value: 'tax', label: 'Steuer' },
@@ -38,6 +40,13 @@ function formatBytes(n: number): string {
   if (n < 1024) return `${n} B`;
   if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
   return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function formatPartyCell(row: DocumentSearchItem): string {
+  const name = row.partyDisplayName?.trim();
+  const id = (row.partyUserId || row.userId || '').trim();
+  if (name && id) return `${name} · ${id}`;
+  return name || id || '—';
 }
 
 type DraftFilters = {
@@ -68,7 +77,7 @@ function buildParams(f: DraftFilters, skip: number): Record<string, unknown> {
   const p: Record<string, unknown> = {
     limit: 25,
     skip,
-    sortBy: 'uploadedAt',
+    sortBy: 'createdAt',
     sortOrder: 'desc',
   };
   if (f.documentNumber.trim()) p.documentNumber = f.documentNumber.trim();
@@ -91,22 +100,72 @@ export function DocumentSearchPage(): JSX.Element {
   const [detailId, setDetailId] = useState<string | null>(null);
   /** GoB: exakte Belegnummer wie `metadata.referenceDocumentNumber` am App-Ledger */
   const [detailLookupNumber, setDetailLookupNumber] = useState<string | null>(null);
+  const detailPanelRef = useRef<HTMLDivElement>(null);
+
+  const scrollToDetailPanel = useCallback(() => {
+    requestAnimationFrame(() => {
+      detailPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }, []);
 
   const openDocumentIdParam = searchParams.get('openDocumentId');
   const openDocumentNumberParam = searchParams.get('openDocumentNumber');
+  const tradeIdParam = searchParams.get('tradeId');
 
-  /** Deep link aus App-Ledger: `openDocumentId` oder `openDocumentNumber` (exakt, serverseitig aufgelöst). */
+  /** Deep link: Trade-Filter aus Summary Report o. ä. */
   useEffect(() => {
-    const open = String(openDocumentIdParam || '').trim();
+    const tid = String(tradeIdParam || '').trim();
+    if (!tid) return;
+    setDraft((d) => ({ ...d, tradeId: tid }));
+    setApplied((prev) => (prev ? { ...prev, tradeId: tid } : { ...emptyDraft(), tradeId: tid }));
+  }, [tradeIdParam]);
+
+  /**
+   * Deep link: Belegnummer ins Suchfeld + Suche starten (Summary Report, App-Ledger).
+   * `openDocumentNumber` — Detail oben (exakt) und Listing per Substring.
+   */
+  useEffect(() => {
     const num = String(openDocumentNumberParam || '').trim();
-    if (open) {
-      setDetailId(open);
-      setDetailLookupNumber(null);
-    } else if (num) {
-      setDetailLookupNumber(num);
+    if (!num) return;
+    const seeded = { ...emptyDraft(), documentNumber: num };
+    setDraft(seeded);
+    setApplied(seeded);
+    setDetailLookupNumber(num);
+    if (!openDocumentIdParam?.trim()) {
       setDetailId(null);
     }
+  }, [openDocumentNumberParam, openDocumentIdParam]);
+
+  /** Deep link: objectId — Detail oben; Belegnummer bleibt aus separatem Param. */
+  useEffect(() => {
+    const open = String(openDocumentIdParam || '').trim();
+    if (!open) return;
+    setDetailId(open);
+    if (!openDocumentNumberParam?.trim()) {
+      setDetailLookupNumber(null);
+    }
   }, [openDocumentIdParam, openDocumentNumberParam]);
+
+  useEffect(() => {
+    if (detailId || detailLookupNumber) {
+      scrollToDetailPanel();
+    }
+  }, [detailId, detailLookupNumber, scrollToDetailPanel]);
+
+  const openRowDetail = useCallback(
+    (row: DocumentSearchItem) => {
+      const num = (row.accountingDocumentNumber || row.documentNumber || '').trim();
+      setDetailId(row.objectId);
+      setDetailLookupNumber(num || null);
+      const next = new URLSearchParams(searchParams);
+      next.set('openDocumentId', row.objectId);
+      if (num) next.set('openDocumentNumber', num);
+      else next.delete('openDocumentNumber');
+      setSearchParams(next, { replace: true });
+      scrollToDetailPanel();
+    },
+    [searchParams, setSearchParams, scrollToDetailPanel],
+  );
 
   const appliedParams = useMemo(
     () => (applied ? buildParams(applied, 0) : null),
@@ -188,9 +247,6 @@ export function DocumentSearchPage(): JSX.Element {
     });
   };
 
-  const detailLabel = clsx('text-sm', adminMuted(isDark));
-  const detailValue = clsx('text-sm', adminEmphasisSoft(isDark));
-
   return (
     <div className="space-y-6">
       <div>
@@ -204,6 +260,7 @@ export function DocumentSearchPage(): JSX.Element {
       </div>
 
       {(detailId || detailLookupNumber) && (
+        <div ref={detailPanelRef} className="scroll-mt-4">
         <Card className="p-4 space-y-3">
           <div className="flex justify-between items-center">
             <h2 className={clsx('text-lg font-semibold', adminPrimary(isDark))}>
@@ -221,38 +278,9 @@ export function DocumentSearchPage(): JSX.Element {
               {detailError instanceof Error ? detailError.message : String(detailError)}
             </p>
           )}
-          {detail && (
-            <div className={clsx('space-y-2 text-sm', detailValue)}>
-              <p>
-                <span className={detailLabel}>objectId:</span>{' '}
-                <code className={clsx('text-xs', adminLabel(isDark))}>{detail.objectId}</code>
-              </p>
-              <p>
-                <span className={detailLabel}>Name:</span> {detail.name}
-              </p>
-              <p>
-                <span className={detailLabel}>fileURL:</span>{' '}
-                <code className={clsx('text-xs break-all', adminLabel(isDark))}>
-                  {detail.fileURL}
-                </code>
-              </p>
-              {detail.accountingSummaryText ? (
-                <pre
-                  className={clsx(
-                    'mt-2 max-h-96 overflow-auto rounded-lg p-3 text-xs whitespace-pre-wrap',
-                    isDark ? 'bg-slate-900 text-slate-200' : 'bg-gray-100 text-gray-800',
-                  )}
-                >
-                  {detail.accountingSummaryText}
-                </pre>
-              ) : (
-                <p className={clsx('text-xs', tableBodyCellMutedClasses(isDark))}>
-                  Kein accountingSummaryText (z. B. PDF-Beleg).
-                </p>
-              )}
-            </div>
-          )}
+          {detail && <DocumentBelegDetailPanel detail={detail} isDark={isDark} />}
         </Card>
+        </div>
       )}
 
       <Card className="p-4 space-y-4">
@@ -363,7 +391,7 @@ export function DocumentSearchPage(): JSX.Element {
             <table className="min-w-full text-sm">
               <thead className={tableTheadSurfaceClasses(isDark)}>
                 <tr>
-                  {['Belegnr.', 'Typ', 'User', 'Investment', 'Trade', 'Datum', 'Größe', 'Aktion'].map((h) => (
+                  {['Belegnr.', 'Typ', 'Inhaber', 'Investment', 'Trade', 'Datum', 'Größe', 'Aktion'].map((h) => (
                     <th
                       key={h}
                       className={clsx(
@@ -396,8 +424,16 @@ export function DocumentSearchPage(): JSX.Element {
                       {r.accountingDocumentNumber || r.documentNumber || '—'}
                     </td>
                     <td className={clsx('px-3 py-2', tableBodyCellPrimaryClasses(isDark))}>{r.type}</td>
-                    <td className={clsx('px-3 py-2 font-mono text-xs', tableBodyCellMutedClasses(isDark))}>
-                      {r.userId || '—'}
+                    <td
+                      className={clsx('px-3 py-2 text-xs max-w-[14rem]', tableBodyCellMutedClasses(isDark))}
+                      title={formatPartyCell(r)}
+                    >
+                      <span className="block truncate">{formatPartyCell(r)}</span>
+                      {r.partyRole && r.partyRole !== 'other' && (
+                        <span className="block text-[10px] uppercase tracking-wide opacity-70">
+                          {r.partyRole === 'trader' ? 'Trader' : 'Investor'}
+                        </span>
+                      )}
                     </td>
                     <td className={clsx('px-3 py-2 font-mono text-xs', tableBodyCellMutedClasses(isDark))}>
                       {r.investmentId || '—'}
@@ -413,10 +449,7 @@ export function DocumentSearchPage(): JSX.Element {
                       <Button
                         size="sm"
                         variant="secondary"
-                        onClick={() => {
-                          setDetailLookupNumber(null);
-                          setDetailId(r.objectId);
-                        }}
+                        onClick={() => openRowDetail(r)}
                       >
                         Details
                       </Button>

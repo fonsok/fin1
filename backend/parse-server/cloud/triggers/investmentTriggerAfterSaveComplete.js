@@ -21,9 +21,10 @@ async function handleInvestmentAfterSaveCompleted(investment, oldStatus) {
     'Investment abgeschlossen',
     `Ihr Investment wurde abgeschlossen. Gewinn: ${formatCurrency(profit)}`);
 
-  await processWalletTransaction(investorId, 'investment_return', finalValue,
-    `Investment Rückzahlung ${investment.get('investmentNumber')}`,
-    'investment', investment.id);
+  const settlementBookedOnBeleg = await investmentEscrow.hasEscrowLeg(
+    investment.id,
+    'tradeSettlementPoolRelease',
+  );
 
   const existingReturn = await new Parse.Query('AccountStatement')
     .equalTo('investmentId', investment.id)
@@ -31,7 +32,13 @@ async function handleInvestmentAfterSaveCompleted(investment, oldStatus) {
     .equalTo('source', 'backend')
     .first({ useMasterKey: true });
 
-  if (!existingReturn) {
+  if (!existingReturn && !settlementBookedOnBeleg) {
+    await processWalletTransaction(investorId, 'investment_return', finalValue,
+      `Investment Rückzahlung ${investment.get('investmentNumber')}`,
+      'investment', investment.id);
+  }
+
+  if (!existingReturn && !settlementBookedOnBeleg) {
     try {
       const receipt = await createWalletReceiptDocument({
         userId: investorId,
@@ -77,14 +84,20 @@ async function handleInvestmentAfterSaveCompleted(investment, oldStatus) {
         businessCaseId,
       });
     } else if (['active', 'executing', 'paused', 'closing'].includes(oldStatus)) {
-      await investmentEscrow.bookReleaseTrading({
-        investorId,
-        amount: fv,
-        investmentId: investment.id,
-        investmentNumber: invNo,
-        reason: 'complete',
-        businessCaseId,
-      });
+      const settledOnTrade = await investmentEscrow.hasEscrowLeg(
+        investment.id,
+        'tradeSettlementPoolRelease',
+      );
+      if (!settledOnTrade) {
+        await investmentEscrow.bookReleaseTrading({
+          investorId,
+          amount: fv,
+          investmentId: investment.id,
+          investmentNumber: invNo,
+          reason: 'complete',
+          businessCaseId,
+        });
+      }
     }
   } catch (err) {
     console.error(`❌ investmentEscrow release on complete failed ${investment.id}:`, err.message);

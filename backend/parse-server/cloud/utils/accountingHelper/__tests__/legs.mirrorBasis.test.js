@@ -24,6 +24,7 @@ const {
   computeInvestorBuyLeg,
   computeInvestorSellLeg,
   deriveMirrorTradeBasis,
+  computeCollectionBillTransferAmount,
 } = require('../legs');
 
 const COMMISSION_RATE = 0.11;
@@ -201,5 +202,16 @@ describe('deriveMirrorTradeBasis — pool mirror-trade SSOT', () => {
     const nextSellLegStyleFees = calculateOrderFees(nextAmt, true, feeConfig);
     const nextTotalCost = round2(nextAmt + nextSellLegStyleFees.totalFees);
     expect(nextTotalCost).toBeGreaterThan(investmentCapital);
+  });
+});
+
+describe('computeCollectionBillTransferAmount — Überweisungsbetrag SSOT', () => {
+  test('equals netSellAmount minus commission', () => {
+    const mirror = { netSellAmount: 1573.08, commission: 57.58 };
+    expect(computeCollectionBillTransferAmount({ mirror, commission: 57.58 })).toBe(1515.5);
+  });
+
+  test('returns null when net sell is unknown', () => {
+    expect(computeCollectionBillTransferAmount({ commission: 10 })).toBeNull();
   });
 });

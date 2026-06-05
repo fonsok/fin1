@@ -23,8 +23,9 @@ struct InvestorWatchlistView: View {
     @State private var showClearAllConfirmation = false
     @State private var showSuccessMessage = false
     @State private var successMessage = ""
-    @State private var itemToRemove: MockTrader?
-    @State private var traderToInvest: MockTrader?
+    @State private var itemToRemove: InvestorTrader?
+    @State private var traderToInvest: InvestorTrader?
+    @State private var selectedTraderID: TraderIDItem?
     @Environment(\.themeManager) private var themeManager
 
     init(watchlistService: any InvestorWatchlistServiceProtocol, traderDataService: any TraderDataServiceProtocol) {
@@ -120,9 +121,11 @@ struct InvestorWatchlistView: View {
             }
             .sheet(item: self.$traderToInvest) { trader in
                 InvestmentSheet(trader: trader, onInvestmentSuccess: {
-                    // Optionally refresh watchlist or show success message
                     self.traderToInvest = nil
                 })
+            }
+            .sheet(item: self.$selectedTraderID) { traderIDItem in
+                TraderNavigationHelper.sheetView(for: traderIDItem.id, appServices: self.services)
             }
         }
     }
@@ -143,6 +146,9 @@ struct InvestorWatchlistView: View {
                                 self.itemToRemove = trader
                                 self.showRemoveConfirmation = true
                             },
+                            onViewDetails: {
+                                self.selectedTraderID = TraderIDItem(id: trader.backendTraderId)
+                            },
                             onInvest: {
                                 self.traderToInvest = trader
                             }
@@ -157,7 +163,7 @@ struct InvestorWatchlistView: View {
     }
 
     // MARK: - Computed Properties
-    private var watchedTraders: [MockTrader] {
+    private var watchedTraders: [InvestorTrader] {
         self.viewModel.watchedTraders
     }
 
@@ -166,7 +172,7 @@ struct InvestorWatchlistView: View {
         guard let trader = itemToRemove else { return }
 
         Task {
-            try? await self.services.watchlistService.removeFromWatchlist(trader.id.uuidString)
+            try? await self.services.watchlistService.removeFromWatchlist(trader.backendTraderId)
             await MainActor.run {
                 self.showSuccessMessage = true
                 self.successMessage = "Removed \(trader.name) from watchlist"
@@ -222,95 +228,6 @@ struct InvestorWatchlistEmptyState: View {
             }
         }
         .padding(.top, ResponsiveDesign.spacing(60))
-    }
-}
-
-// MARK: - Investor Watched Trader Card
-struct InvestorWatchedTraderCard: View {
-    let trader: MockTrader
-    let onRemove: () -> Void
-    let onInvest: () -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
-            // Header with trader info and remove button
-            HStack {
-                VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
-                    Text(self.trader.name)
-                        .font(ResponsiveDesign.headlineFont())
-                        .foregroundColor(AppTheme.fontColor)
-
-                    Text(self.trader.specialization)
-                        .font(ResponsiveDesign.bodyFont())
-                        .foregroundColor(AppTheme.accentLightBlue)
-                }
-
-                Spacer()
-
-                Button(action: self.onRemove, label: {
-                    Image(systemName: "trash")
-                        .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize()))
-                        .foregroundColor(AppTheme.tertiaryText)
-                })
-            }
-
-            // Performance metrics
-            HStack(spacing: ResponsiveDesign.spacing(20)) {
-                VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(2)) {
-                    Text("Performance")
-                        .font(ResponsiveDesign.captionFont())
-                        .foregroundColor(AppTheme.tertiaryText)
-                    Text("\(self.trader.performance, specifier: "%.1f")%")
-                        .font(ResponsiveDesign.bodyFont())
-                        .fontWeight(.semibold)
-                        .foregroundColor(self.trader.performance >= 0 ? AppTheme.accentGreen : AppTheme.accentRed)
-                }
-
-                VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(2)) {
-                    Text("Risk Level")
-                        .font(ResponsiveDesign.captionFont())
-                        .foregroundColor(AppTheme.tertiaryText)
-                    Text(self.trader.riskLevel.displayName)
-                        .font(ResponsiveDesign.bodyFont())
-                        .fontWeight(.semibold)
-                        .foregroundColor(self.trader.riskLevel.color)
-                }
-
-                Spacer()
-            }
-
-            // Action buttons
-            HStack(spacing: ResponsiveDesign.spacing(12)) {
-                Button(action: {
-                    // TODO: View trader details
-                }) {
-                    Text("View Details")
-                        .font(ResponsiveDesign.bodyFont())
-                        .foregroundColor(AppTheme.accentLightBlue)
-                        .padding(.horizontal, ResponsiveDesign.spacing(16))
-                        .padding(.vertical, ResponsiveDesign.spacing(8))
-                        .background(AppTheme.accentLightBlue.opacity(0.1))
-                        .cornerRadius(ResponsiveDesign.spacing(6))
-                }
-
-                Button(action: {
-                    self.onInvest()
-                }) {
-                    Text("Invest")
-                        .font(ResponsiveDesign.bodyFont())
-                        .foregroundColor(AppTheme.fontColor)
-                        .padding(.horizontal, ResponsiveDesign.spacing(16))
-                        .padding(.vertical, ResponsiveDesign.spacing(8))
-                        .background(AppTheme.buttonColor)
-                        .cornerRadius(ResponsiveDesign.spacing(6))
-                }
-
-                Spacer()
-            }
-        }
-        .padding(ResponsiveDesign.spacing(16))
-        .background(AppTheme.sectionBackground)
-        .cornerRadius(ResponsiveDesign.spacing(12))
     }
 }
 

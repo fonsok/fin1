@@ -13,6 +13,23 @@
 //     stay AccountStatement-only.
 // ============================================================================
 
+jest.mock('../userCashBalanceAtomic', () => ({
+  advanceUserCashBalanceAtomic: jest.fn(async ({ amount }) => ({
+    balanceBefore: 0,
+    balanceAfter: Number(amount),
+  })),
+  compensateUserCashBalanceAdvance: jest.fn(async () => true),
+}));
+
+jest.mock('../../../services/poolMirrorActivation/traderCustomerBookingPolicy', () => ({
+  resolveTraderCustomerBookingContext: jest.fn(async ({ tradeId, tradeNumber }) => ({
+    tradeId,
+    tradeNumber,
+    trade: null,
+    redirected: false,
+  })),
+}));
+
 describe('bookSettlementEntry (statements.js)', () => {
   let savedAccountStatements;
   let savedAppLedgerEntries;

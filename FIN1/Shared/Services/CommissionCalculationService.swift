@@ -52,6 +52,9 @@ protocol CommissionCalculationServiceProtocol: ServiceLifecycle, Sendable {
         tradeId: String,
         commissionRate: Double
     ) async throws -> Double
+
+    /// One `getAccountStatement` round-trip: trader `commission_credit` totals keyed by `tradeId`.
+    func fetchTraderCommissionCreditTotalsByTradeId(statementLimit: Int) async throws -> [String: Double]
 }
 
 // MARK: - Commission Calculation Service Implementation
@@ -61,14 +64,17 @@ final class CommissionCalculationService: CommissionCalculationServiceProtocol, 
     // MARK: - Dependencies
     private let investorGrossProfitService: (any InvestorGrossProfitServiceProtocol)?
     private var settlementAPIService: (any SettlementAPIServiceProtocol)?
+    private let configurationService: (any ConfigurationServiceProtocol)?
 
     // MARK: - Initialization
     init(
         investorGrossProfitService: (any InvestorGrossProfitServiceProtocol)? = nil,
-        settlementAPIService: (any SettlementAPIServiceProtocol)? = nil
+        settlementAPIService: (any SettlementAPIServiceProtocol)? = nil,
+        configurationService: (any ConfigurationServiceProtocol)? = nil
     ) {
         self.investorGrossProfitService = investorGrossProfitService
         self.settlementAPIService = settlementAPIService
+        self.configurationService = configurationService
     }
 
     /// Late-binding for settlement API (avoids circular init)
@@ -108,10 +114,8 @@ final class CommissionCalculationService: CommissionCalculationServiceProtocol, 
 
     // MARK: - Investor-Specific Commission Calculations
     //
-    // Phase 3: These methods try backend AccountStatement first. The backend
-    // `settleCompletedTrade` already recorded `commission_debit` entries per
-    // investor.  If the backend is unreachable, we fall back to the local
-    // InvestorGrossProfitService path (labelled "estimate/fallback").
+    // Phase 3: Backend AccountStatement first. Local InvestorGrossProfitService only when
+    // `investorMonetaryServerOnly == false` (tests / dev preview).
 
     func calculateCommissionForInvestor(
         investmentId: String,
@@ -131,7 +135,10 @@ final class CommissionCalculationService: CommissionCalculationServiceProtocol, 
             }
         }
 
-        // Fallback: local estimation
+        if self.configurationService?.investorMonetaryServerOnly == true {
+            throw AppError.serviceError(.serviceUnavailable)
+        }
+
         guard let investorGrossProfitService else {
             throw AppError.serviceError(.serviceUnavailable)
         }
@@ -190,12 +197,25 @@ final class CommissionCalculationService: CommissionCalculationServiceProtocol, 
             NSLog("⚠️ CommissionCalc[trade=\(tradeId)] settlementAPIService is nil")
         }
 
-        // Fallback: local estimation
+        if self.configurationService?.investorMonetaryServerOnly == true {
+            throw AppError.serviceError(.serviceUnavailable)
+        }
+
         guard let investorGrossProfitService else {
             throw AppError.serviceError(.serviceUnavailable)
         }
         let grossProfits = try await investorGrossProfitService.getGrossProfitsForTrade(tradeId: tradeId)
         guard !grossProfits.isEmpty else { return 0.0 }
         return grossProfits.values.reduce(0.0) { $0 + self.calculateCommission(grossProfit: $1, rate: commissionRate) }
+    }
+
+    func fetchTraderCommissionCreditTotalsByTradeId(statementLimit: Int = 500) async throws -> [String: Double] {
+        guard let api = settlementAPIService else {
+            throw AppError.serviceError(.serviceUnavailable)
+        }
+        _ = statementLimit
+        return await TraderAccountStatementBuilder.commissionCreditTotalsByTradeId(
+            settlementAPIService: api
+        )
     }
 }

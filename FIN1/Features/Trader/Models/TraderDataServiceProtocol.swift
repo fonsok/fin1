@@ -5,8 +5,11 @@ import SwiftUI
 // MARK: - Trader Data Service Protocol
 /// Defines the contract for trader data operations and management
 protocol TraderDataServiceProtocol: ObservableObject, Sendable {
-    var traders: [MockTrader] { get }
-    var filteredTraders: [MockTrader] { get }
+    /// Full catalog: mock seed (hydrated) + server-only traders (Discover / search).
+    var traders: [InvestorTrader] { get }
+    /// Mock seed traders with demo metrics — Dashboard „Top Recent Trades“ (performance sort).
+    var dashboardTraders: [InvestorTrader] { get }
+    var filteredTraders: [InvestorTrader] { get }
     var searchText: String { get set }
     var selectedRiskClass: RiskClass? { get set }
     var selectedSpecialization: String? { get set }
@@ -17,9 +20,13 @@ protocol TraderDataServiceProtocol: ObservableObject, Sendable {
     // MARK: - Trader Data Management
     func loadTraderData()
     func refreshTraderData()
-    func addTrader(_ trader: MockTrader)
-    func updateTrader(_ trader: MockTrader)
-    func removeTrader(_ trader: MockTrader)
+    /// Merges `discoverTraders` into mock catalog + appends server-only traders.
+    func refreshTraderCatalog() async
+    /// Back-compat alias — calls `refreshTraderCatalog()`.
+    func refreshParseUserIds() async
+    func addTrader(_ trader: InvestorTrader)
+    func updateTrader(_ trader: InvestorTrader)
+    func removeTrader(_ trader: InvestorTrader)
 
     // MARK: - Search and Filtering
     func performSearch()
@@ -29,10 +36,10 @@ protocol TraderDataServiceProtocol: ObservableObject, Sendable {
     func resetFilters()
 
     // MARK: - Trader Queries
-    func getTrader(by id: String) -> MockTrader?
-    func getTradersByRiskClass(_ riskClass: RiskClass) -> [MockTrader]
-    func getTradersBySpecialization(_ specialization: String) -> [MockTrader]
-    func getTopPerformers(limit: Int) -> [MockTrader]
+    func getTrader(by id: String) -> InvestorTrader?
+    func getTradersByRiskClass(_ riskClass: RiskClass) -> [InvestorTrader]
+    func getTradersBySpecialization(_ specialization: String) -> [InvestorTrader]
+    func getTopPerformers(limit: Int) -> [InvestorTrader]
 }
 
 // MARK: - Trader Data Service Implementation
@@ -40,8 +47,12 @@ protocol TraderDataServiceProtocol: ObservableObject, Sendable {
 final class TraderDataService: TraderDataServiceProtocol, ServiceLifecycle, @unchecked Sendable {
     static let shared = TraderDataService()
 
-    @Published var traders: [MockTrader] = []
-    @Published var filteredTraders: [MockTrader] = []
+    @Published var traders: [InvestorTrader] = []
+    @Published var filteredTraders: [InvestorTrader] = []
+
+    var dashboardTraders: [InvestorTrader] {
+        self.allTraders.filter(\.isFromMockCatalog)
+    }
     @Published var searchText: String = ""
     @Published var selectedRiskClass: RiskClass?
     @Published var selectedSpecialization: String?
@@ -49,15 +60,24 @@ final class TraderDataService: TraderDataServiceProtocol, ServiceLifecycle, @unc
     @Published var isLoading = false
     @Published var errorMessage: String?
 
-    private var allTraders: [MockTrader] = []
+    private var allTraders: [InvestorTrader] = []
+    private var parseAPIClient: (any ParseAPIClientProtocol)?
 
     init() {
         self.loadMockData()
         self.performSearch()
     }
 
+    func configure(parseAPIClient: any ParseAPIClientProtocol) {
+        self.parseAPIClient = parseAPIClient
+    }
+
     // MARK: - ServiceLifecycle
-    func start() { /* preload/mock fetch */ }
+    func start() {
+        Task { @MainActor in
+            await self.refreshTraderCatalog()
+        }
+    }
     func stop() { /* noop */ }
     func reset() { self.traders.removeAll(); self.filteredTraders.removeAll(); self.allTraders.removeAll() }
 
@@ -75,15 +95,35 @@ final class TraderDataService: TraderDataServiceProtocol, ServiceLifecycle, @unc
 
     func refreshTraderData() {
         self.isLoading = true
-
-        // Simulate API call
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+        Task { @MainActor in
+            await self.refreshTraderCatalog()
             self.isLoading = false
             self.performSearch()
         }
     }
 
-    func addTrader(_ trader: MockTrader) {
+    func refreshTraderCatalog() async {
+        guard let client = parseAPIClient else { return }
+        self.isLoading = true
+        defer { self.isLoading = false }
+        do {
+            let serverRows = try await TraderDiscoveryAPIService(apiClient: client).fetchAllDiscoverableTraders()
+            let merged = TraderCatalogMerge.merge(mockCatalog: mockTraders, serverRows: serverRows)
+            self.allTraders = merged
+            self.traders = merged
+            self.performSearch()
+            let serverOnlyCount = merged.filter { !$0.isFromMockCatalog }.count
+            print("✅ TraderDataService: catalog merged — total \(merged.count), server-only \(serverOnlyCount)")
+        } catch {
+            print("⚠️ TraderDataService: refreshTraderCatalog failed: \(error.localizedDescription)")
+        }
+    }
+
+    func refreshParseUserIds() async {
+        await self.refreshTraderCatalog()
+    }
+
+    func addTrader(_ trader: InvestorTrader) {
         if !self.traders.contains(where: { $0.id == trader.id }) {
             self.traders.append(trader)
             self.allTraders.append(trader)
@@ -91,7 +131,7 @@ final class TraderDataService: TraderDataServiceProtocol, ServiceLifecycle, @unc
         }
     }
 
-    func updateTrader(_ trader: MockTrader) {
+    func updateTrader(_ trader: InvestorTrader) {
         if let index = traders.firstIndex(where: { $0.id == trader.id }) {
             self.traders[index] = trader
             if let allIndex = allTraders.firstIndex(where: { $0.id == trader.id }) {
@@ -101,7 +141,7 @@ final class TraderDataService: TraderDataServiceProtocol, ServiceLifecycle, @unc
         }
     }
 
-    func removeTrader(_ trader: MockTrader) {
+    func removeTrader(_ trader: InvestorTrader) {
         self.traders.removeAll { $0.id == trader.id }
         self.allTraders.removeAll { $0.id == trader.id }
         self.performSearch()
@@ -123,7 +163,7 @@ final class TraderDataService: TraderDataServiceProtocol, ServiceLifecycle, @unc
         // Apply risk class filter
         if let selectedRiskClass = selectedRiskClass {
             // Approximate mapping from RiskLevel to RiskClass buckets
-            func riskLevelToClass(_ level: MockTrader.RiskLevel) -> RiskClass {
+            func riskLevelToClass(_ level: TraderRiskLevel) -> RiskClass {
                 switch level {
                 case .low: return .riskClass2
                 case .medium: return .riskClass4
@@ -169,12 +209,18 @@ final class TraderDataService: TraderDataServiceProtocol, ServiceLifecycle, @unc
 
     // MARK: - Trader Queries
 
-    func getTrader(by id: String) -> MockTrader? {
-        return self.allTraders.first { $0.id.uuidString == id }
+    func getTrader(by id: String) -> InvestorTrader? {
+        let key = id.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        return self.allTraders.first {
+            $0.catalogId == id
+                || $0.parseUserId == id
+                || $0.backendTraderId == id
+                || $0.username.lowercased() == key
+        }
     }
 
-    func getTradersByRiskClass(_ riskClass: RiskClass) -> [MockTrader] {
-        func riskLevelToClass(_ level: MockTrader.RiskLevel) -> RiskClass {
+    func getTradersByRiskClass(_ riskClass: RiskClass) -> [InvestorTrader] {
+        func riskLevelToClass(_ level: TraderRiskLevel) -> RiskClass {
             switch level {
             case .low: return .riskClass2
             case .medium: return .riskClass4
@@ -184,11 +230,11 @@ final class TraderDataService: TraderDataServiceProtocol, ServiceLifecycle, @unc
         return self.allTraders.filter { riskLevelToClass($0.riskLevel) == riskClass }
     }
 
-    func getTradersBySpecialization(_ specialization: String) -> [MockTrader] {
+    func getTradersBySpecialization(_ specialization: String) -> [InvestorTrader] {
         return self.allTraders.filter { $0.specialization == specialization }
     }
 
-    func getTopPerformers(limit: Int) -> [MockTrader] {
+    func getTopPerformers(limit: Int) -> [InvestorTrader] {
         return self.allTraders
             .sorted { $0.performance > $1.performance }
             .prefix(limit)
@@ -197,14 +243,14 @@ final class TraderDataService: TraderDataServiceProtocol, ServiceLifecycle, @unc
 
     // MARK: - Private Methods
 
-    private func sortTraders(_ traders: [MockTrader], by option: TraderSortOption) -> [MockTrader] {
+    private func sortTraders(_ traders: [InvestorTrader], by option: TraderSortOption) -> [InvestorTrader] {
         switch option {
         case .name:
             return traders.sorted { $0.name < $1.name }
         case .performance:
             return traders.sorted { $0.performance > $1.performance }
         case .riskClass:
-            func score(_ level: MockTrader.RiskLevel) -> Int { level == .low ? 1 : (level == .medium ? 2 : 3) }
+            func score(_ level: TraderRiskLevel) -> Int { level == .low ? 1 : (level == .medium ? 2 : 3) }
             return traders.sorted { score($0.riskLevel) < score($1.riskLevel) }
         case .experience:
             return traders.sorted { $0.experienceYears > $1.experienceYears }
@@ -218,7 +264,7 @@ final class TraderDataService: TraderDataServiceProtocol, ServiceLifecycle, @unc
     private func loadMockData() {
         // Use the full mockTraders array for better filter testing
         // Includes 7 traders with varied performance metrics
-        self.allTraders = mockTraders
+        self.allTraders = mockTraders.map { InvestorTrader(mock: $0, isFromMockCatalog: true) }
         self.traders = self.allTraders
     }
 }

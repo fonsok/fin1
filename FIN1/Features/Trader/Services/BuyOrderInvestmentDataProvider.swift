@@ -79,25 +79,10 @@ final class BuyOrderInvestmentDataProvider: BuyOrderInvestmentDataProviderProtoc
     }
 
     func findTraderIdForMatching(currentUser: User?) -> String? {
-        guard let currentUser = currentUser else {
-            return nil
-        }
-
-        // Try to find MockTrader by username from user's email
-        if let traderDataService = traderDataService {
-            let email = currentUser.email
-            let username = email.components(separatedBy: "@").first ?? ""
-
-            if !username.isEmpty {
-                let traders = traderDataService.traders
-                if let matchedTrader = traders.first(where: { $0.name.lowercased() == username.lowercased() }) {
-                    print("   ✅ Matched trader by username: \(matchedTrader.id)")
-                    return matchedTrader.id.uuidString
-                }
-            }
-        }
-
-        return nil
+        TraderMatchingHelper.findTraderIdForMatching(
+            currentUser: currentUser,
+            traderDataService: self.traderDataService
+        )
     }
 
     // MARK: - Private Helpers
@@ -122,14 +107,7 @@ final class BuyOrderInvestmentDataProvider: BuyOrderInvestmentDataProviderProtoc
     }
 
     private func filterEligibleInvestments(_ investments: [Investment]) -> [Investment] {
-        investments.filter { investment in
-            let statusMatch = investment.status == .active
-            let reservationMatch = investment.reservationStatus == .reserved ||
-                investment.reservationStatus == .active ||
-                investment.reservationStatus == .executing ||
-                investment.reservationStatus == .closed
-            return statusMatch && reservationMatch
-        }
+        investments.filter(\.hasPoolCapitalCommitted)
     }
 
     private func applyRoundRobinSelection(_ investments: [Investment]) -> [Investment] {

@@ -1,128 +1,187 @@
 import Foundation
 
+// MARK: - Commission amount (shared parsing)
+
+enum TradesOverviewCommissionAmounts {
+    /// Gross commission (net commission line + VAT) from a credit-note `Invoice`.
+    static func grossCommission(from invoice: Invoice) -> Double? {
+        let commissionItems = invoice.items.filter { $0.itemType == .commission }
+        let vatItems = invoice.items.filter { $0.itemType == .vat }
+        let netCommission = commissionItems.reduce(0.0) { $0 + abs($1.totalAmount) }
+        let vatAmount = vatItems.reduce(0.0) { $0 + abs($1.totalAmount) }
+        let gross = netCommission + vatAmount
+        return gross > 0 ? gross : nil
+    }
+
+    static func isCommissionPending(hasProfit: Bool, commission: Double) -> Bool {
+        hasProfit && commission <= 0
+    }
+}
+
 // MARK: - Trades Overview Commission Calculator
 
-/// Handles commission calculation for trades overview
-/// SINGLE SOURCE OF TRUTH: First tries to read from existing Credit Note invoice (if trade completed)
-/// Includes retry mechanism for race condition when credit note is added asynchronously
-/// Falls back to calculation if no credit note exists yet (for active trades)
+/// Commission for **Abgeschlossene Trades** — same SSOT as Kontoauszug / Gutschrift-Belege:
+/// 1. In-memory `DocumentService` (trader credit note, already loaded for inbox / collection bills)
+/// 2. Backend customer timeline (`TraderAccountStatementBuilder`, identical to account statement)
+/// 3. Local credit-note `InvoiceService`
 @MainActor
 final class TradesOverviewCommissionCalculator {
     private let invoiceService: (any InvoiceServiceProtocol)?
+    private let documentService: (any DocumentServiceProtocol)?
     private let tradeService: (any TradeLifecycleServiceProtocol)?
-    private let poolTradeParticipationService: (any PoolTradeParticipationServiceProtocol)?
-    private let commissionCalculationService: (any CommissionCalculationServiceProtocol)?
-    private let configurationService: (any ConfigurationServiceProtocol)?
+    private let settlementAPIService: (any SettlementAPIServiceProtocol)?
+
+    private var commissionCreditByTradeId: [String: Double] = [:]
+    private var pendingRefreshTask: Task<Void, Never>?
 
     init(
         invoiceService: (any InvoiceServiceProtocol)?,
         tradeService: (any TradeLifecycleServiceProtocol)?,
         poolTradeParticipationService: (any PoolTradeParticipationServiceProtocol)?,
         commissionCalculationService: (any CommissionCalculationServiceProtocol)?,
-        configurationService: (any ConfigurationServiceProtocol)? = nil
+        configurationService: (any ConfigurationServiceProtocol)? = nil,
+        settlementAPIService: (any SettlementAPIServiceProtocol)? = nil,
+        documentService: (any DocumentServiceProtocol)? = nil
     ) {
         self.invoiceService = invoiceService
+        self.documentService = documentService
         self.tradeService = tradeService
-        self.poolTradeParticipationService = poolTradeParticipationService
-        self.commissionCalculationService = commissionCalculationService
-        self.configurationService = configurationService
+        self.settlementAPIService = settlementAPIService
+        _ = poolTradeParticipationService
+        _ = commissionCalculationService
+        _ = configurationService
     }
 
-    /// Calculates total commission for a trade using centralized services
-    /// - Parameters:
-    ///   - tradeId: Trade ID to check for investor participations
-    ///   - hasProfit: Whether the trade has positive profit (used for guard check)
-    /// - Returns: Commission amount (0 if no investors, no profit, or service unavailable)
-    func calculateCommission(tradeId: String, hasProfit: Bool) async -> Double {
-        NSLog("🧮 TradesOverviewCalc[trade=\(tradeId)] calculateCommission hasProfit=\(hasProfit)")
-        guard hasProfit else {
-            return 0.0 // No commission on losses or zero profit
-        }
+    /// Loads commission map from sources that already power Kontoauszug / document inbox.
+    func refreshCommissionCache(traderId: String) async {
+        self.commissionCreditByTradeId = self.loadCommissionFromDocuments(traderId: traderId)
 
-        // SINGLE SOURCE OF TRUTH: Try to read commission from existing Credit Note invoice first
-        // This matches what Account Statement shows (reads from invoice)
-        if let commissionFromInvoice = getCommissionFromCreditNoteInvoice(tradeId: tradeId) {
-            NSLog("🧮 TradesOverviewCalc[trade=\(tradeId)] from invoice = €\(commissionFromInvoice)")
-            return commissionFromInvoice
-        }
-
-        // BACKEND-AUTHORITATIVE: ask the Settlement API for the trader's
-        // `commission_credit` posting on this trade. The local
-        // PoolTradeParticipation cache is unreliable on the trader side
-        // (participations are owned by investors and may not be replicated
-        // into the trader's local view), so we must NOT gate this call on a
-        // local participation check. The CommissionCalculationService falls
-        // back to `commission_debit` and the local `investorGrossProfitService`
-        // when needed.
-        if let commissionCalculationService = commissionCalculationService,
-           let configurationService = configurationService {
-            let commissionRate = configurationService.effectiveCommissionRate
-            do {
-                let totalCommission = try await commissionCalculationService.calculateTotalCommissionForTrade(
-                    tradeId: tradeId,
-                    commissionRate: commissionRate
-                )
-                NSLog("🧮 TradesOverviewCalc[trade=\(tradeId)] backend returned €\(totalCommission)")
-                if totalCommission > 0 {
-                    return totalCommission
+        if let settlementAPIService {
+            let fromStatement = await TraderAccountStatementBuilder.commissionCreditTotalsByTradeId(
+                settlementAPIService: settlementAPIService
+            )
+            for (tradeId, amount) in fromStatement where amount > 0 {
+                if self.commissionCreditByTradeId[tradeId] == nil {
+                    self.commissionCreditByTradeId[tradeId] = amount
                 }
-            } catch {
-                NSLog("🧮 TradesOverviewCalc[trade=\(tradeId)] backend lookup failed: \(error)")
             }
-        } else {
             NSLog(
-                "🧮 TradesOverviewCalc[trade=\(tradeId)] services missing (commCalcSvc=\(commissionCalculationService != nil), configSvc=\(configurationService != nil))"
+                "🧮 TradesOverviewCommissionCache: documents=\(self.commissionCreditByTradeId.count) "
+                    + "statement=\(fromStatement.count) trade(s)"
             )
         }
 
-        // RACE CONDITION FIX: Credit note might be added asynchronously after trade completion
-        // Retry reading from invoice with a small delay (credit note is added shortly after trade completes)
-        // This handles cases where trades complete out of order
-        if let trade = tradeService?.completedTrades.first(where: { $0.id == tradeId }),
-           trade.isCompleted {
-            try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
-            if let commissionFromInvoice = getCommissionFromCreditNoteInvoice(tradeId: tradeId) {
-                print(
-                    "✅ TradesOverviewCommissionCalculator: Using commission from Credit Note invoice (after retry): €\(String(format: "%.2f", commissionFromInvoice))"
-                )
-                return commissionFromInvoice
-            }
-            // Retry backend call too — settlement happens asynchronously after the
-            // sell-save returns from `upsertTrade`.
-            if let commissionCalculationService = commissionCalculationService,
-               let configurationService = configurationService {
-                let commissionRate = configurationService.effectiveCommissionRate
-                if let total = try? await commissionCalculationService.calculateTotalCommissionForTrade(
-                    tradeId: tradeId,
-                    commissionRate: commissionRate
-                ), total > 0 {
-                    print(
-                        "✅ TradesOverviewCommissionCalculator: Backend commission (after retry) for trade \(tradeId): €\(String(format: "%.2f", total))"
-                    )
-                    return total
-                }
-            }
+        self.mergeInvoiceCreditNotes()
+        await self.mergeFromTradeSettlements()
+    }
+
+    func calculateCommission(tradeId: String, hasProfit: Bool) async -> Double {
+        guard hasProfit else { return 0.0 }
+
+        if let cached = self.commissionCreditByTradeId[tradeId], cached > 0 {
+            return cached
         }
 
-        // No commission available (e.g. trader keeps full profit because no
-        // investor pool participated, or settlement has not run yet).
+        if let commissionFromInvoice = self.getCommissionFromCreditNoteInvoice(tradeId: tradeId) {
+            self.commissionCreditByTradeId[tradeId] = commissionFromInvoice
+            return commissionFromInvoice
+        }
+
+        if let fromSettlement = await self.commissionFromTradeSettlement(tradeId: tradeId), fromSettlement > 0 {
+            self.commissionCreditByTradeId[tradeId] = fromSettlement
+            return fromSettlement
+        }
+
         return 0.0
     }
 
-    /// Gets commission amount from existing Credit Note invoice (SINGLE SOURCE OF TRUTH)
-    /// This matches what Account Statement displays - both read from the same invoice
-    /// - Parameter tradeId: Trade ID
-    /// - Returns: Commission amount from credit note, or nil if no credit note exists
-    private func getCommissionFromCreditNoteInvoice(tradeId: String) -> Double? {
-        guard let invoiceService = invoiceService else {
+    /// Single deferred refresh when inbox/timeline was empty on first paint. Primary path: notifications (`.commissionSettled`, inbox refresh).
+    func scheduleDeferredCommissionRefreshIfNeeded(
+        traderId: String,
+        tradeIds: [String],
+        onUpdate: @escaping () async -> Void
+    ) {
+        self.pendingRefreshTask?.cancel()
+        let pending = tradeIds.filter { (self.commissionCreditByTradeId[$0] ?? 0) <= 0 }
+        guard !pending.isEmpty else { return }
+
+        self.pendingRefreshTask = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: 2_000_000_000)
+            if Task.isCancelled { return }
+            guard let self else { return }
+            await self.refreshCommissionCache(traderId: traderId)
+            await onUpdate()
+        }
+    }
+
+    func cancelPendingRefresh() {
+        self.pendingRefreshTask?.cancel()
+        self.pendingRefreshTask = nil
+    }
+
+    // MARK: - Private
+
+    private func loadCommissionFromDocuments(traderId: String) -> [String: Double] {
+        guard let documentService else { return [:] }
+        var map: [String: Double] = [:]
+        for document in documentService.getDocuments(for: traderId) {
+            guard document.type == .traderCreditNote,
+                  let tradeId = document.tradeId,
+                  let invoice = document.invoiceData,
+                  let gross = TradesOverviewCommissionAmounts.grossCommission(from: invoice),
+                  gross > 0 else { continue }
+            map[tradeId] = gross
+        }
+        return map
+    }
+
+    private func mergeInvoiceCreditNotes() {
+        guard let tradeService else { return }
+        for trade in tradeService.completedTrades {
+            guard self.commissionCreditByTradeId[trade.id] == nil,
+                  let amount = self.getCommissionFromCreditNoteInvoice(tradeId: trade.id),
+                  amount > 0 else { continue }
+            self.commissionCreditByTradeId[trade.id] = amount
+        }
+    }
+
+    /// Fills gaps when Gutschrift-Beleg / `commission_credit` were not created yet but `getTradeSettlement` has Commission rows.
+    private func mergeFromTradeSettlements() async {
+        guard self.settlementAPIService != nil, let tradeService else { return }
+
+        let candidates = tradeService.completedTrades.filter { trade in
+            trade.displayProfit > 0 && (self.commissionCreditByTradeId[trade.id] ?? 0) <= 0
+        }
+        guard !candidates.isEmpty else { return }
+
+        for trade in candidates {
+            guard let amount = await self.commissionFromTradeSettlement(tradeId: trade.id), amount > 0 else { continue }
+            self.commissionCreditByTradeId[trade.id] = amount
+            await self.mergeSettlementDocuments(for: trade)
+        }
+    }
+
+    private func commissionFromTradeSettlement(tradeId: String) async -> Double? {
+        guard let settlementAPIService else { return nil }
+        guard let settlement = try? await settlementAPIService.fetchTradeSettlement(tradeId: tradeId) else {
             return nil
         }
+        let total = TraderCommissionSettlementResolver.totalCommission(from: settlement)
+        return total > 0 ? total : nil
+    }
 
-        // Get all invoices for this trade
+    private func mergeSettlementDocuments(for trade: Trade) async {
+        guard let settlementAPIService, let documentService else { return }
+        guard let settlement = try? await settlementAPIService.fetchTradeSettlement(tradeId: trade.id) else { return }
+        let docs = settlement.documents.map { Document(backendSettlementDocument: $0) }
+        guard !docs.isEmpty else { return }
+        documentService.mergeDocuments(docs)
+    }
+
+    private func getCommissionFromCreditNoteInvoice(tradeId: String) -> Double? {
+        guard let invoiceService else { return nil }
+
         let allInvoices = invoiceService.getInvoicesForTrade(tradeId)
-
-        // Find credit note invoice (commission is stored in credit note)
-        // Also check by tradeNumber in case tradeId doesn't match
         let creditNote = allInvoices.first { invoice in
             invoice.type == .creditNote && (
                 invoice.tradeId == tradeId ||
@@ -130,30 +189,11 @@ final class TradesOverviewCommissionCalculator {
             )
         }
 
-        guard let creditNote = creditNote else {
-            return nil
-        }
-
-        // Extract commission amount from credit note items
-        // Credit note has: commission item (net) + VAT item = gross commission
-        let commissionItems = creditNote.items.filter { $0.itemType == .commission }
-        let vatItems = creditNote.items.filter { $0.itemType == .vat }
-
-        // Calculate gross commission (net commission + VAT)
-        let netCommission = commissionItems.reduce(0.0) { $0 + abs($1.totalAmount) }
-        let vatAmount = vatItems.reduce(0.0) { $0 + abs($1.totalAmount) }
-        let grossCommission = netCommission + vatAmount
-
-        guard grossCommission > 0 else {
-            return nil
-        }
-
-        return grossCommission
+        guard let creditNote else { return nil }
+        return TradesOverviewCommissionAmounts.grossCommission(from: creditNote)
     }
 
-    /// Helper to get trade number for matching credit notes
     private func getTradeNumber(for tradeId: String) -> Int? {
-        return self.tradeService?.completedTrades.first(where: { $0.id == tradeId })?.tradeNumber
+        self.tradeService?.completedTrades.first(where: { $0.id == tradeId })?.tradeNumber
     }
 }
-

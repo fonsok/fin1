@@ -6,6 +6,10 @@ const { encryptFields } = require('../../utils/fieldEncryption');
 
 const { USER_PII_FIELDS, VALID_USER_ROLES, VALID_USER_STATUSES } = require('./userTriggerConstants');
 const { inferCsrSubRoleFromEmail } = require('./userTriggerCsrSubRole');
+const {
+  looksLikeParseObjectId,
+  isLegacyStableUserId,
+} = require('../../utils/canonicalUserId');
 
 async function userBeforeSave(request) {
   const user = request.object;
@@ -56,6 +60,14 @@ async function userBeforeSave(request) {
   }
 
   normalizeUserCustomerNumber(user);
+
+  // SSOT: stableId mirrors Parse objectId (never persist legacy `user:email` keys).
+  if (user.id && looksLikeParseObjectId(user.id)) {
+    const stable = String(user.get('stableId') || '').trim();
+    if (!stable || isLegacyStableUserId(stable) || stable !== user.id) {
+      user.set('stableId', user.id);
+    }
+  }
 }
 
 module.exports = {

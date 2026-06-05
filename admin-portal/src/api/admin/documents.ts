@@ -1,5 +1,15 @@
 import { cloudFunction } from '../parse';
 
+export interface DocumentBelegDisplayRow {
+  label: string;
+  value: string;
+}
+
+export interface DocumentBelegDisplaySection {
+  title: string;
+  rows: DocumentBelegDisplayRow[];
+}
+
 /** Row shape returned by Cloud Function `searchDocuments` / `getDocumentByObjectId`. */
 export interface DocumentSearchItem {
   objectId: string;
@@ -18,7 +28,18 @@ export interface DocumentSearchItem {
   statementYear: number | null;
   statementMonth: number | null;
   statementRole: string | null;
+  /** Admin-Anreicherung: Rolle des Document-Inhabers (`userId`). */
+  partyRole?: 'trader' | 'investor' | 'other';
+  partyUserId?: string | null;
+  partyDisplayName?: string | null;
+  partyLabel?: string | null;
+  /** Gesetzt bei `partyRole === 'trader'`. */
+  traderId?: string | null;
+  traderName?: string | null;
   accountingSummaryText?: string | null;
+  metadata?: Record<string, unknown>;
+  displaySections?: DocumentBelegDisplaySection[];
+  summarySource?: 'stored' | 'snapshot' | 'computed' | 'none';
 }
 
 export interface DocumentSearchResponse {

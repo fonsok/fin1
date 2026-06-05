@@ -4,7 +4,7 @@ import Foundation
 
 // MARK: - Mock Document Service (Simplified)
 /// Simplified mock using closure-based behavior instead of multiple configuration properties
-class MockDocumentService: DocumentServiceProtocol {
+class MockDocumentService: DocumentServiceProtocol, @unchecked Sendable {
     @Published var documents: [Document] = []
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
@@ -25,8 +25,21 @@ class MockDocumentService: DocumentServiceProtocol {
     var downloadDocumentHandler: ((Document) async throws -> Data)?
 
     // MARK: - Document Management
-    func loadDocuments(for user: User) {
-        // no-op in mock; tests set documents directly
+    func loadDocuments(for user: User) async {
+        await self.refreshUserDocumentInbox(for: user, force: true)
+    }
+
+    func refreshUserDocumentInbox(for user: User, force: Bool) async {
+        _ = force
+        _ = user
+    }
+
+    func mergeDocuments(_ documents: [Document]) {
+        var merged = Dictionary(uniqueKeysWithValues: self.documents.map { ($0.id, $0) })
+        for doc in documents {
+            merged[doc.id] = doc
+        }
+        self.documents = Array(merged.values)
     }
 
     func uploadDocument(_ document: Document) async throws {
@@ -69,6 +82,14 @@ class MockDocumentService: DocumentServiceProtocol {
 
     @MainActor
     func resolveDocumentForDeepLink(objectId: String) async throws -> Document {
+        if let cached = getDocument(by: objectId) {
+            return cached
+        }
+        throw DocumentDeepLinkResolveError.backendUnavailable
+    }
+
+    @MainActor
+    func fetchTraderBelegDetailEnriched(objectId: String) async throws -> Document {
         if let cached = getDocument(by: objectId) {
             return cached
         }

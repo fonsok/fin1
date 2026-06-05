@@ -65,6 +65,8 @@ struct TradeTableRowData: Identifiable {
 
         if trade.isActive {
             self.provision = trade.statusDetail
+        } else if trade.isCommissionPending {
+            self.provision = "…"
         } else {
             self.provision = trade.commission == 0 ? "-" : trade.commission.formatted(.currency(code: "EUR"))
         }

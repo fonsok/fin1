@@ -9,6 +9,8 @@ const {
   serializeTermsContent,
 } = require('./shared');
 const { loadConfig } = require('../../utils/configHelper/index.js');
+const { normalizeTaxCollectionMode } = require('../../utils/configHelper/taxCollectionMode');
+const { applyCapitalGainsTaxNotesForCollectionMode } = require('../../utils/configHelper/documentTaxNotes');
 
 function formatPercentDE(value) {
   const num = Number(value);
@@ -109,9 +111,7 @@ function registerLegalPublicAuditFunctions() {
     const vatRate = Number.isFinite(tax.vatRate)
       ? tax.vatRate
       : 0.19;
-    const taxCollectionMode = typeof tax.taxCollectionMode === 'string'
-      ? tax.taxCollectionMode
-      : 'platform_withholds';
+    const taxCollectionMode = normalizeTaxCollectionMode(tax.taxCollectionMode);
     const replacements = {
       APP_NAME: legal.appName || 'FIN1',
       LEGAL_PLATFORM_NAME: legal.platformName || 'App',
@@ -132,7 +132,15 @@ function registerLegalPublicAuditFunctions() {
       LEGAL_COMPANY_VAT_ID: legal.companyVatId || '',
     };
 
-    return hydrateTermsPlaceholders(serialized, replacements);
+    const hydrated = hydrateTermsPlaceholders(serialized, replacements);
+    return {
+      ...hydrated,
+      sections: applyCapitalGainsTaxNotesForCollectionMode(
+        hydrated.sections,
+        taxCollectionMode,
+        language,
+      ),
+    };
   });
 
   Parse.Cloud.define('getCurrentLegalDocument', async (request) => {

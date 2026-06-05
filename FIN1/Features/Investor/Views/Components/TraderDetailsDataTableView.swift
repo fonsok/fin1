@@ -4,7 +4,7 @@ import SwiftUI
 /// Displays trader performance data in a table matching Top Recent Trades style
 
 struct TraderDetailsDataTableView: View {
-    let trader: MockTrader
+    let trader: InvestorTrader
     @Environment(\.appServices) private var appServices
     @State private var watchlistTick: UInt8 = 0
 
@@ -13,7 +13,7 @@ struct TraderDetailsDataTableView: View {
             watchlistService: self.appServices.watchlistService,
             traderDataService: self.appServices.traderDataService
         )
-        let traderID = self.trader.id.uuidString
+        let traderID = self.trader.backendTraderId
 
         // Calculate average trades per week (mock calculation based on total trades)
         // Assuming average trader has been active for ~52 weeks (1 year)

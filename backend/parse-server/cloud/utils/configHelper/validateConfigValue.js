@@ -101,6 +101,13 @@ function validateConfigValue(paramName, value) {
       maxLength: 120,
       errorMsg: 'App-Name muss zwischen 1 und 120 Zeichen lang sein',
     },
+    maxTraderPartialSells: {
+      type: 'number',
+      min: 0,
+      max: 3,
+      integer: true,
+      errorMsg: 'Max. Teil-Verkäufe muss 0, 1, 2 oder 3 sein (0 = nur Vollverkauf)',
+    },
     minimumCashReserve: {
       type: 'number',
       min: 0.01,
@@ -150,6 +157,14 @@ function validateConfigValue(paramName, value) {
       type: 'boolean',
       errorMsg: 'serviceChargeLegacyClientFallbackEnabled muss true oder false sein',
     },
+    investorMonetaryServerOnly: {
+      type: 'boolean',
+      errorMsg: 'investorMonetaryServerOnly muss true oder false sein',
+    },
+    showInvestorPartialSellRealizations: {
+      type: 'boolean',
+      errorMsg: 'showInvestorPartialSellRealizations muss true oder false sein',
+    },
     showDocumentReferenceLinksInAccountStatement: {
       type: 'boolean',
       errorMsg: 'showDocumentReferenceLinksInAccountStatement muss true oder false sein',
@@ -165,6 +180,12 @@ function validateConfigValue(paramName, value) {
       min: 0.01,
       max: 1000000.0,
       errorMsg: 'Maximuminvestmentbetrag muss zwischen 0,01 € und 1.000.000,00 € liegen',
+    },
+    maxPoolMirrorBuyOrderAmount: {
+      type: 'number',
+      min: 0,
+      max: 50000000.0,
+      errorMsg: 'Pool-Mirror-Buy-Obergrenze muss zwischen 0 € (deaktiviert) und 50.000.000,00 € liegen',
     },
     daily_transaction_limit: {
       type: 'number',
@@ -226,6 +247,10 @@ function validateConfigValue(paramName, value) {
   }
 
   if (validation.min !== undefined && (value < validation.min || value > validation.max)) {
+    return { valid: false, error: validation.errorMsg };
+  }
+
+  if (validation.integer && !Number.isInteger(value)) {
     return { valid: false, error: validation.errorMsg };
   }
 

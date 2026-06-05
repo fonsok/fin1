@@ -39,8 +39,13 @@ extension ConfigurationServiceProtocol {
     var monthlyTransactionLimit: Double { CalculationConstants.TransactionLimits.baseMonthlyLimit }
     var minimumInvestmentAmount: Double { CalculationConstants.Investment.fallbackMinimumInvestmentAmount }
     var maximumInvestmentAmount: Double { CalculationConstants.Investment.fallbackMaximumInvestmentAmount }
+    var maxTraderPartialSells: Int { 3 }
+    var effectiveMaxTraderPartialSells: Int { min(3, max(0, self.maxTraderPartialSells)) }
+    var taxCollectionMode: TaxCollectionMode { .customerSelfReports }
+    var showInvestorPartialSellRealizations: Bool { false }
     var serviceChargeInvoiceFromBackend: Bool { false }
     var serviceChargeLegacyClientFallbackEnabled: Bool { true }
+    var investorMonetaryServerOnly: Bool { true }
     var showDocumentReferenceLinksInAccountStatement: Bool { true }
 
     func updateShowDocumentReferenceLinksInAccountStatement(_ value: Bool) async throws {

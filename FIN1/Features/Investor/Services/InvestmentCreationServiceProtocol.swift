@@ -9,7 +9,7 @@ protocol InvestmentCreationServiceProtocol {
     @discardableResult
     func createInvestment(
         investor: User,
-        trader: MockTrader,
+        trader: InvestorTrader,
         amountPerInvestment: Double,
         numberOfInvestments: Int,
         specialization: String,

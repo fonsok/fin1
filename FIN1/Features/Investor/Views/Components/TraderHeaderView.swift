@@ -5,7 +5,7 @@ import SwiftUI
 /// Displays trader identification with person icon, username, and date
 
 struct TraderHeaderView: View {
-    let trader: MockTrader
+    let trader: InvestorTrader
     @Environment(\.themeManager) private var themeManager
 
     private var formattedDate: String {

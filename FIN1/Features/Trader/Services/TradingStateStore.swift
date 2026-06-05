@@ -132,8 +132,9 @@ final class TradingStateStore: TradingStateStoreProtocol {
     }
 
     private func updateHoldingsFromTrades() {
+        let depotTrades = TraderDepotTradeFilter.tradesForDepotDisplay(self.completedTrades)
         var positionCounter = 1
-        let newHoldings = self.completedTrades.map { trade in
+        let newHoldings = depotTrades.map { trade in
             defer { positionCounter += 1 }
             return self.createHoldingFromTrade(trade, position: positionCounter)
         }

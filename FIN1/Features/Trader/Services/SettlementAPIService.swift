@@ -56,6 +56,15 @@ struct BackendAccountEntry: Decodable, Identifiable {
     let referenceDocumentId: String?
     let referenceDocumentNumber: String?
     let createdAt: String?
+    let statementTitle: String?
+    let transactionType: String?
+    let wknOrIsin: String?
+    let underlyingAsset: String?
+    let securitiesDirection: String?
+    let quantity: String?
+    let strikePrice: String?
+    let issuer: String?
+    let displayAmountMode: String?
 
     var id: String { self.objectId }
 
@@ -73,6 +82,8 @@ struct BackendAccountEntry: Decodable, Identifiable {
         case objectId, userId, entryType, amount, balanceBefore, balanceAfter
         case tradeId, tradeNumber, investmentId, investmentNumber
         case businessReference, description, source, referenceDocumentId, referenceDocumentNumber, createdAt
+        case statementTitle, transactionType, wknOrIsin, underlyingAsset, securitiesDirection
+        case quantity, strikePrice, issuer, displayAmountMode
     }
 
     init(from decoder: Decoder) throws {
@@ -93,6 +104,15 @@ struct BackendAccountEntry: Decodable, Identifiable {
         self.referenceDocumentId = try c.decodeIfPresent(String.self, forKey: .referenceDocumentId)
         self.referenceDocumentNumber = try c.decodeIfPresent(String.self, forKey: .referenceDocumentNumber)
         self.createdAt = try c.decodeIfPresent(String.self, forKey: .createdAt)
+        self.statementTitle = try c.decodeIfPresent(String.self, forKey: .statementTitle)
+        self.transactionType = try c.decodeIfPresent(String.self, forKey: .transactionType)
+        self.wknOrIsin = try c.decodeIfPresent(String.self, forKey: .wknOrIsin)
+        self.underlyingAsset = try c.decodeIfPresent(String.self, forKey: .underlyingAsset)
+        self.securitiesDirection = try c.decodeIfPresent(String.self, forKey: .securitiesDirection)
+        self.quantity = try c.decodeIfPresent(String.self, forKey: .quantity)
+        self.strikePrice = try c.decodeIfPresent(String.self, forKey: .strikePrice)
+        self.issuer = try c.decodeIfPresent(String.self, forKey: .issuer)
+        self.displayAmountMode = try c.decodeIfPresent(String.self, forKey: .displayAmountMode)
     }
 }
 
@@ -140,6 +160,14 @@ struct BackendSettlementDocument: Decodable, Identifiable {
     var id: String { self.objectId }
 }
 
+struct BackendDocumentMetadataInvestorLine: Decodable {
+    let investorId: String?
+    let investmentId: String?
+    let grossProfit: Double?
+    let commission: Double?
+    let taxWithheld: Double?
+}
+
 struct BackendDocumentMetadata: Decodable {
     let commissionAmount: Double?
     let commissionRate: Double?
@@ -147,6 +175,7 @@ struct BackendDocumentMetadata: Decodable {
     let netProfit: Double?
     let ownershipPercentage: Double?
     let commission: Double?
+    let investorBreakdown: [BackendDocumentMetadataInvestorLine]?
 }
 
 struct BackendSettlementCommission: Decodable, Identifiable {
@@ -167,14 +196,22 @@ struct BackendAccountStatementResponse: Decodable {
     let entries: [BackendAccountEntry]
     let total: Int
     let hasMore: Bool
+    /// `asc` for trader customer timeline (oldest first); investor API uses descending.
+    let sortOrder: String?
+    /// True when server source queries hit the row cap (timeline may omit older entries).
+    let timelineTruncated: Bool
 
-    enum CodingKeys: String, CodingKey { case entries, total, hasMore }
+    enum CodingKeys: String, CodingKey {
+        case entries, total, hasMore, sortOrder, timelineTruncated
+    }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         self.entries = try c.decodeIfPresent([BackendAccountEntry].self, forKey: .entries) ?? []
         self.total = try c.decodeIfPresent(Int.self, forKey: .total) ?? self.entries.count
         self.hasMore = try c.decodeIfPresent(Bool.self, forKey: .hasMore) ?? false
+        self.sortOrder = try c.decodeIfPresent(String.self, forKey: .sortOrder)
+        self.timelineTruncated = try c.decodeIfPresent(Bool.self, forKey: .timelineTruncated) ?? false
     }
 }
 
@@ -189,6 +226,7 @@ struct BackendInvoiceLineItem: Decodable {
 
 struct BackendInvoiceMetadata: Decodable {
     let investmentNumber: String?
+    let investmentNumbers: [String]?
     let serviceChargeRate: Double?
     let investorAccountType: String?
     let totalInvestmentAmount: Double?
@@ -296,6 +334,15 @@ struct BackendCollectionBillMetadata: Decodable {
     let grossProfit: Double?
     let commission: Double?
     let netProfit: Double?
+    /// Auszahlung an den Investor: Net Sell Amount − Commission.
+    let transferAmount: Double?
+    /// GoB booked residual (`nominal − totalBuyCost`).
+    let residualAmount: Double?
+    let investmentNominal: Double?
+    let poolTradingAmount: Double?
+    /// Booked totals (GoB Beleg — same identity as `deriveMirrorTradeBasis` on server).
+    let totalBuyCost: Double?
+    let netSellAmount: Double?
     let returnPercentage: Double?
     let commissionRate: Double?
     let buyLeg: BackendCollectionBillLeg?

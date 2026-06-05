@@ -78,6 +78,20 @@ async function generateSequentialNumber(prefix, className, fieldName) {
 }
 
 /**
+ * Atomically allocate support ticket numbers (TKT-YYYY-NNNNN).
+ * Uses SequenceCounter — race-safe under concurrent creates.
+ */
+async function generateTicketNumber() {
+  const year = new Date().getFullYear();
+  const key = `SupportTicket::ticketNumber::TKT::${year}`;
+  const v = await allocateSequentialCounter(
+    key,
+    () => readMaxLegacySequence('TKT', 'SupportTicket', 'ticketNumber'),
+  );
+  return `TKT-${year}-${v.toString().padStart(5, '0')}`;
+}
+
+/**
  * Investment display number per investor (same format as global INV-YYYY-NNNNNNN,
  * but sequence restarts per `investorId` each calendar year).
  * GoB/UI: friendly reference stays investor-scoped; objectId remains globally unique.
@@ -229,21 +243,37 @@ function isValidIBAN(iban) {
 // ============================================================================
 
 /**
- * Calculate order fees
+ * Calculate order fees.
+ *
+ * SSOT für Fee-Defaults ist `utils/configHelper/defaultConfig.js`
+ * (`DEFAULT_CONFIG.financial`). Ein `config`-Override-Objekt (z. B. aus
+ * `Investment.feeConfigSnapshot` oder `Configuration.financial`) hat Vorrang,
+ * fehlende Keys fallen auf die DEFAULT_CONFIG-Werte zurück. Hardcodierte
+ * Zweit-Defaults sind verboten — sie haben in der Vergangenheit Drift erzeugt
+ * (Residual ≠ Beleg, ADR-008-Vorlauf).
  *
  * @param {number} orderAmount - Order amount
  * @param {boolean} isForeign - Is foreign trade
- * @param {object} config - Fee configuration
- * @returns {object} Fee breakdown
+ * @param {object} config - Optional Fee-Config-Override
+ * @returns {{ orderFee: number, exchangeFee: number, foreignCosts: number, totalFees: number }}
  */
 function calculateOrderFees(orderAmount, isForeign = false, config = {}) {
-  const orderFeeRate = config.orderFeeRate || 0.005;
-  const orderFeeMin = config.orderFeeMin || 5.0;
-  const orderFeeMax = config.orderFeeMax || 50.0;
-  const exchangeFeeRate = config.exchangeFeeRate || 0.001;
-  const exchangeFeeMin = config.exchangeFeeMin || 1.0;
-  const exchangeFeeMax = config.exchangeFeeMax || 20.0;
-  const foreignCosts = config.foreignCosts || 1.50;
+  // Lazy require vermeidet zyklische Init zwischen helpers <-> configHelper.
+  // eslint-disable-next-line global-require
+  const { DEFAULT_CONFIG } = require('./configHelper/defaultConfig');
+  const D = DEFAULT_CONFIG.financial || {};
+  const pick = (k, fallback) => {
+    const v = config && Object.prototype.hasOwnProperty.call(config, k) ? config[k] : undefined;
+    return (v === null || v === undefined) ? fallback : v;
+  };
+
+  const orderFeeRate = pick('orderFeeRate', D.orderFeeRate);
+  const orderFeeMin = pick('orderFeeMin', D.orderFeeMin);
+  const orderFeeMax = pick('orderFeeMax', D.orderFeeMax);
+  const exchangeFeeRate = pick('exchangeFeeRate', D.exchangeFeeRate);
+  const exchangeFeeMin = pick('exchangeFeeMin', D.exchangeFeeMin);
+  const exchangeFeeMax = pick('exchangeFeeMax', D.exchangeFeeMax);
+  const foreignCosts = pick('foreignCosts', D.foreignCosts);
 
   // Order fee
   let orderFee = orderAmount * orderFeeRate;
@@ -323,6 +353,7 @@ function calculateRiskClass(experienceScore, knowledgeScore, frequencyScore, des
 
 module.exports = {
   generateSequentialNumber,
+  generateTicketNumber,
   generateInvestorInvestmentNumber,
   generateCustomerNumber,
   generateCustomerId,

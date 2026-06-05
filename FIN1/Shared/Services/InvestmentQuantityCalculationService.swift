@@ -24,9 +24,9 @@ final class InvestmentQuantityCalculationService: InvestmentQuantityCalculationS
     /// Uses binary search algorithm for efficiency
     /// - Parameters:
     ///   - investmentBalance: Available investment balance in EUR
-    ///   - pricePerSecurity: Price per security (share) in EUR
+    ///   - pricePerSecurity: Brief-Kurs pro Stück in EUR (same basis as buy order: `quantity × pricePerSecurity`)
     ///   - denomination: Optional denomination constraint (e.g., 1, 10, 100). If nil, no denomination restriction.
-    ///   - subscriptionRatio: Subscription ratio (e.g., 1.0, 0.1, 0.01, 10.0, 100.0). Represents units per share (1:1, 1:10, 1:100). Default is 1.0.
+    ///   - subscriptionRatio: Used for denomination hints / share display only — not for order cash amount.
     ///   - minimumOrderAmount: Optional minimum order amount in EUR. If specified, order must meet or exceed this amount.
     /// - Returns: Maximum purchasable quantity in units (integer), rounded down to valid denomination if specified, or 0 if minimum order amount cannot be met
     func calculateMaxPurchasableQuantity(
@@ -41,15 +41,13 @@ final class InvestmentQuantityCalculationService: InvestmentQuantityCalculationS
             return 0
         }
 
-        // Calculate price per unit (pricePerSecurity is per share)
-        let pricePerUnit = pricePerSecurity / Double(subscriptionRatio)
+        // SSOT: Documentation/ORDER_CASH_AMOUNT_SSOT.md
+        let briefPricePerPiece = pricePerSecurity
 
-        // DEBUG: Log price values to diagnose quantity calculation issues
         print("🔍 InvestmentQuantityCalculationService.calculateMaxPurchasableQuantity:")
         print("   💰 investmentBalance: €\(String(format: "%.2f", investmentBalance))")
-        print("   💵 pricePerSecurity: €\(String(format: "%.2f", pricePerSecurity))")
-        print("   📊 subscriptionRatio: \(subscriptionRatio)")
-        print("   💵 pricePerUnit: €\(String(format: "%.2f", pricePerUnit))")
+        print("   💵 pricePerSecurity (per Stück): €\(String(format: "%.2f", pricePerSecurity))")
+        print("   📊 subscriptionRatio (denomination only): \(subscriptionRatio)")
 
         // Check if investment balance can meet minimum order amount requirement
         if let minimum = minimumOrderAmount, minimum > 0 {
@@ -60,7 +58,7 @@ final class InvestmentQuantityCalculationService: InvestmentQuantityCalculationS
         }
 
         // Calculate maximum possible quantity in units (if no fees)
-        let maxPossibleQuantity = Int(investmentBalance / pricePerUnit)
+        let maxPossibleQuantity = Int(investmentBalance / briefPricePerPiece)
         print("   📈 maxPossibleQuantity (no fees): \(maxPossibleQuantity)")
         guard maxPossibleQuantity > 0 else {
             return 0
@@ -68,7 +66,7 @@ final class InvestmentQuantityCalculationService: InvestmentQuantityCalculationS
 
         // Calculate minimum quantity required to meet minimum order amount (in units)
         let minRequiredQuantity = CalculationConstants.SecurityDenominations.calculateMinimumQuantity(
-            pricePerSecurity: pricePerUnit,
+            pricePerSecurity: briefPricePerPiece,
             minimumOrderAmount: nil // Don't apply minimum to investment portion individually
         )
 
@@ -103,7 +101,10 @@ final class InvestmentQuantityCalculationService: InvestmentQuantityCalculationS
 
             while testQuantity <= upperBound {
                 // Calculate order amount: units × price per unit
-                let orderAmount = Double(testQuantity) * pricePerUnit
+                let orderAmount = OrderCashAmount.grossAmount(
+                    quantity: testQuantity,
+                    briefPricePerPiece: briefPricePerPiece
+                )
 
                 // Check minimum order amount requirement
                 guard CalculationConstants.SecurityDenominations.meetsMinimumOrderAmount(
@@ -140,7 +141,10 @@ final class InvestmentQuantityCalculationService: InvestmentQuantityCalculationS
             while low <= high {
                 let mid = (low + high) / 2
                 // Calculate order amount: units × price per unit
-                let orderAmount = Double(mid) * pricePerUnit
+                let orderAmount = OrderCashAmount.grossAmount(
+                    quantity: mid,
+                    briefPricePerPiece: briefPricePerPiece
+                )
 
                 // Check minimum order amount requirement
                 guard CalculationConstants.SecurityDenominations.meetsMinimumOrderAmount(

@@ -3,12 +3,18 @@ import Foundation
 // MARK: - Parse config API responses
 struct GetConfigResponse: Decodable {
     let financial: FinancialSection?
+    let tax: TaxSection?
     let limits: LimitsSection?
     let display: DisplaySection?
+
+    struct TaxSection: Decodable {
+        let taxCollectionMode: String?
+    }
 
     struct LimitsSection: Decodable {
         let minInvestment: Double?
         let maxInvestment: Double?
+        let maxPoolMirrorBuyOrderAmount: Double?
     }
 
     struct FinancialSection: Decodable {
@@ -19,6 +25,7 @@ struct GetConfigResponse: Decodable {
         let platformServiceChargeRateCompanies: Double?
         let appServiceChargeRateCompanies: Double?
         let minimumCashReserve: Double?
+        let maxTraderPartialSells: Int?
     }
 
     struct DisplaySection: Decodable {
@@ -28,6 +35,8 @@ struct GetConfigResponse: Decodable {
         let walletFeatureEnabled: Bool?
         let serviceChargeInvoiceFromBackend: Bool?
         let serviceChargeLegacyClientFallbackEnabled: Bool?
+        let investorMonetaryServerOnly: Bool?
+        let showInvestorPartialSellRealizations: Bool?
         let serviceChargeLegacyDisableAllowedFrom: String?
     }
 }

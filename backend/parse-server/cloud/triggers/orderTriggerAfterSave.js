@@ -3,6 +3,7 @@
 const { handleBuyOrderExecuted, handleSellOrderExecuted } = require('./orderBuySellHandlers');
 const { createOrderInvoice } = require('./orderInvoice');
 const { formatCurrency, createOrderNotification } = require('./orderNotifications');
+const { isMirrorPoolOrderLeg } = require('../services/poolMirrorActivation/poolActivationPolicy');
 
 Parse.Cloud.afterSave('Order', async (request) => {
   const order = request.object;
@@ -24,7 +25,9 @@ Parse.Cloud.afterSave('Order', async (request) => {
           await handleSellOrderExecuted(order);
         }
 
-        await createOrderInvoice(order);
+        if (!isMirrorPoolOrderLeg(order)) {
+          await createOrderInvoice(order);
+        }
 
         await createOrderNotification(traderId, 'order_executed', 'trading',
           'Order ausgeführt',

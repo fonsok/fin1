@@ -113,6 +113,7 @@ export interface AccountStatementEntryItem {
   investmentId?: string;
   description: string;
   referenceDocumentId?: string | null;
+  referenceDocumentNumber?: string | null;
   source?: string;
   createdAt: string;
 }
@@ -124,6 +125,69 @@ export interface AccountStatementData {
   totalDebits: number;
   netChange: number;
   entries: AccountStatementEntryItem[];
+  /** Chronological order of `entries` (trader/investor admin: `asc`). */
+  sortOrder?: 'asc' | 'desc';
+  /** True when server source queries hit their row cap. */
+  timelineTruncated?: boolean;
+  /** `customer` = App/Netto-Präsentation; `ledger` = Roh-AccountStatement (GoB). */
+  presentationMode?: 'customer' | 'ledger';
+}
+
+/** Netto-Salden CLT-LIAB-* (Admin, aus AppLedger investmentEscrow). */
+export interface ClientFundsBreakdown {
+  initialBalance: number;
+  available: number;
+  reserved: number;
+  poolTrade: number;
+  totalClientFunds: number;
+  walletReconcileHint: number;
+}
+
+/** Auswertung gemergter Kontoauszug-Zeilen (Admin, nur Lesen). */
+export interface InvestorOutcomeHighlights {
+  sumProfitReturnsResiduals: number;
+  sumFees: number;
+  sumTaxesWithheld: number;
+  sumTradeCashAndOrderFees: number;
+  sumDepositsWithdrawals: number;
+  disclaimer: string;
+}
+
+/** Gebührenkomponenten aus Document.metadata (Collection Bill, GoB-Beleg). */
+export interface InvestorCollectionBillFeeLine {
+  side: 'buy' | 'sell';
+  key: 'orderFee' | 'exchangeFee' | 'foreignCosts' | 'totalFees';
+  amount: number;
+}
+
+/** Zusammenfassung eines gespeicherten Investor-Collection-Bills (Admin Ledger-Ergänzung). */
+export interface InvestorCollectionBillSummary {
+  documentId: string;
+  documentNumber: string | null;
+  tradeId: string | null;
+  tradeNumber: number | null;
+  investmentId: string | null;
+  createdAt: string;
+  transferAmount: number;
+  commission: number;
+  commissionRate: number | null;
+  grossProfit: number;
+  netProfit: number;
+  totalBuyCost: number;
+  netSellAmount: number;
+  buy: {
+    quantity?: number;
+    price?: number;
+    amount: number;
+    costBasisPerShare?: number | null;
+  };
+  sell: {
+    quantity?: number;
+    price?: number;
+    amount: number;
+    netSellPricePerShare?: number | null;
+  };
+  feeComponents: InvestorCollectionBillFeeLine[];
 }
 
 export interface ActivityItem {
@@ -142,6 +206,14 @@ export interface UserDetailsResponse {
   investmentSummary: InvestmentSummary | null;
   investments: InvestmentItem[];
   accountStatement?: AccountStatementData | null;
+  /** Rohbuchungen `AccountStatement` (Admin Ledger-Ansicht). */
+  accountStatementLedger?: AccountStatementData | null;
+  /** Nur Investor: AVA / RSV / PTR aus App-Ledger. */
+  clientFundsBreakdown?: ClientFundsBreakdown | null;
+  /** Nur bei Rolle investor: Kennzahlen aus dem gemergten Kontoauszug. */
+  investorOutcomeHighlights?: InvestorOutcomeHighlights | null;
+  /** Nur Investor: Collection-Bill-Beleg (Metadata) für separates Admin-Panel — nicht im Salden-Ledger. */
+  investorCollectionBills?: InvestorCollectionBillSummary[];
   recentActivity: ActivityItem[];
   walletControls?: {
     globalMode: 'disabled' | 'deposit_only' | 'withdrawal_only' | 'deposit_and_withdrawal';
@@ -174,6 +246,7 @@ export interface Ticket {
   objectId: string;
   ticketNumber: string;
   subject: string;
+  description?: string;
   status: string;
   priority: string;
   category: string;
@@ -181,6 +254,21 @@ export interface Ticket {
   userEmail?: string;
   assignedTo?: string;
   assignedToName?: string;
+  escalated?: boolean;
+  escalationReason?: string;
+  escalatedAt?: string;
+  escalatedBy?: string;
+  escalatedByName?: string;
+  resolvedAt?: string;
+  closedAt?: string;
+  comments?: Array<{
+    objectId: string;
+    content: string;
+    isInternal: boolean;
+    createdBy: string;
+    createdByName?: string;
+    createdAt: string;
+  }>;
   createdAt: string;
   updatedAt: string;
 }
@@ -239,6 +327,25 @@ export interface PendingConfigChange {
   requesterRole: string;
   createdAt: string;
   expiresAt: string;
+}
+
+export interface AdminListSearchCollectionHealth {
+  ok: boolean;
+  error?: string;
+  names?: string[];
+  hasTextOnBlob?: boolean;
+  hasPrefixOnBlob?: boolean;
+}
+
+export interface AdminListSearchHealth {
+  healthy: boolean;
+  investment: AdminListSearchCollectionHealth;
+  trade: AdminListSearchCollectionHealth;
+  samples: {
+    investmentHasBlob: boolean;
+    tradeHasBlob: boolean;
+  };
+  repairHint: string | null;
 }
 
 export interface SystemHealth {

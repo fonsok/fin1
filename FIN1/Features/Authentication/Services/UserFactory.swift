@@ -12,6 +12,11 @@ struct UserFactory {
 
     /// Overlays server-provided fields from the login response onto a locally-created User.
     static func applyLoginResponse(_ response: ParseLoginResponse, to user: inout User) {
+        // Parse session and Cloud Code use `_User.objectId`; keep local `User.id` aligned
+        // so Investment.investorId / ledger reads match `collectLedgerUserIdCandidates`.
+        if !response.objectId.isEmpty {
+            user = user.withId(response.objectId)
+        }
         if let accountType = response.accountType, let at = AccountType(rawValue: accountType) {
             user.accountType = at
         }

@@ -1,5 +1,7 @@
 'use strict';
 
+const { audit } = require('../structuredLogger');
+
 const RETRY_KIND = 'trade_settlement';
 const RETRY_SCHEDULE_MINUTES = [1, 5, 15, 60, 180, 720];
 const DEFAULT_MAX_ATTEMPTS = RETRY_SCHEDULE_MINUTES.length;
@@ -22,6 +24,15 @@ function serializeError(err) {
 
 function createLockToken() {
   return `lock_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function safeContextKeys(context) {
+  if (!context || typeof context !== 'object') return [];
+  try {
+    return Object.keys(context);
+  } catch (_e) {
+    return [];
+  }
 }
 
 function isLeaseActive(job) {
@@ -88,6 +99,15 @@ async function enqueueSettlementRetry({
       existing.set('nextRetryAt', nowDate());
     }
     await existing.save(null, { useMasterKey: true });
+    audit.info('settlement.retry.enqueue', {
+      jobId: existing.id,
+      tradeId,
+      deduped: true,
+      source,
+      reason: reason || existing.get('lastError') || null,
+      contextKeys: safeContextKeys(context),
+      message: 'SettlementRetryJob updated (dedupe)',
+    });
     return existing;
   }
 
@@ -102,6 +122,15 @@ async function enqueueSettlementRetry({
   job.set('lastSource', source);
   job.set('lastContext', context || {});
   await job.save(null, { useMasterKey: true });
+  audit.info('settlement.retry.enqueue', {
+    jobId: job.id,
+    tradeId,
+    deduped: false,
+    source,
+    reason: reason || 'retry requested',
+    contextKeys: safeContextKeys(context),
+    message: 'SettlementRetryJob created',
+  });
   return job;
 }
 
@@ -117,6 +146,14 @@ async function processSingleSettlementRetryJob(claimed) {
       throw new Error('missing tradeId in retry job');
     }
 
+    audit.info('settlement.retry.process.start', {
+      jobId: job.id,
+      tradeId,
+      attempts,
+      maxAttempts,
+      message: 'Processing SettlementRetryJob',
+    });
+
     const trade = await new Parse.Query('Trade').get(tradeId, { useMasterKey: true });
     const { settleAndDistribute } = require('./settlement');
     const summary = await settleAndDistribute(trade);
@@ -129,6 +166,14 @@ async function processSingleSettlementRetryJob(claimed) {
     job.unset('leaseUntil');
     await job.save(null, { useMasterKey: true });
 
+    audit.info('settlement.retry.process.done', {
+      jobId: job.id,
+      tradeId,
+      attempts,
+      status: 'done',
+      message: 'SettlementRetryJob completed',
+    });
+
     return {
       id: job.id,
       tradeId,
@@ -138,8 +183,9 @@ async function processSingleSettlementRetryJob(claimed) {
     };
   } catch (err) {
     const terminal = attempts >= maxAttempts;
+    const errMsg = serializeError(err);
     job.set('status', terminal ? 'failed' : 'pending');
-    job.set('lastError', serializeError(err));
+    job.set('lastError', errMsg);
     job.set('failedAt', nowDate());
     if (!terminal) {
       job.set('nextRetryAt', computeNextRetryAt(attempts));
@@ -156,12 +202,33 @@ async function processSingleSettlementRetryJob(claimed) {
       await latest.save(null, { useMasterKey: true });
     }
 
+    if (terminal) {
+      audit.error('settlement.retry.process.terminal', {
+        jobId: job.id,
+        tradeId,
+        attempts,
+        maxAttempts,
+        error: errMsg,
+        message: 'SettlementRetryJob failed permanently',
+      });
+    } else {
+      audit.warn('settlement.retry.process.reschedule', {
+        jobId: job.id,
+        tradeId,
+        attempts,
+        maxAttempts,
+        nextRetryAt: job.get('nextRetryAt') ? new Date(job.get('nextRetryAt')).toISOString() : null,
+        error: errMsg,
+        message: 'SettlementRetryJob rescheduled',
+      });
+    }
+
     return {
       id: job.id,
       tradeId,
       status: terminal ? 'failed' : 'pending',
       attempts,
-      error: serializeError(err),
+      error: errMsg,
       nextRetryAt: terminal ? null : job.get('nextRetryAt'),
     };
   }
@@ -198,6 +265,15 @@ async function processDueSettlementRetries({ limit = 20 } = {}) {
     const result = await processSingleSettlementRetryJob(claimed);
     results.push(result);
     if (results.length >= effectiveLimit) break;
+  }
+
+  if (results.length > 0) {
+    audit.info('settlement.retry.batch', {
+      processed: results.length,
+      jobIds: results.map((r) => r.id).filter(Boolean),
+      tradeIds: results.map((r) => r.tradeId).filter(Boolean),
+      message: 'Settlement retry batch finished',
+    });
   }
 
   return {

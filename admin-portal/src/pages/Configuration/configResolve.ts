@@ -27,10 +27,14 @@ export const CONFIG_DEFAULT_VALUES: Record<string, number> = {
   weekly_transaction_limit: 50000.0,
   monthly_transaction_limit: 200000.0,
   poolBalanceDistributionThreshold: 5.0,
+  maxPoolMirrorBuyOrderAmount: 0,
+  maxTraderPartialSells: 3,
   maximumRiskExposurePercent: 2.0,
   walletFeatureEnabled: 0,
   serviceChargeInvoiceFromBackend: 0,
   serviceChargeLegacyClientFallbackEnabled: 1,
+  investorMonetaryServerOnly: 1,
+  showInvestorPartialSellRealizations: 0,
   /** 1 = true; matches backend default for account-statement voucher links */
   showDocumentReferenceLinksInAccountStatement: 1,
 };

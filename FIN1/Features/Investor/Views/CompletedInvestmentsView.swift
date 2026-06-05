@@ -139,6 +139,7 @@ struct CompletedInvestmentsView: View {
                     tradeNumbers: self.viewModel.tradeNumbers,
                     investmentSummaries: self.viewModel.investmentSummaries,
                     canonicalSummaries: self.viewModel.canonicalSummaries,
+                    monetaryServerOnly: self.viewModel.monetaryServerOnlyForDisplay,
                     onShowDetails: { investment in
                         self.selectedCompletedInvestment = investment
                     }

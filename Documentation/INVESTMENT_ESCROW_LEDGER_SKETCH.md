@@ -41,7 +41,7 @@ Alle `CLT-*`-Konten sind **wirtschaftlich Verbindlichkeiten gegenüber Kund:inne
 |---------------|-----------------|-----------------|--------|
 | **CLT-LIAB-AVA** | liability | Kundenguthaben – **verfügbar** | Entspricht dem, was die App als „sofort verfügbar“ führt (Auszahlbarkeit nach Produktregeln). |
 | **CLT-LIAB-RSV** | liability | Kundenguthaben – **reserviert** | Nach Zusage/Anlage gebunden, noch nicht im Handel eingesetzt. |
-| **CLT-LIAB-TRD** | liability | Kundenguthaben – **im Handel** | Kapital, das der Pool-/Mirror-Logik zugeführt ist (noch Kundenverbindlichkeit bis Auszahlung/Rückfluss). |
+| **CLT-LIAB-PTR** | liability | Kundenguthaben – **PoolTrade** (Stückkauf) | Kapital, das der Pool-/Mirror-Logik zugeführt ist (noch Kundenverbindlichkeit bis Auszahlung/Rückfluss). Früher `CLT-LIAB-TRD`. |
 | **PLT-CLR-GEN**  | clearing  | Verrechnung allgemein | Bereits im System: z. B. **Brutto**-Servicegebühr vor Aufteilung auf Erlös + USt (siehe `triggers/invoice/`). |
 | *(bestehend)* **PLT-REV-PSC** / **PLT-TAX-VAT** | revenue / tax | Erlös / USt | Servicegebühr netto / USt; Gegenbuch zu `PLT-CLR-GEN` nach Rechnungsauslösung. |
 
@@ -82,10 +82,10 @@ Betragsseite: **`amount`** = Nominal des **einzelnen** `Investment` (wie `Invest
 | Ereignis | Auslöser (Ziel) | Soll | Haben | Bemerkung |
 |----------|-----------------|------|-------|-----------|
 | **Reservieren** | `Investment` neu, Status `reserved` | CLT-LIAB-AVA | CLT-LIAB-RSV | **Umschichtung**; Gesamt-Kundenverbindlichkeit unverändert. Parallel: optional `WalletTransaction` / `AccountStatement` nur wenn **eine** Quelle die „verfügbare“ Konto-Sicht definiert (siehe §6). |
-| **Aktivieren / Pool-Zuführung** | `reserved` → `active` | CLT-LIAB-RSV | CLT-LIAB-TRD | Kapital „im Strategieraum“. Parallel aktuell Server: `WalletTransaction` `investment` (Abbuchung verfügbarer Kontosaldo) + `AccountStatement` `investment_activate` – **Ist** muss mit dieser Umschichtung konsolidiert werden, um keine doppelte Wirkung zu erzeugen. |
-| **Trade-Abwicklung / Settlement** | `settleAndDistribute` u. a. | *(Sachkonto je Produkt)* / CLT-LIAB-TRD | CLT-LIAB-TRD / CLT-LIAB-AVA | Konkrete Splitting-Logik hängt von **Rückfluss** (`investment_return`, Gewinn, Kommission) ab; siehe `utils/accountingHelper/settlement.js` und besteh. `AccountStatement`-`entryType`s. |
+| **Aktivieren / Pool-Zuführung** | `reserved` → `active` | CLT-LIAB-RSV | CLT-LIAB-PTR | Kapital „im Strategieraum“. Parallel aktuell Server: `WalletTransaction` `investment` (Abbuchung verfügbarer Kontosaldo) + `AccountStatement` `investment_activate` – **Ist** muss mit dieser Umschichtung konsolidiert werden, um keine doppelte Wirkung zu erzeugen. |
+| **Trade-Abwicklung / Settlement** | `settleAndDistribute` u. a. | *(Sachkonto je Produkt)* / CLT-LIAB-PTR | CLT-LIAB-PTR / CLT-LIAB-AVA | Konkrete Splitting-Logik hängt von **Rückfluss** (`investment_return`, Gewinn, Kommission) ab; siehe `utils/accountingHelper/settlement.js` und besteh. `AccountStatement`-`entryType`s. |
 | **Storno nur reserviert** | Nutzer löscht Teil-Investment (Papierkorb), noch kein Trade | CLT-LIAB-RSV | CLT-LIAB-AVA | Rückgängig nur **Kapital-Reservierung** des Splits; **Servicegebühr** bleibt gebucht (nicht erstattungsfähig). |
-| **Storno nach aktiv** | `active` → `cancelled` (+ Refund) | CLT-LIAB-TRD (bzw. Teilbeträge) | CLT-LIAB-AVA | An bestehende Refund-/Konto-Logik anbinden. |
+| **Storno nach aktiv** | `active` → `cancelled` (+ Refund) | CLT-LIAB-PTR (bzw. Teilbeträge) | CLT-LIAB-AVA | An bestehende Refund-/Konto-Logik anbinden. |
 
 Servicegebühr (Batch): unverändert über **Invoice** → `PLT-CLR-GEN` (Soll brutto) / `PLT-REV-PSC` + `PLT-TAX-VAT` (Haben), Bank-Contra optional parallel.
 

@@ -4,6 +4,20 @@ struct TraderAccountStatementSnapshot {
     let entries: [AccountStatementEntry]
     let openingBalance: Double
     let closingBalance: Double
+    /// Set when the server hit its source row cap building the customer timeline.
+    let timelineTruncated: Bool
+
+    init(
+        entries: [AccountStatementEntry],
+        openingBalance: Double,
+        closingBalance: Double,
+        timelineTruncated: Bool = false
+    ) {
+        self.entries = entries
+        self.openingBalance = openingBalance
+        self.closingBalance = closingBalance
+        self.timelineTruncated = timelineTruncated
+    }
 }
 
 enum TraderAccountStatementBuilder {
@@ -67,8 +81,9 @@ enum TraderAccountStatementBuilder {
             let securitiesDescription = primarySecuritiesItem?.description ?? ""
 
             let components = securitiesDescription
-                .split(separator: "-")
+                .components(separatedBy: " - ")
                 .map { $0.trimmingCharacters(in: .whitespaces) }
+                .filter { !$0.isEmpty }
 
             let wknOrIsin = components.indices.contains(0) ? String(components[0]) : ""
             let optionDirection = components.indices.contains(1) ? String(components[1]) : ""
@@ -103,6 +118,10 @@ enum TraderAccountStatementBuilder {
             if let quantity = primarySecuritiesItem?.quantity {
                 metadata["quantity"] = String(quantity)
             }
+            metadata["statementTitle"] = TraderAccountStatementBuilder.tradeStatementTitle(
+                for: transactionType,
+                metadata: metadata
+            )
 
             let entry = AccountStatementEntry(
                 title: transactionType.displayName,
@@ -119,9 +138,7 @@ enum TraderAccountStatementBuilder {
         }
 
         // Process credit notes AFTER all settlement entries so the running
-        // balance reflects: buy → sell → commission. The occurredAt is set
-        // to 1 second after the trade's latest settlement entry so the
-        // commission row appears above (newest-first) the sell row.
+        // balance reflects: buy → sell → commission.
         for creditNote in creditNotes {
             let tradeLatest = creditNote.tradeId.flatMap { latestDatePerTrade[$0] }
             let adjustedDate = max(
@@ -137,7 +154,7 @@ enum TraderAccountStatementBuilder {
         }
 
         return TraderAccountStatementSnapshot(
-            entries: entries,
+            entries: AccountStatementEntry.sortedForChronologicalDisplay(entries),
             openingBalance: openingBalance,
             closingBalance: runningBalance
         )
@@ -234,5 +251,67 @@ enum TraderAccountStatementBuilder {
         }
 
         return []
+    }
+
+    /// Primary list title, e.g. `KAUF VO5G3MN · PUT · DAX` (offline invoice fallback).
+    static func tradeStatementTitle(for transactionType: TransactionType, metadata: [String: String]) -> String {
+        let directionLabel = transactionType.displayName
+        var instrumentParts: [String] = []
+        if let wkn = metadata["wknOrIsin"], !wkn.isEmpty {
+            instrumentParts.append(wkn)
+        }
+        if let option = metadata["securitiesDirection"],
+           !option.isEmpty,
+           option.uppercased() != directionLabel {
+            instrumentParts.append(option)
+        }
+        if let underlying = metadata["underlyingAsset"], !underlying.isEmpty {
+            instrumentParts.append(underlying)
+        }
+        if instrumentParts.isEmpty {
+            if let tradeNumber = metadata["tradeNumber"], !tradeNumber.isEmpty {
+                return "\(directionLabel) · Trade #\(tradeNumber)"
+            }
+            return directionLabel
+        }
+        return "\(directionLabel) \(instrumentParts.joined(separator: " · "))"
+    }
+
+    static func invoiceTradeMetadata(from invoice: Invoice) -> [String: String] {
+        var metadata: [String: String] = [
+            "invoiceNumber": invoice.invoiceNumber,
+            "tradeId": invoice.tradeId ?? "",
+            "transactionType": invoice.transactionType?.rawValue ?? ""
+        ]
+        if let tradeNumber = invoice.tradeNumber {
+            metadata["tradeNumber"] = String(format: "%03d", tradeNumber)
+        }
+
+        let primarySecuritiesItem = invoice.items.first { $0.itemType == .securities }
+        let securitiesDescription = primarySecuritiesItem?.description ?? ""
+        let components = securitiesDescription
+            .components(separatedBy: " - ")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+
+        if components.indices.contains(0), !components[0].isEmpty {
+            metadata["wknOrIsin"] = String(components[0])
+        }
+        if components.indices.contains(1), !components[1].isEmpty {
+            metadata["securitiesDirection"] = String(components[1])
+        }
+        if components.indices.contains(2), !components[2].isEmpty {
+            metadata["underlyingAsset"] = String(components[2])
+        }
+        if components.indices.contains(3), !components[3].isEmpty {
+            metadata["strikePrice"] = String(components[3])
+        }
+        if components.indices.contains(4), !components[4].isEmpty {
+            metadata["issuer"] = String(components[4])
+        }
+        if let quantity = primarySecuritiesItem?.quantity {
+            metadata["quantity"] = String(quantity)
+        }
+        return metadata
     }
 }

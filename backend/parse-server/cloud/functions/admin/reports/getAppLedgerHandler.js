@@ -2,68 +2,48 @@
 
 const { resolveListSortOrder } = require('../../../utils/applyQuerySort');
 const { getMappedAccounts, getMappingSnapshotForAccount } = require('./shared');
-const { sortPlainLedgerEntries } = require('./appLedgerCoreHelpers');
 const { createLedgerEntryMatchers } = require('./appLedgerMatchFilters');
 const { fetchAppLedgerViaBankContraPosting } = require('./appLedgerBankPath');
-const { fetchRawAppLedgerRows } = require('./appLedgerLoadEntries');
-const { enrichLedgerRowsForReporting } = require('./appLedgerNormalizePipeline');
 const { buildAppLedgerTotalsAndCounts } = require('./appLedgerResponseMetrics');
 const { isStrictMappingEnabled } = require('../../../utils/accountingHelper/accountMappingResolver');
+const { parseAppLedgerListFilters, requiresMemoryFilter } = require('./appLedgerListFilters');
+const { fetchFilteredAppLedgerEntries } = require('./appLedgerFetchFiltered');
 
 async function handleGetAppLedger(request) {
-  const {
-    account,
-    userId,
-    transactionType,
-    dateFrom,
-    dateTo,
-    limit: maxResults = 500,
-    skip = 0,
-    sortBy,
-  } = request.params || {};
+  const filters = parseAppLedgerListFilters(request.params || {});
+  const useMemoryFilterPath = requiresMemoryFilter(filters);
 
-  const isBankContraAccount = account === 'BANK-PS-NET' || account === 'BANK-PS-VAT';
+  const { matchesFilters, normalizedUserIdFilter } = createLedgerEntryMatchers(filters);
 
-  const { matchesFilters, normalizedUserIdFilter } = createLedgerEntryMatchers({
-    account,
-    transactionType,
-    dateFrom,
-    dateTo,
-    userId,
-  });
-
+  const isBankContraAccount = filters.account === 'BANK-PS-NET' || filters.account === 'BANK-PS-VAT';
   if (isBankContraAccount) {
     return fetchAppLedgerViaBankContraPosting({
       request,
-      account,
-      maxResults,
-      skip,
-      sortBy,
-      userId,
-      dateFrom,
-      dateTo,
+      account: filters.account,
+      maxResults: filters.limit,
+      skip: filters.skip,
+      sortBy: filters.sortBy,
+      userId: filters.userId,
+      dateFrom: filters.dateFrom,
+      dateTo: filters.dateTo,
+      amountMin: filters.amountMin,
+      amountMax: filters.amountMax,
       matchesFilters,
     });
   }
 
-  const mergeBankContra = false;
-  const entries = await fetchRawAppLedgerRows({
-    mergeBankContra,
-    maxResults,
-    skip,
-    account,
-    userId,
-    transactionType,
-    dateFrom,
-    dateTo,
+  const {
+    filtered,
+    paginated,
+    totalCount: memoryTotalCount,
+    filterScanTruncated,
+  } = await fetchFilteredAppLedgerEntries({
+    filters,
+    matchesFilters,
+    useMemoryFilterPath,
     requestParams: request.params || {},
     getMappingSnapshotForAccount,
   });
-
-  const withUserDisplayEntries = await enrichLedgerRowsForReporting(entries);
-  const filtered = withUserDisplayEntries.filter(matchesFilters);
-  sortPlainLedgerEntries(filtered, sortBy, resolveListSortOrder(request.params || {}));
-  const paginated = filtered.slice(skip, skip + maxResults);
 
   const {
     totals,
@@ -73,12 +53,16 @@ async function handleGetAppLedger(request) {
     effectiveTotalCount,
   } = await buildAppLedgerTotalsAndCounts({
     filtered,
-    account,
-    userId,
-    transactionType,
-    dateFrom,
-    dateTo,
+    account: filters.account,
+    userId: filters.userId,
+    transactionType: filters.transactionType,
+    dateFrom: filters.dateFrom,
+    dateTo: filters.dateTo,
+    amountMin: filters.amountMin,
+    amountMax: filters.amountMax,
     normalizedUserIdFilter,
+    useMemoryFilterPath,
+    memoryTotalCount,
   });
 
   return {
@@ -88,6 +72,7 @@ async function handleGetAppLedger(request) {
     totalRefunds: Math.round(totalRefunds * 100) / 100,
     vatSummary,
     totalCount: effectiveTotalCount,
+    filterScanTruncated: useMemoryFilterPath ? filterScanTruncated : false,
     accounts: getMappedAccounts(),
     strictMappingEnabled: isStrictMappingEnabled(),
   };

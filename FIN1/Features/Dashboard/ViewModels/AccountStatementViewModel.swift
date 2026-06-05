@@ -14,6 +14,7 @@ final class AccountStatementViewModel: ObservableObject {
     @Published private(set) var userRole: UserRole?
     @Published private(set) var isLoading = false
     @Published private(set) var errorMessage: String?
+    @Published private(set) var infoMessage: String?
     @Published var selectedRange: AccountStatementRange = .lastMonth {
         didSet {
             self.applyFilters()
@@ -216,6 +217,7 @@ final class AccountStatementViewModel: ObservableObject {
             self.currentBalance = snapshot.closingBalance
             self.entries = snapshot.entries
             self.errorMessage = nil
+            self.infoMessage = nil
         }
     }
 
@@ -236,6 +238,9 @@ final class AccountStatementViewModel: ObservableObject {
             self.currentBalance = snapshot.closingBalance
             self.entries = snapshot.entries
             self.errorMessage = nil
+            self.infoMessage = snapshot.timelineTruncated
+                ? "Ältere Buchungen sind ausgeblendet (Server-Limit). Bitte Admin kontaktieren, falls der Verlauf unvollständig wirkt."
+                : nil
         }
     }
 
@@ -246,6 +251,8 @@ final class AccountStatementViewModel: ObservableObject {
         }
 
         let thresholdDate = self.selectedRange.startDate()
-        self.filteredEntries = self.entries.filter { $0.occurredAt >= thresholdDate }
+        self.filteredEntries = AccountStatementEntry.sortedForChronologicalDisplay(
+            self.entries.filter { $0.occurredAt >= thresholdDate }
+        )
     }
 }

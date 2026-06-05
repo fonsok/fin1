@@ -9,6 +9,7 @@
     "postbuild": "bash ../scripts/sync-admin-portal-to-admin.sh",
     "preview": "vite preview",
     "lint": "eslint . --report-unused-disable-directives --max-warnings 0",
+    "lint:file-size": "eslint -c eslint.filesize.config.js \"src/**/*.{ts,tsx}\"",
     "test": "vitest",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",

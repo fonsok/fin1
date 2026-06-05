@@ -31,7 +31,7 @@ export function listRowStripeClasses(isDark: boolean, index: number, options?: L
       : index % 2 === 0
         ? 'bg-white'
         : adminListRowStripeLightOdd(),
-    hover && (isDark ? 'hover:bg-slate-800/60' : adminListRowHoverLight()),
+    hover && (isDark ? 'hover:bg-slate-700/55' : adminListRowHoverLight()),
     options?.className,
   );
 }

@@ -11,6 +11,8 @@ struct ServerInvestmentCanonicalSummary: Equatable {
     let commission: Double
     let netProfit: Double
     let totalBuyCost: Double
+    /// Sum of booked `metadata.netSellAmount` across settlement bills.
+    let netSellAmount: Double
     /// ROI2 — weighted average of canonical `metadata.returnPercentage` values.
     let returnPercentage: Double
     /// True if at least one bill carried a canonical `returnPercentage`.
@@ -23,13 +25,17 @@ struct ServerInvestmentCanonicalSummary: Equatable {
 enum ServerCalculatedReturnResolver {
     /// Aggregates `getInvestorCollectionBills` rows that carry canonical `metadata.returnPercentage`
     /// (settlement / Teil-Sell-Deltas). Same rules as `resolveCanonicalSummary` after fetch.
-    static func canonicalSummary(fromCollectionBills bills: [BackendCollectionBill]) -> ServerInvestmentCanonicalSummary? {
+    static func canonicalSummary(
+        fromCollectionBills bills: [BackendCollectionBill],
+        allowUnweightedReturnFallback: Bool = true
+    ) -> ServerInvestmentCanonicalSummary? {
         guard !bills.isEmpty else { return nil }
 
         var grossProfitSum = 0.0
         var commissionSum = 0.0
         var netProfitSum = 0.0
         var totalBuyCostSum = 0.0
+        var netSellAmountSum = 0.0
 
         var weightedReturnSum = 0.0
         var totalInvestedAmount = 0.0
@@ -53,10 +59,18 @@ enum ServerCalculatedReturnResolver {
             let buyAmount = metadata.buyLeg?.amount ?? 0.0
             let buyFees = metadata.buyLeg?.fees?.totalFees ?? 0.0
             let investedFromLeg = buyAmount + buyFees
+            let bookedTotalBuyCost = metadata.totalBuyCost ?? 0.0
             let investedDerived = (investedFromLeg == 0 && returnPercentage != 0)
                 ? netProfit / (returnPercentage / 100.0)
                 : 0
-            totalBuyCostSum += (investedFromLeg > 0 ? investedFromLeg : investedDerived)
+            if bookedTotalBuyCost > 0 {
+                totalBuyCostSum += bookedTotalBuyCost
+            } else {
+                totalBuyCostSum += (investedFromLeg > 0 ? investedFromLeg : investedDerived)
+            }
+            if let bookedNetSell = metadata.netSellAmount {
+                netSellAmountSum += bookedNetSell
+            }
 
             if investedFromLeg > 0 {
                 weightedReturnSum += returnPercentage * investedFromLeg
@@ -72,7 +86,7 @@ enum ServerCalculatedReturnResolver {
         let resolvedReturn: Double?
         if totalInvestedAmount > 0 {
             resolvedReturn = weightedReturnSum / totalInvestedAmount
-        } else if fallbackReturnCount > 0 {
+        } else if allowUnweightedReturnFallback, fallbackReturnCount > 0 {
             resolvedReturn = fallbackReturnSum / Double(fallbackReturnCount)
         } else {
             resolvedReturn = nil
@@ -83,6 +97,7 @@ enum ServerCalculatedReturnResolver {
             commission: commissionSum,
             netProfit: netProfitSum,
             totalBuyCost: totalBuyCostSum,
+            netSellAmount: netSellAmountSum,
             returnPercentage: resolvedReturn ?? 0,
             hasReturnPercentage: resolvedReturn != nil,
             billCount: billCount
@@ -114,7 +129,8 @@ enum ServerCalculatedReturnResolver {
     /// ROI2 value shown to the investor.
     static func resolveCanonicalSummary(
         investmentId: String,
-        settlementAPIService: (any SettlementAPIServiceProtocol)?
+        settlementAPIService: (any SettlementAPIServiceProtocol)?,
+        allowUnweightedReturnFallback: Bool = true
     ) async -> ServerInvestmentCanonicalSummary? {
         guard let settlementAPIService else { return nil }
 
@@ -125,7 +141,10 @@ enum ServerCalculatedReturnResolver {
                 investmentId: investmentId,
                 tradeId: nil
             )
-            return self.canonicalSummary(fromCollectionBills: response.collectionBills)
+            return self.canonicalSummary(
+                fromCollectionBills: response.collectionBills,
+                allowUnweightedReturnFallback: allowUnweightedReturnFallback
+            )
         } catch {
             print("⚠️ ServerCalculatedReturnResolver: Backend fetch failed for investment \(investmentId): \(error.localizedDescription)")
             return nil

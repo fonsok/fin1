@@ -1,10 +1,7 @@
 'use strict';
 
 const { requireAdminRole } = require('../../../utils/permissions');
-const {
-  ensureInvestmentBusinessCaseIdSchema,
-  ensureDocumentBusinessCaseIdSchema,
-} = require('./ensureParseSchemaFields');
+const { runPendingSchemaMigrations } = require('../../../utils/schemaMigration/schemaMigrationRunner');
 
 function registerSchemaInitFunctions() {
   Parse.Cloud.define('initializeNewSchemas', async (request) => {
@@ -14,17 +11,10 @@ function registerSchemaInitFunctions() {
     const results = [];
 
     try {
-      const bc = await ensureInvestmentBusinessCaseIdSchema();
-      results.push({ step: 'Investment.businessCaseId', ...bc });
+      const mig = await runPendingSchemaMigrations({ stopOnError: false });
+      results.push({ step: 'SchemaMigration.registry', ok: mig.ok, results: mig.results });
     } catch (error) {
-      results.push({ step: 'Investment.businessCaseId', status: 'error', message: error.message });
-    }
-
-    try {
-      const docBc = await ensureDocumentBusinessCaseIdSchema();
-      results.push({ step: 'Document.businessCaseId', ...docBc });
-    } catch (error) {
-      results.push({ step: 'Document.businessCaseId', status: 'error', message: error.message });
+      results.push({ step: 'SchemaMigration.registry', status: 'error', message: error.message });
     }
 
     try {

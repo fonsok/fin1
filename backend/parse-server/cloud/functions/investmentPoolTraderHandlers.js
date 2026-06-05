@@ -1,7 +1,5 @@
 'use strict';
 
-const { round2 } = require('../utils/accountingHelper/shared');
-const investmentEscrow = require('../utils/accountingHelper/investmentEscrow');
 const { traderOwnsInvestment } = require('./investmentAccess');
 
 async function handleTraderActivateReservedInvestment(request) {
@@ -40,18 +38,7 @@ async function handleTraderActivateReservedInvestment(request) {
   investment.set('status', 'active');
   investment.set('reservationStatus', 'active');
   await investment.save(null, { useMasterKey: true });
-
-  try {
-    await investmentEscrow.bookDeployToTrading({
-      investorId: investment.get('investorId'),
-      amount: round2(investment.get('amount') || 0),
-      investmentId: investment.id,
-      investmentNumber: investment.get('investmentNumber') || '',
-      businessCaseId: String(investment.get('businessCaseId') || '').trim(),
-    });
-  } catch (err) {
-    console.error(`❌ bookDeployToTrading (traderActivate) idempotent repair ${investment.id}:`, err.message);
-  }
+  // Kapital-Split bei Aktivierung sobald Trade/Pool bekannt (afterSave + Pool-Zuteilung).
 
   return { success: true, investmentId: investment.id, status: 'active' };
 }
@@ -119,6 +106,8 @@ async function handleRecordPoolTradeParticipation(request) {
   if (Number.isFinite(profitShare)) row.set('profitShare', profitShare);
 
   await row.save(null, { useMasterKey: true });
+  const { syncTradeHasPoolParticipation } = require('../utils/poolParticipationTradeSync');
+  await syncTradeHasPoolParticipation(tradeId, true);
   return row.toJSON();
 }
 

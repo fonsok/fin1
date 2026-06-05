@@ -4,7 +4,7 @@ import SwiftUI
 /// Content for different tabs in trader details
 
 struct TraderTabContentView: View {
-    let trader: MockTrader
+    let trader: InvestorTrader
     @Binding var selectedTab: Int
 
     var body: some View {

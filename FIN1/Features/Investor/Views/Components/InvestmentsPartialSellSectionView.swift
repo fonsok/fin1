@@ -49,7 +49,7 @@ struct InvestmentsPartialSellSectionView: View {
                                 }, label: {
                                     HStack {
                                         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(2)) {
-                                            Text("Inv \(row.investment.canonicalDisplayReference)")
+                                            Text(row.investment.canonicalDisplayReference)
                                                 .font(ResponsiveDesign.bodyFont())
                                                 .foregroundColor(AppTheme.fontColor)
                                             Text(self.partialSellSummaryCaption(for: row.investment))

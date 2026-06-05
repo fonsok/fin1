@@ -9,7 +9,12 @@ const { calculateOrderFees } = require('../utils/helpers');
 const { requireAdminRole } = require('../utils/permissions');
 
 const { getUserStableId } = require('./tradingIdentity');
+const { normalizeTradeForClient, enrichTradesWithOrderLegs } = require('../utils/tradeClientPresentation');
 const { handleExecutePairedBuy } = require('./tradingPairedBuyExecution');
+const { handleFinalizePairedBuyExecution } = require('./tradingPairedBuyFinalize');
+const { handleCommitPairedBuyExecution } = require('./tradingPairedBuyCommit');
+const { handleCancelOrder } = require('./tradingOrderCancellation');
+const { handleAdvancePairedOrderStatus } = require('./tradingPairedOrderStatus');
 const { handleUpsertTrade } = require('./tradingUpsertTrade');
 const {
   handleGetTradeSettlement,
@@ -17,6 +22,7 @@ const {
   handleGetTradeInvoices,
   handleGetUserInvoices,
 } = require('./tradingSettlementReads');
+const { handleGetUserDocumentInbox } = require('./userDocumentInbox');
 
 // Get trader's open trades
 Parse.Cloud.define('getOpenTrades', async (request) => {
@@ -30,7 +36,7 @@ Parse.Cloud.define('getOpenTrades', async (request) => {
 
   const trades = await query.find({ useMasterKey: true });
 
-  return { trades: trades.map(t => t.toJSON()) };
+  return { trades: trades.map((t) => normalizeTradeForClient(t)) };
 });
 
 // Get trade history
@@ -49,9 +55,10 @@ Parse.Cloud.define('getTradeHistory', async (request) => {
 
   const trades = await query.find({ useMasterKey: true });
   const total = await query.count({ useMasterKey: true });
+  await enrichTradesWithOrderLegs(trades);
 
   return {
-    trades: trades.map(t => t.toJSON()),
+    trades: trades.map((t) => normalizeTradeForClient(t)),
     total,
     hasMore: skip + trades.length < total,
   };
@@ -134,6 +141,15 @@ Parse.Cloud.define('placeOrder', async (request) => {
 
 Parse.Cloud.define('executePairedBuy', handleExecutePairedBuy);
 
+Parse.Cloud.define('finalizePairedBuyExecution', handleFinalizePairedBuyExecution);
+
+/** Preferred: finalize + optional postDisplayStatus (confirmed|completed) in one call. */
+Parse.Cloud.define('commitPairedBuyExecution', handleCommitPairedBuyExecution);
+
+Parse.Cloud.define('advancePairedOrderStatus', handleAdvancePairedOrderStatus);
+
+Parse.Cloud.define('cancelOrder', handleCancelOrder);
+
 Parse.Cloud.define('upsertTrade', handleUpsertTrade);
 
 Parse.Cloud.define('getTradeById', async (request) => {
@@ -147,11 +163,11 @@ Parse.Cloud.define('getTradeById', async (request) => {
   const stableId = getUserStableId(user);
 
   if (request.master) {
-    return trade.toJSON();
+    return normalizeTradeForClient(trade);
   }
 
   if (trade.get('traderId') === stableId) {
-    return trade.toJSON();
+    return normalizeTradeForClient(trade);
   }
 
   const allParticipations = await new Parse.Query('PoolTradeParticipation')
@@ -167,7 +183,7 @@ Parse.Cloud.define('getTradeById', async (request) => {
       .equalTo('investorId', stableId)
       .first({ useMasterKey: true });
     if (investorMatch) {
-      return trade.toJSON();
+      return normalizeTradeForClient(trade);
     }
   }
 
@@ -201,17 +217,21 @@ Parse.Cloud.define('getHoldings', async (request) => {
 });
 
 // Get investor collection bill documents for the current user (paginated)
+Parse.Cloud.define('getUserDocumentInbox', handleGetUserDocumentInbox);
+
 Parse.Cloud.define('getInvestorCollectionBills', async (request) => {
   const user = request.user;
   if (!user) throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Login required');
 
   const { limit = 50, skip = 0, investmentId, tradeId } = request.params || {};
-  const stableId = getUserStableId(user);
+  const { collectLedgerUserIdCandidates } = require('../utils/canonicalUserId');
+  const { buildInvestorCollectionBillQuery } = require('./userDocumentInbox');
+  const userKeys = collectLedgerUserIdCandidates(user);
+  if (userKeys.length === 0) {
+    return { collectionBills: [], total: 0, hasMore: false };
+  }
 
-  const query = new Parse.Query('Document');
-  query.equalTo('userId', stableId);
-  query.containedIn('type', ['investor_collection_bill', 'investorCollectionBill']);
-  query.doesNotExist('metadata.receiptType');
+  const query = await buildInvestorCollectionBillQuery(userKeys);
   if (investmentId) query.equalTo('investmentId', investmentId);
   if (tradeId) query.equalTo('tradeId', tradeId);
   query.descending('createdAt');

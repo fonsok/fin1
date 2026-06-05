@@ -16,7 +16,7 @@ protocol InvestorNotificationServiceProtocol: ObservableObject {
 // MARK: - Investor Notification Service Implementation
 /// Handles investor notifications, confirmations, and document generation
 final class InvestorNotificationService: InvestorNotificationServiceProtocol, ServiceLifecycle, @unchecked Sendable {
-    static let shared = InvestorNotificationService()
+    static let shared = InvestorNotificationService(documentService: DocumentService.shared)
 
     @Published var isLoading = false
     @Published var errorMessage: String?
@@ -25,7 +25,7 @@ final class InvestorNotificationService: InvestorNotificationServiceProtocol, Se
     private let transactionIdService: any TransactionIdServiceProtocol
 
     init(
-        documentService: any DocumentServiceProtocol = DocumentService.shared,
+        documentService: any DocumentServiceProtocol,
         transactionIdService: any TransactionIdServiceProtocol = TransactionIdService()
     ) {
         self.documentService = documentService
@@ -53,6 +53,11 @@ final class InvestorNotificationService: InvestorNotificationServiceProtocol, Se
             NotificationCenter.default.post(
                 name: .investmentCompleted,
                 object: investment
+            )
+            NotificationCenter.default.post(
+                name: .userDocumentInboxShouldRefresh,
+                object: nil,
+                userInfo: ["force": true]
             )
         }
         print("✅ Investment Confirmation: \(investment.traderName) - €\(investment.amount) invested")

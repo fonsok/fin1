@@ -42,8 +42,12 @@ async function handleGetUserDetails(request) {
 
   const {
     accountStatement,
+    accountStatementLedger,
+    clientFundsBreakdown,
+    investorOutcomeHighlights,
     walletControls,
     userWalletActionModeOverride,
+    investorCollectionBills,
   } = await loadAccountStatementAndWalletControls(user, formatDate);
 
   const tradesWithInvestors = await enrichTradesWithInvestors(trades, formatDate);
@@ -95,6 +99,10 @@ async function handleGetUserDetails(request) {
     investmentSummary,
     investments: await mapInvestmentsForAdminDetail(investments, formatDate),
     accountStatement,
+    accountStatementLedger,
+    clientFundsBreakdown,
+    investorOutcomeHighlights,
+    investorCollectionBills,
     recentActivity: activities.map(a => ({
       action: a.get('action'),
       description: a.get('description') || a.get('action'),

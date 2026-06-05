@@ -33,6 +33,7 @@ async function handleDiscoverTraders(request) {
 
     result.push({
       traderId: trader.id,
+      username: trader.get('username') || null,
       displayName: profile ? `${profile.get('firstName')} ${profile.get('lastName').charAt(0)}.` : 'Trader',
       riskClass: risk ? risk.get('riskClass') : null,
       investorCount: activeInvestments.length,

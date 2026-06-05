@@ -91,6 +91,7 @@ final class CollectionBillByNumberViewModel: ObservableObject {
                 profitLoss: foundTrade.currentPnL ?? 0,
                 returnPercentage: 0,
                 commission: 0,
+                isCommissionPending: false,
                 isActive: foundTrade.isActive,
                 statusText: foundTrade.status.rawValue,
                 statusDetail: "",

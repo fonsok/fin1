@@ -69,9 +69,14 @@ export interface SupportTicket {
   objectId: string;
   ticketNumber: string;
   subject: string;
-  description: string;
-  status: 'open' | 'in_progress' | 'waiting' | 'resolved' | 'closed' | 'archived';
+  description?: string;
+  status: 'open' | 'in_progress' | 'waiting' | 'escalated' | 'resolved' | 'closed' | 'archived';
   priority: 'low' | 'medium' | 'high' | 'urgent';
+  escalated?: boolean;
+  escalationReason?: string;
+  escalatedAt?: string;
+  escalatedBy?: string;
+  escalatedByName?: string;
   category: string;
   userId: string;
   userEmail?: string;
@@ -106,6 +111,7 @@ export interface CSRAgent {
 export interface TicketMetrics {
   totalTickets: number;
   openTickets: number;
+  escalatedTickets?: number;
   resolvedTickets: number;
   averageResolutionTime: number;
   averageResponseTime: number;

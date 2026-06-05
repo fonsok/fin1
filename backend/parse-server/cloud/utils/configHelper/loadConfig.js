@@ -103,6 +103,15 @@ async function loadConfig(forceRefresh = false) {
           orderFeeRate: config.get('orderFeeRate') ?? DEFAULT_CONFIG.financial.orderFeeRate,
           orderFeeMin: config.get('orderFeeMin') ?? DEFAULT_CONFIG.financial.orderFeeMin,
           orderFeeMax: config.get('orderFeeMax') ?? DEFAULT_CONFIG.financial.orderFeeMax,
+          maxTraderPartialSells: Math.min(
+            3,
+            Math.max(
+              0,
+              Math.floor(Number(
+                config.get('maxTraderPartialSells') ?? DEFAULT_CONFIG.financial.maxTraderPartialSells,
+              )),
+            ),
+          ),
         },
         limits: {
           ...DEFAULT_CONFIG.limits,
@@ -116,6 +125,15 @@ async function loadConfig(forceRefresh = false) {
             config.get('maxInvestment') ?? (config.get('limits') || {}).maxInvestment,
             DEFAULT_CONFIG.limits.maxInvestment,
           ),
+          maxPoolMirrorBuyOrderAmount: (() => {
+            const raw = config.get('maxPoolMirrorBuyOrderAmount')
+              ?? (config.get('limits') || {}).maxPoolMirrorBuyOrderAmount;
+            if (raw === null || raw === undefined) {
+              return DEFAULT_CONFIG.limits.maxPoolMirrorBuyOrderAmount ?? 0;
+            }
+            const n = Number(raw);
+            return Number.isFinite(n) && n >= 0 ? n : 0;
+          })(),
           dailyTransactionLimit:
             (config.get('limits') || {}).dailyTransactionLimit
             ?? (config.get('limits') || {}).daily_transaction_limit
@@ -152,6 +170,11 @@ async function loadConfig(forceRefresh = false) {
           serviceChargeLegacyDisableAllowedFrom:
             config.get('serviceChargeLegacyDisableAllowedFrom')
             ?? DEFAULT_CONFIG.display.serviceChargeLegacyDisableAllowedFrom,
+          investorMonetaryServerOnly:
+            config.get('investorMonetaryServerOnly')
+            ?? DEFAULT_CONFIG.display.investorMonetaryServerOnly,
+          showInvestorPartialSellRealizations: config.get('showInvestorPartialSellRealizations')
+            ?? DEFAULT_CONFIG.display.showInvestorPartialSellRealizations,
         },
         legal: {
           ...DEFAULT_CONFIG.legal,

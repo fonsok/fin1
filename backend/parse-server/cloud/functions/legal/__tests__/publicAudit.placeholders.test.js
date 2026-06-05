@@ -102,4 +102,47 @@ describe('getCurrentTerms placeholder hydration', () => {
     expect(result.sections[0].content).not.toContain('{{DAILY_LIMIT}}');
     expect(result.sections[0].content).not.toContain('{(APP_SERVICE_CHARGE_RATE)}');
   });
+
+  test('replaces capital gains tax notes when taxCollectionMode is customer_self_reports', async () => {
+    termsRows.TermsContent = [{
+      objectId: 'terms-tax-mode',
+      version: '1.0.0',
+      language: 'de',
+      documentType: 'terms',
+      effectiveDate: new Date('2026-04-01T00:00:00.000Z'),
+      isActive: true,
+      documentHash: null,
+      sections: [
+        {
+          id: 'doc_tax_note_sell',
+          title: 'Steuerhinweis Verkauf',
+          content: 'Plattform behält ein.',
+          icon: 'percent',
+        },
+        {
+          id: 'doc_tax_note_buy',
+          title: 'Steuerhinweis Kauf',
+          content: 'Plattform Kauf.',
+          icon: 'percent',
+        },
+      ],
+    }];
+
+    mockLoadConfig.mockResolvedValue({
+      financial: {},
+      limits: {},
+      display: {},
+      legal: {},
+      tax: { taxCollectionMode: 'customer_self_reports' },
+    });
+
+    const result = await cloudFunctions.getCurrentTerms({
+      params: { language: 'de', documentType: 'terms' },
+    });
+
+    const expected =
+      'Allgemein: Grundsätzlich wird Abgeltungssteuer nicht an Finanzamt überwiesen.';
+    expect(result.sections.find((s) => s.id === 'doc_tax_note_sell').content).toBe(expected);
+    expect(result.sections.find((s) => s.id === 'doc_tax_note_buy').content).toBe(expected);
+  });
 });

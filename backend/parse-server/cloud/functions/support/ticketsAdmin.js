@@ -2,93 +2,32 @@
 
 const { requirePermission, requireAdminRole } = require('../../utils/permissions');
 const { applyQuerySort } = require('../../utils/applyQuerySort');
+const {
+  listTickets,
+  getTicketDetail,
+  mapTicketForClient,
+  normalizeStatusForStorage,
+  assertValidStatus,
+  validateStatusTransition,
+  logTicketAudit,
+} = require('../../utils/supportTicketHelper');
 
 // ============================================================================
-// LEGACY TICKETS (Admin Portal)
+// TICKETS (Admin + CSR list/detail)
 // ============================================================================
 
 /**
- * Get tickets list with filters
+ * Get tickets list with filters (paginated, batch-enriched)
  */
 Parse.Cloud.define('getTickets', async (request) => {
   requireAdminRole(request);
   requirePermission(request, 'getTickets');
 
-  const {
-    status,
-    priority,
-    category,
-    assignedTo,
-    userId,
-    limit = 50,
-    skip = 0,
-  } = request.params;
-
-  const Ticket = Parse.Object.extend('SupportTicket');
-
-  function buildTicketQuery() {
-    const q = new Parse.Query(Ticket);
-    if (status) q.equalTo('status', status);
-    if (priority) q.equalTo('priority', priority);
-    if (category) q.equalTo('category', category);
-    if (assignedTo) q.equalTo('assignedTo', assignedTo);
-    if (userId) q.equalTo('userId', userId);
-    return q;
-  }
-
-  const countQuery = buildTicketQuery();
-  const total = await countQuery.count({ useMasterKey: true });
-
-  const pageQuery = buildTicketQuery();
-  applyQuerySort(pageQuery, request.params || {}, {
-    allowed: ['createdAt'],
-    defaultField: 'createdAt',
-    defaultDesc: true,
-  });
-  pageQuery.skip(skip);
-  pageQuery.limit(limit);
-
-  const tickets = await pageQuery.find({ useMasterKey: true });
-
-  // Enrich with user emails
-  const enrichedTickets = await Promise.all(
-    tickets.map(async (ticket) => {
-      const ticketData = ticket.toJSON();
-
-      // Get user email if userId exists
-      if (ticketData.userId) {
-        try {
-          const userQuery = new Parse.Query(Parse.User);
-          const user = await userQuery.get(ticketData.userId, { useMasterKey: true });
-          ticketData.userEmail = user.get('email');
-        } catch (e) {
-          // User not found, skip
-        }
-      }
-
-      // Get assigned admin name
-      if (ticketData.assignedTo) {
-        try {
-          const adminQuery = new Parse.Query(Parse.User);
-          const admin = await adminQuery.get(ticketData.assignedTo, { useMasterKey: true });
-          ticketData.assignedToName = admin.get('firstName') + ' ' + admin.get('lastName');
-        } catch (e) {
-          // Admin not found, skip
-        }
-      }
-
-      return ticketData;
-    })
-  );
-
-  return {
-    tickets: enrichedTickets,
-    total,
-  };
+  return listTickets(request.params || {});
 });
 
 /**
- * Get single ticket details
+ * Get single ticket details (comments mapped from TicketMessage)
  */
 Parse.Cloud.define('getTicket', async (request) => {
   requireAdminRole(request);
@@ -99,22 +38,7 @@ Parse.Cloud.define('getTicket', async (request) => {
     throw new Parse.Error(Parse.Error.INVALID_QUERY, 'ticketId required');
   }
 
-  const Ticket = Parse.Object.extend('SupportTicket');
-  const query = new Parse.Query(Ticket);
-  const ticket = await query.get(ticketId, { useMasterKey: true });
-
-  const ticketData = ticket.toJSON();
-
-  // Get messages
-  const Message = Parse.Object.extend('TicketMessage');
-  const msgQuery = new Parse.Query(Message);
-  msgQuery.equalTo('ticketId', ticketId);
-  msgQuery.ascending('createdAt');
-  const messages = await msgQuery.find({ useMasterKey: true });
-
-  ticketData.messages = messages.map((m) => m.toJSON());
-
-  return ticketData;
+  return getTicketDetail(ticketId);
 });
 
 /**
@@ -130,10 +54,15 @@ Parse.Cloud.define('updateTicket', async (request) => {
   }
 
   const Ticket = Parse.Object.extend('SupportTicket');
-  const query = new Parse.Query(Ticket);
-  const ticket = await query.get(ticketId, { useMasterKey: true });
+  const ticket = await new Parse.Query(Ticket).get(ticketId, { useMasterKey: true });
+  const oldStatus = ticket.get('status');
+  const oldAssigned = ticket.get('assignedTo');
 
-  if (status) ticket.set('status', status);
+  if (status) {
+    assertValidStatus(status);
+    validateStatusTransition(oldStatus, status);
+    ticket.set('status', normalizeStatusForStorage(status));
+  }
   if (priority) ticket.set('priority', priority);
   if (assignedTo !== undefined) ticket.set('assignedTo', assignedTo);
   if (internalNotes) ticket.set('internalNotes', internalNotes);
@@ -141,7 +70,16 @@ Parse.Cloud.define('updateTicket', async (request) => {
   ticket.set('updatedBy', request.user.id);
   await ticket.save(null, { useMasterKey: true });
 
-  return ticket.toJSON();
+  await logTicketAudit({
+    actorId: request.user.id,
+    actorRole: request.user.get('role'),
+    ticketId,
+    action: 'ticket_updated',
+    oldValues: { status: oldStatus, assignedTo: oldAssigned },
+    newValues: { status: ticket.get('status'), assignedTo: ticket.get('assignedTo') },
+  });
+
+  return mapTicketForClient(ticket.toJSON());
 });
 
 /**
@@ -156,7 +94,6 @@ Parse.Cloud.define('replyToTicket', async (request) => {
     throw new Parse.Error(Parse.Error.INVALID_QUERY, 'ticketId and message required');
   }
 
-  // Create message
   const Message = Parse.Object.extend('TicketMessage');
   const msg = new Message();
   msg.set('ticketId', ticketId);
@@ -166,18 +103,26 @@ Parse.Cloud.define('replyToTicket', async (request) => {
   msg.set('isInternal', !!isInternal);
   await msg.save(null, { useMasterKey: true });
 
-  // Update ticket status if it was waiting
   const Ticket = Parse.Object.extend('SupportTicket');
-  const query = new Parse.Query(Ticket);
-  const ticket = await query.get(ticketId, { useMasterKey: true });
+  const ticket = await new Parse.Query(Ticket).get(ticketId, { useMasterKey: true });
+  const oldStatus = ticket.get('status');
 
-  if (ticket.get('status') === 'waiting' && !isInternal) {
+  if ((oldStatus === 'waiting' || oldStatus === 'waiting_for_customer') && !isInternal) {
     ticket.set('status', 'in_progress');
   }
   ticket.set('lastReplyAt', new Date());
   ticket.set('lastReplyBy', request.user.id);
   await ticket.save(null, { useMasterKey: true });
 
+  await logTicketAudit({
+    actorId: request.user.id,
+    actorRole: request.user.get('role'),
+    ticketId,
+    action: isInternal ? 'ticket_internal_note' : 'ticket_reply',
+    oldValues: { status: oldStatus },
+    newValues: { status: ticket.get('status') },
+    metadata: { isInternal: !!isInternal },
+  });
+
   return msg.toJSON();
 });
-

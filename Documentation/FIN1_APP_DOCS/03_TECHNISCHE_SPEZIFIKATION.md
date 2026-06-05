@@ -264,9 +264,11 @@ sequenceDiagram
 #### Investment
 
 - **`getInvestorPortfolio`**: auth required → `{investments:[...], summary:{...}}`
-- **`createInvestment`**: auth required, params `{traderId, amount}` → `{investmentId, investmentNumber, status}`
+- **`createInvestment`**: auth required, params `{traderId, amount}` → `{investmentId, investmentNumber, status}` (**Legacy**, ein Einzelbetrag ohne Batch-Splits)
+- **`createInvestmentSplits`**: auth required — **Primary-Path iOS** für Investment-Sheet (mehrere Splits pro Batch). Params: `{ batchId, traderId, traderUsername?, traderName?, specialization?, investorName?, splits: [{ sequenceNumber, amount }, …] }` → `{ batchId, resolvedTraderId, batchStatus: "committed"|"replayed", splits: [{ investmentId, sequenceNumber, investmentNumber?, idempotentReplay, status: "created"|"replayed" }] }`. **Atomar:** Fehler bei einem neuen Split → Rollback aller in derselben Request angelegten Splits; Client-Fehler: `Batch-Anlage fehlgeschlagen (neue Anteile zurückgenommen)`. Idempotenz: `(investorId, batchId, sequenceNumber)`. Implementierung: `functions/investmentCreateSplits.js`. Siehe [`Documentation/ENGINEERING_GUIDE.md`](../ENGINEERING_GUIDE.md) (Abschnitt *Investment anlegen*).
 - **`confirmInvestment`**: auth required, params `{investmentId}` → `{success:true, status:"active"}`
-- **`discoverTraders`**: params `{minRiskClass?, maxRiskClass?, limit?, skip?}` → `{traders:[...], total}`
+- **`discoverTraders`**: params `{minRiskClass?, maxRiskClass?, limit?, skip?}` → `{ traders: [{ traderId, username, displayName, … }], total }` — `username` wird von iOS für `MockTrader.parseUserId`-Hydration genutzt (`TraderDataService.refreshParseUserIds`).
+- **`getPoolMirrorCapacity`**, **`setPoolMirrorCapacityAlert`**: `traderId` und optional `traderUsername` / `traderName`; Antwort kann `resolvedTraderId` enthalten.
 
 #### Trading
 
@@ -345,7 +347,7 @@ sequenceDiagram
 | Service | Sync-Typ | Beschreibung |
 |---------|----------|--------------|
 | `TradeAPIService` | Write-through | Trades werden bei Erstellung sofort zum Server gesendet |
-| `InvestmentAPIService` | Write-through + Background | Investments werden bei Erstellung gesendet, Batch-Sync bei App-Background |
+| `InvestmentAPIService` | Write-through + Background | Bei Erstellung: **`createInvestmentSplits`** (ein Call pro `batchId`); Background: `syncPendingInvestmentsToBackend` gruppiert nach Batch. `MockTrader.backendTraderId` nach `discoverTraders`-Hydration. |
 | `OrderAPIService` | Write-through + Background | Buy/Sell Orders werden bei Platzierung sofort synchronisiert; pending Orders werden bei App-Background nachgezogen |
 | `PoolTradeParticipationService` | Write-through | Partizipationen werden bei Trade-Erstellung sofort synchronisiert |
 | `DocumentAPIService` | Write-through + Background | Dokumente werden bei Upload sofort synchronisiert; pending Uploads werden bei App-Background nachgezogen |

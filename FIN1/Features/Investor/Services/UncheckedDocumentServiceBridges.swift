@@ -14,6 +14,11 @@ final class UncheckedDocumentServiceBridge: @unchecked Sendable {
     func uploadDocument(_ document: Document) async throws {
         try await self.documentService.uploadDocument(document)
     }
+
+    @MainActor
+    func loadDocuments(for user: User) async {
+        await self.documentService.loadDocuments(for: user)
+    }
 }
 
 final class UncheckedInvestmentDocumentServiceBridge: @unchecked Sendable {

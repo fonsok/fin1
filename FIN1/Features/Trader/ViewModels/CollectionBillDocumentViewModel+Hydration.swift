@@ -107,6 +107,9 @@ extension CollectionBillDocumentViewModel {
         switch self.routingDocument.type {
         case .traderCollectionBill:
             resolved = await resolveTradeTarget()
+            if resolved {
+                await self.refreshTraderBelegSnapshotFromServer()
+            }
         case .investorCollectionBill:
             resolved = await resolveInvestmentTarget()
             if !resolved {

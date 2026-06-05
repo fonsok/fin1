@@ -142,10 +142,43 @@ Vollständige, für Agenten bindende Fassung: [`.cursor/rules/parse-cloud.md`](.
 - **Idempotenz:** Duplicate-Guards, `batchId`/`referenceId`-Strategien und eindeutige Annahmen nicht lockern; neue schreibende Flows explizit benennen (Retry, Doppelbuch).
 - **Abnahme (Minimum):** `node --check` auf geänderte Dateien; `npx jest` unter `backend/parse-server/cloud` (oder gezielte Suites); wo möglich unveränderte Referenzausgaben für definierte Fixtures.
 - **Transaktionsgrenzen, Konsistenz, Kompensation:** bei neuen oder verschobenen Grenzen **ADR/Runbook** mitziehen (ersetzt diese Policy nicht).
+- **Admin Portal (React/TS):** [`Documentation/ADMIN_PORTAL_NAMING_CONVENTIONS.md`](ADMIN_PORTAL_NAMING_CONVENTIONS.md) — gleiche Prinzipien wie Parse Cloud, PascalCase für Komponenten; `cloudFunction`-Namen = Parse-Verb-Matrix.
+- **Beispiel `utils/accountingHelper/`:** `statements.js` ist die **Fassade** (gleiche öffentliche API; bestehende `require('…/statements')`-Imports bleiben); Implementierung in `accountStatementWriter.js` (Kontoauszugszeilen, Cash/Chain/Kompensation), `settlementGLRules.js` (`SETTLEMENT_GL_RULES`), `settlementGLPoster.js` (Settlement-Posting, Order-Fee-Breakdown). SSOT: [`Documentation/BOOKING_AND_BELEG_SSOT.md`](BOOKING_AND_BELEG_SSOT.md).
+
+#### Investment anlegen (iOS ↔ Parse, Idempotenz, Trader-IDs)
+
+**Maßgeblich für neue Features und Debugging von „Duplicate“ / leerer Investorenliste nach Fehlern.**
+
+| Thema | SSOT / Verhalten |
+|--------|------------------|
+| **Create-Sync (Investor)** | Cloud Function **`createInvestmentSplits`** (`backend/parse-server/cloud/functions/investmentCreateSplits.js`) — **ein** Round-Trip pro lokaler `batchId`, nicht mehr blindes `POST /classes/Investment` pro Split. |
+| **Idempotenz-Schlüssel** | `(investorId, batchId, sequenceNumber)` — Retry nach Timeout oder App-Neustart liefert bestehende Splits (`idempotentReplay: true`), keine zweite Reservierung. Guard: `triggers/investmentDuplicateGuard.js` (`findExistingInvestmentSplit`). |
+| **Investment-Nr.** | `generateInvestorInvestmentNumber` (`utils/helpers.js`) vergibt **`INV-YYYY-NNNNNNN` pro Investor und Kalenderjahr** (Sequenz startet pro `investorId` neu). |
+| **Mongo-Index** | **`unique + sparse` auf `(investorId, investmentNumber)`** — nicht global nur auf `investmentNumber` (sonst E11000, wenn zwei Investoren dieselbe laufende Nummer haben). Migration: `investment_number_per_investor_compound_unique_v1` in `schemaMigrationsRegistry.js`; Init: `backend/mongodb/init/01_indexes.js`. |
+| **Trader-`objectId` (iOS)** | Produktionsmodell **`InvestorTrader`** (`parseUserId` / **`backendTraderId`**) — Hydration via `discoverTraders` (`TraderDiscoveryAPIService` + `TraderCatalogMerge`). **`TraderDemoMetrics`** nur für Mock-Seed (Dashboard/Filter); Server-only-Trader ohne Demo-Overlay. **Zwei UI-Wege:** Dashboard **Top Recent Trades** = `dashboardTraders`; **Find Trader / Discover** = `traders`. Seed bleibt `mockTraders` → `InvestorTrader(mock:)`. Refresh: `refreshTraderCatalog()`. **Trader-Modul** (Buy-Order, Profit, Activation): `TraderMatchingHelper` / `TraderCatalogLookup` auf `TraderDataService`-Katalog — kein `MockTrader`-Lookup mehr. **`Investment.traderUsername`:** lokal + Parse (Migration + Backfill). Anlage: `createInvestmentSplits`. Server: `resolveTraderParseUser`. |
+| **Batch-Antwort** | `createInvestmentSplits` liefert pro Split `status: created \| replayed` (+ `idempotentReplay`) und `batchStatus: committed \| replayed`. **Atomar:** scheitert ein neuer Split, werden alle in derselben Request neu angelegten Zeilen zurückgerollt (`investmentBatchAtomicRollback.js`); Fehlermeldung: `Batch-Anlage fehlgeschlagen (neue Anteile zurückgenommen)`. Pool-Cap: einmal pro Batch in der Function, `beforeSave` überspringt Per-Split-Cap wenn `investmentBatchContext` gesetzt. **Notifications (Batch):** `investmentBatchNotifications.js` — `afterSave` sammelt bei offenem Batch (`beginBatchNotificationDefer`), nach Erfolg ein Digest (Investor + Trader), bei Rollback `discardDeferredBatchNotifications`. Einzel-REST-Create unverändert pro Split. |
+| **Client-Sync** | `InvestmentAPIService.saveInvestmentSplits` → `InvestmentService.syncPendingInvestmentsToBackend` (gruppiert nach `batchId`). Bei Duplicate-/Netzwerkfehler: **Reconcile** per `batchId` + `fetchInvestments`, erst dann lokaler Rollback (`InvestmentService+CreationAndStatus`). **Background:** `syncToBackend` → `refreshTraderCatalog()`, dann Sync mit `traderUsername` (`InvestmentService+TraderSyncContext`). **Fetch:** fehlendes `traderUsername` wird aus dem Trader-Katalog ergänzt (`enrichTraderUsernameFromCatalogIfNeeded`). |
+| **Nach Save** | `investmentTriggerBeforeSave` (Limits, Pool-Mirror-Cap, `feeConfigSnapshot`, Nummer) + `afterSave` → `bookReserve` (GoB). Fehlgeschlagene Reserve → expliziter Orphan-Rollback (`investmentReservationRollback.js`). |
+
+**Legacy:** `createInvestment` (einzelner Betrag, ohne Batch-Splits) und direktes REST-Create bleiben für Kompatibilität; der Investor-Investment-Sheet-Pfad nutzt den Batch-Cloud-Function-Weg.
+
+**GoB / Buchungskontext:** [`Documentation/BOOKING_AND_BELEG_SSOT.md`](BOOKING_AND_BELEG_SSOT.md) (Abschnitt *Investment-Reservierung anlegen*).
+
+#### Trader: Provision im Trade-Überblick (iOS, Anzeige)
+
+| Thema | SSOT / Verhalten |
+|--------|------------------|
+| **Listen-Spalte „Provision“** | Keine Neuberechnung; Lesen aus `DocumentService` (Gutschrift) → `getAccountStatement(entryType: commission_credit)` via `commissionCreditTotalsByTradeId` → `InvoiceService`; Notifications + einmaliger 2 s-Fallback — [`Documentation/TRADER_COMMISSION_DISPLAY_SSOT.md`](TRADER_COMMISSION_DISPLAY_SSOT.md) |
+| **Order-Cash / Stück-Caps** | Separates Thema — [`Documentation/ORDER_CASH_AMOUNT_SSOT.md`](ORDER_CASH_AMOUNT_SSOT.md) |
+
+**API-Referenz:** [`Documentation/FIN1_APP_DOCS/03_TECHNISCHE_SPEZIFIKATION.md`](FIN1_APP_DOCS/03_TECHNISCHE_SPEZIFIKATION.md) (Cloud Functions *Investment*).
+
+**Regression-Tests (Jest):** `backend/parse-server/cloud/functions/__tests__/investmentCreateSplits.integration.test.js` — zwei Investoren mit gleicher `INV-*`-Sequenz (compound unique), Batch-Retry (`idempotentReplay`), Duplicate-Save-Race.
 
 #### Troubleshooting
 - Build errors on DI rules typically mean a ViewModel or View used a singleton directly. Inject protocols.
 - If tests aren’t discovered, ensure they are under `FIN1Tests/` and target membership is `FIN1Tests`.
+- **Investment „Duplicate value“ / 0 Investments nach Fehler:** Prüfen ob `investmentNumber`-Index compound ist (`listSchemaMigrations`, Migration `investment_number_per_investor_compound_unique_v1`); Logs `createInvestmentSplits`; ob `MockTrader` hydratisiert (`TraderDataService: Hydrated N Parse trader IDs`).
 
 
 

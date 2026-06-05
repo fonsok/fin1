@@ -52,6 +52,8 @@ export interface LedgerResponse {
   totalCount: number;
   accounts: AccountDef[];
   strictMappingEnabled?: boolean;
+  /** True when Beleg/User text filters scanned the max row cap (5000). */
+  filterScanTruncated?: boolean;
 }
 
 export interface LedgerMappingValidationReport {
@@ -65,4 +67,4 @@ export interface LedgerMappingValidationReport {
   isValid: boolean;
 }
 
-export type DateRangePreset = 'all' | 'thisMonth' | 'lastMonth' | 'thisYear' | 'last30Days' | 'custom';
+export type { DateRangePreset } from '../../../utils/dateRangePreset';

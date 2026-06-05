@@ -4,6 +4,15 @@ const { round2 } = require('./shared');
 const { computeInvestorBuyLeg } = require('./legs');
 const { ensureBusinessCaseIdForTrade } = require('./businessCaseId');
 const { bookAccountStatementEntry } = require('./statements');
+const { audit } = require('../structuredLogger');
+const {
+  bookReserveCapitalTradeSplit,
+  purgeReleaseTradingResidualCorrectionLeg,
+  purgeTradingResidualReturnLeg,
+  purgeReserveCapitalTradeSplitLeg,
+  purgeDeployReversalForCapitalSplitLeg,
+  hasEscrowLeg,
+} = require('./investmentEscrow');
 const { resolveDocumentReference } = require('./documentReferenceResolver');
 
 async function backfillInvestmentFromBillMetadata({
@@ -54,6 +63,18 @@ async function backfillInvestmentFromBillMetadata({
     updates.profitPercentage = round2((netProfit / initialValue) * 100);
   }
 
+  const totalBuyFromBill = round2(Number(meta.totalBuyCost ?? meta.poolTradingAmount ?? 0));
+  if (totalBuyFromBill > 0) {
+    const curPool = Number(investment.get('poolTradingAmount') || 0);
+    if (
+      !Number.isFinite(curPool)
+      || curPool <= 0.005
+      || Math.abs(curPool - totalBuyFromBill) > 0.02
+    ) {
+      updates.poolTradingAmount = totalBuyFromBill;
+    }
+  }
+
   const status = String(investment.get('status') || '');
   if (status !== 'completed') {
     updates.status = 'completed';
@@ -71,7 +92,18 @@ async function backfillInvestmentFromBillMetadata({
     investment.set(key, value);
   }
   await investment.save(null, { useMasterKey: true });
-  console.log(`  🔧 Backfilled Investment ${investment.id} (${investment.get('investmentNumber') || ''}): ${Object.keys(updates).join(', ')}`);
+  audit.info('settlement.backfill.investment', {
+    investmentId: investment.id,
+    investmentNumber: investment.get('investmentNumber') || null,
+    tradeId: bill && bill.get && bill.get('tradeId') ? bill.get('tradeId') : null,
+    businessCaseId:
+      (bill && bill.get && bill.get('businessCaseId'))
+      || investment.get('businessCaseId')
+      || null,
+    billId: bill && bill.id ? bill.id : null,
+    fields: Object.keys(updates),
+    message: '🔧 backfillInvestmentFromBillMetadata: investment fields updated',
+  });
 }
 
 async function backfillCommissionRecordIfMissing({
@@ -139,6 +171,30 @@ async function backfillResidualReturnIfMissing({
 
   if (!Number.isFinite(residualAmount) || residualAmount <= 0) return;
 
+  const investmentNumber = investment ? String(investment.get('investmentNumber') || '').trim() : '';
+  const businessCaseId = await ensureBusinessCaseIdForTrade(trade);
+  const residualRounded = round2(residualAmount);
+  const nominal = investment ? round2(Number(investment.get('amount') || 0)) : 0;
+
+  await purgeReleaseTradingResidualCorrectionLeg(investmentId, trade.id);
+  await purgeTradingResidualReturnLeg(investmentId, trade.id);
+  await purgeReserveCapitalTradeSplitLeg(investmentId, trade.id);
+  await purgeDeployReversalForCapitalSplitLeg(investmentId, trade.id);
+
+  if (nominal > 0 && !(await hasEscrowLeg(investmentId, 'reserveCapitalTradeSplit', { tradeId: trade.id }))) {
+    await bookReserveCapitalTradeSplit({
+      investorId,
+      nominal,
+      tradingAmount: round2(nominal - residualRounded),
+      availableAmount: residualRounded,
+      investmentId,
+      investmentNumber,
+      tradeId: trade.id,
+      tradeNumber,
+      businessCaseId,
+    });
+  }
+
   const existing = await new Parse.Query('AccountStatement')
     .equalTo('userId', investorId)
     .equalTo('investmentId', investmentId)
@@ -148,22 +204,21 @@ async function backfillResidualReturnIfMissing({
     .first({ useMasterKey: true });
   if (existing) return;
 
-  const investmentNumber = investment ? String(investment.get('investmentNumber') || '').trim() : '';
-  const businessCaseId = await ensureBusinessCaseIdForTrade(trade);
-
   await bookAccountStatementEntry({
     userId: investorId,
     entryType: 'residual_return',
-    amount: round2(residualAmount),
+    amount: residualRounded,
     tradeId: trade.id,
     tradeNumber,
     investmentId,
     investmentNumber,
-    description: `Restbetrag Trade #${tradeNumber} (Rundungsdifferenz Stückkauf)`,
+    description: investmentNumber
+      ? `Restbetrag aus Investment ${investmentNumber}`
+      : `Restbetrag aus Investment (Rundungsdifferenz Stückkauf)`,
     ...resolveDocumentReference(bill, { context: 'residual_return_backfill' }),
     businessCaseId,
   });
-  console.log(`  🔧 Backfilled residual_return €${round2(residualAmount)} for investor ${investorId} / trade ${trade.id}`);
+  console.log(`  🔧 Backfilled residual_return €${residualRounded} for investor ${investorId} / trade ${trade.id}`);
 }
 
 module.exports = {

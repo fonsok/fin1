@@ -181,7 +181,7 @@ struct InvestorDiscoveryView: View {
 // MARK: - Hitlist Table Section
 
 struct HitlistTableSection: View {
-    let traders: [MockTrader]
+    let traders: [InvestorTrader]
     let appServices: AppServices
     let viewModel: InvestorDiscoveryViewModel
     @State private var selectedTraderID: TraderIDItem?
@@ -193,7 +193,12 @@ struct HitlistTableSection: View {
     @State private var errorTitle: String = ""
     @State private var busyUsernames: Set<String> = []
 
-    init(traders: [MockTrader], activeFilters: [IndividualFilterCriteria], appServices: AppServices, viewModel: InvestorDiscoveryViewModel) {
+    init(
+        traders: [InvestorTrader],
+        activeFilters: [IndividualFilterCriteria],
+        appServices: AppServices,
+        viewModel: InvestorDiscoveryViewModel
+    ) {
         self.traders = traders
         self.appServices = appServices
         self.viewModel = viewModel

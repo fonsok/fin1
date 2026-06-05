@@ -6,7 +6,13 @@ final class InvestmentQueryService: InvestmentQueryServiceProtocol {
 
     /// Gets all investments for a specific investor
     func getInvestments(for investorId: String, in investments: [Investment]) -> [Investment] {
-        return investments.filter { $0.investorId == investorId }
+        self.getInvestments(matchingAnyOf: [investorId], in: investments)
+    }
+
+    func getInvestments(matchingAnyOf investorIds: [String], in investments: [Investment]) -> [Investment] {
+        let keys = Set(investorIds.filter { !$0.isEmpty })
+        guard !keys.isEmpty else { return [] }
+        return investments.filter { keys.contains($0.investorId) }
     }
 
     /// Gets all investments for a specific trader

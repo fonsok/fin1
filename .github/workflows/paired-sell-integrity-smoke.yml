@@ -1,0 +1,49 @@
+name: Paired Sell Integrity E2E Smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      skip_seed:
+        description: 'Only assert health (E2E_SKIP_SEED=1), do not create a new trade'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+  schedule:
+    # Weekly Sunday 05:30 UTC — after finance snapshot cron
+    - cron: '30 5 * * 0'
+
+jobs:
+  e2e-paired-sell-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Run paired sell integrity E2E smoke
+        id: smoke
+        continue-on-error: true
+        env:
+          PARSE_SERVER_URL: ${{ secrets.RETURN_MONITOR_PARSE_SERVER_URL }}
+          PARSE_APP_ID: ${{ secrets.RETURN_MONITOR_PARSE_APP_ID }}
+          PARSE_MASTER_KEY: ${{ secrets.RETURN_MONITOR_PARSE_MASTER_KEY }}
+          E2E_TRADER_USERNAME: ${{ vars.E2E_TRADER_USERNAME || 'trader1@test.com' }}
+          E2E_TRADER_PASSWORD: ${{ secrets.E2E_TRADER_PASSWORD }}
+          E2E_SKIP_SEED: ${{ github.event.inputs.skip_seed == 'true' && '1' || '0' }}
+          E2E_POLL_TIMEOUT_MS: '120000'
+        run: node scripts/e2e-paired-sell-integrity-smoke.js
+
+      - name: Build job summary
+        if: always()
+        run: |
+          echo "## Paired Sell Integrity E2E" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Result: ${{ steps.smoke.outcome }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Chain: ${{ steps.smoke.outputs.chain_overall || 'n/a' }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Integrity: ${{ steps.smoke.outputs.integrity_overall || 'n/a' }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Pair: ${{ steps.smoke.outputs.pair_execution_id || 'n/a' }}" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fail workflow if smoke failed
+        if: steps.smoke.outcome != 'success'
+        run: exit 1

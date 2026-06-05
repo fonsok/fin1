@@ -17,12 +17,18 @@ struct CommissionCalculationExplanationSheet: View {
     // backend value is unavailable.
     // See Documentation/RETURN_CALCULATION_SCHEMAS.md.
 
+    private var monetaryServerOnly: Bool {
+        self.services.configurationService.investorMonetaryServerOnly
+    }
+
     private var grossProfit: Double {
-        self.statementSummary?.statementGrossProfit ?? 0.0
+        if let canonical = canonicalSummary { return canonical.grossProfit }
+        return self.statementSummary?.statementGrossProfit ?? 0.0
     }
 
     private var commission: Double {
-        self.statementSummary?.statementCommission ?? 0.0
+        if let canonical = canonicalSummary { return canonical.commission }
+        return self.statementSummary?.statementCommission ?? 0.0
     }
 
     private var investorNetProfit: Double {
@@ -30,11 +36,15 @@ struct CommissionCalculationExplanationSheet: View {
     }
 
     private var totalBuyCost: Double {
-        self.statementSummary?.statementTotalBuyCost ?? self.investment.amount
+        if let canonical = canonicalSummary, canonical.totalBuyCost > 0 {
+            return canonical.totalBuyCost
+        }
+        return self.statementSummary?.statementTotalBuyCost ?? self.investment.amount
     }
 
     private var netSellAmount: Double {
-        self.statementSummary?.statementNetSellAmount ?? 0.0
+        if let canonical = canonicalSummary { return canonical.netSellAmount }
+        return self.statementSummary?.statementNetSellAmount ?? 0.0
     }
 
     // ROI1 = Gross Profit / Total Buy Cost × 100 (pre-commission)
@@ -51,7 +61,9 @@ struct CommissionCalculationExplanationSheet: View {
         if let canonical = canonicalSummary, canonical.hasReturnPercentage {
             return canonical.returnPercentage
         }
-        guard let summary = statementSummary, summary.statementTotalBuyCost > 0 else { return nil }
+        guard !self.monetaryServerOnly,
+              let summary = statementSummary,
+              summary.statementTotalBuyCost > 0 else { return nil }
         return (summary.statementGrossProfit - summary.statementCommission)
             / summary.statementTotalBuyCost * 100.0
     }
@@ -76,8 +88,12 @@ struct CommissionCalculationExplanationSheet: View {
     }
 
     private var tableCanShow: Bool {
-        guard let s = statementSummary else { return false }
-        return (s.statementNetSellAmount - s.statementTotalBuyCost) > 0
+        if self.monetaryServerOnly {
+            guard let canonical = canonicalSummary else { return false }
+            return canonical.totalBuyCost > 0 || canonical.grossProfit != 0 || canonical.netSellAmount != 0
+        }
+        guard let summary = statementSummary else { return false }
+        return (summary.statementNetSellAmount - summary.statementTotalBuyCost) > 0
     }
 
     var body: some View {
@@ -323,26 +339,33 @@ struct CommissionCalculationExplanationSheet: View {
 
     private func refreshStatementSummary() {
         let commissionRate = self.services.configurationService.effectiveCommissionRate
-        self.statementSummary = InvestorInvestmentStatementAggregator.summarizeInvestment(
-            investmentId: self.investment.id,
-            poolTradeParticipationService: self.services.poolTradeParticipationService,
-            tradeLifecycleService: self.services.tradeLifecycleService,
-            invoiceService: self.services.invoiceService,
-            investmentService: self.services.investmentService,
-            calculationService: InvestorCollectionBillCalculationService(),
-            commissionCalculationService: self.services.commissionCalculationService,
-            commissionRate: commissionRate
-        )
-
+        let serverOnly = self.monetaryServerOnly
         let settlementService = self.services.settlementAPIService
         let investmentId = self.investment.id
-        Task {
-            let resolved = await ServerCalculatedReturnResolver.resolveCanonicalSummary(
-                investmentId: investmentId,
-                settlementAPIService: settlementService
-            )
-            await MainActor.run {
-                self.canonicalSummary = resolved
+
+        Task { @MainActor in
+            if serverOnly, let settlementService {
+                self.statementSummary = nil
+                self.canonicalSummary = await ServerCalculatedReturnResolver.resolveCanonicalSummary(
+                    investmentId: investmentId,
+                    settlementAPIService: settlementService,
+                    allowUnweightedReturnFallback: false
+                )
+            } else {
+                self.statementSummary = InvestorInvestmentStatementAggregator.summarizeInvestment(
+                    investmentId: investmentId,
+                    poolTradeParticipationService: self.services.poolTradeParticipationService,
+                    tradeLifecycleService: self.services.tradeLifecycleService,
+                    invoiceService: self.services.invoiceService,
+                    investmentService: self.services.investmentService,
+                    calculationService: InvestorCollectionBillCalculationService(),
+                    commissionCalculationService: self.services.commissionCalculationService,
+                    commissionRate: commissionRate
+                )
+                self.canonicalSummary = await ServerCalculatedReturnResolver.resolveCanonicalSummary(
+                    investmentId: investmentId,
+                    settlementAPIService: settlementService
+                )
             }
         }
     }

@@ -1,13 +1,10 @@
-import { useMemo } from 'react';
 import clsx from 'clsx';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Card } from '../../components/ui';
-import {
-  getSupportTickets,
-  getTicketMetrics,
-} from './api';
-import type { CustomerSearchResult } from './types';
+import { getTicketMetrics } from './api';
+import { useTicketList } from '../../hooks/useTicketList';
+import type { CustomerSearchResult, SupportTicket } from './types';
 import { CustomerSearch } from './components/CustomerSearch';
 import { QuickActions } from './components/QuickActions';
 import { RecentTickets } from './components/RecentTickets';
@@ -27,11 +24,13 @@ export function CSRDashboard() {
     navigate(`/csr/customers/${customer.objectId}`);
   };
 
-  // Load recent tickets
-  const { data: tickets, isLoading: ticketsLoading } = useQuery({
-    queryKey: ['csr-tickets'],
-    queryFn: () => getSupportTickets(),
+  const { data: ticketList, isLoading: ticketsLoading } = useTicketList({
+    activeOnly: true,
+    limit: 25,
+    sortBy: 'createdAt',
+    sortOrder: 'desc',
   });
+  const tickets = ticketList?.tickets;
 
   // Load metrics
   const { data: metrics } = useQuery({
@@ -43,15 +42,9 @@ export function CSRDashboard() {
     },
   });
 
-  const activeTickets = useMemo(
-    () =>
-      (tickets || []).filter(
-        (t) => t.status !== 'resolved' && t.status !== 'closed' && t.status !== 'archived'
-      ),
-    [tickets]
-  );
+  const activeTickets = tickets || [];
   const unassignedCount = activeTickets.filter((t) => !t.assignedTo).length;
-  const serverTicketTotal = (tickets || []).length;
+  const serverTicketTotal = ticketList?.total ?? activeTickets.length;
 
   return (
     <div className="space-y-6">
@@ -98,7 +91,7 @@ export function CSRDashboard() {
 
       {/* Recent Tickets */}
       <RecentTickets
-        tickets={activeTickets}
+        tickets={activeTickets as SupportTicket[]}
         serverTicketTotal={serverTicketTotal}
         isLoading={ticketsLoading}
       />

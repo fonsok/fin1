@@ -1,9 +1,11 @@
 'use strict';
 
+const { normalizeClientLiabilityAccount } = require('../../../utils/accountingHelper/clientLiabilityAccounts');
+
 function totalsByAccountFromEntries(entries) {
   const totals = {};
   for (const e of entries) {
-    const key = e.account;
+    const key = normalizeClientLiabilityAccount(e.account);
     if (!totals[key]) totals[key] = { credit: 0, debit: 0, net: 0 };
     if (e.side === 'credit') {
       totals[key].credit += e.amount;

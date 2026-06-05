@@ -5,6 +5,13 @@
 
 'use strict';
 
+const {
+  normalizeStatusForStorage,
+  assertValidStatus,
+  validateStatusTransition,
+} = require('../utils/supportTicketHelper');
+const { generateTicketNumber } = require('../utils/helpers');
+
 Parse.Cloud.beforeSave('SatisfactionSurvey', (request) => {
   const o = request.object;
   const uid = o.get('userId') || o.get('customerId');
@@ -36,22 +43,22 @@ Parse.Cloud.beforeSave('SupportTicket', async (request) => {
       'SupportTicket requires userId (Parse User objectId of the customer)');
   }
 
-  if (isNew) {
-    // Generate ticket number
-    if (!ticket.get('ticketNumber')) {
-      const year = new Date().getFullYear();
-      const lastTicket = await new Parse.Query('SupportTicket')
-        .startsWith('ticketNumber', `TKT-${year}-`)
-        .descending('ticketNumber')
-        .first({ useMasterKey: true });
-
-      let seq = 1;
-      if (lastTicket) {
-        const parts = lastTicket.get('ticketNumber').split('-');
-        seq = parseInt(parts[2], 10) + 1;
+  const status = ticket.get('status');
+  if (status) {
+    const canonical = normalizeStatusForStorage(status);
+    assertValidStatus(canonical);
+    ticket.set('status', canonical);
+    if (!isNew && request.original) {
+      const oldStatus = request.original.get('status');
+      if (oldStatus !== canonical) {
+        validateStatusTransition(oldStatus, canonical);
       }
+    }
+  }
 
-      ticket.set('ticketNumber', `TKT-${year}-${seq.toString().padStart(5, '0')}`);
+  if (isNew) {
+    if (!ticket.get('ticketNumber')) {
+      ticket.set('ticketNumber', await generateTicketNumber());
     }
 
     // Set defaults (do not overwrite explicit status from imports / seeds)

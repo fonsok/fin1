@@ -139,7 +139,8 @@ extension InvestmentCompletionService {
             realizedSellQuantity: investment.realizedSellQuantity,
             realizedSellAmount: investment.realizedSellAmount,
             lastPartialSellAt: investment.lastPartialSellAt,
-            tradeSellVolumeProgress: investment.tradeSellVolumeProgress
+            tradeSellVolumeProgress: investment.tradeSellVolumeProgress,
+            poolTradingAmount: investment.poolTradingAmount
         )
 
         print("💰 InvestmentCompletionService: Updated investment \(investment.id) with profit")

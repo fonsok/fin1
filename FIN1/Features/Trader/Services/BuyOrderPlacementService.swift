@@ -93,7 +93,10 @@ final class BuyOrderPlacementService: BuyOrderPlacementServiceProtocol, @uncheck
         let mirrorPoolQuantity = investmentOrderCalculation?.investmentQuantity ?? 0
 
         // Transaction limits and trader balance checks apply to trader leg only.
-        let estimatedCost = Double(traderQuantity) * executedPrice
+        let estimatedCost = OrderCashAmount.grossAmount(
+            quantity: traderQuantity,
+            briefPricePerPiece: executedPrice
+        )
 
         guard traderQuantity > 0 else {
             return BuyOrderPlacementResult(
@@ -200,10 +203,19 @@ final class BuyOrderPlacementService: BuyOrderPlacementServiceProtocol, @uncheck
                 notes: "PairExecutionId: \(pairId), Mode: \(orderMode.rawValue), Symbol: \(searchResult.wkn)"
             )
 
-            // Variant A: trade, pool allocation, escrow deploy, invoices run entirely on Parse (executePairedBuy → finalize).
-            await Task { @MainActor in
-                try? await traderService.refreshTradingData()
-            }.value
+            if let pairExecutionId = executionResult.pairExecutionId,
+               let traderLeg = executionResult.traderLegOrder(
+                   traderId: self.userService.currentUser?.id ?? "",
+                   searchResult: searchResult,
+                   quantity: traderQuantity,
+                   executedPrice: executedPrice,
+                   orderMode: orderMode,
+                   limit: limit
+               ) {
+                await Task { @MainActor in
+                    await traderService.registerPairedBuyTraderOrder(traderLeg, pairExecutionId: pairExecutionId)
+                }.value
+            }
 
             return BuyOrderPlacementResult(success: true, error: nil)
         } catch let error as AppError {
@@ -271,11 +283,13 @@ private struct ExecutePairedBuyResult: Decodable {
     let pairExecutionId: String?
     let idempotentReplay: Bool?
     let status: String
+    let orders: [ExecutePairedBuyOrderLeg]?
 
     enum CodingKeys: String, CodingKey {
         case pairExecutionId
         case idempotentReplay
         case status
+        case orders
     }
 
     init(from decoder: Decoder) throws {
@@ -283,7 +297,66 @@ private struct ExecutePairedBuyResult: Decodable {
         self.pairExecutionId = try c.decodeIfPresent(String.self, forKey: .pairExecutionId)
         self.idempotentReplay = try c.decodeIfPresent(Bool.self, forKey: .idempotentReplay)
         self.status = try c.decodeIfPresent(String.self, forKey: .status) ?? ""
+        self.orders = try c.decodeIfPresent([ExecutePairedBuyOrderLeg].self, forKey: .orders)
     }
+
+    func traderLegOrder(
+        traderId: String,
+        searchResult: SearchResult,
+        quantity: Int,
+        executedPrice: Double,
+        orderMode: OrderMode,
+        limit: String
+    ) -> Order? {
+        guard let leg = orders?.first(where: {
+            ($0.legType ?? "").uppercased() == "TRADER"
+        }), let orderId = leg.orderId else {
+            return nil
+        }
+
+        let totalAmount = OrderCashAmount.grossAmount(
+            quantity: quantity,
+            briefPricePerPiece: executedPrice
+        )
+        let limitPrice = orderMode == .limit
+            ? Double(limit.replacingOccurrences(of: ",", with: "."))
+            : nil
+
+        return Order(
+            id: orderId,
+            traderId: traderId,
+            symbol: searchResult.wkn,
+            description: searchResult.underlyingAsset ?? searchResult.wkn,
+            type: .buy,
+            quantity: Double(quantity),
+            price: executedPrice,
+            totalAmount: totalAmount,
+            createdAt: Date(),
+            executedAt: nil,
+            confirmedAt: nil,
+            updatedAt: Date(),
+            optionDirection: searchResult.direction,
+            underlyingAsset: searchResult.underlyingAsset,
+            wkn: searchResult.wkn,
+            category: "Optionsschein",
+            strike: Double(searchResult.strike.replacingOccurrences(of: ",", with: ".")),
+            orderInstruction: orderMode.rawValue,
+            limitPrice: limitPrice,
+            subscriptionRatio: searchResult.subscriptionRatio,
+            denomination: searchResult.denomination,
+            isMirrorPoolOrder: false,
+            originalHoldingId: nil,
+            status: "submitted"
+        )
+    }
+}
+
+private struct ExecutePairedBuyOrderLeg: Decodable {
+    let orderId: String?
+    let legType: String?
+    let quantity: Int?
+    let price: Double?
+    let status: String?
 }
 
 private func safeCurrencyString(_ value: Double) -> String {

@@ -62,12 +62,14 @@ async function handleGetTradeSettlementConsistencyStatus(request) {
       const rawInvestmentProfit = investment.get('profit');
       const investmentAmount = Number(rawInvestmentAmount || 0);
       const investmentProfit = Number(rawInvestmentProfit || 0);
-      const investmentCommission = Number(investment.get('totalCommissionPaid') || expectedCommission);
-      const expectedGrossReturnByInvestment = round2(investmentAmount + investmentProfit + investmentCommission);
+      const expectedGrossReturnByInvestment = round2(investmentAmount + investmentProfit);
       const hasInvestmentGrossReturnSignal = rawInvestmentAmount !== undefined || rawInvestmentProfit !== undefined;
-      const expectedGrossReturn = hasInvestmentGrossReturnSignal && expectedGrossReturnByInvestment > 0
-        ? expectedGrossReturnByInvestment
-        : expectedGrossReturnByDocOrParticipation;
+      // investment_return books transferAmount (capital + net profit), not commission (separate commission_debit).
+      const expectedGrossReturn = expectedByDoc
+        ? expectedGrossReturnByDocOrParticipation
+        : (hasInvestmentGrossReturnSignal && expectedGrossReturnByInvestment > 0
+          ? expectedGrossReturnByInvestment
+          : expectedGrossReturnByDocOrParticipation);
 
       const actualGrossReturn = statementSumsByType.get(statementSumKey({
         userId: investorId,

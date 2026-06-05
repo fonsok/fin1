@@ -31,6 +31,7 @@ verb_prefixes = (
     "terminate", "migrate", "check", "encrypt", "set",
     "log", "render", "review", "regenerate",
     "initialize", "benchmark",
+    "ensure", "finalize", "commit", "advance",
 )
 
 bad_path_tokens = ("/tmp/", "/.tmp/", "/backup/", "/copy/")

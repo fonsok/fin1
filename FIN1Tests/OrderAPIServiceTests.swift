@@ -62,7 +62,7 @@ final class OrderAPIServiceTests: XCTestCase {
         self.mockAPIClient.mockObjectId = "server-sell-order-id-456"
 
         // When
-        let savedOrder = try await sut.saveSellOrder(sellOrder)
+        let savedOrder = try await sut.saveSellOrder(sellOrder, tradeId: "trade-abc")
 
         // Then
         XCTAssertTrue(self.mockAPIClient.createObjectCalled)
@@ -79,7 +79,7 @@ final class OrderAPIServiceTests: XCTestCase {
         let order = self.createSampleOrder()
 
         // When
-        let updatedOrder = try await sut.updateOrder(order)
+        let updatedOrder = try await sut.updateOrder(order, tradeId: nil)
 
         // Then
         XCTAssertTrue(self.mockAPIClient.updateObjectCalled)
@@ -262,6 +262,7 @@ final class OrderAPIServiceTests: XCTestCase {
             symbol: "AAPL",
             description: "Apple Inc.",
             type: type,
+            side: type,
             quantity: 100,
             price: 150.0,
             totalAmount: 15_000.0,

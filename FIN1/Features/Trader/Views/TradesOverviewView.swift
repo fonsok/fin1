@@ -101,6 +101,8 @@ struct TradesOverviewView: View {
                 configurationService: self.services.configurationService,
                 poolTradeParticipationService: self.services.poolTradeParticipationService,
                 commissionCalculationService: self.services.commissionCalculationService,
+                settlementAPIService: self.services.settlementAPIService,
+                documentService: self.services.documentService,
                 investorGrossProfitService: self.services.investorGrossProfitService,
                 userService: self.services.userService,
                 parseLiveQueryClient: self.services.parseLiveQueryClient

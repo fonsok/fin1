@@ -2,6 +2,7 @@
 
 const {
   findExistingStatementEntry,
+  resolveLedgerUserKeysForUserId,
   sumStatementAmounts,
   getStatementSumsByType,
   prefetchInvestmentsById,
@@ -21,6 +22,10 @@ class FakeQuery {
   }
 
   limit() {
+    return this;
+  }
+
+  ascending() {
     return this;
   }
 
@@ -96,6 +101,29 @@ describe('settlementQueries', () => {
       absolute: true,
     });
     expect(sum).toBe(40);
+  });
+
+  test('sumStatementAmounts aggregates across userKeys aliases', async () => {
+    FakeQuery.findResults = [
+      row('trade_sell', 2000),
+      row('trade_sell', 1974.5),
+    ];
+    const sum = await sumStatementAmounts({
+      userKeys: ['u-object', 'u-stable'],
+      tradeId: 't1',
+      entryType: 'trade_sell',
+      absolute: true,
+    });
+    expect(sum).toBe(3974.5);
+  });
+
+  test('resolveLedgerUserKeysForUserId returns at least the input id when user is missing', async () => {
+    global.Parse = {
+      Query: FakeQuery,
+      User: class User {},
+    };
+    const keys = await resolveLedgerUserKeysForUserId('trader-xyz');
+    expect(keys).toEqual(['trader-xyz']);
   });
 
   test('getStatementSumsByType returns empty object for invalid entryTypes', async () => {

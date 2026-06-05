@@ -1,7 +1,6 @@
 'use strict';
 
 const investmentEscrow = require('../utils/accountingHelper/investmentEscrow');
-const { round2 } = require('../utils/accountingHelper/shared');
 const { bookAccountStatementEntry } = require('../utils/accountingHelper/statements');
 const { createWalletReceiptDocument } = require('../utils/accountingHelper/documents');
 const { resolveDocumentReference } = require('../utils/accountingHelper/documentReferenceResolver');
@@ -15,18 +14,6 @@ async function handleInvestmentAfterSaveActivated(investment) {
   const traderId = investment.get('traderId');
   const amount = investment.get('amount');
   const businessCaseId = String(investment.get('businessCaseId') || '').trim();
-
-  try {
-    await investmentEscrow.bookDeployToTrading({
-      investorId,
-      amount: round2(amount),
-      investmentId: investment.id,
-      investmentNumber: investment.get('investmentNumber') || '',
-      businessCaseId,
-    });
-  } catch (err) {
-    console.error(`❌ investmentEscrow.bookDeployToTrading failed ${investment.id}:`, err.message);
-  }
 
   try {
     await createNotification(investorId, 'investment_activated', 'investment',
@@ -86,6 +73,23 @@ async function handleInvestmentAfterSaveActivated(investment) {
     }
   } catch (err) {
     console.error(`❌ bookAppServiceCharge (afterSave Investment activation) ${investment.id}:`, err.message);
+  }
+
+  try {
+    const participation = await new Parse.Query('PoolTradeParticipation')
+      .equalTo('investmentId', investment.id)
+      .descending('createdAt')
+      .first({ useMasterKey: true });
+    const tradeId = participation?.get('tradeId');
+    if (tradeId) {
+      const trade = await new Parse.Query('Trade').get(tradeId, { useMasterKey: true });
+      await investmentEscrow.ensureReserveCapitalTradeSplitOnActivation(investment, trade);
+    }
+  } catch (err) {
+    console.error(
+      `❌ ensureReserveCapitalTradeSplitOnActivation (afterSave activation) ${investment.id}:`,
+      err.message,
+    );
   }
 }
 

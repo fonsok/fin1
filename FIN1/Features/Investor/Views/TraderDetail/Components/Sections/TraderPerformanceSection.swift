@@ -3,10 +3,10 @@ import SwiftUI
 // MARK: - Trader Performance Section
 /// Main view for displaying trader performance data with table and chart modes
 struct TraderPerformanceSection: View {
-    let trader: MockTrader
+    let trader: InvestorTrader
     @StateObject private var viewModel: TraderPerformanceViewModel
 
-    init(trader: MockTrader) {
+    init(trader: InvestorTrader) {
         self.trader = trader
         self._viewModel = StateObject(wrappedValue: TraderPerformanceViewModel(trader: trader))
     }
@@ -202,7 +202,7 @@ struct TraderPerformanceSection: View {
 }
 
 #Preview {
-    TraderPerformanceSection(trader: mockTraders[0])
+    TraderPerformanceSection(trader: InvestorTrader(mock: mockTraders[0]))
         .padding()
         .background(AppTheme.screenBackground)
 }

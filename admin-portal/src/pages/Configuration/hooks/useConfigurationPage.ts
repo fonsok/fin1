@@ -12,6 +12,7 @@ import {
   formatLocalizedInput,
   parseLocalizedNumberInput,
 } from '../localizedNumberInput';
+import { sortConfigEntriesAlphabetically, sortTaxConfigEntries } from '../configurationSort';
 
 const normalizeTaxCollectionMode = (value: unknown): 'customer_self_reports' | 'platform_withholds' =>
   value === 'platform_withholds' ? 'platform_withholds' : 'customer_self_reports';
@@ -105,6 +106,13 @@ export function useConfigurationPage() {
         return `${Number.isFinite(num) ? num : 0} %`;
       case 'currency':
         return formatCurrency(num);
+      case 'number':
+        if (key === 'maxTraderPartialSells') {
+          const n = Math.floor(Number(value));
+          if (n === 0) return '0 (nur Vollverkauf)';
+          return String(n);
+        }
+        return String(value ?? '');
       default:
         return String(value ?? '');
     }
@@ -262,41 +270,34 @@ export function useConfigurationPage() {
     setEditError(null);
   }, []);
 
-  const financialParams = useMemo(() => {
-    const entries = Object.entries(PARAMETER_DEFINITIONS).filter(([, def]) => def.category === 'financial');
-    const sorted = [...entries].sort(([, a], [, b]) =>
-      a.displayName.localeCompare(b.displayName, 'de', { sensitivity: 'base' }),
-    );
-    const maxEntry = sorted.find(([k]) => k === 'maxInvestment');
-    const withoutMax = sorted.filter(([k]) => k !== 'maxInvestment');
-    const minIdx = withoutMax.findIndex(([k]) => k === 'minInvestment');
-    if (maxEntry && minIdx !== -1) {
-      withoutMax.splice(minIdx + 1, 0, maxEntry);
-      return withoutMax;
-    }
-    return sorted;
-  }, []);
+  const financialParams = useMemo(
+    () =>
+      sortConfigEntriesAlphabetically(
+        Object.entries(PARAMETER_DEFINITIONS).filter(([, def]) => def.category === 'financial'),
+      ),
+    [],
+  );
   const displayParams = useMemo(
-    () => Object.entries(PARAMETER_DEFINITIONS).filter(([key, def]) =>
-      def.category === 'display' && !key.startsWith('walletActionMode'),
-    ),
+    () =>
+      sortConfigEntriesAlphabetically(
+        Object.entries(PARAMETER_DEFINITIONS).filter(
+          ([key, def]) => def.category === 'display' && !key.startsWith('walletActionMode'),
+        ),
+      ),
     [],
   );
   const systemParams = useMemo(
-    () => Object.entries(PARAMETER_DEFINITIONS).filter(([, def]) => def.category === 'system'),
+    () =>
+      sortConfigEntriesAlphabetically(
+        Object.entries(PARAMETER_DEFINITIONS).filter(([, def]) => def.category === 'system'),
+      ),
     [],
   );
   const taxParams = useMemo(
-    () => {
-      const entries = Object.entries(PARAMETER_DEFINITIONS).filter(([, def]) => def.category === 'tax');
-      const sortOrder: Record<string, number> = {
-        vatRate: 0,
-        taxCollectionMode: 1,
-        withholdingTaxRate: 2,
-        solidaritySurchargeRate: 3,
-      };
-      return entries.sort(([a], [b]) => (sortOrder[a] ?? 99) - (sortOrder[b] ?? 99));
-    },
+    () =>
+      sortTaxConfigEntries(
+        Object.entries(PARAMETER_DEFINITIONS).filter(([, def]) => def.category === 'tax'),
+      ),
     [],
   );
 

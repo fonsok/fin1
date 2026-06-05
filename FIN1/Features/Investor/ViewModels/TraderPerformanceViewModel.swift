@@ -34,11 +34,11 @@ final class TraderPerformanceViewModel: ObservableObject {
     }
 
     // MARK: - Private Properties
-    private let trader: MockTrader
+    private let trader: InvestorTrader
     private let calendar = Calendar.current
 
     // MARK: - Initialization
-    init(trader: MockTrader) {
+    init(trader: InvestorTrader) {
         self.trader = trader
         self.processTrades()
     }

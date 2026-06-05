@@ -25,11 +25,37 @@ echo ""
 
 "$SCRIPT_DIR/check-parse-cloud-config-helper-shadow.sh"
 
+echo "▸ sync shared/contracts → cloud/contracts (App-Ledger SSOT inside Parse mount) …"
+mkdir -p "$PROJECT_ROOT/backend/parse-server/cloud/contracts"
+cp "$PROJECT_ROOT/shared/contracts/appLedgerTransactionTypes.json" \
+  "$PROJECT_ROOT/backend/parse-server/cloud/contracts/appLedgerTransactionTypes.json"
+
 echo "▸ rsync cloud/ (exclude Jest tests: __tests__, *.test.js) …"
 rsync -avz \
   --exclude='__tests__' \
   --exclude='*.test.js' \
   "$PROJECT_ROOT/backend/parse-server/cloud/" "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_CLOUD}"
+
+echo "▸ sync ops scripts (integrity indexes + snapshot checks) …"
+# shellcheck disable=SC2029
+ssh "${REMOTE_USER}@${REMOTE_HOST}" "mkdir -p ~/fin1-server/scripts ~/fin1-server/scripts/lib ~/fin1-server/backend/scripts/lib"
+rsync -avz \
+  "$PROJECT_ROOT/backend/scripts/ensure-paired-execution-indexes.js" \
+  "${REMOTE_USER}@${REMOTE_HOST}:~/fin1-server/scripts/ensure-paired-execution-indexes.js"
+rsync -avz \
+  "$PROJECT_ROOT/backend/scripts/ensure-finance-integrity-indexes.js" \
+  "$PROJECT_ROOT/backend/scripts/verify-finance-integrity-indexes.js" \
+  "$PROJECT_ROOT/backend/scripts/weekly-mirror-basis-drift-check.js" \
+  "$PROJECT_ROOT/backend/scripts/weekly-trader-cash-booking-duplicate-check.js" \
+  "${REMOTE_USER}@${REMOTE_HOST}:~/fin1-server/backend/scripts/"
+rsync -avz \
+  "$PROJECT_ROOT/backend/scripts/lib/" \
+  "${REMOTE_USER}@${REMOTE_HOST}:~/fin1-server/backend/scripts/lib/"
+rsync -avz \
+  "$PROJECT_ROOT/scripts/run-finance-integrity-snapshots.sh" \
+  "$PROJECT_ROOT/scripts/run-mirror-basis-drift-check.sh" \
+  "$PROJECT_ROOT/scripts/e2e-paired-sell-integrity-smoke.js" \
+  "${REMOTE_USER}@${REMOTE_HOST}:~/fin1-server/scripts/"
 
 echo "▸ remove configHelper.js shadow (if any) + restart parse-server …"
 ssh "${REMOTE_USER}@${REMOTE_HOST}" "rm -f ~/fin1-server/backend/parse-server/cloud/utils/configHelper.js && cd ~/fin1-server && docker compose -f docker-compose.production.yml restart parse-server"

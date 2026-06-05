@@ -6,6 +6,10 @@ const {
   LEGACY_TRANSACTION_TYPE_APP_SERVICE_CHARGE_OLD,
   TRANSACTION_TYPE_APP_SERVICE_CHARGE,
 } = require('./appLedgerConstants');
+const {
+  expandLedgerAccountFilter,
+  normalizeClientLiabilityAccount,
+} = require('../../../utils/accountingHelper/clientLiabilityAccounts');
 
 function deriveBusinessReferenceFromMetadata(metadata) {
   const businessReference = String(metadata?.businessReference || '').trim();
@@ -146,16 +150,29 @@ function sortPlainLedgerEntries(entries, sortBy, sortOrder) {
 async function aggregateTotalsAndCount({
   account,
   userId,
+  resolvedUserIdKeys,
   transactionType,
   dateFrom,
   dateTo,
+  amountMin = null,
+  amountMax = null,
 }) {
   const normalizedUserId = String(userId || '').trim();
-  const userIsExactObjectId = looksLikeParseObjectId(normalizedUserId);
+  const keyList = Array.isArray(resolvedUserIdKeys) && resolvedUserIdKeys.length > 0
+    ? resolvedUserIdKeys
+    : null;
+  const userIsExactObjectId = !keyList && looksLikeParseObjectId(normalizedUserId);
 
   const match = {};
-  if (account) match.account = account;
-  if (userIsExactObjectId) match.userId = normalizedUserId;
+  if (account) {
+    const accountFilter = expandLedgerAccountFilter(account);
+    match.account = accountFilter.length === 1 ? accountFilter[0] : { $in: accountFilter };
+  }
+  if (keyList) {
+    match.userId = { $in: keyList };
+  } else if (userIsExactObjectId) {
+    match.userId = normalizedUserId;
+  }
   if (transactionType) {
     if (transactionType === TRANSACTION_TYPE_APP_SERVICE_CHARGE) {
       match.transactionType = { $in: [TRANSACTION_TYPE_APP_SERVICE_CHARGE, LEGACY_TRANSACTION_TYPE_APP_SERVICE_CHARGE_OLD] };
@@ -165,13 +182,26 @@ async function aggregateTotalsAndCount({
   }
   if (dateFrom || dateTo) {
     match.createdAt = {};
-    if (dateFrom) match.createdAt.$gte = { __type: 'Date', iso: new Date(dateFrom).toISOString() };
-    if (dateTo) match.createdAt.$lte = { __type: 'Date', iso: new Date(dateTo).toISOString() };
+    if (dateFrom) match.createdAt.$gte = new Date(dateFrom);
+    if (dateTo) match.createdAt.$lte = new Date(dateTo);
+  }
+  if (amountMin != null || amountMax != null) {
+    match.amount = {};
+    if (amountMin != null) match.amount.$gte = amountMin;
+    if (amountMax != null) match.amount.$lte = amountMax;
   }
 
   const countQuery = new Parse.Query('AppLedgerEntry');
-  if (account) countQuery.equalTo('account', account);
-  if (userIsExactObjectId) countQuery.equalTo('userId', normalizedUserId);
+  if (account) {
+    const accountFilter = expandLedgerAccountFilter(account);
+    if (accountFilter.length === 1) countQuery.equalTo('account', accountFilter[0]);
+    else countQuery.containedIn('account', accountFilter);
+  }
+  if (keyList) {
+    countQuery.containedIn('userId', keyList);
+  } else if (userIsExactObjectId) {
+    countQuery.equalTo('userId', normalizedUserId);
+  }
   if (transactionType) {
     if (transactionType === TRANSACTION_TYPE_APP_SERVICE_CHARGE) {
       countQuery.containedIn('transactionType', [TRANSACTION_TYPE_APP_SERVICE_CHARGE, LEGACY_TRANSACTION_TYPE_APP_SERVICE_CHARGE_OLD]);
@@ -181,14 +211,16 @@ async function aggregateTotalsAndCount({
   }
   if (dateFrom) countQuery.greaterThanOrEqualTo('createdAt', new Date(dateFrom));
   if (dateTo) countQuery.lessThanOrEqualTo('createdAt', new Date(dateTo));
+  if (amountMin != null) countQuery.greaterThanOrEqualTo('amount', amountMin);
+  if (amountMax != null) countQuery.lessThanOrEqualTo('amount', amountMax);
 
   const [totalCount, grouped] = await Promise.all([
     countQuery.count({ useMasterKey: true }),
     (new Parse.Query('AppLedgerEntry')).aggregate([
-      { match },
+      { $match: match },
       {
-        group: {
-          objectId: {
+        $group: {
+          _id: {
             account: '$account',
             side: '$side',
           },
@@ -200,7 +232,7 @@ async function aggregateTotalsAndCount({
 
   const totals = {};
   for (const row of grouped || []) {
-    const accountCode = row?.objectId?.account;
+    const accountCode = normalizeClientLiabilityAccount(row?.objectId?.account);
     const side = row?.objectId?.side;
     const totalAmount = Number(row?.totalAmount || 0);
     if (!accountCode || !side) continue;

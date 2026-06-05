@@ -1,0 +1,39 @@
+name: Paired Order Status Integrity Monitor
+
+on:
+  schedule:
+    # Weekly Monday 05:55 UTC (after mirror-basis + admin-list-search monitors)
+    - cron: "55 5 * * 1"
+  workflow_dispatch:
+
+jobs:
+  monitor-paired-order-status:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Run paired order status integrity check
+        id: monitor
+        continue-on-error: true
+        env:
+          PARSE_SERVER_URL: ${{ secrets.RETURN_MONITOR_PARSE_SERVER_URL }}
+          PARSE_APP_ID: ${{ secrets.RETURN_MONITOR_PARSE_APP_ID }}
+          PARSE_MASTER_KEY: ${{ secrets.RETURN_MONITOR_PARSE_MASTER_KEY }}
+          PAIRED_STATUS_MAX_VIOLATIONS: "0"
+        run: node scripts/monitor-paired-order-status-integrity.js
+
+      - name: Build job summary
+        if: always()
+        run: |
+          echo "## Paired Order Status Integrity" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Result: ${{ steps.monitor.outcome }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Overall: ${{ steps.monitor.outputs.overall || 'n/a' }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Violations: ${{ steps.monitor.outputs.violation_count || 'n/a' }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Checked pairs: ${{ steps.monitor.outputs.checked_pairs || 'n/a' }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Pool limiter (active/queued/max): ${{ steps.monitor.outputs.pool_active || 'n/a' }} / ${{ steps.monitor.outputs.pool_queued || 'n/a' }} / ${{ steps.monitor.outputs.pool_max_concurrent || 'n/a' }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Run at: ${{ steps.monitor.outputs.run_at || 'n/a' }}" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fail workflow if monitor failed
+        if: steps.monitor.outcome != 'success'
+        run: exit 1

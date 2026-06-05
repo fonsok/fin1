@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ModularTraderDetailView: View {
-    let trader: MockTrader
+    let trader: InvestorTrader
     @Environment(\.dismiss) private var dismiss
     @State private var showInvestmentSheet = false
     @State private var selectedTab = 0
@@ -65,5 +65,5 @@ struct ModularTraderDetailView: View {
 }
 
 #Preview {
-    ModularTraderDetailView(trader: mockTraders[0])
+    ModularTraderDetailView(trader: InvestorTrader(mock: mockTraders[0]))
 }

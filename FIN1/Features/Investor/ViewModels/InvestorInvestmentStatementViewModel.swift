@@ -23,6 +23,8 @@ final class InvestorInvestmentStatementViewModel: ObservableObject {
     @Published var isRefreshingFromBackend = false
     /// When non-nil, backend fetch failed; user is seeing local/cached data
     @Published var backendRefreshMessage: String?
+    /// GoB: non-nil when at least one trade Beleg fails integrity checks.
+    @Published var belegIntegrityBanner: String?
 
     // MARK: - Document Number
     /// Eindeutige Belegnummer für dieses Collection Bill Dokument (gemäß GoB)
@@ -55,6 +57,9 @@ final class InvestorInvestmentStatementViewModel: ObservableObject {
         self.settlementAPIService = settlementAPIService
         self.statementDataProvider = statementDataProvider
 
-        rebuildStatement()
+        // Production path: one backend refresh supplies authoritative rows (avoids local-then-server flash).
+        if settlementAPIService == nil {
+            rebuildStatement()
+        }
     }
 }

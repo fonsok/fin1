@@ -33,7 +33,7 @@ struct InvestorInvestmentStatementSummary {
     let statementResidualAmount: Double // Total residual amount across all trades (should be returned to investor)
     let statementSellAmount: Double // Sell amount (securities value, excluding fees)
     let statementSellFees: Double // Total sell fees across all trades (negative values)
-    let statementNetSellAmount: Double // Net sell amount (sell amount + sell fees)
+    let statementNetSellAmount: Double // Net sell amount (sell amount − |sell fees|)
     let roiGrossProfit: Double
     let roiInvestedAmount: Double
     let statementCommission: Double // Commission calculated from gross profit (single source of truth)
@@ -138,26 +138,9 @@ enum InvestorInvestmentStatementAggregator {
                 roiInvestedAmountTotal += item.roiInvestedAmount
                 statementCommissionTotal += item.commission  // Sum item-level commission
             } catch {
-                print("❌ InvestorInvestmentStatementAggregator: Calculation failed for trade \(trade.tradeNumber): \(error)")
-                // Fallback to legacy build
-                let item = InvestorInvestmentStatementItem.build(
-                    trade: trade,
-                    buyInvoice: buyInvoice,
-                    sellInvoices: sellInvoices,
-                    ownershipPercentage: participation.ownershipPercentage,
-                    investorAllocatedAmount: participation.allocatedAmount,
-                    commissionCalculationService: commissionService,
-                    commissionRate: commissionRate
+                InvestorCollectionBillLog.warning(
+                    "Aggregator skipped trade \(trade.tradeNumber): \(error.localizedDescription)"
                 )
-                items.append(item)
-                statementGrossProfitTotal += item.grossProfit
-                statementInvestedAmountTotal += item.buyTotal
-                statementBuyFeesTotal += item.buyFees
-                statementSellAmountTotal += item.sellTotal
-                statementSellFeesTotal += item.sellFees
-                roiGrossProfitTotal += item.roiGrossProfit
-                roiInvestedAmountTotal += item.roiInvestedAmount
-                statementCommissionTotal += item.commission  // Sum item-level commission
             }
         }
 
@@ -168,8 +151,9 @@ enum InvestorInvestmentStatementAggregator {
 
         // Total Buy Cost = Buy Amount + Buy Fees
         let statementTotalBuyCost = statementInvestedAmountTotal + statementBuyFeesTotal
-        // Net Sell Amount = Sell Amount + Sell Fees (sell fees are negative)
-        let statementNetSellAmount = statementSellAmountTotal + statementSellFeesTotal
+        let sortedItems = items.sorted { $0.tradeDate < $1.tradeDate }
+        // Net Sell Amount = Σ per-trade (Sell Amount − |Sell Fees|); matches Collection Bill line items.
+        let statementNetSellAmount = sortedItems.reduce(0) { $0 + $1.netSellAmount }
 
         // CRITICAL FIX: Calculate residual amount from total investment capital and total buy cost
         // This ensures the accounting equation: Investment Capital = Total Buy Cost + Residual
@@ -185,7 +169,6 @@ enum InvestorInvestmentStatementAggregator {
         print("   💵 Calculated Residual: €\(String(format: "%.2f", calculatedResidualAmount))")
         print("   💵 Final Residual Amount: €\(String(format: "%.2f", finalResidualAmount))")
 
-        let sortedItems = items.sorted { $0.tradeDate < $1.tradeDate }
         return InvestorInvestmentStatementSummary(
             items: sortedItems,
             statementGrossProfit: statementGrossProfitTotal,
@@ -199,6 +182,175 @@ enum InvestorInvestmentStatementAggregator {
             roiGrossProfit: roiGrossProfitTotal,
             roiInvestedAmount: roiInvestedAmountTotal,
             statementCommission: statementCommissionTotal  // Use sum of item-level commissions
+        )
+    }
+
+    /// Builds statement summary from archived collection bills only (GoB / server-only path).
+    @MainActor
+    static func summarizeInvestmentFromServer(
+        investmentId: String,
+        poolTradeParticipationService: any PoolTradeParticipationServiceProtocol,
+        tradeLifecycleService: any TradeLifecycleServiceProtocol,
+        invoiceService: any InvoiceServiceProtocol,
+        settlementAPIService: any SettlementAPIServiceProtocol,
+        calculationService: any InvestorCollectionBillCalculationServiceProtocol,
+        commissionCalculationService: any CommissionCalculationServiceProtocol,
+        investment: Investment? = nil,
+        investmentService: (any InvestmentServiceProtocol)? = nil,
+        additionalTradesById: [String: Trade] = [:],
+        commissionRate: Double,
+        monetaryServerOnly: Bool
+    ) async -> InvestorInvestmentStatementSummary? {
+        let participations = poolTradeParticipationService.getParticipations(forInvestmentId: investmentId)
+        guard !participations.isEmpty else { return nil }
+
+        let investmentToUse: Investment?
+        if let investment {
+            investmentToUse = investment
+        } else if let investmentService {
+            investmentToUse = investmentService.investments.first(where: { $0.id == investmentId })
+        } else {
+            investmentToUse = nil
+        }
+        let totalInvestmentCapital = investmentToUse?.amount ?? participations.reduce(0.0) { $0 + $1.allocatedAmount }
+
+        let billsByTradeId: [String: BackendCollectionBill]
+        do {
+            billsByTradeId = try await InvestorCollectionBillBackendPrefetch.loadBills(
+                investmentId: investmentId,
+                settlementAPIService: settlementAPIService
+            )
+        } catch {
+            return nil
+        }
+
+        let calcService = calculationService
+        let commissionService = commissionCalculationService
+        var items: [InvestorInvestmentStatementItem] = []
+
+        for participation in participations {
+            guard let trade = tradeLifecycleService.completedTrades.first(where: { $0.id == participation.tradeId })
+                ?? additionalTradesById[participation.tradeId] else {
+                if monetaryServerOnly { return nil }
+                continue
+            }
+
+            let invoices = invoiceService.getInvoicesForTrade(trade.id)
+            let tradeCapitalShare: Double
+            if participations.count == 1 {
+                tradeCapitalShare = totalInvestmentCapital
+            } else {
+                let totalOwnership = participations.reduce(0.0) { $0 + $1.ownershipPercentage }
+                tradeCapitalShare = totalOwnership > 0
+                    ? (totalInvestmentCapital * participation.ownershipPercentage / totalOwnership)
+                    : (totalInvestmentCapital / Double(participations.count))
+            }
+
+            let input = InvestorCollectionBillInput(
+                investmentCapital: tradeCapitalShare,
+                buyPrice: trade.entryPrice,
+                tradeTotalQuantity: trade.totalQuantity,
+                ownershipPercentage: participation.ownershipPercentage,
+                buyInvoice: invoices.first { $0.transactionType == .buy },
+                sellInvoices: invoices.filter { $0.transactionType == .sell },
+                investorAllocatedAmount: participation.allocatedAmount
+            )
+
+            do {
+                let output = try await calcService.calculateCollectionBillWithBackend(
+                    input: input,
+                    settlementAPIService: settlementAPIService,
+                    tradeId: trade.id,
+                    investmentId: investmentId,
+                    preloadedBill: billsByTradeId[trade.id],
+                    monetaryServerOnly: monetaryServerOnly,
+                    billResolvedFromPrefetchIndex: true
+                )
+                let item = InvestorInvestmentStatementItem.from(
+                    trade: trade,
+                    output: output,
+                    ownershipPercentage: participation.ownershipPercentage,
+                    commissionCalculationService: commissionService,
+                    commissionRate: commissionRate
+                )
+                items.append(item)
+            } catch {
+                if monetaryServerOnly { return nil }
+            }
+        }
+
+        guard !items.isEmpty else { return nil }
+
+        if let canonical = ServerCalculatedReturnResolver.canonicalSummary(
+            fromCollectionBills: Array(billsByTradeId.values)
+        ) {
+            return self.summary(
+                fromCanonical: canonical,
+                items: items.sorted { $0.tradeDate < $1.tradeDate },
+                investmentCapital: totalInvestmentCapital
+            )
+        }
+
+        return self.summarizeFromItemsOnly(items: items, investmentCapital: totalInvestmentCapital)
+    }
+
+    /// Maps server-aggregated bill metadata to statement totals (SSOT for list/detail when server-only).
+    static func summary(
+        fromCanonical canonical: ServerInvestmentCanonicalSummary,
+        items: [InvestorInvestmentStatementItem],
+        investmentCapital: Double
+    ) -> InvestorInvestmentStatementSummary {
+        let statementInvestedAmountTotal = items.reduce(0) { $0 + $1.buyTotal }
+        let statementBuyFeesTotal = items.reduce(0) { $0 + $1.buyFees }
+        let statementTotalBuyCost = canonical.totalBuyCost > 0 ? canonical.totalBuyCost : (
+            statementInvestedAmountTotal + statementBuyFeesTotal
+        )
+        let statementSellAmountTotal = items.reduce(0) { $0 + $1.sellTotal }
+        let statementSellFeesTotal = items.reduce(0) { $0 + $1.sellFees }
+        let statementNetSellAmount = items.reduce(0) { $0 + $1.netSellAmount }
+        let finalResidualAmount = max(0, investmentCapital - statementTotalBuyCost)
+
+        return InvestorInvestmentStatementSummary(
+            items: items,
+            statementGrossProfit: canonical.grossProfit,
+            statementInvestedAmount: statementInvestedAmountTotal,
+            statementBuyFees: statementBuyFeesTotal,
+            statementTotalBuyCost: statementTotalBuyCost,
+            statementResidualAmount: finalResidualAmount,
+            statementSellAmount: statementSellAmountTotal,
+            statementSellFees: statementSellFeesTotal,
+            statementNetSellAmount: statementNetSellAmount,
+            roiGrossProfit: items.reduce(0) { $0 + $1.roiGrossProfit },
+            roiInvestedAmount: items.reduce(0) { $0 + $1.roiInvestedAmount },
+            statementCommission: canonical.commission
+        )
+    }
+
+    private static func summarizeFromItemsOnly(
+        items: [InvestorInvestmentStatementItem],
+        investmentCapital: Double
+    ) -> InvestorInvestmentStatementSummary? {
+        guard !items.isEmpty else { return nil }
+        let sorted = items.sorted { $0.tradeDate < $1.tradeDate }
+        let statementInvestedAmountTotal = sorted.reduce(0) { $0 + $1.buyTotal }
+        let statementBuyFeesTotal = sorted.reduce(0) { $0 + $1.buyFees }
+        let statementTotalBuyCost = statementInvestedAmountTotal + statementBuyFeesTotal
+        let statementGrossProfitTotal = sorted.reduce(0) { $0 + $1.grossProfit }
+        let statementCommissionTotal = sorted.reduce(0) { $0 + $1.commission }
+
+        return InvestorInvestmentStatementSummary(
+            items: sorted,
+            statementGrossProfit: statementGrossProfitTotal,
+            statementInvestedAmount: statementInvestedAmountTotal,
+            statementBuyFees: statementBuyFeesTotal,
+            statementTotalBuyCost: statementTotalBuyCost,
+            statementResidualAmount: max(0, investmentCapital - statementTotalBuyCost),
+            statementSellAmount: sorted.reduce(0) { $0 + $1.sellTotal },
+            statementSellFees: sorted.reduce(0) { $0 + $1.sellFees },
+            statementNetSellAmount: sorted.reduce(0) { $0 + $1.netSellAmount },
+            roiGrossProfit: sorted.reduce(0) { $0 + $1.roiGrossProfit },
+            roiInvestedAmount: sorted.reduce(0) { $0 + $1.roiInvestedAmount },
+            statementCommission: statementCommissionTotal
         )
     }
 }

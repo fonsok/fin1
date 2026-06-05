@@ -4,7 +4,7 @@ import SwiftUI
 /// Displays investment information for traders
 
 struct TraderInvestmentInformationView: View {
-    let trader: MockTrader
+    let trader: InvestorTrader
 
     var body: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {

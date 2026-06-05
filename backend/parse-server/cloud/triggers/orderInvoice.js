@@ -4,12 +4,34 @@ const { calculateOrderFees } = require('../utils/helpers');
 const { ensureBusinessCaseIdForTrade, newBusinessCaseId } = require('../utils/accountingHelper/businessCaseId');
 
 async function createOrderInvoice(order) {
-  const Invoice = Parse.Object.extend('Invoice');
-  const invoice = new Invoice();
-
   const side = order.get('side');
   const isSell = side === 'sell';
   const invoiceType = isSell ? 'sell_invoice' : 'buy_invoice';
+
+  const invoiceTypes = ['buy_invoice', 'sell_invoice', 'buy', 'sell'];
+  const existingByOrder = await new Parse.Query('Invoice')
+    .equalTo('orderId', order.id)
+    .containedIn('invoiceType', invoiceTypes)
+    .first({ useMasterKey: true });
+  if (existingByOrder) {
+    console.log(`📄 Invoice already exists for order ${order.id}: ${existingByOrder.get('invoiceNumber')}`);
+    return existingByOrder;
+  }
+
+  const linkedTradeId = String(order.get('tradeId') || '').trim();
+  if (linkedTradeId) {
+    const existingByTrade = await new Parse.Query('Invoice')
+      .equalTo('tradeId', linkedTradeId)
+      .equalTo('invoiceType', invoiceType)
+      .first({ useMasterKey: true });
+    if (existingByTrade) {
+      console.log(`📄 Invoice already exists for trade ${linkedTradeId}: ${existingByTrade.get('invoiceNumber')}`);
+      return existingByTrade;
+    }
+  }
+
+  const Invoice = Parse.Object.extend('Invoice');
+  const invoice = new Invoice();
   const grossAmount = order.get('grossAmount') || 0;
   const quantity = order.get('executedQuantity') || order.get('quantity') || 0;
   const price = order.get('price') || 0;
@@ -77,7 +99,6 @@ async function createOrderInvoice(order) {
   invoice.set('source', 'backend');
 
   let businessCaseId = '';
-  const linkedTradeId = order.get('tradeId');
   if (linkedTradeId) {
     try {
       const tr = await new Parse.Query('Trade').get(linkedTradeId, { useMasterKey: true });

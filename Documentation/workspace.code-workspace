@@ -1,0 +1,12 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		}
+	],
+	"settings": {
+		"comments.collapseOnResolve": true,
+		"cursor.composer.collapsePaneInputBoxPills": false,
+		"makefile.configureOnOpen": false
+	}
+}

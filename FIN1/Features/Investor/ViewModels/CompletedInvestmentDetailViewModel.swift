@@ -19,7 +19,12 @@ final class CompletedInvestmentDetailViewModel: ObservableObject {
     // MARK: - Published
     @Published var tradeLineItems: [TradeLineItem] = []
     @Published private var statementSummary: InvestorInvestmentStatementSummary?
+    @Published private var canonicalSummary: ServerInvestmentCanonicalSummary?
     @Published private var tradeLedReturnPercentageValue: Double?
+
+    private var monetaryServerOnly: Bool {
+        self.configurationService?.investorMonetaryServerOnly ?? true
+    }
 
     // MARK: - Initialization
     init(investment: Investment) {
@@ -71,17 +76,43 @@ final class CompletedInvestmentDetailViewModel: ObservableObject {
                 tradeAPIService: tradeAPI
             )
             self.rebuildTradeLineItems(additionalTradesById: tradesById)
-            self.statementSummary = InvestorInvestmentStatementAggregator.summarizeInvestment(
-                investmentId: investmentId,
-                poolTradeParticipationService: poolTradeParticipationService,
-                tradeLifecycleService: tradeLifecycleService,
-                invoiceService: invoiceService,
-                investmentService: investmentService,
-                calculationService: calculationService,
-                commissionCalculationService: commissionCalculationService,
-                additionalTradesById: tradesById,
-                commissionRate: commissionRate
-            )
+
+            if self.monetaryServerOnly, let settlementAPIService = self.settlementAPIService {
+                self.statementSummary = await InvestorInvestmentStatementAggregator.summarizeInvestmentFromServer(
+                    investmentId: investmentId,
+                    poolTradeParticipationService: poolTradeParticipationService,
+                    tradeLifecycleService: tradeLifecycleService,
+                    invoiceService: invoiceService,
+                    settlementAPIService: settlementAPIService,
+                    calculationService: calculationService,
+                    commissionCalculationService: commissionCalculationService,
+                    investment: self.investment,
+                    additionalTradesById: tradesById,
+                    commissionRate: commissionRate,
+                    monetaryServerOnly: true
+                )
+                self.canonicalSummary = await ServerCalculatedReturnResolver.resolveCanonicalSummary(
+                    investmentId: investmentId,
+                    settlementAPIService: settlementAPIService,
+                    allowUnweightedReturnFallback: false
+                )
+            } else {
+                self.statementSummary = InvestorInvestmentStatementAggregator.summarizeInvestment(
+                    investmentId: investmentId,
+                    poolTradeParticipationService: poolTradeParticipationService,
+                    tradeLifecycleService: tradeLifecycleService,
+                    invoiceService: invoiceService,
+                    investmentService: investmentService,
+                    calculationService: calculationService,
+                    commissionCalculationService: commissionCalculationService,
+                    additionalTradesById: tradesById,
+                    commissionRate: commissionRate
+                )
+                self.canonicalSummary = await ServerCalculatedReturnResolver.resolveCanonicalSummary(
+                    investmentId: investmentId,
+                    settlementAPIService: self.settlementAPIService
+                )
+            }
         }
     }
 
@@ -166,12 +197,13 @@ final class CompletedInvestmentDetailViewModel: ObservableObject {
     }
 
     var currentValue: Double {
-        // Use statement-based calculation if available (same as table), otherwise fallback to investment.currentValue
-        if let statementSummary = statementSummary {
-            // Current value = invested amount + gross profit from statement
+        if let statementSummary {
             return self.investedAmount + statementSummary.statementGrossProfit
         }
-        // Fallback to stored value if statement not available yet
+        if let canonical = canonicalSummary {
+            return self.investedAmount + canonical.grossProfit
+        }
+        guard !self.monetaryServerOnly else { return self.investedAmount }
         return self.investment.currentValue
     }
 
@@ -180,11 +212,13 @@ final class CompletedInvestmentDetailViewModel: ObservableObject {
     }
 
     var profit: Double {
-        // Use statement-based gross profit (same as table) for consistency
-        if let statementSummary = statementSummary {
+        if let statementSummary {
             return statementSummary.statementGrossProfit
         }
-        // Fallback to simple calculation if statement not available yet
+        if let canonical = canonicalSummary {
+            return canonical.grossProfit
+        }
+        guard !self.monetaryServerOnly else { return 0 }
         return self.currentValue - self.investedAmount
     }
 
@@ -402,11 +436,17 @@ final class CompletedInvestmentDetailViewModel: ObservableObject {
             return
         }
 
+        let allowFallback = !(configurationService?.investorMonetaryServerOnly ?? true)
         Task {
-            self.tradeLedReturnPercentageValue = await ServerCalculatedReturnResolver.resolveReturnPercentage(
+            if let summary = await ServerCalculatedReturnResolver.resolveCanonicalSummary(
                 investmentId: self.investment.id,
-                settlementAPIService: self.settlementAPIService
-            )
+                settlementAPIService: self.settlementAPIService,
+                allowUnweightedReturnFallback: allowFallback
+            ), summary.hasReturnPercentage {
+                self.tradeLedReturnPercentageValue = summary.returnPercentage
+            } else {
+                self.tradeLedReturnPercentageValue = nil
+            }
         }
     }
 }

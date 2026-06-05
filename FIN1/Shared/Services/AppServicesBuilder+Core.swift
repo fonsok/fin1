@@ -67,6 +67,7 @@ extension AppServicesBuilder {
 
             let documentAPIService = DocumentAPIService(apiClient: parseAPIClient)
             let documentService = DocumentService(documentAPIService: documentAPIService)
+            documentService.configure(documentAPIService: documentAPIService)
             ctx.documentService = documentService
 
             let auditLoggingService = AuditLoggingService(parseAPIClient: parseAPIClient)

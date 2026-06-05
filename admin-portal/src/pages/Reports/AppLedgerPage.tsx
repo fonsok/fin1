@@ -1,4 +1,5 @@
 import clsx from 'clsx';
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, Button, Badge, PaginationBar, Input } from '../../components/ui';
 import { formatCurrency, formatDateTime } from '../../utils/format';
@@ -7,53 +8,17 @@ import { listRowStripeClasses, tableBodyDivideClasses } from '../../utils/tableS
 import { SortableTh } from '../../components/table/SortableTh';
 import {
   GROUP_LABELS,
-  TRANSACTION_TYPE_LABELS,
   getOverviewClasses,
-  formatLedgerAccountDisplayLabel,
+  transactionTypeDisplayLabel,
 } from './appLedger/constants';
+import { AppLedgerFiltersSection } from './appLedger/components/AppLedgerFiltersSection';
 import { useAppLedgerPage } from './appLedger/hooks/useAppLedgerPage';
-import type { DateRangePreset } from './appLedger/types';
-
+import {
+  resolveCounterAccountDisplaySegments,
+  resolveCounterAccountLabel,
+} from './appLedger/counterAccountLabel';
+import { CounterAccountCell } from './appLedger/CounterAccountCell';
 import { adminBorderChromeSoft, adminCaption, adminControlField, adminDivideYChart, adminDualMuted, adminEmphasisSoft, adminHeadline, adminLabel, adminMonoHint, adminMuted, adminPrimary, adminSoft, adminStrong, adminSurfaceInset } from '../../utils/adminThemeClasses';
-function resolveCounterAccountLabel(
-  account: string,
-  transactionType: string,
-  pairedAccountsRaw?: string,
-  pairedAccountRaw?: string,
-  escrowLegRaw?: string,
-): string {
-  const pairedSource = pairedAccountsRaw || pairedAccountRaw || '';
-  const pairedAccounts = pairedSource
-    .split(',')
-    .map((entry) => entry.trim())
-    .filter(Boolean);
-  if (pairedAccounts.length > 0) return pairedAccounts.join(', ');
-
-  // App-Service-Charge: one debit clearing leg against two credit legs.
-  if (transactionType === 'appServiceCharge') {
-    if (account === 'PLT-REV-PSC' || account === 'PLT-TAX-VAT') return 'PLT-CLR-GEN';
-    if (account === 'PLT-CLR-GEN') return 'PLT-REV-PSC, PLT-TAX-VAT';
-  }
-
-  // investmentEscrow legacy rows do not always carry pairedAccount metadata.
-  // Derive the counter-account from deterministic leg/account pairs.
-  if (transactionType === 'investmentEscrow') {
-    const leg = String(escrowLegRaw || '').trim();
-    if (leg === 'reserve' || leg === 'releaseReserve' || leg === 'releaseReservedComplete') {
-      if (account === 'CLT-LIAB-AVA') return 'CLT-LIAB-RSV';
-      if (account === 'CLT-LIAB-RSV') return 'CLT-LIAB-AVA';
-    }
-    if (leg === 'deploy') {
-      if (account === 'CLT-LIAB-RSV') return 'CLT-LIAB-TRD';
-      if (account === 'CLT-LIAB-TRD') return 'CLT-LIAB-RSV';
-    }
-    if (leg === 'releaseTradingComplete' || leg === 'releaseTradingRefund') {
-      if (account === 'CLT-LIAB-TRD') return 'CLT-LIAB-AVA';
-      if (account === 'CLT-LIAB-AVA') return 'CLT-LIAB-TRD';
-    }
-  }
-  return '-';
-}
 
 function resolveAuditReferenceLabel(referenceId: string, businessReferenceRaw?: string): string {
   const businessReference = String(businessReferenceRaw || '').trim();
@@ -71,6 +36,8 @@ export function AppLedgerPage(): JSX.Element {
   const isDark = theme === 'dark';
   const {
     isLoading,
+    isError,
+    error,
     refetch,
     entries,
     accounts,
@@ -106,8 +73,15 @@ export function AppLedgerPage(): JSX.Element {
     setSelectedAccount,
     userFilter,
     setUserFilter,
+    referenceFilter,
+    setReferenceFilter,
+    amountMinInput,
+    setAmountMinInput,
+    amountMaxInput,
+    setAmountMaxInput,
     typeFilter,
     setTypeFilter,
+    filterScanTruncated,
     page,
     setPage,
     pageSize,
@@ -119,10 +93,15 @@ export function AppLedgerPage(): JSX.Element {
     dateToInput,
     setDateToInput,
     resetFilters,
+    resetPagedFilters,
     sortBy,
     sortOrder,
     onLedgerSort,
   } = useAppLedgerPage();
+  const accountByCode = useMemo(
+    () => new Map(accounts.map((a) => [a.code, a])),
+    [accounts],
+  );
   const {
     overviewLabelClass,
     overviewSubtitleClass,
@@ -143,7 +122,6 @@ export function AppLedgerPage(): JSX.Element {
   const sectionH2 = clsx('text-lg font-semibold', adminPrimary(isDark));
   const bodyMutedSm = clsx('text-sm', adminMuted(isDark));
   const spanStrongSm = clsx('text-sm font-medium', adminStrong(isDark));
-  const formLabel = clsx('block text-sm font-medium mb-1', adminStrong(isDark));
   const formLabelXs = clsx('block text-xs mb-1', adminMuted(isDark));
   const controlSm = clsx(
     'w-full border rounded-lg px-3 py-2 text-sm',
@@ -176,7 +154,7 @@ export function AppLedgerPage(): JSX.Element {
           <h1 className={pageTitle}>App Ledger</h1>
           <p className={leadMuted}>
             Eigenkonten der App – Gegenbuchungen zu allen Gebühren (doppelte Buchführung).
-            Unten: Konten-Karten und Filter (inkl. Bank Clearing – Service Charge NET/VAT).
+            Unten: Konten-Karten; Filter und Buchungsliste im Abschnitt „Buchungen“.
           </p>
           <Link
             to="/documents"
@@ -320,131 +298,6 @@ export function AppLedgerPage(): JSX.Element {
         </div>
       ))}
 
-      {/* Filters */}
-      <Card>
-        <div className="flex flex-col sm:flex-row gap-4 items-end">
-          <div className="flex-1">
-            <label className={formLabel}>Konto</label>
-            <select
-              value={selectedAccount}
-              onChange={(e) => {
-                setSelectedAccount(e.target.value);
-                setPage(0);
-              }}
-              className={controlSm}
-            >
-              <option value="">Alle Konten</option>
-              {accounts.map((a) => (
-                <option key={a.code} value={a.code}>
-                  {formatLedgerAccountDisplayLabel(a)}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="flex-1">
-            <label className={formLabel}>User-ID</label>
-            <input
-              type="text"
-              value={userFilter}
-              onChange={(e) => setUserFilter(e.target.value)}
-              placeholder="User-ID filtern..."
-              className={controlSm}
-            />
-          </div>
-          <div className="flex-1">
-            <label className={formLabel}>Transaktionstyp</label>
-            <select
-              value={typeFilter}
-              onChange={(e) => {
-                setTypeFilter(e.target.value);
-                setPage(0);
-              }}
-              className={controlSm}
-            >
-              <option value="">Alle Typen</option>
-              {Object.entries(TRANSACTION_TYPE_LABELS).map(([key, label]) => (
-                <option key={key} value={key}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className={formLabel}>Zeitraum</label>
-            <select
-              value={datePreset}
-              onChange={(e) => {
-                const preset = e.target.value as DateRangePreset;
-                setDatePreset(preset);
-                if (preset !== 'custom') {
-                  setDateFromInput('');
-                  setDateToInput('');
-                }
-                setPage(0);
-              }}
-              className={controlSm}
-            >
-              <option value="all">Alle</option>
-              <option value="thisMonth">Aktueller Monat</option>
-              <option value="lastMonth">Letzter Monat</option>
-              <option value="last30Days">Letzte 30 Tage</option>
-              <option value="thisYear">Aktuelles Jahr</option>
-              <option value="custom">Benutzerdefiniert (Von/Bis)</option>
-            </select>
-          </div>
-          {datePreset === 'custom' && (
-            <>
-              <div>
-                <label className={formLabel}>Von</label>
-                <input
-                  type="date"
-                  value={dateFromInput}
-                  onChange={(e) => {
-                    setDateFromInput(e.target.value);
-                    setPage(0);
-                  }}
-                  className={controlSm}
-                />
-              </div>
-              <div>
-                <label className={formLabel}>Bis</label>
-                <input
-                  type="date"
-                  value={dateToInput}
-                  onChange={(e) => {
-                    setDateToInput(e.target.value);
-                    setPage(0);
-                  }}
-                  className={controlSm}
-                />
-              </div>
-            </>
-          )}
-          <div>
-            <label className={formLabel}>Seite</label>
-            <select
-              value={pageSize}
-              onChange={(e) => {
-                setPageSize(Number(e.target.value));
-                setPage(0);
-              }}
-              className={controlSm}
-            >
-              <option value={50}>50 / Seite</option>
-              <option value={100}>100 / Seite</option>
-              <option value={250}>250 / Seite</option>
-              <option value={500}>500 / Seite</option>
-            </select>
-          </div>
-          <Button
-            variant="ghost"
-            onClick={resetFilters}
-          >
-            Filter zurücksetzen
-          </Button>
-        </div>
-      </Card>
-
       <Card>
         <div className={cardHeaderBorder}>
           <h2 className={sectionH2}>Eröffnungssalden (Snapshot)</h2>
@@ -532,7 +385,7 @@ export function AppLedgerPage(): JSX.Element {
           <div>
             <h2 className={sectionH2}>Abstimmung (Zeitraum)</h2>
             <p className={clsx('mt-1', bodyMutedSm)}>
-              Aggregiert Personenkonto, App-Hauptbuch und Bank-Contra für den gleichen Datumsfilter wie oben (nur Lesen,
+              Aggregiert Personenkonto, App-Hauptbuch und Bank-Contra für den gleichen Datumsfilter wie bei den Buchungen (nur Lesen,
               serverseitig begrenzt). Vertieft: Eröffnung + definierte Konten-Paare (tradeCash, wallet in/out).
             </p>
           </div>
@@ -633,14 +486,50 @@ export function AppLedgerPage(): JSX.Element {
           <h2 className={sectionH2}>Buchungen ({totalCount})</h2>
         </div>
 
-        {isLoading ? (
+        <AppLedgerFiltersSection
+          accounts={accounts}
+          selectedAccount={selectedAccount}
+          onSelectedAccountChange={setSelectedAccount}
+          userFilter={userFilter}
+          onUserFilterChange={setUserFilter}
+          referenceFilter={referenceFilter}
+          onReferenceFilterChange={setReferenceFilter}
+          typeFilter={typeFilter}
+          onTypeFilterChange={setTypeFilter}
+          datePreset={datePreset}
+          dateFromInput={dateFromInput}
+          dateToInput={dateToInput}
+          onDatePresetChange={setDatePreset}
+          onDateFromInputChange={setDateFromInput}
+          onDateToInputChange={setDateToInput}
+          amountMinInput={amountMinInput}
+          onAmountMinInputChange={setAmountMinInput}
+          amountMaxInput={amountMaxInput}
+          onAmountMaxInputChange={setAmountMaxInput}
+          pageSize={pageSize}
+          onPageSizeChange={setPageSize}
+          filterScanTruncated={filterScanTruncated}
+          onResetFilters={resetFilters}
+          onPagedFilterChange={resetPagedFilters}
+        />
+
+                {isError ? (
+          <div className={clsx(emptyState, isDark ? 'text-red-300' : 'text-red-700')}>
+            App-Ledger konnte nicht geladen werden:{' '}
+            {error instanceof Error ? error.message : 'Unbekannter Fehler'}
+            <p className={clsx('mt-2 text-sm', adminDualMuted(isDark))}>
+              Session, Berechtigung (getFinancialDashboard) oder User-ID-Filter prüfen; dann „Aktualisieren“.
+            </p>
+          </div>
+        ) : isLoading ? (
           <div className={emptyState}>Daten werden geladen...</div>
         ) : entries.length === 0 ? (
           <div className={emptyState}>
             Keine Buchungen gefunden.
-            {!selectedAccount && !userFilter && !typeFilter && (
+            {!selectedAccount && !userFilter && !typeFilter && !referenceFilter && !amountMinInput && !amountMaxInput && (
               <p className={clsx('mt-2 text-sm', adminDualMuted(isDark))}>
-                Gegenbuchungen werden automatisch erzeugt, wenn Gebühren von Nutzern erhoben werden.
+                Investment-Escrow-Buchungen erscheinen nach Reservierung/Aktivierung (Typ: investmentEscrow).
+                User-ID-Filter und Datumsbereich zurücksetzen.
               </p>
             )}
           </div>
@@ -806,7 +695,7 @@ export function AppLedgerPage(): JSX.Element {
                     </td>
                     <td className="px-4 py-3 text-sm">
                       <Badge variant="info">
-                        {TRANSACTION_TYPE_LABELS[e.transactionType] || e.transactionType}
+                        {transactionTypeDisplayLabel(e.transactionType)}
                       </Badge>
                     </td>
                     <td className={clsx('px-4 py-3 text-sm whitespace-nowrap', adminLabel(isDark))}>
@@ -854,14 +743,21 @@ export function AppLedgerPage(): JSX.Element {
                         return null;
                       })()}
                     </td>
-                    <td className={clsx('px-4 py-3 text-sm font-mono whitespace-nowrap', adminLabel(isDark))}>
-                      {resolveCounterAccountLabel(
-                        e.account,
-                        e.transactionType,
-                        e.metadata?.pairedAccounts,
-                        e.metadata?.pairedAccount,
-                        e.metadata?.leg,
-                      )}
+                    <td className={clsx('px-4 py-3 text-sm whitespace-nowrap', adminLabel(isDark))}>
+                      <CounterAccountCell
+                        segments={resolveCounterAccountDisplaySegments(
+                          resolveCounterAccountLabel(
+                            e.account,
+                            e.transactionType,
+                            e.metadata?.pairedAccounts,
+                            e.metadata?.pairedAccount,
+                            e.metadata?.leg,
+                            e.metadata?.splitPart,
+                          ),
+                          accountByCode,
+                        )}
+                        isDark={isDark}
+                      />
                     </td>
                     <td
                       className={clsx(

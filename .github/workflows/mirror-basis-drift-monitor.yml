@@ -1,0 +1,38 @@
+name: Mirror Basis Drift Monitor
+
+on:
+  schedule:
+    - cron: "45 5 * * 1"
+  workflow_dispatch:
+
+jobs:
+  monitor-mirror-basis-drift:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Run mirror-basis drift check
+        id: monitor
+        continue-on-error: true
+        env:
+          PARSE_SERVER_URL: ${{ secrets.RETURN_MONITOR_PARSE_SERVER_URL }}
+          PARSE_APP_ID: ${{ secrets.RETURN_MONITOR_PARSE_APP_ID }}
+          PARSE_MASTER_KEY: ${{ secrets.RETURN_MONITOR_PARSE_MASTER_KEY }}
+          MIRROR_DRIFT_MAX_DRIFTED: "0"
+          MIRROR_DRIFT_MAX_AGE_SECONDS: "691200"
+        run: node scripts/monitor-mirror-basis-drift-contract.js
+
+      - name: Build job summary
+        if: always()
+        run: |
+          echo "## Mirror Basis Drift Monitor" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Result: ${{ steps.monitor.outcome }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Overall: ${{ steps.monitor.outputs.overall || 'n/a' }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Drifted documents: ${{ steps.monitor.outputs.drifted_documents || 'n/a' }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Checked documents: ${{ steps.monitor.outputs.checked_documents || 'n/a' }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Snapshot run at: ${{ steps.monitor.outputs.run_at || 'n/a' }}" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fail workflow if monitor failed
+        if: steps.monitor.outcome != 'success'
+        run: exit 1

@@ -82,8 +82,12 @@ extension ConfigurationService {
         walletFeatureEnabled = configuration.effectiveWalletFeatureEnabled
         serviceChargeInvoiceFromBackend = configuration.effectiveServiceChargeInvoiceFromBackend
         serviceChargeLegacyClientFallbackEnabled = configuration.effectiveServiceChargeLegacyClientFallbackEnabled
+        investorMonetaryServerOnly = configuration.effectiveInvestorMonetaryServerOnly
+        showInvestorPartialSellRealizations = configuration.effectiveShowInvestorPartialSellRealizations
         minimumInvestmentAmount = configuration.effectiveMinimumInvestment
         maximumInvestmentAmount = configuration.effectiveMaximumInvestment
+        maxTraderPartialSells = configuration.effectiveMaxTraderPartialSells
+        taxCollectionMode = configuration.effectiveTaxCollectionMode
         slaMonitoringInterval = configuration.slaMonitoringInterval
     }
 
@@ -120,6 +124,7 @@ extension ConfigurationService {
                         self.configuration.appServiceChargeRateCompanies = self.configuration.appServiceChargeRate; changed = true
                     }
                     if let v = f.minimumCashReserve { self.configuration.minimumCashReserve = v; changed = true }
+                    if let v = f.maxTraderPartialSells { self.configuration.maxTraderPartialSells = v; changed = true }
                 }
                 if let v = response.display?.showCommissionBreakdownInCreditNote { self.configuration.showCommissionBreakdownInCreditNote = v; changed = true }
                 if let v = response.display?.showDocumentReferenceLinksInAccountStatement { self.configuration.showDocumentReferenceLinksInAccountStatement = v; changed = true }
@@ -127,9 +132,23 @@ extension ConfigurationService {
                 if let v = response.display?.walletFeatureEnabled { self.configuration.walletFeatureEnabled = v; changed = true }
                 if let v = response.display?.serviceChargeInvoiceFromBackend { self.configuration.serviceChargeInvoiceFromBackend = v; changed = true }
                 if let v = response.display?.serviceChargeLegacyClientFallbackEnabled { self.configuration.serviceChargeLegacyClientFallbackEnabled = v; changed = true }
+                if let v = response.display?.investorMonetaryServerOnly { self.configuration.investorMonetaryServerOnly = v; changed = true }
+                if let v = response.display?.showInvestorPartialSellRealizations {
+                    self.configuration.showInvestorPartialSellRealizations = v
+                    changed = true
+                }
                 if let lim = response.limits {
                     if self.configuration.minInvestment != lim.minInvestment { self.configuration.minInvestment = lim.minInvestment; changed = true }
                     if self.configuration.maxInvestment != lim.maxInvestment { self.configuration.maxInvestment = lim.maxInvestment; changed = true }
+                    if self.configuration.maxPoolMirrorBuyOrderAmount != lim.maxPoolMirrorBuyOrderAmount {
+                        self.configuration.maxPoolMirrorBuyOrderAmount = lim.maxPoolMirrorBuyOrderAmount
+                        changed = true
+                    }
+                }
+                if let mode = response.tax?.taxCollectionMode,
+                   self.configuration.taxCollectionMode != mode {
+                    self.configuration.taxCollectionMode = mode
+                    changed = true
                 }
 
                 if changed {

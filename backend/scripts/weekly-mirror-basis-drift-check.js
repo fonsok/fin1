@@ -1,83 +1,11 @@
-// Weekly drift check: does the stored `metadata.returnPercentage` on each
-// investorCollectionBill still agree with the mirror-basis SSOT
-// (= deriveMirrorTradeBasis(buyLeg, sellLeg, commissionRate)) ?
-//
-// Invariant:
-//   metadata.returnPercentage  ==  round2(netProfit / totalBuyCost * 100)
-//   where
-//     totalBuyCost   = buyLeg.amount  + buyLeg.fees.totalFees
-//     netSellAmount  = sellLeg.amount - sellLeg.fees.totalFees
-//     grossProfit    = netSellAmount - totalBuyCost
-//     commission     = grossProfit > 0 ? grossProfit * commissionRate : 0
-//     netProfit      = grossProfit - commission
-//
-// Run inside the mongodb container via the sibling wrapper
-// `run-mirror-basis-drift-check.sh` once a week. Read-only; emits a short text
-// report that the cron wrapper tails into syslog + log file.
+// Weekly drift check: stored `metadata.returnPercentage` vs mirror-basis SSOT.
+// Requires opsFinanceSsot.mongodb.js prepended by run-finance-integrity-snapshots.sh.
 
-/* global db, print, printjson */
+/* global db, print, printjson, deriveMirrorTradeBasis, loadCommissionRate, resolveCommissionRate, writeOpsHealthSnapshot */
 
 const sampleLimit = 25;
-const epsilonPp = 0.05; // pp drift tolerance between stored and derived ROI
-
-const configCollection = db.getCollection('Config');
+const epsilonPp = 0.05;
 const coll = db.getCollection('Document');
-
-function round2(n) {
-  return Math.round(n * 100) / 100;
-}
-function isNum(v) {
-  return typeof v === 'number' && Number.isFinite(v);
-}
-
-const DEFAULT_COMMISSION_RATE = 0.10;
-
-function loadCommissionRate() {
-  // SSOT order matches Parse `getTraderCommissionRate()`:
-  // 1) active Configuration doc, 2) legacy Config.financial, 3) default.
-  try {
-    const activeCursor = db.getCollection('Configuration')
-      .find({ isActive: true })
-      .sort({ updatedAt: -1 })
-      .limit(1);
-    const activeCfg = activeCursor.hasNext() ? activeCursor.next() : null;
-    if (activeCfg && isNum(activeCfg.traderCommissionRate)) {
-      return activeCfg.traderCommissionRate;
-    }
-  } catch (e) { /* fall through */ }
-  try {
-    const cfg = configCollection.findOne({ _id: 'production' }) || configCollection.findOne({});
-    if (!cfg) return DEFAULT_COMMISSION_RATE;
-    if (cfg.financial && isNum(cfg.financial.traderCommissionRate)) {
-      return cfg.financial.traderCommissionRate;
-    }
-    if (isNum(cfg.traderCommissionRate)) return cfg.traderCommissionRate;
-    if (cfg.params && isNum(cfg.params.traderCommissionRate)) return cfg.params.traderCommissionRate;
-    if (cfg.params && cfg.params.traderCommissionRate && isNum(cfg.params.traderCommissionRate.value)) {
-      return cfg.params.traderCommissionRate.value;
-    }
-  } catch (e) { /* fall through */ }
-  return DEFAULT_COMMISSION_RATE;
-}
-
-function resolveCommissionRate(meta) {
-  if (meta && isNum(meta.commissionRate)) return meta.commissionRate;
-  return loadCommissionRate();
-}
-
-function deriveMirrorBasis(buyLeg, sellLeg, commissionRate) {
-  if (!buyLeg || !sellLeg) return null;
-  const buyFees = buyLeg.fees && isNum(buyLeg.fees.totalFees) ? buyLeg.fees.totalFees : 0;
-  const sellFees = sellLeg.fees && isNum(sellLeg.fees.totalFees) ? sellLeg.fees.totalFees : 0;
-  const totalBuyCost = round2((buyLeg.amount || 0) + buyFees);
-  const netSellAmount = round2((sellLeg.amount || 0) - sellFees);
-  const grossProfit = round2(netSellAmount - totalBuyCost);
-  const commission = grossProfit > 0 ? round2(grossProfit * commissionRate) : 0;
-  const netProfit = round2(grossProfit - commission);
-  const returnPercentage = totalBuyCost > 0 ? round2((netProfit / totalBuyCost) * 100) : null;
-  return { totalBuyCost, grossProfit, commission, netProfit, returnPercentage };
-}
-
 const commissionRate = loadCommissionRate();
 
 const query = {
@@ -99,7 +27,7 @@ for (const doc of docs) {
   checked += 1;
   const meta = doc.metadata || {};
   const billCommissionRate = resolveCommissionRate(meta);
-  const basis = deriveMirrorBasis(meta.buyLeg, meta.sellLeg, billCommissionRate);
+  const basis = deriveMirrorTradeBasis(meta.buyLeg, meta.sellLeg, billCommissionRate);
   if (!basis || basis.returnPercentage === null) { nullDerived += 1; continue; }
 
   const storedReturn = meta.returnPercentage;
@@ -123,28 +51,21 @@ for (const doc of docs) {
 }
 
 print('--- Weekly mirror-basis drift check ---');
-print('commissionRate=' + commissionRate);
-print('epsilonPp=' + epsilonPp);
-print('checkedDocuments=' + checked);
-print('driftedDocuments=' + drifted);
-print('nullDerivedCount=' + nullDerived);
-print('healthy=' + (drifted === 0));
+print(`commissionRate=${commissionRate}`);
+print(`epsilonPp=${epsilonPp}`);
+print(`checkedDocuments=${checked}`);
+print(`driftedDocuments=${drifted}`);
+print(`nullDerivedCount=${nullDerived}`);
+print(`healthy=${drifted === 0}`);
 if (samples.length > 0) {
-  print('driftSamples(limit=' + sampleLimit + ')=');
+  print(`driftSamples(limit=${sampleLimit})=`);
   samples.forEach((entry) => printjson(entry));
 }
 
-// Admin-observability (2026-04-23): persist the latest run into the
-// `OpsHealthSnapshot` collection so the `getMirrorBasisDriftStatus` Cloud
-// function can surface it in the admin portal without SSH-tailing the log.
-// Keep only the most recent run per check (`checkId` as _id).
 try {
-  const healthColl = db.getCollection('OpsHealthSnapshot');
-  const now = new Date();
-  const snapshot = {
+  writeOpsHealthSnapshot({
     _id: 'mirror-basis-drift',
     kind: 'mirror-basis-drift',
-    runAt: now,
     commissionRate,
     epsilonPp,
     checkedDocuments: checked,
@@ -152,11 +73,8 @@ try {
     nullDerivedCount: nullDerived,
     healthy: drifted === 0,
     driftSamples: samples,
-    // `updatedAt` helps ops see the freshness of the snapshot at a glance.
-    updatedAt: now,
-  };
-  healthColl.replaceOne({ _id: snapshot._id }, snapshot, { upsert: true });
+  });
   print('snapshotWritten=OpsHealthSnapshot/mirror-basis-drift');
 } catch (e) {
-  print('snapshotWriteError=' + (e && e.message ? e.message : String(e)));
+  print(`snapshotWriteError=${e && e.message ? e.message : String(e)}`);
 }

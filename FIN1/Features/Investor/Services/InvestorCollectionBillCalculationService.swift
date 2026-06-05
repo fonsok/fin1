@@ -9,6 +9,8 @@ final class InvestorCollectionBillCalculationService: InvestorCollectionBillCalc
 
     // MARK: - Public Methods
 
+    /// Local mirror-basis calculation. Phase 3: not used in production when `monetaryServerOnly`;
+    /// kept for unit tests and admin/dev preview.
     func calculateCollectionBill(input: InvestorCollectionBillInput) throws -> InvestorCollectionBillOutput {
         // Validate input first
         let validation = self.validateInput(input)
@@ -22,26 +24,21 @@ final class InvestorCollectionBillCalculationService: InvestorCollectionBillCalc
         // Calculate sell leg
         let sellResult = self.calculateSellLeg(input: input, buyQuantity: buyResult.quantity)
 
-        // Calculate profit
-        let grossProfit = sellResult.amount + sellResult.fees - (buyResult.amount + buyResult.fees)
-        let roiGrossProfit = sellResult.amount - buyResult.roiInvestedAmount
-
-        return InvestorCollectionBillOutput(
-            buyAmount: buyResult.amount,
-            buyQuantity: buyResult.quantity,
+        return self.makeOutput(
+            buyResult: buyResult,
+            sellResult: sellResult,
             buyPrice: input.buyPrice,
-            buyFees: buyResult.fees,
-            buyFeeDetails: buyResult.feeDetails,
-            residualAmount: buyResult.residualAmount,
-            sellAmount: sellResult.amount,
-            sellQuantity: sellResult.quantity,
-            sellAveragePrice: sellResult.averagePrice,
-            sellFees: sellResult.fees,
-            sellFeeDetails: sellResult.feeDetails,
-            grossProfit: grossProfit,
-            roiGrossProfit: roiGrossProfit,
-            roiInvestedAmount: buyResult.roiInvestedAmount,
-            usedLocalFallbackDueToBackendError: false
+            dataSource: .localInvoices
+        )
+    }
+
+    func prefetchBackendBills(
+        for investmentId: String,
+        settlementAPIService: any SettlementAPIServiceProtocol
+    ) async throws -> [String: BackendCollectionBill] {
+        try await InvestorCollectionBillBackendPrefetch.loadBills(
+            investmentId: investmentId,
+            settlementAPIService: settlementAPIService
         )
     }
 
@@ -104,10 +101,6 @@ final class InvestorCollectionBillCalculationService: InvestorCollectionBillCalc
     private func calculateBuyLeg(input: InvestorCollectionBillInput) -> BuyLegResult {
         let investmentCapital = input.investmentCapital
 
-        print("📊 InvestorCollectionBillCalculationService.calculateBuyLeg")
-        print("   💰 Investment Capital: €\(String(format: "%.2f", investmentCapital))")
-        print("   💵 Buy Price: €\(String(format: "%.2f", input.buyPrice))")
-
         // Solve for buyAmount where: buyAmount + fees(buyAmount) = investmentCapital
         // This ensures Total Buy Cost ≤ Investment Amount (accounting principle)
         let finalBuyAmount = self.solveForBuyAmount(investmentCapital: investmentCapital, tolerance: 0.01)
@@ -156,9 +149,6 @@ final class InvestorCollectionBillCalculationService: InvestorCollectionBillCalc
 
             // Can we afford one more unit?
             if nextTotalCost <= investmentCapital {
-                // Yes! Buy one more unit
-                print("   🔧 Buying one more unit: Quantity \(currentQuantity) → \(nextQuantity)")
-
                 let nextBuyFeeBreakdown = FeeCalculationService.createFeeBreakdown(for: nextBuyAmount)
                 let nextBuyFeeDetails = nextBuyFeeBreakdown.map { feeDetail in
                     InvestorFeeDetail(
@@ -174,32 +164,18 @@ final class InvestorCollectionBillCalculationService: InvestorCollectionBillCalc
                 currentTotalBuyCost = nextTotalCost
                 residualAmount = investmentCapital - currentTotalBuyCost
             } else {
-                // No, can't afford one more unit - we're done
-                print(
-                    "   ✅ Cannot afford one more unit (need €\(String(format: "%.2f", nextTotalCost)), have €\(String(format: "%.2f", investmentCapital)))"
-                )
                 break
             }
         }
 
-        print("   💵 Final buy amount (securities value): €\(String(format: "%.2f", currentBuyAmount))")
-        print("   💵 Final buy fees: €\(String(format: "%.2f", currentBuyFees))")
-        print("   💵 Final Total Buy Cost: €\(String(format: "%.2f", currentTotalBuyCost))")
-        print("   💵 Final residual amount: €\(String(format: "%.2f", residualAmount))")
-        print("   📊 Final quantity: \(currentQuantity)")
-
-        // Verify Total Buy Cost ≤ Investment Capital (accounting principle)
         if currentTotalBuyCost > investmentCapital {
-            print(
-                "⚠️ WARNING: Total Buy Cost (\(String(format: "%.2f", currentTotalBuyCost))) exceeds Investment Capital (\(String(format: "%.2f", investmentCapital)))"
+            InvestorCollectionBillLog.warning(
+                "Total Buy Cost \(currentTotalBuyCost) exceeds investment capital \(investmentCapital)"
             )
         }
-
-        // CRITICAL VALIDATION: Residual must be less than buy price
-        // If residual >= buy price, something is wrong (we could have bought more)
         if residualAmount >= input.buyPrice {
-            print(
-                "⚠️ CRITICAL WARNING: Residual (\(String(format: "%.2f", residualAmount))) >= buy price (\(String(format: "%.2f", input.buyPrice))) - calculation error!"
+            InvestorCollectionBillLog.warning(
+                "Residual \(residualAmount) >= buy price \(input.buyPrice) — buy-leg solver should have consumed capital"
             )
         }
 
@@ -295,7 +271,8 @@ final class InvestorCollectionBillCalculationService: InvestorCollectionBillCalc
         // Fees from invoices (scaled by sell share based on quantity ratio)
         let sellShare = totalSellQtyFromInvoices > 0 ? (investorSellQuantity / totalSellQtyFromInvoices) : input.ownershipPercentage
         let sellFeeDetails = self.buildFeeDetails(from: sellInvoices, scale: sellShare)
-        let investorSellFees = sellFeeDetails.reduce(0) { $0 + $1.amount }
+        let investorSellFeesMagnitude = sellFeeDetails.reduce(0) { $0 + $1.amount }
+        let investorSellFees = InvestorCollectionBillLedger.signedSellFeesCashFlow(investorSellFeesMagnitude)
 
         return SellLegResult(
             amount: investorSellValue,
@@ -328,89 +305,117 @@ final class InvestorCollectionBillCalculationService: InvestorCollectionBillCalc
         input: InvestorCollectionBillInput,
         settlementAPIService: (any SettlementAPIServiceProtocol)?,
         tradeId: String?,
-        investmentId: String?
+        investmentId: String?,
+        preloadedBill: BackendCollectionBill?,
+        monetaryServerOnly: Bool,
+        billResolvedFromPrefetchIndex: Bool
     ) async throws -> InvestorCollectionBillOutput {
-        var usedLocalFallbackDueToBackendError = false
-        if let api = settlementAPIService, let tradeId, let investmentId {
-            do {
-                let response = try await api.fetchInvestorCollectionBills(
-                    limit: 1, skip: 0, investmentId: investmentId, tradeId: tradeId
-                )
-                print(
-                    "🔍 InvestorCollectionBillCalculationService: backend returned \(response.collectionBills.count) bill(s) for trade=\(tradeId) investment=\(investmentId)"
-                )
-                if let bill = response.collectionBills.first {
-                    let hasMeta = bill.metadata != nil
-                    let hasBuyLeg = bill.metadata?.buyLeg != nil
-                    print("   • bill.id=\(bill.objectId) hasMetadata=\(hasMeta) hasBuyLeg=\(hasBuyLeg)")
-                    if let meta = bill.metadata {
-                        if let output = mapBackendToOutput(metadata: meta, input: input) {
-                            print("✅ InvestorCollectionBillCalculationService: Using backend data for trade \(tradeId)")
-                            return output
-                        } else {
-                            print(
-                                "⚠️ InvestorCollectionBillCalculationService: metadata present but mapping failed (buyLeg missing) — falling back to local"
-                            )
-                        }
-                    }
-                } else {
-                    print(
-                        "⚠️ InvestorCollectionBillCalculationService: backend returned no bills — falling back to local for trade=\(tradeId)"
+        var usedBackendErrorFallback = false
+
+        if let tradeId, let investmentId {
+            let bill: BackendCollectionBill?
+            if let preloadedBill {
+                bill = preloadedBill
+            } else if billResolvedFromPrefetchIndex {
+                bill = nil
+            } else if let api = settlementAPIService {
+                do {
+                    let response = try await api.fetchInvestorCollectionBills(
+                        limit: 1, skip: 0, investmentId: investmentId, tradeId: tradeId
                     )
+                    bill = response.collectionBills.first
+                } catch {
+                    InvestorCollectionBillLog.warning(
+                        "Backend fetch failed trade=\(tradeId): \(error.localizedDescription)"
+                    )
+                    usedBackendErrorFallback = true
+                    bill = nil
                 }
-            } catch {
-                print(
-                    "⚠️ InvestorCollectionBillCalculationService: Backend fetch failed, falling back to local: \(error.localizedDescription)"
-                )
-                usedLocalFallbackDueToBackendError = true
+            } else {
+                bill = nil
             }
-        } else {
-            print(
-                "⚠️ InvestorCollectionBillCalculationService: backend disabled (api=\(settlementAPIService != nil) tradeId=\(tradeId ?? "nil") investmentId=\(investmentId ?? "nil"))"
-            )
+
+            if let bill {
+                if let output = self.mapBackendToOutput(bill: bill, input: input) {
+                    return output
+                }
+                throw InvestorCollectionBillBelegError.serverBelegUnmappable(
+                    documentNumber: bill.accountingDocumentNumber
+                )
+            }
+
+            if monetaryServerOnly {
+                if usedBackendErrorFallback {
+                    throw InvestorMonetaryServerOnlyError.serverUnavailable
+                }
+                throw InvestorMonetaryServerOnlyError.noArchivedBeleg(tradeNumber: nil)
+            }
+        } else if monetaryServerOnly {
+            throw InvestorMonetaryServerOnlyError.serverUnavailable
         }
-        var output = try calculateCollectionBill(input: input)
-        if usedLocalFallbackDueToBackendError {
-            output = InvestorCollectionBillOutput(
-                buyAmount: output.buyAmount,
-                buyQuantity: output.buyQuantity,
-                buyPrice: output.buyPrice,
-                buyFees: output.buyFees,
-                buyFeeDetails: output.buyFeeDetails,
-                residualAmount: output.residualAmount,
-                sellAmount: output.sellAmount,
-                sellQuantity: output.sellQuantity,
-                sellAveragePrice: output.sellAveragePrice,
-                sellFees: output.sellFees,
-                sellFeeDetails: output.sellFeeDetails,
-                grossProfit: output.grossProfit,
-                roiGrossProfit: output.roiGrossProfit,
-                roiInvestedAmount: output.roiInvestedAmount,
-                usedLocalFallbackDueToBackendError: true
-            )
+
+        if monetaryServerOnly {
+            throw InvestorMonetaryServerOnlyError.serverUnavailable
         }
-        return output
+
+        let local = try self.calculateCollectionBill(input: input)
+        guard usedBackendErrorFallback else { return local }
+
+        return InvestorCollectionBillOutput(
+            buyAmount: local.buyAmount,
+            buyQuantity: local.buyQuantity,
+            buyPrice: local.buyPrice,
+            buyFees: local.buyFees,
+            buyFeeDetails: local.buyFeeDetails,
+            residualAmount: local.residualAmount,
+            sellAmount: local.sellAmount,
+            sellQuantity: local.sellQuantity,
+            sellAveragePrice: local.sellAveragePrice,
+            sellFees: local.sellFees,
+            sellFeeDetails: local.sellFeeDetails,
+            totalBuyCost: local.totalBuyCost,
+            netSellAmount: local.netSellAmount,
+            grossProfit: local.grossProfit,
+            roiGrossProfit: local.roiGrossProfit,
+            roiInvestedAmount: local.roiInvestedAmount,
+            bookedCommission: nil,
+            bookedNetProfit: nil,
+            bookedTransferAmount: nil,
+            accountingDocumentNumber: nil,
+            belegInconsistencyMessage: nil,
+            dataSource: .localFallbackAfterBackendError
+        )
     }
 
-    /// Maps backend collection bill metadata to local output model.
-    private func mapBackendToOutput(metadata meta: BackendCollectionBillMetadata, input: InvestorCollectionBillInput) -> InvestorCollectionBillOutput? {
-        guard let buyLeg = meta.buyLeg else { return nil }
+    /// Maps archived collection bill (`Document`) to display output — Beleg-first (GoB).
+    private func mapBackendToOutput(bill: BackendCollectionBill, input: InvestorCollectionBillInput) -> InvestorCollectionBillOutput? {
+        guard let meta = bill.metadata, let buyLeg = meta.buyLeg else { return nil }
 
         let buyQty = buyLeg.quantity ?? 0
         let buyPrice = buyLeg.price ?? input.buyPrice
         let buyAmt = buyLeg.amount ?? (buyQty * buyPrice)
         let buyFeesTotal = buyLeg.fees?.totalFees ?? 0
-        let residual = buyLeg.residualAmount ?? 0
+        let residual = meta.residualAmount ?? buyLeg.residualAmount ?? 0
 
         let buyFeeDetails = self.buildFeeDetailsFromBreakdown(buyLeg.fees)
 
         let sellQty = meta.sellLeg?.quantity ?? 0
         let sellPrice = meta.sellLeg?.price ?? 0
         let sellAmt = meta.sellLeg?.amount ?? (sellQty * sellPrice)
-        let sellFeesTotal = meta.sellLeg?.fees?.totalFees ?? 0
+        let sellFeesMagnitude = meta.sellLeg?.fees?.totalFees ?? 0
         let sellFeeDetails = self.buildFeeDetailsFromBreakdown(meta.sellLeg?.fees)
 
-        let grossProfit = meta.grossProfit ?? (sellAmt - sellFeesTotal - buyAmt - buyFeesTotal)
+        let ledger = InvestorCollectionBillLedger.fromBackendLegs(
+            buyAmount: buyAmt,
+            buyFees: buyFeesTotal,
+            sellAmount: sellAmt,
+            sellFeesMagnitude: sellFeesMagnitude
+        )
+        let reconciliation = InvestorCollectionBillBelegReconciliation.reconcile(
+            ledgerFromLegs: ledger,
+            metadata: meta
+        )
+
         let roiInvestedAmount = buyQty * buyPrice
         let roiGrossProfit = sellAmt - roiInvestedAmount
 
@@ -424,13 +429,70 @@ final class InvestorCollectionBillCalculationService: InvestorCollectionBillCalc
             sellAmount: sellAmt,
             sellQuantity: sellQty,
             sellAveragePrice: sellPrice,
-            sellFees: sellFeesTotal,
+            sellFees: ledger.sellFeesSigned,
             sellFeeDetails: sellFeeDetails,
-            grossProfit: grossProfit,
+            totalBuyCost: reconciliation.displayTotalBuyCost,
+            netSellAmount: reconciliation.displayNetSellAmount,
+            grossProfit: reconciliation.displayGrossProfit,
             roiGrossProfit: roiGrossProfit,
             roiInvestedAmount: roiInvestedAmount,
-            usedLocalFallbackDueToBackendError: false
+            bookedCommission: meta.commission,
+            bookedNetProfit: meta.netProfit,
+            bookedTransferAmount: meta.transferAmount,
+            accountingDocumentNumber: bill.accountingDocumentNumber,
+            belegInconsistencyMessage: reconciliation.inconsistencyMessage,
+            dataSource: reconciliation.isConsistent ? .backendBeleg : .backendBelegInconsistent
         )
+    }
+
+    private func makeOutput(
+        buyResult: BuyLegResult,
+        sellResult: SellLegResult,
+        buyPrice: Double,
+        dataSource: InvestorCollectionBillDataSource
+    ) -> InvestorCollectionBillOutput {
+        let ledger = InvestorCollectionBillLedger.fromLocalAmounts(
+            buyAmount: buyResult.amount,
+            buyFees: buyResult.fees,
+            sellAmount: sellResult.amount,
+            sellFees: sellResult.fees
+        )
+        let roiGrossProfit = sellResult.amount - buyResult.roiInvestedAmount
+
+        return InvestorCollectionBillOutput(
+            buyAmount: buyResult.amount,
+            buyQuantity: buyResult.quantity,
+            buyPrice: buyPrice,
+            buyFees: buyResult.fees,
+            buyFeeDetails: buyResult.feeDetails,
+            residualAmount: buyResult.residualAmount,
+            sellAmount: sellResult.amount,
+            sellQuantity: sellResult.quantity,
+            sellAveragePrice: sellResult.averagePrice,
+            sellFees: ledger.sellFeesSigned,
+            sellFeeDetails: sellResult.feeDetails,
+            totalBuyCost: ledger.totalBuyCost,
+            netSellAmount: ledger.netSellAmount,
+            grossProfit: ledger.grossProfit,
+            roiGrossProfit: roiGrossProfit,
+            roiInvestedAmount: buyResult.roiInvestedAmount,
+            bookedCommission: nil,
+            bookedNetProfit: nil,
+            bookedTransferAmount: nil,
+            accountingDocumentNumber: nil,
+            belegInconsistencyMessage: nil,
+            dataSource: dataSource
+        )
+    }
+
+    /// Net proceeds after sell-side fees — delegates to ``InvestorCollectionBillLedger``.
+    static func netSellAmount(securitiesAmount sellAmount: Double, sellFees signedOrMagnitude: Double) -> Double {
+        InvestorCollectionBillLedger.fromLocalAmounts(
+            buyAmount: 0,
+            buyFees: 0,
+            sellAmount: sellAmount,
+            sellFees: signedOrMagnitude
+        ).netSellAmount
     }
 
     private func buildFeeDetailsFromBreakdown(_ fees: BackendFeeBreakdown?) -> [InvestorFeeDetail] {

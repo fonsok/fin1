@@ -21,26 +21,20 @@ struct CompletedInvestmentsTable: View {
     let traderUsernames: [String: String]
     /// Trade-Nummer pro Investment-ID (aus ViewModel, MVVM).
     let tradeNumbers: [String: String]
-    /// Statement-Summaries pro Investment-ID (aus ViewModel, MVVM).
-    /// Source-of-truth für Gross Profit, Commission, Total Buy Cost. Dieselben Werte
-    /// sind auf der Investor Collection Bill abgedruckt.
+    /// Local statement summaries (preview/tests). Empty when `monetaryServerOnly`.
     let investmentSummaries: [String: InvestorInvestmentStatementSummary]
-    /// Server-canonical ROI2 pro Investment-ID (optional). Wenn vorhanden,
-    /// wird dieser Wert bevorzugt gegenüber der lokalen Ableitung aus
-    /// `investmentSummaries`. Fallback-Design: nie "pending" anzeigen, solange
-    /// die lokale Ableitung verfügbar ist. Task 5a.
+    /// Server-canonical totals + ROI2. SSOT for € columns when `monetaryServerOnly`.
     var canonicalSummaries: [String: ServerInvestmentCanonicalSummary] = [:]
+    /// When true, ROI and profit come only from `canonicalSummaries`.
+    var monetaryServerOnly: Bool = false
     let onShowDetails: (Investment) -> Void
 
-    /// ROI2 = (Gross Profit − Commission) / Total Buy Cost × 100.
-    /// Reihenfolge: (1) Server-canonical aus `canonicalSummaries` (SSOT für ROI2);
-    /// (2) lokale Ableitung aus `investmentSummaries`, die dasselbe Aggregator-Resultat
-    /// nutzt wie die Collection-Bill-PDF.
     private func returnPercentage(for investment: Investment) -> Double? {
         if let canonical = canonicalSummaries[investment.id], canonical.hasReturnPercentage {
             return canonical.returnPercentage
         }
-        guard let summary = investmentSummaries[investment.id],
+        guard !self.monetaryServerOnly,
+              let summary = investmentSummaries[investment.id],
               summary.statementTotalBuyCost > 0 else { return nil }
         let net = summary.statementGrossProfit - summary.statementCommission
         return (net / summary.statementTotalBuyCost) * 100.0
@@ -63,6 +57,7 @@ struct CompletedInvestmentsTable: View {
                     let rowModel = CompletedInvestmentsTableRowModel(
                         investment: investment,
                         summary: investmentSummaries[investment.id],
+                        canonical: self.canonicalSummaries[investment.id],
                         returnPercentage: self.returnPercentage(for: investment),
                         traderUsername: self.traderUsernames[investment.id] ?? "---",
                         tradeNumberText: self.tradeNumbers[investment.id] ?? "---",
@@ -96,6 +91,7 @@ struct CompletedInvestmentsTable: View {
                         let rowModel = CompletedInvestmentsTableRowModel(
                             investment: investment,
                             summary: investmentSummaries[investment.id],
+                            canonical: self.canonicalSummaries[investment.id],
                             returnPercentage: self.returnPercentage(for: investment),
                             traderUsername: self.traderUsernames[investment.id] ?? "---",
                             tradeNumberText: self.tradeNumbers[investment.id] ?? "---",

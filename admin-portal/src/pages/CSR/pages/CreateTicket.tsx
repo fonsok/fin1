@@ -4,7 +4,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { Card, Button } from '../../../components/ui';
 import { useTheme } from '../../../context/ThemeContext';
-import { searchCustomers, getCustomerProfile, getSupportTickets, createSupportTicket } from '../api';
+import { searchCustomers, getCustomerProfile, listSupportTickets, createSupportTicket } from '../api';
 import { getResponseTemplates } from '../../Templates/api';
 import { sortByTitleDe } from '../../Templates/utils/templateDisplayOrder';
 import { TemplateDropdown, TemplateButton } from '../components/TemplateDropdown';
@@ -17,6 +17,11 @@ import {
   type TicketDescriptionTemplate,
 } from '../templates';
 import type { CustomerSearchResult } from '../types';
+import { useAuth } from '../../../context/AuthContext';
+import {
+  buildTicketTemplateContext,
+  hydrateTicketTemplateText,
+} from '../utils/hydrateTicketTemplate';
 
 // ============================================================================
 // CreateTicketPage Component
@@ -32,6 +37,7 @@ import { adminLabel, adminMuted, adminPrimary } from '../../../utils/adminThemeC
 export function CreateTicketPage(): JSX.Element {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+  const { user: agentUser } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const preselectedUserId =
@@ -96,7 +102,15 @@ export function CreateTicketPage(): JSX.Element {
   // Load recent tickets for selected customer
   const { data: recentTickets } = useQuery({
     queryKey: ['customer-tickets', selectedCustomer?.objectId],
-    queryFn: () => getSupportTickets(selectedCustomer!.objectId),
+    queryFn: async () => {
+      const { tickets } = await listSupportTickets({
+        userId: selectedCustomer!.objectId,
+        limit: 20,
+        sortBy: 'createdAt',
+        sortOrder: 'desc',
+      });
+      return tickets;
+    },
     enabled: !!selectedCustomer?.objectId,
   });
 
@@ -196,10 +210,21 @@ export function CreateTicketPage(): JSX.Element {
     setFormData({ ...formData, subject: template.title });
   };
 
+  const templateContext = useMemo(
+    () =>
+      buildTicketTemplateContext({
+        customer: selectedCustomer,
+        customerProfile: customerProfile ?? null,
+        agent: agentUser,
+      }),
+    [selectedCustomer, customerProfile, agentUser],
+  );
+
   const handleDescriptionTemplateSelect = (template: TicketDescriptionTemplate): void => {
+    const hydratedBody = hydrateTicketTemplateText(template.body, templateContext);
     const newDescription = formData.description
-      ? `${formData.description}\n\n${template.body}`
-      : template.body;
+      ? `${formData.description}\n\n${hydratedBody}`
+      : hydratedBody;
     setFormData({ ...formData, description: newDescription });
   };
 

@@ -1,21 +1,50 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { Card, Button, Badge, TicketPriorityBadge, TicketStatusBadge } from '../../../components/ui';
 import { formatDateTime } from '../../../utils/format';
 import { useTheme } from '../../../context/ThemeContext';
+import { useAuth } from '../../../context/AuthContext';
 import { tableBodyCellMutedClasses, tableBodyCellPrimaryClasses } from '../../../utils/tableStriping';
-import { getTicket, respondToTicket, assignTicket, escalateTicket, resolveTicket, closeTicket, getAvailableAgents } from '../api';
+import {
+  getTicket,
+  respondToTicket,
+  assignTicket,
+  escalateTicket,
+  resolveTicket,
+  closeTicket,
+  getAvailableAgents,
+  getCustomerProfile,
+} from '../api';
+import { getResponseTemplates } from '../../Templates/api';
+import { sortByTitleDe } from '../../Templates/utils/templateDisplayOrder';
+import { TemplateDropdown, TemplateButton } from '../components/TemplateDropdown';
+import {
+  defaultDescriptionTemplates,
+  type TicketDescriptionTemplate,
+} from '../templates';
+import {
+  buildTicketTemplateContext,
+  hydrateTicketTemplateText,
+} from '../utils/hydrateTicketTemplate';
+import {
+  getTicketDisplayStatus,
+  getTicketPriorityLabel,
+  getTicketStatusLabel,
+  isTicketEscalated,
+} from '../../../utils/ticketLabels';
 
 import { adminBorderChromeDeep, adminControlFieldPh500, adminEmphasisSoft, adminMuted, adminPrimary, adminSoft, adminStrong } from '../../../utils/adminThemeClasses';
 export function TicketDetailPage() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+  const { user: agentUser } = useAuth();
   const { ticketId } = useParams<{ ticketId: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [showRespondModal, setShowRespondModal] = useState(false);
+  const [showResponseTemplates, setShowResponseTemplates] = useState(false);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [showEscalateModal, setShowEscalateModal] = useState(false);
   const [showResolveModal, setShowResolveModal] = useState(false);
@@ -36,11 +65,79 @@ export function TicketDetailPage() {
     queryFn: () => getAvailableAgents(),
   });
 
+  const {
+    data: responseTemplates,
+    error: templatesError,
+    isLoading: templatesLoading,
+  } = useQuery({
+    queryKey: ['response-templates'],
+    queryFn: () => getResponseTemplates('teamlead', true),
+  });
+
+  const descriptionTemplates: TicketDescriptionTemplate[] = useMemo(() => {
+    if (responseTemplates && responseTemplates.length > 0) {
+      return sortByTitleDe(
+        responseTemplates
+          .filter((t) => !!t.body && t.body.length > 0)
+          .map((t) => ({ id: t.id, title: t.title, category: t.category, body: t.body! })),
+      );
+    }
+    return sortByTitleDe(defaultDescriptionTemplates);
+  }, [responseTemplates]);
+
+  const { data: customerProfile } = useQuery({
+    queryKey: ['customer-profile', ticket?.userId],
+    queryFn: () => getCustomerProfile(ticket!.userId),
+    enabled: !!ticket?.userId,
+  });
+
+  const templateContext = useMemo(
+    () =>
+      buildTicketTemplateContext({
+        customerProfile: customerProfile ?? null,
+        customer: customerProfile
+          ? {
+              objectId: customerProfile.objectId,
+              userId: customerProfile.userId,
+              customerNumber: customerProfile.customerNumber,
+              email: customerProfile.email,
+              firstName: customerProfile.firstName,
+              lastName: customerProfile.lastName,
+              fullName: customerProfile.fullName,
+              status: customerProfile.status,
+              role: customerProfile.role,
+              kycStatus: customerProfile.kycStatus,
+            }
+          : ticket
+            ? {
+                objectId: ticket.userId,
+                userId: ticket.userId,
+                customerNumber: '',
+                email: ticket.userEmail || '',
+                status: '',
+                role: '',
+              }
+            : null,
+        agent: agentUser,
+        ticketNumber: ticket?.ticketNumber,
+      }),
+    [customerProfile, ticket, agentUser],
+  );
+
+  const handleResponseTemplateSelect = (template: TicketDescriptionTemplate): void => {
+    if (!template.body) return;
+    const hydratedBody = hydrateTicketTemplateText(template.body, templateContext);
+    setResponseText((prev) => (prev.trim() ? `${prev}\n\n${hydratedBody}` : hydratedBody));
+    setShowResponseTemplates(false);
+  };
+
   const respondMutation = useMutation({
     mutationFn: () => respondToTicket(ticketId!, responseText, isInternal),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ticket', ticketId] });
+      queryClient.invalidateQueries({ queryKey: ['tickets'] });
       setShowRespondModal(false);
+      setShowResponseTemplates(false);
       setResponseText('');
       setIsInternal(false);
     },
@@ -50,6 +147,7 @@ export function TicketDetailPage() {
     mutationFn: () => assignTicket(ticketId!, selectedAgentId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ticket', ticketId] });
+      queryClient.invalidateQueries({ queryKey: ['tickets'] });
       setShowAssignModal(false);
       setSelectedAgentId('');
     },
@@ -59,6 +157,7 @@ export function TicketDetailPage() {
     mutationFn: () => escalateTicket(ticketId!, escalationReason),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ticket', ticketId] });
+      queryClient.invalidateQueries({ queryKey: ['tickets'] });
       setShowEscalateModal(false);
       setEscalationReason('');
     },
@@ -68,6 +167,7 @@ export function TicketDetailPage() {
     mutationFn: () => resolveTicket(ticketId!, resolutionNote, false),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ticket', ticketId] });
+      queryClient.invalidateQueries({ queryKey: ['tickets'] });
       setShowResolveModal(false);
       setResolutionNote('');
     },
@@ -77,6 +177,7 @@ export function TicketDetailPage() {
     mutationFn: () => closeTicket(ticketId!, resolutionNote),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ticket', ticketId] });
+      queryClient.invalidateQueries({ queryKey: ['tickets'] });
       navigate('/csr/tickets');
     },
   });
@@ -103,27 +204,8 @@ export function TicketDetailPage() {
     );
   }
 
-  const getPriorityLabel = (priority: string): string => {
-    switch (priority?.toLowerCase()) {
-      case 'urgent': return 'Dringend';
-      case 'high': return 'Hoch';
-      case 'medium': return 'Mittel';
-      case 'low': return 'Niedrig';
-      default: return priority || '-';
-    }
-  };
-
-  const getTicketStatusLabel = (status: string): string => {
-    switch (status?.toLowerCase()) {
-      case 'open': return 'Offen';
-      case 'in_progress': return 'In Bearbeitung';
-      case 'waiting': return 'Wartend';
-      case 'resolved': return 'Gelöst';
-      case 'closed': return 'Geschlossen';
-      default: return status || '-';
-    }
-  };
-
+  const displayStatus = getTicketDisplayStatus(ticket);
+  const ticketEscalated = isTicketEscalated(ticket);
   const canEdit = ticket.status !== 'closed' && ticket.status !== 'archived';
 
   const fieldSurface = clsx(
@@ -151,11 +233,11 @@ export function TicketDetailPage() {
           </h1>
         </div>
         <div className="flex gap-2">
-          <TicketStatusBadge status={ticket.status}>
-            {getTicketStatusLabel(ticket.status)}
+          <TicketStatusBadge status={displayStatus}>
+            {getTicketStatusLabel(displayStatus)}
           </TicketStatusBadge>
           <TicketPriorityBadge priority={ticket.priority}>
-            {getPriorityLabel(ticket.priority)}
+            {getTicketPriorityLabel(ticket.priority)}
           </TicketPriorityBadge>
         </div>
       </div>
@@ -198,6 +280,37 @@ export function TicketDetailPage() {
           </div>
         </div>
       </Card>
+
+      {ticketEscalated && (
+        <Card>
+          <h2 className={clsx('text-lg font-semibold mb-3', isDark ? 'text-red-300' : 'text-red-700')}>
+            Eskalation
+          </h2>
+          <div className={clsx('space-y-3 text-sm', adminSoft(isDark))}>
+            {ticket.escalationReason && (
+              <p className="whitespace-pre-wrap">{ticket.escalationReason}</p>
+            )}
+            <div className={clsx('grid grid-cols-2 gap-4 pt-2 border-t', adminBorderChromeDeep(isDark))}>
+              {ticket.escalatedAt && (
+                <div>
+                  <div className={tableBodyCellMutedClasses(isDark)}>Eskaliert am</div>
+                  <div className={clsx('font-medium', tableBodyCellPrimaryClasses(isDark))}>
+                    {formatDateTime(ticket.escalatedAt)}
+                  </div>
+                </div>
+              )}
+              {(ticket.escalatedByName || ticket.escalatedBy) && (
+                <div>
+                  <div className={tableBodyCellMutedClasses(isDark)}>Eskaliert von</div>
+                  <div className={clsx('font-medium', tableBodyCellPrimaryClasses(isDark))}>
+                    {ticket.escalatedByName || ticket.escalatedBy}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* Comments */}
       <Card>
@@ -250,9 +363,11 @@ export function TicketDetailPage() {
             <Button variant="secondary" onClick={() => setShowAssignModal(true)}>
               Zuweisen
             </Button>
-            <Button variant="secondary" onClick={() => setShowEscalateModal(true)}>
-              Eskalieren
-            </Button>
+            {!ticketEscalated && (
+              <Button variant="secondary" onClick={() => setShowEscalateModal(true)}>
+                Eskalieren
+              </Button>
+            )}
             {ticket.status === 'resolved' ? (
               <Button variant="secondary" onClick={() => closeMutation.mutate()}>
                 Schließen
@@ -270,9 +385,26 @@ export function TicketDetailPage() {
       {showRespondModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <Card className="w-full max-w-2xl m-4">
-            <h2 className={clsx('text-xl font-semibold mb-4', adminPrimary(isDark))}>
-              Antwort hinzufügen
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className={clsx('text-xl font-semibold', adminPrimary(isDark))}>
+                Antwort hinzufügen
+              </h2>
+              <div className="relative">
+                <TemplateButton onClick={() => setShowResponseTemplates(!showResponseTemplates)} />
+                {showResponseTemplates && (
+                  <TemplateDropdown
+                    title="Antwort-Vorlagen"
+                    templates={descriptionTemplates}
+                    isLoading={templatesLoading}
+                    error={templatesError ? 'Fehler beim Laden der Vorlagen' : null}
+                    onSelect={handleResponseTemplateSelect}
+                    onClose={() => setShowResponseTemplates(false)}
+                    showBodyPreview
+                    widthClass="w-80"
+                  />
+                )}
+              </div>
+            </div>
             <textarea
               value={responseText}
               onChange={(e) => setResponseText(e.target.value)}
@@ -289,7 +421,13 @@ export function TicketDetailPage() {
               <span>Interner Kommentar (nicht für Kunde sichtbar)</span>
             </label>
             <div className="flex gap-2 justify-end">
-              <Button variant="secondary" onClick={() => setShowRespondModal(false)}>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setShowRespondModal(false);
+                  setShowResponseTemplates(false);
+                }}
+              >
                 Abbrechen
               </Button>
               <Button

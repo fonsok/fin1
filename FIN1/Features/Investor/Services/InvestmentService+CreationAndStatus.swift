@@ -5,7 +5,7 @@ extension InvestmentService {
 
     func createInvestment(
         investor: User,
-        trader: MockTrader,
+        trader: InvestorTrader,
         amountPerInvestment: Double,
         numberOfInvestments: Int,
         specialization: String,
@@ -34,33 +34,49 @@ extension InvestmentService {
 
         if !newIds.isEmpty, investmentAPIService != nil {
             do {
-                try await syncPendingInvestmentsToBackend(propagateFirstFailure: true)
-            } catch let error as NetworkError {
-                await rollbackLocalInvestmentDraft(
-                    newInvestmentIds: newIds,
-                    batchId: batch.id,
-                    createdPoolIds: createdPoolIds
+                try await syncPendingInvestmentsToBackend(
+                    propagateFirstFailure: true,
+                    traderUsername: trader.username
                 )
-                if case .badRequest(let message) = error {
-                    throw AppError.validation(message)
-                }
-                throw AppError.network(error)
-            } catch let error as AppError {
-                await rollbackLocalInvestmentDraft(
-                    newInvestmentIds: newIds,
-                    batchId: batch.id,
-                    createdPoolIds: createdPoolIds
-                )
-                throw error
             } catch {
-                await self.rollbackLocalInvestmentDraft(
-                    newInvestmentIds: newIds,
-                    batchId: batch.id,
-                    createdPoolIds: createdPoolIds
-                )
-                throw error.toAppError()
+                var syncResolved = false
+                if Self.isDuplicateInvestmentSyncError(error) {
+                    syncResolved = await self.reconcileInvestmentBatchFromBackend(
+                        batchId: batch.id,
+                        localIds: newIds
+                    )
+                    if !syncResolved {
+                        do {
+                            try await syncPendingInvestmentsToBackend(
+                                propagateFirstFailure: true,
+                                traderUsername: trader.username
+                            )
+                            syncResolved = true
+                        } catch {
+                            syncResolved = await self.reconcileInvestmentBatchFromBackend(
+                                batchId: batch.id,
+                                localIds: newIds
+                            )
+                            if !syncResolved {
+                                await self.rollbackLocalInvestmentDraft(
+                                    newInvestmentIds: newIds,
+                                    batchId: batch.id,
+                                    createdPoolIds: createdPoolIds
+                                )
+                                throw Self.investmentSyncErrorAsAppError(error)
+                            }
+                        }
+                    }
+                    print("✅ InvestmentService: Batch \(batch.id) nach Duplicate/Reconcile übernommen")
+                } else {
+                    await self.rollbackLocalInvestmentDraft(
+                        newInvestmentIds: newIds,
+                        batchId: batch.id,
+                        createdPoolIds: createdPoolIds
+                    )
+                    throw Self.investmentSyncErrorAsAppError(error)
+                }
             }
-            // Nach Parse-Save (inkl. bookReserve): lokale Salden mit echten Investment-IDs.
             if deferCashDeductions {
                 let syncedForBatch = await MainActor.run {
                     repository.investments
@@ -73,6 +89,75 @@ extension InvestmentService {
                     investments: syncedForBatch.isEmpty ? investments : syncedForBatch
                 )
             }
+        }
+    }
+
+    private static func isDuplicateInvestmentSyncError(_ error: Error) -> Bool {
+        let text: String
+        if let appError = error as? AppError, case .network(let net) = appError {
+            if case .badRequest(let message) = net {
+                text = message
+            } else {
+                return false
+            }
+        } else if let net = error as? NetworkError, case .badRequest(let message) = net {
+            text = message
+        } else {
+            return false
+        }
+        let lower = text.lowercased()
+        return lower.contains("duplicate")
+            || lower.contains("kollidiert")
+            || lower.contains("bereits angelegt")
+    }
+
+    private static func investmentSyncErrorAsAppError(_ error: Error) -> AppError {
+        if let appError = error as? AppError { return appError }
+        if let networkError = error as? NetworkError {
+            if case .badRequest(let message) = networkError {
+                return AppError.validation(message)
+            }
+            return AppError.network(networkError)
+        }
+        return error.toAppError()
+    }
+
+    /// Nach Timeout/Duplicate: Splits am Server per batchId+sequenceNumber laden und lokale UUIDs ersetzen.
+    private func reconcileInvestmentBatchFromBackend(batchId: String, localIds: [String]) async -> Bool {
+        guard let apiService = investmentAPIService else { return false }
+
+        let locals: [Investment] = await MainActor.run {
+            repository.investments.filter { $0.batchId == batchId && localIds.contains($0.id) }
+        }
+        guard !locals.isEmpty else { return false }
+
+        let investorId = locals[0].investorId
+        do {
+            let remote = try await apiService.fetchInvestments(for: investorId)
+            let remoteForBatch = remote.filter { $0.batchId == batchId }
+            let localSeq = Set(locals.compactMap(\.sequenceNumber))
+            let remoteSeq = Set(remoteForBatch.compactMap(\.sequenceNumber))
+            guard localSeq.isSubset(of: remoteSeq) else { return false }
+
+            await MainActor.run {
+                for local in locals {
+                    guard let seq = local.sequenceNumber,
+                          let match = remoteForBatch.first(where: { $0.sequenceNumber == seq }),
+                          abs(match.amount - local.amount) <= 0.01 else { continue }
+                    pendingSyncIds.remove(local.id)
+                    if let index = repository.investments.firstIndex(where: { $0.id == local.id }) {
+                        repository.investments[index] = match
+                    }
+                }
+            }
+
+            let stillPending = await MainActor.run {
+                localIds.filter { pendingSyncIds.contains($0) }
+            }
+            return stillPending.isEmpty
+        } catch {
+            print("⚠️ InvestmentService: reconcileInvestmentBatchFromBackend failed: \(error)")
+            return false
         }
     }
 

@@ -1,8 +1,14 @@
 'use strict';
 
 const { isServiceChargeInvoiceType } = require('../serviceChargeInvoiceTypes');
-const { generateSequentialNumber } = require('../helpers');
+const { generateSequentialNumber, calculateOrderFees } = require('../helpers');
 const { round2, formatDateCompact, generateShortHash } = require('./shared');
+const { buildCollectionBillBelegSnapshot } = require('./collectionBillBelegSnapshot');
+const {
+  buildTraderCollectionBillBelegSnapshot,
+  buildTradingFeesBelegSnapshot,
+} = require('./traderCollectionBillBelegSnapshot');
+const { resolveTraderDisplayNameForBeleg } = require('../traderDisplayNameForBeleg');
 
 function applyBusinessCaseIdToDocument(doc, businessCaseId) {
   const bc = String(businessCaseId || '').trim();
@@ -57,10 +63,11 @@ async function createCreditNoteDocument({
   const docNumber = await generateSequentialNumber('CN', 'Document', 'accountingDocumentNumber');
   const dateStr = formatDateCompact(new Date());
   const hash = generateShortHash();
+  const traderParty = await resolveTraderDisplayNameForBeleg(traderId);
 
   const Document = Parse.Object.extend('Document');
   const doc = new Document();
-  doc.set('userId', traderId);
+  doc.set('userId', traderParty.traderId || traderId);
   doc.set('type', 'traderCreditNote');
   doc.set('name', `CreditNote_Trade${tradeNumber}_${dateStr}_${hash}.pdf`);
   doc.set('tradeId', trade.id);
@@ -68,6 +75,9 @@ async function createCreditNoteDocument({
   doc.set('accountingDocumentNumber', docNumber);
   doc.set('source', 'backend');
   doc.set('metadata', {
+    traderId: traderParty.traderId || String(traderId || '').trim() || null,
+    traderDisplayName: traderParty.traderDisplayName,
+    traderUsername: traderParty.traderUsername,
     commissionAmount: round2(totalCommission),
     commissionRate,
     grossProfit: round2(grossProfit),
@@ -105,8 +115,59 @@ async function createCollectionBillDocument({
   sellLeg,
   taxBreakdown,
   businessCaseId,
+  /** Wenn true: vorhandenes backend-`investorCollectionBill` zu (investmentId, tradeId) aktualisieren statt neuer CB-Nummer. Nicht für Teil-Sell-Deltas. */
+  allowIdempotentUpsert = false,
 }) {
   const tradeNumber = trade.get('tradeNumber');
+
+  if (allowIdempotentUpsert) {
+    const existing = await new Parse.Query('Document')
+      .equalTo('type', 'investorCollectionBill')
+      .equalTo('source', 'backend')
+      .equalTo('investmentId', investmentId)
+      .equalTo('tradeId', trade.id)
+      .first({ useMasterKey: true });
+
+    if (existing) {
+      const returnPercentage = computeCollectionBillReturnPercentage({
+        netProfit,
+        buyLeg,
+        investmentCapital,
+      });
+      assertCollectionBillReturnPercentageInvariant(returnPercentage, {
+        tradeId: trade?.id,
+        investmentId,
+        netProfit,
+        investmentCapital,
+      });
+      const { metadata } = buildCollectionBillBelegSnapshot({
+        investmentCapital,
+        ownershipPercentage,
+        commissionRate,
+        buyLeg,
+        sellLeg,
+        taxBreakdown,
+        grossProfit,
+        commission,
+        netProfit,
+        returnPercentage,
+      });
+      existing.set('userId', investorId);
+      existing.set('tradeNumber', tradeNumber);
+      existing.set('metadata', metadata);
+      applyBusinessCaseIdToDocument(
+        existing,
+        businessCaseId || trade.get('businessCaseId'),
+      );
+      await existing.save(null, { useMasterKey: true });
+      console.log(
+        `📄 CollectionBill idempotent update: ${existing.get('accountingDocumentNumber') || existing.id} `
+        + `investor ${investorId}, investment ${investmentId}, trade ${trade.id}`,
+      );
+      return existing;
+    }
+  }
+
   const docNumber = await generateSequentialNumber('CB', 'Document', 'accountingDocumentNumber');
   const dateStr = formatDateCompact(new Date());
   const hash = generateShortHash();
@@ -133,18 +194,19 @@ async function createCollectionBillDocument({
   doc.set('tradeNumber', tradeNumber);
   doc.set('accountingDocumentNumber', docNumber);
   doc.set('source', 'backend');
-  doc.set('metadata', {
-    ownershipPercentage: round2(ownershipPercentage),
-    grossProfit: round2(grossProfit),
-    commission: round2(commission),
-    netProfit: round2(netProfit),
-    returnPercentage,
+  const { metadata } = buildCollectionBillBelegSnapshot({
+    investmentCapital,
+    ownershipPercentage,
     commissionRate,
-    buyLeg: buyLeg || null,
-    sellLeg: sellLeg || null,
-    taxBreakdown: taxBreakdown || null,
-    generatedAt: new Date().toISOString(),
+    buyLeg,
+    sellLeg,
+    taxBreakdown,
+    grossProfit,
+    commission,
+    netProfit,
+    returnPercentage,
   });
+  doc.set('metadata', metadata);
 
   applyBusinessCaseIdToDocument(
     doc,
@@ -436,6 +498,33 @@ async function createWalletReceiptDocument({
 // Every trade_buy, trade_sell, and trading_fees booking needs its own Beleg.
 // ============================================================================
 
+async function loadTradeInvoiceForBeleg(tradeId, executionType) {
+  const q = new Parse.Query('Invoice');
+  q.equalTo('tradeId', tradeId);
+  if (String(executionType).toLowerCase() === 'sell') {
+    q.containedIn('invoiceType', ['sell_invoice', 'sell']);
+  } else {
+    q.containedIn('invoiceType', ['buy_invoice', 'buy']);
+  }
+  q.descending('invoiceDate');
+  q.limit(1);
+  return q.first({ useMasterKey: true });
+}
+
+async function findExistingTradeExecutionDocument({ tradeId, executionType, businessCaseId }) {
+  if (!tradeId || !executionType) return null;
+  const normalizedType = String(executionType).toLowerCase();
+  const q = new Parse.Query('Document');
+  q.equalTo('tradeId', tradeId);
+  q.equalTo('source', 'backend');
+  q.equalTo('metadata.executionType', normalizedType);
+  if (businessCaseId) {
+    q.equalTo('businessCaseId', String(businessCaseId).trim());
+  }
+  q.ascending('createdAt');
+  return q.first({ useMasterKey: true });
+}
+
 async function createTradeExecutionDocument({
   traderId,
   trade,
@@ -443,9 +532,19 @@ async function createTradeExecutionDocument({
   amount,
   order,
   businessCaseId,
+  feeBreakdown,
 }) {
   const tradeNumber = trade.get('tradeNumber');
   const symbol = trade.get('symbol') || '';
+  const resolvedBusinessCaseId = businessCaseId || trade.get('businessCaseId');
+  const existingDoc = await findExistingTradeExecutionDocument({
+    tradeId: trade.id,
+    executionType,
+    businessCaseId: resolvedBusinessCaseId,
+  });
+  if (existingDoc) {
+    return existingDoc;
+  }
 
   const typeToDocType = {
     buy: 'traderCollectionBill',
@@ -472,28 +571,54 @@ async function createTradeExecutionDocument({
   const docNumber = await generateSequentialNumber(prefix, 'Document', 'accountingDocumentNumber');
   const dateStr = formatDateCompact(new Date());
   const hash = generateShortHash();
+  const grossAmount = round2(Math.abs(amount));
+  const traderParty = await resolveTraderDisplayNameForBeleg(traderId);
+  let invoice = null;
+  try {
+    invoice = await loadTradeInvoiceForBeleg(trade.id, executionType);
+  } catch {
+    // Invoice optional at booking time
+  }
+
+  const snapshot = executionType === 'fees'
+    ? buildTradingFeesBelegSnapshot({
+      trade,
+      totalFees: grossAmount,
+      feeBreakdown,
+      label,
+      docNumber,
+      tradeNumber,
+    })
+    : buildTraderCollectionBillBelegSnapshot({
+      trade,
+      order,
+      executionType,
+      grossAmount,
+      feeConfig: trade.get('feeConfig') || {},
+      label,
+      docNumber,
+      tradeNumber,
+      invoice,
+      traderParty,
+    });
 
   const Document = Parse.Object.extend('Document');
   const doc = new Document();
-  doc.set('userId', traderId);
+  doc.set('userId', traderParty.traderId || traderId);
   doc.set('type', docType);
   doc.set('name', `${label}_Trade${tradeNumber}_${symbol}_${dateStr}_${hash}.pdf`);
   doc.set('tradeId', trade.id);
   doc.set('tradeNumber', tradeNumber);
   doc.set('accountingDocumentNumber', docNumber);
   doc.set('source', 'backend');
-  doc.set('metadata', {
-    executionType,
-    symbol,
-    amount: round2(Math.abs(amount)),
-    quantity: order?.quantity || null,
-    price: order?.price || null,
-    orderId: order?.id || null,
-    wkn: order?.wkn || symbol,
-    generatedAt: new Date().toISOString(),
+  const metadata = Object.assign({}, snapshot.metadata, {
+    executionType: String(executionType).toLowerCase(),
   });
+  doc.set('metadata', metadata);
+  doc.set('accountingSummaryText', snapshot.accountingSummaryText);
+  doc.set('size', Buffer.byteLength(snapshot.accountingSummaryText, 'utf8'));
 
-  applyBusinessCaseIdToDocument(doc, businessCaseId || trade.get('businessCaseId'));
+  applyBusinessCaseIdToDocument(doc, resolvedBusinessCaseId);
 
   await doc.save(null, { useMasterKey: true });
   console.log(`📄 ${label} created: ${docNumber} for trade #${tradeNumber} (${symbol}), €${round2(Math.abs(amount))}`);

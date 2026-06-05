@@ -85,6 +85,7 @@ async function getExpectedSettlementByInvestmentForTrade(tradeId) {
     const rawGrossProfit = metadata.grossProfit;
     const rawNetProfit = metadata.netProfit;
     const rawInvestmentCapital = metadata.buyLeg && metadata.buyLeg.amount;
+    const rawTransferAmount = metadata.transferAmount;
     const rawSellAmount = sellLeg.amount;
     const rawCommission = metadata.commission;
     const grossProfit = Number(rawGrossProfit || 0);
@@ -92,13 +93,17 @@ async function getExpectedSettlementByInvestmentForTrade(tradeId) {
     const investmentCapital = Number(rawInvestmentCapital || 0);
     const fallbackGrossReturn = round2(investmentCapital + grossProfit);
     const grossReturn = Number(rawSellAmount);
+    const transferAmount = Number(rawTransferAmount);
     const commission = Number(rawCommission || 0);
-    const grossReturnFromProfitBreakdown = round2(investmentCapital + netProfit + commission);
+    const grossReturnFromTransfer = Number.isFinite(transferAmount) && transferAmount > 0
+      ? round2(transferAmount)
+      : null;
+    const grossReturnFromProfitBreakdown = round2(investmentCapital + netProfit);
     const hasProfitBreakdownSignal =
       rawNetProfit !== undefined &&
-      rawInvestmentCapital !== undefined &&
-      rawCommission !== undefined;
+      rawInvestmentCapital !== undefined;
     const hasGrossReturnSignal =
+      rawTransferAmount !== undefined ||
       rawSellAmount !== undefined ||
       rawGrossProfit !== undefined ||
       rawInvestmentCapital !== undefined;
@@ -110,9 +115,11 @@ async function getExpectedSettlementByInvestmentForTrade(tradeId) {
     byKey.set(key, {
       grossReturn: round2(
         prev.grossReturn +
-        (hasProfitBreakdownSignal
-          ? grossReturnFromProfitBreakdown
-          : (Number.isFinite(grossReturn) ? grossReturn : fallbackGrossReturn)),
+        (grossReturnFromTransfer != null
+          ? grossReturnFromTransfer
+          : (hasProfitBreakdownSignal
+            ? grossReturnFromProfitBreakdown
+            : (Number.isFinite(grossReturn) ? grossReturn : fallbackGrossReturn))),
       ),
       commission: round2(prev.commission + (Number.isFinite(commission) ? commission : 0)),
     });

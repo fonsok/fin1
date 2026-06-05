@@ -72,7 +72,10 @@ final class TradeDetailsViewModel: ObservableObject {
     }
 
     var provisionText: String {
-        self.trade.commission == 0 ? "-" : self.trade.commission.formatted(.currency(code: "EUR"))
+        if self.trade.isCommissionPending {
+            return "…"
+        }
+        return self.trade.commission == 0 ? "-" : self.trade.commission.formatted(.currency(code: "EUR"))
     }
 
     var startDateText: String {

@@ -72,6 +72,8 @@ function buildDisplay(config) {
       config.display?.serviceChargeLegacyClientFallbackEnabled ?? true,
     serviceChargeLegacyDisableAllowedFrom:
       config.display?.serviceChargeLegacyDisableAllowedFrom ?? '2026-05-15',
+    investorMonetaryServerOnly: config.display?.investorMonetaryServerOnly ?? true,
+    showInvestorPartialSellRealizations: config.display?.showInvestorPartialSellRealizations ?? false,
   };
 }
 

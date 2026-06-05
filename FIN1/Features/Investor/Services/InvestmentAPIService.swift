@@ -8,13 +8,20 @@ import Foundation
 /// `@unchecked Sendable` because it holds only an immutable reference to a
 /// `ParseAPIClientProtocol`.
 protocol InvestmentAPIServiceProtocol: Sendable {
-    /// Saves an investment to the Parse Server
+    /// Saves an investment to the Parse Server (single split; prefers idempotent cloud path when batchId is set).
     func saveInvestment(_ investment: Investment) async throws -> Investment
+
+    /// Idempotent batch create (one round-trip). Key: batchId + sequenceNumber per investor.
+    /// - Parameter traderUsername: Parse `_User.username` when `traderId` is a local MockTrader UUID.
+    func saveInvestmentSplits(_ investments: [Investment], traderUsername: String?) async throws -> [Investment]
 
     /// Updates an existing investment on the Parse Server
     func updateInvestment(_ investment: Investment) async throws -> Investment
 
-    /// Fetches all investments for an investor
+    /// Fetches all investments for an investor (any of the given ledger identity keys).
+    func fetchInvestments(forInvestorIds investorIds: [String]) async throws -> [Investment]
+
+    /// Fetches all investments for a single investor id (legacy).
     func fetchInvestments(for investorId: String) async throws -> [Investment]
 
     /// Creates a pool trade participation record
@@ -34,6 +41,22 @@ protocol InvestmentAPIServiceProtocol: Sendable {
     /// The server-side `afterSave Invoice` trigger books the BankContra and AppLedger entries.
     /// Safe to retry — the function short-circuits on (batchId, invoiceType='service_charge').
     func bookAppServiceCharge(investmentId: String) async throws -> String
+
+    /// Pool-mirror capacity for a trader (reserved pool vs admin cap).
+    func fetchPoolMirrorCapacity(
+        traderId: String,
+        traderUsername: String?,
+        traderName: String?,
+        additionalAmount: Double
+    ) async throws -> PoolMirrorCapacityStatus
+
+    /// Subscribe or unsubscribe to alert when investing with this trader is possible again.
+    func setPoolMirrorCapacityAlert(
+        traderId: String,
+        traderUsername: String?,
+        traderName: String?,
+        enabled: Bool
+    ) async throws
 }
 
 // Note: PoolTradeParticipation is defined in FIN1/Features/Investor/Models/PoolTradeParticipation.swift
@@ -82,6 +105,7 @@ struct ParseInvestment: Codable, Sendable {
     let investorId: String
     let investorName: String?
     let traderId: String
+    let traderUsername: String?
     let traderName: String?
     let amount: Double
     let currentValue: Double?
@@ -104,13 +128,17 @@ struct ParseInvestment: Codable, Sendable {
     let realizedSellAmount: Double?
     let lastPartialSellAt: FlexibleParseDate?
     let tradeSellVolumeProgress: Double?
+    let poolTradingAmount: Double?
 
     func toInvestment() -> Investment {
         let createdDate = self.createdAt.toDate() ?? Date()
         let updatedDate = self.updatedAt.toDate() ?? Date()
         let completedDate = self.completedAt?.toDate()
-        let investmentStatus = InvestmentStatus(rawValue: status) ?? .active
-        let reservStatus = InvestmentReservationStatus(rawValue: reservationStatus ?? self.status) ?? .active
+        let investmentStatus: InvestmentStatus = {
+            if self.status == "reserved" { return .submitted }
+            return InvestmentStatus(rawValue: self.status) ?? .active
+        }()
+        let reservStatus = InvestmentReservationStatus(rawValue: reservationStatus ?? self.status) ?? .reserved
 
         return Investment(
             id: self.objectId,
@@ -119,6 +147,7 @@ struct ParseInvestment: Codable, Sendable {
             investorId: self.investorId,
             investorName: self.investorName ?? "",
             traderId: self.traderId,
+            traderUsername: self.traderUsername,
             traderName: self.traderName ?? "",
             amount: self.amount,
             currentValue: self.currentValue ?? self.amount,
@@ -136,7 +165,8 @@ struct ParseInvestment: Codable, Sendable {
             realizedSellQuantity: self.realizedSellQuantity ?? 0,
             realizedSellAmount: self.realizedSellAmount ?? 0,
             lastPartialSellAt: self.lastPartialSellAt?.toDate(),
-            tradeSellVolumeProgress: self.tradeSellVolumeProgress
+            tradeSellVolumeProgress: self.tradeSellVolumeProgress,
+            poolTradingAmount: self.poolTradingAmount
         )
     }
 }
@@ -147,6 +177,7 @@ private struct ParseInvestmentInput: Codable {
     let investorId: String
     let investorName: String
     let traderId: String
+    let traderUsername: String?
     let traderName: String
     let amount: Double
     let currentValue: Double
@@ -167,6 +198,7 @@ private struct ParseInvestmentInput: Codable {
             investorId: investment.investorId,
             investorName: investment.investorName,
             traderId: investment.traderId,
+            traderUsername: investment.traderUsername,
             traderName: investment.traderName,
             amount: investment.amount,
             currentValue: investment.currentValue,
@@ -192,6 +224,23 @@ private struct CancelReservedInvestmentResponse: Decodable {
 private struct ActivateReservedInvestmentResponse: Decodable {
     let success: Bool?
     let investmentId: String?
+    let status: String?
+}
+
+private struct CreateInvestmentSplitsResponse: Decodable {
+    let batchId: String?
+    let resolvedTraderId: String?
+    /// Server: `committed` (new splits saved) | `replayed` (idempotent-only).
+    let batchStatus: String?
+    let splits: [CreateInvestmentSplitResult]
+}
+
+private struct CreateInvestmentSplitResult: Decodable {
+    let investmentId: String
+    let sequenceNumber: Int?
+    let investmentNumber: String?
+    let idempotentReplay: Bool?
+    /// Server: `created` | `replayed` (explicit per-split outcome for batch sync).
     let status: String?
 }
 
@@ -269,25 +318,95 @@ final class InvestmentAPIService: InvestmentAPIServiceProtocol, @unchecked Senda
     // MARK: - Investment Methods
 
     func saveInvestment(_ investment: Investment) async throws -> Investment {
-        print("📡 InvestmentAPIService: Saving investment to Parse Server")
+        if investment.batchId != nil, (investment.sequenceNumber ?? 0) > 0 {
+            let username = investment.storedTraderUsername.isEmpty ? nil : investment.storedTraderUsername
+            let saved = try await saveInvestmentSplits([investment], traderUsername: username)
+            guard let first = saved.first else {
+                throw NetworkError.invalidResponse
+            }
+            return first
+        }
 
-        let parseInput = ParseInvestmentInput.from(investment: investment)
+        throw NetworkError.badRequest(
+            String(localized: "Investment-Anlage erfordert batchId und Positionsnummer (createInvestmentSplits).")
+        )
+    }
 
-        let response = try await apiClient.createObject(
-            className: self.investmentClassName,
-            object: parseInput
+    func saveInvestmentSplits(_ investments: [Investment], traderUsername: String?) async throws -> [Investment] {
+        guard let first = investments.first else { return [] }
+        guard let batchId = first.batchId, !batchId.isEmpty else {
+            throw NetworkError.badRequest(
+                String(localized: "Investment-Splits benötigen eine batchId.")
+            )
+        }
+
+        let sorted = investments.sorted { ($0.sequenceNumber ?? 0) < ($1.sequenceNumber ?? 0) }
+        let splitPayload: [[String: Any]] = sorted.compactMap { inv in
+            guard let seq = inv.sequenceNumber, seq > 0 else { return nil }
+            return [
+                "sequenceNumber": seq,
+                "amount": inv.amount,
+            ]
+        }
+        guard splitPayload.count == sorted.count else {
+            throw NetworkError.badRequest(String(localized: "Investment-Splits benötigen eine gültige Positionsnummer."))
+        }
+
+        print("📡 InvestmentAPIService: createInvestmentSplits batch \(batchId) (\(splitPayload.count) splits)")
+        var params: [String: Any] = [
+            "batchId": batchId,
+            "traderId": first.traderId,
+            "specialization": first.specialization,
+            "investorName": first.investorName,
+            "traderName": first.traderName,
+            "splits": splitPayload,
+        ]
+        let effectiveUsername = (traderUsername?.trimmingCharacters(in: .whitespacesAndNewlines)).flatMap { $0.isEmpty ? nil : $0 }
+            ?? (first.storedTraderUsername.isEmpty ? nil : first.storedTraderUsername)
+        if let effectiveUsername {
+            params["traderUsername"] = effectiveUsername
+        }
+
+        let response: CreateInvestmentSplitsResponse = try await apiClient.callFunction(
+            "createInvestmentSplits",
+            parameters: params
         )
 
-        print("✅ InvestmentAPIService: Investment saved with objectId: \(response.objectId)")
+        let resolvedTraderId = response.resolvedTraderId
 
-        // Return investment with Parse objectId
-        return Investment(
-            id: response.objectId,
-            investmentNumber: investment.investmentNumber,
+        return sorted.map { local in
+            let seq = local.sequenceNumber ?? 0
+            guard let hit = response.splits.first(where: { ($0.sequenceNumber ?? 0) == seq }) else {
+                return local
+            }
+            if hit.idempotentReplay == true {
+                print("✅ InvestmentAPIService: Split #\(seq) idempotent replay → \(hit.investmentId)")
+            }
+            var mapped = self.investment(
+                withServerId: hit.investmentId,
+                investmentNumber: hit.investmentNumber ?? local.investmentNumber,
+                from: local
+            )
+            if let resolvedTraderId, !resolvedTraderId.isEmpty {
+                mapped = mapped.withTraderId(resolvedTraderId)
+            }
+            return mapped
+        }
+    }
+
+    private func investment(
+        withServerId serverId: String,
+        investmentNumber: String? = nil,
+        from investment: Investment
+    ) -> Investment {
+        Investment(
+            id: serverId,
+            investmentNumber: investmentNumber ?? investment.investmentNumber,
             batchId: investment.batchId,
             investorId: investment.investorId,
             investorName: investment.investorName,
             traderId: investment.traderId,
+            traderUsername: investment.traderUsername,
             traderName: investment.traderName,
             amount: investment.amount,
             currentValue: investment.currentValue,
@@ -305,7 +424,8 @@ final class InvestmentAPIService: InvestmentAPIServiceProtocol, @unchecked Senda
             realizedSellQuantity: investment.realizedSellQuantity,
             realizedSellAmount: investment.realizedSellAmount,
             lastPartialSellAt: investment.lastPartialSellAt,
-            tradeSellVolumeProgress: investment.tradeSellVolumeProgress
+            tradeSellVolumeProgress: investment.tradeSellVolumeProgress,
+            poolTradingAmount: investment.poolTradingAmount
         )
     }
 
@@ -325,9 +445,18 @@ final class InvestmentAPIService: InvestmentAPIServiceProtocol, @unchecked Senda
     }
 
     func fetchInvestments(for investorId: String) async throws -> [Investment] {
-        print("📡 InvestmentAPIService: Fetching investments for investor \(investorId)")
+        try await self.fetchInvestments(forInvestorIds: [investorId])
+    }
 
-        let query: [String: Any] = ["investorId": investorId]
+    func fetchInvestments(forInvestorIds investorIds: [String]) async throws -> [Investment] {
+        let keys = Array(Set(investorIds.filter { !$0.isEmpty }))
+        guard !keys.isEmpty else { return [] }
+
+        print("📡 InvestmentAPIService: Fetching investments for investor keys \(keys)")
+
+        let query: [String: Any] = keys.count == 1
+            ? ["investorId": keys[0]]
+            : ["investorId": ["$in": keys]]
 
         let parseInvestments: [ParseInvestment] = try await apiClient.fetchObjects(
             className: self.investmentClassName,
@@ -409,6 +538,111 @@ final class InvestmentAPIService: InvestmentAPIServiceProtocol, @unchecked Senda
         }
         return response.invoiceId
     }
+
+    func fetchPoolMirrorCapacity(
+        traderId: String,
+        traderUsername: String?,
+        traderName: String?,
+        additionalAmount: Double
+    ) async throws -> PoolMirrorCapacityStatus {
+        var params: [String: Any] = [
+            "traderId": traderId,
+            "additionalAmount": additionalAmount,
+        ]
+        if let traderUsername, !traderUsername.isEmpty {
+            params["traderUsername"] = traderUsername
+        }
+        if let traderName, !traderName.isEmpty {
+            params["traderName"] = traderName
+        }
+        let response: PoolMirrorCapacityResponse = try await apiClient.callFunction(
+            "getPoolMirrorCapacity",
+            parameters: params
+        )
+        return PoolMirrorCapacityStatus(
+            capEnabled: response.capEnabled ?? false,
+            maxAmount: response.maxPoolMirrorBuyOrderAmount ?? 0,
+            reservedTotal: response.reservedPoolCapital ?? 0,
+            remainingCapacity: response.remainingCapacity,
+            maxInvestableAmountForNextTrade: response.maxInvestableAmountForNextTrade
+                ?? response.remainingCapacity,
+            minInvestment: response.minInvestment,
+            poolUtilizationRatio: response.poolUtilizationRatio,
+            isPoolNearlyFull: response.isPoolNearlyFull ?? false,
+            isFull: response.isFull ?? false,
+            wouldExceed: response.wouldExceed ?? false,
+            alertSubscribed: response.alertSubscribed ?? false
+        )
+    }
+
+    func setPoolMirrorCapacityAlert(
+        traderId: String,
+        traderUsername: String?,
+        traderName: String?,
+        enabled: Bool
+    ) async throws {
+        var params: [String: Any] = [
+            "traderId": traderId,
+            "enabled": enabled,
+        ]
+        if let traderUsername, !traderUsername.isEmpty {
+            params["traderUsername"] = traderUsername
+        }
+        if let traderName, !traderName.isEmpty {
+            params["traderName"] = traderName
+        }
+        let _: SetPoolMirrorCapacityAlertResponse = try await apiClient.callFunction(
+            "setPoolMirrorCapacityAlert",
+            parameters: params
+        )
+    }
+}
+
+// MARK: - Pool mirror capacity (admin cap + investor alerts)
+
+struct PoolMirrorCapacityStatus: Sendable {
+    let capEnabled: Bool
+    let maxAmount: Double
+    let reservedTotal: Double
+    let remainingCapacity: Double?
+    /// Max. Gesamtbetrag (EUR), den dieser Investor jetzt noch für das nächste Trade reservieren kann.
+    let maxInvestableAmountForNextTrade: Double?
+    let minInvestment: Double?
+    let poolUtilizationRatio: Double?
+    /// Pool ≥95 % belegt oder Rest unter Mindestinvestment — proaktiver Hinweis.
+    let isPoolNearlyFull: Bool
+    let isFull: Bool
+    let wouldExceed: Bool
+    let alertSubscribed: Bool
+
+    var maxInvestableTotal: Double {
+        self.maxInvestableAmountForNextTrade ?? self.remainingCapacity ?? 0
+    }
+
+    var blocksInvestment: Bool {
+        guard self.capEnabled else { return false }
+        if self.isPoolNearlyFull { return true }
+        return self.wouldExceed
+    }
+}
+
+private struct PoolMirrorCapacityResponse: Decodable {
+    let capEnabled: Bool?
+    let maxPoolMirrorBuyOrderAmount: Double?
+    let reservedPoolCapital: Double?
+    let remainingCapacity: Double?
+    let maxInvestableAmountForNextTrade: Double?
+    let minInvestment: Double?
+    let poolUtilizationRatio: Double?
+    let isPoolNearlyFull: Bool?
+    let isFull: Bool?
+    let wouldExceed: Bool?
+    let alertSubscribed: Bool?
+}
+
+private struct SetPoolMirrorCapacityAlertResponse: Decodable {
+    let success: Bool?
+    let subscribed: Bool?
 }
 
 /// Response contract of the `bookAppServiceCharge` Cloud function.

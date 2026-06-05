@@ -44,8 +44,10 @@ struct OpenInvestmentsTableHeaderRow: View {
             ))
 
             Group {
-                Text("Amount (€)")
+                Text("Total buy (€)")
                     .font(ResponsiveDesign.bodyFont())
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
             }
             .modifier(OpenInvestmentsHeaderCellModifier(
                 columnKey: "amount",

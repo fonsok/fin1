@@ -84,12 +84,23 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
 
         // Start status progression simulation
         self.orderStatusSimulationService.startOrderStatusProgression(buyOrder.id) { [weak self] status, order in
-            Task { @MainActor in
-                await self?.handleOrderCompletion(orderId: order.id, status: status, order: order)
-            }
+            await self?.handleOrderCompletion(orderId: order.id, status: status, order: order)
         }
 
         return buyOrder
+    }
+
+    /// Registers the TRADER leg of a paired buy for UI status progression (mirror leg stays server-only).
+    func registerPairedBuyTraderOrder(_ order: Order, pairExecutionId: String) async {
+        await self.orderManagementService.addOrderToActiveOrders(order)
+        self.orderManagementService.registerPairedBuyExecutionLink(
+            orderId: order.id,
+            pairExecutionId: pairExecutionId
+        )
+
+        self.orderStatusSimulationService.startOrderStatusProgression(order.id) { [weak self] status, updatedOrder in
+            await self?.handleOrderCompletion(orderId: updatedOrder.id, status: status, order: updatedOrder)
+        }
     }
 
     func placeSellOrder(symbol: String, quantity: Int, price: Double) async throws -> OrderSell {
@@ -97,28 +108,45 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
     }
 
     func submitOrder(_ order: OrderSell) async throws {
-        // Add the sell order to active orders
+        let tradeId = self.resolveTradeId(for: order)
+        if tradeId == nil {
+            print("⚠️ OrderLifecycleCoordinator: No tradeId resolved for sell — originalHoldingId: \(order.originalHoldingId ?? "nil")")
+        }
+
+        let persistedSellOrder: OrderSell
+        do {
+            persistedSellOrder = try await self.orderManagementService.persistSellOrder(order, tradeId: tradeId)
+        } catch {
+            print("❌ OrderLifecycleCoordinator: Failed to persist sell order — \(error.localizedDescription)")
+            throw error
+        }
+
+        if let tradeId {
+            self.orderManagementService.registerSellOrderTradeLink(orderId: persistedSellOrder.id, tradeId: tradeId)
+        }
+
+        // Add the sell order to active orders (Parse objectId when backend save succeeded)
         let genericOrder = Order(
-            id: order.id,
-            traderId: order.traderId,
-            symbol: order.symbol,
-            description: order.description,
+            id: persistedSellOrder.id,
+            traderId: persistedSellOrder.traderId,
+            symbol: persistedSellOrder.symbol,
+            description: persistedSellOrder.description,
             type: .sell,
-            quantity: order.quantity,
-            price: order.price,
-            totalAmount: order.totalAmount,
-            createdAt: order.createdAt,
-            executedAt: order.executedAt,
-            confirmedAt: order.confirmedAt,
-            updatedAt: order.updatedAt,
-            optionDirection: order.optionDirection,
-            underlyingAsset: order.underlyingAsset,
-            wkn: order.wkn,
-            category: order.category,
-            strike: order.strike,
-            orderInstruction: order.orderInstruction,
-            limitPrice: order.limitPrice,
-            originalHoldingId: order.originalHoldingId,
+            quantity: persistedSellOrder.quantity,
+            price: persistedSellOrder.price,
+            totalAmount: persistedSellOrder.totalAmount,
+            createdAt: persistedSellOrder.createdAt,
+            executedAt: persistedSellOrder.executedAt,
+            confirmedAt: persistedSellOrder.confirmedAt,
+            updatedAt: persistedSellOrder.updatedAt,
+            optionDirection: persistedSellOrder.optionDirection,
+            underlyingAsset: persistedSellOrder.underlyingAsset,
+            wkn: persistedSellOrder.wkn,
+            category: persistedSellOrder.category,
+            strike: persistedSellOrder.strike,
+            orderInstruction: persistedSellOrder.orderInstruction,
+            limitPrice: persistedSellOrder.limitPrice,
+            originalHoldingId: persistedSellOrder.originalHoldingId,
             status: "submitted"
         )
 
@@ -146,14 +174,23 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
         }
 
         // Start status progression simulation for sell orders
-        self.orderStatusSimulationService.startOrderStatusProgression(order.id) { [weak self] status, order in
-            Task { @MainActor in
-                await self?.handleOrderCompletion(orderId: order.id, status: status, order: order)
-            }
+        self.orderStatusSimulationService.startOrderStatusProgression(persistedSellOrder.id) { [weak self] status, order in
+            await self?.handleOrderCompletion(orderId: order.id, status: status, order: order)
         }
 
         // Send notification
-        await self.tradingNotificationService.sendOrderStatusNotification(orderId: order.id, status: "submitted")
+        await self.tradingNotificationService.sendOrderStatusNotification(orderId: persistedSellOrder.id, status: "submitted")
+    }
+
+    /// Maps sell order `originalHoldingId` (buy order id or trade id) to Parse Trade objectId.
+    private func resolveTradeId(for sellOrder: OrderSell) -> String? {
+        guard let holdingId = sellOrder.originalHoldingId else { return nil }
+        let trades = self.tradeLifecycleService.completedTrades.filter { $0.traderId == sellOrder.traderId }
+        let depotTrades = TraderDepotTradeFilter.tradesForDepotDisplay(trades)
+        if let trade = depotTrades.first(where: { $0.buyOrder.id == holdingId || $0.id == holdingId }) {
+            return trade.id
+        }
+        return nil
     }
 
     func cancelOrder(_ orderId: String) async throws {
@@ -186,8 +223,27 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
     // MARK: - Order Completion Handling
 
     func handleOrderCompletion(orderId: String, status: String, order: Order) async {
-        // Update the order status
-        try? await self.orderManagementService.updateOrderStatus(orderId, status: status)
+        // Paired buy: server settlement when UI reaches executed (both legs transition together on Parse).
+        if order.type == .buy,
+           status == "executed",
+           self.orderManagementService.pairedBuyExecutionId(for: orderId) != nil {
+            do {
+                try await self.orderManagementService.finalizePairedBuyExecution(for: orderId) // → commitPairedBuyExecution on server
+                try? await self.tradeLifecycleService.refreshCompletedTrades()
+            } catch {
+                print("❌ OrderLifecycleCoordinator: Paired buy finalize failed — \(error.localizedDescription)")
+                self.orderManagementService.reportOrderStatusFailure(
+                    "Pool-Mirror konnte nicht ausgeführt werden: \(error.localizedDescription)"
+                )
+                self.orderStatusSimulationService.stopOrderStatusProgression(orderId)
+            }
+        }
+
+        // Sell: sync `executed` to backend so Order afterSave updates Trade + ledger
+        if order.type == .sell && status == "executed" {
+            await self.orderManagementService.syncActiveOrderToBackend(orderId)
+            try? await self.tradeLifecycleService.refreshCompletedTrades()
+        }
 
         // Send notification
         await self.tradingNotificationService.sendOrderStatusNotification(orderId: orderId, status: status)
@@ -223,6 +279,25 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
     }
 
     private func handleBuyOrderCompletion(orderId: String, order: Order) async {
+        // Paired buy: trades/invoices/bookings + pool mirror activation are server SSOT — no local duplicate.
+        if self.orderManagementService.pairedBuyExecutionId(for: orderId) != nil {
+            try? await self.tradeLifecycleService.refreshCompletedTrades()
+            if let trade = self.resolveTraderLegTrade(forBuyOrderId: orderId) {
+                if order.isMirrorPoolOrder != true {
+                    await self.cashBalanceService.processBuyOrderExecution(amount: order.totalAmount)
+                }
+                await self.tradingNotificationService.showBuyConfirmation(for: trade)
+                await self.syncPairedBuySettlementDocuments(for: order, traderTrade: trade)
+            } else {
+                print(
+                    "⚠️ OrderLifecycleCoordinator: paired buy completed but TRADER leg trade not found for order \(orderId)"
+                )
+            }
+            await self.refreshInvestmentsAfterPoolMirrorActivation()
+            await self.orderManagementService.removeActiveOrder(orderId)
+            return
+        }
+
         // Create OrderBuy from the completed order
         let buyOrder = OrderBuy(
             id: order.id,
@@ -249,8 +324,14 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
             isMirrorPoolOrder: order.isMirrorPoolOrder
         )
 
-        // Create Trade from the completed buy order
-        let trade = try? await tradeLifecycleService.createNewTrade(buyOrder: buyOrder)
+        try? await self.tradeLifecycleService.refreshCompletedTrades()
+        let serverLinkedTrade = self.tradeLifecycleService.completedTrades.first(where: { $0.buyOrder.id == orderId })
+        let trade: Trade?
+        if let serverLinkedTrade {
+            trade = serverLinkedTrade
+        } else {
+            trade = try? await self.tradeLifecycleService.createNewTrade(buyOrder: buyOrder)
+        }
 
         if let trade = trade {
             // Trader cash debit belongs only to trader-originated buy orders.
@@ -258,23 +339,30 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
                 await self.cashBalanceService.processBuyOrderExecution(amount: order.totalAmount)
             }
 
-            // Investment activation/deploy belongs only to mirror-pool buy orders.
-            if order.isMirrorPoolOrder == true, let investmentActivationService = investmentActivationService {
-                _ = await investmentActivationService.activateInvestmentsForBuyOrder(order: order, trade: trade)
+            // Pool mirror activation (RSV→1592) is server-only via executePairedBuy → MIRROR_POOL Order leg.
+            // Do not duplicate activation locally — prevents double splits per investor.
+            if order.isMirrorPoolOrder == true {
+                print(
+                    "ℹ️ OrderLifecycleCoordinator: skip local pool activation for mirror order \(order.id) — server SSOT"
+                )
             }
 
             // Show buy confirmation
             await self.tradingNotificationService.showBuyConfirmation(for: trade)
 
-            // Generate invoice and send notification with trade ID and trade number
-            await self.tradingNotificationService.generateInvoiceAndNotification(
-                for: order,
-                tradeId: trade.id,
-                tradeNumber: trade.tradeNumber
-            )
+            let bookedByBackend = await self.checkBackendSettlement(for: trade)
+            if bookedByBackend {
+                await self.syncBuyOrderDocumentsFromBackend(for: order, trade: trade)
+            } else {
+                await self.tradingNotificationService.generateInvoiceAndNotification(
+                    for: order,
+                    tradeId: trade.id,
+                    tradeNumber: trade.tradeNumber
+                )
+            }
 
             // Remove completed order from ongoing (activeOrders)
-            try? await self.orderManagementService.cancelOrder(orderId)
+            await self.orderManagementService.removeActiveOrder(orderId)
         }
     }
 
@@ -321,9 +409,11 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
 
         print("🔍 DEBUG: Trade matching result - updatedTrade: \(updatedTrade?.id ?? "nil")")
 
+        // Refresh trades from backend (server Order trigger may have updated Trade already)
+        try? await self.tradeLifecycleService.refreshCompletedTrades()
+
         // FIRST: Remove completed order from ongoing (activeOrders) before showing overlay
-        // This ensures the depot is updated before the success message is displayed
-        try? await self.orderManagementService.cancelOrder(orderId)
+        await self.orderManagementService.removeActiveOrder(orderId)
 
         // Notify depot view model about completed sell order (to refresh holdings)
         await MainActor.run {
@@ -334,8 +424,16 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
             )
         }
 
-        if let trade = updatedTrade {
-            // Update cash balance (money comes in for sell order)
+        let latestTrade = self.tradeLifecycleService.completedTrades.first(where: { $0.id == updatedTrade?.id })
+            ?? updatedTrade
+
+        if let trade = latestTrade ?? updatedTrade {
+            if TraderDepotTradeFilter.isPoolMirrorLeg(trade) {
+                print("ℹ️ OrderLifecycleCoordinator: skip trader completion docs for MIRROR_POOL leg")
+                await self.tradingNotificationService.showSellConfirmation(for: trade)
+                return
+            }
+
             await self.cashBalanceService.processSellOrderExecution(amount: order.totalAmount)
 
             // Generate invoice and send notification for sell order with trade ID and trade number
@@ -347,22 +445,25 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
 
             // Check if trade is now fully completed and generate Collection Bill
             if trade.isCompleted {
-                // RACE CONDITION FIX: Ensure completion logic runs only once per trade
-                if let documentService = documentService, documentService.documentExists(for: trade.id, ofType: .traderCollectionBill) {
+                let settledByBackend = await self.checkBackendSettlement(for: trade)
+
+                if settledByBackend {
+                    print("🎯 Trade #\(trade.tradeNumber) settled by backend — syncing settlement documents to inbox")
+                    await self.syncSettlementDocumentsIntoInbox(for: trade)
+                } else if let documentService = documentService,
+                          documentService.documentExists(for: trade.id, ofType: .traderCollectionBill) {
                     print("ℹ️ Trade #\(trade.tradeNumber) completion logic already ran; skipping duplicate run.")
                     await self.tradingNotificationService.showSellConfirmation(for: trade)
                     return
-                }
-
-                // Check if backend already settled this trade (creates AccountStatement + documents)
-                let settledByBackend = await checkBackendSettlement(for: trade)
-
-                if !settledByBackend {
+                } else {
                     print("🎯 Trade #\(trade.tradeNumber) is now fully completed - generating local documents")
                     await self.tradingNotificationService.generateCollectionBillDocument(for: trade)
                     await self.generateCreditNoteIfCommissionExists(for: trade)
-                } else {
-                    print("🎯 Trade #\(trade.tradeNumber) settled by backend — skipping local document creation")
+                    NotificationCenter.default.post(
+                        name: .userDocumentInboxShouldRefresh,
+                        object: nil,
+                        userInfo: ["force": true]
+                    )
                 }
 
                 // Distribute profit to investors if trade involved pool capital
@@ -406,6 +507,91 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
         return await settlementAPI.isTradeSettledByBackend(tradeId: trade.id)
     }
 
+    /// Resolves the visible TRADER leg after `executePairedBuy` (depot row), not the MIRROR_POOL accounting leg.
+    private func resolveTraderLegTrade(forBuyOrderId orderId: String) -> Trade? {
+        if let direct = self.tradeLifecycleService.completedTrades.first(where: { $0.buyOrder.id == orderId }) {
+            return direct
+        }
+        guard let pairExecutionId = self.orderManagementService.pairedBuyExecutionId(for: orderId) else {
+            return nil
+        }
+        return self.tradeLifecycleService.completedTrades.first { trade in
+            trade.pairExecutionId == pairExecutionId && !TraderDepotTradeFilter.isPoolMirrorLeg(trade)
+        }
+    }
+
+    /// Merges trader buy Belege plus linked pool-mirror eigenbeleg docs (server attaches mirror trade docs).
+    private func syncPairedBuySettlementDocuments(for order: Order, traderTrade: Trade) async {
+        await self.syncBuyOrderDocumentsFromBackend(for: order, trade: traderTrade)
+
+        if let pairExecutionId = traderTrade.pairExecutionId ?? self.orderManagementService.pairedBuyExecutionId(for: order.id),
+           let mirrorTrade = self.tradeLifecycleService.completedTrades.first(where: {
+               $0.pairExecutionId == pairExecutionId && TraderDepotTradeFilter.isPoolMirrorLeg($0)
+           }) {
+            await self.syncBuyOrderDocumentsFromBackend(for: order, trade: mirrorTrade)
+            print(
+                "📄 Paired buy \(order.id): synced pool-mirror documents for trade #\(mirrorTrade.tradeNumber)"
+            )
+        }
+    }
+
+    private func refreshInvestmentsAfterPoolMirrorActivation() async {
+        guard let investmentService else { return }
+        await investmentService.checkAndUpdateInvestmentCompletion()
+        NotificationCenter.default.post(name: .investmentStatusUpdated, object: nil)
+    }
+
+    /// Merges backend buy-order Belege (order invoice, Kaufabrechnung, Gebühren) into the inbox — no client duplicate.
+    private func syncBuyOrderDocumentsFromBackend(for order: Order, trade: Trade) async {
+        guard let settlementAPI = settlementAPIService,
+              let documentService = documentService else {
+            print("ℹ️ OrderLifecycleCoordinator: skip backend buy-doc sync — settlement API unavailable")
+            return
+        }
+
+        do {
+            let settlement = try await settlementAPI.fetchTradeSettlement(tradeId: trade.id)
+            let docs = settlement.documents.map { Document(backendSettlementDocument: $0) }
+            documentService.mergeDocuments(docs)
+            NotificationCenter.default.post(
+                name: .userDocumentInboxShouldRefresh,
+                object: nil,
+                userInfo: ["force": true]
+            )
+            print(
+                "📄 Buy order \(order.id) / trade #\(trade.tradeNumber): merged \(docs.count) backend document(s) "
+                    + "(\(docs.compactMap(\.documentNumber).joined(separator: ", ")))"
+            )
+        } catch {
+            print(
+                "⚠️ Buy order \(order.id): failed to sync backend documents: \(error.localizedDescription)"
+            )
+        }
+    }
+
+    /// Merges backend `Document` rows (collection bill, credit note, …) into the notifications inbox cache.
+    private func syncSettlementDocumentsIntoInbox(for trade: Trade) async {
+        guard let settlementAPI = settlementAPIService,
+              let documentService = documentService else { return }
+
+        do {
+            let settlement = try await settlementAPI.fetchTradeSettlement(tradeId: trade.id)
+            let docs = settlement.documents.map { Document(backendSettlementDocument: $0) }
+            documentService.mergeDocuments(docs)
+            NotificationCenter.default.post(
+                name: .userDocumentInboxShouldRefresh,
+                object: nil,
+                userInfo: ["force": true]
+            )
+            print(
+                "📄 Trade #\(trade.tradeNumber): merged \(docs.count) backend settlement document(s) "
+                    + "(\(docs.map(\.type.rawValue).joined(separator: ", ")))"
+            )
+        } catch {
+            print("⚠️ Trade #\(trade.tradeNumber): failed to sync settlement documents: \(error.localizedDescription)")
+        }
+    }
+
     // MARK: - Credit Note Generation (local fallback)
 
     /// Generates a Credit Note document if commission was earned from the trade
@@ -416,21 +602,27 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
         if let settlementAPI = settlementAPIService {
             do {
                 let settlement = try await settlementAPI.fetchTradeSettlement(tradeId: trade.id)
-                if settlement.isSettledByBackend && settlement.totalFees > 0 {
+                let bookedCommission = TraderCommissionSettlementResolver.totalCommission(from: settlement)
+                if settlement.isSettledByBackend, bookedCommission > 0 {
                     print("📄 CreditNote: Using backend-authoritative commission for trade #\(trade.tradeNumber)")
                     await self.tradingNotificationService.generateCreditNoteDocument(
                         for: trade,
-                        commissionAmount: settlement.totalFees,
+                        commissionAmount: bookedCommission,
                         grossProfit: settlement.grossProfit
                     )
                     return
                 }
             } catch {
-                print("⚠️ CreditNote: Backend fetch failed, falling back to local: \(error.localizedDescription)")
+                print("⚠️ CreditNote: Backend fetch failed: \(error.localizedDescription)")
             }
         }
 
-        // Fallback: local estimation
+        if self.configurationService.investorMonetaryServerOnly {
+            print("⚠️ CreditNote: investorMonetaryServerOnly — no local fallback")
+            return
+        }
+
+        // Fallback: local estimation (dev/preview only)
         guard let poolTradeParticipationService,
               let investmentService,
               let investorGrossProfitService,

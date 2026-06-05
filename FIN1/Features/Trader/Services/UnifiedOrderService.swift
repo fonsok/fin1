@@ -321,9 +321,7 @@ final class UnifiedOrderService: @preconcurrency ServiceLifecycle, UnifiedOrderS
     // MARK: - Private Methods
     private func startOrderStatusProgression(_ orderId: String, isBuyOrder: Bool) {
         self.orderStatusSimulationService.startOrderStatusProgression(orderId) { [weak self] status, _ in
-            Task { @MainActor in
-                try? await self?.updateOrderStatus(orderId, status: status)
-            }
+            try? await self?.updateOrderStatus(orderId, status: status)
         }
     }
 }

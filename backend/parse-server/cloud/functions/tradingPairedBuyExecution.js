@@ -1,7 +1,7 @@
 'use strict';
 
-const { finalizePairedBuyAfterCommit } = require('../utils/pairedBuyOrchestration');
 const { getUserStableId } = require('./tradingIdentity');
+const { capMirrorPoolQuantityForBuy } = require('../utils/poolMirrorBuyCap');
 
 /**
  * Atomic paired buy: trader leg + mirror-pool leg, idempotent via clientOrderIntentId.
@@ -43,14 +43,31 @@ async function handleExecutePairedBuy(request) {
   if (!Number.isInteger(traderQuantity) || traderQuantity <= 0) {
     throw new Parse.Error(Parse.Error.INVALID_VALUE, 'traderQuantity must be an integer > 0');
   }
-  if (!Number.isInteger(mirrorPoolQuantity) || mirrorPoolQuantity <= 0) {
-    throw new Parse.Error(Parse.Error.INVALID_VALUE, 'mirrorPoolQuantity must be an integer > 0');
+  if (!Number.isInteger(mirrorPoolQuantity) || mirrorPoolQuantity < 0) {
+    throw new Parse.Error(Parse.Error.INVALID_VALUE, 'mirrorPoolQuantity must be a non-negative integer');
   }
   if (!clientOrderIntentId || typeof clientOrderIntentId !== 'string') {
     throw new Parse.Error(Parse.Error.INVALID_VALUE, 'clientOrderIntentId required');
   }
 
   const stableId = getUserStableId(user);
+  let effectiveMirrorPoolQuantity = mirrorPoolQuantity;
+
+  if (effectiveMirrorPoolQuantity > 0) {
+    const capResult = await capMirrorPoolQuantityForBuy({
+      mirrorPoolQuantity: effectiveMirrorPoolQuantity,
+      price: Number(price),
+      traderId: stableId,
+    });
+    effectiveMirrorPoolQuantity = capResult.mirrorPoolQuantity;
+    if (capResult.capped) {
+      console.warn(
+        `executePairedBuy: mirror pool quantity capped trader=${stableId} `
+        + `requested=${mirrorPoolQuantity} allowed=${effectiveMirrorPoolQuantity} maxGross=${capResult.maxGrossAllowed}`,
+      );
+    }
+  }
+
   const intentId = clientOrderIntentId.trim();
   if (!intentId) {
     throw new Parse.Error(Parse.Error.INVALID_VALUE, 'clientOrderIntentId must not be empty');
@@ -65,16 +82,8 @@ async function handleExecutePairedBuy(request) {
   if (existingExecution) {
     const status = String(existingExecution.get('status') || 'UNKNOWN');
     const pairExecutionId = existingExecution.id;
-    if (status === 'COMMITTED' && existingExecution.get('effectsApplied') !== true) {
-      try {
-        await finalizePairedBuyAfterCommit(pairExecutionId);
-      } catch (e) {
-        console.error(`executePairedBuy idempotent finalize failed pair=${pairExecutionId}:`, e.message || e);
-        throw new Parse.Error(
-          Parse.Error.SCRIPT_FAILED,
-          `Paired buy finalize failed on retry: ${e && e.message ? e.message : String(e)}`,
-        );
-      }
+    if (status === 'CANCELLED') {
+      throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Paired execution was cancelled');
     }
     const existingOrders = await new Parse.Query('Order')
       .equalTo('pairExecutionId', pairExecutionId)
@@ -139,15 +148,21 @@ async function handleExecutePairedBuy(request) {
     legType: 'TRADER',
     isMirrorPoolOrder: false,
   });
-  const mirrorLeg = createOrderLeg({
-    quantity: mirrorPoolQuantity,
-    legType: 'MIRROR_POOL',
-    isMirrorPoolOrder: true,
-  });
+
+  const legsToSave = [traderLeg];
+  let mirrorLeg = null;
+  if (effectiveMirrorPoolQuantity > 0) {
+    mirrorLeg = createOrderLeg({
+      quantity: effectiveMirrorPoolQuantity,
+      legType: 'MIRROR_POOL',
+      isMirrorPoolOrder: true,
+    });
+    legsToSave.push(mirrorLeg);
+  }
 
   let savedLegs;
   try {
-    savedLegs = await Parse.Object.saveAll([traderLeg, mirrorLeg], { useMasterKey: true });
+    savedLegs = await Parse.Object.saveAll(legsToSave, { useMasterKey: true });
     execution.set('status', 'COMMITTED');
     execution.set('committedAt', new Date().toISOString());
     execution.set('orderIds', savedLegs.map((o) => o.id));
@@ -176,15 +191,8 @@ async function handleExecutePairedBuy(request) {
     );
   }
 
-  try {
-    await finalizePairedBuyAfterCommit(pairExecutionId);
-  } catch (finalizeErr) {
-    console.error(`executePairedBuy finalize failed pair=${pairExecutionId}:`, finalizeErr.message || finalizeErr);
-    throw new Parse.Error(
-      Parse.Error.SCRIPT_FAILED,
-      `Paired buy orders saved but server settlement failed: ${finalizeErr && finalizeErr.message ? finalizeErr.message : String(finalizeErr)}`,
-    );
-  }
+  // Orders remain at `submitted` until finalizePairedBuyExecution (paired legs stay in sync).
+  // Cancellation via cancelOrder is allowed while effectsApplied is false (no trades/bookings yet).
 
   return {
     pairExecutionId,

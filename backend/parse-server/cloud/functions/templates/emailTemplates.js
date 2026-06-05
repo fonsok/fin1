@@ -1,6 +1,7 @@
 'use strict';
 
 const { requirePermission, requireAdminRole } = require('../../utils/permissions');
+const { replacePlaceholders, loadActiveEmailTemplate } = require('../../utils/emailTemplateRenderer');
 
 function registerEmailTemplateFunctions() {
   Parse.Cloud.define('getEmailTemplates', async (request) => {
@@ -162,35 +163,20 @@ function registerEmailTemplateFunctions() {
       throw new Parse.Error(Parse.Error.INVALID_QUERY, 'type is required');
     }
 
-    const Template = Parse.Object.extend('CSREmailTemplate');
-    const query = new Parse.Query(Template);
-    query.equalTo('type', type);
-    query.equalTo('isActive', true);
-
-    const template = await query.first({ useMasterKey: true });
+    const template = await loadActiveEmailTemplate(type, language);
 
     if (!template) {
       throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Email template not found or inactive');
     }
 
-    let subject = language === 'de'
-      ? (template.get('subjectDe') || template.get('subject'))
-      : template.get('subject');
-    let body = language === 'de'
-      ? (template.get('bodyTemplateDe') || template.get('bodyTemplate'))
-      : template.get('bodyTemplate');
-
-    for (const [key, value] of Object.entries(values)) {
-      const placeholder = `{{${key}}}`;
-      subject = subject.replace(new RegExp(placeholder, 'g'), value);
-      body = body.replace(new RegExp(placeholder, 'g'), value);
-    }
+    const subject = replacePlaceholders(template.subject, values);
+    const body = replacePlaceholders(template.body, values);
 
     return {
       subject,
       body,
       type,
-      renderedAt: new Date().toISOString()
+      renderedAt: new Date().toISOString(),
     };
   });
 }

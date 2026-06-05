@@ -10,23 +10,12 @@ export function formatLedgerAccountDisplayLabel(account: {
   return account.name;
 }
 
-export const TRANSACTION_TYPE_LABELS: Record<string, string> = {
-  investmentEscrow: 'Investment-Escrow (Kundenguthaben)',
-  appServiceCharge: 'Appgebühr',
-  // Legacy key from older backend payloads (kept for compatibility).
-  platformServiceCharge: 'Appgebühr',
-  orderFee: 'Ordergebühr',
-  exchangeFee: 'Börsenplatzgebühr',
-  foreignCosts: 'Fremdkosten',
-  commission: 'Provision',
-  refund: 'Erstattung',
-  creditNote: 'Gutschrift',
-  vatRemittance: 'USt-Abführung',
-  vatInputClaim: 'Vorsteuer',
-  operatingExpense: 'Betriebsausgabe',
-  adjustment: 'Korrektur',
-  reversal: 'Storno',
-};
+export {
+  APP_LEDGER_TRANSACTION_TYPE_KEYS,
+  TRANSACTION_TYPE_LABELS,
+  resolveCanonicalTransactionTypeKey,
+  transactionTypeDisplayLabel,
+} from './transactionTypes';
 
 export const GROUP_LABELS: Record<string, string> = {
   liability: 'Kundenguthaben (Teilverbindlichkeiten)',

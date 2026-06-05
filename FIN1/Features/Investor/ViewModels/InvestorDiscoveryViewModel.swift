@@ -7,7 +7,7 @@ import SwiftUI
 final class InvestorDiscoveryViewModel: ObservableObject {
     private var filterPersistence: FilterPersistenceRepositoryProtocol
     private var traderDataService: any TraderDataServiceProtocol
-    @Published var allTraders: [MockTrader] = []
+    @Published var allTraders: [InvestorTrader] = []
     @Published var searchQuery = ""
     private var searchDebounceTask: Task<Void, Never>?
 
@@ -30,6 +30,11 @@ final class InvestorDiscoveryViewModel: ObservableObject {
     // MARK: - Search Methods
 
     func loadTraders() {
+        Task { await self.loadTradersFromService() }
+    }
+
+    func loadTradersFromService() async {
+        await self.traderDataService.refreshTraderCatalog()
         self.allTraders = self.traderDataService.traders
     }
 
@@ -107,16 +112,16 @@ final class InvestorDiscoveryViewModel: ObservableObject {
     }
 
     /// Creates trader performance data from traders (sorted and mapped)
-    func createTraderPerformanceData(from traders: [MockTrader]) -> [TraderData] {
+    func createTraderPerformanceData(from traders: [InvestorTrader]) -> [TraderData] {
         traders
             .sorted { $0.performance > $1.performance } // max return on top
-            .map { mock in
+            .map { trader in
                 TraderData(
-                    traderName: mock.username,
-                    returnPercentage: String(format: "%.1f%%", mock.performance),
-                    successRate: String(format: "%.1f%%", min(max(mock.winRate, 0), 100)),
-                    avgReturnPerTrade: String(format: "%.1f%%", mock.averageReturn),
-                    isPositive: mock.performance >= 0
+                    traderName: trader.username,
+                    returnPercentage: String(format: "%.1f%%", trader.performance),
+                    successRate: String(format: "%.1f%%", min(max(trader.winRate, 0), 100)),
+                    avgReturnPerTrade: String(format: "%.1f%%", trader.averageReturn),
+                    isPositive: trader.performance >= 0
                 )
             }
     }
@@ -126,7 +131,7 @@ final class InvestorDiscoveryViewModel: ObservableObject {
         guard let trader = traderDataService.traders.first(where: { $0.username == username }) else {
             return nil
         }
-        return trader.id.uuidString
+        return trader.backendTraderId
     }
 
     /// Gets watchlist IDs for logging (business logic)
@@ -210,7 +215,7 @@ final class InvestorDiscoveryViewModel: ObservableObject {
 
     // MARK: - Data Filtering
 
-    func filteredTraders(by filters: [IndividualFilterCriteria], searchQuery: String = "") -> [MockTrader] {
+    func filteredTraders(by filters: [IndividualFilterCriteria], searchQuery: String = "") -> [InvestorTrader] {
         var filtered = self.allTraders
 
         // Apply search query filter if provided

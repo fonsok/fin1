@@ -3,7 +3,7 @@ import SwiftUI
 // MARK: - Investment Header View
 /// Displays trader information in the investment sheet header
 struct InvestmentHeaderView: View {
-    let trader: MockTrader
+    let trader: InvestorTrader
     @Environment(\.themeManager) private var themeManager
 
     var body: some View {
@@ -28,7 +28,7 @@ struct InvestmentHeaderView: View {
 
 // MARK: - Preview
 #Preview {
-    InvestmentHeaderView(trader: mockTraders[0])
+    InvestmentHeaderView(trader: InvestorTrader(mock: mockTraders[0]))
         .responsivePadding()
         .background(AppTheme.screenBackground)
 }

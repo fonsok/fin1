@@ -1,6 +1,13 @@
 'use strict';
 
 const { totalSellQuantity, totalSellAmount } = require('./tradeSellQuantityHelpers');
+const {
+  resolvePoolContextForTraderSell,
+  computePoolPiecesForMirrorTrade,
+  poolSellQuantityForTraderSellFraction,
+} = require('../utils/poolMirrorEconomics');
+const { resolveTradeBuyPrice } = require('../utils/accountingHelper/shared');
+const { getMaxTraderPartialSells } = require('../utils/configHelper/traderPartialSellLimits');
 
 function normalizeOwnershipRatio(rawOwnership) {
   const ownership = Number(rawOwnership || 0);
@@ -10,8 +17,9 @@ function normalizeOwnershipRatio(rawOwnership) {
 
 async function applyPartialSellRealizationToInvestments({ trade, previousTrade }) {
   if (!trade || !previousTrade) return;
-  const tradeId = trade.id;
-  if (!tradeId) return;
+
+  const maxPartial = await getMaxTraderPartialSells();
+  if (maxPartial === 0) return;
 
   const currentQty = totalSellQuantity(trade);
   const prevQty = totalSellQuantity(previousTrade);
@@ -23,30 +31,51 @@ async function applyPartialSellRealizationToInvestments({ trade, previousTrade }
   const deltaAmount = currentAmount - prevAmount;
   if (!Number.isFinite(deltaAmount) || deltaAmount <= 0) return;
 
-  const participations = await new Parse.Query('PoolTradeParticipation')
-    .equalTo('tradeId', tradeId)
-    .find({ useMasterKey: true });
-  if (!participations.length) return;
+  const poolCtx = await resolvePoolContextForTraderSell(trade);
+  if (!poolCtx) return;
 
-  const buyOrder = trade.get('buyOrder') || {};
-  const buyQuantity = Number(trade.get('quantity') || buyOrder.quantity || 0);
-  const tradeSellVolumeProgress = buyQuantity > 0
-    ? Math.min(1, Math.round((currentQty / buyQuantity) * 10000) / 10000)
+  const { traderTrade, poolTrade, participations } = poolCtx;
+  const buyOrder = traderTrade.get('buyOrder') || {};
+  const traderBuyQuantity = Number(traderTrade.get('quantity') || buyOrder.quantity || 0);
+  const traderSellVolumeProgress = traderBuyQuantity > 0
+    ? Math.min(1, Math.round((currentQty / traderBuyQuantity) * 10000) / 10000)
     : 0;
+
+  const buyPrice = resolveTradeBuyPrice(poolTrade);
+  const poolPieces = await computePoolPiecesForMirrorTrade(poolTrade, buyPrice);
+  const poolSoldTarget = poolSellQuantityForTraderSellFraction(poolPieces, traderSellVolumeProgress);
+
+  const investmentIds = [
+    ...new Set(
+      participations
+        .map((p) => String(p.get('investmentId') || '').trim())
+        .filter(Boolean),
+    ),
+  ];
+  if (investmentIds.length === 0) return;
+
+  const iq = new Parse.Query('Investment');
+  iq.containedIn('objectId', investmentIds);
+  iq.notContainedIn('status', ['completed', 'cancelled']);
+  iq.limit(Math.min(investmentIds.length, 500));
+  const investments = await iq.find({ useMasterKey: true });
+  const investmentById = new Map(investments.map((inv) => [inv.id, inv]));
+
+  const toSave = [];
+  const nowIso = new Date().toISOString();
 
   for (const participation of participations) {
     const investmentId = String(participation.get('investmentId') || '').trim();
-    if (!investmentId) continue;
+    const investment = investmentById.get(investmentId);
+    if (!investment) continue;
+
     const ownershipRatio = normalizeOwnershipRatio(participation.get('ownershipPercentage'));
     if (ownershipRatio <= 0) continue;
 
-    // eslint-disable-next-line no-await-in-loop
-    const investment = await new Parse.Query('Investment').get(investmentId, { useMasterKey: true }).catch(() => null);
-    if (!investment) continue;
-    const status = String(investment.get('status') || '');
-    if (status === 'completed' || status === 'cancelled') continue;
-
-    const qtyDeltaForInvestment = Math.round((deltaQty * ownershipRatio) * 10000) / 10000;
+    const investmentCapital = Number(investment.get('amount') || investment.get('currentValue') || 0);
+    const investorPoolPieces = buyPrice > 0 ? Math.floor(investmentCapital / buyPrice) : 0;
+    const sellFraction = traderBuyQuantity > 0 ? deltaQty / traderBuyQuantity : 0;
+    const qtyDeltaForInvestment = Math.floor(investorPoolPieces * sellFraction);
     const amountDeltaForInvestment = Math.round((deltaAmount * ownershipRatio) * 100) / 100;
     const prevCount = Number(investment.get('partialSellCount') || 0);
     const prevQtyValue = Number(investment.get('realizedSellQuantity') || 0);
@@ -55,11 +84,19 @@ async function applyPartialSellRealizationToInvestments({ trade, previousTrade }
     investment.set('partialSellCount', prevCount + 1);
     investment.set('realizedSellQuantity', Math.round((prevQtyValue + qtyDeltaForInvestment) * 10000) / 10000);
     investment.set('realizedSellAmount', Math.round((prevAmountValue + amountDeltaForInvestment) * 100) / 100);
-    investment.set('lastPartialSellAt', new Date().toISOString());
-    investment.set('tradeSellVolumeProgress', tradeSellVolumeProgress);
+    investment.set('lastPartialSellAt', nowIso);
+    investment.set('tradeSellVolumeProgress', traderSellVolumeProgress);
+    if (poolPieces > 0) {
+      investment.set('poolSellVolumeProgress', poolSoldTarget / poolPieces);
+    }
+    toSave.push(investment);
+  }
 
+  const BATCH = 40;
+  for (let i = 0; i < toSave.length; i += BATCH) {
+    const chunk = toSave.slice(i, i + BATCH);
     // eslint-disable-next-line no-await-in-loop
-    await investment.save(null, { useMasterKey: true });
+    await Parse.Object.saveAll(chunk, { useMasterKey: true });
   }
 }
 

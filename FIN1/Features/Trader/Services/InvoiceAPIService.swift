@@ -29,16 +29,30 @@ extension BackendInvoice {
         let vat = taxAmount ?? 0
         let rate = taxRate ?? (net > 0 && vat > 0 ? (vat / net) * 100 : 0)
 
-        let breakdownLines = (investmentIds ?? []).filter { !$0.isEmpty }
-        let header: String
-        if let invNumber = metadata?.investmentNumber, !invNumber.isEmpty {
-            header = "App-Servicegebühr \(invNumber)"
-        } else {
-            header = "App-Servicegebühr"
-        }
-        let description: String = breakdownLines.isEmpty
-            ? header
-            : ([header] + breakdownLines).joined(separator: "\n")
+        let labels: [String] = {
+            if let numbers = metadata?.investmentNumbers, !numbers.isEmpty {
+                return numbers.filter { !$0.isEmpty }
+            }
+            return (investmentIds ?? []).filter { $0.hasPrefix("INV-") }
+        }()
+        let totalBasis = metadata?.totalInvestmentAmount
+            ?? max(0, (totalAmount ?? 0) - vat)
+        let chargeRate = metadata?.serviceChargeRate
+            ?? CalculationConstants.ServiceCharges.appServiceChargeRate
+        let perSlotAmounts: [Double] = {
+            guard !labels.isEmpty else { return [] }
+            let each = labels.count > 0 ? totalBasis / Double(labels.count) : 0
+            return labels.map { _ in each }
+        }()
+
+        let description = Invoice.buildServiceChargeDescription(
+            investmentLabels: labels,
+            investmentAmounts: perSlotAmounts,
+            totalInvestmentAmount: totalBasis,
+            serviceChargeRate: chargeRate,
+            netServiceCharge: net,
+            vatAmount: vat
+        )
 
         var items: [InvoiceItem] = [
             InvoiceItem(
@@ -135,7 +149,7 @@ extension BackendInvoice {
             taxNumber: "",
             depotNumber: "",
             bank: "",
-            customerNumber: customerId ?? userId ?? "",
+            customerNumber: CustomerInfo.displayCustomerNumber(from: customerId),
             userId: userId ?? ""
         )
 
@@ -225,7 +239,7 @@ private struct ParseInvoice: Codable {
             taxNumber: "",
             depotNumber: "",
             bank: "",
-            customerNumber: customerId ?? self.userId,
+            customerNumber: CustomerInfo.displayCustomerNumber(from: self.customerId),
             userId: self.userId
         )
 

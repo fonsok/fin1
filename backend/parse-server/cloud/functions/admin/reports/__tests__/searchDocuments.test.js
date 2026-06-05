@@ -8,6 +8,8 @@ const {
   handleSearchDocuments,
   handleGetDocumentByObjectId,
   handleGetDocumentByLedgerReference,
+  serializeParseDateValue,
+  documentTimestampRaw,
 } = require('../searchDocuments');
 
 function mockParse() {
@@ -93,9 +95,12 @@ FakeQuery.and = function and(...queries) {
 };
 
 function row(id, attrs) {
+  const createdAt = attrs.createdAt ?? attrs.uploadedAt ?? null;
   return {
     id,
+    createdAt,
     get(k) {
+      if (k === 'createdAt') return createdAt;
       return attrs[k];
     },
   };
@@ -149,6 +154,9 @@ describe('searchDocuments', () => {
     expect(out.hasMore).toBe(false);
     expect(out.limit).toBe(25);
     expect(out.skip).toBe(0);
+    expect(out.items[0].partyRole).toBe('investor');
+    expect(out.items[0].partyLabel).toBe('Investor');
+    expect(out.items[0].partyUserId).toBe('inv-1');
   });
 
   test('clamps limit to max', async () => {
@@ -174,6 +182,60 @@ describe('searchDocuments', () => {
 
   test('getDocumentByObjectId rejects when objectId is missing', async () => {
     await expect(handleGetDocumentByObjectId({ params: {} })).rejects.toThrow('objectId required');
+  });
+
+  test('getDocumentByObjectId tolerates string uploadedAt and falls back to createdAt', async () => {
+    FakeQuery.__results = [
+      row('tbc-33', {
+        userId: 'trader-1',
+        name: 'Kaufabrechnung_Trade33.pdf',
+        type: 'traderCollectionBill',
+        status: 'verified',
+        fileURL: 'parse://tbc.pdf',
+        size: 900,
+        uploadedAt: '2026-05-15T12:00:00.000Z',
+        createdAt: new Date('2026-05-15T12:00:00.000Z'),
+        accountingDocumentNumber: 'TBC-2026-0000033',
+        tradeId: 'trade-33',
+        accountingSummaryText: 'Kaufabrechnung Trade #33',
+      }),
+    ];
+    const out = await handleGetDocumentByObjectId({ params: { objectId: 'tbc-33' } });
+    expect(out.uploadedAt).toBe('2026-05-15T12:00:00.000Z');
+    expect(out.accountingDocumentNumber).toBe('TBC-2026-0000033');
+    expect(out.partyRole).toBe('trader');
+    expect(out.traderId).toBe('trader-1');
+    expect(out.partyUserId).toBe('trader-1');
+  });
+
+  test('getDocumentByObjectId uses createdAt when backend bill has no uploadedAt', async () => {
+    FakeQuery.__results = [
+      row('tbc-no-up', {
+        userId: 'trader-1',
+        name: 'Kaufabrechnung_Trade34.pdf',
+        type: 'traderCollectionBill',
+        status: '',
+        fileURL: '',
+        size: 512,
+        createdAt: new Date('2026-05-16T08:30:00.000Z'),
+        accountingDocumentNumber: 'TBC-2026-0000034',
+        tradeId: 'trade-34',
+      }),
+    ];
+    const doc = FakeQuery.__results[0];
+    expect(documentTimestampRaw(doc)).toEqual(new Date('2026-05-16T08:30:00.000Z'));
+    const out = await handleGetDocumentByObjectId({ params: { objectId: 'tbc-no-up' } });
+    expect(out.uploadedAt).toBe('2026-05-16T08:30:00.000Z');
+  });
+});
+
+describe('serializeParseDateValue', () => {
+  test('accepts Date, ISO string, and Parse date dict', () => {
+    expect(serializeParseDateValue(new Date('2026-01-02T03:04:05.000Z'))).toBe('2026-01-02T03:04:05.000Z');
+    expect(serializeParseDateValue('2026-01-02T03:04:05.000Z')).toBe('2026-01-02T03:04:05.000Z');
+    expect(serializeParseDateValue({ __type: 'Date', iso: '2026-01-02T03:04:05.000Z' }))
+      .toBe('2026-01-02T03:04:05.000Z');
+    expect(serializeParseDateValue(null)).toBeNull();
   });
 });
 

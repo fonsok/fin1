@@ -15,6 +15,8 @@ async function fetchAppLedgerViaBankContraPosting({
   userId,
   dateFrom,
   dateTo,
+  amountMin = null,
+  amountMax = null,
   matchesFilters,
 }) {
   let bankEntries = [];
@@ -24,12 +26,14 @@ async function fetchAppLedgerViaBankContraPosting({
     if (userId && looksLikeParseObjectId(String(userId).trim())) bcQuery.equalTo('investorId', userId);
     if (dateFrom) bcQuery.greaterThanOrEqualTo('createdAt', new Date(dateFrom));
     if (dateTo) bcQuery.lessThanOrEqualTo('createdAt', new Date(dateTo));
+    if (amountMin != null) bcQuery.greaterThanOrEqualTo('amount', amountMin);
+    if (amountMax != null) bcQuery.lessThanOrEqualTo('amount', amountMax);
     applyQuerySort(bcQuery, request.params || {}, {
       allowed: ['createdAt', 'amount'],
       defaultField: 'createdAt',
       defaultDesc: true,
     });
-    bcQuery.limit(maxResults + skip);
+    bcQuery.limit(Math.min(maxResults + skip, 5000));
     const results = await bcQuery.find({ useMasterKey: true });
     bankEntries = results.map(mapBankContraToEntry);
   } catch {

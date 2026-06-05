@@ -21,6 +21,8 @@ Das Account Statement System verwendet zentrale Builder-Methoden als Single Sour
 - **Online / erfolgreich:** Einträge aus dem Backend werden in `AccountStatementEntry` gemappt (z. B. `commission_debit`, `investment_profit`, `residual_return` beim Investor; Trader analog für Provision-Gutschriften).
 - **Fallback:** Kein Service injiziert, leere Backend-Antwort, oder Fehler beim Abruf → **lokales Ledger** (Investor: `InvestorCashBalanceService.getTransactions()`; Trader: Rechnungs-/Credit-Note-Pfad in `buildSnapshot()`). Der Fallback ist **nur für Resilienz/Offline** gedacht, nicht als zweite „Wahrheit“ neben dem Backend.
 
+**Weitere Consumer (Trader, Anzeige):** Die Provisionsspalte im Trade-Überblick liest `commission_credit` über dieselbe Timeline-Abfrage (`TraderAccountStatementBuilder.commissionCreditTotalsByTradeId`) plus Gutschrift-Belege aus `DocumentService` — siehe [`TRADER_COMMISSION_DISPLAY_SSOT.md`](TRADER_COMMISSION_DISPLAY_SSOT.md).
+
 **Konto:** Das Crypto-Wallet-Produktfeature ist deaktiviert; ein **normales Konto** reicht. Die Builder-Methode heißt im Code noch `buildSnapshotWithWallet` (Legacy-Name) — faktisch werden **Handels-/Investment-Ledger** und **Zahlungsbewegungen** (`PaymentService`) zusammengeführt.
 
 ---
@@ -41,6 +43,25 @@ Das Account Statement System verwendet zentrale Builder-Methoden als Single Sour
 **Relevante Dateien:** `FIN1/Features/Dashboard/Models/AccountStatementEntry+ReferencedDocument.swift`, `FIN1/Features/Dashboard/Views/AccountStatementView.swift`, `FIN1/Features/Dashboard/Views/MonthlyAccountStatementView.swift`, `FIN1/Shared/Services/DocumentServiceProtocol.swift` (`DocumentService`).
 
 **Kurzreferenz:** `Documentation/FIN1_APP_DOCS/04_DEVELOPER_GUIDE.md` → Abschnitt *Dokumente / Account Statement (Beleg-Links)*.
+
+---
+
+## Notifications → Documents (iOS): Buchungsbelege in der Inbox
+
+**Stand:** Mai 2026
+
+**Symptom (behoben):** Kontoauszug-Links auf Belege (`referenceDocumentId`) funktionierten, aber **Profile → Notifications → Documents** war beim **Investor** leer bzw. beim **Trader** fehlte die **Gutschrift** (nur Collection Bill sichtbar).
+
+**Ursachen:**
+
+1. **Client:** Nach Backend-Settlement wurde die Trade-Abschlusslogik abgebrochen, sobald bereits eine `traderCollectionBill` im Cache lag — die serverseitige `traderCreditNote` wurde nicht in den `DocumentService` gemergt.
+2. **Client:** `loadDocuments` war nicht zuverlässig `await`-bar; der 24h-„Smart Cleanup“-Filter galt auch für den Tab **Documents** und blendete gelesene Belege aus.
+3. **Client:** Inbox-Filter nutzte nicht alle `userId`-Alias-Keys (Parse-`objectId` vs. `user:email`).
+4. **Backend:** `getInvestorCollectionBills` filterte nur auf einen einzelnen `userId`-Key statt `collectLedgerUserIdCandidates`.
+
+**Lösung (Kurz):** `getUserDocumentInbox` (ein CF-Call, SSOT-Filter serverseitig); `DocumentService.applyInboxSnapshot` (merge, kein blindes Replace); Event `userDocumentInboxShouldRefresh` nach Settlement/Investment; TTL-Refresh beim Öffnen von Notifications; Tab **Documents** ohne 24h-Fenster.
+
+**Relevante Dateien:** `DocumentInboxPolicy.swift`, `DocumentServiceProtocol.swift`, `userDocumentInbox.js`, `NotificationsViewModel.swift`, `OrderLifecycleCoordinator.swift`.
 
 ---
 

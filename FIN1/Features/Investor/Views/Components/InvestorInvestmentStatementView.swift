@@ -44,6 +44,9 @@ struct InvestorInvestmentStatementView: View {
                             .foregroundColor(.secondary)
                             .padding(.vertical, ResponsiveDesign.spacing(4))
                     }
+                    if let banner = viewModel.belegIntegrityBanner {
+                        self.belegIntegrityBannerView(message: banner)
+                    }
                     // Document Header (einheitliches Layout für alle Dokumente)
                     DocumentHeaderLayoutView(
                         accountHolderName: self.getInvestorDisplayName(),
@@ -80,6 +83,12 @@ struct InvestorInvestmentStatementView: View {
                         }
                         .documentSection(level: 1)
                     }
+                    if self.viewModel.statementItems.isEmpty, !self.viewModel.isRefreshingFromBackend {
+                        self.belegIntegrityBannerView(
+                            message: self.viewModel.backendRefreshMessage
+                                ?? InvestorMonetaryMessages.noArchivedBeleg
+                        )
+                    }
                     ForEach(self.viewModel.statementItems) { item in
                         self.statementSection(for: item)
                     }
@@ -104,13 +113,11 @@ struct InvestorInvestmentStatementView: View {
         .task {
             let provider = LegalSnippetProvider(termsContentService: services.termsContentService)
             let language: TermsOfServiceDataProvider.Language = .german
-            let taxPlaceholders = ["TAX_RATE": CalculationConstants.TaxRates.capitalGainsTaxWithSoli]
-            async let taxTask = provider.text(
-                for: .docTaxNoteSell,
-                language: language,
-                documentType: .terms,
-                defaultText: DocumentNotesSection.defaultTaxNote,
-                placeholders: taxPlaceholders
+            let taxMode = self.services.configurationService.taxCollectionMode
+            async let taxTask = provider.loadCapitalGainsTaxNote(
+                mode: taxMode,
+                side: .sell,
+                language: language
             )
             async let legalTask = provider.text(
                 for: .docLegalNoteWphg,
@@ -139,6 +146,22 @@ struct InvestorInvestmentStatementView: View {
     }
 
     // MARK: - Sections
+
+    private func belegIntegrityBannerView(message: String) -> some View {
+        HStack(alignment: .top, spacing: ResponsiveDesign.spacing(8)) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundColor(.orange)
+            Text(message)
+                .font(ResponsiveDesign.captionFont())
+                .foregroundColor(DocumentDesignSystem.textColor)
+        }
+        .padding(ResponsiveDesign.spacing(8))
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(6))
+                .fill(Color.orange.opacity(0.12))
+        )
+    }
 
     // headerSection removed - name and address are now shown in DocumentHeaderLayoutView
 
@@ -188,6 +211,29 @@ struct InvestorInvestmentStatementView: View {
                     .foregroundColor(DocumentDesignSystem.textColorSecondary)
             }
 
+            if let belegMsg = item.belegInconsistencyMessage {
+                self.belegIntegrityBannerView(message: belegMsg)
+            } else if item.isProvisionalLocalEstimate, self.monetaryServerOnly {
+                self.belegIntegrityBannerView(message: InvestorMonetaryMessages.provisionalSectionHint)
+            } else if item.isProvisionalLocalEstimate {
+                Text("Vorläufige Schätzung — archivierter Beleg auf dem Server fehlt noch.")
+                    .font(ResponsiveDesign.captionFont())
+                    .foregroundColor(.orange)
+            }
+
+            if !(self.monetaryServerOnly && item.isProvisionalLocalEstimate) {
+                self.monetaryDetailSection(for: item)
+            }
+        }
+        .documentSection(level: 2)
+    }
+
+    private var monetaryServerOnly: Bool {
+        self.services.configurationService.investorMonetaryServerOnly
+    }
+
+    private func monetaryDetailSection(for item: InvestorInvestmentStatementItem) -> some View {
+        VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
             Divider()
                 .background(DocumentDesignSystem.textColor.opacity(0.2))
 
@@ -222,7 +268,7 @@ struct InvestorInvestmentStatementView: View {
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(DocumentDesignSystem.textColor)
                 Spacer()
-                Text((item.buyTotal + item.buyFees).formattedAsLocalizedCurrency())
+                Text(item.totalBuyCost.formattedAsLocalizedCurrency())
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(DocumentDesignSystem.textColor)
             }
@@ -253,7 +299,7 @@ struct InvestorInvestmentStatementView: View {
                     .foregroundColor(DocumentDesignSystem.textColor)
             }
 
-            self.feeDetailsSection(title: "Sell Fees", details: item.sellFeeDetails, totalAmount: item.sellFees)
+            self.feeDetailsSection(title: "Sell Fees", details: item.sellFeeDetails, totalAmount: item.sellFeesDisplayAmount)
 
             // Net Sell Amount row
             HStack {
@@ -261,7 +307,7 @@ struct InvestorInvestmentStatementView: View {
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(DocumentDesignSystem.textColor)
                 Spacer()
-                Text((item.sellTotal + item.sellFees).formattedAsLocalizedCurrency())
+                Text(item.netSellAmount.formattedAsLocalizedCurrency())
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(DocumentDesignSystem.textColor)
             }
@@ -298,6 +344,29 @@ struct InvestorInvestmentStatementView: View {
                     .foregroundColor(DocumentDesignSystem.textColor)
             }
 
+            Divider()
+                .background(DocumentDesignSystem.textColor.opacity(0.2))
+
+            VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
+                HStack {
+                    Text("Überweisungsbetrag")
+                        .font(ResponsiveDesign.bodyFont())
+                        .foregroundColor(DocumentDesignSystem.textColor)
+                    Spacer()
+                    Text(item.transferAmount.formattedAsLocalizedCurrency())
+                        .font(ResponsiveDesign.bodyFont())
+                        .foregroundColor(DocumentDesignSystem.textColor)
+                }
+
+                Text(item.transferAmountCalculationNote)
+                    .font(ResponsiveDesign.captionFont())
+                    .foregroundColor(DocumentDesignSystem.textColorSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Divider()
+                .background(DocumentDesignSystem.textColor.opacity(0.2))
+
             // Gross Profit (before taxes) row (using pre-calculated value from model)
             HStack {
                 Text("Gross Profit (before taxes)")
@@ -319,7 +388,6 @@ struct InvestorInvestmentStatementView: View {
                     .foregroundColor(DocumentDesignSystem.textColor)
             }
         }
-        .documentSection(level: 2)
     }
 
     private func feeDetailsSection(title: String, details: [InvestorFeeDetail], totalAmount: Double) -> some View {

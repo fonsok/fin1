@@ -11,6 +11,7 @@ protocol InvestmentRepositoryProtocol: ObservableObject {
 
     var investmentsPublisher: AnyPublisher<[Investment], Never> { get }
     func investmentsPublisher(for investorId: String) -> AnyPublisher<[Investment], Never>
+    func investmentsPublisher(matchingAnyOf investorIds: [String]) -> AnyPublisher<[Investment], Never>
 
     /// Adds an investment (used for backend merge)
     func addInvestment(_ investment: Investment)
@@ -40,9 +41,15 @@ final class InvestmentRepository: InvestmentRepositoryProtocol {
 
     /// Per-investor filtered publisher to prevent cross-user coupling in subscribers
     func investmentsPublisher(for investorId: String) -> AnyPublisher<[Investment], Never> {
-        self.$investments
+        self.investmentsPublisher(matchingAnyOf: [investorId])
+    }
+
+    func investmentsPublisher(matchingAnyOf investorIds: [String]) -> AnyPublisher<[Investment], Never> {
+        let keys = Set(investorIds.filter { !$0.isEmpty })
+        return self.$investments
             .map { all in
-                all.filter { $0.investorId == investorId }
+                guard !keys.isEmpty else { return [] }
+                return all.filter { keys.contains($0.investorId) }
             }
             .removeDuplicates(by: { lhs, rhs in
                 // Shallow equality by ids and updatedAt to limit unnecessary UI churn

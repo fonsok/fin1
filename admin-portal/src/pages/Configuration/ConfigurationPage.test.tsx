@@ -7,18 +7,14 @@ import { PARAMETER_DEFINITIONS } from './parameterDefinitions';
 import { formatCurrency, formatPercentage } from '../../utils/format';
 import { useConfigurationPage } from './hooks/useConfigurationPage';
 import { getAppWithholdsLabel } from '../../constants/branding';
+import { sortTaxConfigEntries } from './configurationSort';
 
 vi.mock('./hooks/useConfigurationPage');
 
 function buildSortedTaxParams(): [string, Omit<(typeof PARAMETER_DEFINITIONS)[string], 'value'>][] {
-  const entries = Object.entries(PARAMETER_DEFINITIONS).filter(([, def]) => def.category === 'tax');
-  const sortOrder: Record<string, number> = {
-    vatRate: 0,
-    taxCollectionMode: 1,
-    withholdingTaxRate: 2,
-    solidaritySurchargeRate: 3,
-  };
-  return entries.sort(([a], [b]) => (sortOrder[a] ?? 99) - (sortOrder[b] ?? 99));
+  return sortTaxConfigEntries(
+    Object.entries(PARAMETER_DEFINITIONS).filter(([, def]) => def.category === 'tax'),
+  );
 }
 
 function formatValueForTest(key: string, value: number | string | boolean): string {
@@ -131,10 +127,13 @@ describe('ConfigurationPage (Steuerparameter integration)', () => {
     vi.clearAllMocks();
   });
 
-  it('shows tax detail section collapsed by default when customer self reports', () => {
+  it('shows tax detail section collapsed by default when customer self reports', async () => {
+    const user = userEvent.setup();
     render(<ConfigurationPageTestHarness />);
 
-    expect(screen.getByRole('heading', { name: 'Steuerparameter' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Steuerparameter/i })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /Steuerparameter/i }));
+
     expect(screen.getByText('Umsatzsteuer (MwSt.)')).toBeInTheDocument();
     expect(screen.getByText('Abgeltungsteuer')).toBeInTheDocument();
     expect(screen.queryByText('Abgeltungsteuersatz')).not.toBeInTheDocument();
@@ -144,6 +143,8 @@ describe('ConfigurationPage (Steuerparameter integration)', () => {
   it('expands tax details when user selects platform withholds while editing tax mode', async () => {
     const user = userEvent.setup();
     render(<ConfigurationPageTestHarness />);
+
+    await user.click(screen.getByRole('button', { name: /Steuerparameter/i }));
 
     const select = screen.getByRole('combobox');
     expect(select).toHaveValue('customer_self_reports');
@@ -157,12 +158,15 @@ describe('ConfigurationPage (Steuerparameter integration)', () => {
     expect(screen.getByText('Kirchensteuer')).toBeInTheDocument();
   });
 
-  it('shows expanded tax details when config already uses platform withholds', () => {
+  it('shows expanded tax details when config already uses platform withholds', async () => {
+    const user = userEvent.setup();
     testState.config = {
       ...testState.config,
       taxCollectionMode: 'platform_withholds',
     };
     render(<ConfigurationPageTestHarness />);
+
+    await user.click(screen.getByRole('button', { name: /Steuerparameter/i }));
 
     expect(screen.getByText('Abgeltungsteuer')).toBeInTheDocument();
     expect(screen.getByText('Abgeltungsteuersatz')).toBeInTheDocument();
@@ -172,6 +176,8 @@ describe('ConfigurationPage (Steuerparameter integration)', () => {
   it('keeps selected tax mode after simulated reload with persisted config', async () => {
     const user = userEvent.setup();
     const { rerender } = render(<ConfigurationPageTestHarness />);
+
+    await user.click(screen.getByRole('button', { name: /Steuerparameter/i }));
 
     const select = screen.getByRole('combobox');
     expect(select).toHaveValue('customer_self_reports');
@@ -187,7 +193,9 @@ describe('ConfigurationPage (Steuerparameter integration)', () => {
     testState.editValue = '';
     rerender(<ConfigurationPageTestHarness />);
 
-    expect(screen.getByRole('combobox')).toHaveValue('platform_withholds');
+    await waitFor(() => {
+      expect(screen.getByRole('combobox')).toHaveValue('platform_withholds');
+    });
     expect(screen.getByText('Abgeltungsteuersatz')).toBeInTheDocument();
     expect(screen.getByText('Kirchensteuer')).toBeInTheDocument();
   });

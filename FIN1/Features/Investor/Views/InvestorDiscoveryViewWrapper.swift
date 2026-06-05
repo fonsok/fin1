@@ -19,7 +19,7 @@ struct InvestorDiscoveryViewWrapper: View {
         InvestorDiscoveryView(viewModel: self.viewModel, savedFiltersManager: self.savedFiltersManager)
             .task {
                 self.viewModel.reconfigure(with: self.services)
-                self.viewModel.loadTraders()
+                await self.viewModel.loadTradersFromService()
 
                 // Register manager with FilterSyncService
                 if let filterSyncService = services.filterSyncService as? FilterSyncService {

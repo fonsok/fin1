@@ -9,7 +9,7 @@
  *   - userId               (Parse objectId; "stable" wird durch User.userId zugelassen)
  *   - investmentId         (Pointer/String)
  *   - tradeId              (Pointer/String)
- *   - dateFrom / dateTo    (uploadedAt window, ISO)
+ *   - dateFrom / dateTo    (createdAt window, ISO; backend-Belege ohne uploadedAt)
  *   - search               (freier Substring auf name + accountingDocumentNumber)
  *   - limit / skip         (Pagination, default 25 / 0; max 100)
  *
@@ -32,11 +32,44 @@
 
 const { requirePermission } = require('../../../utils/permissions');
 const { applyQuerySort, resolveListSortOrder } = require('../../../utils/applyQuerySort');
+const { enrichDocumentsWithPartyFields } = require('./documentPartyPresentation');
 
 const MAX_LIMIT = 100;
 const DEFAULT_LIMIT = 25;
 const MAX_SEARCH_TERM_LENGTH = 80;
 const ALLOWED_SORT_FIELDS = ['uploadedAt', 'createdAt', 'accountingDocumentNumber', 'name'];
+
+/**
+ * Parse/Mongo may store dates as Date, ISO string, or legacy `{ __type: 'Date', iso }`.
+ * Backend `Document` rows often omit `uploadedAt` — callers should fall back to `createdAt`.
+ */
+function serializeParseDateValue(value) {
+  if (value == null || value === '') return null;
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value.toISOString();
+  }
+  if (typeof value === 'object') {
+    const iso = value.iso ?? value.ISO;
+    if (typeof iso === 'string' && iso.trim()) {
+      return serializeParseDateValue(iso);
+    }
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    const d = new Date(trimmed);
+    return Number.isNaN(d.getTime()) ? trimmed : d.toISOString();
+  }
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? null : d.toISOString();
+  }
+  return null;
+}
+
+function documentTimestampRaw(doc) {
+  return doc.get('uploadedAt') ?? doc.get('createdAt') ?? doc.createdAt ?? null;
+}
 
 function escapeForRegex(input) {
   return String(input || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -84,9 +117,7 @@ function hasSearchPredicate(params) {
   return false;
 }
 
-function buildBaseQuery(params) {
-  const query = new Parse.Query('Document');
-
+function applyDocumentScalarFilters(query, params) {
   const types = normalizeStringList(params.type);
   if (types.length === 1) {
     query.equalTo('type', types[0]);
@@ -111,50 +142,61 @@ function buildBaseQuery(params) {
 
   const dateFrom = safeIsoDate(params.dateFrom);
   if (dateFrom) {
-    query.greaterThanOrEqualTo('uploadedAt', dateFrom);
+    query.greaterThanOrEqualTo('createdAt', dateFrom);
   }
   const dateTo = safeIsoDate(params.dateTo);
   if (dateTo) {
-    query.lessThanOrEqualTo('uploadedAt', dateTo);
+    query.lessThanOrEqualTo('createdAt', dateTo);
   }
 
-  const docNumber = String(params.documentNumber || '').trim().slice(0, MAX_SEARCH_TERM_LENGTH);
-  const free = String(params.search || '').trim().slice(0, MAX_SEARCH_TERM_LENGTH);
+  return query;
+}
 
-  return { query, freeText: free, docNumber };
+function buildDocumentNumberOrQuery(params, docNumber) {
+  const escaped = escapeForRegex(docNumber);
+  const acc = applyDocumentScalarFilters(new Parse.Query('Document'), params);
+  acc.matches('accountingDocumentNumber', escaped, 'i');
+  const doc = applyDocumentScalarFilters(new Parse.Query('Document'), params);
+  doc.matches('documentNumber', escaped, 'i');
+  return Parse.Query.or(acc, doc);
+}
+
+function buildDocumentFreeTextOrQuery(params, freeText) {
+  const escaped = escapeForRegex(freeText);
+  const name = applyDocumentScalarFilters(new Parse.Query('Document'), params);
+  name.matches('name', escaped, 'i');
+  const acc = applyDocumentScalarFilters(new Parse.Query('Document'), params);
+  acc.matches('accountingDocumentNumber', escaped, 'i');
+  const doc = applyDocumentScalarFilters(new Parse.Query('Document'), params);
+  doc.matches('documentNumber', escaped, 'i');
+  return Parse.Query.or(name, acc, doc);
 }
 
 /**
- * Combines a base query with optional substring matches. Done outside `buildBaseQuery`
- * because Parse SDK requires `Parse.Query.or(...)` for OR semantics.
+ * Text OR-branches each carry scalar filters — avoids `Parse.Query.and(empty, or)`
+ * which can return zero rows on some Parse Server versions.
  */
-function withTextFilters(baseQuery, freeText, docNumber) {
-  let q = baseQuery;
+function buildDocumentSearchQuery(params) {
+  const docNumber = String(params.documentNumber || '').trim().slice(0, MAX_SEARCH_TERM_LENGTH);
+  const freeText = String(params.search || '').trim().slice(0, MAX_SEARCH_TERM_LENGTH);
 
+  if (docNumber && freeText) {
+    return Parse.Query.and(
+      buildDocumentNumberOrQuery(params, docNumber),
+      buildDocumentFreeTextOrQuery(params, freeText),
+    );
+  }
   if (docNumber) {
-    const escaped = escapeForRegex(docNumber);
-    const a = new Parse.Query('Document');
-    a.matches('accountingDocumentNumber', escaped, 'i');
-    const b = new Parse.Query('Document');
-    b.matches('documentNumber', escaped, 'i');
-    const or = Parse.Query.or(a, b);
-    q = Parse.Query.and(q, or);
+    return buildDocumentNumberOrQuery(params, docNumber);
   }
-
   if (freeText) {
-    const escaped = escapeForRegex(freeText);
-    const a = new Parse.Query('Document');
-    a.matches('name', escaped, 'i');
-    const b = new Parse.Query('Document');
-    b.matches('accountingDocumentNumber', escaped, 'i');
-    const c = new Parse.Query('Document');
-    c.matches('documentNumber', escaped, 'i');
-    const or = Parse.Query.or(a, b, c);
-    q = Parse.Query.and(q, or);
+    return buildDocumentFreeTextOrQuery(params, freeText);
   }
-
-  return q;
+  return applyDocumentScalarFilters(new Parse.Query('Document'), params);
 }
+
+const { projectDocumentDetail } = require('./documentBelegPresentation');
+const { enrichTraderDocumentMetadata } = require('./documentBelegEnrichment');
 
 function projectDocumentRow(doc) {
   return {
@@ -165,8 +207,8 @@ function projectDocumentRow(doc) {
     status: doc.get('status') || '',
     fileURL: doc.get('fileURL') || '',
     size: typeof doc.get('size') === 'number' ? doc.get('size') : 0,
-    uploadedAt: doc.get('uploadedAt') ? doc.get('uploadedAt').toISOString() : null,
-    verifiedAt: doc.get('verifiedAt') ? doc.get('verifiedAt').toISOString() : null,
+    uploadedAt: serializeParseDateValue(documentTimestampRaw(doc)),
+    verifiedAt: serializeParseDateValue(doc.get('verifiedAt')),
     documentNumber: doc.get('documentNumber') || null,
     accountingDocumentNumber: doc.get('accountingDocumentNumber') || null,
     tradeId: doc.get('tradeId') || null,
@@ -192,17 +234,16 @@ async function handleSearchDocuments(request) {
   const skip = clampInt(params.skip, { min: 0, max: 10000, fallback: 0 });
   const includeTotal = Boolean(params.includeTotal);
 
-  const { query: baseQuery, freeText, docNumber } = buildBaseQuery(params);
-  const finalQuery = withTextFilters(baseQuery, freeText, docNumber);
+  const finalQuery = buildDocumentSearchQuery(params);
 
-  applyQuerySort(finalQuery, params, {
+  const sortMeta = applyQuerySort(finalQuery, params, {
     allowed: ALLOWED_SORT_FIELDS,
-    defaultField: 'uploadedAt',
+    defaultField: 'createdAt',
   });
 
   finalQuery.select([
     'userId', 'name', 'type', 'status', 'fileURL', 'size',
-    'uploadedAt', 'verifiedAt',
+    'uploadedAt', 'createdAt', 'verifiedAt',
     'documentNumber', 'accountingDocumentNumber',
     'tradeId', 'investmentId',
     'statementYear', 'statementMonth', 'statementRole',
@@ -217,20 +258,37 @@ async function handleSearchDocuments(request) {
 
   let total = null;
   if (includeTotal) {
-    const countQuery = withTextFilters(buildBaseQuery(params).query, freeText, docNumber);
-    total = await countQuery.count({ useMasterKey: true });
+    total = await buildDocumentSearchQuery(params).count({ useMasterKey: true });
   }
 
+  const projected = rows.map(projectDocumentRow);
+  const items = await enrichDocumentsWithPartyFields(projected, rows);
+
   return {
-    items: rows.map(projectDocumentRow),
+    items,
     hasMore,
     total,
     limit,
     skip,
     sort: {
-      sortBy: ALLOWED_SORT_FIELDS.includes(params.sortBy) ? params.sortBy : 'uploadedAt',
-      sortOrder: resolveListSortOrder(params),
+      sortBy: sortMeta.sortBy,
+      sortOrder: sortMeta.sortOrder,
     },
+  };
+}
+
+async function projectDocumentDetailResponse(doc, metadata) {
+  const projected = projectDocumentRow(doc);
+  const [enriched] = await enrichDocumentsWithPartyFields([projected], [doc]);
+  const meta = metadata ?? doc.get('metadata') ?? {};
+  const snapshotTraderName = String(meta.traderDisplayName || '').trim() || null;
+  const partyEnrichment = {
+    partyDisplayName: enriched.partyDisplayName || snapshotTraderName,
+    partyRole: enriched.partyRole,
+  };
+  return {
+    ...enriched,
+    ...projectDocumentDetail(doc, metadata, partyEnrichment),
   };
 }
 
@@ -242,10 +300,8 @@ async function handleGetDocumentByObjectId(request) {
   }
   const q = new Parse.Query('Document');
   const doc = await q.get(objectId, { useMasterKey: true });
-  return {
-    ...projectDocumentRow(doc),
-    accountingSummaryText: doc.get('accountingSummaryText') || null,
-  };
+  const metadata = await enrichTraderDocumentMetadata(doc);
+  return projectDocumentDetailResponse(doc, metadata);
 }
 
 const MAX_LEDGER_DOC_NUMBER_LEN = 80;
@@ -322,10 +378,8 @@ async function handleGetDocumentByLedgerReference(request) {
     );
   }
 
-  return {
-    ...projectDocumentRow(doc),
-    accountingSummaryText: doc.get('accountingSummaryText') || null,
-  };
+  const metadata = await enrichTraderDocumentMetadata(doc);
+  return projectDocumentDetailResponse(doc, metadata);
 }
 
 function registerSearchDocumentsFunctions() {
@@ -339,4 +393,10 @@ module.exports = {
   handleSearchDocuments,
   handleGetDocumentByObjectId,
   handleGetDocumentByLedgerReference,
+  findSingleDocumentByExactLedgerNumber,
+  projectDocumentRow,
+  projectDocumentDetailResponse,
+  serializeParseDateValue,
+  documentTimestampRaw,
+  buildDocumentSearchQuery,
 };

@@ -147,6 +147,6 @@ final class MonthlyAccountStatementViewModel: ObservableObject {
             entry.occurredAt >= startOfMonth && entry.occurredAt < startOfNextMonth
         }
 
-        self.entries = monthlyEntries.sorted { $0.occurredAt > $1.occurredAt }
+        self.entries = AccountStatementEntry.sortedForChronologicalDisplay(monthlyEntries)
     }
 }

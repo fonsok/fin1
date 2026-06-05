@@ -9,11 +9,11 @@ protocol OrderStatusSimulationServiceProtocol: ObservableObject {
     var errorMessage: String? { get }
 
     // MARK: - Order Status Simulation
-    func startOrderStatusProgression(_ orderId: String, onStatusUpdate: @escaping (String, Order) -> Void)
+    func startOrderStatusProgression(_ orderId: String, onStatusUpdate: @escaping @Sendable (String, Order) async -> Void)
     func stopOrderStatusProgression(_ orderId: String)
     func stopAllOrderStatusProgressions()
 
     // MARK: - Order Status Management
-    func advanceOrderStatus(_ orderId: String, onStatusUpdate: @escaping (String, Order) -> Void) async
+    func advanceOrderStatus(_ orderId: String, onStatusUpdate: @escaping @Sendable (String, Order) async -> Void) async
     func moveOrderToHoldings(_ orderId: String, activeOrders: [Order], onOrderMoved: @escaping (Order) -> Void) async
 }

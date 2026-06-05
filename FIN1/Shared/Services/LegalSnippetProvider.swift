@@ -5,6 +5,7 @@ import Foundation
 enum LegalSnippetKey: String {
     case docTaxNoteSell = "doc_tax_note_sell"
     case docTaxNoteBuy = "doc_tax_note_buy"
+    case docTaxNoteCustomerSelfReports = "doc_tax_note_customer_self_reports"
     case docLegalNoteWphg = "doc_legal_note_wphg"
     case docTaxNoteServiceCharge = "doc_tax_note_service_charge"
     case orderLegalWarningBuy = "order_legal_warning_buy"

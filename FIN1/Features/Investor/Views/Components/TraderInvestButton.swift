@@ -4,7 +4,7 @@ import SwiftUI
 /// Investment button for trader details view
 
 struct TraderInvestButton: View {
-    let trader: MockTrader
+    let trader: InvestorTrader
     @Binding var showInvestSheet: Bool
 
     var body: some View {

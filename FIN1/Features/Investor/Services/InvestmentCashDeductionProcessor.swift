@@ -155,8 +155,8 @@ final class InvestmentCashDeductionProcessor {
 
         let customerInfo = CustomerInfo.from(user: investor)
 
-        // Extract investment IDs and amounts for detailed invoice description
         let investmentIds = investments.map { $0.id }
+        let investmentLabels = investments.map { $0.canonicalDisplayReference }
         let investmentAmounts = investments.map { $0.amount }
 
         // A local `Invoice` value is always built: it backs the display
@@ -170,6 +170,7 @@ final class InvestmentCashDeductionProcessor {
             transactionIdService: self.transactionIdService,
             batchId: batchId,
             investmentIds: investmentIds,
+            investmentLabels: investmentLabels,
             investmentAmounts: investmentAmounts,
             serviceChargeRate: self.configurationService.effectiveAppServiceChargeRate(
                 for: investor.accountType.rawValue

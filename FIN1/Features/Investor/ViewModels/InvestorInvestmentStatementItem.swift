@@ -21,6 +21,10 @@ struct InvestorInvestmentStatementItem: Identifiable {
     let sellFees: Double
     let sellFeeDetails: [InvestorFeeDetail]
 
+    // Canonical ledger totals (from ``InvestorCollectionBillOutput`` — do not recompute in UI)
+    let totalBuyCost: Double
+    let netSellAmount: Double
+
     // Derived amounts
     let grossProfit: Double
     let ownershipPercentage: Double
@@ -33,9 +37,29 @@ struct InvestorInvestmentStatementItem: Identifiable {
     // Commission and profit after commission
     let commission: Double
     let grossProfitAfterCommission: Double
+    /// Auszahlung: Net Sell Amount − Commission.
+    let transferAmount: Double
+
+    /// Erklärzeile für die Collection Bill (Net Sell − Commission).
+    var transferAmountCalculationNote: String {
+        let net = self.netSellAmount.formattedAsLocalizedCurrency()
+        let comm = self.commission.formattedAsLocalizedCurrency()
+        let total = self.transferAmount.formattedAsLocalizedCurrency()
+        return "(Net Sell Amount - Commission = \(net) - \(comm) = \(total))"
+    }
 
     // Residual amount (leftover after rounding quantity to whole number)
     let residualAmount: Double
+
+    /// GoB Belegnummer when row comes from server `investorCollectionBill`.
+    let accountingDocumentNumber: String?
+    /// Set when archived Beleg legs and booked summary diverge.
+    let belegInconsistencyMessage: String?
+    /// False for server Beleg rows; true for local preview / network fallback.
+    let isProvisionalLocalEstimate: Bool
+
+    /// Fee magnitude for display in the Sell Fees row.
+    var sellFeesDisplayAmount: Double { abs(self.sellFees) }
 
     @MainActor
     static func build(
@@ -60,15 +84,40 @@ struct InvestorInvestmentStatementItem: Identifiable {
         )
 
         let output = try calculationService.calculateCollectionBill(input: input)
+        return self.from(
+            trade: trade,
+            output: output,
+            ownershipPercentage: ownershipPercentage,
+            commissionCalculationService: commissionCalculationService,
+            commissionRate: commissionRate
+        )
+    }
 
-        let commission = commissionCalculationService.calculateCommission(
-            grossProfit: output.grossProfit,
-            rate: commissionRate
-        )
-        let grossProfitAfterCommission = commissionCalculationService.calculateNetProfitAfterCommission(
-            grossProfit: output.grossProfit,
-            rate: commissionRate
-        )
+    @MainActor
+    static func from(
+        trade: Trade,
+        output: InvestorCollectionBillOutput,
+        ownershipPercentage: Double,
+        commissionCalculationService: any CommissionCalculationServiceProtocol,
+        commissionRate: Double
+    ) -> InvestorInvestmentStatementItem {
+        let commission = output.bookedCommission
+            ?? commissionCalculationService.calculateCommission(grossProfit: output.grossProfit, rate: commissionRate)
+        let grossProfitAfterCommission = output.bookedNetProfit
+            ?? commissionCalculationService.calculateNetProfitAfterCommission(
+                grossProfit: output.grossProfit,
+                rate: commissionRate
+            )
+        let transferAmount = output.bookedTransferAmount
+            ?? max(0, output.netSellAmount - commission)
+
+        #if DEBUG
+        if abs(output.grossProfit - (output.netSellAmount - output.totalBuyCost)) >= 0.02 {
+            InvestorCollectionBillLog.warning(
+                "Ledger identity violated: gross=\(output.grossProfit) netSell=\(output.netSellAmount) buyCost=\(output.totalBuyCost)"
+            )
+        }
+        #endif
 
         return InvestorInvestmentStatementItem(
             id: trade.id,
@@ -85,6 +134,8 @@ struct InvestorInvestmentStatementItem: Identifiable {
             sellTotal: output.sellAmount,
             sellFees: output.sellFees,
             sellFeeDetails: output.sellFeeDetails,
+            totalBuyCost: output.totalBuyCost,
+            netSellAmount: output.netSellAmount,
             grossProfit: output.grossProfit,
             ownershipPercentage: ownershipPercentage,
             roiGrossProfit: output.roiGrossProfit,
@@ -92,99 +143,12 @@ struct InvestorInvestmentStatementItem: Identifiable {
             tradeROI: trade.displayROI,
             commission: commission,
             grossProfitAfterCommission: grossProfitAfterCommission,
-            residualAmount: output.residualAmount
+            transferAmount: transferAmount,
+            residualAmount: output.residualAmount,
+            accountingDocumentNumber: output.accountingDocumentNumber,
+            belegInconsistencyMessage: output.belegInconsistencyMessage,
+            isProvisionalLocalEstimate: !output.isFromArchivedBeleg
         )
-    }
-
-    static func build(
-        trade: Trade,
-        buyInvoice: Invoice?,
-        sellInvoices: [Invoice],
-        ownershipPercentage: Double,
-        investorAllocatedAmount: Double,
-        commissionCalculationService: any CommissionCalculationServiceProtocol = CommissionCalculationService(),
-        commissionRate: Double
-    ) -> InvestorInvestmentStatementItem {
-        let buyPrice = trade.entryPrice
-        let investorBuyQty = trade.totalQuantity * ownershipPercentage
-        let buyTotal = (buyInvoice?.securitiesTotal ?? 0.0) * ownershipPercentage
-        let buyQty = investorBuyQty
-        let roiInvestedAmount = investorBuyQty * buyPrice
-        let buyFeeDetails = self.buildFeeDetails(from: buyInvoice, scale: ownershipPercentage)
-        let buyFeesInvestor = buyFeeDetails.reduce(0) { $0 + $1.amount }
-
-        let totalSellQtyFromInvoices = sellInvoices.reduce(0.0) { total, invoice in
-            total + invoice.securitiesItems.reduce(0.0) { $0 + $1.quantity }
-        }
-        let totalSellValueFromInvoices = sellInvoices.reduce(0.0) { total, invoice in
-            total + invoice.securitiesTotal
-        }
-
-        let sellPercentage = trade.totalQuantity > 0 ? (totalSellQtyFromInvoices / trade.totalQuantity) : 0.0
-        let investorSellQty = investorBuyQty * sellPercentage
-        let sellAvgPrice = totalSellQtyFromInvoices > 0 ? totalSellValueFromInvoices / totalSellQtyFromInvoices : 0.0
-        let investorSellValue = totalSellValueFromInvoices * ownershipPercentage
-
-        let sellShare = totalSellValueFromInvoices > 0 ? (investorSellValue / totalSellValueFromInvoices) : ownershipPercentage
-        let sellFeeDetails = self.buildFeeDetails(from: sellInvoices, scale: sellShare)
-        let investorSellFees = sellFeeDetails.reduce(0) { $0 + $1.amount }
-
-        let grossProfit = investorSellValue - investorSellFees - (buyTotal + buyFeesInvestor)
-        let roiGrossProfit = investorSellValue - roiInvestedAmount
-
-        let commission = commissionCalculationService.calculateCommission(
-            grossProfit: grossProfit,
-            rate: commissionRate
-        )
-        let grossProfitAfterCommission = commissionCalculationService.calculateNetProfitAfterCommission(
-            grossProfit: grossProfit,
-            rate: commissionRate
-        )
-
-        return InvestorInvestmentStatementItem(
-            id: trade.id,
-            tradeNumber: trade.tradeNumber,
-            symbol: trade.symbol,
-            tradeDate: trade.completedAt ?? trade.updatedAt,
-            buyQuantity: buyQty,
-            buyPrice: buyPrice,
-            buyTotal: buyTotal,
-            buyFees: buyFeesInvestor,
-            buyFeeDetails: buyFeeDetails,
-            sellQuantity: investorSellQty,
-            sellAveragePrice: sellAvgPrice,
-            sellTotal: investorSellValue,
-            sellFees: investorSellFees,
-            sellFeeDetails: sellFeeDetails,
-            grossProfit: grossProfit,
-            ownershipPercentage: ownershipPercentage,
-            roiGrossProfit: roiGrossProfit,
-            roiInvestedAmount: roiInvestedAmount,
-            tradeROI: trade.displayROI,
-            commission: commission,
-            grossProfitAfterCommission: grossProfitAfterCommission,
-            residualAmount: 0.0
-        )
-    }
-
-    private static func buildFeeDetails(from invoice: Invoice?, scale: Double) -> [InvestorFeeDetail] {
-        guard let invoice = invoice else { return [] }
-        return self.buildFeeDetails(from: [invoice], scale: scale)
-    }
-
-    private static func buildFeeDetails(from invoices: [Invoice], scale: Double) -> [InvestorFeeDetail] {
-        guard scale > 0 else { return [] }
-        return invoices.flatMap { invoice -> [InvestorFeeDetail] in
-            invoice.items
-                .filter { $0.itemType != .securities }
-                .map { item in
-                    InvestorFeeDetail(
-                        label: item.description,
-                        amount: item.totalAmount * scale
-                    )
-                }
-        }
-        .filter { abs($0.amount) > 0.0001 }
     }
 }
 

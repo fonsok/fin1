@@ -9,7 +9,7 @@ import {
   getCustomerTrades,
   getCustomerDocuments,
   getCustomerKYCStatus,
-  getSupportTickets,
+  listSupportTickets,
 } from '../api';
 import clsx from 'clsx';
 import { useTheme } from '../../../context/ThemeContext';
@@ -103,7 +103,10 @@ export function CustomerDetailPage() {
 
   const { data: tickets } = useQuery({
     queryKey: ['customer-tickets', userId],
-    queryFn: () => getSupportTickets(userId),
+    queryFn: async () => {
+      const { tickets } = await listSupportTickets({ userId, limit: 50, sortBy: 'createdAt', sortOrder: 'desc' });
+      return tickets;
+    },
     enabled: !!userId && activeTab === 'tickets',
   });
 

@@ -6,8 +6,8 @@ import SwiftUI
 @MainActor
 final class DashboardTraderOverviewViewModel: ObservableObject {
     // MARK: - Dependencies
-    private let traderDataService: any TraderDataServiceProtocol
-    private let watchlistService: any InvestorWatchlistServiceProtocol
+    private var traderDataService: any TraderDataServiceProtocol
+    private var watchlistService: any InvestorWatchlistServiceProtocol
 
     // MARK: - Outputs
     @Published var cachedRows: [TableRowData] = []
@@ -29,7 +29,7 @@ final class DashboardTraderOverviewViewModel: ObservableObject {
 
     // MARK: - Public API
     func updateCachedData() {
-        let traders = self.traderDataService.traders
+        let traders = self.traderDataService.dashboardTraders
             .sorted { $0.performance > $1.performance }
 
         let watchlistStatus = self.getWatchlistStatus()
@@ -51,12 +51,12 @@ final class DashboardTraderOverviewViewModel: ObservableObject {
             onWatchlistToggle: { [weak self] username, isWatched in
                 guard let self else { return }
                 print("⭐️ [Dashboard] onWatchlistToggle username=\(username), isWatched(next)=\(isWatched)")
-                if let trader = self.traderDataService.traders.first(where: { $0.username == username }) {
+                if let trader = self.traderDataService.dashboardTraders.first(where: { $0.username == username }) {
                     Task { @MainActor in
                         self.busyUsernames.insert(username)
                         self.updateCachedData()
                     }
-                    self.handleWatchlistToggle(traderID: trader.id.uuidString, isWatched: isWatched, username: username)
+                    self.handleWatchlistToggle(traderID: trader.backendTraderId, isWatched: isWatched, username: username)
                 }
             },
             watchlistStatus: watchlistStatus,
@@ -65,7 +65,16 @@ final class DashboardTraderOverviewViewModel: ObservableObject {
     }
 
     func getTraderID(username: String) -> String? {
-        return self.traderDataService.traders.first(where: { $0.username == username })?.id.uuidString
+        return self.traderDataService.dashboardTraders.first(where: { $0.username == username })?.backendTraderId
+    }
+
+    func reconfigure(
+        traderDataService: any TraderDataServiceProtocol,
+        watchlistService: any InvestorWatchlistServiceProtocol
+    ) {
+        self.traderDataService = traderDataService
+        self.watchlistService = watchlistService
+        self.updateCachedData()
     }
 
     // MARK: - Private Helpers

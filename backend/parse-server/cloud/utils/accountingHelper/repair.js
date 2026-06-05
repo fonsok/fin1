@@ -15,6 +15,9 @@
 // ============================================================================
 
 const { round2 } = require('./shared');
+const { audit } = require('../structuredLogger');
+const { resolvePairedRepairScope } = require('../../services/poolMirrorActivation/traderCustomerBookingPolicy');
+const { isMirrorPoolTradeLeg } = require('../../services/poolMirrorActivation/poolActivationPolicy');
 
 const BACKEND_DOC_TYPES = [
   'investorCollectionBill',
@@ -50,6 +53,42 @@ async function destroyAllInBatches(objects) {
     removed += slice.length;
   }
   return removed;
+}
+
+async function findBackendDocumentsForTrades(tradeIds) {
+  if (!tradeIds.length) return [];
+  const q = new Parse.Query('Document')
+    .containedIn('tradeId', tradeIds)
+    .equalTo('source', 'backend')
+    .containedIn('type', BACKEND_DOC_TYPES)
+    .limit(1000);
+  return q.find({ useMasterKey: true });
+}
+
+async function findBackendStatementsForTrades(tradeIds) {
+  if (!tradeIds.length) return [];
+  const q = new Parse.Query('AccountStatement')
+    .containedIn('tradeId', tradeIds)
+    .equalTo('source', 'backend')
+    .containedIn('entryType', BACKEND_STATEMENT_TYPES)
+    .limit(1000);
+  return q.find({ useMasterKey: true });
+}
+
+async function findCommissionsForTrades(tradeIds) {
+  if (!tradeIds.length) return [];
+  const q = new Parse.Query('Commission')
+    .containedIn('tradeId', tradeIds)
+    .limit(1000);
+  return q.find({ useMasterKey: true });
+}
+
+async function findParticipationsForTrades(tradeIds) {
+  if (!tradeIds.length) return [];
+  const q = new Parse.Query('PoolTradeParticipation')
+    .containedIn('tradeId', tradeIds)
+    .limit(1000);
+  return q.find({ useMasterKey: true });
 }
 
 async function findBackendDocumentsForTrade(tradeId) {
@@ -154,6 +193,19 @@ async function recalcInvestmentTotalsFromOtherTrades({ investment, excludeTradeI
   return investment;
 }
 
+function tradeAuditFields(trade) {
+  if (!trade || !trade.id) {
+    return { tradeId: null, tradeNumber: null, businessCaseId: null };
+  }
+  const tn = trade.get('tradeNumber');
+  const bc = trade.get('businessCaseId');
+  return {
+    tradeId: trade.id,
+    tradeNumber: tn != null ? tn : null,
+    businessCaseId: bc != null && String(bc).trim() !== '' ? String(bc).trim() : null,
+  };
+}
+
 /**
  * Reparatur eines Trades: Belege & Buchungen säubern und neu erzeugen.
  *
@@ -164,26 +216,83 @@ async function recalcInvestmentTotalsFromOtherTrades({ investment, excludeTradeI
  * @returns {Promise<object>} Diagnose-Report.
  */
 async function repairTradeSettlement(tradeId, opts = {}) {
-  if (!tradeId) {
-    throw new Parse.Error(Parse.Error.INVALID_QUERY, 'tradeId required');
-  }
   const reSettle = opts.reSettle !== false;
   const dryRun = opts.dryRun === true;
 
-  const trade = await new Parse.Query('Trade').get(tradeId, { useMasterKey: true });
+  if (!tradeId) {
+    audit.error('settlement.admin.repair.repairTradeSettlement.invalid', {
+      tradeId: null,
+      dryRun,
+      reSettle,
+      error: 'tradeId required',
+      message: 'repairTradeSettlement: missing or empty tradeId',
+    });
+    throw new Parse.Error(Parse.Error.INVALID_QUERY, 'tradeId required');
+  }
 
-  const [docs, stmts, comms, parts] = await Promise.all([
-    findBackendDocumentsForTrade(tradeId),
-    findBackendStatementsForTrade(tradeId),
-    findCommissionsForTrade(tradeId),
-    findParticipationsForTrade(tradeId),
-  ]);
+  let trade;
+  try {
+    trade = await new Parse.Query('Trade').get(tradeId, { useMasterKey: true });
+  } catch (err) {
+    audit.error('settlement.admin.repair.repairTradeSettlement.loadTradeFailure', {
+      tradeId,
+      dryRun,
+      reSettle,
+      error: err && err.message ? err.message : String(err),
+      stack: err && err.stack ? err.stack : undefined,
+      message: 'repairTradeSettlement: Trade.get failed (preflight)',
+    });
+    throw err;
+  }
+
+  const repairScope = await resolvePairedRepairScope(trade);
+  const tradeIdsForCleanup = repairScope.tradeIdsForCleanup.length
+    ? repairScope.tradeIdsForCleanup
+    : [tradeId];
+  const settlementTrade = repairScope.settlementTrade || trade;
+
+  if (isMirrorPoolTradeLeg(trade) && !repairScope.traderLeg && !opts.repairMirrorLegDirectly) {
+    throw new Parse.Error(
+      Parse.Error.INVALID_QUERY,
+      'MIRROR_POOL trade repair requires paired TRADER leg or repairMirrorLegDirectly=true',
+    );
+  }
+
+  let docs;
+  let stmts;
+  let comms;
+  let parts;
+  try {
+    [docs, stmts, comms, parts] = await Promise.all([
+      findBackendDocumentsForTrades(tradeIdsForCleanup),
+      findBackendStatementsForTrades(tradeIdsForCleanup),
+      findCommissionsForTrades(tradeIdsForCleanup),
+      findParticipationsForTrades([repairScope.poolTrade?.id || tradeId]),
+    ]);
+  } catch (err) {
+    audit.error('settlement.admin.repair.repairTradeSettlement.preflightQueriesFailure', {
+      ...tradeAuditFields(trade),
+      dryRun,
+      reSettle,
+      phase: 'preflight_queries',
+      error: err && err.message ? err.message : String(err),
+      stack: err && err.stack ? err.stack : undefined,
+      message: 'repairTradeSettlement: parallel preflight queries failed',
+    });
+    throw err;
+  }
 
   const investmentIds = [...new Set(parts.map((p) => p.get('investmentId')).filter(Boolean))];
 
   const report = {
     tradeId,
     tradeNumber: trade.get('tradeNumber') || null,
+    repairScope: {
+      settlementTradeId: settlementTrade.id,
+      poolTradeId: repairScope.poolTrade?.id || tradeId,
+      tradeIdsForCleanup,
+      redirectedFromMirror: repairScope.redirectedFromMirror || false,
+    },
     counts: {
       documents: docs.length,
       statements: stmts.length,
@@ -207,45 +316,104 @@ async function repairTradeSettlement(tradeId, opts = {}) {
     reSettleSummary: null,
   };
 
-  if (dryRun) return report;
+  const baseAudit = tradeAuditFields(trade);
+  audit.info('settlement.admin.repair.repairTradeSettlement.start', {
+    ...baseAudit,
+    dryRun,
+    reSettle,
+    counts: report.counts,
+    message: 'repairTradeSettlement: scope (dry-run or destructive)',
+  });
 
-  // 1. Statements first (they reference Documents).
-  await destroyAllInBatches(stmts);
-
-  // 2. Commissions.
-  await destroyAllInBatches(comms);
-
-  // 3. Documents (CollectionBill, CreditNote, TradeExecution, walletReceipt).
-  await destroyAllInBatches(docs);
-
-  // 4. Reset PoolTradeParticipation for this trade.
-  for (const p of parts) {
-    resetParticipation(p);
-  }
-  if (parts.length > 0) {
-    await Parse.Object.saveAll(parts, { useMasterKey: true });
-  }
-
-  // 5. Recompute Investment totals from REMAINING settled participations.
-  for (const invId of investmentIds) {
-    const inv = await loadInvestmentById(invId);
-    if (!inv) continue;
-    await recalcInvestmentTotalsFromOtherTrades({ investment: inv, excludeTradeId: tradeId });
-    await inv.save(null, { useMasterKey: true });
+  if (dryRun) {
+    audit.info('settlement.admin.repair.repairTradeSettlement.complete', {
+      ...baseAudit,
+      dryRun: true,
+      reSettle,
+      counts: report.counts,
+      message: 'repairTradeSettlement: dry-run complete (no changes)',
+    });
+    return report;
   }
 
-  // 6. Trigger fresh settlement.
-  if (reSettle) {
-    const { settleAndDistribute } = require('./settlement');
-    try {
-      const settlement = await settleAndDistribute(trade);
-      report.reSettleSummary = settlement || { skipped: true };
-    } catch (err) {
-      report.reSettleSummary = { error: err && err.message ? err.message : String(err) };
+  try {
+    await destroyAllInBatches(stmts);
+
+    // 2. Commissions.
+    await destroyAllInBatches(comms);
+
+    // 3. Documents (CollectionBill, CreditNote, TradeExecution, walletReceipt).
+    await destroyAllInBatches(docs);
+
+    // 4. Reset PoolTradeParticipation for this trade.
+    for (const p of parts) {
+      resetParticipation(p);
     }
-  }
+    if (parts.length > 0) {
+      await Parse.Object.saveAll(parts, { useMasterKey: true });
+    }
 
-  return report;
+    // 5. Recompute Investment totals from REMAINING settled participations.
+    for (const invId of investmentIds) {
+      const inv = await loadInvestmentById(invId);
+      if (!inv) continue;
+      await recalcInvestmentTotalsFromOtherTrades({ investment: inv, excludeTradeId: tradeId });
+      await inv.save(null, { useMasterKey: true });
+    }
+
+    // 6. Trigger fresh settlement.
+    if (reSettle) {
+      const { settleAndDistribute } = require('./settlement');
+      const baseFields = tradeAuditFields(trade);
+      audit.info('settlement.admin.repair.reSettle.start', {
+        ...baseFields,
+        dryRun: false,
+        repairPath: 'repairTradeSettlement',
+        message: 'repairTradeSettlement: re-settlement starting',
+      });
+      try {
+        const settlement = await settleAndDistribute(settlementTrade);
+        report.reSettleSummary = settlement || { skipped: true };
+        audit.info('settlement.admin.repair.reSettle.done', {
+          ...tradeAuditFields(settlementTrade),
+          investorCount: settlement && settlement.investorCount,
+          totalCommission: settlement && settlement.totalCommission,
+          message: 'repairTradeSettlement: re-settlement completed',
+        });
+      } catch (err) {
+        report.reSettleSummary = { error: err && err.message ? err.message : String(err) };
+        audit.error('settlement.admin.repair.reSettle.failure', {
+          ...baseFields,
+          error: err && err.message ? err.message : String(err),
+          stack: err && err.stack ? err.stack : undefined,
+          message: 'repairTradeSettlement: re-settlement failed',
+        });
+      }
+    }
+
+    audit.info('settlement.admin.repair.repairTradeSettlement.complete', {
+      ...tradeAuditFields(trade),
+      dryRun: false,
+      reSettle,
+      counts: report.counts,
+      reSettleSummaryError: report.reSettleSummary && report.reSettleSummary.error
+        ? String(report.reSettleSummary.error)
+        : null,
+      message: 'repairTradeSettlement: destructive path finished',
+    });
+
+    return report;
+  } catch (err) {
+    audit.error('settlement.admin.repair.repairTradeSettlement.failure', {
+      ...tradeAuditFields(trade),
+      dryRun: false,
+      reSettle,
+      error: err && err.message ? err.message : String(err),
+      stack: err && err.stack ? err.stack : undefined,
+      message: 'repairTradeSettlement: failed before completion',
+    });
+    throw err;
+  }
 }
 
 module.exports = {

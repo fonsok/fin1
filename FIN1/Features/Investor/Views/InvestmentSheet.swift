@@ -3,7 +3,7 @@ import SwiftUI
 // MARK: - Investment Sheet Wrapper
 /// Wrapper view that handles dependency injection from environment
 struct InvestmentSheet: View {
-    let trader: MockTrader
+    let trader: InvestorTrader
     let onInvestmentSuccess: (() -> Void)?
 
     @Environment(\.appServices) private var services
@@ -20,7 +20,7 @@ struct InvestmentSheet: View {
 // MARK: - Investment Sheet Content
 /// Internal view that receives services as parameters
 private struct InvestmentSheetContent: View {
-    let trader: MockTrader
+    let trader: InvestorTrader
     let onInvestmentSuccess: (() -> Void)?
     let services: AppServices
 
@@ -31,7 +31,7 @@ private struct InvestmentSheetContent: View {
     @StateObject private var viewModel: InvestmentSheetViewModel
     @StateObject private var investmentSummaryViewModel: InvestmentSummaryViewModel
 
-    init(trader: MockTrader, onInvestmentSuccess: (() -> Void)?, services: AppServices) {
+    init(trader: InvestorTrader, onInvestmentSuccess: (() -> Void)?, services: AppServices) {
         self.trader = trader
         self.onInvestmentSuccess = onInvestmentSuccess
         self.services = services
@@ -44,6 +44,7 @@ private struct InvestmentSheetContent: View {
             telemetryService: services.telemetryService,
             investorCashBalanceService: services.investorCashBalanceService,
             configurationService: services.configurationService,
+            parseAPIClient: services.parseAPIClient,
             onInvestmentSuccess: onInvestmentSuccess
         ))
         self._investmentSummaryViewModel = StateObject(
@@ -64,7 +65,7 @@ private struct InvestmentSheetContent: View {
                 ScrollView {
                     VStack(spacing: ResponsiveDesign.spacing(16)) {
                         // Header
-                        InvestmentHeaderView(trader: self.trader)
+                        InvestmentHeaderView(trader: self.viewModel.trader)
 
                         // Investment Form
                         InvestmentFormView(
@@ -83,6 +84,20 @@ private struct InvestmentSheetContent: View {
                             self.investmentSlotLimitHintView
                         }
 
+                        if self.viewModel.isHydratingTraderIdentityMessage {
+                            self.traderIdentityLoadingView
+                        } else if let traderBlocked = self.viewModel.traderIdentityBlockedMessage {
+                            self.traderIdentityBlockedView(message: traderBlocked)
+                        }
+
+                        if self.viewModel.showPoolMirrorCapacityBlockedProactive {
+                            self.poolMirrorCapacityBlockedProactiveView
+                        }
+
+                        if self.viewModel.showPoolMirrorMaxInvestableOnInput {
+                            self.poolMirrorMaxInvestableOnInputView
+                        }
+
                         // Investment Selection Section
                         InvestmentSelectionView(
                             selectedInvestmentSelection: self.viewModel.selectedInvestmentSelection,
@@ -99,7 +114,7 @@ private struct InvestmentSheetContent: View {
 
                         // Commission Confirmation
                         CommissionConfirmationView(
-                            traderUsername: self.trader.username,
+                            traderUsername: self.viewModel.trader.username,
                             commissionPercentage: self.services.configurationService.traderCommissionPercentage,
                             isConfirmed: self.$viewModel.isCommissionConfirmed
                         )
@@ -145,13 +160,17 @@ private struct InvestmentSheetContent: View {
         .accessibilityIdentifier("InvestmentSuccessAlert")
         .onChange(of: self.viewModel.investmentAmount) {
             self.updateInvestmentSummary()
+            Task { await self.viewModel.refreshPoolMirrorCapacity() }
         }
         .onChange(of: self.viewModel.numberOfInvestments) {
             self.updateInvestmentSummary()
+            Task { await self.viewModel.refreshPoolMirrorCapacity() }
         }
         .onAppear {
             Task { @MainActor in
-                await self.viewModel.prepareForInvestingFlow()
+                await self.viewModel.prepareForInvestingFlow(
+                    traderDataService: self.services.traderDataService
+                )
                 _ = self.viewModel.validateUserCanInvest()
                 self.updateInvestmentSummary()
             }
@@ -222,8 +241,158 @@ private struct InvestmentSheetContent: View {
         .cornerRadius(ResponsiveDesign.spacing(10))
         .accessibilityIdentifier("InvestmentSlotLimitHint")
     }
+
+    @ViewBuilder
+    private var traderIdentityLoadingView: some View {
+        HStack(spacing: ResponsiveDesign.spacing(10)) {
+            ProgressView()
+            Text("Trader-Verbindung wird geladen …")
+                .font(ResponsiveDesign.bodyFont())
+                .foregroundColor(AppTheme.secondaryText)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding()
+        .accessibilityIdentifier("TraderIdentityLoading")
+    }
+
+    @ViewBuilder
+    private func traderIdentityBlockedView(message: String) -> some View {
+        VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
+            HStack {
+                Image(systemName: "person.crop.circle.badge.exclamationmark")
+                    .foregroundColor(AppTheme.accentOrange)
+                    .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize()))
+                Text("Trader-Verbindung")
+                    .font(ResponsiveDesign.headlineFont())
+                    .foregroundColor(AppTheme.primaryText)
+            }
+            Text(message)
+                .font(ResponsiveDesign.bodyFont())
+                .foregroundColor(AppTheme.primaryText)
+                .multilineTextAlignment(.leading)
+            Button("Erneut verbinden") {
+                Task {
+                    await self.viewModel.prepareForInvestingFlow(
+                        traderDataService: self.services.traderDataService
+                    )
+                }
+            }
+            .font(ResponsiveDesign.bodyFont())
+        }
+        .padding()
+        .background(AppTheme.accentOrange.opacity(0.12))
+        .overlay(
+            RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(10))
+                .stroke(AppTheme.accentOrange.opacity(0.35), lineWidth: 1)
+        )
+        .cornerRadius(ResponsiveDesign.spacing(10))
+        .accessibilityIdentifier("TraderIdentityBlockedHint")
+    }
+
+    @ViewBuilder
+    private var poolMirrorCapacityBlockedProactiveView: some View {
+        VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(10)) {
+            HStack {
+                Image(systemName: "pause.circle.fill")
+                    .foregroundColor(AppTheme.accentOrange)
+                    .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize()))
+                Text("Hinweis")
+                    .font(ResponsiveDesign.headlineFont())
+                    .foregroundColor(AppTheme.primaryText)
+            }
+
+            Text(self.viewModel.poolMirrorCapacityBlockedProactiveMessage)
+                .font(ResponsiveDesign.bodyFont())
+                .foregroundColor(AppTheme.primaryText)
+                .multilineTextAlignment(.leading)
+
+            if self.viewModel.showPoolMirrorCapacityNotifyButton {
+                self.poolMirrorCapacityAlertButton
+            }
+        }
+        .padding()
+        .background(AppTheme.accentOrange.opacity(0.12))
+        .overlay(
+            RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(10))
+                .stroke(AppTheme.accentOrange.opacity(0.35), lineWidth: 1)
+        )
+        .cornerRadius(ResponsiveDesign.spacing(10))
+        .accessibilityIdentifier("PoolMirrorCapacityBlockedProactive")
+    }
+
+    @ViewBuilder
+    private var poolMirrorMaxInvestableOnInputView: some View {
+        VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
+            HStack {
+                Image(systemName: "info.circle.fill")
+                    .foregroundColor(AppTheme.accentOrange)
+                    .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize()))
+                Text("Hinweis")
+                    .font(ResponsiveDesign.headlineFont())
+                    .foregroundColor(AppTheme.primaryText)
+            }
+
+            Text(self.viewModel.poolMirrorMaxInvestableOnInputMessage)
+                .font(ResponsiveDesign.bodyFont())
+                .foregroundColor(AppTheme.primaryText)
+                .multilineTextAlignment(.leading)
+        }
+        .padding()
+        .background(AppTheme.accentOrange.opacity(0.12))
+        .overlay(
+            RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(10))
+                .stroke(AppTheme.accentOrange.opacity(0.35), lineWidth: 1)
+        )
+        .cornerRadius(ResponsiveDesign.spacing(10))
+        .accessibilityIdentifier("PoolMirrorMaxInvestableOnInput")
+    }
+
+    @ViewBuilder
+    private var poolMirrorCapacityAlertButton: some View {
+        let label = {
+            HStack(spacing: ResponsiveDesign.spacing(8)) {
+                if self.viewModel.isUpdatingPoolMirrorAlert {
+                    ProgressView()
+                        .controlSize(.small)
+                }
+                if self.viewModel.poolMirrorAlertSubscribed {
+                    Image(systemName: "bell.badge.fill")
+                        .font(ResponsiveDesign.bodyFont())
+                }
+                Text(
+                    self.viewModel.poolMirrorAlertSubscribed
+                        ? "Benachrichtigung ist aktiv"
+                        : "Benachrichtigen, wenn Investieren wieder möglich ist"
+                )
+                .font(ResponsiveDesign.bodyFont())
+            }
+            .frame(maxWidth: .infinity)
+        }
+
+        if self.viewModel.poolMirrorAlertSubscribed {
+            Button {
+                Task { await self.viewModel.togglePoolMirrorCapacityAlert() }
+            } label: {
+                label()
+            }
+            .buttonStyle(.bordered)
+            .tint(AppTheme.accentGreen)
+            .disabled(self.viewModel.isUpdatingPoolMirrorAlert)
+            .accessibilityIdentifier("PoolMirrorCapacityAlertButton")
+        } else {
+            Button {
+                Task { await self.viewModel.togglePoolMirrorCapacityAlert() }
+            } label: {
+                label()
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(AppTheme.accentOrange)
+            .disabled(self.viewModel.isUpdatingPoolMirrorAlert)
+            .accessibilityIdentifier("PoolMirrorCapacityAlertButton")
+        }
+    }
 }
 
 #Preview {
-    InvestmentSheet(trader: mockTraders[0], onInvestmentSuccess: nil)
+    InvestmentSheet(trader: InvestorTrader(mock: mockTraders[0]), onInvestmentSuccess: nil)
 }

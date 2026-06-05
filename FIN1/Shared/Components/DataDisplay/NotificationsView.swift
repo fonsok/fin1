@@ -44,6 +44,9 @@ struct NotificationsView: View {
             .navigationDestination(for: Document.self) { document in
                 DocumentNavigationHelper.navigationDestination(for: document, appServices: self.appServices)
             }
+            .task {
+                await self.refreshDocumentsForInbox()
+            }
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Done") {
@@ -64,6 +67,14 @@ struct NotificationsView: View {
                 }
             }
         }
+    }
+
+    private func refreshDocumentsForInbox() async {
+        NotificationCenter.default.post(
+            name: .userDocumentInboxShouldRefresh,
+            object: nil,
+            userInfo: ["force": false]
+        )
     }
 
     // MARK: - Filter Tabs

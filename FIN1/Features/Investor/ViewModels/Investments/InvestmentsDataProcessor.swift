@@ -52,7 +52,7 @@ final class InvestmentsDataProcessor {
                 traderName: investment.traderName,
                 sequenceNumber: sequenceNumber,
                 status: investmentStatus,
-                amount: investment.amount,
+                amount: investment.displayAmountForOpenPositions,
                 profit: investmentProfit,
                 returnPercentage: investmentReturn,
                 reservation: reservation,

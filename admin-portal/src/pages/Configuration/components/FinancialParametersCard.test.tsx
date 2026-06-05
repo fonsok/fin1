@@ -3,16 +3,18 @@ import type { ComponentProps } from 'react';
 import { render, screen } from '../../../test/test-utils';
 import { FinancialParametersCard } from './FinancialParametersCard';
 import { PARAMETER_DEFINITIONS } from '../parameterDefinitions';
+import { sortTaxConfigEntries } from '../configurationSort';
 import { getAppWithholdsLabel } from '../../../constants/branding';
+
+function buildTaxParamsInDisplayOrder(): [string, Omit<(typeof PARAMETER_DEFINITIONS)[string], 'value'>][] {
+  return sortTaxConfigEntries(
+    Object.entries(PARAMETER_DEFINITIONS).filter(([, def]) => def.category === 'tax'),
+  );
+}
 
 function createProps(overrides?: Partial<ComponentProps<typeof FinancialParametersCard>>) {
   return {
-    financialParams: [
-      ['taxCollectionMode', PARAMETER_DEFINITIONS.taxCollectionMode],
-      ['vatRate', PARAMETER_DEFINITIONS.vatRate],
-      ['withholdingTaxRate', PARAMETER_DEFINITIONS.withholdingTaxRate],
-      ['solidaritySurchargeRate', PARAMETER_DEFINITIONS.solidaritySurchargeRate],
-    ] as [string, Omit<(typeof PARAMETER_DEFINITIONS)[string], 'value'>][],
+    financialParams: buildTaxParamsInDisplayOrder(),
     title: 'Steuerparameter',
     config: {
       taxCollectionMode: 'customer_self_reports',

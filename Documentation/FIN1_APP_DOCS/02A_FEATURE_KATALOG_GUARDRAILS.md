@@ -193,19 +193,23 @@ Diese Regeln schützen **bereits korrekte Finanzwerte** vor “Formel-Drift” (
 
 - **Entry Point**
   - `FIN1/Shared/Components/DataDisplay/NotificationsView.swift`
+  - `FIN1/Shared/ViewModels/NotificationsViewModel.swift`
 - **Wie es funktioniert**
   - Kombiniert Notifications + Documents in einer UI-Liste.
   - Filter ist rollenbasiert initialisiert.
-  - “Smart Cleanup”: read items werden nach 24h nicht mehr im Main-View gezeigt (Archiv/History).
+  - “Smart Cleanup”: gelesene **Notifications** (nicht der Tab **Documents**) verschwinden nach 24h aus der Hauptliste → Archiv.
+  - Buchungsbelege: SSOT `getUserDocumentInbox` (ein CF); `DocumentService.refreshUserDocumentInbox` mit TTL + `userDocumentInboxShouldRefresh` nach Settlement/Investment.
 - **Protected Behaviors (Security/Privacy)**
-  - **Muss immer nach aktuellem `userId` filtern**:
-    - Notifications: `notification.userId == currentUserId`
-    - Documents: `document.userId == currentUserId`
+  - **Muss immer nach aktuellem User scopen** (`ledgerUserIdCandidates` + legacy `user:email`):
+    - Notifications: `notification.userId` in erlaubten Keys
+    - Documents: alle Cache-Zeilen mit passendem `document.userId` (nicht nur ein einzelner Key)
   - “Mark All Read” darf nur die eigenen Notifications betreffen.
   - UI darf keine fremden Dokumente/Notifications anzeigen (Regression-High-Risk).
 - **Minimal-Checks**
   - Wechsel zwischen Test-Usern: keine Notifications “leaken”.
-  - Archiv/24h-Logik bleibt nachvollziehbar.
+  - Trader nach abgeschlossenem Trade: Tab **Documents** zeigt Collection Bill **und** Gutschrift (wenn Provision > 0).
+  - Investor: Tab **Documents** zeigt `investorCollectionBill` für abgeschlossene Pool-Trades.
+  - Archiv/24h-Logik gilt für Notifications; Documents-Tab bleibt für Belege sichtbar.
 
 ### 3.7 FAQs (server-driven + caching + placeholder replacement)
 

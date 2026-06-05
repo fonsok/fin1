@@ -28,6 +28,10 @@ final class InvestmentService: InvestmentServiceProtocol, ServiceLifecycle, @unc
         self.repository.investmentsPublisher(for: investorId)
     }
 
+    func investmentsPublisher(matchingAnyOf investorIds: [String]) -> AnyPublisher<[Investment], Never> {
+        self.repository.investmentsPublisher(matchingAnyOf: investorIds)
+    }
+
     // MARK: - Dependencies
     let repository: any InvestmentRepositoryProtocol
     let queryService: any InvestmentQueryServiceProtocol
@@ -46,6 +50,8 @@ final class InvestmentService: InvestmentServiceProtocol, ServiceLifecycle, @unc
 
     // Backend sync (optional - for persistence across devices)
     var investmentAPIService: (any InvestmentAPIServiceProtocol)?
+    /// Resolves `traderUsername` for pending sync when `Investment.traderId` is still a MockTrader UUID.
+    var traderDataService: (any TraderDataServiceProtocol)?
     var pendingSyncIds: Set<String> = [] // Track investments not yet synced
 
     // MARK: - Initialization
@@ -94,6 +100,10 @@ final class InvestmentService: InvestmentServiceProtocol, ServiceLifecycle, @unc
         self.commissionCalculationService = commissionCalculationService
     }
 
+    func configureTraderDataService(_ traderDataService: (any TraderDataServiceProtocol)?) {
+        self.traderDataService = traderDataService
+    }
+
     // MARK: - ServiceLifecycle
 
     func start() {
@@ -140,6 +150,10 @@ final class InvestmentService: InvestmentServiceProtocol, ServiceLifecycle, @unc
 
     func getInvestments(for investorId: String) -> [Investment] {
         self.queryService.getInvestments(for: investorId, in: self.repository.investments)
+    }
+
+    func getInvestments(matchingAnyOf investorIds: [String]) -> [Investment] {
+        self.queryService.getInvestments(matchingAnyOf: investorIds, in: self.repository.investments)
     }
 
     func getInvestments(forTrader traderId: String) -> [Investment] {

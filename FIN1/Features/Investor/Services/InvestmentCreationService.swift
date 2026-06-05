@@ -52,7 +52,7 @@ final class InvestmentCreationService: InvestmentCreationServiceProtocol {
     /// Each investment is now a first-class Investment entity
     func createInvestment(
         investor: User,
-        trader: MockTrader,
+        trader: InvestorTrader,
         amountPerInvestment: Double,
         numberOfInvestments: Int,
         specialization: String,
@@ -130,7 +130,7 @@ final class InvestmentCreationService: InvestmentCreationServiceProtocol {
         numberOfInvestments: Int,
         specialization: String,
         investor: User,
-        trader: MockTrader
+        trader: InvestorTrader
     ) throws {
         // Basic input validation
         guard amountPerInvestment > 0 else {
@@ -195,7 +195,7 @@ final class InvestmentCreationService: InvestmentCreationServiceProtocol {
     /// Creates an investment batch to group related investments
     private func createInvestmentBatch(
         investor: User,
-        trader: MockTrader,
+        trader: InvestorTrader,
         amountPerInvestment: Double,
         numberOfInvestments: Int,
         specialization: String,
@@ -224,7 +224,7 @@ final class InvestmentCreationService: InvestmentCreationServiceProtocol {
         // Create the batch
         print("🔍 InvestmentCreationService.createInvestmentBatch:")
         print("   👤 Investor ID: '\(investor.id)'")
-        print("   👤 Trader ID: '\(trader.id.uuidString)'")
+        print("   👤 Trader ID: '\(trader.backendTraderId)'")
         print("   👤 Trader Name: \(trader.name)")
         print("   💵 Total Amount: €\(totalAmount.formatted(.currency(code: "EUR")))")
         print("   📦 Number of Investments: \(numberOfInvestments)")
@@ -252,7 +252,7 @@ final class InvestmentCreationService: InvestmentCreationServiceProtocol {
     /// Creates individual investments
     private func createIndividualInvestments(
         investor: User,
-        trader: MockTrader,
+        trader: InvestorTrader,
         batch: InvestmentBatch,
         amountPerInvestment: Double,
         numberOfInvestments: Int,
@@ -297,7 +297,7 @@ final class InvestmentCreationService: InvestmentCreationServiceProtocol {
     private func finalizeInvestmentCreation(
         batch: InvestmentBatch,
         investments: [Investment],
-        trader: MockTrader,
+        trader: InvestorTrader,
         repository: any InvestmentRepositoryProtocol
     ) async -> [String] {
         // Create investment pools (one per investment)
@@ -322,7 +322,7 @@ final class InvestmentCreationService: InvestmentCreationServiceProtocol {
     /// Investment numbers are calculated per trader based on existing pools
     private func createInvestmentPools(
         investments: [Investment],
-        trader: MockTrader,
+        trader: InvestorTrader,
         repository: any InvestmentRepositoryProtocol
     ) -> [String] {
         guard let investmentPoolLifecycleService = investmentPoolLifecycleService else {
@@ -331,12 +331,12 @@ final class InvestmentCreationService: InvestmentCreationServiceProtocol {
         }
 
         // Get existing pools for this trader to calculate next investment number
-        let existingPools = repository.investmentPools.filter { $0.traderId == trader.id.uuidString }
+        let existingPools = repository.investmentPools.filter { $0.traderId == trader.backendTraderId }
         let maxInvestmentNumber = existingPools.map { $0.poolNumber }.max() ?? 0
         var nextInvestmentNumber = maxInvestmentNumber + 1
 
         print("🔍 InvestmentCreationService.createInvestmentPools:")
-        print("   👤 Trader ID: \(trader.id.uuidString)")
+        print("   👤 Trader ID: \(trader.backendTraderId)")
         print("   📊 Existing pools for trader: \(existingPools.count)")
         print("   🔢 Max investment number: \(maxInvestmentNumber), starting from: \(nextInvestmentNumber)")
 
@@ -344,7 +344,7 @@ final class InvestmentCreationService: InvestmentCreationServiceProtocol {
         var createdPoolIds: [String] = []
         for investment in investments {
             let newPool = investmentPoolLifecycleService.createNewInvestmentPool(
-                for: trader.id.uuidString,
+                for: trader.backendTraderId,
                 sequenceNumber: nextInvestmentNumber,
                 amountPerInvestment: investment.amount
             )

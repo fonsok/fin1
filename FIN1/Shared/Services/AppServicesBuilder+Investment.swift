@@ -29,7 +29,12 @@ extension AppServicesBuilder {
             ctx.telemetryService = TelemetryService()
             ctx.investmentPoolLifecycleService = InvestmentPoolLifecycleService()
             ctx.investmentStatusService = InvestmentStatusService()
-            ctx.traderDataService = TraderDataService()
+            let traderDataService = TraderDataService()
+            traderDataService.configure(parseAPIClient: parseAPIClient)
+            ctx.traderDataService = traderDataService
+            Task { @MainActor in
+                await traderDataService.refreshTraderCatalog()
+            }
             ctx.commissionAccumulationService = CommissionAccumulationService()
             ctx.traderCashBalanceService = TraderCashBalanceService(
                 configurationService: configurationService,
@@ -88,11 +93,16 @@ extension AppServicesBuilder {
             )
             if let settlementAPI = ctx.settlementAPIService {
                 ctx.commissionCalculationService!.configure(settlementAPIService: settlementAPI)
+                ctx.investorGrossProfitService!.configure(
+                    settlementAPIService: settlementAPI,
+                    commissionCalculationService: ctx.commissionCalculationService!
+                )
             }
             ctx.investmentService!.configureCalculationServices(
                 investorGrossProfitService: ctx.investorGrossProfitService!,
                 commissionCalculationService: ctx.commissionCalculationService!
             )
+            ctx.investmentService!.configureTraderDataService(ctx.traderDataService)
 
             ctx.commissionSettlementService = serviceFactory.createCommissionSettlementService(
                 commissionAccumulationService: ctx.commissionAccumulationService!,

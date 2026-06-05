@@ -71,14 +71,20 @@ db.getCollection('_Session').createIndex({ "expiresAt": 1 }, { expireAfterSecond
 // ============================================================================
 
 print('Creating indexes for Investment...');
-// sparse: investmentNumber wird ggf. erst nach Insert gesetzt (DocumentNumber-Service) –
-// ohne sparse kollidieren mehrere Inserts mit `null` am gleichen Unique-Slot (E11000).
-db.Investment.createIndex({ "investmentNumber": 1 }, { unique: true, sparse: true });
+// Per-investor INV-YYYY-NNNNNNN (generateInvestorInvestmentNumber) — global unique auf
+// investmentNumber allein würde Kollisionen zwischen Investoren erzeugen (E11000).
+db.Investment.createIndex(
+  { "investorId": 1, "investmentNumber": 1 },
+  { unique: true, sparse: true, name: "investorId_1_investmentNumber_1" }
+);
 db.Investment.createIndex({ "investorId": 1, "status": 1 });
 db.Investment.createIndex({ "traderId": 1, "status": 1 });
 db.Investment.createIndex({ "status": 1 });
 db.Investment.createIndex({ "createdAt": -1 });
 db.Investment.createIndex({ "activatedAt": -1 });
+db.Investment.createIndex({ "adminSearchBlob": "text" }, { default_language: "none", name: "Investment_adminSearchBlob_text" });
+db.Investment.createIndex({ "adminSearchBlob": 1 }, { name: "Investment_adminSearchBlob_prefix" });
+db.Investment.createIndex({ "status": 1, "createdAt": -1 }, { name: "Investment_status_createdAt" });
 
 // InvestmentBatch
 print('Creating indexes for InvestmentBatch...');
@@ -91,6 +97,14 @@ db.PoolTradeParticipation.createIndex({ "investmentId": 1 });
 db.PoolTradeParticipation.createIndex({ "tradeId": 1 });
 db.PoolTradeParticipation.createIndex({ "investmentId": 1, "tradeId": 1 }, { unique: true });
 db.PoolTradeParticipation.createIndex({ "isSettled": 1 });
+db.PoolTradeParticipation.createIndex(
+  { "investmentId": 1, "isSettled": 1 },
+  { name: 'PoolTradeParticipation_investmentId_isSettled' },
+);
+db.PoolTradeParticipation.createIndex(
+  { "tradeId": 1, "isSettled": 1 },
+  { name: 'PoolTradeParticipation_tradeId_isSettled' },
+);
 
 // Commission
 print('Creating indexes for Commission...');
@@ -124,9 +138,17 @@ db.Order.createIndex({ "traderId": 1, "status": 1 });
 db.Order.createIndex({ "symbol": 1 });
 db.Order.createIndex({ "createdAt": -1 });
 db.Order.createIndex({ "executedAt": -1 }, { sparse: true });
+db.Order.createIndex({ "pairExecutionId": 1 }, { sparse: true });
+db.Order.createIndex({ "pairExecutionId": 1, "legType": 1 }, { sparse: true });
+db.Order.createIndex({ "clientOrderIntentId": 1 }, { sparse: true });
+
+print('Creating indexes for PairedExecution...');
+db.PairedExecution.createIndex({ "traderId": 1, "clientOrderIntentId": 1 }, { unique: true, sparse: true });
+db.PairedExecution.createIndex({ "traderId": 1, "status": 1 });
+db.PairedExecution.createIndex({ "status": 1, "effectsApplied": 1 });
 
 print('Creating indexes for Trade...');
-db.Trade.createIndex({ "tradeNumber": 1 }, { unique: true, sparse: true });
+db.Trade.createIndex({ "traderId": 1, "tradeNumber": 1 }, { unique: true, sparse: true, name: "traderId_1_tradeNumber_1" });
 db.Trade.createIndex({ "traderId": 1 });
 db.Trade.createIndex({ "traderId": 1, "status": 1 });
 db.Trade.createIndex({ "status": 1 });
@@ -134,6 +156,9 @@ db.Trade.createIndex({ "symbol": 1 });
 db.Trade.createIndex({ "createdAt": -1 });
 db.Trade.createIndex({ "openedAt": -1 }, { sparse: true });
 db.Trade.createIndex({ "closedAt": -1 }, { sparse: true });
+db.Trade.createIndex({ "adminSearchBlob": "text" }, { default_language: "none", name: "Trade_adminSearchBlob_text" });
+db.Trade.createIndex({ "adminSearchBlob": 1 }, { name: "Trade_adminSearchBlob_prefix" });
+db.Trade.createIndex({ "hasPoolParticipation": 1, "createdAt": -1 }, { name: "Trade_poolParticipation_createdAt" });
 
 print('Creating indexes for Holding...');
 db.Holding.createIndex({ "positionNumber": 1 }, { unique: true, sparse: true });
@@ -214,6 +239,45 @@ db.AccountStatement.createIndex({ "statementNumber": 1 }, { unique: true, sparse
 db.AccountStatement.createIndex({ "userId": 1 });
 db.AccountStatement.createIndex({ "userId": 1, "periodType": 1, "periodYear": 1, "periodMonth": 1 });
 db.AccountStatement.createIndex({ "tradeId": 1, "createdAt": -1 }, { sparse: true });
+// Finance integrity: prevent duplicate backend trader cash bookings (see ensure-finance-integrity-indexes.js).
+db.AccountStatement.createIndex(
+  { "userId": 1, "entryType": 1, "tradeId": 1 },
+  {
+    unique: true,
+    name: "AccountStatement_backend_user_entry_tradeId_unique",
+    partialFilterExpression: {
+      source: "backend",
+      tradeId: { $exists: true, $type: "string" },
+      entryType: { $in: ["trade_buy", "trade_sell"] },
+    },
+  }
+);
+db.AccountStatement.createIndex(
+  { "userId": 1, "entryType": 1, "businessCaseId": 1 },
+  {
+    unique: true,
+    name: "AccountStatement_backend_user_entry_businessCase_unique",
+    partialFilterExpression: {
+      source: "backend",
+      businessCaseId: { $exists: true, $type: "string", $gt: "" },
+      entryType: { $in: ["trade_buy", "trade_sell"] },
+    },
+  }
+);
+db.AccountStatement.createIndex(
+  { "userId": 1, "entryType": 1, "tradeNumber": 1 },
+  {
+    unique: true,
+    name: "AccountStatement_backend_user_entry_tradeNumber_unique",
+    partialFilterExpression: {
+      source: "backend",
+      tradeNumber: { $exists: true, $type: "string", $gt: "" },
+      entryType: { $in: ["trade_buy", "trade_sell"] },
+    },
+  }
+);
+
+db.OpsHealthSnapshot.createIndex({ "kind": 1, "runAt": -1 }, { name: "OpsHealthSnapshot_kind_runAt" });
 
 // ============================================================================
 // NOTIFICATION COLLECTIONS

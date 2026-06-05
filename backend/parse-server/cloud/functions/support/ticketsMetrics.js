@@ -1,6 +1,7 @@
 'use strict';
 
-const { requirePermission, requireAdminRole } = require('../../utils/permissions');
+const { requireAdminRole } = require('../../utils/permissions');
+const { ACTIVE_STATUSES } = require('../../utils/supportTicketHelper');
 
 // ============================================================================
 // CSR PORTAL - AGENTS & METRICS
@@ -31,7 +32,7 @@ Parse.Cloud.define('getAvailableAgents', async (request) => {
 });
 
 /**
- * Get ticket metrics
+ * Get ticket metrics (count-based, no full ticket load)
  */
 Parse.Cloud.define('getTicketMetrics', async (request) => {
   requireAdminRole(request);
@@ -44,23 +45,51 @@ Parse.Cloud.define('getTicketMetrics', async (request) => {
   const baseQuery = new Parse.Query('SupportTicket');
   baseQuery.greaterThanOrEqualTo('createdAt', from);
   baseQuery.lessThanOrEqualTo('createdAt', to);
-
   const total = await baseQuery.count({ useMasterKey: true });
 
   const openQuery = new Parse.Query('SupportTicket');
-  openQuery.containedIn('status', ['open', 'in_progress', 'waiting']);
+  openQuery.containedIn('status', ACTIVE_STATUSES);
   const openTickets = await openQuery.count({ useMasterKey: true });
+
+  const escalatedStatusQuery = new Parse.Query('SupportTicket');
+  escalatedStatusQuery.equalTo('status', 'escalated');
+  const escalatedFlagQuery = new Parse.Query('SupportTicket');
+  escalatedFlagQuery.equalTo('escalated', true);
+  const escalatedOr = Parse.Query.or(escalatedStatusQuery, escalatedFlagQuery);
+  const escalatedTickets = await escalatedOr.count({ useMasterKey: true });
 
   const resolvedQuery = new Parse.Query('SupportTicket');
   resolvedQuery.containedIn('status', ['resolved', 'closed']);
   resolvedQuery.greaterThanOrEqualTo('resolvedAt', from);
+  resolvedQuery.lessThanOrEqualTo('resolvedAt', to);
   const resolvedTickets = await resolvedQuery.count({ useMasterKey: true });
+
+  const durationQuery = new Parse.Query('SupportTicket');
+  durationQuery.containedIn('status', ['resolved', 'closed']);
+  durationQuery.greaterThanOrEqualTo('resolvedAt', from);
+  durationQuery.lessThanOrEqualTo('resolvedAt', to);
+  durationQuery.exists('resolvedAt');
+  durationQuery.limit(200);
+  const resolvedWithDuration = await durationQuery.find({ useMasterKey: true });
+  let averageResolutionTime = 0;
+  const durations = resolvedWithDuration
+    .map((t) => {
+      const resolvedAt = t.get('resolvedAt');
+      const createdAt = t.get('createdAt');
+      if (!resolvedAt || !createdAt) return null;
+      return (resolvedAt.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
+    })
+    .filter((h) => h != null && h >= 0);
+  if (durations.length > 0) {
+    averageResolutionTime = durations.reduce((a, b) => a + b, 0) / durations.length;
+  }
 
   return {
     totalTickets: total,
     openTickets,
+    escalatedTickets,
     resolvedTickets,
-    averageResolutionTime: 0, // Would need more complex calculation
+    averageResolutionTime: Math.round(averageResolutionTime * 10) / 10,
     averageResponseTime: 0,
   };
 });
@@ -83,14 +112,15 @@ Parse.Cloud.define('getAgentMetrics', async (request) => {
   const assignedQuery = new Parse.Query('SupportTicket');
   assignedQuery.equalTo('assignedTo', agentId);
   assignedQuery.greaterThanOrEqualTo('createdAt', from);
+  assignedQuery.lessThanOrEqualTo('createdAt', to);
   const ticketsAssigned = await assignedQuery.count({ useMasterKey: true });
 
   const resolvedQuery = new Parse.Query('SupportTicket');
   resolvedQuery.equalTo('resolvedBy', agentId);
   resolvedQuery.greaterThanOrEqualTo('resolvedAt', from);
+  resolvedQuery.lessThanOrEqualTo('resolvedAt', to);
   const ticketsResolved = await resolvedQuery.count({ useMasterKey: true });
 
-  // Get agent info
   const agentQuery = new Parse.Query(Parse.User);
   const agent = await agentQuery.get(agentId, { useMasterKey: true });
 
@@ -103,4 +133,3 @@ Parse.Cloud.define('getAgentMetrics', async (request) => {
     customerSatisfaction: 0,
   };
 });
-

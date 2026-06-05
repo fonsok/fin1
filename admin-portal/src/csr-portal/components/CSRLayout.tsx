@@ -206,6 +206,19 @@ export function CSRLayout({ children }: CSRLayoutProps) {
 
           {/* Quick Actions + Theme Toggle */}
           <div className="flex items-center gap-2">
+            {location.pathname === '/csr/tickets' && (
+              <Link
+                to="/csr/tickets/bulk"
+                className={clsx(
+                  'px-4 py-2 rounded-lg transition-colors text-sm font-medium border',
+                  isDark
+                    ? 'border-slate-500 text-slate-100 hover:bg-slate-700'
+                    : 'border-gray-300 text-gray-700 hover:bg-gray-100',
+                )}
+              >
+                Massenbearbeitung
+              </Link>
+            )}
             <Link
               to="/csr/tickets/new"
               className="px-4 py-2 bg-fin1-primary text-white rounded-lg hover:bg-fin1-secondary transition-colors text-sm font-medium"

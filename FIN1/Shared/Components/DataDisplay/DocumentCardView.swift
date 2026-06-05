@@ -40,7 +40,7 @@ struct DocumentCardView: View {
                 // Content
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
-                        Text(self.document.title)
+                        Text(DocumentInboxPolicy.inboxTitle(for: self.document))
                             .font(ResponsiveDesign.bodyFont())
                             .fontWeight(.medium)
                             .foregroundColor(AppTheme.fontColor)

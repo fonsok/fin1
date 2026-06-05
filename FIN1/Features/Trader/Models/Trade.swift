@@ -57,10 +57,18 @@ struct Trade: Identifiable, Codable, Sendable {
 
     // Pre-calculated profit from invoices (single source of truth)
     let calculatedProfit: Double?
+    /// Persisted on Parse (`traderPartialSellEventCount`); SSOT for partial-sell count after sync.
+    let traderPartialSellEventCount: Int?
+    /// Buy leg from paired execution (`TRADER` / `MIRROR_POOL`); nil for legacy single-leg trades.
+    let buyLegType: String?
+    /// Links TRADER + MIRROR_POOL trades from one `executePairedBuy`.
+    let pairExecutionId: String?
 
     // MARK: - Codable Support
     enum CodingKeys: String, CodingKey {
-        case id, tradeNumber, traderId, symbol, description, buyOrder, sellOrder, sellOrders, status, createdAt, completedAt, updatedAt, calculatedProfit
+        case id, tradeNumber, traderId, symbol, description, buyOrder, sellOrder, sellOrders, status
+        case createdAt, completedAt, updatedAt, calculatedProfit, traderPartialSellEventCount
+        case buyLegType, pairExecutionId
     }
 
     init(
@@ -76,7 +84,10 @@ struct Trade: Identifiable, Codable, Sendable {
         createdAt: Date,
         completedAt: Date?,
         updatedAt: Date,
-        calculatedProfit: Double? = nil
+        calculatedProfit: Double? = nil,
+        traderPartialSellEventCount: Int? = nil,
+        buyLegType: String? = nil,
+        pairExecutionId: String? = nil
     ) {
         self.id = id
         self.tradeNumber = tradeNumber
@@ -91,6 +102,9 @@ struct Trade: Identifiable, Codable, Sendable {
         self.completedAt = completedAt
         self.updatedAt = updatedAt
         self.calculatedProfit = calculatedProfit
+        self.traderPartialSellEventCount = traderPartialSellEventCount
+        self.buyLegType = buyLegType
+        self.pairExecutionId = pairExecutionId
     }
 
     init(from decoder: Decoder) throws {
@@ -108,6 +122,9 @@ struct Trade: Identifiable, Codable, Sendable {
         self.completedAt = try container.decodeIfPresent(Date.self, forKey: .completedAt)
         self.updatedAt = try container.decode(Date.self, forKey: .updatedAt)
         self.calculatedProfit = try container.decodeIfPresent(Double.self, forKey: .calculatedProfit)
+        self.traderPartialSellEventCount = try container.decodeIfPresent(Int.self, forKey: .traderPartialSellEventCount)
+        self.buyLegType = try container.decodeIfPresent(String.self, forKey: .buyLegType)
+        self.pairExecutionId = try container.decodeIfPresent(String.self, forKey: .pairExecutionId)
     }
 
     // Options-specific fields (derived from buyOrder)
@@ -359,7 +376,9 @@ extension Trade {
             status: .active,
             createdAt: self.createdAt,
             completedAt: nil,
-            updatedAt: sellOrder.updatedAt
+            updatedAt: sellOrder.updatedAt,
+            calculatedProfit: self.calculatedProfit,
+            traderPartialSellEventCount: self.traderPartialSellEventCount
         )
     }
 
@@ -381,7 +400,8 @@ extension Trade {
             createdAt: self.createdAt,
             completedAt: isCompleted ? Date() : nil,
             updatedAt: Date(),
-            calculatedProfit: self.calculatedProfit // Keep existing calculated profit
+            calculatedProfit: self.calculatedProfit,
+            traderPartialSellEventCount: self.traderPartialSellEventCount
         )
     }
 

@@ -49,13 +49,43 @@ struct InvestorCollectionBillOutput {
     let sellFees: Double
     let sellFeeDetails: [InvestorFeeDetail]
 
+    // Canonical ledger totals (single source for UI — always consistent with grossProfit)
+    let totalBuyCost: Double
+    let netSellAmount: Double
+
     // Profit calculations
     let grossProfit: Double
     let roiGrossProfit: Double
     let roiInvestedAmount: Double
 
+    /// Booked commission on the server Beleg (`metadata.commission`); nil for local-only rows.
+    let bookedCommission: Double?
+    /// Booked net profit on the server Beleg (`metadata.netProfit`).
+    let bookedNetProfit: Double?
+    /// Booked payout (`metadata.transferAmount` = netSellAmount − commission); nil for local-only rows.
+    let bookedTransferAmount: Double?
+
+    /// GoB: `accountingDocumentNumber` of the archived collection bill when loaded from server.
+    let accountingDocumentNumber: String?
+    /// Non-nil when leg detail and booked summary on the same Beleg diverge.
+    let belegInconsistencyMessage: String?
+
+    /// Where the amounts originated.
+    let dataSource: InvestorCollectionBillDataSource
+
     /// True when a backend fetch was attempted, failed, and local calculation was used instead.
-    let usedLocalFallbackDueToBackendError: Bool
+    var usedLocalFallbackDueToBackendError: Bool {
+        self.dataSource == .localFallbackAfterBackendError
+    }
+
+    var isFromArchivedBeleg: Bool {
+        switch self.dataSource {
+        case .backendBeleg, .backendBelegInconsistent:
+            return true
+        case .localInvoices, .localFallbackAfterBackendError:
+            return false
+        }
+    }
 }
 
 /// Validation result for input data

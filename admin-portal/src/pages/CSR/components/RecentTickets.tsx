@@ -13,6 +13,11 @@ import {
 } from '../../../utils/tableStriping';
 import type { SupportTicket } from '../types';
 import { useNavigate } from 'react-router-dom';
+import {
+  getTicketDisplayStatus,
+  getTicketPriorityLabel,
+  getTicketStatusLabel,
+} from '../../../utils/ticketLabels';
 
 import { adminBorderChrome, adminCaption, adminControlField, adminEmptyIcon, adminMuted, adminPrimary, adminSurfaceWell } from '../../../utils/adminThemeClasses';
 interface RecentTicketsProps {
@@ -41,38 +46,6 @@ export function RecentTickets({ tickets, serverTicketTotal, isLoading }: RecentT
       setPage(Math.max(0, listTotalPages - 1));
     }
   }, [page, listTotalPages]);
-
-  const getPriorityLabel = (priority: string): string => {
-    switch (priority?.toLowerCase()) {
-      case 'urgent':
-        return 'Dringend';
-      case 'high':
-        return 'Hoch';
-      case 'medium':
-        return 'Mittel';
-      case 'low':
-        return 'Niedrig';
-      default:
-        return priority || '-';
-    }
-  };
-
-  const getTicketStatusLabel = (status: string): string => {
-    switch (status?.toLowerCase()) {
-      case 'open':
-        return 'Offen';
-      case 'in_progress':
-        return 'In Bearbeitung';
-      case 'waiting':
-        return 'Wartend';
-      case 'resolved':
-        return 'Gelöst';
-      case 'closed':
-        return 'Geschlossen';
-      default:
-        return status || '-';
-    }
-  };
 
   if (isLoading) {
     return (
@@ -229,13 +202,13 @@ export function RecentTickets({ tickets, serverTicketTotal, isLoading }: RecentT
                   <p className={clsx('text-sm', tableBodyCellPrimaryClasses(isDark))}>{ticket.subject}</p>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <TicketStatusBadge status={ticket.status}>
-                    {getTicketStatusLabel(ticket.status)}
+                  <TicketStatusBadge status={getTicketDisplayStatus(ticket)}>
+                    {getTicketStatusLabel(getTicketDisplayStatus(ticket))}
                   </TicketStatusBadge>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <TicketPriorityBadge priority={ticket.priority}>
-                    {getPriorityLabel(ticket.priority)}
+                    {getTicketPriorityLabel(ticket.priority)}
                   </TicketPriorityBadge>
                 </td>
                 <td className={clsx('px-6 py-4 whitespace-nowrap text-sm', tableBodyCellMutedClasses(isDark))}>

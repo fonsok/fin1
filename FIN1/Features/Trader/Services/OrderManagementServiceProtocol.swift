@@ -27,8 +27,16 @@ protocol OrderManagementServiceProtocol: ObservableObject, Sendable {
     ) async throws -> OrderBuy
     func placeSellOrder(symbol: String, quantity: Int, price: Double) async throws -> OrderSell
     func cancelOrder(_ orderId: String) async throws
+    func removeActiveOrder(_ orderId: String) async
     func updateOrderStatus(_ orderId: String, status: String) async throws
     func addOrderToActiveOrders(_ order: Order) async
+    func persistSellOrder(_ order: OrderSell, tradeId: String?) async throws -> OrderSell
+    func syncActiveOrderToBackend(_ orderId: String) async
+    func registerSellOrderTradeLink(orderId: String, tradeId: String)
+    func registerPairedBuyExecutionLink(orderId: String, pairExecutionId: String)
+    func pairedBuyExecutionId(for orderId: String) -> String?
+    func finalizePairedBuyExecution(for orderId: String) async throws
+    @MainActor func reportOrderStatusFailure(_ message: String)
 
     // MARK: - Order Data Management
     func loadActiveOrders() async throws

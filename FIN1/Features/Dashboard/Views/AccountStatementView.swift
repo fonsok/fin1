@@ -23,6 +23,16 @@ struct AccountStatementView: View {
                 self.header
                 self.summarySection
 
+                if let infoMessage = viewModel.infoMessage {
+                    Text(infoMessage)
+                        .font(ResponsiveDesign.captionFont())
+                        .foregroundColor(AppTheme.fontColor.opacity(0.85))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(ResponsiveDesign.spacing(12))
+                        .background(AppTheme.sectionBackground.opacity(0.35))
+                        .cornerRadius(ResponsiveDesign.spacing(10))
+                }
+
                 if self.viewModel.hasTransactions {
                     self.entriesTable
                 } else {

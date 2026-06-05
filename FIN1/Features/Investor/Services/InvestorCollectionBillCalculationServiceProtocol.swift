@@ -28,12 +28,42 @@ protocol InvestorCollectionBillCalculationServiceProtocol {
     /// - Returns: Validation result with any errors or warnings
     func validateInput(_ input: InvestorCollectionBillInput) -> ValidationResult
 
-    /// Attempts to build a collection bill output from backend data, falling back to local calculation.
-    /// When fallback occurs, ``InvestorCollectionBillOutput/usedLocalFallbackDueToBackendError`` is true on the result.
+    /// Builds collection bill output from backend Beleg data.
+    /// When ``monetaryServerOnly`` is true, never falls back to ``calculateCollectionBill(input:)``.
+    /// Set ``billResolvedFromPrefetchIndex`` when ``preloadedBill`` came from a prefetch map lookup (nil = no bill).
     func calculateCollectionBillWithBackend(
         input: InvestorCollectionBillInput,
         settlementAPIService: (any SettlementAPIServiceProtocol)?,
         tradeId: String?,
-        investmentId: String?
+        investmentId: String?,
+        preloadedBill: BackendCollectionBill?,
+        monetaryServerOnly: Bool,
+        billResolvedFromPrefetchIndex: Bool
     ) async throws -> InvestorCollectionBillOutput
+
+    /// One API call per investment — use before building multi-trade statements.
+    func prefetchBackendBills(
+        for investmentId: String,
+        settlementAPIService: any SettlementAPIServiceProtocol
+    ) async throws -> [String: BackendCollectionBill]
+}
+
+extension InvestorCollectionBillCalculationServiceProtocol {
+    func calculateCollectionBillWithBackend(
+        input: InvestorCollectionBillInput,
+        settlementAPIService: (any SettlementAPIServiceProtocol)?,
+        tradeId: String?,
+        investmentId: String?,
+        preloadedBill: BackendCollectionBill?
+    ) async throws -> InvestorCollectionBillOutput {
+        try await self.calculateCollectionBillWithBackend(
+            input: input,
+            settlementAPIService: settlementAPIService,
+            tradeId: tradeId,
+            investmentId: investmentId,
+            preloadedBill: preloadedBill,
+            monetaryServerOnly: false,
+            billResolvedFromPrefetchIndex: preloadedBill != nil
+        )
+    }
 }

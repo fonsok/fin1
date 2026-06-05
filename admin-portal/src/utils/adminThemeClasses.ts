@@ -16,7 +16,7 @@ const TEXT_GRAY_800 = clsx('text-gray-800');
 const TEXT_GRAY_300 = clsx('text-gray-300');
 
 const BG_GRAY_50_60 = clsx('bg-gray-50/60');
-const HOVER_BG_GRAY_50 = clsx('hover:bg-gray-50');
+const HOVER_BG_GRAY_100 = clsx('hover:bg-gray-100');
 const THEAD_SURFACE_LIGHT = clsx('bg-gray-50 border-gray-200');
 const DIVIDE_GRAY_100 = clsx('divide-gray-100');
 const BORDER_GRAY_100 = clsx('border-gray-100');
@@ -340,7 +340,7 @@ export function adminListRowStripeLightOdd(): string {
 }
 
 export function adminListRowHoverLight(): string {
-  return HOVER_BG_GRAY_50;
+  return HOVER_BG_GRAY_100;
 }
 
 export function adminEmptyListPlaceholderSurface(isDark: boolean): string {

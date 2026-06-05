@@ -85,6 +85,7 @@ function registerConfigurationWorkflowFunctions() {
       'walletFeatureEnabled',
       'serviceChargeInvoiceFromBackend',
       'serviceChargeLegacyClientFallbackEnabled',
+      'investorMonetaryServerOnly',
     ]);
     const valueToApply = booleanParameters.has(parameterName)
       ? Boolean(Number(normalizedNewValue))

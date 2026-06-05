@@ -14,6 +14,15 @@ Kurzcheckliste nach den umfangreichen DEV-/UI-Änderungen.
   - `counts`, `deleted`, `deletedTotal`
   - `timestamp`, `userId`
 
+### Parse Schema-Migrationen (GoB) — nach jedem Parse-Cloud-Deploy
+
+Siehe **`Documentation/SCHEMA_MIGRATIONS.md`**. Kurz:
+
+- Parse Dashboard oder Cloud-Logs: Startup meldet `Schema migrations (GoB registry) ok` bzw. `partial` (siehe `main.js` ~6 s nach Boot).
+- Bei Unsicherheit: Admin-Cloud **`listSchemaMigrations`** (letzte Zeilen in `SchemaMigration`) — erwartet u. a. `success: true` für `gob_investment_schema_v1` und `gob_document_schema_v1` nach erstem erfolgreichen Lauf.
+- Wenn Migrationen fehlen / rot: **`updateInvestmentClassSchemaFields`** (Admin) erneut ausführen, dann erneut `listSchemaMigrations` prüfen.
+- Symptom „**Permission denied for action addField on class Investment**“: Schema-Feld fehlt noch → obige Schritte, bis `feeConfigSnapshot` auf der Klasse `Investment` existiert.
+
 ## 2) Keine manuellen DB-Hotfixes für CSR-Templates
 
 - Statt direkter Mongo-Updates: Cloud Function nutzen:
@@ -100,10 +109,55 @@ docker compose -f docker-compose.production.yml up -d --force-recreate --no-deps
   - DEV Resets (Dry-Run + Execute)
   - CSR Template Status/Shortcut-Anzeige
 
-## 6) Abnahmeprotokoll verlinken
+## 6) Admin Summary Report — Listen-Suche (Go-Live + Monitoring + Abnahme)
+
+**Zielbild:** production-tauglich mit dokumentierten Grenzen (kein „100 %-Search“). Siehe **`Documentation/ADMIN_LIST_SEARCH.md`**.
+
+### Deploy / einmalig
+
+1. **Health:** `getAdminListSearchHealth` → `healthy: true` (Text- + Prefix-Index, Sample-Blobs).
+2. **Backfill** (nach Deploy / Import): `./scripts/backfill-trade-summary-flags.sh`
+3. **UI:** Summary Report → Investments/Trades: Suche + Zeitraum + Filter; Button **Such-Index Status**.
+
+Bei `healthy: false`: `ensureAdminListSearchIndexes` (Master) + Backfill erneut.
+
+### Monitoring (Dauerbetrieb)
+
+- **CI:** GitHub Workflow `Admin List Search Health Monitor` (wöchentlich; Secrets `RETURN_MONITOR_PARSE_*` wie Return%-Monitor).
+- **Manuell:** `./scripts/check-admin-list-search-health.sh` oder Summary Report → **Such-Index Status**.
+
+### Abnahme (Go/No-Go)
+
+- Checkliste: **`Documentation/RELEASE_ABNAHME_SUMMARY_REPORT_SEARCH.md`** (§4 manuelle Tests, §5 Protokoll ausfüllen).
+
+## 8) iOS — Notifications → Documents (Beleg-Inbox)
+
+**Zielbild:** Ein CF `getUserDocumentInbox`, Client-Merge-Cache, Event-Refresh nach Settlement. Siehe `Documentation/ACCOUNT_STATEMENT_ARCHITECTURE.md`.
+
+### Deploy
+
+1. `./scripts/deploy-parse-cloud-to-fin1-server.sh` (inkl. `userDocumentInbox.js`)
+2. iOS-App neu bauen/installieren
+
+### Kurztest (2 Rollen)
+
+| Rolle | Documents-Tab |
+|-------|----------------|
+| Investor | `investorCollectionBill` sichtbar |
+| Trader | `traderCollectionBill` + `traderCreditNote` (wenn Provision) |
+
+Kontoauszug-Beleg-Link und Documents-Tab müssen denselben Parse-`Document` öffnen.
+
+### Abnahmeprotokoll
+
+- **`Documentation/RELEASE_ABNAHME_IOS_DOCUMENT_INBOX.md`**
+
+## 7) Abnahmeprotokoll verlinken
 
 - Nach erfolgreichem Go/No-Go Test immer ein kurzes Abnahmeprotokoll ablegen und verlinken.
 - Aktuelle Referenz:
   - `Documentation/RELEASE_ABNAHME_2026-05-15_ADMIN_PORTAL.md` (§5 Quickcheck Chip/Dark-Mode)
+  - `Documentation/RELEASE_ABNAHME_SUMMARY_REPORT_SEARCH.md` (Summary Report Listen-Suche)
+  - `Documentation/RELEASE_ABNAHME_IOS_DOCUMENT_INBOX.md` (iOS Notifications → Documents)
   - `Documentation/RELEASE_ABNAHME_2026-03-19_ADMIN_PORTAL.md`
 

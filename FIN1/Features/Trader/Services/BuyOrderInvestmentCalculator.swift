@@ -52,15 +52,9 @@ final class BuyOrderInvestmentCalculator: BuyOrderInvestmentCalculatorProtocol {
         // 1. It's a static value that doesn't reflect actual available capital
         // 2. It may not match the sum of individual investment amounts
         // 3. It can lead to underutilization of pool capital
-        // Include investments that are reserved OR active (executing/closed are also participating)
+        // Parse `status: reserved` maps locally to `.submitted` — use pool-capital SSOT, not `status == .active`.
         let allReservedInvestments = investmentService.getInvestments(forTrader: traderId)
-            .filter { investment in
-                investment.status == .active &&
-                    (investment.reservationStatus == .reserved ||
-                        investment.reservationStatus == .active ||
-                        investment.reservationStatus == .executing ||
-                        investment.reservationStatus == .closed)
-            }
+            .filter(\.hasPoolCapitalCommitted)
 
         // Calculate total available capital from all reserved investments
         let investmentBalance = allReservedInvestments.reduce(0.0) { $0 + $1.amount }

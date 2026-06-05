@@ -22,13 +22,20 @@ final class MockInvestmentService: InvestmentServiceProtocol, @unchecked Sendabl
             .eraseToAnyPublisher()
     }
 
+    func investmentsPublisher(matchingAnyOf investorIds: [String]) -> AnyPublisher<[Investment], Never> {
+        let idSet = Set(investorIds)
+        return self.$investments
+            .map { list in list.filter { idSet.contains($0.investorId) } }
+            .eraseToAnyPublisher()
+    }
+
     // MARK: - Behavior Closures (Simplified Approach)
     /// Closure to handle createInvestment - defaults to creating simple investment
-    var createInvestmentHandler: ((User, MockTrader, Double, Int, String, InvestmentSelectionStrategy) async throws -> Void)?
+    var createInvestmentHandler: ((User, InvestorTrader, Double, Int, String, InvestmentSelectionStrategy) async throws -> Void)?
 
     func createInvestment(
         investor: User,
-        trader: MockTrader,
+        trader: InvestorTrader,
         amountPerInvestment: Double,
         numberOfInvestments: Int,
         specialization: String,
@@ -44,7 +51,7 @@ final class MockInvestmentService: InvestmentServiceProtocol, @unchecked Sendabl
                     batchId: nil,
                     investorId: investor.id,
                     investorName: investor.displayName,
-                    traderId: trader.id.uuidString,
+                    traderId: trader.id,
                     traderName: trader.name,
                     amount: amountPerInvestment * Double(numberOfInvestments),
                     currentValue: amountPerInvestment * Double(numberOfInvestments) * 1.05, // 5% gain
@@ -67,6 +74,11 @@ final class MockInvestmentService: InvestmentServiceProtocol, @unchecked Sendabl
 
     func getInvestments(for investorId: String) -> [Investment] {
         return self.investments.filter { $0.investorId == investorId }
+    }
+
+    func getInvestments(matchingAnyOf investorIds: [String]) -> [Investment] {
+        let idSet = Set(investorIds)
+        return self.investments.filter { idSet.contains($0.investorId) }
     }
 
     func getInvestments(forTrader traderId: String) -> [Investment] {
@@ -228,6 +240,10 @@ final class MockInvestmentService: InvestmentServiceProtocol, @unchecked Sendabl
 
     func fetchFromBackend(for investorId: String) async {
         // Mock: no-op
+    }
+
+    func fetchFromBackend(for user: User) async {
+        await self.fetchFromBackend(for: user.id)
     }
 
     func start() {}

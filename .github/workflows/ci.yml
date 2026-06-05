@@ -34,6 +34,11 @@ jobs:
           chmod +x scripts/check-parse-cloud-naming-conventions.sh
           ./scripts/check-parse-cloud-naming-conventions.sh
 
+      - name: iOS order cash SSOT guard
+        run: |
+          chmod +x scripts/check-order-cash-amount-ssot.sh
+          ./scripts/check-order-cash-amount-ssot.sh
+
       - name: Local Parse-shaped API smoke
         run: |
           set -euo pipefail
@@ -85,6 +90,10 @@ jobs:
       - name: ESLint
         run: npm run lint
 
+      - name: File size advisory (non-blocking)
+        run: bash ../scripts/check-admin-portal-file-lines.sh
+        continue-on-error: true
+
       - name: Unit tests (Vitest)
         run: npm run test:run
 
@@ -132,6 +141,11 @@ jobs:
       # there are error-severity violations. Use `swiftlint --strict` locally when clearing the backlog.
       - name: SwiftLint
         run: swiftlint
+
+      - name: Order cash SSOT guard
+        run: |
+          chmod +x scripts/check-order-cash-amount-ssot.sh
+          ./scripts/check-order-cash-amount-ssot.sh
 
       - name: Build and Test (iOS Simulator)
         run: |

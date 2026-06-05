@@ -40,6 +40,14 @@ jest.mock('../../pairedTradeMirrorSync', () => ({
   getMirrorTradeForPairedTraderLeg: jest.fn().mockResolvedValue(null),
 }));
 
+jest.mock('../../../services/poolMirrorActivation/traderCustomerBookingPolicy', () => ({
+  resolveTraderSettlementBookingTrade: jest.fn(async (trade) => ({
+    traderBookingTrade: trade,
+    poolSettlementTrade: trade,
+    invokedOnMirrorLeg: false,
+  })),
+}));
+
 jest.mock('../settlementTradeMath', () => ({
   computeTradingFeesWithBreakdown: jest.fn().mockReturnValue({
     totalFees: 10,
@@ -64,6 +72,7 @@ jest.mock('../settlementTraderLifecycleBooks', () => ({
 }));
 
 const { isPairedTraderLegTrade, getMirrorTradeForPairedTraderLeg } = require('../../pairedTradeMirrorSync');
+const { resolveTraderSettlementBookingTrade } = require('../../../services/poolMirrorActivation/traderCustomerBookingPolicy');
 const { settleParticipation } = require('../settlementParticipationProcessor');
 const { bookSettlementEntry } = require('../statements');
 const { createCreditNoteDocument } = require('../documents');
@@ -154,6 +163,11 @@ describe('settleAndDistribute (settlementCore)', () => {
     settleParticipation.mockResolvedValue({ commission: 40, grossProfit: 160 });
     isPairedTraderLegTrade.mockResolvedValue(false);
     getMirrorTradeForPairedTraderLeg.mockResolvedValue(null);
+    resolveTraderSettlementBookingTrade.mockImplementation(async (trade) => ({
+      traderBookingTrade: trade,
+      poolSettlementTrade: trade,
+      invokedOnMirrorLeg: false,
+    }));
     taxation.calculateWithholdingBundle.mockReturnValue({
       totalTax: 0,
       lines: [],
@@ -272,6 +286,86 @@ describe('settleAndDistribute (settlementCore)', () => {
           tradeNumber: '88',
           netTradingProfit: 490,
         }),
+      );
+    });
+
+    test('when mirror has no rows yet, calls ensureParticipationsForTrade(mirror)', async () => {
+      FakeQuery.mirrorParticipations = [];
+      const createdPart = { id: 'ptp-fallback', get: (k) => (k === 'ownershipPercentage' ? 1 : undefined) };
+      ensureParticipationsForTrade.mockResolvedValue([createdPart]);
+      const trade = makeTrade();
+      await settleAndDistribute(trade);
+      expect(ensureParticipationsForTrade).toHaveBeenCalledWith(mirrorTrade);
+      expect(settleParticipation).toHaveBeenCalledTimes(1);
+      expect(settleParticipation).toHaveBeenCalledWith(
+        expect.objectContaining({
+          participation: createdPart,
+          trade: mirrorTrade,
+          tradeNumber: '88',
+          netTradingProfit: 490,
+        }),
+      );
+    });
+  });
+
+  describe('per-investor try/catch isolation', () => {
+    test('isolates failing participation: completes successful ones and throws aggregated error', async () => {
+      const p1 = { id: 'ptp-1', get: (k) => (k === 'investmentId' ? 'inv-1' : 1) };
+      const p2 = { id: 'ptp-2', get: (k) => (k === 'investmentId' ? 'inv-2' : 1) };
+      const p3 = { id: 'ptp-3', get: (k) => (k === 'investmentId' ? 'inv-3' : 1) };
+      FakeQuery.participationRows = [p1, p2, p3];
+      settleParticipation
+        .mockResolvedValueOnce({ commission: 30, grossProfit: 120, investorId: 'i1', investmentId: 'inv-1' })
+        .mockRejectedValueOnce(new Error('Investment not found'))
+        .mockResolvedValueOnce({ commission: 30, grossProfit: 120, investorId: 'i3', investmentId: 'inv-3' });
+      const trade = makeTrade();
+      await expect(settleAndDistribute(trade)).rejects.toThrow(/partial failure.*1\/3.*inv=inv-2.*Investment not found/i);
+      expect(settleParticipation).toHaveBeenCalledTimes(3);
+      // Trader-CreditNote MUST NOT be created on partial failure (no Teilbuchung).
+      expect(createCreditNoteDocument).not.toHaveBeenCalled();
+      expect(bookSettlementEntry).not.toHaveBeenCalledWith(
+        expect.objectContaining({ entryType: 'commission_credit' }),
+      );
+    });
+
+    test('completes all and books trader credit when no participation fails', async () => {
+      const p1 = { id: 'ptp-1', get: (k) => (k === 'investmentId' ? 'inv-1' : 1) };
+      const p2 = { id: 'ptp-2', get: (k) => (k === 'investmentId' ? 'inv-2' : 1) };
+      FakeQuery.participationRows = [p1, p2];
+      settleParticipation.mockResolvedValue({ commission: 40, grossProfit: 160 });
+      const trade = makeTrade();
+      const result = await settleAndDistribute(trade);
+      expect(settleParticipation).toHaveBeenCalledTimes(2);
+      expect(createCreditNoteDocument).toHaveBeenCalledTimes(1);
+      expect(result.totalCommission).toBe(80);
+      expect(result.investorCount).toBe(2);
+    });
+  });
+
+  describe('MIRROR_POOL leg invocation', () => {
+    test('books commission_credit on TRADER leg and skips lifecycle on mirror', async () => {
+      const traderTrade = makeTrade({ id: 'trader-leg-1', tradeNumber: 1 });
+      const mirrorTrade = makeTrade({ id: 'mirror-leg-2', tradeNumber: 2, grossProfit: 800 });
+      resolveTraderSettlementBookingTrade.mockResolvedValue({
+        traderBookingTrade: traderTrade,
+        poolSettlementTrade: mirrorTrade,
+        invokedOnMirrorLeg: true,
+      });
+      FakeQuery.participationRows = [{ id: 'ptp-m', get: () => 1 }];
+      FakeQuery.tradeIdFilter = 'mirror-leg-2';
+
+      await settleAndDistribute(mirrorTrade);
+
+      expect(bookTraderTradeLifecycleEntries).not.toHaveBeenCalled();
+      expect(bookSettlementEntry).toHaveBeenCalledWith(
+        expect.objectContaining({
+          entryType: 'commission_credit',
+          tradeId: 'trader-leg-1',
+          tradeNumber: 1,
+        }),
+      );
+      expect(createCreditNoteDocument).toHaveBeenCalledWith(
+        expect.objectContaining({ trade: traderTrade }),
       );
     });
   });

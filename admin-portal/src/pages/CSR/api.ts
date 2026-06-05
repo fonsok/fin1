@@ -1,4 +1,5 @@
 import { cloudFunction } from '../../api/admin';
+import { getTickets, type TicketListParams } from '../../api/admin/tickets';
 import type {
   CustomerSearchResult,
   CustomerProfile,
@@ -42,11 +43,24 @@ export async function getCustomerKYCStatus(userId: string): Promise<CustomerKYCS
   return cloudFunction<CustomerKYCStatus | null>('getCustomerKYCStatus', { userId });
 }
 
+/** Paginated ticket list — preferred over legacy getSupportTickets. */
+export async function listSupportTickets(
+  params: TicketListParams = {},
+): Promise<{ tickets: SupportTicket[]; total: number }> {
+  const result = await getTickets(params);
+  return {
+    tickets: result.tickets as unknown as SupportTicket[],
+    total: result.total,
+  };
+}
+
+/** @deprecated Use listSupportTickets — returns tickets only (no total). */
 export async function getSupportTickets(userId?: string): Promise<SupportTicket[]> {
-  const result = await cloudFunction<{ tickets: SupportTicket[] }>('getSupportTickets', {
+  const { tickets } = await listSupportTickets({
     userId: userId || undefined,
+    limit: 50,
   });
-  return result.tickets || [];
+  return tickets;
 }
 
 export async function getTicket(ticketId: string): Promise<SupportTicket | null> {
@@ -98,6 +112,31 @@ export async function getAvailableAgents(): Promise<CSRAgent[]> {
 }
 
 // Analytics
+export interface SupportTrend {
+  id: string;
+  type: string;
+  title: string;
+  description: string;
+  severity: 'info' | 'warning' | 'critical';
+  ticketCount: number;
+  affectedCustomers: number;
+  percentageChange: number;
+  detectedAt: string;
+  relatedTicketIds: string[];
+  suggestedAction: string;
+}
+
+export async function getSupportTrends(weeksBack = 2): Promise<{
+  trends: SupportTrend[];
+  meta: { currentWeekCount: number; previousWeekCount: number; ticketsAnalyzed: number; truncated?: boolean };
+}> {
+  const result = await cloudFunction<{
+    trends: SupportTrend[];
+    meta: { currentWeekCount: number; previousWeekCount: number; ticketsAnalyzed: number; truncated?: boolean };
+  }>('getSupportTrends', { weeksBack });
+  return { trends: result.trends || [], meta: result.meta };
+}
+
 export async function getTicketMetrics(from: Date, to: Date): Promise<TicketMetrics> {
   return cloudFunction<TicketMetrics>('getTicketMetrics', {
     fromDate: from.toISOString(),

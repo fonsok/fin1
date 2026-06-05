@@ -10,6 +10,7 @@ struct OpenInvestmentsTable: View {
     let totalReturn: Double?
     let onDeleteInvestment: (InvestmentRow) -> Void
     let onShowStatusInfo: () -> Void
+    var onShowAmountInfo: ((InvestmentRow) -> Void)?
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: true) {
@@ -29,7 +30,8 @@ struct OpenInvestmentsTable: View {
                         isEven: index % 2 == 0,
                         columnWidths: self.columnWidths,
                         forMeasurement: false,
-                        onDeleteInvestment: self.onDeleteInvestment
+                        onDeleteInvestment: self.onDeleteInvestment,
+                        onShowAmountInfo: self.onShowAmountInfo
                     )
                 }
 
@@ -57,7 +59,8 @@ struct OpenInvestmentsTable: View {
                             isEven: false,
                             columnWidths: [:],
                             forMeasurement: true,
-                            onDeleteInvestment: self.onDeleteInvestment
+                            onDeleteInvestment: self.onDeleteInvestment,
+                            onShowAmountInfo: self.onShowAmountInfo
                         )
                     }
 

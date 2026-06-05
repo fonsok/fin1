@@ -69,6 +69,8 @@ extension CustomerInfo {
         // Default bank (in real app, this would come from user's account settings)
         let bank = LegalIdentity.bankName
 
+        let customerNumber = user.customerNumber.trimmingCharacters(in: .whitespacesAndNewlines)
+
         return CustomerInfo(
             name: fullName,
             address: address,
@@ -77,8 +79,19 @@ extension CustomerInfo {
             taxNumber: taxNumber,
             depotNumber: depotNumber,
             bank: bank,
-            customerNumber: user.customerNumber.isEmpty ? user.id : user.customerNumber,
+            // Kundennummer (ANL-/TRD-…) — never Parse objectId or legacy `user:email`.
+            customerNumber: Self.displayCustomerNumber(from: customerNumber),
             userId: user.id
         )
+    }
+
+    /// Shows ANL-/TRD- Kundennummer only; hides legacy `user:…` and Parse objectIds.
+    static func displayCustomerNumber(from stored: String?) -> String {
+        let trimmed = (stored ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return "—" }
+        if trimmed.hasPrefix("ANL-") || trimmed.hasPrefix("TRD-") {
+            return trimmed
+        }
+        return "—"
     }
 }

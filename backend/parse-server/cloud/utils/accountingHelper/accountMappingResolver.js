@@ -1,5 +1,7 @@
 'use strict';
 
+const { normalizeClientLiabilityAccount } = require('./clientLiabilityAccounts');
+
 const DEFAULT_CHART_CODE = 'SKR03';
 const DEFAULT_CHART_VERSION = '2026-05-v1';
 
@@ -32,17 +34,22 @@ const ACCOUNT_MAPPINGS = {
   'BANK-TRT-CLT': { externalAccountNumber: '1230', vatKey: 'frei', taxTreatment: 'non_taxable' },
   'CLT-LIAB-AVA': { externalAccountNumber: '1590', vatKey: 'frei', taxTreatment: 'non_taxable' },
   'CLT-LIAB-RSV': { externalAccountNumber: '1591', vatKey: 'frei', taxTreatment: 'non_taxable' },
+  'CLT-LIAB-PTR': { externalAccountNumber: '1592', vatKey: 'frei', taxTreatment: 'non_taxable' },
+  /** Legacy alias (Lesen bis Mongo-Backfill). */
   'CLT-LIAB-TRD': { externalAccountNumber: '1592', vatKey: 'frei', taxTreatment: 'non_taxable' },
+  /** Investor-Erfolg bei Trade-Settlement (Gegenkonto zu CLT-LIAB-AVA Haben). */
+  'CLT-EQT-INV-PNL': { externalAccountNumber: '8900', vatKey: 'frei', taxTreatment: 'non_taxable' },
 };
 
 function getMappingSnapshotForAccount(accountCode, options = {}) {
-  const mapped = ACCOUNT_MAPPINGS[accountCode];
+  const normalizedCode = normalizeClientLiabilityAccount(accountCode);
+  const mapped = ACCOUNT_MAPPINGS[normalizedCode] || ACCOUNT_MAPPINGS[accountCode];
   if (!mapped) {
     if (options.strict) {
       throw new Error(`Missing ledger account mapping for account "${accountCode}"`);
     }
     return {
-      internalAccountId: accountCode,
+      internalAccountId: normalizedCode,
       chartCodeSnapshot: '',
       chartVersionSnapshot: '',
       externalAccountNumberSnapshot: '',
@@ -52,13 +59,13 @@ function getMappingSnapshotForAccount(accountCode, options = {}) {
     };
   }
   return {
-    internalAccountId: accountCode,
+    internalAccountId: normalizedCode,
     chartCodeSnapshot: DEFAULT_CHART_CODE,
     chartVersionSnapshot: DEFAULT_CHART_VERSION,
     externalAccountNumberSnapshot: mapped.externalAccountNumber,
     vatKeySnapshot: mapped.vatKey,
     taxTreatmentSnapshot: mapped.taxTreatment,
-    mappingIdSnapshot: `${DEFAULT_CHART_CODE}:${DEFAULT_CHART_VERSION}:${accountCode}`,
+    mappingIdSnapshot: `${DEFAULT_CHART_CODE}:${DEFAULT_CHART_VERSION}:${normalizedCode}`,
   };
 }
 

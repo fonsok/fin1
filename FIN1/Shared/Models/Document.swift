@@ -203,7 +203,18 @@ struct Document: Identifiable, Codable, Hashable {
     }
 
     var fileFormat: String {
-        let pathExtension = URL(string: fileURL)?.pathExtension ?? "unknown"
+        switch self.type {
+        case .traderCollectionBill, .investorCollectionBill, .traderCreditNote:
+            return "PDF"
+        default:
+            break
+        }
+        let url = self.fileURL.lowercased()
+        if url.hasPrefix("beleg://") || url.hasPrefix("collectionbill://") || url.hasPrefix("creditnote://") {
+            return "Beleg"
+        }
+        let pathExtension = URL(string: fileURL)?.pathExtension ?? ""
+        if pathExtension.isEmpty { return "PDF" }
         return pathExtension.uppercased()
     }
 

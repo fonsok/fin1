@@ -3,6 +3,11 @@ import { useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { cloudFunction } from '../../api/admin';
 import { Card, Button, Badge, PaginationBar } from '../../components/ui';
+import { useDebounce } from '../../hooks/useDebounce';
+import { useDateRangeFilter } from '../../hooks/useDateRangeFilter';
+import { AdminTableFilterBar } from '../../components/filters/AdminTableFilterBar';
+import { DateRangeFilterFields } from '../../components/filters/DateRangeFilterFields';
+import { isDateRangeFilterActive } from '../../utils/dateRangePreset';
 import { SortableTh, nextSortState, type SortOrder } from '../../components/table/SortableTh';
 import { formatCurrency, formatDateTime, formatNumber } from '../../utils/format';
 import { useTheme } from '../../context/ThemeContext';
@@ -13,7 +18,19 @@ import {
   tableTheadSurfaceClasses,
 } from '../../utils/tableStriping';
 
-import { adminBodyStrong, adminBorderChrome, adminBorderChromeSoft, adminCaption, adminControlField, adminMuted, adminPrimary, adminSoft } from '../../utils/adminThemeClasses';
+import { adminBodyStrong, adminBorderChrome, adminBorderChromeSoft, adminCaption, adminMuted, adminPrimary, adminSoft } from '../../utils/adminThemeClasses';
+import {
+  SummaryReportTradesTable,
+  type SummaryReportTradeRow,
+} from './SummaryReportTradesTable';
+import { SummaryReportSearchIndexStatusButton } from './SummaryReportSearchIndexStatusButton';
+import {
+  buildInvestmentFilterSelects,
+  buildTradeFilterSelects,
+  investmentListFilterParams,
+  tradeListFilterParams,
+} from './summaryReportFilters';
+
 interface InvestmentSummary {
   investmentId: string;
   investmentNumber: string;
@@ -27,19 +44,6 @@ interface InvestmentSummary {
   returnPercentage: number;
   commission: number;
   status: string;
-  createdAt: string;
-}
-
-interface TradeSummary {
-  tradeId: string;
-  tradeNumber: number;
-  symbol: string;
-  traderId: string;
-  buyAmount: number;
-  sellAmount: number;
-  profit: number;
-  status: string;
-  investorIds: string[];
   createdAt: string;
 }
 
@@ -68,33 +72,18 @@ interface PagedListResponse<T> {
   pageSize: number;
 }
 
-function dateParamsForRange(dateRange: 'all' | '30d' | '90d' | '1y'): Record<string, string> {
-  const now = new Date();
-  switch (dateRange) {
-    case '30d':
-      return { dateFrom: new Date(now.getTime() - 30 * 86400000).toISOString() };
-    case '90d':
-      return { dateFrom: new Date(now.getTime() - 90 * 86400000).toISOString() };
-    case '1y':
-      return { dateFrom: new Date(now.getTime() - 365 * 86400000).toISOString() };
-    default:
-      return {};
-  }
-}
-
 type TabId = 'overview' | 'investments' | 'trades';
 
 export function SummaryReportPage(): JSX.Element {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
   const [activeTab, setActiveTab] = useState<TabId>('overview');
-  const [dateRange, setDateRange] = useState<'all' | '30d' | '90d' | '1y'>('all');
-
-  const dateParams = useMemo(() => dateParamsForRange(dateRange), [dateRange]);
+  const overviewDate = useDateRangeFilter('all');
 
   const { data, isLoading, refetch } = useQuery({
-    queryKey: ['summaryReport', dateRange],
-    queryFn: () => cloudFunction<SummaryReportKpisResponse>('getSummaryReport', dateParams),
+    queryKey: ['summaryReport', overviewDate.apiParams],
+    queryFn: () =>
+      cloudFunction<SummaryReportKpisResponse>('getSummaryReport', overviewDate.apiParams),
     staleTime: 60000,
   });
 
@@ -120,25 +109,39 @@ export function SummaryReportPage(): JSX.Element {
             )}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <select
-            value={dateRange}
-            onChange={(e) => setDateRange(e.target.value as typeof dateRange)}
-            className={clsx(
-              'border rounded-lg px-3 py-2 text-sm',
-              adminControlField(isDark),
-            )}
-          >
-            <option value="all">Alle Zeiten</option>
-            <option value="30d">Letzte 30 Tage</option>
-            <option value="90d">Letzte 90 Tage</option>
-            <option value="1y">Letztes Jahr</option>
-          </select>
+        <div className="flex flex-wrap gap-2">
+          <SummaryReportSearchIndexStatusButton />
           <Button variant="secondary" onClick={() => refetch()} disabled={isLoading}>
             {isLoading ? 'Laden...' : 'Aktualisieren'}
           </Button>
         </div>
       </div>
+
+      {activeTab === 'overview' && (
+        <Card>
+          <div className="p-4 flex flex-col sm:flex-row gap-4 items-end flex-wrap">
+            <DateRangeFilterFields
+              preset={overviewDate.datePreset}
+              dateFromInput={overviewDate.dateFromInput}
+              dateToInput={overviewDate.dateToInput}
+              onPresetChange={(preset) => {
+                overviewDate.onPresetChange(preset);
+              }}
+              onDateFromChange={overviewDate.setDateFromInput}
+              onDateToChange={overviewDate.setDateToInput}
+            />
+            {isDateRangeFilterActive(
+              overviewDate.datePreset,
+              overviewDate.dateFromInput,
+              overviewDate.dateToInput,
+            ) && (
+              <Button variant="ghost" onClick={overviewDate.resetDateRange}>
+                Zeitraum zurücksetzen
+              </Button>
+            )}
+          </div>
+        </Card>
+      )}
 
       {/* KPI Cards */}
       {summary && (
@@ -183,9 +186,9 @@ export function SummaryReportPage(): JSX.Element {
       ) : activeTab === 'overview' && summary ? (
         <OverviewTab summary={summary} commissionRate={summary.commissionRate} />
       ) : activeTab === 'investments' ? (
-        <InvestmentsTab dateParams={dateParams} dateRangeKey={dateRange} />
+        <InvestmentsTab />
       ) : activeTab === 'trades' ? (
-        <TradesTab dateParams={dateParams} dateRangeKey={dateRange} />
+        <TradesTab />
       ) : null}
     </div>
   );
@@ -281,38 +284,74 @@ function InfoRow({ label, value, index }: { label: string; value: string; index:
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const variants: Record<string, 'success' | 'warning' | 'neutral' | 'danger'> = {
+  const variants: Record<string, 'success' | 'warning' | 'neutral' | 'danger' | 'info'> = {
     active: 'success',
+    executing: 'info',
+    reserved: 'warning',
+    paused: 'warning',
+    closing: 'warning',
     completed: 'success',
+    cancelled: 'danger',
     pending: 'warning',
     unknown: 'neutral',
   };
   const labels: Record<string, string> = {
     active: 'Aktiv',
+    executing: 'Ausführend',
+    reserved: 'Reserviert',
+    paused: 'Pausiert',
+    closing: 'Schließend',
     completed: 'Abgeschlossen',
+    cancelled: 'Storniert',
     pending: 'Ausstehend',
     unknown: 'Unbekannt',
   };
   return <Badge variant={variants[status] || 'neutral'}>{labels[status] || status}</Badge>;
 }
 
-function InvestmentsTab({
-  dateParams,
-  dateRangeKey,
-}: {
-  dateParams: Record<string, string>;
-  dateRangeKey: string;
-}) {
+function InvestmentsTab() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(50);
   const [sortBy, setSortBy] = useState('createdAt');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [returnSignFilter, setReturnSignFilter] = useState('');
+  const debouncedSearch = useDebounce(searchQuery);
+  const dateFilter = useDateRangeFilter('all');
+
+  const listFilters = useMemo(
+    () => ({
+      ...dateFilter.apiParams,
+      ...investmentListFilterParams({
+        search: debouncedSearch,
+        status: statusFilter,
+        returnSign: returnSignFilter,
+      }),
+    }),
+    [dateFilter.apiParams, debouncedSearch, statusFilter, returnSignFilter],
+  );
+
+  const hasActiveFilters = Boolean(
+    debouncedSearch.trim()
+      || statusFilter
+      || returnSignFilter
+      || dateFilter.hasActiveDateRange,
+  );
+
+  const resetFilters = useCallback(() => {
+    setSearchQuery('');
+    setStatusFilter('');
+    setReturnSignFilter('');
+    dateFilter.resetDateRange();
+    setPage(0);
+  }, [dateFilter]);
 
   useEffect(() => {
     setPage(0);
-  }, [dateRangeKey]);
+  }, [listFilters]);
 
   const onSort = useCallback(
     (field: string) => {
@@ -325,10 +364,10 @@ function InvestmentsTab({
   );
 
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: ['summaryReportInvestments', dateRangeKey, page, pageSize, sortBy, sortOrder],
+    queryKey: ['summaryReportInvestments', page, pageSize, sortBy, sortOrder, listFilters],
     queryFn: () =>
       cloudFunction<PagedListResponse<InvestmentSummary>>('getSummaryReportInvestmentsPage', {
-        ...dateParams,
+        ...listFilters,
         page,
         pageSize,
         sortBy,
@@ -341,9 +380,57 @@ function InvestmentsTab({
   const items = data?.items ?? [];
   const thClass = clsx('px-4 py-3 text-xs font-medium uppercase', tableHeaderCellTextClasses(isDark));
 
+  const filterSelects = buildInvestmentFilterSelects({
+    status: statusFilter,
+    returnSign: returnSignFilter,
+    onStatusChange: setStatusFilter,
+    onReturnSignChange: setReturnSignFilter,
+  });
+
+  const filterBar = (
+    <AdminTableFilterBar
+      searchPlaceholder="Nr., Investor oder Trader…"
+      searchValue={searchQuery}
+      onSearchChange={setSearchQuery}
+      selects={filterSelects}
+      dateRange={{
+        preset: dateFilter.datePreset,
+        dateFromInput: dateFilter.dateFromInput,
+        dateToInput: dateFilter.dateToInput,
+        onPresetChange: (preset) => {
+          dateFilter.onPresetChange(preset);
+          setPage(0);
+        },
+        onDateFromChange: (v) => {
+          dateFilter.setDateFromInput(v);
+          setPage(0);
+        },
+        onDateToChange: (v) => {
+          dateFilter.setDateToInput(v);
+          setPage(0);
+        },
+      }}
+      pageSize={{
+        value: pageSize,
+        onChange: (size) => {
+          setPageSize(size);
+          setPage(0);
+        },
+      }}
+      hasActiveFilters={hasActiveFilters}
+      onReset={resetFilters}
+      resultHint={
+        isFetching
+          ? 'Aktualisiere…'
+          : `${formatNumber(total)} Investments (gefiltert, serverseitig)`
+      }
+    />
+  );
+
   if (isLoading && !data) {
     return (
       <Card>
+        <div className={clsx('p-4 border-b', adminBorderChromeSoft(isDark))}>{filterBar}</div>
         <div className={clsx('p-8 text-center', adminMuted(isDark))}>
           Investments werden geladen...
         </div>
@@ -351,38 +438,16 @@ function InvestmentsTab({
     );
   }
 
-  if (total === 0) {
-    return (
-      <Card>
-        <div className={clsx('p-8 text-center', adminMuted(isDark))}>
-          Keine Investments gefunden
-        </div>
-      </Card>
-    );
-  }
-
   return (
     <Card>
-      <div className={clsx('p-3 border-b flex flex-wrap items-center gap-3 justify-between', adminBorderChromeSoft(isDark))}>
-        <select
-          value={pageSize}
-          onChange={(e) => {
-            setPageSize(Number(e.target.value));
-            setPage(0);
-          }}
-          className={clsx(
-            'border rounded-lg px-3 py-2 text-sm',
-            adminControlField(isDark),
-          )}
-        >
-          <option value={25}>25 / Seite</option>
-          <option value={50}>50 / Seite</option>
-          <option value={100}>100 / Seite</option>
-        </select>
-        <p className={clsx('text-sm', adminMuted(isDark))}>
-          {isFetching ? 'Aktualisiere…' : `${formatNumber(total)} Investments gesamt (serverseitig)`}
-        </p>
-      </div>
+      <div className={clsx('p-4 border-b', adminBorderChromeSoft(isDark))}>{filterBar}</div>
+      {total === 0 ? (
+        <div className={clsx('p-8 text-center', adminMuted(isDark))}>
+          {hasActiveFilters
+            ? 'Keine Investments für die aktuelle Suche oder Filter.'
+            : 'Keine Investments gefunden'}
+        </div>
+      ) : (
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead className={tableTheadSurfaceClasses(isDark)}>
@@ -459,35 +524,79 @@ function InvestmentsTab({
           </tbody>
         </table>
       </div>
-      <PaginationBar
-        page={page}
-        pageSize={pageSize}
-        total={total}
-        itemLabel="Investments"
-        isDark={isDark}
-        onPageChange={setPage}
-      />
+      )}
+      {total > 0 && (
+        <PaginationBar
+          page={page}
+          pageSize={pageSize}
+          total={total}
+          itemLabel="Investments"
+          isDark={isDark}
+          onPageChange={setPage}
+        />
+      )}
     </Card>
   );
 }
 
-function TradesTab({
-  dateParams,
-  dateRangeKey,
-}: {
-  dateParams: Record<string, string>;
-  dateRangeKey: string;
-}) {
+function TradesTab() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(50);
   const [sortBy, setSortBy] = useState('createdAt');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [profitSignFilter, setProfitSignFilter] = useState('');
+  const [sellProgressFilter, setSellProgressFilter] = useState('');
+  const [hasPoolInvestorsFilter, setHasPoolInvestorsFilter] = useState('');
+  const debouncedSearch = useDebounce(searchQuery);
+  const dateFilter = useDateRangeFilter('all');
+
+  const listFilters = useMemo(
+    () => ({
+      ...dateFilter.apiParams,
+      ...tradeListFilterParams({
+        search: debouncedSearch,
+        status: statusFilter,
+        profitSign: profitSignFilter,
+        sellProgress: sellProgressFilter,
+        hasPoolInvestors: hasPoolInvestorsFilter,
+      }),
+    }),
+    [
+      dateFilter.apiParams,
+      debouncedSearch,
+      statusFilter,
+      profitSignFilter,
+      sellProgressFilter,
+      hasPoolInvestorsFilter,
+    ],
+  );
+
+  const hasActiveFilters = Boolean(
+    debouncedSearch.trim()
+      || statusFilter
+      || profitSignFilter
+      || sellProgressFilter
+      || hasPoolInvestorsFilter
+      || dateFilter.hasActiveDateRange,
+  );
+
+  const resetFilters = useCallback(() => {
+    setSearchQuery('');
+    setStatusFilter('');
+    setProfitSignFilter('');
+    setSellProgressFilter('');
+    setHasPoolInvestorsFilter('');
+    dateFilter.resetDateRange();
+    setPage(0);
+  }, [dateFilter]);
 
   useEffect(() => {
     setPage(0);
-  }, [dateRangeKey]);
+  }, [listFilters]);
 
   const onSort = useCallback(
     (field: string) => {
@@ -500,10 +609,10 @@ function TradesTab({
   );
 
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: ['summaryReportTrades', dateRangeKey, page, pageSize, sortBy, sortOrder],
+    queryKey: ['summaryReportTrades', page, pageSize, sortBy, sortOrder, listFilters],
     queryFn: () =>
-      cloudFunction<PagedListResponse<TradeSummary>>('getSummaryReportTradesPage', {
-        ...dateParams,
+      cloudFunction<PagedListResponse<SummaryReportTradeRow>>('getSummaryReportTradesPage', {
+        ...listFilters,
         page,
         pageSize,
         sortBy,
@@ -514,129 +623,74 @@ function TradesTab({
 
   const total = data?.total ?? 0;
   const items = data?.items ?? [];
-  const thClass = clsx('px-4 py-3 text-xs font-medium uppercase', tableHeaderCellTextClasses(isDark));
 
-  if (isLoading && !data) {
-    return (
-      <Card>
-        <div className={clsx('p-8 text-center', adminMuted(isDark))}>
-          Trades werden geladen...
-        </div>
-      </Card>
-    );
-  }
-
-  if (total === 0) {
-    return (
-      <Card>
-        <div className={clsx('p-8 text-center', adminMuted(isDark))}>
-          Keine Trades gefunden
-        </div>
-      </Card>
-    );
-  }
+  const toolbar = (
+    <AdminTableFilterBar
+      searchPlaceholder="Symbol, Trade-Nr.…"
+      searchValue={searchQuery}
+      onSearchChange={setSearchQuery}
+      selects={buildTradeFilterSelects({
+        status: statusFilter,
+        profitSign: profitSignFilter,
+        sellProgress: sellProgressFilter,
+        hasPoolInvestors: hasPoolInvestorsFilter,
+        onStatusChange: setStatusFilter,
+        onProfitSignChange: setProfitSignFilter,
+        onSellProgressChange: setSellProgressFilter,
+        onHasPoolInvestorsChange: setHasPoolInvestorsFilter,
+      })}
+      dateRange={{
+        preset: dateFilter.datePreset,
+        dateFromInput: dateFilter.dateFromInput,
+        dateToInput: dateFilter.dateToInput,
+        onPresetChange: (preset) => {
+          dateFilter.onPresetChange(preset);
+          setPage(0);
+        },
+        onDateFromChange: (v) => {
+          dateFilter.setDateFromInput(v);
+          setPage(0);
+        },
+        onDateToChange: (v) => {
+          dateFilter.setDateToInput(v);
+          setPage(0);
+        },
+      }}
+      pageSize={{
+        value: pageSize,
+        onChange: (size) => {
+          setPageSize(size);
+          setPage(0);
+        },
+      }}
+      hasActiveFilters={hasActiveFilters}
+      onReset={resetFilters}
+      resultHint={
+        isFetching
+          ? 'Aktualisiere…'
+          : `${formatNumber(total)} Trades (gefiltert, serverseitig)`
+      }
+    />
+  );
 
   return (
-    <Card>
-      <div className={clsx('p-3 border-b flex flex-wrap items-center gap-3 justify-between', adminBorderChromeSoft(isDark))}>
-        <select
-          value={pageSize}
-          onChange={(e) => {
-            setPageSize(Number(e.target.value));
-            setPage(0);
-          }}
-          className={clsx(
-            'border rounded-lg px-3 py-2 text-sm',
-            adminControlField(isDark),
-          )}
-        >
-          <option value={25}>25 / Seite</option>
-          <option value={50}>50 / Seite</option>
-          <option value={100}>100 / Seite</option>
-        </select>
-        <p className={clsx('text-sm', adminMuted(isDark))}>
-          {isFetching ? 'Aktualisiere…' : `${formatNumber(total)} Trades gesamt (serverseitig)`}
-        </p>
-      </div>
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className={tableTheadSurfaceClasses(isDark)}>
-            <tr>
-              <SortableTh
-                label="Nr."
-                field="tradeNumber"
-                sortBy={sortBy}
-                sortOrder={sortOrder}
-                onSort={onSort}
-                className={clsx(thClass, 'text-left')}
-              />
-              <th className={clsx(thClass, 'text-left')}>Symbol</th>
-              <th className={clsx(thClass, 'text-right')}>Kauf</th>
-              <th className={clsx(thClass, 'text-right')}>Verkauf</th>
-              <th className={clsx(thClass, 'text-right')}>Gewinn</th>
-              <th className={clsx(thClass, 'text-center')}>Investoren</th>
-              <th className={clsx(thClass, 'text-left')}>Status</th>
-              <SortableTh
-                label="Datum"
-                field="createdAt"
-                sortBy={sortBy}
-                sortOrder={sortOrder}
-                onSort={onSort}
-                className={clsx(thClass, 'text-left')}
-              />
-            </tr>
-          </thead>
-          <tbody className={tableBodyDivideClasses(isDark)}>
-            {items.map((trade, index) => (
-              <tr key={trade.tradeId} className={listRowStripeClasses(isDark, index)}>
-                <td className={clsx('px-4 py-3 text-sm font-mono', adminBodyStrong(isDark))}>
-                  {String(trade.tradeNumber).padStart(3, '0')}
-                </td>
-                <td className={clsx('px-4 py-3 text-sm font-medium', adminPrimary(isDark))}>
-                  {trade.symbol}
-                </td>
-                <td className={clsx('px-4 py-3 text-sm text-right', adminBodyStrong(isDark))}>
-                  {formatCurrency(trade.buyAmount)}
-                </td>
-                <td className={clsx('px-4 py-3 text-sm text-right', adminBodyStrong(isDark))}>
-                  {formatCurrency(trade.sellAmount)}
-                </td>
-                <td
-                  className={clsx(
-                    'px-4 py-3 text-sm text-right font-medium',
-                    trade.profit >= 0
-                      ? isDark
-                        ? 'text-green-400'
-                        : 'text-green-600'
-                      : isDark
-                        ? 'text-red-400'
-                        : 'text-red-600',
-                  )}
-                >
-                  {formatCurrency(trade.profit)}
-                </td>
-                <td className={clsx('px-4 py-3 text-sm text-center', adminBodyStrong(isDark))}>
-                  {trade.investorIds.length}
-                </td>
-                <td className="px-4 py-3">
-                  <StatusBadge status={trade.status} />
-                </td>
-                <td className={clsx('px-4 py-3 text-sm', adminMuted(isDark))}>
-                  {formatDateTime(trade.createdAt)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <PaginationBar
-        page={page}
-        pageSize={pageSize}
-        total={total}
-        itemLabel="Trades"
-        isDark={isDark}
-        onPageChange={setPage}
-      />
-    </Card>
+    <SummaryReportTradesTable
+      items={items}
+      total={total}
+      page={page}
+      pageSize={pageSize}
+      sortBy={sortBy}
+      sortOrder={sortOrder}
+      isLoading={isLoading && !data}
+      isDark={isDark}
+      toolbar={toolbar}
+      emptyMessage={
+        hasActiveFilters
+          ? 'Keine Trades für die aktuelle Suche oder Filter.'
+          : 'Keine Trades gefunden'
+      }
+      onPageChange={setPage}
+      onSort={onSort}
+    />
   );
 }

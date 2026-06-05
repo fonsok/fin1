@@ -71,13 +71,11 @@ struct TraderCreditNoteDetailView: View {
         .task {
             let provider = LegalSnippetProvider(termsContentService: appServices.termsContentService)
             let language: TermsOfServiceDataProvider.Language = .german
-            let taxPlaceholders = ["TAX_RATE": CalculationConstants.TaxRates.capitalGainsTaxWithSoli]
-            async let taxTask = provider.text(
-                for: .docTaxNoteSell,
-                language: language,
-                documentType: .terms,
-                defaultText: DocumentNotesSection.defaultTaxNote,
-                placeholders: taxPlaceholders
+            let taxMode = self.appServices.configurationService.taxCollectionMode
+            async let taxTask = provider.loadCapitalGainsTaxNote(
+                mode: taxMode,
+                side: .sell,
+                language: language
             )
             async let legalTask = provider.text(
                 for: .docLegalNoteWphg,

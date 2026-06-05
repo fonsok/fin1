@@ -194,8 +194,9 @@ extension Invoice {
     ///   - customerInfo: Customer information for the invoice
     ///   - transactionIdService: Service for generating invoice numbers
     ///   - batchId: Optional batch ID to link the invoice to an investment batch
-    ///   - investmentIds: Array of investment IDs that this service charge applies to
-    ///   - investmentAmounts: Array of investment amounts corresponding to investmentIds (for detailed description)
+    ///   - investmentIds: Internal keys (Parse objectIds); not shown on the invoice text.
+    ///   - investmentLabels: Human-readable investment refs (e.g. `INV-2026-0000020`) for the description.
+    ///   - investmentAmounts: Per-slot amounts matching `investmentLabels` / batch splits.
     ///   - serviceChargeRate: App service charge rate (default: 2% from CalculationConstants)
     /// - Returns: Invoice with service charge and VAT items
     /// - Note: The gross amount is split into net service charge and VAT (19%)
@@ -205,6 +206,7 @@ extension Invoice {
         transactionIdService: any TransactionIdServiceProtocol,
         batchId: String? = nil,
         investmentIds: [String] = [],
+        investmentLabels: [String] = [],
         investmentAmounts: [Double] = [],
         serviceChargeRate: Double = CalculationConstants.ServiceCharges.appServiceChargeRate,
         includeVAT: Bool = true
@@ -230,8 +232,8 @@ extension Invoice {
         var items: [InvoiceItem] = []
 
         // Build detailed description with calculation basis, investment amounts, IDs, and split
-        let serviceChargeDescription = buildServiceChargeDescription(
-            investmentIds: investmentIds,
+        let serviceChargeDescription = self.buildServiceChargeDescription(
+            investmentLabels: investmentLabels.isEmpty ? investmentIds : investmentLabels,
             investmentAmounts: investmentAmounts,
             totalInvestmentAmount: investmentAmounts.reduce(0, +),
             serviceChargeRate: serviceChargeRate,
@@ -366,6 +368,55 @@ extension Invoice {
             legalNote: InvoiceNotes.legalNote
         )
     }
+
+    /// Builds a readable service-charge description (batch total + optional per-slot INV lines).
+    static func buildServiceChargeDescription(
+        investmentLabels: [String],
+        investmentAmounts: [Double],
+        totalInvestmentAmount: Double,
+        serviceChargeRate: Double,
+        netServiceCharge: Double,
+        vatAmount: Double
+    ) -> String {
+        var description = "App-Servicegebühr für Gesamtinvestition"
+
+        if totalInvestmentAmount > 0 {
+            let formattedTotal = totalInvestmentAmount.formatted(.currency(code: "EUR"))
+            let ratePercent = (serviceChargeRate * 100).formatted(.number.precision(.fractionLength(2)))
+            description += "\n\nBerechnungsgrundlage:"
+            description += "\nInvestitionsbetrag gesamt: \(formattedTotal)"
+            description += "\nServicegebühr-Satz: \(ratePercent)%"
+        }
+
+        let labels = investmentLabels.filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        guard !labels.isEmpty else {
+            return description
+        }
+
+        if labels.count > 1 {
+            description += "\n\nAufteilung in \(labels.count) Positionen:"
+        } else {
+            description += "\n\nPosition:"
+        }
+
+        let count = min(labels.count, investmentAmounts.count)
+        if count > 0 {
+            for index in 0..<count {
+                let label = labels[index]
+                let amount = investmentAmounts[index]
+                let formattedAmount = amount.formatted(.currency(code: "EUR"))
+                let suffix = index < count - 1 ? "" : "."
+                description += "\n\(label): \(formattedAmount)\(suffix)"
+            }
+        } else {
+            for (index, label) in labels.enumerated() {
+                let suffix = index < labels.count - 1 ? "" : "."
+                description += "\n\(label)\(suffix)"
+            }
+        }
+
+        return description
+    }
 }
 
 // MARK: - Private Helper Methods
@@ -434,55 +485,5 @@ private extension Invoice {
             InvoiceFeeCalculator.createExchangeFeeItem(for: orderAmount, isNegative: isSellOrder),
             InvoiceFeeCalculator.createForeignCostsItem(isNegative: isSellOrder)
         ]
-    }
-
-    /// Builds a detailed service charge description with calculation basis, investment amounts, IDs, and split
-    static func buildServiceChargeDescription(
-        investmentIds: [String],
-        investmentAmounts: [Double],
-        totalInvestmentAmount: Double,
-        serviceChargeRate: Double,
-        netServiceCharge: Double,
-        vatAmount: Double
-    ) -> String {
-        var description = "App-Servicegebühr für Investition(en)"
-
-        // Add calculation basis
-        if totalInvestmentAmount > 0 {
-            let formattedTotal = totalInvestmentAmount.formatted(.currency(code: "EUR"))
-            let ratePercent = (serviceChargeRate * 100).formatted(.number.precision(.fractionLength(2)))
-            description += "\n\nBerechnungsgrundlage:"
-            description += "\nInvestitionsbetrag gesamt: \(formattedTotal)"
-            description += "\nServicegebühr-Satz: \(ratePercent)%"
-        }
-
-        // Add investment details (split information) - show individual investments if multiple
-        if !investmentIds.isEmpty {
-            if investmentIds.count > 1 {
-                description += "\n\nAufteilung auf \(investmentIds.count) Investition(en):"
-            } else {
-                description += "\n\nInvestition:"
-            }
-
-            // Match IDs with amounts (if arrays have same length)
-            let count = min(investmentIds.count, investmentAmounts.count)
-            if count > 0 {
-                for index in 0..<count {
-                    let id = investmentIds[index]
-                    let amount = investmentAmounts[index]
-                    let formattedAmount = amount.formatted(.currency(code: "EUR"))
-                    let separator = index < count - 1 ? "," : "."
-                    description += "\nBuchungsnummer \(id): \(formattedAmount)\(separator)"
-                }
-            } else {
-                // Fallback: just show IDs if amounts not available
-                for (index, id) in investmentIds.enumerated() {
-                    let separator = index < investmentIds.count - 1 ? "," : "."
-                    description += "\nBuchungsnummer \(id)\(separator)"
-                }
-            }
-        }
-
-        return description
     }
 }

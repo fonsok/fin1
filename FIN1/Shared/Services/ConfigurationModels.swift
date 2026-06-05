@@ -15,11 +15,18 @@ struct AppConfiguration: Codable {
     var walletFeatureEnabled: Bool?
     var serviceChargeInvoiceFromBackend: Bool?
     var serviceChargeLegacyClientFallbackEnabled: Bool?
+    var investorMonetaryServerOnly: Bool?
+    var showInvestorPartialSellRealizations: Bool?
     var dailyTransactionLimit: Double?
     var weeklyTransactionLimit: Double?
     var monthlyTransactionLimit: Double?
     var minInvestment: Double?
     var maxInvestment: Double?
+    /// 0 = no cap; max gross EUR per pool-mirror buy leg / reserved pool per trader (admin).
+    var maxPoolMirrorBuyOrderAmount: Double?
+    var maxTraderPartialSells: Int?
+    /// `customer_self_reports` vs `platform_withholds` — from admin Steuerparameter.
+    var taxCollectionMode: String?
     var userMinimumCashReserves: [String: Double]
     var slaMonitoringInterval: TimeInterval
     var lastUpdated: Date
@@ -31,9 +38,9 @@ struct AppConfiguration: Codable {
         case platformServiceChargeRate, platformServiceChargeRateCompanies
         case showCommissionBreakdownInCreditNote, showDocumentReferenceLinksInAccountStatement
         case maximumRiskExposurePercent, walletFeatureEnabled
-        case serviceChargeInvoiceFromBackend, serviceChargeLegacyClientFallbackEnabled
+        case serviceChargeInvoiceFromBackend, serviceChargeLegacyClientFallbackEnabled, investorMonetaryServerOnly, showInvestorPartialSellRealizations
         case dailyTransactionLimit, weeklyTransactionLimit, monthlyTransactionLimit
-        case minInvestment, maxInvestment, userMinimumCashReserves, slaMonitoringInterval, lastUpdated, updatedBy
+        case minInvestment, maxInvestment, maxPoolMirrorBuyOrderAmount, maxTraderPartialSells, taxCollectionMode, userMinimumCashReserves, slaMonitoringInterval, lastUpdated, updatedBy
     }
 
     init(from decoder: Decoder) throws {
@@ -57,11 +64,16 @@ struct AppConfiguration: Codable {
         self.walletFeatureEnabled = try c.decodeIfPresent(Bool.self, forKey: .walletFeatureEnabled)
         self.serviceChargeInvoiceFromBackend = try c.decodeIfPresent(Bool.self, forKey: .serviceChargeInvoiceFromBackend)
         self.serviceChargeLegacyClientFallbackEnabled = try c.decodeIfPresent(Bool.self, forKey: .serviceChargeLegacyClientFallbackEnabled)
+        self.investorMonetaryServerOnly = try c.decodeIfPresent(Bool.self, forKey: .investorMonetaryServerOnly)
+        self.showInvestorPartialSellRealizations = try c.decodeIfPresent(Bool.self, forKey: .showInvestorPartialSellRealizations)
         self.dailyTransactionLimit = try c.decodeIfPresent(Double.self, forKey: .dailyTransactionLimit)
         self.weeklyTransactionLimit = try c.decodeIfPresent(Double.self, forKey: .weeklyTransactionLimit)
         self.monthlyTransactionLimit = try c.decodeIfPresent(Double.self, forKey: .monthlyTransactionLimit)
         self.minInvestment = try c.decodeIfPresent(Double.self, forKey: .minInvestment)
         self.maxInvestment = try c.decodeIfPresent(Double.self, forKey: .maxInvestment)
+        self.maxPoolMirrorBuyOrderAmount = try c.decodeIfPresent(Double.self, forKey: .maxPoolMirrorBuyOrderAmount)
+        self.maxTraderPartialSells = try c.decodeIfPresent(Int.self, forKey: .maxTraderPartialSells)
+        self.taxCollectionMode = try c.decodeIfPresent(String.self, forKey: .taxCollectionMode)
         self.userMinimumCashReserves = try c.decode([String: Double].self, forKey: .userMinimumCashReserves)
         self.slaMonitoringInterval = try c.decode(TimeInterval.self, forKey: .slaMonitoringInterval)
         self.lastUpdated = try c.decode(Date.self, forKey: .lastUpdated)
@@ -83,11 +95,16 @@ struct AppConfiguration: Codable {
         try c.encodeIfPresent(self.walletFeatureEnabled, forKey: .walletFeatureEnabled)
         try c.encodeIfPresent(self.serviceChargeInvoiceFromBackend, forKey: .serviceChargeInvoiceFromBackend)
         try c.encodeIfPresent(self.serviceChargeLegacyClientFallbackEnabled, forKey: .serviceChargeLegacyClientFallbackEnabled)
+        try c.encodeIfPresent(self.investorMonetaryServerOnly, forKey: .investorMonetaryServerOnly)
+        try c.encodeIfPresent(self.showInvestorPartialSellRealizations, forKey: .showInvestorPartialSellRealizations)
         try c.encodeIfPresent(self.dailyTransactionLimit, forKey: .dailyTransactionLimit)
         try c.encodeIfPresent(self.weeklyTransactionLimit, forKey: .weeklyTransactionLimit)
         try c.encodeIfPresent(self.monthlyTransactionLimit, forKey: .monthlyTransactionLimit)
         try c.encodeIfPresent(self.minInvestment, forKey: .minInvestment)
         try c.encodeIfPresent(self.maxInvestment, forKey: .maxInvestment)
+        try c.encodeIfPresent(self.maxPoolMirrorBuyOrderAmount, forKey: .maxPoolMirrorBuyOrderAmount)
+        try c.encodeIfPresent(self.maxTraderPartialSells, forKey: .maxTraderPartialSells)
+        try c.encodeIfPresent(self.taxCollectionMode, forKey: .taxCollectionMode)
         try c.encode(self.userMinimumCashReserves, forKey: .userMinimumCashReserves)
         try c.encode(self.slaMonitoringInterval, forKey: .slaMonitoringInterval)
         try c.encode(self.lastUpdated, forKey: .lastUpdated)
@@ -108,11 +125,16 @@ struct AppConfiguration: Codable {
         walletFeatureEnabled: Bool?,
         serviceChargeInvoiceFromBackend: Bool? = nil,
         serviceChargeLegacyClientFallbackEnabled: Bool? = nil,
+        investorMonetaryServerOnly: Bool? = nil,
+        showInvestorPartialSellRealizations: Bool? = nil,
         dailyTransactionLimit: Double?,
         weeklyTransactionLimit: Double?,
         monthlyTransactionLimit: Double?,
         minInvestment: Double?,
         maxInvestment: Double?,
+        maxPoolMirrorBuyOrderAmount: Double? = nil,
+        maxTraderPartialSells: Int?,
+        taxCollectionMode: String? = nil,
         userMinimumCashReserves: [String: Double],
         slaMonitoringInterval: TimeInterval,
         lastUpdated: Date,
@@ -131,11 +153,16 @@ struct AppConfiguration: Codable {
         self.walletFeatureEnabled = walletFeatureEnabled
         self.serviceChargeInvoiceFromBackend = serviceChargeInvoiceFromBackend
         self.serviceChargeLegacyClientFallbackEnabled = serviceChargeLegacyClientFallbackEnabled
+        self.investorMonetaryServerOnly = investorMonetaryServerOnly
+        self.showInvestorPartialSellRealizations = showInvestorPartialSellRealizations
         self.dailyTransactionLimit = dailyTransactionLimit
         self.weeklyTransactionLimit = weeklyTransactionLimit
         self.monthlyTransactionLimit = monthlyTransactionLimit
         self.minInvestment = minInvestment
         self.maxInvestment = maxInvestment
+        self.maxPoolMirrorBuyOrderAmount = maxPoolMirrorBuyOrderAmount
+        self.maxTraderPartialSells = maxTraderPartialSells
+        self.taxCollectionMode = taxCollectionMode
         self.userMinimumCashReserves = userMinimumCashReserves
         self.slaMonitoringInterval = slaMonitoringInterval
         self.lastUpdated = lastUpdated
@@ -160,6 +187,7 @@ struct AppConfiguration: Codable {
         monthlyTransactionLimit: CalculationConstants.TransactionLimits.baseMonthlyLimit,
         minInvestment: nil,
         maxInvestment: nil,
+        maxTraderPartialSells: 3,
         userMinimumCashReserves: [:],
         slaMonitoringInterval: 300.0,
         lastUpdated: Date(),
@@ -174,11 +202,21 @@ struct AppConfiguration: Codable {
     var effectiveWalletFeatureEnabled: Bool { self.walletFeatureEnabled ?? false }
     var effectiveServiceChargeInvoiceFromBackend: Bool { self.serviceChargeInvoiceFromBackend ?? false }
     var effectiveServiceChargeLegacyClientFallbackEnabled: Bool { self.serviceChargeLegacyClientFallbackEnabled ?? true }
+    var effectiveInvestorMonetaryServerOnly: Bool { self.investorMonetaryServerOnly ?? true }
+    var effectiveShowInvestorPartialSellRealizations: Bool { self.showInvestorPartialSellRealizations ?? false }
     var effectiveDailyTransactionLimit: Double { self.dailyTransactionLimit ?? CalculationConstants.TransactionLimits.baseDailyLimit }
     var effectiveWeeklyTransactionLimit: Double { self.weeklyTransactionLimit ?? CalculationConstants.TransactionLimits.baseWeeklyLimit }
     var effectiveMonthlyTransactionLimit: Double { self.monthlyTransactionLimit ?? CalculationConstants.TransactionLimits.baseMonthlyLimit }
     var effectiveMinimumInvestment: Double { self.minInvestment ?? CalculationConstants.Investment.fallbackMinimumInvestmentAmount }
     var effectiveMaximumInvestment: Double { self.maxInvestment ?? CalculationConstants.Investment.fallbackMaximumInvestmentAmount }
+    var effectiveMaxTraderPartialSells: Int {
+        let raw = self.maxTraderPartialSells ?? 3
+        return min(3, max(0, raw))
+    }
+
+    var effectiveTaxCollectionMode: TaxCollectionMode {
+        TaxCollectionMode(rawConfigValue: self.taxCollectionMode)
+    }
 }
 
 enum ConfigurationError: Error, LocalizedError {

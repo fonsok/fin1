@@ -27,7 +27,7 @@ struct OpenInvestmentsHeaderCellModifier: ViewModifier {
         switch self.columnKey {
         case "pool": return 60
         case "status": return 80
-        case "amount": return 110
+        case "amount": return 140
         case "profit": return 110
         case "return": return 90
         case "docRef": return 100

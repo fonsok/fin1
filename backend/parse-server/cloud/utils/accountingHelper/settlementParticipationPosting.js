@@ -3,12 +3,21 @@
 const { round2 } = require('./shared');
 const { bookAccountStatementEntry, bookSettlementEntry } = require('./statements');
 const { calculateWithholdingBundle, resolveUserTaxProfile } = require('./taxation');
-const { createCollectionBillDocument, createWalletReceiptDocument } = require('./documents');
+const { createCollectionBillDocument } = require('./documents');
 const { resolveDocumentReference } = require('./documentReferenceResolver');
-const { computeInvestorBuyLeg, computeInvestorSellLeg, deriveMirrorTradeBasis } = require('./legs');
+const {
+  computeInvestorBuyLeg,
+  computeInvestorSellLeg,
+  deriveMirrorTradeBasis,
+} = require('./legs');
 const { sumStatementAmounts, getStatementSumsByType } = require('./settlementQueries');
 const { bookInvestorTaxEntries } = require('./settlementTaxEntries');
 const { createCommissionRecord, createNotification, formatCurrency } = require('./settlementSupport');
+const {
+  bookReserveCapitalTradeSplit,
+  bookTradeSettlementPayout,
+  hasEscrowLeg,
+} = require('./investmentEscrow');
 
 async function settleNewParticipation({
   participation,
@@ -71,37 +80,6 @@ async function settleNewParticipation({
     userProfile: investorProfile,
   });
 
-  const existingActivation = await new Parse.Query('AccountStatement')
-    .equalTo('investmentId', investment.id)
-    .equalTo('entryType', 'investment_activate')
-    .equalTo('source', 'backend')
-    .first({ useMasterKey: true });
-
-  if (!existingActivation && investmentCapital > 0) {
-    const invBc = String(investment.get('businessCaseId') || '').trim();
-    const activateReceipt = await createWalletReceiptDocument({
-      userId: investorId,
-      receiptType: 'investment',
-      amount: -investmentCapital,
-      description: `Investment ${investmentNumber} aktiviert – Abbuchung vom Anlagekonto`,
-      referenceType: 'Investment',
-      referenceId: investment.id,
-      metadata: { investmentNumber, traderId, businessCaseId: invBc || businessCaseId },
-      businessCaseId: invBc || businessCaseId,
-    });
-    const activateReceiptRef = resolveDocumentReference(activateReceipt, { context: 'investment_activate' });
-    await bookAccountStatementEntry({
-      userId: investorId,
-      entryType: 'investment_activate',
-      amount: -Math.abs(investmentCapital),
-      investmentId: investment.id,
-      investmentNumber,
-      description: `Investment ${investmentNumber} aktiviert`,
-      ...activateReceiptRef,
-      businessCaseId: invBc || businessCaseId,
-    });
-  }
-
   const collectionBill = await createCollectionBillDocument({
     investorId,
     investmentId: investment.id,
@@ -116,10 +94,21 @@ async function settleNewParticipation({
     sellLeg,
     taxBreakdown,
     businessCaseId,
+    allowIdempotentUpsert: true,
   });
   const collectionBillRef = resolveDocumentReference(collectionBill, { context: 'investor_collection_bill' });
 
-  const grossReturn = investmentCapital + profitShare;
+  const beleg = collectionBill.get('metadata') || {};
+  const transferAmount = round2(beleg.transferAmount ?? 0);
+  if (transferAmount <= 0) {
+    throw new Error(
+      `GoB fail-closed: Collection bill ${collectionBillRef.referenceDocumentNumber || collectionBill.id} `
+      + 'missing transferAmount',
+    );
+  }
+  const bookedResidual = round2(beleg.residualAmount ?? (buyLeg && buyLeg.residualAmount) ?? 0);
+  const poolTradingAmount = round2(beleg.poolTradingAmount ?? beleg.totalBuyCost ?? 0);
+
   const alreadyReturned = await sumStatementAmounts({
     userId: investorId,
     tradeId: trade.id,
@@ -127,21 +116,34 @@ async function settleNewParticipation({
     entryType: 'investment_return',
     absolute: true,
   });
-  const remainingGrossReturn = round2(Math.abs(grossReturn) - alreadyReturned);
-  if (remainingGrossReturn > 0) {
+  const remainingTransfer = round2(Math.abs(transferAmount) - alreadyReturned);
+  if (remainingTransfer > 0) {
     await bookAccountStatementEntry({
       userId: investorId,
       entryType: 'investment_return',
-      amount: remainingGrossReturn,
+      amount: remainingTransfer,
       tradeId: trade.id,
       tradeNumber,
       investmentId: investment.id,
       investmentNumber,
-      description: `Abrechnung Trade #${tradeNumber} – Rückzahlung ${investmentNumber}`,
+      description: `Abrechnung Trade #${tradeNumber} – Überweisungsbetrag ${investmentNumber}`,
       ...collectionBillRef,
       businessCaseId,
     });
   }
+
+  await bookTradeSettlementPayout({
+    investorId,
+    investmentId: investment.id,
+    investmentNumber,
+    tradeId: trade.id,
+    tradeNumber,
+    tradingAmount: poolTradingAmount,
+    netProfit: round2(beleg.netProfit ?? netProfit),
+    transferAmount,
+    businessCaseId,
+    collectionBillRef,
+  });
 
   if (commission > 0) {
     const alreadyCommissionDebited = await sumStatementAmounts({
@@ -214,6 +216,52 @@ async function settleNewParticipation({
   if (initialValue > 0) {
     investment.set('profitPercentage', round2((updatedProfit / initialValue) * 100));
   }
+  if (buyLeg && investmentCapital > 0) {
+    const splitAlreadyBooked = await hasEscrowLeg(
+      investment.id,
+      'reserveCapitalTradeSplit',
+      { tradeId: trade.id },
+    );
+    if (!splitAlreadyBooked) {
+      await bookReserveCapitalTradeSplit({
+        investorId,
+        nominal: round2(beleg.investmentNominal ?? investmentCapital),
+        tradingAmount: poolTradingAmount,
+        availableAmount: bookedResidual,
+        investmentId: investment.id,
+        investmentNumber,
+        tradeId: trade.id,
+        tradeNumber,
+        businessCaseId,
+      });
+    }
+    if (bookedResidual > 0) {
+      const existingResidualStmt = await new Parse.Query('AccountStatement')
+        .equalTo('userId', investorId)
+        .equalTo('investmentId', investment.id)
+        .equalTo('tradeId', trade.id)
+        .equalTo('entryType', 'residual_return')
+        .equalTo('source', 'backend')
+        .first({ useMasterKey: true });
+      if (!existingResidualStmt) {
+        await bookAccountStatementEntry({
+          userId: investorId,
+          entryType: 'residual_return',
+          amount: bookedResidual,
+          tradeId: trade.id,
+          tradeNumber,
+          investmentId: investment.id,
+          investmentNumber,
+          description: investmentNumber
+            ? `Restbetrag aus Investment ${investmentNumber}`
+            : `Restbetrag aus Investment (Rundungsdifferenz Stückkauf)`,
+          ...collectionBillRef,
+          businessCaseId,
+        });
+      }
+    }
+  }
+
   const currentStatus = investment.get('status') || 'reserved';
   if (currentStatus !== 'completed') {
     investment.set('status', 'completed');
@@ -222,21 +270,6 @@ async function settleNewParticipation({
     }
   }
   await investment.save(null, { useMasterKey: true });
-
-  if (buyLeg && buyLeg.residualAmount > 0) {
-    await bookAccountStatementEntry({
-      userId: investorId,
-      entryType: 'residual_return',
-      amount: round2(buyLeg.residualAmount),
-      tradeId: trade.id,
-      tradeNumber,
-      investmentId: investment.id,
-      investmentNumber,
-      description: `Restbetrag Trade #${tradeNumber} (Rundungsdifferenz Stückkauf)`,
-      ...collectionBillRef,
-      businessCaseId,
-    });
-  }
 
   await createCommissionRecord(traderId, investment, trade, participation, commission);
   await createNotification(

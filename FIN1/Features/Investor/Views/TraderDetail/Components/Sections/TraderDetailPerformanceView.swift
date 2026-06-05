@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct TraderDetailPerformanceView: View {
-    let trader: MockTrader
+    let trader: InvestorTrader
 
     var body: some View {
         VStack(spacing: ResponsiveDesign.spacing(16)) {
@@ -60,7 +60,7 @@ struct PerformanceRow: View {
 }
 
 #Preview {
-    TraderDetailPerformanceView(trader: mockTraders[0])
+    TraderDetailPerformanceView(trader: InvestorTrader(mock: mockTraders[0]))
         .padding()
         .background(AppTheme.screenBackground)
 }

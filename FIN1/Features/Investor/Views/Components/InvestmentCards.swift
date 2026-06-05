@@ -20,7 +20,7 @@ struct ActiveInvestmentCard: View {
                         )
 
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(self.getTraderUsername(for: self.investment.traderId))
+                        Text(self.investment.displayTraderUsername())
                             .font(ResponsiveDesign.headlineFont())
                             .fontWeight(.bold)
                             .foregroundColor(AppTheme.fontColor)
@@ -46,8 +46,8 @@ struct ActiveInvestmentCard: View {
                 // Investment Details
                 HStack(spacing: ResponsiveDesign.spacing(20)) {
                     InvestmentDetailItem(
-                        title: "Amount",
-                        value: self.investment.amount.formattedAsLocalizedCurrency()
+                        title: "Total buy",
+                        value: self.investment.displayAmountForOpenPositions.formattedAsLocalizedCurrency()
                     )
 
                     InvestmentDetailItem(
@@ -112,12 +112,6 @@ struct ActiveInvestmentCard: View {
             return AppTheme.accentRed
         }
     }
-
-    private func getTraderUsername(for traderId: String) -> String {
-        // In a real app, this would fetch from a traders database
-        // For now, return a placeholder based on the ID
-        return "trader_\(traderId.prefix(8))"
-    }
 }
 
 struct CompletedInvestmentCard: View {
@@ -138,7 +132,7 @@ struct CompletedInvestmentCard: View {
                     )
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(self.getTraderUsername(for: self.investment.traderId))
+                    Text(self.investment.displayTraderUsername())
                         .font(ResponsiveDesign.headlineFont())
                         .fontWeight(.bold)
                         .foregroundColor(AppTheme.fontColor)
@@ -192,12 +186,6 @@ struct CompletedInvestmentCard: View {
         .background(AppTheme.sectionBackground)
         .cornerRadius(ResponsiveDesign.spacing(16))
     }
-
-    private func getTraderUsername(for traderId: String) -> String {
-        // In a real app, this would fetch from a traders database
-        // For now, return a placeholder based on the ID
-        return "trader_\(traderId.prefix(8))"
-    }
 }
 
 struct InvestmentHistoryCard: View {
@@ -223,7 +211,7 @@ struct InvestmentHistoryCard: View {
                     .fontWeight(.medium)
                     .foregroundColor(AppTheme.fontColor)
 
-                Text(self.getTraderUsername(for: self.investment.traderId))
+                Text(self.investment.displayTraderUsername())
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.secondaryText)
             }
@@ -245,12 +233,6 @@ struct InvestmentHistoryCard: View {
         .padding(ResponsiveDesign.spacing(16))
         .background(AppTheme.sectionBackground)
         .cornerRadius(ResponsiveDesign.spacing(12))
-    }
-
-    private func getTraderUsername(for traderId: String) -> String {
-        // In a real app, this would fetch from a traders database
-        // For now, return a placeholder based on the ID
-        return "trader_\(traderId.prefix(8))"
     }
 }
 

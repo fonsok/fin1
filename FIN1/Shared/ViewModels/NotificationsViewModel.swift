@@ -106,7 +106,8 @@ final class NotificationsViewModel: ObservableObject {
     private func recompute() {
         let allItems = self.combinedItemsForCurrentUser()
         let recentItems = self.applyRecentReadWindow(to: allItems)
-        self.filteredItems = self.applyFilter(self.selectedFilter, to: recentItems)
+        let visibleItems = self.selectedFilter == .documents ? allItems : recentItems
+        self.filteredItems = self.applyFilter(self.selectedFilter, to: visibleItems)
 
         let archivedBaseItems = self.applyArchivedReadWindow(to: allItems)
         self.archivedItems = self.applyFilter(self.selectedFilter, to: archivedBaseItems)
@@ -116,46 +117,19 @@ final class NotificationsViewModel: ObservableObject {
     }
 
     private func combinedItemsForCurrentUser() -> [NotificationItem] {
-        let currentUserId = self.userService.currentUser?.id ?? ""
-        let stableUserId = self.resolvedStableUserId()
-        let allowedUserIds = Set([currentUserId, stableUserId].filter { !$0.isEmpty })
+        guard let user = self.userService.currentUser else { return [] }
+        let allowedUserIds = DocumentInboxPolicy.documentInboxUserIdKeys(for: user)
 
         let userNotifications = self.notificationService.notifications.filter { allowedUserIds.contains($0.userId) }
         let notificationItems = userNotifications.map { NotificationItem.notification($0) }
 
-        let userDocuments = allowedUserIds
-            .flatMap { self.documentService.getDocuments(for: $0) }
-            .filter { self.isDisplayableNotificationDocument($0) }
+        let userDocuments = self.documentService.documents
+            .filter { DocumentInboxPolicy.belongsToUser($0, keys: allowedUserIds) }
+            .filter { DocumentInboxPolicy.isDisplayableInNotificationsInbox($0) }
             .uniqueById()
         let documentItems = userDocuments.map { NotificationItem.document($0) }
 
         return notificationItems + documentItems
-    }
-
-    private func resolvedStableUserId() -> String {
-        guard let email = userService.currentUser?.email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased(),
-              !email.isEmpty else {
-            return ""
-        }
-        return "user:\(email)"
-    }
-
-    private func isDisplayableNotificationDocument(_ document: Document) -> Bool {
-        if document.isExcludedFromInvestorDocumentInbox {
-            return false
-        }
-        // Hide backend wallet receipts (IAR/IRR/IFR) from the Documents tab.
-        // These are booking receipts, not user-facing collection-bill/invoice artifacts.
-        if document.type == .financial {
-            let accNo = (document.accountingDocumentNumber ?? "").uppercased()
-            if accNo.hasPrefix("IAR-") || accNo.hasPrefix("IRR-") || accNo.hasPrefix("IFR-") {
-                return false
-            }
-            if document.name.lowercased().hasPrefix("investorcollectionbill_") {
-                return false
-            }
-        }
-        return true
     }
 
     private func applyRecentReadWindow(to items: [NotificationItem]) -> [NotificationItem] {

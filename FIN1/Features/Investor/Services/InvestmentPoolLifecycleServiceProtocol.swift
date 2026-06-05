@@ -12,7 +12,7 @@ protocol InvestmentPoolLifecycleServiceProtocol: ServiceLifecycle {
     ///   - investment: The investment to create reservations for
     ///   - trader: The trader associated with the investment
     /// - Returns: Array of investment reservations
-    func createInvestmentReservations(for investment: Investment, trader: MockTrader) -> [InvestmentReservation]
+    func createInvestmentReservations(for investment: Investment, trader: InvestorTrader) -> [InvestmentReservation]
 
     /// Creates a new investment pool for a trader
     /// - Parameters:

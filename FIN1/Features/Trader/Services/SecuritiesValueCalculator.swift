@@ -36,10 +36,10 @@ struct SecuritiesValueCalculator {
             return 0.0
         }
 
-        let pricePerUnit = pricePerSecurity / subscriptionRatio
-        if verbose { print("   💵 Price per unit: €\(String(format: "%.2f", pricePerUnit))") }
+        let briefPricePerPiece = pricePerSecurity
+        if verbose { print("   💵 Order price per Stück: €\(String(format: "%.2f", briefPricePerPiece))") }
 
-        let maxPossibleQuantity = Int(totalCapital / pricePerUnit)
+        let maxPossibleQuantity = Int(totalCapital / briefPricePerPiece)
         if verbose { print("   📦 Max possible quantity (no fees): \(maxPossibleQuantity)") }
 
         guard maxPossibleQuantity > 0 else {
@@ -60,13 +60,16 @@ struct SecuritiesValueCalculator {
 
         let bestQuantity = self.findOptimalQuantity(
             upperBound: upperBound,
-            pricePerUnit: pricePerUnit,
+            pricePerUnit: briefPricePerPiece,
             totalCapital: totalCapital,
             denomination: denomination,
             verbose: verbose
         )
 
-        let securitiesValue = Double(bestQuantity) * pricePerUnit
+        let securitiesValue = OrderCashAmount.grossAmount(
+            quantity: bestQuantity,
+            briefPricePerPiece: briefPricePerPiece
+        )
         if verbose {
             let remainingCapital = totalCapital - (securitiesValue + FeeCalculationService.calculateTotalFees(for: securitiesValue))
             print("   ✅ Final result:")

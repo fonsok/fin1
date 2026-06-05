@@ -15,3 +15,4 @@ export * from './admin/configuration';
 export * from './admin/system';
 export * from './admin/kyb';
 export * from './admin/documents';
+export * from './admin/reports';

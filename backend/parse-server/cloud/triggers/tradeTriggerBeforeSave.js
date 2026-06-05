@@ -3,6 +3,10 @@
 const { newBusinessCaseId } = require('../utils/accountingHelper/businessCaseId');
 const { deriveSoldQuantity } = require('./tradeSellQuantityHelpers');
 const { computeTradingFees } = require('./tradeTriggerFees');
+const {
+  assertTraderPartialSellWithinLimit,
+  countTraderPartialSellEvents,
+} = require('../utils/configHelper/traderPartialSellLimits');
 
 Parse.Cloud.beforeSave('Trade', async (request) => {
   const trade = request.object;
@@ -64,8 +68,13 @@ Parse.Cloud.beforeSave('Trade', async (request) => {
   }
   trade.set('soldQuantity', soldQuantity);
   trade.set('remainingQuantity', Math.max(0, quantity - soldQuantity));
+  trade.set('traderPartialSellEventCount', countTraderPartialSellEvents(trade));
+  const { buildTradeSearchBlob } = require('../utils/adminListSearch');
+  trade.set('adminSearchBlob', buildTradeSearchBlob(trade));
 
   if (!isNew && request.original) {
+    await assertTraderPartialSellWithinLimit(trade, request.original);
+
     const oldStatus = request.original.get('status');
 
     const oldSold = Math.max(

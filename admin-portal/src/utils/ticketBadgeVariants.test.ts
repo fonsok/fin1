@@ -23,6 +23,13 @@ describe('ticketStatusChipClasses', () => {
   it('is case insensitive', () => {
     expect(ticketStatusChipClasses('OPEN', true)).toBe(ticketStatusChipClasses('open', true));
   });
+
+  it('maps escalated to red', () => {
+    const escalated = ticketStatusChipClasses('escalated', true);
+    const open = ticketStatusChipClasses('open', true);
+    expect(escalated).toContain('red');
+    expect(escalated).not.toEqual(open);
+  });
 });
 
 describe('ticketPriorityChipClasses', () => {

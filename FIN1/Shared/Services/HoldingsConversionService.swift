@@ -75,8 +75,9 @@ final class HoldingsConversionService: HoldingsConversionServiceProtocol, @unche
     }
 
     func createHoldings(from trades: [Trade], ongoingOrders: [Order] = []) -> [DepotHolding] {
+        let depotTrades = TraderDepotTradeFilter.tradesForDepotDisplay(trades)
         var positionCounter = 1
-        let allHoldings = trades.map { trade -> DepotHolding in
+        let allHoldings = depotTrades.map { trade -> DepotHolding in
             defer { positionCounter += 1 }
             return self.createHolding(from: trade, position: positionCounter, ongoingOrders: ongoingOrders)
         }

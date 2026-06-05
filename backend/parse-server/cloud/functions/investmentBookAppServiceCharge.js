@@ -4,6 +4,7 @@ const { round2 } = require('../utils/accountingHelper/shared');
 const { newBusinessCaseId } = require('../utils/accountingHelper/businessCaseId');
 const { getAppServiceChargeRateForAccountType } = require('../utils/configHelper');
 const { investorOwnsInvestment, resolveInvestorAccountType } = require('./investmentAccess');
+const { resolveCanonicalUserId } = require('../utils/canonicalUserId');
 
 /**
  * ADR-007: Idempotent service_charge Invoice for an Investment batch.
@@ -71,7 +72,22 @@ async function handleBookAppServiceCharge(request) {
   }
 
   const batchId = investment.get('batchId') || investment.id;
-  const investorId = investment.get('investorId') || (user ? user.id : null);
+  const investorIdRaw = investment.get('investorId') || (user ? user.id : null);
+  const investorId = investorIdRaw
+    ? await resolveCanonicalUserId(String(investorIdRaw))
+    : null;
+
+  let customerNumber = '';
+  if (investorId) {
+    try {
+      const investorUser = await new Parse.Query(Parse.User).get(investorId, { useMasterKey: true });
+      customerNumber = String(
+        investorUser.get('customerNumber') || investorUser.get('customerId') || '',
+      ).trim();
+    } catch {
+      customerNumber = '';
+    }
+  }
 
   const existing = await new Parse.Query('Invoice')
     .equalTo('batchId', batchId)
@@ -149,7 +165,7 @@ async function handleBookAppServiceCharge(request) {
   invoice.set('batchId', batchId);
   invoice.set('businessCaseId', businessCaseId);
   invoice.set('userId', investorId);
-  invoice.set('customerId', investorId);
+  invoice.set('customerId', customerNumber || investorId || '');
   invoice.set('customerEmail', investment.get('investorEmail') || '');
   invoice.set('customerName', investment.get('investorName') || '');
   invoice.set('investmentIds', investmentIds);
@@ -158,8 +174,12 @@ async function handleBookAppServiceCharge(request) {
   invoice.set('taxAmount', vatAmount);
   invoice.set('totalAmount', totalAmount);
   invoice.set('source', 'backend');
+  const investmentNumbers = relevantRows
+    .map((row) => String(row.get('investmentNumber') || '').trim())
+    .filter(Boolean);
   invoice.set('metadata', {
-    investmentNumber: investment.get('investmentNumber') || '',
+    investmentNumber: investmentNumbers[0] || investment.get('investmentNumber') || '',
+    investmentNumbers,
     serviceChargeRate,
     investorAccountType: accountType,
     totalInvestmentAmount,

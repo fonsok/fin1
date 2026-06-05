@@ -10,7 +10,7 @@ const APP_ACCOUNTS = [
   // Kundenguthaben (Teil-Verbindlichkeiten) – Buchungen folgen bei serverseitiger Escrow-Policy
   { code: 'CLT-LIAB-AVA', name: 'Kundenguthaben – verfügbar', group: 'liability' },
   { code: 'CLT-LIAB-RSV', name: 'Kundenguthaben – für Investments reserviert', group: 'liability' },
-  { code: 'CLT-LIAB-TRD', name: 'Kundenguthaben – im Handel / Pool', group: 'liability' },
+  { code: 'CLT-LIAB-PTR', name: 'Kundenguthaben – PoolTrade (Stückkauf)', group: 'liability' },
   { code: 'PLT-REV-PSC', name: 'Erlös Appgebühr (netto)', group: 'revenue' },
   { code: 'PLT-REV-ORD', name: 'Erlös Ordergebühren', group: 'revenue' },
   { code: 'PLT-REV-EXC', name: 'Erlös Börsenplatzgebühren', group: 'revenue' },

@@ -94,3 +94,98 @@ struct User: Identifiable, Codable, Sendable {
     var createdAt: Date
     var updatedAt: Date
 }
+
+extension User {
+    /// Technical person key for API queries — Parse `objectId` when available.
+    var canonicalUserId: String { self.id }
+
+    /// Read keys for backend fetch. After login uses a single Parse id (one query, no alias fan-out).
+    var ledgerUserIdCandidates: [String] {
+        if Self.isParseObjectId(self.id) {
+            return [self.id]
+        }
+        let email = self.email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        if email.isEmpty {
+            return [self.id]
+        }
+        return [self.id, UserFactory.stableUserId(for: email)]
+    }
+
+    private static func isParseObjectId(_ value: String) -> Bool {
+        value.range(of: #"^[a-zA-Z0-9]{10}$"#, options: .regularExpression) != nil
+    }
+
+    /// Copy with a different identity key (e.g. Parse `objectId` after login).
+    func withId(_ newId: String) -> User {
+        guard newId != self.id else { return self }
+        return User(
+            id: newId,
+            customerNumber: self.customerNumber,
+            accountType: self.accountType,
+            email: self.email,
+            username: self.username,
+            phoneNumber: self.phoneNumber,
+            password: self.password,
+            salutation: self.salutation,
+            academicTitle: self.academicTitle,
+            firstName: self.firstName,
+            lastName: self.lastName,
+            streetAndNumber: self.streetAndNumber,
+            postalCode: self.postalCode,
+            city: self.city,
+            state: self.state,
+            country: self.country,
+            dateOfBirth: self.dateOfBirth,
+            placeOfBirth: self.placeOfBirth,
+            countryOfBirth: self.countryOfBirth,
+            role: self.role,
+            csrRole: self.csrRole,
+            employmentStatus: self.employmentStatus,
+            income: self.income,
+            incomeRange: self.incomeRange,
+            riskTolerance: self.riskTolerance,
+            address: self.address,
+            nationality: self.nationality,
+            additionalNationalities: self.additionalNationalities,
+            taxNumber: self.taxNumber,
+            additionalTaxResidences: self.additionalTaxResidences,
+            isNotUSCitizen: self.isNotUSCitizen,
+            identificationType: self.identificationType,
+            passportFrontImageURL: self.passportFrontImageURL,
+            passportBackImageURL: self.passportBackImageURL,
+            idCardFrontImageURL: self.idCardFrontImageURL,
+            idCardBackImageURL: self.idCardBackImageURL,
+            identificationConfirmed: self.identificationConfirmed,
+            addressConfirmed: self.addressConfirmed,
+            addressVerificationDocumentURL: self.addressVerificationDocumentURL,
+            leveragedProductsExperience: self.leveragedProductsExperience,
+            financialProductsExperience: self.financialProductsExperience,
+            investmentExperience: self.investmentExperience,
+            tradingFrequency: self.tradingFrequency,
+            investmentKnowledge: self.investmentKnowledge,
+            desiredReturn: self.desiredReturn,
+            insiderTradingOptions: self.insiderTradingOptions,
+            moneyLaunderingDeclaration: self.moneyLaunderingDeclaration,
+            assetType: self.assetType,
+            profileImageURL: self.profileImageURL,
+            isEmailVerified: self.isEmailVerified,
+            isKYCCompleted: self.isKYCCompleted,
+            acceptedTerms: self.acceptedTerms,
+            acceptedPrivacyPolicy: self.acceptedPrivacyPolicy,
+            acceptedMarketingConsent: self.acceptedMarketingConsent,
+            acceptedTermsVersion: self.acceptedTermsVersion,
+            acceptedTermsDate: self.acceptedTermsDate,
+            acceptedPrivacyPolicyVersion: self.acceptedPrivacyPolicyVersion,
+            acceptedPrivacyPolicyDate: self.acceptedPrivacyPolicyDate,
+            onboardingCompleted: self.onboardingCompleted,
+            onboardingStep: self.onboardingStep,
+            kycStatus: self.kycStatus,
+            companyKybCompleted: self.companyKybCompleted,
+            companyKybStep: self.companyKybStep,
+            companyKybStatus: self.companyKybStatus,
+            lastLoginDate: self.lastLoginDate,
+            createdAt: self.createdAt,
+            updatedAt: self.updatedAt
+        )
+    }
+}

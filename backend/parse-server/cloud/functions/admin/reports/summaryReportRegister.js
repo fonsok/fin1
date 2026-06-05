@@ -2,8 +2,6 @@
 
 const { requirePermission } = require('../../../utils/permissions');
 const { getTraderCommissionRate } = require('../../../utils/configHelper/index.js');
-const { applyQuerySort } = require('../../../utils/applyQuerySort');
-
 const { MAX_PAGE_SIZE } = require('./summaryReportConstants');
 const {
   buildInvestmentMatch,
@@ -11,6 +9,15 @@ const {
   applyInvestmentQueryFilters,
   applyTradeQueryFilters,
 } = require('./summaryReportQueryHelpers');
+const { fetchInvestmentsPage, fetchTradesPage } = require('./summaryReportPagedList');
+const {
+  handleGetAdminListSearchHealth,
+  handleEnsureAdminListSearchIndexes,
+} = require('./adminListSearchHealth');
+const {
+  normalizeInvestmentListFilters,
+  normalizeTradeListFilters,
+} = require('./summaryReportFilterHelpers');
 const {
   investmentAggPipeline,
   tradeAggPipeline,
@@ -24,6 +31,11 @@ const {
   mapTradeRow,
   loadDistinctInvestorIdsByTradeId,
 } = require('./summaryReportTradeRows');
+const {
+  enrichSummaryReportTrades,
+  ensureMirrorLinkForTraderRows,
+  ensureTraderLinkForPoolRows,
+} = require('./summaryReportTradePoolEnrichment');
 
 async function handleGetSummaryReport(request) {
   const { dateFrom, dateTo, investorId, traderId } = request.params || {};
@@ -82,74 +94,46 @@ async function handleGetSummaryReport(request) {
 }
 
 async function handleGetSummaryReportInvestmentsPage(request) {
-  const {
-    dateFrom,
-    dateTo,
-    investorId,
-    traderId,
-    page: pageRaw,
-    pageSize: pageSizeRaw,
-  } = request.params || {};
+  const { page: pageRaw, pageSize: pageSizeRaw } = request.params || {};
   const page = Math.max(0, parseInt(pageRaw, 10) || 0);
   const pageSize = Math.min(MAX_PAGE_SIZE, Math.max(1, parseInt(pageSizeRaw, 10) || 25));
-  const filters = { dateFrom, dateTo, investorId, traderId };
+  const filters = normalizeInvestmentListFilters(request.params);
 
   const commissionRate = await getTraderCommissionRate();
 
-  const base = new Parse.Query('Investment');
-  applyInvestmentQueryFilters(base, filters);
-
-  const total = await base.count({ useMasterKey: true });
-
-  const pageQuery = new Parse.Query('Investment');
-  applyInvestmentQueryFilters(pageQuery, filters);
-  applyQuerySort(pageQuery, request.params || {}, {
-    allowed: ['createdAt', 'amount'],
-    defaultField: 'createdAt',
-    defaultDesc: true,
-  });
-  pageQuery.skip(page * pageSize);
-  pageQuery.limit(pageSize);
-
-  const rows = await pageQuery.find({ useMasterKey: true });
+  const pageResult = await fetchInvestmentsPage(
+    filters,
+    request.params || {},
+    page,
+    pageSize,
+  );
+  const { total, rows, searchMode } = pageResult;
   const canonicalReturnMap = await loadCanonicalReturnByInvestmentId(rows.map((r) => r.id));
   const items = rows.map((inv) => mapInvestmentRow(inv, commissionRate, canonicalReturnMap));
 
-  return { items, total, page, pageSize };
+  return { items, total, page, pageSize, searchMode: searchMode || 'none' };
 }
 
 async function handleGetSummaryReportTradesPage(request) {
-  const {
-    dateFrom,
-    dateTo,
-    traderId,
-    page: pageRaw,
-    pageSize: pageSizeRaw,
-  } = request.params || {};
+  const { page: pageRaw, pageSize: pageSizeRaw } = request.params || {};
   const page = Math.max(0, parseInt(pageRaw, 10) || 0);
   const pageSize = Math.min(MAX_PAGE_SIZE, Math.max(1, parseInt(pageSizeRaw, 10) || 25));
-  const filters = { dateFrom, dateTo, traderId };
+  const filters = normalizeTradeListFilters(request.params);
 
-  const base = new Parse.Query('Trade');
-  applyTradeQueryFilters(base, filters);
-
-  const total = await base.count({ useMasterKey: true });
-
-  const pageQuery = new Parse.Query('Trade');
-  applyTradeQueryFilters(pageQuery, filters);
-  applyQuerySort(pageQuery, request.params || {}, {
-    allowed: ['createdAt', 'tradeNumber'],
-    defaultField: 'createdAt',
-    defaultDesc: true,
-  });
-  pageQuery.skip(page * pageSize);
-  pageQuery.limit(pageSize);
-
-  const rows = await pageQuery.find({ useMasterKey: true });
+  const pageResult = await fetchTradesPage(
+    filters,
+    request.params || {},
+    page,
+    pageSize,
+  );
+  const { total, rows, searchMode } = pageResult;
   const poolInvestorsByTrade = await loadDistinctInvestorIdsByTradeId(rows);
-  const items = rows.map((t) => mapTradeRow(t, poolInvestorsByTrade.get(t.id)));
+  const baseItems = rows.map((t) => mapTradeRow(t, poolInvestorsByTrade.get(t.id)));
+  let items = await enrichSummaryReportTrades(rows, baseItems);
+  items = await ensureMirrorLinkForTraderRows(items, rows);
+  items = await ensureTraderLinkForPoolRows(items, rows);
 
-  return { items, total, page, pageSize };
+  return { items, total, page, pageSize, searchMode: searchMode || 'none' };
 }
 
 function registerSummaryReportFunctions() {
@@ -166,6 +150,14 @@ function registerSummaryReportFunctions() {
   Parse.Cloud.define('getSummaryReportTradesPage', async (request) => {
     requirePermission(request, 'getFinancialDashboard');
     return handleGetSummaryReportTradesPage(request);
+  });
+
+  Parse.Cloud.define('getAdminListSearchHealth', async (request) => {
+    return handleGetAdminListSearchHealth(request);
+  });
+
+  Parse.Cloud.define('ensureAdminListSearchIndexes', async (request) => {
+    return handleEnsureAdminListSearchIndexes(request);
   });
 }
 

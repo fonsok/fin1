@@ -6,11 +6,8 @@ extension InvestorInvestmentStatementViewModel {
     func refreshFromBackend() async {
         isRefreshingFromBackend = true
         backendRefreshMessage = nil
+        belegIntegrityBanner = nil
         defer { isRefreshingFromBackend = false }
-
-        print(
-            "🔍 InvestorCB-refresh: start investmentId=\(investment.id) batchId=\(investment.batchId ?? "nil") investorId=\(investment.investorId)"
-        )
 
         let resolvedContext: InvestorInvestmentStatementResolvedContext
         if let statementDataProvider {
@@ -28,29 +25,27 @@ extension InvestorInvestmentStatementViewModel {
         }
 
         let participations = resolvedContext.participations
-        print("🔍 InvestorCB-refresh: resolved participations=\(participations.count) trades=\(resolvedContext.tradesById.count)")
-        for p in participations {
-            let hasTrade = resolvedContext.tradesById[p.tradeId] != nil
-            print("   • participation tradeId=\(p.tradeId) ownership=\(p.ownershipPercentage) hasLocalTrade=\(hasTrade)")
-        }
-
         guard !participations.isEmpty else {
             backendRefreshMessage = "Collection Bill konnte nicht geladen werden (keine Beteiligungen gefunden)"
-            print("⚠️ InvestorCB-refresh: aborted (no participations)")
             return
         }
 
+        let serverOnly = configurationService.investorMonetaryServerOnly
+
         guard let settlementAPIService else {
+            if serverOnly {
+                backendRefreshMessage = InvestorMonetaryMessages.serverUnavailable
+                statementItems = []
+                return
+            }
             let localItems = buildStatementItems(
                 participations: participations,
                 tradesById: resolvedContext.tradesById
             )
             if !localItems.isEmpty {
                 statementItems = localItems
-                print("✅ InvestorCB-refresh: settlementAPI nil → built \(localItems.count) local items")
             } else {
                 backendRefreshMessage = "Collection Bill konnte nicht aufgebaut werden (Trades fehlen lokal — bitte erneut öffnen oder Sync prüfen)"
-                print("⚠️ InvestorCB-refresh: settlementAPI nil & no local items")
             }
             return
         }
@@ -62,10 +57,26 @@ extension InvestorInvestmentStatementViewModel {
         var failedCalculations = 0
         let effectiveRate = effectiveCommissionRate
 
+        let backendBillsByTradeId: [String: BackendCollectionBill]
+        do {
+            backendBillsByTradeId = try await calculationService.prefetchBackendBills(
+                for: investment.id,
+                settlementAPIService: settlementAPIService
+            )
+        } catch {
+            backendRefreshMessage = InvestorMonetaryMessages.serverUnavailable
+            if !serverOnly {
+                statementItems = buildStatementItems(
+                    participations: participations,
+                    tradesById: trades
+                )
+            }
+            return
+        }
+
         for participation in participations {
             guard let trade = trades[participation.tradeId] else {
                 skippedNoTrade += 1
-                print("⚠️ InvestorCB-refresh: skipping participation tradeId=\(participation.tradeId) — trade not in resolved set")
                 continue
             }
 
@@ -98,63 +109,63 @@ extension InvestorInvestmentStatementViewModel {
                     input: input,
                     settlementAPIService: settlementAPIService,
                     tradeId: trade.id,
-                    investmentId: investment.id
-                )
-                if output.usedLocalFallbackDueToBackendError {
-                    backendRefreshMessage = "Daten werden aus dem lokalen Speicher angezeigt (Server nicht erreichbar)"
-                }
-
-                let commission = commissionCalculationService.calculateCommission(
-                    grossProfit: output.grossProfit,
-                    rate: effectiveRate
-                )
-                let netAfterComm = commissionCalculationService.calculateNetProfitAfterCommission(
-                    grossProfit: output.grossProfit,
-                    rate: effectiveRate
+                    investmentId: investment.id,
+                    preloadedBill: backendBillsByTradeId[trade.id],
+                    monetaryServerOnly: serverOnly,
+                    billResolvedFromPrefetchIndex: true
                 )
 
-                let item = InvestorInvestmentStatementItem(
-                    id: trade.id,
-                    tradeNumber: trade.tradeNumber,
-                    symbol: trade.symbol,
-                    tradeDate: trade.completedAt ?? trade.updatedAt,
-                    buyQuantity: output.buyQuantity,
-                    buyPrice: output.buyPrice,
-                    buyTotal: output.buyAmount,
-                    buyFees: output.buyFees,
-                    buyFeeDetails: output.buyFeeDetails,
-                    sellQuantity: output.sellQuantity,
-                    sellAveragePrice: output.sellAveragePrice,
-                    sellTotal: output.sellAmount,
-                    sellFees: output.sellFees,
-                    sellFeeDetails: output.sellFeeDetails,
-                    grossProfit: output.grossProfit,
+                let item = InvestorInvestmentStatementItem.from(
+                    trade: trade,
+                    output: output,
                     ownershipPercentage: participation.ownershipPercentage,
-                    roiGrossProfit: output.roiGrossProfit,
-                    roiInvestedAmount: output.roiInvestedAmount,
-                    tradeROI: trade.displayROI,
-                    commission: commission,
-                    grossProfitAfterCommission: netAfterComm,
-                    residualAmount: output.residualAmount
+                    commissionCalculationService: commissionCalculationService,
+                    commissionRate: effectiveRate
                 )
                 items.append(item)
-                print(
-                    "✅ InvestorCB-refresh: built item for trade \(trade.tradeNumber) buyAmt=\(output.buyAmount) sellAmt=\(output.sellAmount) gp=\(output.grossProfit)"
+            } catch let error as InvestorMonetaryServerOnlyError {
+                failedCalculations += 1
+                if backendRefreshMessage == nil {
+                    backendRefreshMessage = error.localizedDescription
+                }
+            } catch let error as InvestorCollectionBillBelegError {
+                failedCalculations += 1
+                backendRefreshMessage = error.localizedDescription
+                InvestorCollectionBillLog.warning(
+                    "Beleg unmappable trade \(trade.tradeNumber): \(error.localizedDescription)"
                 )
             } catch {
                 failedCalculations += 1
-                print("⚠️ InvestorCB-refresh: calculation failed for trade \(trade.tradeNumber): \(error.localizedDescription)")
+                InvestorCollectionBillLog.warning(
+                    "Statement build failed trade \(trade.tradeNumber): \(error.localizedDescription)"
+                )
             }
         }
 
-        print(
-            "🔍 InvestorCB-refresh: done — items=\(items.count) skippedNoTrade=\(skippedNoTrade) failedCalcs=\(failedCalculations) priorStatementItems=\(statementItems.count)"
-        )
-
         if !items.isEmpty {
             statementItems = items.sorted { $0.tradeDate < $1.tradeDate }
+            self.updateBelegIntegrityBanner(from: items)
         } else if statementItems.isEmpty {
             backendRefreshMessage = "Collection Bill enthält keine Positionen (Server lieferte keine verwertbaren Metadaten — bitte Logs prüfen)"
+        }
+
+        if failedCalculations > 0, backendRefreshMessage == nil {
+            backendRefreshMessage = "\(failedCalculations) Trade(s) konnten nicht aus dem Server-Beleg geladen werden"
+        }
+
+        _ = skippedNoTrade
+    }
+
+    private func updateBelegIntegrityBanner(from items: [InvestorInvestmentStatementItem]) {
+        let inconsistent = items.compactMap(\.belegInconsistencyMessage)
+        let provisional = items.contains(where: \.isProvisionalLocalEstimate)
+
+        if !inconsistent.isEmpty {
+            self.belegIntegrityBanner =
+                "GoB-Hinweis: Mindestens ein archivierter Collection Bill ist intern inkonsistent (Legs ≠ gebuchte Summen). Angezeigte Summen folgen dem Beleg; bitte Admin-Audit auslösen."
+        } else if provisional {
+            self.belegIntegrityBanner =
+                "Vorläufige Werte (lokale Schätzung). Maßgeblich ist der archivierte Collection Bill auf dem Server nach Trade-Abschluss."
         }
     }
 }

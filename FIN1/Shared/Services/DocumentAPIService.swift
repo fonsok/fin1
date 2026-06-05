@@ -3,7 +3,7 @@ import Foundation
 // MARK: - Document API Service Protocol
 
 /// Protocol for syncing documents to Parse Server backend
-protocol DocumentAPIServiceProtocol {
+protocol DocumentAPIServiceProtocol: Sendable {
     /// Saves a document to the Parse Server
     func saveDocument(_ document: Document) async throws -> Document
 
@@ -16,8 +16,65 @@ protocol DocumentAPIServiceProtocol {
     /// Fetches a single Document row by Parse `objectId` (notification deep-links).
     func fetchDocument(by objectId: String) async throws -> Document
 
+    /// Enriched trader collection bill (SSOT); session-only Cloud Function.
+    func fetchTraderBelegDetail(objectId: String) async throws -> TraderDocumentBelegDetail
+
+    /// Session inbox (one Cloud Function); SSOT for Notifications → Documents.
+    func fetchUserDocumentInbox(limit: Int, skip: Int) async throws -> UserDocumentInboxPage
+
+    /// Fetches up to `DocumentInboxPolicy.inboxMaxExtraPages` follow-up pages when `hasMore`.
+    func fetchAllUserDocumentInbox() async throws -> [Document]
+
+    /// Investor settlement bills (`getInvestorCollectionBills`); supplements inbox when `userId` is legacy.
+    func fetchInvestorCollectionBillsForInbox(limit: Int) async throws -> [Document]
+
     /// Deletes a document from the Parse Server
     func deleteDocument(_ documentId: String) async throws
+}
+
+// MARK: - Trader Beleg detail (Cloud Function)
+
+struct TraderDocumentBelegDetail: Decodable, Sendable {
+    let objectId: String
+    let userId: String
+    let name: String
+    let type: String
+    let status: String
+    let fileURL: String
+    let size: Int64
+    let uploadedAt: String?
+    let verifiedAt: String?
+    let documentNumber: String?
+    let accountingDocumentNumber: String?
+    let tradeId: String?
+    let investmentId: String?
+    let accountingSummaryText: String?
+    let summarySource: String?
+
+    func toDocument() -> Document {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let uploaded = self.uploadedAt.flatMap { formatter.date(from: $0) } ?? Date()
+        let verified = self.verifiedAt.flatMap { formatter.date(from: $0) }
+        let docType = DocumentType(rawValue: self.type) ?? .other
+        let docStatus = DocumentStatus(rawValue: self.status) ?? .pending
+
+        return Document(
+            id: self.objectId,
+            userId: self.userId,
+            name: self.name,
+            type: docType,
+            status: docStatus,
+            fileURL: self.fileURL,
+            size: self.size,
+            uploadedAt: uploaded,
+            verifiedAt: verified,
+            tradeId: self.tradeId,
+            investmentId: self.investmentId,
+            documentNumber: self.documentNumber ?? self.accountingDocumentNumber,
+            accountingSummaryText: self.accountingSummaryText
+        )
+    }
 }
 
 // MARK: - Parse Document Input
@@ -89,6 +146,7 @@ private struct ParseDocumentResponse: Decodable {
     let fileURL: String
     let size: Int64
     let uploadedAt: String
+    let createdAt: String?
     let updatedAt: String
     let verifiedAt: String?
     let expiresAt: String?
@@ -113,6 +171,7 @@ private struct ParseDocumentResponse: Decodable {
         case fileURL
         case size
         case uploadedAt
+        case createdAt
         case updatedAt
         case verifiedAt
         case expiresAt
@@ -137,7 +196,14 @@ private struct ParseDocumentResponse: Decodable {
         self.status = try c.decodeIfPresent(String.self, forKey: .status) ?? DocumentStatus.verified.rawValue
         self.fileURL = try c.decodeIfPresent(String.self, forKey: .fileURL) ?? ""
         self.size = c.decodeLossyInt64(forKey: .size) ?? 0
-        self.uploadedAt = try c.decodeIfPresent(String.self, forKey: .uploadedAt) ?? Date().ISO8601Format()
+        if let uploaded = try c.decodeIfPresent(String.self, forKey: .uploadedAt) {
+            self.uploadedAt = uploaded
+        } else if let created = try c.decodeIfPresent(String.self, forKey: .createdAt) {
+            self.uploadedAt = created
+        } else {
+            self.uploadedAt = Date().ISO8601Format()
+        }
+        self.createdAt = try c.decodeIfPresent(String.self, forKey: .createdAt)
         self.updatedAt = try c.decodeIfPresent(String.self, forKey: .updatedAt) ?? self.uploadedAt
         self.verifiedAt = try c.decodeIfPresent(String.self, forKey: .verifiedAt)
         self.expiresAt = try c.decodeIfPresent(String.self, forKey: .expiresAt)
@@ -248,7 +314,7 @@ private extension KeyedDecodingContainer where K == ParseDocumentResponse.Coding
 // MARK: - Document API Service Implementation
 
 /// Service for syncing documents with Parse Server backend
-final class DocumentAPIService: DocumentAPIServiceProtocol {
+final class DocumentAPIService: DocumentAPIServiceProtocol, @unchecked Sendable {
     private let apiClient: ParseAPIClientProtocol
     private let className = "Document"
 
@@ -314,6 +380,51 @@ final class DocumentAPIService: DocumentAPIServiceProtocol {
         return document
     }
 
+    // MARK: - User document inbox (Cloud Function)
+
+    func fetchUserDocumentInbox(limit: Int = DocumentInboxPolicy.inboxPageSize, skip: Int = 0) async throws -> UserDocumentInboxPage {
+        print("📡 DocumentAPIService: getUserDocumentInbox limit=\(limit) skip=\(skip)")
+        let response: DocumentInboxCloudResponse = try await apiClient.callFunction(
+            "getUserDocumentInbox",
+            parameters: ["limit": limit, "skip": skip]
+        )
+        let docs = response.documents.map { $0.toDocument() }
+            .filter { DocumentInboxPolicy.isDisplayableInNotificationsInbox($0) }
+        print("✅ DocumentAPIService: Inbox page skip=\(skip) → \(docs.count) document(s), hasMore=\(response.hasMore ?? false)")
+        return UserDocumentInboxPage(documents: docs, hasMore: response.hasMore ?? false)
+    }
+
+    func fetchAllUserDocumentInbox() async throws -> [Document] {
+        var merged = [String: Document]()
+        var skip = 0
+        let pageSize = DocumentInboxPolicy.inboxPageSize
+        var pageIndex = 0
+
+        while pageIndex <= DocumentInboxPolicy.inboxMaxExtraPages {
+            let page = try await self.fetchUserDocumentInbox(limit: pageSize, skip: skip)
+            for doc in page.documents {
+                merged[doc.id] = doc
+            }
+            guard page.hasMore, pageIndex < DocumentInboxPolicy.inboxMaxExtraPages else { break }
+            skip += pageSize
+            pageIndex += 1
+        }
+
+        return Array(merged.values)
+    }
+
+    func fetchInvestorCollectionBillsForInbox(limit: Int = 100) async throws -> [Document] {
+        print("📡 DocumentAPIService: getInvestorCollectionBills limit=\(limit)")
+        let response: InvestorCollectionBillsCloudResponse = try await apiClient.callFunction(
+            "getInvestorCollectionBills",
+            parameters: ["limit": limit, "skip": 0]
+        )
+        let docs = response.collectionBills.map { $0.toDocument() }
+            .filter { DocumentInboxPolicy.isDisplayableInNotificationsInbox($0) }
+        print("✅ DocumentAPIService: getInvestorCollectionBills → \(docs.count) bill(s)")
+        return docs
+    }
+
     // MARK: - Fetch Documents
 
     func fetchDocuments(for userId: String) async throws -> [Document] {
@@ -341,6 +452,18 @@ final class DocumentAPIService: DocumentAPIServiceProtocol {
         return response.toDocument()
     }
 
+    func fetchTraderBelegDetail(objectId: String) async throws -> TraderDocumentBelegDetail {
+        let id = objectId.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !id.isEmpty else {
+            throw DocumentDeepLinkResolveError.backendUnavailable
+        }
+        print("📡 DocumentAPIService: getTraderDocumentBelegDetail \(id)")
+        return try await self.apiClient.callFunction(
+            "getTraderDocumentBelegDetail",
+            parameters: ["objectId": id]
+        )
+    }
+
     // MARK: - Delete Document
 
     func deleteDocument(_ documentId: String) async throws {
@@ -352,5 +475,41 @@ final class DocumentAPIService: DocumentAPIServiceProtocol {
         )
 
         print("✅ DocumentAPIService: Document deleted")
+    }
+}
+
+// MARK: - Inbox Cloud Function response
+
+struct UserDocumentInboxPage: Sendable {
+    let documents: [Document]
+    let hasMore: Bool
+}
+
+private struct InvestorCollectionBillsCloudResponse: Decodable {
+    let collectionBills: [ParseDocumentResponse]
+
+    enum CodingKeys: String, CodingKey {
+        case collectionBills
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.collectionBills = try c.decodeIfPresent([ParseDocumentResponse].self, forKey: .collectionBills) ?? []
+    }
+}
+
+private struct DocumentInboxCloudResponse: Decodable {
+    let documents: [ParseDocumentResponse]
+    let hasMore: Bool?
+
+    enum CodingKeys: String, CodingKey {
+        case documents
+        case hasMore
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.documents = try c.decodeIfPresent([ParseDocumentResponse].self, forKey: .documents) ?? []
+        self.hasMore = try c.decodeIfPresent(Bool.self, forKey: .hasMore) ?? false
     }
 }

@@ -8,6 +8,76 @@
 'use strict';
 
 const { calculateOrderFees } = require('./helpers');
+const { pairedStatusBatchContext } = require('./pairedOrderShared');
+const { allocateTradeToInvestmentPools } = require('../triggers/orderPoolAllocation');
+const {
+  advancePairedOrderLegsStatus,
+  statusRank,
+  pairedLegsCanonicalStatus,
+} = require('./pairedOrderStatusCoupling');
+
+const BUY_EXECUTABLE_STATUSES = new Set([
+  'pending', 'submitted', 'suspended', 'confirmed', 'completed',
+]);
+
+function sortPairedBuyLegs(orders) {
+  return [...orders].sort((a, b) => {
+    const L = (a.get('legType') || '').toUpperCase();
+    const R = (b.get('legType') || '').toUpperCase();
+    if (L === 'TRADER' && R === 'MIRROR_POOL') return -1;
+    if (L === 'MIRROR_POOL' && R === 'TRADER') return 1;
+    return 0;
+  });
+}
+
+/**
+ * @param {string} pairExecutionId
+ * @returns {Promise<{ ok: boolean, buyLegs: Parse.Object[], mirrorLeg: Parse.Object|null, issues: string[] }>}
+ */
+async function verifyPairedBuySettlement(pairExecutionId) {
+  const orders = await new Parse.Query('Order')
+    .equalTo('pairExecutionId', pairExecutionId)
+    .find({ useMasterKey: true });
+
+  const buyLegs = orders.filter((o) => (o.get('side') || '') === 'buy');
+  const mirrorLeg = buyLegs.find((o) => String(o.get('legType') || '').toUpperCase() === 'MIRROR_POOL') || null;
+  const issues = [];
+
+  for (const leg of buyLegs) {
+    const legType = String(leg.get('legType') || 'unknown');
+    const status = String(leg.get('status') || '');
+    if (status !== 'executed') {
+      issues.push(`${legType}_order_not_executed:${status}`);
+    }
+    if (!String(leg.get('tradeId') || '').trim()) {
+      issues.push(`${legType}_order_missing_trade`);
+    }
+  }
+
+  const mirrorQty = Number(mirrorLeg?.get('quantity') || 0);
+  if (mirrorLeg && mirrorQty > 0) {
+    const mirrorTrade = await new Parse.Query('Trade')
+      .equalTo('buyOrderId', mirrorLeg.id)
+      .first({ useMasterKey: true });
+    if (!mirrorTrade) {
+      issues.push('mirror_trade_missing');
+    } else {
+      const participation = await new Parse.Query('PoolTradeParticipation')
+        .equalTo('tradeId', mirrorTrade.id)
+        .first({ useMasterKey: true });
+      if (!participation) {
+        issues.push('mirror_pool_not_activated');
+      }
+    }
+  }
+
+  return {
+    ok: issues.length === 0,
+    buyLegs,
+    mirrorLeg,
+    issues,
+  };
+}
 
 /**
  * @param {string} pairExecutionId — PairedExecution.objectId
@@ -23,25 +93,60 @@ async function finalizePairedBuyAfterCommit(pairExecutionId) {
   }
 
   if (execution.get('effectsApplied') === true) {
-    return;
+    const check = await verifyPairedBuySettlement(pairExecutionId);
+    if (check.ok) {
+      return;
+    }
+    console.warn(
+      `finalizePairedBuyAfterCommit: effectsApplied but incomplete pair ${pairExecutionId}: ${check.issues.join(', ')} — repairing`,
+    );
+    execution.set('effectsApplied', false);
+    await execution.save(null, { useMasterKey: true });
   }
+
+  const traderId = String(execution.get('traderId') || '').trim();
 
   const orders = await new Parse.Query('Order')
     .equalTo('pairExecutionId', pairExecutionId)
     .ascending('createdAt')
     .find({ useMasterKey: true });
 
-  const sorted = [...orders].sort((a, b) => {
-    const L = (a.get('legType') || '').toUpperCase();
-    const R = (b.get('legType') || '').toUpperCase();
-    if (L === 'TRADER' && R === 'MIRROR_POOL') return -1;
-    if (L === 'MIRROR_POOL' && R === 'TRADER') return 1;
-    return 0;
-  });
+  const buyLegs = orders.filter((o) => (o.get('side') || '') === 'buy');
+  const currentStatus = pairedLegsCanonicalStatus(buyLegs);
+  if (currentStatus && statusRank(currentStatus) < statusRank('suspended') && traderId) {
+    try {
+      await advancePairedOrderLegsStatus(pairExecutionId, traderId, 'suspended');
+    } catch (err) {
+      console.warn(
+        `finalizePairedBuyAfterCommit: pre-suspended advance failed for ${pairExecutionId}:`,
+        err.message || err,
+      );
+    }
+  }
 
-  for (const o of sorted) {
-    if ((o.get('side') || '') !== 'buy') continue;
-    await transitionPairedBuyLegToExecuted(o.id);
+  const refreshedOrders = await new Parse.Query('Order')
+    .equalTo('pairExecutionId', pairExecutionId)
+    .ascending('createdAt')
+    .find({ useMasterKey: true });
+  const sorted = sortPairedBuyLegs(refreshedOrders);
+
+  // Sequential saves (TRADER before MIRROR_POOL): avoid saveAll + nested order.save in afterSave
+  // skipping mirror leg trade creation / pool activation.
+  for (const order of sorted) {
+    if ((order.get('side') || '') !== 'buy') continue;
+    const prepared = preparePairedBuyLegExecutedFields(order);
+    if (!prepared) continue;
+    await prepared.save(null, { useMasterKey: true, context: pairedStatusBatchContext() });
+  }
+
+  await ensureMirrorPoolActivationForPair(pairExecutionId);
+
+  const verification = await verifyPairedBuySettlement(pairExecutionId);
+  if (!verification.ok) {
+    console.error(
+      `finalizePairedBuyAfterCommit: settlement incomplete for pair ${pairExecutionId}: ${verification.issues.join(', ')}`,
+    );
+    return;
   }
 
   execution.set('effectsApplied', true);
@@ -50,20 +155,66 @@ async function finalizePairedBuyAfterCommit(pairExecutionId) {
 }
 
 /**
- * Pending → executed with fee fields filled; triggers Parse afterSave trade + invoice logic.
+ * Idempotent pool activation for the mirror leg (repair path after sequential finalize).
  */
-async function transitionPairedBuyLegToExecuted(orderObjectId) {
-  const order = await new Parse.Query('Order').get(orderObjectId, { useMasterKey: true });
-  if ((order.get('side') || '') !== 'buy') return;
+async function ensureMirrorPoolActivationForPair(pairExecutionId) {
+  const orders = await new Parse.Query('Order')
+    .equalTo('pairExecutionId', pairExecutionId)
+    .find({ useMasterKey: true });
 
-  const cur = String(order.get('status') || '');
-  if (cur === 'executed' && order.get('tradeId')) {
-    return;
+  const mirrorLeg = orders.find(
+    (o) => (o.get('side') || '') === 'buy'
+      && String(o.get('legType') || '').toUpperCase() === 'MIRROR_POOL',
+  );
+  if (!mirrorLeg) return;
+
+  const mirrorQty = Number(mirrorLeg.get('quantity') || 0);
+  if (mirrorQty <= 0) return;
+
+  const tradeId = String(mirrorLeg.get('tradeId') || '').trim();
+  let mirrorTrade = null;
+  if (tradeId) {
+    try {
+      mirrorTrade = await new Parse.Query('Trade').get(tradeId, { useMasterKey: true });
+    } catch (_) {
+      mirrorTrade = null;
+    }
+  }
+  if (!mirrorTrade) {
+    mirrorTrade = await new Parse.Query('Trade')
+      .equalTo('buyOrderId', mirrorLeg.id)
+      .first({ useMasterKey: true });
+  }
+  if (!mirrorTrade) return;
+
+  if (!String(mirrorTrade.get('buyLegType') || '').trim()) {
+    mirrorTrade.set('buyLegType', 'MIRROR_POOL');
+    const pairId = String(mirrorLeg.get('pairExecutionId') || '').trim();
+    if (pairId) {
+      mirrorTrade.set('pairExecutionId', pairId);
+    }
+    await mirrorTrade.save(null, { useMasterKey: true });
   }
 
-  // Already marked executed (e.g. partial retry): do not resend duplicate transition
-  if (cur === 'executed') {
-    return;
+  await allocateTradeToInvestmentPools(mirrorTrade, mirrorLeg);
+}
+
+/**
+ * @param {Parse.Object} order
+ * @returns {Parse.Object|null} order if it should be saved, null if already settled
+ */
+function preparePairedBuyLegExecutedFields(order) {
+  if ((order.get('side') || '') !== 'buy') return null;
+
+  const cur = String(order.get('status') || '').toLowerCase().trim();
+  if (cur === 'executed' && String(order.get('tradeId') || '').trim()) {
+    return null;
+  }
+  if (cur === 'cancelled' || cur === 'failed') {
+    return null;
+  }
+  if (!BUY_EXECUTABLE_STATUSES.has(cur) && cur !== 'executed') {
+    return null;
   }
 
   const qty = Number(order.get('quantity') || 0);
@@ -78,10 +229,27 @@ async function transitionPairedBuyLegToExecuted(orderObjectId) {
   order.set('executedQuantity', qty);
   order.set('remainingQuantity', 0);
   order.set('status', 'executed');
+  if (!order.get('executedAt')) {
+    order.set('executedAt', new Date());
+  }
 
-  await order.save(null, { useMasterKey: true });
+  return order;
+}
+
+/**
+ * Pending → executed with fee fields filled; triggers Parse afterSave trade + invoice logic.
+ */
+async function transitionPairedBuyLegToExecuted(orderObjectId) {
+  const order = await new Parse.Query('Order').get(orderObjectId, { useMasterKey: true });
+  const prepared = preparePairedBuyLegExecutedFields(order);
+  if (!prepared) return;
+  await prepared.save(null, { useMasterKey: true, context: pairedStatusBatchContext() });
 }
 
 module.exports = {
   finalizePairedBuyAfterCommit,
+  transitionPairedBuyLegToExecuted,
+  preparePairedBuyLegExecutedFields,
+  verifyPairedBuySettlement,
+  ensureMirrorPoolActivationForPair,
 };

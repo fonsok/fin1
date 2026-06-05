@@ -4,15 +4,15 @@ import Foundation
 extension InvestmentsViewModel {
     // MARK: - Open Investment Lists
 
-    /// Returns investments filtered by active status.
-    var activeInvestments: [Investment] {
-        investments.filter { $0.status == .active }
+    /// Offene Investments (reserviert + aktiv im Pool) — `reservationStatus`, nicht `status == .active`.
+    var openInvestments: [Investment] {
+        investments.filter(\.isOpenPosition)
     }
 
     /// Returns investment rows for open (reserved + active) investments.
     /// Sorted by: creation date (newest first), then trader name (A-Z), then investment number (ascending).
     var openInvestmentRows: [InvestmentRow] {
-        let baseRows = dataProcessor.processOpenInvestmentRows(from: self.activeInvestments)
+        let baseRows = dataProcessor.processOpenInvestmentRows(from: self.openInvestments)
         let userId = userService.currentUser?.id ?? ""
         return baseRows.map { row in
             let docs = documentService.getDocumentsForInvestment(row.investmentId)

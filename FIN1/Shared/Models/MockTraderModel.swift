@@ -5,6 +5,8 @@ import SwiftUI
 /// Core model representing a mock trader with basic properties and risk level
 struct MockTrader: Identifiable {
     let id: UUID
+    /// Backing storage for `parseUserId` (see `MockTrader+ParseIdentity.swift`).
+    let _parseUserId: String?
     let name: String
     let username: String
     let specialization: String
@@ -26,6 +28,7 @@ struct MockTrader: Identifiable {
 
     // Default initializer with random UUID
     init(
+        parseUserId: String? = nil,
         name: String,
         username: String,
         specialization: String,
@@ -46,6 +49,7 @@ struct MockTrader: Identifiable {
         sharpeRatio: Double
     ) {
         self.id = UUID()
+        self._parseUserId = parseUserId
         self.name = name
         self.username = username
         self.specialization = specialization
@@ -69,6 +73,7 @@ struct MockTrader: Identifiable {
     // Custom initializer with specific ID
     init(
         id: UUID,
+        parseUserId: String? = nil,
         name: String,
         username: String,
         specialization: String,
@@ -89,6 +94,7 @@ struct MockTrader: Identifiable {
         sharpeRatio: Double
     ) {
         self.id = id
+        self._parseUserId = parseUserId
         self.name = name
         self.username = username
         self.specialization = specialization
@@ -110,24 +116,9 @@ struct MockTrader: Identifiable {
     }
 }
 
-// MARK: - Risk Level Enum
-/// Risk level classification for traders
+// MARK: - Risk Level (shared with InvestorTrader)
 extension MockTrader {
-    enum RiskLevel: String, CaseIterable, Codable {
-        case low = "Low"
-        case medium = "Medium"
-        case high = "High"
-
-        var displayName: String { rawValue }
-
-        var color: Color {
-            switch self {
-            case .low: return AppTheme.accentGreen
-            case .medium: return AppTheme.accentOrange
-            case .high: return AppTheme.accentRed
-            }
-        }
-    }
+    typealias RiskLevel = TraderRiskLevel
 }
 
 // MARK: - Mock Instrument Model

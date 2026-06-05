@@ -106,6 +106,32 @@ extension AccountStatementEntry {
     // MARK: - Private Title Helpers
 
     private var investmentDescriptionTitle: String {
+        let backendType = metadata["backendEntryType"] ?? ""
+        if backendType == "investment_activate" {
+            if let investmentId = preferredInvestmentReference {
+                return "Investment activated (\(investmentId))"
+            }
+            return "Investment activated"
+        }
+        if backendType == "investment_escrow_deploy" {
+            if let investmentId = preferredInvestmentReference {
+                return "Capital allocated to pool (\(investmentId))"
+            }
+            return "Capital allocated to pool"
+        }
+        if backendType == "residual_return" {
+            if let investmentId = preferredInvestmentReference {
+                return "Residual: Rest aus Investment \(investmentId)"
+            }
+            return "Residual: Rest aus Investment"
+        }
+        if backendType.contains("deployResidualToAvailable")
+            || backendType.contains("reserveCapitalTradeSplit") {
+            if let investmentId = preferredInvestmentReference {
+                return "Residual: Rest aus Investment \(investmentId)"
+            }
+            return "Residual: Rest aus Investment"
+        }
         let investmentId = self.preferredInvestmentReference
         if direction == .debit {
             if let investmentId {
@@ -145,26 +171,16 @@ extension AccountStatementEntry {
     }
 
     private var tradeSettlementDescriptionTitle: String {
-        let wknOrIsin = metadata["wknOrIsin"]
-        let underlying = metadata["underlyingAsset"]
-        let directionLabel = metadata["securitiesDirection"] ?? metadata["transactionType"]
-        let tradeDirection = directionLabel?.isEmpty == false ? directionLabel : (direction == .credit ? "Verkauf" : "Kauf")
-
-        var components: [String] = []
-        if let wknOrIsin, !wknOrIsin.isEmpty {
-            components.append(wknOrIsin)
+        if let preset = metadata["statementTitle"], !preset.isEmpty {
+            return preset
         }
-        if let underlying, !underlying.isEmpty {
-            components.append(underlying)
-        }
-        let baseInstrument = components.isEmpty ? nil : components.joined(separator: " · ")
-
-        if let baseInstrument {
-            return "\(tradeDirection ?? "") \(baseInstrument)"
-        } else {
-            let base = title.isEmpty ? "Trade settlement" : title
-            return "\(base) (\(direction == .credit ? "cash inflow" : "cash outflow"))"
-        }
+        let transactionType: TransactionType = {
+            if let raw = metadata["transactionType"], let type = TransactionType(rawValue: raw) {
+                return type
+            }
+            return direction == .credit ? .sell : .buy
+        }()
+        return TraderAccountStatementBuilder.tradeStatementTitle(for: transactionType, metadata: metadata)
     }
 
     private var commissionDescriptionTitle: String {
@@ -206,6 +222,24 @@ extension AccountStatementEntry {
     // MARK: - Private Subtitle Helpers
 
     private var investmentDescriptionSubtitle: String? {
+        let backendType = metadata["backendEntryType"] ?? ""
+        if backendType == "investment_activate" {
+            return "Internal move reserved → pool (no additional lock on your available cash vs. the reservation)."
+        }
+        if backendType == "investment_escrow_deploy" {
+            if let investmentId = preferredInvestmentReference {
+                return "Reserved capital earmarked for trading / pool for Investment \(investmentId) (sub-ledger only)."
+            }
+            return "Reserved capital earmarked for trading / pool (sub-ledger only)."
+        }
+        if backendType == "residual_return"
+            || backendType.contains("deployResidualToAvailable")
+            || backendType.contains("reserveCapitalTradeSplit") {
+            if let investmentId = preferredInvestmentReference {
+                return "Restbetrag aus Investment \(investmentId) (Rundungsdifferenz Stückkauf) — auf verfügbares Guthaben."
+            }
+            return "Restbetrag aus Investment (Rundungsdifferenz Stückkauf) — auf verfügbares Guthaben."
+        }
         let investmentId = self.preferredInvestmentReference
         if direction == .debit {
             if let investmentId {

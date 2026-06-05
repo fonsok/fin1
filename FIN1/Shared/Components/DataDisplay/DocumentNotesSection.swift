@@ -9,10 +9,14 @@ struct DocumentNotesSection: View {
     let taxNote: String?
     let legalNote: String?
 
-    /// Standard-Steuerhinweis für Verkäufe
-    /// Verwendet CalculationConstants für DRY-Compliance
+    /// Standard-Steuerhinweis (Verkauf / Plattform-Abführung) — für Offline-Fallback ohne Config.
     static var defaultTaxNote: String {
-        "Beim Verkauf erfolgt die Besteuerung gemäß Abgeltungsteuer (dzt. \(CalculationConstants.TaxRates.capitalGainsTaxWithSoli)) auf den realisierten Gewinn. Die Steuer wird automatisch von der Bank einbehalten."
+        DocumentTaxNoteTexts.platformWithholdsSellDefault
+    }
+
+    /// Steuerlicher Hinweis gemäß Admin-`taxCollectionMode` (Kapitalerträge).
+    static func defaultCapitalGainsTaxNote(mode: TaxCollectionMode, side: DocumentTaxNoteTexts.CapitalGainsSide) -> String {
+        DocumentTaxNoteTexts.capitalGainsBody(mode: mode, side: side)
     }
 
     /// Standard-Rechtlicher Hinweis (erster Absatz)

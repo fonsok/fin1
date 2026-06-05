@@ -5,11 +5,17 @@ extension InvestmentService {
 
     /// Syncs pending investments to backend in batch (called on app background).
     func syncToBackend() async {
+        if let traderDataService {
+            await traderDataService.refreshTraderCatalog()
+        }
         try? await self.syncPendingInvestmentsToBackend(propagateFirstFailure: false)
     }
 
     /// - Parameter propagateFirstFailure: If true, first `saveInvestment` error is rethrown (e.g. user-initiated create).
-    func syncPendingInvestmentsToBackend(propagateFirstFailure: Bool) async throws {
+    func syncPendingInvestmentsToBackend(
+        propagateFirstFailure: Bool,
+        traderUsername: String? = nil
+    ) async throws {
         guard let apiService = investmentAPIService, !pendingSyncIds.isEmpty else { return }
 
         let idsToSync = pendingSyncIds
@@ -19,20 +25,63 @@ extension InvestmentService {
             repository.investments.filter { idsToSync.contains($0.id) }
         }
 
-        for investment in investmentsToSync {
+        let batchGroups = Dictionary(grouping: investmentsToSync) { inv -> String in
+            if let batchId = inv.batchId, !batchId.isEmpty { return "batch:\(batchId)" }
+            return "single:\(inv.id)"
+        }
+
+        for (_, group) in batchGroups {
+            let sorted = group.sorted { ($0.sequenceNumber ?? 0) < ($1.sequenceNumber ?? 0) }
+            let canBatch = sorted.first?.batchId != nil
+                && sorted.allSatisfy { ($0.sequenceNumber ?? 0) > 0 }
+            let resolvedTraderUsername = sorted.first.map {
+                traderUsernameForSync(investment: $0, explicit: traderUsername)
+            } ?? traderUsernameForSync(traderId: "", explicit: traderUsername)
+
             do {
-                let savedInvestment = try await apiService.saveInvestment(investment)
-                let localId = investment.id
+                let savedList: [Investment]
+                if canBatch {
+                    savedList = try await apiService.saveInvestmentSplits(
+                        sorted,
+                        traderUsername: resolvedTraderUsername
+                    )
+                } else {
+                    var singles: [Investment] = []
+                    for investment in sorted {
+                        let splitUsername = traderUsernameForSync(
+                            investment: investment,
+                            explicit: traderUsername
+                        )
+                        if investment.batchId != nil, (investment.sequenceNumber ?? 0) > 0 {
+                            let saved = try await apiService.saveInvestmentSplits(
+                                [investment],
+                                traderUsername: splitUsername
+                            )
+                            guard let first = saved.first else {
+                                throw NetworkError.invalidResponse
+                            }
+                            singles.append(first)
+                        } else {
+                            singles.append(try await apiService.saveInvestment(investment))
+                        }
+                    }
+                    savedList = singles
+                }
+
                 await MainActor.run {
-                    pendingSyncIds.remove(localId)
-                    if savedInvestment.id != localId,
-                       let index = repository.investments.firstIndex(where: { $0.id == localId }) {
-                        repository.investments[index] = savedInvestment
-                        print("📡 InvestmentService: Updated ID \(localId) → \(savedInvestment.id)")
+                    for (local, saved) in zip(sorted, savedList) {
+                        pendingSyncIds.remove(local.id)
+                        if saved.id != local.id,
+                           let index = repository.investments.firstIndex(where: { $0.id == local.id }) {
+                            repository.investments[index] = saved
+                            print("📡 InvestmentService: Updated ID \(local.id) → \(saved.id)")
+                        }
                     }
                 }
             } catch {
-                print("⚠️ InvestmentService: Failed to sync investment \(investment.id): \(error)")
+                for investment in sorted {
+                    print("⚠️ InvestmentService: Failed to sync batch/split \(investment.id): \(error)")
+                }
                 if propagateFirstFailure {
                     throw error
                 }
@@ -43,15 +92,30 @@ extension InvestmentService {
     }
 
     /// Fetches investments from backend and merges status/financial updates into local store.
+    func fetchFromBackend(for user: User) async {
+        await self.fetchFromBackend(
+            canonicalInvestorId: user.canonicalUserId,
+            investorIdKeys: user.ledgerUserIdCandidates
+        )
+    }
+
     func fetchFromBackend(for investorId: String) async {
+        await self.fetchFromBackend(canonicalInvestorId: investorId, investorIdKeys: [investorId])
+    }
+
+    private func fetchFromBackend(canonicalInvestorId: String, investorIdKeys: [String]) async {
         guard let apiService = investmentAPIService else { return }
 
+        let keys = Array(Set(investorIdKeys.filter { !$0.isEmpty }))
+        guard !keys.isEmpty else { return }
+
         do {
-            let remoteInvestments = try await apiService.fetchInvestments(for: investorId)
+            let remoteInvestments = try await apiService.fetchInvestments(forInvestorIds: keys)
             await MainActor.run {
+                let keySet = Set(keys)
                 let remoteIds = Set(remoteInvestments.map(\.id))
                 repository.investments.removeAll { inv in
-                    guard inv.investorId == investorId else { return false }
+                    guard keySet.contains(inv.investorId) else { return false }
                     if pendingSyncIds.contains(inv.id) { return false }
                     return !remoteIds.contains(inv.id)
                 }
@@ -61,51 +125,60 @@ extension InvestmentService {
                 var updatedCount = 0
 
                 for remote in remoteInvestments {
-                    if let local = localById[remote.id] {
+                    var stored = remote.investorId == canonicalInvestorId
+                        ? remote
+                        : remote.withInvestorId(canonicalInvestorId)
+                    stored = self.enrichTraderUsernameFromCatalogIfNeeded(stored)
+
+                    if let local = localById[stored.id] {
                         let partialSellChanged =
-                            local.partialSellCount != remote.partialSellCount
-                                || local.realizedSellQuantity != remote.realizedSellQuantity
-                                || abs(local.realizedSellAmount - remote.realizedSellAmount) > 0.005
-                                || local.lastPartialSellAt != remote.lastPartialSellAt
-                                || local.tradeSellVolumeProgress != remote.tradeSellVolumeProgress
-                        let needsUpdate = local.status != remote.status
-                            || local.reservationStatus != remote.reservationStatus
-                            || abs(local.currentValue - remote.currentValue) > 0.01
-                            || abs((local.performance) - (remote.performance)) > 0.01
-                            || local.investmentNumber != remote.investmentNumber
+                            local.partialSellCount != stored.partialSellCount
+                                || local.realizedSellQuantity != stored.realizedSellQuantity
+                                || abs(local.realizedSellAmount - stored.realizedSellAmount) > 0.005
+                                || local.lastPartialSellAt != stored.lastPartialSellAt
+                                || local.tradeSellVolumeProgress != stored.tradeSellVolumeProgress
+                                || local.poolTradingAmount != stored.poolTradingAmount
+                        let needsUpdate = local.status != stored.status
+                            || local.reservationStatus != stored.reservationStatus
+                            || abs(local.currentValue - stored.currentValue) > 0.01
+                            || abs((local.performance) - (stored.performance)) > 0.01
+                            || local.investmentNumber != stored.investmentNumber
+                            || local.investorId != stored.investorId
                             || partialSellChanged
                         if needsUpdate {
                             let merged = Investment(
                                 id: local.id,
-                                investmentNumber: local.investmentNumber ?? remote.investmentNumber,
-                                batchId: local.batchId ?? remote.batchId,
-                                investorId: local.investorId,
+                                investmentNumber: local.investmentNumber ?? stored.investmentNumber,
+                                batchId: local.batchId ?? stored.batchId,
+                                investorId: stored.investorId,
                                 investorName: local.investorName,
                                 traderId: local.traderId,
-                                traderName: local.traderName.isEmpty ? remote.traderName : local.traderName,
+                                traderUsername: local.traderUsername ?? stored.traderUsername,
+                                traderName: local.traderName.isEmpty ? stored.traderName : local.traderName,
                                 amount: local.amount,
-                                currentValue: remote.currentValue,
+                                currentValue: stored.currentValue,
                                 date: local.date,
-                                status: remote.status,
-                                performance: remote.performance,
-                                numberOfTrades: max(local.numberOfTrades, remote.numberOfTrades),
+                                status: stored.status,
+                                performance: stored.performance,
+                                numberOfTrades: max(local.numberOfTrades, stored.numberOfTrades),
                                 sequenceNumber: local.sequenceNumber,
                                 createdAt: local.createdAt,
-                                updatedAt: remote.updatedAt,
-                                completedAt: remote.completedAt ?? local.completedAt,
+                                updatedAt: stored.updatedAt,
+                                completedAt: stored.completedAt ?? local.completedAt,
                                 specialization: local.specialization,
-                                reservationStatus: remote.reservationStatus,
-                                partialSellCount: remote.partialSellCount,
-                                realizedSellQuantity: remote.realizedSellQuantity,
-                                realizedSellAmount: remote.realizedSellAmount,
-                                lastPartialSellAt: remote.lastPartialSellAt,
-                                tradeSellVolumeProgress: remote.tradeSellVolumeProgress
+                                reservationStatus: stored.reservationStatus,
+                                partialSellCount: stored.partialSellCount,
+                                realizedSellQuantity: stored.realizedSellQuantity,
+                                realizedSellAmount: stored.realizedSellAmount,
+                                lastPartialSellAt: stored.lastPartialSellAt,
+                                tradeSellVolumeProgress: stored.tradeSellVolumeProgress,
+                                poolTradingAmount: stored.poolTradingAmount ?? local.poolTradingAmount
                             )
                             repository.updateInvestment(merged)
                             updatedCount += 1
                         }
                     } else {
-                        repository.addInvestment(remote)
+                        repository.addInvestment(stored)
                         addedCount += 1
                     }
                 }
@@ -116,6 +189,15 @@ extension InvestmentService {
         } catch {
             print("⚠️ InvestmentService: Backend fetch failed: \(error)")
         }
+    }
+
+    /// Fills `traderUsername` from `TraderDataService` when server row lacks it (legacy pending sync).
+    func enrichTraderUsernameFromCatalogIfNeeded(_ investment: Investment) -> Investment {
+        guard investment.storedTraderUsername.isEmpty else { return investment }
+        guard let traderDataService,
+              let trader = traderDataService.getTrader(by: investment.traderId),
+              !trader.username.isEmpty else { return investment }
+        return investment.withTraderUsername(trader.username)
     }
 
     /// Marks an investment for sync (called after local creation).
@@ -140,11 +222,7 @@ extension InvestmentService {
                 }
             }
 
-            if UUID(uuidString: investment.id) == nil {
-                _ = try await apiService.updateInvestment(investment)
-            } else {
-                _ = try await apiService.saveInvestment(investment)
-            }
+            _ = try await apiService.updateInvestment(investment)
         } catch {
             print("⚠️ InvestmentService: Failed to sync updated investment \(investment.id): \(error)")
         }

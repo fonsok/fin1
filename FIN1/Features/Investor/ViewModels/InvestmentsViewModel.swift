@@ -34,10 +34,9 @@ final class InvestmentsViewModel: ObservableObject {
     /// Display-Daten für Completed-Tabelle (MVVM: View bindet nur daran).
     @Published var completedTraderUsernames: [String: String] = [:]
     @Published var completedTradeNumbers: [String: String] = [:]
+    /// Local summaries for completed-list fallback (preview / tests). Empty when server-only.
     @Published var completedInvestmentSummaries: [String: InvestorInvestmentStatementSummary] = [:]
-    /// Server-canonical summaries (ROI2) pro Investment-ID. Task 5a: View prefers
-    /// this value; `completedInvestmentSummaries` is the fallback when the
-    /// backend data is not available yet.
+    /// Server-canonical totals + ROI2. SSOT for completed lists when `investorMonetaryServerOnly`.
     @Published var completedCanonicalSummaries: [String: ServerInvestmentCanonicalSummary] = [:]
 
     init(
@@ -131,10 +130,9 @@ final class InvestmentsViewModel: ObservableObject {
         self.cancellables.removeAll()
 
         // Observe investment changes from service
-        let investorId = self.boundInvestorId
         let publisher: AnyPublisher<[Investment], Never>
-        if let investorId = investorId {
-            publisher = self.investmentService.investmentsPublisher(for: investorId)
+        if let user = self.userService.currentUser {
+            publisher = self.investmentService.investmentsPublisher(matchingAnyOf: user.ledgerUserIdCandidates)
         } else {
             publisher = self.investmentService.investmentsPublisher
         }

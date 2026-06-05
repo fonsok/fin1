@@ -15,6 +15,7 @@ protocol InvestmentServiceProtocol: ObservableObject, Sendable {
     var investmentsPublisher: AnyPublisher<[Investment], Never> { get }
     /// Publisher filtered per investor for isolation
     func investmentsPublisher(for investorId: String) -> AnyPublisher<[Investment], Never>
+    func investmentsPublisher(matchingAnyOf investorIds: [String]) -> AnyPublisher<[Investment], Never>
     /// Select next eligible investment for a trader using fair round-robin allocation
     func selectNextInvestmentForTrader(_ traderId: String) async -> Investment?
     /// Select next eligible investment for a specific investor using fair round-robin allocation
@@ -24,7 +25,7 @@ protocol InvestmentServiceProtocol: ObservableObject, Sendable {
     // MARK: - Investment Creation
     func createInvestment(
         investor: User,
-        trader: MockTrader,
+        trader: InvestorTrader,
         amountPerInvestment: Double,
         numberOfInvestments: Int,
         specialization: String,
@@ -33,6 +34,7 @@ protocol InvestmentServiceProtocol: ObservableObject, Sendable {
 
     // MARK: - Investment Queries
     func getInvestments(for investorId: String) -> [Investment]
+    func getInvestments(matchingAnyOf investorIds: [String]) -> [Investment]
     func getInvestments(forTrader traderId: String) -> [Investment]
     func getInvestmentPools(forTrader traderId: String) -> [InvestmentPool]
     func getGroupedInvestmentsBySequence(forTrader traderId: String) -> [Int: [Investment]]
@@ -68,4 +70,5 @@ protocol InvestmentServiceProtocol: ObservableObject, Sendable {
     /// Fetches investments from backend for an investor (on-demand)
     /// Returns cached local data immediately, fetches in background
     func fetchFromBackend(for investorId: String) async
+    func fetchFromBackend(for user: User) async
 }

@@ -223,12 +223,14 @@ final class DashboardStatsViewModel: ObservableObject {
     }
 
     private func updateActiveInvestmentsCount() {
-        guard let currentUserId = currentUserId else {
+        guard let currentUser = userService.currentUser else {
             self.activeInvestmentsCount = 0
             return
         }
-        let investorInvestments = self.investmentService.getInvestments(for: currentUserId)
-        self.activeInvestmentsCount = investorInvestments.filter { $0.status == .active }.count
+        let investorInvestments = self.investmentService.getInvestments(
+            matchingAnyOf: currentUser.ledgerUserIdCandidates
+        )
+        self.activeInvestmentsCount = investorInvestments.filter(\.isOpenPosition).count
     }
 
     // MARK: - Trader Data Updates
@@ -283,47 +285,52 @@ final class DashboardStatsViewModel: ObservableObject {
         }
 
         let traderId = self.findTraderIdForMatching() ?? currentUser.id
+        let traderIdCandidates = self.traderIdCandidatesForPoolMatching(primaryTraderId: traderId)
 
-        let traderInvestments = self.investmentService.getInvestments(forTrader: traderId)
-            .filter { $0.status == .active }
-
-        let hasRelevantInvestments = traderInvestments.contains { investment in
-            investment.reservationStatus == .reserved || investment.reservationStatus == .active
+        let traderInvestments = self.investmentService.investments.filter { investment in
+            self.investmentMatchesTraderCandidates(investment, candidates: traderIdCandidates) && investment.isOpenPosition
         }
+
+        let hasRelevantInvestments = traderInvestments.contains { $0.hasPoolCapitalCommitted }
 
         self.traderPoolsStatus = hasRelevantInvestments ? "active" : "not active"
     }
 
     // MARK: - Helper Methods
 
-    /// Finds the trader ID to use for investment matching
-    /// First tries to find MockTrader by username from user's email, then falls back to user ID
     private func findTraderIdForMatching() -> String? {
-        guard let currentUser = userService.currentUser else {
-            return nil
+        TraderMatchingHelper.findTraderIdForMatching(
+            currentUser: self.userService.currentUser,
+            traderDataService: self.traderDataService
+        )
+    }
+
+    private func traderIdCandidatesForPoolMatching(primaryTraderId: String) -> Set<String> {
+        var candidates = [primaryTraderId]
+        if let user = userService.currentUser {
+            candidates.append(user.id)
+            let email = user.email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            if !email.isEmpty {
+                candidates.append(email)
+                candidates.append("user:\(email)")
+                if let username = email.split(separator: "@").first.map(String.init), !username.isEmpty {
+                    candidates.append(username)
+                }
+            }
         }
+        return Set(
+            candidates
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() }
+                .filter { !$0.isEmpty },
+        )
+    }
 
-        // Extract username from email (e.g., "trader3@test.com" -> "trader3")
-        let username = currentUser.email.components(separatedBy: "@").first ?? ""
-
-        // 1) Exact username match
-        if let mockTrader = traderDataService.traders.first(where: { $0.username == username }) {
-            return mockTrader.id.uuidString
-        }
-
-        // 2) Try display name match (FirstName LastName) against MockTrader.name
-        let displayName = "\(currentUser.firstName) \(currentUser.lastName)".trimmingCharacters(in: .whitespaces)
-        if let byName = traderDataService.traders.first(where: { $0.name.caseInsensitiveCompare(displayName) == .orderedSame }) {
-            return byName.id.uuidString
-        }
-
-        // 3) Fuzzy contains on name as last resort
-        if let fuzzy = traderDataService.traders.first(where: { $0.name.localizedCaseInsensitiveContains(username) }) {
-            return fuzzy.id.uuidString
-        }
-
-        // Fallback to user ID
-        return currentUser.id
+    private func investmentMatchesTraderCandidates(_ investment: Investment, candidates: Set<String>) -> Bool {
+        let traderKey = investment.traderId.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        if candidates.contains(traderKey) { return true }
+        let username = investment.traderUsername?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() ?? ""
+        if !username.isEmpty, candidates.contains(username) { return true }
+        return false
     }
 
     /// Generate invoices for any completed trades that don't have invoices yet

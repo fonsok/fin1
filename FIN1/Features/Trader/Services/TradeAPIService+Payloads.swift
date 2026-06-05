@@ -11,6 +11,7 @@ extension TradeAPIService {
             "symbol": trade.symbol,
             "description": trade.description,
             "status": trade.status.rawValue,
+            "quantity": trade.buyOrder.quantity,
             "buyOrder": self.makeBuyOrderPayload(from: trade.buyOrder)
         ]
 

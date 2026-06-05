@@ -94,15 +94,21 @@ async function handleRunFinanceConsistencySmoke(request) {
   const ledgerSampleLimit = Number(request.params?.ledgerSampleLimit || 500);
   const sinceHours = Number(request.params?.sinceHours || 168);
 
-  const mirrorBasis = await Parse.Cloud.run('getMirrorBasisDriftStatus', {}, {
-    useMasterKey: true,
-  }).catch((err) => ({ overall: 'down', error: err?.message || String(err) }));
-
-  const settlementConsistency = await Parse.Cloud.run('getTradeSettlementConsistencyStatus', {
-    limit: Number(request.params?.settlementLimit || 100),
+  const financeIntegrity = await Parse.Cloud.run('getFinanceIntegrityStatus', {
+    settlementLimit: Number(request.params?.settlementLimit || 100),
   }, {
     useMasterKey: true,
   }).catch((err) => ({ overall: 'down', error: err?.message || String(err) }));
+
+  const mirrorBasis = financeIntegrity?.checks?.find((c) => c.id === 'mirror_basis_drift')
+    || await Parse.Cloud.run('getMirrorBasisDriftStatus', {}, { useMasterKey: true })
+      .catch((err) => ({ overall: 'down', error: err?.message || String(err) }));
+
+  const settlementConsistency = financeIntegrity?.checks?.find((c) => c.id === 'settlement_consistency')
+    || await Parse.Cloud.run('getTradeSettlementConsistencyStatus', {
+      limit: Number(request.params?.settlementLimit || 100),
+    }, { useMasterKey: true })
+      .catch((err) => ({ overall: 'down', error: err?.message || String(err) }));
 
   const ledgerFuzzySmoke = await runLedgerFuzzySmoke({
     userFilter,
@@ -111,11 +117,15 @@ async function handleRunFinanceConsistencySmoke(request) {
   const referenceCoverage = await runReferenceDocumentCoverageSmoke({ sinceHours });
 
   const issues = [];
-  if (mirrorBasis?.overall && mirrorBasis.overall !== 'healthy' && mirrorBasis.overall !== 'unknown') {
-    issues.push(`mirror_basis_${mirrorBasis.overall}`);
-  }
-  if (settlementConsistency?.overall && settlementConsistency.overall !== 'healthy') {
-    issues.push(`settlement_consistency_${settlementConsistency.overall}`);
+  if (financeIntegrity?.issues?.length) {
+    issues.push(...financeIntegrity.issues);
+  } else {
+    if (mirrorBasis?.overall && mirrorBasis.overall !== 'healthy' && mirrorBasis.overall !== 'unknown') {
+      issues.push(`mirror_basis_${mirrorBasis.overall}`);
+    }
+    if (settlementConsistency?.overall && settlementConsistency.overall !== 'healthy') {
+      issues.push(`settlement_consistency_${settlementConsistency.overall}`);
+    }
   }
   if ((referenceCoverage?.missingReferenceDocumentId || 0) > 0 || (referenceCoverage?.missingReferenceDocumentNumber || 0) > 0) {
     issues.push('missing_reference_document_fields');
@@ -125,6 +135,7 @@ async function handleRunFinanceConsistencySmoke(request) {
     overall: issues.length === 0 ? 'healthy' : 'degraded',
     checkedAt: new Date().toISOString(),
     issues,
+    financeIntegrity,
     mirrorBasis,
     settlementConsistency,
     ledgerFuzzySmoke,

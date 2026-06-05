@@ -1,94 +1,53 @@
 'use strict';
 
 /**
- * Fügt per Parse REST (Master-Key) fehlende Felder zum Class-Schema hinzu.
- * Client-Saves dürfen kein addField auslösen — beforeSave setzt u. a. businessCaseId auf Investment.
+ * Schema-Felder für GoB (Investment / Document) — **versioniert** über
+ * `utils/schemaMigration` + Audit-Klasse `SchemaMigration`.
  */
 
 const { requireAdminRole } = require('../../../utils/permissions');
+const { putParseSchemaFields } = require('../../../utils/schemaMigration/putParseSchemaFields');
+const {
+  runPendingSchemaMigrations,
+  SCHEMA_MIGRATION_CLASS,
+} = require('../../../utils/schemaMigration/schemaMigrationRunner');
 
-function parseServerRestBase() {
-  const port = Number(process.env.PORT || 1337);
-  const raw = (process.env.PARSE_SERVER_INTERNAL_URL || `http://127.0.0.1:${port}/parse`).trim();
-  return raw.replace(/\/$/, '');
-}
-
-/**
- * @param {string} className
- * @param {Record<string, { type: string }>} fields
- */
-async function putParseSchemaFields(className, fields) {
-  const appId = process.env.PARSE_SERVER_APPLICATION_ID || 'fin1-app-id';
-  const masterKey = process.env.PARSE_SERVER_MASTER_KEY;
-  if (!masterKey) {
-    return {
-      ok: false,
-      skipped: true,
-      message: 'PARSE_SERVER_MASTER_KEY fehlt in der Umgebung — Schema-Update übersprungen.',
-    };
-  }
-  const base = parseServerRestBase();
-  const url = `${base}/schemas/${className}`;
-  const res = await fetch(url, {
-    method: 'PUT',
-    headers: {
-      'X-Parse-Application-Id': appId,
-      'X-Parse-Master-Key': masterKey,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ className, fields }),
-  });
-  const text = await res.text();
-  let body;
-  try {
-    body = JSON.parse(text);
-  } catch {
-    body = { _raw: text };
-  }
-  if (res.ok) {
-    return { ok: true, status: res.status, body };
-  }
-  const errBlob = JSON.stringify(body).toLowerCase();
-  if (
-    res.status === 400 &&
-    (errBlob.includes('already') ||
-      errBlob.includes('exists') ||
-      errBlob.includes('field exists') ||
-      errBlob.includes('duplicate'))
-  ) {
-    return { ok: true, status: res.status, note: 'field_likely_already_present', body };
-  }
-  return { ok: false, status: res.status, body };
-}
-
-async function ensureInvestmentBusinessCaseIdSchema() {
-  return putParseSchemaFields('Investment', {
-    businessCaseId: { type: 'String' },
-  });
-}
-
-/** Eigenbelege (Document) setzen businessCaseId — ohne Schema-Spalte schlägt save() fehl → keine RSV-Buchung. */
-async function ensureDocumentBusinessCaseIdSchema() {
-  return putParseSchemaFields('Document', {
-    businessCaseId: { type: 'String' },
-    /** Mehrzeiliger Eigenbeleg-/Buchungstext (Reservierung GoB), Anzeige in App ohne PDF. */
-    accountingSummaryText: { type: 'String' },
-  });
-}
-
+/** Alle GoB-Schema-Migrationen (idempotent, mit `SchemaMigration`-Audit). */
 async function ensureGoBInvestmentEscrowSchemaFields() {
-  const investment = await ensureInvestmentBusinessCaseIdSchema();
-  const document = await ensureDocumentBusinessCaseIdSchema();
-  return { investment, document };
+  return runPendingSchemaMigrations({ stopOnError: false });
 }
 
 function registerEnsureInvestmentSchemaParseFields() {
   Parse.Cloud.define('updateInvestmentClassSchemaFields', async (request) => {
     requireAdminRole(request);
-    const result = await ensureGoBInvestmentEscrowSchemaFields();
-    const okInv = Boolean(result.investment.ok || result.investment.skipped);
-    const okDoc = Boolean(result.document.ok || result.document.skipped);
-    return { success: okInv && okDoc, result };
+    const result = await runPendingSchemaMigrations({ stopOnError: false });
+    return { success: Boolean(result.ok), result };
+  });
+
+  Parse.Cloud.define('listSchemaMigrations', async (request) => {
+    requireAdminRole(request);
+    const limit = Math.min(Math.max(Number(request.params?.limit) || 50, 1), 200);
+    const q = new Parse.Query(SCHEMA_MIGRATION_CLASS);
+    q.descending('appliedAt');
+    q.limit(limit);
+    const rows = await q.find({ useMasterKey: true });
+    return {
+      className: SCHEMA_MIGRATION_CLASS,
+      count: rows.length,
+      rows: rows.map((r) => ({
+        id: r.id,
+        migrationId: r.get('migrationId') || null,
+        title: r.get('title') || null,
+        success: Boolean(r.get('success')),
+        applySkipped: Boolean(r.get('applySkipped')),
+        appliedAt: r.get('appliedAt') ? new Date(r.get('appliedAt')).toISOString() : null,
+        durationMs: r.get('durationMs') ?? null,
+        applyStatus: r.get('applyStatus') ?? null,
+        applyNote: r.get('applyNote') || null,
+        applyMessage: r.get('applyMessage') || null,
+        errorMessage: r.get('errorMessage') || null,
+      })),
+    };
   });
 
   const { round2 } = require('../../../utils/accountingHelper/shared');
@@ -142,8 +101,7 @@ function registerEnsureInvestmentSchemaParseFields() {
 
 module.exports = {
   putParseSchemaFields,
-  ensureInvestmentBusinessCaseIdSchema,
-  ensureDocumentBusinessCaseIdSchema,
   ensureGoBInvestmentEscrowSchemaFields,
   registerEnsureInvestmentSchemaParseFields,
+  runPendingSchemaMigrations,
 };

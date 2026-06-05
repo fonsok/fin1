@@ -2,8 +2,9 @@ import Foundation
 
 // MARK: - Investor Gross Profit Service Protocol
 
-/// Single source of truth for investor gross profit calculations
-/// Uses the same calculation method as Collection Bill to ensure consistency
+/// Local investor gross-profit estimation (Collection-Bill-shaped).
+/// Phase 3: Production uses server collection bills / settlement; this path is for tests and
+/// dev preview (`investorMonetaryServerOnly == false`) via `TradeInvestorCommissionBreakdownLoader.loadLocalEstimate`.
 protocol InvestorGrossProfitServiceProtocol: ServiceLifecycle, Sendable {
     /// Gets the gross profit for a specific investor's investment in a specific trade
     /// - Parameters:
@@ -37,6 +38,8 @@ final class InvestorGrossProfitService: InvestorGrossProfitServiceProtocol, Obse
     /// Protocol is not `Sendable`; service is main-thread–bound in the app.
     nonisolated(unsafe) private let calculationService: any InvestorCollectionBillCalculationServiceProtocol
     private let configurationService: any ConfigurationServiceProtocol
+    nonisolated(unsafe) private var settlementAPIService: (any SettlementAPIServiceProtocol)?
+    nonisolated(unsafe) private var commissionCalculationService: (any CommissionCalculationServiceProtocol)?
 
     // MARK: - Initialization
     init(
@@ -53,6 +56,14 @@ final class InvestorGrossProfitService: InvestorGrossProfitServiceProtocol, Obse
         self.investmentService = investmentService
         self.calculationService = calculationService
         self.configurationService = configurationService
+    }
+
+    func configure(
+        settlementAPIService: any SettlementAPIServiceProtocol,
+        commissionCalculationService: any CommissionCalculationServiceProtocol
+    ) {
+        self.settlementAPIService = settlementAPIService
+        self.commissionCalculationService = commissionCalculationService
     }
 
     // MARK: - ServiceLifecycle
@@ -74,19 +85,36 @@ final class InvestorGrossProfitService: InvestorGrossProfitServiceProtocol, Obse
         for investmentId: String,
         tradeId: String
     ) async throws -> Double {
-        // Use InvestorInvestmentStatementAggregator to get the exact gross profit from Collection Bill
-        // This ensures we use the same calculation and values as the Collection Bill
-        let summary = await MainActor.run {
-            InvestorInvestmentStatementAggregator.summarizeInvestment(
+        let commissionRate = self.configurationService.effectiveCommissionRate
+        let serverOnly = self.configurationService.investorMonetaryServerOnly
+
+        let summary: InvestorInvestmentStatementSummary?
+        if serverOnly, let settlementAPIService, let commissionCalculationService {
+            summary = await InvestorInvestmentStatementAggregator.summarizeInvestmentFromServer(
                 investmentId: investmentId,
                 poolTradeParticipationService: self.poolTradeParticipationService,
                 tradeLifecycleService: self.tradeLifecycleService,
                 invoiceService: self.invoiceService,
-                investmentService: self.investmentService,
+                settlementAPIService: settlementAPIService,
                 calculationService: self.calculationService,
-                commissionCalculationService: nil,
-                commissionRate: self.configurationService.effectiveCommissionRate
+                commissionCalculationService: commissionCalculationService,
+                investmentService: self.investmentService,
+                commissionRate: commissionRate,
+                monetaryServerOnly: true
             )
+        } else {
+            summary = await MainActor.run {
+                InvestorInvestmentStatementAggregator.summarizeInvestment(
+                    investmentId: investmentId,
+                    poolTradeParticipationService: self.poolTradeParticipationService,
+                    tradeLifecycleService: self.tradeLifecycleService,
+                    invoiceService: self.invoiceService,
+                    investmentService: self.investmentService,
+                    calculationService: self.calculationService,
+                    commissionCalculationService: self.commissionCalculationService,
+                    commissionRate: commissionRate
+                )
+            }
         }
         guard let summary else {
             throw AppError.serviceError(.dataNotFound)

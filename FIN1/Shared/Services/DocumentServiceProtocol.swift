@@ -25,7 +25,13 @@ protocol DocumentServiceProtocol: ObservableObject, ServiceLifecycle {
     var showError: Bool { get }
 
     // MARK: - Document Management
-    func loadDocuments(for user: User)
+    func loadDocuments(for user: User) async
+
+    /// Refreshes the notifications inbox cache (`getUserDocumentInbox` with TTL unless `force`).
+    func refreshUserDocumentInbox(for user: User, force: Bool) async
+
+    /// Merges backend settlement / collection-bill rows into the in-memory inbox cache.
+    func mergeDocuments(_ documents: [Document])
     func uploadDocument(_ document: Document) async throws
     func deleteDocument(_ document: Document) async throws
     func downloadDocument(_ document: Document) async throws -> Data
@@ -38,6 +44,10 @@ protocol DocumentServiceProtocol: ObservableObject, ServiceLifecycle {
     /// Local cache first, otherwise fetch Parse `Document` by `objectId` and merge into `documents` (notifications deep-link).
     @MainActor
     func resolveDocumentForDeepLink(objectId: String) async throws -> Document
+
+    /// Trader TBC SSOT via `getTraderDocumentBelegDetail` (enrichment for legacy rows).
+    @MainActor
+    func fetchTraderBelegDetailEnriched(objectId: String) async throws -> Document
     func getDocumentsForTrade(_ tradeId: String) -> [Document]
     func getDocumentsForInvestment(_ investmentId: String) -> [Document]
     func documentExists(for tradeId: String, ofType type: DocumentType) -> Bool
@@ -86,10 +96,18 @@ final class DocumentService: DocumentServiceProtocol, ServiceLifecycle, @uncheck
         self.documentAPIService = documentAPIService
     }
 
+    private var lastInboxRefreshAt: Date?
+    private var inboxRefreshTask: Task<Void, Never>?
+    private static let inboxRefreshMinInterval: TimeInterval = 45
+    private static let inboxFetchMaxAttempts = 2
+
     // MARK: - ServiceLifecycle
     func start() { /* preload documents if needed */ }
     func stop() { /* noop */ }
     func reset() {
+        self.inboxRefreshTask?.cancel()
+        self.inboxRefreshTask = nil
+        self.lastInboxRefreshAt = nil
         for (_, task) in self.deepLinkResolveTasks {
             task.cancel()
         }
@@ -99,35 +117,151 @@ final class DocumentService: DocumentServiceProtocol, ServiceLifecycle, @uncheck
 
     // MARK: - Document Management
 
-    func loadDocuments(for user: User) {
-        self.isLoading = true
+    func loadDocuments(for user: User) async {
+        await self.refreshUserDocumentInbox(for: user, force: true)
+    }
 
-        // Try to fetch from backend first
-        if let apiService = documentAPIService {
-            Task {
-                do {
-                    let stableUserId = "user:\(user.email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased())"
-                    let directDocs = try await apiService.fetchDocuments(for: user.id)
-                    let stableDocs = try await apiService.fetchDocuments(for: stableUserId)
-                    let fetchedDocuments = (directDocs + stableDocs).reduce(into: [String: Document]()) { dict, doc in
-                        dict[doc.id] = doc
-                    }.map(\.value)
-                    await MainActor.run {
-                        self.documents = fetchedDocuments
-                        self.isLoading = false
-                    }
-                    return
-                } catch {
-                    print("⚠️ Failed to fetch documents from backend, using local: \(error.localizedDescription)")
+    nonisolated func refreshUserDocumentInbox(for user: User, force: Bool) async {
+        await self.refreshUserDocumentInboxOnMainActor(for: user, force: force)
+    }
+
+    @MainActor
+    private func refreshUserDocumentInboxOnMainActor(for user: User, force: Bool) async {
+        if !force,
+           let last = lastInboxRefreshAt,
+           Date().timeIntervalSince(last) < Self.inboxRefreshMinInterval {
+            return
+        }
+
+        if let task = inboxRefreshTask {
+            await task.value
+            if !force { return }
+        }
+
+        let task = Task { @MainActor [weak self] in
+            guard let self else { return }
+            await self.performInboxRefresh(for: user)
+        }
+        self.inboxRefreshTask = task
+        await task.value
+        self.inboxRefreshTask = nil
+    }
+
+    @MainActor
+    private func performInboxRefresh(for user: User) async {
+        guard let apiService = documentAPIService else { return }
+
+        self.isLoading = true
+        defer { self.isLoading = false }
+
+        let userKeys = DocumentInboxPolicy.documentInboxUserIdKeys(for: user)
+        var lastError: Error?
+
+        for attempt in 1 ... Self.inboxFetchMaxAttempts {
+            do {
+                let serverDocs = try await self.fetchInboxDocuments(apiService: apiService, user: user)
+                self.applyInboxSnapshot(serverDocs, userKeys: userKeys)
+                self.lastInboxRefreshAt = Date()
+                print(
+                    "📄 DocumentService: inbox refresh → \(serverDocs.count) server, "
+                        + "\(self.documents.count) cached for user \(user.id)"
+                )
+                return
+            } catch {
+                lastError = error
+                print("⚠️ DocumentService inbox refresh attempt \(attempt) failed: \(error.localizedDescription)")
+                if attempt < Self.inboxFetchMaxAttempts {
+                    try? await Task.sleep(nanoseconds: 300_000_000)
                 }
             }
         }
 
-        // Fallback to mock data
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            self.isLoading = false
+        if let lastError {
+            print("⚠️ DocumentService: inbox refresh exhausted retries: \(lastError.localizedDescription)")
         }
     }
+
+    private func fetchInboxDocuments(
+        apiService: any DocumentAPIServiceProtocol,
+        user: User
+    ) async throws -> [Document] {
+        var merged = [String: Document]()
+        do {
+            for doc in try await apiService.fetchAllUserDocumentInbox() {
+                merged[doc.id] = doc
+            }
+        } catch {
+            print("⚠️ getUserDocumentInbox unavailable, falling back to legacy fetch: \(error.localizedDescription)")
+            for doc in try await self.fetchInboxDocumentsLegacy(apiService: apiService, user: user) {
+                merged[doc.id] = doc
+            }
+        }
+
+        if user.role == .investor {
+            if let bills = try? await apiService.fetchInvestorCollectionBillsForInbox(limit: 100) {
+                for doc in bills {
+                    merged[doc.id] = doc
+                }
+                print("📄 DocumentService: merged \(bills.count) investor collection bill(s) from getInvestorCollectionBills")
+            }
+        }
+
+        return Array(merged.values)
+    }
+
+    private func fetchInboxDocumentsLegacy(
+        apiService: any DocumentAPIServiceProtocol,
+        user: User
+    ) async throws -> [Document] {
+        var merged = [String: Document]()
+        for key in DocumentInboxPolicy.documentInboxUserIdKeys(for: user) {
+            let fetched = try await apiService.fetchDocuments(for: key)
+            for doc in fetched where DocumentInboxPolicy.isDisplayableInNotificationsInbox(doc) {
+                merged[doc.id] = doc
+            }
+        }
+        return Array(merged.values)
+    }
+
+    /// Server inbox is SSOT for settlement types; preserve deep-linked rows and non-managed uploads.
+    @MainActor
+    private func applyInboxSnapshot(_ serverDocs: [Document], userKeys: Set<String>) {
+        let serverIds = Set(serverDocs.map(\.id))
+        var merged = [String: Document]()
+
+        for doc in self.documents {
+            if DocumentInboxPolicy.isServerManagedInboxType(doc.type),
+               !DocumentInboxPolicy.isLocalPlaceholderDocument(doc),
+               DocumentInboxPolicy.isParseBackedDocumentId(doc.id) {
+                if serverIds.contains(doc.id) {
+                    merged[doc.id] = doc
+                } else {
+                    // Kontoauszug deep-link: keep Parse row until inbox/supplement returns it.
+                    merged[doc.id] = doc
+                }
+                continue
+            }
+            guard DocumentInboxPolicy.belongsToUser(doc, keys: userKeys) else { continue }
+            merged[doc.id] = doc
+        }
+
+        for doc in serverDocs {
+            merged[doc.id] = doc
+        }
+
+        self.documents = DocumentInboxPolicy.dedupeInboxDocuments(Array(merged.values))
+    }
+
+    func mergeDocuments(_ incoming: [Document]) {
+        guard !incoming.isEmpty else { return }
+        var merged = Dictionary(uniqueKeysWithValues: self.documents.map { ($0.id, $0) })
+        for doc in incoming {
+            merged[doc.id] = doc
+        }
+        self.documents = DocumentInboxPolicy.dedupeInboxDocuments(Array(merged.values))
+        self.lastInboxRefreshAt = Date()
+    }
+
 
     func uploadDocument(_ document: Document) async throws {
         await MainActor.run {
@@ -201,7 +335,8 @@ final class DocumentService: DocumentServiceProtocol, ServiceLifecycle, @uncheck
     // MARK: - Document Queries
 
     func getDocuments(for userId: String) -> [Document] {
-        return self.documents.filter { $0.userId == userId }
+        let keys: Set<String> = [userId]
+        return self.documents.filter { DocumentInboxPolicy.belongsToUser($0, keys: keys) }
     }
 
     func getDocumentsByType(_ type: DocumentType, for userId: String) -> [Document] {
@@ -210,6 +345,21 @@ final class DocumentService: DocumentServiceProtocol, ServiceLifecycle, @uncheck
 
     func getDocument(by id: String) -> Document? {
         return self.documents.first { $0.id == id }
+    }
+
+    @MainActor
+    func fetchTraderBelegDetailEnriched(objectId: String) async throws -> Document {
+        guard let apiService = documentAPIService else {
+            throw DocumentDeepLinkResolveError.backendUnavailable
+        }
+        let detail = try await apiService.fetchTraderBelegDetail(objectId: objectId)
+        let document = detail.toDocument()
+        if let idx = documents.firstIndex(where: { $0.id == document.id }) {
+            self.documents[idx] = document
+        } else {
+            self.documents.append(document)
+        }
+        return document
     }
 
     @MainActor

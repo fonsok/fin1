@@ -8,9 +8,17 @@ const {
   handleBenchmarkTradeSettlementConsistency,
   handleBenchmarkTradeSettlementConsistencySynthetic,
 } = require('./opsHealthBenchmarkSettlement');
+const { handleGetPairedBuyPoolIntegrityStatus } = require('./opsHealthPairedBuyPoolIntegrity');
+const { handleGetTraderMirrorBookingIntegrityStatus } = require('./opsHealthTraderMirrorBookingIntegrity');
+const { handleGetPairedOrderStatusIntegrityStatus } = require('./opsHealthPairedOrderStatusIntegrity');
+const { handleGetTraderCashBookingDuplicatesStatus } = require('./opsHealthTraderCashBookingDuplicates');
+const { handleGetFinanceIntegrityStatus } = require('./opsHealthFinanceIntegrity');
+const { handleGetPairedSellInvestorChainStatus } = require('./opsHealthPairedSellInvestorChain');
+const { handleGetFinanceIntegrityPreventionStatus } = require('./opsHealthFinancePrevention');
+const { handleGetFinanceRepairCatalog } = require('./financeRepairCatalog');
 
 // ============================================================================
-// Admin observability: mirror-basis drift, settlement consistency, finance smokes.
+// Admin observability: closed finance integrity (snapshots + live guards).
 // See module headers under opsHealth*.js for behaviour notes.
 // ============================================================================
 
@@ -43,4 +51,44 @@ Parse.Cloud.define('benchmarkTradeSettlementConsistency', async (request) => {
 Parse.Cloud.define('benchmarkTradeSettlementConsistencySynthetic', async (request) => {
   ensureAdminOrMaster(request);
   return handleBenchmarkTradeSettlementConsistencySynthetic(request);
+});
+
+Parse.Cloud.define('getPairedBuyPoolIntegrityStatus', async (request) => {
+  ensureAdminOrMaster(request);
+  return handleGetPairedBuyPoolIntegrityStatus(request);
+});
+
+Parse.Cloud.define('getTraderMirrorBookingIntegrityStatus', async (request) => {
+  ensureAdminOrMaster(request);
+  return handleGetTraderMirrorBookingIntegrityStatus(request);
+});
+
+Parse.Cloud.define('getPairedOrderStatusIntegrityStatus', async (request) => {
+  ensureAdminOrMaster(request);
+  return handleGetPairedOrderStatusIntegrityStatus(request);
+});
+
+Parse.Cloud.define('getTraderCashBookingDuplicatesStatus', async (request) => {
+  ensureAdminOrMaster(request);
+  return handleGetTraderCashBookingDuplicatesStatus(request);
+});
+
+Parse.Cloud.define('getFinanceIntegrityStatus', async (request) => {
+  ensureAdminOrMaster(request);
+  return handleGetFinanceIntegrityStatus(request);
+});
+
+Parse.Cloud.define('getPairedSellInvestorChainStatus', async (request) => {
+  ensureAdminOrMaster(request);
+  return handleGetPairedSellInvestorChainStatus(request);
+});
+
+Parse.Cloud.define('getFinanceIntegrityPreventionStatus', async (request) => {
+  ensureAdminOrMaster(request);
+  return handleGetFinanceIntegrityPreventionStatus(request);
+});
+
+Parse.Cloud.define('getFinanceRepairCatalog', async (request) => {
+  ensureAdminOrMaster(request);
+  return handleGetFinanceRepairCatalog(request);
 });

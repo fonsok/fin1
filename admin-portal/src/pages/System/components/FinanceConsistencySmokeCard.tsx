@@ -10,7 +10,24 @@ export type FinanceConsistencySmokeStatus = {
   overall: HealthStatus;
   checkedAt: string;
   issues: string[];
-  mirrorBasis?: { overall?: HealthStatus; hasSnapshot?: boolean; reason?: string };
+  mirrorBasis?: {
+    overall?: HealthStatus;
+    hasSnapshot?: boolean;
+    reason?: string | null;
+    runAt?: string | null;
+    ageSeconds?: number | null;
+    checkedDocuments?: number;
+    driftedDocuments?: number;
+    nullDerivedCount?: number;
+    driftSamples?: Array<{
+      docId?: string;
+      investmentId?: string;
+      tradeId?: string;
+      storedReturnPercentage?: number;
+      derivedReturnPercentage?: number;
+      deltaPp?: number;
+    }>;
+  };
   settlementConsistency?: { overall?: HealthStatus; checkedTrades?: number; checkedInvestments?: number; mismatchCount?: number };
   ledgerFuzzySmoke?: { fuzzyUserFilter?: string; sampledRows?: number; matches?: number; parseObjectIdFilterWouldApply?: boolean };
   referenceCoverage?: { checkedRows?: number; missingReferenceDocumentId?: number };
@@ -96,9 +113,45 @@ export function FinanceConsistencySmokeCard({
       </div>
 
       {(financeSmoke.issues?.length || 0) > 0 && (
-        <div className={clsx('mt-3 rounded-md border px-3 py-2 text-sm', isDark ? 'border-amber-700 bg-amber-950/30 text-amber-200' : 'border-yellow-300 bg-yellow-50 text-yellow-800')}>
-          Issues: {financeSmoke.issues.join(', ')}
+        <div className={clsx('mt-3 rounded-md border px-3 py-2 text-sm space-y-2', isDark ? 'border-amber-700 bg-amber-950/30 text-amber-200' : 'border-yellow-300 bg-yellow-50 text-yellow-800')}>
+          <p>
+            <span className="font-medium">Issues:</span> {financeSmoke.issues.join(', ')}
+          </p>
+          {financeSmoke.mirrorBasis?.reason && (
+            <p className={clsx('text-xs', adminMonoHint(isDark))}>
+              Mirror-Basis: {financeSmoke.mirrorBasis.reason}
+              {financeSmoke.mirrorBasis.runAt
+                ? ` (Snapshot ${formatDateTime(financeSmoke.mirrorBasis.runAt)})`
+                : ''}
+              {typeof financeSmoke.mirrorBasis.driftedDocuments === 'number'
+                ? ` — geprüft: ${financeSmoke.mirrorBasis.checkedDocuments ?? 0}, Drift: ${financeSmoke.mirrorBasis.driftedDocuments}`
+                : ''}
+            </p>
+          )}
+          {(financeSmoke.mirrorBasis?.driftSamples?.length || 0) > 0 && (
+            <details>
+              <summary className="cursor-pointer text-xs font-medium">Drift-Beispiele (max. 5)</summary>
+              <ul className="mt-1 text-xs font-mono space-y-1 list-disc pl-4">
+                {financeSmoke.mirrorBasis!.driftSamples!.slice(0, 5).map((s) => (
+                  <li key={s.docId || `${s.tradeId}-${s.investmentId}`}>
+                    doc {s.docId || '—'} · Δ {s.deltaPp ?? '?'} pp (gespeichert {s.storedReturnPercentage ?? '—'} % vs. SSOT{' '}
+                    {s.derivedReturnPercentage ?? '—'} %)
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
         </div>
+      )}
+
+      {(financeSmoke.issues?.length || 0) === 0 && financeSmoke.mirrorBasis?.hasSnapshot && (
+        <p className={clsx('mt-3 text-xs', adminMonoHint(isDark))}>
+          Mirror-Basis: {financeSmoke.mirrorBasis.overall ?? 'healthy'}
+          {financeSmoke.mirrorBasis.runAt ? ` · Snapshot ${formatDateTime(financeSmoke.mirrorBasis.runAt)}` : ''}
+          {typeof financeSmoke.mirrorBasis.checkedDocuments === 'number'
+            ? ` · ${financeSmoke.mirrorBasis.checkedDocuments} Collection Bills geprüft`
+            : ''}
+        </p>
       )}
     </Card>
   );

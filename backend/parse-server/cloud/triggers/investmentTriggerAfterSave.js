@@ -5,6 +5,7 @@ const { handleInvestmentAfterSaveActivated } = require('./investmentTriggerAfter
 const { handleInvestmentAfterSaveCompleted } = require('./investmentTriggerAfterSaveComplete');
 const { handleInvestmentAfterSaveCancelled } = require('./investmentTriggerAfterSaveCancel');
 const { logInvestmentAudit } = require('./investmentTriggerHelpers');
+const { notifyPoolMirrorCapacityAvailable } = require('../functions/poolMirrorCapacity');
 
 Parse.Cloud.afterSave('Investment', async (request) => {
   const investment = request.object;
@@ -31,6 +32,14 @@ Parse.Cloud.afterSave('Investment', async (request) => {
         await handleInvestmentAfterSaveCompleted(investment, oldStatus);
       } else if (newStatus === 'cancelled') {
         await handleInvestmentAfterSaveCancelled(investment, oldStatus, investment.get('amount'));
+      }
+
+      if (['active', 'completed', 'cancelled'].includes(newStatus) && oldStatus === 'reserved') {
+        try {
+          await notifyPoolMirrorCapacityAvailable(investment.get('traderId'));
+        } catch (err) {
+          console.warn('notifyPoolMirrorCapacityAvailable failed:', err.message);
+        }
       }
     }
   }

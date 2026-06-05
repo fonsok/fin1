@@ -1,0 +1,39 @@
+name: Paired Buy Load Test (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      concurrency:
+        description: Parallel executePairedBuy calls (default 10; roadmap 50)
+        required: false
+        default: "10"
+
+jobs:
+  paired-buy-load:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Run parallel paired-buy load probe
+        id: load
+        continue-on-error: true
+        env:
+          PARSE_SERVER_URL: ${{ secrets.RETURN_MONITOR_PARSE_SERVER_URL }}
+          PARSE_APPLICATION_ID: ${{ secrets.RETURN_MONITOR_PARSE_APP_ID }}
+          E2E_TRADER_USERNAME: ${{ secrets.E2E_TRADER_USERNAME }}
+          E2E_TRADER_PASSWORD: ${{ secrets.E2E_TRADER_PASSWORD }}
+          PAIRED_LOAD_CONCURRENCY: ${{ inputs.concurrency }}
+        run: bash scripts/load-test-paired-buy-parallel.sh
+
+      - name: Build job summary
+        if: always()
+        run: |
+          echo "## Paired Buy Load Test" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Result: ${{ steps.load.outcome }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Concurrency: ${{ inputs.concurrency }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Note: executePairedBuy only (no commit/finalize)." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fail workflow if load test failed
+        if: steps.load.outcome != 'success'
+        run: exit 1

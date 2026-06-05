@@ -11,9 +11,9 @@ extension InvestmentsViewModel {
             self.loadInvestments()
 
             // Always reconcile with Parse so server-side deletes (e.g. DEV reset) clear local rows.
-            if let investorId = boundInvestorId {
-                print("📡 InvestmentsViewModel: Fetching from backend for \(investorId)")
-                await investmentService.fetchFromBackend(for: investorId)
+            if let user = userService.currentUser {
+                print("📡 InvestmentsViewModel: Fetching from backend for \(user.ledgerUserIdCandidates)")
+                await investmentService.fetchFromBackend(for: user)
                 self.loadInvestments()
             }
 
@@ -25,8 +25,8 @@ extension InvestmentsViewModel {
     }
 
     func loadInvestments() {
-        if let investorId = boundInvestorId {
-            let localInvestments = investmentService.getInvestments(for: investorId)
+        if let user = userService.currentUser {
+            let localInvestments = investmentService.getInvestments(matchingAnyOf: user.ledgerUserIdCandidates)
             if !localInvestments.isEmpty {
                 investments = localInvestments
             }
@@ -60,9 +60,10 @@ extension InvestmentsViewModel {
             )
             var usernames: [String: String] = [:]
             var tradeNums: [String: String] = [:]
-            var summaries: [String: InvestorInvestmentStatementSummary] = [:]
             let commissionRate = configurationService.effectiveCommissionRate
             let calculationService = InvestorCollectionBillCalculationService()
+            let serverOnly = configurationService.investorMonetaryServerOnly
+
             for inv in investments {
                 usernames[inv.id] = traderDataService.getTrader(by: inv.traderId)?.username ?? "---"
                 let participations = poolTradeParticipationService.getParticipations(forInvestmentId: inv.id)
@@ -73,30 +74,36 @@ extension InvestmentsViewModel {
                 } else {
                     tradeNums[inv.id] = "---"
                 }
-                if let summary = InvestorInvestmentStatementAggregator.summarizeInvestment(
-                    investmentId: inv.id,
-                    poolTradeParticipationService: poolTradeParticipationService,
-                    tradeLifecycleService: tradeLifecycleService,
-                    invoiceService: invoiceService,
-                    investmentService: investmentService,
-                    calculationService: calculationService,
-                    commissionCalculationService: commissionCalculationService,
-                    additionalTradesById: tradesById,
-                    commissionRate: commissionRate
-                ) {
-                    summaries[inv.id] = summary
-                }
             }
             completedTraderUsernames = usernames
             completedTradeNumbers = tradeNums
-            completedInvestmentSummaries = summaries
+
+            if serverOnly {
+                completedInvestmentSummaries = [:]
+            } else {
+                var summaries: [String: InvestorInvestmentStatementSummary] = [:]
+                for inv in investments {
+                    if let summary = InvestorInvestmentStatementAggregator.summarizeInvestment(
+                        investmentId: inv.id,
+                        poolTradeParticipationService: poolTradeParticipationService,
+                        tradeLifecycleService: tradeLifecycleService,
+                        invoiceService: invoiceService,
+                        investmentService: investmentService,
+                        calculationService: calculationService,
+                        commissionCalculationService: commissionCalculationService,
+                        additionalTradesById: tradesById,
+                        commissionRate: commissionRate
+                    ) {
+                        summaries[inv.id] = summary
+                    }
+                }
+                completedInvestmentSummaries = summaries
+            }
 
             self.refreshCompletedCanonicalSummaries(for: investments)
         }
     }
 
-    /// Lädt die server-kanonischen Summaries (ROI2) async. Die View bevorzugt
-    /// diese Werte gegenüber `completedInvestmentSummaries` (Fallback).
     func refreshCompletedCanonicalSummaries(for investments: [Investment]) {
         let service = settlementAPIService
         guard service != nil else { return }
@@ -104,13 +111,15 @@ extension InvestmentsViewModel {
             .filter { $0.status == .completed || $0.reservationStatus == .completed }
             .map { $0.id }
         guard !relevantIds.isEmpty else { return }
+        let allowUnweightedFallback = !configurationService.investorMonetaryServerOnly
 
         Task { [weak self] in
             var result: [String: ServerInvestmentCanonicalSummary] = [:]
             for id in relevantIds {
                 if let summary = await ServerCalculatedReturnResolver.resolveCanonicalSummary(
                     investmentId: id,
-                    settlementAPIService: service
+                    settlementAPIService: service,
+                    allowUnweightedReturnFallback: allowUnweightedFallback
                 ) {
                     result[id] = summary
                 }

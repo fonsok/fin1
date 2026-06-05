@@ -1,70 +1,27 @@
 'use strict';
 
-const { requirePermission, requireAdminRole } = require('../../utils/permissions');
+const { requireAdminRole } = require('../../utils/permissions');
+const {
+  listTickets,
+  mapTicketForClient,
+  normalizeStatusForStorage,
+  assertValidStatus,
+  validateStatusTransition,
+  logTicketAudit,
+  escalateTicketRecord,
+} = require('../../utils/supportTicketHelper');
 
 // ============================================================================
 // CSR PORTAL - TICKETS
 // ============================================================================
 
 /**
- * Get support tickets (CSR version with enhanced filters)
+ * @deprecated Prefer getTickets — kept for backward compatibility; delegates to shared list.
  */
 Parse.Cloud.define('getSupportTickets', async (request) => {
   requireAdminRole(request);
-
-  const { userId, customerId, status, priority, limit = 50 } = request.params;
-
-  const query = new Parse.Query('SupportTicket');
-
-  const endUserFilter = userId || customerId;
-  if (endUserFilter) {
-    query.equalTo('userId', endUserFilter);
-  }
-  if (status) {
-    query.equalTo('status', status);
-  }
-  if (priority) {
-    query.equalTo('priority', priority);
-  }
-
-  query.descending('createdAt');
-  query.limit(limit);
-
-  const tickets = await query.find({ useMasterKey: true });
-
-  // Enrich tickets
-  const enrichedTickets = await Promise.all(
-    tickets.map(async (ticket) => {
-      const data = ticket.toJSON();
-
-      // Get user info
-      if (data.userId) {
-        try {
-          const userQuery = new Parse.Query(Parse.User);
-          const user = await userQuery.get(data.userId, { useMasterKey: true });
-          data.userEmail = user.get('email');
-          data.userName = `${user.get('firstName') || ''} ${user.get('lastName') || ''}`.trim();
-        } catch (e) {
-          // User not found
-        }
-      }
-
-      // Get assigned agent info
-      if (data.assignedTo) {
-        try {
-          const agentQuery = new Parse.Query(Parse.User);
-          const agent = await agentQuery.get(data.assignedTo, { useMasterKey: true });
-          data.assignedToName = `${agent.get('firstName') || ''} ${agent.get('lastName') || ''}`.trim();
-        } catch (e) {
-          // Agent not found
-        }
-      }
-
-      return data;
-    })
-  );
-
-  return { tickets: enrichedTickets };
+  const params = { ...request.params, limit: request.params.limit || 50 };
+  return listTickets(params);
 });
 
 /**
@@ -98,7 +55,19 @@ Parse.Cloud.define('createSupportTicket', async (request) => {
 
   await ticket.save(null, { useMasterKey: true });
 
-  return ticket.toJSON();
+  await logTicketAudit({
+    actorId: request.user.id,
+    actorRole: request.user.get('role'),
+    ticketId: ticket.id,
+    action: 'ticket_created',
+    newValues: { status: 'open', priority, category },
+    metadata: { userId: actualUserId },
+  });
+
+  const { scheduleTicketCreated } = require('../../utils/ticketEmailNotifier');
+  scheduleTicketCreated(ticket);
+
+  return mapTicketForClient(ticket.toJSON());
 });
 
 /**
@@ -113,7 +82,6 @@ Parse.Cloud.define('respondToTicket', async (request) => {
     throw new Parse.Error(Parse.Error.INVALID_QUERY, 'ticketId and response required');
   }
 
-  // Create message
   const Message = Parse.Object.extend('TicketMessage');
   const msg = new Message();
   msg.set('ticketId', ticketId);
@@ -123,15 +91,45 @@ Parse.Cloud.define('respondToTicket', async (request) => {
   msg.set('isInternal', isInternal);
   await msg.save(null, { useMasterKey: true });
 
-  // Update ticket
-  const query = new Parse.Query('SupportTicket');
-  const ticket = await query.get(ticketId, { useMasterKey: true });
+  const ticket = await new Parse.Query('SupportTicket').get(ticketId, { useMasterKey: true });
+  const oldStatus = ticket.get('status');
 
-  if (ticket.get('status') === 'open') {
+  if (oldStatus === 'open') {
+    ticket.set('status', 'in_progress');
+  } else if ((oldStatus === 'waiting' || oldStatus === 'waiting_for_customer') && !isInternal) {
     ticket.set('status', 'in_progress');
   }
   ticket.set('lastResponseAt', new Date());
   await ticket.save(null, { useMasterKey: true });
+
+  if (!isInternal) {
+    const customerId = ticket.get('userId');
+    if (request.user.id !== customerId) {
+      const slaQuery = new Parse.Query('TicketSLATracking');
+      slaQuery.equalTo('ticketId', ticketId);
+      const sla = await slaQuery.first({ useMasterKey: true });
+      if (sla && !sla.get('firstResponseActual')) {
+        sla.set('firstResponseActual', new Date());
+        sla.set('slaStatus', 'on_track');
+        await sla.save(null, { useMasterKey: true });
+      }
+    }
+  }
+
+  await logTicketAudit({
+    actorId: request.user.id,
+    actorRole: request.user.get('role'),
+    ticketId,
+    action: isInternal ? 'ticket_internal_note' : 'ticket_reply',
+    oldValues: { status: oldStatus },
+    newValues: { status: ticket.get('status') },
+    metadata: { isInternal: !!isInternal },
+  });
+
+  if (!isInternal && request.user.id !== ticket.get('userId')) {
+    const { scheduleTicketPublicReply } = require('../../utils/ticketEmailNotifier');
+    scheduleTicketPublicReply(ticket, response, { agentId: request.user.id });
+  }
 
   return { success: true };
 });
@@ -148,14 +146,24 @@ Parse.Cloud.define('assignTicket', async (request) => {
     throw new Parse.Error(Parse.Error.INVALID_QUERY, 'ticketId and agentId required');
   }
 
-  const query = new Parse.Query('SupportTicket');
-  const ticket = await query.get(ticketId, { useMasterKey: true });
+  const ticket = await new Parse.Query('SupportTicket').get(ticketId, { useMasterKey: true });
+  const oldAssigned = ticket.get('assignedTo');
+  const oldStatus = ticket.get('status');
 
   ticket.set('assignedTo', agentId);
-  if (ticket.get('status') === 'open') {
+  if (oldStatus === 'open') {
     ticket.set('status', 'in_progress');
   }
   await ticket.save(null, { useMasterKey: true });
+
+  await logTicketAudit({
+    actorId: request.user.id,
+    actorRole: request.user.get('role'),
+    ticketId,
+    action: 'ticket_assigned',
+    oldValues: { assignedTo: oldAssigned, status: oldStatus },
+    newValues: { assignedTo: agentId, status: ticket.get('status') },
+  });
 
   return { success: true };
 });
@@ -168,18 +176,19 @@ Parse.Cloud.define('escalateTicket', async (request) => {
 
   const { ticketId, reason } = request.params;
 
-  if (!ticketId) {
-    throw new Parse.Error(Parse.Error.INVALID_QUERY, 'ticketId required');
+  if (!ticketId || !reason || !String(reason).trim()) {
+    throw new Parse.Error(Parse.Error.INVALID_QUERY, 'ticketId and reason required');
   }
 
-  const query = new Parse.Query('SupportTicket');
-  const ticket = await query.get(ticketId, { useMasterKey: true });
+  const ticket = await new Parse.Query('SupportTicket').get(ticketId, { useMasterKey: true });
 
-  ticket.set('escalated', true);
-  ticket.set('escalationReason', reason);
-  ticket.set('escalatedAt', new Date());
-  ticket.set('escalatedBy', request.user.id);
-  await ticket.save(null, { useMasterKey: true });
+  await escalateTicketRecord({
+    ticket,
+    reason,
+    actorId: request.user.id,
+    actorRole: request.user.get('role'),
+    isAutomatic: false,
+  });
 
   return { success: true };
 });
@@ -196,14 +205,27 @@ Parse.Cloud.define('resolveTicket', async (request) => {
     throw new Parse.Error(Parse.Error.INVALID_QUERY, 'ticketId required');
   }
 
-  const query = new Parse.Query('SupportTicket');
-  const ticket = await query.get(ticketId, { useMasterKey: true });
+  const ticket = await new Parse.Query('SupportTicket').get(ticketId, { useMasterKey: true });
+  const oldStatus = ticket.get('status');
+  validateStatusTransition(oldStatus, 'resolved');
 
   ticket.set('status', 'resolved');
   ticket.set('resolutionNote', resolutionNote);
   ticket.set('resolvedAt', new Date());
   ticket.set('resolvedBy', request.user.id);
   await ticket.save(null, { useMasterKey: true });
+
+  await logTicketAudit({
+    actorId: request.user.id,
+    actorRole: request.user.get('role'),
+    ticketId,
+    action: 'ticket_resolved',
+    oldValues: { status: oldStatus },
+    newValues: { status: 'resolved' },
+  });
+
+  const { scheduleTicketResolved } = require('../../utils/ticketEmailNotifier');
+  scheduleTicketResolved(ticket, resolutionNote, { agentId: request.user.id });
 
   return { success: true };
 });
@@ -220,14 +242,24 @@ Parse.Cloud.define('closeTicket', async (request) => {
     throw new Parse.Error(Parse.Error.INVALID_QUERY, 'ticketId required');
   }
 
-  const query = new Parse.Query('SupportTicket');
-  const ticket = await query.get(ticketId, { useMasterKey: true });
+  const ticket = await new Parse.Query('SupportTicket').get(ticketId, { useMasterKey: true });
+  const oldStatus = ticket.get('status');
+  validateStatusTransition(oldStatus, 'closed');
 
   ticket.set('status', 'closed');
   ticket.set('closureReason', closureReason);
   ticket.set('closedAt', new Date());
   ticket.set('closedBy', request.user.id);
   await ticket.save(null, { useMasterKey: true });
+
+  await logTicketAudit({
+    actorId: request.user.id,
+    actorRole: request.user.get('role'),
+    ticketId,
+    action: 'ticket_closed',
+    oldValues: { status: oldStatus },
+    newValues: { status: 'closed' },
+  });
 
   return { success: true };
 });

@@ -57,9 +57,6 @@ final class CombinedOrderCalculator {
             )
         }
 
-        // Calculate price per unit (pricePerSecurity is per share)
-        let pricePerUnit = pricePerSecurity / Double(subscriptionRatio)
-
         // 1. Respect trader input quantity and cap it by what trader can afford.
         //    Trader quantity must never be silently maximized beyond the user's input.
         print("💰 CombinedOrderCalculator.calculateCombinedOrderDetails:")
@@ -100,7 +97,10 @@ final class CombinedOrderCalculator {
         print("   📊 Calculation complete: Trader=\(actualTraderQuantity) + Pool=\(investmentQuantity) = Total=\(totalQuantity)")
         // CRITICAL FIX: totalOrderAmount should be securities value (quantity × pricePerSecurity)
         // NOT quantity × pricePerUnit, because pricePerUnit is for quantity calculations only
-        let totalOrderAmount = Double(totalQuantity) * pricePerSecurity
+        let totalOrderAmount = OrderCashAmount.grossAmount(
+            quantity: totalQuantity,
+            briefPricePerPiece: pricePerSecurity
+        )
 
         // 4. Validate minimum order amount for total order
         // Note: Individual portions (trader/investment) may be below minimum, but total must meet it
@@ -138,8 +138,14 @@ final class CombinedOrderCalculator {
 
         // 6. Split fees proportionally between trader and investment
         // CRITICAL FIX: Order amounts should be securities value (quantity × pricePerSecurity)
-        let traderOrderAmountActual = Double(actualTraderQuantity) * pricePerSecurity
-        let investmentOrderAmount = Double(investmentQuantity) * pricePerSecurity
+        let traderOrderAmountActual = OrderCashAmount.grossAmount(
+            quantity: actualTraderQuantity,
+            briefPricePerPiece: pricePerSecurity
+        )
+        let investmentOrderAmount = OrderCashAmount.grossAmount(
+            quantity: investmentQuantity,
+            briefPricePerPiece: pricePerSecurity
+        )
 
         let traderFees: Double
         let investmentFees: Double
@@ -171,7 +177,10 @@ final class CombinedOrderCalculator {
             // But if there's a denomination constraint, check if we can buy more
             if let denomination = denomination {
                 // Check if remaining balance can buy at least one more denomination unit
-                let nextDenominationCost = Double(denomination) * pricePerUnit
+                let nextDenominationCost = OrderCashAmount.grossAmount(
+                    quantity: denomination,
+                    briefPricePerPiece: pricePerSecurity
+                )
                 let feesForNext = FeeCalculationService.calculateTotalFees(for: nextDenominationCost)
                 let totalCostForNext = nextDenominationCost + feesForNext
 
@@ -184,7 +193,7 @@ final class CombinedOrderCalculator {
                 }
             } else {
                 // No denomination constraint, check if we can buy at least 1 more unit
-                let oneUnitCost = pricePerUnit
+                let oneUnitCost = pricePerSecurity
                 let feesForOne = FeeCalculationService.calculateTotalFees(for: oneUnitCost)
                 let totalCostForOne = oneUnitCost + feesForOne
 
@@ -205,8 +214,8 @@ final class CombinedOrderCalculator {
         let isInvestmentLimited = investmentQuantity == 0 && investmentBalance > 0
 
         // 11. Calculate shares from units using subscription ratio
-        let traderShares = Int(Double(actualTraderQuantity) / subscriptionRatio)
-        let investmentShares = Int(Double(investmentQuantity) / subscriptionRatio)
+        let traderShares = OrderCashAmount.shares(fromPieces: actualTraderQuantity, subscriptionRatio: subscriptionRatio)
+        let investmentShares = OrderCashAmount.shares(fromPieces: investmentQuantity, subscriptionRatio: subscriptionRatio)
         let totalShares = traderShares + investmentShares
 
         // 12. Get fee breakdown

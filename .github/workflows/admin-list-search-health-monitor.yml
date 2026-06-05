@@ -1,0 +1,41 @@
+name: Admin List Search Health Monitor
+
+on:
+  schedule:
+    # Weekly Monday 05:30 UTC (after mirror-basis monitor)
+    - cron: "30 5 * * 1"
+  workflow_dispatch:
+
+jobs:
+  monitor-admin-list-search-health:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Run admin list search health check
+        id: monitor
+        continue-on-error: true
+        env:
+          PARSE_SERVER_URL: ${{ secrets.RETURN_MONITOR_PARSE_SERVER_URL }}
+          PARSE_APP_ID: ${{ secrets.RETURN_MONITOR_PARSE_APP_ID }}
+          PARSE_MASTER_KEY: ${{ secrets.RETURN_MONITOR_PARSE_MASTER_KEY }}
+        run: node scripts/monitor-admin-list-search-health.js
+
+      - name: Build job summary
+        if: always()
+        run: |
+          echo "## Admin List Search Health" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Result: ${{ steps.monitor.outcome }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Healthy: ${{ steps.monitor.outputs.healthy || 'n/a' }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Investment: ${{ steps.monitor.outputs.investment_summary || 'n/a' }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Trade: ${{ steps.monitor.outputs.trade_summary || 'n/a' }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Sample blobs (inv/trade): ${{ steps.monitor.outputs.sample_investment_blob || 'n/a' }} / ${{ steps.monitor.outputs.sample_trade_blob || 'n/a' }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Run at: ${{ steps.monitor.outputs.run_at || 'n/a' }}" >> "$GITHUB_STEP_SUMMARY"
+          if [ -n "${{ steps.monitor.outputs.repair_hint }}" ]; then
+            echo "- Repair: ${{ steps.monitor.outputs.repair_hint }}" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Fail workflow if monitor failed
+        if: steps.monitor.outcome != 'success'
+        run: exit 1

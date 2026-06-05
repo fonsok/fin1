@@ -1,16 +1,15 @@
 'use strict';
 
-/**
- * Stable user ID used throughout the trading data model (trades, orders, invoices).
- */
-function getUserStableId(user) {
-  return user.get('stableId') || `user:${(user.get('email') || user.get('username') || '').toLowerCase()}`;
-}
+const {
+  getCanonicalUserId,
+  getUserStableId,
+  collectLedgerUserIdCandidates,
+} = require('../utils/canonicalUserId');
 
 /**
  * Trade IDs linked to this investor via PoolTradeParticipation (for invoice visibility).
  *
- * @param {string} stableId Investor stable id (`user:` email or `_User.stableId`)
+ * @param {string} stableId Legacy or canonical investor key (resolved via candidates when possible)
  * @param {string} [parseUserId] Parse `_User.objectId` for the session user
  * @returns {Promise<string[]>}
  */
@@ -59,5 +58,7 @@ async function getTradeIdsForInvestorStableId(stableId, parseUserId) {
 
 module.exports = {
   getUserStableId,
+  getCanonicalUserId,
+  collectLedgerUserIdCandidates,
   getTradeIdsForInvestorStableId,
 };

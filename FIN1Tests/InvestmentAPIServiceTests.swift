@@ -1,6 +1,18 @@
 @testable import FIN1
 import XCTest
 
+private struct CreateInvestmentSplitsResponse: Decodable {
+    let batchId: String?
+    let splits: [CreateInvestmentSplitResult]
+}
+
+private struct CreateInvestmentSplitResult: Decodable {
+    let investmentId: String
+    let sequenceNumber: Int?
+    let investmentNumber: String?
+    let idempotentReplay: Bool?
+}
+
 // MARK: - Investment API Service Tests
 
 final class InvestmentAPIServiceTests: XCTestCase {
@@ -25,14 +37,24 @@ final class InvestmentAPIServiceTests: XCTestCase {
     func testSaveInvestment_Success() async throws {
         // Given
         let investment = self.createSampleInvestment()
-        self.mockAPIClient.mockObjectId = "server-investment-id-123"
+        self.mockAPIClient.mockFunctionResult = CreateInvestmentSplitsResponse(
+            batchId: "batch-1",
+            splits: [
+                CreateInvestmentSplitResult(
+                    investmentId: "server-investment-id-123",
+                    sequenceNumber: 1,
+                    investmentNumber: "INV-1",
+                    idempotentReplay: false
+                ),
+            ]
+        )
 
         // When
         let savedInvestment = try await sut.saveInvestment(investment)
 
         // Then
-        XCTAssertTrue(self.mockAPIClient.createObjectCalled)
-        XCTAssertEqual(self.mockAPIClient.lastClassName, "Investment")
+        XCTAssertTrue(self.mockAPIClient.callFunctionCalled)
+        XCTAssertEqual(self.mockAPIClient.lastFunctionName, "createInvestmentSplits")
         XCTAssertEqual(savedInvestment.id, "server-investment-id-123")
         XCTAssertEqual(savedInvestment.investorId, investment.investorId)
         XCTAssertEqual(savedInvestment.amount, investment.amount)
@@ -41,7 +63,17 @@ final class InvestmentAPIServiceTests: XCTestCase {
     func testSaveInvestment_PreservesAllFields() async throws {
         // Given
         let investment = self.createSampleInvestment()
-        self.mockAPIClient.mockObjectId = "server-investment-id-456"
+        self.mockAPIClient.mockFunctionResult = CreateInvestmentSplitsResponse(
+            batchId: investment.batchId,
+            splits: [
+                CreateInvestmentSplitResult(
+                    investmentId: "server-investment-id-456",
+                    sequenceNumber: investment.sequenceNumber,
+                    investmentNumber: nil,
+                    idempotentReplay: true
+                ),
+            ]
+        )
 
         // When
         let savedInvestment = try await sut.saveInvestment(investment)
@@ -159,6 +191,7 @@ final class InvestmentAPIServiceTests: XCTestCase {
             investorId: "investor-123",
             investorName: "Max Mustermann",
             traderId: "trader-456",
+            traderUsername: "top_trader",
             traderName: "Top Trader",
             amount: 10_000.0,
             currentValue: 10_500.0,
@@ -195,6 +228,7 @@ final class InvestmentAPIServiceTests: XCTestCase {
             investorId: "investor-123",
             investorName: "Max Mustermann",
             traderId: "trader-456",
+            traderUsername: "top_trader",
             traderName: "Top Trader",
             amount: 10_000.0,
             currentValue: 10_500.0,
@@ -216,7 +250,8 @@ final class InvestmentAPIServiceTests: XCTestCase {
             realizedSellQuantity: nil,
             realizedSellAmount: nil,
             lastPartialSellAt: nil,
-            tradeSellVolumeProgress: nil
+            tradeSellVolumeProgress: nil,
+            poolTradingAmount: nil
         )
     }
 }

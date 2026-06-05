@@ -12,7 +12,8 @@ import {
   tableHeaderCellTextClasses,
   tableTheadSurfaceClasses,
 } from '../../../utils/tableStriping';
-import { getSupportTickets, assignTicket, getAvailableAgents } from '../api';
+import { assignTicket, getAvailableAgents } from '../api';
+import { useTicketList } from '../../../hooks/useTicketList';
 
 import { adminControlField, adminEmptyIcon, adminMuted, adminPrimary, adminSurfaceWell } from '../../../utils/adminThemeClasses';
 export function TicketQueuePage() {
@@ -25,10 +26,14 @@ export function TicketQueuePage() {
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(25);
 
-  const { data: tickets, isLoading } = useQuery({
-    queryKey: ['csr-tickets-queue'],
-    queryFn: () => getSupportTickets(),
+  const { data: ticketList, isLoading } = useTicketList({
+    unassigned: true,
+    activeOnly: true,
+    limit: 100,
+    sortBy: 'createdAt',
+    sortOrder: 'asc',
   });
+  const tickets = ticketList?.tickets;
 
   const { data: agents } = useQuery({
     queryKey: ['csr-agents'],
@@ -39,22 +44,15 @@ export function TicketQueuePage() {
     mutationFn: ({ ticketId, agentId }: { ticketId: string; agentId: string }) =>
       assignTicket(ticketId, agentId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['csr-tickets-queue'] });
+      queryClient.invalidateQueries({ queryKey: ['tickets'] });
       setSelectedTicketId(null);
       setSelectedAgentId('');
     },
   });
 
-  const unassignedTickets = useMemo(
-    () =>
-      (tickets || []).filter(
-        (t) => !t.assignedTo && t.status !== 'resolved' && t.status !== 'closed' && t.status !== 'archived'
-      ),
-    [tickets]
-  );
-
-  const serverTicketTotal = (tickets || []).length;
-  const queueTotal = unassignedTickets.length;
+  const unassignedTickets = tickets || [];
+  const serverTicketTotal = ticketList?.total ?? unassignedTickets.length;
+  const queueTotal = ticketList?.total ?? unassignedTickets.length;
   const queueTotalPages = Math.max(1, Math.ceil(queueTotal / pageSize));
   const pagedQueueTickets = useMemo(
     () => unassignedTickets.slice(page * pageSize, (page + 1) * pageSize),

@@ -72,7 +72,7 @@ final class ServiceFactory {
     }
 
     func createTradeMatchingService() -> TradeMatchingService {
-        return TradeMatchingService()
+        return TradeMatchingService(configurationService: self.configurationService)
     }
 
     func createSecuritiesWatchlistService(
@@ -249,7 +249,10 @@ final class ServiceFactory {
     func createCommissionCalculationService(
         investorGrossProfitService: (any InvestorGrossProfitServiceProtocol)?
     ) -> CommissionCalculationService {
-        return CommissionCalculationService(investorGrossProfitService: investorGrossProfitService)
+        return CommissionCalculationService(
+            investorGrossProfitService: investorGrossProfitService,
+            configurationService: self.configurationService
+        )
     }
 
     /// Configures InvoiceService with ParseAPIClient and InvoiceAPIService for backend integration

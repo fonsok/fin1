@@ -72,7 +72,8 @@ extension ParseAPIClient {
         }
 
         let (data, response) = try await session.data(for: request)
-        if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 400 {
+        if let httpResponse = response as? HTTPURLResponse,
+           httpResponse.statusCode == 400 || httpResponse.statusCode == 404 {
             if let message = ParseAPIClient.parseErrorMessageFromResponseBody(data) {
                 throw NetworkError.badRequest(message)
             }

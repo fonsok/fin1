@@ -10,7 +10,7 @@ import Foundation
 /// credit `PLT-REV-PSC` (net) and `PLT-TAX-VAT` (VAT) so the App ledger balances.
 ///
 /// Client-funds sub-ledger (target, see `Documentation/INVESTMENT_ESCROW_LEDGER_SKETCH.md`):
-/// `CLT-LIAB-AVA` → `CLT-LIAB-RSV` (reserve) → `CLT-LIAB-TRD` (deploy to pool); postings server-side TBD.
+/// `CLT-LIAB-AVA` → `CLT-LIAB-RSV` (reserve) → `CLT-LIAB-PTR` (PoolTrade / Stückkauf); postings server-side.
 ///
 /// Full accounting lifecycle:
 ///   1. Eingang: User wallet debit → App ledger debit clearing + credits (revenue + VAT)
@@ -27,8 +27,8 @@ enum AppLedgerAccount: String, Codable, CaseIterable, Sendable {
     /// Customer funds – reserved for pending investments
     case clientFundsReserved = "CLT-LIAB-RSV"
 
-    /// Customer funds – deployed in trading / pool mirror
-    case clientFundsInTrading = "CLT-LIAB-TRD"
+    /// Customer funds – bound in PoolTrade (piece purchase), SKR 1592
+    case clientFundsInPoolTrade = "CLT-LIAB-PTR"
 
     // MARK: - Revenue Accounts (Erlöskonten)
 
@@ -105,7 +105,7 @@ enum AppLedgerAccount: String, Codable, CaseIterable, Sendable {
         switch self {
         case .clientFundsAvailable:    return "Kundenguthaben – verfügbar"
         case .clientFundsReserved:     return "Kundenguthaben – reserviert"
-        case .clientFundsInTrading:    return "Kundenguthaben – im Handel"
+        case .clientFundsInPoolTrade:  return "Kundenguthaben – PoolTrade"
         case .serviceChargeRevenue:    return "Erlös Appgebühr (netto)"
         case .orderFeeRevenue:         return "Erlös Ordergebühren"
         case .exchangeFeeRevenue:      return "Erlös Börsenplatzgebühren"
@@ -128,7 +128,7 @@ enum AppLedgerAccount: String, Codable, CaseIterable, Sendable {
 
     var accountGroup: AccountGroup {
         switch self {
-        case .clientFundsAvailable, .clientFundsReserved, .clientFundsInTrading,
+        case .clientFundsAvailable, .clientFundsReserved, .clientFundsInPoolTrade,
              .commissionLiability:
             return .liability
         case .clientTrustBank:

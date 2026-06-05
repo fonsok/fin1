@@ -13,7 +13,7 @@ struct AppServices: @unchecked Sendable {
     let investmentService: any InvestmentServiceProtocol
     let poolTradeParticipationService: any PoolTradeParticipationServiceProtocol
     let notificationService: any NotificationServiceProtocol
-    let documentService: any DocumentServiceProtocol
+    let documentService: DocumentService
     let watchlistService: any InvestorWatchlistServiceProtocol
     let traderDataService: any TraderDataServiceProtocol
     let dashboardService: any DashboardServiceProtocol

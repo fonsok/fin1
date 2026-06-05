@@ -298,6 +298,7 @@ struct TradeDetailsView: View {
             profitLoss: 150.0,
             returnPercentage: 12.5,
             commission: 25.0,
+            isCommissionPending: false,
             isActive: false,
             statusText: "Completed",
             statusDetail: "Successfully completed",

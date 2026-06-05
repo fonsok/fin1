@@ -1,0 +1,36 @@
+name: Finance Integrity Monitor
+
+on:
+  schedule:
+    # Weekly Monday 06:05 UTC (after snapshot cron on server + individual monitors)
+    - cron: "5 6 * * 1"
+  workflow_dispatch:
+
+jobs:
+  monitor-finance-integrity:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Run closed finance integrity check
+        id: monitor
+        continue-on-error: true
+        env:
+          PARSE_SERVER_URL: ${{ secrets.RETURN_MONITOR_PARSE_SERVER_URL }}
+          PARSE_APP_ID: ${{ secrets.RETURN_MONITOR_PARSE_APP_ID }}
+          PARSE_MASTER_KEY: ${{ secrets.RETURN_MONITOR_PARSE_MASTER_KEY }}
+        run: node scripts/monitor-finance-integrity.js
+
+      - name: Build job summary
+        if: always()
+        run: |
+          echo "## Finance Integrity (closed system)" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Result: ${{ steps.monitor.outcome }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Overall: ${{ steps.monitor.outputs.overall || 'n/a' }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Issues: ${{ steps.monitor.outputs.issues || 'none' }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Checks: ${{ steps.monitor.outputs.check_count || 'n/a' }}" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fail workflow if monitor failed
+        if: steps.monitor.outcome != 'success'
+        run: exit 1

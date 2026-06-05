@@ -1,6 +1,7 @@
 'use strict';
 
 const { generateSequentialNumber } = require('../utils/helpers');
+const { assertPairedOrderStatusCouplingOnSave } = require('../utils/pairedOrderStatusCoupling');
 
 Parse.Cloud.beforeSave('Order', async (request) => {
   const order = request.object;
@@ -37,11 +38,50 @@ Parse.Cloud.beforeSave('Order', async (request) => {
       throw new Parse.Error(Parse.Error.INVALID_VALUE, 'Stop price required for stop orders');
     }
 
-    order.set('status', 'pending');
+    if (!order.get('status')) {
+      order.set('status', 'pending');
+    }
     order.set('executedQuantity', 0);
     order.set('remainingQuantity', order.get('quantity'));
     order.set('timeInForce', order.get('timeInForce') || 'day');
   }
+
+  if (request.original) {
+    const oldStatus = request.original.get('status');
+    const newStatus = order.get('status');
+    if (oldStatus !== newStatus && newStatus === 'cancelled') {
+      const cancellable = ['pending', 'submitted', 'suspended'];
+      if (!cancellable.includes(String(oldStatus || '').toLowerCase())) {
+        throw new Parse.Error(
+          Parse.Error.OPERATION_FORBIDDEN,
+          `Order cannot be cancelled from status "${oldStatus}"`,
+        );
+      }
+      if (String(order.get('tradeId') || '').trim()) {
+        throw new Parse.Error(
+          Parse.Error.OPERATION_FORBIDDEN,
+          'Order linked to trade — use cancelOrder cloud function for paired legs',
+        );
+      }
+    }
+    if (oldStatus !== newStatus && newStatus === 'executed') {
+      const qty = Number(order.get('quantity') || 0);
+      const executedQty = Number(order.get('executedQuantity') || 0);
+      if (qty > 0 && executedQty <= 0) {
+        order.set('executedQuantity', qty);
+      }
+      if (!order.get('executedAt')) {
+        order.set('executedAt', new Date());
+      }
+      const price = Number(order.get('price') || order.get('limitPrice') || 0);
+      const grossAmount = Number(order.get('grossAmount') || 0);
+      if (grossAmount <= 0 && qty > 0 && price > 0) {
+        order.set('grossAmount', qty * price);
+      }
+    }
+  }
+
+  await assertPairedOrderStatusCouplingOnSave(order, request);
 
   const quantity = order.get('quantity') || 0;
   const executedQuantity = order.get('executedQuantity') || 0;

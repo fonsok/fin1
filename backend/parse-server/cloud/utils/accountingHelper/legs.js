@@ -148,8 +148,20 @@ function deriveMirrorTradeBasis(buyLeg, sellLeg, commissionRate) {
   };
 }
 
+/**
+ * Überweisungsbetrag (Collection Bill SSOT): Net Sell Amount − Commission.
+ * @returns {number|null} null when net sell is unknown
+ */
+function computeCollectionBillTransferAmount({ mirror, netSellAmount, commission }) {
+  const comm = round2(commission ?? 0);
+  const netSell = mirror?.netSellAmount ?? netSellAmount;
+  if (!Number.isFinite(netSell)) return null;
+  return round2(Math.max(0, netSell - comm));
+}
+
 module.exports = {
   computeInvestorBuyLeg,
   computeInvestorSellLeg,
   deriveMirrorTradeBasis,
+  computeCollectionBillTransferAmount,
 };

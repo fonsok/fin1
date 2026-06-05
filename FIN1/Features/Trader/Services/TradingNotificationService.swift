@@ -66,6 +66,14 @@ final class TradingNotificationService: TradingNotificationServiceProtocol, Serv
     }
 
     func generateInvoiceAndNotification(for order: Order, tradeId: String? = nil, tradeNumber: Int? = nil) async {
+        if let tradeId, !tradeId.isEmpty,
+           self.documentService.documentExists(for: tradeId, ofType: .invoice) {
+            print(
+                "ℹ️ TradingNotificationService: skip client invoice — backend invoice already present for trade \(tradeId)"
+            )
+            return
+        }
+
         // Generate invoice with actual order values
         let invoiceId = self.transactionIdService.generateInvoiceNumber()
         print("📄 Invoice Generated: \(invoiceId) for \(order.symbol) (Trade ID: \(tradeId ?? "none"))")
@@ -207,7 +215,14 @@ final class TradingNotificationService: TradingNotificationServiceProtocol, Serv
             return
         }
 
-        let userTrades = trades.filter { $0.traderId == currentUserId }
+        if self.configurationService.investorMonetaryServerOnly {
+            print("📄 TradingNotificationService: server SSOT — skip local collection bill regeneration")
+            return
+        }
+
+        let userTrades = TraderDepotTradeFilter.tradesForDepotDisplay(
+            trades.filter { $0.traderId == currentUserId }
+        )
         print(
             "📄 TradingNotificationService: Checking for missing collection bills for \(userTrades.count) trades (filtered from \(trades.count) total for current trader)"
         )

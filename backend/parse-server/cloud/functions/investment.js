@@ -8,6 +8,11 @@
 const { round2 } = require('../utils/accountingHelper/shared');
 const investmentEscrow = require('../utils/accountingHelper/investmentEscrow');
 const { validateInvestmentAmountAgainstLimits } = require('../utils/investmentLimitsValidation');
+const { validatePoolMirrorReservationCapacity } = require('../utils/poolMirrorBuyCap');
+const {
+  handleGetPoolMirrorCapacity,
+  handleSetPoolMirrorCapacityAlert,
+} = require('./poolMirrorCapacity');
 const { getAppServiceChargeRateForAccountType } = require('../utils/configHelper');
 const { investorOwnsInvestment } = require('./investmentAccess');
 const { handleBookAppServiceCharge } = require('./investmentBookAppServiceCharge');
@@ -53,7 +58,9 @@ Parse.Cloud.define('getInvestorPortfolio', async (request) => {
   };
 });
 
+/** @deprecated Investor app uses `createInvestmentSplits`. Kept for legacy/admin callers only. */
 Parse.Cloud.define('createInvestment', async (request) => {
+  console.warn('[createInvestment] deprecated — prefer createInvestmentSplits for batch/idempotent investor flow');
   const user = request.user;
   if (!user) throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Anmeldung erforderlich.');
 
@@ -73,6 +80,11 @@ Parse.Cloud.define('createInvestment', async (request) => {
   const trader = await traderQuery.first({ useMasterKey: true });
 
   if (!trader) throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Trader nicht gefunden oder nicht aktiv.');
+
+  const poolCapCheck = await validatePoolMirrorReservationCapacity(traderId, amount);
+  if (!poolCapCheck.valid) {
+    throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, poolCapCheck.error);
+  }
 
   const investorAccountType = user.get('accountType') || 'individual';
   const configuredChargeRate = await getAppServiceChargeRateForAccountType(investorAccountType);
@@ -170,18 +182,7 @@ Parse.Cloud.define('confirmInvestment', async (request) => {
   investment.set('status', 'active');
   investment.set('reservationStatus', 'active');
   await investment.save(null, { useMasterKey: true });
-
-  try {
-    await investmentEscrow.bookDeployToTrading({
-      investorId: investment.get('investorId'),
-      amount: round2(investment.get('amount') || 0),
-      investmentId: investment.id,
-      investmentNumber: investment.get('investmentNumber') || '',
-      businessCaseId: String(investment.get('businessCaseId') || '').trim(),
-    });
-  } catch (err) {
-    console.error(`❌ bookDeployToTrading (confirmInvestment) idempotent repair ${investment.id}:`, err.message);
-  }
+  // Kapital-Split (RSV→TRD+AVA) bei Aktivierung sobald Trade/Pool bekannt (afterSave + Pool-Zuteilung).
 
   return { success: true, status: 'active' };
 });
@@ -226,3 +227,9 @@ Parse.Cloud.define('recordPoolTradeParticipation', handleRecordPoolTradeParticip
 Parse.Cloud.define('updatePoolTradeParticipation', handleUpdatePoolTradeParticipation);
 
 Parse.Cloud.define('discoverTraders', handleDiscoverTraders);
+
+Parse.Cloud.define('getPoolMirrorCapacity', handleGetPoolMirrorCapacity);
+Parse.Cloud.define('setPoolMirrorCapacityAlert', handleSetPoolMirrorCapacityAlert);
+
+const { handleCreateInvestmentSplits } = require('./investmentCreateSplits');
+Parse.Cloud.define('createInvestmentSplits', handleCreateInvestmentSplits);

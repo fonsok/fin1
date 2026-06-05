@@ -1,0 +1,26 @@
+{
+  "canonicalTypes": [
+    { "key": "investmentEscrow", "labelDe": "Investment-Escrow (Kundenguthaben)" },
+    { "key": "appServiceCharge", "labelDe": "Appgebühr" },
+    { "key": "orderFee", "labelDe": "Ordergebühr" },
+    { "key": "exchangeFee", "labelDe": "Börsenplatzgebühr" },
+    { "key": "foreignCosts", "labelDe": "Fremdkosten" },
+    { "key": "commission", "labelDe": "Provision" },
+    { "key": "refund", "labelDe": "Erstattung" },
+    { "key": "creditNote", "labelDe": "Gutschrift" },
+    { "key": "vatRemittance", "labelDe": "USt-Abführung" },
+    { "key": "vatInputClaim", "labelDe": "Vorsteuer" },
+    { "key": "operatingExpense", "labelDe": "Betriebsausgabe" },
+    { "key": "withholdingTax", "labelDe": "Quellensteuer" },
+    { "key": "solidaritySurcharge", "labelDe": "Solidaritätszuschlag" },
+    { "key": "churchTax", "labelDe": "Kirchensteuer" },
+    { "key": "tradeCash", "labelDe": "Trade-Cash" },
+    { "key": "walletDeposit", "labelDe": "Einzahlung" },
+    { "key": "walletWithdrawal", "labelDe": "Auszahlung" },
+    { "key": "adjustment", "labelDe": "Korrektur" },
+    { "key": "reversal", "labelDe": "Storno" }
+  ],
+  "legacyLabelKeys": {
+    "platformServiceCharge": "appServiceCharge"
+  }
+}

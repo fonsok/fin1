@@ -15,6 +15,7 @@ struct CompletedInvestmentsTableRowModel {
     init(
         investment: Investment,
         summary: InvestorInvestmentStatementSummary?,
+        canonical: ServerInvestmentCanonicalSummary? = nil,
         returnPercentage: Double?,
         traderUsername: String,
         tradeNumberText: String,
@@ -24,7 +25,7 @@ struct CompletedInvestmentsTableRowModel {
         self.id = investment.id
         self.investmentNumber = investment.canonicalDisplayReference
         self.amount = investment.amount
-        self.grossProfit = summary?.statementGrossProfit
+        self.grossProfit = canonical.map(\.grossProfit) ?? summary?.statementGrossProfit
         self.returnPercentage = returnPercentage
         self.isCancelled = investment.status == .cancelled
         self.traderUsername = traderUsername

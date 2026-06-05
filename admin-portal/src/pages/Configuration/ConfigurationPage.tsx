@@ -1,11 +1,39 @@
+import { useCallback, useMemo, useState } from 'react';
 import { Card, Button } from '../../components/ui';
 import { ConfigurationHeaderCard } from './components/ConfigurationHeaderCard';
 import { PendingChangesCard } from './components/PendingChangesCard';
 import { FinancialParametersCard } from './components/FinancialParametersCard';
 import { DisplayParametersCard } from './components/DisplayParametersCard';
+import { ConfigurationSectionCollapsible } from './components/ConfigurationSectionCollapsible';
 import { WalletActionModeBatchCard } from './components/WalletActionModeBatchCard';
 import { PARAMETER_DEFINITIONS } from './parameterDefinitions';
 import { useConfigurationPage } from './hooks/useConfigurationPage';
+import {
+  CONFIG_SECTION,
+  type ConfigSectionId,
+  countPendingInSection,
+  getConfigSectionForParameter,
+} from './configurationSections';
+
+const financialIcon = (
+  <svg className="w-5 h-5 text-fin1-primary shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
+
+const displayIcon = (
+  <svg className="w-5 h-5 text-fin1-primary shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+  </svg>
+);
+
+const systemIcon = (
+  <svg className="w-5 h-5 text-fin1-primary shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+  </svg>
+);
 
 export function ConfigurationPage() {
   const {
@@ -36,6 +64,65 @@ export function ConfigurationPage() {
     onFinancialEditValueChange,
     onDisplayEditValueChange,
   } = useConfigurationPage();
+
+  const [expandedSections, setExpandedSections] = useState<Set<ConfigSectionId>>(new Set());
+
+  const forceExpandedSection = useMemo(
+    () => (editingParam ? getConfigSectionForParameter(editingParam) : null),
+    [editingParam],
+  );
+
+  const financialKeys = useMemo(() => financialParams.map(([k]) => k), [financialParams]);
+  const taxKeys = useMemo(() => taxParams.map(([k]) => k), [taxParams]);
+  const systemKeys = useMemo(() => systemParams.map(([k]) => k), [systemParams]);
+  const displayKeys = useMemo(() => displayParams.map(([k]) => k), [displayParams]);
+
+  const pendingBySection = useMemo(
+    () => ({
+      [CONFIG_SECTION.financial]: countPendingInSection(pendingData?.requests, financialKeys),
+      [CONFIG_SECTION.tax]: countPendingInSection(pendingData?.requests, taxKeys),
+      [CONFIG_SECTION.system]: countPendingInSection(pendingData?.requests, systemKeys),
+      [CONFIG_SECTION.display]: countPendingInSection(pendingData?.requests, displayKeys),
+    }),
+    [pendingData?.requests, financialKeys, taxKeys, systemKeys, displayKeys],
+  );
+
+  const toggleSection = useCallback((sectionId: ConfigSectionId) => {
+    setExpandedSections((prev) => {
+      const next = new Set(prev);
+      if (next.has(sectionId)) {
+        next.delete(sectionId);
+      } else {
+        next.add(sectionId);
+      }
+      return next;
+    });
+  }, []);
+
+  const isSectionExpanded = useCallback(
+    (sectionId: ConfigSectionId) => expandedSections.has(sectionId),
+    [expandedSections],
+  );
+
+  const sharedCardProps = {
+    config,
+    isDark,
+    editingParam,
+    editValue,
+    changeReason,
+    crossLimitError,
+    editError,
+    pendingRequests: pendingData?.requests,
+    onChangeReason: setChangeReason,
+    onSave: handleSaveChange,
+    onCancel: handleCancelEdit,
+    onStartEdit: handleStartEdit,
+    formatValue,
+    isSaving: requestChangeMutation.isPending,
+    isError: requestChangeMutation.isError,
+    isSuccess: requestChangeMutation.isSuccess,
+    showHeader: false,
+  };
 
   if (isLoading) {
     return (
@@ -77,91 +164,74 @@ export function ConfigurationPage() {
         />
       )}
 
-      <FinancialParametersCard
-        financialParams={financialParams}
+      <ConfigurationSectionCollapsible
         title="Finanzparameter"
-        config={config}
+        icon={financialIcon}
+        expanded={isSectionExpanded(CONFIG_SECTION.financial)}
+        onToggle={() => toggleSection(CONFIG_SECTION.financial)}
+        forceExpanded={forceExpandedSection === CONFIG_SECTION.financial}
+        pendingCount={pendingBySection[CONFIG_SECTION.financial]}
         isDark={isDark}
-        editingParam={editingParam}
-        editValue={editValue}
-        changeReason={changeReason}
-        crossLimitError={crossLimitError}
-        editError={editError}
-        pendingRequests={pendingData?.requests}
-        onEditValueChange={onFinancialEditValueChange}
-        onChangeReason={setChangeReason}
-        onSave={handleSaveChange}
-        onCancel={handleCancelEdit}
-        onStartEdit={handleStartEdit}
-        formatValue={formatValue}
-        isSaving={requestChangeMutation.isPending}
-        isError={requestChangeMutation.isError}
-        isSuccess={requestChangeMutation.isSuccess}
-      />
+      >
+        <FinancialParametersCard
+          {...sharedCardProps}
+          financialParams={financialParams}
+          title="Finanzparameter"
+          onEditValueChange={onFinancialEditValueChange}
+        />
+      </ConfigurationSectionCollapsible>
 
-      <FinancialParametersCard
-        financialParams={taxParams}
+      <ConfigurationSectionCollapsible
         title="Steuerparameter"
-        config={config}
+        icon={financialIcon}
+        expanded={isSectionExpanded(CONFIG_SECTION.tax)}
+        onToggle={() => toggleSection(CONFIG_SECTION.tax)}
+        forceExpanded={forceExpandedSection === CONFIG_SECTION.tax}
+        pendingCount={pendingBySection[CONFIG_SECTION.tax]}
         isDark={isDark}
-        editingParam={editingParam}
-        editValue={editValue}
-        changeReason={changeReason}
-        crossLimitError={crossLimitError}
-        editError={editError}
-        pendingRequests={pendingData?.requests}
-        onEditValueChange={onFinancialEditValueChange}
-        onChangeReason={setChangeReason}
-        onSave={handleSaveChange}
-        onCancel={handleCancelEdit}
-        onStartEdit={handleStartEdit}
-        formatValue={formatValue}
-        isSaving={requestChangeMutation.isPending}
-        isError={requestChangeMutation.isError}
-        isSuccess={requestChangeMutation.isSuccess}
-      />
+      >
+        <FinancialParametersCard
+          {...sharedCardProps}
+          financialParams={taxParams}
+          title="Steuerparameter"
+          onEditValueChange={onFinancialEditValueChange}
+        />
+      </ConfigurationSectionCollapsible>
 
-      <FinancialParametersCard
-        financialParams={systemParams}
+      <ConfigurationSectionCollapsible
         title="Systemparameter"
-        config={config}
+        icon={systemIcon}
+        expanded={isSectionExpanded(CONFIG_SECTION.system)}
+        onToggle={() => toggleSection(CONFIG_SECTION.system)}
+        forceExpanded={forceExpandedSection === CONFIG_SECTION.system}
+        pendingCount={pendingBySection[CONFIG_SECTION.system]}
         isDark={isDark}
-        editingParam={editingParam}
-        editValue={editValue}
-        changeReason={changeReason}
-        crossLimitError={crossLimitError}
-        editError={editError}
-        pendingRequests={pendingData?.requests}
-        onEditValueChange={onFinancialEditValueChange}
-        onChangeReason={setChangeReason}
-        onSave={handleSaveChange}
-        onCancel={handleCancelEdit}
-        onStartEdit={handleStartEdit}
-        formatValue={formatValue}
-        isSaving={requestChangeMutation.isPending}
-        isError={requestChangeMutation.isError}
-        isSuccess={requestChangeMutation.isSuccess}
-      />
+      >
+        <FinancialParametersCard
+          {...sharedCardProps}
+          financialParams={systemParams}
+          title="Systemparameter"
+          onEditValueChange={onFinancialEditValueChange}
+        />
+      </ConfigurationSectionCollapsible>
 
-      <DisplayParametersCard
-        displayParams={displayParams}
-        config={config}
-        isDark={isDark}
-        editingParam={editingParam}
-        editValue={editValue}
-        changeReason={changeReason}
-        editError={editError}
-        pendingRequests={pendingData?.requests}
-        onEditValueChange={onDisplayEditValueChange}
-        onChangeReason={setChangeReason}
-        onSave={handleSaveChange}
-        onCancel={handleCancelEdit}
-        onStartEdit={handleStartEdit}
-        formatValue={formatValue}
-        isSaving={requestChangeMutation.isPending}
-        isError={requestChangeMutation.isError}
-        isSuccess={requestChangeMutation.isSuccess}
-      />
+      {displayParams.length > 0 && (
+        <ConfigurationSectionCollapsible
+          title="Anzeige"
+          icon={displayIcon}
+          expanded={isSectionExpanded(CONFIG_SECTION.display)}
+          onToggle={() => toggleSection(CONFIG_SECTION.display)}
+          forceExpanded={forceExpandedSection === CONFIG_SECTION.display}
+          pendingCount={pendingBySection[CONFIG_SECTION.display]}
+          isDark={isDark}
+        >
+          <DisplayParametersCard
+            {...sharedCardProps}
+            displayParams={displayParams}
+            onEditValueChange={onDisplayEditValueChange}
+          />
+        </ConfigurationSectionCollapsible>
+      )}
 
       <WalletActionModeBatchCard />
 

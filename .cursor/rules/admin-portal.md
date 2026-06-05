@@ -95,7 +95,24 @@ pages/Feature/
 └── index.ts             # Re-exports
 ```
 
-### API Layer Pattern
+### Dateinamen & Naming (an Parse Cloud angelehnt)
+
+**Vollständige Matrix:** [`Documentation/ADMIN_PORTAL_NAMING_CONVENTIONS.md`](../Documentation/ADMIN_PORTAL_NAMING_CONVENTIONS.md)
+
+**Kurzfassung (Experten-Default):**
+
+| Was | Konvention | Wie Parse Cloud |
+|-----|------------|-----------------|
+| **Prinzipien** | Domain-Ordner, ein Zweck pro Datei, keine Temp-Namen | gleich |
+| **React-Komponenten** | **PascalCase** (`UserTradeCard.tsx`, `TradeExpandPanel.tsx`) | *anders* — Parse nutzt `lowerCamelCase.js` für **Backend**-Dateien |
+| **Feature-Split-Ordner** | **lowerCamelCase** (`summaryReportTrades/`) | ähnlich wie `functions/admin/reports/` |
+| **Hooks / Utils** | **camelCase** (`useTicketList.ts`, `format.ts`) | ähnlich Intent-Helfer |
+| **`cloudFunction('…')`** | Name **identisch** zu `Parse.Cloud.define` — `lowerCamelCase` + Verb | **identisch** — siehe [`PARSE_CLOUD_NAMING_CONVENTIONS.md`](../Documentation/PARSE_CLOUD_NAMING_CONVENTIONS.md) |
+| **Dateigröße** | Page ≤ 400 Zeilen, sonst ≤ 300 Zeilen | wie Modularisierung in `parse-cloud.md` (~250–300) |
+
+**Nicht** die Parse-Regel „alle Dateien `lowerCamelCase.js`“ auf `.tsx`-Komponenten anwenden — das widerspricht React-Ökosystem und dem bestehenden Portal-Code.
+
+**API Layer Pattern**
 
 **REQUIRED**: All Parse Server communication via `src/api/parse.ts`:
 
@@ -304,7 +321,8 @@ import { t } from '../i18n/de';
 
 - **Config:** `eslint.config.js` (Flat Config: `@eslint/js`, `typescript-eslint`, `eslint-plugin-react-hooks`, `eslint-plugin-react-refresh`).
 - **Run:** `npm run lint` (must exit  zero before merge if CI is green).
-- **CI:** GitHub Actions job `admin-portal` runs `npm ci` → `npm run lint` → `npm run test:run` → `npm run build`.
+- **Dateigröße (advisory, blockiert CI nicht):** `./scripts/check-admin-portal-file-lines.sh` oder `npm run lint:file-size` (`eslint.filesize.config.js`, Limits 300 / 400 für `*Page.tsx`).
+- **CI:** GitHub Actions job `admin-portal` runs `npm ci` → `npm run lint` → file-size advisory (`continue-on-error`) → `npm run test:run` → `npm run build`.
 
 ## Testing
 

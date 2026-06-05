@@ -8,6 +8,8 @@ struct OrderCard: View {
     @State private var showOrderInstructionInfo = false
     @State private var showInvoiceSheet = false
     @State private var buyInvoice: Invoice?
+    @State private var isCancelling = false
+    @State private var cancelErrorMessage: String?
     @Environment(\.appServices) private var services
     @Environment(\.themeManager) private var themeManager
 
@@ -26,37 +28,52 @@ struct OrderCard: View {
                     // 8 Tiles in 4 Rows using TileGrid
                     TileGrid(tiles: self.orderTiles, columns: 2)
 
+                    if self.canCancelOrder {
+                        Text("Storno noch möglich — tippe unten auf STORNO, solange Status 1 oder 2 angezeigt wird.")
+                            .font(ResponsiveDesign.captionFont())
+                            .foregroundColor(AppTheme.accentOrange)
+                            .multilineTextAlignment(.leading)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, ResponsiveDesign.spacing(4))
+                    }
+
                     // STORNO button (full width)
                     Button(action: {
-                        if self.statusValue < 3 {
-                            Task {
-                                try? await self.services.traderService.cancelOrder(self.order.id)
-                            }
+                        if self.canCancelOrder, !self.isCancelling {
+                            Task { await self.performCancel() }
                         }
                     }, label: {
                         HStack {
                             Text("\(self.order.type.displayName.uppercased())")
                                 .font(ResponsiveDesign.bodyFont())
                                 .fontWeight(.thin)
-                                .foregroundColor(AppTheme.fontColor.opacity(self.statusValue < 3 ? 0.75 : 0.2))
+                                .foregroundColor(AppTheme.fontColor.opacity(self.canCancelOrder ? 0.75 : 0.2))
 
                             Spacer()
 
                             Text("STORNO")
                                 .font(ResponsiveDesign.bodyFont())
                                 .fontWeight(.regular)
-                                .foregroundColor(AppTheme.fontColor.opacity(self.statusValue < 3 ? 0.85 : 0.2))
+                                .foregroundColor(AppTheme.fontColor.opacity(self.canCancelOrder ? 0.85 : 0.2))
                         }
                         .padding(ResponsiveDesign.spacing(8))
                         .frame(maxWidth: .infinity, minHeight: 50, alignment: .leading)
-                        .background(self.statusValue < 3 ? AppTheme.accentRed.opacity(0.6) : AppTheme.accentRed.opacity(0.2))
+                        .background(self.canCancelOrder ? AppTheme.accentRed.opacity(0.6) : AppTheme.accentRed.opacity(0.2))
                         .cornerRadius(ResponsiveDesign.spacing(4))
                     })
                     .buttonStyle(PlainButtonStyle())
-                    .disabled(self.statusValue >= 3)
+                    .disabled(!self.canCancelOrder || self.isCancelling)
                 }
             }
         )
+        .alert("Storno fehlgeschlagen", isPresented: Binding(
+            get: { self.cancelErrorMessage != nil },
+            set: { if !$0 { self.cancelErrorMessage = nil } }
+        )) {
+            Button("OK") { self.cancelErrorMessage = nil }
+        } message: {
+            Text(self.cancelErrorMessage ?? "")
+        }
         .alert("Order Status Info", isPresented: self.$showStatusInfo) {
             Button("OK") { }
         } message: {
@@ -166,6 +183,21 @@ struct OrderCard: View {
         }
     }
 
+    @MainActor
+    private func performCancel() async {
+        self.isCancelling = true
+        defer { self.isCancelling = false }
+        do {
+            try await self.services.traderService.cancelOrder(self.order.id)
+        } catch {
+            self.cancelErrorMessage = error.localizedDescription
+        }
+    }
+
+    private var canCancelOrder: Bool {
+        self.statusValue < 3
+    }
+
     private var statusValue: Int {
         switch self.order.status {
         case "submitted":
@@ -188,11 +220,11 @@ struct OrderCard: View {
     private var statusInfoMessage: String {
         switch self.order.status {
         case "submitted":
-            return "Status 1: übermittelt\nIhre Order wurde erfolgreich übermittelt und wird bearbeitet."
+            return "Status 1: übermittelt\nIhre Order wurde übermittelt und ist noch nicht ausgeführt.\n\nSie können die Order unten über STORNO löschen, solange Status 1 oder 2 angezeigt wird."
         case "suspended":
-            return "Status 2: Handel ausgesetzt\nDer Handel wurde vorübergehend ausgesetzt."
+            return "Status 2: Handel ausgesetzt\nDer Handel wurde vorübergehend ausgesetzt.\n\nStorno ist noch möglich — tippe auf STORNO, bevor Status 3 (ausgeführt) erreicht ist."
         case "executed":
-            return "Status 3: ausgeführt\nIhre Order wurde erfolgreich ausgeführt."
+            return "Status 3: ausgeführt\nIhre Order wurde ausgeführt. Storno ist nicht mehr möglich."
         case "confirmed":
             return "Status 4: bestätigt\nIhre Order wurde bestätigt und wird abgeschlossen."
         case "completed":

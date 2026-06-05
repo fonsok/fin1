@@ -19,6 +19,8 @@ final class CollectionBillDocumentViewModel: ObservableObject {
     @Published var isLoading = true
     @Published var errorMessage: String?
     @Published var fallbackToDocumentViewer = false
+    /// Parse `accountingSummaryText` (Backend SSOT); nil → TradeStatement/Invoice-Fallback.
+    @Published var resolvedBelegSnapshotText: String?
 
     // MARK: - Dependencies
 

@@ -109,6 +109,38 @@ final class NotificationsViewModelTests: XCTestCase {
         XCTAssertFalse(titles.contains("OldRead"))
     }
 
+    func testDocumentsFilterShowsReadDocumentsRegardlessOfReadWindow() async {
+        let notificationService = MockNotificationService()
+        let documentService = MockDocumentService()
+        let userService = MockUserService()
+
+        _ = await TestHelpers.createInvestorUser(mockUserService: userService)
+        let userId = userService.currentUser?.id ?? "user1"
+
+        var oldReadDoc = Document(
+            userId: userId,
+            name: "Old CB",
+            type: .investorCollectionBill,
+            status: .verified,
+            fileURL: "file://cb",
+            size: 1,
+            uploadedAt: Date()
+        )
+        oldReadDoc.readAt = Date().addingTimeInterval(-90_000)
+
+        documentService.documents = [oldReadDoc]
+
+        let vm = NotificationsViewModel(
+            notificationService: notificationService,
+            documentService: documentService,
+            userService: userService
+        )
+        vm.selectedFilter = .documents
+        await Task.yield()
+
+        XCTAssertEqual(vm.filteredItems.count, 1)
+    }
+
     func testDocumentsFilterShowsOnlyDocuments() async {
         let notificationService = MockNotificationService()
         let documentService = MockDocumentService()
