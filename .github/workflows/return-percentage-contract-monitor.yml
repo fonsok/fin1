@@ -1,8 +1,8 @@
 name: Return Percentage Contract Monitor
 
+# SSOT: iobox cron via scripts/run-return-percentage-contract-monitor.sh (LAN Parse).
+# Complements mongosh run-return-monitor.sh (also on iobox).
 on:
-  schedule:
-    - cron: "10 5 * * *"
   workflow_dispatch:
     inputs:
       threshold:
@@ -36,6 +36,8 @@ jobs:
           echo "- Checked at: ${{ steps.monitor.outputs.checked_at || 'n/a' }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Total active bills: ${{ steps.monitor.outputs.total_active || 'n/a' }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Missing canonical return%: ${{ steps.monitor.outputs.missing_count || 'n/a' }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Note:** SSOT on iobox — \`scripts/run-return-percentage-contract-monitor.sh\` (daily 05:12 UTC cron)." >> "$GITHUB_STEP_SUMMARY"
 
       - name: Send Slack alert on breach
         if: steps.monitor.outcome != 'success'

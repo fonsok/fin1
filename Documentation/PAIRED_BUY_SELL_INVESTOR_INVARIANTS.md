@@ -143,7 +143,7 @@ Siehe auch [BOOKING_AND_BELEG_SSOT.md](./BOOKING_AND_BELEG_SSOT.md) (`transferAm
 - `pairedSellInvestorChainIntegrity.test.js` (Exit-Erkennung)
 - E2E: `node scripts/e2e-paired-sell-integrity-smoke.js` (seed + assert) oder CI `paired-sell-integrity-smoke.yml`
 - E2E assert-only: `E2E_SKIP_SEED=1 node scripts/e2e-paired-sell-integrity-smoke.js`
-- **Monitoring (iobox SSOT):** `scripts/run-finance-integrity-monitor.sh` (Cron via `install-finance-integrity-server-cron.sh`); GitHub `finance-integrity-monitor.yml` nur `workflow_dispatch` (kein LAN-Zugriff von Cloud-Runnern)
+- **Monitoring (iobox SSOT):** alle Parse-Cloud-Monitore via `scripts/install-iobox-monitors-cron.sh` (u. a. `run-finance-integrity-monitor.sh`, `run-paired-order-status-monitor.sh`, `run-mirror-basis-drift-monitor.sh`); GitHub-Workflows nur `workflow_dispatch`
 
 ---
 

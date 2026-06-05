@@ -1,9 +1,7 @@
 name: Paired Order Status Integrity Monitor
 
+# SSOT: iobox cron via scripts/run-paired-order-status-monitor.sh (LAN Parse).
 on:
-  schedule:
-    # Weekly Monday 05:55 UTC (after mirror-basis + admin-list-search monitors)
-    - cron: "55 5 * * 1"
   workflow_dispatch:
 
 jobs:
@@ -33,6 +31,8 @@ jobs:
           echo "- Checked pairs: ${{ steps.monitor.outputs.checked_pairs || 'n/a' }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Pool limiter (active/queued/max): ${{ steps.monitor.outputs.pool_active || 'n/a' }} / ${{ steps.monitor.outputs.pool_queued || 'n/a' }} / ${{ steps.monitor.outputs.pool_max_concurrent || 'n/a' }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Run at: ${{ steps.monitor.outputs.run_at || 'n/a' }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Note:** SSOT on iobox — \`scripts/run-paired-order-status-monitor.sh\` (Mo 05:55 UTC cron)." >> "$GITHUB_STEP_SUMMARY"
 
       - name: Fail workflow if monitor failed
         if: steps.monitor.outcome != 'success'

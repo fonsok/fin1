@@ -52,11 +52,20 @@ rsync -avz \
   "$PROJECT_ROOT/backend/scripts/lib/" \
   "${REMOTE_USER}@${REMOTE_HOST}:~/fin1-server/backend/scripts/lib/"
 rsync -avz \
+  "$PROJECT_ROOT/scripts/run-parse-cloud-monitor.sh" \
   "$PROJECT_ROOT/scripts/run-finance-integrity-snapshots.sh" \
   "$PROJECT_ROOT/scripts/run-mirror-basis-drift-check.sh" \
-  "$PROJECT_ROOT/scripts/e2e-paired-sell-integrity-smoke.js" \
   "$PROJECT_ROOT/scripts/run-finance-integrity-monitor.sh" \
+  "$PROJECT_ROOT/scripts/run-mirror-basis-drift-monitor.sh" \
+  "$PROJECT_ROOT/scripts/run-paired-order-status-monitor.sh" \
+  "$PROJECT_ROOT/scripts/run-return-percentage-contract-monitor.sh" \
+  "$PROJECT_ROOT/scripts/run-admin-list-search-health-monitor.sh" \
   "$PROJECT_ROOT/scripts/monitor-finance-integrity.js" \
+  "$PROJECT_ROOT/scripts/monitor-mirror-basis-drift-contract.js" \
+  "$PROJECT_ROOT/scripts/monitor-paired-order-status-integrity.js" \
+  "$PROJECT_ROOT/scripts/monitor-return-percentage-contract.js" \
+  "$PROJECT_ROOT/scripts/monitor-admin-list-search-health.js" \
+  "$PROJECT_ROOT/scripts/e2e-paired-sell-integrity-smoke.js" \
   "${REMOTE_USER}@${REMOTE_HOST}:~/fin1-server/scripts/"
 
 echo "▸ remove configHelper.js shadow (if any) + restart parse-server …"
@@ -71,8 +80,8 @@ if [[ "${WRITE_DEPLOY_MANIFEST}" != "0" ]]; then
   ssh "${REMOTE_USER}@${REMOTE_HOST}" "mkdir -p ~/fin1-server/deploy-manifests && cat >> ~/fin1-server/deploy-manifests/history.log" <<<"$(printf '%s %s\n' "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" "$(echo "$MANIFEST_JSON" | python3 -c 'import json,sys; print(json.load(sys.stdin)["gitCommit"])')")"
 fi
 
-echo "▸ install finance-integrity server cron (idempotent) …"
-"$SCRIPT_DIR/install-finance-integrity-server-cron.sh"
+echo "▸ install iobox monitor cron (idempotent) …"
+"$SCRIPT_DIR/install-iobox-monitors-cron.sh"
 
 echo ""
 echo "=== Parse Cloud deploy done ==="

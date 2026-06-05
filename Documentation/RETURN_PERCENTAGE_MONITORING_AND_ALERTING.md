@@ -18,9 +18,11 @@ Detect any active investor collection bill without canonical `metadata.returnPer
 - **Weekly reconciliation job**:
   - `backend/scripts/weekly-return-percentage-reconciliation.js`
   - wrapper: `scripts/run-return-reconciliation.sh`
-- **CI/scheduled job**:
-  - `.github/workflows/return-percentage-contract-monitor.yml`
-  - script: `scripts/monitor-return-percentage-contract.js`
+- **Parse Cloud contract monitor (server cron, SSOT)**:
+  - `scripts/run-return-percentage-contract-monitor.sh` → `scripts/monitor-return-percentage-contract.js`
+  - Cron via `scripts/install-iobox-monitors-cron.sh` (daily **05:12 UTC**; complements mongosh `run-return-monitor.sh` at 05:10)
+- **CI/manual only** (no schedule — cloud runners cannot reach LAN Parse):
+  - `.github/workflows/return-percentage-contract-monitor.yml` (`workflow_dispatch`)
 
 ## GitHub Actions Secrets
 
