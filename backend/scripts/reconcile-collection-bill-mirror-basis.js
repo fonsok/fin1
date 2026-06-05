@@ -33,18 +33,36 @@ function round2(n) { return Math.round(n * 100) / 100; }
 function isNum(v) { return typeof v === 'number' && Number.isFinite(v); }
 function eq2(a, b) { return isNum(a) && isNum(b) && Math.abs(round2(a) - round2(b)) < 0.01; }
 
+const DEFAULT_COMMISSION_RATE = 0.10;
+
 function loadCommissionRate() {
-  // Try a few known shapes. Defaults to 0.11 (current production value).
+  // SSOT order matches Parse `getTraderCommissionRate()`:
+  // 1) active Configuration doc, 2) legacy Config.financial, 3) default.
   try {
-    const cfg = configCollection.findOne({ _id: 'traderCommissionRate' });
-    if (cfg && isNum(cfg.value)) return cfg.value;
+    const activeCursor = database.getCollection('Configuration')
+      .find({ isActive: true })
+      .sort({ updatedAt: -1 })
+      .limit(1);
+    const activeCfg = activeCursor.hasNext() ? activeCursor.next() : null;
+    if (activeCfg && isNum(activeCfg.traderCommissionRate)) {
+      return activeCfg.traderCommissionRate;
+    }
   } catch (_) {}
   try {
-    const cfg = configCollection.findOne({});
-    if (cfg && isNum(cfg.traderCommissionRate)) return cfg.traderCommissionRate;
-    if (cfg && cfg.params && isNum(cfg.params.traderCommissionRate)) return cfg.params.traderCommissionRate;
+    const cfg = configCollection.findOne({ _id: 'production' }) || configCollection.findOne({});
+    if (!cfg) return DEFAULT_COMMISSION_RATE;
+    if (cfg.financial && isNum(cfg.financial.traderCommissionRate)) {
+      return cfg.financial.traderCommissionRate;
+    }
+    if (isNum(cfg.traderCommissionRate)) return cfg.traderCommissionRate;
+    if (cfg.params && isNum(cfg.params.traderCommissionRate)) return cfg.params.traderCommissionRate;
   } catch (_) {}
-  return 0.11;
+  return DEFAULT_COMMISSION_RATE;
+}
+
+function resolveCommissionRate(meta) {
+  if (meta && isNum(meta.commissionRate)) return meta.commissionRate;
+  return loadCommissionRate();
 }
 
 function deriveMirrorTradeBasis(buyLeg, sellLeg, commissionRate) {
@@ -96,7 +114,8 @@ while (cursor.hasNext()) {
   const buyLeg = meta.buyLeg;
   const sellLeg = meta.sellLeg;
 
-  const basis = deriveMirrorTradeBasis(buyLeg, sellLeg, commissionRate);
+  const billCommissionRate = resolveCommissionRate(meta);
+  const basis = deriveMirrorTradeBasis(buyLeg, sellLeg, billCommissionRate);
   if (!basis) {
     skippedNoLegs += 1;
     continue;
@@ -147,7 +166,9 @@ while (cursor.hasNext()) {
 
       const investment = database.Investment.findOne({ _id: doc.investmentId });
       const capital = investment && isNum(investment.amount) ? investment.amount : null;
-      const expectedReturn = isNum(capital) ? round2(capital + basis.grossProfit) : null;
+      const expectedReturn = isNum(basis.netSellAmount)
+        ? round2(Math.max(0, basis.netSellAmount - basis.commission))
+        : (isNum(capital) ? round2(capital + basis.netProfit) : null);
       const expectedCommDebit = -Math.abs(basis.commission);
 
       const returnDrift = investmentReturn && isNum(expectedReturn) && !eq2(investmentReturn.amount, expectedReturn);

@@ -21,8 +21,8 @@
 //
 // What it touches (APPLY=1):
 //   - Document(type ∈ {investorCollectionBill, investor_collection_bill}).metadata.{
-//       grossProfit, commission, netProfit, returnPercentage, ownershipPercentage,
-//       buyLeg, sellLeg, backfilledAt, backfillSource }
+//       grossProfit, commission, netProfit, returnPercentage, totalBuyCost, netSellAmount,
+//       ownershipPercentage, buyLeg, sellLeg, backfilledAt, backfillSource }
 //   - PoolTradeParticipation.{ profitShare, commissionAmount, grossReturn,
 //       profitBasis='mirror-backfill', backfilledAt }
 //
@@ -95,15 +95,32 @@ function eq2(a, b) {
   return isNum(a) && isNum(b) && Math.abs(round2(a) - round2(b)) < 0.01;
 }
 
+const DEFAULT_COMMISSION_RATE = 0.10;
+
 async function loadCommissionRate(database) {
-  // Production config is typically in `Config` (Parse) or `_GlobalConfig`. Try a
-  // few known shapes; default to 0.11 (the value the admin panel currently
-  // displays per the 2026-04 conversation with the user).
+  // SSOT order matches Parse `getTraderCommissionRate()`:
+  // 1) active Configuration doc, 2) legacy Config.financial, 3) default.
+  try {
+    const activeCfg = await database.collection('Configuration')
+      .find({ isActive: true })
+      .sort({ updatedAt: -1 })
+      .limit(1)
+      .next();
+    if (activeCfg && isNum(activeCfg.traderCommissionRate)) {
+      return activeCfg.traderCommissionRate;
+    }
+  } catch (_) {
+    /* ignore */
+  }
   const collections = ['Config', '_GlobalConfig'];
   for (const col of collections) {
     try {
-      const row = await database.collection(col).findOne({});
+      const row = await database.collection(col).findOne({ _id: 'production' })
+        || await database.collection(col).findOne({});
       if (!row) continue;
+      if (row.financial && isNum(row.financial.traderCommissionRate)) {
+        return row.financial.traderCommissionRate;
+      }
       if (isNum(row.traderCommissionRate)) return row.traderCommissionRate;
       if (row.params && isNum(row.params.traderCommissionRate)) return row.params.traderCommissionRate;
       if (row.params && row.params.traderCommissionRate && isNum(row.params.traderCommissionRate.value)) {
@@ -113,7 +130,12 @@ async function loadCommissionRate(database) {
       /* ignore */
     }
   }
-  return 0.11;
+  return DEFAULT_COMMISSION_RATE;
+}
+
+function resolveCommissionRate(meta, fallbackRate) {
+  if (meta && isNum(meta.commissionRate)) return meta.commissionRate;
+  return fallbackRate;
 }
 
 async function loadFeeConfig(database) {
@@ -263,7 +285,8 @@ async function main() {
       // the pool sells 100 % of the shares it bought, so fraction = 1.0 aligns
       // with the live settleParticipation path.
       const sellLeg = computeInvestorSellLeg(buyLeg.quantity, sellPrice, 1.0, feeConfig);
-      const basis = deriveMirrorTradeBasis(buyLeg, sellLeg, commissionRate);
+      const billCommissionRate = resolveCommissionRate(meta, commissionRate);
+      const basis = deriveMirrorTradeBasis(buyLeg, sellLeg, billCommissionRate);
       if (!basis) continue;
       reconstructed += 1;
 
@@ -271,15 +294,20 @@ async function main() {
       const storedComm = meta.commission;
       const storedNet = meta.netProfit;
       const storedRet = meta.returnPercentage;
+      const storedTotalBuyCost = meta.totalBuyCost;
+      const storedNetSellAmount = meta.netSellAmount;
 
       const grossMismatch = !eq2(storedGross, basis.grossProfit);
       const commMismatch = !eq2(storedComm, basis.commission);
       const netMismatch = !eq2(storedNet, basis.netProfit);
       const retMismatch = !eq2(storedRet, basis.returnPercentage);
+      const totalBuyCostMismatch = !eq2(storedTotalBuyCost, basis.totalBuyCost);
+      const netSellMismatch = !eq2(storedNetSellAmount, basis.netSellAmount);
       const buyLegMissing = !meta.buyLeg || !meta.buyLeg.quantity;
       const sellLegMissing = !meta.sellLeg || !meta.sellLeg.quantity;
 
       if (!grossMismatch && !commMismatch && !netMismatch && !retMismatch
+          && !totalBuyCostMismatch && !netSellMismatch
           && !buyLegMissing && !sellLegMissing) {
         continue;
       }
@@ -300,6 +328,8 @@ async function main() {
             commission: storedComm,
             netProfit: storedNet,
             returnPercentage: storedRet,
+            totalBuyCost: storedTotalBuyCost,
+            netSellAmount: storedNetSellAmount,
             hasBuyLeg: !buyLegMissing,
             hasSellLeg: !sellLegMissing,
           },
@@ -308,6 +338,8 @@ async function main() {
             commission: basis.commission,
             netProfit: basis.netProfit,
             returnPercentage: basis.returnPercentage,
+            totalBuyCost: basis.totalBuyCost,
+            netSellAmount: basis.netSellAmount,
             buyLeg: { quantity: buyLeg.quantity, amount: buyLeg.amount, fees: buyLeg.fees, residual: buyLeg.residualAmount },
             sellLeg: { quantity: sellLeg.quantity, amount: sellLeg.amount, fees: sellLeg.fees },
           },
@@ -327,7 +359,9 @@ async function main() {
           entryType: 'commission_debit',
         });
 
-        const expectedReturn = isNum(investmentCapital) ? round2(investmentCapital + basis.grossProfit) : null;
+        const expectedReturn = isNum(basis.netSellAmount)
+          ? round2(Math.max(0, basis.netSellAmount - basis.commission))
+          : (isNum(investmentCapital) ? round2(investmentCapital + basis.netProfit) : null);
         const expectedCommDebit = -Math.abs(basis.commission);
 
         const returnDrift = investmentReturn && isNum(expectedReturn)
@@ -364,6 +398,8 @@ async function main() {
           'metadata.commission': basis.commission,
           'metadata.netProfit': basis.netProfit,
           'metadata.returnPercentage': basis.returnPercentage,
+          'metadata.totalBuyCost': basis.totalBuyCost,
+          'metadata.netSellAmount': basis.netSellAmount,
           'metadata.buyLeg': buyLeg,
           'metadata.sellLeg': sellLeg,
           'metadata.backfilledAt': new Date(),

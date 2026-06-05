@@ -30,17 +30,39 @@ function isNum(v) {
   return typeof v === 'number' && Number.isFinite(v);
 }
 
+const DEFAULT_COMMISSION_RATE = 0.10;
+
 function loadCommissionRate() {
+  // SSOT order matches Parse `getTraderCommissionRate()`:
+  // 1) active Configuration doc, 2) legacy Config.financial, 3) default.
   try {
-    const cfg = configCollection.findOne({});
-    if (!cfg) return 0.11;
+    const activeCursor = db.getCollection('Configuration')
+      .find({ isActive: true })
+      .sort({ updatedAt: -1 })
+      .limit(1);
+    const activeCfg = activeCursor.hasNext() ? activeCursor.next() : null;
+    if (activeCfg && isNum(activeCfg.traderCommissionRate)) {
+      return activeCfg.traderCommissionRate;
+    }
+  } catch (e) { /* fall through */ }
+  try {
+    const cfg = configCollection.findOne({ _id: 'production' }) || configCollection.findOne({});
+    if (!cfg) return DEFAULT_COMMISSION_RATE;
+    if (cfg.financial && isNum(cfg.financial.traderCommissionRate)) {
+      return cfg.financial.traderCommissionRate;
+    }
     if (isNum(cfg.traderCommissionRate)) return cfg.traderCommissionRate;
     if (cfg.params && isNum(cfg.params.traderCommissionRate)) return cfg.params.traderCommissionRate;
     if (cfg.params && cfg.params.traderCommissionRate && isNum(cfg.params.traderCommissionRate.value)) {
       return cfg.params.traderCommissionRate.value;
     }
   } catch (e) { /* fall through */ }
-  return 0.11;
+  return DEFAULT_COMMISSION_RATE;
+}
+
+function resolveCommissionRate(meta) {
+  if (meta && isNum(meta.commissionRate)) return meta.commissionRate;
+  return loadCommissionRate();
 }
 
 function deriveMirrorBasis(buyLeg, sellLeg, commissionRate) {
@@ -76,7 +98,8 @@ const samples = [];
 for (const doc of docs) {
   checked += 1;
   const meta = doc.metadata || {};
-  const basis = deriveMirrorBasis(meta.buyLeg, meta.sellLeg, commissionRate);
+  const billCommissionRate = resolveCommissionRate(meta);
+  const basis = deriveMirrorBasis(meta.buyLeg, meta.sellLeg, billCommissionRate);
   if (!basis || basis.returnPercentage === null) { nullDerived += 1; continue; }
 
   const storedReturn = meta.returnPercentage;
