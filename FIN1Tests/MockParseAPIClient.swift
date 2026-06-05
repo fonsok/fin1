@@ -164,11 +164,22 @@ final class MockParseAPIClient: ParseAPIClientProtocol, @unchecked Sendable {
             return synthesized
         }
 
-        guard let result = mockFunctionResult as? T else {
-            throw NetworkError.invalidResponse
+        if let result = mockFunctionResult as? T {
+            return result
         }
 
-        return result
+        if let dictionary = mockFunctionResult as? [String: Any],
+           let decoded: T = decodeFromJSONDictionary(dictionary) {
+            return decoded
+        }
+
+        if let encodable = mockFunctionResult as? any Encodable,
+           let data = try? JSONEncoder().encode(AnyEncodableWrapper(encodable)),
+           let decoded = try? JSONDecoder().decode(T.self, from: data) {
+            return decoded
+        }
+
+        throw NetworkError.invalidResponse
     }
 
     func login(username: String, password: String) async throws -> ParseLoginResponse {
@@ -208,6 +219,18 @@ final class MockParseAPIClient: ParseAPIClientProtocol, @unchecked Sendable {
         self.lastFunctionName = nil
         self.lastFunctionParameters = nil
         self.shouldThrowError = false
+    }
+
+    private struct AnyEncodableWrapper: Encodable {
+        private let encode: (Encoder) throws -> Void
+
+        init(_ value: any Encodable) {
+            self.encode = value.encode
+        }
+
+        func encode(to encoder: Encoder) throws {
+            try self.encode(encoder)
+        }
     }
 
     private func decodeFromJSONDictionary<T: Decodable>(_ dictionary: [String: Any]) -> T? {

@@ -1,16 +1,29 @@
 @testable import FIN1
 import XCTest
 
-private struct CreateInvestmentSplitsResponse: Decodable {
-    let batchId: String?
-    let splits: [CreateInvestmentSplitResult]
-}
-
-private struct CreateInvestmentSplitResult: Decodable {
-    let investmentId: String
-    let sequenceNumber: Int?
-    let investmentNumber: String?
-    let idempotentReplay: Bool?
+private enum InvestmentAPITestFixtures {
+    static func createInvestmentSplitsResponse(
+        batchId: String?,
+        investmentId: String,
+        sequenceNumber: Int?,
+        investmentNumber: String? = nil,
+        idempotentReplay: Bool = false
+    ) -> [String: Any] {
+        [
+            "batchId": batchId as Any,
+            "resolvedTraderId": NSNull(),
+            "batchStatus": idempotentReplay ? "replayed" : "committed",
+            "splits": [
+                [
+                    "investmentId": investmentId,
+                    "sequenceNumber": sequenceNumber as Any,
+                    "investmentNumber": investmentNumber as Any,
+                    "idempotentReplay": idempotentReplay,
+                    "status": idempotentReplay ? "replayed" : "created",
+                ],
+            ],
+        ]
+    }
 }
 
 // MARK: - Investment API Service Tests
@@ -37,16 +50,11 @@ final class InvestmentAPIServiceTests: XCTestCase {
     func testSaveInvestment_Success() async throws {
         // Given
         let investment = self.createSampleInvestment()
-        self.mockAPIClient.mockFunctionResult = CreateInvestmentSplitsResponse(
+        self.mockAPIClient.mockFunctionResult = InvestmentAPITestFixtures.createInvestmentSplitsResponse(
             batchId: "batch-1",
-            splits: [
-                CreateInvestmentSplitResult(
-                    investmentId: "server-investment-id-123",
-                    sequenceNumber: 1,
-                    investmentNumber: "INV-1",
-                    idempotentReplay: false
-                ),
-            ]
+            investmentId: "server-investment-id-123",
+            sequenceNumber: 1,
+            investmentNumber: "INV-1"
         )
 
         // When
@@ -63,16 +71,11 @@ final class InvestmentAPIServiceTests: XCTestCase {
     func testSaveInvestment_PreservesAllFields() async throws {
         // Given
         let investment = self.createSampleInvestment()
-        self.mockAPIClient.mockFunctionResult = CreateInvestmentSplitsResponse(
+        self.mockAPIClient.mockFunctionResult = InvestmentAPITestFixtures.createInvestmentSplitsResponse(
             batchId: investment.batchId,
-            splits: [
-                CreateInvestmentSplitResult(
-                    investmentId: "server-investment-id-456",
-                    sequenceNumber: investment.sequenceNumber,
-                    investmentNumber: nil,
-                    idempotentReplay: true
-                ),
-            ]
+            investmentId: "server-investment-id-456",
+            sequenceNumber: investment.sequenceNumber,
+            idempotentReplay: true
         )
 
         // When

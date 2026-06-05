@@ -149,14 +149,19 @@ final class OrderAPIServiceTests: XCTestCase {
     func testCancelOrder_Success() async throws {
         // Given
         let orderId = "order-to-cancel-123"
+        self.mockAPIClient.mockFunctionResult = [
+            "orderId": orderId,
+            "cancelledOrderIds": [orderId],
+            "cancelledLegCount": 1,
+        ]
 
         // When
-        try await sut.cancelOrder(orderId)
+        try await self.sut.cancelOrder(orderId)
 
         // Then
-        XCTAssertTrue(self.mockAPIClient.updateObjectCalled)
-        XCTAssertEqual(self.mockAPIClient.lastClassName, "Order")
-        XCTAssertEqual(self.mockAPIClient.lastObjectId, orderId)
+        XCTAssertTrue(self.mockAPIClient.callFunctionCalled)
+        XCTAssertEqual(self.mockAPIClient.lastFunctionName, "cancelOrder")
+        XCTAssertEqual(self.mockAPIClient.lastFunctionParameters?["orderId"] as? String, orderId)
     }
 
     func testCancelOrder_NetworkError() async {
