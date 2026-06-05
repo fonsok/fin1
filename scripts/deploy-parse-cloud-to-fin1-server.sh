@@ -55,6 +55,8 @@ rsync -avz \
   "$PROJECT_ROOT/scripts/run-finance-integrity-snapshots.sh" \
   "$PROJECT_ROOT/scripts/run-mirror-basis-drift-check.sh" \
   "$PROJECT_ROOT/scripts/e2e-paired-sell-integrity-smoke.js" \
+  "$PROJECT_ROOT/scripts/run-finance-integrity-monitor.sh" \
+  "$PROJECT_ROOT/scripts/monitor-finance-integrity.js" \
   "${REMOTE_USER}@${REMOTE_HOST}:~/fin1-server/scripts/"
 
 echo "▸ remove configHelper.js shadow (if any) + restart parse-server …"
@@ -68,6 +70,9 @@ if [[ "${WRITE_DEPLOY_MANIFEST}" != "0" ]]; then
   # shellcheck disable=SC2029
   ssh "${REMOTE_USER}@${REMOTE_HOST}" "mkdir -p ~/fin1-server/deploy-manifests && cat >> ~/fin1-server/deploy-manifests/history.log" <<<"$(printf '%s %s\n' "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" "$(echo "$MANIFEST_JSON" | python3 -c 'import json,sys; print(json.load(sys.stdin)["gitCommit"])')")"
 fi
+
+echo "▸ install finance-integrity server cron (idempotent) …"
+"$SCRIPT_DIR/install-finance-integrity-server-cron.sh"
 
 echo ""
 echo "=== Parse Cloud deploy done ==="

@@ -44,9 +44,20 @@ async function main() {
     body: JSON.stringify({ settlementLimit: 50 }),
   });
 
-  const json = await response.json();
+  const rawText = await response.text();
+  let json;
+  try {
+    json = JSON.parse(rawText);
+  } catch (_) {
+    throw new Error(
+      `Parse function call returned non-JSON (${response.status}) from ${endpoint}: ${rawText.slice(0, 300)}`,
+    );
+  }
   if (!response.ok || json.error) {
-    throw new Error(`Parse function call failed (${response.status}): ${JSON.stringify(json)}`);
+    const hint = response.status === 403 || json.code === 119
+      ? ' (master key IP blocked? use server script run-finance-integrity-monitor.sh on iobox)'
+      : '';
+    throw new Error(`Parse function call failed (${response.status})${hint}: ${JSON.stringify(json)}`);
   }
 
   const result = json.result || {};
@@ -82,6 +93,13 @@ async function main() {
 
   if (overall !== 'healthy') {
     process.exitCode = 1;
+  }
+
+  if (process.exitCode === 1) {
+    console.error(
+      'finance_integrity_monitor_failed: see check_* lines above. '
+      + 'GitHub-hosted runners cannot reach private LAN Parse — use run-finance-integrity-monitor.sh on iobox.',
+    );
   }
 }
 
