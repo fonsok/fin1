@@ -5,22 +5,17 @@ final class MonthlyAccountStatementViewModel: ObservableObject {
     @Published private(set) var entries: [AccountStatementEntry] = []
     @Published private(set) var openingBalance: Double = 0
     @Published private(set) var closingBalance: Double = 0
+    @Published private(set) var infoMessage: String?
 
+    private let services: AppServices
     private let userService: any UserServiceProtocol
-    private let investorCashBalanceService: any InvestorCashBalanceServiceProtocol
-    private let invoiceService: any InvoiceServiceProtocol
-    private let configurationService: any ConfigurationServiceProtocol
-    private let traderDataService: (any TraderDataServiceProtocol)?
 
     private let year: Int
     private let month: Int
 
     init(services: AppServices, year: Int, month: Int) {
+        self.services = services
         self.userService = services.userService
-        self.investorCashBalanceService = services.investorCashBalanceService
-        self.invoiceService = services.invoiceService
-        self.configurationService = services.configurationService
-        self.traderDataService = services.traderDataService
         self.year = year
         self.month = month
     }
@@ -97,11 +92,12 @@ final class MonthlyAccountStatementViewModel: ObservableObject {
         return "\(prefix)\(abs(self.netChange).formattedAsLocalizedCurrency())"
     }
 
-    func load() {
+    func load() async {
         guard let currentUser = userService.currentUser else {
             self.entries = []
             self.openingBalance = 0
             self.closingBalance = 0
+            self.infoMessage = nil
             return
         }
 
@@ -109,29 +105,8 @@ final class MonthlyAccountStatementViewModel: ObservableObject {
         let startOfMonth = calendar.date(from: DateComponents(year: self.year, month: self.month, day: 1)) ?? Date()
         let startOfNextMonth = calendar.date(byAdding: .month, value: 1, to: startOfMonth) ?? startOfMonth
 
-        let allEntries: [AccountStatementEntry]
-        var baseOpeningBalance: Double = 0
-        switch currentUser.role {
-        case .investor:
-            let ledger = self.investorCashBalanceService.getTransactions(for: currentUser.id)
-            let closingNow = self.investorCashBalanceService.getBalance(for: currentUser.id)
-            let totalDeltaAll = ledger.reduce(0) { $0 + $1.signedAmount }
-            baseOpeningBalance = closingNow - totalDeltaAll
-            allEntries = ledger
-        case .trader:
-            let snapshot = TraderAccountStatementBuilder.buildSnapshot(
-                for: currentUser,
-                invoiceService: self.invoiceService,
-                configurationService: self.configurationService
-            )
-            baseOpeningBalance = snapshot.openingBalance
-            allEntries = snapshot.entries
-        default:
-            self.openingBalance = 0
-            self.closingBalance = 0
-            self.entries = []
-            return
-        }
+        let snapshot = await MonthlyAccountStatementDataSource.loadSnapshot(for: currentUser, services: self.services)
+        let allEntries = snapshot.entries
 
         let preMonthDelta = allEntries
             .filter { $0.occurredAt < startOfMonth }
@@ -140,8 +115,11 @@ final class MonthlyAccountStatementViewModel: ObservableObject {
             .filter { $0.occurredAt >= startOfMonth && $0.occurredAt < startOfNextMonth }
             .reduce(0) { $0 + $1.signedAmount }
 
-        self.openingBalance = baseOpeningBalance + preMonthDelta
+        self.openingBalance = snapshot.openingBalance + preMonthDelta
         self.closingBalance = self.openingBalance + monthDelta
+        self.infoMessage = snapshot.timelineTruncated
+            ? "Ältere Buchungen sind ausgeblendet (Server-Limit). Bitte Admin kontaktieren, falls der Verlauf unvollständig wirkt."
+            : nil
 
         let monthlyEntries = allEntries.filter { entry in
             entry.occurredAt >= startOfMonth && entry.occurredAt < startOfNextMonth

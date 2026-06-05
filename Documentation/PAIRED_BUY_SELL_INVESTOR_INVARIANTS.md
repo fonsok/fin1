@@ -119,6 +119,8 @@ Siehe auch [BOOKING_AND_BELEG_SSOT.md](./BOOKING_AND_BELEG_SSOT.md) (`transferAm
 
 ## Abnahme-Checkliste (manuell / nach Release)
 
+**Protokoll (ausgefüllt):** [`RELEASE_ABNAHME_PAIRED_SELL_IOS_2026-06-05.md`](./RELEASE_ABNAHME_PAIRED_SELL_IOS_2026-06-05.md) — **Go** 2026-06-05 (Trade 001, Investor completed, Ops-Monitore exit 0).
+
 1. Paired Buy mit Pool → Admin: `getPairedSellInvestorChainStatus` → `overall: healthy`
 2. Trader Sell (voll) → Mirror-Trade: `sellOrders.length >= 1`
 3. Investor-Inbox: N Collection Bills (N = Participations)

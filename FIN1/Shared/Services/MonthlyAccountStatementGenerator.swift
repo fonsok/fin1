@@ -6,23 +6,8 @@ import Foundation
 struct MonthlyAccountStatementGenerator {
     /// Generates statements for all completed months (excluding the current, possibly incomplete month).
     static func ensureMonthlyStatements(for user: User, services: AppServices) async {
-        // Build full statement entries for the user
-        let entries: [AccountStatementEntry]
-        switch user.role {
-        case .investor:
-            let ledger = services.investorCashBalanceService.getTransactions(for: user.id)
-            entries = ledger
-        case .trader:
-            let snapshot = TraderAccountStatementBuilder.buildSnapshot(
-                for: user,
-                invoiceService: services.invoiceService,
-                configurationService: services.configurationService
-            )
-            entries = snapshot.entries
-        default:
-            return
-        }
-
+        let snapshot = await MonthlyAccountStatementDataSource.loadSnapshot(for: user, services: services)
+        let entries = snapshot.entries
         guard !entries.isEmpty else { return }
 
         let calendar = Calendar.current
@@ -53,15 +38,13 @@ struct MonthlyAccountStatementGenerator {
                   let year = Int(parts[0]),
                   let month = Int(parts[1]) else { continue }
 
-            // Skip if statement for this month already exists
-            let alreadyExists = existingDocs.contains {
-                $0.type == .monthlyAccountStatement &&
-                    $0.statementYear == year &&
-                    $0.statementMonth == month &&
-                    $0.statementRole == user.role
-            }
-
-            if alreadyExists {
+            if MonthlyAccountStatementDataSource.monthlyStatementExists(
+                year: year,
+                month: month,
+                role: user.role,
+                in: existingDocs,
+                user: user
+            ) {
                 continue
             }
 
@@ -128,22 +111,19 @@ struct MonthlyAccountStatementGenerator {
         let comps = calendar.dateComponents([.year, .month], from: now)
         guard let year = comps.year, let month = comps.month else { return }
 
-        // Build full statement entries for the user
-        let entries: [AccountStatementEntry]
-        switch user.role {
-        case .investor:
-            entries = services.investorCashBalanceService.getTransactions(for: user.id)
-        case .trader:
-            let snapshot = TraderAccountStatementBuilder.buildSnapshot(
-                for: user,
-                invoiceService: services.invoiceService,
-                configurationService: services.configurationService
-            )
-            entries = snapshot.entries
-        default:
+        let existingDocs = services.documentService.getDocuments(for: user.id)
+        if MonthlyAccountStatementDataSource.monthlyStatementExists(
+            year: year,
+            month: month,
+            role: user.role,
+            in: existingDocs,
+            user: user
+        ) {
             return
         }
 
+        let snapshot = await MonthlyAccountStatementDataSource.loadSnapshot(for: user, services: services)
+        let entries = snapshot.entries
         guard !entries.isEmpty else { return }
 
         // Filter to current month

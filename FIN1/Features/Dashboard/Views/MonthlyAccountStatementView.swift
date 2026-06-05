@@ -57,8 +57,8 @@ struct MonthlyAccountStatementView: View {
                 }
             }
         }
-        .onAppear {
-            self.viewModel.load()
+        .task {
+            await self.viewModel.load()
         }
         .alert("Beleg nicht gefunden", isPresented: self.$showMissingDocumentAlert) {
             Button("OK", role: .cancel) { }

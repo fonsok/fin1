@@ -31,9 +31,9 @@ Scope: How account statements, monthly documents, and per-investment statements 
 ## Monthly Account Statement Generation
 - Source: `FIN1/Shared/Services/MonthlyAccountStatementGenerator.swift` (**`@MainActor`**; uses `AppServices` on the main thread).
 - Trigger: `MonthlyStatementPrefetch.schedule(services:)` from `FIN1App` after parallel notification/document/invoice preload (see **Consumer API Reference** above).
-- Builds all completed-month statements (skips current month) for the current user role:
-  - Investor: uses `investorCashBalanceService.getTransactions`.
-  - Trader: uses `TraderAccountStatementBuilder.buildSnapshot` (invoices-derived ledger).
+- Builds all completed-month statements (skips current month) for the current user role via **`MonthlyAccountStatementDataSource`** (same SSOT as live Kontoauszug):
+  - Investor: `InvestorAccountStatementBuilder.buildSnapshotWithWallet` (backend `investment_return`, wallet, …).
+  - Trader: `TraderAccountStatementBuilder.buildSnapshotWithWallet` (backend `customer_display` timeline; no duplicate invoice rows).
 - Groups entries by year-month, skips months with no entries or existing documents.
 - Creates document records (placeholder file URLs/size), validates with `documentService`, uploads, and sends notifications.
 - Supports mock current-month statement generation for manual creation, using current transactions.
@@ -46,10 +46,7 @@ Scope: How account statements, monthly documents, and per-investment statements 
 - Filters entries by selected range; exposes totals (credits, debits, net change).
 
 - Source: `FIN1/Features/Dashboard/ViewModels/MonthlyAccountStatementViewModel.swift`
-- For a given year/month:
-  - Investor: ledger + current balance from `investorCashBalanceService`; derives base opening balance from closing − total delta.
-  - Trader: uses `TraderAccountStatementBuilder` snapshot for entries and opening balance.
-  - Computes opening/closing balances for the month by summing deltas before and within the month; slices entries to the month window.
+- For a given year/month: loads **`MonthlyAccountStatementDataSource`** (same backend-first path as `AccountStatementViewModel`), then slices entries to the month window and derives month opening/closing from snapshot opening + pre-month delta.
 - Provides header labels (title, period, opening balance date) and mock account identifiers.
 
 ### Document reference taps (monthly vs. rolling statement)

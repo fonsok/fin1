@@ -159,5 +159,6 @@ Kontoauszug-Beleg-Link und Documents-Tab müssen denselben Parse-`Document` öff
   - `Documentation/RELEASE_ABNAHME_2026-05-15_ADMIN_PORTAL.md` (§5 Quickcheck Chip/Dark-Mode)
   - `Documentation/RELEASE_ABNAHME_SUMMARY_REPORT_SEARCH.md` (Summary Report Listen-Suche)
   - `Documentation/RELEASE_ABNAHME_IOS_DOCUMENT_INBOX.md` (iOS Notifications → Documents)
+  - `Documentation/RELEASE_ABNAHME_PAIRED_SELL_IOS_2026-06-05.md` (iOS Paired Buy/Sell → Investor, **Go** 2026-06-05)
   - `Documentation/RELEASE_ABNAHME_2026-03-19_ADMIN_PORTAL.md`
 
