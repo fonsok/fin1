@@ -34,6 +34,10 @@ Configure these repository secrets for the monitor workflow:
 - `RETURN_MONITOR_PARSE_MASTER_KEY`
 - `RETURN_MONITOR_SLACK_WEBHOOK_URL` (optional, for alerts)
 
+## iOS prevention
+
+Client-side placeholder rows (`investment://`, `invoice://`, `collectionbill://`, `creditnote://`) for server-managed beleg types must **not** sync to Parse — see `DocumentInboxPolicy.shouldSyncDocumentToParse` and `DocumentService.uploadDocument`. Backend settlement owns canonical `metadata.returnPercentage`.
+
 ## Alert Message Template
 
 Use this message for Slack/ops channels when monitor fails:

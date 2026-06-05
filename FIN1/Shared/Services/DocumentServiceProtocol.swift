@@ -273,15 +273,19 @@ final class DocumentService: DocumentServiceProtocol, ServiceLifecycle, @uncheck
             self.documents.append(document)
         }
 
-        // Sync to backend (write-through pattern)
+        // Sync to backend (write-through pattern) — skip client placeholders for server-managed beleg types.
         if let apiService = documentAPIService {
-            Task.detached { [apiService, document] in
-                do {
-                    let savedDocument = try await apiService.saveDocument(document)
-                    print("✅ Document synced to backend: \(savedDocument.id)")
-                } catch {
-                    print("⚠️ Failed to sync document to backend: \(error.localizedDescription)")
+            if DocumentInboxPolicy.shouldSyncDocumentToParse(document) {
+                Task.detached { [apiService, document] in
+                    do {
+                        let savedDocument = try await apiService.saveDocument(document)
+                        print("✅ Document synced to backend: \(savedDocument.id)")
+                    } catch {
+                        print("⚠️ Failed to sync document to backend: \(error.localizedDescription)")
+                    }
                 }
+            } else {
+                print("ℹ️ DocumentService: local placeholder kept on-device only (no Parse sync): \(document.type.rawValue)")
             }
         } else {
             // Simulate API call if no backend available
@@ -530,6 +534,9 @@ final class DocumentService: DocumentServiceProtocol, ServiceLifecycle, @uncheck
         var failedCount = 0
 
         for document in recentDocuments {
+            guard DocumentInboxPolicy.shouldSyncDocumentToParse(document) else {
+                continue
+            }
             do {
                 _ = try await apiService.saveDocument(document)
                 syncedCount += 1

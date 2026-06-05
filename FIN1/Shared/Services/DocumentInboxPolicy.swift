@@ -63,6 +63,16 @@ enum DocumentInboxPolicy {
         return url.hasPrefix("creditnote://")
             || url.hasPrefix("collectionbill://")
             || url.hasPrefix("investment://")
+            || url.hasPrefix("invoice://")
+    }
+
+    /// Server-owned beleg types must not be written to Parse from the client (no `metadata.returnPercentage`, etc.).
+    /// Local placeholder rows stay in the on-device inbox until `getUserDocumentInbox` returns the backend bill.
+    static func shouldSyncDocumentToParse(_ document: Document) -> Bool {
+        if self.isServerManagedInboxType(document.type), self.isLocalPlaceholderDocument(document) {
+            return false
+        }
+        return true
     }
 
     /// Title for Notifications → Documents (prefer accounting number CB-/CN- over storage filename).

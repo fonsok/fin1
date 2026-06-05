@@ -44,6 +44,46 @@ final class DocumentInboxPolicyTests: XCTestCase {
         XCTAssertTrue(DocumentInboxPolicy.isLocalPlaceholderDocument(doc))
     }
 
+    func testShouldNotSyncServerManagedPlaceholderToParse() {
+        let collectionBill = Document(
+            userId: "u1",
+            name: "InvestorCollectionBill_Batch.pdf",
+            type: .investorCollectionBill,
+            status: .verified,
+            fileURL: "investment://ABCDEFG-INVST-20260605-00001.pdf",
+            size: 1,
+            uploadedAt: Date(),
+            documentNumber: "ABCDEFG-INVST-20260605-00001"
+        )
+        XCTAssertFalse(DocumentInboxPolicy.shouldSyncDocumentToParse(collectionBill))
+
+        let invoice = Document(
+            userId: "u1",
+            name: "Invoice.pdf",
+            type: .invoice,
+            status: .verified,
+            fileURL: "invoice://ABCDEFG-INV-20260605-00001.pdf",
+            size: 1,
+            uploadedAt: Date(),
+            documentNumber: "ABCDEFG-INV-20260605-00001"
+        )
+        XCTAssertFalse(DocumentInboxPolicy.shouldSyncDocumentToParse(invoice))
+    }
+
+    func testShouldSyncNonPlaceholderServerManagedDocument() {
+        let doc = Document(
+            userId: "u1",
+            name: "CB-2026-0001",
+            type: .investorCollectionBill,
+            status: .verified,
+            fileURL: "https://files.example/cb.pdf",
+            size: 1,
+            uploadedAt: Date(),
+            documentNumber: "CB-2026-0001"
+        )
+        XCTAssertTrue(DocumentInboxPolicy.shouldSyncDocumentToParse(doc))
+    }
+
     func testBelongsToUserMatchesLegacyStableUserId() {
         let email = "investor1@test.com"
         let keys: Set<String> = ["flCPAlXSM6", UserFactory.stableUserId(for: email)]
