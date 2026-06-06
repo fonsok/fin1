@@ -83,7 +83,7 @@ struct Investment: Identifiable, Codable, Sendable {
         self.reservationStatus == .reserved
     }
 
-    /// Trader-Dashboard „Pool active“: Reservierungen oder laufende Pool-Teilnahme.
+    /// Pool-Kapital für Kauf-Berechnung / Guards (reserviert oder aktiviert). Depot zeigt Pool-Status pro Position nach Mirror-Aktivierung.
     var hasPoolCapitalCommitted: Bool {
         self.isReservedForPoolActivation || self.isInvestmentActive
     }

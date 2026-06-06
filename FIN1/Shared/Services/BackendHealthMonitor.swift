@@ -114,27 +114,7 @@ final class BackendHealthMonitor: ObservableObject {
 
                 let duration = Date().timeIntervalSince(startTime)
 
-                await MainActor.run {
-                    self.isHealthy = true
-                    self.lastHealthCheck = Date()
-                    self.lastError = nil
-                    self.consecutiveFailures = 0
-
-                    self.responseTimes.append(duration)
-                    if self.responseTimes.count > self.maxResponseTimeHistory {
-                        self.responseTimes.removeFirst()
-                    }
-                    self.averageResponseTime = self.responseTimes.reduce(0, +) / Double(self.responseTimes.count)
-
-                    #if DEBUG
-                    print("✅ BackendHealthMonitor: Health check passed (\(String(format: "%.3f", duration))s)")
-                    #endif
-                }
-
-                // Reset circuit breaker since backend is healthy
-                if let apiClient = parseAPIClient {
-                    await apiClient.resetCircuitBreaker()
-                }
+                await self.markHealthy(duration: duration)
                 return
             }
 
@@ -145,26 +125,7 @@ final class BackendHealthMonitor: ObservableObject {
                let status = result["status"] as? String,
                status == "healthy" {
                 let duration = Date().timeIntervalSince(startTime)
-                await MainActor.run {
-                    self.isHealthy = true
-                    self.lastHealthCheck = Date()
-                    self.lastError = nil
-                    self.consecutiveFailures = 0
-
-                    self.responseTimes.append(duration)
-                    if self.responseTimes.count > self.maxResponseTimeHistory {
-                        self.responseTimes.removeFirst()
-                    }
-                    self.averageResponseTime = self.responseTimes.reduce(0, +) / Double(self.responseTimes.count)
-
-                    #if DEBUG
-                    print("✅ BackendHealthMonitor: Health check passed (\(String(format: "%.3f", duration))s)")
-                    #endif
-                }
-
-                if let apiClient = parseAPIClient {
-                    await apiClient.resetCircuitBreaker()
-                }
+                await self.markHealthy(duration: duration)
                 return
             }
 
@@ -208,22 +169,7 @@ final class BackendHealthMonitor: ObservableObject {
             let _: HealthResponse = try await apiClient.callFunction("health", parameters: nil)
             let duration = Date().timeIntervalSince(startTime)
 
-            await MainActor.run {
-                self.isHealthy = true
-                self.lastHealthCheck = Date()
-                self.lastError = nil
-                self.consecutiveFailures = 0
-
-                self.responseTimes.append(duration)
-                if self.responseTimes.count > self.maxResponseTimeHistory {
-                    self.responseTimes.removeFirst()
-                }
-                self.averageResponseTime = self.responseTimes.reduce(0, +) / Double(self.responseTimes.count)
-
-                #if DEBUG
-                print("✅ BackendHealthMonitor: Health check passed (\(String(format: "%.3f", duration))s)")
-                #endif
-            }
+            await self.markHealthy(duration: duration)
         } catch {
             let duration = Date().timeIntervalSince(startTime)
 
@@ -242,6 +188,37 @@ final class BackendHealthMonitor: ObservableObject {
                 #if DEBUG
                 print("❌ BackendHealthMonitor: Health check failed - \(error.localizedDescription)")
                 #endif
+            }
+        }
+    }
+
+    private func markHealthy(duration: TimeInterval) async {
+        let wasUnhealthy = await MainActor.run { () -> Bool in
+            let previous = !self.isHealthy || self.consecutiveFailures > 0
+            self.isHealthy = true
+            self.lastHealthCheck = Date()
+            self.lastError = nil
+            self.consecutiveFailures = 0
+
+            self.responseTimes.append(duration)
+            if self.responseTimes.count > self.maxResponseTimeHistory {
+                self.responseTimes.removeFirst()
+            }
+            self.averageResponseTime = self.responseTimes.reduce(0, +) / Double(self.responseTimes.count)
+
+            #if DEBUG
+            print("✅ BackendHealthMonitor: Health check passed (\(String(format: "%.3f", duration))s)")
+            #endif
+            return previous
+        }
+
+        if let apiClient = parseAPIClient {
+            await apiClient.resetCircuitBreaker()
+        }
+
+        if wasUnhealthy {
+            await MainActor.run {
+                NotificationCenter.default.post(name: .backendBecameHealthy, object: nil)
             }
         }
     }
@@ -296,18 +273,7 @@ extension BackendHealthMonitor {
 
             let duration = Date().timeIntervalSince(startTime)
 
-            await MainActor.run {
-                self.isHealthy = true
-                self.lastHealthCheck = Date()
-                self.lastError = nil
-                self.consecutiveFailures = 0
-
-                self.responseTimes.append(duration)
-                if self.responseTimes.count > self.maxResponseTimeHistory {
-                    self.responseTimes.removeFirst()
-                }
-                self.averageResponseTime = self.responseTimes.reduce(0, +) / Double(self.responseTimes.count)
-            }
+            await self.markHealthy(duration: duration)
         } catch {
             // If fallback also fails, try the main health check
             await self.checkHealth()

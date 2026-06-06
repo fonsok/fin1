@@ -7,7 +7,8 @@ struct HoldingCardTiles {
     static func generateTiles(
         for holding: DepotHolding,
         showAdditionalDetails: Bool = false,
-        warrantDetailsViewModel: WarrantDetailsViewModel
+        warrantDetailsViewModel: WarrantDetailsViewModel,
+        poolStatusDisplay: String? = nil
     ) -> [TileData] {
         var tiles: [TileData] = [
             // Always visible base information
@@ -57,6 +58,19 @@ struct HoldingCardTiles {
             )
         )
         tiles.append(TileData(title: "Profit", value: self.calculateGewinnVerlust(holding)))
+
+        if let poolStatusDisplay {
+            let isActive = poolStatusDisplay == "active"
+            tiles.append(
+                TileData(
+                    title: "Investment-Pool",
+                    value: poolStatusDisplay,
+                    backgroundColor: isActive
+                        ? AppTheme.accentGreen.opacity(0.12)
+                        : AppTheme.sectionBackground
+                )
+            )
+        }
 
         // Additional details when expanded
         if showAdditionalDetails {

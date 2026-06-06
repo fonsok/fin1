@@ -46,7 +46,8 @@ struct HoldingCard: View {
                     tiles: HoldingCardTiles.generateTiles(
                         for: self.holding,
                         showAdditionalDetails: self.showAdditionalDetails,
-                        warrantDetailsViewModel: self.warrantDetailsViewModel
+                        warrantDetailsViewModel: self.warrantDetailsViewModel,
+                        poolStatusDisplay: self.poolStatusDisplay
                     ),
                     columns: 2
                 )
@@ -62,6 +63,14 @@ struct HoldingCard: View {
                 userService: self.services.userService
             )
         }
+    }
+
+    private var poolStatusDisplay: String {
+        DepotPositionPoolStatusResolver.displayValue(
+            for: self.holding,
+            completedTrades: self.services.traderService.completedTrades,
+            participations: self.services.poolTradeParticipationService.participations
+        )
     }
 
     // MARK: - Partial Sales Progress View

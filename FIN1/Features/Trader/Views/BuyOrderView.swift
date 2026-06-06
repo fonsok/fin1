@@ -109,16 +109,9 @@ struct BuyOrderView: View {
                 }
             }
         }
-        .onAppear {
-            // Refresh investments when view appears
-            print("🔍 BuyOrderView: onAppear - refreshing investments")
-            self.viewModel.refreshInvestments()
-
-            // Also refresh after a short delay to ensure data is loaded
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                print("🔍 BuyOrderView: Delayed refresh")
-                self.viewModel.refreshInvestments()
-            }
+        .task {
+            print("🔍 BuyOrderView: loading trader pool investments from backend")
+            await self.viewModel.refreshInvestmentsFromBackend()
         }
         .onChange(of: self.viewModel.shouldShowDepotView) { _, newValue in
             if newValue {

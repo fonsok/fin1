@@ -125,6 +125,13 @@ final class BuyOrderViewModel: ObservableObject, LimitOrderMonitor {
         self.validator = validator
         self.transactionLimitService = transactionLimitService
         let parseAPIClient = (configurationService as? ConfigurationService)?.getParseAPIClient()
+        let resolvedDataProvider = investmentDataProvider ?? BuyOrderInvestmentDataProvider(
+            investmentService: investmentService,
+            traderDataService: traderDataService
+        )
+        self.investmentDataProvider = resolvedDataProvider
+        let resolvedInvestmentAPIService = parseAPIClient.map { InvestmentAPIService(apiClient: $0) }
+
         // Create placement service with audit logging and transaction limits if not provided
         if let providedService = placementService {
             self.placementService = providedService
@@ -133,7 +140,10 @@ final class BuyOrderViewModel: ObservableObject, LimitOrderMonitor {
                 auditLoggingService: auditService,
                 userService: userService,
                 transactionLimitService: transactionLimitService,
-                parseAPIClient: parseAPIClient
+                parseAPIClient: parseAPIClient,
+                investmentAPIService: resolvedInvestmentAPIService,
+                investmentService: investmentService,
+                investmentDataProvider: resolvedDataProvider
             )
         } else {
             // Fallback: Create without audit logging (for backward compatibility)
@@ -142,14 +152,12 @@ final class BuyOrderViewModel: ObservableObject, LimitOrderMonitor {
                 auditLoggingService: AuditLoggingService(),
                 userService: userService,
                 transactionLimitService: transactionLimitService,
-                parseAPIClient: parseAPIClient
+                parseAPIClient: parseAPIClient,
+                investmentAPIService: resolvedInvestmentAPIService,
+                investmentService: investmentService,
+                investmentDataProvider: resolvedDataProvider
             )
         }
-        // Create provider with default implementation if not provided
-        self.investmentDataProvider = investmentDataProvider ?? BuyOrderInvestmentDataProvider(
-            investmentService: investmentService,
-            traderDataService: traderDataService
-        )
         self.quantityInputManager = QuantityInputManager(initialQuantity: 1_000)
         self.priceValidityTimerManager = PriceValidityTimerManager()
 
@@ -208,10 +216,12 @@ final class BuyOrderViewModel: ObservableObject, LimitOrderMonitor {
         }
         self.orderStatus = .transmitting
 
-        // Calculate investment order if not already calculated
-        if self.investmentOrderCalculation == nil {
-            await calculateInvestmentOrder()
+        if let currentUser = userService.currentUser, currentUser.role == .trader {
+            await self.investmentService.fetchFromBackendForTrader(user: currentUser)
+            self.updateReservedInvestments()
         }
+
+        await self.calculateInvestmentOrder()
 
         do {
             let result = try await placementService.placeOrder(

@@ -11,6 +11,10 @@ let mockRunningTransactions: [Order] = []
 struct DepotHolding: Identifiable {
     let id = UUID()
     let orderId: String? // Reference to original buy order for invoice generation
+    /// Parse Trade objectId for the trader leg shown in depot (SSOT for pool status per position).
+    let tradeId: String
+    /// Set when buy used `executePairedBuy`; links TRADER + MIRROR_POOL legs.
+    let pairExecutionId: String?
     let position: Int
     let valuationDate: String
     let wkn: String
@@ -32,6 +36,8 @@ struct DepotHolding: Identifiable {
 
     init(
         orderId: String?,
+        tradeId: String = "",
+        pairExecutionId: String? = nil,
         position: Int,
         valuationDate: String,
         wkn: String,
@@ -50,6 +56,8 @@ struct DepotHolding: Identifiable {
         subscriptionRatio: Double? = nil
     ) {
         self.orderId = orderId
+        self.tradeId = tradeId
+        self.pairExecutionId = pairExecutionId
         self.position = position
         self.valuationDate = valuationDate
         self.wkn = wkn
@@ -88,7 +96,12 @@ struct DepotHolding: Identifiable {
 
     /// Creates a DepotHolding from a completed OrderBuy
     /// This represents the final state when an order is completed and moved to holdings
-    static func from(completedOrder: OrderBuy, position: Int) -> DepotHolding {
+    static func from(
+        completedOrder: OrderBuy,
+        position: Int,
+        tradeId: String? = nil,
+        pairExecutionId: String? = nil
+    ) -> DepotHolding {
         let designation: String
         if let optionDirection = completedOrder.optionDirection, let underlyingAsset = completedOrder.underlyingAsset {
             designation = "\(optionDirection) - \(underlyingAsset)"
@@ -99,6 +112,8 @@ struct DepotHolding: Identifiable {
         let quantity = Int(completedOrder.quantity)
         return DepotHolding(
             orderId: completedOrder.id,
+            tradeId: tradeId ?? completedOrder.id,
+            pairExecutionId: pairExecutionId,
             position: position,
             valuationDate: Date().formatted(date: .numeric, time: .omitted),
             wkn: completedOrder.wkn ?? completedOrder.symbol,
@@ -125,6 +140,8 @@ struct DepotHolding: Identifiable {
 
         return DepotHolding(
             orderId: self.orderId,
+            tradeId: self.tradeId,
+            pairExecutionId: self.pairExecutionId,
             position: self.position,
             valuationDate: self.valuationDate,
             wkn: self.wkn,

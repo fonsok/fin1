@@ -246,6 +246,10 @@ final class MockInvestmentService: InvestmentServiceProtocol, @unchecked Sendabl
         await self.fetchFromBackend(for: user.id)
     }
 
+    func fetchFromBackendForTrader(user: User) async {
+        // Mock: no-op
+    }
+
     func start() {}
     func stop() {}
 

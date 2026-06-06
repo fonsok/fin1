@@ -24,6 +24,9 @@ protocol InvestmentAPIServiceProtocol: Sendable {
     /// Fetches all investments for a single investor id (legacy).
     func fetchInvestments(for investorId: String) async throws -> [Investment]
 
+    /// Fetches investments reserved for a trader (paired-buy / pool mirror SSOT).
+    func fetchInvestments(forTraderIds traderIds: [String]) async throws -> [Investment]
+
     /// Creates a pool trade participation record
     func createPoolParticipation(_ participation: PoolTradeParticipation) async throws -> PoolTradeParticipation
 
@@ -468,6 +471,28 @@ final class InvestmentAPIService: InvestmentAPIServiceProtocol, @unchecked Senda
 
         print("📡 InvestmentAPIService: Fetched \(parseInvestments.count) investments")
 
+        return parseInvestments.map { $0.toInvestment() }
+    }
+
+    func fetchInvestments(forTraderIds traderIds: [String]) async throws -> [Investment] {
+        let keys = Array(Set(traderIds.filter { !$0.isEmpty }))
+        guard !keys.isEmpty else { return [] }
+
+        print("📡 InvestmentAPIService: Fetching investments for trader keys \(keys)")
+
+        let query: [String: Any] = keys.count == 1
+            ? ["traderId": keys[0]]
+            : ["traderId": ["$in": keys]]
+
+        let parseInvestments: [ParseInvestment] = try await apiClient.fetchObjects(
+            className: self.investmentClassName,
+            query: query,
+            include: nil,
+            orderBy: "-createdAt",
+            limit: 1_000
+        )
+
+        print("📡 InvestmentAPIService: Fetched \(parseInvestments.count) trader investments")
         return parseInvestments.map { $0.toInvestment() }
     }
 

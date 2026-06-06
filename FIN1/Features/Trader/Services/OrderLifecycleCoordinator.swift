@@ -230,6 +230,7 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
             do {
                 try await self.orderManagementService.finalizePairedBuyExecution(for: orderId) // → commitPairedBuyExecution on server
                 try? await self.tradeLifecycleService.refreshCompletedTrades()
+                await self.refreshInvestmentsAfterPoolMirrorActivation()
             } catch {
                 print("❌ OrderLifecycleCoordinator: Paired buy finalize failed — \(error.localizedDescription)")
                 self.orderManagementService.reportOrderStatusFailure(
@@ -294,6 +295,17 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
                 )
             }
             await self.refreshInvestmentsAfterPoolMirrorActivation()
+            await self.orderManagementService.removeActiveOrder(orderId)
+            return
+        }
+
+        if order.isMirrorPoolOrder != true,
+           await self.legacyBuyBlockedByPoolMirrorRequirement(for: order) {
+            let message = String(
+                localized: "Kauf ohne Paired-Buy blockiert: Pool-Kapital erfordert executePairedBuy. Bitte Order stornieren und nach Pool-Refresh erneut kaufen."
+            )
+            print("❌ OrderLifecycleCoordinator: \(message) (order \(orderId))")
+            self.orderManagementService.reportOrderStatusFailure(message)
             await self.orderManagementService.removeActiveOrder(orderId)
             return
         }
@@ -537,8 +549,48 @@ final class OrderLifecycleCoordinator: OrderLifecycleCoordinatorProtocol {
 
     private func refreshInvestmentsAfterPoolMirrorActivation() async {
         guard let investmentService else { return }
+        if let currentUser = userService.currentUser, currentUser.role == .trader {
+            await investmentService.fetchFromBackendForTrader(user: currentUser)
+        }
         await investmentService.checkAndUpdateInvestmentCompletion()
         NotificationCenter.default.post(name: .investmentStatusUpdated, object: nil)
+    }
+
+    private func legacyBuyBlockedByPoolMirrorRequirement(for order: Order) async -> Bool {
+        guard let investmentService else { return false }
+
+        if let currentUser = userService.currentUser, currentUser.role == .trader {
+            await investmentService.fetchFromBackendForTrader(user: currentUser)
+        }
+
+        let dataProvider = BuyOrderInvestmentDataProvider(
+            investmentService: investmentService,
+            traderDataService: nil
+        )
+        let localPoolCapital = TraderPairedBuyPlacementGuard.localReservedPoolCapital(
+            investmentService: investmentService,
+            investmentDataProvider: dataProvider,
+            currentUser: self.userService.currentUser
+        )
+
+        let parseAPIClient = (configurationService as? ConfigurationService)?.getParseAPIClient()
+        let investmentAPIService = parseAPIClient.map { InvestmentAPIService(apiClient: $0) }
+        let currentUser = self.userService.currentUser
+
+        if let blockReason = await TraderPairedBuyPlacementGuard.blockReason(
+            mirrorPoolQuantity: 0,
+            localReservedPoolCapital: localPoolCapital,
+            parseAPIClient: parseAPIClient,
+            investmentAPIService: investmentAPIService,
+            traderId: order.traderId,
+            traderUsername: currentUser?.username,
+            traderName: currentUser.map { "\($0.firstName) \($0.lastName)".trimmingCharacters(in: .whitespaces) }
+        ) {
+            print("⚠️ OrderLifecycleCoordinator: legacy buy blocked — \(blockReason)")
+            return true
+        }
+
+        return false
     }
 
     /// Merges backend buy-order Belege (order invoice, Kaufabrechnung, Gebühren) into the inbox — no client duplicate.

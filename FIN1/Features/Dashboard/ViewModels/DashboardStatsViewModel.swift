@@ -14,7 +14,6 @@ final class DashboardStatsViewModel: ObservableObject {
     @Published var activeTradesCount: String = "-"
     @Published var accountBalance: Double = 0.0
     @Published var depotValue: Double = 0.0
-    @Published var traderPoolsStatus: String = "not active"
 
     // MARK: - Dependencies
 
@@ -22,7 +21,6 @@ final class DashboardStatsViewModel: ObservableObject {
     private let investmentService: any InvestmentServiceProtocol
     private let investorCashBalanceService: any InvestorCashBalanceServiceProtocol
     private let traderService: any TraderServiceProtocol
-    private let traderDataService: any TraderDataServiceProtocol
     private let invoiceService: any InvoiceServiceProtocol
     private let configurationService: any ConfigurationServiceProtocol
     private let holdingsConversionService: any HoldingsConversionServiceProtocol
@@ -52,7 +50,6 @@ final class DashboardStatsViewModel: ObservableObject {
         investmentService: any InvestmentServiceProtocol,
         investorCashBalanceService: any InvestorCashBalanceServiceProtocol,
         traderService: any TraderServiceProtocol,
-        traderDataService: any TraderDataServiceProtocol,
         invoiceService: any InvoiceServiceProtocol,
         configurationService: any ConfigurationServiceProtocol,
         holdingsConversionService: any HoldingsConversionServiceProtocol,
@@ -63,7 +60,6 @@ final class DashboardStatsViewModel: ObservableObject {
         self.investmentService = investmentService
         self.investorCashBalanceService = investorCashBalanceService
         self.traderService = traderService
-        self.traderDataService = traderDataService
         self.invoiceService = invoiceService
         self.configurationService = configurationService
         self.holdingsConversionService = holdingsConversionService
@@ -80,7 +76,6 @@ final class DashboardStatsViewModel: ObservableObject {
             investmentService: appServices.investmentService,
             investorCashBalanceService: appServices.investorCashBalanceService,
             traderService: appServices.traderService,
-            traderDataService: appServices.traderDataService,
             invoiceService: appServices.invoiceService,
             configurationService: appServices.configurationService,
             holdingsConversionService: appServices.holdingsConversionService,
@@ -124,7 +119,8 @@ final class DashboardStatsViewModel: ObservableObject {
         NotificationCenter.default.publisher(for: .investmentStatusUpdated)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
-                self?.updateActiveInvestmentsCount()
+                guard let self, self.isInvestor else { return }
+                self.updateActiveInvestmentsCount()
             }
             .store(in: &self.cancellables)
 
@@ -186,7 +182,6 @@ final class DashboardStatsViewModel: ObservableObject {
         } else if self.isTrader {
             self.updateTraderAccountBalance()
             self.updateDepotValue()
-            self.updateTraderPoolsStatus()
         }
     }
 
@@ -276,61 +271,6 @@ final class DashboardStatsViewModel: ObservableObject {
         }.reduce(0, +)
 
         self.depotValue = totalValue
-    }
-
-    private func updateTraderPoolsStatus() {
-        guard let currentUser = userService.currentUser else {
-            self.traderPoolsStatus = "not active"
-            return
-        }
-
-        let traderId = self.findTraderIdForMatching() ?? currentUser.id
-        let traderIdCandidates = self.traderIdCandidatesForPoolMatching(primaryTraderId: traderId)
-
-        let traderInvestments = self.investmentService.investments.filter { investment in
-            self.investmentMatchesTraderCandidates(investment, candidates: traderIdCandidates) && investment.isOpenPosition
-        }
-
-        let hasRelevantInvestments = traderInvestments.contains { $0.hasPoolCapitalCommitted }
-
-        self.traderPoolsStatus = hasRelevantInvestments ? "active" : "not active"
-    }
-
-    // MARK: - Helper Methods
-
-    private func findTraderIdForMatching() -> String? {
-        TraderMatchingHelper.findTraderIdForMatching(
-            currentUser: self.userService.currentUser,
-            traderDataService: self.traderDataService
-        )
-    }
-
-    private func traderIdCandidatesForPoolMatching(primaryTraderId: String) -> Set<String> {
-        var candidates = [primaryTraderId]
-        if let user = userService.currentUser {
-            candidates.append(user.id)
-            let email = user.email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-            if !email.isEmpty {
-                candidates.append(email)
-                candidates.append("user:\(email)")
-                if let username = email.split(separator: "@").first.map(String.init), !username.isEmpty {
-                    candidates.append(username)
-                }
-            }
-        }
-        return Set(
-            candidates
-                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() }
-                .filter { !$0.isEmpty },
-        )
-    }
-
-    private func investmentMatchesTraderCandidates(_ investment: Investment, candidates: Set<String>) -> Bool {
-        let traderKey = investment.traderId.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        if candidates.contains(traderKey) { return true }
-        let username = investment.traderUsername?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() ?? ""
-        if !username.isEmpty, candidates.contains(username) { return true }
-        return false
     }
 
     /// Generate invoices for any completed trades that don't have invoices yet

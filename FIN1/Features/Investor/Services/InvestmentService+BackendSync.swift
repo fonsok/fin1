@@ -103,6 +103,91 @@ extension InvestmentService {
         await self.fetchFromBackend(canonicalInvestorId: investorId, investorIdKeys: [investorId])
     }
 
+    func fetchFromBackendForTrader(user: User) async {
+        guard user.role == .trader else { return }
+        let keys = self.traderIdKeysForBackendSync(user: user)
+        await self.fetchFromBackendForTraderIds(keys)
+    }
+
+    private func traderIdKeysForBackendSync(user: User) -> [String] {
+        var keys = Set<String>()
+        let trimmedId = user.id.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedId.isEmpty { keys.insert(trimmedId) }
+        keys.insert(user.canonicalUserId)
+
+        if let traderDataService,
+           let matched = TraderMatchingHelper.findTraderIdForMatching(
+               currentUser: user,
+               traderDataService: traderDataService
+           ),
+           !matched.isEmpty {
+            keys.insert(matched)
+        }
+
+        let email = user.email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        if !email.isEmpty { keys.insert(email) }
+
+        return Array(keys)
+    }
+
+    private func fetchFromBackendForTraderIds(_ traderIdKeys: [String]) async {
+        guard let apiService = investmentAPIService else { return }
+
+        let keys = Array(Set(traderIdKeys.filter { !$0.isEmpty }))
+        guard !keys.isEmpty else { return }
+
+        do {
+            let remoteInvestments = try await apiService.fetchInvestments(forTraderIds: keys)
+            await MainActor.run {
+                let keySet = Set(keys.map { $0.lowercased() })
+                let remoteIds = Set(remoteInvestments.map(\.id))
+
+                func matchesTraderKeys(_ investment: Investment) -> Bool {
+                    let traderKey = investment.traderId.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+                    let usernameKey = investment.storedTraderUsername.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+                    return keySet.contains(traderKey)
+                        || (!usernameKey.isEmpty && keySet.contains(usernameKey))
+                }
+
+                repository.investments.removeAll { inv in
+                    guard matchesTraderKeys(inv) else { return false }
+                    if pendingSyncIds.contains(inv.id) { return false }
+                    return !remoteIds.contains(inv.id)
+                }
+
+                let localById = Dictionary(uniqueKeysWithValues: repository.investments.map { ($0.id, $0) })
+                var addedCount = 0
+                var updatedCount = 0
+
+                for remote in remoteInvestments {
+                    var stored = self.enrichTraderUsernameFromCatalogIfNeeded(remote)
+                    if let local = localById[stored.id] {
+                        let needsUpdate = local.status != stored.status
+                            || local.reservationStatus != stored.reservationStatus
+                            || abs(local.currentValue - stored.currentValue) > 0.01
+                            || abs(local.performance - stored.performance) > 0.01
+                            || local.investmentNumber != stored.investmentNumber
+                        if needsUpdate {
+                            repository.updateInvestment(stored)
+                            updatedCount += 1
+                        }
+                    } else {
+                        repository.addInvestment(stored)
+                        addedCount += 1
+                    }
+                }
+
+                print(
+                    "📡 InvestmentService: Trader backend sync — \(addedCount) added, \(updatedCount) updated "
+                        + "(of \(remoteInvestments.count) remote)"
+                )
+                NotificationCenter.default.post(name: .investmentStatusUpdated, object: nil)
+            }
+        } catch {
+            print("⚠️ InvestmentService: Trader backend fetch failed: \(error)")
+        }
+    }
+
     private func fetchFromBackend(canonicalInvestorId: String, investorIdKeys: [String]) async {
         guard let apiService = investmentAPIService else { return }
 

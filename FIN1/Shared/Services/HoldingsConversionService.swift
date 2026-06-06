@@ -44,8 +44,13 @@ final class HoldingsConversionService: HoldingsConversionServiceProtocol, @unche
     // MARK: - Public Methods
 
     func createHolding(from trade: Trade, position: Int, ongoingOrders: [Order] = []) -> DepotHolding {
-        // Start with base holding from buy order
-        var holding = DepotHolding.from(completedOrder: trade.buyOrder, position: position)
+        // Start with base holding from buy order (include trade ids for per-position pool status)
+        var holding = DepotHolding.from(
+            completedOrder: trade.buyOrder,
+            position: position,
+            tradeId: trade.id,
+            pairExecutionId: trade.pairExecutionId
+        )
 
         // Apply partial sales from sellOrders array (primary source of truth)
         if !trade.sellOrders.isEmpty {

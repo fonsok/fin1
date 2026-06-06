@@ -135,9 +135,6 @@ struct DashboardStatsSection: View {
 
             // Row 2: Depot Value
             self.traderDepotValueRow
-
-            // Row 3: Pool
-            self.traderPoolRow
         }
     }
 
@@ -182,17 +179,6 @@ struct DashboardStatsSection: View {
         }
     }
 
-    private var traderPoolRow: some View {
-        HStack {
-            Text("Pool")
-                .font(ResponsiveDesign.headlineFont())
-                .fontWeight(.light)
-                .foregroundColor(AppTheme.tertiaryText)
-            Spacer()
-            self.poolStatusText
-        }
-    }
-
     private var accountActionsRow: some View {
         HStack(spacing: ResponsiveDesign.spacing(8)) {
             Button {
@@ -226,23 +212,6 @@ struct DashboardStatsSection: View {
                 .foregroundColor(AppTheme.fontColor)
                 .cornerRadius(ResponsiveDesign.spacing(10))
             }
-        }
-    }
-
-    @ViewBuilder
-    private var poolStatusText: some View {
-        let isActive = self.viewModel.traderPoolsStatus == "active"
-        if isActive {
-            Text("active")
-                .font(ResponsiveDesign.headlineFont())
-                .fontWeight(.medium)
-                .italic()
-                .foregroundColor(AppTheme.accentGreen)
-        } else {
-            Text("-")
-                .font(ResponsiveDesign.headlineFont())
-                .fontWeight(.medium)
-                .foregroundColor(AppTheme.tertiaryText)
         }
     }
 

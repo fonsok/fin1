@@ -71,4 +71,7 @@ protocol InvestmentServiceProtocol: ObservableObject, Sendable {
     /// Returns cached local data immediately, fetches in background
     func fetchFromBackend(for investorId: String) async
     func fetchFromBackend(for user: User) async
+
+    /// Fetches investments for the signed-in trader (pool mirror / paired-buy SSOT).
+    func fetchFromBackendForTrader(user: User) async
 }

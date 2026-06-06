@@ -28,18 +28,27 @@ final class BuyOrderPlacementService: BuyOrderPlacementServiceProtocol, @uncheck
     private let userService: any UserServiceProtocol
     private let transactionLimitService: (any TransactionLimitServiceProtocol)?
     private let parseAPIClient: (any ParseAPIClientProtocol)?
-    
+    private let investmentAPIService: (any InvestmentAPIServiceProtocol)?
+    private let investmentService: (any InvestmentServiceProtocol)?
+    private let investmentDataProvider: (any BuyOrderInvestmentDataProviderProtocol)?
+
     // MARK: - Initialization
     init(
         auditLoggingService: any AuditLoggingServiceProtocol,
         userService: any UserServiceProtocol,
         transactionLimitService: (any TransactionLimitServiceProtocol)? = nil,
-        parseAPIClient: (any ParseAPIClientProtocol)? = nil
+        parseAPIClient: (any ParseAPIClientProtocol)? = nil,
+        investmentAPIService: (any InvestmentAPIServiceProtocol)? = nil,
+        investmentService: (any InvestmentServiceProtocol)? = nil,
+        investmentDataProvider: (any BuyOrderInvestmentDataProviderProtocol)? = nil
     ) {
         self.auditLoggingService = auditLoggingService
         self.userService = userService
         self.transactionLimitService = transactionLimitService
         self.parseAPIClient = parseAPIClient
+        self.investmentAPIService = investmentAPIService
+        self.investmentService = investmentService
+        self.investmentDataProvider = investmentDataProvider
     }
 
     func placeOrder(
@@ -106,6 +115,16 @@ final class BuyOrderPlacementService: BuyOrderPlacementServiceProtocol, @uncheck
         }
 
         do {
+            if self.parseAPIClient != nil {
+                let backendHealthy = await MainActor.run { BackendHealthMonitor.shared.isHealthy }
+                guard backendHealthy else {
+                    return BuyOrderPlacementResult(
+                        success: false,
+                        error: TraderPairedBuyPlacementGuard.appError(for: .backendUnreachable)
+                    )
+                }
+            }
+
             // ✅ Pre-Trade Compliance: Check transaction limits (applies before any placement path)
             if let limitService = transactionLimitService,
                let userId = userService.currentUser?.id {
@@ -120,6 +139,15 @@ final class BuyOrderPlacementService: BuyOrderPlacementServiceProtocol, @uncheck
 
             // No pool mirror leg: trader-only order (must run on MainActor for TraderService)
             if mirrorPoolQuantity <= 0 {
+                if let blockReason = await self.traderOnlyBlockReason(
+                    mirrorPoolQuantity: mirrorPoolQuantity
+                ) {
+                    return BuyOrderPlacementResult(
+                        success: false,
+                        error: TraderPairedBuyPlacementGuard.appError(for: blockReason)
+                    )
+                }
+
                 let orderRequest = self.makeBuyOrderRequest(
                     searchResult: searchResult,
                     quantity: traderQuantity,
@@ -250,6 +278,31 @@ final class BuyOrderPlacementService: BuyOrderPlacementServiceProtocol, @uncheck
             subscriptionRatio: searchResult.subscriptionRatio,
             denomination: searchResult.denomination,
             isMirrorPoolOrder: isMirrorPoolOrder
+        )
+    }
+
+    private func traderOnlyBlockReason(mirrorPoolQuantity: Int) async -> TraderPairedBuyPlacementGuard.BlockReason? {
+        let currentUser = self.userService.currentUser
+        let localPoolCapital: Double
+        if let investmentService, let investmentDataProvider {
+            localPoolCapital = TraderPairedBuyPlacementGuard.localReservedPoolCapital(
+                investmentService: investmentService,
+                investmentDataProvider: investmentDataProvider,
+                currentUser: currentUser
+            )
+        } else {
+            localPoolCapital = 0
+        }
+
+        let traderId = currentUser?.id ?? ""
+        return await TraderPairedBuyPlacementGuard.blockReason(
+            mirrorPoolQuantity: mirrorPoolQuantity,
+            localReservedPoolCapital: localPoolCapital,
+            parseAPIClient: self.parseAPIClient,
+            investmentAPIService: self.investmentAPIService,
+            traderId: traderId,
+            traderUsername: currentUser?.username,
+            traderName: currentUser.map { "\($0.firstName) \($0.lastName)".trimmingCharacters(in: .whitespaces) }
         )
     }
 

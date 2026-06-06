@@ -53,6 +53,17 @@ extension BuyOrderViewModel {
         self.updateReservedInvestments()
     }
 
+    /// Loads trader pool investments from Parse before buy UI / placement guards run.
+    func refreshInvestmentsFromBackend() async {
+        guard let currentUser = userService.currentUser, currentUser.role == .trader else {
+            self.refreshInvestments()
+            return
+        }
+        await self.investmentService.fetchFromBackendForTrader(user: currentUser)
+        self.updateReservedInvestments()
+        await self.calculateInvestmentOrder()
+    }
+
     var totalInvestmentQuantity: Int {
         TotalInvestmentQuantityCalculator.calculate(
             investments: reservedInvestments,

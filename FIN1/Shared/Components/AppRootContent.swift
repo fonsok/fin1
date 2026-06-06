@@ -41,6 +41,11 @@ struct AppRootContent: View {
                     }
                 }
             }
+            .onReceive(NotificationCenter.default.publisher(for: .backendBecameHealthy)) { _ in
+                Task { @MainActor in
+                    await self.refreshTraderPoolInvestmentsIfNeeded()
+                }
+            }
     }
 
     @ViewBuilder
@@ -133,10 +138,17 @@ struct AppRootContent: View {
         async let loadDocuments: Void = await self.services.documentService.loadDocuments(for: currentUser)
         async let loadInvoices: Void = { _ = try? await self.services.invoiceService.loadInvoices(for: currentUser.id) }()
         async let generateInvoices: Void = self.preloadInvoicesForCompletedTrades()
+        async let loadTraderPoolInvestments: Void = self.refreshTraderPoolInvestmentsIfNeeded()
         await loadNotifications
         await loadDocuments
         await loadInvoices
         await generateInvoices
+        await loadTraderPoolInvestments
+    }
+
+    private func refreshTraderPoolInvestmentsIfNeeded() async {
+        guard let currentUser = services.userService.currentUser, currentUser.role == .trader else { return }
+        await self.services.investmentService.fetchFromBackendForTrader(user: currentUser)
     }
 
     private func preloadInvoicesForCompletedTrades() async {
