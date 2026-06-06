@@ -24,6 +24,7 @@ That was the root cause of the UB4PQLG regression (1000 Stück capped to 60).
 
 - **Trader leg** → depot position quantity = `traderQuantity` (Stück).
 - **Mirror pool leg** → separate trade/accounting; **not** a second depot row (`TraderDepotTradeFilter`).
+- **Admin Summary Report (Trades-Tab):** gleiche Sichtbarkeitsregel — flache Liste nur Trader-Leg / Standalone; Mirror nur nested im Expand (`summaryReportTradeListVisibility.js` auf Parse Cloud).
 
 ## Guards
 

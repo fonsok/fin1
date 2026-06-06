@@ -176,6 +176,8 @@ Diese Regeln schützen **bereits korrekte Finanzwerte** vor “Formel-Drift” (
 - **Protected Behaviors**
   - **Pre-trade Checks** werden nicht umgangen:
     - Extend/verwende `BuyOrderValidator` Pattern (Compliance Rule).
+  - **Paired-Buy-Schutz:** Kein Trader-only-Buy, wenn reserviertes Pool-Kapital serverseitig/lokal existiert (`TraderPairedBuyPlacementGuard`; Backend-Refresh vor Kauf in `BuyOrderPlacementService` / `BuyOrderViewModel`).
+  - **Pool-UX (Investor-Schutz):** Kein globales „Pool active“ im Dashboard; Status nur **pro Depot-Position** nach Mirror-Aktivierung (`DepotPositionPoolStatusResolver` / Kachel „Investment-Pool“). Reserviert (RSV) ≠ `active`.
   - **Audit Logging** bei Trading-Aktionen darf nicht “aus Versehen” entfernt werden (MiFID/Compliance).
   - Status-/Lifecycle Logik bleibt konsistent (Orders/Trades/Invoices/Notifications).
   - **Profit/ROI/Tax/Fee Displays bleiben konsistent** (siehe `1.1`):

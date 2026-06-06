@@ -67,7 +67,9 @@ Als **Admin** einloggen (`Documentation/DEV_PORTAL_LOGIN_SSOT.md`).
 ### C) Tab Trades
 
 - [ ] Suche (Trade-Nr., Symbol, Trader) + Filter + Zeitraum wie bei Investments
-- [ ] Pool-Filter (`hasPoolParticipation`) plausibel
+- [ ] Pool-Filter („mit Investoren“) plausibel — trifft auch **Trader-Legs** mit `pairExecutionId`, nicht nur Mirror-Dokumente mit `hasPoolParticipation`
+- [ ] **Paired Buy:** genau **eine Listenzeile** (Trader-Leg); **keine** zweite Zeile „Pool-Mirror“ mit Roh-`buyOrder.totalAmount`
+- [ ] Chevron-Expand unter Trader-Leg: Pool-Mirror-Panel mit SSOT (Reserved, Pool-Einlage, Residual, Investoren); Listen-Spalten Kauf/Gewinn = Trader-Leg, nicht Participation-SSOT
 - [ ] Expand/Detail-Zeilen laden (keine 500er in Network)
 
 ### D) Regression Overview
