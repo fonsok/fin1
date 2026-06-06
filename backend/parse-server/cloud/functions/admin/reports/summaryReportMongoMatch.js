@@ -2,6 +2,10 @@
 
 const { parseDateParam } = require('./summaryReportQueryHelpers');
 const { buildAdminListSearchMatchClause } = require('../../../utils/adminListSearch');
+const {
+  buildExcludePoolMirrorLegMongoClause,
+  buildHasPoolInvestorsMongoClause,
+} = require('./summaryReportTradeListVisibility');
 
 function appendDateRangeToMatch(match, dateFrom, dateTo) {
   const from = parseDateParam(dateFrom);
@@ -57,11 +61,13 @@ function buildTradeMongoMatch(filters, options = {}) {
   appendDateRangeToMatch(base, filters.dateFrom, filters.dateTo);
   if (filters.traderId) base.traderId = filters.traderId;
   if (filters.status) base.status = filters.status;
-  if (filters.hasPoolInvestors === 'yes') base.hasPoolParticipation = true;
-  if (filters.hasPoolInvestors === 'no') base.hasPoolParticipation = { $ne: true };
   if (filters.sellProgress === 'full') base.status = 'completed';
   else if (filters.sellProgress === 'partial') base.status = 'partial';
   clauses.push(base);
+  clauses.push(buildExcludePoolMirrorLegMongoClause());
+
+  const poolInvestorsClause = buildHasPoolInvestorsMongoClause(filters.hasPoolInvestors);
+  if (poolInvestorsClause) clauses.push(poolInvestorsClause);
 
   if (filters.sellProgress === 'none') {
     clauses.push({

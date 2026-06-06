@@ -8,6 +8,10 @@ const {
   buildTradeHasPoolInvestorsQuery,
   combineQueries,
 } = require('./summaryReportFilterHelpers');
+const {
+  buildExcludePoolMirrorLegMongoClause,
+  buildExcludePoolMirrorLegParseQuery,
+} = require('./summaryReportTradeListVisibility');
 
 function parseDateParam(v) {
   if (v == null || v === '') return null;
@@ -60,7 +64,13 @@ function buildTradeMatch({
       { calculatedProfit: { $gt: 0 } },
     ];
   }
-  return match;
+
+  const visibility = buildExcludePoolMirrorLegMongoClause();
+  const baseKeys = Object.keys(match);
+  if (baseKeys.length === 0) {
+    return visibility;
+  }
+  return { $and: [match, visibility] };
 }
 
 function applyInvestmentQueryFilters(query, filters) {
@@ -96,6 +106,7 @@ function buildFilteredTradeQuery(filters) {
   const base = new Parse.Query('Trade');
   applyTradeQueryFilters(base, filters);
   const extra = [
+    buildExcludePoolMirrorLegParseQuery(),
     buildTradeSearchQuery(filters.search),
     buildTradeProfitSignQuery(filters.profitSign),
     buildTradeSellProgressQuery(filters.sellProgress),

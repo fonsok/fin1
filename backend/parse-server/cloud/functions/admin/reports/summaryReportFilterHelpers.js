@@ -154,16 +154,13 @@ function buildTradeSellProgressQuery(sellProgress) {
   return Parse.Query.or(zeroSold, missingSold, activeOpen);
 }
 
-/** Uses denormalized `Trade.hasPoolParticipation` (see poolParticipationTradeSync). */
+const {
+  buildHasPoolInvestorsParseQuery,
+} = require('./summaryReportTradeListVisibility');
+
+/** Paired TRADER legs + denormalized `hasPoolParticipation` (see poolParticipationTradeSync). */
 function buildTradeHasPoolInvestorsQuery(hasPoolInvestors) {
-  if (!hasPoolInvestors) return null;
-  const q = new Parse.Query('Trade');
-  if (hasPoolInvestors === 'yes') {
-    q.equalTo('hasPoolParticipation', true);
-  } else {
-    q.notEqualTo('hasPoolParticipation', true);
-  }
-  return q;
+  return buildHasPoolInvestorsParseQuery(hasPoolInvestors);
 }
 
 function combineQueries(parts) {
