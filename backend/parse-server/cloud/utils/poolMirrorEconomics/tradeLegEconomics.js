@@ -11,6 +11,10 @@ const {
 } = require('../accountingHelper/legPriceMetrics');
 const { aggregatePoolInvestmentEconomics } = require('./aggregatePool');
 const { reconcilePoolMirrorSnapshot } = require('./resolvePoolMirrorState');
+const {
+  isPersistedLegEconomicsCurrent,
+  legEconomicsFromPersisted,
+} = require('./legEconomicsPersistShared');
 
 function weightedAvgSellPrice(sellOrders) {
   let qtySum = 0;
@@ -128,6 +132,17 @@ function resolveImmutableBuyInputsForSnapshot(trade, traderReference, applyPoolM
  */
 function tradeEconomicsSnapshot(trade, participations = null, options = {}) {
   if (!trade) return null;
+
+  if (options.preferPersisted !== false) {
+    const persisted = trade.get?.('legEconomicsSnapshot');
+    if (isPersistedLegEconomicsCurrent(persisted, trade)) {
+      const applyPoolMirror = Boolean(options.applyPoolMirror && participations?.length);
+      if (!applyPoolMirror || Number(persisted.impliedBuyQuantityFromPool || 0) > 0) {
+        return legEconomicsFromPersisted(persisted, trade);
+      }
+    }
+  }
+
   const instrument = extractInstrumentFields(trade);
   const sellOrders = trade.get('sellOrders') || [];
   const sellOrder = trade.get('sellOrder') || {};

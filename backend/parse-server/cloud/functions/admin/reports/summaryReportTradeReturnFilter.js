@@ -36,7 +36,23 @@ function buildTradeReturnMongoClause(returnOp, returnThreshold, feeConfig = {}) 
   if (!Number.isFinite(threshold)) return null;
   const pct = buildTradeReturnPercentageExpr(feeConfig);
   const mongoOp = `$${returnOp}`;
-  return { $expr: { [mongoOp]: [pct, threshold] } };
+  const persistedField = `legEconomicsSnapshot.returnPercentage`;
+  return {
+    $or: [
+      { [persistedField]: { [returnOp]: threshold } },
+      {
+        $and: [
+          {
+            $or: [
+              { legEconomicsSnapshot: { $exists: false } },
+              { [persistedField]: { $exists: false } },
+            ],
+          },
+          { $expr: { [mongoOp]: [pct, threshold] } },
+        ],
+      },
+    ],
+  };
 }
 
 function normalizeTradeReturnFilter(params = {}) {

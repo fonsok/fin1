@@ -2,9 +2,11 @@
 
 const { buildBuyOrderSnapshotFromOrder } = require('./orderBuySnapshot');
 const { buildSellOrderSnapshotFromOrder } = require('./orderSellSnapshot');
+const { resolveTradeRealizedGrossProfit } = require('./tradeRealizedGrossProfit');
 const { allocateTradeToInvestmentPools } = require('./orderPoolAllocation');
 const { isMirrorPoolOrderLeg } = require('../services/poolMirrorActivation/poolActivationPolicy');
 const { pairedStatusBatchContext } = require('../utils/pairedOrderShared');
+const { applyLegEconomicsSnapshotToTrade } = require('../utils/poolMirrorEconomics/persistTradeLegEconomics');
 
 async function resolveTradeIdForSellOrder(order) {
   const existing = String(order.get('tradeId') || '').trim();
@@ -118,6 +120,13 @@ async function handleBuyOrderExecuted(order) {
     }
   }
 
+  if (savedTrade) {
+    const economicsDirty = await applyLegEconomicsSnapshotToTrade(savedTrade);
+    if (economicsDirty) {
+      savedTrade = await savedTrade.save(null, { useMasterKey: true });
+    }
+  }
+
   if (isMirrorPoolOrderLeg(order) && savedTrade) {
     await allocateTradeToInvestmentPools(savedTrade, order);
   }
@@ -171,13 +180,15 @@ async function handleSellOrderExecuted(order) {
   trade.set('soldQuantity', newSoldQuantity);
   trade.set('remainingQuantity', Math.max(0, buyQty - newSoldQuantity));
 
-  const profitPerUnit = sellPrice - Number(trade.get('buyPrice') || 0);
-  const grossProfit = profitPerUnit * sellQuantity;
-  const totalSellAmount = (Number(trade.get('sellAmount') || 0) + sellAmount);
-  const totalGrossProfit = (Number(trade.get('grossProfit') || 0) + grossProfit);
+  const totalSellAmount = existingSellOrders.reduce(
+    (sum, entry) => sum + Number(entry?.totalAmount || 0),
+    0,
+  );
+  const totalGrossProfit = resolveTradeRealizedGrossProfit(trade) ?? 0;
 
   trade.set('sellAmount', totalSellAmount);
   trade.set('grossProfit', totalGrossProfit);
+  trade.set('calculatedProfit', totalGrossProfit);
   if (newSoldQuantity > 0) {
     trade.set('averageSellPrice', totalSellAmount / newSoldQuantity);
   }
@@ -195,6 +206,7 @@ async function handleSellOrderExecuted(order) {
     trade.set('status', 'partial');
   }
 
+  await applyLegEconomicsSnapshotToTrade(trade);
   await trade.save(null, { useMasterKey: true });
 }
 

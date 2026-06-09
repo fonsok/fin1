@@ -44,15 +44,17 @@ describe('summaryReportTradeReturnFilter', () => {
     ).toBeUndefined();
   });
 
-  test('buildTradeMongoMatch adds return percentage expr clause', () => {
+  test('buildTradeMongoMatch adds return percentage clause with persisted snapshot fallback', () => {
     const match = buildTradeMongoMatch({
       returnOp: 'gt',
       returnThreshold: 20,
     });
     const clauses = match.$and || [match];
-    const returnClause = clauses.find((c) => c.$expr && c.$expr.$gt);
+    const returnClause = clauses.find((c) => c.$or);
     expect(returnClause).toBeDefined();
     expect(buildTradeReturnMongoClause('gt', 20)).toEqual(returnClause);
+    expect(returnClause.$or[0]['legEconomicsSnapshot.returnPercentage']).toEqual({ gt: 20 });
+    expect(returnClause.$or[1].$and[1].$expr.$gt).toBeDefined();
   });
 
   test('buildTradeReturnPercentageExpr delegates to legPriceMetricsMongo SSOT', () => {

@@ -15,6 +15,7 @@ const { readMaxInvestorsPerMirrorTrade } = require('./poolMirrorLimits');
 const { loadConfig } = require('../../utils/configHelper/index.js');
 const { buildPoolBuySnapshotsProRata } = require('./poolBuySnapshot');
 const { syncMirrorTradeBuyFromParticipationSnapshots } = require('./syncMirrorTradeBuyFromSnapshots');
+const { refreshPoolMirrorLegEconomicsPersistence } = require('../../utils/poolMirrorEconomics/persistTradeLegEconomics');
 
 async function activatePoolMirrorForTrade(trade, { source, order = null }) {
   return withPoolActivationConcurrencyLimit(() => activatePoolMirrorForTradeInner(trade, { source, order }));
@@ -161,6 +162,11 @@ async function activatePoolMirrorForTradeInner(trade, { source, order = null }) 
       poolCapital: syncResult.poolCapital,
       message: 'Mirror trade buy qty drifted from pool SSOT — realigned after activation (should be rare)',
     });
+  }
+
+  const economicsDirty = await refreshPoolMirrorLegEconomicsPersistence(trade, { feeConfig });
+  if (economicsDirty) {
+    await trade.save(null, { useMasterKey: true });
   }
 
   const ESCROW_CONCURRENCY = 4;
