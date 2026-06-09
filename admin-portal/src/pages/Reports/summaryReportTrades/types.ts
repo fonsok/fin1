@@ -23,6 +23,8 @@ export interface SummaryReportPartialSellEvent {
   poolSellQuantity: number;
   poolSellQuantityCumulative: number;
   poolSellAmount: number;
+  poolSellFeesTotal?: number;
+  poolNetSellAmount?: number;
   investorRealizations: SummaryReportPartialSellInvestorRealization[];
   traderSellBeleg: SummaryReportTradeBelegLink | null;
   poolMirrorSellBeleg: SummaryReportTradeBelegLink | null;
@@ -38,9 +40,11 @@ export interface SummaryReportPoolParticipation {
   ownershipPercentage: number;
   investmentStatus?: string;
   investmentCapital?: number;
+  /** Backend snapshot (buySnapshot / pro-rata @ Einstand). */
   poolPieces?: number;
   activeInvestmentAtBid?: number;
   investmentResidual?: number;
+  /** Legacy Parse-Feld — nicht für Anzeige; nur API-Kompatibilität. */
   allocatedAmount: number;
   profitShare: number;
   commissionAmount: number;
@@ -102,12 +106,11 @@ export interface SummaryReportTradeEconomics {
   buyQuantity: number;
   soldQuantity: number;
   sellVolumeProgress: number;
-  /** Bid / nomineller Kurs pro Stück (ohne Gebühren im Stückpreis). */
-  buyPrice: number;
-  /** Ask / nomineller Verkaufskurs pro Stück. */
-  sellPrice: number;
-  buyAmount: number;
-  sellAmount: number;
+  /** @deprecated Nur Snapshot-Felder nutzen: bidPricePerShare, askPricePerShare, totalBuyCost, netSellAmount. */
+  buyPrice?: number;
+  sellPrice?: number;
+  buyAmount?: number;
+  sellAmount?: number;
   profit: number;
   bidPricePerShare?: number | null;
   buyFeesTotal?: number;
@@ -157,23 +160,4 @@ export interface SummaryReportTradeRow {
   poolBelege?: SummaryReportPoolBelege | null;
   partialSellEvents?: SummaryReportPartialSellEvent[];
   hasPoolDetails: boolean;
-}
-
-export function fallbackTraderFromRow(trade: SummaryReportTradeRow): SummaryReportTradeEconomics {
-  return {
-    tradeId: trade.tradeId,
-    tradeNumber: trade.tradeNumber,
-    symbol: trade.symbol,
-    status: trade.status,
-    traderId: trade.traderId,
-    buyQuantity: 0,
-    soldQuantity: 0,
-    sellVolumeProgress: 0,
-    buyPrice: 0,
-    sellPrice: 0,
-    buyAmount: trade.buyAmount,
-    sellAmount: trade.sellAmount,
-    profit: trade.profit,
-    createdAt: trade.createdAt,
-  };
 }

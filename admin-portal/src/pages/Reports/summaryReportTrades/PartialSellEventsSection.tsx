@@ -100,6 +100,12 @@ export function PartialSellEventsSection({
                   Pool: +{formatNumber(event.poolSellQuantity)} Stk
                   {' '}(Σ {formatNumber(event.poolSellQuantityCumulative)})
                   {event.poolSellAmount > 0 ? ` · ${formatCurrency(event.poolSellAmount)}` : ''}
+                  {(event.poolSellFeesTotal ?? 0) > 0
+                    ? ` · Geb. ${formatCurrency(event.poolSellFeesTotal ?? 0)}`
+                    : ''}
+                  {(event.poolNetSellAmount ?? 0) > 0
+                    ? ` · netto ${formatCurrency(event.poolNetSellAmount ?? 0)}`
+                    : ''}
                 </span>
               )}
             </div>

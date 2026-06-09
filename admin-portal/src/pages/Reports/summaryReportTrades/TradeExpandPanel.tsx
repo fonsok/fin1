@@ -11,7 +11,7 @@ import { PoolParticipationsSection } from './PoolParticipationsTable';
 import { PoolBelegeSection, TraderBelegeSection } from './TradeBelegeSection';
 import { TradeChevronIcon, TradeLegBadge } from './TradeBadges';
 import { TradeMetricsGrid } from './TradeMetricsGrid';
-import { fallbackTraderFromRow, type SummaryReportTradeRow } from './types';
+import type { SummaryReportTradeRow } from './types';
 
 export function TradeExpandPanel({
   trade,
@@ -24,10 +24,7 @@ export function TradeExpandPanel({
   const participations = trade.poolParticipations ?? [];
   const legKind = trade.legKind ?? 'standalone';
   const rowIsPoolMirror = trade.poolMirrorTrade?.tradeId === trade.tradeId;
-  const traderSnap =
-    trade.traderTrade
-    ?? trade.linkedTraderTrade
-    ?? (rowIsPoolMirror ? null : fallbackTraderFromRow(trade));
+  const traderSnap = trade.traderTrade ?? trade.linkedTraderTrade ?? null;
   const poolSnap = trade.poolMirrorTrade ?? null;
   const traderBelege = trade.traderBelege ?? null;
   const poolBelege = trade.poolBelege ?? null;

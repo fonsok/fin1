@@ -1,6 +1,6 @@
 import clsx from 'clsx';
 import { Badge } from '../../../components/ui';
-import { formatCurrency } from '../../../utils/format';
+import { formatCurrency, formatNumber } from '../../../utils/format';
 import { listRowStripeClasses } from '../../../utils/tableStriping';
 import {
   adminBodyStrong,
@@ -37,6 +37,7 @@ export function PoolParticipationsTable({
             <th className={clsx(thClass, 'text-left')}>Investor</th>
             <th className={clsx(thClass, 'text-left')}>Investment</th>
             <th className={clsx(thClass, 'text-right')}>Anteil</th>
+            <th className={clsx(thClass, 'text-right')}>Stück</th>
             <th className={clsx(thClass, 'text-right')}>Active @ Einstand</th>
             <th className={clsx(thClass, 'text-right')}>Residual</th>
             <th className={clsx(thClass, 'text-right')}>Gewinn-Anteil</th>
@@ -59,8 +60,11 @@ export function PoolParticipationsTable({
               <td className={clsx('px-3 py-2 text-right font-mono', adminBodyStrong(isDark))}>
                 {p.ownershipPercentage.toFixed(1)}%
               </td>
+              <td className={clsx('px-3 py-2 text-right font-mono', adminBodyStrong(isDark))}>
+                {(p.poolPieces ?? 0) > 0 ? formatNumber(p.poolPieces ?? 0) : '—'}
+              </td>
               <td className={clsx('px-3 py-2 text-right', adminPrimary(isDark))}>
-                {formatCurrency(p.activeInvestmentAtBid ?? p.allocatedAmount)}
+                {formatCurrency(p.activeInvestmentAtBid ?? 0)}
               </td>
               <td className={clsx('px-3 py-2 text-right font-mono text-xs', adminMuted(isDark))}>
                 {(p.investmentResidual ?? 0) > 0

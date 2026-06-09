@@ -112,38 +112,47 @@ function mapParticipationRow(participation, investmentById, userById) {
   };
 }
 
+function participationForApiResponse(participation) {
+  if (!participation || typeof participation !== 'object') return participation;
+  const { buySnapshot, ...rest } = participation;
+  void buySnapshot;
+  return rest;
+}
+
 function enrichParticipationDisplayFields(participations, costBasisPerShare) {
   if (!participations.length) return participations;
   const basis = Number(costBasisPerShare || 0);
-  if (!(basis > 0)) return participations;
 
   const caps = participations.map((p) => Number(p.investmentCapital || 0));
-  const tradeTotals = computeTradeLevelPoolBuyTotals(
-    caps.reduce((s, c) => s + c, 0),
-    basis,
-  );
+  const tradeTotals = basis > 0
+    ? computeTradeLevelPoolBuyTotals(caps.reduce((s, c) => s + c, 0), basis)
+    : null;
   const proRata = tradeTotals
     ? allocateProRataByInvestmentCapital(caps, tradeTotals)
     : [];
 
   return participations.map((p, i) => {
     const snap = p.buySnapshot;
+    let enriched = p;
     if (snap?.poolPieces > 0) {
-      return {
+      enriched = {
         ...p,
         poolPieces: snap.poolPieces,
         activeInvestmentAtBid: round2(snap.poolCapitalAllocated || 0),
         investmentResidual: round2(snap.residualAmount ?? 0),
       };
+    } else {
+      const alloc = proRata[i];
+      if (alloc) {
+        enriched = {
+          ...p,
+          poolPieces: alloc.poolPieces,
+          activeInvestmentAtBid: alloc.poolCapitalAllocated,
+          investmentResidual: alloc.residualAmount,
+        };
+      }
     }
-    const alloc = proRata[i];
-    if (!alloc) return p;
-    return {
-      ...p,
-      poolPieces: alloc.poolPieces,
-      activeInvestmentAtBid: alloc.poolCapitalAllocated,
-      investmentResidual: alloc.residualAmount,
-    };
+    return participationForApiResponse(enriched);
   });
 }
 

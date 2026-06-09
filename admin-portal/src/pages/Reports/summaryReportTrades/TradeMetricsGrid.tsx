@@ -106,8 +106,8 @@ export function TradeMetricsGrid({
       <div>
         <p className={clsx('text-xs', adminCaption(isDark))}>Bid (nominell / Stück)</p>
         <p className={adminBodyStrong(isDark)}>
-          {(snap.bidPricePerShare ?? snap.buyPrice) > 0
-            ? formatCurrency(snap.bidPricePerShare ?? snap.buyPrice)
+          {(snap.bidPricePerShare ?? 0) > 0
+            ? formatCurrency(snap.bidPricePerShare ?? 0)
             : '—'}
         </p>
       </div>
@@ -124,8 +124,8 @@ export function TradeMetricsGrid({
       <div>
         <p className={clsx('text-xs', adminCaption(isDark))}>Ask (nominell / Stück)</p>
         <p className={adminBodyStrong(isDark)}>
-          {(snap.askPricePerShare ?? snap.sellPrice) > 0
-            ? formatCurrency(snap.askPricePerShare ?? snap.sellPrice)
+          {(snap.askPricePerShare ?? 0) > 0
+            ? formatCurrency(snap.askPricePerShare ?? 0)
             : '—'}
         </p>
       </div>
@@ -149,7 +149,7 @@ export function TradeMetricsGrid({
         <div>
           <p className={clsx('text-xs', adminCaption(isDark))}>Kaufvolumen (Einstand)</p>
           <p className={adminBodyStrong(isDark)}>
-            {formatCurrency(snap.totalBuyCost ?? snap.buyAmount)}
+            {(snap.totalBuyCost ?? 0) > 0 ? formatCurrency(snap.totalBuyCost ?? 0) : '—'}
           </p>
         </div>
       )}
@@ -157,7 +157,7 @@ export function TradeMetricsGrid({
         <div>
           <p className={clsx('text-xs', adminCaption(isDark))}>Verkaufsvolumen (netto)</p>
           <p className={adminBodyStrong(isDark)}>
-            {formatCurrency(snap.netSellAmount ?? snap.sellAmount)}
+            {(snap.netSellAmount ?? 0) > 0 ? formatCurrency(snap.netSellAmount ?? 0) : '—'}
           </p>
         </div>
       )}
