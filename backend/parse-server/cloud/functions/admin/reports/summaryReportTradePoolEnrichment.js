@@ -16,13 +16,11 @@ const {
   attachBelegeToSummaryRows,
 } = require('./summaryReportTradeBelege');
 const { resolveLegReturnPercentage } = require('../../../utils/accountingHelper/legPriceMetrics');
-const { tradeEconomicsSnapshot } = require('../../../utils/poolMirrorEconomics/tradeLegEconomics');
+const { createTradeLegSnapshotCache } = require('./summaryReportTradeSnapshotCache');
 const {
   resolvePairedLegContextsByTradeId,
   loadTradesById,
-  resolveTraderAndPoolObjects,
-  resolvePoolParticipationsForRow,
-  applyPoolMirrorFromParticipations,
+  buildPairedLegSnapshotsForRow,
 } = require('./summaryReportPairedLegResolver');
 const {
   loadParticipationsByPoolTradeIds,
@@ -32,7 +30,7 @@ const {
 async function enrichSummaryReportTrades(tradeRows, baseItems) {
   const config = await loadConfig();
   const feeConfig = config.financial || {};
-  const snapshotOptions = { feeConfig };
+  const snapshotCache = createTradeLegSnapshotCache(feeConfig);
 
   const contexts = await resolvePairedLegContextsByTradeId(tradeRows);
 
@@ -64,22 +62,14 @@ async function enrichSummaryReportTrades(tradeRows, baseItems) {
       legKind: 'standalone', poolTradeId: trade.id, traderTradeId: trade.id, mirrorTradeId: null, pairExecutionId: null,
     };
 
-    let resolved = resolveTraderAndPoolObjects(trade, ctx, tradeById);
-    const { poolTradeId: effectivePoolId, participations } = resolvePoolParticipationsForRow(trade, ctx, participationsByPool);
-    resolved = applyPoolMirrorFromParticipations({
-      tradeRow: trade, legKind: resolved.legKind, traderTrade: resolved.traderTrade,
-      poolMirrorTrade: resolved.poolMirrorTrade, poolTradeId: effectivePoolId,
-      participations, tradeById, feeConfig,
-    });
-
-    if (resolved.poolMirrorTrade?.tradeId === trade.id) {
-      resolved.legKind = 'mirror_pool';
-      if (!resolved.traderTrade) resolved.traderTrade = null;
-    } else if (!resolved.traderTrade) {
-      resolved.traderTrade = tradeEconomicsSnapshot(trade, null, snapshotOptions);
-    } else if (resolved.legKind === 'trader' && resolved.traderTrade.tradeId !== trade.id) {
-      resolved.traderTrade = tradeEconomicsSnapshot(trade, null, snapshotOptions);
-    }
+    const resolved = buildPairedLegSnapshotsForRow(
+      trade,
+      ctx,
+      tradeById,
+      participationsByPool,
+      snapshotCache,
+    );
+    const { participations } = resolved;
 
     const investorIdsFromPool = [...new Set(participations.map((p) => p.investorId).filter(Boolean))];
 
@@ -150,10 +140,8 @@ async function attachPartialSellEventsToSummaryRows(items, tradeRows) {
   });
 }
 
-async function ensureMirrorLinkForTraderRows(enrichedItems, tradeRows) {
-  const config = await loadConfig();
-  const feeConfig = config.financial || {};
-  const snapshotOptions = { feeConfig };
+async function ensureMirrorLinkForTraderRows(enrichedItems, tradeRows, feeConfig = {}) {
+  const snapshotCache = createTradeLegSnapshotCache(feeConfig);
 
   const out = [...enrichedItems];
   for (let i = 0; i < tradeRows.length; i += 1) {
@@ -162,10 +150,12 @@ async function ensureMirrorLinkForTraderRows(enrichedItems, tradeRows) {
     const mirror = await getMirrorTradeForPairedTraderLeg(tradeRows[i]);
     if (!mirror || mirror.id === tradeRows[i].id) continue;
     const parts = await loadParticipationsByPoolTradeIds([mirror.id]);
-    const traderSnap = out[i].traderTrade || tradeEconomicsSnapshot(tradeRows[i], null, snapshotOptions);
-    const snap = tradeEconomicsSnapshot(mirror, parts.get(mirror.id) || [], {
-      traderReference: traderSnap, applyPoolMirror: true, feeConfig,
-    });
+    const traderSnap = out[i].traderTrade || snapshotCache.getLegSnap(tradeRows[i]);
+    const snap = snapshotCache.getPoolMirrorSnap(
+      mirror,
+      parts.get(mirror.id) || [],
+      traderSnap,
+    );
     const docsByTradeId = await loadDocumentsByTradeIds([mirror.id, tradeRows[i].id]);
     const [withBelege] = attachBelegeToSummaryRows(
       [{
@@ -180,14 +170,15 @@ async function ensureMirrorLinkForTraderRows(enrichedItems, tradeRows) {
   return out;
 }
 
-async function ensureTraderLinkForPoolRows(enrichedItems, tradeRows) {
+async function ensureTraderLinkForPoolRows(enrichedItems, tradeRows, feeConfig = {}) {
+  const snapshotCache = createTradeLegSnapshotCache(feeConfig);
   const out = [...enrichedItems];
   for (let i = 0; i < tradeRows.length; i += 1) {
     if (out[i].traderTrade) continue;
     if (!out[i].poolMirrorTrade) continue;
     const trader = await getTraderTradeForPairedMirrorLeg(tradeRows[i]);
     if (!trader) continue;
-    const traderSnap = tradeEconomicsSnapshot(trader);
+    const traderSnap = snapshotCache.getLegSnap(trader);
     out[i] = { ...out[i], legKind: 'mirror_pool', traderTrade: traderSnap, linkedTraderTrade: traderSnap };
   }
   return out;
@@ -198,6 +189,5 @@ module.exports = {
   attachPartialSellEventsToSummaryRows,
   ensureMirrorLinkForTraderRows,
   ensureTraderLinkForPoolRows,
-  tradeEconomicsSnapshot,
   resolvePairedLegContextsByTradeId,
 };

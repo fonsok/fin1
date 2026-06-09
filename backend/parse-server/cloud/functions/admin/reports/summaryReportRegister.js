@@ -147,8 +147,8 @@ async function handleGetSummaryReportTradesPage(request) {
     );
   });
   let items = await enrichSummaryReportTrades(rows, baseItems);
-  items = await ensureMirrorLinkForTraderRows(items, rows);
-  items = await ensureTraderLinkForPoolRows(items, rows);
+  items = await ensureMirrorLinkForTraderRows(items, rows, feeConfig);
+  items = await ensureTraderLinkForPoolRows(items, rows, feeConfig);
   items = await attachPartialSellEventsToSummaryRows(items, rows);
 
   return { items, total, page, pageSize, searchMode: searchMode || 'none' };

@@ -1,6 +1,5 @@
 'use strict';
 
-const { tradeEconomicsSnapshot } = require('../../../utils/poolMirrorEconomics/tradeLegEconomics');
 const {
   applyPoolMirrorEconomicsToSnapshot,
   reconcilePoolMirrorSnapshot,
@@ -10,7 +9,8 @@ function normalizeLegType(legType) {
   return String(legType || '').trim().toUpperCase();
 }
 
-function resolveTraderAndPoolObjects(tradeRow, ctx, tradeById) {
+/** Parse-Objekte + legKind — keine Snapshots. */
+function resolveLegObjects(tradeRow, ctx, tradeById) {
   let legKind = ctx.legKind;
   const mirrorId = ctx.mirrorTradeId;
   const rowId = tradeRow.id;
@@ -37,15 +37,12 @@ function resolveTraderAndPoolObjects(tradeRow, ctx, tradeById) {
     poolObj = null;
   }
 
-  const traderTrade = traderObj ? tradeEconomicsSnapshot(traderObj) : null;
-  const poolMirrorTrade =
-    poolObj && traderObj && poolObj.id !== traderObj.id
-      ? tradeEconomicsSnapshot(poolObj)
-      : poolObj && !traderObj
-        ? tradeEconomicsSnapshot(poolObj)
-        : null;
-
-  return { legKind, traderTrade, poolMirrorTrade, poolTradeId: poolObj?.id || ctx.poolTradeId };
+  return {
+    legKind,
+    traderObj,
+    poolObj,
+    poolTradeId: poolObj?.id || ctx.poolTradeId,
+  };
 }
 
 function resolvePoolParticipationsForRow(tradeRow, ctx, participationsByPool) {
@@ -61,6 +58,68 @@ function resolvePoolParticipationsForRow(tradeRow, ctx, participationsByPool) {
   return { poolTradeId: ctx.poolTradeId || tradeRow.id, participations: [] };
 }
 
+/**
+ * Ein Snapshot-Aufruf pro Leg/Kontext (Phase 2.1 — Request-Cache).
+ */
+function buildPairedLegSnapshotsForRow(tradeRow, ctx, tradeById, participationsByPool, cache) {
+  let { legKind, traderObj, poolObj } = resolveLegObjects(tradeRow, ctx, tradeById);
+  const { poolTradeId: effectivePoolId, participations } = resolvePoolParticipationsForRow(
+    tradeRow,
+    ctx,
+    participationsByPool,
+  );
+
+  const poolObjEffective =
+    tradeById.get(effectivePoolId)
+    || (effectivePoolId === tradeRow.id ? tradeRow : null)
+    || poolObj;
+
+  let traderTrade = null;
+  if (legKind === 'mirror_pool') {
+    traderTrade = traderObj ? cache.getLegSnap(traderObj) : null;
+  } else {
+    traderTrade = cache.getLegSnap(tradeRow);
+  }
+
+  let poolMirrorTrade = null;
+  if (participations.length && poolObjEffective) {
+    poolMirrorTrade = cache.getPoolMirrorSnap(poolObjEffective, participations, traderTrade);
+    if (effectivePoolId === tradeRow.id) {
+      legKind = 'mirror_pool';
+      if (!traderTrade && traderObj) {
+        traderTrade = cache.getLegSnap(traderObj);
+      }
+    }
+  } else if (poolObj && poolObj.id !== tradeRow.id) {
+    const basePool = cache.getLegSnap(poolObj);
+    poolMirrorTrade = cache.syncPoolMirrorSellOnly(basePool, traderTrade, []);
+  }
+
+  return {
+    legKind,
+    traderTrade,
+    poolMirrorTrade,
+    poolTradeId: effectivePoolId,
+    participations,
+  };
+}
+
+/** @deprecated Nutze buildPairedLegSnapshotsForRow — behält API für Tests. */
+function resolveTraderAndPoolObjects(tradeRow, ctx, tradeById, cache) {
+  if (!cache) {
+    const { createTradeLegSnapshotCache } = require('./summaryReportTradeSnapshotCache');
+    cache = createTradeLegSnapshotCache();
+  }
+  const built = buildPairedLegSnapshotsForRow(tradeRow, ctx, tradeById, new Map(), cache);
+  return {
+    legKind: built.legKind,
+    traderTrade: built.traderTrade,
+    poolMirrorTrade: built.poolMirrorTrade,
+    poolTradeId: built.poolTradeId,
+  };
+}
+
+/** @deprecated Nutze buildPairedLegSnapshotsForRow. */
 function applyPoolMirrorFromParticipations({
   tradeRow,
   legKind,
@@ -70,40 +129,33 @@ function applyPoolMirrorFromParticipations({
   participations,
   tradeById,
   feeConfig = {},
+  cache,
 }) {
-  if (!participations.length) {
-    const synced = applyPoolMirrorEconomicsToSnapshot(poolMirrorTrade, traderTrade, []);
-    return { legKind, traderTrade, poolMirrorTrade: synced, poolTradeId };
+  if (!cache) {
+    const { createTradeLegSnapshotCache } = require('./summaryReportTradeSnapshotCache');
+    cache = createTradeLegSnapshotCache(feeConfig);
   }
-
-  const poolObj =
-    tradeById.get(poolTradeId)
-    || (poolTradeId === tradeRow.id ? tradeRow : null);
-  if (!poolObj) {
-    return { legKind, traderTrade, poolMirrorTrade, poolTradeId };
+  if (participations.length) {
+    const poolObj =
+      tradeById.get(poolTradeId)
+      || (poolTradeId === tradeRow.id ? tradeRow : null);
+    if (!poolObj) {
+      return { legKind, traderTrade, poolMirrorTrade, poolTradeId };
+    }
+    const poolSnap = cache.getPoolMirrorSnap(poolObj, participations, traderTrade);
+    let nextLeg = legKind;
+    if (poolTradeId === tradeRow.id) {
+      nextLeg = 'mirror_pool';
+    }
+    return {
+      legKind: nextLeg,
+      traderTrade,
+      poolMirrorTrade: poolSnap,
+      poolTradeId,
+    };
   }
-
-  const poolSnap = tradeEconomicsSnapshot(poolObj, participations, {
-    traderReference: traderTrade,
-    applyPoolMirror: true,
-    feeConfig,
-  });
-  let nextLeg = legKind;
-  let nextTrader = traderTrade;
-
-  if (poolTradeId === tradeRow.id) {
-    nextLeg = 'mirror_pool';
-    if (!nextTrader) nextTrader = null;
-  } else if (!poolMirrorTrade) {
-    nextLeg = legKind === 'standalone' ? 'trader' : legKind;
-  }
-
-  return {
-    legKind: nextLeg,
-    traderTrade: nextTrader,
-    poolMirrorTrade: poolSnap,
-    poolTradeId,
-  };
+  const synced = cache.syncPoolMirrorSellOnly(poolMirrorTrade, traderTrade, []);
+  return { legKind, traderTrade, poolMirrorTrade: synced, poolTradeId };
 }
 
 async function resolvePairedLegContextsByTradeId(tradeRows) {
@@ -179,6 +231,8 @@ async function loadTradesById(tradeIds) {
 module.exports = {
   resolvePairedLegContextsByTradeId,
   loadTradesById,
+  resolveLegObjects,
+  buildPairedLegSnapshotsForRow,
   resolveTraderAndPoolObjects,
   resolvePoolParticipationsForRow,
   applyPoolMirrorFromParticipations,
