@@ -118,10 +118,33 @@ function computeInvestorPartialSellDelta({
   };
 }
 
+/** Ask je Trader-Sell-Order (einzige Preis-Verknüpfung Trader→Pool). */
+function normalizeSellPriceFromOrder(order) {
+  const direct = Number(order?.price || order?.limitPrice || order?.averagePrice || 0);
+  if (direct > 0) return round4(direct);
+  const qty = Number(order?.quantity || 0);
+  const total = Number(order?.totalAmount || 0);
+  if (qty > 0 && total > 0) return round4(total / qty);
+  return 0;
+}
+
+function resolveInvestorPieceRowsForPoolSell(participations, poolPieces) {
+  if (Array.isArray(participations) && participations.length > 0) {
+    const fromSnap = participations
+      .map((p) => Number(p.buySnapshot?.poolPieces || p.poolPieces || 0))
+      .filter((pieces) => pieces > 0)
+      .map((pieces) => ({ pieces }));
+    if (fromSnap.length > 0) return fromSnap;
+  }
+  const total = Number(poolPieces || 0);
+  return total > 0 ? [{ pieces: total }] : [];
+}
+
 /**
- * Pool-Verkaufserlös über alle Trader-Teilverkäufe (je Order-Preis), nicht ein Durchschnittskurs.
+ * SSOT: je Trader-Sell-Order Pool-Δ, Brutto, Gebühren (Summe investorPieceRows).
+ * Summary-Aggregation und Partial-Sell-Events nutzen dieselbe Enumeration.
  */
-function aggregatePoolSellFromTraderSellOrders({
+function enumeratePoolSellEventsFromTraderOrders({
   investorPieceRows,
   traderSellOrders,
   traderBuyQuantity,
@@ -129,25 +152,31 @@ function aggregatePoolSellFromTraderSellOrders({
 }) {
   const buyQty = Number(traderBuyQuantity || 0);
   if (!buyQty || !Array.isArray(traderSellOrders) || !traderSellOrders.length) {
-    return null;
+    return [];
   }
-  const { poolSellDeltaForTraderSellRange } = require('./poolMirrorEconomics');
+  if (!Array.isArray(investorPieceRows) || investorPieceRows.length === 0) {
+    return [];
+  }
+
+  const { poolSellDeltaForTraderSellRange, resolvePoolSoldQtyCumulative } = require('./poolMirrorEconomics');
   let cumulativeTraderSold = 0;
-  let poolSoldQty = 0;
-  let poolSellAmt = 0;
-  let poolSellFees = 0;
-  for (const order of traderSellOrders) {
-    const deltaQty = Number(order.quantity || 0);
+  const events = [];
+
+  for (let sourceOrderIndex = 0; sourceOrderIndex < traderSellOrders.length; sourceOrderIndex += 1) {
+    const order = traderSellOrders[sourceOrderIndex];
+    const deltaQty = Number(order?.quantity || 0);
     if (!(deltaQty > 0)) continue;
+
     const traderSoldBefore = cumulativeTraderSold;
     cumulativeTraderSold += deltaQty;
-    let price = Number(order.price || 0);
-    if (!(price > 0) && order.totalAmount && deltaQty > 0) {
-      price = Number(order.totalAmount) / deltaQty;
-    }
-    if (!(price > 0)) continue;
-    for (let i = 0; i < investorPieceRows.length; i += 1) {
-      const row = investorPieceRows[i];
+    const sellPrice = normalizeSellPriceFromOrder(order);
+    if (!(sellPrice > 0)) continue;
+
+    let poolDeltaQty = 0;
+    let poolGross = 0;
+    let poolFees = 0;
+
+    for (const row of investorPieceRows) {
       const rowDelta = poolSellDeltaForTraderSellRange(
         row.pieces,
         traderSoldBefore,
@@ -155,21 +184,53 @@ function aggregatePoolSellFromTraderSellOrders({
         buyQty,
       );
       if (rowDelta > 0) {
-        poolSoldQty += rowDelta;
-        const sellLeg = buildSellLegFromQuantity(rowDelta, price, feeConfig);
-        poolSellAmt += Number(sellLeg.amount || 0);
-        poolSellFees += Number(sellLeg.fees?.totalFees || 0);
+        poolDeltaQty += rowDelta;
+        const sellLeg = buildSellLegFromQuantity(rowDelta, sellPrice, feeConfig);
+        poolGross += Number(sellLeg.amount || 0);
+        poolFees += Number(sellLeg.fees?.totalFees || 0);
       }
     }
+
+    if (!(poolDeltaQty > 0)) continue;
+
+    const cumulativePoolSold = investorPieceRows.reduce(
+      (sum, row) => sum + resolvePoolSoldQtyCumulative(row.pieces, cumulativeTraderSold, buyQty),
+      0,
+    );
+    const gross = round2(poolGross);
+    const fees = round2(poolFees);
+
+    events.push({
+      sourceOrderIndex,
+      traderSellQuantity: round4(deltaQty),
+      traderSoldBefore: round4(traderSoldBefore),
+      traderSoldAfter: round4(cumulativeTraderSold),
+      traderSellPrice: sellPrice,
+      traderSellAmount: round2(Number(order?.totalAmount || 0)),
+      sellFraction: round4(deltaQty / buyQty),
+      traderSellVolumeProgress: round4(Math.min(1, cumulativeTraderSold / buyQty)),
+      poolSellQuantity: round4(poolDeltaQty),
+      poolSellQuantityCumulative: round4(cumulativePoolSold),
+      poolSellAmount: gross,
+      poolSellFeesTotal: fees,
+      poolNetSellAmount: round2(gross - fees),
+      isFinalExit: cumulativeTraderSold >= buyQty - 1e-4,
+    });
   }
-  if (!poolSoldQty) return null;
-  const gross = round2(poolSellAmt);
-  const fees = round2(poolSellFees);
+
+  return events;
+}
+
+/** Kumulierte Pool-Verkaufssummen über alle Trader-Sell-Orders. */
+function aggregatePoolSellFromTraderSellOrders(params) {
+  const events = enumeratePoolSellEventsFromTraderOrders(params);
+  if (!events.length) return null;
+  const last = events[events.length - 1];
   return {
-    poolSoldQuantityDerived: poolSoldQty,
-    poolSellAmountDerived: gross,
-    poolSellFeesTotal: fees,
-    poolNetSellAmount: round2(gross - fees),
+    poolSoldQuantityDerived: last.poolSellQuantityCumulative,
+    poolSellAmountDerived: round2(events.reduce((s, e) => s + e.poolSellAmount, 0)),
+    poolSellFeesTotal: round2(events.reduce((s, e) => s + e.poolSellFeesTotal, 0)),
+    poolNetSellAmount: round2(events.reduce((s, e) => s + e.poolNetSellAmount, 0)),
   };
 }
 
@@ -226,6 +287,9 @@ function resolvePoolSellFromTraderReference(
 module.exports = {
   investorPoolPiecesAtCostBasis,
   computeInvestorPartialSellDelta,
+  normalizeSellPriceFromOrder,
+  resolveInvestorPieceRowsForPoolSell,
+  enumeratePoolSellEventsFromTraderOrders,
   aggregatePoolSellFromTraderSellOrders,
   resolvePoolSellFromTraderReference,
 };

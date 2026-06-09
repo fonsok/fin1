@@ -19,8 +19,9 @@ describe('poolMirrorEconomics public surface contract', () => {
     }
   });
 
-  it('use-case tier has fourteen entry points', () => {
-    expect(API_TIERS.useCases).toHaveLength(14);
+  it('use-case tier has fifteen entry points', () => {
+    expect(API_TIERS.useCases).toHaveLength(15);
     expect(API_TIERS.useCases).toContain('tradeEconomicsSnapshot');
+    expect(API_TIERS.useCases).toContain('enumeratePoolSellEventsFromTraderOrders');
   });
 });

@@ -21,7 +21,10 @@ const {
   computePoolPiecesForMirrorTrade,
   resolvePoolContextForTraderSell,
 } = require('../poolMirrorQueries');
-const { computeInvestorPartialSellDelta } = require('../poolMirrorInvestorDelta');
+const {
+  computeInvestorPartialSellDelta,
+  enumeratePoolSellEventsFromTraderOrders,
+} = require('../poolMirrorInvestorDelta');
 const { costBasisPerShareFromBuyLeg } = require('../accountingHelper/legPriceMetrics');
 const { tradeEconomicsSnapshot } = require('./tradeLegEconomics');
 
@@ -40,6 +43,7 @@ const tier1UseCases = {
   computePoolPiecesForMirrorTrade,
   resolvePoolContextForTraderSell,
   computeInvestorPartialSellDelta,
+  enumeratePoolSellEventsFromTraderOrders,
   costBasisPerShareFromBuyLeg,
 };
 

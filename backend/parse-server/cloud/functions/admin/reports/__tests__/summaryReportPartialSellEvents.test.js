@@ -5,6 +5,7 @@ const {
   buildPartialSellEvents,
   groupInvestorPartialSellBelegeByEvent,
 } = require('../summaryReportPartialSellEvents');
+const { enumeratePoolSellEventsFromTraderOrders } = require('../../../../utils/poolMirrorInvestorDelta');
 
 function mockParseTrade(data) {
   return {
@@ -63,6 +64,8 @@ describe('buildPartialSellEvents', () => {
     expect(events[0].traderSellVolumeProgress).toBe(0.2);
     expect(events[0].sellFraction).toBe(0.2);
     expect(events[0].poolSellQuantity).toBe(98);
+    expect(events[0].poolSellFeesTotal).toBeGreaterThan(0);
+    expect(events[0].poolNetSellAmount).toBeLessThan(events[0].poolSellAmount);
     expect(events[0].isFinalExit).toBe(false);
 
     expect(events[1].eventIndex).toBe(2);
@@ -155,6 +158,34 @@ describe('buildPartialSellEvents', () => {
       0,
     );
     expect(investorSum).toBe(598);
+  });
+
+  test('pool sell metrics match enumeratePoolSellEventsFromTraderOrders SSOT', () => {
+    const traderTrade = mockParseTrade({
+      quantity: 1000,
+      buyOrder: { quantity: 1000, totalAmount: 3740, price: 3.74 },
+      sellOrders: [{ quantity: 200, totalAmount: 748, price: 3.74 }],
+    });
+    const events = buildPartialSellEvents({
+      traderTrade,
+      poolTrade: traderTrade,
+      poolMirrorSnap: { impliedBuyQuantityFromPool: 797, costBasisPerShare: 3.7625 },
+      participations,
+      feeConfig: {},
+      commissionRate: 0,
+    });
+    const ssot = enumeratePoolSellEventsFromTraderOrders({
+      investorPieceRows: [{ pieces: 797 }],
+      traderSellOrders: traderTrade.get('sellOrders'),
+      traderBuyQuantity: 1000,
+      feeConfig: {},
+    });
+    expect(events).toHaveLength(1);
+    expect(ssot).toHaveLength(1);
+    expect(events[0].poolSellQuantity).toBe(ssot[0].poolSellQuantity);
+    expect(events[0].poolSellAmount).toBe(ssot[0].poolSellAmount);
+    expect(events[0].poolSellFeesTotal).toBe(ssot[0].poolSellFeesTotal);
+    expect(events[0].poolNetSellAmount).toBe(ssot[0].poolNetSellAmount);
   });
 
   test('links belege by event index', () => {

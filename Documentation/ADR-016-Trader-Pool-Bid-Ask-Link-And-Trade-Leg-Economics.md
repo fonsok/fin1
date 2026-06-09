@@ -30,7 +30,9 @@ Nicht kopieren: Trader-`costBasisPerShare`, `buyFeesTotal`, `totalBuyCost`, Verk
 ### C) Pool-Kauf / Pool-Verkauf
 
 - Kauf: `resolvePoolMirrorBuyMetricsFromBid({ poolPieces, bidPricePerShare, feeConfig })`
-- Verkauf: `aggregatePoolSellFromTraderSellOrders` — Gebühren **pro Pool-Order**, Summen in `poolSellFeesTotal` / `poolNetSellAmount`
+- Verkauf SSOT: `enumeratePoolSellEventsFromTraderOrders` — je Trader-Sell-Order Pool-Δ, Brutto, Gebühren, Netto
+- Aggregation: `aggregatePoolSellFromTraderSellOrders` = Summe über Enumeration
+- Report Partial-Sell: `buildPartialSellEvents` nutzt dieselbe Enumeration (kein paralleler Sell-Pfad)
 
 ### D) P/L
 

@@ -3,12 +3,12 @@
 const { resolveSellOrdersFromTradeLike } = require('../../../triggers/tradeSellQuantityHelpers');
 const { resolveTradeBuyPrice } = require('../../../utils/accountingHelper/shared');
 const { resolveTradeCostBasisPerShare } = require('../../../utils/accountingHelper/legPriceMetrics');
+const { resolvePoolBuyQuantity } = require('../../../utils/poolMirrorEconomics');
 const {
-  resolvePoolSoldQtyCumulative,
-  poolSellDeltaForTraderSellRange,
   computeInvestorPartialSellDelta,
-  resolvePoolBuyQuantity,
-} = require('../../../utils/poolMirrorEconomics');
+  enumeratePoolSellEventsFromTraderOrders,
+  resolveInvestorPieceRowsForPoolSell,
+} = require('../../../utils/poolMirrorInvestorDelta');
 
 function round2(n) {
   return Math.round(Number(n) * 100) / 100;
@@ -24,15 +24,6 @@ function sortSellOrders(orders) {
     const tb = b?.createdAt ? new Date(b.createdAt).getTime() : 0;
     return ta - tb;
   });
-}
-
-function resolveSellPriceFromOrder(order) {
-  const direct = Number(order?.price || order?.limitPrice || order?.averagePrice || 0);
-  if (direct > 0) return round4(direct);
-  const qty = Number(order?.quantity || 0);
-  const total = Number(order?.totalAmount || 0);
-  if (qty > 0 && total > 0) return round4(total / qty);
-  return 0;
 }
 
 /**
@@ -67,6 +58,7 @@ function groupInvestorPartialSellBelegeByEvent(investorPartialSells, participati
 
 /**
  * Per partial-sell event (delta), aligned with settlementDeltas sellFraction.
+ * Pool-Stück/Brutto/Gebühren: SSOT enumeratePoolSellEventsFromTraderOrders.
  */
 function buildPartialSellEvents({
   traderTrade,
@@ -101,48 +93,33 @@ function buildPartialSellEvents({
     },
     costBasisPerShare,
   });
-  const investorBelegeByEvent = groupInvestorPartialSellBelegeByEvent(
+  const investorPieceRows = resolveInvestorPieceRowsForPoolSell(participations, poolPieces);
+  const poolSellEvents = enumeratePoolSellEventsFromTraderOrders({
+    investorPieceRows,
+    traderSellOrders: sellOrders,
+    traderBuyQuantity: buyQuantity,
+    feeConfig,
+  });
+  const investorBelegesByEvent = groupInvestorPartialSellBelegeByEvent(
     poolBelege?.investorPartialSells,
     participations,
     sellOrders.length,
   );
 
-  let cumulativeTraderQty = 0;
   const events = [];
-
-  for (let i = 0; i < sellOrders.length; i += 1) {
-    const order = sellOrders[i];
-    const deltaQty = Number(order?.quantity || 0);
-    if (!(deltaQty > 0)) continue;
-
-    const deltaAmount = round2(Number(order?.totalAmount || 0));
-    const sellFraction = round4(deltaQty / buyQuantity);
-    const traderSoldBefore = cumulativeTraderQty;
-    cumulativeTraderQty = round4(cumulativeTraderQty + deltaQty);
-    const cumulativeTraderPct = round4(Math.min(1, cumulativeTraderQty / buyQuantity));
-
-    const poolDeltaPieces = poolSellDeltaForTraderSellRange(
-      poolPieces,
-      traderSoldBefore,
-      cumulativeTraderQty,
-      buyQuantity,
-    );
-    const cumulativePoolSold = resolvePoolSoldQtyCumulative(poolPieces, cumulativeTraderQty, buyQuantity);
-
-    const tradeSellPrice = resolveSellPriceFromOrder(order)
-      || Number(poolMirrorSnap?.sellPrice || 0);
-
+  for (const poolEvent of poolSellEvents) {
+    const i = poolEvent.sourceOrderIndex;
     const investorRealizations = participations.map((p) => {
       const capital = Number(p.investmentCapital || 0);
       const legDelta = computeInvestorPartialSellDelta({
         investmentCapital: capital,
         costBasisPerShare: p.buySnapshot?.costBasisPerShare || costBasisPerShare,
         tradeBuyPrice,
-        tradeSellPrice,
-        sellFraction,
+        tradeSellPrice: poolEvent.traderSellPrice,
+        sellFraction: poolEvent.sellFraction,
         traderBuyQuantity: buyQuantity,
-        traderSoldBefore,
-        traderSoldAfter: cumulativeTraderQty,
+        traderSoldBefore: poolEvent.traderSoldBefore,
+        traderSoldAfter: poolEvent.traderSoldAfter,
         commissionRate,
         feeConfig,
       });
@@ -174,27 +151,24 @@ function buildPartialSellEvents({
       };
     });
 
-    const poolDeltaAmount = tradeSellPrice > 0 && poolDeltaPieces > 0
-      ? round2(poolDeltaPieces * tradeSellPrice)
-      : 0;
-
     events.push({
       eventIndex: events.length + 1,
-      // Fachlich sold = buy; Toleranz wegen Float-Summen aus sellOrders.
-      isFinalExit: cumulativeTraderQty >= buyQuantity - 0.0001,
-      traderSellQuantity: round4(deltaQty),
-      traderSellQuantityCumulative: round4(cumulativeTraderQty),
-      traderSellAmount: deltaAmount,
-      traderSellPrice: tradeSellPrice,
-      traderSellVolumeProgress: cumulativeTraderPct,
-      sellFraction,
-      poolSellQuantity: poolDeltaPieces,
-      poolSellQuantityCumulative: cumulativePoolSold,
-      poolSellAmount: poolDeltaAmount,
+      isFinalExit: poolEvent.isFinalExit,
+      traderSellQuantity: poolEvent.traderSellQuantity,
+      traderSellQuantityCumulative: poolEvent.traderSoldAfter,
+      traderSellAmount: poolEvent.traderSellAmount,
+      traderSellPrice: poolEvent.traderSellPrice,
+      traderSellVolumeProgress: poolEvent.traderSellVolumeProgress,
+      sellFraction: poolEvent.sellFraction,
+      poolSellQuantity: poolEvent.poolSellQuantity,
+      poolSellQuantityCumulative: poolEvent.poolSellQuantityCumulative,
+      poolSellAmount: poolEvent.poolSellAmount,
+      poolSellFeesTotal: poolEvent.poolSellFeesTotal,
+      poolNetSellAmount: poolEvent.poolNetSellAmount,
       investorRealizations,
       traderSellBeleg: traderBelege?.sells?.[i] || null,
       poolMirrorSellBeleg: poolBelege?.traderExecution?.sells?.[i] || null,
-      investorPartialSellBelege: investorBelegeByEvent[i] || [],
+      investorPartialSellBelege: investorBelegesByEvent[i] || [],
     });
   }
 
