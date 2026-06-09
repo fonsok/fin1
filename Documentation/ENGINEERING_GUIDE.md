@@ -141,9 +141,36 @@ Vollständige, für Agenten bindende Fassung: [`.cursor/rules/parse-cloud.md`](.
 - **Schnittlinien:** Domäne vor Technik (Validierung, Domänenregeln, Posting-/Journal-Aufbau, Parse-Persistenz, Audit); **Trigger** dünn halten (registrieren + Delegation), schwere Logik in benachbarten Modulen.
 - **Idempotenz:** Duplicate-Guards, `batchId`/`referenceId`-Strategien und eindeutige Annahmen nicht lockern; neue schreibende Flows explizit benennen (Retry, Doppelbuch).
 - **Abnahme (Minimum):** `node --check` auf geänderte Dateien; `npx jest` unter `backend/parse-server/cloud` (oder gezielte Suites); wo möglich unveränderte Referenzausgaben für definierte Fixtures.
+
+#### iOS Simulator: schwarzes Fenster (iPhone 17 Pro, iOS 26)
+
+Nach **Build Succeeded** kann der **iPhone 17 Pro**-Simulator ein zweites Fenster **„External Display“** öffnen. FIN1 rendert nur auf dem **Hauptdisplay (LCD)** — External Display bleibt **schwarz**.
+
+**Wichtig:** **I/O → External Display → Disabled** verhindert nur *neue* External Displays. Ein **bereits offenes schwarzes Fenster** bleibt stehen — mit dem **roten Schließen-Button (✕)** schließen.
+
+**Hauptfenster finden (Simulator aktiv, Menüleiste zeigt „Simulator“):**
+
+1. **Fenster** (engl. **Window**) in der Menüleiste öffnen — dort stehen Einträge wie `iPhone 17 Pro` und ggf. `iPhone 17 Pro – External Display`.
+2. Auf **`iPhone 17 Pro`** klicken (ohne „External Display“) → dieses Fenster nach vorne.
+3. Fehlt der Eintrag: **Simulator beenden** (⌘Q), in Xcode **▶ Run** — es sollte ein **hohes** iPhone-Fenster (Dynamic Island oben) erscheinen, nicht das flache/schmale External-Display-Fenster.
+
+**Alternativ über Xcode:** **Window → Devices and Simulators** (⇧⌘2) → links **Simulators** → **iPhone 17 Pro** wählen → Doppelklick oder Kontextmenü **Open Simulator**.
+
+**Terminal-Reset (nur ein Simulator-Fenster):**
+
+```bash
+xcrun simctl shutdown all
+xcrun simctl boot "iPhone 17 Pro"
+open -a Simulator
+```
+
+Danach in Xcode erneut **▶ Run** (Destination weiterhin iPhone 17 Pro).
+
+**Wenn das Hauptfenster (Dynamic Island, Statusleiste) ebenfalls komplett schwarz bleibt:** **Device → Erase All Content and Settings**, Simulator/Xcode neu starten.
 - **Transaktionsgrenzen, Konsistenz, Kompensation:** bei neuen oder verschobenen Grenzen **ADR/Runbook** mitziehen (ersetzt diese Policy nicht).
 - **Admin Portal (React/TS):** [`Documentation/ADMIN_PORTAL_NAMING_CONVENTIONS.md`](ADMIN_PORTAL_NAMING_CONVENTIONS.md) — gleiche Prinzipien wie Parse Cloud, PascalCase für Komponenten; `cloudFunction`-Namen = Parse-Verb-Matrix.
-- **Beispiel `utils/accountingHelper/`:** `statements.js` ist die **Fassade** (gleiche öffentliche API; bestehende `require('…/statements')`-Imports bleiben); Implementierung in `accountStatementWriter.js` (Kontoauszugszeilen, Cash/Chain/Kompensation), `settlementGLRules.js` (`SETTLEMENT_GL_RULES`), `settlementGLPoster.js` (Settlement-Posting, Order-Fee-Breakdown). SSOT: [`Documentation/BOOKING_AND_BELEG_SSOT.md`](BOOKING_AND_BELEG_SSOT.md).
+- **Beispiel `utils/accountingHelper/`:** `statements.js` ist die **Fassade** (gleiche öffentliche API; bestehende `require('…/statements')`-Imports bleiben); Implementierung in `accountStatementWriter.js` (Kontoauszugszeilen, Cash/Chain/Kompensation), `settlementGLRules.js` (`SETTLEMENT_GL_RULES`), `settlementGLPoster.js` (Settlement-Posting, Order-Fee-Breakdown). Weitere Barrel-Fassaden: `documents.js` → `documents/`, `investmentEscrow.js` → `investmentEscrow/`, `settlementCore.js` → `settlementCore/` (`settleAndDistribute`), `repair.js` → `repair/`, `traderCollectionBillBelegSnapshot.js` → `traderCollectionBillBelegSnapshot/`, `utils/investorAccountStatementMerge.js` → `investorAccountStatementMerge/`, `utils/traderAccountStatementPresentation.js` → `traderAccountStatementPresentation/`. Admin: `usersDetailStatementsAndWallet.js` → `usersDetailStatementsAndWallet/`. CF-Reads: `tradingSettlementReads.js` → `tradingSettlementReads/`. Utils: `permissions.js` → `permissions/`, `pairedTradeMirrorSync.js` → `pairedTradeMirrorSync/` (`legResolution`, `sellSync`), `poolMirrorEconomics.js` → `poolMirrorEconomics/` (`aggregatePool`, `traderSellMath`, `constants`).
+- **Fassade-Policy (kurz):** Eintrittspunkt nur — **keine Logik** in der Root-Datei; Fachlogik in Submodule; öffentliche API über **`modul/publicSurface.js`** (Tier-Manifest); **Tests: `*.publicSurface.test.js` (Contract) + Submodule direkt**. Alle reorganisierten Module: `investmentEscrow`, `investorAccountStatementMerge`, `documents`, `traderCollectionBillBelegSnapshot`, `traderAccountStatementPresentation`, `repair`, `usersDetailStatementsAndWallet`, `tradingSettlementReads`, `permissions`, `pairedTradeMirrorSync`, `poolMirrorEconomics`. Swift-Analog: [`.cursor/rules/architecture.md`](../.cursor/rules/architecture.md). Regeln: [`.cursor/rules/parse-cloud.md`](../.cursor/rules/parse-cloud.md). SSOT: [`BOOKING_AND_BELEG_SSOT.md`](BOOKING_AND_BELEG_SSOT.md), [`ACCOUNT_STATEMENT_ARCHITECTURE.md`](ACCOUNT_STATEMENT_ARCHITECTURE.md), [`ADR-014`](ADR-014-Pool-Buy-Immutability-And-Snapshot-Architecture.md) (Mirror-Buy-Immutability).
 
 #### Investment anlegen (iOS ↔ Parse, Idempotenz, Trader-IDs)
 
@@ -174,6 +201,19 @@ Vollständige, für Agenten bindende Fassung: [`.cursor/rules/parse-cloud.md`](.
 **API-Referenz:** [`Documentation/FIN1_APP_DOCS/03_TECHNISCHE_SPEZIFIKATION.md`](FIN1_APP_DOCS/03_TECHNISCHE_SPEZIFIKATION.md) (Cloud Functions *Investment*).
 
 **Regression-Tests (Jest):** `backend/parse-server/cloud/functions/__tests__/investmentCreateSplits.integration.test.js` — zwei Investoren mit gleicher `INV-*`-Sequenz (compound unique), Batch-Retry (`idempotentReplay`), Duplicate-Save-Race.
+
+#### Trader ↔ Pool-Mirror: Bid/Ask-only (Parse Cloud / Admin Report)
+
+| Thema | SSOT / Verhalten |
+|--------|------------------|
+| **Verknüpfung** | Nur **Bid** (Kauf) und **Ask** je Sell-Order — keine Kopie von Trader-Einstand, `buyFeesTotal`, `totalBuyCost` auf den Pool-Leg |
+| **Domain** | `backend/parse-server/cloud/utils/poolMirrorEconomics/tradeLegEconomics.js` (`tradeEconomicsSnapshot`) |
+| **Persistenz** | `Trade.legEconomicsSnapshot` beim Buy/Sell/Pool-Aktivierung (Phase 3); Report liest Snapshot zuerst |
+| **Pool-Stückzahl** | `computeTradeLevelPoolBuyTotalsFromBid` — max. Stück aus Reserved + Bid, nicht `floor(reserved / traderEinstand)` |
+| **Contract-Monitor** | Cloud `getTraderPoolBidAskContractStatus` + Cron `run-trader-pool-bid-ask-contract-monitor.sh` |
+| **Report-Performance** | Cloud `benchmarkSummaryReportTradesPage` + Cron `run-summary-report-performance-monitor.sh` (100 Zeilen, Default &lt; 8s) |
+
+**ADR:** [`Documentation/ADR-016-Trader-Pool-Bid-Ask-Link-And-Trade-Leg-Economics.md`](ADR-016-Trader-Pool-Bid-Ask-Link-And-Trade-Leg-Economics.md), [`Documentation/ADR-014-Pool-Buy-Immutability-And-Snapshot-Architecture.md`](ADR-014-Pool-Buy-Immutability-And-Snapshot-Architecture.md)
 
 #### Troubleshooting
 - Build errors on DI rules typically mean a ViewModel or View used a singleton directly. Inject protocols.

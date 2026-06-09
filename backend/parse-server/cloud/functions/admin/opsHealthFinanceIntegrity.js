@@ -7,6 +7,7 @@ const { handleGetTraderMirrorBookingIntegrityStatus } = require('./opsHealthTrad
 const { handleGetTradeSettlementConsistencyStatus } = require('./opsHealthTradeSettlementConsistency');
 const { handleGetPairedSellInvestorChainStatus } = require('./opsHealthPairedSellInvestorChain');
 const { handleGetFinanceIntegrityPreventionStatus } = require('./opsHealthFinancePrevention');
+const { handleGetTraderPoolBidAskContractStatus } = require('./opsHealthTraderPoolBidAskContract');
 
 const OVERALL_RANK = {
   healthy: 1,
@@ -86,6 +87,12 @@ async function handleGetFinanceIntegrityStatus(request) {
       'Paired sell → mirror sync → investor bills',
       handleGetPairedSellInvestorChainStatus,
       { limit: Math.min(50, settlementLimit) },
+    ),
+    safeCheck(
+      'trader_pool_bid_ask_contract',
+      'Trader↔Pool Bid/Ask-only economics',
+      handleGetTraderPoolBidAskContractStatus,
+      { limit: Math.min(100, settlementLimit * 2) },
     ),
   ]);
 

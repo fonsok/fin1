@@ -16,6 +16,8 @@ const { handleGetFinanceIntegrityStatus } = require('./opsHealthFinanceIntegrity
 const { handleGetPairedSellInvestorChainStatus } = require('./opsHealthPairedSellInvestorChain');
 const { handleGetFinanceIntegrityPreventionStatus } = require('./opsHealthFinancePrevention');
 const { handleGetFinanceRepairCatalog } = require('./financeRepairCatalog');
+const { handleGetTraderPoolBidAskContractStatus } = require('./opsHealthTraderPoolBidAskContract');
+const { handleBenchmarkSummaryReportTradesPage } = require('./opsHealthSummaryReportBenchmark');
 
 // ============================================================================
 // Admin observability: closed finance integrity (snapshots + live guards).
@@ -91,4 +93,14 @@ Parse.Cloud.define('getFinanceIntegrityPreventionStatus', async (request) => {
 Parse.Cloud.define('getFinanceRepairCatalog', async (request) => {
   ensureAdminOrMaster(request);
   return handleGetFinanceRepairCatalog(request);
+});
+
+Parse.Cloud.define('getTraderPoolBidAskContractStatus', async (request) => {
+  ensureAdminOrMaster(request);
+  return handleGetTraderPoolBidAskContractStatus(request);
+});
+
+Parse.Cloud.define('benchmarkSummaryReportTradesPage', async (request) => {
+  ensureAdminOrMaster(request);
+  return handleBenchmarkSummaryReportTradesPage(request);
 });

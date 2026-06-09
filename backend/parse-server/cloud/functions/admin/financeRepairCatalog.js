@@ -58,6 +58,23 @@ const REPAIR_CATALOG = [
     relatedChecks: ['mirror_basis_drift'],
   },
   {
+    id: 'pool_mirror_buy_quantity_drift',
+    layer: 'repair',
+    cloudFunction: 'repairMirrorPoolBuyQuantity',
+    defaultParams: { dryRun: true, limit: 50 },
+    applyParams: { dryRun: false, limit: 50, resyncSellFromTrader: true },
+    notes: 'Align MIRROR_POOL trade qty/buyAmount from PoolTradeParticipation.buySnapshot; optional sell resync from trader leg',
+    relatedChecks: ['mirror_basis_drift', 'paired_sell_investor_chain', 'trader_pool_bid_ask_contract'],
+  },
+  {
+    id: 'trader_pool_bid_ask_contract',
+    layer: 'detection',
+    cloudFunction: 'getTraderPoolBidAskContractStatus',
+    defaultParams: { limit: 100 },
+    notes: 'ADR-016: pool must not copy trader Einstand/Gebühren when piece counts differ; Bid must match',
+    relatedChecks: ['trader_pool_bid_ask_contract'],
+  },
+  {
     id: 'finance_prevention_indexes',
     layer: 'prevention',
     script: 'backend/scripts/ensure-finance-integrity-indexes.js',

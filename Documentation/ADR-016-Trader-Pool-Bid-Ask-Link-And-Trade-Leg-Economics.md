@@ -57,3 +57,12 @@ Nicht kopieren: Trader-`costBasisPerShare`, `buyFeesTotal`, `totalBuyCost`, Verk
 
 - Summary Report importiert Domain, keine Gebührenformeln im Report.
 - Phase 2 (Snapshot-Dedup im Report) und Phase 3 (persistierte Economics) bauen auf dieser Domain auf.
+
+## Phase 3–4 (Perfektions-Roadmap)
+
+| Phase | Status | Inhalt |
+|-------|--------|--------|
+| **3.1–3.3** | Done | `Trade.legEconomicsSnapshot` Write-Path; Report Snapshot-first; Mongo-Return-Filter auf `legEconomicsSnapshot.returnPercentage` |
+| **4.1** | Done | `getTraderPoolBidAskContractStatus` — erkennt kopierten Trader-Einstand/Gebühren bei unterschiedlicher Stückzahl |
+| **4.2** | Done | `benchmarkSummaryReportTradesPage` — Performance-Baseline (100 Zeilen, Cron-Monitor) |
+| **4.3** | Done | `ENGINEERING_GUIDE.md` — Bid/Ask-only-Verknüpfung dokumentiert |

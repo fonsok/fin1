@@ -25,6 +25,8 @@ CRON_ENTRIES=(
   "# FIN1 admin-list-search-health-monitor (managed)|30 5 * * 1 $BASE_DIR/scripts/run-admin-list-search-health-monitor.sh"
   "# FIN1 mirror-basis-drift-monitor (managed)|45 5 * * 1 $BASE_DIR/scripts/run-mirror-basis-drift-monitor.sh"
   "# FIN1 paired-order-status-monitor (managed)|55 5 * * 1 $BASE_DIR/scripts/run-paired-order-status-monitor.sh"
+  "# FIN1 trader-pool-bid-ask-contract-monitor (managed)|5 6 * * 1 $BASE_DIR/scripts/run-trader-pool-bid-ask-contract-monitor.sh"
+  "# FIN1 summary-report-performance-monitor (managed)|20 6 * * 1 $BASE_DIR/scripts/run-summary-report-performance-monitor.sh"
   "# FIN1 finance-integrity-snapshots (managed)|0 6 * * 1 $BASE_DIR/scripts/run-finance-integrity-snapshots.sh >> $BASE_DIR/logs/finance-integrity-snapshots.log 2>&1"
   "# FIN1 finance-integrity-monitor (managed)|15 6 * * 1 $BASE_DIR/scripts/run-finance-integrity-monitor.sh"
 )
@@ -35,6 +37,8 @@ RUNNERS=(
   run-paired-order-status-monitor.sh
   run-return-percentage-contract-monitor.sh
   run-admin-list-search-health-monitor.sh
+  run-trader-pool-bid-ask-contract-monitor.sh
+  run-summary-report-performance-monitor.sh
   run-finance-integrity-monitor.sh
   run-finance-integrity-snapshots.sh
 )

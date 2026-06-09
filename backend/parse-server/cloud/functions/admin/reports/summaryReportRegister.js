@@ -179,4 +179,5 @@ function registerSummaryReportFunctions() {
 
 module.exports = {
   registerSummaryReportFunctions,
+  handleGetSummaryReportTradesPage,
 };
