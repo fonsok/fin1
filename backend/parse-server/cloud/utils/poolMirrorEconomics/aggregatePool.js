@@ -4,7 +4,6 @@ const { round2 } = require('../accountingHelper/shared');
 const {
   resolveBidPricePerShareFromTraderReference,
   resolvePoolMirrorBuyMetricsFromBid,
-  resolvePoolCostBasisHintFromBid,
 } = require('../accountingHelper/legPriceMetrics');
 const { resolvePoolSellFromTraderReference } = require('../poolMirrorInvestorDelta');
 const { ACTIVE_INVESTMENT_STATUSES } = require('./constants');
@@ -14,6 +13,7 @@ const {
 } = require('./resolvePoolMirrorState');
 const {
   computeTradeLevelPoolBuyTotals,
+  computeTradeLevelPoolBuyTotalsFromBid,
   allocateProRataByInvestmentCapital,
 } = require('./proRataAllocation');
 
@@ -62,7 +62,8 @@ function aggregatePoolAtCostBasis(
   }
 
   poolReservedCapital = round2(poolReservedCapital);
-  const tradeTotals = computeTradeLevelPoolBuyTotals(poolReservedCapital, basis);
+  const tradeTotals = options.tradeTotalsFromBid
+    || computeTradeLevelPoolBuyTotals(poolReservedCapital, basis);
   if (tradeTotals?.impliedBuyQuantityFromPool) {
     poolPieces = tradeTotals.impliedBuyQuantityFromPool;
     const allocations = allocateProRataByInvestmentCapital(
@@ -109,8 +110,8 @@ function aggregatePoolAtCostBasis(
     poolSellFeesTotal: round2(poolSellFeesTotal),
     poolNetSellAmount: round2(poolNetSellAmount),
     poolSellVolumeProgress,
-    costBasisPerShare: basis,
-  }, basis);
+    costBasisPerShare: tradeTotals?.costBasisPerShare || basis,
+  }, tradeTotals?.costBasisPerShare || basis);
 }
 
 function aggregateFromParticipationBuySnapshots(rows, traderReference, { feeConfig, sellPrice }) {
@@ -204,20 +205,25 @@ function aggregatePoolInvestmentEconomics(
   if (snapshotResult) return snapshotResult;
 
   let costBasis = Number(options.costBasisPerShare || 0);
-  if (!(costBasis > 0) && bid > 0) {
+  let tradeTotalsFromBid = null;
+  if (bid > 0 && !(costBasis > 0)) {
     let poolReserved = 0;
     for (const p of participations) {
       const status = String(p.investmentStatus || '').toLowerCase();
       if (!ACTIVE_INVESTMENT_STATUSES.has(status)) continue;
       poolReserved += Number(p.investmentCapital || 0);
     }
-    costBasis = resolvePoolCostBasisHintFromBid(round2(poolReserved), bid, feeConfig);
+    tradeTotalsFromBid = computeTradeLevelPoolBuyTotalsFromBid(round2(poolReserved), bid, feeConfig);
+    if (tradeTotalsFromBid?.costBasisPerShare > 0) {
+      costBasis = tradeTotalsFromBid.costBasisPerShare;
+    }
   }
 
   if (costBasis > 0) {
     return aggregatePoolAtCostBasis(participations, costBasis, traderReference, {
       feeConfig,
       sellPrice,
+      tradeTotalsFromBid,
     });
   }
 

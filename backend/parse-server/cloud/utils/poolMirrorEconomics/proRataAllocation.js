@@ -1,5 +1,6 @@
 'use strict';
 
+const { tradeBuySideMetrics } = require('../accountingHelper/legPriceMetrics');
 const { round2, round4 } = require('../accountingHelper/shared');
 
 function poolCapitalFromPiecesAndBasis(poolPieces, costBasisPerShare) {
@@ -9,8 +10,59 @@ function poolCapitalFromPiecesAndBasis(poolPieces, costBasisPerShare) {
   return round2(pieces * round2(basis));
 }
 
+function poolCostBasisForPieces(pieces, bidPricePerShare, feeConfig = {}) {
+  const qty = Number(pieces || 0);
+  const bid = Number(bidPricePerShare || 0);
+  if (!(qty > 0) || !(bid > 0)) return 0;
+  const metrics = tradeBuySideMetrics({
+    quantity: qty,
+    grossAmount: round2(qty * bid),
+    feeConfig,
+  });
+  return Number(metrics?.costBasisPerShare || 0);
+}
+
+function poolCapitalAtPieces(pieces, bidPricePerShare, feeConfig = {}) {
+  return poolCapitalFromPiecesAndBasis(
+    pieces,
+    poolCostBasisForPieces(pieces, bidPricePerShare, feeConfig),
+  );
+}
+
 /**
- * Trade-Ebene: Stück = floor(Σ Einlagen / Einstand), Einlage = Stück × Einstand (Anzeige), Rest = Reserved − Einlage.
+ * Pool-Leg SSOT: max. n mit n × Einstand(n) ≤ Reserved.
+ * Einstand(n) = Bid + Gebühren auf (n × Bid) / n — nur Bid vom Trader, keine Trader-Stückzahl.
+ */
+function computeTradeLevelPoolBuyTotalsFromBid(poolReservedCapitalTotal, bidPricePerShare, feeConfig = {}) {
+  const reserved = round2(Number(poolReservedCapitalTotal || 0));
+  const bid = Number(bidPricePerShare || 0);
+  if (!(reserved > 0) || !(bid > 0)) return null;
+
+  let n = Math.max(1, Math.floor(reserved / bid));
+  while (n > 0 && poolCapitalAtPieces(n, bid, feeConfig) > reserved + 0.005) {
+    n -= 1;
+  }
+  if (n <= 0) return null;
+  while (poolCapitalAtPieces(n + 1, bid, feeConfig) <= reserved + 0.005) {
+    n += 1;
+  }
+
+  const costBasisPerShare = poolCostBasisForPieces(n, bid, feeConfig);
+  const poolCapitalAllocated = poolCapitalFromPiecesAndBasis(n, costBasisPerShare);
+  const poolResidualTotal = round2(Math.max(0, reserved - poolCapitalAllocated));
+
+  return {
+    poolReservedCapitalTotal: reserved,
+    impliedBuyQuantityFromPool: n,
+    poolCapitalAllocated,
+    poolResidualTotal,
+    costBasisPerShare,
+    bidPricePerShare: bid,
+  };
+}
+
+/**
+ * Trade-Ebene bei bekanntem Einstand: Stück = floor(Σ Einlagen / Einstand), Einlage = Stück × Einstand, Rest = Reserved − Einlage.
  */
 function computeTradeLevelPoolBuyTotals(poolReservedCapitalTotal, costBasisPerShare) {
   const reserved = round2(Number(poolReservedCapitalTotal || 0));
@@ -85,6 +137,9 @@ function allocateProRataByInvestmentCapital(investmentCapitals, tradeTotals) {
 
 module.exports = {
   poolCapitalFromPiecesAndBasis,
+  poolCostBasisForPieces,
+  poolCapitalAtPieces,
+  computeTradeLevelPoolBuyTotalsFromBid,
   computeTradeLevelPoolBuyTotals,
   allocateProRataByInvestmentCapital,
 };

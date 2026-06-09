@@ -12,6 +12,9 @@ const {
 } = require('./poolActivationPolicy');
 const { withPoolActivationConcurrencyLimit } = require('../../utils/poolActivationLimiter');
 const { readMaxInvestorsPerMirrorTrade } = require('./poolMirrorLimits');
+const { loadConfig } = require('../../utils/configHelper/index.js');
+const { buildPoolBuySnapshotsProRata } = require('./poolBuySnapshot');
+const { syncMirrorTradeBuyFromParticipationSnapshots } = require('./syncMirrorTradeBuyFromSnapshots');
 
 async function activatePoolMirrorForTrade(trade, { source, order = null }) {
   return withPoolActivationConcurrencyLimit(() => activatePoolMirrorForTradeInner(trade, { source, order }));
@@ -47,6 +50,18 @@ async function activatePoolMirrorForTradeInner(trade, { source, order = null }) 
   const buyAmount = Number(buyOrder.totalAmount || trade.get('buyAmount') || 0);
   if (!Number.isFinite(buyAmount) || buyAmount <= 0) {
     return { activated: false, reason: 'invalid_buy_amount', investmentCount: 0 };
+  }
+
+  let costBasisBuyOrder = buyOrder;
+  try {
+    const { getTraderTradeForPairedMirrorLeg } = require('../../utils/pairedTradeMirrorSync');
+    const traderTrade = await getTraderTradeForPairedMirrorLeg(trade);
+    const traderBuyOrder = traderTrade?.get('buyOrder');
+    if (traderBuyOrder && Number(traderBuyOrder.quantity || 0) > 0) {
+      costBasisBuyOrder = traderBuyOrder;
+    }
+  } catch (_) {
+    void _;
   }
 
   const traderId = String(trade.get('traderId') || '');
@@ -89,19 +104,32 @@ async function activatePoolMirrorForTradeInner(trade, { source, order = null }) 
     return { activated: false, reason: 'empty_pool_capital', investmentCount: 0 };
   }
 
+  const config = await loadConfig();
+  const feeConfig = config.financial || {};
+
   const PoolParticipation = Parse.Object.extend('PoolTradeParticipation');
   const activatedIds = [];
   const investmentsToActivate = [];
   const participationsToCreate = [];
+  const invValues = selected.map((inv) =>
+    Number(inv.get('currentValue') || inv.get('amount') || 0),
+  );
+  const buySnapshots = buildPoolBuySnapshotsProRata(
+    trade,
+    invValues,
+    costBasisBuyOrder,
+    { feeConfig },
+  );
 
-  for (const inv of selected) {
+  for (let i = 0; i < selected.length; i += 1) {
+    const inv = selected[i];
     if (inv.get('status') === 'reserved') {
       inv.set('status', 'active');
       inv.set('reservationStatus', 'active');
       investmentsToActivate.push(inv);
     }
 
-    const invValue = Number(inv.get('currentValue') || inv.get('amount') || 0);
+    const invValue = invValues[i];
     const ownershipPct = totalPool > 0 ? (invValue / totalPool) * 100 : 0;
     const allocatedAmount = buyAmount * (ownershipPct / 100);
 
@@ -111,6 +139,8 @@ async function activatePoolMirrorForTradeInner(trade, { source, order = null }) 
     participation.set('allocatedAmount', allocatedAmount);
     participation.set('ownershipPercentage', ownershipPct);
     participation.set('isSettled', false);
+    const snapshot = buySnapshots[i];
+    if (snapshot) participation.set('buySnapshot', snapshot);
     participationsToCreate.push(participation);
     activatedIds.push(inv.id);
   }
@@ -120,6 +150,17 @@ async function activatePoolMirrorForTradeInner(trade, { source, order = null }) 
   }
   if (participationsToCreate.length > 0) {
     await Parse.Object.saveAll(participationsToCreate, { useMasterKey: true });
+  }
+
+  const syncResult = await syncMirrorTradeBuyFromParticipationSnapshots(trade);
+  if (syncResult.synced) {
+    audit.warn('pool.mirror.activation.buy_quantity_realigned', {
+      tradeId,
+      tradeNumber: trade.get('tradeNumber') || null,
+      poolPieces: syncResult.poolPieces,
+      poolCapital: syncResult.poolCapital,
+      message: 'Mirror trade buy qty drifted from pool SSOT — realigned after activation (should be rare)',
+    });
   }
 
   const ESCROW_CONCURRENCY = 4;

@@ -2,8 +2,10 @@
 
 const {
   computeTradeLevelPoolBuyTotals,
+  computeTradeLevelPoolBuyTotalsFromBid,
   allocateProRataByInvestmentCapital,
 } = require('../proRataAllocation');
+const { DEFAULT_CONFIG } = require('../../configHelper/defaultConfig');
 
 describe('proRataAllocation', () => {
   test('Residual 0,80 € auf 1000/3000 → 0,20 € / 0,60 €', () => {
@@ -34,6 +36,24 @@ describe('proRataAllocation', () => {
     expect(totals.impliedBuyQuantityFromPool).toBe(400);
     expect(totals.poolCapitalAllocated).toBe(4000);
     expect(totals.poolResidualTotal).toBe(0);
+  });
+
+  test('computeTradeLevelPoolBuyTotalsFromBid: GS4GLEF 3000 @ 3,74 → 797 Stück, Rest 3,28', () => {
+    const totals = computeTradeLevelPoolBuyTotalsFromBid(3000, 3.74, {});
+    expect(totals.impliedBuyQuantityFromPool).toBe(797);
+    expect(totals.poolCapitalAllocated).toBe(2996.72);
+    expect(totals.poolResidualTotal).toBe(3.28);
+    expect(totals.costBasisPerShare).toBe(3.7625);
+  });
+
+  test('computeTradeLevelPoolBuyTotalsFromBid: kleiner Trader-Bid — nicht Trader-Einstand für Stückzahl', () => {
+    const feeConfig = DEFAULT_CONFIG.financial;
+    const bid = 1.89007;
+    const totals = computeTradeLevelPoolBuyTotalsFromBid(4000, bid, feeConfig);
+    expect(totals.impliedBuyQuantityFromPool).toBe(2105);
+    expect(totals.costBasisPerShare).toBe(1.9009);
+    expect(totals.poolCapitalAllocated).toBe(3999.5);
+    expect(totals.poolResidualTotal).toBe(0.5);
   });
 });
 
