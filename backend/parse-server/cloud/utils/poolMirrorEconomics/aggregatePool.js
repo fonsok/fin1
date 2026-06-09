@@ -83,7 +83,8 @@ function aggregatePoolAtCostBasis(
   let poolNetSellAmount = 0;
   let poolSellVolumeProgress = 0;
   if (traderReference && poolPieces > 0) {
-    const sellAgg = resolvePoolSellFromTraderReference(investorPieceRows, traderReference, {
+    // Trade-Ebene: Sell-Sync auf Σ Pool-Stück (wie enumeratePoolSellEventsFromTraderOrders).
+    const sellAgg = resolvePoolSellFromTraderReference([{ pieces: poolPieces }], traderReference, {
       feeConfig,
       sellPrice,
       poolPieces,

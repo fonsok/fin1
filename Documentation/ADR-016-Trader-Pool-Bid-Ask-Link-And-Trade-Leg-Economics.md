@@ -41,6 +41,18 @@ Nicht kopieren: Trader-`costBasisPerShare`, `buyFeesTotal`, `totalBuyCost`, Verk
 - Pool offen: `−poolCapitalAllocated`
 - Pool verkauft: Pool-Netto − (Pool-Stück × Pool-Einstand)
 
+## Regression-Anchor (E2E)
+
+`poolMirrorEconomics/__tests__/tradeLegEconomicsE2e.test.js` — GS4GLEF Szenario:
+
+| Leg | Kennzahl | Wert |
+|-----|----------|------|
+| Trader | Stück / Kaufvolumen | 1.000 / 3.761,70 € |
+| Trader | Einstand | 3,7617 € |
+| Pool | Stück / Einlage / Residual | 797 / 2.996,72 € / 3,28 € |
+| Pool | Einstand / Gebühren (Kauf) | 3,7625 € / 17,90 € |
+| Sell | Trader 200 @ 3,74 → Pool 159 Stück | Brutto 594,66 €, Netto 586,66 € |
+
 ## Konsequenzen
 
 - Summary Report importiert Domain, keine Gebührenformeln im Report.
