@@ -23,12 +23,16 @@ jest.mock('../summaryReportTradeBelege', () => {
     ...actual,
     loadDocumentsByTradeIds: (...args) => mockLoadDocumentsByTradeIds(...args),
     attachBelegeToSummaryRows: (rows) => rows,
+    collectTradeIdsFromDraftRows: (rows) => rows.flatMap((r) => [
+      r.traderTrade?.tradeId,
+      r.poolMirrorTrade?.tradeId,
+    ].filter(Boolean)),
   };
 });
 
-jest.mock('../../../../utils/pairedTradeMirrorSync', () => ({
-  getMirrorTradeForPairedTraderLeg: jest.fn(),
-  getTraderTradeForPairedMirrorLeg: jest.fn(),
+jest.mock('../../../../utils/configHelper/index.js', () => ({
+  loadConfig: jest.fn().mockResolvedValue({ financial: {} }),
+  getTraderCommissionRate: jest.fn().mockResolvedValue(0),
 }));
 
 const {
@@ -36,13 +40,10 @@ const {
   collectPoolRowsNeedingTraderLink,
 } = require('../summaryReportMirrorLinkBatch');
 const {
-  getMirrorTradeForPairedTraderLeg,
-  getTraderTradeForPairedMirrorLeg,
-} = require('../../../../utils/pairedTradeMirrorSync');
-const {
-  ensureMirrorLinkForTraderRows,
-  ensureTraderLinkForPoolRows,
-} = require('../summaryReportTradePoolEnrichment');
+  applyMissingMirrorLinks,
+  applyMissingTraderLinks,
+} = require('../summaryReportTradeBundle');
+const { enrichSummaryReportTrades } = require('../summaryReportTradePoolEnrichment');
 
 describe('summaryReportMirrorLinkBatch collectors', () => {
   const contexts = new Map([
@@ -85,7 +86,7 @@ describe('summaryReportMirrorLinkBatch collectors', () => {
   });
 });
 
-describe('ensureMirrorLink batching (no per-row leg resolution)', () => {
+describe('summaryReportTradeBundle link fallbacks', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockLoadParticipationsByPoolTradeIds.mockResolvedValue(new Map([
@@ -112,7 +113,18 @@ describe('ensureMirrorLink batching (no per-row leg resolution)', () => {
     };
   }
 
-  test('ensureMirrorLinkForTraderRows batches trades, participations, and documents', async () => {
+  function makeBundle(contexts, tradeById, participationsByPool = new Map()) {
+    const { createTradeLegSnapshotCache } = require('../summaryReportTradeSnapshotCache');
+    return {
+      contexts,
+      snapshotCache: createTradeLegSnapshotCache({}),
+      tradeById,
+      participationsByPool,
+      feeConfig: {},
+    };
+  }
+
+  test('applyMissingMirrorLinks batches trade and participation loads', async () => {
     const contexts = new Map([
       ['trader-1', { mirrorTradeId: 'pool-1', traderTradeId: 'trader-1' }],
       ['trader-2', { mirrorTradeId: 'pool-2', traderTradeId: 'trader-2' }],
@@ -126,41 +138,39 @@ describe('ensureMirrorLink batching (no per-row leg resolution)', () => {
       sellOrders: [],
       soldQuantity: 0,
     };
-    const enrichedItems = [
+    const items = [
       { legKind: 'trader', poolMirrorTrade: null, traderTrade: { ...traderRef, tradeId: 'trader-1' } },
       { legKind: 'trader', poolMirrorTrade: null, traderTrade: { ...traderRef, tradeId: 'trader-2' } },
     ];
+
+    const bundle = makeBundle(contexts, new Map([
+      ['trader-1', tradeRows[0]],
+      ['trader-2', tradeRows[1]],
+    ]));
 
     mockLoadTradesById.mockResolvedValue(new Map([
       ['pool-1', mockTrade('pool-1')],
       ['pool-2', mockTrade('pool-2')],
     ]));
+    mockLoadParticipationsByPoolTradeIds.mockResolvedValue(new Map([
+      ['pool-1', [{ investorId: 'i1', investmentStatus: 'active', investmentCapital: 1000 }]],
+      ['pool-2', [{ investorId: 'i2', investmentStatus: 'active', investmentCapital: 1000 }]],
+    ]));
 
-    const out = await ensureMirrorLinkForTraderRows(
-      enrichedItems,
-      tradeRows,
-      {},
-      { pairedLegContexts: contexts },
-    );
+    const out = await applyMissingMirrorLinks(items, tradeRows, bundle);
 
-    expect(getMirrorTradeForPairedTraderLeg).not.toHaveBeenCalled();
     expect(mockLoadTradesById).toHaveBeenCalledTimes(1);
-    expect(mockLoadTradesById.mock.calls[0][0]).toEqual(expect.arrayContaining(['pool-1', 'pool-2']));
     expect(mockLoadParticipationsByPoolTradeIds).toHaveBeenCalledTimes(1);
-    expect(mockLoadParticipationsByPoolTradeIds.mock.calls[0][0]).toEqual(
-      expect.arrayContaining(['pool-1', 'pool-2']),
-    );
-    expect(mockLoadDocumentsByTradeIds).toHaveBeenCalledTimes(1);
     expect(out[0].poolMirrorTrade).toBeTruthy();
     expect(out[1].poolMirrorTrade).toBeTruthy();
   });
 
-  test('ensureTraderLinkForPoolRows batches trader trade loads', async () => {
+  test('applyMissingTraderLinks batches trader trade loads', async () => {
     const contexts = new Map([
       ['pool-1', { mirrorTradeId: 'pool-1', traderTradeId: 'trader-1' }],
     ]);
     const tradeRows = [mockTrade('pool-1')];
-    const enrichedItems = [
+    const items = [
       {
         legKind: 'mirror_pool',
         poolMirrorTrade: { tradeId: 'pool-1', buyQuantity: 50 },
@@ -168,19 +178,48 @@ describe('ensureMirrorLink batching (no per-row leg resolution)', () => {
       },
     ];
 
+    const bundle = makeBundle(contexts, new Map([['pool-1', tradeRows[0]]]));
     mockLoadTradesById.mockResolvedValue(new Map([['trader-1', mockTrade('trader-1')]]));
 
-    const out = await ensureTraderLinkForPoolRows(
-      enrichedItems,
-      tradeRows,
-      {},
-      { pairedLegContexts: contexts },
-    );
+    const out = await applyMissingTraderLinks(items, tradeRows, bundle);
 
-    expect(getTraderTradeForPairedMirrorLeg).not.toHaveBeenCalled();
     expect(mockLoadTradesById).toHaveBeenCalledTimes(1);
-    expect(mockLoadTradesById.mock.calls[0][0]).toEqual(['trader-1']);
     expect(out[0].traderTrade?.tradeId).toBe('trader-1');
     expect(out[0].legKind).toBe('mirror_pool');
+  });
+});
+
+describe('enrichSummaryReportTrades unified pipeline', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockLoadDocumentsByTradeIds.mockResolvedValue(new Map());
+    mockLoadParticipationsByPoolTradeIds.mockResolvedValue(new Map());
+    mockLoadTradesById.mockResolvedValue(new Map());
+  });
+
+  test('attaches belege once after link fallbacks', async () => {
+    const tradeRows = [{
+      id: 'trader-1',
+      get(key) {
+        return {
+          tradeNumber: 1,
+          symbol: 'X',
+          status: 'active',
+          quantity: 100,
+          soldQuantity: 0,
+          buyOrder: { quantity: 100, totalAmount: 500, price: 5 },
+          sellOrders: [],
+          buyOrderId: null,
+        }[key];
+      },
+    }];
+    const baseItems = [{ id: 'trader-1', buyAmount: 500, profit: 0, returnPercentage: 0, investorIds: [] }];
+    const contexts = new Map([
+      ['trader-1', { legKind: 'standalone', poolTradeId: 'trader-1', traderTradeId: 'trader-1', mirrorTradeId: null, pairExecutionId: null }],
+    ]);
+
+    await enrichSummaryReportTrades(tradeRows, baseItems, { pairedLegContexts: contexts });
+
+    expect(mockLoadDocumentsByTradeIds).toHaveBeenCalledTimes(1);
   });
 });
