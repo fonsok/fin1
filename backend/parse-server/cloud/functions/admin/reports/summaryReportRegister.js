@@ -38,6 +38,7 @@ const {
   attachPartialSellEventsToSummaryRows,
   ensureMirrorLinkForTraderRows,
   ensureTraderLinkForPoolRows,
+  resolvePairedLegContextsByTradeId,
 } = require('./summaryReportTradePoolEnrichment');
 
 async function handleGetSummaryReport(request) {
@@ -146,9 +147,11 @@ async function handleGetSummaryReportTradesPage(request) {
       feeConfig,
     );
   });
-  let items = await enrichSummaryReportTrades(rows, baseItems);
-  items = await ensureMirrorLinkForTraderRows(items, rows, feeConfig);
-  items = await ensureTraderLinkForPoolRows(items, rows, feeConfig);
+  const pairedLegContexts = await resolvePairedLegContextsByTradeId(rows);
+  const reportRowOptions = { pairedLegContexts };
+  let items = await enrichSummaryReportTrades(rows, baseItems, reportRowOptions);
+  items = await ensureMirrorLinkForTraderRows(items, rows, feeConfig, reportRowOptions);
+  items = await ensureTraderLinkForPoolRows(items, rows, feeConfig, reportRowOptions);
   items = await attachPartialSellEventsToSummaryRows(items, rows);
 
   return { items, total, page, pageSize, searchMode: searchMode || 'none' };
