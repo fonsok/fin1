@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { formatCurrency, formatNumber } from '../../../utils/format';
+import { formatCurrency, formatCurrencyPerShare, formatNumber } from '../../../utils/format';
 import {
   adminBodyStrong,
   adminCaption,
@@ -75,7 +75,7 @@ export function TradeMetricsGrid({
       )}
       {showPoolCapital && (snap.poolCapitalAllocated ?? 0) > 0 && (
         <div>
-          <p className={clsx('text-xs', adminCaption(isDark))}>Pool-Einlage (∑ active investments)</p>
+          <p className={clsx('text-xs', adminCaption(isDark))}>Pool-Einlage (Σ Stück × Einstand)</p>
           <p className={adminBodyStrong(isDark)}>{formatCurrency(snap.poolCapitalAllocated ?? 0)}</p>
         </div>
       )}
@@ -114,7 +114,7 @@ export function TradeMetricsGrid({
       {(snap.costBasisPerShare ?? 0) > 0 && (
         <div>
           <p className={clsx('text-xs', adminCaption(isDark))}>Einstand / Bezug (pro Stück)</p>
-          <p className={adminBodyStrong(isDark)}>{formatCurrency(snap.costBasisPerShare ?? 0)}</p>
+          <p className={adminBodyStrong(isDark)}>{formatCurrencyPerShare(snap.costBasisPerShare ?? 0)}</p>
         </div>
       )}
       <div>
@@ -145,18 +145,22 @@ export function TradeMetricsGrid({
         <p className={clsx('text-xs', adminCaption(isDark))}>Verkaufs-Fortschritt</p>
         <p className={adminBodyStrong(isDark)}>{(snap.sellVolumeProgress * 100).toFixed(1)}%</p>
       </div>
-      <div>
-        <p className={clsx('text-xs', adminCaption(isDark))}>Kaufvolumen (Einstand)</p>
-        <p className={adminBodyStrong(isDark)}>
-          {formatCurrency(snap.totalBuyCost ?? snap.buyAmount)}
-        </p>
-      </div>
-      <div>
-        <p className={clsx('text-xs', adminCaption(isDark))}>Verkaufsvolumen (netto)</p>
-        <p className={adminBodyStrong(isDark)}>
-          {formatCurrency(snap.netSellAmount ?? snap.sellAmount)}
-        </p>
-      </div>
+      {!poolLegMetrics && (
+        <div>
+          <p className={clsx('text-xs', adminCaption(isDark))}>Kaufvolumen (Einstand)</p>
+          <p className={adminBodyStrong(isDark)}>
+            {formatCurrency(snap.totalBuyCost ?? snap.buyAmount)}
+          </p>
+        </div>
+      )}
+      {!poolLegMetrics && (
+        <div>
+          <p className={clsx('text-xs', adminCaption(isDark))}>Verkaufsvolumen (netto)</p>
+          <p className={adminBodyStrong(isDark)}>
+            {formatCurrency(snap.netSellAmount ?? snap.sellAmount)}
+          </p>
+        </div>
+      )}
       <div>
         <p className={clsx('text-xs', adminCaption(isDark))}>{profitLabel}</p>
         <p className={adminBodyStrong(isDark)}>{formatCurrency(snap.profit)}</p>

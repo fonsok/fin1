@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   formatDateTime,
   formatCurrency,
+  formatCurrencyPerShare,
   formatDate,
   formatRelative,
   formatNumber,
@@ -95,6 +96,16 @@ describe('formatCurrency', () => {
 
   it('returns dash for undefined', () => {
     expect(formatCurrency(undefined)).toBe('-');
+  });
+});
+
+describe('formatCurrencyPerShare', () => {
+  it('formats with 4 decimal places (GoB Einstand)', () => {
+    expect(formatCurrencyPerShare(3.7617)).toMatch(/3,7617\s*€/);
+  });
+
+  it('returns dash for undefined', () => {
+    expect(formatCurrencyPerShare(undefined)).toBe('-');
   });
 });
 

@@ -42,6 +42,14 @@ export function resolveCounterAccountLabel(
       if (account === 'CLT-LIAB-RSV') return 'CLT-LIAB-PTR';
       if (account === 'CLT-LIAB-PTR' || account === 'CLT-LIAB-TRD') return 'CLT-LIAB-RSV';
     }
+    if (leg === 'partialSellRelease') {
+      if (account === 'CLT-LIAB-PTR' || account === 'CLT-LIAB-TRD') return 'CLT-LIAB-PPS';
+      if (account === 'CLT-LIAB-PPS') return 'CLT-LIAB-PTR';
+    }
+    if (leg === 'tradeSettlementPartialPoolRelease') {
+      if (account === 'CLT-LIAB-PPS') return 'CLT-LIAB-AVA';
+      if (account === 'CLT-LIAB-AVA') return 'CLT-LIAB-PPS';
+    }
     if (leg === 'releaseTradingComplete' || leg === 'releaseTradingRefund') {
       if (account === 'CLT-LIAB-PTR' || account === 'CLT-LIAB-TRD') return 'CLT-LIAB-AVA';
       if (account === 'CLT-LIAB-AVA') return 'CLT-LIAB-PTR';

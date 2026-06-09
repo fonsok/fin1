@@ -1,3 +1,34 @@
+export interface SummaryReportPartialSellInvestorRealization {
+  investmentId: string;
+  investmentNumber: string;
+  investorId: string;
+  investorName: string;
+  sellQuantity: number;
+  sellAmount: number;
+  grossProfit: number;
+  commission: number;
+  netProfit: number;
+  investorPayout: number;
+}
+
+export interface SummaryReportPartialSellEvent {
+  eventIndex: number;
+  isFinalExit: boolean;
+  traderSellQuantity: number;
+  traderSellQuantityCumulative: number;
+  traderSellAmount: number;
+  traderSellPrice: number;
+  traderSellVolumeProgress: number;
+  sellFraction: number;
+  poolSellQuantity: number;
+  poolSellQuantityCumulative: number;
+  poolSellAmount: number;
+  investorRealizations: SummaryReportPartialSellInvestorRealization[];
+  traderSellBeleg: SummaryReportTradeBelegLink | null;
+  poolMirrorSellBeleg: SummaryReportTradeBelegLink | null;
+  investorPartialSellBelege: SummaryReportTradeBelegLink[];
+}
+
 export interface SummaryReportPoolParticipation {
   investmentId: string;
   investmentNumber: string;
@@ -102,8 +133,10 @@ export interface SummaryReportTradeRow {
   tradeNumber: number;
   symbol: string;
   traderId: string;
+  traderName: string;
   buyAmount: number;
   sellAmount: number;
+  returnPercentage: number;
   profit: number;
   status: string;
   investorIds: string[];
@@ -122,6 +155,7 @@ export interface SummaryReportTradeRow {
   };
   traderBelege?: SummaryReportTraderBelege | null;
   poolBelege?: SummaryReportPoolBelege | null;
+  partialSellEvents?: SummaryReportPartialSellEvent[];
   hasPoolDetails: boolean;
 }
 

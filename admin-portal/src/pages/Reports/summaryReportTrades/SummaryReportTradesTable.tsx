@@ -19,6 +19,29 @@ import {
 import { TradeChevronIcon, TradeLegBadge, TradeStatusBadge } from './TradeBadges';
 import { TradeExpandPanel } from './TradeExpandPanel';
 import type { SummaryReportTradeRow } from './types';
+import {
+  TRADE_PROFIT_HEADER_TOOLTIP,
+  TRADE_RETURN_HEADER_TOOLTIP,
+  tradeProfitCellTooltip,
+  tradeReturnCellTooltip,
+  tradeReturnPercentage,
+} from './tradeMetricTooltips';
+
+function MetricHeader({
+  label,
+  tooltip,
+  className,
+}: {
+  label: string;
+  tooltip: string;
+  className?: string;
+}): JSX.Element {
+  return (
+    <th className={className} title={tooltip}>
+      <span className="cursor-help border-b border-dotted border-current/40">{label}</span>
+    </th>
+  );
+}
 
 export function SummaryReportTradesTable({
   items,
@@ -92,10 +115,20 @@ export function SummaryReportTradesTable({
                 className={clsx(thClass, 'text-left')}
               />
               <th className={clsx(thClass, 'text-left')}>Symbol</th>
+              <th className={clsx(thClass, 'text-left')}>Trader</th>
               <th className={clsx(thClass, 'text-left')}>Leg</th>
               <th className={clsx(thClass, 'text-right')}>Kauf</th>
               <th className={clsx(thClass, 'text-right')}>Verkauf</th>
-              <th className={clsx(thClass, 'text-right')}>Gewinn</th>
+              <MetricHeader
+                label="Rendite"
+                tooltip={TRADE_RETURN_HEADER_TOOLTIP}
+                className={clsx(thClass, 'text-right')}
+              />
+              <MetricHeader
+                label="Gewinn"
+                tooltip={TRADE_PROFIT_HEADER_TOOLTIP}
+                className={clsx(thClass, 'text-right')}
+              />
               <th className={clsx(thClass, 'text-center')}>Investoren</th>
               <th className={clsx(thClass, 'text-left')}>Status</th>
               <SortableTh
@@ -186,6 +219,9 @@ function SummaryReportTradeTableRow({
         <td className={clsx('px-4 py-3 text-sm font-medium', adminPrimary(isDark))}>
           {trade.symbol}
         </td>
+        <td className={clsx('px-4 py-3 text-sm', adminBodyStrong(isDark))}>
+          {trade.traderName || trade.traderId || '—'}
+        </td>
         <td className="px-4 py-3">
           <TradeLegBadge legKind={legKind} />
         </td>
@@ -196,8 +232,24 @@ function SummaryReportTradeTableRow({
           {formatCurrency(trade.sellAmount)}
         </td>
         <td
+          title={tradeReturnCellTooltip(trade)}
           className={clsx(
-            'px-4 py-3 text-sm text-right font-medium',
+            'px-4 py-3 text-sm text-right font-medium cursor-help',
+            tradeReturnPercentage(trade) >= 0
+              ? isDark
+                ? 'text-green-400'
+                : 'text-green-600'
+              : isDark
+                ? 'text-red-400'
+                : 'text-red-600',
+          )}
+        >
+          {tradeReturnPercentage(trade).toFixed(2)}%
+        </td>
+        <td
+          title={tradeProfitCellTooltip(trade)}
+          className={clsx(
+            'px-4 py-3 text-sm text-right font-medium cursor-help',
             trade.profit >= 0
               ? isDark
                 ? 'text-green-400'
@@ -221,7 +273,7 @@ function SummaryReportTradeTableRow({
       </tr>
       {expanded && canExpand && (
         <tr>
-          <td colSpan={10} className="p-0">
+          <td colSpan={12} className="p-0">
             <TradeExpandPanel trade={trade} isDark={isDark} />
           </td>
         </tr>

@@ -8,6 +8,7 @@ const BELEG_DOCUMENT_TYPES = [
   'traderCreditNote',
   'investorCollectionBill',
   'investor_collection_bill',
+  'investorPartialSellInternal',
 ];
 
 function investmentIdFromDocument(doc) {
@@ -108,6 +109,10 @@ function isInvestorCollectionBill(doc) {
   return type === 'investorCollectionBill' || type === 'investor_collection_bill';
 }
 
+function isInvestorPartialSellInternal(doc) {
+  return String(doc.get('type') || '') === 'investorPartialSellInternal';
+}
+
 /**
  * Teil-Sell: mehrere CB pro Investment; Abschluss = letzter Beleg wenn Participation settled.
  */
@@ -195,16 +200,34 @@ function buildPoolMirrorExecutionBelege(poolDocs) {
   return { buy, sells: sellLinks };
 }
 
+function buildInvestorPartialSellInternalBelege(docs) {
+  const internal = sortDocsByCreatedAt(docs.filter(isInvestorPartialSellInternal));
+  return internal.map((doc, i) => {
+    const invId = investmentIdFromDocument(doc);
+    const num = doc.get('accountingDocumentNumber') || doc.id?.slice(0, 8);
+    return mapDocumentToBelegLink(doc, {
+      label: `Eigenbeleg Teilverkauf (intern) · ${num}${internal.length > 1 ? ` #${i + 1}` : ''}`,
+      billKind: 'partial_sell',
+      visibility: 'internal',
+      investmentId: invId,
+    });
+  });
+}
+
 function buildPoolBelege({ poolDocs, participations }) {
   const traderExecution = buildPoolMirrorExecutionBelege(poolDocs);
-  const { investorFullSettlement, investorPartialSells } = partitionInvestorCollectionBills(
+  const { investorFullSettlement, investorPartialSells: legacyPartialFromCb } = partitionInvestorCollectionBills(
     poolDocs,
     participations,
   );
+  const investorPartialSells = buildInvestorPartialSellInternalBelege(poolDocs);
+  const mergedPartialSells = investorPartialSells.length > 0
+    ? investorPartialSells
+    : legacyPartialFromCb;
   return {
     traderExecution,
     investorFullSettlement,
-    investorPartialSells,
+    investorPartialSells: mergedPartialSells,
   };
 }
 

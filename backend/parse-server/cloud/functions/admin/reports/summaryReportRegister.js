@@ -1,7 +1,7 @@
 'use strict';
 
 const { requirePermission } = require('../../../utils/permissions');
-const { getTraderCommissionRate } = require('../../../utils/configHelper/index.js');
+const { getTraderCommissionRate, loadConfig } = require('../../../utils/configHelper/index.js');
 const { MAX_PAGE_SIZE } = require('./summaryReportConstants');
 const {
   buildInvestmentMatch,
@@ -18,6 +18,7 @@ const {
   normalizeInvestmentListFilters,
   normalizeTradeListFilters,
 } = require('./summaryReportFilterHelpers');
+const { enrichTradeListFiltersForSearch } = require('./summaryReportTraderSearch');
 const {
   investmentAggPipeline,
   tradeAggPipeline,
@@ -30,9 +31,11 @@ const {
 const {
   mapTradeRow,
   loadDistinctInvestorIdsByTradeId,
+  loadTraderDisplayNamesForTrades,
 } = require('./summaryReportTradeRows');
 const {
   enrichSummaryReportTrades,
+  attachPartialSellEventsToSummaryRows,
   ensureMirrorLinkForTraderRows,
   ensureTraderLinkForPoolRows,
 } = require('./summaryReportTradePoolEnrichment');
@@ -118,7 +121,12 @@ async function handleGetSummaryReportTradesPage(request) {
   const { page: pageRaw, pageSize: pageSizeRaw } = request.params || {};
   const page = Math.max(0, parseInt(pageRaw, 10) || 0);
   const pageSize = Math.min(MAX_PAGE_SIZE, Math.max(1, parseInt(pageSizeRaw, 10) || 25));
-  const filters = normalizeTradeListFilters(request.params);
+  const config = await loadConfig();
+  const feeConfig = config.financial || {};
+  const filters = await enrichTradeListFiltersForSearch(
+    normalizeTradeListFilters(request.params),
+  );
+  filters.feeConfig = feeConfig;
 
   const pageResult = await fetchTradesPage(
     filters,
@@ -128,10 +136,20 @@ async function handleGetSummaryReportTradesPage(request) {
   );
   const { total, rows, searchMode } = pageResult;
   const poolInvestorsByTrade = await loadDistinctInvestorIdsByTradeId(rows);
-  const baseItems = rows.map((t) => mapTradeRow(t, poolInvestorsByTrade.get(t.id)));
+  const traderNamesById = await loadTraderDisplayNamesForTrades(rows);
+  const baseItems = rows.map((t) => {
+    const traderId = t.get('traderId') || '';
+    return mapTradeRow(
+      t,
+      poolInvestorsByTrade.get(t.id),
+      traderNamesById.get(traderId),
+      feeConfig,
+    );
+  });
   let items = await enrichSummaryReportTrades(rows, baseItems);
   items = await ensureMirrorLinkForTraderRows(items, rows);
   items = await ensureTraderLinkForPoolRows(items, rows);
+  items = await attachPartialSellEventsToSummaryRows(items, rows);
 
   return { items, total, page, pageSize, searchMode: searchMode || 'none' };
 }

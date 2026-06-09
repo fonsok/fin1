@@ -1,11 +1,15 @@
 'use strict';
 
 const { parseDateParam } = require('./summaryReportQueryHelpers');
-const { buildAdminListSearchMatchClause } = require('../../../utils/adminListSearch');
+const {
+  buildAdminListSearchMatchClause,
+  appendTraderIdsToSearchClause,
+} = require('../../../utils/adminListSearch');
 const {
   buildExcludePoolMirrorLegMongoClause,
   buildHasPoolInvestorsMongoClause,
 } = require('./summaryReportTradeListVisibility');
+const { buildTradeReturnMongoClause } = require('./summaryReportTradeReturnFilter');
 
 function appendDateRangeToMatch(match, dateFrom, dateTo) {
   const from = parseDateParam(dateFrom);
@@ -89,7 +93,15 @@ function buildTradeMongoMatch(filters, options = {}) {
     });
   }
 
-  const searchClause = buildAdminListSearchMatchClause('Trade', filters.search, searchMode);
+  const returnClause = buildTradeReturnMongoClause(
+    filters.returnOp,
+    filters.returnThreshold,
+    filters.feeConfig || {},
+  );
+  if (returnClause) clauses.push(returnClause);
+
+  let searchClause = buildAdminListSearchMatchClause('Trade', filters.search, searchMode);
+  searchClause = appendTraderIdsToSearchClause(searchClause, filters.traderIdsFromSearch);
   if (searchClause) clauses.push(searchClause);
 
   return combineAndClauses(clauses);

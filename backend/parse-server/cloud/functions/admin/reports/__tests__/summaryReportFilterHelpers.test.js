@@ -44,6 +44,7 @@ describe('summaryReportFilterHelpers', () => {
         profitSign: 'negative',
         sellProgress: 'full',
         hasPoolInvestors: 'yes',
+        returnFilter: 'gt:80',
       }),
     ).toEqual({
       dateFrom: undefined,
@@ -54,6 +55,8 @@ describe('summaryReportFilterHelpers', () => {
       profitSign: 'negative',
       sellProgress: 'full',
       hasPoolInvestors: 'yes',
+      returnOp: 'gt',
+      returnThreshold: 80,
     });
 
     expect(
@@ -71,6 +74,8 @@ describe('summaryReportFilterHelpers', () => {
       profitSign: undefined,
       sellProgress: undefined,
       hasPoolInvestors: undefined,
+      returnOp: undefined,
+      returnThreshold: undefined,
     });
   });
 });

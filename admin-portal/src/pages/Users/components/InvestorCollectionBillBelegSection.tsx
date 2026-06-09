@@ -1,6 +1,6 @@
 import clsx from 'clsx';
 import type { InvestorCollectionBillFeeLine, InvestorCollectionBillSummary } from '../../../api/admin';
-import { formatCurrency, formatDateTime } from '../../../utils/format';
+import { formatCurrency, formatCurrencyPerShare, formatDateTime } from '../../../utils/format';
 import { adminBodyStrong, adminMuted, adminPrimary, adminSoft, adminTableBodyDivide } from '../../../utils/adminThemeClasses';
 
 const FEE_LABELS: Record<string, string> = {
@@ -94,6 +94,7 @@ function BillCard({ bill, isDark }: { bill: InvestorCollectionBillSummary; isDar
             label="Einstand / Bezug (pro Stück)"
             value={bill.buy.costBasisPerShare}
             isDark={isDark}
+            formatValue={formatCurrencyPerShare}
           />
         )}
         <SummaryCell label="Netto-Verkauf" value={bill.netSellAmount} isDark={isDark} />
@@ -156,11 +157,13 @@ function SummaryCell({
   value,
   isDark,
   highlight,
+  formatValue = formatCurrency,
 }: {
   label: string;
   value: number;
   isDark: boolean;
   highlight?: boolean;
+  formatValue?: (amount: number | undefined) => string;
 }) {
   return (
     <div>
@@ -175,7 +178,7 @@ function SummaryCell({
             : adminPrimary(isDark),
         )}
       >
-        {formatCurrency(value)}
+        {formatValue(value)}
       </p>
     </div>
   );

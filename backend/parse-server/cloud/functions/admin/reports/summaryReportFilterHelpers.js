@@ -14,6 +14,7 @@ const INVESTMENT_STATUSES = new Set([
 ]);
 
 const TRADE_STATUSES = new Set(['active', 'partial', 'completed', 'cancelled']);
+const { normalizeTradeReturnFilter } = require('./summaryReportTradeReturnFilter');
 
 function trimParam(v) {
   if (v == null) return '';
@@ -63,6 +64,8 @@ function normalizeTradeListFilters(params = {}) {
   if (hasPoolInvestors === 'any') hasPoolInvestors = '';
   if (!['yes', 'no'].includes(hasPoolInvestors)) hasPoolInvestors = '';
 
+  const returnFilter = normalizeTradeReturnFilter(params);
+
   return {
     dateFrom: params.dateFrom,
     dateTo: params.dateTo,
@@ -72,6 +75,8 @@ function normalizeTradeListFilters(params = {}) {
     profitSign: profitSign || undefined,
     sellProgress: sellProgress || undefined,
     hasPoolInvestors: hasPoolInvestors || undefined,
+    returnOp: returnFilter.returnOp,
+    returnThreshold: returnFilter.returnThreshold,
   };
 }
 
@@ -113,6 +118,14 @@ function buildTradeSearchQuery(search) {
       parts.push(tradeNumQ);
     }
   }
+
+  const traderNameQ = new Parse.Query('Trade');
+  traderNameQ.matches('traderName', re);
+  parts.push(traderNameQ);
+
+  const blobQ = new Parse.Query('Trade');
+  blobQ.matches('adminSearchBlob', re);
+  parts.push(blobQ);
 
   return Parse.Query.or(...parts);
 }

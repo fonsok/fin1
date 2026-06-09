@@ -82,11 +82,25 @@ export function formatRelative(dateString: unknown): string {
  * Format currency (Euro)
  */
 export function formatCurrency(amount: number | undefined): string {
+  return formatCurrencyWithFractionDigits(amount, 2);
+}
+
+/** Stückpreise (Einstand, Bid, Ask): GoB-intern round4 → Anzeige mit 4 Dezimalstellen. */
+export function formatCurrencyPerShare(amount: number | undefined): string {
+  return formatCurrencyWithFractionDigits(amount, 4);
+}
+
+export function formatCurrencyWithFractionDigits(
+  amount: number | undefined,
+  fractionDigits: number,
+): string {
   if (amount === undefined || amount === null) return '-';
 
   return new Intl.NumberFormat('de-DE', {
     style: 'currency',
     currency: 'EUR',
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
   }).format(amount);
 }
 

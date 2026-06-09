@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { cloudFunction } from '../../api/admin';
-import { Card, Button, Badge, PaginationBar } from '../../components/ui';
+import { cloudFunction, searchUsers } from '../../api/admin';
+import { Card, Button, Badge, PaginationBar, Input } from '../../components/ui';
 import { useDebounce } from '../../hooks/useDebounce';
 import { useDateRangeFilter } from '../../hooks/useDateRangeFilter';
 import { AdminTableFilterBar } from '../../components/filters/AdminTableFilterBar';
@@ -18,7 +18,17 @@ import {
   tableTheadSurfaceClasses,
 } from '../../utils/tableStriping';
 
-import { adminBodyStrong, adminBorderChrome, adminBorderChromeSoft, adminCaption, adminMuted, adminPrimary, adminSoft } from '../../utils/adminThemeClasses';
+import {
+  adminBodyStrong,
+  adminBorderChrome,
+  adminBorderChromeSoft,
+  adminCaption,
+  adminControlField,
+  adminMuted,
+  adminPrimary,
+  adminSoft,
+  adminStrong,
+} from '../../utils/adminThemeClasses';
 import {
   SummaryReportTradesTable,
   type SummaryReportTradeRow,
@@ -27,8 +37,11 @@ import { SummaryReportSearchIndexStatusButton } from './SummaryReportSearchIndex
 import {
   buildInvestmentFilterSelects,
   buildTradeFilterSelects,
+  buildTraderFilterOptions,
   investmentListFilterParams,
   tradeListFilterParams,
+  TRADE_RETURN_CUSTOM_OP_OPTIONS,
+  type TradeReturnCustomOp,
 } from './summaryReportFilters';
 
 interface InvestmentSummary {
@@ -547,19 +560,44 @@ function TradesTab() {
   const [sortBy, setSortBy] = useState('createdAt');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [searchQuery, setSearchQuery] = useState('');
+  const [traderFilter, setTraderFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [returnFilter, setReturnFilter] = useState('');
+  const [returnCustomOp, setReturnCustomOp] = useState<TradeReturnCustomOp>('gt');
+  const [returnCustomPct, setReturnCustomPct] = useState('');
   const [profitSignFilter, setProfitSignFilter] = useState('');
   const [sellProgressFilter, setSellProgressFilter] = useState('');
   const [hasPoolInvestorsFilter, setHasPoolInvestorsFilter] = useState('');
   const debouncedSearch = useDebounce(searchQuery);
+  const debouncedReturnCustomPct = useDebounce(returnCustomPct);
   const dateFilter = useDateRangeFilter('all');
+
+  const { data: traderOptionsData } = useQuery({
+    queryKey: ['summaryReportTraderFilterOptions'],
+    queryFn: () =>
+      searchUsers({
+        role: 'trader',
+        limit: 200,
+        sortBy: 'lastName',
+        sortOrder: 'asc',
+      }),
+    staleTime: 300_000,
+  });
+  const traderFilterOptions = useMemo(
+    () => buildTraderFilterOptions(traderOptionsData?.users ?? []),
+    [traderOptionsData?.users],
+  );
 
   const listFilters = useMemo(
     () => ({
       ...dateFilter.apiParams,
       ...tradeListFilterParams({
         search: debouncedSearch,
+        traderId: traderFilter,
         status: statusFilter,
+        returnFilter,
+        returnCustomOp,
+        returnCustomPct: debouncedReturnCustomPct,
         profitSign: profitSignFilter,
         sellProgress: sellProgressFilter,
         hasPoolInvestors: hasPoolInvestorsFilter,
@@ -568,16 +606,27 @@ function TradesTab() {
     [
       dateFilter.apiParams,
       debouncedSearch,
+      traderFilter,
       statusFilter,
+      returnFilter,
+      returnCustomOp,
+      debouncedReturnCustomPct,
       profitSignFilter,
       sellProgressFilter,
       hasPoolInvestorsFilter,
     ],
   );
 
+  const hasActiveReturnFilter = Boolean(
+    (returnFilter && returnFilter !== 'custom')
+      || (returnFilter === 'custom' && debouncedReturnCustomPct.trim()),
+  );
+
   const hasActiveFilters = Boolean(
     debouncedSearch.trim()
+      || traderFilter
       || statusFilter
+      || hasActiveReturnFilter
       || profitSignFilter
       || sellProgressFilter
       || hasPoolInvestorsFilter
@@ -586,7 +635,11 @@ function TradesTab() {
 
   const resetFilters = useCallback(() => {
     setSearchQuery('');
+    setTraderFilter('');
     setStatusFilter('');
+    setReturnFilter('');
+    setReturnCustomOp('gt');
+    setReturnCustomPct('');
     setProfitSignFilter('');
     setSellProgressFilter('');
     setHasPoolInvestorsFilter('');
@@ -626,19 +679,67 @@ function TradesTab() {
 
   const toolbar = (
     <AdminTableFilterBar
-      searchPlaceholder="Symbol, Trade-Nr.…"
+      searchPlaceholder="Symbol, Trade-Nr., Trader…"
       searchValue={searchQuery}
       onSearchChange={setSearchQuery}
       selects={buildTradeFilterSelects({
+        traderId: traderFilter,
+        traderOptions: traderFilterOptions,
         status: statusFilter,
+        returnFilter,
         profitSign: profitSignFilter,
         sellProgress: sellProgressFilter,
         hasPoolInvestors: hasPoolInvestorsFilter,
+        onTraderChange: setTraderFilter,
+        onReturnFilterChange: setReturnFilter,
         onStatusChange: setStatusFilter,
         onProfitSignChange: setProfitSignFilter,
         onSellProgressChange: setSellProgressFilter,
         onHasPoolInvestorsChange: setHasPoolInvestorsFilter,
       })}
+      trailingContent={
+        returnFilter === 'custom' ? (
+          <div className="flex flex-wrap gap-2 items-end min-w-[14rem]">
+            <div className="min-w-[5rem]">
+              <label className={clsx('block text-sm font-medium mb-1', adminStrong(isDark))}>
+                Vergleich
+              </label>
+              <select
+                value={returnCustomOp}
+                onChange={(e) => {
+                  setReturnCustomOp(e.target.value as TradeReturnCustomOp);
+                  setPage(0);
+                }}
+                className={clsx(
+                  'w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-fin1-primary',
+                  adminControlField(isDark),
+                )}
+              >
+                {TRADE_RETURN_CUSTOM_OP_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="min-w-[8rem] flex-1">
+              <label className={clsx('block text-sm font-medium mb-1', adminStrong(isDark))}>
+                Rendite %
+              </label>
+              <Input
+                type="number"
+                inputMode="decimal"
+                placeholder="z. B. 25"
+                value={returnCustomPct}
+                onChange={(e) => {
+                  setReturnCustomPct(e.target.value);
+                  setPage(0);
+                }}
+              />
+            </div>
+          </div>
+        ) : null
+      }
       dateRange={{
         preset: dateFilter.datePreset,
         dateFromInput: dateFilter.dateFromInput,

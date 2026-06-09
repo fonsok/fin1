@@ -6,6 +6,7 @@ import {
   adminMuted,
   adminStrong,
 } from '../../../utils/adminThemeClasses';
+import { PartialSellEventsSection } from './PartialSellEventsSection';
 import { PoolParticipationsSection } from './PoolParticipationsTable';
 import { PoolBelegeSection, TraderBelegeSection } from './TradeBelegeSection';
 import { TradeChevronIcon, TradeLegBadge } from './TradeBadges';
@@ -49,7 +50,7 @@ export function TradeExpandPanel({
           )}
         </div>
         {traderSnap ? (
-          <TradeMetricsGrid snap={traderSnap} isDark={isDark} profitLabel="Gewinn (Trader)" />
+          <TradeMetricsGrid snap={traderSnap} isDark={isDark} profitLabel="P/L (Trader)" />
         ) : (
           <p className={clsx('text-sm', adminMuted(isDark))}>
             {rowIsPoolMirror
@@ -100,7 +101,7 @@ export function TradeExpandPanel({
                   <TradeMetricsGrid
                     snap={poolSnap}
                     isDark={isDark}
-                    profitLabel="Gewinn (Pool)"
+                    profitLabel="P/L (Pool)"
                     showPoolCapital
                     poolLegMetrics
                   />
@@ -119,6 +120,8 @@ export function TradeExpandPanel({
               )}
 
               {poolSnap && <PoolBelegeSection belege={poolBelege} isDark={isDark} />}
+
+              <PartialSellEventsSection events={trade.partialSellEvents} isDark={isDark} />
 
               <PoolParticipationsSection participations={participations} isDark={isDark} />
             </div>
