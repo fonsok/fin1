@@ -22,7 +22,7 @@ final class InvestmentSheetViewModel: ObservableObject {
     @Published var isUpdatingPoolMirrorAlert = false
     @Published private(set) var isHydratingTraderIdentity = false
 
-    // MARK: - Dependencies
+    private var poolMirrorRefreshTask: Task<Void, Never>?
     @Published private(set) var trader: InvestorTrader
     private let userService: any UserServiceProtocol
     private let investmentService: any InvestmentServiceProtocol
@@ -282,6 +282,16 @@ final class InvestmentSheetViewModel: ObservableObject {
             self.poolMirrorAlertSubscribed = status.alertSubscribed
         } catch {
             print("⚠️ InvestmentSheetViewModel: pool mirror capacity fetch failed: \(error.localizedDescription)")
+        }
+    }
+
+    /// Debounced pool-mirror refresh — avoids one network call per keystroke in the amount field.
+    func schedulePoolMirrorCapacityRefresh(debounceNanoseconds: UInt64 = 450_000_000) {
+        self.poolMirrorRefreshTask?.cancel()
+        self.poolMirrorRefreshTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: debounceNanoseconds)
+            guard !Task.isCancelled, let self else { return }
+            await self.refreshPoolMirrorCapacity()
         }
     }
 

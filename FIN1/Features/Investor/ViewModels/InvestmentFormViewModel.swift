@@ -11,6 +11,8 @@ final class InvestmentFormViewModel: ObservableObject {
     private var updateInvestmentAmount: (String) -> Void
     private var getInvestmentAmount: () -> String
     let configurationService: any ConfigurationServiceProtocol
+    /// Prevents `updateDisplayFromAmount` from fighting with in-flight `formatAndValidateInput`.
+    private var lastEmittedBackingAmount: String = ""
 
     // MARK: - Initialization
     init(
@@ -41,6 +43,8 @@ final class InvestmentFormViewModel: ObservableObject {
 
         // If empty, clear both display and amount
         if cleanedInput.isEmpty {
+            if self.displayAmount.isEmpty, self.getInvestmentAmount().isEmpty { return }
+            self.lastEmittedBackingAmount = ""
             self.displayAmount = ""
             self.updateInvestmentAmount("")
             return
@@ -63,24 +67,43 @@ final class InvestmentFormViewModel: ObservableObject {
         // Format with localized thousand separators
         let formattedString = capped.formattedAsLocalizedInteger()
 
-        // Update both display and backing amount
+        // Avoid re-assigning identical values (prevents TextField cursor jumps + onChange storms).
+        if formattedString == self.displayAmount, cappedString == self.getInvestmentAmount() {
+            return
+        }
+
+        self.lastEmittedBackingAmount = cappedString
         self.displayAmount = formattedString
-        self.updateInvestmentAmount(cappedString)
+        if cappedString != self.getInvestmentAmount() {
+            self.updateInvestmentAmount(cappedString)
+        }
     }
 
     /// Updates the display amount from the backing investment amount
     func updateDisplayFromAmount() {
         let investmentAmount = self.getInvestmentAmount()
+        if investmentAmount == self.lastEmittedBackingAmount, !self.displayAmount.isEmpty {
+            return
+        }
         guard let integerValue = Int(investmentAmount), integerValue >= 0 else {
+            if self.displayAmount.isEmpty { return }
             self.displayAmount = ""
+            self.lastEmittedBackingAmount = ""
             return
         }
         let maxEuros = self.maxTotalInvestmentWholeEuros
         let capped = min(integerValue, maxEuros)
+        let cappedString = String(capped)
         if capped != integerValue {
-            self.updateInvestmentAmount(String(capped))
+            self.lastEmittedBackingAmount = cappedString
+            self.updateInvestmentAmount(cappedString)
+        } else {
+            self.lastEmittedBackingAmount = cappedString
         }
-        self.displayAmount = capped.formattedAsLocalizedInteger()
+        let formatted = capped.formattedAsLocalizedInteger()
+        if formatted != self.displayAmount {
+            self.displayAmount = formatted
+        }
     }
 
     // MARK: - App Service Charge Calculation

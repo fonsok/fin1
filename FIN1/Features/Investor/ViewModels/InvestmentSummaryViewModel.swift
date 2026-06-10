@@ -30,6 +30,11 @@ final class InvestmentSummaryViewModel: ObservableObject {
 
     // MARK: - Update Methods
     func update(amountPerInvestment: Double, numberOfInvestments: Int, totalInvestmentAmount: Double) {
+        if self.amountPerInvestment == amountPerInvestment,
+           self.numberOfInvestments == numberOfInvestments,
+           self.totalInvestmentAmount == totalInvestmentAmount {
+            return
+        }
         self.amountPerInvestment = amountPerInvestment
         self.numberOfInvestments = numberOfInvestments
         self.totalInvestmentAmount = totalInvestmentAmount
