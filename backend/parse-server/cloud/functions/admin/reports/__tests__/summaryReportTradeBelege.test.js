@@ -49,6 +49,54 @@ describe('summaryReportTradeBelege', () => {
     expect(out.creditNote?.documentId).toBe('c1');
   });
 
+  test('sell belege sort by partialSell.executedAt, not document createdAt', () => {
+    const docs = [
+      mockDoc({ id: 'b1', type: 'traderCollectionBill', executionType: 'buy', docNumber: 'TBC-1' }),
+      {
+        id: 's-late',
+        get(key) {
+          const data = {
+            type: 'traderCollectionBill',
+            accountingDocumentNumber: 'TSC-129',
+            metadata: {
+              executionType: 'sell',
+              partialSell: {
+                eventIndex: 2,
+                executedAt: '2026-06-09T11:00:00.000Z',
+              },
+            },
+            createdAt: new Date('2026-06-10T16:00:00Z'),
+          };
+          return data[key];
+        },
+      },
+      {
+        id: 's-early',
+        get(key) {
+          const data = {
+            type: 'traderCollectionBill',
+            accountingDocumentNumber: 'TSC-128',
+            metadata: {
+              executionType: 'sell',
+              partialSell: {
+                eventIndex: 1,
+                executedAt: '2026-06-08T10:00:00.000Z',
+              },
+            },
+            createdAt: new Date('2026-06-10T15:00:00Z'),
+          };
+          return data[key];
+        },
+      },
+    ];
+    const out = buildTraderBelege(docs);
+    expect(out.sells[0].documentId).toBe('s-early');
+    expect(out.sells[0].label).toContain('#1');
+    expect(out.sells[1].documentId).toBe('s-late');
+    expect(out.sells[1].label).toContain('#2');
+    expect(out.sells[0].createdAt).toBe('2026-06-08T10:00:00.000Z');
+  });
+
   test('partitionInvestorCollectionBills: settled → last is full, earlier partial', () => {
     const docs = [
       mockDoc({

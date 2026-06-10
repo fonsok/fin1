@@ -1,5 +1,9 @@
 'use strict';
 
+const {
+  sortTraderSellBelegeChronologically,
+} = require('../../../utils/accountingHelper/traderCollectionBillBelegSnapshot/partialSellSnapshot');
+
 const BELEG_DOCUMENT_TYPES = [
   'traderCollectionBill',
   'trade_execution_document',
@@ -37,7 +41,10 @@ function mapDocumentToBelegLink(doc, overrides = {}) {
   if (!doc) return null;
   const meta = doc.get('metadata') || {};
   const executionType = String(meta.executionType || '').toLowerCase();
-  const createdAt = doc.get('createdAt');
+  const docCreatedAt = doc.get('createdAt');
+  const resolvedCreatedAt = overrides.createdAt != null
+    ? String(overrides.createdAt)
+    : (docCreatedAt ? docCreatedAt.toISOString() : undefined);
   return {
     documentId: doc.id,
     documentNumber: doc.get('accountingDocumentNumber') || '',
@@ -46,7 +53,7 @@ function mapDocumentToBelegLink(doc, overrides = {}) {
     label: overrides.label || defaultBelegLabel(doc),
     investmentId: overrides.investmentId ?? investmentIdFromDocument(doc) ?? undefined,
     investorId: overrides.investorId ?? (doc.get('userId') || undefined),
-    createdAt: createdAt ? createdAt.toISOString() : undefined,
+    createdAt: resolvedCreatedAt,
     visibility: overrides.visibility || 'customer',
     billKind: overrides.billKind,
   };
@@ -74,18 +81,26 @@ function buildTraderExecutionBelege(docs) {
     const ex = String((d.get('metadata') || {}).executionType || '').toLowerCase();
     return ex === 'buy' || /kauf|buy/i.test(d.get('name') || '');
   }));
-  const sells = sortDocsByCreatedAt(exec.filter((d) => {
+  const sells = sortTraderSellBelegeChronologically(exec.filter((d) => {
     const ex = String((d.get('metadata') || {}).executionType || '').toLowerCase();
     return ex === 'sell' || /verkauf|sell/i.test(d.get('name') || '');
   }));
   const buy = buys.length ? mapDocumentToBelegLink(buys[0]) : null;
-  const sellLinks = sells.map((d, i) => mapDocumentToBelegLink(d, {
-    label: sells.length > 1
-      ? `Verkaufsabrechnung (Trader) #${i + 1}`
-      : 'Verkaufsabrechnung (Trader)',
-    billKind: 'execution_sell',
-    visibility: 'customer',
-  }));
+  const sellLinks = sells.map((d, i) => {
+    const meta = d.get('metadata') || {};
+    const partial = meta.partialSell || {};
+    const eventIndex = partial.eventIndex ?? (i + 1);
+    const executedAt = partial.executedAt
+      || (d.get('createdAt') ? d.get('createdAt').toISOString() : undefined);
+    return mapDocumentToBelegLink(d, {
+      label: sells.length > 1
+        ? `Verkaufsabrechnung (Trader) #${eventIndex}`
+        : 'Verkaufsabrechnung (Trader)',
+      billKind: 'execution_sell',
+      visibility: 'customer',
+      createdAt: executedAt,
+    });
+  });
   return { buy, sells: sellLinks };
 }
 
@@ -179,7 +194,7 @@ function buildPoolMirrorExecutionBelege(poolDocs) {
     const ex = String((d.get('metadata') || {}).executionType || '').toLowerCase();
     return ex === 'buy';
   }));
-  const sells = sortDocsByCreatedAt(exec.filter((d) => {
+  const sells = sortTraderSellBelegeChronologically(exec.filter((d) => {
     const ex = String((d.get('metadata') || {}).executionType || '').toLowerCase();
     return ex === 'sell';
   }));
@@ -190,13 +205,19 @@ function buildPoolMirrorExecutionBelege(poolDocs) {
       billKind: 'pool_mirror_execution',
     })
     : null;
-  const sellLinks = sells.map((d, i) => mapDocumentToBelegLink(d, {
-    label: sells.length > 1
-      ? `Verkaufsabrechnung (Pool-Mirror) #${i + 1}`
-      : 'Verkaufsabrechnung (Pool-Mirror)',
-    billKind: 'pool_mirror_execution',
-    visibility: 'internal',
-  }));
+  const sellLinks = sells.map((d, i) => {
+    const partial = (d.get('metadata') || {}).partialSell || {};
+    const eventIndex = partial.eventIndex ?? (i + 1);
+    return mapDocumentToBelegLink(d, {
+      label: sells.length > 1
+        ? `Verkaufsabrechnung (Pool-Mirror) #${eventIndex}`
+        : 'Verkaufsabrechnung (Pool-Mirror)',
+      billKind: 'pool_mirror_execution',
+      visibility: 'internal',
+      createdAt: partial.executedAt
+        || (d.get('createdAt') ? d.get('createdAt').toISOString() : undefined),
+    });
+  });
   return { buy, sells: sellLinks };
 }
 

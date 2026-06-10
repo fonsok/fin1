@@ -51,6 +51,17 @@ export function BelegLinkRow({
         {beleg.label}
         {beleg.documentNumber ? ` · ${beleg.documentNumber}` : ''}
       </Link>
+      {beleg.createdAt && (
+        <span className={clsx('text-xs font-mono', adminMuted(isDark))}>
+          {new Date(beleg.createdAt).toLocaleString('de-DE', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+          })}
+        </span>
+      )}
       {internal && (
         <span
           className={clsx(

@@ -87,6 +87,17 @@ export function PartialSellEventsSection({
               <span className={clsx('text-sm font-semibold', adminStrong(isDark))}>
                 Event #{event.eventIndex}
                 {event.isFinalExit ? ' · Vollständiger Exit' : ''}
+                {event.traderSellBeleg?.createdAt && (
+                  <span className={clsx('font-normal font-mono text-xs ml-2', adminCaption(isDark))}>
+                    {new Date(event.traderSellBeleg.createdAt).toLocaleString('de-DE', {
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </span>
+                )}
               </span>
               <span className={clsx('text-xs font-mono', adminCaption(isDark))}>
                 Trader: {formatNumber(event.traderSellQuantity)} Stk
