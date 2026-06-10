@@ -22,6 +22,7 @@ Die **Dev-Login-Box** auf `/admin/login` (nur `import.meta.env.DEV`) liest diese
 ### Portal-Admins (`admin`, `business_admin`, `compliance`)
 
 - **Ein gemeinsames Operator-Passwort** für alle drei Bootstrap-Läufe: Variable **`BA_PASSWORD`** in **`scripts/.env.server`** (Vorlage: `scripts/.env.server.example`, Datei ist gitignored).
+- **Am Mac (interaktiv, Eingabe versteckt):** vom Repo-Root `./scripts/configure-local-ba-password.sh` — schreibt/aktualisiert nur `BA_PASSWORD` in `scripts/.env.server` (gitignored).
 - Auf dem Parse-Host nacheinander ausführen (jeweils mit demselben `BA_PASSWORD` in `.env.server` oder inline):
 
   ```bash
@@ -48,8 +49,16 @@ Die **Dev-Login-Box** auf `/admin/login` (nur `import.meta.env.DEV`) liest diese
 
 ---
 
-## 4. Kurz-Checkliste nach „wir erinnern uns nicht mehr“
+## 4. Smoke / SSH-Tunnel vom Mac
 
-1. Admins: `BA_PASSWORD='…'` in `scripts/.env.server` setzen, drei `create-*-admin.sh` auf dem Server ausführen.  
+- **LAN:** `./scripts/smoke-admin-get-user-details.sh` (liest `BA_PASSWORD` aus `scripts/.env.server`).
+- **SSH-Tunnel** (Terminal 1 offen lassen): `ssh -L 8443:127.0.0.1:443 io@192.168.178.20`  
+  Terminal 2: `PARSE_URL=https://127.0.0.1:8443/parse ./scripts/smoke-admin-get-user-details.sh`
+
+---
+
+## 5. Kurz-Checkliste nach „wir erinnern uns nicht mehr“
+
+1. Admins: `./scripts/configure-local-ba-password.sh` (Mac) oder `BA_PASSWORD='…'` in `scripts/.env.server`, dann drei `create-*-admin.sh` auf dem Server ausführen.  
 2. Compliance vergessen: nur `create-compliance-admin.sh` mit neuem `BA_PASSWORD` reicht.  
 3. CSR: `node backend/scripts/create_csr_users.js` gegen eure Parse-URL + Master Key (siehe Skript-Kopf), oder Passwörter in `CSR_USERS` anpassen und Skript erneut laufen lassen.
