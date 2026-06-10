@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { cloudFunction } from '../../api/admin';
 import { Card, Button, Badge } from '../../components/ui';
@@ -13,7 +13,7 @@ import {
   tableHeaderCellTextClasses,
   tableTheadSurfaceClasses,
 } from '../../utils/tableStriping';
-import { formatLedgerAccountDisplayLabel } from './appLedger/constants';
+import { formatLedgerAccountDisplayLabel, sortLedgerAccountsByExternalNumber } from './appLedger/constants';
 
 import { adminBorderChromeSoft, adminCaption, adminControlFieldPh500, adminDualMuted, adminMuted, adminPrimary, adminStrong } from '../../utils/adminThemeClasses';
 interface ContraPosting {
@@ -65,10 +65,16 @@ export function BankContraLedgerPage(): JSX.Element {
   });
 
   const postings = data?.postings || [];
-  const accounts = data?.accounts || [
-    { code: 'BANK-PS-NET', name: 'Bank Clearing – Service Charge NET' },
-    { code: 'BANK-PS-VAT', name: 'Bank Clearing – Service Charge VAT' },
-  ];
+  const accounts = useMemo(
+    () =>
+      sortLedgerAccountsByExternalNumber(
+        data?.accounts ?? [
+          { code: 'BANK-PS-NET', name: 'Bank Clearing – Service Charge NET' },
+          { code: 'BANK-PS-VAT', name: 'Bank Clearing – Service Charge VAT' },
+        ],
+      ),
+    [data?.accounts],
+  );
 
   const normalizedFilter = investorFilter.trim().toLowerCase();
   const filteredPostings = normalizedFilter

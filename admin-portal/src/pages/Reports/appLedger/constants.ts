@@ -1,5 +1,33 @@
 import clsx from 'clsx';
 
+export function parseLedgerExternalAccountNumber(value?: string): number | null {
+  const trimmed = String(value ?? '').trim();
+  if (!/^\d+$/.test(trimmed)) return null;
+  return Number.parseInt(trimmed, 10);
+}
+
+/** Ascending by SKR/external account number; unnumbered accounts last, then by internal code. */
+export function compareLedgerAccountsByExternalNumber(
+  a: { externalAccountNumber?: string; code: string },
+  b: { externalAccountNumber?: string; code: string },
+): number {
+  const numA = parseLedgerExternalAccountNumber(a.externalAccountNumber);
+  const numB = parseLedgerExternalAccountNumber(b.externalAccountNumber);
+  if (numA != null && numB != null) {
+    if (numA !== numB) return numA - numB;
+    return a.code.localeCompare(b.code);
+  }
+  if (numA != null) return -1;
+  if (numB != null) return 1;
+  return a.code.localeCompare(b.code);
+}
+
+export function sortLedgerAccountsByExternalNumber<T extends { externalAccountNumber?: string; code: string }>(
+  accounts: T[],
+): T[] {
+  return [...accounts].sort(compareLedgerAccountsByExternalNumber);
+}
+
 /** SKR / externes Konto vor Bezeichnung, z. B. „1591 Kundenguthaben – …“. */
 export function formatLedgerAccountDisplayLabel(account: {
   name: string;

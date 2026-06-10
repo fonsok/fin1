@@ -6,6 +6,7 @@ import { useDebounce } from '../../../../hooks/useDebounce';
 import { formatDateTime } from '../../../../utils/format';
 import { resolveDateRange } from '../../../../utils/dateRangePreset';
 import { transactionTypeDisplayLabel } from '../constants';
+import { sortLedgerAccountsByExternalNumber } from '../constants';
 import type { AccountDef, DateRangePreset, LedgerResponse, VATSummary } from '../types';
 
 /** Response shape of `exportAuditorFinancialCsv` (Parse Cloud). */
@@ -281,7 +282,10 @@ export function useAppLedgerPage() {
   const dataAccounts = data?.accounts;
   const dataTotals = data?.totals;
   const entries = useMemo(() => dataEntries ?? [], [dataEntries]);
-  const accounts = useMemo(() => dataAccounts ?? [], [dataAccounts]);
+  const accounts = useMemo(
+    () => sortLedgerAccountsByExternalNumber(dataAccounts ?? []),
+    [dataAccounts],
+  );
   const totalCount = data?.totalCount ?? 0;
   const filterScanTruncated = data?.filterScanTruncated ?? false;
 
@@ -300,12 +304,16 @@ export function useAppLedgerPage() {
 
   const groupedAccounts = useMemo(
     () =>
-      accounts.reduce<Record<string, AccountDef[]>>((acc, a) => {
-        const group = a.group || 'other';
-        if (!acc[group]) acc[group] = [];
-        acc[group].push(a);
-        return acc;
-      }, {}),
+      Object.fromEntries(
+        Object.entries(
+          accounts.reduce<Record<string, AccountDef[]>>((acc, a) => {
+            const group = a.group || 'other';
+            if (!acc[group]) acc[group] = [];
+            acc[group].push(a);
+            return acc;
+          }, {}),
+        ).map(([group, groupAccounts]) => [group, sortLedgerAccountsByExternalNumber(groupAccounts)]),
+      ),
     [accounts],
   );
 
