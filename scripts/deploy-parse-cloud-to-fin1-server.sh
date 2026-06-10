@@ -69,6 +69,8 @@ rsync -avz \
   "$PROJECT_ROOT/scripts/monitor-return-percentage-contract.js" \
   "$PROJECT_ROOT/scripts/monitor-trader-pool-bid-ask-contract.js" \
   "$PROJECT_ROOT/scripts/monitor-summary-report-performance.js" \
+  "$PROJECT_ROOT/scripts/monitor-settlement-gl-reconciliation.js" \
+  "$PROJECT_ROOT/scripts/run-settlement-gl-reconciliation-monitor.sh" \
   "$PROJECT_ROOT/scripts/monitor-admin-list-search-health.js" \
   "$PROJECT_ROOT/scripts/e2e-paired-sell-integrity-smoke.js" \
   "${REMOTE_USER}@${REMOTE_HOST}:~/fin1-server/scripts/"

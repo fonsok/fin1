@@ -115,8 +115,10 @@ Feature‑Flag (`FIN1_LEDGER_LEGACY_FEE_SYNTHESIS`, default off) gelegt.
   `commission`, `withholding_tax`, `order_fee:orderFee`). **Investor-Zeilen mit
   `investmentId`:** `leg` = `{baseLeg}:inv:{investmentId}` (sonst nur ein
   `commission_debit`-GL-Pair pro Trade trotz mehrerer Investoren).
-- Backfill historischer `AccountStatement`‑Zeilen: separater Admin‑Cloud‑Job
-  (out of scope dieser ADR; Skizze in PR4 / Roadmap).
+- Backfill historischer `AccountStatement`‑Zeilen: Cloud `backfillMissingSettlementGL`.
+- **Ops-Monitor:** `getSettlementGLReconciliationStatus` + Cron
+  `run-settlement-gl-reconciliation-monitor.sh` — vergleicht Statement-Zeilen mit
+  AppLedger-Legs (inkl. `PLT-LIAB-COM`-Summen pro Trade).
 
 ### Out of scope (Phase 2+)
 

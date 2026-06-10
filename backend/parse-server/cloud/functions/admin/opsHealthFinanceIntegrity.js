@@ -8,6 +8,7 @@ const { handleGetTradeSettlementConsistencyStatus } = require('./opsHealthTradeS
 const { handleGetPairedSellInvestorChainStatus } = require('./opsHealthPairedSellInvestorChain');
 const { handleGetFinanceIntegrityPreventionStatus } = require('./opsHealthFinancePrevention');
 const { handleGetTraderPoolBidAskContractStatus } = require('./opsHealthTraderPoolBidAskContract');
+const { handleGetSettlementGLReconciliationStatus } = require('./opsHealthSettlementGLReconciliation');
 
 const OVERALL_RANK = {
   healthy: 1,
@@ -92,6 +93,12 @@ async function handleGetFinanceIntegrityStatus(request) {
       'trader_pool_bid_ask_contract',
       'Trader↔Pool Bid/Ask-only economics',
       handleGetTraderPoolBidAskContractStatus,
+      { limit: Math.min(100, settlementLimit * 2) },
+    ),
+    safeCheck(
+      'settlement_gl_reconciliation',
+      'AccountStatement ↔ AppLedger settlement GL',
+      handleGetSettlementGLReconciliationStatus,
       { limit: Math.min(100, settlementLimit * 2) },
     ),
   ]);

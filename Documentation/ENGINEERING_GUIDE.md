@@ -212,6 +212,7 @@ Danach in Xcode erneut **▶ Run** (Destination weiterhin iPhone 17 Pro).
 | **Pool-Stückzahl** | `computeTradeLevelPoolBuyTotalsFromBid` — max. Stück aus Reserved + Bid, nicht `floor(reserved / traderEinstand)` |
 | **Contract-Monitor** | Cloud `getTraderPoolBidAskContractStatus` + Cron `run-trader-pool-bid-ask-contract-monitor.sh` |
 | **Report-Performance** | Cloud `benchmarkSummaryReportTradesPage` + Cron `run-summary-report-performance-monitor.sh` (100 Zeilen, Default &lt; 8s) |
+| **Statement↔GL-Monitor** | Cloud `getSettlementGLReconciliationStatus` + Cron `run-settlement-gl-reconciliation-monitor.sh`; Repair `backfillMissingSettlementGL` |
 
 **ADR:** [`Documentation/ADR-016-Trader-Pool-Bid-Ask-Link-And-Trade-Leg-Economics.md`](ADR-016-Trader-Pool-Bid-Ask-Link-And-Trade-Leg-Economics.md), [`Documentation/ADR-014-Pool-Buy-Immutability-And-Snapshot-Architecture.md`](ADR-014-Pool-Buy-Immutability-And-Snapshot-Architecture.md)
 

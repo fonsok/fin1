@@ -73,7 +73,7 @@ const REPAIR_CATALOG = [
     defaultParams: { dryRun: true },
     applyParams: { dryRun: false },
     notes: 'Replay AppLedger pairs from AccountStatement rows (per-investor commission/tax legs)',
-    relatedChecks: ['settlement_consistency'],
+    relatedChecks: ['settlement_consistency', 'settlement_gl_reconciliation'],
   },
   {
     id: 'trader_pool_bid_ask_contract',
