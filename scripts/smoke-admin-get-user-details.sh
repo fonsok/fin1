@@ -57,7 +57,7 @@ echo "  OK admin login"
 resolve_user_id() {
   local email="$1"
   local resp
-  resp="$(parse_call searchUsers "{\"search\":\"${email}\",\"limit\":5}" "$TOKEN")"
+  resp="$(parse_call searchUsers "{\"query\":\"${email}\",\"limit\":20}" "$TOKEN")"
   echo "$resp" | python3 -c "
 import json,sys
 r=json.load(sys.stdin).get('result',{})
@@ -99,10 +99,12 @@ TRADER_ID="$(resolve_user_id "$TRADER_EMAIL")"
 INVESTOR_ID="$(resolve_user_id "$INVESTOR_EMAIL")"
 if [ -z "$TRADER_ID" ]; then
   echo "FAIL: user not found: $TRADER_EMAIL" >&2
+  echo "  Hint: seed test users (seedTestUsers) or set SMOKE_TRADER_EMAIL in scripts/.env.server" >&2
   exit 1
 fi
 if [ -z "$INVESTOR_ID" ]; then
   echo "FAIL: user not found: $INVESTOR_EMAIL" >&2
+  echo "  Hint: seed test users (seedTestUsers) or set SMOKE_INVESTOR_EMAIL in scripts/.env.server" >&2
   exit 1
 fi
 
