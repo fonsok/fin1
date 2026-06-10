@@ -79,17 +79,18 @@ final class TermsAcceptanceViewModel: ObservableObject {
 
         do {
             let versionToAccept = self.currentTermsVersionForDisplay
-            let updatedUser = self.termsAcceptanceService.recordTermsAcceptance(
-                user: user,
-                version: versionToAccept
-            )
-
-            try await self.userService.updateProfile(updatedUser)
-            await self.recordConsentInBackendIfPossible(
+            try await self.recordConsentInBackend(
                 consentType: "terms_of_service",
                 version: versionToAccept,
                 documentHash: self.currentTermsHash
             )
+
+            let updatedUser = self.termsAcceptanceService.recordTermsAcceptance(
+                user: user,
+                version: versionToAccept
+            )
+            try await self.userService.updateProfile(updatedUser)
+            try? await self.userService.refreshUserData()
 
             self.needsTermsAcceptance = false
             self.isLoading = false
@@ -109,17 +110,18 @@ final class TermsAcceptanceViewModel: ObservableObject {
 
         do {
             let versionToAccept = self.currentPrivacyVersionForDisplay
-            let updatedUser = self.termsAcceptanceService.recordPrivacyPolicyAcceptance(
-                user: user,
-                version: versionToAccept
-            )
-
-            try await self.userService.updateProfile(updatedUser)
-            await self.recordConsentInBackendIfPossible(
+            try await self.recordConsentInBackend(
                 consentType: "privacy_policy",
                 version: versionToAccept,
                 documentHash: self.currentPrivacyHash
             )
+
+            let updatedUser = self.termsAcceptanceService.recordPrivacyPolicyAcceptance(
+                user: user,
+                version: versionToAccept
+            )
+            try await self.userService.updateProfile(updatedUser)
+            try? await self.userService.refreshUserData()
 
             self.needsPrivacyPolicyAcceptance = false
             self.isLoading = false
@@ -142,12 +144,14 @@ final class TermsAcceptanceViewModel: ObservableObject {
         let acceptedAt: String?
     }
 
-    private func recordConsentInBackendIfPossible(
+    private func recordConsentInBackend(
         consentType: String,
         version: String,
         documentHash: String?
-    ) async {
-        guard let parseAPIClient else { return }
+    ) async throws {
+        guard let parseAPIClient else {
+            throw AppError.serviceError(.serviceUnavailable)
+        }
 
         var parameters: [String: Any] = [
             "consentType": consentType,
@@ -161,7 +165,7 @@ final class TermsAcceptanceViewModel: ObservableObject {
             parameters["documentHash"] = documentHash
         }
 
-        let _: ConsentResult? = try? await parseAPIClient.callFunction(
+        let _: ConsentResult = try await parseAPIClient.callFunction(
             "recordLegalConsent",
             parameters: parameters
         )
