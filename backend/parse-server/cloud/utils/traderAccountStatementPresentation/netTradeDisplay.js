@@ -17,6 +17,7 @@ const {
   parseInstrumentFromTrade,
   parseInstrumentFromInvoice,
   resolveSellOrderForStatementLeg,
+  resolveInstrumentForDisplayEvent,
 } = require('./instruments');
 const { tradeStatementTitle } = require('./instrumentTitles');
 
@@ -55,11 +56,21 @@ function signedNetAmount(transactionType, netAmount) {
   return transactionType === 'sell' ? absAmount : -absAmount;
 }
 
-function buildDisplayEventFromInvoice(invoice, cashLegRows) {
+function buildDisplayEventFromInvoice(invoice, cashLegRows, instrumentContext = {}) {
   const transactionType = invoiceTransactionType(invoice);
   if (!transactionType) return null;
 
-  const instrument = parseInstrumentFromInvoice(invoice);
+  const { tradeById = new Map(), orderByTradeId = new Map() } = instrumentContext;
+  const tradeId = invoice.get('tradeId');
+  const trade = tradeId ? tradeById.get(tradeId) : null;
+  const order = tradeId ? orderByTradeId.get(tradeId) : null;
+  const invoiceInstrument = parseInstrumentFromInvoice(invoice);
+  const instrument = resolveInstrumentForDisplayEvent(
+    trade,
+    order,
+    transactionType,
+    invoiceInstrument,
+  );
   const beleg = preferredBackendBeleg(
     invoice.get('tradeId'),
     invoice.get('tradeNumber'),
@@ -190,7 +201,7 @@ function buildNetTradeDisplayEvents(stmtEntries, invoices, instrumentContext = {
     if (!isTraderCustomerVisibleTrade(invoiceTradeId, tradeById, orderByTradeId)) {
       continue;
     }
-    const event = buildDisplayEventFromInvoice(invoice, cashLegRows);
+    const event = buildDisplayEventFromInvoice(invoice, cashLegRows, instrumentContext);
     if (!event) continue;
     const alreadyCovered = event.transactionTypeLabel === 'buy'
       ? isTradeCovered(coveredBuy, event.tradeId, event.tradeNumber)

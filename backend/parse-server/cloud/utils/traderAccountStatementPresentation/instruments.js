@@ -123,39 +123,75 @@ function parseInstrumentFromInvoice(invoice) {
     .map((part) => part.trim())
     .filter(Boolean);
 
+  const wknOrIsin = components[0] || '';
+  const strikePart = components.find((part) => /^strike\b/i.test(part)) || '';
+  const underlyingAsset = resolveUnderlyingAsset(
+    components.slice(2).filter((part) => part !== strikePart),
+    wknOrIsin,
+  );
+
   const instrument = {
-    wknOrIsin: components[0] || '',
+    wknOrIsin,
     securitiesDirection: components[1] || '',
-    underlyingAsset: components[2] || '',
-    strikePrice: components[3] || '',
+    underlyingAsset,
+    strikePrice: strikePart || components[3] || '',
     issuer: components[4] || '',
     quantity: primary?.quantity != null ? String(primary.quantity) : '',
   };
   return instrument;
 }
 
+function mergeInstrumentFields(tradeInstrument, fallback = {}) {
+  return {
+    wknOrIsin: tradeInstrument.wknOrIsin || fallback.wknOrIsin || '',
+    securitiesDirection: tradeInstrument.securitiesDirection || fallback.securitiesDirection || '',
+    underlyingAsset: tradeInstrument.underlyingAsset || fallback.underlyingAsset || '',
+    strikePrice: tradeInstrument.strikePrice || fallback.strikePrice || '',
+    issuer: tradeInstrument.issuer || fallback.issuer || '',
+    quantity: fallback.quantity || tradeInstrument.quantity || '',
+  };
+}
+
+function resolveInstrumentForDisplayEvent(trade, order, transactionType, fallback = {}, opts = {}) {
+  if (!trade && !order) {
+    return { ...fallback };
+  }
+  const fromTrade = parseInstrumentFromTrade(trade, order, {
+    transactionType,
+    sellOrder: opts.sellOrder || null,
+  });
+  return mergeInstrumentFields(fromTrade, fallback);
+}
+
 function enrichTimelineWithTradeInstruments(timeline, tradeById, orderByTradeId) {
   return timeline.map((event) => {
-    if (event.wknOrIsin || !event.tradeId || !event.transactionTypeLabel) {
+    if (!event.tradeId || !event.transactionTypeLabel) {
       return event;
     }
     const trade = tradeById.get(event.tradeId);
     const order = orderByTradeId.get(event.tradeId);
     if (!trade && !order) return event;
-    const instrument = parseInstrumentFromTrade(trade, order, {
-      transactionType: event.transactionTypeLabel,
+
+    const instrument = resolveInstrumentForDisplayEvent(trade, order, event.transactionTypeLabel, {
+      wknOrIsin: event.wknOrIsin,
+      underlyingAsset: event.underlyingAsset,
+      securitiesDirection: event.securitiesDirection,
+      quantity: event.quantity,
+      strikePrice: event.strikePrice,
+      issuer: event.issuer,
     });
+
     if (!instrument.wknOrIsin && !instrument.securitiesDirection && !instrument.underlyingAsset) {
       return event;
     }
     return {
       ...event,
-      wknOrIsin: instrument.wknOrIsin || event.wknOrIsin,
-      underlyingAsset: instrument.underlyingAsset || event.underlyingAsset,
-      securitiesDirection: instrument.securitiesDirection || event.securitiesDirection,
-      quantity: instrument.quantity || event.quantity,
-      strikePrice: instrument.strikePrice || event.strikePrice,
-      issuer: instrument.issuer || event.issuer,
+      wknOrIsin: instrument.wknOrIsin || null,
+      underlyingAsset: instrument.underlyingAsset || null,
+      securitiesDirection: instrument.securitiesDirection || null,
+      quantity: instrument.quantity || null,
+      strikePrice: instrument.strikePrice || null,
+      issuer: instrument.issuer || null,
       statementTitle: tradeStatementTitle(event.transactionTypeLabel, instrument),
     };
   });
@@ -165,5 +201,6 @@ module.exports = {
   parseInstrumentFromTrade,
   parseInstrumentFromInvoice,
   resolveSellOrderForStatementLeg,
+  resolveInstrumentForDisplayEvent,
   enrichTimelineWithTradeInstruments,
 };

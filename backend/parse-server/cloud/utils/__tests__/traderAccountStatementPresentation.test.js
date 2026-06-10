@@ -316,6 +316,72 @@ describe('traderAccountStatementPresentation', () => {
     expect(enriched[0].statementTitle).toContain('ABC123');
   });
 
+  test('buy invoice display uses trade instrument and unified title schema', () => {
+    const t0 = new Date('2026-06-08T09:00:00Z');
+    const tradeId = 'trade-buy-inv';
+    const trade = {
+      id: tradeId,
+      get: (key) => ({
+        wkn: 'UB4PQLG',
+        symbol: 'UB4PQLG',
+        securityType: 'PUT',
+        quantity: 1000,
+        buyLegType: 'TRADER',
+        buyOrder: { wkn: 'UB4PQLG', optionDirection: 'PUT', underlyingAsset: 'UB4PQLG' },
+        sellOrder: { underlyingAsset: 'Dow Jones', optionDirection: 'PUT' },
+        sellOrders: [],
+      }[key]),
+    };
+    const invoices = [
+      mockInvoice('inv-buy', 'buy_invoice', 2513, t0, {
+        tradeId,
+        tradeNumber: 1,
+        invoiceNumber: 'INV-2026-0000001',
+        lineItems: [{
+          itemType: 'securities',
+          description: 'UB4PQLG - PUT - UB4PQLG - Strike 17191.23',
+          quantity: 1000,
+        }],
+      }),
+    ];
+    const instrumentContext = {
+      tradeById: new Map([[tradeId, trade]]),
+      orderByTradeId: new Map(),
+    };
+
+    const events = buildNetTradeDisplayEvents([], invoices, instrumentContext);
+    const buyEvents = events.filter((e) => e.entryType === 'trade_buy');
+    expect(buyEvents).toHaveLength(1);
+    expect(buyEvents[0].statementTitle).toBe('KAUF · PUT · Dow Jones · UB4PQLG');
+    expect(buyEvents[0].underlyingAsset).toBe('Dow Jones');
+  });
+
+  test('enrichTimelineWithTradeInstruments refreshes invoice buy title when wkn already set', () => {
+    const trade = {
+      get: (key) => ({
+        wkn: 'UB4PQLG',
+        securityType: 'PUT',
+        buyOrder: { wkn: 'UB4PQLG', optionDirection: 'PUT' },
+        sellOrder: { underlyingAsset: 'Dow Jones', optionDirection: 'PUT' },
+        sellOrders: [],
+      }[key]),
+    };
+    const timeline = [{
+      tradeId: 't1',
+      transactionTypeLabel: 'buy',
+      wknOrIsin: 'UB4PQLG',
+      underlyingAsset: 'UB4PQLG',
+      securitiesDirection: 'PUT',
+      statementTitle: 'KAUF UB4PQLG · PUT · UB4PQLG',
+    }];
+    const enriched = enrichTimelineWithTradeInstruments(
+      timeline,
+      new Map([['t1', trade]]),
+      new Map(),
+    );
+    expect(enriched[0].statementTitle).toBe('KAUF · PUT · Dow Jones · UB4PQLG');
+  });
+
   test('duplicate buy invoices for same tradeNumber show only once', () => {
     const t0 = new Date('2026-05-01T10:00:00Z');
     const invoices = [
