@@ -4,7 +4,22 @@ const {
   partitionInvestorCollectionBills,
   buildTraderBelege,
   buildPoolBelege,
+  collectTraderExecutionSplit,
+  attachBelegeToSummaryRows,
 } = require('../summaryReportTradeBelege');
+
+jest.mock('../documentBelegEnrichment', () => ({
+  enrichTraderDocumentMetadata: jest.fn(async (doc) => ({
+    ...(doc.get('metadata') || {}),
+    instrumentLine: 'Enriched Instrument',
+    fees: { orderFee: 9, exchangeFee: 1, foreignCosts: 1.5, totalFees: 11.5 },
+    amount: 1000,
+    quantity: 100,
+    price: 10,
+    belegSchemaVersion: 1,
+    traderDisplayName: 'Trader',
+  })),
+}));
 
 function mockDoc({
   id,
@@ -130,6 +145,48 @@ describe('summaryReportTradeBelege', () => {
     expect(investorPartialSells).toHaveLength(2);
     expect(investorPartialSells[0].visibility).toBe('internal');
     expect(investorPartialSells[0].billKind).toBe('partial_sell');
+  });
+
+  test('collectTraderExecutionSplit filters and sorts buy/sell once', () => {
+    const docs = [
+      mockDoc({ id: 'b1', type: 'traderCollectionBill', executionType: 'buy', docNumber: 'TBC-1' }),
+      mockDoc({ id: 's1', type: 'traderCollectionBill', executionType: 'sell', docNumber: 'TSC-1', createdAt: new Date('2026-01-02') }),
+      mockDoc({ id: 's2', type: 'traderCollectionBill', executionType: 'sell', docNumber: 'TSC-2', createdAt: new Date('2026-01-03') }),
+    ];
+    const split = collectTraderExecutionSplit(docs);
+    expect(split.buys).toHaveLength(1);
+    expect(split.sells).toHaveLength(2);
+    expect(split.sells[0].id).toBe('s1');
+    const belege = buildTraderBelege(docs, split);
+    expect(belege.sells).toHaveLength(2);
+    expect(belege.sells[0].documentId).toBe('s1');
+  });
+
+  test('attachBelegeToSummaryRows enriches sparse sell legs only when shown', async () => {
+    const sparseSell = {
+      id: 's-sparse',
+      get(key) {
+        const data = {
+          type: 'traderCollectionBill',
+          tradeId: 'trade-1',
+          accountingDocumentNumber: 'TSC-SPARSE',
+          metadata: { executionType: 'sell', amount: 50 },
+          createdAt: new Date('2026-06-10'),
+        };
+        if (key === 'name') return 'Verkauf';
+        return data[key];
+      },
+    };
+    const docsByTradeId = new Map([['trade-1', [sparseSell]]]);
+    const rows = [{
+      tradeId: 'trade-1',
+      legKind: 'trader',
+      status: 'partial',
+      poolParticipations: [],
+    }];
+    const out = await attachBelegeToSummaryRows(rows, docsByTradeId);
+    expect(out[0].traderSellLegs).toHaveLength(1);
+    expect(out[0].traderSellLegs[0].instrumentLine).toBe('Enriched Instrument');
   });
 
   test('buildPoolBelege uses pool mirror eigenbeleg docs, not trader TBC', () => {

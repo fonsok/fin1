@@ -1,20 +1,8 @@
 'use strict';
 
-const { projectDocumentDetail } = require('./documentBelegPresentation');
 const {
-  sortTraderSellBelegeChronologically,
-} = require('../../../utils/accountingHelper/traderCollectionBillBelegSnapshot/partialSellSnapshot');
-
-function isTraderSellDoc(doc) {
-  const type = String(doc.get('type') || '');
-  if (type !== 'traderCollectionBill' && type !== 'trade_execution_document') return false;
-  const ex = String((doc.get('metadata') || {}).executionType || '').toLowerCase();
-  return ex === 'sell' || /verkauf|sell/i.test(doc.get('name') || '');
-}
-
-function collectTraderSellDocs(traderDocs) {
-  return sortTraderSellBelegeChronologically((traderDocs || []).filter(isTraderSellDoc));
-}
+  traderCollectionBillDisplaySections,
+} = require('../../../utils/accountingHelper/traderCollectionBillBelegSnapshot');
 
 function shouldShowTraderSellLegs(sellDocs, tradeStatus) {
   if (sellDocs.length > 1) return true;
@@ -32,12 +20,12 @@ function rowsFromSection(sections, title) {
   return section?.rows?.map((r) => ({ label: r.label, value: String(r.value ?? '') })) ?? [];
 }
 
-function buildTraderSellLegCard(doc, index, total) {
-  const meta = doc.get('metadata') || {};
+function buildTraderSellLegCard(doc, index, total, metaOverride) {
+  const meta = metaOverride ?? (doc.get('metadata') || {});
   const partial = meta.partialSell && typeof meta.partialSell === 'object' ? meta.partialSell : null;
   const eventIndex = partial?.eventIndex ?? (index + 1);
   const totalSellEvents = partial?.totalSellEvents ?? total;
-  const { displaySections } = projectDocumentDetail(doc, meta);
+  const displaySections = traderCollectionBillDisplaySections(meta, doc);
   const executedAt = partial?.executedAt
     || (doc.get('createdAt') ? doc.get('createdAt').toISOString() : undefined);
 
@@ -56,15 +44,23 @@ function buildTraderSellLegCard(doc, index, total) {
   };
 }
 
-function buildTraderSellLegsFromDocs(traderDocs, tradeStatus) {
-  const sells = collectTraderSellDocs(traderDocs);
+function buildTraderSellLegsFromSells(sells, tradeStatus, enrichedMetaByDocId) {
   if (!shouldShowTraderSellLegs(sells, tradeStatus)) return [];
+  const metaMap = enrichedMetaByDocId instanceof Map ? enrichedMetaByDocId : new Map();
 
-  return sells.map((doc, index) => buildTraderSellLegCard(doc, index, sells.length));
+  return sells.map((doc, index) => {
+    const enriched = metaMap.get(doc.id);
+    return buildTraderSellLegCard(
+      doc,
+      index,
+      sells.length,
+      enriched !== undefined ? enriched : undefined,
+    );
+  });
 }
 
 module.exports = {
-  collectTraderSellDocs,
   shouldShowTraderSellLegs,
-  buildTraderSellLegsFromDocs,
+  buildTraderSellLegsFromSells,
+  buildTraderSellLegCard,
 };

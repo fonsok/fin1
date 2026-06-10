@@ -17,6 +17,7 @@ import {
   adminPrimary,
 } from '../../../utils/adminThemeClasses';
 import { TradeChevronIcon, TradeLegBadge, TradeStatusBadge } from './TradeBadges';
+import { AdminUserDetailLink } from '../../../components/AdminUserDetailLink';
 import { TradeExpandPanel } from './TradeExpandPanel';
 import type { SummaryReportTradeRow } from './types';
 import {
@@ -220,7 +221,11 @@ function SummaryReportTradeTableRow({
           {trade.symbol}
         </td>
         <td className={clsx('px-4 py-3 text-sm', adminBodyStrong(isDark))}>
-          {trade.traderName || trade.traderId || '—'}
+          <AdminUserDetailLink
+            userId={trade.traderId}
+            label={trade.traderName || trade.traderId}
+            isDark={isDark}
+          />
         </td>
         <td className="px-4 py-3">
           <TradeLegBadge legKind={legKind} />

@@ -23,6 +23,17 @@ const {
 } = require('./summaryReportPairedLegResolver');
 const { enrichParticipationDisplayFields } = require('./summaryReportParticipationLoader');
 
+function syncPoolMirrorInvestorCount(poolMirrorTrade, poolParticipations) {
+  if (!poolMirrorTrade) return poolMirrorTrade;
+  const parts = Array.isArray(poolParticipations) ? poolParticipations : [];
+  const investorIds = new Set(parts.map((p) => p?.investorId).filter(Boolean));
+  const fromParticipations = investorIds.size || parts.length;
+  const snapCount = Number(poolMirrorTrade.poolInvestorCount || 0);
+  const count = Math.max(fromParticipations, snapCount);
+  if (count === snapCount) return poolMirrorTrade;
+  return { ...poolMirrorTrade, poolInvestorCount: count };
+}
+
 async function enrichSummaryReportTrades(tradeRows, baseItems, options = {}) {
   const config = await loadConfig();
   const feeConfig = config.financial || {};
@@ -36,12 +47,13 @@ async function enrichSummaryReportTrades(tradeRows, baseItems, options = {}) {
   await applyMissingTraderLinks(items, tradeRows, bundle);
 
   const docsByTradeId = await loadDocumentsByTradeIds(collectTradeIdsFromDraftRows(items));
-  const withBelege = attachBelegeToSummaryRows(items, docsByTradeId);
+  const withBelege = await attachBelegeToSummaryRows(items, docsByTradeId);
 
   return withBelege.map((row) => {
     const costBasis = row.poolMirrorTrade?.costBasisPerShare || row.traderTrade?.costBasisPerShare || 0;
     const poolParticipations = enrichParticipationDisplayFields(row.poolParticipations || [], costBasis);
-    return { ...row, poolParticipations };
+    const poolMirrorTrade = syncPoolMirrorInvestorCount(row.poolMirrorTrade, poolParticipations);
+    return { ...row, poolParticipations, poolMirrorTrade };
   });
 }
 
@@ -78,4 +90,5 @@ module.exports = {
   enrichSummaryReportTrades,
   attachPartialSellEventsToSummaryRows,
   resolvePairedLegContextsByTradeId,
+  syncPoolMirrorInvestorCount,
 };

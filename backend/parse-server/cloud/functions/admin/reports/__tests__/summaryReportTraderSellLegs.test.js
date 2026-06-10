@@ -2,7 +2,8 @@
 
 const {
   shouldShowTraderSellLegs,
-  buildTraderSellLegsFromDocs,
+  buildTraderSellLegsFromSells,
+  buildTraderSellLegCard,
 } = require('../summaryReportTraderSellLegs');
 
 function mockSellDoc({
@@ -15,7 +16,6 @@ function mockSellDoc({
   amount,
   fees,
   totalWithFees,
-  executedAt,
 }) {
   return {
     id,
@@ -24,6 +24,8 @@ function mockSellDoc({
         type: 'traderCollectionBill',
         accountingDocumentNumber: docNumber,
         metadata: {
+          belegSchemaVersion: 1,
+          traderDisplayName: 'Trader One',
           executionType: 'sell',
           instrumentLine: instrumentLine || 'VO5G3MN - Put - DAX - Strike 38900',
           quantity: quantity ?? 800,
@@ -56,8 +58,8 @@ describe('summaryReportTraderSellLegs', () => {
     expect(shouldShowTraderSellLegs([mockSellDoc({ id: 'a', partialSell: null })], 'completed')).toBe(false);
   });
 
-  test('buildTraderSellLegsFromDocs maps Collection-Bill-style cards', () => {
-    const docs = [
+  test('buildTraderSellLegsFromSells maps Collection-Bill-style cards via displaySections', () => {
+    const sells = [
       mockSellDoc({
         id: 's1',
         docNumber: 'TSC-2026-0000134',
@@ -88,12 +90,40 @@ describe('summaryReportTraderSellLegs', () => {
         totalWithFees: 880.9,
       }),
     ];
-    const legs = buildTraderSellLegsFromDocs(docs, 'partial');
+    const legs = buildTraderSellLegsFromSells(sells, 'partial');
     expect(legs).toHaveLength(2);
     expect(legs[0].title).toBe('VERKAUF - Nr. 1/3');
     expect(legs[1].title).toBe('VERKAUF - Nr. 2/3');
     expect(legs[0].verkaufRows.some((r) => r.label === 'Ordervolumen')).toBe(true);
     expect(legs[0].verkaufRows.some((r) => r.label === 'Σ VERKAUF')).toBe(true);
     expect(legs[0].partialSellRows.some((r) => r.label === 'Reihenfolge')).toBe(true);
+  });
+
+  test('buildTraderSellLegCard uses enriched metadata override', () => {
+    const doc = mockSellDoc({
+      id: 's1',
+      docNumber: 'TSC-1',
+      instrumentLine: '',
+      quantity: 0,
+      amount: 0,
+      fees: { orderFee: 0, exchangeFee: 0, foreignCosts: 0, totalFees: 0 },
+      totalWithFees: 0,
+    });
+    const enriched = {
+      belegSchemaVersion: 1,
+      traderDisplayName: 'Trader One',
+      executionType: 'sell',
+      instrumentLine: 'ENRICHED - Put - DAX',
+      quantity: 500,
+      price: 2,
+      amount: 1000,
+      fees: { orderFee: 5, exchangeFee: 1, foreignCosts: 1.5, totalFees: 7.5 },
+      totalWithFees: 992.5,
+      valueDate: '10.06.26',
+      closingDate: '10.06.2026, 17:04 Uhr',
+    };
+    const leg = buildTraderSellLegCard(doc, 0, 1, enriched);
+    expect(leg.instrumentLine).toBe('ENRICHED - Put - DAX');
+    expect(leg.verkaufRows.some((r) => r.label === 'Ordervolumen' && r.value.includes('500'))).toBe(true);
   });
 });

@@ -21,7 +21,7 @@ export function TradeExpandPanel({
   trade: SummaryReportTradeRow;
   isDark: boolean;
 }): JSX.Element {
-  const [poolOpen, setPoolOpen] = useState(true);
+  const [poolOpen, setPoolOpen] = useState(false);
   const participations = trade.poolParticipations ?? [];
   const legKind = trade.legKind ?? 'standalone';
   const rowIsPoolMirror = trade.poolMirrorTrade?.tradeId === trade.tradeId;
@@ -29,6 +29,11 @@ export function TradeExpandPanel({
   const poolSnap = trade.poolMirrorTrade ?? null;
   const traderBelege = trade.traderBelege ?? null;
   const poolBelege = trade.poolBelege ?? null;
+  const poolInvestorCount = Math.max(
+    participations.length,
+    poolSnap?.poolInvestorCount ?? 0,
+    trade.investorIds?.length ?? 0,
+  );
 
   return (
     <div
@@ -87,7 +92,7 @@ export function TradeExpandPanel({
             <span className={clsx('text-sm font-semibold', adminStrong(isDark))}>
               Pool-Mirror-Trade
               {poolSnap
-                ? ` (#${String(poolSnap.tradeNumber).padStart(3, '0')} · ${poolSnap.poolInvestorCount ?? participations.length} Investoren)`
+                ? ` (#${String(poolSnap.tradeNumber).padStart(3, '0')} · ${poolInvestorCount} Investoren)`
                 : ''}
             </span>
             <TradeChevronIcon expanded={poolOpen} />

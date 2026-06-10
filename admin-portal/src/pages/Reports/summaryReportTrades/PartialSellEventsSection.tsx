@@ -5,6 +5,7 @@ import {
   adminMuted,
   adminStrong,
 } from '../../../utils/adminThemeClasses';
+import { AdminUserDetailLink } from '../../../components/AdminUserDetailLink';
 import { BelegLinkRow } from './BelegLinkRow';
 import type { SummaryReportPartialSellEvent } from './types';
 
@@ -35,7 +36,11 @@ function InvestorRealizationsTable({
           {rows.map((r) => (
             <tr key={r.investmentId || r.investorId} className={clsx(isDark ? 'text-slate-200' : 'text-gray-800')}>
               <td className="py-1 pr-3">
-                <span className="font-medium">{r.investorName || '—'}</span>
+                <AdminUserDetailLink
+                  userId={r.investorId}
+                  label={r.investorName}
+                  isDark={isDark}
+                />
                 {r.investmentNumber && (
                   <span className={clsx('block font-mono', adminCaption(isDark))}>{r.investmentNumber}</span>
                 )}

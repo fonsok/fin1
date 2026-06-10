@@ -14,6 +14,7 @@ import { UserTradeCard } from './components/UserTradeCard';
 import { InvestmentTable } from './components/InvestmentTable';
 import { AccountStatementCard } from './components/AccountStatementCard';
 import { orientInvestorStatementsForAdminPortal } from './utils/orientInvestorStatementsForAdminPortal';
+import { resolveUserDetailErrorMessage } from './utils/resolveUserDetailErrorMessage';
 import { UserActionModal } from './components/UserActionModal';
 import { DetailRow, StatBox } from './components/UserShared';
 
@@ -111,9 +112,10 @@ export function UserDetailPage() {
   }
 
   if (error || !user) {
+    const errorMessage = resolveUserDetailErrorMessage(error, userId);
     return (
       <Card className="text-center py-8">
-        <p className={clsx(isDark ? 'text-red-400' : 'text-red-500')}>Benutzer nicht gefunden</p>
+        <p className={clsx(isDark ? 'text-red-400' : 'text-red-500')}>{errorMessage}</p>
         <Button variant="secondary" className="mt-4" onClick={() => navigate('/users')}>
           Zurück zur Liste
         </Button>

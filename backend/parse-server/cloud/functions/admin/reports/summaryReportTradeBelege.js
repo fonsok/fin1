@@ -3,7 +3,12 @@
 const {
   sortTraderSellBelegeChronologically,
 } = require('../../../utils/accountingHelper/traderCollectionBillBelegSnapshot/partialSellSnapshot');
-const { buildTraderSellLegsFromDocs } = require('./summaryReportTraderSellLegs');
+const { metadataNeedsBackfill } = require('../../../utils/accountingHelper/traderCollectionBillBelegSnapshot');
+const { enrichTraderDocumentMetadata } = require('./documentBelegEnrichment');
+const {
+  shouldShowTraderSellLegs,
+  buildTraderSellLegsFromSells,
+} = require('./summaryReportTraderSellLegs');
 
 const BELEG_DOCUMENT_TYPES = [
   'traderCollectionBill',
@@ -76,16 +81,25 @@ function isTraderExecutionDoc(doc) {
   return ex === 'buy' || ex === 'sell';
 }
 
-function buildTraderExecutionBelege(docs) {
-  const exec = docs.filter(isTraderExecutionDoc);
-  const buys = sortDocsByCreatedAt(exec.filter((d) => {
-    const ex = String((d.get('metadata') || {}).executionType || '').toLowerCase();
-    return ex === 'buy' || /kauf|buy/i.test(d.get('name') || '');
-  }));
-  const sells = sortTraderSellBelegeChronologically(exec.filter((d) => {
-    const ex = String((d.get('metadata') || {}).executionType || '').toLowerCase();
-    return ex === 'sell' || /verkauf|sell/i.test(d.get('name') || '');
-  }));
+function isTraderBuyExecutionDoc(doc) {
+  const ex = String((doc.get('metadata') || {}).executionType || '').toLowerCase();
+  return ex === 'buy' || /kauf|buy/i.test(doc.get('name') || '');
+}
+
+function isTraderSellExecutionDoc(doc) {
+  const ex = String((doc.get('metadata') || {}).executionType || '').toLowerCase();
+  return ex === 'sell' || /verkauf|sell/i.test(doc.get('name') || '');
+}
+
+/** Single filter/sort pass for trader execution docs (buy + sell legs). */
+function collectTraderExecutionSplit(docs) {
+  const exec = (docs || []).filter(isTraderExecutionDoc);
+  const buys = sortDocsByCreatedAt(exec.filter(isTraderBuyExecutionDoc));
+  const sells = sortTraderSellBelegeChronologically(exec.filter(isTraderSellExecutionDoc));
+  return { buys, sells };
+}
+
+function buildTraderExecutionBelegeFromSplit({ buys, sells }) {
   const buy = buys.length ? mapDocumentToBelegLink(buys[0]) : null;
   const sellLinks = sells.map((d, i) => {
     const meta = d.get('metadata') || {};
@@ -105,8 +119,14 @@ function buildTraderExecutionBelege(docs) {
   return { buy, sells: sellLinks };
 }
 
-function buildTraderBelege(docs) {
-  const traderExecution = buildTraderExecutionBelege(docs);
+function buildTraderExecutionBelege(docs) {
+  return buildTraderExecutionBelegeFromSplit(collectTraderExecutionSplit(docs));
+}
+
+function buildTraderBelege(docs, executionSplit) {
+  const traderExecution = buildTraderExecutionBelegeFromSplit(
+    executionSplit || collectTraderExecutionSplit(docs),
+  );
   const creditDoc = sortDocsByCreatedAt(
     docs.filter((d) => String(d.get('type') || '') === 'traderCreditNote'),
   )[0];
@@ -285,29 +305,86 @@ function collectTradeIdsFromDraftRows(rows) {
   return [...ids];
 }
 
-function attachBelegeToSummaryRows(rows, docsByTradeId) {
-  return rows.map((row) => {
-    const traderTradeId =
-      row.traderTrade?.tradeId
-      || row.linkedTraderTrade?.tradeId
-      || (row.legKind === 'trader' || row.legKind === 'standalone' ? row.tradeId : null);
-    const poolTradeId = row.poolMirrorTrade?.tradeId || null;
+function resolveTraderTradeIdForRow(row) {
+  return row.traderTrade?.tradeId
+    || row.linkedTraderTrade?.tradeId
+    || (row.legKind === 'trader' || row.legKind === 'standalone' ? row.tradeId : null);
+}
 
+function resolveTraderTradeStatusForRow(row) {
+  return row.traderTrade?.status
+    || row.linkedTraderTrade?.status
+    || (row.legKind === 'trader' || row.legKind === 'standalone' ? row.status : null);
+}
+
+function collectSellDocsNeedingMetadataEnrichment(rowContexts) {
+  const candidates = new Map();
+  for (const ctx of rowContexts) {
+    if (!ctx.traderTradeId || !shouldShowTraderSellLegs(ctx.executionSplit.sells, ctx.traderTradeStatus)) {
+      continue;
+    }
+    for (const doc of ctx.executionSplit.sells) {
+      if (!metadataNeedsBackfill(doc.get('metadata') || {})) continue;
+      candidates.set(doc.id, doc);
+    }
+  }
+  return candidates;
+}
+
+async function enrichSellLegMetadataByDocId(candidates) {
+  const enrichedMetaByDocId = new Map();
+  if (!candidates.size) return enrichedMetaByDocId;
+
+  const entries = await Promise.all(
+    [...candidates.entries()].map(async ([docId, doc]) => {
+      const meta = await enrichTraderDocumentMetadata(doc);
+      return [docId, meta];
+    }),
+  );
+  for (const [docId, meta] of entries) {
+    enrichedMetaByDocId.set(docId, meta);
+  }
+  return enrichedMetaByDocId;
+}
+
+async function attachBelegeToSummaryRows(rows, docsByTradeId) {
+  const rowContexts = rows.map((row) => {
+    const traderTradeId = resolveTraderTradeIdForRow(row);
+    const poolTradeId = row.poolMirrorTrade?.tradeId || null;
     const traderDocs = traderTradeId ? (docsByTradeId.get(traderTradeId) || []) : [];
     const poolDocs = poolTradeId ? (docsByTradeId.get(poolTradeId) || []) : [];
+    const executionSplit = collectTraderExecutionSplit(traderDocs);
 
-    const traderBelege = traderTradeId ? buildTraderBelege(traderDocs) : null;
-    const traderTradeStatus =
-      row.traderTrade?.status
-      || row.linkedTraderTrade?.status
-      || (row.legKind === 'trader' || row.legKind === 'standalone' ? row.status : null);
-    const traderSellLegs = traderTradeId
-      ? buildTraderSellLegsFromDocs(traderDocs, traderTradeStatus)
+    return {
+      row,
+      traderTradeId,
+      poolTradeId,
+      traderDocs,
+      poolDocs,
+      executionSplit,
+      traderTradeStatus: resolveTraderTradeStatusForRow(row),
+    };
+  });
+
+  const enrichedMetaByDocId = await enrichSellLegMetadataByDocId(
+    collectSellDocsNeedingMetadataEnrichment(rowContexts),
+  );
+
+  return rowContexts.map((ctx) => {
+    const traderBelege = ctx.traderTradeId
+      ? buildTraderBelege(ctx.traderDocs, ctx.executionSplit)
+      : null;
+    const traderSellLegs = ctx.traderTradeId
+      ? buildTraderSellLegsFromSells(
+        ctx.executionSplit.sells,
+        ctx.traderTradeStatus,
+        enrichedMetaByDocId,
+      )
       : [];
-    const poolBelege = poolTradeId
+    const poolBelege = ctx.poolTradeId
       ? buildPoolBelege({
-        poolDocs,
-        participations: row.poolParticipations || [],
+        poolDocs: ctx.poolDocs,
+        participations: ctx.row.poolParticipations || [],
       })
       : null;
 
@@ -321,7 +398,7 @@ function attachBelegeToSummaryRows(rows, docsByTradeId) {
       : { buy: null, sell: null };
 
     return {
-      ...row,
+      ...ctx.row,
       traderBelege,
       traderSellLegs,
       poolBelege,
@@ -335,6 +412,7 @@ module.exports = {
   loadDocumentsByTradeIds,
   collectTradeIdsFromDraftRows,
   attachBelegeToSummaryRows,
+  collectTraderExecutionSplit,
   buildTraderBelege,
   buildPoolBelege,
   partitionInvestorCollectionBills,

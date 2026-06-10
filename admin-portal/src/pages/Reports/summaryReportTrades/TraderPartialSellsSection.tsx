@@ -156,7 +156,7 @@ export function TraderPartialSellsSection({
   legs: SummaryReportTraderSellLeg[] | undefined;
   isDark: boolean;
 }): JSX.Element | null {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   if (!legs?.length) return null;
 
   return (
@@ -177,10 +177,10 @@ export function TraderPartialSellsSection({
       >
         <span className="min-w-0">
           <span className={clsx('text-sm font-semibold block', adminStrong(isDark))}>
-            Trader-Verkäufe ({legs.length})
+            Trader-(Teil-)Verkäufe ({legs.length})
           </span>
           <span className={clsx('text-xs mt-0.5 block', adminCaption(isDark))}>
-            Einzelne Verkaufsabrechnungen wie in der Trader Collection Bill
+            Einzelne (Teil-)Verkaufsabrechnungen wie in der Trader Collection Bill
           </span>
         </span>
         <TradeChevronIcon expanded={open} />
@@ -193,7 +193,7 @@ export function TraderPartialSellsSection({
             isDark ? 'border-slate-600 bg-slate-900/40' : 'border-blue-200 bg-white/70',
           )}
         >
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
             {legs.map((leg) => (
               <TraderSellLegCard key={leg.documentId} leg={leg} isDark={isDark} />
             ))}

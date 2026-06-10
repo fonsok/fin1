@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { cloudFunction, searchUsers } from '../../api/admin';
+import { AdminUserDetailLink } from '../../components/AdminUserDetailLink';
 import { Card, Button, Badge, PaginationBar, Input } from '../../components/ui';
 import { useDebounce } from '../../hooks/useDebounce';
 import { useDateRangeFilter } from '../../hooks/useDateRangeFilter';
@@ -498,10 +499,18 @@ function InvestmentsTab() {
                   {inv.investmentNumber}
                 </td>
                 <td className={clsx('px-4 py-3 text-sm', adminBodyStrong(isDark))}>
-                  {inv.investorName}
+                  <AdminUserDetailLink
+                    userId={inv.investorId}
+                    label={inv.investorName}
+                    isDark={isDark}
+                  />
                 </td>
                 <td className={clsx('px-4 py-3 text-sm', adminBodyStrong(isDark))}>
-                  {inv.traderName}
+                  <AdminUserDetailLink
+                    userId={inv.traderId}
+                    label={inv.traderName}
+                    isDark={isDark}
+                  />
                 </td>
                 <td className={clsx('px-4 py-3 text-sm text-right', adminBodyStrong(isDark))}>
                   {formatCurrency(inv.amount)}

@@ -1,11 +1,11 @@
 'use strict';
 
+const { buildLedgerAccountStatementFromStmtEntries } = require('../usersDetailStatementsAndWallet/ledgerStatement');
 const {
   mapTraderTimelineToAdminEntries,
-  buildLedgerAccountStatementFromStmtEntries,
   mapInvestorTimelineToAdminEntries,
-  mapInvestorCollectionBillDocumentToSummary,
-} = require('../usersDetailStatementsAndWallet');
+} = require('../usersDetailStatementsAndWallet/timelineMappers');
+const { mapInvestorCollectionBillDocumentToSummary } = require('../usersDetailStatementsAndWallet/collectionBillSummaries');
 const { buildInvestorMergedTimeline, buildInvestorLedgerGoBTimeline } = require('../../../utils/investorAccountStatementMerge');
 
 describe('usersDetailStatementsAndWallet', () => {

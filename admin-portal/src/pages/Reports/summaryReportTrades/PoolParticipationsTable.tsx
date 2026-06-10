@@ -9,6 +9,7 @@ import {
   adminPrimary,
   adminStrong,
 } from '../../../utils/adminThemeClasses';
+import { AdminUserDetailLink } from '../../../components/AdminUserDetailLink';
 import type { SummaryReportPoolParticipation } from './types';
 
 export function PoolParticipationsTable({
@@ -51,7 +52,11 @@ export function PoolParticipationsTable({
               className={listRowStripeClasses(isDark, idx, { hover: false })}
             >
               <td className="px-3 py-2">
-                <p className={clsx('font-medium', adminPrimary(isDark))}>{p.investorName}</p>
+                <AdminUserDetailLink
+                  userId={p.investorId}
+                  label={p.investorName || p.investorEmail}
+                  isDark={isDark}
+                />
                 <p className={clsx('text-xs', adminMuted(isDark))}>{p.investorEmail}</p>
               </td>
               <td className={clsx('px-3 py-2 font-mono text-xs', adminMuted(isDark))}>
