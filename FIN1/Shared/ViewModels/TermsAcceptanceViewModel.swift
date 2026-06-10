@@ -25,6 +25,8 @@ final class TermsAcceptanceViewModel: ObservableObject {
     @Published private(set) var currentPrivacyVersionForDisplay: String = TermsVersionConstants.currentPrivacyPolicyVersion
     @Published private(set) var currentTermsHash: String?
     @Published private(set) var currentPrivacyHash: String?
+    /// False until first `checkAcceptanceStatus` — prevents premature `canProceed`.
+    @Published private(set) var hasLoadedAcceptanceStatus = false
 
     // MARK: - Initialization
 
@@ -50,6 +52,7 @@ final class TermsAcceptanceViewModel: ObservableObject {
         guard let user = userService.currentUser else {
             self.needsTermsAcceptance = false
             self.needsPrivacyPolicyAcceptance = false
+            self.hasLoadedAcceptanceStatus = false
             return
         }
 
@@ -65,6 +68,7 @@ final class TermsAcceptanceViewModel: ObservableObject {
             user: user,
             currentServerVersion: currentPrivacyVersion
         )
+        self.hasLoadedAcceptanceStatus = true
     }
 
     // MARK: - Acceptance Actions
@@ -91,8 +95,7 @@ final class TermsAcceptanceViewModel: ObservableObject {
             )
             try await self.userService.updateProfile(updatedUser)
             try? await self.userService.refreshUserData()
-
-            self.needsTermsAcceptance = false
+            self.checkAcceptanceStatus()
             self.isLoading = false
         } catch {
             self.errorMessage = error.localizedDescription
@@ -122,8 +125,7 @@ final class TermsAcceptanceViewModel: ObservableObject {
             )
             try await self.userService.updateProfile(updatedUser)
             try? await self.userService.refreshUserData()
-
-            self.needsPrivacyPolicyAcceptance = false
+            self.checkAcceptanceStatus()
             self.isLoading = false
         } catch {
             self.errorMessage = error.localizedDescription
@@ -134,7 +136,9 @@ final class TermsAcceptanceViewModel: ObservableObject {
     // MARK: - Computed Properties
 
     var canProceed: Bool {
-        !self.needsTermsAcceptance && !self.needsPrivacyPolicyAcceptance
+        self.hasLoadedAcceptanceStatus
+            && !self.needsTermsAcceptance
+            && !self.needsPrivacyPolicyAcceptance
     }
 
     // MARK: - Backend Consent Recording (Audit)

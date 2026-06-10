@@ -92,9 +92,12 @@ struct AuthenticationView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .userDataDidUpdate)) { _ in
             if self.isAuthenticated {
-                self.checkTermsAcceptance()
+                self.showTermsAcceptanceModalIfStillRequired()
                 self.checkOnboardingStatus()
             }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .legalConsentAcceptanceCompleted)) { _ in
+            self.showTermsAcceptance = false
         }
     }
 
@@ -148,12 +151,15 @@ struct AuthenticationView: View {
     // MARK: - Private Methods
 
     private func checkTermsAcceptance() {
+        self.showTermsAcceptanceModalIfStillRequired()
+    }
+
+    /// Show blocking modal when consent is still required; never hide on partial acceptance.
+    private func showTermsAcceptanceModalIfStillRequired() {
         guard let user = services.userService.currentUser else {
-            self.showTermsAcceptance = false
             return
         }
 
-        // Server-driven: determine current versions via TermsContentService (best effort).
         Task {
             let termsVersion = await resolveCurrentVersion(documentType: .terms)
             let privacyVersion = await resolveCurrentVersion(documentType: .privacy)
@@ -168,7 +174,9 @@ struct AuthenticationView: View {
             )
 
             await MainActor.run {
-                self.showTermsAcceptance = needsTerms || needsPrivacy
+                if needsTerms || needsPrivacy {
+                    self.showTermsAcceptance = true
+                }
             }
         }
     }

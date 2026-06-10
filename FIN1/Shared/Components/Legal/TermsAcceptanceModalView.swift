@@ -30,7 +30,7 @@ struct TermsAcceptanceModalView: View {
             AppTheme.screenBackground
                 .ignoresSafeArea()
 
-            if self.viewModel.isLoading {
+            if self.viewModel.isLoading || !self.viewModel.hasLoadedAcceptanceStatus {
                 self.loadingView
             } else {
                 self.contentView
@@ -49,11 +49,8 @@ struct TermsAcceptanceModalView: View {
             )
         }
         .onChange(of: self.viewModel.canProceed) { _, canProceed in
-            // Hide modal when all documents are accepted
-            if canProceed {
-                // Notify that acceptance is complete
-                NotificationCenter.default.post(name: .userDataDidUpdate, object: nil)
-            }
+            guard canProceed else { return }
+            NotificationCenter.default.post(name: .legalConsentAcceptanceCompleted, object: nil)
         }
     }
 
