@@ -150,7 +150,10 @@ function aggregateFromParticipationBuySnapshots(rows, traderReference, { feeConf
   const poolBuyM = bid > 0 && poolPieces > 0
     ? resolvePoolMirrorBuyMetricsFromBid({ poolPieces, bidPricePerShare: bid, feeConfig })
     : null;
-  const costBasis = Number(poolBuyM?.costBasisPerShare || 0);
+  let costBasis = Number(poolBuyM?.costBasisPerShare || 0);
+  if (!(costBasis > 0) && traderReference) {
+    costBasis = Number(traderReference.costBasisPerShare || 0);
+  }
   return applyTradeLevelPoolCapitalTotals({
     poolCapitalAllocated: 0,
     poolReservedCapitalTotal: round2(poolReserved),
