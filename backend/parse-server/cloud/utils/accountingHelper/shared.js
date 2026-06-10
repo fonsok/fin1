@@ -43,6 +43,18 @@ function resolveTradeBuyPrice(trade) {
 }
 
 /** Stückpreis Verkauf (exitPrice, sellOrder(s).price, oder totalAmount/quantity). */
+/** Settlement: pool mirror trade first, trader leg fallback when sell not yet mirrored. */
+function resolveSettlementLegPrices(poolTrade, traderTrade) {
+  let tradeBuyPrice = resolveTradeBuyPrice(poolTrade);
+  let tradeSellPrice = resolveTradeSellPrice(poolTrade);
+  const trader = traderTrade && poolTrade && traderTrade.id !== poolTrade.id ? traderTrade : null;
+  if (trader) {
+    if (!(tradeSellPrice > 0)) tradeSellPrice = resolveTradeSellPrice(trader);
+    if (!(tradeBuyPrice > 0)) tradeBuyPrice = resolveTradeBuyPrice(trader);
+  }
+  return { tradeBuyPrice, tradeSellPrice };
+}
+
 function resolveTradeSellPrice(trade) {
   if (!trade || typeof trade.get !== 'function') return 0;
   const direct = Number(trade.get('exitPrice') || trade.get('sellPrice') || 0);
@@ -72,4 +84,5 @@ module.exports = {
   generateShortHash,
   resolveTradeBuyPrice,
   resolveTradeSellPrice,
+  resolveSettlementLegPrices,
 };

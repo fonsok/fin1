@@ -133,6 +133,28 @@ describe('investorAccountStatementMerge', () => {
     expect(withLegs).toHaveLength(3);
   });
 
+  test('customer merged timeline hides tradeSettlementPartialPoolRelease (ADR-015 + investment_return)', () => {
+    const t0 = new Date('2026-06-08T18:00:00Z');
+    const t1 = new Date('2026-06-08T18:00:01Z');
+    const stmtEntries = [
+      mockStmt('s1', 'investment_return', 1155.84, t0, 'inv1'),
+    ];
+    const avaRows = [
+      mockLedger('l1', 'tradeSettlementPartialPoolRelease', 1192.99, 'credit', t1, 'inv1', 'INV-001', {
+        tradeId: 'tr1',
+        referenceDocumentNumber: 'CB-2026-0000001',
+      }),
+    ];
+    const timeline = buildInvestorMergedTimeline({
+      stmtEntries,
+      avaRows,
+      initialBalance: 5000,
+    });
+    expect(timeline).toHaveLength(1);
+    expect(timeline[0].stmt.get('entryType')).toBe('investment_return');
+    expect(timeline[0].balanceAfter).toBeCloseTo(6155.84, 2);
+  });
+
   test('ledger GoB timeline includes AVA appServiceCharge (no AccountStatement row)', () => {
     const t0 = new Date('2026-05-18T12:40:00Z');
     const t1 = new Date('2026-05-18T12:40:30Z');

@@ -34,7 +34,7 @@ protocol NotificationServiceProtocol: ObservableObject {
     func getNotificationsByType(_ type: NotificationType, for userId: String) -> [AppNotification]
 
     // MARK: - Combined Notification Methods
-    func getCombinedUnreadCount(for userId: String?) -> Int
+    func getCombinedUnreadCount(for user: User?) -> Int
     func getCombinedItems() -> [NotificationItem]
 
     // MARK: - Push Token Management
@@ -323,42 +323,26 @@ final class NotificationService: NotificationServiceProtocol, ServiceLifecycle, 
 
     // MARK: - Combined Notification Methods
 
-    func getCombinedUnreadCount(for userId: String? = nil) -> Int {
-        // Count unread notifications (filter by userId if provided)
+    func getCombinedUnreadCount(for user: User? = nil) -> Int {
         let unreadNotifications: Int
-        if let userId = userId {
-            unreadNotifications = self.notifications.filter { $0.userId == userId && !$0.isRead }.count
+        let unreadDocuments: Int
+
+        if let user {
+            let keys = DocumentInboxPolicy.documentInboxUserIdKeys(for: user)
+            unreadNotifications = self.notifications.filter {
+                DocumentInboxPolicy.notificationBelongsToInbox($0, keys: keys) && !$0.isRead
+            }.count
+            unreadDocuments = self.documentService.getInboxDocuments(for: user)
+                .filter { $0.readAt == nil }
+                .count
+
+            let totalCount = unreadNotifications + unreadDocuments
+            print("🔔 NotificationService.getCombinedUnreadCount: userId=\(user.id) role=\(user.role)")
+            print("   📊 Unread notifications: \(unreadNotifications)")
+            print("   📊 Unread inbox documents: \(unreadDocuments)")
+            print("   📊 Combined unread count: \(totalCount)")
         } else {
             unreadNotifications = self.notifications.filter { !$0.isRead }.count
-        }
-
-        // Count unread documents (documents where readAt == nil, filter by userId if provided)
-        // IMPORTANT: Only count documents that belong to the current user to avoid counting
-        // mock documents or documents from other users
-        let unreadDocuments: Int
-        if let userId = userId {
-            let userDocuments = self.documentService.getDocuments(for: userId)
-            unreadDocuments = userDocuments.filter {
-                $0.readAt == nil && !$0.isExcludedFromInvestorDocumentInbox
-            }.count
-
-            // Debug logging to help diagnose issues
-            let allUnread = self.documentService.documents.filter { $0.readAt == nil }.count
-            let totalCount = unreadNotifications + unreadDocuments
-            print("🔔 NotificationService.getCombinedUnreadCount: userId=\(userId)")
-            print("   📊 Unread notifications: \(unreadNotifications)")
-            print("   📊 Unread documents (user): \(unreadDocuments)")
-            print("   📊 Total unread documents (all users): \(allUnread)")
-            print("   📊 Combined unread count: \(totalCount)")
-
-            if unreadDocuments < allUnread {
-                let otherUsersDocs = self.documentService.documents.filter { $0.readAt == nil && $0.userId != userId }
-                print("   ⚠️ Found \(otherUsersDocs.count) unread documents from other users (not counted)")
-                for doc in otherUsersDocs.prefix(3) {
-                    print("      - \(doc.name.prefix(40))... (userId: '\(doc.userId)')")
-                }
-            }
-        } else {
             unreadDocuments = self.documentService.documents.filter {
                 $0.readAt == nil && !$0.isExcludedFromInvestorDocumentInbox
             }.count

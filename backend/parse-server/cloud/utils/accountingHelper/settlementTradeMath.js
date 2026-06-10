@@ -3,6 +3,37 @@
 const { calculateOrderFees } = require('../helpers');
 const { round2 } = require('./shared');
 
+function resolveSellOrderGrossAmount(order) {
+  return round2(Number(order?.totalAmount || 0));
+}
+
+function resolveSellOrderNetCashAmount(order, feeConfig = {}) {
+  const gross = resolveSellOrderGrossAmount(order);
+  if (!(gross > 0)) return 0;
+  const fees = calculateOrderFees(gross, true, feeConfig);
+  return round2(Math.max(0, gross - (fees.totalFees || 0)));
+}
+
+function getSellOrdersAddedSince(previousTrade, trade) {
+  const prevKeys = new Set(
+    getOrderArrayFromTradeLike(previousTrade)
+      .map(resolveSellOrderKey)
+      .filter(Boolean),
+  );
+  return getOrderArrayFromTradeLike(trade)
+    .filter((order) => {
+      const key = resolveSellOrderKey(order);
+      return key && !prevKeys.has(key);
+    });
+}
+
+function getTotalSellNetCashAmount(tradeLike, feeConfig = {}) {
+  const orders = getOrderArrayFromTradeLike(tradeLike);
+  return round2(
+    orders.reduce((sum, order) => sum + resolveSellOrderNetCashAmount(order, feeConfig), 0),
+  );
+}
+
 function getOrderArrayFromTradeLike(tradeLike) {
   if (!tradeLike) return [];
   const sellOrders = tradeLike.get ? (tradeLike.get('sellOrders') || []) : (tradeLike.sellOrders || []);
@@ -23,6 +54,12 @@ function getTotalSellQuantity(tradeLike) {
 function getRepresentativeSellOrder(tradeLike) {
   const orders = getOrderArrayFromTradeLike(tradeLike);
   return orders.length > 0 ? orders[orders.length - 1] : null;
+}
+
+/** Stable idempotency key for a sell order leg (partial or full). */
+function resolveSellOrderKey(order) {
+  if (!order) return '';
+  return String(order.id || order.objectId || order.orderId || '').trim();
 }
 
 function computeTradingFees(trade) {
@@ -59,6 +96,11 @@ module.exports = {
   computeTradingFeesWithBreakdown,
   getOrderArrayFromTradeLike,
   getTotalSellAmount,
+  getTotalSellNetCashAmount,
   getTotalSellQuantity,
   getRepresentativeSellOrder,
+  getSellOrdersAddedSince,
+  resolveSellOrderGrossAmount,
+  resolveSellOrderNetCashAmount,
+  resolveSellOrderKey,
 };

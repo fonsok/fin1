@@ -38,6 +38,7 @@ protocol DocumentServiceProtocol: ObservableObject, ServiceLifecycle {
 
     // MARK: - Document Queries
     func getDocuments(for userId: String) -> [Document]
+    func getInboxDocuments(for user: User) -> [Document]
     func getDocumentsByType(_ type: DocumentType, for userId: String) -> [Document]
     func getDocument(by id: String) -> Document?
 
@@ -84,7 +85,11 @@ final class DocumentService: DocumentServiceProtocol, ServiceLifecycle, @uncheck
 
     init(documentAPIService: DocumentAPIServiceProtocol? = nil) {
         self.documentAPIService = documentAPIService
-        self.loadMockDocuments()
+        if documentAPIService == nil {
+            #if DEBUG
+            self.loadMockDocuments()
+            #endif
+        }
     }
 
     var documentsPublisher: AnyPublisher<[Document], Never> {
@@ -100,6 +105,11 @@ final class DocumentService: DocumentServiceProtocol, ServiceLifecycle, @uncheck
     private var inboxRefreshTask: Task<Void, Never>?
     private static let inboxRefreshMinInterval: TimeInterval = 45
     private static let inboxFetchMaxAttempts = 2
+
+    private static func sanitizeInboxDocuments(_ documents: [Document]) -> [Document] {
+        DocumentInboxPolicy.dedupeInboxDocuments(documents)
+            .filter { DocumentInboxPolicy.isDisplayableInNotificationsInbox($0) }
+    }
 
     // MARK: - ServiceLifecycle
     func start() { /* preload documents if needed */ }
@@ -153,6 +163,10 @@ final class DocumentService: DocumentServiceProtocol, ServiceLifecycle, @uncheck
 
         self.isLoading = true
         defer { self.isLoading = false }
+
+        if self.documentAPIService != nil {
+            self.documents.removeAll { !DocumentInboxPolicy.isParseBackedDocumentId($0.id) }
+        }
 
         let userKeys = DocumentInboxPolicy.documentInboxUserIdKeys(for: user)
         var lastError: Error?
@@ -235,8 +249,8 @@ final class DocumentService: DocumentServiceProtocol, ServiceLifecycle, @uncheck
                DocumentInboxPolicy.isParseBackedDocumentId(doc.id) {
                 if serverIds.contains(doc.id) {
                     merged[doc.id] = doc
-                } else {
-                    // Kontoauszug deep-link: keep Parse row until inbox/supplement returns it.
+                } else if DocumentInboxPolicy.belongsToUser(doc, keys: userKeys) {
+                    // Kontoauszug deep-link: keep Parse row for this user until inbox returns it.
                     merged[doc.id] = doc
                 }
                 continue
@@ -249,16 +263,16 @@ final class DocumentService: DocumentServiceProtocol, ServiceLifecycle, @uncheck
             merged[doc.id] = doc
         }
 
-        self.documents = DocumentInboxPolicy.dedupeInboxDocuments(Array(merged.values))
+        self.documents = Self.sanitizeInboxDocuments(Array(merged.values))
     }
 
     func mergeDocuments(_ incoming: [Document]) {
         guard !incoming.isEmpty else { return }
         var merged = Dictionary(uniqueKeysWithValues: self.documents.map { ($0.id, $0) })
-        for doc in incoming {
+        for doc in incoming where DocumentInboxPolicy.isDisplayableInNotificationsInbox(doc) {
             merged[doc.id] = doc
         }
-        self.documents = DocumentInboxPolicy.dedupeInboxDocuments(Array(merged.values))
+        self.documents = Self.sanitizeInboxDocuments(Array(merged.values))
         self.lastInboxRefreshAt = Date()
     }
 
@@ -341,6 +355,10 @@ final class DocumentService: DocumentServiceProtocol, ServiceLifecycle, @uncheck
     func getDocuments(for userId: String) -> [Document] {
         let keys: Set<String> = [userId]
         return self.documents.filter { DocumentInboxPolicy.belongsToUser($0, keys: keys) }
+    }
+
+    func getInboxDocuments(for user: User) -> [Document] {
+        DocumentInboxPolicy.inboxDocuments(from: self.documents, for: user)
     }
 
     func getDocumentsByType(_ type: DocumentType, for userId: String) -> [Document] {

@@ -66,6 +66,7 @@ function buildPoolMirrorExecutionEigenbelegSnapshot(input) {
     linkedTraderTradeId: trader.tradeId || null,
     linkedTraderTradeNumber: trader.tradeNumber || null,
     linkedTraderDocumentNumber: input.linkedTraderDocumentNumber || null,
+    sellOrderId: input.sellOrderId || null,
     traderBuyQuantity: round2(trader.buyQuantity),
     traderSoldQuantity: round2(trader.soldQuantity),
   };
@@ -107,7 +108,7 @@ function formatPoolMirrorExecutionSummaryText({
     '',
     '3. Pool-Kapital (∑ aktive Investments)',
     `Reserved (∑ Investments): ${formatEuroDe(metadata.poolReservedCapitalTotal)}`,
-    `Pool-Einlage (Stück @ Einstand): ${formatEuroDe(metadata.poolCapitalAllocated)}`,
+    `Pool-Einlage (Σ Stück × Einstand): ${formatEuroDe(metadata.poolCapitalAllocated)}`,
     `Residual (Reserved − aktiv @ Einstand): ${formatEuroDe(metadata.poolResidualTotal)}`,
     `Investoren (aktiv): ${metadata.poolInvestorCount}`,
     `Stück (Pool, abgerundet): ${metadata.impliedBuyQuantityFromPool ?? '—'}`,
@@ -127,6 +128,7 @@ function formatPoolMirrorExecutionSummaryText({
     metadata.linkedTraderDocumentNumber
       ? `Trader-Beleg: ${metadata.linkedTraderDocumentNumber}`
       : 'Trader-Beleg: (noch nicht verknüpft)',
+    metadata.sellOrderId ? `Verkaufsorder: ${metadata.sellOrderId}` : '',
     trader.buyQuantity
       ? `Trader Kauf (Stück): ${trader.buyQuantity} · Trader Verkauft: ${trader.soldQuantity ?? 0}`
       : '',

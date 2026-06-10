@@ -19,12 +19,19 @@ const INBOX_DOCUMENT_TYPES = [
   'other',
 ];
 
-const EXCLUDED_TYPES = new Set(['investmentReservationEigenbeleg']);
+const EXCLUDED_TYPES = new Set([
+  'investmentReservationEigenbeleg',
+  'poolMirrorExecutionEigenbeleg',
+  'investorPartialSellInternal',
+]);
+
+const INTERNAL_ACCOUNTING_PREFIXES = ['PMBC-', 'PMSC-', 'PME-', 'TFS-', 'EBP-'];
 
 const INVESTMENT_SCOPED_INBOX_TYPES = [
   'investorCollectionBill',
   'investor_collection_bill',
   'investmentReservationEigenbeleg',
+  'invoice',
 ];
 
 /**
@@ -61,13 +68,50 @@ async function buildUserInboxDocumentQuery(userKeys) {
 }
 
 /**
- * Mirrors iOS `NotificationsViewModel.isDisplayableNotificationDocument`.
+ * GoB-internal belege (pool-mirror eigenbeleg, fees summary, partial-sell eigenbeleg, …).
+ * @param {Parse.Object} doc
+ */
+function isInternalInboxDocument(doc) {
+  const type = String(doc.get('type') || '');
+  if (EXCLUDED_TYPES.has(type)) return true;
+
+  const accNo = String(doc.get('accountingDocumentNumber') || '').toUpperCase();
+  if (INTERNAL_ACCOUNTING_PREFIXES.some((prefix) => accNo.startsWith(prefix))) {
+    return true;
+  }
+
+  const meta = doc.get('metadata') || {};
+  if (String(meta.executionType || '').toLowerCase() === 'fees') {
+    return true;
+  }
+
+  const fileURL = String(doc.get('fileURL') || '').toLowerCase();
+  if (fileURL.startsWith('eigenbeleg-partial-sell://')) {
+    return true;
+  }
+
+  const name = String(doc.get('name') || '').toLowerCase();
+  if (name.includes('eigenbeleg')
+    && (name.includes('pool') || name.includes('partialsell') || name.includes('partial_sell'))) {
+    return true;
+  }
+
+  const summary = String(doc.get('accountingSummaryText') || '').toLowerCase();
+  if (summary.includes('eigenbeleg') && summary.includes('intern')) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Mirrors iOS `DocumentInboxPolicy.isDisplayableInNotificationsInbox`.
  * @param {Parse.Object} doc
  */
 function isDisplayableInUserInbox(doc) {
-  const type = String(doc.get('type') || '');
-  if (EXCLUDED_TYPES.has(type)) return false;
+  if (isInternalInboxDocument(doc)) return false;
 
+  const type = String(doc.get('type') || '');
   const meta = doc.get('metadata') || {};
   if (meta.receiptType) return false;
 
@@ -154,6 +198,7 @@ module.exports = {
   handleGetUserDocumentInbox,
   buildUserInboxDocumentQuery,
   buildInvestorCollectionBillQuery,
+  isInternalInboxDocument,
   isDisplayableInUserInbox,
   INBOX_DOCUMENT_TYPES,
   INVESTOR_COLLECTION_BILL_TYPES,

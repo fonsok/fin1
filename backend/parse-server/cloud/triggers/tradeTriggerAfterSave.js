@@ -6,6 +6,9 @@ const {
   bookInvestorPartialRealizationDeltaIfAny,
 } = require('../utils/accountingHelper');
 const {
+  ensureAllPoolMirrorSellEigenbelegeForTraderLeg,
+} = require('../utils/accountingHelper/poolMirrorExecutionEigenbelegBook');
+const {
   syncMirrorTradeWhenTraderLegCompletes,
   syncMirrorPoolSellProgressFromTraderLeg,
 } = require('../utils/pairedTradeMirrorSync');
@@ -130,40 +133,66 @@ Parse.Cloud.afterSave('Trade', async (request) => {
     const willCompleteOnThisSave = newStatus === 'completed' && oldStatus !== 'completed';
 
     if (!isMirrorLeg) {
+      // Isolated hooks: a trader trade_sell failure must not skip investor partial-sell / mirror sync.
       try {
-        if (!willCompleteOnThisSave) {
-          await bookTraderSellDeltaIfAny({
-            trade,
-            previousTrade: request.original,
-          });
-          try {
-            await syncMirrorPoolSellProgressFromTraderLeg(trade);
-          } catch (err) {
-            console.error(
-              `❌ Trade #${trade.get('tradeNumber')} paired mirror partial-sell sync failed:`,
-              err.message,
-              err.stack,
-            );
-          }
-        } else {
-          console.log(
-            `ℹ️ Trade #${trade.get('tradeNumber')} completes on this save — skipping trade_sell delta; settlement queued`,
+        await bookTraderSellDeltaIfAny({
+          trade,
+          previousTrade: request.original,
+        });
+      } catch (err) {
+        console.error(
+          `❌ Trade #${trade.get('tradeNumber')} immediate trade_sell booking failed:`,
+          err.message,
+          err.stack,
+        );
+      }
+      try {
+        await syncMirrorPoolSellProgressFromTraderLeg(trade);
+      } catch (err) {
+        console.error(
+          `❌ Trade #${trade.get('tradeNumber')} paired mirror sell sync failed:`,
+          err.message,
+          err.stack,
+        );
+      }
+      try {
+        await bookInvestorPartialRealizationDeltaIfAny({
+          trade,
+          previousTrade: request.original,
+        });
+      } catch (err) {
+        console.error(
+          `❌ Trade #${trade.get('tradeNumber')} investor partial-sell booking failed:`,
+          err.message,
+          err.stack,
+        );
+      }
+      try {
+        await applyPartialSellRealizationToInvestments({
+          trade,
+          previousTrade: request.original,
+        });
+      } catch (err) {
+        console.error(
+          `❌ Trade #${trade.get('tradeNumber')} partial-sell investment metadata failed:`,
+          err.message,
+          err.stack,
+        );
+      }
+      if (willCompleteOnThisSave) {
+        try {
+          await ensureAllPoolMirrorSellEigenbelegeForTraderLeg(trade);
+        } catch (err) {
+          console.error(
+            `❌ Trade #${trade.get('tradeNumber')} pool-mirror sell eigenbeleg ensure failed:`,
+            err.message,
+            err.stack,
           );
         }
-        if (!willCompleteOnThisSave) {
-          await bookInvestorPartialRealizationDeltaIfAny({
-            trade,
-            previousTrade: request.original,
-          });
-          await applyPartialSellRealizationToInvestments({
-            trade,
-            previousTrade: request.original,
-          });
-        } else {
-          console.log(`ℹ️ Trade #${trade.get('tradeNumber')} completes on this save — skipping partial-sell delta path; settlement queued`);
-        }
-      } catch (err) {
-        console.error(`❌ Trade #${trade.get('tradeNumber')} immediate trade_sell booking failed:`, err.message, err.stack);
+        console.log(
+          `ℹ️ Trade #${trade.get('tradeNumber')} completes on this save — `
+          + 'internal partial deltas booked; external investor belege via settlement queued',
+        );
       }
     } else if (!willCompleteOnThisSave) {
       console.log(

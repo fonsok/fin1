@@ -35,6 +35,8 @@ const ACCOUNT_MAPPINGS = {
   'CLT-LIAB-AVA': { externalAccountNumber: '1590', vatKey: 'frei', taxTreatment: 'non_taxable' },
   'CLT-LIAB-RSV': { externalAccountNumber: '1591', vatKey: 'frei', taxTreatment: 'non_taxable' },
   'CLT-LIAB-PTR': { externalAccountNumber: '1592', vatKey: 'frei', taxTreatment: 'non_taxable' },
+  /** ADR-015: Teilverkauf Pool-Trade ausstehend (Zwischenkonto bis Settlement). */
+  'CLT-LIAB-PPS': { externalAccountNumber: '1593', vatKey: 'frei', taxTreatment: 'non_taxable' },
   /** Legacy alias (Lesen bis Mongo-Backfill). */
   'CLT-LIAB-TRD': { externalAccountNumber: '1592', vatKey: 'frei', taxTreatment: 'non_taxable' },
   /** Investor-Erfolg bei Trade-Settlement (Gegenkonto zu CLT-LIAB-AVA Haben). */

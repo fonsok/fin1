@@ -159,9 +159,30 @@ function computeCollectionBillTransferAmount({ mirror, netSellAmount, commission
   return round2(Math.max(0, netSell - comm));
 }
 
+/**
+ * Aligns buyLeg with activation SSOT (buySnapshot Einstand), not Bid-Solver residual=0.
+ * totalBuyCost for mirror = poolCapitalAllocated (= amount + fees after patch).
+ */
+function applyPoolCapitalSplitToBuyLeg(buyLeg, poolCapitalAllocated, residualAmount, poolPieces) {
+  if (!buyLeg) return buyLeg;
+  const pool = round2(poolCapitalAllocated);
+  if (!(pool > 0)) return buyLeg;
+  const fees = (buyLeg.fees && buyLeg.fees.totalFees) || 0;
+  const enriched = Object.assign({}, buyLeg, {
+    amount: round2(pool - fees),
+    residualAmount: round2(Math.max(0, residualAmount || 0)),
+  });
+  const pieces = Number(poolPieces || 0);
+  if (pieces > 0) {
+    enriched.quantity = pieces;
+  }
+  return enriched;
+}
+
 module.exports = {
   computeInvestorBuyLeg,
   computeInvestorSellLeg,
   deriveMirrorTradeBasis,
   computeCollectionBillTransferAmount,
+  applyPoolCapitalSplitToBuyLeg,
 };

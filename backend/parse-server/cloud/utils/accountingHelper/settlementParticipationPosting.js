@@ -9,6 +9,7 @@ const {
   computeInvestorBuyLeg,
   computeInvestorSellLeg,
   deriveMirrorTradeBasis,
+  applyPoolCapitalSplitToBuyLeg,
 } = require('./legs');
 const { sumStatementAmounts, getStatementSumsByType } = require('./settlementQueries');
 const { bookInvestorTaxEntries } = require('./settlementTaxEntries');
@@ -17,6 +18,7 @@ const {
   bookReserveCapitalTradeSplit,
   bookTradeSettlementPayout,
   hasEscrowLeg,
+  resolveActivationCapitalSplitAmounts,
 } = require('./investmentEscrow');
 
 async function settleNewParticipation({
@@ -41,10 +43,33 @@ async function settleNewParticipation({
   const investmentCapital = investment.get('amount') || 0;
   const investmentNumber = investment.get('investmentNumber') || investment.id;
 
+  if (participation.get('isSettled')) {
+    const priorBillQ = new Parse.Query('Document');
+    priorBillQ.equalTo('tradeId', trade.id);
+    priorBillQ.equalTo('investmentId', investment.id);
+    priorBillQ.equalTo('type', 'investorCollectionBill');
+    priorBillQ.equalTo('source', 'backend');
+    const priorBill = await priorBillQ.first({ useMasterKey: true });
+    if (!priorBill) {
+      participation.set('isSettled', false);
+      participation.unset('settledAt');
+      await participation.save(null, { useMasterKey: true });
+    }
+  }
+
   let buyLeg = null;
   let sellLeg = null;
   if (tradeBuyPrice > 0 && investmentCapital > 0) {
     buyLeg = computeInvestorBuyLeg(investmentCapital, tradeBuyPrice, feeConfig);
+    const capitalSplit = await resolveActivationCapitalSplitAmounts(investment, trade, investmentCapital);
+    if (buyLeg && capitalSplit.tradingAmount > 0) {
+      buyLeg = applyPoolCapitalSplitToBuyLeg(
+        buyLeg,
+        capitalSplit.tradingAmount,
+        capitalSplit.residualAmt,
+        capitalSplit.poolPieces,
+      );
+    }
     if (buyLeg && tradeSellPrice > 0) {
       sellLeg = computeInvestorSellLeg(buyLeg.quantity, tradeSellPrice, 1.0, feeConfig);
     }
@@ -63,15 +88,6 @@ async function settleNewParticipation({
   }
 
   console.log(`  📊 Participation ${participation.id}: ownership=${rawOwnership} (ratio=${ownershipRatio.toFixed(4)}), profit=€${profitShare}, comm=€${commission}, net=€${netProfit} [${basis}]`);
-
-  participation.set('profitShare', profitShare);
-  participation.set('commissionAmount', commission);
-  participation.set('commissionRate', commissionRate);
-  participation.set('grossReturn', netProfit);
-  participation.set('profitBasis', basis);
-  participation.set('isSettled', true);
-  participation.set('settledAt', new Date());
-  await participation.save(null, { useMasterKey: true });
 
   const investorProfile = await resolveUserTaxProfile(investorId);
   const taxBreakdown = calculateWithholdingBundle({
@@ -97,6 +113,15 @@ async function settleNewParticipation({
     allowIdempotentUpsert: true,
   });
   const collectionBillRef = resolveDocumentReference(collectionBill, { context: 'investor_collection_bill' });
+
+  participation.set('profitShare', profitShare);
+  participation.set('commissionAmount', commission);
+  participation.set('commissionRate', commissionRate);
+  participation.set('grossReturn', netProfit);
+  participation.set('profitBasis', basis);
+  participation.set('isSettled', true);
+  participation.set('settledAt', new Date());
+  await participation.save(null, { useMasterKey: true });
 
   const beleg = collectionBill.get('metadata') || {};
   const transferAmount = round2(beleg.transferAmount ?? 0);

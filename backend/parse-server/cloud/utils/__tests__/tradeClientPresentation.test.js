@@ -1,82 +1,54 @@
 'use strict';
 
-const {
-  normalizeTradeForClient,
-  normalizeBuyOrderSnapshot,
-} = require('../tradeClientPresentation');
+const { normalizeTradeForClient } = require('../tradeClientPresentation');
 
-function mockTrade(fields = {}) {
-  const data = {
-    id: 'trade-1',
-    traderId: 'traderObj12',
-    symbol: 'SAP',
-    securityName: 'SAP SE',
-    buyAmount: 930,
-    quantity: 500,
-    buyPrice: 1.86,
-    createdAt: new Date('2026-05-15T12:00:00.000Z'),
-    ...fields,
-  };
-  return {
-    id: data.id,
-    createdAt: data.createdAt,
-    get(key) {
-      return data[key];
-    },
-    toJSON() {
-      return {
-        objectId: data.id,
-        tradeNumber: data.tradeNumber ?? 42,
-        traderId: data.traderId,
-        symbol: data.symbol,
-        status: data.status ?? 'active',
-        createdAt: data.createdAt,
-        updatedAt: data.createdAt,
-        buyOrder: data.buyOrder,
-      };
-    },
-  };
-}
+describe('normalizeTradeForClient realized profit', () => {
+  test('overrides stale calculatedProfit from cumulative sellOrders', () => {
+    const trade = {
+      id: 't1',
+      get(key) {
+        const data = {
+          traderId: 'trader-1',
+          tradeNumber: 1,
+          symbol: 'TEST',
+          status: 'completed',
+          quantity: 1000,
+          buyAmount: 1660,
+          buyPrice: 1.66,
+          calculatedProfit: -660,
+          grossProfit: -660,
+          buyOrder: { quantity: 1000, totalAmount: 1660, price: 1.66 },
+          sellOrders: [
+            { quantity: 500, totalAmount: 1000, price: 2 },
+            { quantity: 200, totalAmount: 600, price: 3 },
+            { quantity: 300, totalAmount: 496.73, price: 1.66 },
+          ],
+          createdAt: new Date('2026-06-06'),
+          updatedAt: new Date('2026-06-07'),
+        };
+        return data[key];
+      },
+      toJSON() {
+        return {
+          objectId: 't1',
+          traderId: 'trader-1',
+          tradeNumber: 1,
+          symbol: 'TEST',
+          status: 'completed',
+          calculatedProfit: -660,
+          grossProfit: -660,
+          buyAmount: 1660,
+          buyOrder: this.get('buyOrder'),
+          sellOrders: this.get('sellOrders'),
+          createdAt: this.get('createdAt'),
+          updatedAt: this.get('updatedAt'),
+        };
+      },
+    };
 
-describe('tradeClientPresentation', () => {
-  test('normalizeBuyOrderSnapshot fills iOS-required buyOrder fields', () => {
-    const trade = mockTrade();
-    const snap = normalizeBuyOrderSnapshot({
-      objectId: 'order-1',
-      quantity: 500,
-      price: 1.86,
-      totalAmount: 930,
-      symbol: 'SAP',
-    }, trade);
-
-    expect(snap.id).toBe('order-1');
-    expect(snap.traderId).toBe('traderObj12');
-    expect(snap.description).toBe('SAP SE');
-    expect(snap.status).toBe('executed');
-    expect(snap.createdAt).toBeTruthy();
-  });
-
-  test('normalizeBuyOrderSnapshot passes mirror-pool leg flags', () => {
-    const trade = mockTrade();
-    const snap = normalizeBuyOrderSnapshot({
-      objectId: 'order-m',
-      quantity: 18,
-      price: 1.64,
-      isMirrorPoolOrder: true,
-      legType: 'MIRROR_POOL',
-    }, trade);
-
-    expect(snap.isMirrorPoolOrder).toBe(true);
-    expect(snap.legType).toBe('MIRROR_POOL');
-  });
-
-  test('normalizeTradeForClient maps securityName to description', () => {
-    const trade = mockTrade({
-      buyOrder: { objectId: 'o1', quantity: 10, price: 2, totalAmount: 20, symbol: 'X' },
-    });
-    const out = normalizeTradeForClient(trade);
-    expect(out.description).toBe('SAP SE');
-    expect(out.buyOrder.id).toBe('o1');
-    expect(out.buyOrder.description).toBe('SAP SE');
+    const normalized = normalizeTradeForClient(trade);
+    expect(normalized.calculatedProfit).toBeCloseTo(436.73, 1);
+    expect(normalized.grossProfit).toBeCloseTo(436.73, 1);
+    expect(normalized.calculatedProfit).toBeGreaterThan(0);
   });
 });

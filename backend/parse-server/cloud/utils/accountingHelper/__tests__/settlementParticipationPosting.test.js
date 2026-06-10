@@ -69,6 +69,12 @@ jest.mock('../investmentEscrow', () => ({
   bookReserveCapitalTradeSplit: jest.fn().mockResolvedValue(undefined),
   bookTradeSettlementPayout: jest.fn().mockResolvedValue(undefined),
   hasEscrowLeg: jest.fn().mockResolvedValue(false),
+  resolveActivationCapitalSplitAmounts: jest.fn().mockResolvedValue({
+    tradingAmount: 0,
+    residualAmt: 0,
+    poolPieces: 0,
+    basis: 'mock',
+  }),
 }));
 
 const statements = require('../statements');
@@ -385,6 +391,47 @@ describe('settleNewParticipation', () => {
         investorId: 'inv-user-1',
         collectionBillId: 'doc-1',
         taxBreakdown: expect.objectContaining({ totalTax: 10 }),
+      }),
+    );
+  });
+
+  test('enriches buyLeg from buySnapshot SSOT before collection bill', async () => {
+    investmentEscrow.resolveActivationCapitalSplitAmounts.mockResolvedValue({
+      tradingAmount: 997.96,
+      residualAmt: 2.04,
+      poolPieces: 400,
+      basis: 'buySnapshot',
+    });
+    legs.computeInvestorBuyLeg.mockReturnValue({
+      quantity: 403,
+      amount: 999.44,
+      fees: { totalFees: 0 },
+      residualAmount: 0,
+    });
+    legs.deriveMirrorTradeBasis.mockImplementation(
+      jest.requireActual('../legs').deriveMirrorTradeBasis,
+    );
+    legs.computeInvestorSellLeg.mockReturnValue({
+      quantity: 400,
+      amount: 1471.2,
+      fees: { totalFees: 0 },
+    });
+
+    await settleNewParticipation({
+      ...baseArgs(),
+      participation: makeParticipation(),
+      investment: makeInvestment(),
+      tradeBuyPrice: 2.48,
+      tradeSellPrice: 3.68,
+    });
+
+    expect(documents.createCollectionBillDocument).toHaveBeenCalledWith(
+      expect.objectContaining({
+        buyLeg: expect.objectContaining({
+          residualAmount: 2.04,
+          quantity: 400,
+          amount: 997.96,
+        }),
       }),
     );
   });

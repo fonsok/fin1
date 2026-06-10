@@ -21,10 +21,7 @@ async function handleInvestmentAfterSaveCompleted(investment, oldStatus) {
     'Investment abgeschlossen',
     `Ihr Investment wurde abgeschlossen. Gewinn: ${formatCurrency(profit)}`);
 
-  const settlementBookedOnBeleg = await investmentEscrow.hasEscrowLeg(
-    investment.id,
-    'tradeSettlementPoolRelease',
-  );
+  const settlementBookedOnBeleg = await investmentEscrow.hasTradeSettlementEscrow(investment.id);
 
   const existingReturn = await new Parse.Query('AccountStatement')
     .equalTo('investmentId', investment.id)
@@ -84,10 +81,7 @@ async function handleInvestmentAfterSaveCompleted(investment, oldStatus) {
         businessCaseId,
       });
     } else if (['active', 'executing', 'paused', 'closing'].includes(oldStatus)) {
-      const settledOnTrade = await investmentEscrow.hasEscrowLeg(
-        investment.id,
-        'tradeSettlementPoolRelease',
-      );
+      const settledOnTrade = await investmentEscrow.hasTradeSettlementEscrow(investment.id);
       if (!settledOnTrade) {
         await investmentEscrow.bookReleaseTrading({
           investorId,

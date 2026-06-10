@@ -38,6 +38,9 @@ jest.mock('../documentReferenceResolver', () => ({
 jest.mock('../../pairedTradeMirrorSync', () => ({
   isPairedTraderLegTrade: jest.fn().mockResolvedValue(false),
   getMirrorTradeForPairedTraderLeg: jest.fn().mockResolvedValue(null),
+  syncMirrorPoolSellProgressFromTraderLeg: jest.fn().mockResolvedValue(undefined),
+  syncMirrorTradeWhenTraderLegCompletes: jest.fn().mockResolvedValue(undefined),
+  mirrorPoolTradeHasSyncedExitEconomics: jest.fn().mockReturnValue(true),
 }));
 
 jest.mock('../../../services/poolMirrorActivation/traderCustomerBookingPolicy', () => ({
@@ -93,6 +96,7 @@ function makeTrade(overrides = {}) {
     entryPrice: 10,
     exitPrice: 12,
     symbol: 'TEST',
+    status: 'completed',
   }, overrides);
   return {
     id: attrs.id,
@@ -209,6 +213,15 @@ describe('settleAndDistribute (settlementCore)', () => {
         tradeNumber: '99',
         netTradingProfit: 990,
       }),
+    );
+  });
+
+  test('throws when trader leg is not completed (no early commission)', async () => {
+    FakeQuery.participationRows = [{ id: 'ptp-1', get: () => 1 }];
+    const trade = makeTrade({ status: 'active' });
+    await expect(settleAndDistribute(trade)).rejects.toThrow(/requires completed trader leg/i);
+    expect(bookSettlementEntry).not.toHaveBeenCalledWith(
+      expect.objectContaining({ entryType: 'commission_credit' }),
     );
   });
 

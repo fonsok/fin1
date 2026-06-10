@@ -72,6 +72,10 @@ class MockDocumentService: DocumentServiceProtocol, @unchecked Sendable {
         self.documents.filter { $0.userId == userId }
     }
 
+    func getInboxDocuments(for user: User) -> [Document] {
+        DocumentInboxPolicy.inboxDocuments(from: self.documents, for: user)
+    }
+
     func getDocumentsByType(_ type: DocumentType, for userId: String) -> [Document] {
         self.documents.filter { $0.userId == userId && $0.type == type }
     }

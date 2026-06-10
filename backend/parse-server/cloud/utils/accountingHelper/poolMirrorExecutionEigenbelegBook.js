@@ -91,6 +91,7 @@ async function ensurePoolMirrorExecutionEigenbelegDocument({
   traderTrade,
   traderExecutionDoc,
   executionType,
+  sellOrderId,
   force = false,
 }) {
   const poolCtx = await resolvePoolContextForTraderSell(traderTrade);
@@ -104,10 +105,20 @@ async function ensurePoolMirrorExecutionEigenbelegDocument({
   const participationRows = await loadParticipationEconomicsRows(poolTrade.id);
   if (!participationRows.length) return null;
 
+  const execType = String(executionType).toLowerCase();
+  const resolvedSellOrderId = String(
+    sellOrderId
+    || traderExecutionDoc?.get?.('metadata')?.sellOrderId
+    || '',
+  ).trim();
+
   const dup = new Parse.Query('Document');
   dup.equalTo('tradeId', poolTrade.id);
   dup.equalTo('type', DOC_TYPE);
-  dup.equalTo('metadata.executionType', String(executionType).toLowerCase());
+  dup.equalTo('metadata.executionType', execType);
+  if (execType === 'sell' && resolvedSellOrderId) {
+    dup.equalTo('metadata.sellOrderId', resolvedSellOrderId);
+  }
   const existing = await dup.first({ useMasterKey: true });
   if (existing && !force) return existing;
 
@@ -126,6 +137,7 @@ async function ensurePoolMirrorExecutionEigenbelegDocument({
     traderSnap,
     docNumber,
     linkedTraderDocumentNumber,
+    sellOrderId: execType === 'sell' ? resolvedSellOrderId || null : null,
   });
 
   const label = snapshot.metadata.label || 'Pool-Mirror Eigenbeleg';
@@ -157,9 +169,47 @@ async function ensurePoolMirrorExecutionEigenbelegDocument({
   return doc;
 }
 
+/**
+ * Ensure PMSC exists for every trader TSC sell leg (idempotent per sellOrderId).
+ * Called on trade completion so pool-mirror sell belege are not missing after full exit.
+ */
+async function ensureAllPoolMirrorSellEigenbelegeForTraderLeg(traderTrade) {
+  if (!traderTrade?.id) return [];
+
+  const q = new Parse.Query('Document');
+  q.equalTo('tradeId', traderTrade.id);
+  q.containedIn('type', ['traderCollectionBill', 'trade_execution_document']);
+  q.equalTo('metadata.executionType', 'sell');
+  q.ascending('createdAt');
+  const sellDocs = await q.find({ useMasterKey: true });
+  if (!sellDocs.length) return [];
+
+  const results = [];
+  for (const traderExecutionDoc of sellDocs) {
+    const meta = traderExecutionDoc.get('metadata') || {};
+    const sellOrderId = String(meta.sellOrderId || '').trim() || undefined;
+    try {
+      const doc = await ensurePoolMirrorExecutionEigenbelegDocument({
+        traderTrade,
+        traderExecutionDoc,
+        executionType: 'sell',
+        sellOrderId,
+      });
+      if (doc) results.push(doc);
+    } catch (err) {
+      console.warn(
+        `⚠️ PMSC ensure failed trade ${traderTrade.id} sellOrderId=${sellOrderId || 'n/a'}:`,
+        err && err.message ? err.message : err,
+      );
+    }
+  }
+  return results;
+}
+
 module.exports = {
   DOC_TYPE,
   ensurePoolMirrorExecutionEigenbelegDocument,
+  ensureAllPoolMirrorSellEigenbelegeForTraderLeg,
   poolSnapFromTrade,
   traderReferenceSnap,
 };

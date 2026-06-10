@@ -23,6 +23,7 @@ async function findExistingStatementEntry({
   userId,
   tradeId,
   entryType,
+  referenceDocumentId,
 }) {
   if (!userId || !tradeId || !entryType) return null;
   const userKeys = await resolveLedgerUserKeysForUserId(userId);
@@ -36,6 +37,10 @@ async function findExistingStatementEntry({
   q.equalTo('tradeId', tradeId);
   q.equalTo('entryType', entryType);
   q.equalTo('source', 'backend');
+  const docRef = String(referenceDocumentId || '').trim();
+  if (docRef) {
+    q.equalTo('referenceDocumentId', docRef);
+  }
   q.ascending('createdAt');
   return q.first({ useMasterKey: true });
 }
@@ -52,6 +57,11 @@ async function findExistingTraderTradeCashEntry({
   businessCaseId,
   pairExecutionId,
 }) {
+  // trade_sell is idempotent per TSC (referenceDocumentId); never dedupe by tradeId alone.
+  if (String(entryType || '') === 'trade_sell') {
+    return null;
+  }
+
   const direct = await findExistingStatementEntry({ userId, tradeId, entryType });
   if (direct) return direct;
 

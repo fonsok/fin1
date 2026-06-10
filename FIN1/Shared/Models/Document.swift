@@ -254,8 +254,8 @@ struct Document: Identifiable, Codable, Hashable {
         return self.accountingDocumentNumber != nil
     }
 
-    /// Interner GoB-Eigenbeleg (Reservierung); nicht im Investor-Postfach „Dokumente“, sondern am App-Ledger zur Buchung.
+    /// Interner GoB-Eigenbeleg — nicht im Kunden-Postfach „Dokumente“ (Investor + Trader).
     var isExcludedFromInvestorDocumentInbox: Bool {
-        self.type == .investmentReservationEigenbeleg
+        DocumentInboxPolicy.isInternalInboxDocument(self)
     }
 }

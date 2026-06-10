@@ -82,11 +82,13 @@ class MockNotificationService: NotificationServiceProtocol {
         self.notifications.filter { $0.userId == userId && $0.type == type }
     }
 
-    func getCombinedUnreadCount(for userId: String? = nil) -> Int {
-        // Count unread notifications (filter by userId if provided)
+    func getCombinedUnreadCount(for user: User? = nil) -> Int {
         let unreadNotifications: Int
-        if let userId = userId {
-            unreadNotifications = self.notifications.filter { $0.userId == userId && !$0.isRead }.count
+        if let user {
+            let keys = DocumentInboxPolicy.documentInboxUserIdKeys(for: user)
+            unreadNotifications = self.notifications.filter {
+                DocumentInboxPolicy.notificationBelongsToInbox($0, keys: keys) && !$0.isRead
+            }.count
         } else {
             unreadNotifications = self.notifications.filter { !$0.isRead }.count
         }

@@ -4,9 +4,14 @@ const {
   computeTradingFees,
   computeTradingFeesWithBreakdown,
   getOrderArrayFromTradeLike,
+  getSellOrdersAddedSince,
   getTotalSellAmount,
+  getTotalSellNetCashAmount,
   getTotalSellQuantity,
   getRepresentativeSellOrder,
+  resolveSellOrderGrossAmount,
+  resolveSellOrderNetCashAmount,
+  resolveSellOrderKey,
 } = require('../settlementTradeMath');
 
 function tradeFrom(attrs) {
@@ -64,6 +69,14 @@ describe('settlementTradeMath', () => {
     });
   });
 
+  describe('resolveSellOrderKey', () => {
+    test('prefers id then objectId then orderId', () => {
+      expect(resolveSellOrderKey({ id: 'a', objectId: 'b' })).toBe('a');
+      expect(resolveSellOrderKey({ objectId: 'b', orderId: 'c' })).toBe('b');
+      expect(resolveSellOrderKey(null)).toBe('');
+    });
+  });
+
   describe('computeTradingFeesWithBreakdown', () => {
     test('aggregates fees for buy plus each sell (foreign leg each time)', () => {
       const t = tradeFrom({
@@ -89,6 +102,44 @@ describe('settlementTradeMath', () => {
       const { totalFees, breakdown } = computeTradingFeesWithBreakdown(t);
       expect(breakdown.orderFee).toBeGreaterThanOrEqual(0);
       expect(totalFees).toBeGreaterThan(0);
+    });
+  });
+
+  describe('resolveSellOrderNetCashAmount', () => {
+    test('subtracts order fees from gross totalAmount', () => {
+      const order = { totalAmount: 1000 };
+      const net = resolveSellOrderNetCashAmount(order, {});
+      expect(net).toBeLessThan(1000);
+      expect(net).toBeGreaterThan(990);
+    });
+  });
+
+  describe('getSellOrdersAddedSince', () => {
+    test('returns only sell orders not present on previous trade', () => {
+      const previous = tradeFrom({
+        sellOrders: [{ id: 'sell-1', totalAmount: 500 }],
+      });
+      const current = tradeFrom({
+        sellOrders: [
+          { id: 'sell-1', totalAmount: 500 },
+          { id: 'sell-2', totalAmount: 1000 },
+        ],
+      });
+      expect(getSellOrdersAddedSince(previous, current)).toEqual([
+        { id: 'sell-2', totalAmount: 1000 },
+      ]);
+    });
+  });
+
+  describe('getTotalSellNetCashAmount', () => {
+    test('sums net cash per sell order', () => {
+      const t = tradeFrom({
+        sellOrders: [{ totalAmount: 1000 }, { totalAmount: 500 }],
+      });
+      const gross = getTotalSellAmount(t);
+      const net = getTotalSellNetCashAmount(t, {});
+      expect(net).toBeLessThan(gross);
+      expect(resolveSellOrderGrossAmount({ totalAmount: 1000 })).toBe(1000);
     });
   });
 

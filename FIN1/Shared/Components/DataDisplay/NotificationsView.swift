@@ -45,7 +45,11 @@ struct NotificationsView: View {
                 DocumentNavigationHelper.navigationDestination(for: document, appServices: self.appServices)
             }
             .task {
-                await self.refreshDocumentsForInbox()
+                if let user = self.appServices.userService.currentUser {
+                    await self.appServices.documentService.loadDocuments(for: user)
+                } else {
+                    await self.refreshDocumentsForInbox()
+                }
             }
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {

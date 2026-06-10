@@ -2,6 +2,7 @@
 
 const { newBusinessCaseId } = require('../utils/accountingHelper/businessCaseId');
 const { deriveSoldQuantity } = require('./tradeSellQuantityHelpers');
+const { resolveTradeRealizedGrossProfit } = require('./tradeRealizedGrossProfit');
 const { computeTradingFees } = require('./tradeTriggerFees');
 const {
   assertTraderPartialSellWithinLimit,
@@ -69,6 +70,19 @@ Parse.Cloud.beforeSave('Trade', async (request) => {
   trade.set('soldQuantity', soldQuantity);
   trade.set('remainingQuantity', Math.max(0, quantity - soldQuantity));
   trade.set('traderPartialSellEventCount', countTraderPartialSellEvents(trade));
+
+  const traderId = String(trade.get('traderId') || '').trim();
+  const prevTraderId = isNew ? '' : String(request.original?.get('traderId') || '').trim();
+  if (traderId && (isNew || traderId !== prevTraderId || !trade.get('traderName'))) {
+    try {
+      const { resolveTraderDisplayNameForBeleg } = require('../utils/traderDisplayNameForBeleg');
+      const { traderDisplayName } = await resolveTraderDisplayNameForBeleg(traderId);
+      if (traderDisplayName) trade.set('traderName', traderDisplayName);
+    } catch (err) {
+      console.warn('beforeSave Trade: traderName snapshot skipped:', err.message);
+    }
+  }
+
   const { buildTradeSearchBlob } = require('../utils/adminListSearch');
   trade.set('adminSearchBlob', buildTradeSearchBlob(trade));
 
@@ -102,23 +116,11 @@ Parse.Cloud.beforeSave('Trade', async (request) => {
       trade.unset('completedAt');
     }
 
+    const realizedGrossProfit = resolveTradeRealizedGrossProfit(trade);
     let calculatedProfit = trade.get('calculatedProfit');
-
-    if (calculatedProfit === undefined || calculatedProfit === null || calculatedProfit === 0) {
-      const buyOrder = trade.get('buyOrder');
-      const sellOrder = trade.get('sellOrder');
-      const sellOrders = trade.get('sellOrders') || [];
-
-      const buyTotal = buyOrder ? (buyOrder.totalAmount || 0) : 0;
-      let sellTotal = sellOrder ? (sellOrder.totalAmount || 0) : 0;
-      if (sellOrders.length > 0) {
-        sellTotal = sellOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
-      }
-
-      if (buyTotal > 0 && sellTotal > 0) {
-        calculatedProfit = sellTotal - buyTotal;
-        console.log(`📊 Trade update: Calculated profit from orders: ${sellTotal} - ${buyTotal} = ${calculatedProfit}`);
-      }
+    if (realizedGrossProfit !== null && Number.isFinite(realizedGrossProfit)) {
+      calculatedProfit = realizedGrossProfit;
+      console.log(`📊 Trade update: realized grossProfit=${calculatedProfit}`);
     }
 
     if (calculatedProfit !== undefined && calculatedProfit !== null && calculatedProfit !== 0) {

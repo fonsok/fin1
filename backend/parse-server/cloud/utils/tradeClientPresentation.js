@@ -1,5 +1,7 @@
 'use strict';
 
+const { resolveTradeRealizedGrossProfit } = require('../triggers/tradeRealizedGrossProfit');
+
 /**
  * Normalizes Parse Trade rows for iOS `ParseTrade` / `ParseOrderBuy` decoding.
  * Server-created trades (order afterSave) use minimal embedded buyOrder snapshots.
@@ -109,6 +111,20 @@ function normalizeTradeForClient(trade) {
   ).trim();
   if (pairExecutionId) {
     normalized.pairExecutionId = pairExecutionId;
+  }
+
+  const realized = resolveTradeRealizedGrossProfit(trade);
+  if (realized !== null && Number.isFinite(realized)) {
+    normalized.calculatedProfit = realized;
+    normalized.grossProfit = realized;
+    const buyAmt = Number(
+      normalized.buyAmount
+      || normalized.buyOrder?.totalAmount
+      || 0,
+    );
+    if (buyAmt > 0) {
+      normalized.profitPercentage = (realized / buyAmt) * 100;
+    }
   }
 
   return normalized;

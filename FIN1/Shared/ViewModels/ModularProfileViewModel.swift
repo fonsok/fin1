@@ -98,8 +98,7 @@ final class ModularProfileViewModel: ObservableObject {
     // MARK: - Update Methods
 
     func updateCounts() {
-        let userId = self.currentUserId
-        self.combinedUnreadCount = self.notificationService.getCombinedUnreadCount(for: userId)
+        self.combinedUnreadCount = self.notificationService.getCombinedUnreadCount(for: self.userService.currentUser)
         self.totalNotificationsCount = self.notificationService.notifications.count
     }
 }

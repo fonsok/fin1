@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * Kundenguthaben-Unterkonten (Teil-Verbindlichkeiten, SKR 1590–1592).
+ * Kundenguthaben-Unterkonten (Teil-Verbindlichkeiten, SKR 1590–1593).
  * PTR = PoolTrade-Gebunden (Stückkauf), nicht „Trading“ als Produkt.
  */
 
@@ -17,10 +17,16 @@ const CLT_LIAB_RSV = 'CLT-LIAB-RSV';
  */
 const CLT_LIAB_PTR = 'CLT-LIAB-PTR';
 
+/**
+ * Teilverkauf aus Pool-Trade, ausstehend bis Trade-Ende (SKR 1593).
+ * ADR-015: Zwischenkonto PTR → AVA bei Partial Sells.
+ */
+const CLT_LIAB_PPS = 'CLT-LIAB-PPS';
+
 /** Legacy ledger code – nur noch Lesen/Backfill bis Migration durch ist. */
 const CLT_LIAB_TRD_LEGACY = 'CLT-LIAB-TRD';
 
-const CLIENT_LIABILITY_ACCOUNTS = [CLT_LIAB_AVA, CLT_LIAB_RSV, CLT_LIAB_PTR];
+const CLIENT_LIABILITY_ACCOUNTS = [CLT_LIAB_AVA, CLT_LIAB_RSV, CLT_LIAB_PTR, CLT_LIAB_PPS];
 
 function normalizeClientLiabilityAccount(account) {
   const code = String(account || '').trim();
@@ -46,6 +52,7 @@ module.exports = {
   CLT_LIAB_AVA,
   CLT_LIAB_RSV,
   CLT_LIAB_PTR,
+  CLT_LIAB_PPS,
   CLT_LIAB_TRD_LEGACY,
   CLIENT_LIABILITY_ACCOUNTS,
   normalizeClientLiabilityAccount,

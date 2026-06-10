@@ -2,6 +2,14 @@ import Foundation
 
 extension Document {
 
+    /// Maps backend settlement rows to inbox-eligible `Document` rows (excludes internal GoB eigenbelege).
+    static func inboxEligible(from backendDocuments: [BackendSettlementDocument]) -> [Document] {
+        backendDocuments
+            .filter { !DocumentInboxPolicy.isInternalBackendDocumentType($0.type) }
+            .map { Document(backendSettlementDocument: $0) }
+            .filter { DocumentInboxPolicy.isDisplayableInNotificationsInbox($0) }
+    }
+
     init(backendSettlementDocument backend: BackendSettlementDocument) {
         let title = backend.accountingDocumentNumber?.trimmingCharacters(in: .whitespacesAndNewlines)
         let displayName = (title?.isEmpty == false) ? title! : backend.name

@@ -70,6 +70,43 @@ describe('userDocumentInbox', () => {
     expect(isDisplayableInUserInbox(documents[4])).toBe(false);
   });
 
+  test('isDisplayableInUserInbox excludes internal pool-mirror and fees belege', () => {
+    const { isInternalInboxDocument } = require('../userDocumentInbox');
+    const poolMirror = {
+      get(field) {
+        return ({
+          type: 'poolMirrorExecutionEigenbeleg',
+          accountingDocumentNumber: 'PMBC-2026-0000001',
+          name: 'Pool-Mirror Eigenbeleg',
+        })[field];
+      },
+    };
+    const feesDoc = {
+      get(field) {
+        return ({
+          type: 'invoice',
+          accountingDocumentNumber: 'TFS-2026-0000001',
+          metadata: { executionType: 'fees' },
+          name: 'Gebührenabrechnung',
+        })[field];
+      },
+    };
+    const tbc = {
+      get(field) {
+        return ({
+          type: 'traderCollectionBill',
+          accountingDocumentNumber: 'TBC-2026-0000002',
+          name: 'Kaufabrechnung',
+        })[field];
+      },
+    };
+    expect(isInternalInboxDocument(poolMirror)).toBe(true);
+    expect(isInternalInboxDocument(feesDoc)).toBe(true);
+    expect(isDisplayableInUserInbox(poolMirror)).toBe(false);
+    expect(isDisplayableInUserInbox(feesDoc)).toBe(false);
+    expect(isDisplayableInUserInbox(tbc)).toBe(true);
+  });
+
   beforeAll(() => {
     jest.resetModules();
     global.Parse = {

@@ -216,8 +216,7 @@ final class RoleBasedTabCoordinator: ObservableObject {
     }
 
     private func getUnreadNotificationCount() -> Int {
-        let currentUserId = self.userService.currentUser?.id
-        return self.notificationService.getCombinedUnreadCount(for: currentUserId)
+        self.notificationService.getCombinedUnreadCount(for: self.userService.currentUser)
     }
 
     // MARK: - Badge Observation

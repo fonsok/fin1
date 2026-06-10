@@ -120,13 +120,12 @@ final class NotificationsViewModel: ObservableObject {
         guard let user = self.userService.currentUser else { return [] }
         let allowedUserIds = DocumentInboxPolicy.documentInboxUserIdKeys(for: user)
 
-        let userNotifications = self.notificationService.notifications.filter { allowedUserIds.contains($0.userId) }
+        let userNotifications = self.notificationService.notifications.filter {
+            DocumentInboxPolicy.notificationBelongsToInbox($0, keys: allowedUserIds)
+        }
         let notificationItems = userNotifications.map { NotificationItem.notification($0) }
 
-        let userDocuments = self.documentService.documents
-            .filter { DocumentInboxPolicy.belongsToUser($0, keys: allowedUserIds) }
-            .filter { DocumentInboxPolicy.isDisplayableInNotificationsInbox($0) }
-            .uniqueById()
+        let userDocuments = self.documentService.getInboxDocuments(for: user).uniqueById()
         let documentItems = userDocuments.map { NotificationItem.document($0) }
 
         return notificationItems + documentItems
