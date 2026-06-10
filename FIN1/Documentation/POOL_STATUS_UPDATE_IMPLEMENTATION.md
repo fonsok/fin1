@@ -65,7 +65,18 @@ Updated `OrderLifecycleCoordinator` to:
 - Called `markPoolAsActive()` in `handleBuyOrderCompletion()`
 - Called `markPoolAsCompleted()` in `handleSellOrderCompletion()` when `trade.isCompleted == true`
 
-**Location**: `FIN1/Features/Trader/Services/OrderLifecycleCoordinator.swift`
+**Code layout** (split for maintainability; protocol/DI unchanged):
+
+| File | Responsibility |
+|------|----------------|
+| `OrderLifecycleCoordinator.swift` | DI, order placement (buy/sell/submit/cancel) |
+| `OrderLifecycleCoordinator+Completion.swift` | Status progression callback, routes to buy/sell |
+| `OrderLifecycleCoordinator+BuyCompletion.swift` | Buy completion, trade creation, cash |
+| `OrderLifecycleCoordinator+SellCompletion.swift` | Sell completion, trade matching, pool completion |
+| `OrderLifecycleCoordinator+Settlement.swift` | Backend settlement sync, documents, credit-note fallback |
+| `OrderLifecycleCoordinatorProtocol.swift` | Public contract |
+
+**Entry points for pool status**: buy → `+BuyCompletion.swift`; sell/trade complete → `+SellCompletion.swift`.
 
 ### 4. Dependency Injection Updates
 

@@ -88,7 +88,7 @@ This guide walks you through manually testing the complete investment pool compl
     - **IMPORTANT**: This step requires implementation
     - When a trade involving a pool is completed, the pool reservation status should update:
       - From `.active` → `.completed` (Status 3)
-    - **Current Status**: This may need to be implemented (see TODO in `OrderLifecycleCoordinator.swift`)
+    - **Current Status**: Pool completion runs in `OrderLifecycleCoordinator+SellCompletion.swift` when `trade.isCompleted`
 
 12. **Verify Investment Status:**
     - Sign back in as Investor
@@ -176,9 +176,9 @@ This guide walks you through manually testing the complete investment pool compl
 ### ⚠️ Pool Status Update Mechanism
 The automatic update of pool reservation status from `.active` → `.completed` when trades complete may need implementation.
 
-**Location**: `FIN1/Features/Trader/Services/OrderLifecycleCoordinator.swift:226`
+**Location**: `FIN1/Features/Trader/Services/OrderLifecycleCoordinator+SellCompletion.swift` (`handleSellOrderCompletion`)
 ```swift
-// TODO: Distribute profit to investors if trade involved pools
+// Profit distribution when trade completes (backend-settled path skips local distributeProfit)
 // This will be implemented when pool trade participation tracking is added
 ```
 
@@ -236,7 +236,7 @@ For now, you can manually update pool statuses in the test to verify the complet
 - **Investment Model**: `FIN1/Features/Investor/Models/Investment.swift`
 - **Investment Service**: `FIN1/Features/Investor/Services/InvestmentServiceProtocol.swift`
 - **Completion Logic**: `FIN1/Features/Investor/ViewModels/CompletedInvestmentsViewModel.swift`
-- **Trade Completion**: `FIN1/Features/Trader/Services/OrderLifecycleCoordinator.swift`
+- **Trade Completion**: `FIN1/Features/Trader/Services/OrderLifecycleCoordinator+SellCompletion.swift`
 - **Documentation**: `FIN1/Documentation/INVESTMENT_COMPLETION_FLOW.md`
 
 

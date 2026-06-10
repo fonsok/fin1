@@ -67,4 +67,31 @@ Ziel ist **weniger Fehlerfläche** und bessere Reviews — nicht nur kürzere Da
 
 - Architektur-Entscheide zu **Transaktionsgrenzen**, **eventual consistency** und **Kompensation** bleiben **ADR-/Runbook-Doku** — bei neuen Grenzen dort nachziehen, nicht nur Code splitten.
 
+### Öffentliche API-Fassade (Barrel) — verbindlich bei Splits
+
+Bei großen `utils/`- oder `accountingHelper/`-Modulen ist die **dünne Root-Datei** (`documents.js`, `investmentEscrow.js`, `investorAccountStatementMerge.js`, …) **kein** GoF-Facade zur Vereinfachung und **kein Sammelbecken für Logik**, sondern eine **stabile Import-Grenze** (Eintrittspunkt):
+
+| Regel | FIN1-Entscheidung |
+|-------|-------------------|
+| **Aufgabe** | Nur **stabile Use-Cases** re-exportieren — exakt die **bisherigen `module.exports`**; **keine** neuen öffentlichen Submodule-Imports von außen (`require('…/name/submodule')` nur in Tests und innerhalb des Pakets). |
+| **Overhead** | Fassade nur `require` + Re-Export (~≤60 Zeilen). **Keine** Business-Logik, keine Orchestrierung, keine Hilfsfunktionen in der Fassade. |
+| **Verantwortung** | Fachlogik **ausschließlich** in Submodule (`name/queries.js`, `name/posting.js`, …) nach Domänenschnitt — nicht nach Zeilenzahl allein. Fassade kennt keine Regeln, nur Exportliste. |
+| **API-Größe** | Öffentliche Oberfläche **klein halten**. Ziel: **1–5 stabile Use-Cases** pro Paket (z. B. `settlementCore` → nur `settleAndDistribute`). Größere historische APIs (z. B. `investmentEscrow` 26 Exports) dokumentieren **Stabilitäts-Tiers** in SSOT-Doku; neue Exporte nur mit Absprache — interne Helfer nicht nach außen ziehen. |
+| **Stabilität** | Alle bestehenden `require('…/name')`-Pfade bleiben gültig; interne Submodule dürfen sich ändern. |
+| **Tests** | **Zwei Ebenen:** (1) **Contract-/Integration** über die Fassade (bestehende Suites, Characterization). (2) **Submodule direkt** für fachliche Einheiten (Queries, Dedup, Posting-Builder, Timeline-Merge) — nicht nur die Fassade mocken. Fassade selbst nur testen, wenn sie eigene Logik hätte (unüblich). |
+| **Performance** | Mechanische Splits sind unkritisch (`require`-Graph, keine Datenkopien). Nur bei zusätzlichen Async-Schichten oder Kopien messen. |
+| **Abhängigkeiten** | **Einseitiger Graph** — Submodule unter `name/` importieren sich nicht zirkulär; Fassade importiert Submodule, nicht umgekehrt. Paket-intern: Submodule dürfen Geschwister importieren; **außen** nur die Fassade. |
+
+**Nicht als Fassade behandeln:** Admin-**Registrierungs-Loader** (`fourEyes.js`, `devHelpers.js`, `reports.js`) — Side-Effect-Bootstrap (`register*`), kein reiner Re-Export. Submodule dort direkt testen (bereits üblich).
+
+**Wann keine Fassade?** Wenn das Paket ohnehin **ein** Use-Case ist (z. B. `settlementParticipationPosting.js`) oder nur **zwei gleichrangige Geschwister** (`statements.js` → `accountStatementWriter` + `settlementGLPoster`) — dann reicht Geschwister-Modul ohne Unterordner.
+
+**Submodule** (`name/shared.js`, `name/dataLoading.js`, …) nach **fachlicher Verantwortung** schneiden: Validierung, Domänenregeln, Posting/Journal, Parse-Persistenz, API-Row-Mapping, Dedup — jeweils **eine** klar benannte Verantwortung pro Datei.
+
+Referenz (schmal + sauber): `settlementCore.js` (1 Export), `repair.js` (1 Export), `documents.js` (reiner Barrel).
+
+**Breite historische APIs:** `modul/publicSurface.js` hält **Tier-Manifest + Exportliste** (keine Logik); die Fassade re-exportiert nur `publicSurface`. Package-internal = nicht auf Fassade. Contract-Tests: `*.publicSurface.test.js`. Referenz-Module: `investmentEscrow`, `investorAccountStatementMerge`, `documents`, `traderCollectionBillBelegSnapshot`, `traderAccountStatementPresentation`, `repair`, `usersDetailStatementsAndWallet`, `tradingSettlementReads`, **`permissions`** (9 Exports; Role-Listing-Helper nur in `roles.js`), **`pairedTradeMirrorSync`** (`legResolution.js`, `sellSync.js`; `applyMirrorSellSyncFromTraderLeg` package-internal — GOBD-Guard-Test liest `sellSync.js`), **`poolMirrorEconomics`** (`aggregatePool.js`, `traderSellMath.js`, `constants.js`). Doku: `INVESTMENT_ESCROW_LEDGER_SKETCH.md` §5.1, `BOOKING_AND_BELEG_SSOT.md`, `ADR-014`.
+
+Modultabellen: `Documentation/BOOKING_AND_BELEG_SSOT.md`, `Documentation/ACCOUNT_STATEMENT_ARCHITECTURE.md`.
+
 Kurzfassung für Leser im Repo: [`Documentation/ENGINEERING_GUIDE.md`](../Documentation/ENGINEERING_GUIDE.md) → Abschnitt *Parse Cloud: Modularisierung und Refactor-Policy*.

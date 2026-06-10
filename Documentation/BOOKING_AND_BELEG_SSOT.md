@@ -87,7 +87,7 @@ Beide: `enrichTraderDocumentMetadata` (Alt-Belege) → `projectDocumentDetail` /
 
 ## Settlement-Robustheit: Per-Investor-Isolation
 
-`settleAndDistribute` (`utils/accountingHelper/settlementCore.js`) isoliert jeden Investor des Pool-Trades in einen eigenen `try/catch`. Ein einzelner Fehler (korrupte `Investment`-Row, transienter Save-Konflikt etc.) bricht **nicht** mehr die gesamte Pool-Abrechnung ab — die übrigen Investoren werden trotzdem versucht.
+`settleAndDistribute` (Fassade `utils/accountingHelper/settlementCore.js` → `settlementCore/`: `poolSettlementScope`, `participationSettlementLoop`, `traderCommissionCredit`, `settleAndDistribute`) isoliert jeden Investor des Pool-Trades in einen eigenen `try/catch`. Ein einzelner Fehler (korrupte `Investment`-Row, transienter Save-Konflikt etc.) bricht **nicht** mehr die gesamte Pool-Abrechnung ab — die übrigen Investoren werden trotzdem versucht.
 
 ## Strukturiertes Audit-Logging
 
@@ -131,17 +131,89 @@ iOS InvestmentService (batchId + sequenceNumber lokal)
 
 **Implementierungs-Guide (MVVM, Tests, Deploy):** [`Documentation/ENGINEERING_GUIDE.md`](ENGINEERING_GUIDE.md) (Abschnitt *Investment anlegen*).
 
+## Code-Modulstruktur (`documents.js`)
+
+Persistierung von Parse-`Document`-Zeilen: Fassade **`accountingHelper/documents.js`** → **`documents/publicSurface.js`** (Tier 1: 8× `create*`/`ensure*`, Tier 2: Return-% + `resolveDocumentRefForFeeRefund`), Implementierung unter **`accountingHelper/documents/`**:
+
+| Modul | Verantwortung |
+|-------|----------------|
+| `shared.js` | `applyBusinessCaseIdToDocument`, `formatEuroDe`, `formatDateTimeDe` |
+| `creditNote.js` | `createCreditNoteDocument` |
+| `collectionBill.js` | `createCollectionBillDocument`, `returnPercentage`-Invarianten |
+| `reservationEigenbeleg.js` | `createInvestmentReservationEigenbelegDocument` (vor `investmentEscrow.bookReserve`) |
+| `partialSellEigenbeleg.js` | `createPartialSellInternalBeleg` (ADR-015) |
+| `walletReceipt.js` | `createWalletReceiptDocument` |
+| `tradeExecution.js` | `createTradeExecutionDocument`, `findExistingTradeExecutionDocument` |
+| `serviceChargeInvoice.js` | `ensureServiceChargeInvoiceDocument` |
+| `feeRefundRefs.js` | `resolveDocumentRefForFeeRefund` (4-eyes fee_refund) |
+
+Beleg-**Metadaten-SSOT** (Beträge/Invarianten vor Persistenz): `collectionBillBelegSnapshot.js` (Investor CB); Trader TBC/TSC — Fassade **`traderCollectionBillBelegSnapshot.js`**, Submodule **`traderCollectionBillBelegSnapshot/`**:
+
+| Modul | Verantwortung |
+|-------|----------------|
+| `shared.js` | Schema-Version, Toleranz, `formatEuroDe`, Backfill-Checks |
+| `snapshotHelpers.js` | Instrument-Zeile, Order-Like, `totalWithFees`-Invariante |
+| `buildCollectionBill.js` | `buildTraderCollectionBillBelegSnapshot` (Kauf/Verkauf inkl. Teilverkauf) |
+| `summaryText.js` | `formatTraderCollectionBillSummaryText` (Klartext) |
+| `tradingFeesBeleg.js` | `buildTradingFeesBelegSnapshot` (TFS intern) |
+| `publicSurface.js` | Tier-Manifest (7 Fassaden-Exports; `TOLERANCE`/`formatEuroDe*` nur in `shared.js`) |
+
+**Öffentliche API (Fassade → `traderCollectionBillBelegSnapshot/publicSurface.js`):** Tier 1 Beleg-Build (`build*`, `format*SummaryText`, `traderCollectionBillDisplaySections`); Tier 2 Backfill (`TRADER_COLLECTION_BILL_SCHEMA_VERSION`, `isUsableTraderBelegSummaryText`, `metadataNeedsBackfill`). Contract-Test: `traderCollectionBillBelegSnapshot.publicSurface.test.js`.
+| `displaySections.js` | `traderCollectionBillDisplaySections` (Admin-UI) |
+
 ## Trade-Settlement (Async)
 
 `tradeTriggerAfterSave.js` stößt nach `syncMirrorTradeWhenTraderLegCompletes` nur noch `SettlementRetryJob` an und plant einen kurzen `processDueSettlementRetries`-Drain (`setImmediate`); die eigentliche Abrechnung läuft wie bisher im bestehenden Worker (`main.js`, 60s-Intervall). Finale Collection Bills: `createCollectionBillDocument` mit `allowIdempotentUpsert: true` aktualisiert ein vorhandenes `investorCollectionBill` zu `(investmentId, tradeId, source=backend)` statt einer zweiten CB-Nummer (Teil-Sell-Deltas rufen weiterhin **ohne** Upsert auf).
 
+## Paired Buy: Mirror-Sync & Pool-Ökonomie
+
+Fassaden mit `publicSurface.js` (ADR-014, GOBD Buy-Immutability):
+
+| Fassade | Submodule | Verantwortung |
+|---------|-----------|---------------|
+| `utils/pairedTradeMirrorSync.js` | `legResolution.js` | TRADER ↔ MIRROR_POOL Lookup, `isPairedTraderLegTrade`, Idempotenz-Probe |
+| | `sellSync.js` | `applyMirrorSellSyncFromTraderLeg` (**package-internal**) — nur Sell-Felder spiegeln |
+| `utils/poolMirrorEconomics.js` | `aggregatePool.js` | `aggregatePoolInvestmentEconomics`, Snapshot-/Cost-Basis-Pfad |
+| | `traderSellMath.js` | `resolvePoolSoldQtyCumulative`, Teilverkauf-Deltas (`TRADER_FULL_SELL_EPSILON` package-internal) |
+| | `constants.js` | `ACTIVE_INVESTMENT_STATUSES` (package-internal) |
+
+**Öffentliche API:** `pairedTradeMirrorSync/publicSurface.js` (6 Exports: 2 Sync-Use-Cases + 4 Leg-Resolution); `poolMirrorEconomics/publicSurface.js` (10 Exports: Aggregation/Queries + Sell-Math). Contract-Tests: `pairedTradeMirrorSync.publicSurface.test.js`, `poolMirrorEconomics.publicSurface.test.js`; Buy-Guard: `pairedTradeMirrorSync.buyImmutability.test.js` (liest `sellSync.js`).
+
+**RBAC:** `utils/permissions.js` → `permissions/publicSurface.js` (9 Exports: Guards + Konstanten + Admin-Introspection; `isValidRole`/`get*Roles` nur in `roles.js`).
+
 ## Investor-Kontoauszug (Kundensicht / App)
 
-Merge-SSOT: `backend/parse-server/cloud/utils/investorAccountStatementMerge.js` (`buildInvestorMergedTimeline`), genutzt von `getAccountStatement` (nicht-Trader) und Admin **Kundensicht**.
+Merge-SSOT: Fassade **`utils/investorAccountStatementMerge.js`** (unveränderte `require`-API), Implementierung unter **`utils/investorAccountStatementMerge/`**:
+
+| Modul | Verantwortung |
+|-------|----------------|
+| `shared.js` | Konstanten (`INVESTOR_STMT_SOURCE_LIMIT`, Escrow-Typen), `dedupeParseObjectsById`, `iso` |
+| `clientLiability.js` | `summarizeClientFundsFromEscrowRows` (AVA/RSV/PTR-Netto) |
+| `avaLedger.js` | AVA-Signed-Amount, `syntheticEntryTypeFromLedgerRow`, Residual-Dedup |
+| `dataLoading.js` | `loadInvestorAccountStatementSourceData`, Investment-/Escrow-Queries |
+| `mergedTimeline.js` | `buildInvestorMergedTimeline` (Kundensicht) |
+| `ledgerGoBTimeline.js` | `buildInvestorLedgerGoBTimeline` (Admin Ledger GoB) |
+| `collectionBillFeeGranularity.js` | `applyInvestorGoBCollectionBillFeeGranularity` |
+| `apiRows.js` | `mergedTimelineToApiRows`, Pagination |
+| `publicSurface.js` | Tier-Manifest + Exportliste für die Fassade (keine Logik) |
+
+**Öffentliche API (Fassade → `investorAccountStatementMerge/publicSurface.js`):**
+
+| Tier | Exports | Neuer Code |
+|------|---------|------------|
+| **1 — Customer** | `loadInvestorAccountStatementSourceData`, `buildInvestorMergedTimeline`, `buildInvestorLedgerGoBTimeline`, `mergedTimelineToApiRows`, `mergedTimelineToDescendingApiRows` | Ja |
+| **2 — Admin** | `applyInvestorGoBCollectionBillFeeGranularity`, `summarizeClientFundsFromEscrowRows`, `fetchInvestorEscrowLedgerRows`, `listInvestorInvestmentIds`, `syntheticEntryTypeFromLedgerRow` | Ja (Admin/`getUserDetails`) |
+| **3 — Package-internal** | `signedAmountFromAvaLedgerRow`, `buildResidualReturnDedupKeys`, `isDuplicateAvaResidualLedgerRow`, `fetchAccountStatementRowsForInvestor`, `fetchInvestorAvaCashLedgerRows`, `timelineRowMatchesEntryType` | **Nein** — Submodule + direkte Tests |
+
+Contract-Test: `utils/__tests__/investorAccountStatementMerge.publicSurface.test.js`.
+
+Genutzt von `getAccountStatement` (nicht-Trader) und Admin **Kundensicht** (`buildInvestorMergedTimeline`).
 
 - `investment_activate` erscheint nicht (interne RSV→PTR-Umschichtung).
 - AVA-Zeilen `tradeSettlementPoolRelease` und `tradeSettlementProfitRelease` werden **nicht** angezeigt: sie sind nur die buchhalterische Aufteilung desselben Cashflows, der bereits als `investment_return` in `AccountStatement` steht (vgl. `accountStatementWriter.js` / `settlementGLPoster.js` über Fassade `statements.js` sowie `investmentEscrow.js`). Laufender Saldo wird nach dem Filtern neu berechnet.
-- Vollständige Parse-`AccountStatement`-Chronologie inkl. `investment_activate` bleibt der Admin-Ansicht **Ledger (GoB)** vorbehalten; dort werden zusätzlich AVA-`reserve`-Zeilen für noch nicht aktivierte Investments sowie **`appServiceCharge`** auf AVA eingeblendet (`buildInvestorLedgerGoBTimeline`) — App-Servicegebühr läuft über Rechnung/Trigger ohne paralleles `AccountStatement`. Optional: `expandTraderLedgerStmtEntries` (Order-Math wie Trader). Mit vorhandenem Collection-Bill-Metadaten-Payload ersetzt `applyInvestorGoBCollectionBillFeeGranularity` aggregierte `trading_fees` desselben Trades durch **Einzelzeilen** laut Beleg: Kaufgebühren am `investment_activate`, Verkaufsgebühren nach letzter `residual_return` (Fallback `investment_return` / `trade_sell`). **Gesamtkaufkosten / Überweisungsbetrag** und Tabellen-Nachweis bleiben im Admin-Feld `investorCollectionBills` / UI **Beleg-Nachweis** (`getUserDetails` → `usersDetailStatementsAndWallet.js`).
+- Vollständige Parse-`AccountStatement`-Chronologie inkl. `investment_activate` bleibt der Admin-Ansicht **Ledger (GoB)** vorbehalten; dort werden zusätzlich AVA-`reserve`-Zeilen für noch nicht aktivierte Investments sowie **`appServiceCharge`** auf AVA eingeblendet (`buildInvestorLedgerGoBTimeline`) — App-Servicegebühr läuft über Rechnung/Trigger ohne paralleles `AccountStatement`. Optional: `expandTraderLedgerStmtEntries` (Order-Math wie Trader). Mit vorhandenem Collection-Bill-Metadaten-Payload ersetzt `applyInvestorGoBCollectionBillFeeGranularity` aggregierte `trading_fees` desselben Trades durch **Einzelzeilen** laut Beleg: Kaufgebühren am `investment_activate`, Verkaufsgebühren nach letzter `residual_return` (Fallback `investment_return` / `trade_sell`). **Gesamtkaufkosten / Überweisungsbetrag** und Tabellen-Nachweis bleiben im Admin-Feld `investorCollectionBills` / UI **Beleg-Nachweis** (`getUserDetails` → Fassade `usersDetailStatementsAndWallet.js`, Submodule `usersDetailStatementsAndWallet/`).
+
+**Trade-Settlement-Reparatur (admin):** Fassade `accountingHelper/repair.js` → `repair/` (`queries`, `batchDestroy`, `investmentRecalc`, `repairTradeSettlement`).
 
 ## iOS
 

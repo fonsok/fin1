@@ -420,6 +420,20 @@ Smaller files enforce better separation of concerns, easier code reviews, and re
 2. **Extract services** - Move business logic from ViewModels to dedicated services
 3. **Use composition** - Combine smaller services instead of one large service
 4. **Split by responsibility** - One file = one clear responsibility
+5. **Swift `Type+Feature.swift` extensions** (e.g. `OrderLifecycleCoordinator+SellCompletion.swift`) — **file organization only**, not a Facade: same type, same public API, `internal`/`let` deps for cross-file access within the module. No extra indirection layer; existing tests/build validate the split.
+
+**Not applicable to Swift:** Parse-Cloud-style „barrel facades“ (thin re-export file + subfolder). iOS uses a different split matrix:
+
+| Situation | Bevorzugtes Muster | Nicht |
+|-----------|-------------------|-------|
+| Große **Service**-Klasse mit mehreren Verantwortlichkeiten | **Protocol + focused Service** oder **Use-Case-Klassen** (`SettlementSyncUseCase`, `BuyOrderCompletionHandler`) injiziert in Coordinator/ViewModel | Extra „Facade“-Typ nur zum Weiterleiten |
+| **Coordinator** mit vielen Lifecycle-Pfaden | Dünner Coordinator + **delegierte Handler/Use-Cases** (bereits: `UnifiedOrderCompletionHandler`) | Logik in `Coordinator+*.swift` duplizieren statt auslagern |
+| Reine **Datei-Größe** ohne neue Abstraktion | `Type+Feature.swift` Extension, gleiche öffentliche API | Neues Indirection-Layer ohne Testnutzen |
+| **ViewModel** | Ein ViewModel pro Screen; Business-Logik in **Services/Use-Cases**, nicht im ViewModel ansammeln | ViewModel als Sammelbecken für Netzwerk + Buchhaltung + Navigation |
+
+**Use-Case vs. Service (Swift):** Service = zustandsbehaftete oder wiederverwendbare Domänen-IO (API, Cache, Live Query). Use-Case = **ein** stabiler Anwendungsfall (z. B. „Sell-Order abschließen und Pool updaten“), oft stateless, vom Coordinator/ViewModel aufgerufen. Neue heikle Flows → Use-Case-Klasse + Unit-Test auf Use-Case, nicht nur Coordinator-Integration.
+
+**Tests (Swift):** Use-Cases und Services **direkt** testen (Mocks auf Protocols); Coordinator/ViewModel nur Orchestration. Entspricht Parse-Cloud-Regel „Submodule direkt testen“.
 
 ## Class vs Struct Best Practices
 

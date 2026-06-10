@@ -61,7 +61,7 @@ Das Account Statement System verwendet zentrale Builder-Methoden als Single Sour
 
 **Lösung (Kurz):** `getUserDocumentInbox` (ein CF-Call, SSOT-Filter serverseitig); `DocumentService.applyInboxSnapshot` (merge, kein blindes Replace); Event `userDocumentInboxShouldRefresh` nach Settlement/Investment; TTL-Refresh beim Öffnen von Notifications; Tab **Documents** ohne 24h-Fenster.
 
-**Relevante Dateien:** `DocumentInboxPolicy.swift`, `DocumentServiceProtocol.swift`, `userDocumentInbox.js`, `NotificationsViewModel.swift`, `OrderLifecycleCoordinator.swift`.
+**Relevante Dateien:** `DocumentInboxPolicy.swift`, `DocumentServiceProtocol.swift`, `userDocumentInbox.js`, `NotificationsViewModel.swift`, `OrderLifecycleCoordinator+Settlement.swift` (Beleg-Sync), `OrderLifecycleCoordinator+SellCompletion.swift` (Trade-Abschluss).
 
 ---
 
@@ -88,6 +88,8 @@ Das Account Statement System verwendet zentrale Builder-Methoden als Single Sour
 - `DashboardStatsViewModel.updateInvestorBalance()`
 - `WalletViewModel.getUserSpecificBalance()` *(Klassenname historisch; Kontext: Kontosaldo / Zahlungsbewegungen)*
 
+**Backend Kundensicht (Parse Cloud):** Fassade `utils/investorAccountStatementMerge.js`, Submodule `utils/investorAccountStatementMerge/` — siehe `Documentation/BOOKING_AND_BELEG_SSOT.md` (Investor-Kontoauszug). Kern: `buildInvestorMergedTimeline` (App/API), `buildInvestorLedgerGoBTimeline` (Admin GoB), `applyInvestorGoBCollectionBillFeeGranularity` (CB-Gebühren-Einzelzeilen).
+
 ---
 
 ### Trader Account Statement
@@ -108,6 +110,24 @@ Das Account Statement System verwendet zentrale Builder-Methoden als Single Sour
 - `AccountStatementViewModel.buildTraderStatement()`
 - `DashboardStatsViewModel.updateTraderAccountBalance()`
 - `WalletViewModel.getUserSpecificBalance()` *(Klassenname historisch; Kontext: Kontosaldo / Zahlungsbewegungen)*
+
+**Backend Kundensicht (Parse Cloud):** Fassade `utils/traderAccountStatementPresentation.js` (unveränderte `require`-API), Implementierung unter `utils/traderAccountStatementPresentation/`:
+
+| Modul | Verantwortung |
+|-------|----------------|
+| `shared.js` | Konstanten (`TIMELINE_SOURCE_LIMIT`, Entry-Type-Sets), `dedupeParseObjectsById`, `iso` |
+| `tradeCoverage.js` | Trade-Abdeckung per `tradeId` / `tradeNumber` |
+| `cashLegDedup.js` | Deduplizierung paralleler `trade_buy`/`trade_sell`-Cash-Legs |
+| `invoices.js` | Settlement-Rechnungen: Typ, Seite, Zeitstempel |
+| `instrumentTitles.js` | `tradeStatementTitle` (KAUF/VERKAUF-Zeile) |
+| `instruments.js` | `parseInstrumentFromTrade` / `parseInstrumentFromInvoice`, Timeline-Anreicherung |
+| `netTradeDisplay.js` | Netto-Trade-Zeilen aus Rechnungen + Backend-Legs (Mirror-Pool-Filter) |
+| `passthrough.js` | Einzahlung, Auszahlung, Provisions-Gutschrift |
+| `dataLoading.js` | `loadTraderAccountStatementSourceData`, Trade/Order-Instrument-Context |
+| `timeline.js` | `buildTraderCustomerTimeline`, laufendes Saldo, Sortierung |
+| `apiRows.js` | `traderCustomerTimelineToApiRows` (CF-Response) |
+
+Genutzt von `getAccountStatement` (CF in `tradingSettlementReads.js` → `tradingSettlementReads/getAccountStatement.js`), `usersDetailStatementsAndWallet`.
 
 ---
 

@@ -20,7 +20,7 @@ This directory contains persistent rules automatically applied to Cursor AI conv
 - **`responsive-design.md`** - Responsive design system compliance
 
 ### Backend (Parse Cloud Code)
-- **`parse-cloud.md`** - Node/Parse Cloud unter `backend/parse-server/cloud/**`: **`configHelper/index.js`**-Imports, kein Shadowing durch `configHelper.js`, Guard-Skript, Verweis Runbook § 8.2.1; **Modularisierung & Refactor-Policy** (Risiko, Tests, Domänenschnitte); **`utils/accountingHelper/`** — Kontoauszug/Settlement-GL: Fassade `statements.js`, Module `accountStatementWriter.js`, `settlementGLRules.js`, `settlementGLPoster.js` (auto-applied per `filePatterns`)
+- **`parse-cloud.md`** - Node/Parse Cloud unter `backend/parse-server/cloud/**`: **`configHelper/index.js`**-Imports, kein Shadowing durch `configHelper.js`, Guard-Skript, Verweis Runbook § 8.2.1; **Modularisierung & Refactor-Policy** (Risiko, Tests, Domänenschnitte); **Öffentliche API-Fassade (Barrel)** bei großen `utils/`/`accountingHelper/`-Splits; Beispiele `statements.js`, `documents.js`, `investmentEscrow.js`, `investorAccountStatementMerge.js`, `traderAccountStatementPresentation.js` (auto-applied per `filePatterns`)
 - **`parse-cloud-naming.md`** - Naming-Convention-Matrix fuer Parse Cloud (`backend/parse-server/cloud/**`): Dateinamen, Cloud Function Verb-Prefixe, Verbot von Temp-/Legacy-Namen (auto-applied per `filePatterns`)
 
 ### Admin Portal (React/TypeScript)

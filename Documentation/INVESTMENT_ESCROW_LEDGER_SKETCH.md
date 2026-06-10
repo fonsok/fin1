@@ -1,7 +1,7 @@
 ---
 title: "FIN1 – Investment-Escrow & Kundenguthaben (technische Kontenskizze)"
 audience: ["Entwicklung", "Architektur", "Buchhaltung"]
-lastUpdated: "2026-04-10"
+lastUpdated: "2026-06-08"
 ---
 
 ## 1. Zweck
@@ -42,6 +42,8 @@ Alle `CLT-*`-Konten sind **wirtschaftlich Verbindlichkeiten gegenüber Kund:inne
 | **CLT-LIAB-AVA** | liability | Kundenguthaben – **verfügbar** | Entspricht dem, was die App als „sofort verfügbar“ führt (Auszahlbarkeit nach Produktregeln). |
 | **CLT-LIAB-RSV** | liability | Kundenguthaben – **reserviert** | Nach Zusage/Anlage gebunden, noch nicht im Handel eingesetzt. |
 | **CLT-LIAB-PTR** | liability | Kundenguthaben – **PoolTrade** (Stückkauf) | Kapital, das der Pool-/Mirror-Logik zugeführt ist (noch Kundenverbindlichkeit bis Auszahlung/Rückfluss). Früher `CLT-LIAB-TRD`. |
+| **CLT-LIAB-PPS** | liability | Kundenguthaben – **Teilverkauf Pool-Trade** (ausstehend) | ADR-015: bei Partial Sell PTR→PPS; bei Trade-Ende PPS→AVA. SKR03 1593. |
+| **CLT-EQT-INV-PNL** | equity | Investor-Erfolg (Trade-/Teilverkauf, intern) | Partial Sell: INV-PNL→PPS (Brutto-Gewinn); Settlement: INV-PNL→AVA. SKR03 8900. |
 | **PLT-CLR-GEN**  | clearing  | Verrechnung allgemein | Bereits im System: z. B. **Brutto**-Servicegebühr vor Aufteilung auf Erlös + USt (siehe `triggers/invoice/`). |
 | *(bestehend)* **PLT-REV-PSC** / **PLT-TAX-VAT** | revenue / tax | Erlös / USt | Servicegebühr netto / USt; Gegenbuch zu `PLT-CLR-GEN` nach Rechnungsauslösung. |
 
@@ -83,7 +85,8 @@ Betragsseite: **`amount`** = Nominal des **einzelnen** `Investment` (wie `Invest
 |----------|-----------------|------|-------|-----------|
 | **Reservieren** | `Investment` neu, Status `reserved` | CLT-LIAB-AVA | CLT-LIAB-RSV | **Umschichtung**; Gesamt-Kundenverbindlichkeit unverändert. Parallel: optional `WalletTransaction` / `AccountStatement` nur wenn **eine** Quelle die „verfügbare“ Konto-Sicht definiert (siehe §6). |
 | **Aktivieren / Pool-Zuführung** | `reserved` → `active` | CLT-LIAB-RSV | CLT-LIAB-PTR | Kapital „im Strategieraum“. Parallel aktuell Server: `WalletTransaction` `investment` (Abbuchung verfügbarer Kontosaldo) + `AccountStatement` `investment_activate` – **Ist** muss mit dieser Umschichtung konsolidiert werden, um keine doppelte Wirkung zu erzeugen. |
-| **Trade-Abwicklung / Settlement** | `settleAndDistribute` u. a. | *(Sachkonto je Produkt)* / CLT-LIAB-PTR | CLT-LIAB-PTR / CLT-LIAB-AVA | Konkrete Splitting-Logik hängt von **Rückfluss** (`investment_return`, Gewinn, Kommission) ab; siehe `utils/accountingHelper/settlement.js` und besteh. `AccountStatement`-`entryType`s. |
+| **Partial Sell (Investor)** | Trader-`sellOrder` (Trade offen) | CLT-LIAB-PTR → CLT-LIAB-PPS (Einstand); CLT-EQT-INV-PNL → CLT-LIAB-PPS (Brutto-Gewinn) | — | Interner Eigenbeleg; **kein** `investment_return` (ADR-015). |
+| **Trade-Abwicklung / Settlement** | `settleAndDistribute` u. a. | CLT-LIAB-PTR / CLT-LIAB-PPS / CLT-EQT-INV-PNL | CLT-LIAB-AVA | Rest PTR + kumuliertes PPS + Gewinn → verfügbar; parallel `investment_return` auf Kontoauszug. |
 | **Storno nur reserviert** | Nutzer löscht Teil-Investment (Papierkorb), noch kein Trade | CLT-LIAB-RSV | CLT-LIAB-AVA | Rückgängig nur **Kapital-Reservierung** des Splits; **Servicegebühr** bleibt gebucht (nicht erstattungsfähig). |
 | **Storno nach aktiv** | `active` → `cancelled` (+ Refund) | CLT-LIAB-PTR (bzw. Teilbeträge) | CLT-LIAB-AVA | An bestehende Refund-/Konto-Logik anbinden. |
 
@@ -101,12 +104,45 @@ Servicegebühr (Batch): unverändert über **Invoice** → `PLT-CLR-GEN` (Soll b
 | `AppLedgerEntry` | Plattform-Hauptbuch (Eigenkonten); Erweiterung um **CLT-LIAB-***-Buchungen bei Implementierung. |
 | `PoolTradeParticipation` / Trade-Settlement | Übergang **TRD** ↔ Rückfluss; `utils/accountingHelper/settlement.js`. |
 
+### 5.1 Code-Modulstruktur (`investmentEscrow`)
+
+Implementierung: **`cloud/utils/accountingHelper/investmentEscrow.js`** (dünne **Fassade**, unveränderte `require('./investmentEscrow')`-API) und Unterordner **`investmentEscrow/`** (analog zu `statements.js` → `accountStatementWriter.js` usw.).
+
+| Modul | Verantwortung | Wichtige Legs / Funktionen |
+|-------|---------------|----------------------------|
+| `constants.js` | SSOT `transactionType`, Konten, Settlement-Leg-Liste | `investmentEscrow`, `TRADE_SETTLEMENT_ESCROW_LEGS` |
+| `ledgerQueries.js` | Parse-Queries, Idempotenz, Summen | `hasEscrowLeg`, `sumEscrowLeg*`, `hasTradeSettlementEscrow` |
+| `ledgerBuilders.js` | Doppelbuchungs-Paare / Einzelzeilen | `baseFields`, `buildPairedLedgerEntries`, `savePair` |
+| `escrowReserve.js` | Schritt 1 Reservierung (GoB: Beleg vor Buchung) | `bookReserve` → `leg: reserve` |
+| `escrowDeploy.js` | RSV → PTR (+ Reversal vor Split) | `deploy`, `deployReversalForCapitalSplit` |
+| `escrowRelease.js` | Auflösung Reservierung / Handel | `releaseReserve`, `releaseTrading*`, `releaseReservedComplete` |
+| `escrowRepair.js` | Admin-Repair / Purge fehlerhafter Legs | `purge*Leg` |
+| `escrowCapitalSplit.js` | GoB-Split bei Aktivierung (RSV → PTR + AVA) | `reserveCapitalTradeSplit` |
+| `escrowActivation.js` | Orchestrierung Aktivierung + Kontoauszug | `ensureReserveCapitalTradeSplitOnActivation`, `resolveActivationCapitalSplitAmounts` |
+| `escrowSettlement.js` | Collection-Bill-Payout | `tradeSettlementPoolRelease`, `tradeSettlementProfitRelease`, … |
+| `escrowPartialSell.js` | ADR-015 Teilverkauf (intern) | `partialSellRelease`, `partialSellProfitRecognition` |
+
+**Öffentliche API (Fassade `investmentEscrow.js` → `investmentEscrow/publicSurface.js`):**
+
+| Tier | Exports | Neuer Code |
+|------|---------|------------|
+| **1 — Stable booking** | `bookReserve`, `bookReleaseReservation`, `bookReleaseTrading`, `bookReleaseReservedOnComplete`, `ensureReserveCapitalTradeSplitOnActivation`, `bookReserveCapitalTradeSplit`, `bookTradeSettlementPayout`, `bookPartialSellPoolRelease`, `bookPartialSellProfitRecognition` | Ja |
+| **2 — Settlement support** | `hasEscrowLeg`, `hasTradeSettlementEscrow`, `resolveActivationCapitalSplitAmounts` | Ja (Settlement/Repair) |
+| **3 — Repair purge** | `purgeReleaseTradingResidualCorrectionLeg`, `purgeTradingResidualReturnLeg`, `purgeReserveCapitalTradeSplitLeg`, `purgeDeployReversalForCapitalSplitLeg` | Nur Admin-Repair/Backfill |
+| **4 — Package-internal** | `bookDeployToTrading`, `bookDeployForPoolParticipation`, `bookTradingResidualReturn`, `ledgerQueries` sum-*, `buildPairedLedgerEntries`, `TRANSACTION_TYPE` | **Nein** — nur Submodule/`investmentEscrow/` |
+
+Contract-Test: `__tests__/investmentEscrow.publicSurface.test.js`. Submodule-Tests: `investmentEscrow.ledgerBuilders.test.js`, …
+
+**Aufrufer (Auswahl):** `triggers/investmentTriggerAfterSave*.js`, `settlementParticipationPosting.js`, `settlementInvestorPartialRealization.js`, `financialSettlementRepair.js`, `poolMirrorActivationService.js`.
+
+Tests: `cloud/utils/accountingHelper/__tests__/investmentEscrow.test.js` (Characterization / Golden-Legs).
+
 ---
 
 ## 6. Ist-Zustand vs. Ziel (kurz)
 
 - **Servicegebühr:** Unwiderruflich bei Flow-Abschluss; App-Ledger über Invoice (`PLT-CLR-GEN` etc.) – `triggers/invoice/`.
-- **Escrow (AppLedger):** `cloud/utils/accountingHelper/investmentEscrow.js` + `triggers/investment.js`: **reserve** bei neuem Investment, **deploy** bei `reserved→active`, **releaseReserve** + Konto/Statement bei `reserved→cancelled`, **releaseTrading** bei Abschluss/Storno nach Aktiv, **releaseReservedComplete** bei `reserved→completed`.
+- **Escrow (AppLedger):** Fassade `investmentEscrow.js` + Module unter `investmentEscrow/` (siehe §5.1); Trigger `triggers/investment.js` u. a.: **reserve** bei neuem Investment, **deploy** bei `reserved→active`, **releaseReserve** + Konto/Statement bei `reserved→cancelled`, **releaseTrading** bei Abschluss/Storno nach Aktiv, **releaseReservedComplete** bei `reserved→completed`.
 - **Papierkorb:** Cloud Function `cancelReservedInvestment` (Investor); iOS ruft sie bei Parse-`objectId` auf, sonst lokaler Fallback mit Konto-Gutschrift (`InvestmentService.deleteInvestment`).
 - **Kontocodes:** `CLT-LIAB-AVA` / `RSV` / `TRD` im Admin-Kontenrahmen und `AppLedgerAccount` (Swift).
 

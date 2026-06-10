@@ -40,6 +40,7 @@ All code changes must pass these local checks (matching what would run in CI if 
 
 3. **Build Test**: Builds for iOS Simulator
    - CI runs tests via **`scripts/run-ios-tests.sh`**; GitHub sets **`IOS_TEST_DESTINATION`** (see `.github/workflows/ci.yml`). Locally, override if needed: `IOS_TEST_DESTINATION='platform=iOS Simulator,name=iPhone 16,OS=18.6' ./scripts/run-ios-tests.sh`
+   - **iPhone 17 Pro (iOS 26):** Extra-Fenster **„External Display“** kann schwarz bleiben — **Fenster schließen (✕)**, dann **Simulator → Fenster → iPhone 17 Pro** (ohne External Display). Details: `Documentation/ENGINEERING_GUIDE.md` (*iOS Simulator: schwarzes Fenster*).
    - One-off build: `xcodebuild … -destination 'platform=iOS Simulator,name=iPhone 16,OS=<your-runtime>' build` or `make build` / VS Code tasks (see `Makefile`, `.vscode/tasks.json`).
    - **MANDATORY**: If build fails, repeat builds until all errors are fixed and "BUILD SUCCEEDED" is achieved
    - Never commit code that doesn't build successfully
