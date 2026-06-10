@@ -273,7 +273,7 @@ final class DocumentInboxPolicyTests: XCTestCase {
             csrRole: nil,
             employmentStatus: .employed,
             income: 50_000,
-            incomeRange: .range50kTo100k,
+            incomeRange: .middle,
             riskTolerance: 5,
             address: "123 Test St",
             nationality: "DE",
