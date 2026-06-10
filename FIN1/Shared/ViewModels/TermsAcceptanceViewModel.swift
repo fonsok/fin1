@@ -42,7 +42,9 @@ final class TermsAcceptanceViewModel: ObservableObject {
         self.termsContentService = termsContentService
         Task { [weak self] in
             await self?.refreshCurrentDocuments()
-            self?.checkAcceptanceStatus()
+            await MainActor.run {
+                self?.checkAcceptanceStatus()
+            }
         }
     }
 
@@ -176,39 +178,16 @@ final class TermsAcceptanceViewModel: ObservableObject {
     }
 
     private func refreshCurrentDocuments() async {
-        guard let termsContentService else { return }
-        guard self.userService.currentUser != nil else { return }
+        guard let user = userService.currentUser else { return }
 
-        let termsLanguage: TermsOfServiceDataProvider.Language = {
-            Locale.current.language.languageCode?.identifier == "de" ? .german : .english
-        }()
-
-        let privacyLanguage: TermsOfServiceDataProvider.Language = {
-            guard let user = userService.currentUser else { return .german }
-            let jurisdiction = PrivacyPolicyDataProvider.determineJurisdiction(
-                country: user.country,
-                nationality: user.nationality,
-                isNotUSCitizen: user.isNotUSCitizen
-            )
-            return (jurisdiction == .american) ? .english : .german
-        }()
-
-        func resolve(language: TermsOfServiceDataProvider.Language, doc: LegalDocumentType) async -> TermsContent? {
-            if let cached = termsContentService.getCachedTerms(language: language, documentType: doc) {
-                return cached
-            }
-            return try? await termsContentService.fetchCurrentTerms(language: language, documentType: doc)
-        }
-
-        if let terms = await resolve(language: termsLanguage, doc: .terms) {
-            self.currentTermsVersionForDisplay = terms.version
-            self.currentTermsHash = terms.documentHash
-        }
-
-        if let privacy = await resolve(language: privacyLanguage, doc: .privacy) {
-            self.currentPrivacyVersionForDisplay = privacy.version
-            self.currentPrivacyHash = privacy.documentHash
-        }
+        let resolved = await LegalConsentVersionResolver.resolveDocuments(
+            user: user,
+            termsContentService: self.termsContentService
+        )
+        self.currentTermsVersionForDisplay = resolved.termsVersion
+        self.currentPrivacyVersionForDisplay = resolved.privacyVersion
+        self.currentTermsHash = resolved.termsHash
+        self.currentPrivacyHash = resolved.privacyHash
     }
 }
 

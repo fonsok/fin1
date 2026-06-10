@@ -62,22 +62,22 @@ final class TermsAcceptanceServiceDeviceConsentTests: XCTestCase {
             acceptedTerms: true,
             acceptedPrivacyPolicy: true,
             acceptedMarketingConsent: false,
-            acceptedTermsVersion: "1.0.2",
+            acceptedTermsVersion: "1.0",
             acceptedTermsDate: Date(),
-            acceptedPrivacyPolicyVersion: "1.0.2",
+            acceptedPrivacyPolicyVersion: "1.0",
             acceptedPrivacyPolicyDate: Date(),
             createdAt: Date(),
             updatedAt: Date()
         )
 
-        XCTAssertTrue(service.needsToAcceptTerms(user: user, currentServerVersion: "1.0.2"))
-        XCTAssertTrue(service.needsToAcceptPrivacyPolicy(user: user, currentServerVersion: "1.0.2"))
+        XCTAssertTrue(service.needsToAcceptTerms(user: user, currentServerVersion: "1.0"))
+        XCTAssertTrue(service.needsToAcceptPrivacyPolicy(user: user, currentServerVersion: "1.0"))
 
-        _ = service.recordTermsAcceptance(user: user, version: "1.0.2")
-        _ = service.recordPrivacyPolicyAcceptance(user: user, version: "1.0.2")
+        _ = service.recordTermsAcceptance(user: user, version: "1.0")
+        _ = service.recordPrivacyPolicyAcceptance(user: user, version: "1.0")
 
-        XCTAssertFalse(service.needsToAcceptTerms(user: user, currentServerVersion: "1.0.2"))
-        XCTAssertFalse(service.needsToAcceptPrivacyPolicy(user: user, currentServerVersion: "1.0.2"))
+        XCTAssertFalse(service.needsToAcceptTerms(user: user, currentServerVersion: "1.0"))
+        XCTAssertFalse(service.needsToAcceptPrivacyPolicy(user: user, currentServerVersion: "1.0"))
     }
 
     func testSecondUserOnSameInstallStillRequiresOwnDeviceAcknowledgement() {
@@ -85,11 +85,58 @@ final class TermsAcceptanceServiceDeviceConsentTests: XCTestCase {
         let userA = self.makeUser(id: "user-a", email: "trader1@test.com")
         let userB = self.makeUser(id: "user-b", email: "investor5@test.com")
 
-        _ = service.recordTermsAcceptance(user: userA, version: "1.0.2")
-        _ = service.recordPrivacyPolicyAcceptance(user: userA, version: "1.0.2")
+        _ = service.recordTermsAcceptance(user: userA, version: "1.0")
+        _ = service.recordPrivacyPolicyAcceptance(user: userA, version: "1.0")
 
-        XCTAssertTrue(service.needsToAcceptTerms(user: userB, currentServerVersion: "1.0.2"))
-        XCTAssertTrue(service.needsToAcceptPrivacyPolicy(user: userB, currentServerVersion: "1.0.2"))
+        XCTAssertTrue(service.needsToAcceptTerms(user: userB, currentServerVersion: "1.0"))
+        XCTAssertTrue(service.needsToAcceptPrivacyPolicy(user: userB, currentServerVersion: "1.0"))
+    }
+
+    func testDeviceAcknowledgementSurvivesParseObjectIdAlias() {
+        let service = TermsAcceptanceService()
+        let parseUser = self.makeUser(id: "uLxVZveIpl", email: "trader1@test.com")
+
+        _ = service.recordTermsAcceptance(user: parseUser, version: "1.0")
+        _ = service.recordPrivacyPolicyAcceptance(user: parseUser, version: "1.0")
+
+        let stableIdUser = self.makeUser(
+            id: UserFactory.stableUserId(for: "trader1@test.com"),
+            email: "trader1@test.com"
+        )
+
+        XCTAssertFalse(service.needsToAcceptTerms(user: stableIdUser, currentServerVersion: "1.0"))
+        XCTAssertFalse(service.needsToAcceptPrivacyPolicy(user: stableIdUser, currentServerVersion: "1.0"))
+    }
+
+    func testReLoginSkipsPromptWhenDeviceAckExistsDespiteStaleProfileVersion() {
+        let service = TermsAcceptanceService()
+        var user = self.makeUser(id: "uLxVZveIpl", email: "trader1@test.com")
+        user.acceptedTermsVersion = "1.0.2"
+        user.acceptedPrivacyPolicyVersion = "1.0"
+
+        _ = service.recordTermsAcceptance(user: user, version: "1.0")
+        _ = service.recordPrivacyPolicyAcceptance(user: user, version: "1.0")
+
+        XCTAssertFalse(service.needsToAcceptTerms(user: user, currentServerVersion: "1.0"))
+        XCTAssertFalse(service.needsToAcceptPrivacyPolicy(user: user, currentServerVersion: "1.0"))
+    }
+
+    func testResolvedVersionFallsBackToProfileWhenServerUnavailable() async {
+        let user = self.makeUser(id: "uLxVZveIpl", email: "trader1@test.com")
+
+        let termsVersion = await LegalConsentVersionResolver.resolveVersion(
+            user: user,
+            documentType: .terms,
+            termsContentService: nil
+        )
+        let privacyVersion = await LegalConsentVersionResolver.resolveVersion(
+            user: user,
+            documentType: .privacy,
+            termsContentService: nil
+        )
+
+        XCTAssertEqual(termsVersion, "1.0")
+        XCTAssertEqual(privacyVersion, "1.0")
     }
 
     private func makeUser(id: String, email: String) -> User {
@@ -137,9 +184,9 @@ final class TermsAcceptanceServiceDeviceConsentTests: XCTestCase {
             acceptedTerms: true,
             acceptedPrivacyPolicy: true,
             acceptedMarketingConsent: false,
-            acceptedTermsVersion: "1.0.2",
+            acceptedTermsVersion: "1.0",
             acceptedTermsDate: Date(),
-            acceptedPrivacyPolicyVersion: "1.0.2",
+            acceptedPrivacyPolicyVersion: "1.0",
             acceptedPrivacyPolicyDate: Date(),
             createdAt: Date(),
             updatedAt: Date()

@@ -63,11 +63,10 @@ describe('legalConsentRecording', () => {
       return [];
     }
 
-    async first() {
+    matchingRows() {
       const rows = this.rowsForClass().filter((row) => (
         Object.entries(this.filters).every(([k, v]) => row[k] === v)
       ));
-      if (!rows.length) return null;
       if (this.sortField) {
         rows.sort((a, b) => {
           const av = a[this.sortField];
@@ -75,7 +74,17 @@ describe('legalConsentRecording', () => {
           return bv > av ? 1 : bv < av ? -1 : 0;
         });
       }
+      return rows.slice(0, this.limitN);
+    }
+
+    async first() {
+      const rows = this.matchingRows();
+      if (!rows.length) return null;
       return new FakeParseObject(this.className, rows[0]);
+    }
+
+    async find() {
+      return this.matchingRows().map((row) => new FakeParseObject(this.className, row));
     }
   }
 
@@ -185,5 +194,43 @@ describe('legalConsentRecording', () => {
     expect(first.skipped).toBe(true);
     expect(second.skipped).toBe(true);
     expect(savedConsents).toHaveLength(0);
+  });
+
+  test('findDeviceLegalConsentAcknowledgements returns unique consentType/version pairs', async () => {
+    consentRows.push(
+      {
+        objectId: 'c-1',
+        userId: 'user-1',
+        consentType: 'terms_of_service',
+        version: '1.0',
+        accepted: true,
+        deviceInstallId: 'install-abc',
+        acceptedAt: new Date('2026-06-01'),
+      },
+      {
+        objectId: 'c-2',
+        userId: 'user-1',
+        consentType: 'privacy_policy',
+        version: '1.0',
+        accepted: true,
+        deviceInstallId: 'install-abc',
+        acceptedAt: new Date('2026-06-02'),
+      },
+      {
+        objectId: 'c-3',
+        userId: 'user-1',
+        consentType: 'terms_of_service',
+        version: '1.0',
+        accepted: true,
+        deviceInstallId: 'install-abc',
+        acceptedAt: new Date('2026-06-03'),
+      }
+    );
+
+    const rows = await mod.findDeviceLegalConsentAcknowledgements('user-1', 'install-abc');
+    expect(rows).toEqual([
+      { consentType: 'terms_of_service', version: '1.0' },
+      { consentType: 'privacy_policy', version: '1.0' },
+    ]);
   });
 });

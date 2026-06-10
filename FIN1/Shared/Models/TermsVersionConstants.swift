@@ -9,11 +9,11 @@ struct TermsVersionConstants {
 
     /// Current Terms of Service version
     /// Update this when Terms content changes materially
-    static let currentTermsVersion: String = "1.0.2"
+    static let currentTermsVersion: String = "1.0"
 
     /// Current Privacy Policy version
     /// Update this when Privacy Policy content changes materially
-    static let currentPrivacyPolicyVersion: String = "1.0.2"
+    static let currentPrivacyPolicyVersion: String = "1.0"
 
     // MARK: - Version Metadata
 

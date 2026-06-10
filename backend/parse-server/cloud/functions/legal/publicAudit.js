@@ -263,6 +263,22 @@ function registerLegalPublicAuditFunctions() {
 
     return { objectId: result.objectId, acceptedAt: result.acceptedAt };
   });
+
+  Parse.Cloud.define('getDeviceLegalConsentAcknowledgements', async (request) => {
+    const user = request.user;
+    if (!user) {
+      throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Login required');
+    }
+
+    const deviceInstallId = normalizeString(request.params.deviceInstallId);
+    if (!deviceInstallId) {
+      throw new Parse.Error(Parse.Error.INVALID_VALUE, 'deviceInstallId is required');
+    }
+
+    const { findDeviceLegalConsentAcknowledgements } = require('./legalConsentRecording');
+    const acknowledgements = await findDeviceLegalConsentAcknowledgements(user.id, deviceInstallId);
+    return { acknowledgements };
+  });
 }
 
 module.exports = { registerLegalPublicAuditFunctions };

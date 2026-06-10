@@ -20,35 +20,55 @@ final class TermsAcceptanceService: TermsAcceptanceServiceProtocol {
     // MARK: - Acceptance Checks
 
     func needsToAcceptTerms(user: User, currentServerVersion: String) -> Bool {
-        let currentVersion = currentServerVersion.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !currentVersion.isEmpty else { return true }
-        guard user.acceptedTerms else { return true }
-        guard let acceptedVersion = user.acceptedTermsVersion?.trimmingCharacters(in: .whitespacesAndNewlines),
-              !acceptedVersion.isEmpty else {
-            return true
-        }
-        guard acceptedVersion == currentVersion else { return true }
-        return !DeviceLegalConsentStore.hasAcknowledged(
-            userId: user.id,
+        self.needsDeviceAcknowledgement(
+            user: user,
             consentType: ConsentType.terms,
-            version: currentVersion
+            isAcceptedOnAccount: user.acceptedTerms,
+            acceptedVersionOnAccount: user.acceptedTermsVersion,
+            currentServerVersion: currentServerVersion
         )
     }
 
     func needsToAcceptPrivacyPolicy(user: User, currentServerVersion: String) -> Bool {
+        self.needsDeviceAcknowledgement(
+            user: user,
+            consentType: ConsentType.privacy,
+            isAcceptedOnAccount: user.acceptedPrivacyPolicy,
+            acceptedVersionOnAccount: user.acceptedPrivacyPolicyVersion,
+            currentServerVersion: currentServerVersion
+        )
+    }
+
+    /// Install gate: device ack for the active version ends the prompt. Account flags/version decide fresh install vs bump.
+    private func needsDeviceAcknowledgement(
+        user: User,
+        consentType: String,
+        isAcceptedOnAccount: Bool,
+        acceptedVersionOnAccount: String?,
+        currentServerVersion: String
+    ) -> Bool {
         let currentVersion = currentServerVersion.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !currentVersion.isEmpty else { return true }
-        guard user.acceptedPrivacyPolicy else { return true }
-        guard let acceptedVersion = user.acceptedPrivacyPolicyVersion?.trimmingCharacters(in: .whitespacesAndNewlines),
+
+        if DeviceLegalConsentStore.hasAcknowledged(
+            user: user,
+            consentType: consentType,
+            version: currentVersion
+        ) {
+            return false
+        }
+
+        guard isAcceptedOnAccount else { return true }
+        guard let acceptedVersion = acceptedVersionOnAccount?.trimmingCharacters(in: .whitespacesAndNewlines),
               !acceptedVersion.isEmpty else {
             return true
         }
-        guard acceptedVersion == currentVersion else { return true }
-        return !DeviceLegalConsentStore.hasAcknowledged(
-            userId: user.id,
-            consentType: ConsentType.privacy,
-            version: currentVersion
-        )
+        if acceptedVersion != currentVersion {
+            return true
+        }
+
+        // Account matches active version, but this install has not confirmed yet.
+        return true
     }
 
     func needsToAcceptNewTerms(user: User) -> Bool {
@@ -71,7 +91,7 @@ final class TermsAcceptanceService: TermsAcceptanceServiceProtocol {
         updatedUser.acceptedTermsVersion = version
         updatedUser.acceptedTermsDate = Date()
         updatedUser.updatedAt = Date()
-        DeviceLegalConsentStore.markAcknowledged(userId: user.id, consentType: ConsentType.terms, version: version)
+        DeviceLegalConsentStore.markAcknowledged(user: user, consentType: ConsentType.terms, version: version)
         return updatedUser
     }
 
@@ -81,7 +101,7 @@ final class TermsAcceptanceService: TermsAcceptanceServiceProtocol {
         updatedUser.acceptedPrivacyPolicyVersion = version
         updatedUser.acceptedPrivacyPolicyDate = Date()
         updatedUser.updatedAt = Date()
-        DeviceLegalConsentStore.markAcknowledged(userId: user.id, consentType: ConsentType.privacy, version: version)
+        DeviceLegalConsentStore.markAcknowledged(user: user, consentType: ConsentType.privacy, version: version)
         return updatedUser
     }
 }

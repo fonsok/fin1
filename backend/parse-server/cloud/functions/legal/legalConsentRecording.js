@@ -197,9 +197,37 @@ async function persistOnboardingLegalConsents(request, user, data) {
   return { recorded };
 }
 
+async function findDeviceLegalConsentAcknowledgements(userId, deviceInstallId) {
+  const uid = normalizeString(userId);
+  const installId = normalizeString(deviceInstallId);
+  if (!uid || !installId) return [];
+
+  const q = new Parse.Query('LegalConsent');
+  q.equalTo('userId', uid);
+  q.equalTo('deviceInstallId', installId);
+  q.equalTo('accepted', true);
+  q.descending('acceptedAt');
+  q.limit(50);
+  const rows = await q.find({ useMasterKey: true });
+
+  const seen = new Set();
+  const acknowledgements = [];
+  for (const row of rows) {
+    const consentType = normalizeString(row.get('consentType'));
+    const version = normalizeString(row.get('version'));
+    if (!consentType || !version) continue;
+    const key = `${consentType}:${version}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    acknowledgements.push({ consentType, version });
+  }
+  return acknowledgements;
+}
+
 module.exports = {
   findExistingLegalConsent,
   getActiveDocumentHash,
   recordLegalConsentEntry,
   persistOnboardingLegalConsents,
+  findDeviceLegalConsentAcknowledgements,
 };

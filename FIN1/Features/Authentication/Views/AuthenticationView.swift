@@ -194,8 +194,23 @@ struct AuthenticationView: View {
             return
         }
 
-        let termsVersion = await resolveCurrentVersion(documentType: .terms)
-        let privacyVersion = await resolveCurrentVersion(documentType: .privacy)
+        if let parseAPIClient = services.parseAPIClient {
+            await DeviceLegalConsentStore.syncAcknowledgementsFromServer(
+                user: user,
+                parseAPIClient: parseAPIClient
+            )
+        }
+
+        let termsVersion = await LegalConsentVersionResolver.resolveVersion(
+            user: user,
+            documentType: .terms,
+            termsContentService: self.services.termsContentService
+        )
+        let privacyVersion = await LegalConsentVersionResolver.resolveVersion(
+            user: user,
+            documentType: .privacy,
+            termsContentService: self.services.termsContentService
+        )
 
         let needsTerms = self.services.termsAcceptanceService.needsToAcceptTerms(
             user: user,
@@ -213,22 +228,6 @@ struct AuthenticationView: View {
                 self.showTermsAcceptance = false
             }
             self.isResolvingLegalConsentGate = false
-        }
-    }
-
-    private func resolveCurrentVersion(documentType: LegalDocumentType) async -> String {
-        // Prefer cached (no network); then try server; then fallback to bundled constants.
-        let language: TermsOfServiceDataProvider.Language = .german
-        if let cached = services.termsContentService.getCachedTerms(language: language, documentType: documentType) {
-            return cached.version
-        }
-        if let fetched = try? await services.termsContentService.fetchCurrentTerms(language: language, documentType: documentType) {
-            return fetched.version
-        }
-        switch documentType {
-        case .terms: return TermsVersionConstants.currentTermsVersion
-        case .privacy: return TermsVersionConstants.currentPrivacyPolicyVersion
-        case .imprint: return "1.0"
         }
     }
 }
