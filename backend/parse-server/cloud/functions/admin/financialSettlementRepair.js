@@ -2,6 +2,7 @@
 
 const { repairTradeSettlement } = require('../../utils/accountingHelper/repair');
 const { settleAndDistribute } = require('../../utils/accountingHelper');
+const { backfillMissingSettlementGLForTrade } = require('../../utils/accountingHelper/settlementGLPoster');
 const { backfillResidualReturnIfMissing } = require('../../utils/accountingHelper/settlementBackfill');
 const investmentEscrow = require('../../utils/accountingHelper/investmentEscrow');
 const { mergeInvestorFeeConfig } = require('../../utils/accountingHelper/feeConfigSnapshot');
@@ -9,6 +10,7 @@ const { loadConfig } = require('../../utils/configHelper/index.js');
 const { logPermissionCheck } = require('../../utils/permissions');
 const { audit } = require('../../utils/structuredLogger');
 const { round2 } = require('../../utils/accountingHelper/shared');
+const { resolveCanonicalUserId } = require('../../utils/canonicalUserId');
 
 async function handleRepairTradeSettlement(request) {
   const { tradeId, dryRun = false, reSettle = true } = request.params || {};
@@ -231,7 +233,7 @@ async function handleBackfillTradingResidualEscrow(request) {
 }
 
 async function handleEnsureCapitalSplitOnActivation(request) {
-  const { investmentId, investmentNumber } = request.params || {};
+  const { investmentId, investmentNumber, forceRebook } = request.params || {};
   const investment = await loadInvestmentByIdOrNumber({ investmentId, investmentNumber });
 
   const participation = await new Parse.Query('PoolTradeParticipation')
@@ -250,6 +252,27 @@ async function handleEnsureCapitalSplitOnActivation(request) {
     throw new Parse.Error(Parse.Error.INVALID_VALUE, 'Participation has no tradeId');
   }
   const trade = await new Parse.Query('Trade').get(tradeId, { useMasterKey: true });
+
+  let purgedRows = 0;
+  if (forceRebook) {
+    purgedRows = await investmentEscrow.purgeReserveCapitalTradeSplitLeg(investment.id, trade.id);
+    purgedRows += await investmentEscrow.purgeDeployReversalForCapitalSplitLeg(investment.id, trade.id);
+    const canonicalUserId = await resolveCanonicalUserId(investment.get('investorId'));
+    const badResidual = await new Parse.Query('AccountStatement')
+      .equalTo('userId', canonicalUserId)
+      .equalTo('investmentId', investment.id)
+      .equalTo('tradeId', trade.id)
+      .equalTo('entryType', 'residual_return')
+      .equalTo('source', 'backend')
+      .first({ useMasterKey: true });
+    if (badResidual) {
+      await badResidual.destroy({ useMasterKey: true });
+      purgedRows += 1;
+    }
+    investment.unset('poolTradingAmount');
+    await investment.save(null, { useMasterKey: true });
+  }
+
   const result = await investmentEscrow.ensureReserveCapitalTradeSplitOnActivation(investment, trade);
 
   if (!request.master) {
@@ -260,8 +283,23 @@ async function handleEnsureCapitalSplitOnActivation(request) {
     investmentId: investment.id,
     investmentNumber: investment.get('investmentNumber') || '',
     tradeId: trade.id,
+    forceRebook: Boolean(forceRebook),
+    purgedRows,
     ...result,
   };
+}
+
+async function handleBackfillMissingSettlementGL(request) {
+  const { tradeId, dryRun = false } = request.params || {};
+  if (!tradeId) {
+    throw new Parse.Error(Parse.Error.INVALID_VALUE, 'tradeId required');
+  }
+
+  const report = await backfillMissingSettlementGLForTrade(tradeId, { dryRun: !!dryRun });
+  if (!request.master) {
+    await logPermissionCheck(request, 'backfillMissingSettlementGL', 'Trade', tradeId);
+  }
+  return report;
 }
 
 module.exports = {
@@ -269,4 +307,5 @@ module.exports = {
   handleBackfillTradeSettlement,
   handleBackfillTradingResidualEscrow,
   handleEnsureCapitalSplitOnActivation,
+  handleBackfillMissingSettlementGL,
 };

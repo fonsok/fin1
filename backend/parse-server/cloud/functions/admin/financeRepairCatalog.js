@@ -67,6 +67,15 @@ const REPAIR_CATALOG = [
     relatedChecks: ['mirror_basis_drift', 'paired_sell_investor_chain', 'trader_pool_bid_ask_contract'],
   },
   {
+    id: 'settlement_gl_pairs_missing',
+    layer: 'repair',
+    cloudFunction: 'backfillMissingSettlementGL',
+    defaultParams: { dryRun: true },
+    applyParams: { dryRun: false },
+    notes: 'Replay AppLedger pairs from AccountStatement rows (per-investor commission/tax legs)',
+    relatedChecks: ['settlement_consistency'],
+  },
+  {
     id: 'trader_pool_bid_ask_contract',
     layer: 'detection',
     cloudFunction: 'getTraderPoolBidAskContractStatus',

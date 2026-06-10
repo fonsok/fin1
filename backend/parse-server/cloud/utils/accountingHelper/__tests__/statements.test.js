@@ -155,6 +155,33 @@ describe('bookSettlementEntry (statements.js)', () => {
     expect(credit.attrs.account).toBe('CLT-LIAB-AVA');
   });
 
+  test('multiple investor commission_debit on same trade each post PLT-LIAB-COM credit', async () => {
+    // eslint-disable-next-line global-require
+    const { bookSettlementEntry } = require('../statements');
+
+    await bookSettlementEntry({
+      userId: 'investor-a', userRole: 'investor',
+      entryType: 'commission_debit', amount: -116.21,
+      tradeId: 'trade-pool', tradeNumber: '0002',
+      investmentId: 'inv-a', investmentNumber: 'INV-A',
+      description: 'Provision A', referenceDocumentId: 'doc-a', referenceDocumentNumber: 'CB-A',
+    });
+    await bookSettlementEntry({
+      userId: 'investor-b', userRole: 'investor',
+      entryType: 'commission_debit', amount: -233.02,
+      tradeId: 'trade-pool', tradeNumber: '0002',
+      investmentId: 'inv-b', investmentNumber: 'INV-B',
+      description: 'Provision B', referenceDocumentId: 'doc-b', referenceDocumentNumber: 'CB-B',
+    });
+
+    const liabRows = findEntries('PLT-LIAB-COM');
+    const creditSum = liabRows.filter((e) => e.attrs.side === 'credit').reduce((s, e) => s + e.attrs.amount, 0);
+    expect(liabRows.filter((e) => e.attrs.side === 'credit')).toHaveLength(2);
+    expect(creditSum).toBeCloseTo(349.23, 2);
+    expect(liabRows.some((e) => e.attrs.metadata.leg === 'commission:inv:inv-a')).toBe(true);
+    expect(liabRows.some((e) => e.attrs.metadata.leg === 'commission:inv:inv-b')).toBe(true);
+  });
+
   test('Investor + Trader commission together saldieren PLT-LIAB-COM auf 0', async () => {
     // eslint-disable-next-line global-require
     const { bookSettlementEntry } = require('../statements');

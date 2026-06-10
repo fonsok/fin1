@@ -112,7 +112,9 @@ Feature‑Flag (`FIN1_LEDGER_LEGACY_FEE_SYNTHESIS`, default off) gelegt.
 
 - Idempotenz‑Schlüssel pro Pair: `(referenceId, referenceType, transactionType,
   metadata.leg)`. `metadata.leg` ist je `entryType` deterministisch (z. B.
-  `commission`, `withholding_tax`, `order_fee:orderFee`).
+  `commission`, `withholding_tax`, `order_fee:orderFee`). **Investor-Zeilen mit
+  `investmentId`:** `leg` = `{baseLeg}:inv:{investmentId}` (sonst nur ein
+  `commission_debit`-GL-Pair pro Trade trotz mehrerer Investoren).
 - Backfill historischer `AccountStatement`‑Zeilen: separater Admin‑Cloud‑Job
   (out of scope dieser ADR; Skizze in PR4 / Roadmap).
 

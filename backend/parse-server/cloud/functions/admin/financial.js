@@ -12,6 +12,7 @@ const {
   handleBackfillTradeSettlement,
   handleBackfillTradingResidualEscrow,
   handleEnsureCapitalSplitOnActivation,
+  handleBackfillMissingSettlementGL,
 } = require('./financialSettlementRepair');
 const {
   handleRunSettlementRetryQueue,
@@ -24,6 +25,7 @@ const { handleVerifyAccountStatementChain } = require('./financialVerifyAccountS
 const { handleBackfillUserCashBalanceFromStatements } = require('./financialUserCashBalanceBackfill');
 const { handleBackfillTraderCollectionBillBeleg } = require('./financialTraderCollectionBillBelegBackfill');
 const { handleBackfillPoolMirrorExecutionEigenbeleg } = require('./financialPoolMirrorExecutionEigenbelegBackfill');
+const { handleRepairMirrorPoolBuyQuantity } = require('./financialMirrorPoolBuyQuantityRepair');
 const { handleBackfillTradeSummaryFlags } = require('./financialBackfillTradeSummaryFlags');
 
 Parse.Cloud.define('getFinancialDashboard', async (request) => {
@@ -72,6 +74,13 @@ Parse.Cloud.define('ensureCapitalSplitOnActivation', async (request) => {
     requireAdminRole(request);
   }
   return handleEnsureCapitalSplitOnActivation(request);
+});
+
+Parse.Cloud.define('backfillMissingSettlementGL', async (request) => {
+  if (!request.master) {
+    requireAdminRole(request);
+  }
+  return handleBackfillMissingSettlementGL(request);
 });
 
 Parse.Cloud.define('runSettlementRetryQueue', async (request) => {
@@ -135,6 +144,13 @@ Parse.Cloud.define('backfillPoolMirrorExecutionEigenbeleg', async (request) => {
     requireAdminRole(request);
   }
   return handleBackfillPoolMirrorExecutionEigenbeleg(request);
+});
+
+Parse.Cloud.define('repairMirrorPoolBuyQuantity', async (request) => {
+  if (!request.master) {
+    requireAdminRole(request);
+  }
+  return handleRepairMirrorPoolBuyQuantity(request);
 });
 
 Parse.Cloud.define('backfillTradeSummaryFlags', async (request) => {
