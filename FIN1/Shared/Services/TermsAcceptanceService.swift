@@ -28,7 +28,11 @@ final class TermsAcceptanceService: TermsAcceptanceServiceProtocol {
             return true
         }
         guard acceptedVersion == currentVersion else { return true }
-        return !DeviceLegalConsentStore.hasAcknowledged(consentType: ConsentType.terms, version: currentVersion)
+        return !DeviceLegalConsentStore.hasAcknowledged(
+            userId: user.id,
+            consentType: ConsentType.terms,
+            version: currentVersion
+        )
     }
 
     func needsToAcceptPrivacyPolicy(user: User, currentServerVersion: String) -> Bool {
@@ -40,7 +44,11 @@ final class TermsAcceptanceService: TermsAcceptanceServiceProtocol {
             return true
         }
         guard acceptedVersion == currentVersion else { return true }
-        return !DeviceLegalConsentStore.hasAcknowledged(consentType: ConsentType.privacy, version: currentVersion)
+        return !DeviceLegalConsentStore.hasAcknowledged(
+            userId: user.id,
+            consentType: ConsentType.privacy,
+            version: currentVersion
+        )
     }
 
     func needsToAcceptNewTerms(user: User) -> Bool {
@@ -63,7 +71,7 @@ final class TermsAcceptanceService: TermsAcceptanceServiceProtocol {
         updatedUser.acceptedTermsVersion = version
         updatedUser.acceptedTermsDate = Date()
         updatedUser.updatedAt = Date()
-        DeviceLegalConsentStore.markAcknowledged(consentType: ConsentType.terms, version: version)
+        DeviceLegalConsentStore.markAcknowledged(userId: user.id, consentType: ConsentType.terms, version: version)
         return updatedUser
     }
 
@@ -73,7 +81,7 @@ final class TermsAcceptanceService: TermsAcceptanceServiceProtocol {
         updatedUser.acceptedPrivacyPolicyVersion = version
         updatedUser.acceptedPrivacyPolicyDate = Date()
         updatedUser.updatedAt = Date()
-        DeviceLegalConsentStore.markAcknowledged(consentType: ConsentType.privacy, version: version)
+        DeviceLegalConsentStore.markAcknowledged(userId: user.id, consentType: ConsentType.privacy, version: version)
         return updatedUser
     }
 }

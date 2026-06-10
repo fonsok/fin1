@@ -6,6 +6,7 @@ struct AuthenticationView: View {
     @Environment(\.appServices) private var services
     @State private var isAuthenticated = false
     @State private var showTermsAcceptance = false
+    @State private var isResolvingLegalConsentGate = false
     @State private var showOnboardingResume = false
     @State private var showCompanyKybResume = false
     @State private var showCompanyKybStatus = false
@@ -17,22 +18,11 @@ struct AuthenticationView: View {
 
             Group {
                 if self.isAuthenticated {
-                    ZStack {
-                        MainTabView(services: self.services)
-                            .accessibilityIdentifier("MainTabView")
-                            .onAppear {
-                                print("🏠 MainTabView appeared - User is authenticated")
-                                self.checkTermsAcceptance()
-                            }
-
-                        if self.showTermsAcceptance {
-                            TermsAcceptanceModalView(
-                                termsAcceptanceService: self.services.termsAcceptanceService,
-                                userService: self.services.userService,
-                                parseAPIClient: self.services.parseAPIClient,
-                                termsContentService: self.services.termsContentService
-                            )
-                            .zIndex(1_000)
+                    Group {
+                        if self.isResolvingLegalConsentGate {
+                            self.legalConsentGatePlaceholder
+                        } else {
+                            self.authenticatedMainContent
                         }
                     }
                     .fullScreenCover(isPresented: self.$showOnboardingResume) {
@@ -71,18 +61,19 @@ struct AuthenticationView: View {
         .onAppear {
             self.isAuthenticated = self.services.userService.isAuthenticated
             if self.isAuthenticated {
-                self.checkTermsAcceptance()
+                self.beginLegalConsentGateCheck()
                 self.checkOnboardingStatus()
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .userDidSignIn)) { _ in
             self.isAuthenticated = true
             print("🔍 AuthenticationView: User signed in")
-            self.checkTermsAcceptance()
+            self.beginLegalConsentGateCheck()
             self.checkOnboardingStatus()
         }
         .onReceive(NotificationCenter.default.publisher(for: .userDidSignOut)) { _ in
             self.isAuthenticated = false
+            self.isResolvingLegalConsentGate = false
             self.showTermsAcceptance = false
             self.showOnboardingResume = false
             self.showCompanyKybResume = false
@@ -150,34 +141,78 @@ struct AuthenticationView: View {
 
     // MARK: - Private Methods
 
-    private func checkTermsAcceptance() {
-        self.showTermsAcceptanceModalIfStillRequired()
+    private var authenticatedMainContent: some View {
+        ZStack {
+            MainTabView(services: self.services)
+                .accessibilityIdentifier("MainTabView")
+                .onAppear {
+                    print("🏠 MainTabView appeared - User is authenticated")
+                }
+
+            if self.showTermsAcceptance {
+                TermsAcceptanceModalView(
+                    termsAcceptanceService: self.services.termsAcceptanceService,
+                    userService: self.services.userService,
+                    parseAPIClient: self.services.parseAPIClient,
+                    termsContentService: self.services.termsContentService
+                )
+                .zIndex(1_000)
+            }
+        }
+    }
+
+    private var legalConsentGatePlaceholder: some View {
+        ZStack {
+            AppTheme.screenBackground
+                .ignoresSafeArea()
+            ProgressView()
+                .tint(AppTheme.accentLightBlue)
+                .scaleEffect(1.2)
+        }
+        .accessibilityIdentifier("LegalConsentGatePlaceholder")
+    }
+
+    private func beginLegalConsentGateCheck() {
+        self.isResolvingLegalConsentGate = true
+        Task {
+            await self.evaluateLegalConsentRequirement(showOnlyIfNeeded: false)
+        }
     }
 
     /// Show blocking modal when consent is still required; never hide on partial acceptance.
     private func showTermsAcceptanceModalIfStillRequired() {
+        Task {
+            await self.evaluateLegalConsentRequirement(showOnlyIfNeeded: true)
+        }
+    }
+
+    private func evaluateLegalConsentRequirement(showOnlyIfNeeded: Bool) async {
         guard let user = services.userService.currentUser else {
+            await MainActor.run {
+                self.isResolvingLegalConsentGate = false
+            }
             return
         }
 
-        Task {
-            let termsVersion = await resolveCurrentVersion(documentType: .terms)
-            let privacyVersion = await resolveCurrentVersion(documentType: .privacy)
+        let termsVersion = await resolveCurrentVersion(documentType: .terms)
+        let privacyVersion = await resolveCurrentVersion(documentType: .privacy)
 
-            let needsTerms = self.services.termsAcceptanceService.needsToAcceptTerms(
-                user: user,
-                currentServerVersion: termsVersion
-            )
-            let needsPrivacy = self.services.termsAcceptanceService.needsToAcceptPrivacyPolicy(
-                user: user,
-                currentServerVersion: privacyVersion
-            )
+        let needsTerms = self.services.termsAcceptanceService.needsToAcceptTerms(
+            user: user,
+            currentServerVersion: termsVersion
+        )
+        let needsPrivacy = self.services.termsAcceptanceService.needsToAcceptPrivacyPolicy(
+            user: user,
+            currentServerVersion: privacyVersion
+        )
 
-            await MainActor.run {
-                if needsTerms || needsPrivacy {
-                    self.showTermsAcceptance = true
-                }
+        await MainActor.run {
+            if needsTerms || needsPrivacy {
+                self.showTermsAcceptance = true
+            } else if !showOnlyIfNeeded {
+                self.showTermsAcceptance = false
             }
+            self.isResolvingLegalConsentGate = false
         }
     }
 
