@@ -3,6 +3,7 @@
 const {
   sortTraderSellBelegeChronologically,
 } = require('../../../utils/accountingHelper/traderCollectionBillBelegSnapshot/partialSellSnapshot');
+const { buildTraderSellLegsFromDocs } = require('./summaryReportTraderSellLegs');
 
 const BELEG_DOCUMENT_TYPES = [
   'traderCollectionBill',
@@ -296,6 +297,13 @@ function attachBelegeToSummaryRows(rows, docsByTradeId) {
     const poolDocs = poolTradeId ? (docsByTradeId.get(poolTradeId) || []) : [];
 
     const traderBelege = traderTradeId ? buildTraderBelege(traderDocs) : null;
+    const traderTradeStatus =
+      row.traderTrade?.status
+      || row.linkedTraderTrade?.status
+      || (row.legKind === 'trader' || row.legKind === 'standalone' ? row.status : null);
+    const traderSellLegs = traderTradeId
+      ? buildTraderSellLegsFromDocs(traderDocs, traderTradeStatus)
+      : [];
     const poolBelege = poolTradeId
       ? buildPoolBelege({
         poolDocs,
@@ -315,6 +323,7 @@ function attachBelegeToSummaryRows(rows, docsByTradeId) {
     return {
       ...row,
       traderBelege,
+      traderSellLegs,
       poolBelege,
       poolExecutionBelege,
     };

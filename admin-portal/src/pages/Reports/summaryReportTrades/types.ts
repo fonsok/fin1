@@ -11,6 +11,23 @@ export interface SummaryReportPartialSellInvestorRealization {
   investorPayout: number;
 }
 
+export interface SummaryReportTraderSellLegRow {
+  label: string;
+  value: string;
+}
+
+export interface SummaryReportTraderSellLeg {
+  eventIndex: number;
+  totalSellEvents: number;
+  title: string;
+  instrumentLine: string;
+  documentId: string;
+  documentNumber: string;
+  verkaufRows: SummaryReportTraderSellLegRow[];
+  partialSellRows: SummaryReportTraderSellLegRow[];
+  createdAt?: string;
+}
+
 export interface SummaryReportPartialSellEvent {
   eventIndex: number;
   isFinalExit: boolean;
@@ -157,6 +174,7 @@ export interface SummaryReportTradeRow {
     sell: SummaryReportTradeBelegLink | null;
   };
   traderBelege?: SummaryReportTraderBelege | null;
+  traderSellLegs?: SummaryReportTraderSellLeg[];
   poolBelege?: SummaryReportPoolBelege | null;
   partialSellEvents?: SummaryReportPartialSellEvent[];
   hasPoolDetails: boolean;

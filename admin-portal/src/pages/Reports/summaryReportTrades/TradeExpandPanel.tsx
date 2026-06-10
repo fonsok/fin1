@@ -7,6 +7,7 @@ import {
   adminStrong,
 } from '../../../utils/adminThemeClasses';
 import { PartialSellEventsSection } from './PartialSellEventsSection';
+import { TraderPartialSellsSection } from './TraderPartialSellsSection';
 import { PoolParticipationsSection } from './PoolParticipationsTable';
 import { PoolBelegeSection, TraderBelegeSection } from './TradeBelegeSection';
 import { TradeChevronIcon, TradeLegBadge } from './TradeBadges';
@@ -47,7 +48,15 @@ export function TradeExpandPanel({
           )}
         </div>
         {traderSnap ? (
-          <TradeMetricsGrid snap={traderSnap} isDark={isDark} profitLabel="P/L (Trader)" />
+          <>
+            <TradeMetricsGrid snap={traderSnap} isDark={isDark} profitLabel="P/L (Trader)" />
+            {traderSnap.soldQuantity > 0 && traderSnap.buyQuantity > 0 && (
+              <p className={clsx('text-xs', adminCaption(isDark))}>
+                Teilverkauf: {formatNumber(traderSnap.soldQuantity)} / {formatNumber(traderSnap.buyQuantity)}{' '}
+                Stk ({(traderSnap.sellVolumeProgress * 100).toFixed(1)} % verkauft).
+              </p>
+            )}
+          </>
         ) : (
           <p className={clsx('text-sm', adminMuted(isDark))}>
             {rowIsPoolMirror
@@ -55,6 +64,7 @@ export function TradeExpandPanel({
               : 'Keine Trader-Trade-Daten.'}
           </p>
         )}
+        <TraderPartialSellsSection legs={trade.traderSellLegs} isDark={isDark} />
         <TraderBelegeSection belege={traderBelege} isDark={isDark} />
       </div>
 
