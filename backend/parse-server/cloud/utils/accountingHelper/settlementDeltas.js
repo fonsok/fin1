@@ -18,6 +18,7 @@ const {
   findExistingStatementEntry,
 } = require('./settlementQueries');
 const { isMirrorPoolTradeLeg } = require('../../services/poolMirrorActivation/poolActivationPolicy');
+const { customerDisplayFromPersistedBelegMetadata } = require('./traderStatementCustomerDisplay');
 
 /**
  * Books one trader sell leg: external TSC (Kurswert + Gebühren) + internal pool-mirror eigenbeleg,
@@ -45,15 +46,20 @@ async function bookTraderSellOrderLeg({
     sellOrderId,
   });
 
-  const sellDoc = existingDoc || await createTradeExecutionDocument({
-    traderId,
-    trade,
-    executionType: 'sell',
-    amount: grossAmount,
-    order,
-    businessCaseId: resolvedBusinessCaseId,
-    sellOrderId,
-  });
+  const executionResult = existingDoc
+    ? { document: existingDoc }
+    : await createTradeExecutionDocument({
+      traderId,
+      trade,
+      executionType: 'sell',
+      amount: grossAmount,
+      order,
+      businessCaseId: resolvedBusinessCaseId,
+      sellOrderId,
+    });
+  const sellDoc = executionResult.document;
+  const customerDisplaySnapshot = executionResult.customerDisplay
+    || customerDisplayFromPersistedBelegMetadata(sellDoc.get('metadata'), 'sell');
 
   const sellDocRef = resolveDocumentReference(sellDoc, { context: 'trade_sell_delta' });
   if (sellDocRef.referenceDocumentId) {
@@ -90,6 +96,7 @@ async function bookTraderSellOrderLeg({
     description: `Wertpapierverkauf Trade #${tradeNumber} (${trade.get('symbol') || ''})`,
     ...sellDocRef,
     businessCaseId: resolvedBusinessCaseId,
+    customerDisplaySnapshot,
   });
 }
 
@@ -129,7 +136,7 @@ async function bookTraderBuyEntryIfMissing(trade) {
     return existing;
   }
 
-  const buyDoc = await createTradeExecutionDocument({
+  const { document: buyDoc, customerDisplay: buyCustomerDisplay } = await createTradeExecutionDocument({
     traderId,
     trade,
     executionType: 'buy',
@@ -158,6 +165,7 @@ async function bookTraderBuyEntryIfMissing(trade) {
     description: `Wertpapierkauf Trade #${tradeNumber} (${trade.get('symbol') || ''})`,
     ...buyDocRef,
     businessCaseId,
+    customerDisplaySnapshot: buyCustomerDisplay,
   });
 }
 

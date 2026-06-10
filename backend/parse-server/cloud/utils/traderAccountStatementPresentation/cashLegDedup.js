@@ -1,5 +1,6 @@
 'use strict';
 
+const { round2 } = require('../accountingHelper/shared');
 const { TRADE_CASH_ENTRY_TYPES } = require('./shared');
 
 function isTraderExecutionBelegNumber(number) {
@@ -13,10 +14,35 @@ function belegRank(number) {
   return 2;
 }
 
-function traderCashLegDedupKey(row) {
-  const entryType = row.get('entryType');
+function sellDuplicateAnchorKey(row) {
+  const amount = round2(Math.abs(Number(row.get('amount') || 0)));
+  if (!(amount > 0)) return null;
+  const tradeId = String(row.get('tradeId') || '').trim();
+  if (tradeId) return `id:${tradeId}@${amount}`;
   const tradeNumber = row.get('tradeNumber');
-  // Customer view: one buy/sell cash line per trade number (paired legs may duplicate tradeId).
+  if (tradeNumber !== undefined && tradeNumber !== null && tradeNumber !== '') {
+    return `num:${tradeNumber}@${amount}`;
+  }
+  return null;
+}
+
+function traderCashLegDedupKey(row) {
+  const entryType = String(row.get('entryType') || '');
+
+  // Partial sells: one customer line per TSC / stmt row — not per trade number.
+  if (entryType === 'trade_sell') {
+    const refNum = String(row.get('referenceDocumentNumber') || '').trim();
+    if (isTraderExecutionBelegNumber(refNum)) {
+      return `sell:beleg:${refNum}`;
+    }
+    const refId = String(row.get('referenceDocumentId') || '').trim();
+    if (refId) return `sell:doc:${refId}`;
+    if (row.id) return `sell:stmt:${row.id}`;
+    return null;
+  }
+
+  // Buy: one line per trade number (paired mirror legs may duplicate tradeId).
+  const tradeNumber = row.get('tradeNumber');
   if (tradeNumber !== undefined && tradeNumber !== null && tradeNumber !== '') {
     return `num:${tradeNumber}#${entryType}`;
   }
@@ -41,6 +67,33 @@ function prefersTraderExecutionBeleg(candidate, existing) {
   return candidateAt.getTime() > existingAt.getTime();
 }
 
+function suppressSellStmtDuplicatesWhereExecutionBelegExists(rows) {
+  const sells = [];
+  const rest = [];
+  for (const row of rows) {
+    if (String(row.get('entryType') || '') === 'trade_sell') sells.push(row);
+    else rest.push(row);
+  }
+
+  const executionAnchors = new Set();
+  for (const row of sells) {
+    const refNum = String(row.get('referenceDocumentNumber') || '');
+    if (!isTraderExecutionBelegNumber(refNum)) continue;
+    const anchorKey = sellDuplicateAnchorKey(row);
+    if (anchorKey) executionAnchors.add(anchorKey);
+  }
+
+  const keptSells = sells.filter((row) => {
+    const refNum = String(row.get('referenceDocumentNumber') || '');
+    if (isTraderExecutionBelegNumber(refNum)) return true;
+    const anchorKey = sellDuplicateAnchorKey(row);
+    if (!anchorKey) return true;
+    return !executionAnchors.has(anchorKey);
+  });
+
+  return [...rest, ...keptSells];
+}
+
 function deduplicatedTraderCashLegs(rows) {
   const passthrough = [];
   const bestByKey = new Map();
@@ -61,13 +114,18 @@ function deduplicatedTraderCashLegs(rows) {
     }
   }
 
-  return [...passthrough, ...bestByKey.values()];
+  return suppressSellStmtDuplicatesWhereExecutionBelegExists([
+    ...passthrough,
+    ...bestByKey.values(),
+  ]);
 }
 
 module.exports = {
   isTraderExecutionBelegNumber,
   belegRank,
+  sellDuplicateAnchorKey,
   traderCashLegDedupKey,
   prefersTraderExecutionBeleg,
+  suppressSellStmtDuplicatesWhereExecutionBelegExists,
   deduplicatedTraderCashLegs,
 };

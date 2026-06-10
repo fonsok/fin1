@@ -29,6 +29,7 @@ function mockStmt(id, entryType, amount, createdAt, extra = {}) {
         referenceDocumentNumber: extra.referenceDocumentNumber || null,
         description: extra.description || entryType,
         source: 'backend',
+        customerDisplaySnapshot: extra.customerDisplaySnapshot || null,
       };
       return map[key];
     },
@@ -256,6 +257,51 @@ describe('traderAccountStatementPresentation', () => {
     });
     const instrument = parseInstrumentFromTrade(trade, sellOrder, { transactionType: 'sell' });
     expect(instrument.quantity).toBe('300');
+  });
+
+  test('stmt leg prefers booking-time customerDisplaySnapshot over order reconstruction', () => {
+    const t0 = new Date('2026-06-10T15:00:00Z');
+    const tradeId = 'trade-snapshot';
+    const trade = {
+      id: tradeId,
+      get: (key) => ({
+        wkn: 'VO47OXA',
+        symbol: 'VO47OXA',
+        securityType: 'PUT',
+        quantity: 900,
+        buyLegType: 'TRADER',
+        buyOrder: { wkn: 'VO47OXA', quantity: 900 },
+        sellOrder: {},
+        sellOrders: [],
+      }[key]),
+    };
+    const stmtEntries = [
+      mockStmt('s-snap', 'trade_sell', 2668, t0, {
+        tradeId,
+        tradeNumber: 1,
+        referenceDocumentNumber: 'TSC-2026-0000999',
+        customerDisplaySnapshot: {
+          schemaVersion: 1,
+          transactionType: 'sell',
+          wknOrIsin: 'VO47OXA',
+          securitiesDirection: 'PUT',
+          underlyingAsset: 'DAX',
+          quantity: '300',
+          statementTitle: 'VERKAUF · PUT · DAX · VO47OXA',
+        },
+      }),
+    ];
+    const instrumentContext = {
+      tradeById: new Map([[tradeId, trade]]),
+      buyOrderByTradeId: new Map(),
+      sellOrdersByTradeId: new Map([[tradeId, [
+        mockParseOrder('sell-wrong', 'sell', tradeId, { quantity: 900, executedQuantity: 900 }),
+      ]]]),
+    };
+    const events = buildNetTradeDisplayEvents(stmtEntries, [], instrumentContext);
+    expect(events[0].quantity).toBe('300');
+    expect(events[0].statementTitle).toBe('VERKAUF · PUT · DAX · VO47OXA');
+    expect(events[0].instrumentResolvedFromTrade).toBe(true);
   });
 
   test('partial sell stmt leg uses parse sell order quantity when executedQuantity is zero', () => {
@@ -496,6 +542,122 @@ describe('traderAccountStatementPresentation', () => {
     expect(instrument.underlyingAsset).toBe('Dow Jones');
     expect(instrument.strikePrice).toBe('Strike 17191.23');
     expect(tradeStatementTitle('buy', instrument)).toBe('KAUF · PUT · Dow Jones · UB4PQLG');
+  });
+
+  test('two partial sell stmt legs show as separate events with distinct TSC belege', () => {
+    const t1 = new Date('2026-06-08T10:00:00Z');
+    const t2 = new Date('2026-06-09T11:00:00Z');
+    const tradeId = 'trade-vo47-partial';
+    const trade = {
+      id: tradeId,
+      get: (key) => ({
+        wkn: 'VO47OXA',
+        symbol: 'VO47OXA',
+        securityType: 'PUT',
+        quantity: 1000,
+        buyLegType: 'TRADER',
+        buyOrder: { wkn: 'VO47OXA', quantity: 1000 },
+        sellOrder: {},
+        sellOrders: [],
+      }[key]),
+    };
+    const sellOrder1 = mockParseOrder('sell-1', 'sell', tradeId, {
+      quantity: 500,
+      netAmount: 1500,
+      underlyingAsset: 'DAX',
+    });
+    const sellOrder2 = mockParseOrder('sell-2', 'sell', tradeId, {
+      quantity: 300,
+      netAmount: 900,
+      underlyingAsset: 'DAX',
+    });
+    const stmtEntries = [
+      mockStmt('s-sell-1', 'trade_sell', 1500, t1, {
+        tradeId,
+        tradeNumber: 1,
+        referenceDocumentId: 'doc-tsc-128',
+        referenceDocumentNumber: 'TSC-2026-0000128',
+        customerDisplaySnapshot: {
+          schemaVersion: 1,
+          transactionType: 'sell',
+          wknOrIsin: 'VO47OXA',
+          securitiesDirection: 'PUT',
+          underlyingAsset: 'DAX',
+          quantity: '500',
+          statementTitle: 'VERKAUF · PUT · DAX · VO47OXA',
+        },
+      }),
+      mockStmt('s-sell-2', 'trade_sell', 900, t2, {
+        tradeId,
+        tradeNumber: 1,
+        referenceDocumentId: 'doc-tsc-129',
+        referenceDocumentNumber: 'TSC-2026-0000129',
+        customerDisplaySnapshot: {
+          schemaVersion: 1,
+          transactionType: 'sell',
+          wknOrIsin: 'VO47OXA',
+          securitiesDirection: 'PUT',
+          underlyingAsset: 'DAX',
+          quantity: '300',
+          statementTitle: 'VERKAUF · PUT · DAX · VO47OXA',
+        },
+      }),
+    ];
+    const instrumentContext = {
+      tradeById: new Map([[tradeId, trade]]),
+      buyOrderByTradeId: new Map(),
+      sellOrdersByTradeId: new Map([[tradeId, [sellOrder1, sellOrder2]]]),
+    };
+    const events = buildNetTradeDisplayEvents(stmtEntries, [], instrumentContext);
+    const sellEvents = events
+      .filter((e) => e.entryType === 'trade_sell')
+      .sort((a, b) => a.at.getTime() - b.at.getTime());
+    expect(sellEvents).toHaveLength(2);
+    expect(sellEvents[0].referenceDocumentNumber).toBe('TSC-2026-0000128');
+    expect(sellEvents[0].quantity).toBe('500');
+    expect(sellEvents[0].netAmount).toBe(1500);
+    expect(sellEvents[1].referenceDocumentNumber).toBe('TSC-2026-0000129');
+    expect(sellEvents[1].quantity).toBe('300');
+    expect(sellEvents[1].netAmount).toBe(900);
+  });
+
+  test('multiple sell invoices for same trade each produce a display event', () => {
+    const t1 = new Date('2026-06-08T10:00:00Z');
+    const t2 = new Date('2026-06-09T11:00:00Z');
+    const tradeId = 'trade-multi-inv';
+    const invoices = [
+      mockInvoice('inv-sell-1', 'sell_invoice', 1500, t1, {
+        tradeId,
+        tradeNumber: 1,
+        orderId: 'sell-1',
+        invoiceNumber: 'TSC-2026-0000128',
+      }),
+      mockInvoice('inv-sell-2', 'sell_invoice', 900, t2, {
+        tradeId,
+        tradeNumber: 1,
+        orderId: 'sell-2',
+        invoiceNumber: 'TSC-2026-0000129',
+      }),
+    ];
+    const stmtEntries = [
+      mockStmt('s1', 'trade_sell', 1500, t1, {
+        tradeId,
+        tradeNumber: 1,
+        referenceDocumentNumber: 'TSC-2026-0000128',
+      }),
+      mockStmt('s2', 'trade_sell', 900, t2, {
+        tradeId,
+        tradeNumber: 1,
+        referenceDocumentNumber: 'TSC-2026-0000129',
+      }),
+    ];
+    const events = buildNetTradeDisplayEvents(stmtEntries, invoices);
+    const sellEvents = events
+      .filter((e) => e.entryType === 'trade_sell')
+      .sort((a, b) => a.at.getTime() - b.at.getTime());
+    expect(sellEvents).toHaveLength(2);
+    expect(sellEvents[0].netAmount).toBe(1500);
+    expect(sellEvents[1].netAmount).toBe(900);
   });
 
   test('buildOrderMapsFromParseOrders keeps one buy and multiple sells per trade', () => {

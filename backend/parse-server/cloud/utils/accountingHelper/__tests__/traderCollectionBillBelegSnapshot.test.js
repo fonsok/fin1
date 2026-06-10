@@ -170,6 +170,36 @@ describe('traderCollectionBillBelegSnapshot', () => {
     })).toBe(false);
   });
 
+  test('sell partial includes TEILVERKAUF block in metadata and summary', () => {
+    const trade = mockTrade({
+      status: 'partial',
+      quantity: 1000,
+      sellOrders: [{ id: 'sell-1', quantity: 500, totalAmount: 1000, price: 2 }],
+    });
+    const out = buildTraderCollectionBillBelegSnapshot({
+      trade,
+      order: { id: 'sell-1', quantity: 500, totalAmount: 1000, price: 2 },
+      executionType: 'sell',
+      grossAmount: 1000,
+      label: 'Verkaufsabrechnung',
+      docNumber: 'TSC-2026-0000001',
+      tradeNumber: 33,
+    });
+    expect(out.metadata.partialSell?.isPartialSell).toBe(true);
+    expect(out.metadata.partialSell.sellOrderId).toBe('sell-1');
+    expect(out.metadata.totalWithFees).toBe(992.5);
+    expect(out.accountingSummaryText).toContain('TEILVERKAUF');
+    expect(out.accountingSummaryText).toContain('Verbleibend: 500 St.');
+    const sections = traderCollectionBillDisplaySections(out.metadata, {
+      get(k) {
+        if (k === 'accountingDocumentNumber') return 'TSC-2026-0000001';
+        if (k === 'tradeNumber') return 33;
+        return null;
+      },
+    });
+    expect(sections.some((s) => s.title === 'Teilverkauf')).toBe(true);
+  });
+
   test('buildTradingFeesBelegSnapshot for trading_fees ledger companion', () => {
     const out = buildTradingFeesBelegSnapshot({
       trade: mockTrade(),

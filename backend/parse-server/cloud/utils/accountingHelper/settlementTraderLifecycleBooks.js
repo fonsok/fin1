@@ -1,17 +1,20 @@
 'use strict';
 
+const { loadConfig } = require('../configHelper/index.js');
 const { round2 } = require('./shared');
 const { bookSettlementEntry } = require('./statements');
-const { createTradeExecutionDocument } = require('./documents');
+const { createTradeExecutionDocument, findExistingTradeExecutionDocument } = require('./documents');
 const { ensurePoolMirrorExecutionEigenbelegDocument } = require('./poolMirrorExecutionEigenbelegBook');
 const { resolveDocumentReference } = require('./documentReferenceResolver');
 const {
   findExistingStatementEntry,
   findExistingTraderTradeCashEntry,
-  resolveLedgerUserKeysForUserId,
-  sumStatementAmounts,
 } = require('./settlementQueries');
-const { getTotalSellAmount } = require('./settlementTradeMath');
+const {
+  getOrderArrayFromTradeLike,
+  resolveSellOrderKey,
+} = require('./settlementTradeMath');
+const { bookTraderSellOrderLeg } = require('./settlementDeltas');
 const { isMirrorPoolTradeLeg } = require('../../services/poolMirrorActivation/poolActivationPolicy');
 
 /**
@@ -31,9 +34,9 @@ async function bookTraderTradeLifecycleEntries({
   }
 
   const buyOrder = trade.get('buyOrder');
-  const sellOrders = trade.get('sellOrders') || [];
-  const sellOrder = trade.get('sellOrder');
-  const allSells = sellOrders.length > 0 ? sellOrders : (sellOrder ? [sellOrder] : []);
+  const allSells = getOrderArrayFromTradeLike(trade);
+  const config = await loadConfig();
+  const feeConfig = config.financial || {};
 
   if (buyOrder && buyOrder.totalAmount > 0) {
     const existingTradeBuy = await findExistingTraderTradeCashEntry({
@@ -45,7 +48,7 @@ async function bookTraderTradeLifecycleEntries({
       pairExecutionId: trade.get('pairExecutionId'),
     });
     if (!existingTradeBuy) {
-      const buyDoc = await createTradeExecutionDocument({
+      const { document: buyDoc, customerDisplay: buyCustomerDisplay } = await createTradeExecutionDocument({
         traderId, trade, executionType: 'buy',
         amount: buyOrder.totalAmount, order: buyOrder,
         businessCaseId,
@@ -68,45 +71,39 @@ async function bookTraderTradeLifecycleEntries({
         description: `Wertpapierkauf Trade #${tradeNumber} (${trade.get('symbol') || ''})`,
         ...buyDocRef,
         businessCaseId,
+        customerDisplaySnapshot: buyCustomerDisplay,
       });
     }
   }
 
-  const targetSellTotal = getTotalSellAmount(trade);
-  const traderUserKeys = await resolveLedgerUserKeysForUserId(traderId);
-  const bookedSellTotal = await sumStatementAmounts({
-    userKeys: traderUserKeys,
-    tradeId: trade.id,
-    entryType: 'trade_sell',
-    absolute: true,
-  });
-  const sellRemaining = round2(targetSellTotal - bookedSellTotal);
-  if (sellRemaining > 0.005) {
-    const representativeOrder = allSells.find((so) => so && so.totalAmount > 0) || allSells[0] || {};
-    const docOrder = Object.assign({}, representativeOrder, { totalAmount: sellRemaining });
-    const sellDoc = await createTradeExecutionDocument({
-      traderId, trade, executionType: 'sell',
-      amount: sellRemaining, order: docOrder,
-      businessCaseId,
-    });
-    try {
-      await ensurePoolMirrorExecutionEigenbelegDocument({
-        traderTrade: trade,
-        traderExecutionDoc: sellDoc,
-        executionType: 'sell',
-      });
-    } catch (_) { /* non-blocking */ }
-    const sellDocRef = resolveDocumentReference(sellDoc, { context: 'trade_sell' });
-    await bookSettlementEntry({
-      userId: traderId,
-      userRole: 'trader',
-      entryType: 'trade_sell',
-      amount: sellRemaining,
+  for (const order of allSells) {
+    const sellOrderId = resolveSellOrderKey(order);
+    if (!sellOrderId) continue;
+    const existingDoc = await findExistingTradeExecutionDocument({
       tradeId: trade.id,
-      tradeNumber,
-      description: `Wertpapierverkauf Trade #${tradeNumber} (${trade.get('symbol') || ''})`,
-      ...sellDocRef,
+      executionType: 'sell',
       businessCaseId,
+      sellOrderId,
+    });
+    if (existingDoc) {
+      const docRef = resolveDocumentReference(existingDoc, { context: 'trade_sell' });
+      const existingStmt = docRef.referenceDocumentId
+        ? await findExistingStatementEntry({
+          userId: traderId,
+          tradeId: trade.id,
+          entryType: 'trade_sell',
+          referenceDocumentId: docRef.referenceDocumentId,
+        })
+        : null;
+      if (existingStmt) continue;
+    }
+    await bookTraderSellOrderLeg({
+      traderId,
+      trade,
+      tradeNumber,
+      order,
+      businessCaseId,
+      feeConfig,
     });
   }
 
@@ -117,7 +114,7 @@ async function bookTraderTradeLifecycleEntries({
       entryType: 'trading_fees',
     });
     if (!existingFees) {
-      const feeDoc = await createTradeExecutionDocument({
+      const { document: feeDoc } = await createTradeExecutionDocument({
         traderId, trade, executionType: 'fees',
         amount: totalTradingFees, order: buyOrder,
         businessCaseId,

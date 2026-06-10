@@ -75,6 +75,7 @@ async function bookSettlementEntry({
   feeBreakdown,
   ledgerReference,
   businessCaseId,
+  customerDisplaySnapshot,
   enforceReferenceDocumentId = true,
 }) {
   const bookingContext = await resolveTraderCustomerBookingContext({
@@ -98,6 +99,7 @@ async function bookSettlementEntry({
     referenceDocumentId,
     referenceDocumentNumber,
     businessCaseId,
+    customerDisplaySnapshot,
     enforceReferenceDocumentId,
   });
 

@@ -6,8 +6,19 @@ const {
   isMirrorPoolTradeLeg,
 } = require('../../services/poolMirrorActivation/poolActivationPolicy');
 const { TRADE_CASH_ENTRY_TYPES } = require('./shared');
-const { tradeCoverageKeys, markTradeCovered, isTradeCovered } = require('./tradeCoverage');
-const { belegRank, deduplicatedTraderCashLegs } = require('./cashLegDedup');
+const {
+  tradeCoverageKeys,
+  markTradeCovered,
+  isTradeCovered,
+  markSellLegCovered,
+  isSellLegCovered,
+  sellCoverageFromStmtLeg,
+} = require('./tradeCoverage');
+const {
+  belegRank,
+  isTraderExecutionBelegNumber,
+  deduplicatedTraderCashLegs,
+} = require('./cashLegDedup');
 const {
   isSettlementTradeInvoice,
   invoiceTransactionType,
@@ -22,6 +33,10 @@ const {
   parseOrderToSnapshot,
   resolveOrderForTradeSide,
 } = require('./orderContext');
+const {
+  readCustomerDisplaySnapshotFromEntry,
+  applyCustomerDisplaySnapshotToEvent,
+} = require('./customerDisplaySnapshot');
 const { tradeStatementTitle } = require('./instrumentTitles');
 
 function allocatedTradingFees(feesEntry, tradeBuyGross, tradeSellGross, forBuySide) {
@@ -35,13 +50,17 @@ function allocatedTradingFees(feesEntry, tradeBuyGross, tradeSellGross, forBuySi
   return round2(totalFees * (sideGross / denominator));
 }
 
-function preferredBackendBeleg(tradeId, tradeNumber, entryType, cashLegRows) {
-  const matches = cashLegRows.filter((row) => {
+function matchingCashLegsForTrade(tradeId, tradeNumber, entryType, cashLegRows) {
+  return cashLegRows.filter((row) => {
     if (String(row.get('entryType') || '') !== entryType) return false;
     if (tradeId && String(row.get('tradeId') || '').trim() === String(tradeId).trim()) return true;
     if (tradeNumber != null && row.get('tradeNumber') === tradeNumber) return true;
     return false;
   });
+}
+
+function preferredBackendBeleg(tradeId, tradeNumber, entryType, cashLegRows) {
+  const matches = matchingCashLegsForTrade(tradeId, tradeNumber, entryType, cashLegRows);
   if (!matches.length) return { referenceDocumentId: null, referenceDocumentNumber: null };
   const best = matches.reduce((a, b) => (
     belegRank(a.get('referenceDocumentNumber') || '') >= belegRank(b.get('referenceDocumentNumber') || '')
@@ -52,6 +71,59 @@ function preferredBackendBeleg(tradeId, tradeNumber, entryType, cashLegRows) {
     referenceDocumentId: best.get('referenceDocumentId') || null,
     referenceDocumentNumber: best.get('referenceDocumentNumber') || null,
   };
+}
+
+function resolveBackendBelegForInvoice(invoice, cashLegRows, transactionType) {
+  const entryType = transactionType === 'sell' ? 'trade_sell' : 'trade_buy';
+  const matches = matchingCashLegsForTrade(
+    invoice.get('tradeId'),
+    invoice.get('tradeNumber'),
+    entryType,
+    cashLegRows,
+  );
+  if (!matches.length) {
+    return { referenceDocumentId: null, referenceDocumentNumber: null };
+  }
+  if (transactionType !== 'sell' || matches.length === 1) {
+    return preferredBackendBeleg(
+      invoice.get('tradeId'),
+      invoice.get('tradeNumber'),
+      entryType,
+      cashLegRows,
+    );
+  }
+
+  const netAmount = Math.abs(Number(invoice.get('totalAmount') || 0));
+  if (netAmount > 0) {
+    const byAmount = matches.filter((row) => (
+      Math.abs(Math.abs(Number(row.get('amount') || 0)) - netAmount) < 0.02
+    ));
+    if (byAmount.length === 1) {
+      const leg = byAmount[0];
+      return {
+        referenceDocumentId: leg.get('referenceDocumentId') || null,
+        referenceDocumentNumber: leg.get('referenceDocumentNumber') || null,
+      };
+    }
+    if (byAmount.length > 1) {
+      const tscLeg = byAmount.find((row) => (
+        isTraderExecutionBelegNumber(row.get('referenceDocumentNumber') || '')
+      ));
+      if (tscLeg) {
+        return {
+          referenceDocumentId: tscLeg.get('referenceDocumentId') || null,
+          referenceDocumentNumber: tscLeg.get('referenceDocumentNumber') || null,
+        };
+      }
+    }
+  }
+
+  return preferredBackendBeleg(
+    invoice.get('tradeId'),
+    invoice.get('tradeNumber'),
+    entryType,
+    cashLegRows,
+  );
 }
 
 function signedNetAmount(transactionType, netAmount) {
@@ -82,12 +154,7 @@ function buildDisplayEventFromInvoice(invoice, cashLegRows, instrumentContext = 
     invoiceInstrument,
     { sellOrder },
   );
-  const beleg = preferredBackendBeleg(
-    invoice.get('tradeId'),
-    invoice.get('tradeNumber'),
-    transactionType === 'sell' ? 'trade_sell' : 'trade_buy',
-    cashLegRows,
-  );
+  const beleg = resolveBackendBelegForInvoice(invoice, cashLegRows, transactionType);
   const netAmount = Math.abs(Number(invoice.get('totalAmount') || 0));
   const tradeNumber = invoice.get('tradeNumber');
   const tradeNumberStr = tradeNumber != null ? String(tradeNumber) : '';
@@ -113,6 +180,7 @@ function buildDisplayEventFromInvoice(invoice, cashLegRows, instrumentContext = 
     issuer: instrument.issuer || null,
     displayAmountMode: 'netCash',
     netAmount,
+    orderId,
     instrumentResolvedFromTrade: Boolean(trade),
   };
 }
@@ -129,24 +197,26 @@ function buildDisplayEventsFromBackendLegs({
   const legGrossTotal = legs.reduce((sum, leg) => sum + Math.abs(Number(leg.get('amount') || 0)), 0);
   if (legGrossTotal <= 0) return [];
 
-  const feeShare = allocatedTradingFees(
-    feesEntry,
-    tradeBuyGross,
-    tradeSellGross,
-    transactionType === 'buy',
-  );
-  const net = Math.max(0, round2(legGrossTotal - feeShare));
+  const net = transactionType === 'sell'
+    ? round2(legGrossTotal)
+    : Math.max(0, round2(legGrossTotal - allocatedTradingFees(
+      feesEntry,
+      tradeBuyGross,
+      tradeSellGross,
+      true,
+    )));
   const representative = legs.reduce((best, leg) => {
     const bestAt = best.get('createdAt') || new Date(0);
     const legAt = leg.get('createdAt') || new Date(0);
     return legAt.getTime() >= bestAt.getTime() ? leg : best;
   }, legs[0]);
 
+  const bookingSnapshot = readCustomerDisplaySnapshotFromEntry(representative);
   const instrument = tradeInstrument || { wknOrIsin: '', securitiesDirection: '', underlyingAsset: '' };
   const tradeNumber = representative.get('tradeNumber');
   const hasInstrument = Boolean(instrument.wknOrIsin || instrument.securitiesDirection || instrument.underlyingAsset);
 
-  return [{
+  const baseEvent = {
     objectId: `stmt-display:${representative.id}`,
     entryType: transactionType === 'sell' ? 'trade_sell' : 'trade_buy',
     amount: signedNetAmount(transactionType, net),
@@ -172,7 +242,9 @@ function buildDisplayEventsFromBackendLegs({
     displayAmountMode: 'netCash',
     netAmount: net,
     instrumentResolvedFromTrade,
-  }];
+  };
+
+  return [applyCustomerDisplaySnapshotToEvent(baseEvent, bookingSnapshot)];
 }
 
 function isTraderCustomerVisibleTrade(tradeId, tradeById, buyOrderByTradeId) {
@@ -217,16 +289,28 @@ function buildNetTradeDisplayEvents(stmtEntries, invoices, instrumentContext = {
     }
     const event = buildDisplayEventFromInvoice(invoice, cashLegRows, instrumentContext);
     if (!event) continue;
-    const alreadyCovered = event.transactionTypeLabel === 'buy'
-      ? isTradeCovered(coveredBuy, event.tradeId, event.tradeNumber)
-      : isTradeCovered(coveredSell, event.tradeId, event.tradeNumber);
-    if (alreadyCovered) continue;
-    events.push(event);
     if (event.transactionTypeLabel === 'buy') {
+      if (isTradeCovered(coveredBuy, event.tradeId, event.tradeNumber)) continue;
+      events.push(event);
       markTradeCovered(coveredBuy, event.tradeId, event.tradeNumber);
-    } else {
-      markTradeCovered(coveredSell, event.tradeId, event.tradeNumber);
+      continue;
     }
+
+    if (isSellLegCovered(coveredSell, {
+      referenceDocumentId: event.referenceDocumentId,
+      referenceDocumentNumber: event.referenceDocumentNumber,
+      orderId: event.orderId,
+      invoiceId: invoice.id,
+    })) {
+      continue;
+    }
+    events.push(event);
+    markSellLegCovered(coveredSell, {
+      referenceDocumentId: event.referenceDocumentId,
+      referenceDocumentNumber: event.referenceDocumentNumber,
+      orderId: event.orderId,
+      invoiceId: invoice.id,
+    });
   }
 
   const legsByTrade = new Map();
@@ -267,29 +351,33 @@ function buildNetTradeDisplayEvents(stmtEntries, invoices, instrumentContext = {
       }));
     }
 
-    if (sellLegs.length > 0 && !isTradeCovered(coveredSell, tradeId, tradeNumber)) {
-      for (const sellLeg of sellLegs) {
-        const sellOrderMatch = resolveOrderForTradeSide(instrumentContext, tradeId, 'sell', {
-          trade,
-          stmtLeg: sellLeg,
-        });
-        const sellOrderSnap = sellOrderMatch?.get
-          ? parseOrderToSnapshot(sellOrderMatch)
-          : sellOrderMatch;
-        const sellInstrument = parseInstrumentFromTrade(trade, sellOrderMatch, {
-          transactionType: 'sell',
-          sellOrder: sellOrderSnap,
-        });
-        events.push(...buildDisplayEventsFromBackendLegs({
-          legs: [sellLeg],
-          feesEntry,
-          tradeBuyGross,
-          tradeSellGross,
-          transactionType: 'sell',
-          tradeInstrument: sellInstrument,
-          instrumentResolvedFromTrade: Boolean(trade),
-        }));
+    for (const sellLeg of sellLegs) {
+      if (isSellLegCovered(coveredSell, sellCoverageFromStmtLeg(sellLeg))) {
+        continue;
       }
+      const sellOrderMatch = resolveOrderForTradeSide(instrumentContext, tradeId, 'sell', {
+        trade,
+        stmtLeg: sellLeg,
+      });
+      const sellOrderSnap = sellOrderMatch?.get
+        ? parseOrderToSnapshot(sellOrderMatch)
+        : sellOrderMatch;
+      const sellInstrument = parseInstrumentFromTrade(trade, sellOrderMatch, {
+        transactionType: 'sell',
+        sellOrder: sellOrderSnap,
+      });
+      const legEvents = buildDisplayEventsFromBackendLegs({
+        legs: [sellLeg],
+        feesEntry,
+        tradeBuyGross,
+        tradeSellGross,
+        transactionType: 'sell',
+        tradeInstrument: sellInstrument,
+        instrumentResolvedFromTrade: Boolean(trade),
+      });
+      if (!legEvents.length) continue;
+      events.push(...legEvents);
+      markSellLegCovered(coveredSell, sellCoverageFromStmtLeg(sellLeg));
     }
   }
 

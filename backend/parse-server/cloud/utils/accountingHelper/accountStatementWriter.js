@@ -43,6 +43,7 @@ async function bookAccountStatementEntry({
   referenceDocumentId,
   referenceDocumentNumber,
   businessCaseId,
+  customerDisplaySnapshot,
   enforceReferenceDocumentId = true,
 }) {
   if (enforceReferenceDocumentId && (!referenceDocumentId || !referenceDocumentNumber)) {
@@ -96,6 +97,9 @@ async function bookAccountStatementEntry({
   if (referenceDocumentNumber) entry.set('referenceDocumentNumber', referenceDocumentNumber);
   const bc = String(businessCaseId || '').trim();
   if (bc) entry.set('businessCaseId', bc);
+  if (customerDisplaySnapshot && typeof customerDisplaySnapshot === 'object') {
+    entry.set('customerDisplaySnapshot', customerDisplaySnapshot);
+  }
   entry.set('source', 'backend');
 
   try {
