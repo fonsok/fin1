@@ -163,9 +163,15 @@ function resolveInstrumentForDisplayEvent(trade, order, transactionType, fallbac
   return mergeInstrumentFields(fromTrade, fallback);
 }
 
+function shouldEnrichTimelineEvent(event) {
+  if (!event.tradeId || !event.transactionTypeLabel) return false;
+  if (event.instrumentResolvedFromTrade) return false;
+  return true;
+}
+
 function enrichTimelineWithTradeInstruments(timeline, tradeById, orderByTradeId) {
   return timeline.map((event) => {
-    if (!event.tradeId || !event.transactionTypeLabel) {
+    if (!shouldEnrichTimelineEvent(event)) {
       return event;
     }
     const trade = tradeById.get(event.tradeId);
@@ -193,6 +199,7 @@ function enrichTimelineWithTradeInstruments(timeline, tradeById, orderByTradeId)
       strikePrice: instrument.strikePrice || null,
       issuer: instrument.issuer || null,
       statementTitle: tradeStatementTitle(event.transactionTypeLabel, instrument),
+      instrumentResolvedFromTrade: true,
     };
   });
 }
@@ -202,5 +209,6 @@ module.exports = {
   parseInstrumentFromInvoice,
   resolveSellOrderForStatementLeg,
   resolveInstrumentForDisplayEvent,
+  shouldEnrichTimelineEvent,
   enrichTimelineWithTradeInstruments,
 };

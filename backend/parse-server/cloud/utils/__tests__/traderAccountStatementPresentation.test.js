@@ -2,7 +2,11 @@
 
 const { buildTraderCustomerTimeline } = require('../traderAccountStatementPresentation/timeline');
 const { buildNetTradeDisplayEvents } = require('../traderAccountStatementPresentation/netTradeDisplay');
-const { enrichTimelineWithTradeInstruments, parseInstrumentFromTrade } = require('../traderAccountStatementPresentation/instruments');
+const {
+  enrichTimelineWithTradeInstruments,
+  parseInstrumentFromTrade,
+  shouldEnrichTimelineEvent,
+} = require('../traderAccountStatementPresentation/instruments');
 const { tradeStatementTitle } = require('../traderAccountStatementPresentation/instrumentTitles');
 const { traderCustomerTimelineToApiRows } = require('../traderAccountStatementPresentation/apiRows');
 
@@ -293,6 +297,31 @@ describe('traderAccountStatementPresentation', () => {
     expect(rows[0].quantity).toBe('500');
   });
 
+  test('enrichTimelineWithTradeInstruments skips events already resolved from trade', () => {
+    const trade = {
+      get: (key) => ({
+        wkn: 'OTHER',
+        securityType: 'CALL',
+        buyOrder: {},
+        sellOrder: {},
+        sellOrders: [],
+      }[key]),
+    };
+    const timeline = [{
+      tradeId: 't1',
+      transactionTypeLabel: 'buy',
+      statementTitle: 'KAUF · PUT · Dow Jones · UB4PQLG',
+      instrumentResolvedFromTrade: true,
+    }];
+    expect(shouldEnrichTimelineEvent(timeline[0])).toBe(false);
+    const enriched = enrichTimelineWithTradeInstruments(
+      timeline,
+      new Map([['t1', trade]]),
+      new Map(),
+    );
+    expect(enriched[0].statementTitle).toBe('KAUF · PUT · Dow Jones · UB4PQLG');
+  });
+
   test('enrichTimelineWithTradeInstruments fills missing titles', () => {
     const trade = {
       get: (key) => ({
@@ -354,6 +383,7 @@ describe('traderAccountStatementPresentation', () => {
     expect(buyEvents).toHaveLength(1);
     expect(buyEvents[0].statementTitle).toBe('KAUF · PUT · Dow Jones · UB4PQLG');
     expect(buyEvents[0].underlyingAsset).toBe('Dow Jones');
+    expect(buyEvents[0].instrumentResolvedFromTrade).toBe(true);
   });
 
   test('enrichTimelineWithTradeInstruments refreshes invoice buy title when wkn already set', () => {

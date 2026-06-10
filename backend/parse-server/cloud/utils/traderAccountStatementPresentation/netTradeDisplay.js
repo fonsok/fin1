@@ -102,6 +102,7 @@ function buildDisplayEventFromInvoice(invoice, cashLegRows, instrumentContext = 
     issuer: instrument.issuer || null,
     displayAmountMode: 'netCash',
     netAmount,
+    instrumentResolvedFromTrade: Boolean(trade),
   };
 }
 
@@ -112,6 +113,7 @@ function buildDisplayEventsFromBackendLegs({
   tradeSellGross,
   transactionType,
   tradeInstrument,
+  instrumentResolvedFromTrade = false,
 }) {
   const legGrossTotal = legs.reduce((sum, leg) => sum + Math.abs(Number(leg.get('amount') || 0)), 0);
   if (legGrossTotal <= 0) return [];
@@ -158,6 +160,7 @@ function buildDisplayEventsFromBackendLegs({
     issuer: instrument.issuer || null,
     displayAmountMode: 'netCash',
     netAmount: net,
+    instrumentResolvedFromTrade,
   }];
 }
 
@@ -249,6 +252,7 @@ function buildNetTradeDisplayEvents(stmtEntries, invoices, instrumentContext = {
         tradeSellGross,
         transactionType: 'buy',
         tradeInstrument: buyInstrument,
+        instrumentResolvedFromTrade: Boolean(trade),
       }));
     }
 
@@ -266,6 +270,7 @@ function buildNetTradeDisplayEvents(stmtEntries, invoices, instrumentContext = {
           tradeSellGross,
           transactionType: 'sell',
           tradeInstrument: sellInstrument,
+          instrumentResolvedFromTrade: Boolean(trade),
         }));
       }
     }
