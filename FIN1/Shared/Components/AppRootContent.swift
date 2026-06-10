@@ -11,8 +11,9 @@ struct AppRootContent: View {
 
     var body: some View {
         self.rootView
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .environment(\.appServices, self.services)
-            .background(AppTheme.screenBackground)
+            .background(AppTheme.screenBackground.ignoresSafeArea())
             .preferredColorScheme(.dark)
             .onChange(of: self.scenePhase) { _, newPhase in
                 Task { @MainActor in

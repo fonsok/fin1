@@ -15,18 +15,35 @@ struct AppLaunchHost: View {
                     launchStartTime: self.launchModel.launchStartTime
                 )
             } else {
-                ZStack {
-                    AppTheme.screenBackground
-                        .ignoresSafeArea()
-                    ProgressView()
-                        .tint(AppTheme.accentLightBlue)
-                }
-                .accessibilityIdentifier("AppLaunchPlaceholder")
+                AppLaunchPlaceholderView()
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(AppTheme.screenBackground.ignoresSafeArea())
         .task {
             await self.launchModel.bootstrapIfNeeded()
         }
+        .onAppear {
+            Task { await self.launchModel.bootstrapIfNeeded() }
+        }
+    }
+}
+
+private struct AppLaunchPlaceholderView: View {
+    var body: some View {
+        ZStack {
+            AppTheme.screenBackground
+                .ignoresSafeArea()
+            VStack(spacing: ResponsiveDesign.spacing(16)) {
+                ProgressView()
+                    .tint(AppTheme.accentLightBlue)
+                    .scaleEffect(1.2)
+                Text(AppBrand.appName)
+                    .font(ResponsiveDesign.headlineFont())
+                    .foregroundColor(AppTheme.fontColor)
+            }
+        }
+        .accessibilityIdentifier("AppLaunchPlaceholder")
     }
 }
 
@@ -42,6 +59,9 @@ final class AppLaunchModel: ObservableObject {
 
     func bootstrapIfNeeded() async {
         guard self.context == nil else { return }
+
+        // Allow the launch placeholder to paint before the synchronous service graph build.
+        await Task.yield()
 
         let started = CFAbsoluteTimeGetCurrent()
         let services = AppServices.live
