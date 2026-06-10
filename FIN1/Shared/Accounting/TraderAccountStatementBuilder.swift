@@ -253,28 +253,26 @@ enum TraderAccountStatementBuilder {
         return []
     }
 
-    /// Primary list title, e.g. `KAUF VO5G3MN · PUT · DAX` (offline invoice fallback).
+    /// Primary list title: `KAUF/VERKAUF · Richtung · Basiswert · WKN/ISIN` (offline invoice fallback).
     static func tradeStatementTitle(for transactionType: TransactionType, metadata: [String: String]) -> String {
         let directionLabel = transactionType.displayName
-        var instrumentParts: [String] = []
-        if let wkn = metadata["wknOrIsin"], !wkn.isEmpty {
-            instrumentParts.append(wkn)
-        }
-        if let option = metadata["securitiesDirection"],
-           !option.isEmpty,
-           option.uppercased() != directionLabel {
-            instrumentParts.append(option)
+        var parts: [String] = [directionLabel]
+        if let option = metadata["securitiesDirection"], !option.isEmpty {
+            parts.append(option)
         }
         if let underlying = metadata["underlyingAsset"], !underlying.isEmpty {
-            instrumentParts.append(underlying)
+            parts.append(underlying)
         }
-        if instrumentParts.isEmpty {
+        if let wkn = metadata["wknOrIsin"], !wkn.isEmpty {
+            parts.append(wkn)
+        }
+        if parts.count == 1 {
             if let tradeNumber = metadata["tradeNumber"], !tradeNumber.isEmpty {
                 return "\(directionLabel) · Trade #\(tradeNumber)"
             }
             return directionLabel
         }
-        return "\(directionLabel) \(instrumentParts.joined(separator: " · "))"
+        return parts.joined(separator: " · ")
     }
 
     static func invoiceTradeMetadata(from invoice: Invoice) -> [String: String] {

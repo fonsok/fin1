@@ -1,13 +1,10 @@
 'use strict';
 
-const {
-  buildTraderCustomerTimeline,
-  buildNetTradeDisplayEvents,
-  enrichTimelineWithTradeInstruments,
-  parseInstrumentFromTrade,
-  tradeStatementTitle,
-  traderCustomerTimelineToApiRows,
-} = require('../traderAccountStatementPresentation');
+const { buildTraderCustomerTimeline } = require('../traderAccountStatementPresentation/timeline');
+const { buildNetTradeDisplayEvents } = require('../traderAccountStatementPresentation/netTradeDisplay');
+const { enrichTimelineWithTradeInstruments, parseInstrumentFromTrade } = require('../traderAccountStatementPresentation/instruments');
+const { tradeStatementTitle } = require('../traderAccountStatementPresentation/instrumentTitles');
+const { traderCustomerTimelineToApiRows } = require('../traderAccountStatementPresentation/apiRows');
 
 function mockStmt(id, entryType, amount, createdAt, extra = {}) {
   return {
@@ -69,7 +66,7 @@ describe('traderAccountStatementPresentation', () => {
       securitiesDirection: 'PUT',
       underlyingAsset: 'DAX',
     });
-    expect(title).toBe('KAUF VO5G3MN · PUT · DAX');
+    expect(title).toBe('KAUF · PUT · DAX · VO5G3MN');
   });
 
   test('mirror pool buy invoice and stmt legs are hidden from customer timeline', () => {
@@ -186,10 +183,114 @@ describe('traderAccountStatementPresentation', () => {
         underlyingAsset: 'DAX',
       }[key]),
     };
-    const instrument = parseInstrumentFromTrade(trade, order);
+    const instrument = parseInstrumentFromTrade(trade, order, { transactionType: 'buy' });
     expect(instrument.wknOrIsin).toBe('VO5G3MN');
     expect(instrument.underlyingAsset).toBe('DAX');
-    expect(tradeStatementTitle('buy', instrument)).toBe('KAUF VO5G3MN · PUT · DAX');
+    expect(instrument.quantity).toBe('5');
+    expect(tradeStatementTitle('buy', instrument)).toBe('KAUF · PUT · DAX · VO5G3MN');
+  });
+
+  test('parseInstrumentFromTrade uses sell-order underlying for buy when buy snapshot lacks it', () => {
+    const trade = {
+      get: (key) => ({
+        wkn: 'UB4PQLG',
+        symbol: 'UB4PQLG',
+        securityType: 'PUT',
+        quantity: 1000,
+        buyOrder: { wkn: 'UB4PQLG', optionDirection: 'PUT', underlyingAsset: 'UB4PQLG' },
+        sellOrder: { underlyingAsset: 'Dow Jones', optionDirection: 'PUT' },
+        sellOrders: [],
+      }[key]),
+    };
+    const instrument = parseInstrumentFromTrade(trade, null, { transactionType: 'buy' });
+    expect(instrument.underlyingAsset).toBe('Dow Jones');
+    expect(tradeStatementTitle('buy', instrument)).toBe('KAUF · PUT · Dow Jones · UB4PQLG');
+  });
+
+  test('parseInstrumentFromTrade uses sell-order quantity for partial sell, not trade buy quantity', () => {
+    const trade = {
+      get: (key) => ({
+        wkn: 'UB4PQLG',
+        symbol: 'UB4PQLG',
+        securityType: 'PUT',
+        quantity: 1000,
+        buyOrder: { wkn: 'UB4PQLG', quantity: 1000 },
+        sellOrder: {
+          wkn: 'UB4PQLG',
+          optionDirection: 'PUT',
+          underlyingAsset: 'Dow Jones',
+          quantity: 500,
+        },
+        sellOrders: [{
+          id: 'sell-1',
+          wkn: 'UB4PQLG',
+          optionDirection: 'PUT',
+          underlyingAsset: 'Dow Jones',
+          quantity: 500,
+          totalAmount: 1987,
+        }],
+      }[key]),
+    };
+    const instrument = parseInstrumentFromTrade(trade, null, { transactionType: 'sell' });
+    expect(instrument.quantity).toBe('500');
+    expect(instrument.underlyingAsset).toBe('Dow Jones');
+    expect(tradeStatementTitle('sell', instrument)).toBe('VERKAUF · PUT · Dow Jones · UB4PQLG');
+  });
+
+  test('partial sell trade_sell stmt leg shows sell-order quantity in API row', () => {
+    const t0 = new Date('2026-06-08T10:00:00Z');
+    const tradeId = 'trade-partial';
+    const trade = {
+      id: tradeId,
+      get: (key) => ({
+        wkn: 'UB4PQLG',
+        symbol: 'UB4PQLG',
+        securityType: 'PUT',
+        quantity: 1000,
+        buyLegType: 'TRADER',
+        buyOrder: { wkn: 'UB4PQLG', quantity: 1000 },
+        sellOrder: {
+          wkn: 'UB4PQLG',
+          optionDirection: 'PUT',
+          underlyingAsset: 'Dow Jones',
+          quantity: 500,
+          totalAmount: 1987,
+        },
+        sellOrders: [{
+          id: 'sell-1',
+          wkn: 'UB4PQLG',
+          optionDirection: 'PUT',
+          underlyingAsset: 'Dow Jones',
+          quantity: 500,
+          totalAmount: 1987,
+        }],
+      }[key]),
+    };
+    const stmtEntries = [
+      mockStmt('s1', 'trade_sell', 1987, t0, {
+        tradeId,
+        tradeNumber: 1,
+        referenceDocumentNumber: 'TSC-2026-0000124',
+      }),
+    ];
+    const instrumentContext = {
+      tradeById: new Map([[tradeId, trade]]),
+      orderByTradeId: new Map(),
+    };
+    const events = buildNetTradeDisplayEvents(stmtEntries, [], instrumentContext);
+    const sellEvents = events.filter((e) => e.entryType === 'trade_sell');
+    expect(sellEvents).toHaveLength(1);
+    expect(sellEvents[0].quantity).toBe('500');
+    expect(sellEvents[0].statementTitle).toContain('Dow Jones');
+
+    const timeline = buildTraderCustomerTimeline({
+      stmtEntries,
+      invoices: [],
+      initialBalance: 0,
+      instrumentContext,
+    });
+    const { rows } = traderCustomerTimelineToApiRows(user, timeline, { limit: 50, skip: 0 });
+    expect(rows[0].quantity).toBe('500');
   });
 
   test('enrichTimelineWithTradeInstruments fills missing titles', () => {
@@ -261,7 +362,7 @@ describe('traderAccountStatementPresentation', () => {
     });
     const { rows } = traderCustomerTimelineToApiRows(user, timeline, { limit: 50, skip: 0 });
     expect(rows[0].source).toBe('customer_display');
-    expect(rows[0].statementTitle).toBe('KAUF VO5G3MN · PUT · DAX');
+    expect(rows[0].statementTitle).toBe('KAUF · PUT · DAX · VO5G3MN');
     expect(rows[0].displayAmountMode).toBe('netCash');
     expect(rows[0].amount).toBe(-5000);
   });
