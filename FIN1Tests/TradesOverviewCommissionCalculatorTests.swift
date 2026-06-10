@@ -12,9 +12,37 @@ final class TradesOverviewCommissionCalculatorTests: XCTestCase {
     }
 
     func testIsCommissionPendingOnlyForProfitableTradesWithoutAmount() {
-        XCTAssertTrue(TradesOverviewCommissionAmounts.isCommissionPending(hasProfit: true, commission: 0))
-        XCTAssertFalse(TradesOverviewCommissionAmounts.isCommissionPending(hasProfit: true, commission: 10))
-        XCTAssertFalse(TradesOverviewCommissionAmounts.isCommissionPending(hasProfit: false, commission: 0))
+        XCTAssertTrue(
+            TradesOverviewCommissionAmounts.isCommissionPending(
+                tradeIsCompleted: true,
+                hasProfit: true,
+                commission: 0
+            )
+        )
+        XCTAssertFalse(
+            TradesOverviewCommissionAmounts.isCommissionPending(
+                tradeIsCompleted: true,
+                hasProfit: true,
+                commission: 10
+            )
+        )
+        XCTAssertFalse(
+            TradesOverviewCommissionAmounts.isCommissionPending(
+                tradeIsCompleted: true,
+                hasProfit: false,
+                commission: 0
+            )
+        )
+    }
+
+    func testIsCommissionPendingWhileTradeOpenEvenWithPartialSellProfit() {
+        XCTAssertTrue(
+            TradesOverviewCommissionAmounts.isCommissionPending(
+                tradeIsCompleted: false,
+                hasProfit: true,
+                commission: 0
+            )
+        )
     }
 
     func testDocumentCreditNoteWinsOverTimeline() async {

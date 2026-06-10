@@ -196,18 +196,22 @@ struct Trade: Identifiable, Codable, Sendable {
         return self.totalSoldQuantity >= self.buyOrder.quantity
     }
 
+    private var hasExecutedSellOrders: Bool {
+        let executedSellOrders = self.sellOrders.filter { $0.status == .confirmed || $0.status == .completed }
+        return !executedSellOrders.isEmpty || self.sellOrder != nil
+    }
+
+    /// Fallback when `calculatedProfit` was not persisted yet (sync gap / legacy rows).
+    private var orderBasedProfit: Double? {
+        guard self.hasExecutedSellOrders else { return nil }
+        return ProfitCalculationService.calculateRealizedGrossProfitFromOrders(for: self)
+    }
+
     var currentPnL: Double? {
-        // Use pre-calculated profit if available (single source of truth)
         if let calculatedProfit = calculatedProfit {
             return calculatedProfit
         }
-
-        // Fallback to calculation for backward compatibility
-        let executedSellOrders = self.sellOrders.filter { $0.status == .confirmed || $0.status == .completed }
-        guard !executedSellOrders.isEmpty else { return nil }
-
-        // Use centralized profit calculation service to avoid DRY violations
-        return ProfitCalculationService.calculateGrossProfitFromOrders(for: self)
+        return self.orderBasedProfit
     }
 
     var finalPnL: Double? {
@@ -219,20 +223,12 @@ struct Trade: Identifiable, Codable, Sendable {
 
     /// **SINGLE SOURCE OF TRUTH for profit display**
     /// Use this property everywhere profit needs to be displayed to ensure consistency.
-    /// Fallback chain: calculatedProfit (invoice-verified) → order-based calculation → 0
-    ///
-    /// This ensures Profit value and ROI percentage always use the same source.
+    /// Fallback chain: calculatedProfit (write-time SSOT) → order-based → 0
     var displayProfit: Double {
-        // 1. Pre-calculated profit (highest priority - invoice-verified, stored on trade completion)
         if let calculated = calculatedProfit {
             return calculated
         }
-        // 2. Order-based calculation (always available for trades with executed sell orders)
-        if let pnl = currentPnL {
-            return pnl
-        }
-        // 3. Zero fallback (no sell orders yet)
-        return 0.0
+        return self.currentPnL ?? 0.0
     }
 
     /// **SINGLE SOURCE OF TRUTH for ROI display**

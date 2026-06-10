@@ -43,6 +43,9 @@ struct Order: Identifiable, Codable, Sendable {
     // Reference to original holding for sell orders
     let originalHoldingId: String? // ID of the holding being sold
 
+    /// Links TRADER leg to `executePairedBuy` / `PairedExecution` (restored from Parse on reload).
+    let pairExecutionId: String?
+
     // For backward compatibility during migration
     let status: String
 
@@ -72,6 +75,7 @@ struct Order: Identifiable, Codable, Sendable {
         denomination: Int? = nil,
         isMirrorPoolOrder: Bool? = nil,
         originalHoldingId: String? = nil,
+        pairExecutionId: String? = nil,
         status: String = "submitted"
     ) {
         self.id = id
@@ -97,6 +101,7 @@ struct Order: Identifiable, Codable, Sendable {
         self.denomination = denomination
         self.isMirrorPoolOrder = isMirrorPoolOrder
         self.originalHoldingId = originalHoldingId
+        self.pairExecutionId = pairExecutionId
         self.status = status
     }
 

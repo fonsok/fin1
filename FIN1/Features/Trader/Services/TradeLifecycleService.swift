@@ -205,7 +205,9 @@ final class TradeLifecycleService: TradeLifecycleServiceProtocol, ServiceLifecyc
         let updatedTrade: Trade? = await MainActor.run {
             if let index = completedTrades.firstIndex(where: { $0.id == tradeId }) {
                 let trade = self.completedTrades[index]
-                let updated = trade.with(sellOrder: sellOrder).updateStatus()
+                let updated = self.tradeWithStoredRealizedProfit(
+                    trade.with(sellOrder: sellOrder).updateStatus()
+                )
                 self.completedTrades[index] = updated
                 // Persist after update
                 self.persistenceService.persistTrades(self.completedTrades)
@@ -229,7 +231,9 @@ final class TradeLifecycleService: TradeLifecycleServiceProtocol, ServiceLifecyc
         let updatedTrade: Trade? = await MainActor.run {
             if let index = completedTrades.firstIndex(where: { $0.id == tradeId }) {
                 let trade = self.completedTrades[index]
-                let updated = trade.withPartialSellOrder(sellOrder).updateStatus()
+                let updated = self.tradeWithStoredRealizedProfit(
+                    trade.withPartialSellOrder(sellOrder).updateStatus()
+                )
                 self.completedTrades[index] = updated
                 // Persist after update
                 self.persistenceService.persistTrades(self.completedTrades)
@@ -295,19 +299,7 @@ final class TradeLifecycleService: TradeLifecycleServiceProtocol, ServiceLifecyc
             let trade = self.completedTrades[index]
             let updatedTrade = trade.updateStatus()
 
-            // Calculate and store profit if trade is completed and we have invoice service
-            let resultTrade: Trade
-            if updatedTrade.isCompleted, let invoiceService = invoiceService {
-                let allInvoices = invoiceService.getInvoicesForTrade(trade.id)
-                let buyInvoices = allInvoices.filter { $0.transactionType == .buy }
-                let sellInvoices = allInvoices.filter { $0.transactionType == .sell }
-                let buyInvoice = buyInvoices.first
-
-                let calculatedProfit = ProfitCalculationService.calculateTaxableProfit(buyInvoice: buyInvoice, sellInvoices: sellInvoices)
-                resultTrade = updatedTrade.withCalculatedProfit(calculatedProfit)
-            } else {
-                resultTrade = updatedTrade
-            }
+            let resultTrade = self.tradeWithStoredRealizedProfit(updatedTrade)
 
             self.completedTrades[index] = resultTrade
             // Persist after completion
@@ -383,6 +375,21 @@ final class TradeLifecycleService: TradeLifecycleServiceProtocol, ServiceLifecyc
                 }
             }
         }
+    }
+
+    /// Write-time SSOT after any sell event (partial or full).
+    private func tradeWithStoredRealizedProfit(_ trade: Trade) -> Trade {
+        guard let invoiceService else {
+            return ProfitCalculationService.tradeWithStoredRealizedProfit(trade)
+        }
+        let allInvoices = invoiceService.getInvoicesForTrade(trade.id)
+        let buyInvoice = allInvoices.first { $0.transactionType == .buy }
+        let sellInvoices = allInvoices.filter { $0.transactionType == .sell }
+        return ProfitCalculationService.tradeWithStoredRealizedProfit(
+            trade,
+            buyInvoice: buyInvoice,
+            sellInvoices: sellInvoices
+        )
     }
 
     /// Resets trade numbering for a specific trader to start at 1

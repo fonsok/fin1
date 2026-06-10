@@ -84,6 +84,7 @@ final class OrderManagementService: OrderManagementServiceProtocol, ServiceLifec
                 let orders = try await apiService.fetchActiveOrders(for: self.currentTraderId)
                 await MainActor.run {
                     self.activeOrders = orders
+                    self.restorePairedBuyLinks(from: orders)
                     self.isLoading = false
                 }
                 return
@@ -340,6 +341,13 @@ extension OrderManagementService {
 
     func updateOrderStatus(_ orderId: String, status: String) async throws {
         let normalized = status.lowercased()
+
+        if normalized == "confirmed" || normalized == "completed" {
+            if self.pairedBuyExecutionId(for: orderId) != nil {
+                try await self.ensurePairedBuyFinalized(for: orderId)
+            }
+        }
+
         if let pairExecutionId = self.pairedBuyExecutionIds[orderId],
            let apiService = self.orderAPIService,
            normalized != "executed",
@@ -383,11 +391,41 @@ extension OrderManagementService {
                     limitPrice: order.limitPrice,
                     isMirrorPoolOrder: order.isMirrorPoolOrder,
                     originalHoldingId: order.originalHoldingId,
+                    pairExecutionId: order.pairExecutionId,
                     status: status
                 )
                 self.activeOrders[index] = updatedOrder
             }
         }
+    }
+
+    func restorePairedBuyLinks(from orders: [Order]) {
+        for order in orders {
+            guard let pairId = order.pairExecutionId?.trimmingCharacters(in: .whitespacesAndNewlines),
+                  !pairId.isEmpty else { continue }
+            self.pairedBuyExecutionIds[order.id] = pairId
+        }
+    }
+
+    func ensurePairedBuyFinalized(for orderId: String) async throws {
+        guard self.pairedBuyExecutionId(for: orderId) != nil else { return }
+
+        var lastError: Error?
+        for attempt in 1...5 {
+            do {
+                try await self.finalizePairedBuyExecution(for: orderId)
+                return
+            } catch {
+                lastError = error
+                print(
+                    "⚠️ OrderManagementService: paired buy finalize attempt \(attempt)/5 failed — \(error.localizedDescription)"
+                )
+                if attempt < 5 {
+                    try? await Task.sleep(nanoseconds: UInt64(attempt) * 1_000_000_000)
+                }
+            }
+        }
+        throw lastError ?? AppError.validationError("Paired buy finalize failed")
     }
 
     func cancelOrder(_ orderId: String) async throws {

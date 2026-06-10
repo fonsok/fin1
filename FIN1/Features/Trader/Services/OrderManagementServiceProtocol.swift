@@ -36,6 +36,9 @@ protocol OrderManagementServiceProtocol: ObservableObject, Sendable {
     func registerPairedBuyExecutionLink(orderId: String, pairExecutionId: String)
     func pairedBuyExecutionId(for orderId: String) -> String?
     func finalizePairedBuyExecution(for orderId: String) async throws
+    /// Retries `commitPairedBuyExecution` until settlement succeeds or attempts exhausted.
+    func ensurePairedBuyFinalized(for orderId: String) async throws
+    func restorePairedBuyLinks(from orders: [Order])
     @MainActor func reportOrderStatusFailure(_ message: String)
 
     // MARK: - Order Data Management

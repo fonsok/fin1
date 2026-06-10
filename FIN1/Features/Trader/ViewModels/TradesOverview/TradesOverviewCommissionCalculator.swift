@@ -13,8 +13,11 @@ enum TradesOverviewCommissionAmounts {
         return gross > 0 ? gross : nil
     }
 
-    static func isCommissionPending(hasProfit: Bool, commission: Double) -> Bool {
-        hasProfit && commission <= 0
+    /// Provision is booked only when the trade completes and pool partial-sell P/L is saldiert server-side.
+    static func isCommissionPending(tradeIsCompleted: Bool, hasProfit: Bool, commission: Double) -> Bool {
+        guard hasProfit else { return false }
+        guard tradeIsCompleted else { return true }
+        return commission <= 0
     }
 }
 
@@ -173,7 +176,7 @@ final class TradesOverviewCommissionCalculator {
     private func mergeSettlementDocuments(for trade: Trade) async {
         guard let settlementAPIService, let documentService else { return }
         guard let settlement = try? await settlementAPIService.fetchTradeSettlement(tradeId: trade.id) else { return }
-        let docs = settlement.documents.map { Document(backendSettlementDocument: $0) }
+        let docs = Document.inboxEligible(from: settlement.documents)
         guard !docs.isEmpty else { return }
         documentService.mergeDocuments(docs)
     }

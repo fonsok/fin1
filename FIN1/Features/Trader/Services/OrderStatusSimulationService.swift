@@ -82,7 +82,9 @@ final class OrderStatusSimulationService: OrderStatusSimulationServiceProtocol {
         #endif
 
         // Same progression for both buy and sell orders: submitted → suspended → executed → confirmed → completed
-        switch currentStatus {
+        switch currentStatus.lowercased() {
+        case "pending":
+            nextStatus = "submitted"
         case "submitted", "1":
             nextStatus = "suspended"
         case "suspended", "2":

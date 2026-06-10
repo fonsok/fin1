@@ -199,19 +199,21 @@ struct OrderCard: View {
     }
 
     private var statusValue: Int {
-        switch self.order.status {
-        case "submitted":
+        switch self.order.status.lowercased() {
+        case "submitted", "1":
             return 1
-        case "suspended":
+        case "suspended", "2":
             return 2
-        case "executed":
+        case "executed", "3":
             return 3
-        case "confirmed":
+        case "confirmed", "4":
             return 4
-        case "completed":
+        case "completed", "5":
             return 5
-        case "cancelled":
+        case "cancelled", "0":
             return 0
+        case "pending":
+            return 1
         default:
             return 0
         }

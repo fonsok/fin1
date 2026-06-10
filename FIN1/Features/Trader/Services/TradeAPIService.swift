@@ -49,7 +49,11 @@ final class TradeAPIService: TradeAPIServiceProtocol, @unchecked Sendable {
         var trades: [Trade] = []
         for parseTrade in parseTrades {
             do {
-                let trade = try parseTrade.toTrade()
+                var trade = try parseTrade.toTrade()
+                if ProfitCalculationService.isStoredProfitStale(for: trade),
+                   let profit = ProfitCalculationService.resolveRealizedProfit(for: trade) {
+                    trade = trade.withCalculatedProfit(profit)
+                }
                 trades.append(trade)
             } catch {
                 print("⚠️ TradeAPIService: Failed to convert Parse trade \(parseTrade.objectId): \(error)")

@@ -28,6 +28,7 @@ protocol OrderLifecycleCoordinatorProtocol: Sendable {
     func cancelOrder(_ orderId: String) async throws
     func updateOrderStatus(_ orderId: String, status: String) async throws
     func registerPairedBuyTraderOrder(_ order: Order, pairExecutionId: String) async
+    func resumeOrderProgressionForActiveOrders()
 
     // MARK: - Order Completion Handling
     func handleOrderCompletion(orderId: String, status: String, order: Order) async

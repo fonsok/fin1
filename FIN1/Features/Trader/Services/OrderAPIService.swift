@@ -428,6 +428,7 @@ struct ParseOrderResponse: Codable, Sendable {
             isMirrorPoolOrder: self.isMirrorPoolOrder == true
                 || self.legType?.uppercased() == "MIRROR_POOL",
             originalHoldingId: self.originalHoldingId,
+            pairExecutionId: self.pairExecutionId,
             status: self.status
         )
     }

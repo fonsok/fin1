@@ -399,6 +399,7 @@ private struct ExecutePairedBuyResult: Decodable {
             denomination: searchResult.denomination,
             isMirrorPoolOrder: false,
             originalHoldingId: nil,
+            pairExecutionId: self.pairExecutionId,
             status: "submitted"
         )
     }

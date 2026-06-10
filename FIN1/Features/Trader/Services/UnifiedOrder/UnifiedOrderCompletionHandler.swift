@@ -127,22 +127,15 @@ final class UnifiedOrderCompletionHandler: @unchecked Sendable {
         guard let trade = completedTrades.first(where: { $0.id == tradeId }) else {
             throw AppError.tradeNotFound(tradeId)
         }
-        let tradeWithSellOrder = trade.withPartialSellOrder(sellOrder)
-        let updatedTrade = tradeWithSellOrder.updateStatus()
-
-        // Calculate and store profit if trade is completed
-        let finalTrade: Trade
-        if updatedTrade.isCompleted {
-            let allInvoices = self.invoiceService.getInvoicesForTrade(trade.id)
-            let buyInvoices = allInvoices.filter { $0.transactionType == .buy }
-            let sellInvoices = allInvoices.filter { $0.transactionType == .sell }
-            let buyInvoice = buyInvoices.first
-
-            let calculatedProfit = ProfitCalculationService.calculateTaxableProfit(buyInvoice: buyInvoice, sellInvoices: sellInvoices)
-            finalTrade = updatedTrade.withCalculatedProfit(calculatedProfit)
-        } else {
-            finalTrade = updatedTrade
-        }
+        let updatedTrade = trade.withPartialSellOrder(sellOrder).updateStatus()
+        let allInvoices = self.invoiceService.getInvoicesForTrade(trade.id)
+        let buyInvoice = allInvoices.first { $0.transactionType == .buy }
+        let sellInvoices = allInvoices.filter { $0.transactionType == .sell }
+        let finalTrade = ProfitCalculationService.tradeWithStoredRealizedProfit(
+            updatedTrade,
+            buyInvoice: buyInvoice,
+            sellInvoices: sellInvoices
+        )
 
         // Update on Parse Server if available
         if let tradeAPIService = tradeAPIService {

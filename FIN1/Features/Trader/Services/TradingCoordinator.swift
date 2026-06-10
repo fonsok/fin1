@@ -54,6 +54,7 @@ final class TradingCoordinator: TradingCoordinatorProtocol {
 
     func loadAllTradingData() async throws {
         try await self.tradingStateStore.loadAllTradingData()
+        self.orderLifecycleCoordinator.resumeOrderProgressionForActiveOrders()
     }
 
     func refreshTradingData() async throws {

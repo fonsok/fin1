@@ -81,14 +81,15 @@ extension TradesOverviewViewModel {
     }
 
     func createTradeOverviewItem(for trade: Trade) async -> TradeOverviewItem {
-        let pnl = trade.displayProfit
-        let roi = trade.displayROI
+        let pnl = self.resolveOverviewProfit(for: trade)
+        let roi = self.resolveOverviewROI(for: trade, profit: pnl)
         let endDate = trade.completedAt ?? Date()
         let startDate = trade.createdAt
         let totalFees = self.calculateInvoiceBasedFees(for: trade)
         let hasProfit = pnl > 0
         let commission = await commissionCalculator.calculateCommission(tradeId: trade.id, hasProfit: hasProfit)
         let isCommissionPending = TradesOverviewCommissionAmounts.isCommissionPending(
+            tradeIsCompleted: trade.isCompleted,
             hasProfit: hasProfit,
             commission: commission
         )
@@ -145,6 +146,7 @@ extension TradesOverviewViewModel {
             returnPercentage: roi,
             commission: detailsCommission,
             isCommissionPending: TradesOverviewCommissionAmounts.isCommissionPending(
+                tradeIsCompleted: trade.isCompleted,
                 hasProfit: hasProfit,
                 commission: detailsCommission
             ),
@@ -188,12 +190,36 @@ extension TradesOverviewViewModel {
         statisticsService?.calculateTotalFees(for: trade) ?? 0.0
     }
 
-    func calculateInvoiceBasedProfit(for trade: Trade) -> Double {
-        guard let invoiceService = invoiceService else { return 0.0 }
-        let allInvoices = invoiceService.getInvoicesForTrade(trade.id)
-        let buyInvoice = allInvoices.first { $0.transactionType == .buy }
-        let sellInvoices = allInvoices.filter { $0.transactionType == .sell }
-        return ProfitCalculationService.calculateTaxableProfit(buyInvoice: buyInvoice, sellInvoices: sellInvoices)
+    /// Read-time: stored SSOT first unless stale vs cumulative sell legs; then recompute.
+    func resolveOverviewProfit(for trade: Trade) -> Double {
+        if let stored = trade.calculatedProfit,
+           !ProfitCalculationService.isStoredProfitStale(for: trade) {
+            return stored
+        }
+        if let invoiceService {
+            let allInvoices = invoiceService.getInvoicesForTrade(trade.id)
+            let buyInvoice = allInvoices.first { $0.transactionType == .buy }
+            let sellInvoices = allInvoices.filter { $0.transactionType == .sell }
+            if let profit = ProfitCalculationService.resolveRealizedProfit(
+                for: trade,
+                buyInvoice: buyInvoice,
+                sellInvoices: sellInvoices
+            ) {
+                return profit
+            }
+        }
+        return trade.displayProfit
+    }
+
+    func resolveOverviewROI(for trade: Trade, profit: Double) -> Double {
+        guard trade.totalSoldQuantity > 0 else { return 0.0 }
+        let buySecuritiesValue = trade.buyOrder.price * trade.totalSoldQuantity
+        let buyFees = FeeCalculationService.calculateTotalFees(for: buySecuritiesValue)
+        let totalBuyCost = buySecuritiesValue + buyFees
+        return ProfitCalculationService.calculateReturnPercentage(
+            grossProfit: profit,
+            investedAmount: totalBuyCost
+        ) ?? trade.displayROI
     }
 
     func calculateInvoiceBasedFees(for trade: Trade) -> Double {
