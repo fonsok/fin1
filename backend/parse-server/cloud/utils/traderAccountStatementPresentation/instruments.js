@@ -6,12 +6,15 @@ const {
   resolveOrderForTradeSide,
 } = require('./orderContext');
 
+/**
+ * SSOT aligned with `buildSellOrderSnapshotFromOrder`: use executed qty when > 0,
+ * else order qty. Returns null when no positive quantity (so callers can fall through).
+ */
 function resolveOrderQuantity(orderLike) {
   if (!orderLike) return null;
-  const qty = orderLike.executedQuantity ?? orderLike.quantity;
-  if (qty == null || qty === '') return null;
-  const parsed = Number(qty);
-  return Number.isFinite(parsed) ? parsed : null;
+  const parsed = Number(orderLike.executedQuantity || orderLike.quantity);
+  if (!Number.isFinite(parsed) || parsed <= 0) return null;
+  return parsed;
 }
 
 function resolveUnderlyingAsset(candidates, wknOrIsin) {
@@ -160,6 +163,12 @@ function parseInstrumentFromInvoice(invoice) {
   };
 }
 
+function positiveQuantityString(value) {
+  const parsed = Number(value);
+  if (Number.isFinite(parsed) && parsed > 0) return String(parsed);
+  return '';
+}
+
 function mergeInstrumentFields(tradeInstrument, fallback = {}) {
   return {
     wknOrIsin: tradeInstrument.wknOrIsin || fallback.wknOrIsin || '',
@@ -167,7 +176,9 @@ function mergeInstrumentFields(tradeInstrument, fallback = {}) {
     underlyingAsset: tradeInstrument.underlyingAsset || fallback.underlyingAsset || '',
     strikePrice: tradeInstrument.strikePrice || fallback.strikePrice || '',
     issuer: tradeInstrument.issuer || fallback.issuer || '',
-    quantity: tradeInstrument.quantity || fallback.quantity || '',
+    quantity: positiveQuantityString(tradeInstrument.quantity)
+      || positiveQuantityString(fallback.quantity)
+      || '',
   };
 }
 

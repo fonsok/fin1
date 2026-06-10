@@ -237,6 +237,64 @@ describe('traderAccountStatementPresentation', () => {
     expect(tradeStatementTitle('buy', instrument)).toBe('KAUF · PUT · Dow Jones · UB4PQLG');
   });
 
+  test('resolveOrderQuantity uses order quantity when executedQuantity is zero', () => {
+    const trade = {
+      get: (key) => ({
+        wkn: 'VO47OXA',
+        symbol: 'VO47OXA',
+        securityType: 'PUT',
+        quantity: 900,
+        buyOrder: { wkn: 'VO47OXA', quantity: 900 },
+        sellOrder: {},
+        sellOrders: [],
+      }[key]),
+    };
+    const sellOrder = mockParseOrder('sell-partial', 'sell', 'trade-1', {
+      quantity: 300,
+      executedQuantity: 0,
+      netAmount: 2668,
+    });
+    const instrument = parseInstrumentFromTrade(trade, sellOrder, { transactionType: 'sell' });
+    expect(instrument.quantity).toBe('300');
+  });
+
+  test('partial sell stmt leg uses parse sell order quantity when executedQuantity is zero', () => {
+    const t0 = new Date('2026-06-10T15:00:00Z');
+    const tradeId = 'trade-vo47';
+    const trade = {
+      id: tradeId,
+      get: (key) => ({
+        wkn: 'VO47OXA',
+        symbol: 'VO47OXA',
+        securityType: 'PUT',
+        quantity: 900,
+        buyLegType: 'TRADER',
+        buyOrder: { wkn: 'VO47OXA', quantity: 900 },
+        sellOrder: {},
+        sellOrders: [],
+      }[key]),
+    };
+    const sellOrder = mockParseOrder('sell-partial', 'sell', tradeId, {
+      quantity: 300,
+      executedQuantity: 0,
+      netAmount: 2668,
+    });
+    const stmtEntries = [
+      mockStmt('s1', 'trade_sell', 2668, t0, {
+        tradeId,
+        tradeNumber: 1,
+        referenceDocumentNumber: 'TSC-2026-0000127',
+      }),
+    ];
+    const instrumentContext = {
+      tradeById: new Map([[tradeId, trade]]),
+      buyOrderByTradeId: new Map(),
+      sellOrdersByTradeId: new Map([[tradeId, [sellOrder]]]),
+    };
+    const events = buildNetTradeDisplayEvents(stmtEntries, [], instrumentContext);
+    expect(events[0].quantity).toBe('300');
+  });
+
   test('parseInstrumentFromTrade uses sell-order quantity for partial sell, not trade buy quantity', () => {
     const trade = {
       get: (key) => ({
