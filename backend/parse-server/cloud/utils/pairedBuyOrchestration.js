@@ -15,6 +15,11 @@ const {
   statusRank,
   pairedLegsCanonicalStatus,
 } = require('./pairedOrderStatusCoupling');
+const { isMirrorPoolOrderLeg } = require('../services/poolMirrorActivation/poolActivationPolicy');
+const {
+  applyResolvedMirrorPoolBuyQuantityToOrder,
+} = require('../services/poolMirrorActivation/resolveMirrorPoolBuyQuantity');
+const { loadConfig } = require('./configHelper/index.js');
 
 const BUY_EXECUTABLE_STATUSES = new Set([
   'pending', 'submitted', 'suspended', 'confirmed', 'completed',
@@ -132,8 +137,22 @@ async function finalizePairedBuyAfterCommit(pairExecutionId) {
 
   // Sequential saves (TRADER before MIRROR_POOL): avoid saveAll + nested order.save in afterSave
   // skipping mirror leg trade creation / pool activation.
+  const config = await loadConfig();
+  const feeConfig = config.financial || {};
+
   for (const order of sorted) {
     if ((order.get('side') || '') !== 'buy') continue;
+
+    if (isMirrorPoolOrderLeg(order)) {
+      const applied = await applyResolvedMirrorPoolBuyQuantityToOrder(order, { feeConfig });
+      if (!applied.ok) {
+        console.warn(
+          `finalizePairedBuyAfterCommit: mirror pool qty resolve failed pair ${pairExecutionId}: ${applied.reason}`,
+        );
+        continue;
+      }
+    }
+
     const prepared = preparePairedBuyLegExecutedFields(order);
     if (!prepared) continue;
     await prepared.save(null, { useMasterKey: true, context: pairedStatusBatchContext() });
@@ -219,7 +238,15 @@ function preparePairedBuyLegExecutedFields(order) {
 
   const qty = Number(order.get('quantity') || 0);
   const price = Number(order.get('price') || 0);
-  const grossAmount = qty * price;
+  let grossAmount;
+  if (isMirrorPoolOrderLeg(order)) {
+    grossAmount = Number(order.get('grossAmount') || order.get('totalAmount') || 0);
+    if (!(grossAmount > 0) && qty > 0 && price > 0) {
+      grossAmount = qty * price;
+    }
+  } else {
+    grossAmount = qty * price;
+  }
   const fees = calculateOrderFees(grossAmount, false);
   const netAmount = grossAmount + fees.totalFees;
 
