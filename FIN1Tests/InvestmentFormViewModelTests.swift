@@ -4,15 +4,8 @@ import XCTest
 @MainActor
 final class InvestmentFormViewModelTests: XCTestCase {
 
-    private final class MockConfigurationService: ConfigurationServiceProtocol {
-        var maximumInvestmentAmount: Double = 100_000
-        var minimumInvestmentAmount: Double = 20
-        var appServiceChargePercentage: String = "2,00%"
-        var traderCommissionPercentage: Double = 0
-        var effectiveAppServiceChargeRate: Double = 0.02
-
-        func refreshConfigurationFromServerIfAvailable() async {}
-        func getMinimumCashReserve(for userId: String) -> Double { 0 }
+    private func makeConfigurationService() -> ConfigurationService {
+        ConfigurationService(userService: MockUserService())
     }
 
     func testFormatAndValidateInputDoesNotReemitUnchangedBackingAmount() {
@@ -20,7 +13,7 @@ final class InvestmentFormViewModelTests: XCTestCase {
         let viewModel = InvestmentFormViewModel(
             updateInvestmentAmount: { backing = $0 },
             getInvestmentAmount: { backing },
-            configurationService: MockConfigurationService()
+            configurationService: self.makeConfigurationService()
         )
 
         viewModel.updateDisplayFromAmount()
@@ -31,7 +24,7 @@ final class InvestmentFormViewModelTests: XCTestCase {
         let trackingVM = InvestmentFormViewModel(
             updateInvestmentAmount: { _ in updateCount += 1 },
             getInvestmentAmount: { backing },
-            configurationService: MockConfigurationService()
+            configurationService: self.makeConfigurationService()
         )
         trackingVM.updateDisplayFromAmount()
         updateCount = 0
@@ -45,7 +38,7 @@ final class InvestmentFormViewModelTests: XCTestCase {
         let viewModel = InvestmentFormViewModel(
             updateInvestmentAmount: { backing = $0 },
             getInvestmentAmount: { backing },
-            configurationService: MockConfigurationService()
+            configurationService: self.makeConfigurationService()
         )
 
         viewModel.formatAndValidateInput("3000")
