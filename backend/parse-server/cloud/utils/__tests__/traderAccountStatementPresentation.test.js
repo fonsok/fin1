@@ -5,8 +5,13 @@ const { buildNetTradeDisplayEvents } = require('../traderAccountStatementPresent
 const {
   enrichTimelineWithTradeInstruments,
   parseInstrumentFromTrade,
+  parseInstrumentFromInvoice,
   shouldEnrichTimelineEvent,
 } = require('../traderAccountStatementPresentation/instruments');
+const {
+  buildOrderMapsFromParseOrders,
+  resolveOrderForTradeSide,
+} = require('../traderAccountStatementPresentation/orderContext');
 const { tradeStatementTitle } = require('../traderAccountStatementPresentation/instrumentTitles');
 const { traderCustomerTimelineToApiRows } = require('../traderAccountStatementPresentation/apiRows');
 
@@ -43,6 +48,7 @@ function mockInvoice(id, invoiceType, totalAmount, invoiceDate, extra = {}) {
         tradeNumber: extra.tradeNumber ?? 1,
         invoiceNumber: extra.invoiceNumber || `INV-${id}`,
         side: extra.side || null,
+        orderId: extra.orderId || null,
         lineItems: extra.lineItems || [{
           itemType: 'securities',
           description: 'VO5G3MN - PUT - DAX',
@@ -51,6 +57,25 @@ function mockInvoice(id, invoiceType, totalAmount, invoiceDate, extra = {}) {
       };
       return map[key];
     },
+  };
+}
+
+function mockParseOrder(id, side, tradeId, extra = {}) {
+  return {
+    id,
+    get: (key) => ({
+      tradeId,
+      side,
+      wkn: extra.wkn || 'UB4PQLG',
+      symbol: extra.symbol || 'UB4PQLG',
+      optionDirection: extra.optionDirection || 'PUT',
+      underlyingAsset: extra.underlyingAsset || 'Dow Jones',
+      quantity: extra.quantity ?? 500,
+      executedQuantity: extra.executedQuantity ?? extra.quantity ?? 500,
+      grossAmount: extra.grossAmount ?? 2000,
+      netAmount: extra.netAmount ?? 1987,
+      legType: extra.legType || 'TRADER',
+    }[key]),
   };
 }
 
@@ -93,7 +118,8 @@ describe('traderAccountStatementPresentation', () => {
         [mirrorTradeId, mockTrade(mirrorTradeId, 'MIRROR_POOL')],
         [traderTradeId, mockTrade(traderTradeId, 'TRADER')],
       ]),
-      orderByTradeId: new Map(),
+      buyOrderByTradeId: new Map(),
+      sellOrdersByTradeId: new Map(),
     };
 
     const events = buildNetTradeDisplayEvents(stmtEntries, invoices, instrumentContext);
@@ -279,7 +305,11 @@ describe('traderAccountStatementPresentation', () => {
     ];
     const instrumentContext = {
       tradeById: new Map([[tradeId, trade]]),
-      orderByTradeId: new Map(),
+      buyOrderByTradeId: new Map(),
+      sellOrdersByTradeId: new Map([[
+        tradeId,
+        [mockParseOrder('sell-1', 'sell', tradeId, { quantity: 500, netAmount: 1987 })],
+      ]]),
     };
     const events = buildNetTradeDisplayEvents(stmtEntries, [], instrumentContext);
     const sellEvents = events.filter((e) => e.entryType === 'trade_sell');
@@ -314,11 +344,11 @@ describe('traderAccountStatementPresentation', () => {
       instrumentResolvedFromTrade: true,
     }];
     expect(shouldEnrichTimelineEvent(timeline[0])).toBe(false);
-    const enriched = enrichTimelineWithTradeInstruments(
-      timeline,
-      new Map([['t1', trade]]),
-      new Map(),
-    );
+    const enriched = enrichTimelineWithTradeInstruments(timeline, {
+      tradeById: new Map([['t1', trade]]),
+      buyOrderByTradeId: new Map(),
+      sellOrdersByTradeId: new Map(),
+    });
     expect(enriched[0].statementTitle).toBe('KAUF · PUT · Dow Jones · UB4PQLG');
   });
 
@@ -341,7 +371,11 @@ describe('traderAccountStatementPresentation', () => {
       underlyingAsset: null,
       statementTitle: 'KAUF · Trade #001',
     }];
-    const enriched = enrichTimelineWithTradeInstruments(timeline, tradeById, new Map());
+    const enriched = enrichTimelineWithTradeInstruments(timeline, {
+      tradeById,
+      buyOrderByTradeId: new Map(),
+      sellOrdersByTradeId: new Map(),
+    });
     expect(enriched[0].statementTitle).toContain('ABC123');
   });
 
@@ -375,7 +409,8 @@ describe('traderAccountStatementPresentation', () => {
     ];
     const instrumentContext = {
       tradeById: new Map([[tradeId, trade]]),
-      orderByTradeId: new Map(),
+      buyOrderByTradeId: new Map(),
+      sellOrdersByTradeId: new Map(),
     };
 
     const events = buildNetTradeDisplayEvents([], invoices, instrumentContext);
@@ -384,6 +419,85 @@ describe('traderAccountStatementPresentation', () => {
     expect(buyEvents[0].statementTitle).toBe('KAUF · PUT · Dow Jones · UB4PQLG');
     expect(buyEvents[0].underlyingAsset).toBe('Dow Jones');
     expect(buyEvents[0].instrumentResolvedFromTrade).toBe(true);
+  });
+
+  test('parseInstrumentFromInvoice prefers structured securities line item fields', () => {
+    const invoice = mockInvoice('inv-structured', 'buy_invoice', 1000, new Date(), {
+      lineItems: [{
+        itemType: 'securities',
+        description: 'UB4PQLG - PUT - UB4PQLG - Strike 17191.23',
+        quantity: 1000,
+        wkn: 'UB4PQLG',
+        optionDirection: 'PUT',
+        underlyingAsset: 'Dow Jones',
+        strikePrice: '17191.23',
+        issuer: 'Issuer AG',
+      }],
+    });
+    const instrument = parseInstrumentFromInvoice(invoice);
+    expect(instrument.underlyingAsset).toBe('Dow Jones');
+    expect(instrument.strikePrice).toBe('Strike 17191.23');
+    expect(tradeStatementTitle('buy', instrument)).toBe('KAUF · PUT · Dow Jones · UB4PQLG');
+  });
+
+  test('buildOrderMapsFromParseOrders keeps one buy and multiple sells per trade', () => {
+    const tradeId = 'trade-1';
+    const orders = [
+      mockParseOrder('buy-1', 'buy', tradeId, { quantity: 1000 }),
+      mockParseOrder('sell-1', 'sell', tradeId, { quantity: 500, netAmount: 1987 }),
+      mockParseOrder('sell-2', 'sell', tradeId, { quantity: 500, netAmount: 1990 }),
+    ];
+    const maps = buildOrderMapsFromParseOrders(orders);
+    expect(maps.buyOrderByTradeId.get(tradeId).id).toBe('buy-1');
+    expect(maps.sellOrdersByTradeId.get(tradeId)).toHaveLength(2);
+  });
+
+  test('sell invoice display resolves quantity from linked sell order', () => {
+    const t0 = new Date('2026-06-08T11:00:00Z');
+    const tradeId = 'trade-sell-inv';
+    const sellOrder = mockParseOrder('sell-partial', 'sell', tradeId, {
+      quantity: 500,
+      underlyingAsset: 'Dow Jones',
+      netAmount: 1987,
+    });
+    const trade = {
+      id: tradeId,
+      get: (key) => ({
+        wkn: 'UB4PQLG',
+        quantity: 1000,
+        buyLegType: 'TRADER',
+        buyOrder: { wkn: 'UB4PQLG', quantity: 1000 },
+        sellOrder: {},
+        sellOrders: [],
+      }[key]),
+    };
+    const invoices = [
+      mockInvoice('inv-sell', 'sell_invoice', 1987, t0, {
+        tradeId,
+        orderId: 'sell-partial',
+        lineItems: [{
+          itemType: 'securities',
+          description: 'UB4PQLG - PUT - UB4PQLG',
+          quantity: 1000,
+          wkn: 'UB4PQLG',
+          optionDirection: 'PUT',
+          underlyingAsset: 'Dow Jones',
+        }],
+      }),
+    ];
+    const instrumentContext = {
+      tradeById: new Map([[tradeId, trade]]),
+      buyOrderByTradeId: new Map([[tradeId, mockParseOrder('buy-1', 'buy', tradeId, { quantity: 1000 })]]),
+      sellOrdersByTradeId: new Map([[tradeId, [sellOrder]]]),
+    };
+    const events = buildNetTradeDisplayEvents([], invoices, instrumentContext);
+    expect(events[0].quantity).toBe('500');
+    expect(events[0].statementTitle).toBe('VERKAUF · PUT · Dow Jones · UB4PQLG');
+
+    const resolved = resolveOrderForTradeSide(instrumentContext, tradeId, 'sell', {
+      orderId: 'sell-partial',
+    });
+    expect(resolved.id).toBe('sell-partial');
   });
 
   test('enrichTimelineWithTradeInstruments refreshes invoice buy title when wkn already set', () => {
@@ -404,11 +518,11 @@ describe('traderAccountStatementPresentation', () => {
       securitiesDirection: 'PUT',
       statementTitle: 'KAUF UB4PQLG · PUT · UB4PQLG',
     }];
-    const enriched = enrichTimelineWithTradeInstruments(
-      timeline,
-      new Map([['t1', trade]]),
-      new Map(),
-    );
+    const enriched = enrichTimelineWithTradeInstruments(timeline, {
+      tradeById: new Map([['t1', trade]]),
+      buyOrderByTradeId: new Map(),
+      sellOrdersByTradeId: new Map(),
+    });
     expect(enriched[0].statementTitle).toBe('KAUF · PUT · Dow Jones · UB4PQLG');
   });
 

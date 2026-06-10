@@ -7,12 +7,14 @@ const {
   TIMELINE_SOURCE_LIMIT,
   dedupeParseObjectsById,
 } = require('./shared');
+const { buildOrderMapsFromParseOrders } = require('./orderContext');
 
 async function loadTradeInstrumentContext(tradeIds) {
   const tradeById = new Map();
-  const orderByTradeId = new Map();
+  const buyOrderByTradeId = new Map();
+  const sellOrdersByTradeId = new Map();
   if (!tradeIds.length) {
-    return { tradeById, orderByTradeId };
+    return { tradeById, buyOrderByTradeId, sellOrdersByTradeId };
   }
 
   const tradeQuery = new Parse.Query('Trade');
@@ -38,9 +40,11 @@ async function loadTradeInstrumentContext(tradeIds) {
   const orderQuery = new Parse.Query('Order');
   orderQuery.containedIn('tradeId', tradeIds);
   orderQuery.ascending('createdAt');
-  orderQuery.limit(Math.min(tradeIds.length * 3, TIMELINE_SOURCE_LIMIT));
+  // 1 buy + multiple partial sells per trade (capped by TIMELINE_SOURCE_LIMIT).
+  orderQuery.limit(Math.min(tradeIds.length * 12, TIMELINE_SOURCE_LIMIT));
   orderQuery.select(
     'tradeId',
+    'side',
     'wkn',
     'symbol',
     'optionDirection',
@@ -49,17 +53,20 @@ async function loadTradeInstrumentContext(tradeIds) {
     'issuer',
     'quantity',
     'executedQuantity',
+    'grossAmount',
+    'netAmount',
     'legType',
   );
   const orders = await orderQuery.find({ useMasterKey: true });
-  for (const order of orders) {
-    const tid = order.get('tradeId');
-    if (tid && !orderByTradeId.has(tid)) {
-      orderByTradeId.set(tid, order);
-    }
+  const orderMaps = buildOrderMapsFromParseOrders(orders);
+  for (const [tid, buyOrder] of orderMaps.buyOrderByTradeId) {
+    buyOrderByTradeId.set(tid, buyOrder);
+  }
+  for (const [tid, sellOrders] of orderMaps.sellOrdersByTradeId) {
+    sellOrdersByTradeId.set(tid, sellOrders);
   }
 
-  return { tradeById, orderByTradeId };
+  return { tradeById, buyOrderByTradeId, sellOrdersByTradeId };
 }
 
 function collectTradeIdsFromSources(stmtEntries, invoices, timeline) {

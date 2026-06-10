@@ -25,7 +25,7 @@ function buildTraderCustomerTimeline({
   initialBalance,
   instrumentContext = {},
 }) {
-  const { tradeById = new Map(), orderByTradeId = new Map() } = instrumentContext;
+  const { tradeById = new Map(), buyOrderByTradeId = new Map() } = instrumentContext;
   const tradeEvents = buildNetTradeDisplayEvents(stmtEntries, invoices, instrumentContext);
   const latestTradeAt = new Map();
 
@@ -48,7 +48,7 @@ function buildTraderCustomerTimeline({
     .filter((entry) => isTraderCustomerVisibleTrade(
       entry.get('tradeId'),
       tradeById,
-      orderByTradeId,
+      buyOrderByTradeId,
     ))
     .map(buildDisplayEventFromStatementEntry);
 
@@ -95,11 +95,7 @@ async function buildTraderCustomerTimelineForUser({ stmtEntries, invoices, initi
     initialBalance,
     instrumentContext,
   });
-  timeline = enrichTimelineWithTradeInstruments(
-    timeline,
-    instrumentContext.tradeById,
-    instrumentContext.orderByTradeId,
-  );
+  timeline = enrichTimelineWithTradeInstruments(timeline, instrumentContext);
   return timeline;
 }
 

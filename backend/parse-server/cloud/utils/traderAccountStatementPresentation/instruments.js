@@ -1,10 +1,10 @@
 'use strict';
 
-const {
-  getOrderArrayFromTradeLike,
-  resolveSellOrderNetCashAmount,
-} = require('../accountingHelper/settlementTradeMath');
 const { tradeStatementTitle } = require('./instrumentTitles');
+const {
+  parseOrderToSnapshot,
+  resolveOrderForTradeSide,
+} = require('./orderContext');
 
 function resolveOrderQuantity(orderLike) {
   if (!orderLike) return null;
@@ -25,26 +25,10 @@ function resolveUnderlyingAsset(candidates, wknOrIsin) {
   return '';
 }
 
-function resolveSellOrderForStatementLeg(trade, leg, feeConfig = {}) {
-  const sellOrders = getOrderArrayFromTradeLike(trade);
-  if (!sellOrders.length) return null;
-  if (sellOrders.length === 1) return sellOrders[0];
-
-  const legAmount = Math.abs(Number(leg?.get?.('amount') || 0));
-  if (legAmount > 0) {
-    const match = sellOrders.find((sellOrder) => {
-      const netCash = resolveSellOrderNetCashAmount(sellOrder, feeConfig);
-      return Math.abs(netCash - legAmount) < 0.02;
-    });
-    if (match) return match;
-  }
-
-  return sellOrders[sellOrders.length - 1];
-}
-
 function parseInstrumentFromTrade(trade, order, opts = {}) {
   const transactionType = String(opts.transactionType || '').toLowerCase();
-  const sellOrderHint = opts.sellOrder || null;
+  const parseOrderSnap = order?.get ? parseOrderToSnapshot(order) : null;
+  const sellOrderHint = opts.sellOrder || (transactionType === 'sell' ? parseOrderSnap : null) || null;
   const buyOrder = trade?.get?.('buyOrder') || {};
   const sellOrder = sellOrderHint || trade?.get?.('sellOrder') || {};
   const sellOrders = trade?.get?.('sellOrders') || [];
@@ -113,11 +97,47 @@ function parseInstrumentFromTrade(trade, order, opts = {}) {
   return { wknOrIsin, securitiesDirection, underlyingAsset, strikePrice, issuer, quantity };
 }
 
+function formatStrikePrice(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  return /^strike\b/i.test(raw) ? raw : `Strike ${raw}`;
+}
+
 function parseInstrumentFromInvoice(invoice) {
   const lineItems = invoice.get('lineItems') || [];
   const primary = lineItems.find((item) => String(item?.itemType || '') === 'securities')
     || lineItems[0];
-  const description = String(primary?.description || '').trim();
+  if (!primary) {
+    return {
+      wknOrIsin: '',
+      securitiesDirection: '',
+      underlyingAsset: '',
+      strikePrice: '',
+      issuer: '',
+      quantity: '',
+    };
+  }
+
+  const structuredWkn = String(primary.wkn || '').trim();
+  const structuredDirection = String(primary.optionDirection || '').trim();
+  const structuredUnderlying = String(primary.underlyingAsset || '').trim();
+  const structuredStrike = formatStrikePrice(primary.strikePrice);
+  const structuredIssuer = String(primary.issuer || '').trim();
+  const structuredSymbol = String(primary.symbol || '').trim();
+
+  if (structuredWkn || structuredDirection || structuredUnderlying) {
+    const wknOrIsin = structuredWkn || structuredSymbol;
+    return {
+      wknOrIsin,
+      securitiesDirection: structuredDirection,
+      underlyingAsset: resolveUnderlyingAsset([structuredUnderlying], wknOrIsin),
+      strikePrice: structuredStrike,
+      issuer: structuredIssuer,
+      quantity: primary.quantity != null ? String(primary.quantity) : '',
+    };
+  }
+
+  const description = String(primary.description || '').trim();
   const components = description
     .split(' - ')
     .map((part) => part.trim())
@@ -130,15 +150,14 @@ function parseInstrumentFromInvoice(invoice) {
     wknOrIsin,
   );
 
-  const instrument = {
+  return {
     wknOrIsin,
     securitiesDirection: components[1] || '',
     underlyingAsset,
-    strikePrice: strikePart || components[3] || '',
+    strikePrice: strikePart || formatStrikePrice(components[3]),
     issuer: components[4] || '',
-    quantity: primary?.quantity != null ? String(primary.quantity) : '',
+    quantity: primary.quantity != null ? String(primary.quantity) : '',
   };
-  return instrument;
 }
 
 function mergeInstrumentFields(tradeInstrument, fallback = {}) {
@@ -148,7 +167,7 @@ function mergeInstrumentFields(tradeInstrument, fallback = {}) {
     underlyingAsset: tradeInstrument.underlyingAsset || fallback.underlyingAsset || '',
     strikePrice: tradeInstrument.strikePrice || fallback.strikePrice || '',
     issuer: tradeInstrument.issuer || fallback.issuer || '',
-    quantity: fallback.quantity || tradeInstrument.quantity || '',
+    quantity: tradeInstrument.quantity || fallback.quantity || '',
   };
 }
 
@@ -169,15 +188,22 @@ function shouldEnrichTimelineEvent(event) {
   return true;
 }
 
-function enrichTimelineWithTradeInstruments(timeline, tradeById, orderByTradeId) {
+function enrichTimelineWithTradeInstruments(timeline, instrumentContext = {}) {
+  const { tradeById = new Map() } = instrumentContext;
   return timeline.map((event) => {
     if (!shouldEnrichTimelineEvent(event)) {
       return event;
     }
     const trade = tradeById.get(event.tradeId);
-    const order = orderByTradeId.get(event.tradeId);
+    const order = resolveOrderForTradeSide(instrumentContext, event.tradeId, event.transactionTypeLabel, {
+      orderId: event.orderId,
+      trade,
+    });
     if (!trade && !order) return event;
 
+    const sellOrder = event.transactionTypeLabel === 'sell'
+      ? (order?.get ? parseOrderToSnapshot(order) : order)
+      : null;
     const instrument = resolveInstrumentForDisplayEvent(trade, order, event.transactionTypeLabel, {
       wknOrIsin: event.wknOrIsin,
       underlyingAsset: event.underlyingAsset,
@@ -185,7 +211,7 @@ function enrichTimelineWithTradeInstruments(timeline, tradeById, orderByTradeId)
       quantity: event.quantity,
       strikePrice: event.strikePrice,
       issuer: event.issuer,
-    });
+    }, { sellOrder });
 
     if (!instrument.wknOrIsin && !instrument.securitiesDirection && !instrument.underlyingAsset) {
       return event;
@@ -207,7 +233,6 @@ function enrichTimelineWithTradeInstruments(timeline, tradeById, orderByTradeId)
 module.exports = {
   parseInstrumentFromTrade,
   parseInstrumentFromInvoice,
-  resolveSellOrderForStatementLeg,
   resolveInstrumentForDisplayEvent,
   shouldEnrichTimelineEvent,
   enrichTimelineWithTradeInstruments,

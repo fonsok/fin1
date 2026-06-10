@@ -19,7 +19,8 @@ async function createOrderInvoice(order) {
   }
 
   const linkedTradeId = String(order.get('tradeId') || '').trim();
-  if (linkedTradeId) {
+  // One buy invoice per trade; each partial sell has its own sell order + invoice.
+  if (linkedTradeId && !isSell) {
     const existingByTrade = await new Parse.Query('Invoice')
       .equalTo('tradeId', linkedTradeId)
       .equalTo('invoiceType', invoiceType)
@@ -58,17 +59,33 @@ async function createOrderInvoice(order) {
   const fees = calculateOrderFees(grossAmount, false);
   const sign = isSell ? -1 : 1;
 
+  const wkn = String(order.get('wkn') || '').trim();
+  const optionDirection = String(order.get('optionDirection') || '').trim();
+  const underlyingAsset = String(order.get('underlyingAsset') || '').trim();
+  const symbol = String(order.get('symbol') || '').trim();
+  const strike = order.get('strikePrice') ?? order.get('strike');
+  const strikeText = strike != null && String(strike).trim()
+    ? `Strike ${strike}`
+    : '';
+  const issuer = String(order.get('issuer') || '').trim();
+
   const lineItems = [
     {
       description: [
-        order.get('wkn') || '',
-        order.get('optionDirection') || '',
-        order.get('symbol') || '',
-        order.get('strike') ? `Strike ${order.get('strike')}` : '',
+        wkn,
+        optionDirection,
+        underlyingAsset || symbol,
+        strikeText,
       ].filter(Boolean).join(' - '),
       quantity,
       unitPrice: price,
       itemType: 'securities',
+      wkn,
+      optionDirection,
+      underlyingAsset,
+      symbol,
+      strikePrice: strike != null ? String(strike) : '',
+      issuer,
     },
     { description: 'Ordergebühr', quantity: 1, unitPrice: sign * fees.orderFee, itemType: 'orderFee' },
     { description: 'Börsenplatzgebühr (XETRA)', quantity: 1, unitPrice: sign * fees.exchangeFee, itemType: 'exchangeFee' },

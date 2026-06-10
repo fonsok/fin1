@@ -16,9 +16,12 @@ const {
 const {
   parseInstrumentFromTrade,
   parseInstrumentFromInvoice,
-  resolveSellOrderForStatementLeg,
   resolveInstrumentForDisplayEvent,
 } = require('./instruments');
+const {
+  parseOrderToSnapshot,
+  resolveOrderForTradeSide,
+} = require('./orderContext');
 const { tradeStatementTitle } = require('./instrumentTitles');
 
 function allocatedTradingFees(feesEntry, tradeBuyGross, tradeSellGross, forBuySide) {
@@ -60,16 +63,24 @@ function buildDisplayEventFromInvoice(invoice, cashLegRows, instrumentContext = 
   const transactionType = invoiceTransactionType(invoice);
   if (!transactionType) return null;
 
-  const { tradeById = new Map(), orderByTradeId = new Map() } = instrumentContext;
+  const { tradeById = new Map() } = instrumentContext;
   const tradeId = invoice.get('tradeId');
   const trade = tradeId ? tradeById.get(tradeId) : null;
-  const order = tradeId ? orderByTradeId.get(tradeId) : null;
+  const orderId = String(invoice.get('orderId') || '').trim() || null;
+  const order = resolveOrderForTradeSide(instrumentContext, tradeId, transactionType, {
+    orderId,
+    trade,
+  });
   const invoiceInstrument = parseInstrumentFromInvoice(invoice);
+  const sellOrder = transactionType === 'sell' && order?.get
+    ? parseOrderToSnapshot(order)
+    : null;
   const instrument = resolveInstrumentForDisplayEvent(
     trade,
     order,
     transactionType,
     invoiceInstrument,
+    { sellOrder },
   );
   const beleg = preferredBackendBeleg(
     invoice.get('tradeId'),
@@ -164,17 +175,17 @@ function buildDisplayEventsFromBackendLegs({
   }];
 }
 
-function isTraderCustomerVisibleTrade(tradeId, tradeById, orderByTradeId) {
+function isTraderCustomerVisibleTrade(tradeId, tradeById, buyOrderByTradeId) {
   if (!tradeId) return true;
   const trade = tradeById.get(tradeId);
   if (trade && isMirrorPoolTradeLeg(trade)) return false;
-  const order = orderByTradeId.get(tradeId);
-  if (order && isMirrorPoolOrderLeg(order)) return false;
+  const buyOrder = buyOrderByTradeId.get(tradeId);
+  if (buyOrder && isMirrorPoolOrderLeg(buyOrder)) return false;
   return true;
 }
 
 function buildNetTradeDisplayEvents(stmtEntries, invoices, instrumentContext = {}) {
-  const { tradeById = new Map(), orderByTradeId = new Map() } = instrumentContext;
+  const { tradeById = new Map(), buyOrderByTradeId = new Map() } = instrumentContext;
   const cashLegRows = deduplicatedTraderCashLegs(
     stmtEntries.filter((row) => TRADE_CASH_ENTRY_TYPES.has(String(row.get('entryType') || ''))),
   );
@@ -201,7 +212,7 @@ function buildNetTradeDisplayEvents(stmtEntries, invoices, instrumentContext = {
 
   for (const invoice of settlementInvoices) {
     const invoiceTradeId = invoice.get('tradeId');
-    if (!isTraderCustomerVisibleTrade(invoiceTradeId, tradeById, orderByTradeId)) {
+    if (!isTraderCustomerVisibleTrade(invoiceTradeId, tradeById, buyOrderByTradeId)) {
       continue;
     }
     const event = buildDisplayEventFromInvoice(invoice, cashLegRows, instrumentContext);
@@ -228,7 +239,7 @@ function buildNetTradeDisplayEvents(stmtEntries, invoices, instrumentContext = {
 
   for (const [, legs] of legsByTrade) {
     const tradeId = legs[0]?.get('tradeId') || null;
-    if (!isTraderCustomerVisibleTrade(tradeId, tradeById, orderByTradeId)) {
+    if (!isTraderCustomerVisibleTrade(tradeId, tradeById, buyOrderByTradeId)) {
       continue;
     }
     const tradeNumber = legs[0]?.get('tradeNumber') ?? null;
@@ -241,8 +252,8 @@ function buildNetTradeDisplayEvents(stmtEntries, invoices, instrumentContext = {
     const tradeSellGross = sellLegs.reduce((sum, leg) => sum + Math.abs(Number(leg.get('amount') || 0)), 0);
 
     const trade = tradeId ? tradeById.get(tradeId) : null;
-    const order = tradeId ? orderByTradeId.get(tradeId) : null;
-    const buyInstrument = parseInstrumentFromTrade(trade, order, { transactionType: 'buy' });
+    const buyOrder = resolveOrderForTradeSide(instrumentContext, tradeId, 'buy');
+    const buyInstrument = parseInstrumentFromTrade(trade, buyOrder, { transactionType: 'buy' });
 
     if (buyLegs.length > 0 && !isTradeCovered(coveredBuy, tradeId, tradeNumber)) {
       events.push(...buildDisplayEventsFromBackendLegs({
@@ -258,10 +269,16 @@ function buildNetTradeDisplayEvents(stmtEntries, invoices, instrumentContext = {
 
     if (sellLegs.length > 0 && !isTradeCovered(coveredSell, tradeId, tradeNumber)) {
       for (const sellLeg of sellLegs) {
-        const sellOrder = resolveSellOrderForStatementLeg(trade, sellLeg);
-        const sellInstrument = parseInstrumentFromTrade(trade, order, {
+        const sellOrderMatch = resolveOrderForTradeSide(instrumentContext, tradeId, 'sell', {
+          trade,
+          stmtLeg: sellLeg,
+        });
+        const sellOrderSnap = sellOrderMatch?.get
+          ? parseOrderToSnapshot(sellOrderMatch)
+          : sellOrderMatch;
+        const sellInstrument = parseInstrumentFromTrade(trade, sellOrderMatch, {
           transactionType: 'sell',
-          sellOrder,
+          sellOrder: sellOrderSnap,
         });
         events.push(...buildDisplayEventsFromBackendLegs({
           legs: [sellLeg],
