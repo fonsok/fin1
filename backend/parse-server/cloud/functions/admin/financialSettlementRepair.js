@@ -3,6 +3,7 @@
 const { repairTradeSettlement } = require('../../utils/accountingHelper/repair');
 const { settleAndDistribute } = require('../../utils/accountingHelper');
 const { backfillMissingSettlementGLForTrade } = require('../../utils/accountingHelper/settlementGLPoster');
+const { repairPartialSellEscrowGapsForTraderLeg } = require('../../utils/accountingHelper/settlementInvestorPartialRealization');
 const { backfillResidualReturnIfMissing } = require('../../utils/accountingHelper/settlementBackfill');
 const investmentEscrow = require('../../utils/accountingHelper/investmentEscrow');
 const { mergeInvestorFeeConfig } = require('../../utils/accountingHelper/feeConfigSnapshot');
@@ -302,10 +303,34 @@ async function handleBackfillMissingSettlementGL(request) {
   return report;
 }
 
+async function handleRepairPartialSellEscrow(request) {
+  const { tradeId, dryRun = false } = request.params || {};
+  if (!tradeId) {
+    throw new Parse.Error(Parse.Error.INVALID_VALUE, 'tradeId required');
+  }
+
+  const trade = await new Parse.Query('Trade').get(tradeId, { useMasterKey: true });
+  const report = await repairPartialSellEscrowGapsForTraderLeg(trade, { dryRun: !!dryRun });
+
+  if (!request.master) {
+    await logPermissionCheck(request, 'repairPartialSellEscrow', 'Trade', tradeId);
+  }
+
+  audit.info('settlement.admin.repairPartialSellEscrow.done', {
+    tradeId,
+    dryRun: !!dryRun,
+    repairedCount: report?.gaps?.repaired?.length || 0,
+    replayedCount: Array.isArray(report?.replayed) ? report.replayed.length : 0,
+  });
+
+  return report;
+}
+
 module.exports = {
   handleRepairTradeSettlement,
   handleBackfillTradeSettlement,
   handleBackfillTradingResidualEscrow,
   handleEnsureCapitalSplitOnActivation,
   handleBackfillMissingSettlementGL,
+  handleRepairPartialSellEscrow,
 };

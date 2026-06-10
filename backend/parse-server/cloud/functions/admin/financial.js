@@ -13,6 +13,7 @@ const {
   handleBackfillTradingResidualEscrow,
   handleEnsureCapitalSplitOnActivation,
   handleBackfillMissingSettlementGL,
+  handleRepairPartialSellEscrow,
 } = require('./financialSettlementRepair');
 const {
   handleRunSettlementRetryQueue,
@@ -81,6 +82,13 @@ Parse.Cloud.define('backfillMissingSettlementGL', async (request) => {
     requireAdminRole(request);
   }
   return handleBackfillMissingSettlementGL(request);
+});
+
+Parse.Cloud.define('repairPartialSellEscrow', async (request) => {
+  if (!request.master) {
+    requireAdminRole(request);
+  }
+  return handleRepairPartialSellEscrow(request);
 });
 
 Parse.Cloud.define('runSettlementRetryQueue', async (request) => {
