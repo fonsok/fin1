@@ -2,6 +2,10 @@
 
 const { sanitizeObject, validateProfileUpdate } = require('../../utils/validation');
 const { readCustomerNumber } = require('../../utils/userIdentity');
+const {
+  resolveUserLegalAcceptanceState,
+  persistResolvedLegalAcceptanceIfNeeded,
+} = require('../legal/legalConsentUserSync');
 
 // ============================================================================
 // USER PROFILE
@@ -45,7 +49,10 @@ Parse.Cloud.define('getUserMe', async (request) => {
   const user = request.user;
   if (!user) throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Login required');
 
-  // Single round-trip for app refresh / post-login: KYB + identity + Kundennummer (see iOS `ParseUserMeResponse`).
+  const legal = await resolveUserLegalAcceptanceState(user, { language: 'de' });
+  await persistResolvedLegalAcceptanceIfNeeded(user, legal);
+
+  // Single round-trip for app refresh / post-login: KYB + identity + legal acceptance SSOT.
   return {
     id: user.id,
     customerNumber: readCustomerNumber(user),
@@ -58,6 +65,12 @@ Parse.Cloud.define('getUserMe', async (request) => {
     companyKybStatus: user.get('companyKybStatus') || null,
     onboardingCompleted: user.get('onboardingCompleted') || false,
     onboardingStep: user.get('onboardingStep') || null,
+    acceptedTerms: legal.acceptedTerms,
+    acceptedPrivacyPolicy: legal.acceptedPrivacyPolicy,
+    acceptedTermsVersion: legal.acceptedTermsVersion,
+    acceptedPrivacyPolicyVersion: legal.acceptedPrivacyPolicyVersion,
+    acceptedTermsDate: legal.acceptedTermsDate,
+    acceptedPrivacyPolicyDate: legal.acceptedPrivacyPolicyDate,
   };
 });
 

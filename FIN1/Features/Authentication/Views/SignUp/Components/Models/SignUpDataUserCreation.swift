@@ -242,7 +242,11 @@ extension SignUpData {
             customerId: nil,
             questionnaireVersion: TermsVersionConstants.currentQuestionnaireVersion,
             termsVersion: TermsVersionConstants.currentTermsVersion,
-            privacyVersion: TermsVersionConstants.currentPrivacyPolicyVersion
+            privacyVersion: TermsVersionConstants.currentPrivacyPolicyVersion,
+            deviceInstallId: DeviceInstallIdProvider.getOrCreate(),
+            platform: AppBuildInfo.platform,
+            appVersion: AppBuildInfo.appVersion,
+            buildNumber: AppBuildInfo.buildNumber
         )
     }
 

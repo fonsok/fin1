@@ -92,6 +92,12 @@ struct SavedOnboardingData: Codable, Sendable {
     let questionnaireVersion: String?
     let termsVersion: String?
     let privacyVersion: String?
+
+    // Device/app metadata for LegalConsent audit (`recordLegalConsent` / onboarding consents)
+    let deviceInstallId: String?
+    let platform: String?
+    let appVersion: String?
+    let buildNumber: String?
 }
 
 // MARK: - Onboarding Step Completion Response

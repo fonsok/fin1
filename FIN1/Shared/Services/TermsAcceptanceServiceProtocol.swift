@@ -7,6 +7,12 @@ protocol TermsAcceptanceServiceProtocol {
 
     // MARK: - Acceptance Checks
 
+    /// Checks if user needs to accept Terms of Service version (account + this device install).
+    func needsToAcceptTerms(user: User, currentServerVersion: String) -> Bool
+
+    /// Checks if user needs to accept Privacy Policy version (account + this device install).
+    func needsToAcceptPrivacyPolicy(user: User, currentServerVersion: String) -> Bool
+
     /// Checks if user needs to accept new Terms of Service version
     /// - Parameter user: The user to check
     /// - Returns: True if user needs to accept new terms

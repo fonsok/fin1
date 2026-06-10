@@ -70,13 +70,13 @@ extension UserFactory {
             profileImageURL: nil,
             isEmailVerified: true,
             isKYCCompleted: true,
-            acceptedTerms: true,
-            acceptedPrivacyPolicy: true,
-            acceptedMarketingConsent: true,
-            acceptedTermsVersion: TermsVersionConstants.currentTermsVersion,
-            acceptedTermsDate: Date(),
-            acceptedPrivacyPolicyVersion: TermsVersionConstants.currentPrivacyPolicyVersion,
-            acceptedPrivacyPolicyDate: Date(),
+            acceptedTerms: false,
+            acceptedPrivacyPolicy: false,
+            acceptedMarketingConsent: false,
+            acceptedTermsVersion: nil,
+            acceptedTermsDate: nil,
+            acceptedPrivacyPolicyVersion: nil,
+            acceptedPrivacyPolicyDate: nil,
             lastLoginDate: Date(),
             createdAt: Date(),
             updatedAt: Date()
@@ -137,13 +137,13 @@ extension UserFactory {
             profileImageURL: nil,
             isEmailVerified: true,
             isKYCCompleted: true,
-            acceptedTerms: true,
-            acceptedPrivacyPolicy: true,
-            acceptedMarketingConsent: true,
-            acceptedTermsVersion: TermsVersionConstants.currentTermsVersion,
-            acceptedTermsDate: Date(),
-            acceptedPrivacyPolicyVersion: TermsVersionConstants.currentPrivacyPolicyVersion,
-            acceptedPrivacyPolicyDate: Date(),
+            acceptedTerms: false,
+            acceptedPrivacyPolicy: false,
+            acceptedMarketingConsent: false,
+            acceptedTermsVersion: nil,
+            acceptedTermsDate: nil,
+            acceptedPrivacyPolicyVersion: nil,
+            acceptedPrivacyPolicyDate: nil,
             lastLoginDate: Date(),
             createdAt: Date(),
             updatedAt: Date()
@@ -172,9 +172,9 @@ extension UserFactory {
         signUpData.lastName = lastName
         signUpData.username = "\(firstName.lowercased().prefix(1))\(lastName.lowercased())"
         signUpData.moneyLaunderingDeclaration = true
-        signUpData.acceptedTerms = true
-        signUpData.acceptedPrivacyPolicy = true
-        signUpData.acceptedMarketingConsent = true
+        signUpData.acceptedTerms = false
+        signUpData.acceptedPrivacyPolicy = false
+        signUpData.acceptedMarketingConsent = false
 
         return User(
             id: stableUserId(for: email),
@@ -227,13 +227,13 @@ extension UserFactory {
             profileImageURL: nil,
             isEmailVerified: true,
             isKYCCompleted: true,
-            acceptedTerms: signUpData.acceptedTerms,
-            acceptedPrivacyPolicy: signUpData.acceptedPrivacyPolicy,
-            acceptedMarketingConsent: signUpData.acceptedMarketingConsent,
-            acceptedTermsVersion: signUpData.acceptedTerms ? TermsVersionConstants.currentTermsVersion : nil,
-            acceptedTermsDate: signUpData.acceptedTerms ? Date() : nil,
-            acceptedPrivacyPolicyVersion: signUpData.acceptedPrivacyPolicy ? TermsVersionConstants.currentPrivacyPolicyVersion : nil,
-            acceptedPrivacyPolicyDate: signUpData.acceptedPrivacyPolicy ? Date() : nil,
+            acceptedTerms: false,
+            acceptedPrivacyPolicy: false,
+            acceptedMarketingConsent: false,
+            acceptedTermsVersion: nil,
+            acceptedTermsDate: nil,
+            acceptedPrivacyPolicyVersion: nil,
+            acceptedPrivacyPolicyDate: nil,
             lastLoginDate: Date(),
             createdAt: Date(),
             updatedAt: Date()

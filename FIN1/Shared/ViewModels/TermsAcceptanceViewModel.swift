@@ -57,8 +57,14 @@ final class TermsAcceptanceViewModel: ObservableObject {
         let currentTermsVersion = self.currentTermsVersionForDisplay
         let currentPrivacyVersion = self.currentPrivacyVersionForDisplay
 
-        self.needsTermsAcceptance = (user.acceptedTermsVersion ?? "") != currentTermsVersion
-        self.needsPrivacyPolicyAcceptance = (user.acceptedPrivacyPolicyVersion ?? "") != currentPrivacyVersion
+        self.needsTermsAcceptance = self.termsAcceptanceService.needsToAcceptTerms(
+            user: user,
+            currentServerVersion: currentTermsVersion
+        )
+        self.needsPrivacyPolicyAcceptance = self.termsAcceptanceService.needsToAcceptPrivacyPolicy(
+            user: user,
+            currentServerVersion: currentPrivacyVersion
+        )
     }
 
     // MARK: - Acceptance Actions

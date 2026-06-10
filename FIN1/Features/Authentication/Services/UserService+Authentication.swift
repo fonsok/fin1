@@ -31,6 +31,14 @@ extension UserService {
                 #endif
 
                 UserFactory.applyLoginResponse(loginResponse, to: &builtUser)
+
+                do {
+                    let me: ParseUserMeResponse = try await apiClient.callFunction("getUserMe", parameters: nil)
+                    UserFactory.applyUserMeResponse(me, to: &builtUser)
+                } catch {
+                    print("⚠️ UserService: getUserMe after login failed (\(error.localizedDescription))")
+                }
+
                 let user = builtUser
 
                 await MainActor.run { [weak self] in
@@ -39,18 +47,6 @@ extension UserService {
                     self?.isAuthenticated = true
                     self?.isLoading = false
                     NotificationCenter.default.post(name: .userDidSignIn, object: nil)
-                }
-
-                do {
-                    let me: ParseUserMeResponse = try await apiClient.callFunction("getUserMe", parameters: nil)
-                    await MainActor.run { [weak self] in
-                        guard var u = self?.currentUser else { return }
-                        UserFactory.applyUserMeResponse(me, to: &u)
-                        self?.currentUser = u
-                        NotificationCenter.default.post(name: .userDataDidUpdate, object: nil)
-                    }
-                } catch {
-                    print("⚠️ UserService: getUserMe after login failed (\(error.localizedDescription))")
                 }
                 return
             } catch {

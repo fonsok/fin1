@@ -68,4 +68,5 @@ struct LandingView: View {
 
 #Preview {
     LandingView(userService: UserService.shared)
+        .environment(\.appServices, AppServices.live)
 }

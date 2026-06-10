@@ -12,56 +12,61 @@ struct AuthenticationView: View {
     @State private var companyKybReviewStatus: CompanyKybReviewStatus?
 
     var body: some View {
-        Group {
-            if self.isAuthenticated {
-                ZStack {
-                    MainTabView(services: self.services)
-                        .accessibilityIdentifier("MainTabView")
-                        .onAppear {
-                            print("🏠 MainTabView appeared - User is authenticated")
-                            self.checkTermsAcceptance()
-                        }
+        ZStack {
+            AppTheme.screenBackground.ignoresSafeArea()
 
-                    if self.showTermsAcceptance {
-                        TermsAcceptanceModalView(
-                            termsAcceptanceService: self.services.termsAcceptanceService,
-                            userService: self.services.userService,
-                            parseAPIClient: self.services.parseAPIClient,
-                            termsContentService: self.services.termsContentService
-                        )
-                        .zIndex(1_000)
+            Group {
+                if self.isAuthenticated {
+                    ZStack {
+                        MainTabView(services: self.services)
+                            .accessibilityIdentifier("MainTabView")
+                            .onAppear {
+                                print("🏠 MainTabView appeared - User is authenticated")
+                                self.checkTermsAcceptance()
+                            }
+
+                        if self.showTermsAcceptance {
+                            TermsAcceptanceModalView(
+                                termsAcceptanceService: self.services.termsAcceptanceService,
+                                userService: self.services.userService,
+                                parseAPIClient: self.services.parseAPIClient,
+                                termsContentService: self.services.termsContentService
+                            )
+                            .zIndex(1_000)
+                        }
                     }
-                }
-                .fullScreenCover(isPresented: self.$showOnboardingResume) {
-                    SignUpView()
-                        .environment(\.appServices, self.services)
-                }
-                .fullScreenCover(isPresented: self.$showCompanyKybResume) {
-                    if let kybService = services.companyKybAPIService {
-                        CompanyKybView(companyKybAPIService: kybService)
+                    .fullScreenCover(isPresented: self.$showOnboardingResume) {
+                        SignUpView()
                             .environment(\.appServices, self.services)
                     }
-                }
-                .fullScreenCover(isPresented: self.$showCompanyKybStatus) {
-                    if let reviewStatus = companyKybReviewStatus {
-                        CompanyKybStatusView(
-                            status: reviewStatus,
-                            onDismiss: { self.showCompanyKybStatus = false },
-                            onResubmit: {
-                                self.showCompanyKybStatus = false
-                                self.showCompanyKybResume = true
-                            }
-                        )
+                    .fullScreenCover(isPresented: self.$showCompanyKybResume) {
+                        if let kybService = services.companyKybAPIService {
+                            CompanyKybView(companyKybAPIService: kybService)
+                                .environment(\.appServices, self.services)
+                        }
                     }
-                }
-            } else {
-                LandingView(userService: self.services.userService)
-                    .accessibilityIdentifier("LandingView")
-                    .onAppear {
-                        print("🚪 LandingView appeared - User is not authenticated")
+                    .fullScreenCover(isPresented: self.$showCompanyKybStatus) {
+                        if let reviewStatus = companyKybReviewStatus {
+                            CompanyKybStatusView(
+                                status: reviewStatus,
+                                onDismiss: { self.showCompanyKybStatus = false },
+                                onResubmit: {
+                                    self.showCompanyKybStatus = false
+                                    self.showCompanyKybResume = true
+                                }
+                            )
+                        }
                     }
+                } else {
+                    LandingView(userService: self.services.userService)
+                        .accessibilityIdentifier("LandingView")
+                        .onAppear {
+                            print("🚪 LandingView appeared - User is not authenticated")
+                        }
+                }
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .accessibilityIdentifier("AuthenticationView")
         .onAppear {
             self.isAuthenticated = self.services.userService.isAuthenticated
@@ -153,8 +158,14 @@ struct AuthenticationView: View {
             let termsVersion = await resolveCurrentVersion(documentType: .terms)
             let privacyVersion = await resolveCurrentVersion(documentType: .privacy)
 
-            let needsTerms = (user.acceptedTermsVersion ?? "") != termsVersion
-            let needsPrivacy = (user.acceptedPrivacyPolicyVersion ?? "") != privacyVersion
+            let needsTerms = self.services.termsAcceptanceService.needsToAcceptTerms(
+                user: user,
+                currentServerVersion: termsVersion
+            )
+            let needsPrivacy = self.services.termsAcceptanceService.needsToAcceptPrivacyPolicy(
+                user: user,
+                currentServerVersion: privacyVersion
+            )
 
             await MainActor.run {
                 self.showTermsAcceptance = needsTerms || needsPrivacy

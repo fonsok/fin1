@@ -109,6 +109,12 @@ struct ParseUserMeResponse: Decodable {
     let companyKybStatus: String?
     let onboardingCompleted: Bool?
     let onboardingStep: String?
+    let acceptedTerms: Bool?
+    let acceptedPrivacyPolicy: Bool?
+    let acceptedTermsVersion: String?
+    let acceptedPrivacyPolicyVersion: String?
+    let acceptedTermsDate: String?
+    let acceptedPrivacyPolicyDate: String?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -123,6 +129,12 @@ struct ParseUserMeResponse: Decodable {
         case companyKybStatus
         case onboardingCompleted
         case onboardingStep
+        case acceptedTerms
+        case acceptedPrivacyPolicy
+        case acceptedTermsVersion
+        case acceptedPrivacyPolicyVersion
+        case acceptedTermsDate
+        case acceptedPrivacyPolicyDate
     }
 
     init(from decoder: Decoder) throws {
@@ -137,6 +149,12 @@ struct ParseUserMeResponse: Decodable {
         self.companyKybStatus = try c.decodeIfPresent(String.self, forKey: .companyKybStatus)
         self.onboardingCompleted = try c.decodeIfPresent(Bool.self, forKey: .onboardingCompleted)
         self.onboardingStep = try c.decodeIfPresent(String.self, forKey: .onboardingStep)
+        self.acceptedTerms = try c.decodeIfPresent(Bool.self, forKey: .acceptedTerms)
+        self.acceptedPrivacyPolicy = try c.decodeIfPresent(Bool.self, forKey: .acceptedPrivacyPolicy)
+        self.acceptedTermsVersion = try c.decodeIfPresent(String.self, forKey: .acceptedTermsVersion)
+        self.acceptedPrivacyPolicyVersion = try c.decodeIfPresent(String.self, forKey: .acceptedPrivacyPolicyVersion)
+        self.acceptedTermsDate = try c.decodeIfPresent(String.self, forKey: .acceptedTermsDate)
+        self.acceptedPrivacyPolicyDate = try c.decodeIfPresent(String.self, forKey: .acceptedPrivacyPolicyDate)
         if let n = try c.decodeIfPresent(String.self, forKey: .customerNumber), !n.isEmpty {
             self.customerNumber = n
         } else if let legacy = try c.decodeIfPresent(String.self, forKey: .legacyCustomerNumber), !legacy.isEmpty {

@@ -120,6 +120,11 @@ Parse.Cloud.define('completeOnboardingStep', async (request) => {
     }
   }
 
+  if (step === 'consents' && data) {
+    const { persistOnboardingLegalConsents } = require('../legal/legalConsentRecording');
+    await persistOnboardingLegalConsents(request, user, data);
+  }
+
   await user.save(null, { useMasterKey: true });
 
   const OnboardingAudit = Parse.Object.extend('OnboardingAudit');

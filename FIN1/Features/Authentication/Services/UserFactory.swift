@@ -38,6 +38,11 @@ struct UserFactory {
 
     /// Overlays fields from `getUserMe` (`ParseUserMeResponse`) onto the local `User`.
     static func applyUserMeResponse(_ me: ParseUserMeResponse, to user: inout User) {
+        if let id = me.id?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !id.isEmpty,
+           id.range(of: #"^[a-zA-Z0-9]{10}$"#, options: .regularExpression) != nil {
+            user = user.withId(id)
+        }
         if let cn = me.customerNumber, !cn.isEmpty {
             user.customerNumber = cn
         }
@@ -62,6 +67,32 @@ struct UserFactory {
         user.companyKybStep = me.companyKybStep
         user.companyKybStatus = me.companyKybStatus
         user.onboardingStep = me.onboardingStep
+        if let acceptedTerms = me.acceptedTerms {
+            user.acceptedTerms = acceptedTerms
+        }
+        if let acceptedPrivacyPolicy = me.acceptedPrivacyPolicy {
+            user.acceptedPrivacyPolicy = acceptedPrivacyPolicy
+        }
+        if let version = me.acceptedTermsVersion, !version.isEmpty {
+            user.acceptedTermsVersion = version
+        }
+        if let version = me.acceptedPrivacyPolicyVersion, !version.isEmpty {
+            user.acceptedPrivacyPolicyVersion = version
+        }
+        if let dateStr = me.acceptedTermsDate {
+            user.acceptedTermsDate = Self.parseISO8601Date(dateStr) ?? user.acceptedTermsDate
+        }
+        if let dateStr = me.acceptedPrivacyPolicyDate {
+            user.acceptedPrivacyPolicyDate = Self.parseISO8601Date(dateStr) ?? user.acceptedPrivacyPolicyDate
+        }
+    }
+
+    private static func parseISO8601Date(_ value: String) -> Date? {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let date = formatter.date(from: value) { return date }
+        formatter.formatOptions = [.withInternetDateTime]
+        return formatter.date(from: value)
     }
 
     static func createUser(from email: String, password: String) -> User {

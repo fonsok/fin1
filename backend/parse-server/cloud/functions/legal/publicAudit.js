@@ -240,37 +240,28 @@ function registerLegalPublicAuditFunctions() {
       throw new Parse.Error(Parse.Error.INVALID_VALUE, 'deviceInstallId is required');
     }
 
-    const Consent = Parse.Object.extend('LegalConsent');
-    const entry = new Consent();
-
-    entry.set('consentType', consentType);
-    entry.set('version', version);
-
-    const documentHash = normalizeString(request.params.documentHash || null);
-    if (documentHash) entry.set('documentHash', documentHash);
-
-    const documentUrl = normalizeString(request.params.documentUrl || null);
-    if (documentUrl) entry.set('documentUrl', documentUrl);
-
-    entry.set('accepted', true);
-
     const acceptedAt = request.params.acceptedAt ? new Date(request.params.acceptedAt) : new Date();
-    entry.set('acceptedAt', acceptedAt);
+    const documentHash = normalizeString(request.params.documentHash || null);
+    const documentUrl = normalizeString(request.params.documentUrl || null);
 
-    entry.set('platform', normalizeString(request.params.platform || 'ios'));
-    entry.set('appVersion', normalizeString(request.params.appVersion || ''));
-    entry.set('buildNumber', normalizeString(request.params.buildNumber || ''));
-    entry.set('deviceInstallId', deviceInstallId);
+    const { recordLegalConsentEntry } = require('./legalConsentRecording');
+    const result = await recordLegalConsentEntry({
+      request,
+      user: request.user,
+      consentType,
+      version,
+      deviceInstallId,
+      platform: normalizeString(request.params.platform || 'ios'),
+      appVersion: normalizeString(request.params.appVersion || ''),
+      buildNumber: normalizeString(request.params.buildNumber || ''),
+      documentHash: documentHash || null,
+      documentUrl: documentUrl || null,
+      acceptedAt,
+      source: 'app',
+      syncUser: true,
+    });
 
-    if (request.user) {
-      entry.set('userId', request.user.id);
-    }
-
-    entry.set('ipAddress', getRequestIP(request));
-    entry.set('userAgent', getUserAgent(request));
-
-    const saved = await entry.save(null, { useMasterKey: true });
-    return { objectId: saved.id, acceptedAt: saved.get('acceptedAt')?.toISOString?.() ?? null };
+    return { objectId: result.objectId, acceptedAt: result.acceptedAt };
   });
 }
 

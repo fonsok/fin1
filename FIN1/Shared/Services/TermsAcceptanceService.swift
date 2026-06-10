@@ -6,6 +6,11 @@ import Foundation
 /// Handles version checking and acceptance recording
 final class TermsAcceptanceService: TermsAcceptanceServiceProtocol {
 
+    private enum ConsentType {
+        static let terms = "terms_of_service"
+        static let privacy = "privacy_policy"
+    }
+
     // MARK: - Initialization
 
     init() {
@@ -14,24 +19,36 @@ final class TermsAcceptanceService: TermsAcceptanceServiceProtocol {
 
     // MARK: - Acceptance Checks
 
-    func needsToAcceptNewTerms(user: User) -> Bool {
-        // If user has never accepted terms, they need to accept
-        guard let acceptedVersion = user.acceptedTermsVersion else {
+    func needsToAcceptTerms(user: User, currentServerVersion: String) -> Bool {
+        let currentVersion = currentServerVersion.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !currentVersion.isEmpty else { return true }
+        guard user.acceptedTerms else { return true }
+        guard let acceptedVersion = user.acceptedTermsVersion?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !acceptedVersion.isEmpty else {
             return true
         }
+        guard acceptedVersion == currentVersion else { return true }
+        return !DeviceLegalConsentStore.hasAcknowledged(consentType: ConsentType.terms, version: currentVersion)
+    }
 
-        // If accepted version doesn't match current version, need to accept
-        return acceptedVersion != TermsVersionConstants.currentTermsVersion
+    func needsToAcceptPrivacyPolicy(user: User, currentServerVersion: String) -> Bool {
+        let currentVersion = currentServerVersion.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !currentVersion.isEmpty else { return true }
+        guard user.acceptedPrivacyPolicy else { return true }
+        guard let acceptedVersion = user.acceptedPrivacyPolicyVersion?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !acceptedVersion.isEmpty else {
+            return true
+        }
+        guard acceptedVersion == currentVersion else { return true }
+        return !DeviceLegalConsentStore.hasAcknowledged(consentType: ConsentType.privacy, version: currentVersion)
+    }
+
+    func needsToAcceptNewTerms(user: User) -> Bool {
+        self.needsToAcceptTerms(user: user, currentServerVersion: TermsVersionConstants.currentTermsVersion)
     }
 
     func needsToAcceptNewPrivacyPolicy(user: User) -> Bool {
-        // If user has never accepted privacy policy, they need to accept
-        guard let acceptedVersion = user.acceptedPrivacyPolicyVersion else {
-            return true
-        }
-
-        // If accepted version doesn't match current version, need to accept
-        return acceptedVersion != TermsVersionConstants.currentPrivacyPolicyVersion
+        self.needsToAcceptPrivacyPolicy(user: user, currentServerVersion: TermsVersionConstants.currentPrivacyPolicyVersion)
     }
 
     func needsToAcceptAnyNewDocument(user: User) -> Bool {
@@ -46,6 +63,7 @@ final class TermsAcceptanceService: TermsAcceptanceServiceProtocol {
         updatedUser.acceptedTermsVersion = version
         updatedUser.acceptedTermsDate = Date()
         updatedUser.updatedAt = Date()
+        DeviceLegalConsentStore.markAcknowledged(consentType: ConsentType.terms, version: version)
         return updatedUser
     }
 
@@ -55,13 +73,7 @@ final class TermsAcceptanceService: TermsAcceptanceServiceProtocol {
         updatedUser.acceptedPrivacyPolicyVersion = version
         updatedUser.acceptedPrivacyPolicyDate = Date()
         updatedUser.updatedAt = Date()
+        DeviceLegalConsentStore.markAcknowledged(consentType: ConsentType.privacy, version: version)
         return updatedUser
     }
 }
-
-
-
-
-
-
-

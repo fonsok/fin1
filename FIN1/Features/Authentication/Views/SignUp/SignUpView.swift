@@ -306,7 +306,7 @@ struct SignUpView: View {
                 try await self.appServices.userService.updateProfile(user)
 
                 if let onboardingAPI = appServices.onboardingAPIService {
-                    // Mark legalConsent phase complete
+                    // Records LegalConsent audit rows (AGB + DSE) via completeOnboardingStep(consents).
                     _ = try await onboardingAPI.completeStep(
                         step: OnboardingPhase.legalConsent.completionBackendStep,
                         data: exportedData
@@ -316,6 +316,12 @@ struct SignUpView: View {
                         step: "verification",
                         data: exportedData
                     )
+                }
+
+                try await self.appServices.userService.refreshUserData()
+
+                if let user = self.appServices.userService.currentUser {
+                    DeviceLegalConsentStore.markAcknowledgedFromUser(user)
                 }
 
                 self.coordinator.trackOnboardingCompleted()
