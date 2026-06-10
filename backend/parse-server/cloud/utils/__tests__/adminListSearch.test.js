@@ -27,17 +27,19 @@ describe('adminListSearch', () => {
     expect(blob).toContain('max m.');
   });
 
-  test('buildTradeSearchBlob includes trade number and symbol', () => {
+  test('buildTradeSearchBlob includes trade number, symbol and traderName', () => {
     const blob = buildTradeSearchBlob({
       get: (k) => ({
         tradeNumber: 42,
         symbol: 'AAPL',
         buyOrder: { symbol: 'AAPL' },
         traderId: 't1',
+        traderName: 'Trader T.',
       })[k],
     });
     expect(blob).toContain('42');
     expect(blob).toContain('aapl');
+    expect(blob).toContain('trader t.');
   });
 
   test('buildAdminListSearchMatchClause uses tradeNumber for numeric', () => {

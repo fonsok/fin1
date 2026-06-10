@@ -240,15 +240,16 @@ db.AccountStatement.createIndex({ "userId": 1 });
 db.AccountStatement.createIndex({ "userId": 1, "periodType": 1, "periodYear": 1, "periodMonth": 1 });
 db.AccountStatement.createIndex({ "tradeId": 1, "createdAt": -1 }, { sparse: true });
 // Finance integrity: prevent duplicate backend trader cash bookings (see ensure-finance-integrity-indexes.js).
+// trade_buy: one per trade; trade_sell: one per TSC/referenceDocument (partial sells).
 db.AccountStatement.createIndex(
   { "userId": 1, "entryType": 1, "tradeId": 1 },
   {
     unique: true,
-    name: "AccountStatement_backend_user_entry_tradeId_unique",
+    name: "AccountStatement_backend_trade_buy_user_tradeId_unique",
     partialFilterExpression: {
       source: "backend",
       tradeId: { $exists: true, $type: "string" },
-      entryType: { $in: ["trade_buy", "trade_sell"] },
+      entryType: "trade_buy",
     },
   }
 );
@@ -256,11 +257,11 @@ db.AccountStatement.createIndex(
   { "userId": 1, "entryType": 1, "businessCaseId": 1 },
   {
     unique: true,
-    name: "AccountStatement_backend_user_entry_businessCase_unique",
+    name: "AccountStatement_backend_trade_buy_user_businessCase_unique",
     partialFilterExpression: {
       source: "backend",
       businessCaseId: { $exists: true, $type: "string", $gt: "" },
-      entryType: { $in: ["trade_buy", "trade_sell"] },
+      entryType: "trade_buy",
     },
   }
 );
@@ -268,11 +269,23 @@ db.AccountStatement.createIndex(
   { "userId": 1, "entryType": 1, "tradeNumber": 1 },
   {
     unique: true,
-    name: "AccountStatement_backend_user_entry_tradeNumber_unique",
+    name: "AccountStatement_backend_trade_buy_user_tradeNumber_unique",
     partialFilterExpression: {
       source: "backend",
       tradeNumber: { $exists: true, $type: "string", $gt: "" },
-      entryType: { $in: ["trade_buy", "trade_sell"] },
+      entryType: "trade_buy",
+    },
+  }
+);
+db.AccountStatement.createIndex(
+  { "userId": 1, "entryType": 1, "referenceDocumentId": 1 },
+  {
+    unique: true,
+    name: "AccountStatement_backend_trade_sell_user_referenceDocument_unique",
+    partialFilterExpression: {
+      source: "backend",
+      referenceDocumentId: { $exists: true, $type: "string", $gt: "" },
+      entryType: "trade_sell",
     },
   }
 );

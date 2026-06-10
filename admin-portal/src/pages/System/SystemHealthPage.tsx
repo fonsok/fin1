@@ -148,6 +148,10 @@ export function SystemHealthPage() {
       const lines = Object.entries(preview.counts || {})
         .filter(([, c]) => (c || 0) > 0)
         .map(([k, c]) => `- ${k}: ${c}`);
+      const seqPreview = preview.sequenceCounters;
+      const seqLine = seqPreview?.skipped
+        ? '- SequenceCounter: unveraendert (Scope nicht „Alles“)'
+        : `- SequenceCounter (INV/CB/ORD/TXN): ${seqPreview?.wouldDelete ?? 0} zuruecksetzen`;
 
       const ok = window.confirm(
         [
@@ -158,8 +162,10 @@ export function SystemHealthPage() {
           `Objekte die gelöscht werden: ${preview.willDeleteTotal ?? '-'}`,
           '',
           ...lines,
+          seqLine,
           '',
           'Fortfahren? Dies löscht Testdaten aus Trading/Investments inkl. Belegen/Buchungen.',
+          'Bei Scope „Alles“: naechste INV-Nummer pro Investor = INV-YYYY-0000001.',
           'Templates/Vorlagen bleiben erhalten.',
         ].join('\n')
       );
@@ -172,6 +178,11 @@ export function SystemHealthPage() {
         sinceHours: resetScope === 'sinceHours' ? resetSinceHours : undefined,
         reseedInitialBalance,
       } as unknown as { dryRun: boolean });
+      const seqResult = result.sequenceCounters;
+      const seqDoneLine = seqResult?.skipped
+        ? '- SequenceCounter: unveraendert (Scope nicht „Alles“)'
+        : `- SequenceCounter zurueckgesetzt: ${seqResult?.deleted ?? 0}`;
+
       window.alert(
         [
           'DEV Reset abgeschlossen.',
@@ -179,6 +190,7 @@ export function SystemHealthPage() {
           `Gelöscht gesamt: ${result.deletedTotal ?? '-'}`,
           '',
           ...Object.entries(result.deleted || {}).map(([k, c]) => `- ${k}: ${c}`),
+          seqDoneLine,
         ].join('\n')
       );
     } catch (err) {

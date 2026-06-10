@@ -6,6 +6,7 @@ const {
   buildInvestmentSearchBlob,
   buildTradeSearchBlob,
 } = require('../../utils/adminListSearch');
+const { resolveTraderDisplayNameForBeleg } = require('../../utils/traderDisplayNameForBeleg');
 
 /**
  * Maintenance: Trade summary flags + adminSearchBlob; optional Investment adminSearchBlob.
@@ -58,8 +59,18 @@ async function handleBackfillTradeSummaryFlags(request) {
     await syncTradeHasPoolParticipation(trade.id, true);
     const refreshed = await new Parse.Query('Trade').get(trade.id, { useMasterKey: true }).catch(() => trade);
     const count = countTraderPartialSellEvents(refreshed);
+    const traderId = String(refreshed.get('traderId') || '').trim();
+    let traderNameUpdated = false;
+    if (traderId && !refreshed.get('traderName')) {
+      // eslint-disable-next-line no-await-in-loop
+      const { traderDisplayName } = await resolveTraderDisplayNameForBeleg(traderId);
+      if (traderDisplayName) {
+        refreshed.set('traderName', traderDisplayName);
+        traderNameUpdated = true;
+      }
+    }
     const blob = buildTradeSearchBlob(refreshed);
-    let dirty = false;
+    let dirty = traderNameUpdated;
     if (refreshed.get('traderPartialSellEventCount') !== count) {
       refreshed.set('traderPartialSellEventCount', count);
       dirty = true;

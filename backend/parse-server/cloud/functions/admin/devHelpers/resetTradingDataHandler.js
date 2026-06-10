@@ -11,6 +11,7 @@ const { CLASSES_TO_WIPE } = require('./resetTradingDataClasses');
 const { seedInitialBalancesFromConfig } = require('./resetTradingDataSeedBalances');
 const { collectTradingResetTargets } = require('./resetTradingDataCollectTargets');
 const { createTradingResetScopedOps } = require('./resetTradingDataScopedOps');
+const { resetTradingSequenceCounters } = require('./resetTradingDataSequenceCounters');
 
 function assertDevTradingResetAllowed() {
   const nodeEnv = String(process.env.NODE_ENV || '').toLowerCase();
@@ -82,6 +83,10 @@ async function handleDevResetTradingTestData(request) {
     investorTraderCount = await cq.count({ useMasterKey: true });
   }
 
+  const sequenceCountersPreview = normalizedScope === 'all'
+    ? await resetTradingSequenceCounters({ dryRun: true })
+    : { wouldDelete: 0, keys: [], skipped: true, reason: 'scope_not_all' };
+
   if (dryRun) {
     const result = {
       dryRun: true,
@@ -92,10 +97,11 @@ async function handleDevResetTradingTestData(request) {
       testUserIdPrefix: normalizedScope === 'testUsers' ? String(testUserIdPrefix || '') : undefined,
       counts,
       willDeleteTotal: Object.values(counts).reduce((a, b) => a + (b || 0), 0),
+      sequenceCounters: sequenceCountersPreview,
       reseedInitialBalance: !!reseedInitialBalance,
       configInitialAccountBalance: initialBalPreview,
       wouldSeedWalletDeposits: reseedInitialBalance && initialBalPreview > 0 ? investorTraderCount : 0,
-      note: 'Dry-run only. Set dryRun=false to execute. Templates/legal/config are preserved. After execute, each investor/trader gets one completed deposit = active Configuration.initialAccountBalance (unless reseedInitialBalance=false).',
+      note: 'Dry-run only. Set dryRun=false to execute. Templates/legal/config are preserved. scope=all also resets INV/CB/ORD/TXN SequenceCounter (next INV-YYYY-0000001 per investor). After execute, each investor/trader gets one completed deposit = active Configuration.initialAccountBalance (unless reseedInitialBalance=false).',
     };
     await writeDevMaintenanceAudit({
       action: 'dev_reset_trading_test_data_dry_run',
@@ -111,6 +117,10 @@ async function handleDevResetTradingTestData(request) {
       deleted[cls] = await destroyScoped(cls);
     }
   });
+
+  const sequenceCounters = normalizedScope === 'all'
+    ? await resetTradingSequenceCounters({ dryRun: false })
+    : { deleted: 0, keys: [], skipped: true, reason: 'scope_not_all' };
 
   let walletReseed = null;
   if (reseedInitialBalance) {
@@ -131,6 +141,7 @@ async function handleDevResetTradingTestData(request) {
     counts,
     deleted,
     deletedTotal: Object.values(deleted).reduce((a, b) => a + (b || 0), 0),
+    sequenceCounters,
     reseedInitialBalance: !!reseedInitialBalance,
     configInitialAccountBalance: initialBalPreview,
     walletReseed,

@@ -389,6 +389,13 @@ export interface DevResetTradingTestDataResult {
     error?: string;
     errors?: Array<{ userId: string; message: string }>;
   };
+  sequenceCounters?: {
+    deleted?: number;
+    wouldDelete?: number;
+    skipped?: boolean;
+    reason?: string;
+    keys?: Array<{ key?: string; value?: number }>;
+  };
 }
 
 export interface CleanupDuplicateInvestmentSplitsResult {

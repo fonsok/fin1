@@ -131,4 +131,25 @@ try {
   print('InvestmentBatch: collection not present (skip)');
 }
 
-print('--- Done. Backend cleared for testing. ---');
+// 10. Sequence counters (INV/CB/CN/EB*/ORD/TXN) — sonst nächste Nummer trotz leerer Tabellen hoch
+const seq = db.getCollection('SequenceCounter');
+const seqKeyPatterns = [
+  /^Investment::investmentNumber::INV::/,
+  /^Document::accountingDocumentNumber::(CB|CN|EBP|EBR|EIR|EBT)::\d{4}$/,
+  /^Order::orderNumber::ORD::\d{4}$/,
+  /^WalletTransaction::transactionNumber::TXN::\d{4}$/,
+];
+const seqRows = seq.find({}).toArray();
+let seqDeleted = 0;
+for (const row of seqRows) {
+  const key = String(row.key || '');
+  if (!seqKeyPatterns.some((re) => re.test(key))) continue;
+  seq.deleteOne({ _id: row._id });
+  seqDeleted += 1;
+  print('SequenceCounter: deleted ' + key + ' (was ' + row.value + ')');
+}
+if (seqDeleted === 0) {
+  print('SequenceCounter: 0 trading-related keys (skip)');
+}
+
+print('--- Done. Backend cleared for testing. Next INV per investor: INV-' + new Date().getFullYear() + '-0000001 ---');

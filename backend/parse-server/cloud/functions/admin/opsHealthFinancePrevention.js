@@ -2,9 +2,10 @@
 
 /** Must match `backend/scripts/ensure-finance-integrity-indexes.js` index names. */
 const REQUIRED_ACCOUNT_STATEMENT_UNIQUE_INDEXES = [
-  'AccountStatement_backend_user_entry_tradeId_unique',
-  'AccountStatement_backend_user_entry_businessCase_unique',
-  'AccountStatement_backend_user_entry_tradeNumber_unique',
+  'AccountStatement_backend_trade_buy_user_tradeId_unique',
+  'AccountStatement_backend_trade_buy_user_businessCase_unique',
+  'AccountStatement_backend_trade_buy_user_tradeNumber_unique',
+  'AccountStatement_backend_trade_sell_user_referenceDocument_unique',
 ];
 
 const OPS_HEALTH_SNAPSHOT_INDEX = 'OpsHealthSnapshot_kind_runAt';

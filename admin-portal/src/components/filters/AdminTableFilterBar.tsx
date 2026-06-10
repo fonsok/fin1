@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import clsx from 'clsx';
 import { Input, Button } from '../ui';
 import { useTheme } from '../../context/ThemeContext';
@@ -34,6 +35,7 @@ interface AdminTableFilterBarProps {
   onReset?: () => void;
   hasActiveFilters?: boolean;
   resultHint?: string;
+  trailingContent?: ReactNode;
 }
 
 /**
@@ -50,6 +52,7 @@ export function AdminTableFilterBar({
   onReset,
   hasActiveFilters,
   resultHint,
+  trailingContent,
 }: AdminTableFilterBarProps): JSX.Element {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -99,6 +102,7 @@ export function AdminTableFilterBar({
             </select>
           </div>
         ))}
+        {trailingContent}
         {dateRange && (
           <DateRangeFilterFields
             preset={dateRange.preset}

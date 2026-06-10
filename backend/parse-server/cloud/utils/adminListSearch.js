@@ -40,6 +40,7 @@ function buildTradeSearchBlob(source) {
     get('tradeNumber'),
     get('symbol'),
     buy.symbol,
+    get('traderName'),
     get('traderId'),
   ]
     .map((v) => (v == null ? '' : String(v).trim()))
@@ -83,12 +84,27 @@ function buildAdminListSearchPrefixClause(entity, search) {
       parts.push({ 'buyOrder.symbol': sym });
     }
     parts.push({
+      traderName: { $regex: escapeRegExp(term), $options: 'i' },
+    });
+    parts.push({
       adminSearchBlob: { $gte: term, $lt: prefixRangeEnd(term) },
     });
     return parts.length === 1 ? parts[0] : { $or: parts };
   }
 
   return null;
+}
+
+function appendTraderIdsToSearchClause(searchClause, traderIdsFromSearch) {
+  if (!Array.isArray(traderIdsFromSearch) || traderIdsFromSearch.length === 0) {
+    return searchClause;
+  }
+  const traderClause = { traderId: { $in: traderIdsFromSearch } };
+  if (!searchClause) return traderClause;
+  if (searchClause.$or) {
+    return { $or: [...searchClause.$or, traderClause] };
+  }
+  return { $or: [searchClause, traderClause] };
 }
 
 /**
@@ -166,6 +182,7 @@ module.exports = {
   buildTradeSearchBlob,
   buildAdminListSearchMatchClause,
   buildAdminListSearchPrefixClause,
+  appendTraderIdsToSearchClause,
   sanitizeTextSearchQuery,
   isMongoTextIndexError,
 };
