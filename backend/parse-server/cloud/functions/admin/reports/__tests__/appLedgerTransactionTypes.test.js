@@ -32,6 +32,7 @@ describe('appLedgerTransactionTypes (SSOT contract)', () => {
 
   test('recognizes canonical and legacy types', () => {
     expect(isKnownAppLedgerTransactionType('orderFee')).toBe(true);
+    expect(isKnownAppLedgerTransactionType('appCommission')).toBe(true);
     expect(isKnownAppLedgerTransactionType('platformServiceCharge')).toBe(true);
     expect(isKnownAppLedgerTransactionType('unknownType')).toBe(false);
   });

@@ -7,6 +7,7 @@ const {
   backfillResidualReturnIfMissing,
 } = require('./settlementBackfill');
 const { createCommissionRecord } = require('./settlementSupport');
+const { resolveCommissionPartsFromBillMetadata } = require('./commissionSplit');
 
 async function trySettleFromExistingBill({
   participation,
@@ -14,7 +15,7 @@ async function trySettleFromExistingBill({
   traderId,
   trade,
   tradeNumber,
-  commissionRate,
+  commissionRates,
   feeConfig,
   tradeBuyPrice,
 }) {
@@ -33,7 +34,10 @@ async function trySettleFromExistingBill({
   const existingTax = Number((meta.taxBreakdown && meta.taxBreakdown.totalTax) || 0);
   const grossForBackfill = Number.isFinite(existingGross) ? existingGross : (participation.get('profitShare') || 0);
   const commForBackfill = Number.isFinite(existingComm) ? existingComm : (participation.get('commissionAmount') || 0);
+  const { traderCommission: traderCommForBackfill, appCommission: appCommForBackfill } =
+    resolveCommissionPartsFromBillMetadata(meta);
   const netForBackfill = round2(grossForBackfill - commForBackfill);
+  const totalCommissionRate = commissionRates.totalRate;
 
   if (!participation.get('isSettled')) {
     participation.set('isSettled', true);
@@ -46,7 +50,13 @@ async function trySettleFromExistingBill({
     participation.set('commissionAmount', commForBackfill);
   }
   if (!participation.get('commissionRate')) {
-    participation.set('commissionRate', commissionRate);
+    participation.set('commissionRate', totalCommissionRate);
+  }
+  if (!Number.isFinite(participation.get('traderCommissionAmount'))) {
+    participation.set('traderCommissionAmount', traderCommForBackfill);
+  }
+  if (!Number.isFinite(participation.get('appCommissionAmount'))) {
+    participation.set('appCommissionAmount', appCommForBackfill);
   }
   await participation.save(null, { useMasterKey: true });
 
@@ -63,7 +73,7 @@ async function trySettleFromExistingBill({
     investment,
     trade,
     participation,
-    commission: commForBackfill,
+    commission: traderCommForBackfill,
     createCommissionRecord,
   });
 
@@ -84,6 +94,8 @@ async function trySettleFromExistingBill({
     investmentId: investment.id,
     grossProfit: grossForBackfill,
     commission: commForBackfill,
+    traderCommission: traderCommForBackfill,
+    appCommission: appCommForBackfill,
     taxWithheld: Number.isFinite(existingTax) ? existingTax : 0,
   };
 }

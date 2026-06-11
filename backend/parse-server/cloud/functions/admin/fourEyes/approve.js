@@ -5,6 +5,7 @@ const {
   validateConfigValue,
   validateTransactionLimitOrdering,
   validateInvestmentAmountOrdering,
+  validateCommissionRateOrdering,
   loadConfig,
 } = require('../../../utils/configHelper/index.js');
 const { applyConfigurationChange: persistConfigurationChange } = require('../../configuration/shared');
@@ -33,6 +34,10 @@ async function applyConfigurationChange({ req, requestId, request }) {
   const investmentOrder = validateInvestmentAmountOrdering(parameterName, newValue, currentConfig.limits);
   if (!investmentOrder.valid) {
     throw new Parse.Error(Parse.Error.INVALID_VALUE, investmentOrder.error);
+  }
+  const commissionOrder = validateCommissionRateOrdering(parameterName, newValue, currentConfig.financial);
+  if (!commissionOrder.valid) {
+    throw new Parse.Error(Parse.Error.INVALID_VALUE, commissionOrder.error);
   }
 
   await persistConfigurationChange(parameterName, newValue, request.user.id);

@@ -338,7 +338,7 @@ struct CommissionCalculationExplanationSheet: View {
     }
 
     private func refreshStatementSummary() {
-        let commissionRate = self.services.configurationService.effectiveCommissionRate
+        let commissionRate = self.services.configurationService.effectiveInvestorCommissionRate
         let serverOnly = self.monetaryServerOnly
         let settlementService = self.services.settlementAPIService
         let investmentId = self.investment.id

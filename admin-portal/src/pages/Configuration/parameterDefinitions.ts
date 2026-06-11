@@ -12,6 +12,17 @@ export const PARAMETER_DEFINITIONS: Record<string, Omit<ConfigurationParameter, 
     min: 0,
     max: 1,
   },
+  appCommissionRate: {
+    key: 'appCommissionRate',
+    displayName: 'App Erfolgsprovision',
+    description:
+      'Plattform-Anteil am Investoren-Gewinn (Erfolgsprovision). In der Collection Bill als ein Posten „Commission“ zusammen mit der Trader-Provision ausgewiesen; Buchung auf 8400 Provisionserlös (PLT-REV-COM).',
+    type: 'percentage',
+    category: 'financial',
+    isCritical: true,
+    min: 0,
+    max: 1,
+  },
   initialAccountBalance: {
     key: 'initialAccountBalance',
     displayName: 'Initial Account Balance',

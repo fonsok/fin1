@@ -54,14 +54,27 @@ extension BuyOrderViewModel {
     }
 
     /// Loads trader pool investments from Parse before buy UI / placement guards run.
-    func refreshInvestmentsFromBackend() async {
+    /// Concurrent callers await the same in-flight fetch (e.g. `.task` + Kaufen).
+    func refreshInvestmentsFromBackend(force: Bool = false) async {
         guard let currentUser = userService.currentUser, currentUser.role == .trader else {
             self.refreshInvestments()
             return
         }
-        await self.investmentService.fetchFromBackendForTrader(user: currentUser)
+
+        if !force, let inFlight = poolInvestmentsRefreshTask {
+            await inFlight.value
+            self.updateReservedInvestments()
+            return
+        }
+
+        let task = Task { @MainActor [investmentService] in
+            await investmentService.fetchFromBackendForTrader(user: currentUser)
+        }
+        self.poolInvestmentsRefreshTask = task
+        await task.value
+        self.poolInvestmentsRefreshTask = nil
+
         self.updateReservedInvestments()
-        await self.calculateInvestmentOrder()
     }
 
     var totalInvestmentQuantity: Int {

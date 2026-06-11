@@ -56,7 +56,7 @@ const baseArgs = () => ({
   traderId: 'trader-1',
   tradeNumber: '7',
   netTradingProfit: 1000,
-  commissionRate: 0.2,
+  commissionRates: { traderRate: 0.2, appRate: 0, totalRate: 0.2 },
   feeConfig,
   tradeBuyPrice: 10,
   tradeSellPrice: 12,

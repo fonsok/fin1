@@ -16,6 +16,8 @@ const { TRANSACTION_LIMIT_SNAKE_TO_CAMEL, validateTransactionLimitOrdering } = r
 const { loadConfig } = require('./loadConfig');
 const {
   getTraderCommissionRate,
+  getAppCommissionRate,
+  getCommissionRateBundle,
   getAppServiceChargeRate,
   getAppServiceChargeRateForAccountType,
   getMinimumCashReserve,
@@ -23,7 +25,7 @@ const {
   getOrderFeeConfig,
   getFinancialConfig,
 } = require('./getters');
-const { validateConfigValue, validateInvestmentAmountOrdering } = require('./validateConfigValue');
+const { validateConfigValue, validateInvestmentAmountOrdering, validateCommissionRateOrdering } = require('./validateConfigValue');
 
 const {
   getMaxTraderPartialSells,
@@ -35,6 +37,8 @@ module.exports = {
   loadConfig,
   invalidateCache,
   getTraderCommissionRate,
+  getAppCommissionRate,
+  getCommissionRateBundle,
   getAppServiceChargeRate,
   getAppServiceChargeRateForAccountType,
   getPlatformServiceChargeRate: getAppServiceChargeRate,
@@ -44,6 +48,7 @@ module.exports = {
   getFinancialConfig,
   validateConfigValue,
   validateInvestmentAmountOrdering,
+  validateCommissionRateOrdering,
   isCriticalParameter,
   validateTransactionLimitOrdering,
   TRANSACTION_LIMIT_SNAKE_TO_CAMEL,

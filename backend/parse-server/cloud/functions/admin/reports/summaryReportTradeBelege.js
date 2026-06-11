@@ -16,6 +16,7 @@ const BELEG_DOCUMENT_TYPES = [
   'poolMirrorExecutionEigenbeleg',
   'invoice',
   'traderCreditNote',
+  'appCommissionEigenbeleg',
   'investorCollectionBill',
   'investor_collection_bill',
   'investorPartialSellInternal',
@@ -33,6 +34,9 @@ function defaultBelegLabel(doc) {
   const meta = doc.get('metadata') || {};
   const executionType = String(meta.executionType || '').toLowerCase();
   if (type === 'traderCreditNote') return 'Gutschrift (Provision)';
+  if (type === 'appCommissionEigenbeleg' || type === 'appCommissionInternalEigenbeleg') {
+    return 'Eigenbeleg (App-Erfolgsprovision)';
+  }
   if (type === 'investorCollectionBill' || type === 'investor_collection_bill') {
     return 'Collection Bill (Investor)';
   }

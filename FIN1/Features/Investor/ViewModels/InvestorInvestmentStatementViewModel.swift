@@ -32,7 +32,7 @@ final class InvestorInvestmentStatementViewModel: ObservableObject {
 
     /// Admin-configured commission rate (single source of truth via ConfigurationService)
     var effectiveCommissionRate: Double {
-        self.configurationService.effectiveCommissionRate
+        self.configurationService.effectiveInvestorCommissionRate
     }
 
     // MARK: - Initialization

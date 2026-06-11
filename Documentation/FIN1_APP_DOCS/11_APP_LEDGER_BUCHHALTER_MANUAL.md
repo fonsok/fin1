@@ -1,7 +1,7 @@
 ---
 title: "FIN1 – App Ledger – Handbuch für Buchhalter"
 audience: ["Buchhaltung", "Controlling", "Admin"]
-lastUpdated: "2026-05-02"
+lastUpdated: "2026-06-11"
 ---
 
 ## 1. Zweck und Zielgruppe
@@ -40,7 +40,7 @@ Die Konten sind in **Gruppen** unterteilt. Im Admin-Portal erscheinen sie als Ka
 | PLT-REV-ORD | Erlös Ordergebühren            | Ordergebühren (z. B. von Tradern). |
 | PLT-REV-EXC | Erlös Börsenplatzgebühren      | Börsenplatzgebühren. |
 | PLT-REV-FRG | Fremdkostenpauschale           | Fremdkostenpauschale. |
-| PLT-REV-COM | Provisionserlös                | Provisionserlöse. |
+| PLT-REV-COM | Provisionserlös (8400)         | Erfolgsprovision der Plattform aus abgeschlossenen Trades (Anteil am Investoren-Gewinn). |
 
 ### 3.2 Steuerkonten (tax)
 
@@ -164,7 +164,8 @@ Im App Ledger werden u. a. folgende **Transaktionstypen** verwendet (u. a. i
 | orderFee               | Ordergebühr        | Ordergebühren. |
 | exchangeFee            | Börsenplatzgebühr  | Börsenplatzgebühren. |
 | foreignCosts           | Fremdkosten        | Fremdkostenpauschale. |
-| commission             | Provision           | Provisionserlös. |
+| commission             | Provision Clearing (1700) | Provisions-Clearing Investor/Trader (`PLT-LIAB-COM`); **nicht** der Plattform-Erlös. |
+| appCommission          | Erfolgsprovision Plattform (8400) | Realisierung des Plattform-Anteils: `PLT-LIAB-COM` → `PLT-REV-COM`; Beleg: Eigenbeleg EAP. |
 | refund / creditNote    | Erstattung / Gutschrift | Erstattungen an Nutzer. |
 | vatRemittance          | USt-Abführung      | Abführung USt ans Finanzamt. |
 | vatInputClaim          | Vorsteuer          | Vorsteuer. |

@@ -12,6 +12,7 @@ const {
   loadTraderCommissionIdempotency,
   bookTraderCommissionCreditIfDue,
 } = require('./traderCommissionCredit');
+const { bookAppCommissionRevenueIfDue } = require('./appCommissionRevenue');
 
 async function settleAndDistribute(trade) {
   const traderId = trade.get('traderId');
@@ -72,19 +73,24 @@ async function settleAndDistribute(trade) {
     netTradingProfitForPool,
     tradeBuyPrice,
     tradeSellPrice,
-    commissionRate,
+    commissionRates,
     feeConfig,
     taxConfig,
   } = poolScope;
 
-  const { totalCommission, investorBreakdown } = await settleAllParticipations({
+  const {
+    totalCommission,
+    totalTraderCommission,
+    totalAppCommission,
+    investorBreakdown,
+  } = await settleAllParticipations({
     participations,
     poolSettlementTrade,
     trade,
     traderId,
     settlementTradeNumber,
     netTradingProfitForPool,
-    commissionRate,
+    commissionRates,
     feeConfig,
     tradeBuyPrice,
     tradeSellPrice,
@@ -99,7 +105,7 @@ async function settleAndDistribute(trade) {
   const creditNoteGrossProfit = totalInvestorGrossProfit > 0 ? totalInvestorGrossProfit : netTradingProfit;
 
   const commissionResult = await bookTraderCommissionCreditIfDue({
-    totalCommission,
+    totalCommission: totalTraderCommission,
     traderCreditAlreadyBooked,
     traderBookingTrade,
     lifecycleTradeStatus,
@@ -111,7 +117,18 @@ async function settleAndDistribute(trade) {
     businessCaseId,
   });
 
-  const commissionRateForSummary = commissionResult?.commissionRate ?? commissionRate;
+  await bookAppCommissionRevenueIfDue({
+    totalAppCommission,
+    trade: traderBookingTrade || trade,
+    tradeId: commissionTradeId,
+    tradeNumber: commissionTradeNumber,
+    traderId,
+    appCommissionRate: commissionRates.appRate,
+    grossProfitBasis: creditNoteGrossProfit,
+    businessCaseId,
+  });
+
+  const commissionRateForSummary = commissionResult?.commissionRate ?? commissionRates.traderRate;
   const taxConfigForSummary = commissionResult?.taxConfig ?? taxConfig;
   const traderProfileForSummary = commissionResult?.traderProfile
     ?? await resolveUserTaxProfile(traderId);
@@ -125,10 +142,12 @@ async function settleAndDistribute(trade) {
     netTradingProfit: round2(netTradingProfit),
     mirrorGrossProfit: round2(totalInvestorGrossProfit),
     totalCommission: round2(totalCommission),
-    netProfit: round2(creditNoteGrossProfit - totalCommission),
+    totalTraderCommission: round2(totalTraderCommission),
+    totalAppCommission: round2(totalAppCommission),
+    netProfit: round2(creditNoteGrossProfit - totalTraderCommission),
     traderTaxWithheld: round2(
       calculateWithholdingBundle({
-        taxableAmount: totalCommission,
+        taxableAmount: totalTraderCommission,
         taxConfig: taxConfigForSummary,
         userProfile: traderProfileForSummary,
       }).totalTax,

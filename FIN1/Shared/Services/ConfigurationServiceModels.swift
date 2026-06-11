@@ -20,6 +20,7 @@ struct GetConfigResponse: Decodable {
     struct FinancialSection: Decodable {
         let initialAccountBalance: Double?
         let traderCommissionRate: Double?
+        let appCommissionRate: Double?
         let platformServiceChargeRate: Double?
         let appServiceChargeRate: Double?
         let platformServiceChargeRateCompanies: Double?

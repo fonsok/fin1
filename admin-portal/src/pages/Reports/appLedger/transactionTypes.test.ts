@@ -15,6 +15,8 @@ describe('transactionTypes (SSOT contract)', () => {
   it('maps canonical transaction types', () => {
     expect(transactionTypeDisplayLabel('appServiceCharge')).toBe('Appgebühr');
     expect(transactionTypeDisplayLabel('orderFee')).toBe('Ordergebühr');
+    expect(transactionTypeDisplayLabel('appCommission')).toBe('Erfolgsprovision Plattform (8400)');
+    expect(transactionTypeDisplayLabel('commission')).toBe('Provision Clearing (Investor/Trader, 1700)');
   });
 
   it('maps legacy platformServiceCharge to Appgebühr', () => {

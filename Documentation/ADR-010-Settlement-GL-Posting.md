@@ -92,14 +92,26 @@ Nicht überlagert (bereits sauber):
   Eine vollständige Aktivposition (`CLT-AST-TRD`) erfordert Treuhand‑Bank‑Mapping
   (`BANK-TRT-CLT`) und ist für Phase 2 vorgesehen.
 
-### `PLT-LIAB-COM` als Clearing‑Verbindlichkeit
+### `PLT-LIAB-COM` als Clearing‑Verbindlichkeit (Trader + App‑Erfolgsprovision)
 
-Heute leitet `settleAndDistribute` 100 % der berechneten Provision an den Trader
-weiter (`getTraderCommissionRate`). `PLT-LIAB-COM` saldiert in diesem Modell
-**pro Trade auf 0**: Investor:in bucht ins Soll, Trader:in ins Haben. Sobald die
-Plattform einen eigenen Anteil einführt, wird der App‑Cut additiv über
-`PLT-REV-COM` als zusätzliches Haben gegen `PLT-LIAB-COM` geführt – ohne
-Strukturänderung.
+**Stand Juni 2026 — umgesetzt.** Provision wird aus zwei Admin‑Parametern (4‑Eyes) gelesen:
+`traderCommissionRate` und `appCommissionRate` (`getCommissionRateBundle()`).
+
+| Anteil | Investor Collection Bill | Trader | App‑Hauptbuch |
+| --- | --- | --- | --- |
+| Gesamt | **eine** Zeile `commission` (= Trader + App) | — | — |
+| Trader | Metadaten `traderCommission` | Gutschrift `traderCreditNote` / `commission_credit` | Clearing `PLT-LIAB-COM` ↔ `CLT-LIAB-AVA` |
+| Plattform (Erfolgsprovision) | Metadaten `appCommission` | — | Eigenbeleg `appCommissionEigenbeleg` (EAP) **vor** GL: `PLT-LIAB-COM` → `PLT-REV-COM`, `transactionType: appCommission`, `metadata.leg: app_commission` |
+
+`PLT-LIAB-COM` saldiert **pro Trade auf 0**: Investoren buchen die **gesamte** Provision ins
+Clearing (Soll `CLT-LIAB-AVA` / Haben `PLT-LIAB-COM`), die Trader‑Gutschrift hebt den
+Trader‑Anteil ab, die App‑Erfolgsprovision hebt den Plattform‑Anteil auf `PLT-REV-COM` ab.
+
+Implementierung: `commissionSplit.js`, `settlementParticipationPosting.js`,
+`settlementCore/appCommissionRevenue.js`, `documents/appCommissionEigenbeleg.js`.
+
+**Legacy‑Backfill (Admin):** `backfillAppCommissionEigenbeleg` — erzeugt fehlende EAP‑Belege
+für Trades, die bereits ein `appCommission`‑GL‑Leg haben (ohne erneute Buchung).
 
 ### Order‑Fees (`PLT-REV-ORD/EXC/FRG`)
 
@@ -112,7 +124,7 @@ Feature‑Flag (`FIN1_LEDGER_LEGACY_FEE_SYNTHESIS`, default off) gelegt.
 
 - Idempotenz‑Schlüssel pro Pair: `(referenceId, referenceType, transactionType,
   metadata.leg)`. `metadata.leg` ist je `entryType` deterministisch (z. B.
-  `commission`, `withholding_tax`, `order_fee:orderFee`). **Investor-Zeilen mit
+  `commission`, `withholding_tax`, `order_fee:orderFee`, **`app_commission`**). **Investor-Zeilen mit
   `investmentId`:** `leg` = `{baseLeg}:inv:{investmentId}` (sonst nur ein
   `commission_debit`-GL-Pair pro Trade trotz mehrerer Investoren).
 - Backfill historischer `AccountStatement`‑Zeilen: Cloud `backfillMissingSettlementGL`.

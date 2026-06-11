@@ -29,6 +29,7 @@ const DOCUMENT_TYPE_OPTIONS: { value: string; label: string }[] = [
   { value: 'traderCollectionBill', label: 'Trader Collection Bill' },
   { value: 'traderCreditNote', label: 'Gutschrift' },
   { value: 'investmentReservationEigenbeleg', label: 'Eigenbeleg (Reservierung)' },
+  { value: 'appCommissionEigenbeleg', label: 'Eigenbeleg (App-Erfolgsprovision)' },
   { value: 'poolMirrorExecutionEigenbeleg', label: 'Eigenbeleg (Pool-Mirror)' },
   { value: 'monthlyAccountStatement', label: 'Monatskontoauszug' },
   { value: 'financial', label: 'Financial' },

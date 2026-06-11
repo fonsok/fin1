@@ -162,7 +162,7 @@ const baseArgs = () => ({
   trade,
   traderId: 'trader-post-1',
   tradeNumber: '42',
-  commissionRate: 0.1,
+  commissionRates: { traderRate: 0.1, appRate: 0, totalRate: 0.1 },
   feeConfig: {},
   tradeBuyPrice: 0,
   tradeSellPrice: 0,
@@ -221,6 +221,8 @@ describe('settleNewParticipation', () => {
       investmentId: 'inv-post-1',
       grossProfit: 200,
       commission: 20,
+      traderCommission: 20,
+      appCommission: 0,
       taxWithheld: 0,
     });
     expect(participation.get('profitBasis')).toBe('proportional');
@@ -292,8 +294,8 @@ describe('settleNewParticipation', () => {
       tradeSellPrice: 20,
     });
     expect(participation.get('profitShare')).toBe(55);
-    expect(participation.get('commissionAmount')).toBe(5);
-    expect(participation.get('grossReturn')).toBe(50);
+    expect(participation.get('commissionAmount')).toBe(5.5);
+    expect(participation.get('grossReturn')).toBe(49.5);
     expect(participation.get('profitBasis')).toBe('mirror');
   });
 

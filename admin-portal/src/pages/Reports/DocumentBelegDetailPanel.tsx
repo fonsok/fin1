@@ -16,6 +16,7 @@ const TYPE_LABELS: Record<string, string> = {
   traderCreditNote: 'Gutschrift (Provision)',
   invoice: 'Rechnung',
   investmentReservationEigenbeleg: 'Eigenbeleg (Reservierung)',
+  appCommissionEigenbeleg: 'Eigenbeleg (App-Erfolgsprovision)',
   poolMirrorExecutionEigenbeleg: 'Eigenbeleg (Pool-Mirror)',
 };
 

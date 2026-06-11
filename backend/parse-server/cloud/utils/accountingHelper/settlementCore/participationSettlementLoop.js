@@ -10,7 +10,7 @@ async function settleAllParticipations({
   traderId,
   settlementTradeNumber,
   netTradingProfitForPool,
-  commissionRate,
+  commissionRates,
   feeConfig,
   tradeBuyPrice,
   tradeSellPrice,
@@ -18,6 +18,8 @@ async function settleAllParticipations({
   businessCaseId,
 }) {
   let totalCommission = 0;
+  let totalTraderCommission = 0;
+  let totalAppCommission = 0;
   const investorBreakdown = [];
   const failures = [];
 
@@ -31,7 +33,7 @@ async function settleAllParticipations({
         traderId,
         tradeNumber: settlementTradeNumber,
         netTradingProfit: netTradingProfitForPool,
-        commissionRate,
+        commissionRates,
         feeConfig,
         tradeBuyPrice,
         tradeSellPrice,
@@ -39,7 +41,15 @@ async function settleAllParticipations({
       });
       if (result) {
         totalCommission += result.commission;
-        investorBreakdown.push(result);
+        totalTraderCommission += result.traderCommission ?? result.commission;
+        totalAppCommission += result.appCommission ?? 0;
+        investorBreakdown.push({
+          investorId: result.investorId,
+          investmentId: result.investmentId,
+          grossProfit: result.grossProfit,
+          commission: result.traderCommission ?? result.commission,
+          taxWithheld: result.taxWithheld,
+        });
       }
     } catch (err) {
       const msg = err && err.message ? err.message : String(err);
@@ -67,7 +77,12 @@ async function settleAllParticipations({
     );
   }
 
-  return { totalCommission, investorBreakdown };
+  return {
+    totalCommission,
+    totalTraderCommission,
+    totalAppCommission,
+    investorBreakdown,
+  };
 }
 
 module.exports = {

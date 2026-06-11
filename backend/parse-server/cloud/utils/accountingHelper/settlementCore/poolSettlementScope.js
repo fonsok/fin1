@@ -1,6 +1,6 @@
 'use strict';
 
-const { getTraderCommissionRate, loadConfig } = require('../../configHelper/index.js');
+const { getCommissionRateBundle, loadConfig } = require('../../configHelper/index.js');
 const { round2, resolveSettlementLegPrices } = require('../shared');
 const {
   isPairedTraderLegTrade,
@@ -214,7 +214,7 @@ async function preparePoolSettlementScope({
     traderLegForPool,
   );
 
-  const commissionRate = await getTraderCommissionRate();
+  const commissionRates = await getCommissionRateBundle();
   const config = await loadConfig();
 
   return {
@@ -224,7 +224,7 @@ async function preparePoolSettlementScope({
     netTradingProfitForPool,
     tradeBuyPrice,
     tradeSellPrice,
-    commissionRate,
+    commissionRates,
     feeConfig: config.financial,
     taxConfig: config.tax || {},
   };

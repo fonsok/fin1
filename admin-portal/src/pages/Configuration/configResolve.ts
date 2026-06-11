@@ -13,7 +13,8 @@ export interface ConfigResponse {
 
 /** Client-side defaults matching backend `utils/configHelper` DEFAULT_CONFIG */
 export const CONFIG_DEFAULT_VALUES: Record<string, number> = {
-  traderCommissionRate: 0.1,
+  traderCommissionRate: 0.05,
+  appCommissionRate: 0.05,
   initialAccountBalance: 0.0,
   appServiceChargeRate: 0.02,
   appServiceChargeRateCompanies: 0.02,

@@ -7,6 +7,7 @@ const {
   isCriticalParameter,
   validateTransactionLimitOrdering,
   validateInvestmentAmountOrdering,
+  validateCommissionRateOrdering,
 } = require('../../utils/configHelper/index.js');
 const { applyConfigurationChange, formatValue, getOldValueFromConfig } = require('./shared');
 const {
@@ -47,6 +48,14 @@ function registerConfigurationWorkflowFunctions() {
     const investmentOrder = validateInvestmentAmountOrdering(parameterName, normalizedNewValue, currentConfig.limits);
     if (!investmentOrder.valid) {
       throw new Parse.Error(Parse.Error.INVALID_VALUE, investmentOrder.error);
+    }
+    const commissionOrder = validateCommissionRateOrdering(
+      parameterName,
+      normalizedNewValue,
+      currentConfig.financial,
+    );
+    if (!commissionOrder.valid) {
+      throw new Parse.Error(Parse.Error.INVALID_VALUE, commissionOrder.error);
     }
     const oldValue = getOldValueFromConfig(currentConfig, parameterName);
 

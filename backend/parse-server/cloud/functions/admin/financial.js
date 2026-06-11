@@ -26,6 +26,7 @@ const { handleVerifyAccountStatementChain } = require('./financialVerifyAccountS
 const { handleBackfillUserCashBalanceFromStatements } = require('./financialUserCashBalanceBackfill');
 const { handleBackfillTraderCollectionBillBeleg } = require('./financialTraderCollectionBillBelegBackfill');
 const { handleBackfillPoolMirrorExecutionEigenbeleg } = require('./financialPoolMirrorExecutionEigenbelegBackfill');
+const { handleBackfillAppCommissionEigenbeleg } = require('./financialAppCommissionEigenbelegBackfill');
 const { handleRepairMirrorPoolBuyQuantity } = require('./financialMirrorPoolBuyQuantityRepair');
 const { handleBackfillTradeSummaryFlags } = require('./financialBackfillTradeSummaryFlags');
 
@@ -152,6 +153,13 @@ Parse.Cloud.define('backfillPoolMirrorExecutionEigenbeleg', async (request) => {
     requireAdminRole(request);
   }
   return handleBackfillPoolMirrorExecutionEigenbeleg(request);
+});
+
+Parse.Cloud.define('backfillAppCommissionEigenbeleg', async (request) => {
+  if (!request.master) {
+    requireAdminRole(request);
+  }
+  return handleBackfillAppCommissionEigenbeleg(request);
 });
 
 Parse.Cloud.define('repairMirrorPoolBuyQuantity', async (request) => {

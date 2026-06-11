@@ -64,6 +64,10 @@ struct BuyOrderView: View {
     @State private var legalNoticeText: String = ""
     @State private var transactionLimitWarningTitle: String = "Transaktionslimit erreicht"
     @State private var transactionLimitIntroText: String?
+    @State private var orderFailureAlertError: AppError?
+    @State private var showOrderFailureAlert = false
+
+    private var isPlacingOrder: Bool { self.viewModel.isPlacingOrder }
 
     private var defaultLegalNoticeText: String {
         "Mit dem Klicken auf 'Kaufen' stimmen Sie den allgemeinen Geschäftsbedingungen zu und bestätigen, dass Sie die Risiken des Wertpapierhandels verstanden haben. Diese Transaktion ist gebührenpflichtig."
@@ -85,6 +89,8 @@ struct BuyOrderView: View {
 
                     self.orderActionButton
 
+                    self.orderPlacementStatusSection
+
                     VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
                         Text("Rechtliche Hinweise")
                             .font(ResponsiveDesign.headlineFont())
@@ -98,6 +104,7 @@ struct BuyOrderView: View {
                 }
                 .padding()
             }
+            .disabled(self.isPlacingOrder)
             .background(AppTheme.screenBackground)
             .navigationTitle("Kauf-Order")
             .navigationBarTitleDisplayMode(.inline)
@@ -112,6 +119,7 @@ struct BuyOrderView: View {
         .task {
             print("🔍 BuyOrderView: loading trader pool investments from backend")
             await self.viewModel.refreshInvestmentsFromBackend()
+            await self.viewModel.calculateInvestmentOrder()
         }
         .onChange(of: self.viewModel.shouldShowDepotView) { _, newValue in
             if newValue {
@@ -124,6 +132,20 @@ struct BuyOrderView: View {
 
                 self.dismiss()
             }
+        }
+        .onChange(of: self.viewModel.orderStatus) { _, newStatus in
+            if case .failed(let error) = newStatus {
+                self.orderFailureAlertError = error
+                self.showOrderFailureAlert = true
+            }
+        }
+        .alert("Kauf fehlgeschlagen", isPresented: self.$showOrderFailureAlert) {
+            Button("OK") {
+                self.viewModel.resetOrderStatus()
+                self.orderFailureAlertError = nil
+            }
+        } message: {
+            Text(self.orderFailureAlertError?.localizedDescription ?? "Unbekannter Fehler")
         }
         .onChange(of: self.viewModel.orderMode) { _, newValue in
             // Stop monitoring if switching away from limit order
@@ -359,11 +381,35 @@ struct BuyOrderView: View {
         }
     }
 
+    @ViewBuilder
+    private var orderPlacementStatusSection: some View {
+        if self.isPlacingOrder {
+            HStack(spacing: ResponsiveDesign.spacing(12)) {
+                ProgressView()
+                VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
+                    Text("Kauf-Order wird übermittelt…")
+                        .font(ResponsiveDesign.bodyFont())
+                        .foregroundColor(AppTheme.primaryText)
+                    Text("Pool-Daten und Server werden abgefragt. Nach einem Neustart kann das kurz dauern.")
+                        .font(ResponsiveDesign.captionFont())
+                        .foregroundColor(AppTheme.secondaryText)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding()
+            .background(AppTheme.sectionBackground)
+            .cornerRadius(ResponsiveDesign.spacing(10))
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Kauf-Order wird übermittelt")
+        }
+    }
+
     private var orderActionButton: some View {
         OrderActionButton(
             title: "(Gebührenpflichtig) Kaufen",
             backgroundColor: AppTheme.buttonColor,
             isEnabled: self.viewModel.canPlaceOrder && !self.viewModel.showLimitWarning,
+            isLoading: self.isPlacingOrder,
             action: {
                 print("🔘 DEBUG: Buy button tapped in form section")
                 Task {

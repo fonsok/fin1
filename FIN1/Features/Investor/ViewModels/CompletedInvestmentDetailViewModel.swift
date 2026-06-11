@@ -60,7 +60,7 @@ final class CompletedInvestmentDetailViewModel: ObservableObject {
             return
         }
 
-        let commissionRate = configurationService.effectiveCommissionRate
+        let commissionRate = configurationService.effectiveInvestorCommissionRate
         let investmentId = self.investment.id
         let tradeAPI = self.tradeAPIService
         let localTrades = tradeLifecycleService.completedTrades
@@ -255,7 +255,7 @@ final class CompletedInvestmentDetailViewModel: ObservableObject {
             return 0.0
         }
         guard let configurationService else { return 0.0 }
-        let commissionRate = configurationService.effectiveCommissionRate
+        let commissionRate = configurationService.effectiveInvestorCommissionRate
         return self.commissionCalculationService?.calculateCommission(
             grossProfit: self.profit,
             rate: commissionRate

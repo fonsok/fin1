@@ -7,6 +7,7 @@ struct AppConfiguration: Codable {
     var poolBalanceDistributionStrategy: PoolBalanceDistributionStrategy
     var poolBalanceDistributionThreshold: Double
     var traderCommissionRate: Double?
+    var appCommissionRate: Double?
     var appServiceChargeRate: Double?
     var appServiceChargeRateCompanies: Double?
     var showCommissionBreakdownInCreditNote: Bool?
@@ -34,7 +35,7 @@ struct AppConfiguration: Codable {
 
     enum CodingKeys: String, CodingKey {
         case minimumCashReserve, initialAccountBalance, poolBalanceDistributionStrategy, poolBalanceDistributionThreshold
-        case traderCommissionRate, appServiceChargeRate, appServiceChargeRateCompanies
+        case traderCommissionRate, appCommissionRate, appServiceChargeRate, appServiceChargeRateCompanies
         case platformServiceChargeRate, platformServiceChargeRateCompanies
         case showCommissionBreakdownInCreditNote, showDocumentReferenceLinksInAccountStatement
         case maximumRiskExposurePercent, walletFeatureEnabled
@@ -50,6 +51,7 @@ struct AppConfiguration: Codable {
         self.poolBalanceDistributionStrategy = try c.decode(PoolBalanceDistributionStrategy.self, forKey: .poolBalanceDistributionStrategy)
         self.poolBalanceDistributionThreshold = try c.decode(Double.self, forKey: .poolBalanceDistributionThreshold)
         self.traderCommissionRate = try c.decodeIfPresent(Double.self, forKey: .traderCommissionRate)
+        self.appCommissionRate = try c.decodeIfPresent(Double.self, forKey: .appCommissionRate)
         self.appServiceChargeRate = try c.decodeIfPresent(Double.self, forKey: .appServiceChargeRate)
             ?? c.decodeIfPresent(Double.self, forKey: .platformServiceChargeRate)
         self.appServiceChargeRateCompanies = try c.decodeIfPresent(Double.self, forKey: .appServiceChargeRateCompanies)
@@ -87,6 +89,7 @@ struct AppConfiguration: Codable {
         try c.encode(self.poolBalanceDistributionStrategy, forKey: .poolBalanceDistributionStrategy)
         try c.encode(self.poolBalanceDistributionThreshold, forKey: .poolBalanceDistributionThreshold)
         try c.encodeIfPresent(self.traderCommissionRate, forKey: .traderCommissionRate)
+        try c.encodeIfPresent(self.appCommissionRate, forKey: .appCommissionRate)
         try c.encodeIfPresent(self.appServiceChargeRate, forKey: .appServiceChargeRate)
         try c.encodeIfPresent(self.appServiceChargeRateCompanies, forKey: .appServiceChargeRateCompanies)
         try c.encodeIfPresent(self.showCommissionBreakdownInCreditNote, forKey: .showCommissionBreakdownInCreditNote)
@@ -117,6 +120,7 @@ struct AppConfiguration: Codable {
         poolBalanceDistributionStrategy: PoolBalanceDistributionStrategy,
         poolBalanceDistributionThreshold: Double,
         traderCommissionRate: Double?,
+        appCommissionRate: Double? = nil,
         appServiceChargeRate: Double?,
         appServiceChargeRateCompanies: Double?,
         showCommissionBreakdownInCreditNote: Bool?,
@@ -145,6 +149,7 @@ struct AppConfiguration: Codable {
         self.poolBalanceDistributionStrategy = poolBalanceDistributionStrategy
         self.poolBalanceDistributionThreshold = poolBalanceDistributionThreshold
         self.traderCommissionRate = traderCommissionRate
+        self.appCommissionRate = appCommissionRate
         self.appServiceChargeRate = appServiceChargeRate
         self.appServiceChargeRateCompanies = appServiceChargeRateCompanies
         self.showCommissionBreakdownInCreditNote = showCommissionBreakdownInCreditNote
@@ -174,7 +179,8 @@ struct AppConfiguration: Codable {
         initialAccountBalance: 0.0,
         poolBalanceDistributionStrategy: .immediateDistribution,
         poolBalanceDistributionThreshold: 5.0,
-        traderCommissionRate: 0.10,
+        traderCommissionRate: 0.05,
+        appCommissionRate: 0.05,
         appServiceChargeRate: 0.02,
         appServiceChargeRateCompanies: 0.02,
         showCommissionBreakdownInCreditNote: true,
@@ -195,6 +201,13 @@ struct AppConfiguration: Codable {
     )
 
     var effectiveTraderCommissionRate: Double { self.traderCommissionRate ?? CalculationConstants.FeeRates.traderCommissionRate }
+    var effectiveAppCommissionRate: Double {
+        self.appCommissionRate ?? CalculationConstants.FeeRates.appCommissionRate
+    }
+    /// Investor Collection Bill: single „Commission“ line = trader + app success provision.
+    var effectiveInvestorCommissionRate: Double {
+        self.effectiveTraderCommissionRate + self.effectiveAppCommissionRate
+    }
     var effectiveAppServiceChargeRate: Double { self.appServiceChargeRate ?? CalculationConstants.ServiceCharges.appServiceChargeRate }
     var effectiveAppServiceChargeRateCompanies: Double { self.appServiceChargeRateCompanies ?? self.effectiveAppServiceChargeRate }
     var effectiveMaximumRiskExposurePercent: Double { self.maximumRiskExposurePercent ?? 2.0 }

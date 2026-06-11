@@ -85,11 +85,15 @@ struct CalculationConstants {
 
         /// Trader commission rate on profit - LAST-RESORT FALLBACK.
         /// Production value comes from `ConfigurationService.traderCommissionRate`.
-        static let traderCommissionRate: Double = 0.10
+        static let traderCommissionRate: Double = 0.05
+
+        /// App success-provision rate on investor gross profit - LAST-RESORT FALLBACK.
+        /// Production value comes from `ConfigurationService.appCommissionRate`.
+        static let appCommissionRate: Double = 0.05
 
         /// Trader commission percentage for display - LAST-RESORT FALLBACK.
         /// Production value comes from `ConfigurationService.traderCommissionPercentage`.
-        static let traderCommissionPercentage: String = "10%"
+        static let traderCommissionPercentage: String = "5%"
     }
 
     // MARK: - Service Charges

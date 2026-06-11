@@ -13,7 +13,7 @@ async function settleParticipation({
   traderId,
   tradeNumber,
   netTradingProfit,
-  commissionRate,
+  commissionRates,
   feeConfig,
   tradeBuyPrice,
   tradeSellPrice,
@@ -22,9 +22,10 @@ async function settleParticipation({
   const businessCaseId = await ensureBusinessCaseIdForTrade(trade);
   const rawOwnership = participation.get('ownershipPercentage') || 0;
   const ownershipRatio = rawOwnership > 1 ? rawOwnership / 100 : rawOwnership;
+  const totalCommissionRate = commissionRates.totalRate;
 
   const proportionalProfitShare = round2(netTradingProfit * ownershipRatio);
-  const proportionalCommission = round2(proportionalProfitShare * commissionRate);
+  const proportionalCommission = round2(proportionalProfitShare * totalCommissionRate);
   const proportionalNetProfit = round2(proportionalProfitShare - proportionalCommission);
 
   const rawInvestmentId = participation.get('investmentId');
@@ -47,7 +48,7 @@ async function settleParticipation({
     traderId,
     trade,
     tradeNumber,
-    commissionRate,
+    commissionRates,
     feeConfig: feeConfigForInvestor,
     tradeBuyPrice,
   });
@@ -59,7 +60,7 @@ async function settleParticipation({
     trade,
     traderId,
     tradeNumber,
-    commissionRate,
+    commissionRates,
     feeConfig: feeConfigForInvestor,
     tradeBuyPrice,
     tradeSellPrice,

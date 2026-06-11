@@ -44,7 +44,7 @@ enum InvestmentCashDistributor {
 
         print("💰 InvestmentCashDistributor: Starting cash distribution for investment \(investment.id)")
 
-        let commissionRate = configurationService.effectiveCommissionRate
+        let commissionRate = configurationService.effectiveInvestorCommissionRate
 
         let serverOnly = configurationService.investorMonetaryServerOnly
         let amounts: DistributionAmounts

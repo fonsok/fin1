@@ -118,6 +118,42 @@ function traderSummaryFromMetadata(meta, doc) {
   });
 }
 
+function buildAppCommissionEigenbelegSections(meta, doc) {
+  const sections = [];
+  const konten = meta.buchungskonten || {};
+  pushSection(sections, 'Eigenbeleg — Erfolgsprovision Plattform', [
+    { label: 'Belegnummer', value: doc.get('accountingDocumentNumber') || '—' },
+    { label: 'Trade', value: doc.get('tradeNumber') ? `#${doc.get('tradeNumber')}` : doc.get('tradeId') },
+    { label: 'Erfolgsprovision', value: formatEuroDe(meta.appCommissionAmount ?? meta.betrag) },
+    {
+      label: 'Provisionssatz (Plattform)',
+      value: typeof meta.appCommissionRateSnapshot === 'number'
+        ? `${(meta.appCommissionRateSnapshot * 100).toFixed(2)} %`
+        : '—',
+    },
+    {
+      label: 'Bruttogewinn-Basis',
+      value: typeof meta.grossProfitBasis === 'number'
+        ? formatEuroDe(meta.grossProfitBasis)
+        : '—',
+    },
+  ]);
+  if (konten.soll && konten.haben) {
+    pushSection(sections, 'Buchungskonten (SKR03)', [
+      {
+        label: 'Soll',
+        value: `${konten.soll.skr03} ${konten.soll.ledgerId} — ${konten.soll.bezeichnung}`,
+      },
+      {
+        label: 'Haben',
+        value: `${konten.haben.skr03} ${konten.haben.ledgerId} — ${konten.haben.bezeichnung}`,
+      },
+      { label: 'Buchungssatz', value: konten.buchungssatzBeschreibung || '—' },
+    ]);
+  }
+  return sections;
+}
+
 function buildTraderCreditNoteSections(meta, doc, enrichment = {}) {
   const sections = [];
   const traderName = enrichment.partyDisplayName || meta.traderDisplayName;
@@ -177,6 +213,9 @@ function buildBelegDisplaySections(doc, metadataOverride, enrichment = {}) {
     return buildTraderExecutionSections(meta, doc, enrichment);
   }
   if (type === 'traderCreditNote') return buildTraderCreditNoteSections(meta, doc, enrichment);
+  if (type === 'appCommissionEigenbeleg' || type === 'appCommissionInternalEigenbeleg') {
+    return buildAppCommissionEigenbelegSections(meta, doc);
+  }
   if (type === 'invoice') return buildInvoiceSections(meta, doc);
   if (Object.keys(meta).length > 0) {
     return [{

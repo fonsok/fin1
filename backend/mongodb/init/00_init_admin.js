@@ -171,7 +171,8 @@ db.Config.updateOne(
         orderFeeMin: 5.0,
         orderFeeMax: 50.0,
         exchangeFeeRate: 0.001,
-        traderCommissionRate: 0.10,
+        traderCommissionRate: 0.05,
+        appCommissionRate: 0.05,
         appServiceChargeRate: 0.02,
         minimumCashReserve: 20.0,
         initialAccountBalance: 0.0

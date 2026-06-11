@@ -40,13 +40,16 @@ protocol ConfigurationServiceProtocol: ObservableObject, Sendable {
     var poolBalanceDistributionThreshold: Double { get }
     var traderCommissionRate: Double { get }
     var traderCommissionPercentage: String { get }
+    var appCommissionRate: Double { get }
     var appServiceChargeRate: Double { get }
     var appServiceChargeRateCompanies: Double { get }
     var appServiceChargePercentage: String { get }
 
-    /// Single source of truth for commission rate with fallback to default
-    /// Use this instead of manually checking `traderCommissionRate ?? CalculationConstants.FeeRates.traderCommissionRate`
+    /// Trader success-provision rate (Gutschrift / Trader-UI).
     var effectiveCommissionRate: Double { get }
+
+    /// Investor Collection Bill commission line (trader + app Erfolgsprovision).
+    var effectiveInvestorCommissionRate: Double { get }
 
     /// Single source of truth for app service charge rate with fallback to default
     /// Use this instead of manually checking `appServiceChargeRate ?? CalculationConstants.ServiceCharges.appServiceChargeRate`

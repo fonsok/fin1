@@ -159,7 +159,8 @@ private final class StubConfigurationService: ObservableObject, ConfigurationSer
     var initialAccountBalance: Double { 0 }
     var poolBalanceDistributionStrategy: PoolBalanceDistributionStrategy { .immediateDistribution }
     var poolBalanceDistributionThreshold: Double { 5 }
-    var traderCommissionRate: Double { 0.10 }
+    var traderCommissionRate: Double { 0.05 }
+    var appCommissionRate: Double { 0.05 }
     var appServiceChargeRate: Double { 0.02 }
     var isAdminMode: Bool { false }
     var showCommissionBreakdownInCreditNote: Bool { true }

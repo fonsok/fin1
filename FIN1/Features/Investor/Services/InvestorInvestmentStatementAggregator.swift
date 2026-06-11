@@ -16,7 +16,7 @@ import Foundation
 //   - investmentId, poolTradeParticipationService, tradeLifecycleService, invoiceService
 //   - investmentService (used by CompletedInvestmentsTable, CommissionCalculationExplanationSheet)
 //   - calculationService (used by CompletedInvestmentsTable, CommissionCalculationExplanationSheet)
-//   - commissionRate — required; pass configurationService.effectiveCommissionRate (no CalculationConstants default)
+//   - commissionRate — required; pass configurationService.effectiveInvestorCommissionRate (no CalculationConstants default)
 //
 // DEPENDENT FILES (will fail to build if this API changes):
 //   - CommissionCalculationExplanationSheet.swift

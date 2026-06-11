@@ -19,7 +19,9 @@ const DEFAULT_CONFIG = {
     exchangeFeeMin: 0.50,
     exchangeFeeMax: 25.0,
     foreignCosts: 2.50,
-    traderCommissionRate: 0.10,
+    traderCommissionRate: 0.05,
+    /** Success provision (Erfolgsprovision) retained by the platform on investor gross profit. */
+    appCommissionRate: 0.05,
     appServiceChargeRate: 0.02,
     appServiceChargeRateCompanies: 0.02,
     minimumCashReserve: 20.0,

@@ -17,7 +17,8 @@ final class ConfigurationService: ConfigurationServiceProtocol, ServiceLifecycle
     @Published var initialAccountBalance: Double = 0.0
     @Published var poolBalanceDistributionStrategy: PoolBalanceDistributionStrategy = .immediateDistribution // internal(set) for extension access
     @Published var poolBalanceDistributionThreshold: Double = 5.0 // internal(set) for extension access
-    @Published var traderCommissionRate: Double = 0.10 // internal(set) for extension access
+    @Published var traderCommissionRate: Double = 0.05 // internal(set) for extension access
+    @Published var appCommissionRate: Double = 0.05 // internal(set) for extension access
     @Published var appServiceChargeRate: Double = 0.02 // internal(set) for extension access
     @Published var appServiceChargeRateCompanies: Double = 0.02 // internal(set) for extension access
     @Published var showCommissionBreakdownInCreditNote: Bool = true // internal(set) for extension access

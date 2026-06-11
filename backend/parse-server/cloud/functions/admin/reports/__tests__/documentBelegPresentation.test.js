@@ -63,6 +63,27 @@ describe('documentBelegPresentation', () => {
     expect(out.accountingSummaryText).toContain('991,82');
   });
 
+  test('appCommissionEigenbeleg → platform revenue sections', () => {
+    const doc = mockDoc({
+      type: 'appCommissionEigenbeleg',
+      accountingDocumentNumber: 'EAP-1',
+      tradeNumber: 9,
+      metadata: {
+        appCommissionAmount: 12.5,
+        appCommissionRateSnapshot: 0.05,
+        grossProfitBasis: 250,
+        buchungskonten: {
+          soll: { skr03: '1700', ledgerId: 'PLT-LIAB-COM', bezeichnung: 'Clearing' },
+          haben: { skr03: '8400', ledgerId: 'PLT-REV-COM', bezeichnung: 'Erlös' },
+          buchungssatzBeschreibung: 'Clearing → Erlös',
+        },
+      },
+    });
+    const out = projectDocumentDetail(doc);
+    expect(out.displaySections.some((s) => s.title.includes('Erfolgsprovision'))).toBe(true);
+    expect(out.displaySections.some((s) => s.title === 'Buchungskonten (SKR03)')).toBe(true);
+  });
+
   test('stored accountingSummaryText wins over computed', () => {
     const doc = mockDoc({
       type: 'investmentReservationEigenbeleg',

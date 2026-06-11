@@ -5,6 +5,7 @@
  */
 const CRITICAL_PARAMETERS = [
   'traderCommissionRate',
+  'appCommissionRate',
   'appServiceChargeRate',
   'appServiceChargeRateCompanies',
   'serviceChargeLegacyClientFallbackEnabled',

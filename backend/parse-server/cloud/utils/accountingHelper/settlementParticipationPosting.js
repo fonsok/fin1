@@ -11,6 +11,7 @@ const {
   deriveMirrorTradeBasis,
   applyPoolCapitalSplitToBuyLeg,
 } = require('./legs');
+const { splitCommissionFromGrossProfit } = require('./commissionSplit');
 const { sumStatementAmounts, getStatementSumsByType } = require('./settlementQueries');
 const { bookInvestorTaxEntries } = require('./settlementTaxEntries');
 const { createCommissionRecord, createNotification, formatCurrency } = require('./settlementSupport');
@@ -27,7 +28,7 @@ async function settleNewParticipation({
   trade,
   traderId,
   tradeNumber,
-  commissionRate,
+  commissionRates,
   feeConfig,
   tradeBuyPrice,
   tradeSellPrice,
@@ -75,19 +76,30 @@ async function settleNewParticipation({
     }
   }
 
+  const totalCommissionRate = commissionRates.totalRate;
   let profitShare = proportionalProfitShare;
-  let commission = proportionalCommission;
-  let netProfit = proportionalNetProfit;
   let basis = 'proportional';
-  const mirror = deriveMirrorTradeBasis(buyLeg, sellLeg, commissionRate);
+  let split = splitCommissionFromGrossProfit(profitShare, commissionRates);
+  let commission = split.commission;
+  let traderCommission = split.traderCommission;
+  let appCommission = split.appCommission;
+  let netProfit = split.netProfit;
+  const mirror = deriveMirrorTradeBasis(buyLeg, sellLeg, totalCommissionRate);
   if (mirror) {
     profitShare = mirror.grossProfit;
-    commission = mirror.commission;
-    netProfit = mirror.netProfit;
+    split = splitCommissionFromGrossProfit(profitShare, commissionRates);
+    commission = split.commission;
+    traderCommission = split.traderCommission;
+    appCommission = split.appCommission;
+    netProfit = split.netProfit;
     basis = 'mirror';
   }
 
-  console.log(`  📊 Participation ${participation.id}: ownership=${rawOwnership} (ratio=${ownershipRatio.toFixed(4)}), profit=€${profitShare}, comm=€${commission}, net=€${netProfit} [${basis}]`);
+  console.log(
+    `  📊 Participation ${participation.id}: ownership=${rawOwnership} (ratio=${ownershipRatio.toFixed(4)}), `
+    + `profit=€${profitShare}, comm=€${commission} (trader €${traderCommission}, app €${appCommission}), `
+    + `net=€${netProfit} [${basis}]`,
+  );
 
   const investorProfile = await resolveUserTaxProfile(investorId);
   const taxBreakdown = calculateWithholdingBundle({
@@ -103,8 +115,12 @@ async function settleNewParticipation({
     ownershipPercentage: round2(ownershipRatio * 100),
     grossProfit: profitShare,
     commission,
+    traderCommission,
+    appCommission,
     netProfit,
-    commissionRate,
+    commissionRate: totalCommissionRate,
+    traderCommissionRate: commissionRates.traderRate,
+    appCommissionRate: commissionRates.appRate,
     investmentCapital,
     buyLeg,
     sellLeg,
@@ -116,7 +132,9 @@ async function settleNewParticipation({
 
   participation.set('profitShare', profitShare);
   participation.set('commissionAmount', commission);
-  participation.set('commissionRate', commissionRate);
+  participation.set('commissionRate', totalCommissionRate);
+  participation.set('traderCommissionAmount', traderCommission);
+  participation.set('appCommissionAmount', appCommission);
   participation.set('grossReturn', netProfit);
   participation.set('profitBasis', basis);
   participation.set('isSettled', true);
@@ -189,7 +207,7 @@ async function settleNewParticipation({
         tradeNumber,
         investmentId: investment.id,
         investmentNumber,
-        description: `Provision Trade #${tradeNumber} (${(commissionRate * 100).toFixed(0)}%)`,
+        description: `Provision Trade #${tradeNumber} (${(totalCommissionRate * 100).toFixed(0)}%)`,
         ...collectionBillRef,
         businessCaseId,
       });
@@ -296,7 +314,7 @@ async function settleNewParticipation({
   }
   await investment.save(null, { useMasterKey: true });
 
-  await createCommissionRecord(traderId, investment, trade, participation, commission);
+  await createCommissionRecord(traderId, investment, trade, participation, traderCommission);
   await createNotification(
     investorId,
     'investment_profit',
@@ -310,6 +328,8 @@ async function settleNewParticipation({
     investmentId: investment.id,
     grossProfit: profitShare,
     commission,
+    traderCommission,
+    appCommission,
     taxWithheld: taxBreakdown.totalTax,
   };
 }

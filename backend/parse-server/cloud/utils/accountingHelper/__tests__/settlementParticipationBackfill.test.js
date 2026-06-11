@@ -83,7 +83,7 @@ describe('trySettleFromExistingBill', () => {
       traderId: 'trader-1',
       trade,
       tradeNumber: '1',
-      commissionRate: 0.2,
+      commissionRates: { traderRate: 0.2, appRate: 0, totalRate: 0.2 },
       feeConfig: {},
       tradeBuyPrice: 10,
     });
@@ -115,7 +115,7 @@ describe('trySettleFromExistingBill', () => {
       traderId: 'trader-1',
       trade,
       tradeNumber: '1',
-      commissionRate: 0.2,
+      commissionRates: { traderRate: 0.2, appRate: 0, totalRate: 0.2 },
       feeConfig: {},
       tradeBuyPrice: 10,
     });
@@ -124,6 +124,8 @@ describe('trySettleFromExistingBill', () => {
       investmentId: 'inv-bf-1',
       grossProfit: 80,
       commission: 16,
+      traderCommission: 16,
+      appCommission: 0,
       taxWithheld: 2,
     });
     expect(participation.save).toHaveBeenCalledTimes(1);
@@ -175,7 +177,7 @@ describe('trySettleFromExistingBill', () => {
       traderId: 'trader-1',
       trade,
       tradeNumber: '2',
-      commissionRate: 0.15,
+      commissionRates: { traderRate: 0.15, appRate: 0, totalRate: 0.15 },
       feeConfig: {},
       tradeBuyPrice: 5,
     });

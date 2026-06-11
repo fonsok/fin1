@@ -60,7 +60,7 @@ extension InvestmentsViewModel {
             )
             var usernames: [String: String] = [:]
             var tradeNums: [String: String] = [:]
-            let commissionRate = configurationService.effectiveCommissionRate
+            let commissionRate = configurationService.effectiveInvestorCommissionRate
             let calculationService = InvestorCollectionBillCalculationService()
             let serverOnly = configurationService.investorMonetaryServerOnly
 

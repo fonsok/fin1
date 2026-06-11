@@ -218,7 +218,7 @@ final class InvestmentsDataProcessor {
 
             guard denominator > 0 else { return nil }
 
-            let commissionRate = self.configurationService.effectiveCommissionRate
+            let commissionRate = self.configurationService.effectiveInvestorCommissionRate
             // Net profit = Gross profit * (1 - commissionRate)
             // So: Gross profit = Net profit / (1 - commissionRate)
             let grossProfit = profit > 0 ?

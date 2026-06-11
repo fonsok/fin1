@@ -14,6 +14,7 @@
 const FINANCIAL_RECONCILIATION_SKIP_KEYS = Object.freeze(new Set([
   'initialAccountBalance',
   'traderCommissionRate',
+  'appCommissionRate',
   'appServiceChargeRate',
   'appServiceChargeRateCompanies',
 ]));

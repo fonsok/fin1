@@ -65,6 +65,9 @@ final class BuyOrderViewModel: ObservableObject, LimitOrderMonitor {
     @Published var showLimitWarning: Bool = false
     @Published var limitWarningMessage: String?
 
+    /// Coalesces concurrent pool-investment refreshes (`.task` + placeOrder).
+    var poolInvestmentsRefreshTask: Task<Void, Never>?
+
     // Helpers (extracted for file size reduction; internal for extensions)
     var quantityConstraintHelper: BuyOrderQuantityConstraintHelper {
         BuyOrderQuantityConstraintHelper(searchResult: self.searchResult)
@@ -93,6 +96,11 @@ final class BuyOrderViewModel: ObservableObject, LimitOrderMonitor {
             configurationService: self.configurationService,
             maxQuantity: self.maxQuantity
         )
+    }
+
+    var isPlacingOrder: Bool {
+        if case .transmitting = self.orderStatus { return true }
+        return false
     }
 
     init(
@@ -216,10 +224,7 @@ final class BuyOrderViewModel: ObservableObject, LimitOrderMonitor {
         }
         self.orderStatus = .transmitting
 
-        if let currentUser = userService.currentUser, currentUser.role == .trader {
-            await self.investmentService.fetchFromBackendForTrader(user: currentUser)
-            self.updateReservedInvestments()
-        }
+        await self.refreshInvestmentsFromBackend()
 
         await self.calculateInvestmentOrder()
 

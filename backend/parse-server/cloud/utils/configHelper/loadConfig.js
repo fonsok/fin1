@@ -84,6 +84,9 @@ async function loadConfig(forceRefresh = false) {
           traderCommissionRate: Number(
             config.get('traderCommissionRate') ?? DEFAULT_CONFIG.financial.traderCommissionRate,
           ),
+          appCommissionRate: Number(
+            config.get('appCommissionRate') ?? DEFAULT_CONFIG.financial.appCommissionRate,
+          ),
           appServiceChargeRate: Number(
             config.get('appServiceChargeRate')
             ?? config.get('platformServiceChargeRate')

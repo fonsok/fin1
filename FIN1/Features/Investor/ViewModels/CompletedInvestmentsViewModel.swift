@@ -236,7 +236,7 @@ final class CompletedInvestmentsViewModel: ObservableObject {
             )
             var usernames: [String: String] = [:]
             var tradeNums: [String: String] = [:]
-            let commissionRate = self.configurationService.effectiveCommissionRate
+            let commissionRate = self.configurationService.effectiveInvestorCommissionRate
             let calculationService = InvestorCollectionBillCalculationService()
             let serverOnly = self.monetaryServerOnly
 

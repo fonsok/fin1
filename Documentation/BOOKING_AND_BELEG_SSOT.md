@@ -22,7 +22,7 @@
 |------------|--------|
 | Nominal | `investmentNominal = totalBuyCost + residualAmount` |
 | Gewinn | `grossProfit = netSellAmount − totalBuyCost` |
-| Nach Provision | `netProfit = grossProfit − commission` |
+| Nach Provision | `netProfit = grossProfit − commission` (Investor sieht **eine** Provision-Zeile; `commission = traderCommission + appCommission`) |
 | Überweisung | `transferAmount = netSellAmount − commission` |
 
 `totalBuyCost` und `residualAmount` leiten sich aus `buyLeg.residualAmount` und Investment-Nominal ab (gebuchter Split), nicht aus abweichender Zeilensumme.
@@ -70,11 +70,13 @@ Beide: `enrichTraderDocumentMetadata` (Alt-Belege) → `projectDocumentDetail` /
 
 **Nicht SSOT (nur Anzeige-Hilfe):** iOS `TradeStatementDisplayDataBuilder` aus `Invoice` — Zielbild: offizieller Beleg = Parse `Document` mit Snapshot; Invoice-Rebuild nur Fallback.
 
-**Trader-Provision (Trade-Überblick, nicht Beleg-Erzeugung):** Anzeige der Gutschriftssumme pro Trade aus Beleg-Inbox + `commission_credit` der Kundentimeline — [`TRADER_COMMISSION_DISPLAY_SSOT.md`](TRADER_COMMISSION_DISPLAY_SSOT.md).
+**Trader-Provision (Trade-Überblick, nicht Beleg-Erzeugung):** Anzeige der Gutschriftssumme pro Trade aus Beleg-Inbox + `commission_credit` der Kundentimeline — nur **Trader-Anteil** (`traderCommission`), nicht die App-Erfolgsprovision — [`TRADER_COMMISSION_DISPLAY_SSOT.md`](TRADER_COMMISSION_DISPLAY_SSOT.md).
+
+**App-Erfolgsprovision (Plattform, intern):** Eigenbeleg-Typ `appCommissionEigenbeleg` (Präfix **EAP**) am **Trader-/Settlement-Trade** — GoB **vor** App-Ledger-Buchung `PLT-LIAB-COM` → `PLT-REV-COM` (`transactionType: appCommission`, `leg: app_commission`). Metadaten: Betrag, `appCommissionRateSnapshot`, Bruttogewinn-Basis, SKR03 1700→8400.
 
 **Pool-Mirror (intern):** Eigenbeleg-Typ `poolMirrorExecutionEigenbeleg` (PMBC/PMSC) am **Mirror-Trade** — Klartext mit Reserved / Pool-Einlage / Residual / Investoren; verknüpft Trader-TBC nur als Referenz. Admin Summary verlinkt **nicht** mehr die Trader-TBC unter „Pool-Mirror“.
 
-**Legacy-Backfill (Admin):** `backfillTraderCollectionBillBeleg` (Trader TBC/TSC), `backfillPoolMirrorExecutionEigenbeleg` (Pool PMBC aus Trader-TBC + Participations; Parameter `traderDocumentNumber`, `poolTradeId`, `executionType`).
+**Legacy-Backfill (Admin):** `backfillTraderCollectionBillBeleg` (Trader TBC/TSC), `backfillPoolMirrorExecutionEigenbeleg` (Pool PMBC aus Trader-TBC + Participations; Parameter `traderDocumentNumber`, `poolTradeId`, `executionType`), `backfillAppCommissionEigenbeleg` (fehlende EAP für bereits gebuchte App-Provision-GL).
 
 ### Kontoauszug & Settlement-GL (`utils/accountingHelper/`)
 
@@ -142,6 +144,7 @@ Persistierung von Parse-`Document`-Zeilen: Fassade **`accountingHelper/documents
 | `collectionBill.js` | `createCollectionBillDocument`, `returnPercentage`-Invarianten |
 | `reservationEigenbeleg.js` | `createInvestmentReservationEigenbelegDocument` (vor `investmentEscrow.bookReserve`) |
 | `partialSellEigenbeleg.js` | `createPartialSellInternalBeleg` (ADR-015) |
+| `appCommissionEigenbeleg.js` | `createAppCommissionEigenbeleg` (GoB vor App-Ledger Erfolgsprovision, EAP) |
 | `walletReceipt.js` | `createWalletReceiptDocument` |
 | `tradeExecution.js` | `createTradeExecutionDocument`, `findExistingTradeExecutionDocument` |
 | `serviceChargeInvoice.js` | `ensureServiceChargeInvoiceDocument` |

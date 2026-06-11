@@ -8,6 +8,7 @@ const {
 } = require('./collectionBill');
 const { createInvestmentReservationEigenbelegDocument } = require('./reservationEigenbeleg');
 const { createPartialSellInternalBeleg } = require('./partialSellEigenbeleg');
+const { createAppCommissionEigenbeleg } = require('./appCommissionEigenbeleg');
 const { createWalletReceiptDocument } = require('./walletReceipt');
 const {
   createTradeExecutionDocument,
@@ -22,6 +23,7 @@ const tier1DocumentWrites = {
   createCollectionBillDocument,
   createInvestmentReservationEigenbelegDocument,
   createPartialSellInternalBeleg,
+  createAppCommissionEigenbeleg,
   createWalletReceiptDocument,
   createTradeExecutionDocument,
   findExistingTradeExecutionDocument,

@@ -67,6 +67,15 @@ const REPAIR_CATALOG = [
     relatedChecks: ['mirror_basis_drift', 'paired_sell_investor_chain', 'trader_pool_bid_ask_contract'],
   },
   {
+    id: 'app_commission_eigenbeleg_missing',
+    layer: 'repair',
+    cloudFunction: 'backfillAppCommissionEigenbeleg',
+    defaultParams: { dryRun: true, limit: 25 },
+    applyParams: { dryRun: false, limit: 25 },
+    notes: 'Create EAP eigenbeleg for trades with appCommission GL leg but no appCommissionEigenbeleg document',
+    relatedChecks: ['settlement_gl_reconciliation'],
+  },
+  {
     id: 'settlement_gl_pairs_missing',
     layer: 'repair',
     cloudFunction: 'backfillMissingSettlementGL',
