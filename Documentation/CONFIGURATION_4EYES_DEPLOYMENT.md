@@ -131,7 +131,9 @@ curl -k https://192.168.178.24/parse/classes/Configuration \
   -H "Content-Type: application/json" \
   -d '{
     "isActive": true,
-    "traderCommissionRate": 0.10,
+    "investorCommissionRateTotal": 0.10,
+    "traderCommissionRate": 0.05,
+    "appCommissionRate": 0.05,
     "appServiceChargeRate": 0.02,
     "minimumCashReserve": 20.0,
     "initialAccountBalance": 0.0
@@ -146,13 +148,17 @@ Die folgenden Parameter erfordern 4-Augen-Genehmigung:
 
 | Parameter | Beschreibung | Standardwert |
 |-----------|-------------|--------------|
-| `traderCommissionRate` | Trader Commission | 10% |
+| `investorCommissionRateTotal` | Gesamtprovision Investor (Collection Bill „Commission“) | 10% (0,10) |
+| `traderCommissionRate` | Trader-Anteil an der Gesamtprovision | 5% (0,05) |
+| `appCommissionRate` | App-Erfolgsprovision (Plattform-Anteil) | 5% (0,05) |
 | `appServiceChargeRate` | Service Charge | 2% |
 | `initialAccountBalance` | Startguthaben (nur via Admin-Portal setzbar; ohne Eintrag/Default **€0,00**) | €0,00 |
 | `orderFeeRate` | Ordergebühr Rate | 0.5% |
 | `orderFeeMin` | Ordergebühr Min | €5.00 |
 | `orderFeeMax` | Ordergebühr Max | €50.00 |
 | `showDocumentReferenceLinksInAccountStatement` | Kontoauszug: tappbare Links zu Buchungsbelegen (App) | `true` |
+
+**Provisions-Bundle (Admin-Portal):** Die drei Provisions-Parameter werden im Admin-Portal als **eine Karte** „Erfolgsprovision App + Trader“ bearbeitet (Gesamtprovision + Aufteilungs-Dropdown). Technisch bleiben drei DB-Felder; Änderungen laufen als **ein** 4-Augen-Antrag über `requestCommissionRateBundleChange` (Metadaten-Key `commissionRateBundle`). Validierung: `traderCommissionRate + appCommissionRate` muss **exakt** `investorCommissionRateTotal` entsprechen.
 
 ---
 

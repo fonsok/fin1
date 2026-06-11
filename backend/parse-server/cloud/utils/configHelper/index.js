@@ -25,7 +25,7 @@ const {
   getOrderFeeConfig,
   getFinancialConfig,
 } = require('./getters');
-const { validateConfigValue, validateInvestmentAmountOrdering, validateCommissionRateOrdering } = require('./validateConfigValue');
+const { validateConfigValue, validateInvestmentAmountOrdering, validateInvestorCommissionRateTotalMatch } = require('./validateConfigValue');
 
 const {
   getMaxTraderPartialSells,
@@ -48,7 +48,7 @@ module.exports = {
   getFinancialConfig,
   validateConfigValue,
   validateInvestmentAmountOrdering,
-  validateCommissionRateOrdering,
+  validateInvestorCommissionRateTotalMatch,
   isCriticalParameter,
   validateTransactionLimitOrdering,
   TRANSACTION_LIMIT_SNAKE_TO_CAMEL,

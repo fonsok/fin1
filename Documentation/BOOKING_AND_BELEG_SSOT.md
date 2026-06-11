@@ -22,7 +22,7 @@
 |------------|--------|
 | Nominal | `investmentNominal = totalBuyCost + residualAmount` |
 | Gewinn | `grossProfit = netSellAmount − totalBuyCost` |
-| Nach Provision | `netProfit = grossProfit − commission` (Investor sieht **eine** Provision-Zeile; `commission = traderCommission + appCommission`) |
+| Nach Provision | `netProfit = grossProfit − commission` (Investor: **eine** Zeile; `commission` = Summe gemäß `investorCommissionRateTotal` = `traderCommission` + `appCommission`) |
 | Überweisung | `transferAmount = netSellAmount − commission` |
 
 `totalBuyCost` und `residualAmount` leiten sich aus `buyLeg.residualAmount` und Investment-Nominal ab (gebuchter Split), nicht aus abweichender Zeilensumme.

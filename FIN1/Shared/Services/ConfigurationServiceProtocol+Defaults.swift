@@ -22,7 +22,9 @@ extension ConfigurationServiceProtocol {
 
     var appCommissionRate: Double { CalculationConstants.FeeRates.appCommissionRate }
 
-    var effectiveInvestorCommissionRate: Double { self.traderCommissionRate + self.appCommissionRate }
+    var investorCommissionRateTotal: Double { CalculationConstants.FeeRates.investorCommissionRateTotal }
+
+    var effectiveInvestorCommissionRate: Double { self.investorCommissionRateTotal }
 
     var appServiceChargePercentage: String {
         "\((appServiceChargeRate * 100).formatted(.number.precision(.fractionLength(2))))%"

@@ -3,12 +3,42 @@ import { Card, Badge } from '../../../components/ui';
 import { formatDateTime } from '../../../utils/format';
 import { useTheme } from '../../../context/ThemeContext';
 import type { PendingConfigChange, ConfigurationParameter } from '../types';
-
+import {
+  COMMISSION_RATE_BUNDLE_DISPLAY_NAME,
+  COMMISSION_RATE_BUNDLE_PARAMETER_NAME,
+  formatCommissionRatesSummary,
+} from '../commissionRateTraderApp';
 import { adminCaption, adminMuted, adminPrimary, adminSoft } from '../../../utils/adminThemeClasses';
+
 interface PendingChangesCardProps {
   requests: PendingConfigChange[];
   parameterDefinitions: Record<string, Omit<ConfigurationParameter, 'value'>>;
   formatValue: (key: string, value: number | string | boolean) => string;
+}
+
+function formatPendingChangeValue(
+  parameterName: string,
+  value: PendingConfigChange['oldValue'],
+  formatValue: (key: string, value: number | string | boolean) => string,
+): string {
+  if (parameterName === COMMISSION_RATE_BUNDLE_PARAMETER_NAME && value && typeof value === 'object') {
+    return formatCommissionRatesSummary({
+      investorCommissionRateTotal: Number(value.investorCommissionRateTotal),
+      traderCommissionRate: Number(value.traderCommissionRate),
+      appCommissionRate: Number(value.appCommissionRate),
+    });
+  }
+  return formatValue(parameterName, value as number | string | boolean);
+}
+
+function getPendingDisplayName(
+  parameterName: string,
+  parameterDefinitions: Record<string, Omit<ConfigurationParameter, 'value'>>,
+): string {
+  if (parameterName === COMMISSION_RATE_BUNDLE_PARAMETER_NAME) {
+    return COMMISSION_RATE_BUNDLE_DISPLAY_NAME;
+  }
+  return parameterDefinitions[parameterName]?.displayName || parameterName;
 }
 
 export function PendingChangesCard({
@@ -38,12 +68,12 @@ export function PendingChangesCard({
             <div className="flex justify-between items-start">
               <div>
                 <p className={clsx('font-medium', adminPrimary(isDark))}>
-                  {parameterDefinitions[change.parameterName]?.displayName || change.parameterName}
+                  {getPendingDisplayName(change.parameterName, parameterDefinitions)}
                 </p>
                 <p className={clsx('text-sm mt-1', adminSoft(isDark))}>
-                  {formatValue(change.parameterName, change.oldValue)}
+                  {formatPendingChangeValue(change.parameterName, change.oldValue, formatValue)}
                   {' -> '}
-                  {formatValue(change.parameterName, change.newValue)}
+                  {formatPendingChangeValue(change.parameterName, change.newValue, formatValue)}
                 </p>
                 <p className={clsx('text-sm mt-1', adminMuted(isDark))}>
                   Grund: {change.reason}

@@ -37,7 +37,7 @@ Diese Regeln schützen **bereits korrekte Finanzwerte** vor “Formel-Drift” (
 
 - **Single Source of Truth ist Pflicht (keine Parallel-Formeln)**
   - **Constants**: `FIN1/Shared/Models/CalculationConstants.swift` ist die zentrale Quelle für Raten/Limits/Default-Werte (Fallback-Werte).
-- **Konfigurierbare Rates**: `ConfigurationService` verwaltet admin-konfigurierbare Finanzparameter (z.B. `appServiceChargeRate`, `traderCommissionRate`) mit Fallback auf `CalculationConstants` Defaults.
+- **Konfigurierbare Rates**: `ConfigurationService` verwaltet admin-konfigurierbare Finanzparameter (z.B. `appServiceChargeRate`, `traderCommissionRate`, `appCommissionRate`, `investorCommissionRateTotal`) mit Fallback auf `CalculationConstants` Defaults. Im Admin-Portal werden die drei Provisions-Rates als **eine Karte** mit Aufteilungs-Dropdown bearbeitet (`requestCommissionRateBundleChange`).
   - **Fees**: ausschließlich `FIN1/Shared/Services/FeeCalculationService.swift` (`createFeeBreakdown`, `calculateTotalFees`).
   - **Profit (Trader, aus Invoices, ohne Taxes)**: `FIN1/Shared/Services/ProfitCalculationService.swift` (`calculateTaxableProfit`), verwendet `Invoice.nonTaxTotal` (siehe `FIN1/Shared/Extensions/Invoice+Calculations.swift`).
   - **Taxes**: ausschließlich `FIN1/Features/Trader/Models/InvoiceTaxCalculations.swift` (`InvoiceTaxCalculator.*`).

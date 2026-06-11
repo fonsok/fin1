@@ -95,7 +95,8 @@ Nicht überlagert (bereits sauber):
 ### `PLT-LIAB-COM` als Clearing‑Verbindlichkeit (Trader + App‑Erfolgsprovision)
 
 **Stand Juni 2026 — umgesetzt.** Provision wird aus zwei Admin‑Parametern (4‑Eyes) gelesen:
-`traderCommissionRate` und `appCommissionRate` (`getCommissionRateBundle()`).
+`traderCommissionRate` und `appCommissionRate` (`getCommissionRateBundle()`); die **Gesamtprovision**
+(`investorCommissionRateTotal`) muss exakt deren Summe entsprechen (Admin-Validierung „=“).
 
 | Anteil | Investor Collection Bill | Trader | App‑Hauptbuch |
 | --- | --- | --- | --- |

@@ -75,6 +75,7 @@ extension ConfigurationService {
         poolBalanceDistributionThreshold = configuration.poolBalanceDistributionThreshold
         traderCommissionRate = configuration.effectiveTraderCommissionRate
         appCommissionRate = configuration.effectiveAppCommissionRate
+        investorCommissionRateTotal = configuration.effectiveInvestorCommissionRateTotal
         appServiceChargeRate = configuration.effectiveAppServiceChargeRate
         appServiceChargeRateCompanies = configuration.effectiveAppServiceChargeRateCompanies
         showCommissionBreakdownInCreditNote = configuration.showCommissionBreakdownInCreditNote ?? true
@@ -119,6 +120,9 @@ extension ConfigurationService {
                     if self.configuration.initialAccountBalance != initial { self.configuration.initialAccountBalance = initial; changed = true }
                     if let v = f.traderCommissionRate { self.configuration.traderCommissionRate = v; changed = true }
                     if let v = f.appCommissionRate { self.configuration.appCommissionRate = v; changed = true }
+                    if let v = f.investorCommissionRateTotal {
+                        self.configuration.investorCommissionRateTotal = v; changed = true
+                    }
                     if let v = f.appServiceChargeRate ?? f.platformServiceChargeRate { self.configuration.appServiceChargeRate = v; changed = true }
                     if let v = f.appServiceChargeRateCompanies ?? f.platformServiceChargeRateCompanies {
                         self.configuration.appServiceChargeRateCompanies = v; changed = true

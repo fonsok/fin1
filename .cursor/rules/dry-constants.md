@@ -27,7 +27,9 @@ This split must stay consistent when adding new fees or wiring `ConfigurationSer
 
 | Rate | ConfigurationService property | CalculationConstants fallback |
 |------|-------------------------------|-------------------------------|
-| Trader commission | `traderCommissionRate` / `effectiveCommissionRate` | `FeeRates.traderCommissionRate` (0.10) |
+| Investor commission total | `investorCommissionRateTotal` / `effectiveInvestorCommissionRate` | `FeeRates.investorCommissionRateTotal` (0.10) |
+| Trader commission (share of total) | `traderCommissionRate` / `effectiveCommissionRate` | `FeeRates.traderCommissionRate` (0.05) |
+| App success commission (share of total) | `appCommissionRate` / `effectiveAppCommissionRate` | `FeeRates.appCommissionRate` (0.05) |
 | App service charge (investors) | `appServiceChargeRate` / `effectiveAppServiceChargeRate` | `ServiceCharges.appServiceChargeRate` (0.02); legacy API key `platformServiceChargeRate` on backend |
 
 **RULE — ConfigurationService-first for admin-configurable rates:**

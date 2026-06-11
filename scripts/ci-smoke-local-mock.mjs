@@ -13,6 +13,7 @@ const getConfigResult = {
     orderFeeMax: 50,
     traderCommissionRate: 0.05,
     appCommissionRate: 0.05,
+    investorCommissionRateTotal: 0.1,
     appServiceChargeRate: 0.02,
     minimumCashReserve: 20,
     initialAccountBalance: 0,

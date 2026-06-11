@@ -1,7 +1,7 @@
 ---
 title: "FIN1 – Technische Spezifikation"
 audience: ["Entwicklung", "Architektur", "Security", "QA", "Betrieb"]
-lastUpdated: "2026-04-15"
+lastUpdated: "2026-06-11"
 ---
 
 ## Konfigurierbare Finanzparameter
@@ -14,10 +14,14 @@ Diese Parameter erfordern eine Genehmigung durch einen zweiten Administrator:
 
 | Parameter | Standard | Cloud Function | Beschreibung |
 |-----------|----------|----------------|--------------|
-| `traderCommissionRate` | 10% (0.10) | `requestConfigurationChange` | Trader-Provision |
+| `investorCommissionRateTotal` | 10% (0,10) | `requestCommissionRateBundleChange` (empfohlen) bzw. `requestConfigurationChange` | Gesamtprovision Investor (= Trader + App) |
+| `traderCommissionRate` | 5% (0,05) | siehe Bundle oben | Trader-Anteil an der Gesamtprovision |
+| `appCommissionRate` | 5% (0,05) | siehe Bundle oben | App-Erfolgsprovision (Plattform) |
 | `initialAccountBalance` | €0,00 (Code-/DB-Default; Anhebung nur Admin-Portal / 4-Augen) | `requestConfigurationChange` | Startguthaben für Kontoführung (kein „geschenktes“ Guthaben ohne Admin-Entscheid) |
 | `appServiceChargeRate` | 2% (0.02) | `requestConfigurationChange` | Appgebühr |
 | `legalAppName` | `FIN1` (Default) / `VITE_APP_NAME` (Portal-Fallback) | `requestConfigurationChange` | Kanonischer App-Name für Platzhalter wie `{{APP_NAME}}` (wird in `loadConfig()` als `legal.appName` exponiert) |
+
+**Admin-Portal:** Provisionsänderungen über die zusammengefasste Karte „Erfolgsprovision App + Trader“ (Gesamt + Aufteilungs-Presets); ein 4-Augen-Antrag setzt alle drei Felder atomar.
 
 **Workflow:**
 1. Admin A beantragt Änderung → `FourEyesRequest` wird erstellt

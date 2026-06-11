@@ -173,6 +173,7 @@ db.Config.updateOne(
         exchangeFeeRate: 0.001,
         traderCommissionRate: 0.05,
         appCommissionRate: 0.05,
+        investorCommissionRateTotal: 0.1,
         appServiceChargeRate: 0.02,
         minimumCashReserve: 20.0,
         initialAccountBalance: 0.0

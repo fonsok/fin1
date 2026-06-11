@@ -23,6 +23,12 @@ function validateConfigValue(paramName, value) {
       max: 1.0,
       errorMsg: 'App-Erfolgsprovision muss zwischen 0,0 (0 %) und 1,0 (100 %) liegen',
     },
+    investorCommissionRateTotal: {
+      type: 'number',
+      min: 0.0,
+      max: 1.0,
+      errorMsg: 'Gesamtprovision (Investor) muss zwischen 0,0 (0 %) und 1,0 (100 %) liegen',
+    },
     appServiceChargeRate: {
       type: 'number',
       min: 0.0,
@@ -294,17 +300,31 @@ function validateInvestmentAmountOrdering(parameterName, newValue, limits) {
 }
 
 /**
- * Trader- + App-Provisionssatz dürfen zusammen 100 % des Bruttogewinns nicht übersteigen.
+ * Provisions-Summe: traderCommissionRate + appCommissionRate muss exakt investorCommissionRateTotal entsprechen.
  *
  * @param {string} parameterName
  * @param {number} newValue
  * @param {object} financial - Current merged financial config from loadConfig()
  * @returns {{ valid: boolean, error?: string }}
  */
-function validateCommissionRateOrdering(parameterName, newValue, financial) {
-  if (parameterName !== 'traderCommissionRate' && parameterName !== 'appCommissionRate') {
+function roundRate(n) {
+  return Math.round(Number(n) * 10000) / 10000;
+}
+
+function formatRatePct(rate) {
+  return `${(roundRate(rate) * 100).toFixed(2).replace(/\.?0+$/, '')} %`;
+}
+
+function validateInvestorCommissionRateTotalMatch(parameterName, newValue, financial) {
+  const COMMISSION_KEYS = new Set([
+    'traderCommissionRate',
+    'appCommissionRate',
+    'investorCommissionRateTotal',
+  ]);
+  if (!COMMISSION_KEYS.has(parameterName)) {
     return { valid: true };
   }
+
   const { DEFAULT_CONFIG } = require('./defaultConfig');
   const traderRate =
     parameterName === 'traderCommissionRate'
@@ -314,14 +334,27 @@ function validateCommissionRateOrdering(parameterName, newValue, financial) {
     parameterName === 'appCommissionRate'
       ? Number(newValue)
       : Number(financial.appCommissionRate ?? DEFAULT_CONFIG.financial.appCommissionRate);
-  if (!Number.isFinite(traderRate) || !Number.isFinite(appRate)) {
+  const totalTarget =
+    parameterName === 'investorCommissionRateTotal'
+      ? Number(newValue)
+      : Number(
+        financial.investorCommissionRateTotal
+        ?? DEFAULT_CONFIG.financial.investorCommissionRateTotal,
+      );
+
+  if (!Number.isFinite(traderRate) || !Number.isFinite(appRate) || !Number.isFinite(totalTarget)) {
     return { valid: true };
   }
-  if (traderRate + appRate > 1) {
+
+  const sum = roundRate(traderRate + appRate);
+  const target = roundRate(totalTarget);
+  if (sum !== target) {
     return {
       valid: false,
       error:
-        'Summe aus Trader-Provision und App-Erfolgsprovision darf 100 % (1,0) nicht übersteigen.',
+        `Gesamtprovision muss exakt der Summe entsprechen: `
+        + `Trader (${formatRatePct(traderRate)}) + App (${formatRatePct(appRate)}) = ${formatRatePct(sum)}, `
+        + `Gesamtprovision (= Summe) ist ${formatRatePct(target)}.`,
     };
   }
   return { valid: true };
@@ -330,5 +363,5 @@ function validateCommissionRateOrdering(parameterName, newValue, financial) {
 module.exports = {
   validateConfigValue,
   validateInvestmentAmountOrdering,
-  validateCommissionRateOrdering,
+  validateInvestorCommissionRateTotalMatch,
 };

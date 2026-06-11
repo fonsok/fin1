@@ -2,6 +2,7 @@
 
 const { invalidateCache, TRANSACTION_LIMIT_SNAKE_TO_CAMEL } = require('../../utils/configHelper/index.js');
 const { normalizeTaxCollectionMode } = require('../../utils/configHelper/taxCollectionMode');
+const { formatCommissionRateBundle } = require('../../utils/configHelper/commissionRateBundle');
 const TAX_CONFIG_KEYS = new Set([
   'withholdingTaxRate',
   'solidaritySurchargeRate',
@@ -10,6 +11,9 @@ const TAX_CONFIG_KEYS = new Set([
 ]);
 
 function formatValue(value) {
+  if (value && typeof value === 'object' && 'investorCommissionRateTotal' in value) {
+    return formatCommissionRateBundle(value);
+  }
   if (typeof value === 'number') {
     if (value < 1) {
       return `${(value * 100).toFixed(1)}%`;
@@ -122,9 +126,36 @@ async function applyConfigurationChange(parameterName, newValue, userId) {
   console.log(`✅ Configuration '${parameterName}' updated to ${appliedValue} by ${userId}`);
 }
 
+async function applyCommissionRateBundle(bundle, userId) {
+  const Configuration = Parse.Object.extend('Configuration');
+  const query = new Parse.Query(Configuration);
+  query.equalTo('isActive', true);
+  query.descending('updatedAt');
+
+  let config = await query.first({ useMasterKey: true });
+  if (!config) {
+    config = new Configuration();
+    config.set('isActive', true);
+  }
+
+  config.set('investorCommissionRateTotal', bundle.investorCommissionRateTotal);
+  config.set('traderCommissionRate', bundle.traderCommissionRate);
+  config.set('appCommissionRate', bundle.appCommissionRate);
+  config.set('updatedBy', userId);
+  config.set('updatedAt', new Date());
+
+  await config.save(null, { useMasterKey: true });
+  invalidateCache();
+
+  console.log(
+    `✅ Commission rate bundle updated to ${formatCommissionRateBundle(bundle)} by ${userId}`,
+  );
+}
+
 module.exports = {
   formatValue,
   getOldValueFromConfig,
   buildDisplay,
   applyConfigurationChange,
+  applyCommissionRateBundle,
 };

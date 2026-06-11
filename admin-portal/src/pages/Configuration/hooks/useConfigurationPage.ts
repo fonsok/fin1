@@ -12,7 +12,7 @@ import {
   formatLocalizedInput,
   parseLocalizedNumberInput,
 } from '../localizedNumberInput';
-import { sortConfigEntriesAlphabetically, sortTaxConfigEntries } from '../configurationSort';
+import { sortConfigEntriesAlphabetically, sortFinancialConfigEntries, sortTaxConfigEntries } from '../configurationSort';
 
 const normalizeTaxCollectionMode = (value: unknown): 'customer_self_reports' | 'platform_withholds' =>
   value === 'platform_withholds' ? 'platform_withholds' : 'customer_self_reports';
@@ -272,8 +272,10 @@ export function useConfigurationPage() {
 
   const financialParams = useMemo(
     () =>
-      sortConfigEntriesAlphabetically(
-        Object.entries(PARAMETER_DEFINITIONS).filter(([, def]) => def.category === 'financial'),
+      sortFinancialConfigEntries(
+        Object.entries(PARAMETER_DEFINITIONS).filter(
+          ([, def]) => def.category === 'financial' && !def.hiddenInParameterList,
+        ),
       ),
     [],
   );

@@ -4,6 +4,7 @@
  * Parameters that require 4-eyes approval for changes.
  */
 const CRITICAL_PARAMETERS = [
+  'investorCommissionRateTotal',
   'traderCommissionRate',
   'appCommissionRate',
   'appServiceChargeRate',

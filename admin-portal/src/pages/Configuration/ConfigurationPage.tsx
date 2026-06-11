@@ -6,6 +6,8 @@ import { FinancialParametersCard } from './components/FinancialParametersCard';
 import { DisplayParametersCard } from './components/DisplayParametersCard';
 import { ConfigurationSectionCollapsible } from './components/ConfigurationSectionCollapsible';
 import { WalletActionModeBatchCard } from './components/WalletActionModeBatchCard';
+import { CommissionRateTraderAppCard } from './components/CommissionRateTraderAppCard';
+import { COMMISSION_RATE_BUNDLE_PARAMETER_NAME, COMMISSION_RATE_PARAMETER_KEYS } from './commissionRateTraderApp';
 import { PARAMETER_DEFINITIONS } from './parameterDefinitions';
 import { useConfigurationPage } from './hooks/useConfigurationPage';
 import {
@@ -72,7 +74,10 @@ export function ConfigurationPage() {
     [editingParam],
   );
 
-  const financialKeys = useMemo(() => financialParams.map(([k]) => k), [financialParams]);
+  const financialKeys = useMemo(
+    () => [COMMISSION_RATE_BUNDLE_PARAMETER_NAME, ...COMMISSION_RATE_PARAMETER_KEYS, ...financialParams.map(([k]) => k)],
+    [financialParams],
+  );
   const taxKeys = useMemo(() => taxParams.map(([k]) => k), [taxParams]);
   const systemKeys = useMemo(() => systemParams.map(([k]) => k), [systemParams]);
   const displayKeys = useMemo(() => displayParams.map(([k]) => k), [displayParams]);
@@ -173,6 +178,7 @@ export function ConfigurationPage() {
         pendingCount={pendingBySection[CONFIG_SECTION.financial]}
         isDark={isDark}
       >
+        <CommissionRateTraderAppCard config={config} pendingRequests={pendingData?.requests} />
         <FinancialParametersCard
           {...sharedCardProps}
           financialParams={financialParams}

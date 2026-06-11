@@ -5,10 +5,14 @@ const {
   validateConfigValue,
   validateTransactionLimitOrdering,
   validateInvestmentAmountOrdering,
-  validateCommissionRateOrdering,
+  validateInvestorCommissionRateTotalMatch,
   loadConfig,
 } = require('../../../utils/configHelper/index.js');
-const { applyConfigurationChange: persistConfigurationChange } = require('../../configuration/shared');
+const { applyConfigurationChange: persistConfigurationChange, applyCommissionRateBundle } = require('../../configuration/shared');
+const {
+  validateCommissionRateBundle,
+  COMMISSION_RATE_BUNDLE_PARAMETER_NAME,
+} = require('../../../utils/configHelper/commissionRateBundle');
 const {
   saveFourEyesAudit,
   saveConfigurationAuditLog,
@@ -20,6 +24,34 @@ const { applyCorrectionRequest } = require('./corrections');
 async function applyConfigurationChange({ req, requestId, request }) {
   const metadata = req.get('metadata') || {};
   const { parameterName, newValue, oldValue } = metadata;
+
+  if (parameterName === COMMISSION_RATE_BUNDLE_PARAMETER_NAME) {
+    const validation = validateCommissionRateBundle(newValue);
+    if (!validation.valid) {
+      throw new Parse.Error(Parse.Error.INVALID_VALUE, `Value no longer valid: ${validation.error}`);
+    }
+
+    await persistCommissionRateBundle(validation.bundle, request.user.id);
+
+    await saveConfigurationAuditLog({
+      action: 'configuration_change_approved',
+      userId: request.user.id,
+      userRole: request.user.get('role'),
+      parameterName,
+      oldValue,
+      newValue: validation.bundle,
+      metadata: {
+        fourEyesRequestId: requestId,
+        requesterId: req.get('requesterId'),
+        reason: metadata.reason,
+        isCritical: true,
+        ip: request.ip,
+      },
+    });
+
+    console.log(`✅ Commission rate bundle updated via 4-eyes approval by ${request.user.id}`);
+    return true;
+  }
 
   const validation = validateConfigValue(parameterName, newValue);
   if (!validation.valid) {
@@ -35,7 +67,11 @@ async function applyConfigurationChange({ req, requestId, request }) {
   if (!investmentOrder.valid) {
     throw new Parse.Error(Parse.Error.INVALID_VALUE, investmentOrder.error);
   }
-  const commissionOrder = validateCommissionRateOrdering(parameterName, newValue, currentConfig.financial);
+  const commissionOrder = validateInvestorCommissionRateTotalMatch(
+    parameterName,
+    newValue,
+    currentConfig.financial,
+  );
   if (!commissionOrder.valid) {
     throw new Parse.Error(Parse.Error.INVALID_VALUE, commissionOrder.error);
   }

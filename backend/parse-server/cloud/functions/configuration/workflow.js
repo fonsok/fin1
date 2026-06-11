@@ -7,8 +7,13 @@ const {
   isCriticalParameter,
   validateTransactionLimitOrdering,
   validateInvestmentAmountOrdering,
-  validateCommissionRateOrdering,
+  validateInvestorCommissionRateTotalMatch,
 } = require('../../utils/configHelper/index.js');
+const {
+  validateCommissionRateBundle,
+  extractCommissionRateBundleFromConfig,
+  COMMISSION_RATE_BUNDLE_PARAMETER_NAME,
+} = require('../../utils/configHelper/commissionRateBundle');
 const { applyConfigurationChange, formatValue, getOldValueFromConfig } = require('./shared');
 const {
   logConfigurationChangeRequest,
@@ -49,7 +54,7 @@ function registerConfigurationWorkflowFunctions() {
     if (!investmentOrder.valid) {
       throw new Parse.Error(Parse.Error.INVALID_VALUE, investmentOrder.error);
     }
-    const commissionOrder = validateCommissionRateOrdering(
+    const commissionOrder = validateInvestorCommissionRateTotalMatch(
       parameterName,
       normalizedNewValue,
       currentConfig.financial,
@@ -196,6 +201,77 @@ function registerConfigurationWorkflowFunctions() {
     return {
       success: true,
       message: `Configuration change request for '${metadata.parameterName}' has been rejected.`,
+    };
+  });
+
+  Parse.Cloud.define('requestCommissionRateBundleChange', async (request) => {
+    await requirePermissionWithTestAuth(request, 'createCorrectionRequest');
+
+    const { investorCommissionRateTotal, traderCommissionRate, appCommissionRate, reason } = request.params;
+    if (
+      investorCommissionRateTotal === undefined
+      || traderCommissionRate === undefined
+      || appCommissionRate === undefined
+      || !reason
+    ) {
+      throw new Parse.Error(
+        Parse.Error.INVALID_VALUE,
+        'investorCommissionRateTotal, traderCommissionRate, appCommissionRate, and reason are required',
+      );
+    }
+
+    const validation = validateCommissionRateBundle({
+      investorCommissionRateTotal,
+      traderCommissionRate,
+      appCommissionRate,
+    });
+    if (!validation.valid) {
+      throw new Parse.Error(Parse.Error.INVALID_VALUE, validation.error);
+    }
+
+    const currentConfig = await loadConfig(true);
+    const oldValue = extractCommissionRateBundleFromConfig(currentConfig);
+    const newValue = validation.bundle;
+
+    const FourEyesRequest = Parse.Object.extend('FourEyesRequest');
+    const fourEyesReq = new FourEyesRequest();
+
+    fourEyesReq.set('requestType', 'configuration_change');
+    fourEyesReq.set('requesterId', request.user.id);
+    fourEyesReq.set('requesterRole', request.user.get('role'));
+    fourEyesReq.set('requesterEmail', request.user.get('email'));
+    fourEyesReq.set('status', 'pending');
+    fourEyesReq.set('expiresAt', new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
+    fourEyesReq.set('metadata', {
+      parameterName: COMMISSION_RATE_BUNDLE_PARAMETER_NAME,
+      oldValue,
+      newValue,
+      reason,
+      isCritical: true,
+    });
+
+    await fourEyesReq.save(null, { useMasterKey: true });
+
+    await logConfigurationChangeRequest(
+      request,
+      COMMISSION_RATE_BUNDLE_PARAMETER_NAME,
+      oldValue,
+      newValue,
+      reason,
+      fourEyesReq.id,
+    );
+    await notifyApproversOfPendingRequest(
+      fourEyesReq,
+      COMMISSION_RATE_BUNDLE_PARAMETER_NAME,
+      newValue,
+      reason,
+    );
+
+    return {
+      success: true,
+      requiresApproval: true,
+      fourEyesRequestId: fourEyesReq.id,
+      message: `Provisions-Bundle-Änderung erfordert 4-Augen-Freigabe. Request ID: ${fourEyesReq.id}`,
     };
   });
 }

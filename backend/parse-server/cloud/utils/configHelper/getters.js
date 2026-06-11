@@ -20,10 +20,11 @@ async function getCommissionRateBundle() {
   const config = await loadConfig();
   const traderRate = Number(config.financial.traderCommissionRate) || 0;
   const appRate = Number(config.financial.appCommissionRate) || 0;
+  const totalRate = Number(config.financial.investorCommissionRateTotal);
   return {
     traderRate,
     appRate,
-    totalRate: traderRate + appRate,
+    totalRate: Number.isFinite(totalRate) ? totalRate : traderRate + appRate,
   };
 }
 

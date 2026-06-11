@@ -3,6 +3,11 @@ import type { ConfigurationParameter } from './types';
 export type ConfigParameterEntry = [string, Omit<ConfigurationParameter, 'value'>];
 
 /** German A–Z by `displayName` (case- and accent-insensitive). */
+export function sortFinancialConfigEntries(entries: ConfigParameterEntry[]): ConfigParameterEntry[] {
+  return sortConfigEntriesAlphabetically(entries);
+}
+
+/** German A–Z by `displayName` (case- and accent-insensitive). */
 export function sortConfigEntriesAlphabetically(entries: ConfigParameterEntry[]): ConfigParameterEntry[] {
   return [...entries].sort(([, a], [, b]) =>
     a.displayName.localeCompare(b.displayName, 'de', { sensitivity: 'base' }),

@@ -2,6 +2,20 @@ import type { ConfigurationParameter } from './types';
 
 /** Parameter definitions with metadata (values come from backend / resolveConfig). */
 export const PARAMETER_DEFINITIONS: Record<string, Omit<ConfigurationParameter, 'value'>> = {
+  investorCommissionRateTotal: {
+    key: 'investorCommissionRateTotal',
+    displayName: 'Gesamtprovision Investor (= Summe)',
+    description:
+      'Exakte Provisions-Summe für Investoren (Collection Bill „Commission“). '
+      + 'Muss immer gelten: Trader-Provision + App-Erfolgsprovision = dieser Wert (Gleichheit „=“, keine Obergrenze). '
+      + 'Standard: 10 % (0,10) bei 5 % + 5 %.',
+    type: 'percentage',
+    category: 'financial',
+    isCritical: true,
+    hiddenInParameterList: true,
+    min: 0,
+    max: 1,
+  },
   traderCommissionRate: {
     key: 'traderCommissionRate',
     displayName: 'Trader Commission Rate',
@@ -9,6 +23,7 @@ export const PARAMETER_DEFINITIONS: Record<string, Omit<ConfigurationParameter, 
     type: 'percentage',
     category: 'financial',
     isCritical: true,
+    hiddenInParameterList: true,
     min: 0,
     max: 1,
   },
@@ -20,6 +35,7 @@ export const PARAMETER_DEFINITIONS: Record<string, Omit<ConfigurationParameter, 
     type: 'percentage',
     category: 'financial',
     isCritical: true,
+    hiddenInParameterList: true,
     min: 0,
     max: 1,
   },

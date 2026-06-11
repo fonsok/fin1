@@ -8,6 +8,8 @@ export interface ConfigurationParameter {
   type: 'number' | 'percentage' | 'percent_display' | 'currency' | 'boolean' | 'string';
   category: 'financial' | 'tax' | 'display' | 'system' | 'feature';
   isCritical: boolean;
+  /** Omit from Finanzparameter list — edited via a dedicated composite card. */
+  hiddenInParameterList?: boolean;
   min?: number;
   max?: number;
   unit?: string;
@@ -22,12 +24,18 @@ export interface ConfigurationData {
 export interface PendingConfigChange {
   id: string;
   parameterName: string;
-  oldValue: number | string | boolean;
-  newValue: number | string | boolean;
+  oldValue: number | string | boolean | CommissionRateBundleValue;
+  newValue: number | string | boolean | CommissionRateBundleValue;
   reason: string;
   requesterId: string;
   requesterEmail: string;
   requesterRole: string;
   createdAt: string;
   expiresAt: string;
+}
+
+export interface CommissionRateBundleValue {
+  investorCommissionRateTotal: number;
+  traderCommissionRate: number;
+  appCommissionRate: number;
 }

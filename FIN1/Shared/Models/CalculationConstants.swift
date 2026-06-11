@@ -90,6 +90,8 @@ struct CalculationConstants {
         /// App success-provision rate on investor gross profit - LAST-RESORT FALLBACK.
         /// Production value comes from `ConfigurationService.appCommissionRate`.
         static let appCommissionRate: Double = 0.05
+        /// Exact investor commission sum (= trader + app); from `ConfigurationService.investorCommissionRateTotal`.
+        static let investorCommissionRateTotal: Double = 0.1
 
         /// Trader commission percentage for display - LAST-RESORT FALLBACK.
         /// Production value comes from `ConfigurationService.traderCommissionPercentage`.

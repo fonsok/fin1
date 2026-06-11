@@ -41,7 +41,9 @@ interface ApprovalsResponse {
 type TabId = 'pending' | 'own' | 'all' | 'history';
 
 const CONFIG_PARAM_TYPES: Record<string, 'percentage' | 'currency'> = {
+  investorCommissionRateTotal: 'percentage',
   traderCommissionRate: 'percentage',
+  appCommissionRate: 'percentage',
   appServiceChargeRate: 'percentage',
   initialAccountBalance: 'currency',
   minimumCashReserve: 'currency',
@@ -55,7 +57,10 @@ const CONFIG_PARAM_TYPES: Record<string, 'percentage' | 'currency'> = {
 };
 
 const PARAM_DISPLAY_NAMES: Record<string, string> = {
+  commissionRateBundle: 'Erfolgsprovision App + Trader',
+  investorCommissionRateTotal: 'Gesamtprovision Investor (= Summe)',
   traderCommissionRate: 'Trader-Provision',
+  appCommissionRate: 'App-Erfolgsprovision',
   appServiceChargeRate: 'App-Servicegebühr',
   initialAccountBalance: 'Startguthaben',
   minimumCashReserve: 'Mindest-Bargeldreserve',
@@ -78,6 +83,15 @@ const PARAM_DISPLAY_NAMES: Record<string, string> = {
 };
 
 function formatConfigValue(paramName: string, value: unknown): string {
+  if (paramName === 'commissionRateBundle' && value && typeof value === 'object') {
+    const bundle = value as {
+      investorCommissionRateTotal?: number;
+      traderCommissionRate?: number;
+      appCommissionRate?: number;
+    };
+    const pct = (rate: number) => `${(Number(rate) * 100).toFixed(1).replace(/\.0$/, '')} %`;
+    return `${pct(Number(bundle.investorCommissionRateTotal))} gesamt (Trader ${pct(Number(bundle.traderCommissionRate))} · App ${pct(Number(bundle.appCommissionRate))})`;
+  }
   const numVal = Number(value);
   if (isNaN(numVal)) return String(value);
   const type = CONFIG_PARAM_TYPES[paramName];
