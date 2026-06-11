@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { Card, Button, Input, Badge } from '../../../components/ui';
-import { useTheme } from '../../../context/ThemeContext';
+import { Button, Input, Badge } from '../../../components/ui';
 import { cloudFunction } from '../../../api/admin';
 import { formatPercentage } from '../../../utils/format';
-import { adminMuted } from '../../../utils/adminThemeClasses';
+import { listRowStripeClasses } from '../../../utils/tableStriping';
+import { adminControlField, adminMuted } from '../../../utils/adminThemeClasses';
 import type { PendingConfigChange } from '../types';
 import {
+  COMMISSION_RATE_BUNDLE_DESCRIPTION,
   COMMISSION_RATE_BUNDLE_DISPLAY_NAME,
   COMMISSION_RATE_BUNDLE_PARAMETER_NAME,
   COMMISSION_RATE_PARAMETER_KEYS,
@@ -25,12 +26,15 @@ import {
 } from '../commissionRateTraderApp';
 import {
   formatLocalizedInput,
+  formatRateInputFromNumber,
   parseLocalizedNumberInput,
 } from '../localizedNumberInput';
 
 interface CommissionRateTraderAppCardProps {
   config: Record<string, number | string | boolean>;
   pendingRequests?: PendingConfigChange[];
+  isDark: boolean;
+  rowIndex?: number;
 }
 
 function hasPendingCommissionChange(pendingRequests?: PendingConfigChange[]): boolean {
@@ -49,13 +53,18 @@ function hasPendingCommissionChange(pendingRequests?: PendingConfigChange[]): bo
 export function CommissionRateTraderAppCard({
   config,
   pendingRequests,
+  isDark,
+  rowIndex = 0,
 }: CommissionRateTraderAppCardProps) {
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
   const queryClient = useQueryClient();
+  const muted = adminMuted(isDark);
+  const selectControlClass = clsx(
+    'w-full max-w-md rounded-md border px-3 py-2 text-sm',
+    adminControlField(isDark),
+  );
 
   const currentRates = useMemo(() => readCommissionRatesFromConfig(config), [config]);
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [totalInput, setTotalInput] = useState('');
   const [splitPreset, setSplitPreset] = useState<CommissionSplitPresetId>('equal_50_50');
   const [customTraderInput, setCustomTraderInput] = useState('');
@@ -65,21 +74,21 @@ export function CommissionRateTraderAppCard({
 
   const resetDraftFromConfig = () => {
     const preset = detectPresetFromRates(currentRates);
-    setTotalInput(formatLocalizedInput(String(currentRates.investorCommissionRateTotal)));
+    setTotalInput(formatRateInputFromNumber(currentRates.investorCommissionRateTotal));
     setSplitPreset(preset);
-    setCustomTraderInput(formatLocalizedInput(String(currentRates.traderCommissionRate)));
-    setCustomAppInput(formatLocalizedInput(String(currentRates.appCommissionRate)));
+    setCustomTraderInput(formatRateInputFromNumber(currentRates.traderCommissionRate));
+    setCustomAppInput(formatRateInputFromNumber(currentRates.appCommissionRate));
     setReason('');
     setUiError(null);
   };
 
   useEffect(() => {
-    if (!isExpanded) {
+    if (!isEditing) {
       return;
     }
     resetDraftFromConfig();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only when opening editor
-  }, [isExpanded]);
+  }, [isEditing]);
 
   const parsedTotal = parseLocalizedNumberInput(totalInput);
   const draftRates = useMemo((): CommissionRates | null => {
@@ -115,7 +124,7 @@ export function CommissionRateTraderAppCard({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['configuration'] });
       queryClient.invalidateQueries({ queryKey: ['pendingConfigChanges'] });
-      setIsExpanded(false);
+      setIsEditing(false);
       setUiError(null);
     },
     onError: (err: unknown) => {
@@ -129,6 +138,11 @@ export function CommissionRateTraderAppCard({
       setUiError(backendMessage || 'Fehler beim Beantragen der Änderung.');
     },
   });
+
+  const cancelEdit = () => {
+    resetDraftFromConfig();
+    setIsEditing(false);
+  };
 
   const submit = () => {
     setUiError(null);
@@ -158,8 +172,8 @@ export function CommissionRateTraderAppCard({
       const preset = COMMISSION_SPLIT_PRESETS.find((entry) => entry.id === nextPreset);
       if (preset) {
         const rates = computeRatesFromPreset(parsedTotal, preset.traderShareOfTotal);
-        setCustomTraderInput(formatLocalizedInput(String(rates.traderCommissionRate)));
-        setCustomAppInput(formatLocalizedInput(String(rates.appCommissionRate)));
+        setCustomTraderInput(formatRateInputFromNumber(rates.traderCommissionRate));
+        setCustomAppInput(formatRateInputFromNumber(rates.appCommissionRate));
       }
     }
   };
@@ -176,122 +190,153 @@ export function CommissionRateTraderAppCard({
       return;
     }
     const rates = computeRatesFromPreset(total, preset.traderShareOfTotal);
-    setCustomTraderInput(formatLocalizedInput(String(rates.traderCommissionRate)));
-    setCustomAppInput(formatLocalizedInput(String(rates.appCommissionRate)));
+    setCustomTraderInput(formatRateInputFromNumber(rates.traderCommissionRate));
+    setCustomAppInput(formatRateInputFromNumber(rates.appCommissionRate));
   };
 
   const pending = hasPendingCommissionChange(pendingRequests);
 
   return (
-    <Card className="mb-4">
-      <div className="flex items-center justify-between gap-3">
-        <h3 className="text-md font-semibold mb-2 flex items-center gap-2">
-          {COMMISSION_RATE_BUNDLE_DISPLAY_NAME}
-          <Badge variant="warning" size="sm">4-Augen</Badge>
-          {pending && <Badge variant="warning" size="sm">Ausstehend</Badge>}
-        </h3>
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={() => {
-            if (isExpanded) {
-              resetDraftFromConfig();
-            }
-            setIsExpanded((prev) => !prev);
-          }}
-        >
-          {isExpanded ? 'Abbrechen' : 'Bearbeiten'}
-        </Button>
-      </div>
+    <div
+      className={clsx(
+        'py-4 first:pt-0 last:pb-0 rounded-lg px-3 -mx-3',
+        listRowStripeClasses(isDark, rowIndex, { className: 'transition-colors' }),
+      )}
+    >
+      <div className="flex items-start justify-between">
+        <div className="flex-1">
+          <div className="flex items-center gap-2">
+            <span className="font-medium">{COMMISSION_RATE_BUNDLE_DISPLAY_NAME}</span>
+            <Badge variant="warning" size="sm">4-Augen</Badge>
+            {pending && (
+              <Badge variant="info" size="sm">Änderung ausstehend</Badge>
+            )}
+          </div>
+          <p className={clsx('text-sm mt-1', muted)}>{COMMISSION_RATE_BUNDLE_DESCRIPTION}</p>
 
-      <p className={clsx('text-sm mb-2', adminMuted(isDark))}>
-        Gesamtprovision für Investoren (Collection Bill „Commission“) mit Aufteilung Trader / App.
-        Summe muss exakt gelten: Trader + App = Gesamt.
-      </p>
-      <p className={clsx('text-sm font-medium mb-4', adminMuted(isDark))}>
-        Aktuell: {formatCommissionRatesSummary(currentRates)}
-      </p>
+          {isEditing ? (
+            <div className="mt-3 space-y-3">
+              <div className="flex items-center gap-2">
+                <span className={clsx('text-sm', muted)}>Aktuell:</span>
+                <span className="font-medium">{formatCommissionRatesSummary(currentRates)}</span>
+              </div>
 
-      {isExpanded && (
-        <>
-          <div className="grid gap-4 md:grid-cols-2 mb-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Gesamtprovision</label>
-              <Input
-                value={totalInput}
-                onChange={(e) => onTotalChange(e.target.value)}
-                placeholder="z. B. 0,10"
-              />
-              {Number.isFinite(parsedTotal) && (
-                <p className={clsx('text-xs mt-1', adminMuted(isDark))}>
-                  {formatPercentage(parsedTotal)} gesamt
+              <div className="grid gap-4 md:grid-cols-2 max-w-2xl">
+                <div>
+                  <label className={clsx('block text-sm font-medium mb-1', muted)}>Gesamtprovision</label>
+                  <Input
+                    value={totalInput}
+                    onChange={(e) => onTotalChange(e.target.value)}
+                    placeholder="0,1"
+                    className="w-32"
+                  />
+                  {Number.isFinite(parsedTotal) && (
+                    <p className={clsx('text-xs mt-1', muted)}>
+                      {formatPercentage(parsedTotal)} gesamt
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className={clsx('block text-sm font-medium mb-1', muted)}>Aufteilung</label>
+                  <select
+                    className={selectControlClass}
+                    value={splitPreset}
+                    onChange={(e) => onSplitChange(e.target.value as CommissionSplitPresetId)}
+                  >
+                    {COMMISSION_SPLIT_PRESETS.map((preset) => (
+                      <option key={preset.id} value={preset.id}>
+                        {formatSplitPresetLabel(
+                          preset,
+                          Number.isFinite(parsedTotal) ? parsedTotal : currentRates.investorCommissionRateTotal,
+                        )}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {splitPreset === 'custom' && (
+                <div className="grid gap-4 md:grid-cols-2 max-w-2xl">
+                  <div>
+                    <label className={clsx('block text-sm font-medium mb-1', muted)}>Trader-Provision</label>
+                    <Input
+                      value={customTraderInput}
+                      onChange={(e) => setCustomTraderInput(formatLocalizedInput(e.target.value))}
+                      className="w-32"
+                    />
+                  </div>
+                  <div>
+                    <label className={clsx('block text-sm font-medium mb-1', muted)}>App-Erfolgsprovision</label>
+                    <Input
+                      value={customAppInput}
+                      onChange={(e) => setCustomAppInput(formatLocalizedInput(e.target.value))}
+                      className="w-32"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {draftRates && (
+                <p className={clsx('text-sm', muted)}>
+                  Vorschau: {formatCommissionRatesSummary(draftRates)}
                 </p>
               )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Aufteilung</label>
-              <select
-                className={clsx(
-                  'w-full rounded-md border px-3 py-2 text-sm',
-                  isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-300',
-                )}
-                value={splitPreset}
-                onChange={(e) => onSplitChange(e.target.value as CommissionSplitPresetId)}
-              >
-                {COMMISSION_SPLIT_PRESETS.map((preset) => (
-                  <option key={preset.id} value={preset.id}>
-                    {formatSplitPresetLabel(
-                      preset,
-                      Number.isFinite(parsedTotal) ? parsedTotal : currentRates.investorCommissionRateTotal,
-                    )}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
 
-          {splitPreset === 'custom' && (
-            <div className="grid gap-4 md:grid-cols-2 mb-4">
+              {uiError && <p className="text-sm text-red-500">{uiError}</p>}
+
               <div>
-                <label className="block text-sm font-medium mb-1">Trader-Provision</label>
                 <Input
-                  value={customTraderInput}
-                  onChange={(e) => setCustomTraderInput(formatLocalizedInput(e.target.value))}
+                  placeholder="Begründung für die Änderung..."
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  className="w-full"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">App-Erfolgsprovision</label>
-                <Input
-                  value={customAppInput}
-                  onChange={(e) => setCustomAppInput(formatLocalizedInput(e.target.value))}
-                />
+
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  onClick={submit}
+                  loading={mutation.isPending}
+                  disabled={!reason.trim()}
+                >
+                  Änderung beantragen
+                </Button>
+                <Button variant="secondary" size="sm" onClick={cancelEdit}>
+                  Abbrechen
+                </Button>
               </div>
+
+              {mutation.isSuccess && (
+                <p className="text-sm text-green-600">Änderungsantrag wurde erstellt</p>
+              )}
+            </div>
+          ) : (
+            <div className="mt-2 flex flex-col gap-1">
+              <span className="text-lg font-semibold text-fin1-primary">
+                {formatPercentage(currentRates.investorCommissionRateTotal)}
+              </span>
+              <span className={clsx('text-sm', muted)}>
+                Trader {formatPercentage(currentRates.traderCommissionRate)}
+                {' · '}
+                App {formatPercentage(currentRates.appCommissionRate)}
+              </span>
             </div>
           )}
+        </div>
 
-          {draftRates && (
-            <p className={clsx('text-sm mb-4', adminMuted(isDark))}>
-              Vorschau: {formatCommissionRatesSummary(draftRates)}
-            </p>
-          )}
-
-          <Input
-            placeholder="Begründung für die Änderung..."
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            className="w-full mb-3"
-          />
-
-          {uiError && <p className="text-sm text-red-500 mb-2">{uiError}</p>}
-          {mutation.isSuccess && (
-            <p className="text-sm text-green-600 mb-2">Änderungsantrag wurde erstellt.</p>
-          )}
-
-          <Button size="sm" onClick={submit} loading={mutation.isPending}>
-            Änderung beantragen
+        {!isEditing && (
+          <Button
+            variant="secondary"
+            size="sm"
+            className="self-center"
+            onClick={() => setIsEditing(true)}
+            disabled={pending}
+          >
+            Bearbeiten
           </Button>
-        </>
-      )}
-    </Card>
+        )}
+      </div>
+    </div>
   );
 }

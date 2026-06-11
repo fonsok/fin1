@@ -16,6 +16,7 @@ import {
   countPendingInSection,
   getConfigSectionForParameter,
 } from './configurationSections';
+import { adminTableBodyDivide } from '../../utils/adminThemeClasses';
 
 const financialIcon = (
   <svg className="w-5 h-5 text-fin1-primary shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
@@ -178,13 +179,22 @@ export function ConfigurationPage() {
         pendingCount={pendingBySection[CONFIG_SECTION.financial]}
         isDark={isDark}
       >
-        <CommissionRateTraderAppCard config={config} pendingRequests={pendingData?.requests} />
-        <FinancialParametersCard
-          {...sharedCardProps}
-          financialParams={financialParams}
-          title="Finanzparameter"
-          onEditValueChange={onFinancialEditValueChange}
-        />
+        <div className={adminTableBodyDivide(isDark)}>
+          <CommissionRateTraderAppCard
+            config={config}
+            pendingRequests={pendingData?.requests}
+            isDark={isDark}
+            rowIndex={0}
+          />
+          <FinancialParametersCard
+            {...sharedCardProps}
+            financialParams={financialParams}
+            title="Finanzparameter"
+            stripeIndexOffset={1}
+            listWrapper={false}
+            onEditValueChange={onFinancialEditValueChange}
+          />
+        </div>
       </ConfigurationSectionCollapsible>
 
       <ConfigurationSectionCollapsible

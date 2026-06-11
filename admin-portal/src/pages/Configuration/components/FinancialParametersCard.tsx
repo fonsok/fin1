@@ -18,6 +18,10 @@ interface FinancialParametersCardProps {
   crossLimitError: string | null;
   editError: string | null;
   pendingRequests?: PendingConfigChange[];
+  /** When false, rows render without an outer divide wrapper (for combined lists). */
+  listWrapper?: boolean;
+  /** Offset for zebra striping when rows are prepended before this card's list */
+  stripeIndexOffset?: number;
   onEditValueChange: (value: string, key: string) => void;
   onChangeReason: (value: string) => void;
   onSave: () => void;
@@ -61,6 +65,8 @@ export function FinancialParametersCard({
   isSaving,
   isError,
   isSuccess,
+  stripeIndexOffset = 0,
+  listWrapper = true,
 }: FinancialParametersCardProps) {
   const isTaxCard = title === 'Steuerparameter';
   const appWithholdsLabel = getAppWithholdsLabel(config);
@@ -85,7 +91,7 @@ export function FinancialParametersCard({
   );
 
   const content = (
-      <div className={adminTableBodyDivide(isDark)}>
+    <>
         {visibleParams.map(([key, def], index: number) => {
           const value = config[key];
           const isEditing = editingParam === key;
@@ -97,7 +103,7 @@ export function FinancialParametersCard({
               key={key}
               className={clsx(
                 'py-4 first:pt-0 last:pb-0 rounded-lg px-3 -mx-3',
-                listRowStripeClasses(isDark, index, { className: 'transition-colors' }),
+                listRowStripeClasses(isDark, index + stripeIndexOffset, { className: 'transition-colors' }),
               )}
             >
               <div className="flex items-start justify-between">
@@ -286,7 +292,7 @@ export function FinancialParametersCard({
           <div
             className={clsx(
               'py-4 first:pt-0 last:pb-0 rounded-lg px-3 -mx-3',
-              listRowStripeClasses(isDark, visibleParams.length, { className: 'transition-colors' }),
+              listRowStripeClasses(isDark, visibleParams.length + stripeIndexOffset, { className: 'transition-colors' }),
             )}
           >
             <div className="flex items-start justify-between">
@@ -303,11 +309,11 @@ export function FinancialParametersCard({
             </div>
           </div>
         )}
-      </div>
+    </>
   );
 
   if (!showHeader) {
-    return content;
+    return listWrapper ? <div className={adminTableBodyDivide(isDark)}>{content}</div> : content;
   }
 
   return (
@@ -318,7 +324,7 @@ export function FinancialParametersCard({
         </svg>
         {title}
       </h3>
-      {content}
+      {listWrapper ? <div className={adminTableBodyDivide(isDark)}>{content}</div> : content}
     </Card>
   );
 }

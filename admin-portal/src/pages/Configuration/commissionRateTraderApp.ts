@@ -10,6 +10,10 @@ export const COMMISSION_RATE_BUNDLE_PARAMETER_NAME = 'commissionRateBundle';
 
 export const COMMISSION_RATE_BUNDLE_DISPLAY_NAME = 'Erfolgsprovision App + Trader';
 
+export const COMMISSION_RATE_BUNDLE_DESCRIPTION =
+  'Gesamtprovision für Investoren (Collection Bill „Commission“) mit Aufteilung Trader / App. '
+  + 'Summe muss exakt gelten: Trader + App = Gesamt.';
+
 export type CommissionSplitPresetId =
   | 'equal_50_50'
   | 'trader_60'
