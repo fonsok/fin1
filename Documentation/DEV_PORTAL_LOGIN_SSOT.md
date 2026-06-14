@@ -60,6 +60,8 @@ Die **Dev-Login-Box** auf `/admin/login` (nur `import.meta.env.DEV`) liest diese
 
 ## 5. Kurz-Checkliste nach „wir erinnern uns nicht mehr“
 
+- **Account lockout (Parse):** nach 3 Fehlversuchen ~5 Min. Sperre. Master-Key-Freigabe: Cloud Function `unlockParseAccountLockout` mit `{ "email": "…@fin1.de" }` — oder auf dem Parse-Host `reset-portal-login.sh` (setzt Passwort neu + Lockout weg).
+
 1. Admins: `./scripts/configure-local-ba-password.sh` (Mac) oder `BA_PASSWORD='…'` in `scripts/.env.server`, dann drei `create-*-admin.sh` auf dem Server ausführen.  
 2. Compliance vergessen: nur `create-compliance-admin.sh` mit neuem `BA_PASSWORD` reicht.  
 3. CSR: `node backend/scripts/create_csr_users.js` gegen eure Parse-URL + Master Key (siehe Skript-Kopf), oder Passwörter in `CSR_USERS` anpassen und Skript erneut laufen lassen.

@@ -1,39 +1,70 @@
 'use strict';
 
+const { MongoClient } = require('mongodb');
+
+const LOCKOUT_FIELDS = ['_failed_login_count', '_account_lockout_expires_at'];
+
+let mongoPromise;
+
+function getDatabaseUri() {
+  const uri = process.env.PARSE_SERVER_DATABASE_URI;
+  if (!uri || typeof uri !== 'string' || !uri.trim()) {
+    return null;
+  }
+  return uri.trim();
+}
+
+async function getMongoDb() {
+  const uri = getDatabaseUri();
+  if (!uri) {
+    return null;
+  }
+  if (!mongoPromise) {
+    mongoPromise = (async () => {
+      const client = new MongoClient(uri, { maxPoolSize: 5 });
+      await client.connect();
+      return { client, db: client.db() };
+    })();
+  }
+  const { db } = await mongoPromise;
+  return db;
+}
+
 /**
- * Clears Parse Server account-lockout fields on _User (see node_modules/parse-server/lib/AccountLockout.js).
- * Master-key PUT on /users/:id with Delete ops — same mechanism as unlockAccount() when unlockOnPasswordReset is true.
+ * Clears Parse Server account-lockout fields on _User (see AccountLockout.js).
+ * REST PUT with Delete ops does not reliably remove internal underscore fields;
+ * use MongoDB $unset on the same database as Parse Server.
  */
 async function clearAccountLockoutForUserObjectId(objectId) {
   if (!objectId) {
     return;
   }
-  const port = String(process.env.PORT || '1337');
-  const basePath = (process.env.PARSE_SERVER_INTERNAL_PARSE_PATH || '/parse').replace(/\/$/, '');
-  const host = process.env.PARSE_SERVER_LOCKOUT_CLEAR_HOST || '127.0.0.1';
-  const url = `http://${host}:${port}${basePath}/users/${objectId}`;
-  const appId = process.env.PARSE_SERVER_APPLICATION_ID || 'fin1-app-id';
-  const masterKey = process.env.PARSE_SERVER_MASTER_KEY || 'fin1-master-key';
 
-  const res = await fetch(url, {
-    method: 'PUT',
-    headers: {
-      'X-Parse-Application-Id': appId,
-      'X-Parse-Master-Key': masterKey,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      _failed_login_count: { __op: 'Delete' },
-      _account_lockout_expires_at: { __op: 'Delete' },
-    }),
-  });
-
-  if (!res.ok) {
-    const body = await res.text();
-    console.error(`clearAccountLockoutForUserObjectId failed: ${res.status} ${body}`);
+  const db = await getMongoDb();
+  if (!db) {
     throw new Parse.Error(
       Parse.Error.INTERNAL_SERVER_ERROR,
-      `Account lockout could not be cleared (HTTP ${res.status}). Check parse logs.`
+      'PARSE_SERVER_DATABASE_URI is missing — account lockout cannot be cleared.',
+    );
+  }
+
+  const unset = LOCKOUT_FIELDS.reduce((acc, field) => {
+    acc[field] = '';
+    return acc;
+  }, {});
+
+  const result = await db.collection('_User').updateOne(
+    { _id: objectId },
+    {
+      $unset: unset,
+      $set: { failedLoginCount: 0 },
+    },
+  );
+
+  if (result.matchedCount !== 1) {
+    throw new Parse.Error(
+      Parse.Error.OBJECT_NOT_FOUND,
+      `User not found for lockout clear: ${objectId}`,
     );
   }
 }
@@ -74,4 +105,16 @@ async function handleUnlockParseAccountLockout(request) {
 module.exports = {
   clearAccountLockoutForUserObjectId,
   handleUnlockParseAccountLockout,
+  __resetAccountLockoutMongoForTests: async () => {
+    if (!mongoPromise) {
+      return;
+    }
+    try {
+      const { client } = await mongoPromise;
+      await client.close();
+    } catch {
+      // ignore
+    }
+    mongoPromise = null;
+  },
 };
