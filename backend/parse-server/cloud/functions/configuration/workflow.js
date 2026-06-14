@@ -14,7 +14,7 @@ const {
   extractCommissionRateBundleFromConfig,
   COMMISSION_RATE_BUNDLE_PARAMETER_NAME,
 } = require('../../utils/configHelper/commissionRateBundle');
-const { applyConfigurationChange, formatValue, getOldValueFromConfig } = require('./shared');
+const { applyConfigurationChange, applyCommissionRateBundle, formatValue, getOldValueFromConfig } = require('./shared');
 const {
   logConfigurationChangeRequest,
   logConfigurationChange,
@@ -146,7 +146,15 @@ function registerConfigurationWorkflowFunctions() {
     const metadata = req.get('metadata');
     const { parameterName, newValue, oldValue } = metadata;
 
-    await applyConfigurationChange(parameterName, newValue, request.user.id);
+    if (parameterName === COMMISSION_RATE_BUNDLE_PARAMETER_NAME) {
+      const validation = validateCommissionRateBundle(newValue);
+      if (!validation.valid) {
+        throw new Parse.Error(Parse.Error.INVALID_VALUE, validation.error);
+      }
+      await applyCommissionRateBundle(validation.bundle, request.user.id);
+    } else {
+      await applyConfigurationChange(parameterName, newValue, request.user.id);
+    }
 
     req.set('status', 'approved');
     req.set('approverId', request.user.id);

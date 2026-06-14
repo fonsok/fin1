@@ -31,7 +31,7 @@ async function applyConfigurationChange({ req, requestId, request }) {
       throw new Parse.Error(Parse.Error.INVALID_VALUE, `Value no longer valid: ${validation.error}`);
     }
 
-    await persistCommissionRateBundle(validation.bundle, request.user.id);
+    await applyCommissionRateBundle(validation.bundle, request.user.id);
 
     await saveConfigurationAuditLog({
       action: 'configuration_change_approved',

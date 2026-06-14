@@ -52,6 +52,7 @@ Die **Dev-Login-Box** auf `/admin/login` (nur `import.meta.env.DEV`) liest diese
 ## 4. Smoke / SSH-Tunnel vom Mac
 
 - **LAN:** `./scripts/smoke-admin-get-user-details.sh` (liest `BA_PASSWORD` aus `scripts/.env.server`).
+- **Commission 4-Augen E2E:** `./scripts/smoke-commission-rate-bundle-e2e.sh` (admin beantragt → finance genehmigt → Revert; optional `SMOKE_APPROVER_PASSWORD` wenn Approver-Passwort abweicht).
 - **SSH-Tunnel** (Terminal 1 offen lassen): `ssh -L 8443:127.0.0.1:443 io@192.168.178.20`  
   Terminal 2: `PARSE_URL=https://127.0.0.1:8443/parse ./scripts/smoke-admin-get-user-details.sh`
 
