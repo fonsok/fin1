@@ -127,10 +127,17 @@ jobs:
           path: ~/Library/Caches/Homebrew
           key: ${{ runner.os }}-brew-${{ hashFiles('.swiftlint.yml') }}
 
-      - name: Install tools
+      - name: Install SwiftLint & SwiftFormat
         run: |
           brew update
-          brew install swiftlint swiftformat danger/tap/danger-swift || true
+          brew install swiftlint swiftformat
+
+      - name: Install Danger (pull requests)
+        if: github.event_name == 'pull_request'
+        run: |
+          brew tap danger/tap
+          brew trust danger/tap
+          brew install danger/tap/danger-swift
 
       # Lint Swift sources only (avoid scanning local build trees; matches clean CI checkout).
       - name: SwiftFormat
