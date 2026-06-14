@@ -154,27 +154,9 @@ jobs:
           chmod +x scripts/check-order-cash-amount-ssot.sh
           ./scripts/check-order-cash-amount-ssot.sh
 
-      - name: Resolve iOS simulator destination
-        run: |
-          chmod +x scripts/resolve-ios-sim-destination.sh
-          echo "Resolved: $(./scripts/resolve-ios-sim-destination.sh)"
-
-      # Warm compile on generic simulator (same as responsive-design-compliance.yml).
-      # Avoids immediate xcodebuild test failures on GHA when no concrete sim was used yet.
-      - name: Build for Testing (generic simulator)
-        run: |
-          xcodebuild -project FIN1.xcodeproj \
-            -scheme FIN1 \
-            -sdk iphonesimulator \
-            -configuration Debug \
-            -destination 'generic/platform=iOS Simulator' \
-            build
-
-      - name: Build and Test (iOS Simulator)
-        run: |
-          set -eo pipefail
-          chmod +x scripts/run-ios-tests.sh
-          ./scripts/run-ios-tests.sh
+      # iOS unit tests (FIN1Tests) run in responsive-design-compliance.yml on every
+      # push/PR to main|develop — same run-ios-tests.sh, currently reliable there.
+      # This job focuses on Release/Staging/Prod builds, analyzer, and size guards.
 
       - name: Build Release + Staging + Prod configurations (simulator)
         run: |
