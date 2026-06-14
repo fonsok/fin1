@@ -13,8 +13,14 @@ cd "$ROOT"
 SCHEME="${1:?usage: $0 <scheme> <configuration>}"
 CONFIG="${2:?usage: $0 <scheme> <configuration>}"
 PROJECT="FIN1.xcodeproj"
-chmod +x scripts/resolve-ios-sim-destination.sh
-DEST="$(./scripts/resolve-ios-sim-destination.sh)"
+if [[ "${IOS_BUILD_USE_GENERIC:-0}" == "1" ]]; then
+  DEST='generic/platform=iOS Simulator'
+elif [[ -n "${IOS_BUILD_DESTINATION:-}" ]]; then
+  DEST="$IOS_BUILD_DESTINATION"
+else
+  chmod +x scripts/resolve-ios-sim-destination.sh
+  DEST="$(./scripts/resolve-ios-sim-destination.sh)"
+fi
 
 echo "=== xcodebuild build === scheme=$SCHEME configuration=$CONFIG destination=$DEST"
 
