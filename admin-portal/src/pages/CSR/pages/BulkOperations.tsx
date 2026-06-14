@@ -128,7 +128,7 @@ export function BulkOperationsPage() {
     return sortByTitleDe(defaultDescriptionTemplates);
   }, [responseTemplates]);
 
-  const activeTickets = tickets || [];
+  const activeTickets = useMemo(() => tickets || [], [tickets]);
   const selectedTicketList = useMemo(
     () => activeTickets.filter((t) => selectedTickets.has(t.objectId)),
     [activeTickets, selectedTickets],

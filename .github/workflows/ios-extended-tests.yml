@@ -36,6 +36,11 @@ jobs:
       - name: Xcode toolchain (for logs)
         run: xcodebuild -version && xcode-select -p
 
+      - name: Resolve iOS simulator destination
+        run: |
+          chmod +x scripts/resolve-ios-sim-destination.sh
+          echo "Resolved: $(./scripts/resolve-ios-sim-destination.sh)"
+
       - name: Extended unit targets (no UI by default)
         env:
           IOS_TEST_TARGETS: 'FIN1Tests,FIN1InvestorTests,FIN1CoreRegressionTests'

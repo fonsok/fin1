@@ -13,7 +13,8 @@ cd "$ROOT"
 SCHEME="${1:?usage: $0 <scheme> <configuration>}"
 CONFIG="${2:?usage: $0 <scheme> <configuration>}"
 PROJECT="FIN1.xcodeproj"
-DEST="${IOS_BUILD_DESTINATION:-platform=iOS Simulator,name=iPhone 16,OS=18.6}"
+chmod +x scripts/resolve-ios-sim-destination.sh
+DEST="$(./scripts/resolve-ios-sim-destination.sh)"
 
 echo "=== xcodebuild analyze === scheme=$SCHEME configuration=$CONFIG destination=$DEST"
 

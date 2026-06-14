@@ -23,7 +23,7 @@ export const NAV_ITEM_ICON_STYLES: Record<string, NavIconStyle> = {
   'app-ledger': { icon: 'text-green-300', bg: 'bg-green-400/25' },
   configuration: { icon: 'text-red-300', bg: 'bg-red-500/25' },
   system: { icon: 'text-stone-200', bg: 'bg-stone-400/25' },
-  settings: { icon: 'text-gray-200', bg: 'bg-gray-400/25' },
+  settings: { icon: 'text-slate-200', bg: 'bg-slate-400/25' },
 };
 
 export function getNavIconStyle(itemId: string): NavIconStyle {

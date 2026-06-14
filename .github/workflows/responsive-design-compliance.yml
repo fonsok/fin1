@@ -42,6 +42,11 @@ jobs:
       run: |
         swiftformat FIN1 FIN1Tests FIN1UITests FIN1InvestorTests FIN1CoreRegressionTests --lint
 
+    - name: Resolve iOS simulator destination
+      run: |
+        chmod +x scripts/resolve-ios-sim-destination.sh
+        echo "Resolved: $(./scripts/resolve-ios-sim-destination.sh)"
+
     # Compile-only: use generic simulator destination so CI does not depend on a
     # specific runtime (OS=18.6) being installed exactly as named on the runner.
     - name: Build Project

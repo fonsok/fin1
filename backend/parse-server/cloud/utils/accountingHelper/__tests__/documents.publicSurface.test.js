@@ -13,7 +13,7 @@ describe('documents public surface contract', () => {
     expect(Object.keys(publicSurface).sort()).toEqual(expected);
   });
 
-  it('has eight document write use-cases', () => {
-    expect(API_TIERS.documentWrites).toHaveLength(8);
+  it('has nine document write use-cases', () => {
+    expect(API_TIERS.documentWrites).toHaveLength(9);
   });
 });

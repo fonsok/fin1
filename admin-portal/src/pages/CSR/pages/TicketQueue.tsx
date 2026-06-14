@@ -50,7 +50,7 @@ export function TicketQueuePage() {
     },
   });
 
-  const unassignedTickets = tickets || [];
+  const unassignedTickets = useMemo(() => tickets || [], [tickets]);
   const serverTicketTotal = ticketList?.total ?? unassignedTickets.length;
   const queueTotal = ticketList?.total ?? unassignedTickets.length;
   const queueTotalPages = Math.max(1, Math.ceil(queueTotal / pageSize));

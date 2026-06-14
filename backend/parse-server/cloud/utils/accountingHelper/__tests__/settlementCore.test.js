@@ -5,6 +5,11 @@
 
 jest.mock('../../configHelper/index.js', () => ({
   getTraderCommissionRate: jest.fn().mockResolvedValue(0.25),
+  getCommissionRateBundle: jest.fn().mockResolvedValue({
+    traderRate: 0.25,
+    appRate: 0,
+    totalRate: 0.25,
+  }),
   loadConfig: jest.fn().mockResolvedValue({ financial: {}, tax: {} }),
 }));
 

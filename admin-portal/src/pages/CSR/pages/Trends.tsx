@@ -33,7 +33,7 @@ export function TrendsPage() {
     staleTime: 60_000,
   });
 
-  const trends = data?.trends ?? [];
+  const trends = useMemo(() => data?.trends ?? [], [data?.trends]);
   const meta = data?.meta;
 
   const trendsTotal = trends.length;

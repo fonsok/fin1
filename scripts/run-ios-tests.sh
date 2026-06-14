@@ -6,7 +6,7 @@
 # scheduled jobs (see .github/workflows/ios-extended-tests.yml).
 #
 # Env (optional):
-#   IOS_TEST_DESTINATION   default: platform=iOS Simulator,name=iPhone 16,OS=18.6
+#   IOS_TEST_DESTINATION   preferred simulator (resolved via scripts/resolve-ios-sim-destination.sh)
 #   IOS_TEST_SCHEME        default: FIN1
 #   IOS_TEST_CONFIGURATION default: Debug
 #   IOS_TEST_TARGETS       comma-separated -only-testing targets, default: FIN1Tests
@@ -26,8 +26,10 @@ cd "$ROOT"
 PROJECT="FIN1.xcodeproj"
 SCHEME="${IOS_TEST_SCHEME:-FIN1}"
 CONFIG="${IOS_TEST_CONFIGURATION:-Debug}"
-DEST="${IOS_TEST_DESTINATION:-platform=iOS Simulator,name=iPhone 16,OS=18.6}"
 TARGETS="${IOS_TEST_TARGETS:-FIN1Tests}"
+
+chmod +x scripts/resolve-ios-sim-destination.sh
+DEST="$(./scripts/resolve-ios-sim-destination.sh)"
 
 ONLY_ARGS=()
 IFS=',' read -ra _TARGET_PARTS <<< "$TARGETS"

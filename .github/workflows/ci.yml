@@ -101,8 +101,8 @@ jobs:
         run: npm run build
 
   build-test-lint:
-    # macos-15 runner-images ship iOS 18.5+18.6 simulators for iPhone 16; use 18.6 so local Xcode
-    # installs (often 18.6, not 18.5) match CI without extra env (see Makefile / run-ios-tests.sh).
+    # IOS_TEST_DESTINATION is a preference; scripts/resolve-ios-sim-destination.sh picks the
+    # best available simulator when the pinned runtime is missing on the runner (common on GHA).
     runs-on: macos-15
     env:
       IOS_TEST_DESTINATION: platform=iOS Simulator,name=iPhone 16,OS=18.6
@@ -146,6 +146,11 @@ jobs:
         run: |
           chmod +x scripts/check-order-cash-amount-ssot.sh
           ./scripts/check-order-cash-amount-ssot.sh
+
+      - name: Resolve iOS simulator destination
+        run: |
+          chmod +x scripts/resolve-ios-sim-destination.sh
+          echo "Resolved: $(./scripts/resolve-ios-sim-destination.sh)"
 
       - name: Build and Test (iOS Simulator)
         run: |
