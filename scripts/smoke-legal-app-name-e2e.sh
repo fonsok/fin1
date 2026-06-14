@@ -61,11 +61,10 @@ login() {
 import json,sys
 raw=json.load(sys.stdin)
 if raw.get('error'):
-    print('', end='')
-    sys.stderr.write(raw.get('error','login failed') + '\n')
+    sys.stderr.write(str(raw.get('error','login failed')) + '\n')
     sys.exit(1)
 print(raw.get('sessionToken',''))
-" || return 1
+" 2>/dev/null || return 1
 }
 
 echo "=== smoke-legal-app-name-e2e ==="

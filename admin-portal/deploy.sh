@@ -75,3 +75,11 @@ echo "  Remote assets:"
 ssh "${REMOTE_USER}@${REMOTE_HOST}" "ls -lh ${REMOTE_DIR}assets/"
 echo ""
 echo "=== Deploy successful ✔ ==="
+
+if [[ "${POST_DEPLOY_SMOKE:-1}" != "0" ]]; then
+  echo ""
+  echo "▸ post-deploy smoke (Admin Portal) …"
+  POST_DEPLOY_SMOKE_PROFILE="${POST_DEPLOY_SMOKE_PROFILE:-admin}" \
+    POST_DEPLOY_WAIT_PARSE="${POST_DEPLOY_WAIT_PARSE:-0}" \
+    "$SCRIPT_DIR/../scripts/post-deploy-smoke.sh"
+fi

@@ -5,7 +5,11 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
-[ -f "$SCRIPT_DIR/.env.server" ] && source "$SCRIPT_DIR/.env.server"
+if [ -z "${BA_PASSWORD:-}" ] && [ -f "$SCRIPT_DIR/.env.server" ]; then
+  set +e
+  source "$SCRIPT_DIR/.env.server" 2>/dev/null || true
+  set -e
+fi
 
 PARSE_HOST="${FIN1_PARSE_CLOUD_SSH_HOST:-${FIN1_SERVER_IP:-192.168.178.20}}"
 PARSE_URL="${PARSE_URL:-https://${PARSE_HOST}/parse}"

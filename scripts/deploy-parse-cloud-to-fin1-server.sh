@@ -73,6 +73,10 @@ rsync -avz \
   "$PROJECT_ROOT/scripts/run-settlement-gl-reconciliation-monitor.sh" \
   "$PROJECT_ROOT/scripts/monitor-admin-list-search-health.js" \
   "$PROJECT_ROOT/scripts/e2e-paired-sell-integrity-smoke.js" \
+  "$PROJECT_ROOT/scripts/post-deploy-smoke.sh" \
+  "$PROJECT_ROOT/scripts/smoke-admin-get-user-details.sh" \
+  "$PROJECT_ROOT/scripts/smoke-commission-rate-bundle-e2e.sh" \
+  "$PROJECT_ROOT/scripts/smoke-legal-app-name-e2e.sh" \
   "${REMOTE_USER}@${REMOTE_HOST}:~/fin1-server/scripts/"
 
 echo "▸ remove configHelper.js shadow (if any) + restart parse-server …"
@@ -89,6 +93,18 @@ fi
 
 echo "▸ install iobox monitor cron (idempotent) …"
 "$SCRIPT_DIR/install-iobox-monitors-cron.sh"
+
+if [[ "${POST_DEPLOY_SMOKE:-1}" != "0" ]]; then
+  echo ""
+  echo "▸ post-deploy smoke (Parse Cloud, via server localhost) …"
+  if [[ -z "${BA_PASSWORD:-}" ]]; then
+    echo "  WARN: BA_PASSWORD unset — skipping post-deploy smoke (set in scripts/.env.server)" >&2
+  else
+    # shellcheck disable=SC2029
+    ssh "${REMOTE_USER}@${REMOTE_HOST}" \
+      "cd ~/fin1-server && BA_PASSWORD='${BA_PASSWORD}' PARSE_URL='http://127.0.0.1:1338/parse' POST_DEPLOY_SMOKE_PROFILE='${POST_DEPLOY_SMOKE_PROFILE:-full}' POST_DEPLOY_WAIT_PARSE='${POST_DEPLOY_WAIT_PARSE:-1}' bash scripts/post-deploy-smoke.sh"
+  fi
+fi
 
 echo ""
 echo "=== Parse Cloud deploy done ==="
