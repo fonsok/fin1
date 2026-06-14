@@ -123,6 +123,16 @@ async function pollHealth(parseBase, appId, masterKey, timeoutMs) {
       return { chain: lastChain, integrity: lastIntegrity };
     }
 
+    const staleOnly = Array.isArray(lastIntegrity.checks)
+      && lastIntegrity.overall === 'degraded'
+      && lastIntegrity.checks.every((check) => {
+        if (check.overall !== 'degraded') return true;
+        return typeof check.reason === 'string' && check.reason.includes('getting stale');
+      });
+    if (staleOnly) {
+      console.warn('[e2e] finance integrity degraded due to stale OpsHealthSnapshot rows only — run scripts/run-finance-integrity-snapshots.sh on iobox');
+    }
+
     await cloudFunction(parseBase, appId, { masterKey }, 'runSettlementRetryQueue', { limit: 25 });
     await sleep(3000);
   }

@@ -12,8 +12,9 @@ on:
           - 'false'
           - 'true'
   schedule:
-    # Weekly Sunday 05:30 UTC — after finance snapshot cron
-    - cron: '30 5 * * 0'
+    # Weekly Monday 05:00 UTC (07:00 CEST) — after iobox finance-integrity-snapshots cron
+    # (Mon 06:00 Europe/Berlin). Sunday runs hit 8-day stale snapshots and fail assert-only.
+    - cron: '0 5 * * 1'
 
 jobs:
   e2e-paired-sell-smoke:
