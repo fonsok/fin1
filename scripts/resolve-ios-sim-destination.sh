@@ -4,6 +4,7 @@
 # GitHub macos-15 + Xcode 26 images may not ship iPhone 16 + OS=18.6 even when local
 # dev machines still have that runtime. This script picks the best available simulator
 # from `xcodebuild -showdestinations`, preferring a requested destination when present.
+# Emits `platform=iOS Simulator,id=<UDID>` when possible (most reliable on CI).
 #
 # Usage:
 #   ./scripts/resolve-ios-sim-destination.sh
@@ -32,24 +33,41 @@ DESTINATIONS="$(
 
 if [[ -z "$DESTINATIONS" ]]; then
   echo "resolve-ios-sim-destination: no iOS Simulator destinations from xcodebuild" >&2
+  xcodebuild -project "$PROJECT" -scheme "$SCHEME" -showdestinations 2>&1 | tail -20 >&2 || true
   exit 1
 fi
 
 extract_field() {
   local line="$1"
   local key="$2"
-  printf '%s' "$line" | sed -n "s/.*${key}:\\([^,}]*\\).*/\\1/p" | head -1 | xargs
+  local value
+  value="$(printf '%s' "$line" | sed -n "s/.*${key}:\\([^,}]*\\).*/\\1/p" | head -1)"
+  value="${value#"${value%%[![:space:]]*}"}"
+  value="${value%"${value##*[![:space:]]}"}"
+  printf '%s' "$value"
 }
 
-format_destination() {
-  local name="$1"
-  local os="$2"
+format_destination_from_line() {
+  local line="$1"
+  local id name os
+  id="$(extract_field "$line" 'id')"
+  if [[ -n "$id" && "$id" != *placeholder* ]]; then
+    printf 'platform=iOS Simulator,id=%s' "$id"
+    return 0
+  fi
+  name="$(extract_field "$line" 'name')"
+  os="$(extract_field "$line" 'OS')"
   printf 'platform=iOS Simulator,name=%s,OS=%s' "$name" "$os"
 }
 
 matches_requested() {
   local line="$1"
-  local req_name req_os
+  local req_name req_os req_id
+  req_id="$(printf '%s' "$REQUESTED" | sed -n 's/.*id=\([^,}]*\).*/\1/p')"
+  if [[ -n "$req_id" ]]; then
+    [[ "$(extract_field "$line" 'id')" == "$req_id" ]]
+    return
+  fi
   req_name="$(printf '%s' "$REQUESTED" | sed -n 's/.*name=\([^,]*\).*/\1/p')"
   req_os="$(printf '%s' "$REQUESTED" | sed -n 's/.*OS=\([^,]*\).*/\1/p')"
   [[ -n "$req_name" ]] || return 1
@@ -66,13 +84,12 @@ matches_requested() {
 
 pick_first_named() {
   local target="$1"
-  local line name os
+  local line name
   while IFS= read -r line; do
     [[ -n "$line" ]] || continue
     name="$(extract_field "$line" 'name')"
     if [[ "$name" == "$target" ]]; then
-      os="$(extract_field "$line" 'OS')"
-      format_destination "$name" "$os"
+      format_destination_from_line "$line"
       return 0
     fi
   done <<< "$DESTINATIONS"
@@ -80,13 +97,12 @@ pick_first_named() {
 }
 
 pick_first_iphone() {
-  local line name os
+  local line name
   while IFS= read -r line; do
     [[ -n "$line" ]] || continue
     name="$(extract_field "$line" 'name')"
     if [[ "$name" == iPhone* ]]; then
-      os="$(extract_field "$line" 'OS')"
-      format_destination "$name" "$os"
+      format_destination_from_line "$line"
       return 0
     fi
   done <<< "$DESTINATIONS"
@@ -97,7 +113,7 @@ if [[ -n "$REQUESTED" ]]; then
   while IFS= read -r line; do
     [[ -n "$line" ]] || continue
     if matches_requested "$line"; then
-      format_destination "$(extract_field "$line" 'name')" "$(extract_field "$line" 'OS')"
+      format_destination_from_line "$line"
       exit 0
     fi
   done <<< "$DESTINATIONS"
@@ -117,4 +133,4 @@ if dest="$(pick_first_iphone)"; then
 fi
 
 first_line="$(printf '%s\n' "$DESTINATIONS" | head -1)"
-format_destination "$(extract_field "$first_line" 'name')" "$(extract_field "$first_line" 'OS')"
+format_destination_from_line "$first_line"
