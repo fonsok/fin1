@@ -159,6 +159,17 @@ jobs:
           chmod +x scripts/resolve-ios-sim-destination.sh
           echo "Resolved: $(./scripts/resolve-ios-sim-destination.sh)"
 
+      # Warm compile on generic simulator (same as responsive-design-compliance.yml).
+      # Avoids immediate xcodebuild test failures on GHA when no concrete sim was used yet.
+      - name: Build for Testing (generic simulator)
+        run: |
+          xcodebuild -project FIN1.xcodeproj \
+            -scheme FIN1 \
+            -sdk iphonesimulator \
+            -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            build
+
       - name: Build and Test (iOS Simulator)
         run: |
           set -eo pipefail

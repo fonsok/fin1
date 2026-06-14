@@ -32,6 +32,7 @@ chmod +x scripts/resolve-ios-sim-destination.sh
 DEST="$(./scripts/resolve-ios-sim-destination.sh)"
 
 boot_simulator_for_destination() {
+  set +o pipefail
   local dest="$1"
   local udid name os
   udid="$(printf '%s' "$dest" | sed -n 's/.*id=\([^,}]*\).*/\1/p' | head -1)"
@@ -52,6 +53,7 @@ boot_simulator_for_destination() {
     xcrun simctl boot "$udid" 2>/dev/null || true
     xcrun simctl bootstatus "$udid" -b 2>/dev/null || sleep 5
   fi
+  set -o pipefail
 }
 
 boot_simulator_for_destination "$DEST"
