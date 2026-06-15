@@ -2,6 +2,10 @@
 
 const { generateSequentialNumber } = require('../utils/helpers');
 const { assertPairedOrderStatusCouplingOnSave } = require('../utils/pairedOrderStatusCoupling');
+const {
+  resolveOrderExecutionPrice,
+  applyExecutionPriceMetaToOrder,
+} = require('../utils/executionPriceResolver');
 
 Parse.Cloud.beforeSave('Order', async (request) => {
   const order = request.object;
@@ -44,6 +48,22 @@ Parse.Cloud.beforeSave('Order', async (request) => {
     order.set('executedQuantity', 0);
     order.set('remainingQuantity', order.get('quantity'));
     order.set('timeInForce', order.get('timeInForce') || 'day');
+
+    if (
+      side === 'buy'
+      && !order.get('executionPriceSource')
+      && !order.get('pairExecutionId')
+    ) {
+      const clientPrice = Number(order.get('price') || order.get('limitPrice') || 0);
+      const priceMeta = await resolveOrderExecutionPrice({
+        symbol: order.get('symbol'),
+        orderType: order.get('orderType'),
+        limitPrice: order.get('limitPrice'),
+        clientPrice,
+        clientQuotedAt: order.get('clientQuotedAt'),
+      });
+      applyExecutionPriceMetaToOrder(order, priceMeta);
+    }
   }
 
   if (request.original) {

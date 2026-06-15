@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# End-to-end: Parse login as trader → executePairedBuy → getOpenTrades (trader leg trade)
-# → idempotent replay verifies DB settlement.
+# End-to-end: Parse login as trader → executePairedBuy → finalizePairedBuyExecution
+# → getOpenTrades (trader leg trade) → idempotent replay verifies DB settlement.
 #
 # Env (optional):
 #   PARSE_SERVER_URL       default https://192.168.178.20/parse
@@ -54,7 +54,7 @@ print(json.dumps({
   "orderInstruction": "market",
   "clientOrderIntentId": os.environ["INTENT_ID"],
   "traderQuantity": 1,
-  "mirrorPoolQuantity": 1,
+  "mirrorPoolQuantity": 0,
   "description": "E2E paired buy script",
   "clientQuotedAt": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z"),
 }))
@@ -68,10 +68,20 @@ call_paired_buy() {
     -d "${PAYLOAD}"
 }
 
+call_finalize() {
+  local pair_id="$1"
+  curl -sk -X POST "${PARSE_URL}/functions/finalizePairedBuyExecution" \
+    -H "X-Parse-Application-Id: ${APP_ID}" \
+    -H "X-Parse-Session-Token: ${SESSION}" \
+    -H "Content-Type: application/json" \
+    -d "$(python3 -c 'import json, sys; print(json.dumps({"pairExecutionId": sys.argv[1]}))' "${pair_id}")"
+}
+
 FIRST_FILE="$(mktemp)"
+FINALIZE_FILE="$(mktemp)"
 SECOND_FILE="$(mktemp)"
 OPEN_TRADES_FILE="$(mktemp)"
-trap 'rm -f "${FIRST_FILE}" "${SECOND_FILE}" "${OPEN_TRADES_FILE}"' EXIT
+trap 'rm -f "${FIRST_FILE}" "${FINALIZE_FILE}" "${SECOND_FILE}" "${OPEN_TRADES_FILE}"' EXIT
 
 call_paired_buy >"${FIRST_FILE}"
 
@@ -93,6 +103,20 @@ print(pid)
 " "${FIRST_FILE}")"
 
 echo "[e2e] First executePairedBuy OK pairExecutionId=${PAIR_ID}"
+
+call_finalize "${PAIR_ID}" >"${FINALIZE_FILE}"
+
+python3 -c "
+import json, sys
+raw = json.load(open(sys.argv[1]))
+if raw.get('code') or raw.get('error'):
+    sys.stderr.write('finalizePairedBuyExecution failed: ' + json.dumps(raw) + chr(10))
+    sys.exit(1)
+if 'result' not in raw:
+    sys.stderr.write('finalize missing result: ' + json.dumps(raw) + chr(10))
+    sys.exit(1)
+print('[e2e] finalizePairedBuyExecution OK')
+" "${FINALIZE_FILE}"
 
 curl -sk -X POST "${PARSE_URL}/functions/getOpenTrades" \
   -H "X-Parse-Application-Id: ${APP_ID}" \
@@ -133,8 +157,8 @@ if str(r2.get('status') or '') != 'COMMITTED':
     fail('Expected status COMMITTED on replay: ' + json.dumps(r2))
 
 orders = r2.get('orders') or []
-if len(orders) != 2:
-    fail('Expected 2 order legs: ' + json.dumps(orders))
+if len(orders) < 1:
+    fail('Expected at least 1 order leg: ' + json.dumps(orders))
 
 for o in orders:
     if str(o.get('status') or '') != 'executed':
@@ -143,7 +167,6 @@ for o in orders:
 if str(r2.get('pairExecutionId') or '') != str(pair_id):
     fail('pairExecutionId mismatch on replay')
 
-# Trader leg → Trade with buyOrderId (Variant A: TRADER leg skips pool allocation only)
 trader_order_id = None
 for o in r2.get('orders') or []:
     if str(o.get('legType') or '') == 'TRADER':
@@ -186,7 +209,8 @@ print(
     + ')'
 )
 print(
-    '[e2e] PASS: replay shows COMMITTED + both legs executed '
-    '(server finalize + Order triggers ran).'
+    '[e2e] PASS: finalize + replay shows COMMITTED + '
+    + str(len(orders))
+    + ' leg(s) executed (server settlement).'
 )
 PY

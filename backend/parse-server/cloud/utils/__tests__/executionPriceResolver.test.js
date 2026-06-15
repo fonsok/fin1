@@ -2,6 +2,7 @@
 
 const {
   resolvePairedBuyExecutionPrice,
+  resolveOrderExecutionPrice,
   absBpsDiff,
 } = require('../executionPriceResolver');
 
@@ -18,6 +19,17 @@ jest.mock('../configHelper/index.js', () => ({
 describe('executionPriceResolver', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+  });
+
+  test('resolveOrderExecutionPrice maps limit orderType to limit_price', async () => {
+    const result = await resolveOrderExecutionPrice({
+      symbol: 'ABC123',
+      orderType: 'limit',
+      limitPrice: 3.25,
+      clientPrice: 9.99,
+    });
+    expect(result.executionPrice).toBe(3.25);
+    expect(result.priceSource).toBe('limit_price');
   });
 
   test('limit order uses limitPrice as execution price', async () => {

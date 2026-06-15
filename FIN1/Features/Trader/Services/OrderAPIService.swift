@@ -59,6 +59,13 @@ private struct ParseOrderInput: Codable {
     let subscriptionRatio: Double?
     let denomination: Int?
     let originalHoldingId: String?
+    let clientQuotedAt: String?
+
+    private nonisolated(unsafe) static let iso8601NowFormatter: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter
+    }()
 
     private static func resolveOrderType(from instruction: String?, limitPrice: Double?) -> String {
         switch instruction?.lowercased() {
@@ -109,7 +116,8 @@ private struct ParseOrderInput: Codable {
             limitPrice: buyOrder.limitPrice,
             subscriptionRatio: buyOrder.subscriptionRatio,
             denomination: buyOrder.denomination,
-            originalHoldingId: nil
+            originalHoldingId: nil,
+            clientQuotedAt: Self.iso8601NowFormatter.string(from: Date())
         )
     }
 
@@ -145,7 +153,8 @@ private struct ParseOrderInput: Codable {
             limitPrice: sellOrder.limitPrice,
             subscriptionRatio: nil,
             denomination: nil,
-            originalHoldingId: sellOrder.originalHoldingId
+            originalHoldingId: sellOrder.originalHoldingId,
+            clientQuotedAt: nil
         )
     }
 
@@ -181,7 +190,8 @@ private struct ParseOrderInput: Codable {
             limitPrice: order.limitPrice,
             subscriptionRatio: order.subscriptionRatio,
             denomination: order.denomination,
-            originalHoldingId: order.originalHoldingId
+            originalHoldingId: order.originalHoldingId,
+            clientQuotedAt: nil
         )
     }
 }

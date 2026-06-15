@@ -7,6 +7,10 @@
 
 const { calculateOrderFees } = require('../utils/helpers');
 const { requireAdminRole } = require('../utils/permissions');
+const {
+  resolveOrderExecutionPrice,
+  applyExecutionPriceMetaToOrder,
+} = require('../utils/executionPriceResolver');
 
 const { getUserStableId } = require('./tradingIdentity');
 const { normalizeTradeForClient, enrichTradesWithOrderLegs } = require('../utils/tradeClientPresentation');
@@ -92,7 +96,17 @@ Parse.Cloud.define('placeOrder', async (request) => {
   const user = request.user;
   if (!user) throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Login required');
 
-  const { symbol, quantity, price, side, orderType, limitPrice, stopPrice, tradeId } = request.params;
+  const {
+    symbol,
+    quantity,
+    price,
+    side,
+    orderType,
+    limitPrice,
+    stopPrice,
+    tradeId,
+    clientQuotedAt,
+  } = request.params;
 
   if (!symbol) throw new Parse.Error(Parse.Error.INVALID_VALUE, 'Symbol required');
   if (!quantity || quantity <= 0) throw new Parse.Error(Parse.Error.INVALID_VALUE, 'Invalid quantity');
@@ -112,9 +126,7 @@ Parse.Cloud.define('placeOrder', async (request) => {
     }
   }
 
-  const grossAmount = quantity * (price || limitPrice || 0);
-  const fees = calculateOrderFees(grossAmount);
-
+  let executionPrice = Number(price || limitPrice || 0);
   const Order = Parse.Object.extend('Order');
   const order = new Order();
   order.set('traderId', getUserStableId(user));
@@ -125,6 +137,24 @@ Parse.Cloud.define('placeOrder', async (request) => {
   order.set('price', price);
   order.set('limitPrice', limitPrice);
   order.set('stopPrice', stopPrice);
+  if (clientQuotedAt) {
+    order.set('clientQuotedAt', clientQuotedAt);
+  }
+
+  if (side === 'buy') {
+    const priceMeta = await resolveOrderExecutionPrice({
+      symbol,
+      orderType,
+      limitPrice,
+      clientPrice: price,
+      clientQuotedAt,
+    });
+    applyExecutionPriceMetaToOrder(order, priceMeta);
+    executionPrice = priceMeta.executionPrice;
+  }
+
+  const grossAmount = quantity * executionPrice;
+  const fees = calculateOrderFees(grossAmount);
   order.set('grossAmount', grossAmount);
   order.set('totalFees', fees.totalFees);
   order.set('netAmount', side === 'buy' ? grossAmount + fees.totalFees : grossAmount - fees.totalFees);

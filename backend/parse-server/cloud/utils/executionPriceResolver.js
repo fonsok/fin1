@@ -126,8 +126,57 @@ async function resolvePairedBuyExecutionPrice({
   };
 }
 
+function orderTypeToInstruction(orderType) {
+  const type = String(orderType || 'market').toLowerCase();
+  return ['limit', 'stop_limit'].includes(type) ? 'limit' : 'market';
+}
+
+/**
+ * Shared resolver for placeOrder and Order beforeSave (trader-only buys).
+ */
+async function resolveOrderExecutionPrice({
+  symbol,
+  orderType = 'market',
+  limitPrice = null,
+  clientPrice,
+  clientQuotedAt = null,
+}) {
+  const instruction = orderTypeToInstruction(orderType);
+  return resolvePairedBuyExecutionPrice({
+    symbol,
+    orderInstruction: instruction,
+    limitPrice: instruction === 'limit' ? (limitPrice ?? clientPrice) : null,
+    clientPrice,
+    clientQuotedAt,
+  });
+}
+
+function applyExecutionPriceMetaToOrder(order, priceMeta) {
+  order.set('price', priceMeta.executionPrice);
+  order.set('executionPriceSource', priceMeta.priceSource);
+  if (priceMeta.clientSubmittedPrice != null) {
+    order.set('clientSubmittedPrice', priceMeta.clientSubmittedPrice);
+  }
+  if (priceMeta.serverReferencePrice != null) {
+    order.set('serverReferencePrice', priceMeta.serverReferencePrice);
+  }
+  if (priceMeta.priceSnapshotAt) {
+    order.set('priceSnapshotAt', priceMeta.priceSnapshotAt);
+  }
+  if (priceMeta.clientQuotedAt) {
+    order.set('clientQuotedAt', priceMeta.clientQuotedAt);
+  }
+  const qty = Number(order.get('quantity') || 0);
+  if (qty > 0) {
+    order.set('grossAmount', qty * priceMeta.executionPrice);
+  }
+}
+
 module.exports = {
   resolvePairedBuyExecutionPrice,
+  resolveOrderExecutionPrice,
+  applyExecutionPriceMetaToOrder,
+  orderTypeToInstruction,
   round4,
   absBpsDiff,
   fetchLatestMarketDataPrice,
