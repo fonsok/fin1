@@ -29,6 +29,19 @@ struct TradeStatementDisplayData {
     let legalDisclaimer: String
     let accountNumber: String
     let taxReportTransactionNumber: String
+    let partialSellDisplay: PartialSellDisplayData?
+}
+
+// MARK: - Partial Sell Display (Teilverkauf-Fortschritt, GoB metadata)
+
+struct PartialSellDisplayData: Equatable {
+    let sequenceLabel: String
+    let executedAt: String
+    let sellOrderId: String
+    let thisSellQuantity: String
+    let cumulativeSold: String
+    let remaining: String
+    let progress: String
 }
 
 // MARK: - Buy Transaction Data

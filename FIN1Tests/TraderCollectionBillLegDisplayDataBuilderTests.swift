@@ -29,7 +29,19 @@ final class TraderCollectionBillLegDisplayDataBuilderTests: XCTestCase {
             tradeNumber: 1,
             tradeStatus: "active",
             generatedAt: nil,
-            partialSell: .init(isPartialSell: true, soldQuantity: 400, remainingQuantity: 800, buyQuantity: 1_200)
+            partialSell: .init(
+                isPartialSell: true,
+                soldQuantity: 400,
+                remainingQuantity: 800,
+                buyQuantity: 1_200,
+                sellOrderId: "kUI8NNLSzj",
+                eventIndex: 1,
+                totalSellEvents: 2,
+                executedAt: "2026-06-15T12:45:00.000Z",
+                orderQuantity: 400,
+                cumulativeSoldQuantity: 400,
+                sellVolumeProgress: 0.3333333333
+            )
         )
 
         let display = TraderCollectionBillLegDisplayDataBuilder.build(
@@ -44,6 +56,64 @@ final class TraderCollectionBillLegDisplayDataBuilderTests: XCTestCase {
         XCTAssertTrue(display.sellTransactions.first?.price.contains("2,49") == true)
         XCTAssertEqual(display.securityIdentifier, "Put - Dow Jones (GS4GLEF)")
         XCTAssertTrue(display.sellInvoices.isEmpty)
+        XCTAssertNotNil(display.partialSellDisplay)
+        XCTAssertEqual(display.partialSellDisplay?.sequenceLabel, "Teilverkauf 1 von 2")
+        XCTAssertEqual(display.partialSellDisplay?.thisSellQuantity, "400 St.")
+        XCTAssertEqual(display.partialSellDisplay?.remaining, "800 St.")
+    }
+
+    func testSecondPartialSellLegShowsFullProgressWhenComplete() {
+        let trade = Self.makeTradeOverview()
+        let metadata = TraderCollectionBillBelegMetadata(
+            belegSchemaVersion: 1,
+            belegKind: "traderCollectionBill",
+            belegLabel: "Verkaufsabrechnung",
+            traderId: "trader-1",
+            traderDisplayName: "Julia Richter",
+            traderUsername: nil,
+            executionType: "sell",
+            symbol: "GS4GLEF",
+            instrumentLine: "Put - Dow Jones (GS4GLEF)",
+            amount: 2_400.0,
+            quantity: 800,
+            price: 3.0,
+            orderId: "sell-2",
+            sellOrderId: "sell-2",
+            wkn: "GS4GLEF",
+            fees: .init(orderFee: 12, exchangeFee: 0.5, foreignCosts: 2.5, totalFees: 15),
+            totalWithFees: 2_385.0,
+            valueDate: "15.06.26",
+            closingDate: "15.06.2026, 14:47 Uhr",
+            tradingVenue: "XETRA",
+            tradeNumber: 1,
+            tradeStatus: "completed",
+            generatedAt: nil,
+            partialSell: .init(
+                isPartialSell: true,
+                soldQuantity: 800,
+                remainingQuantity: 0,
+                buyQuantity: 1_200,
+                sellOrderId: "sell-2",
+                eventIndex: 2,
+                totalSellEvents: 2,
+                executedAt: "2026-06-15T12:47:00.000Z",
+                orderQuantity: 800,
+                cumulativeSoldQuantity: 1_200,
+                sellVolumeProgress: 1.0
+            )
+        )
+
+        let display = TraderCollectionBillLegDisplayDataBuilder.build(
+            trade: trade,
+            metadata: metadata,
+            belegNumber: "TSC-2026-0000141"
+        )
+
+        XCTAssertEqual(display.partialSellDisplay?.sequenceLabel, "Teilverkauf 2 von 2")
+        XCTAssertEqual(display.partialSellDisplay?.thisSellQuantity, "800 St.")
+        XCTAssertEqual(display.partialSellDisplay?.cumulativeSold, "1200 von 1200 St.")
+        XCTAssertEqual(display.partialSellDisplay?.remaining, "0 St.")
+        XCTAssertEqual(display.partialSellDisplay?.progress, "100.0 %")
     }
 
     func testBuyLegShowsKaufOnly() {

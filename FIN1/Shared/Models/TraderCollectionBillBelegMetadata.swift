@@ -41,6 +41,17 @@ struct TraderCollectionBillBelegMetadata: Codable, Equatable, Hashable, Sendable
         let soldQuantity: Double?
         let remainingQuantity: Double?
         let buyQuantity: Double?
+        let sellOrderId: String?
+        let eventIndex: Int?
+        let totalSellEvents: Int?
+        let executedAt: String?
+        let orderQuantity: Double?
+        let cumulativeSoldQuantity: Double?
+        let sellVolumeProgress: Double?
+
+        var showsProgressSection: Bool {
+            self.isPartialSell == true
+        }
     }
 
     var normalizedExecutionType: String? {

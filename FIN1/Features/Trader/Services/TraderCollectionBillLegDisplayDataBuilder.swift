@@ -49,6 +49,8 @@ enum TraderCollectionBillLegDisplayDataBuilder {
             netResultColor: "fin1FontColor"
         )
 
+        let partialSellDisplay = TraderCollectionBillPartialSellDisplayBuilder.build(from: metadata.partialSell)
+
         if metadata.isSell {
             let sellTx = SellTransactionData(
                 transactionNumber: belegNumber ?? "\(trade.tradeNumber)/2",
@@ -93,7 +95,8 @@ enum TraderCollectionBillLegDisplayDataBuilder {
                 taxes: [],
                 legalDisclaimer: TradeStatementDisplayDataBuilder.defaultLegalDisclaimer,
                 accountNumber: "DE89 3704 0044 0532 0130 00",
-                taxReportTransactionNumber: "343433"
+                taxReportTransactionNumber: "343433",
+                partialSellDisplay: partialSellDisplay
             )
         }
 
@@ -140,7 +143,8 @@ enum TraderCollectionBillLegDisplayDataBuilder {
             taxes: [],
             legalDisclaimer: TradeStatementDisplayDataBuilder.defaultLegalDisclaimer,
             accountNumber: "DE89 3704 0044 0532 0130 00",
-            taxReportTransactionNumber: "343433"
+            taxReportTransactionNumber: "343433",
+            partialSellDisplay: partialSellDisplay
         )
     }
 

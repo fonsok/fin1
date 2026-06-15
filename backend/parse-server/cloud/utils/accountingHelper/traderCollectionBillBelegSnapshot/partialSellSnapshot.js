@@ -82,7 +82,11 @@ function buildPartialSellSnapshot({
     cumulativeSoldQty = orderSoldQty;
   }
 
-  const isPartialSell = (buyQty > 0 && cumulativeSoldQty > 0 && cumulativeSoldQty < buyQty)
+  const hasMultipleSellEvents = allSells.length > 1;
+  const isPartialSell = (buyQty > 0 && cumulativeSoldQty > 0 && (
+    cumulativeSoldQty < buyQty
+    || hasMultipleSellEvents
+  ))
     || tradeStatus === 'partial';
 
   if (!isPartialSell) {

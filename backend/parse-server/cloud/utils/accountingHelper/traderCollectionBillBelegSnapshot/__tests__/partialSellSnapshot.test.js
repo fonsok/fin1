@@ -63,6 +63,32 @@ describe('partialSellSnapshot', () => {
     expect(second.partialSell.remainingQuantity).toBe(200);
   });
 
+  test('final sell leg of multi-event sequence still emits partialSell block when trade completes', () => {
+    const trade = mockTrade({
+      status: 'completed',
+      quantity: 1200,
+      sellOrders: [
+        { id: 'sell-1', quantity: 400, totalAmount: 1600, createdAt: '2026-06-15T12:45:00Z' },
+        { id: 'sell-2', quantity: 800, totalAmount: 2400, createdAt: '2026-06-15T12:47:00Z' },
+      ],
+    });
+    const second = buildPartialSellSnapshot({
+      trade,
+      order: { id: 'sell-2', quantity: 800 },
+      orderLike: { id: 'sell-2', quantity: 800, createdAt: '2026-06-15T12:47:00Z' },
+      sellOrderId: 'sell-2',
+      buyQty: 1200,
+      tradeStatus: 'completed',
+    });
+    expect(second.isPartialSell).toBe(true);
+    expect(second.partialSell.eventIndex).toBe(2);
+    expect(second.partialSell.totalSellEvents).toBe(2);
+    expect(second.partialSell.orderQuantity).toBe(800);
+    expect(second.partialSell.cumulativeSoldQuantity).toBe(1200);
+    expect(second.partialSell.remainingQuantity).toBe(0);
+    expect(second.partialSell.sellVolumeProgress).toBe(1);
+  });
+
   test('sortTraderSellBelegeChronologically uses executedAt, not doc createdAt', () => {
     const docs = [
       mockDoc({

@@ -97,7 +97,8 @@ final class TradeStatementDisplayDataBuilder: TradeStatementDisplayDataBuilderPr
             taxes: taxes,
             legalDisclaimer: Self.defaultLegalDisclaimer,
             accountNumber: "DE89 3704 0044 0532 0130 00", // In a real app, this would come from user's account information
-            taxReportTransactionNumber: "343433" // In a real app, this would be a unique transaction number for tax reporting
+            taxReportTransactionNumber: "343433", // In a real app, this would be a unique transaction number for tax reporting
+            partialSellDisplay: nil
         )
     }
 

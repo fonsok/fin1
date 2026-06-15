@@ -142,6 +142,10 @@ struct TradeStatementView: View {
                             )
                         }
 
+                        if let partialSell = self.viewModel.displayData?.partialSellDisplay {
+                            TradeStatementPartialSellSection(partialSell: partialSell)
+                        }
+
                         if let displayProperties = viewModel.displayProperties {
                             DocumentNotesSection(
                                 accountNumber: displayProperties.accountNumber,
