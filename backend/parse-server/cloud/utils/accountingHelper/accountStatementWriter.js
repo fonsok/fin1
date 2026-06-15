@@ -10,7 +10,7 @@
  * See `settlementGLPoster.js` for `bookSettlementEntry` (statement + GL pair).
  */
 
-const { round2 } = require('./shared');
+const { normalizeEuro } = require('./moneyCents');
 const { auditChainConsistencyOnInsert } = require('./accountStatementChainGuard');
 const {
   advanceUserCashBalanceAtomic,
@@ -53,17 +53,22 @@ async function bookAccountStatementEntry({
     );
   }
 
+  const normalizedAmount = normalizeEuro(amount);
+
   const AccountStatement = Parse.Object.extend('AccountStatement');
 
   let balanceBefore;
   let balanceAfter;
   try {
-    ({ balanceBefore, balanceAfter } = await advanceUserCashBalanceAtomic({ userId, amount }));
+    ({ balanceBefore, balanceAfter } = await advanceUserCashBalanceAtomic({
+      userId,
+      amount: normalizedAmount,
+    }));
   } catch (err) {
     audit.error('accountstatement.balance.advanceFailure', {
       userId,
       entryType,
-      amount,
+      amount: normalizedAmount,
       tradeId: tradeId || null,
       investmentId: investmentId || null,
       businessCaseId: String(businessCaseId || '').trim() || null,
@@ -79,9 +84,9 @@ async function bookAccountStatementEntry({
     : String(tradeNumber);
   entry.set('userId', userId);
   entry.set('entryType', entryType);
-  entry.set('amount', amount);
-  entry.set('balanceBefore', round2(balanceBefore));
-  entry.set('balanceAfter', round2(balanceAfter));
+  entry.set('amount', normalizedAmount);
+  entry.set('balanceBefore', balanceBefore);
+  entry.set('balanceAfter', balanceAfter);
   entry.set('tradeId', tradeId);
   entry.set('tradeNumber', normalizedTradeNumber);
   if (investmentId) entry.set('investmentId', investmentId);
@@ -111,12 +116,12 @@ async function bookAccountStatementEntry({
       await entry.save(null, { useMasterKey: true });
     }
   } catch (saveErr) {
-    const rolledBack = await compensateUserCashBalanceAdvance({ userId, amount });
+    const rolledBack = await compensateUserCashBalanceAdvance({ userId, amount: normalizedAmount });
     if (rolledBack) {
       audit.warn('accountstatement.balance.advanceRollback', {
         userId,
         entryType,
-        amount,
+        amount: normalizedAmount,
         tradeId: tradeId || null,
         investmentId: investmentId || null,
         businessCaseId: bc || null,
@@ -127,7 +132,7 @@ async function bookAccountStatementEntry({
       audit.error('accountstatement.balance.advanceRollbackCritical', {
         userId,
         entryType,
-        amount,
+        amount: normalizedAmount,
         tradeId: tradeId || null,
         investmentId: investmentId || null,
         businessCaseId: bc || null,
@@ -142,7 +147,7 @@ async function bookAccountStatementEntry({
     userId,
     insertedEntry: entry,
     entryType,
-    amount,
+    amount: normalizedAmount,
     tradeId,
     tradeNumber,
     investmentId,

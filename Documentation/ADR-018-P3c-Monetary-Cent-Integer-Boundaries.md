@@ -196,9 +196,11 @@ Reihenfolge der Implementierung:
 
 1. **`moneyCents.test.js`:** Referenzvektor ≥ 30 Fälle (Fees, Steuer, negative Buchungen, Teilsummen).
 2. **`journal.test.js`:** Pair-Amounts immer identisch; Cent-Alignment für `0.1 + 0.2`-Eingänge.
-3. **`userCashBalanceAtomic` Tests:** 1000× `$inc` mit typischen Settlement-Beträgen → Endsaldo = Summe in Cent (kein Float-Drift).
+3. **`userCashBalanceAtomic` Tests:** `$inc` cent-normalisiert; `balanceAfter` aus Cent-Raum.
 4. **Kein Prod-Verhalten-Bruch:** bestehende `round2`-Tests grün; `accountStatementChainGuard` weiter grün.
 5. **Deploy:** Parse Cloud only; **kein** iOS-Release nötig für P3c-1.
+
+**Status P3c-1:** Implemented 2026-06-15 (`journal.js`, `userCashBalanceAtomic.js`, `accountStatementWriter.js`).
 
 ---
 

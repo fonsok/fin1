@@ -22,10 +22,10 @@
 // See:
 //   - Documentation/ADR-010-Settlement-GL-Posting.md
 //   - Documentation/LEDGER_CHART_OF_ACCOUNTS_ROADMAP.md (PR4)
-//   - Documentation/INVESTMENT_ESCROW_LEDGER_SKETCH.md § 4
+//   - Documentation/ADR-018-P3c-Monetary-Cent-Integer-Boundaries.md
 // ============================================================================
 
-const { round2 } = require('./shared');
+const { euroToCents, centsToEuro } = require('./moneyCents');
 const {
   applyLedgerSnapshotToEntry,
   mergeMetadataWithSnapshot,
@@ -78,8 +78,9 @@ async function postLedgerPair({
   metadata = {},
   leg,
 }) {
-  const amt = round2(Math.abs(Number(amount) || 0));
-  if (amt <= 0) return [];
+  const amountCents = euroToCents(Math.abs(Number(amount) || 0));
+  if (amountCents <= 0) return [];
+  const amt = centsToEuro(amountCents);
   if (!debitAccount || !creditAccount) return [];
   if (!leg) {
     throw new Error('postLedgerPair: `leg` is required for idempotency');
@@ -104,7 +105,7 @@ async function postLedgerPair({
   if (referenceType) debit.set('referenceType', referenceType);
   if (description) debit.set('description', description);
   debit.set('metadata', mergeMetadataWithSnapshot(
-    Object.assign({}, baseMetadata, { pairedAccount: creditAccount }),
+    Object.assign({}, baseMetadata, { pairedAccount: creditAccount, amountCents }),
     debitSnap,
   ));
 
@@ -120,7 +121,7 @@ async function postLedgerPair({
   if (referenceType) credit.set('referenceType', referenceType);
   if (description) credit.set('description', description);
   credit.set('metadata', mergeMetadataWithSnapshot(
-    Object.assign({}, baseMetadata, { pairedAccount: debitAccount }),
+    Object.assign({}, baseMetadata, { pairedAccount: debitAccount, amountCents }),
     creditSnap,
   ));
 

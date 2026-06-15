@@ -15,7 +15,12 @@
  */
 
 const { MongoClient } = require('mongodb');
-const { round2 } = require('./shared');
+const {
+  euroToCents,
+  centsToEuro,
+  normalizeEuro,
+  addCents,
+} = require('./moneyCents');
 const { audit } = require('../structuredLogger');
 
 let fin1MongoPromise;
@@ -89,7 +94,7 @@ async function ensureUserCashBalanceSeeded(userId) {
     .descending('createdAt')
     .first({ useMasterKey: true });
 
-  const seed = round2(lastEntry ? Number(lastEntry.get('balanceAfter') || 0) : 0);
+  const seed = normalizeEuro(lastEntry ? Number(lastEntry.get('balanceAfter') || 0) : 0);
 
   const row = new Parse.Object('UserCashBalance');
   row.set('userId', uid);
@@ -112,13 +117,15 @@ async function ensureUserCashBalanceSeeded(userId) {
  */
 async function advanceUserCashBalanceAtomic({ userId, amount }) {
   const uid = String(userId || '').trim();
-  const amt = Number(amount);
   if (!uid) {
     throw new Error('advanceUserCashBalanceAtomic: userId is required');
   }
-  if (!Number.isFinite(amt)) {
+  if (!Number.isFinite(Number(amount))) {
     throw new Error(`advanceUserCashBalanceAtomic: invalid amount (${amount})`);
   }
+
+  const amountCents = euroToCents(Number(amount));
+  const amt = centsToEuro(amountCents);
 
   await ensureUserCashBalanceSeeded(uid);
 
@@ -133,16 +140,18 @@ async function advanceUserCashBalanceAtomic({ userId, amount }) {
     ? result.value
     : null;
 
-  let balanceBefore = 0;
+  let balanceBeforeEuro = 0;
   if (prev && prev.currentBalance !== undefined && prev.currentBalance !== null) {
     const n = Number(prev.currentBalance);
-    if (Number.isFinite(n)) balanceBefore = n;
+    if (Number.isFinite(n)) balanceBeforeEuro = normalizeEuro(n);
   }
 
-  const balanceAfter = round2(balanceBefore + amt);
+  const balanceBeforeCents = euroToCents(balanceBeforeEuro);
+  const balanceAfterCents = addCents(balanceBeforeCents, amountCents);
+
   return {
-    balanceBefore: round2(balanceBefore),
-    balanceAfter,
+    balanceBefore: centsToEuro(balanceBeforeCents),
+    balanceAfter: centsToEuro(balanceAfterCents),
   };
 }
 
@@ -153,8 +162,9 @@ async function advanceUserCashBalanceAtomic({ userId, amount }) {
  */
 async function compensateUserCashBalanceAdvance({ userId, amount }) {
   const uid = String(userId || '').trim();
-  const amt = Number(amount);
-  if (!uid || !Number.isFinite(amt)) return true;
+  if (!uid || !Number.isFinite(Number(amount))) return true;
+
+  const amt = centsToEuro(euroToCents(Number(amount)));
 
   try {
     const coll = await getUserCashBalanceCollection();

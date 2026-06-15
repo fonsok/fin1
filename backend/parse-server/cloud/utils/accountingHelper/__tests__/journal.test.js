@@ -99,10 +99,12 @@ describe('postLedgerPair', () => {
     expect(credit.attrs.account).toBe('PLT-LIAB-COM');
     expect(credit.attrs.side).toBe('credit');
 
-    // round2(12.345) = 12.35
-    expect(debit.attrs.amount).toBeCloseTo(12.35, 2);
-    expect(credit.attrs.amount).toBeCloseTo(12.35, 2);
+    // round2(12.345) = 12.35 — P3c-1: exact cent equality on both legs
+    expect(debit.attrs.amount).toBe(12.35);
+    expect(credit.attrs.amount).toBe(12.35);
     expect(debit.attrs.amount).toBe(credit.attrs.amount);
+    expect(debit.attrs.metadata.amountCents).toBe(1235);
+    expect(credit.attrs.metadata.amountCents).toBe(1235);
 
     // Both rows share reference + transactionType
     expect(debit.attrs.referenceId).toBe('trade-7');

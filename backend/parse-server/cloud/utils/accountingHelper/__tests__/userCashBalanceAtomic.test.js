@@ -89,4 +89,27 @@ describe('userCashBalanceAtomic (Phase 3b)', () => {
     expect(out.balanceBefore).toBe(0);
     expect(out.balanceAfter).toBe(50);
   });
+
+  test('advance normalizes float dust before Mongo $inc', async () => {
+    mockFindOneAndUpdate.mockResolvedValueOnce({ value: { currentBalance: 0 } });
+    // eslint-disable-next-line global-require
+    const { advanceUserCashBalanceAtomic } = require('../userCashBalanceAtomic');
+
+    await advanceUserCashBalanceAtomic({ userId: 'u3', amount: 0.1 + 0.2 });
+    expect(mockFindOneAndUpdate).toHaveBeenCalledWith(
+      { userId: 'u3' },
+      { $inc: { currentBalance: 0.3 } },
+      { upsert: true, returnDocument: 'before' },
+    );
+  });
+
+  test('balanceAfter computed in cent space after many-style increments', async () => {
+    mockFindOneAndUpdate.mockResolvedValueOnce({ value: { currentBalance: 100 } });
+    // eslint-disable-next-line global-require
+    const { advanceUserCashBalanceAtomic } = require('../userCashBalanceAtomic');
+
+    const out = await advanceUserCashBalanceAtomic({ userId: 'u4', amount: 0.1 + 0.2 });
+    expect(out.balanceBefore).toBe(100);
+    expect(out.balanceAfter).toBe(100.3);
+  });
 });
