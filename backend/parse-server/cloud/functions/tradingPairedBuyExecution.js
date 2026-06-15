@@ -2,6 +2,7 @@
 
 const { getUserStableId } = require('./tradingIdentity');
 const { capMirrorPoolQuantityForBuy } = require('../utils/poolMirrorBuyCap');
+const { resolvePairedBuyExecutionPrice } = require('../utils/executionPriceResolver');
 
 /**
  * Atomic paired buy: trader leg + mirror-pool leg, idempotent via clientOrderIntentId.
@@ -26,19 +27,14 @@ async function handleExecutePairedBuy(request) {
     clientOrderIntentId,
     traderQuantity,
     mirrorPoolQuantity,
+    clientQuotedAt = null,
   } = request.params || {};
 
   if (!symbol || typeof symbol !== 'string') {
     throw new Parse.Error(Parse.Error.INVALID_VALUE, 'symbol required');
   }
-  if (!Number.isFinite(price) || Number(price) <= 0) {
-    throw new Parse.Error(Parse.Error.INVALID_VALUE, 'valid price required');
-  }
   if (!['market', 'limit'].includes(String(orderInstruction).toLowerCase())) {
     throw new Parse.Error(Parse.Error.INVALID_VALUE, 'orderInstruction must be market or limit');
-  }
-  if (String(orderInstruction).toLowerCase() === 'limit' && (!Number.isFinite(limitPrice) || Number(limitPrice) <= 0)) {
-    throw new Parse.Error(Parse.Error.INVALID_VALUE, 'valid limitPrice required for limit orders');
   }
   if (!Number.isInteger(traderQuantity) || traderQuantity <= 0) {
     throw new Parse.Error(Parse.Error.INVALID_VALUE, 'traderQuantity must be an integer > 0');
@@ -50,13 +46,22 @@ async function handleExecutePairedBuy(request) {
     throw new Parse.Error(Parse.Error.INVALID_VALUE, 'clientOrderIntentId required');
   }
 
+  const priceResolution = await resolvePairedBuyExecutionPrice({
+    symbol,
+    orderInstruction,
+    limitPrice,
+    clientPrice: price,
+    clientQuotedAt,
+  });
+  const executionPrice = priceResolution.executionPrice;
+
   const stableId = getUserStableId(user);
   let effectiveMirrorPoolQuantity = mirrorPoolQuantity;
 
   if (effectiveMirrorPoolQuantity > 0) {
     const capResult = await capMirrorPoolQuantityForBuy({
       mirrorPoolQuantity: effectiveMirrorPoolQuantity,
-      price: Number(price),
+      price: executionPrice,
       traderId: stableId,
     });
     effectiveMirrorPoolQuantity = capResult.mirrorPoolQuantity;
@@ -108,7 +113,14 @@ async function handleExecutePairedBuy(request) {
   execution.set('traderId', stableId);
   execution.set('clientOrderIntentId', intentId);
   execution.set('symbol', symbol);
-  execution.set('price', Number(price));
+  execution.set('price', executionPrice);
+  execution.set('priceSource', priceResolution.priceSource);
+  execution.set('clientSubmittedPrice', priceResolution.clientSubmittedPrice);
+  execution.set('serverReferencePrice', priceResolution.serverReferencePrice);
+  execution.set('priceSnapshotAt', priceResolution.priceSnapshotAt);
+  if (priceResolution.clientQuotedAt) {
+    execution.set('clientQuotedAt', priceResolution.clientQuotedAt);
+  }
   execution.set('status', 'PREPARED');
   execution.set('requestedAt', new Date().toISOString());
   await execution.save(null, { useMasterKey: true });
@@ -125,9 +137,12 @@ async function handleExecutePairedBuy(request) {
     order.set('side', 'buy');
     order.set('orderType', String(orderInstruction).toLowerCase());
     order.set('quantity', quantity);
-    order.set('price', Number(price));
-    order.set('totalAmount', Number(quantity) * Number(price));
+    order.set('price', executionPrice);
+    order.set('totalAmount', Number(quantity) * executionPrice);
     order.set('status', 'submitted');
+    order.set('executionPriceSource', priceResolution.priceSource);
+    order.set('clientSubmittedPrice', priceResolution.clientSubmittedPrice);
+    order.set('priceSnapshotAt', priceResolution.priceSnapshotAt);
     order.set('optionDirection', optionDirection);
     order.set('underlyingAsset', description);
     order.set('wkn', symbol);

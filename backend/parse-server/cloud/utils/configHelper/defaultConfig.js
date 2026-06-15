@@ -42,6 +42,12 @@ const DEFAULT_CONFIG = {
     dailyTransactionLimit: 10000.0,
     weeklyTransactionLimit: 50000.0,
     monthlyTransactionLimit: 200000.0,
+    /** Max age of clientQuotedAt for market executePairedBuy (seconds). Aligns with iOS price-validity window. */
+    executionPriceMaxQuoteAgeSeconds: 30,
+    /** Max age of Parse MarketData row when used as execution reference (seconds). */
+    executionPriceMarketDataMaxAgeSeconds: 300,
+    /** Max deviation client vs MarketData in basis points (100 = 1%). */
+    executionPriceToleranceBps: 100,
   },
   display: {
     showCommissionBreakdownInCreditNote: true,

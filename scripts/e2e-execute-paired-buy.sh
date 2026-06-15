@@ -56,6 +56,7 @@ print(json.dumps({
   "traderQuantity": 1,
   "mirrorPoolQuantity": 1,
   "description": "E2E paired buy script",
+  "clientQuotedAt": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z"),
 }))
 ')"
 

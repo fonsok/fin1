@@ -200,6 +200,7 @@ final class BuyOrderPlacementService: BuyOrderPlacementServiceProtocol, @uncheck
             if let denomination = searchResult.denomination {
                 payload["denomination"] = denomination
             }
+            payload["clientQuotedAt"] = Self.iso8601Now()
 
             guard JSONSerialization.isValidJSONObject(payload) else {
                 return BuyOrderPlacementResult(
@@ -416,4 +417,18 @@ private struct ExecutePairedBuyOrderLeg: Decodable {
 private func safeCurrencyString(_ value: Double) -> String {
     guard value.isFinite else { return "—" }
     return value.formatted(.number.precision(.fractionLength(2)))
+}
+
+private enum PairedBuyPayloadTime {
+    nonisolated(unsafe) static let iso8601: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter
+    }()
+}
+
+extension BuyOrderPlacementService {
+    static func iso8601Now() -> String {
+        PairedBuyPayloadTime.iso8601.string(from: Date())
+    }
 }
